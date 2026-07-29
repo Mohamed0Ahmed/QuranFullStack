@@ -160,4 +160,17 @@ public static class ApiMessages
     public const string AbwabTemplatesLoaded = "تم تحميل القوالب";
     public const string AbwabTemplateLoaded = "تم تحميل القالب";
     public const string AbwabTemplateNotFound = "القالب غير موجود";
+    public const string AbwabTemplateCreated = "تم إنشاء القالب";
+    public const string AbwabTemplateInvalidName = "اسم القالب غير صالح";
+    public const string AbwabTemplateNodeCreated = "تم إضافة العنصر";
+    public const string AbwabTemplateNodeEdited = "تم تعديل العنصر";
+    public const string AbwabTemplateNodeReordered = "تم إعادة ترتيب العنصر";
+    public const string AbwabTemplateNodeInvalidName = "اسم العنصر غير صالح";
+    public const string AbwabTemplateNodeMissingParent = "يجب تحديد العنصر الأب";
+    public const string AbwabTemplateNodeNotFound = "العنصر غير موجود";
+    public const string AbwabTemplateNodeParentNotFound = "العنصر الأب غير موجود في هذا القالب";
+    public const string AbwabTemplateNodeDuplicateName = "يوجد عنصر آخر بنفس الاسم تحت العنصر الأب";
+    public const string AbwabTemplateNodeInvalidPosition = "الترتيب المطلوب خارج نطاق العناصر المجاورة";
+    public const string AbwabTemplateRootNotReorderable = "جذر القالب ليس له عناصر مجاورة لإعادة ترتيبها";
+    public const string AbwabTemplateRootNotDeletable = "لا يمكن حذف جذر القالب، احذف القالب نفسه";
 }

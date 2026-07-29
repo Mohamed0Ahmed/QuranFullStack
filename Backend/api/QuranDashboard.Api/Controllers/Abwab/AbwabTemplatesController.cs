@@ -1,4 +1,6 @@
 using QuranDashboard.Application.Abstractions.Abwab.Responses;
+using QuranDashboard.Application.Abwab.Commands.Templates.CreateTemplate;
+using QuranDashboard.Application.Abwab.Commands.Templates.DeleteTemplate;
 using QuranDashboard.Application.Abwab.Queries.GetTemplate;
 using QuranDashboard.Application.Abwab.Queries.GetTemplates;
 
@@ -8,7 +10,9 @@ namespace QuranDashboard.Api.Controllers.Abwab;
 [Route("api/abwab")]
 public sealed class AbwabTemplatesController(
     GetTemplatesHandler getTemplatesHandler,
-    GetTemplateHandler getTemplateHandler) : ControllerBase
+    GetTemplateHandler getTemplateHandler,
+    CreateTemplateHandler createTemplateHandler,
+    DeleteTemplateHandler deleteTemplateHandler) : ControllerBase
 {
     [HttpGet("templates")]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<AbwabTemplateSummaryDto>>>> GetAll(
@@ -37,6 +41,41 @@ public sealed class AbwabTemplatesController(
             GetTemplateOutcome.NotFound =>
                 NotFound(ApiResponse<AbwabTemplateDto>.Fail(ApiMessages.AbwabTemplateNotFound)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetTemplateOutcome)} variant."),
+        };
+    }
+
+    [HttpPost("templates")]
+    public async Task<ActionResult<ApiResponse<AbwabTemplateDto>>> Create(
+        [FromBody] CreateTemplateBody body, CancellationToken cancellationToken)
+    {
+        var outcome = await createTemplateHandler.HandleAsync(
+            new CreateTemplateCommand(body.Name, body.Description, body.RepresentativeAyahText, body.Aliases),
+            cancellationToken);
+
+        return outcome switch
+        {
+            CreateTemplateOutcome.Success success =>
+                Created($"api/abwab/templates/{success.Template.Id}",
+                    ApiResponse<AbwabTemplateDto>.Ok(success.Template, ApiMessages.AbwabTemplateCreated)),
+            CreateTemplateOutcome.InvalidName =>
+                BadRequest(ApiResponse<AbwabTemplateDto>.Fail(ApiMessages.AbwabTemplateInvalidName)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(CreateTemplateOutcome)} variant."),
+        };
+    }
+
+    [HttpDelete("templates/{templateId:int}")]
+    public async Task<ActionResult<ApiResponse<object>>> Delete(
+        int templateId, CancellationToken cancellationToken)
+    {
+        var outcome = await deleteTemplateHandler.HandleAsync(
+            new DeleteTemplateCommand(templateId), cancellationToken);
+
+        return outcome switch
+        {
+            DeleteTemplateOutcome.Success => NoContent(),
+            DeleteTemplateOutcome.NotFound =>
+                NotFound(ApiResponse<object>.Fail(ApiMessages.AbwabTemplateNotFound)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(DeleteTemplateOutcome)} variant."),
         };
     }
 }

@@ -14,6 +14,7 @@ internal static class AbwabDependencyInjection
         services.AddScoped<IAbwabRelationsReader, EfAbwabRelationsReader>();
         services.AddScoped<IAbwabRelationsWriter, EfAbwabRelationsWriter>();
         services.AddScoped<IAbwabTemplatesReader, EfAbwabTemplatesReader>();
+        services.AddScoped<IAbwabTemplatesWriter, EfAbwabTemplatesWriter>();
 
         return services;
     }

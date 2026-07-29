@@ -321,6 +321,34 @@ internal static class SmokeRouteCatalog
         {
             ParityOnly = true,
         },
+        new("api/abwab/templates", "/api/abwab/templates", HttpStatusCode.Created)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/templates/{templateId:int}", "/api/abwab/templates/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Delete, ParityOnly = true,
+        },
+
+        // api/abwab/templates/{templateId:int}/nodes and api/abwab/template-nodes/{nodeId:int} —
+        // AbwabTemplateNodesController. ParityOnly for the sibling write routes' own reason: these
+        // write, so the generic sweep must not dispatch them.
+        new("api/abwab/templates/{templateId:int}/nodes", "/api/abwab/templates/1/nodes", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/template-nodes/{nodeId:int}", "/api/abwab/template-nodes/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Put, ParityOnly = true,
+        },
+        new("api/abwab/template-nodes/{nodeId:int}/order", "/api/abwab/template-nodes/1/order", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/template-nodes/{nodeId:int}", "/api/abwab/template-nodes/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Delete, ParityOnly = true,
+        },
     ];
 
     // The sweep's theory data is the Path alone (a string is serializable, so every route is an

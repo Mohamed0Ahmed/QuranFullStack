@@ -12,6 +12,12 @@ using QuranDashboard.Application.Abwab.Commands.Doors.DeleteDoor;
 using QuranDashboard.Application.Abwab.Commands.Doors.RestoreDoor;
 using QuranDashboard.Application.Abwab.Queries.GetAbwabTree;
 using QuranDashboard.Application.Abwab.Queries.GetDoorRelations;
+using QuranDashboard.Application.Abwab.Commands.Templates.AddTemplateNode;
+using QuranDashboard.Application.Abwab.Commands.Templates.CreateTemplate;
+using QuranDashboard.Application.Abwab.Commands.Templates.DeleteTemplate;
+using QuranDashboard.Application.Abwab.Commands.Templates.DeleteTemplateNode;
+using QuranDashboard.Application.Abwab.Commands.Templates.EditTemplateNode;
+using QuranDashboard.Application.Abwab.Commands.Templates.ReorderTemplateNode;
 using QuranDashboard.Application.Abwab.Queries.GetTemplate;
 using QuranDashboard.Application.Abwab.Queries.GetTemplates;
 using QuranDashboard.Application.Abwab.Commands.Relations.AddDoorRelations;
@@ -157,6 +163,12 @@ public static class DependencyInjection
 
         services.AddScoped<GetTemplatesHandler>();
         services.AddScoped<GetTemplateHandler>();
+        services.AddScoped<CreateTemplateHandler>();
+        services.AddScoped<DeleteTemplateHandler>();
+        services.AddScoped<AddTemplateNodeHandler>();
+        services.AddScoped<EditTemplateNodeHandler>();
+        services.AddScoped<ReorderTemplateNodeHandler>();
+        services.AddScoped<DeleteTemplateNodeHandler>();
 
         return services;
     }
