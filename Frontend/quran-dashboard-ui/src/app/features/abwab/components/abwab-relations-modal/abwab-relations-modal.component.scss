@@ -155,9 +155,17 @@
 
 .abwab-relations-modal__type:focus-visible,
 .abwab-relations-modal__pill button:focus-visible,
-.abwab-relations-modal__picker input:focus-visible {
+.abwab-relations-modal__picker input:focus-visible,
+.abwab-relations-modal__pick-chevron:focus-visible,
+.abwab-relations-modal__pick-row input:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: -1px;
+}
+
+/* The checkbox and the chevron are the row's two tab stops, so keyboard focus has to read as a
+   row highlight — the row itself is not focusable and gets no ring of its own. */
+.abwab-relations-modal__pick-row:has(:focus-visible) {
+  background: var(--qd-surface-hover);
 }
 
 .abwab-relations-modal__direction {

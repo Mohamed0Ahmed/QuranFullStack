@@ -5,12 +5,13 @@
       role="dialog"
       aria-modal="true"
       dir="rtl"
+      [attr.aria-labelledby]="titleId"
       qdModalScrollLock
       data-testid="abwab-relations-modal"
       (click)="$event.stopPropagation()"
       (keydown.escape)="close()"
     >
-      <h3>
+      <h3 [id]="titleId">
         {{ titleText() }}
         @if (!anchorPickMode()) {
           <span class="abwab-relations-modal__count" data-testid="abwab-relations-modal-count">{{ relations().length }}</span>
@@ -87,7 +88,7 @@
               data-testid="abwab-relations-modal-direction-anchor-more"
               (click)="pickDirection('anchor-more')"
             >
-              {{ anchorMoreLabel }}
+              {{ anchorMoreLabel() }}
             </button>
             <button
               type="button"
@@ -96,7 +97,7 @@
               data-testid="abwab-relations-modal-direction-anchor-less"
               (click)="pickDirection('anchor-less')"
             >
-              {{ anchorLessLabel }}
+              {{ anchorLessLabel() }}
             </button>
           </div>
           <span class="abwab-relations-modal__preview" data-testid="abwab-relations-modal-direction-preview">
@@ -125,11 +126,15 @@
               [attr.data-testid]="'abwab-relations-modal-pick-' + row.node.id"
               (click)="togglePicked(row)"
             >
+              <!-- A leaf keeps the element for alignment only: no tab stop, nothing to announce. -->
               <button
                 type="button"
                 class="abwab-relations-modal__pick-chevron"
                 [class.abwab-relations-modal__pick-chevron--leaf]="!row.hasChildren"
-                [attr.tabindex]="-1"
+                [attr.tabindex]="row.hasChildren ? null : -1"
+                [attr.aria-hidden]="row.hasChildren ? null : true"
+                [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
+                [attr.aria-label]="row.hasChildren ? expandAriaLabel(row) : null"
                 [attr.data-testid]="'abwab-relations-modal-pick-chevron-' + row.node.id"
                 (click)="toggleExpanded($event, row.node.id)"
               >

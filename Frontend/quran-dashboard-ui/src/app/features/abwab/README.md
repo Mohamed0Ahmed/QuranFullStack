@@ -94,7 +94,13 @@ all.
   `abwab-sections-modal` precedent. `anchorPickMode` inverts the picker for the bulk
   entry: the selected doors become the fixed target list and the picker single-selects
   the anchor, so the add call keeps one shape. Direction is always stated from the
-  anchor's side — «أعم/أخص» appears nowhere in the copy.
+  anchor's side — «أعم/أخص» appears nowhere in the copy. **The direction pill has two
+  copies, one per mode**, because «المحدد» names whichever side the picker chooses and the
+  modes choose opposite sides: door mode picks targets («المحدد أقل/أكثر شمولية»),
+  anchor-pick mode picks the anchor («الباب المختار أكثر/أقل شمولية»). Sharing one pair
+  makes the label state the opposite of what the row stores in one of the two modes. The
+  picker's expand chevron is a real tab stop with `aria-expanded` — search auto-expand is a
+  convenience, not the keyboard path to a nested door.
 - `components/abwab-announcer/` — one `aria-live="polite"` `role="status"` region for
   operation messages; a feature-scoped stand-in for a toast primitive this one
   feature does not warrant (`plan-slice-b.md` §4.1).

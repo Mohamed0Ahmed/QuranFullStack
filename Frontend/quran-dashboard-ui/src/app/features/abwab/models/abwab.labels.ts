@@ -146,11 +146,15 @@ export const ABWAB_LABELS = {
   relationTypeOpposition: 'تضاد',
   relationTypeComprehensiveness: 'شمولية',
   relationDirectionLabel: 'الاتجاه:',
+  // «المحدد» = the doors the picker selects, i.e. the TARGETS. Only true in door mode; the
+  // anchor-pick pair below exists because the picker changes sides there.
   relationDirectionAnchorMore: 'المحدد أقل شمولية',
   relationDirectionAnchorLess: 'المحدد أكثر شمولية',
   relationDirectionPreview: (doorName: string, anchorIsMore: boolean): string =>
     `الأبواب اللي هتختارها ${anchorIsMore ? 'أقل شمولية' : 'أكثر شمولية'} من «${doorName}»`,
   relationPickerPlaceholder: 'ابحث واختر بابًا أو أكثر… (تقدر تربط كذا باب مرة واحدة)',
+  relationPickerExpandAriaLabel: (doorName: string): string => `عرض الأبواب الفرعية لـ«${doorName}»`,
+  relationPickerCollapseAriaLabel: (doorName: string): string => `إخفاء الأبواب الفرعية لـ«${doorName}»`,
   relationAlreadyLinked: 'مرتبط بالفعل بهذا النوع',
   relationNoneSelected: 'لم تختر شيئًا بعد',
   relationSelectedSummary: (names: readonly string[]): string => `${names.length} مختار: ${names.join('، ')}`,
@@ -162,6 +166,11 @@ export const ABWAB_LABELS = {
   relationsBulkAddOp: 'إضافة علاقة',
   relationsBulkTitle: (count: number): string => `إضافة علاقة لـ ${doorCountPhrase(count)}`,
   relationsBulkAnchorHint: 'اختر الباب الذي ترتبط به الأبواب المحددة',
+  // The pill must name the side the picker chooses, and in this mode that is the ANCHOR, not the
+  // targets. Reusing the door-mode pair here would state the opposite of what the row stores:
+  // `anchor-more` makes the picked door the more comprehensive endpoint (plan §5.3).
+  relationsBulkDirectionAnchorMore: 'الباب المختار أكثر شمولية',
+  relationsBulkDirectionAnchorLess: 'الباب المختار أقل شمولية',
   relationsBulkDirectionPreview: (count: number, doorName: string, anchorIsMore: boolean): string =>
     `الأبواب المحددة (${count}) هتبقى ${anchorIsMore ? 'أقل شمولية' : 'أكثر شمولية'} من «${doorName}»`,
 

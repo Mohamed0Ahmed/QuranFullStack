@@ -631,6 +631,14 @@ npm run build                                                  # required before
   decision wins, **do not copy either string into `abwab.labels.ts`**.
 - **`broader`/`narrower` never reach the wire** (§5.3). Two perspectives share those tokens in
   the mockup; the wire enum is anchor-relative.
+- **The direction pill needs two copies, one per mode — and the trap is in the copy layer, not the
+  wire.** «المحدد» means *the doors the picker selects*, and the two modes select opposite sides:
+  targets in door mode, the anchor in anchor-pick mode. The door-mode pair
+  («المحدد أقل/أكثر شمولية») therefore states the **opposite** of what the row stores when reused
+  in anchor-pick mode, where `anchor-more` makes the picked door the more comprehensive endpoint.
+  Anchor-pick mode uses its own pair («الباب المختار أكثر/أقل شمولية»). Recorded because §5.3
+  eliminated this exact ambiguity on the wire and in the grouping, and it still survived into the
+  labels file — killing it in one layer does not kill it in the next.
 - **Direction is not editable.** No PATCH, no flip endpoint. Delete + re-add, because the
   contract has no edit affordance and a flip is a different row under the canonical shape.
 - **`23505` must be translated in the new writer.** The existing helpers are door-name-keyed;
@@ -674,54 +682,65 @@ local dev DB with two sandbox sections so cross-section cases are reachable.
    expansion state.
 10. The anchor door never appears in the picker.
 11. Pick at depth 0 and at depth 2+ — both add normally. *(nesting is irrelevant)*
+12. Relate a **section-less** door (one whose section was archived, or one created with no
+    section) → succeeds like any other. *(§6.2's "Section-less door" column — sections are
+    irrelevant to relations in both directions)*
 
 **Refusals**
 
-12. Add the same pair+type twice → `409`, Arabic message names the door, nothing is created.
-13. Add the **opposite** شمولية direction for a pair that already has one → `409` too. *(§5.2)*
-14. Add three targets where one is a duplicate → **nothing** is created. *(all-or-nothing)*
-15. Relate a door to its own child, and to its own parent → both succeed. *(§6.2)*
-16. Relate doors in two different sections → succeeds.
+13. Add the same pair+type twice → `409`, Arabic message names the door, nothing is created.
+14. Add the **opposite** شمولية direction for a pair that already has one → `409` too. *(§5.2)*
+15. Add three targets where one is a duplicate → **nothing** is created. *(all-or-nothing)*
+16. Relate a door to its own child, and to its own parent → both succeed. *(§6.2)*
+17. Relate doors in two different sections → succeeds.
 
 **Delete**
 
-17. ✕ on a chip → gone here **and** on the other door's modal.
-18. Re-add the same pair+type after deleting → succeeds. *(soft delete does not block)*
+18. ✕ on a chip → gone here **and** on the other door's modal.
+19. Re-add the same pair+type after deleting → succeeds. *(soft delete does not block)*
 
 **Flag and counts**
 
-19. A door with ≥1 relation shows the «علاقات» chip in the tree; a door with none does not.
-20. The chip appears in the tree only — **not** on cards, **not** in the archive view.
-21. After an add and after a delete, the flag/count update without a manual page reload.
+20. A door with ≥1 relation shows the «علاقات» chip in the tree; a door with none does not.
+21. The chip appears in the tree only — **not** on cards, **not** in the archive view.
+22. After an add and after a delete, the flag/count update without a manual page reload.
     *(refresh-after-write)*
 
 **Archive / restore — the dormancy cells**
 
-22. Archive door A (which has relations) → the archive **succeeds**, never blocked.
-23. Open partner B's modal → A's chip is **gone**, and B's tree flag drops (disappears if A was
+23. Archive door A (which has relations) → the archive **succeeds**, never blocked.
+24. Open partner B's modal → A's chip is **gone**, and B's tree flag drops (disappears if A was
     B's only relation). *(§6.3, the most-missed cell)*
-24. Restore A → the chip and the flag **come back on both sides**, with no re-adding.
-25. Archive a door **with a subtree** where a descendant has relations → the descendant's
+25. Restore A → the chip and the flag **come back on both sides**, with no re-adding.
+26. Archive a door **with a subtree** where a descendant has relations → the descendant's
     partners lose their chips too; restore brings them all back.
-26. Bulk-archive two related doors, then restore only one → its relation stays dormant until the
+27. Bulk-archive two related doors, then restore only one → its relation stays dormant until the
     partner is restored too.
-27. Archive a door, restore it into a **detached** state (its section was archived meanwhile) →
+28. Archive a door, restore it into a **detached** state (its section was archived meanwhile) →
     relations are unaffected by the detach.
 
 **Structure ops never touch relations**
 
-28. Move a related door to another section / under another parent (single and bulk) → chips and
+29. Move a related door to another section / under another parent (single and bulk) → chips and
     counts unchanged on both sides.
-29. Reorder a related door in both order spaces → unchanged.
-30. Rename a related door → the chip on the partner's modal shows the **new** name.
+30. Reorder a related door in both order spaces → unchanged.
+31. Rename a related door → the chip on the partner's modal shows the **new** name.
+32. Create a section, rename it, and delete an empty one while related doors exist → every chip
+    and count is unchanged on both sides. *(§6.3's section row — the cell most easily assumed
+    rather than checked, because no relation code runs on any of these paths)*
 
 **Bulk entry (T602 — confirm this reading)**
 
-31. Enter bulk mode, select three doors, press «إضافة علاقة» → the modal opens in anchor-pick
+33. Enter bulk mode, select three doors, press «إضافة علاقة» → the modal opens in anchor-pick
     mode: the three doors are shown as fixed targets, the picker single-selects the anchor, the
     existing-relations groups are hidden.
-32. Pick an anchor + شمولية + a direction → three relations created in one call; a duplicate
+34. Pick an anchor + شمولية + a direction → three relations created in one call; a duplicate
     among them fails the whole batch with one `409`.
+35. Switch the direction pill in anchor-pick mode → it names the **picked anchor**'s side
+    («الباب المختار أكثر/أقل شمولية»), not «المحدد», and the preview below it agrees. Add, then
+    open the anchor's own modal and confirm the targets landed in the group the pill promised.
+    *(the pill reads from the opposite side in each mode — §5.3's two-perspectives trap, which
+    survived in the copy layer until review)*
 
 ---
 
@@ -767,6 +786,11 @@ local dev DB with two sandbox sections so cross-section cases are reachable.
 - [x] `TESTING_STRATEGY.md` counts re-measured and the partition identity re-verified (T704) —
       `1,086 + 617 + 140 = 1,843`, every term unchanged, which is itself the finding
 - [x] Root `CLAUDE.md` Active-Feature line → `abwab-relations` (T101)
+- [x] Engineering review run against this plan at the PR boundary (2026-07-29). One MAJOR — the
+      anchor-pick direction pill reused the door-mode copy and inverted the write's meaning — plus
+      three MINORs (mouse-only picker expansion, missing `aria-labelledby`, two §6 cells with no
+      §10 step). All fixed in the same branch; §9 gained the copy-layer trap, §10 gained steps 12,
+      32 and 35, and `docs/TESTING_DEBT.md` rows 2–4 were widened to cover them
 - [ ] The §10 manual pass walked by the user before merge (T705) — **the one open item**
 - [x] Clean-code self-check (`.claude/skills/engineering-review/references/clean-code-guard/`)
       before delivery, per the root `CLAUDE.md`. The test-code self-check applies **narrowly to

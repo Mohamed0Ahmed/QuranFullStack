@@ -54,6 +54,8 @@ const GROUP_DOT_KIND: Readonly<Record<AbwabRelationGroupKey, AbwabRelationKind>>
   'less-comprehensive': 'comprehensiveness',
 };
 
+let nextModalId = 0;
+
 function subtreeMatches(node: AbwabNode, query: string): boolean {
   return node.name.includes(query) || node.children.some((child) => subtreeMatches(child, query));
 }
@@ -107,13 +109,12 @@ export class AbwabRelationsModalComponent {
   private readonly expandedIds = signal<ReadonlySet<number>>(new Set());
 
   protected readonly typeOptions = TYPE_ORDER;
+  protected readonly titleId = `abwab-relations-modal-title-${nextModalId++}`;
 
   protected get addTitle(): string { return ABWAB_LABELS.relationAddTitle; }
   protected get descriptionText(): string { return ABWAB_LABELS.relationsModalDescription; }
   protected get emptyText(): string { return ABWAB_LABELS.relationsEmpty; }
   protected get directionLabel(): string { return ABWAB_LABELS.relationDirectionLabel; }
-  protected get anchorMoreLabel(): string { return ABWAB_LABELS.relationDirectionAnchorMore; }
-  protected get anchorLessLabel(): string { return ABWAB_LABELS.relationDirectionAnchorLess; }
   protected get searchPlaceholder(): string { return ABWAB_LABELS.relationPickerPlaceholder; }
   protected get alreadyLinkedLabel(): string { return ABWAB_LABELS.relationAlreadyLinked; }
   protected get noneSelectedLabel(): string { return ABWAB_LABELS.relationNoneSelected; }
@@ -121,7 +122,25 @@ export class AbwabRelationsModalComponent {
   protected get closeLabel(): string { return ABWAB_LABELS.relationsCloseButton; }
   protected get deleteAriaLabel(): string { return ABWAB_LABELS.relationDeleteAriaLabel; }
 
+  /** The pill names whichever side the picker chooses, and the two modes choose opposite sides:
+   * door mode picks the targets, anchor-pick mode picks the anchor. One pair of strings would
+   * therefore be right in one mode and inverted in the other. */
+  protected readonly anchorMoreLabel = computed(() =>
+    this.anchorPickMode() ? ABWAB_LABELS.relationsBulkDirectionAnchorMore : ABWAB_LABELS.relationDirectionAnchorMore,
+  );
+
+  protected readonly anchorLessLabel = computed(() =>
+    this.anchorPickMode() ? ABWAB_LABELS.relationsBulkDirectionAnchorLess : ABWAB_LABELS.relationDirectionAnchorLess,
+  );
+
   protected typeLabel(kind: AbwabRelationKind): string { return TYPE_LABELS[kind]; }
+
+  protected expandAriaLabel(row: AbwabRelationPickerRow): string {
+    return row.isExpanded
+      ? ABWAB_LABELS.relationPickerCollapseAriaLabel(row.node.name)
+      : ABWAB_LABELS.relationPickerExpandAriaLabel(row.node.name);
+  }
+
   protected groupLabel(key: AbwabRelationGroupKey): string { return GROUP_LABELS[key]; }
   protected groupDotKind(key: AbwabRelationGroupKey): AbwabRelationKind { return GROUP_DOT_KIND[key]; }
 
