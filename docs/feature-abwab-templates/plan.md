@@ -293,6 +293,14 @@ than a duplication:
   (the relations `GuardAgainstExistingAsync` pattern) so the `409` can name **which** target
   collided; the catch in the save helper stays as the race backstop, with no names.
 
+What it **does** need, discovered in implementation and not anticipated above: **`AbwabDoor` has no
+parent navigation property** (`AbwabDoorConfiguration` maps the self-FK with `HasOne<AbwabDoor>()
+.WithMany()` and no CLR navigation), so a copied child's `ParentId` cannot be filled in by EF fixup —
+it can only be set once its parent's generated id exists. The copy therefore **descends one level per
+`SaveChanges`**, all inside the single enclosing transaction, which is what keeps the batch
+all-or-nothing; each level's alias rows flush alongside the next level's doors. Do not "optimize"
+this into one save: it would require a navigation property the entity deliberately does not have.
+
 ### 5.7 The doors tree snapshot contract is unchanged
 
 `abwab-relations` added `RelationCount` to `AbwabTreeDoorDto` and therefore owed the
@@ -453,7 +461,7 @@ green before the next one starts.
 **Verification**
 
 ```bash
-dotnet build Backend/QuranDashboard.sln
+dotnet build Backend/QuranDashboard.sln    # REBUILD after `migrations add`, before `dotnet test`
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Abwab."
 ```
@@ -461,6 +469,12 @@ dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
 `Tests.Abwab` (46 today) must stay green — `AbwabSchemaTests`/`AbwabSchemaFixture` build a
 Testcontainers schema from the migrations, so a broken migration fails here with nothing new
 written.
+
+**The rebuild between the two commands is load-bearing.** A migration generated after the last
+build leaves the test assembly holding the entities and configurations but **not** the migration, so
+every one of the 46 fails at fixture init with `PendingModelChangesWarning: The model for context
+'QuranDashboardDbContext' has pending changes` — which reads as a broken migration and is not one.
+Hit during execution; one rebuild clears it.
 
 ---
 
@@ -533,7 +547,9 @@ Evidence **must state whether `Tests.Smoke.Data` ran or skipped**.
 
 - **T301 — Abstractions and Arabic messages.** `IAbwabTemplatesWriter` (create/delete template;
   add/edit/reorder/delete node) plus the plain exception types the seam may throw:
-  `AbwabTemplateNodeDuplicateNameException`, `AbwabTemplateRootNotDeletableException`,
+  `AbwabTemplateNodeDuplicateNameException`, **`AbwabTemplateRootNodeException`** (named for the
+  root, not for deletion: the root refuses *reordering* as well, and one type with two
+  handler-specific messages beats two near-identical types),
   `AbwabTemplateNodeNotFoundException`, `AbwabTemplateNotFoundException` — in
   `Application.Abstractions/Abwab/`, beside the twelve the area already defines. New `ApiMessages`
   entries for every outcome, Arabic, singular/plural through the counted-forms rule where a count
@@ -617,8 +633,11 @@ routes + new request contracts). State the `Tests.Smoke.Data` ran/skipped line.
 
 ### Phase 5 — contract regeneration (1 task)
 
-- **T501** — `npm run generate:api` (`ng-openapi-gen` + `scripts/prune-generated-api.mjs`) and
-  `npm run docs:api`. Confirm the generated models carry `AbwabTemplateSummaryDto`,
+- **T501** — **`Backend/scripts/export-swagger` FIRST**, then `npm run generate:api`
+  (`ng-openapi-gen` + `scripts/prune-generated-api.mjs`) and `npm run docs:api`. The export is not
+  optional and not implied: `generate:api` reads `Frontend/quran-dashboard-ui/openapi/swagger.json`
+  off disk, so running it alone silently regenerates the **previous** contract and reports success.
+  `docs/feature-abwab-relations/plan.md` §7 had the same hole and it cost a cycle here. Confirm the generated models carry `AbwabTemplateSummaryDto`,
   `AbwabTemplateDto`, `AbwabTemplateNodeDto`, and every request body. **`abwab-tree-door-dto.ts`
   must be unchanged** — if it moved, something violated §5.7. This is the Slice A → Slice B
   handoff artifact; Slice B cannot start before it lands.
@@ -781,7 +800,12 @@ npm run build
 
 ### Phase 9 — docs, debt, evidence (5 tasks)
 
-- **T901 — Backend READMEs, in the same change.** `Persistence/Writes/Abwab/README.md`: the two
+- **T901 — Backend READMEs. MOVED TO SLICE A** (executed 2026-07-29, its own commit on
+  `abwab-templates-a`). Slice A is its own PR into `dev`, and the root `CLAUDE.md` requires a README
+  to be updated in the **same change** as the boundaries it describes — leaving it here would have
+  merged two READMEs stating a falsified endpoint count and a "one seam per aggregate" rule the apply
+  writer breaks by design. T902 (`features/abwab/README.md`) correctly stays in Slice B, where the
+  frontend it describes lands. What it covered: `Persistence/Writes/Abwab/README.md`: the two
   new writers, **why the apply is its own writer** (the 816-vs-600 measurement, §5.6) and that it
   crosses two aggregates by design, the append-only/no-resequence/no-global-order derivation, the
   inverse-of-relations `23505` note, node delete taking its subtree, template delete touching one
@@ -863,8 +887,19 @@ saying plainly rather than by reference:
 - **Aliases are a `text[]` column, not a table** (§5.3), and are **assigned wholesale** — an
   in-place mutation of the tracked array can go undetected by EF.
 - **The apply lives in its own writer because `EfAbwabDoorsWriter` is 816 lines against a 600-line
-  hard threshold** (§5.6). Do not "consolidate" it back there. The doors writer's size is
-  pre-existing drift, flagged not fixed.
+  hard threshold** (§5.6), and because `BACKEND_STRUCTURE.md` §4 prescribes exactly this
+  use-case split. Do not "consolidate" it back there.
+- **Do not collapse the copy's level-order inserts into one `SaveChanges`** (§5.6). `AbwabDoor` has
+  no parent navigation property, so a child's `ParentId` needs its parent's generated id. The
+  enclosing transaction is what makes the batch all-or-nothing, not the number of saves.
+- **`AbwabTemplateRootNodeException` covers reordering *and* deletion**, not deletion alone — the
+  root has no siblings either. Two near-identical types would say the same thing twice; the two
+  handlers carry the two messages.
+- **Run `Backend/scripts/export-swagger` before `npm run generate:api`** (T501) — the generator reads
+  the spec off disk and will happily regenerate the previous contract while reporting success.
+- **Rebuild between `dotnet ef migrations add` and `dotnet test --no-build`** (phase 1) — otherwise
+  all 46 `Tests.Abwab` fail with `PendingModelChangesWarning`, which looks like a broken migration
+  and is not one.
 - **The apply's `23505` helper is the *inverse* of the relations case.** There, the door-name-keyed
   helper was wrong; here the collision genuinely **is** a door name. Still pre-check up front so
   the `409` can name the target — `23505` names no row.
@@ -981,23 +1016,41 @@ dev DB with at least two sections and one section-less door so those cases are r
 
 ## 12. Obligations checklist
 
-- [ ] Migration by EF tooling only, on explicit go-ahead; **local apply only**; name/files/build
-      reported, **plus the `text[]` column-type verification** (T104)
-- [ ] Canonical smoke dump regenerated after the migration — a stale dump **fails loud** (T105)
-- [ ] **Nine** `SmokeRouteCatalog` entries, all `ParityOnly`, each with a `DerivedStatus`
+- [x] Migration by EF tooling only, on explicit go-ahead; **local apply only**; name/files/build
+      reported, **plus the `text[]` column-type verification** (T104) —
+      `20260729162330_AddAbwabTemplates`, `aliases` emitted as a real `text[]` column, both partial
+      unique indexes present with `NullsDistinct: false` on the sibling-name one
+- [x] Canonical smoke dump regenerated after the migration — a stale dump **fails loud** (T105) —
+      sha256 `b14e5bd7…`, head `20260729162330_AddAbwabTemplates`, 23 migrations applied
+- [x] **Nine** `SmokeRouteCatalog` entries, all `ParityOnly`, each with a `DerivedStatus`
       (T203 ×2, T305 ×6, T404 ×1). **Mandatory gate, not debt**
-- [ ] `Tests.Abwab` + `Tests.Api` + `Tests.Smoke.` run at phases 2, 3, 4 and at each PR boundary,
-      each with the `Tests.Smoke.Data` **ran/skipped** statement
+- [x] `Tests.Abwab` + `Tests.Api` + `Tests.Smoke.` run at phases 2, 3, 4 and at the Slice A PR
+      boundary, each with the `Tests.Smoke.Data` **ran/skipped** statement — PR boundary
+      (2026-07-29): full suite **1,843 passed / 0 skipped**, no-pipeline **1,086**, smoke **140
+      passed, 0 skipped (data tier RAN)**, `Tests.Abwab` 46, `Tests.Api` 60
+- [x] Slice A: `Backend/scripts/export-swagger` → `npm run generate:api` → `npm run docs:api`, and
+      `npm run build` clean (T501). Eleven new models; `abwab-tree-door-dto.ts` **unchanged**, as §5.7
+      requires
+- [x] Slice A live exercise of the apply path, since it has no automated coverage: depth-3 copy into
+      two targets preserved order/section/aliases/description/ayah, every refusal answered its
+      designed status, the failed apply created nothing, and the copies survived deleting the
+      template (2026-07-29; sandbox torn down)
 - [ ] Full Frontend suite + `npm run build` before the Slice B PR (T705, phases 7–8)
 - [ ] `abwab-door-modal.component.spec.ts` green **unchanged** after the form extraction — the
       verified claim T703 rests on
 - [ ] `docs/TESTING_DEBT.md` gains its second section, each row naming its paying trigger (T903)
-- [ ] `Writes/Abwab/README.md` + `Reads/Abwab/README.md` + `features/abwab/README.md` updated in
-      the same change, including the **"Zero dead controls"** correction and endpoint counts
-      **measured off the controllers** (T901, T902)
-- [ ] `TESTING_STRATEGY.md` counts re-measured and the partition identity re-verified (T904)
-- [ ] Root `CLAUDE.md` Active-Feature line → `abwab-templates`; N-2 arithmetic verified against
-      `git log`, not this document (T101)
+- [x] `Writes/Abwab/README.md` + `Reads/Abwab/README.md` updated **in Slice A**, counts measured off
+      the controllers: **five writers / twenty write endpoints**, three readers / four read
+      endpoints, plus the use-case-seam exception to "one seam per aggregate" and the level-order
+      copy (T901, moved forward — see phase 9)
+- [ ] `features/abwab/README.md`, including the **"Zero dead controls"** correction (T902, Slice B)
+- [x] `TESTING_STRATEGY.md` counts re-measured and the partition identity re-verified (T904) —
+      `1,086 + 617 + 140 = 1,843`, every term unchanged, which is itself the finding. All nine new
+      catalog entries are `ParityOnly`, so the parity gate's two set-comparison `[Fact]`s absorb them
+      without adding a case and the dispatched sweep is untouched
+- [x] Root `CLAUDE.md` Active-Feature line → `abwab-templates`; N-2 arithmetic verified against
+      `git log`, not this document (T101) — `abwab-relations` merged as #52, so
+      `docs/feature-abwab-doors/` is the eviction now due; **deferred to its own chore PR** (§11)
 - [ ] The §10 manual pass walked by the user before the Slice B merge (T905)
 - [ ] Clean-code self-check (`.claude/skills/engineering-review/references/clean-code-guard/`)
       before delivery, per the root `CLAUDE.md`. The test-code self-check applies **narrowly to
