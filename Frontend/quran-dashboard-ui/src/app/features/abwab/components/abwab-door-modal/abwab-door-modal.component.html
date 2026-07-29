@@ -14,67 +14,7 @@
       <h3 [id]="titleId">{{ modalTitle }}</h3>
       <p class="abwab-door-modal__context" data-testid="abwab-door-modal-context">{{ contextText }}</p>
 
-      @if (errorMessage()) {
-        <p class="abwab-door-modal__error" role="alert" data-testid="abwab-door-modal-error">
-          {{ errorMessage() }}
-        </p>
-      }
-
-      <div class="abwab-door-modal__field">
-        <label for="abwab-door-modal-name">{{ nameLabel }} *</label>
-        <input
-          id="abwab-door-modal-name"
-          type="text"
-          [value]="name()"
-          (input)="onNameInput($event)"
-          data-testid="abwab-door-modal-name"
-        />
-      </div>
-
-      <div class="abwab-door-modal__field">
-        <label for="abwab-door-modal-description">{{ descriptionLabel }}</label>
-        <textarea
-          id="abwab-door-modal-description"
-          rows="2"
-          [placeholder]="descriptionPlaceholder"
-          [value]="description()"
-          (input)="onDescriptionInput($event)"
-          data-testid="abwab-door-modal-description"
-        ></textarea>
-      </div>
-
-      <div class="abwab-door-modal__field">
-        <label for="abwab-door-modal-ayah">{{ ayahLabel }}</label>
-        <input
-          id="abwab-door-modal-ayah"
-          type="text"
-          [placeholder]="ayahPlaceholder"
-          [value]="ayah()"
-          (input)="onAyahInput($event)"
-          data-testid="abwab-door-modal-ayah"
-        />
-        <p class="abwab-door-modal__hint">{{ ayahHint }}</p>
-      </div>
-
-      <div class="abwab-door-modal__field">
-        <label for="abwab-door-modal-alias-input">{{ aliasLabel }}</label>
-        <input
-          id="abwab-door-modal-alias-input"
-          type="text"
-          [placeholder]="aliasPlaceholder"
-          [value]="aliasDraft()"
-          (input)="onAliasDraftInput($event)"
-          (keydown.enter)="onAliasEnter($event)"
-          data-testid="abwab-door-modal-alias-input"
-        />
-        <div class="abwab-door-modal__chips">
-          @for (alias of aliases(); track alias; let i = $index) {
-            <qd-chip [removable]="true" [removeAriaLabel]="removeAliasLabel(alias)" (remove)="removeAliasAt(i)">
-              {{ alias }}
-            </qd-chip>
-          }
-        </div>
-      </div>
+      <qd-abwab-door-fields-form [value]="initialFields()" [errorMessage]="errorMessage()" />
 
       @if (isEdit) {
         <div class="abwab-door-modal__meta" data-testid="abwab-door-modal-meta">

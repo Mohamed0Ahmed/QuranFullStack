@@ -1,0 +1,88 @@
+<div class="abwab-template-tree" role="list" [attr.aria-label]="ariaLabel()" data-testid="abwab-template-tree">
+  @for (row of rows(); track row.node.id) {
+    <div
+      class="abwab-template-tree__row"
+      role="listitem"
+      [class.abwab-template-tree__row--root]="row.node.parentNodeId === null"
+      [attr.aria-level]="row.node.depth + 1"
+      [style.--abwab-template-tree-depth]="row.node.depth"
+      [attr.data-testid]="'abwab-template-tree-row-' + row.node.id"
+    >
+      <!-- A leaf keeps the element for alignment only: no tab stop, nothing to announce. -->
+      <button
+        type="button"
+        class="abwab-template-tree__chevron"
+        [class.abwab-template-tree__chevron--leaf]="!row.hasChildren"
+        [attr.tabindex]="row.hasChildren ? null : -1"
+        [attr.aria-hidden]="row.hasChildren ? null : true"
+        [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
+        [attr.aria-label]="row.hasChildren ? expandAriaLabel(row) : null"
+        [attr.data-testid]="'abwab-template-tree-chevron-' + row.node.id"
+        (click)="toggleExpanded(row.node.id)"
+      >
+        @if (row.hasChildren) {
+          <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
+        }
+      </button>
+
+      @if (row.node.parentNodeId === null) {
+        <span class="abwab-template-tree__marker" data-testid="abwab-template-tree-root-marker" aria-hidden="true">◆</span>
+      } @else if (editingOrderId() === row.node.id) {
+        <input
+          type="number"
+          min="1"
+          class="abwab-template-tree__order-input"
+          [value]="row.node.orderValue"
+          [attr.data-testid]="'abwab-template-tree-order-input-' + row.node.id"
+          (keydown)="onOrderKeydown($event, row.node.id)"
+          (blur)="commitOrderEdit(row.node.id, $event.target)"
+        />
+      } @else {
+        <span
+          class="abwab-template-tree__order"
+          [attr.data-testid]="'abwab-template-tree-order-' + row.node.id"
+          (click)="onOrderClick(row.node)"
+          >{{ row.node.orderValue }}</span
+        >
+      }
+
+      <span class="abwab-template-tree__name">{{ row.node.name }}</span>
+
+      <span class="abwab-template-tree__actions">
+        <button
+          type="button"
+          class="abwab-template-tree__act"
+          [attr.aria-label]="addChildAriaLabel(row.node.name)"
+          [attr.data-testid]="'abwab-template-tree-add-child-' + row.node.id"
+          (click)="onAddChildClick(row.node.id)"
+        >
+          <span aria-hidden="true">＋</span>
+        </button>
+        <button
+          type="button"
+          class="abwab-template-tree__act"
+          [attr.aria-label]="menuAriaLabel(row.node.name)"
+          [attr.data-testid]="'abwab-template-tree-more-' + row.node.id"
+          (click)="onMoreClick($event, row.node.id)"
+        >
+          <span aria-hidden="true">⋯</span>
+        </button>
+      </span>
+    </div>
+  }
+</div>
+
+@if (root()) {
+  <div class="abwab-template-tree__add-row">
+    <span class="abwab-template-tree__add-marker" aria-hidden="true">＋</span>
+    <input
+      type="text"
+      [placeholder]="addChildPlaceholder"
+      [attr.aria-label]="addChildPlaceholder"
+      [value]="quickAddDraft()"
+      data-testid="abwab-template-tree-quick-add"
+      (input)="onQuickAddInput($event)"
+      (keydown.enter)="onQuickAddEnter($event)"
+    />
+  </div>
+}

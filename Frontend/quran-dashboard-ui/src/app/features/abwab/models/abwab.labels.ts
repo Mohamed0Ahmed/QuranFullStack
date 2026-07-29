@@ -232,8 +232,6 @@ export const ABWAB_LABELS = {
   templateNodeContextRoot: 'جذر القالب — اسمه هو اسم القالب',
   templateNodeContextParent: (parentName: string): string => `سيُضاف تحت: «${parentName}»`,
   templateNodeContextEdit: (nodeName: string): string => `تعديل «${nodeName}»`,
-  templateNodeNameFieldLabel: 'اسم العنصر',
-  templateNodeNameRequiredError: 'اسم العنصر مطلوب',
 
   templateCopyTitle: (templateName: string): string => `نسخ «${templateName}»`,
   templateCopyDescription: 'اختر الأبواب المستهدفة — القالب سيُنسخ كاملًا (بجذره وكل فروعه) داخل كل باب تختاره.',

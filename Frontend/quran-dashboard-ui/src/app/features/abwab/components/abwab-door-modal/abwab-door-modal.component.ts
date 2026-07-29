@@ -1,19 +1,24 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 
-import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { AbwabDoorFieldsFormComponent } from '../abwab-door-fields-form/abwab-door-fields-form.component';
 import { AbwabWriteController, AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
+import { AbwabAuthoringFields, EMPTY_AUTHORING_FIELDS } from '../../models/abwab-templates.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 let nextModalId = 0;
 
 /**
  * Add/edit door modal (plan-slice-b.md T414). Composes `.qd-modal`/`.qd-modal-backdrop`
- * and `qdModalScrollLock` rather than hand-rolling a dialog. Create-under-a-parent nulls
- * `sectionId` here (M10) even though `AbwabApi.createDoor` already strips the key at the
- * wire level (T405/M33) — defense in depth at the layer that decides *whether* a section
- * applies, not just how it is serialized.
+ * and `qdModalScrollLock` rather than hand-rolling a dialog, and renders the four authoring
+ * fields through the shared `qd-abwab-door-fields-form` — this shell keeps the framing, the
+ * tracking box, the dirty guard's confirm strip, and the write dispatch.
+ *
+ * Create-under-a-parent nulls `sectionId` here (M10) even though `AbwabApi.createDoor` already
+ * strips the key at the wire level (T405/M33) — defense in depth at the layer that decides
+ * *whether* a section applies, not just how it is serialized. It stays in this shell: the shared
+ * form has no concept of a section.
  *
  * Tracking-data box: `AbwabDoorDto` carries no audit-seed columns on the wire (verified
  * against the generated model + `openapi/swagger.json` — no `createdAt`/`createdBy`/
@@ -25,7 +30,7 @@ let nextModalId = 0;
 @Component({
   selector: 'qd-abwab-door-modal',
   standalone: true,
-  imports: [QdChipComponent, ModalScrollLockDirective],
+  imports: [AbwabDoorFieldsFormComponent, ModalScrollLockDirective],
   templateUrl: './abwab-door-modal.component.html',
   styleUrl: './abwab-door-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,17 +47,24 @@ export class AbwabDoorModalComponent {
   readonly closed = output<void>();
   readonly saved = output<AbwabDoorDto>();
 
+  private readonly fieldsForm = viewChild(AbwabDoorFieldsFormComponent);
+
   protected readonly titleId = `abwab-door-modal-title-${nextModalId++}`;
 
-  protected readonly name = signal('');
-  protected readonly description = signal('');
-  protected readonly ayah = signal('');
-  protected readonly aliases = signal<string[]>([]);
-  protected readonly aliasDraft = signal('');
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly confirmingDiscard = signal(false);
 
-  private initialSnapshot = '';
+  protected readonly initialFields = computed<AbwabAuthoringFields>(() => {
+    const door = this.door();
+    return door === null
+      ? EMPTY_AUTHORING_FIELDS
+      : {
+          name: door.name,
+          description: door.description ?? '',
+          representativeAyahText: door.representativeAyahText ?? '',
+          aliases: door.aliases,
+        };
+  });
 
   protected get modalTitle(): string {
     return this.isEdit ? ABWAB_LABELS.editDoorTitle : ABWAB_LABELS.addDoorTitle;
@@ -68,14 +80,6 @@ export class AbwabDoorModalComponent {
   protected get isEdit(): boolean {
     return this.door() !== null;
   }
-  protected get nameLabel(): string { return ABWAB_LABELS.nameFieldLabel; }
-  protected get descriptionLabel(): string { return ABWAB_LABELS.descriptionFieldLabel; }
-  protected get descriptionPlaceholder(): string { return ABWAB_LABELS.descriptionPlaceholder; }
-  protected get ayahLabel(): string { return ABWAB_LABELS.ayahFieldLabel; }
-  protected get ayahPlaceholder(): string { return ABWAB_LABELS.ayahPlaceholder; }
-  protected get ayahHint(): string { return ABWAB_LABELS.ayahHint; }
-  protected get aliasLabel(): string { return ABWAB_LABELS.aliasFieldLabel; }
-  protected get aliasPlaceholder(): string { return ABWAB_LABELS.aliasPlaceholder; }
   protected get saveLabel(): string { return ABWAB_LABELS.saveButton; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
   protected get dirtyCloseConfirmMessage(): string { return ABWAB_LABELS.dirtyCloseConfirm; }
@@ -89,77 +93,19 @@ export class AbwabDoorModalComponent {
   protected get trackingArchiveLabel(): string { return ABWAB_LABELS.trackingArchiveLabel; }
   protected get trackingArchiveActiveValue(): string { return ABWAB_LABELS.trackingArchiveActiveValue; }
 
-  protected removeAliasLabel(alias: string): string {
-    return ABWAB_LABELS.removeAliasAriaLabel(alias);
-  }
-
   constructor() {
-    // `untracked` is load-bearing: resetFormFromInputs() both writes and (via
-    // snapshotKey) reads the form signals, so without it those reads register as
-    // effect dependencies and every keystroke re-triggers the reset, wiping the
-    // user's input back to the door's original value.
+    // The form resets itself from `initialFields`; this clears only what the shell owns. Reopening
+    // must not surface the previous attempt's error or a half-answered discard prompt.
     effect(() => {
-      const isOpen = this.open();
-      if (isOpen) {
-        untracked(() => this.resetFormFromInputs());
+      if (this.open()) {
+        this.errorMessage.set(null);
+        this.confirmingDiscard.set(false);
       }
     });
   }
 
-  private resetFormFromInputs(): void {
-    const door = this.door();
-    this.name.set(door?.name ?? '');
-    this.description.set(door?.description ?? '');
-    this.ayah.set(door?.representativeAyahText ?? '');
-    this.aliases.set(door ? [...door.aliases] : []);
-    this.aliasDraft.set('');
-    this.errorMessage.set(null);
-    this.confirmingDiscard.set(false);
-    this.initialSnapshot = this.snapshotKey();
-  }
-
-  private snapshotKey(): string {
-    return JSON.stringify({
-      name: this.name(),
-      description: this.description(),
-      ayah: this.ayah(),
-      aliases: this.aliases(),
-    });
-  }
-
-  private get isDirty(): boolean {
-    return this.snapshotKey() !== this.initialSnapshot;
-  }
-
-  protected onNameInput(event: Event): void {
-    this.name.set((event.target as HTMLInputElement).value);
-  }
-  protected onDescriptionInput(event: Event): void {
-    this.description.set((event.target as HTMLTextAreaElement).value);
-  }
-  protected onAyahInput(event: Event): void {
-    this.ayah.set((event.target as HTMLInputElement).value);
-  }
-  protected onAliasDraftInput(event: Event): void {
-    this.aliasDraft.set((event.target as HTMLInputElement).value);
-  }
-
-  protected onAliasEnter(event: Event): void {
-    event.preventDefault();
-    const value = this.aliasDraft().trim();
-    if (!value) {
-      return;
-    }
-    this.aliases.update((current) => [...current, value]);
-    this.aliasDraft.set('');
-  }
-
-  protected removeAliasAt(index: number): void {
-    this.aliases.update((current) => current.filter((_, i) => i !== index));
-  }
-
   protected requestClose(): void {
-    if (this.isDirty) {
+    if (this.fieldsForm()?.isDirty() ?? false) {
       this.confirmingDiscard.set(true);
       return;
     }
@@ -176,15 +122,21 @@ export class AbwabDoorModalComponent {
   }
 
   protected submit(): void {
-    const name = this.name().trim();
+    // The form and this button live under the same `@if (open())`, so the form is present
+    // whenever the button is clickable.
+    const fields = this.fieldsForm()?.current();
+    if (!fields) {
+      return;
+    }
+    const name = fields.name.trim();
     if (!name) {
       this.errorMessage.set(ABWAB_LABELS.nameRequiredError);
       return;
     }
 
-    const description = this.description().trim() || null;
-    const representativeAyahText = this.ayah().trim() || null;
-    const aliases = this.aliases();
+    const description = fields.description.trim() || null;
+    const representativeAyahText = fields.representativeAyahText.trim() || null;
+    const aliases = [...fields.aliases];
     const door = this.door();
 
     if (door) {

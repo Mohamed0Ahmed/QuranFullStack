@@ -1,0 +1,151 @@
+.abwab-template-tree {
+  display: flex;
+  flex-direction: column;
+}
+
+.abwab-template-tree__row {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  padding: var(--qd-space-1) var(--qd-space-2);
+  padding-inline-start: calc(var(--abwab-template-tree-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
+  border-radius: var(--qd-radius-sm);
+  color: var(--qd-text);
+}
+
+.abwab-template-tree__row:hover {
+  background: var(--qd-surface-hover);
+}
+
+.abwab-template-tree__row--root .abwab-template-tree__name {
+  font-weight: 700;
+}
+
+.abwab-template-tree__chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  flex: none;
+  border: none;
+  background: transparent;
+  color: var(--qd-text-muted);
+  cursor: pointer;
+}
+
+.abwab-template-tree__chevron--leaf {
+  visibility: hidden;
+}
+
+.abwab-template-tree__chevron:focus-visible,
+.abwab-template-tree__act:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: 1px;
+}
+
+.abwab-template-tree__marker,
+.abwab-template-tree__order {
+  font-size: 0.6875rem;
+  color: var(--qd-text-muted);
+  background: var(--qd-section-bg);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  padding-inline: 0.3rem;
+  min-inline-size: 1.25rem;
+  text-align: center;
+  flex: none;
+}
+
+.abwab-template-tree__order {
+  cursor: pointer;
+}
+
+.abwab-template-tree__marker {
+  color: var(--qd-accent-text);
+  border-color: var(--qd-border-accent);
+}
+
+.abwab-template-tree__order-input {
+  inline-size: 2.5rem;
+  border: 1px solid var(--qd-border-accent);
+  border-radius: var(--qd-radius-sm);
+  font-size: 0.6875rem;
+  text-align: center;
+  flex: none;
+}
+
+.abwab-template-tree__name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Revealed on hover, the design contract's `.row:hover .actions`. `visibility` rather than
+   `display` keeps the row height stable, and :focus-within keeps them reachable by keyboard. */
+.abwab-template-tree__actions {
+  display: inline-flex;
+  gap: var(--qd-space-1);
+  flex: none;
+  visibility: hidden;
+}
+
+.abwab-template-tree__row:hover .abwab-template-tree__actions,
+.abwab-template-tree__actions:focus-within {
+  visibility: visible;
+}
+
+.abwab-template-tree__act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--qd-radius-sm);
+  background: transparent;
+  color: var(--qd-text-muted);
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--qd-t-fast), color var(--qd-t-fast);
+}
+
+.abwab-template-tree__act:hover {
+  background: var(--qd-surface);
+  color: var(--qd-accent-text);
+}
+
+.abwab-template-tree__add-row {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  padding: var(--qd-space-1) var(--qd-space-2);
+  padding-inline-start: calc(var(--qd-space-5) + var(--qd-space-2));
+  margin-block-start: var(--qd-space-1);
+}
+
+.abwab-template-tree__add-marker {
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+  flex: none;
+}
+
+.abwab-template-tree__add-row input {
+  flex: 1;
+  max-inline-size: 16rem;
+  border: 1px solid var(--qd-border-accent);
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-1) var(--qd-space-3);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.abwab-template-tree__add-row input:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -1px;
+}

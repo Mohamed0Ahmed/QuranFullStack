@@ -1,0 +1,292 @@
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { Observable, of } from 'rxjs';
+
+import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
+import { AbwabTemplatesFacade } from '../../state/abwab-templates.facade';
+import { AbwabTemplatesController } from '../../state/abwab-templates.controller';
+import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
+import {
+  AbwabAuthoringFields,
+  collectAbwabTemplateNodes,
+  toAuthoringFields,
+} from '../../models/abwab-templates.models';
+import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { AbwabAnnouncerComponent } from '../../components/abwab-announcer/abwab-announcer.component';
+import {
+  AbwabTemplateNodeMenuRequest,
+  AbwabTemplateTreeComponent,
+} from '../../components/abwab-template-tree/abwab-template-tree.component';
+import { AbwabTemplateNodeModalComponent } from '../../components/abwab-template-node-modal/abwab-template-node-modal.component';
+
+/** What the node modal is currently authoring. `parentNodeId` is the new node's parent when
+ * adding; `nodeId` is the edited node when editing. */
+type AbwabNodeModalState =
+  | { readonly mode: 'add'; readonly parentNodeId: number }
+  | { readonly mode: 'edit'; readonly nodeId: number };
+
+/**
+ * Route shell for `/abwab/templates` — the templates workshop: the template list, the tree
+ * editor, and the node authoring modal. It composes the same `.qd-page`/`.qd-container` shell as
+ * the doors page, so the flat parchment+green surface rules apply without being restated here.
+ *
+ * State lives in the root-scoped `AbwabTemplatesFacade` (a cache) while the overlays are owned by
+ * this component (page-scoped) — the split `features/abwab/README.md` already records.
+ */
+@Component({
+  selector: 'qd-abwab-templates-page',
+  standalone: true,
+  imports: [RouterLink, AbwabAnnouncerComponent, AbwabTemplateTreeComponent, AbwabTemplateNodeModalComponent],
+  templateUrl: './abwab-templates-page.component.html',
+  styleUrl: './abwab-templates-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class AbwabTemplatesPageComponent implements OnInit {
+  protected readonly facade = inject(AbwabTemplatesFacade);
+  protected readonly controller = inject(AbwabTemplatesController);
+
+  protected readonly doorsRoutePath = `/${ABWAB_ROUTE_PATH}`;
+
+  protected readonly namingTemplate = signal(false);
+  protected readonly newTemplateName = signal('');
+  protected readonly nodeModal = signal<AbwabNodeModalState | null>(null);
+  protected readonly contextMenuNodeId = signal<number | null>(null);
+  protected readonly contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+  protected readonly deletingNodeId = signal<number | null>(null);
+  protected readonly confirmingTemplateDelete = signal(false);
+
+  private readonly nodesById = computed(() => collectAbwabTemplateNodes(this.facade.selectedTemplate()?.root ?? null));
+
+  protected readonly nodeModalOpen = computed(() => this.nodeModal() !== null);
+  protected readonly nodeModalIsEdit = computed(() => this.nodeModal()?.mode === 'edit');
+
+  protected readonly nodeModalFields = computed<AbwabAuthoringFields | null>(() => {
+    const state = this.nodeModal();
+    if (state?.mode !== 'edit') {
+      return null;
+    }
+    const node = this.nodesById().get(state.nodeId);
+    return node ? toAuthoringFields(node) : null;
+  });
+
+  protected readonly nodeModalIsRoot = computed(() => {
+    const state = this.nodeModal();
+    return state?.mode === 'edit' && this.nodesById().get(state.nodeId)?.parentNodeId === null;
+  });
+
+  protected readonly nodeModalContextName = computed(() => {
+    const state = this.nodeModal();
+    if (!state) {
+      return null;
+    }
+    const nodeId = state.mode === 'edit' ? state.nodeId : state.parentNodeId;
+    return this.nodesById().get(nodeId)?.name ?? null;
+  });
+
+  protected readonly deletingNodeName = computed(() => {
+    const nodeId = this.deletingNodeId();
+    return nodeId === null ? null : (this.nodesById().get(nodeId)?.name ?? null);
+  });
+
+  /** The root is the template itself: deleting it is refused by the API, so the row menu offers
+   * «حذف القالب» rather than a node delete the user would only see fail. */
+  protected readonly contextMenuIsRoot = computed(() => {
+    const nodeId = this.contextMenuNodeId();
+    return nodeId !== null && this.nodesById().get(nodeId)?.parentNodeId === null;
+  });
+
+  protected get pageTitle(): string { return ABWAB_LABELS.templatesPageTitle; }
+  protected get pageSubtitle(): string { return ABWAB_LABELS.templatesPageSubtitle; }
+  protected get backToDoorsLabel(): string { return ABWAB_LABELS.backToDoorsButton; }
+  protected get newTemplateLabel(): string { return ABWAB_LABELS.newTemplateButton; }
+  protected get newTemplateNameLabel(): string { return ABWAB_LABELS.newTemplateNameLabel; }
+  protected get newTemplateNamePlaceholder(): string { return ABWAB_LABELS.newTemplateNamePlaceholder; }
+  protected get editTemplateLabel(): string { return ABWAB_LABELS.editTemplateButton; }
+  protected get deleteTemplateLabel(): string { return ABWAB_LABELS.deleteTemplateButton; }
+  protected get templatesListAriaLabel(): string { return ABWAB_LABELS.templatesListAriaLabel; }
+  protected get templateTreeAriaLabel(): string { return ABWAB_LABELS.templateTreeAriaLabel; }
+  protected get templatesEmptyMessage(): string { return ABWAB_LABELS.templatesEmptyMessage; }
+  protected get templateNoneSelectedMessage(): string { return ABWAB_LABELS.templateNoneSelectedMessage; }
+  protected get templatesLoadingMessage(): string { return ABWAB_LABELS.templatesLoadingMessage; }
+  protected get nodeEditOpLabel(): string { return ABWAB_LABELS.templateNodeEditOp; }
+  protected get nodeAddChildOpLabel(): string { return ABWAB_LABELS.templateNodeAddChildOp; }
+  protected get nodeDeleteOpLabel(): string { return ABWAB_LABELS.templateNodeDeleteOp; }
+  protected get templateDeleteConfirmMessage(): string { return ABWAB_LABELS.templateDeleteConfirm; }
+  protected get deleteConfirmLabel(): string { return ABWAB_LABELS.deleteConfirmButton; }
+  protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
+
+  protected elementCountLabel(count: number): string {
+    return ABWAB_LABELS.templateElementCount(count);
+  }
+
+  protected nodeDeleteConfirmMessage(nodeName: string): string {
+    return ABWAB_LABELS.templateNodeDeleteConfirm(nodeName);
+  }
+
+  ngOnInit(): void {
+    this.facade.loadList();
+  }
+
+  protected selectTemplate(templateId: number): void {
+    this.closeOverlays();
+    this.facade.select(templateId);
+  }
+
+  protected startNamingTemplate(): void {
+    this.namingTemplate.set(true);
+    this.newTemplateName.set('');
+  }
+
+  protected onNewTemplateNameInput(event: Event): void {
+    this.newTemplateName.set((event.target as HTMLInputElement).value);
+  }
+
+  protected createTemplate(event: Event): void {
+    event.preventDefault();
+    const name = this.newTemplateName().trim();
+    if (!name) {
+      return;
+    }
+    this.controller.createTemplate(name).subscribe((outcome) => {
+      if (outcome.kind !== 'success') {
+        return;
+      }
+      this.namingTemplate.set(false);
+      this.newTemplateName.set('');
+      // Selecting the new template is what puts its root — the only node it has — on screen so
+      // it can be authored through the full modal.
+      if (outcome.data) {
+        this.facade.select(outcome.data.id);
+      }
+    });
+  }
+
+  protected cancelNamingTemplate(): void {
+    this.namingTemplate.set(false);
+    this.newTemplateName.set('');
+  }
+
+  protected editRoot(): void {
+    const rootId = this.facade.selectedTemplate()?.root?.id;
+    if (rootId !== undefined) {
+      this.nodeModal.set({ mode: 'edit', nodeId: rootId });
+    }
+  }
+
+  protected onAddChildRequested(parentNodeId: number): void {
+    this.closeContextMenu();
+    this.nodeModal.set({ mode: 'add', parentNodeId });
+  }
+
+  protected onEditRequested(nodeId: number): void {
+    this.closeContextMenu();
+    this.nodeModal.set({ mode: 'edit', nodeId });
+  }
+
+  protected closeNodeModal(): void {
+    this.nodeModal.set(null);
+  }
+
+  /** Bound into the node modal as a function input, the `abwab-sections-modal` precedent, so the
+   * modal never reaches for a controller of its own. */
+  protected readonly submitNode = (fields: AbwabAuthoringFields): Observable<AbwabWriteOutcome<unknown>> => {
+    const state = this.nodeModal();
+    if (state?.mode === 'edit') {
+      return this.controller.editNode(state.nodeId, fields);
+    }
+    const templateId = this.facade.selectedTemplateId();
+    if (state === null || templateId === null) {
+      // Unreachable: the modal only opens over a selected template. No request is invented for a
+      // state that would have to fabricate an id to send.
+      return of<AbwabWriteOutcome<unknown>>({ kind: 'invalid', message: ABWAB_LABELS.writeInvalidFallback });
+    }
+    return this.controller.addNode(templateId, state.parentNodeId, fields);
+  };
+
+  protected onQuickAddRequested(name: string): void {
+    const templateId = this.facade.selectedTemplateId();
+    const rootId = this.facade.selectedTemplate()?.root?.id;
+    if (templateId === null || rootId === undefined) {
+      return;
+    }
+    this.controller
+      .addNode(templateId, rootId, { name, description: '', representativeAyahText: '', aliases: [] })
+      .subscribe();
+  }
+
+  protected onOrderCommitted(event: { nodeId: number; position: number }): void {
+    this.controller.reorderNode(event.nodeId, event.position).subscribe();
+  }
+
+  protected onMenuRequested(request: AbwabTemplateNodeMenuRequest): void {
+    this.contextMenuPosition.set({ x: request.x, y: request.y });
+    this.contextMenuNodeId.set(request.nodeId);
+  }
+
+  protected closeContextMenu(): void {
+    this.contextMenuNodeId.set(null);
+  }
+
+  protected requestNodeDelete(): void {
+    const nodeId = this.contextMenuNodeId();
+    this.closeContextMenu();
+    if (nodeId !== null) {
+      this.deletingNodeId.set(nodeId);
+    }
+  }
+
+  protected confirmNodeDelete(): void {
+    const nodeId = this.deletingNodeId();
+    this.deletingNodeId.set(null);
+    if (nodeId !== null) {
+      this.controller.deleteNode(nodeId).subscribe();
+    }
+  }
+
+  protected cancelNodeDelete(): void {
+    this.deletingNodeId.set(null);
+  }
+
+  protected requestTemplateDelete(): void {
+    this.closeContextMenu();
+    this.confirmingTemplateDelete.set(true);
+  }
+
+  protected confirmTemplateDelete(): void {
+    const templateId = this.facade.selectedTemplateId();
+    this.confirmingTemplateDelete.set(false);
+    if (templateId === null) {
+      return;
+    }
+    this.controller.deleteTemplate(templateId).subscribe((outcome) => {
+      if (outcome.kind === 'success') {
+        this.facade.clearSelection();
+      }
+    });
+  }
+
+  protected cancelTemplateDelete(): void {
+    this.confirmingTemplateDelete.set(false);
+  }
+
+  protected ctxEdit(): void {
+    const nodeId = this.contextMenuNodeId();
+    if (nodeId !== null) {
+      this.onEditRequested(nodeId);
+    }
+  }
+
+  protected ctxAddChild(): void {
+    const nodeId = this.contextMenuNodeId();
+    if (nodeId !== null) {
+      this.onAddChildRequested(nodeId);
+    }
+  }
+
+  private closeOverlays(): void {
+    this.nodeModal.set(null);
+    this.contextMenuNodeId.set(null);
+    this.deletingNodeId.set(null);
+    this.confirmingTemplateDelete.set(false);
+  }
+}
