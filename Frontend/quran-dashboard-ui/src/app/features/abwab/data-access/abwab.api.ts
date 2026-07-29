@@ -50,8 +50,9 @@ export class AbwabApi {
     return this.http.put<ApiResponse<AbwabSectionDto>>(`${this.base}/sections/${id}`, body);
   }
 
-  deleteSection(id: number): Observable<ApiResponse<unknown>> {
-    return this.http.delete<ApiResponse<unknown>>(`${this.base}/sections/${id}`);
+  // 204 No Content on success, so HttpClient yields `null` rather than an envelope.
+  deleteSection(id: number): Observable<ApiResponse<unknown> | null> {
+    return this.http.delete<ApiResponse<unknown> | null>(`${this.base}/sections/${id}`);
   }
 
   createDoor(command: CreateDoorCommand): Observable<ApiResponse<AbwabDoorDto>> {
@@ -78,9 +79,10 @@ export class AbwabApi {
     return this.http.post<ApiResponse<number[]>>(`${this.base}/doors/bulk-archive`, command);
   }
 
-  /** Archive is `DELETE` **with** a body — Angular's `HttpClient.delete` needs `{ body }`. */
-  archiveDoor(id: number, body: DeleteDoorBody): Observable<ApiResponse<unknown>> {
-    return this.http.delete<ApiResponse<unknown>>(`${this.base}/doors/${id}`, { body });
+  // Archive is `DELETE` **with** a body — Angular's `HttpClient.delete` needs `{ body }`.
+  // 204 No Content on success, so HttpClient yields `null` rather than an envelope.
+  archiveDoor(id: number, body: DeleteDoorBody): Observable<ApiResponse<unknown> | null> {
+    return this.http.delete<ApiResponse<unknown> | null>(`${this.base}/doors/${id}`, { body });
   }
 
   restoreDoor(id: number, body: RestoreDoorBody): Observable<ApiResponse<AbwabRestoredDoorDto>> {

@@ -3,10 +3,10 @@
 **HOW rules:** `.architecture/UI_STYLE_SYSTEM.md`, `.architecture/FRONTEND_STRUCTURE.md`,
 `.architecture/API_INTEGRATION_GUIDELINES.md` (project root). This file is the WHAT.
 
-**Status: Slice B1 complete (phases 4 + 5)** — the full page: tree, cards, bulk mode,
-move, reorder, search, archive view, sections management, and the row context menu.
-e2e flows and the two test-doc amendments are Slice B2
-(`docs/feature-abwab-doors/plan-slice-b.md` §9). The routes are `Open` (no auth) per
+**Status: Slice B2 complete** — the full page (tree, cards, bulk mode, move, reorder,
+search, archive view, sections management, row context menu — Slice B1, phases 4 + 5)
+plus the browser e2e flows and the two test-doc amendments
+(`docs/feature-abwab-doors/plan-slice-b2.md`). The routes are `Open` (no auth) per
 `plan.md` §10 — **do not** include this feature in a `dev → main` release until write
 protection lands.
 
@@ -172,10 +172,34 @@ turning `archive` off restores neither.
   initialisers, or they resolve to `undefined` in the bundled test build.
 - **Zero dead controls.** Nothing for relations, protection, templates, per-node flags,
   or the «الأبواب الرئيسية» tab, anywhere in this feature.
+- **A `204 No Content` arrives as a `null` envelope, not `{isSuccess, data}`.** Single-door
+  archive (`DELETE api/abwab/doors/{id}`) and a successful section delete
+  (`DELETE api/abwab/sections/{id}`) are the two routes that answer 204, and Angular's
+  `HttpClient` parses an empty body as `null`. `abwab-write.controller.ts#handleSuccess`
+  therefore treats a null response as a payload-less success: only a success is ever a 204,
+  since every failure arrives as a 4xx through `catchError`. Dereferencing `response.isSuccess`
+  first — which is how this originally shipped — throws, gets swallowed as a transport error,
+  and leaves the UI reporting failure while the backend write has committed. Vitest missed it
+  because the specs mocked `AbwabApi` with well-formed envelopes; the browser suite caught it.
+  Both the null-envelope path and the real 204 flush are now pinned by tests, and
+  `abwab-archive.e2e.ts` drives archive through the UI end to end.
+
+## Browser e2e (Slice B2)
+
+`Frontend/quran-dashboard-ui/e2e/abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`,
+`abwab-archive.e2e.ts`, and `abwab-url-and-a11y.e2e.ts` drive this page end to end —
+sections, root/child doors with alias chips, the dirty guard, inline reorder, single and
+bulk move, bulk archive, the row context menu, archive/restore including the
+parent-must-restore-first rule and the detach announcement, all six URL query keys, and
+the tree's ARIA/roving-tabindex/RTL keyboard model. `e2e/fixtures/abwab.ts` is the shared
+sandbox: each test creates its own uniquely-named section over the API, and tears down by
+archiving every door it created and then deleting the section — see `e2e/README.md` and
+`TESTING_STRATEGY.md` §6 for the residue this leaves in the local dev DB.
 
 ## Related
 
-- Plan: `docs/feature-abwab-doors/plan-slice-b.md` (Slice B) and
+- Plan: `docs/feature-abwab-doors/plan-slice-b.md` (Slice B1/B2 interaction matrix),
+  `docs/feature-abwab-doors/plan-slice-b2.md` (Slice B2, this e2e slice), and
   `docs/feature-abwab-doors/plan.md` (Slice A, backend).
 - Design contract: `docs/design-preview/abwab-tree-concept.html`.
 - Shared UI primitives: `../../shared/README.md`.

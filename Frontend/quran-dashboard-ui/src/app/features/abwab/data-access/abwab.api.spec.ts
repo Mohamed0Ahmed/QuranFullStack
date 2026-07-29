@@ -195,6 +195,24 @@ describe('AbwabApi', () => {
     await promise;
   });
 
+  // The two routes that answer 204 hand back a null envelope, not `{isSuccess, data}`.
+  // Flushing a well-formed envelope here would assert a response the backend never sends.
+  it('archiveDoor emits null when the backend answers 204 No Content', async () => {
+    const promise = firstValueFrom(api.archiveDoor(1, { version: 2 }));
+    const req = httpMock.expectOne(`${BASE}/doors/1`);
+
+    req.flush(null, { status: 204, statusText: 'No Content' });
+    expect(await promise).toBeNull();
+  });
+
+  it('deleteSection emits null when the backend answers 204 No Content', async () => {
+    const promise = firstValueFrom(api.deleteSection(1));
+    const req = httpMock.expectOne(`${BASE}/sections/1`);
+
+    req.flush(null, { status: 204, statusText: 'No Content' });
+    expect(await promise).toBeNull();
+  });
+
   it('restoreDoor sends POST /api/abwab/doors/{id}/restore', async () => {
     const promise = firstValueFrom(api.restoreDoor(1, { version: 2 }));
     const req = httpMock.expectOne(`${BASE}/doors/1/restore`);

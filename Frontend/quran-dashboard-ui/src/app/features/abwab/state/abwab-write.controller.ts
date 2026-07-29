@@ -159,21 +159,29 @@ export class AbwabWriteController {
     return Array.from(this.selection.bulkSet(), ([doorId, version]) => ({ doorId, version }));
   }
 
-  private dispatch<T>(request$: Observable<ApiResponse<T>>, conflictClearsSelectionId?: number): Observable<AbwabWriteOutcome<T>> {
+  private dispatch<T>(request$: Observable<ApiResponse<T> | null>, conflictClearsSelectionId?: number): Observable<AbwabWriteOutcome<T>> {
     return request$.pipe(
       map((response) => this.handleSuccess(response)),
       catchError((err: unknown) => of(this.handleFailure<T>(err, conflictClearsSelectionId))),
     );
   }
 
-  private handleSuccess<T>(response: ApiResponse<T>, onData?: (data: T) => void): AbwabWriteOutcome<T> {
+  private handleSuccess<T>(response: ApiResponse<T> | null, onData?: (data: T) => void): AbwabWriteOutcome<T> {
     // `isSuccess` alone is authoritative here — unlike a read, a void write's success
     // payload (archive, section delete) is legitimately `null`; requiring non-null data
     // would silently treat those successes as failures.
-    if (response.isSuccess) {
-      const data = response.data as T;
-      onData?.(data);
-      if (!onData) {
+    //
+    // The whole envelope is `null` too on those two routes: they answer `204 No Content`
+    // (AbwabDoorsController.cs:176, AbwabSectionsController.cs:67) and HttpClient parses an
+    // empty body as `null`. Only a success is ever a 204 — every failure arrives as a 4xx
+    // through `catchError` — so a null response is a payload-less success. Reading
+    // `response.isSuccess` first threw here, and the throw was swallowed as a transport
+    // error while the write had in fact committed.
+    const data = (response?.data ?? null) as T;
+    if (response === null || response.isSuccess) {
+      if (onData && data !== null) {
+        onData(data);
+      } else {
         this.announcementState.set(null);
       }
       this.facade.refresh().subscribe((snapshot) => {

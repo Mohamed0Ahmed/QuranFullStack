@@ -6,7 +6,10 @@ Chromium-only browser flow tests over the public browse surfaces: dashboard home
 navbar and its dropdown menus, the Mushaf reader (paging, deep link, surah jump, fonts) with the
 ayah study — tafsir / translation / full-إعراب / similar-ayahs / متشابهات tabs — and the word
 analysis panel, the words hub, the five explorers (roots, lemmas, stems, word types, unique
-words), and the placeholder / wildcard-fallback routes.
+words), and the placeholder / wildcard-fallback routes — **plus the Abwab doors/sections flows**
+(`abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`, `abwab-archive.e2e.ts`,
+`abwab-url-and-a11y.e2e.ts`), which are the one deliberate exception to the read-only invariant
+below.
 
 ## Commands
 
@@ -36,8 +39,21 @@ npm run e2e:typecheck                    # tsc over e2e/ + playwright.config.ts
   theme; leaking either between tests makes results order-dependent.
 - **Zero external network calls.** `fixtures/app-test.ts` stubs the Logto origin and fails any
   test whose browser context talked to a non-localhost host.
-- **Read-only flows and loose count assertions only.** The suite reads the live local dev DB;
-  exact row counts would break on the next reseed.
+- **Read-only flows and loose count assertions, except for Abwab.** Every suite but Abwab reads
+  the live local dev DB without writing to it; exact row counts would break on the next reseed.
+  The four Abwab specs are a deliberate, named exception (`docs/feature-abwab-doors/plan-slice-b2.md`
+  §2, and `TESTING_STRATEGY.md` §6, which this amendment mirrors): each test creates its own
+  uniquely-named sandbox section over the API (`fixtures/abwab.ts`), drives real writes against
+  it through the UI, and tears down by archiving every door it created and then deleting the
+  now-empty section — the only lawful order, since section delete `409`s while live doors remain.
+  Teardown is best-effort and never masks a test's own failure (R19), and no Abwab test asserts a
+  global count — each one only ever asserts on the ids its own sandbox produced (R18).
+  **The residue is real and permanent, not "self-cleaning":** there is no hard delete and no
+  section restore, so every run leaves its sandbox doors **archived** in the local dev DB forever,
+  and any future restore of one reports `detachedFromArchivedSection: true` since its section is
+  gone. This is accepted on a local dev DB with loose, id-scoped assertions; it would need to be
+  revisited (per the same `TESTING_STRATEGY.md` §6 note) before this suite runs anywhere but a
+  disposable local database.
 - Both servers boot with `reuseExistingServer`, and the backend readiness gate is
   `GET https://localhost:5015/api/health`, which answers 503 when the database is unreachable.
 - **Never leave a server running on :4200 or :5015 outside Playwright's control.** A stray

@@ -268,6 +268,51 @@ describe('AbwabWriteController', () => {
     });
   });
 
+  describe('204 No Content — a payload-less success is not a transport error', () => {
+    // Archive and section-delete answer 204, so HttpClient hands the controller a `null`
+    // envelope rather than `{isSuccess, data}`. Mocking these with `ok(null)` — a well-formed
+    // envelope carrying null *data* — passes while the real null *envelope* throws, which is
+    // exactly how this shipped broken: the throw was swallowed as a transport failure while
+    // the backend write had already committed.
+    it('treats a null response to archiveDoor as a success and still refetches', () => {
+      let treeCalls = 0;
+      const { controller, selection } = setup({
+        getTree: () => {
+          treeCalls += 1;
+          return of(ok<AbwabTreeDto>({ doors: [door({ id: 1, name: 'باق', version: 7 })], sections: [], version: 'v2' }));
+        },
+        archiveDoor: () => of(null),
+      } as unknown as FakeApi);
+      selection.select(1, 1);
+
+      let outcome: unknown;
+      controller.archiveDoor(1, 1).subscribe((result) => (outcome = result));
+
+      expect(outcome).toEqual({ kind: 'success', data: null });
+      expect(controller.announcement()).toBeNull();
+      expect(treeCalls).toBe(1);
+      expect(selection.selectedVersion()).toBe(7);
+    });
+
+    it('treats a null response to deleteSection as a success and still refetches', () => {
+      let treeCalls = 0;
+      const { controller } = setup({
+        getTree: () => {
+          treeCalls += 1;
+          return of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v2' }));
+        },
+        deleteSection: () => of(null),
+      } as unknown as FakeApi);
+
+      let outcome: unknown;
+      controller.deleteSection(1).subscribe((result) => (outcome = result));
+
+      expect(outcome).toEqual({ kind: 'success', data: null });
+      expect(controller.announcement()).toBeNull();
+      expect(treeCalls).toBe(1);
+    });
+  });
+
   describe('transport failure', () => {
     it('maps a non-HttpErrorResponse failure to the controlled transport fallback message', () => {
       const { controller } = setup({
