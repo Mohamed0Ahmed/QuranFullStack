@@ -69,9 +69,13 @@
 
           @let template = facade.selectedTemplate();
           @if (!template) {
-            <p class="qd-empty-state" data-testid="abwab-templates-page-none-selected">
-              {{ templateNoneSelectedMessage }}
-            </p>
+            <!-- A failed load already says why nothing is here; stacking «اختر قالبًا» under the
+                 error would read as a second, contradictory status. -->
+            @if (!facade.selectedErrorMessage()) {
+              <p class="qd-empty-state" data-testid="abwab-templates-page-none-selected">
+                {{ templateNoneSelectedMessage }}
+              </p>
+            }
           } @else {
             <div class="abwab-templates-page__editor-head">
               <h2 class="abwab-templates-page__editor-title" data-testid="abwab-templates-page-template-name">

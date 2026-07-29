@@ -4,7 +4,7 @@ import { Observable, Subscription, catchError, map, of, shareReplay, tap } from 
 import { AbwabTemplatesApi } from '../data-access/abwab-templates.api';
 import { AbwabTemplateSummaryDto } from '../../../core/api/generated/models/abwab-template-summary-dto';
 import { AbwabTemplateDto } from '../../../core/api/generated/models/abwab-template-dto';
-import { AbwabTemplateSummaryVm, AbwabTemplateVm, buildAbwabTemplateTree } from '../models/abwab-templates.models';
+import { AbwabTemplateVm, buildAbwabTemplateTree } from '../models/abwab-templates.models';
 import { ABWAB_LABELS } from '../models/abwab.labels';
 
 /**
@@ -33,19 +33,33 @@ export class AbwabTemplatesFacade {
   readonly selectedErrorMessage = this.selectedErrorState.asReadonly();
   readonly selectedTemplateId = this.selectedIdState.asReadonly();
 
-  readonly templates = computed<readonly AbwabTemplateSummaryVm[]>(() => this.rawList() ?? []);
+  /** Each row's `nodeCount` counts the root's live descendants, excluding the root itself — the
+   * contract's «N عناصر» chip. */
+  readonly templates = computed<readonly AbwabTemplateSummaryDto[]>(() => this.rawList() ?? []);
   readonly isEmpty = computed(() => (this.rawList()?.length ?? -1) === 0);
 
+  /**
+   * Null unless the loaded template *is* the selected one. Leaving a previous value in place
+   * across a failed load is the `AbwabSnapshotFacade` contract, but that facade owns a single
+   * resource; this one changes resource on every `select()`, so the same rule would let the page
+   * name one template while every write sent another id — and template copies are detached by
+   * design, so there is no provenance to undo a wrong copy by.
+   *
+   * A refresh of the *same* template does not trip this, so writes never blink the editor.
+   */
   readonly selectedTemplate = computed<AbwabTemplateVm | null>(() => {
     const dto = this.rawSelected();
-    return dto === null ? null : buildAbwabTemplateTree(dto);
+    if (dto === null || dto.id !== this.selectedIdState()) {
+      return null;
+    }
+    return buildAbwabTemplateTree(dto);
   });
 
   loadList(): void {
     this.fetchList().subscribe();
   }
 
-  refreshList(): Observable<readonly AbwabTemplateSummaryVm[]> {
+  refreshList(): Observable<readonly AbwabTemplateSummaryDto[]> {
     return this.fetchList();
   }
 
@@ -71,7 +85,7 @@ export class AbwabTemplatesFacade {
     return this.fetchSelected(templateId);
   }
 
-  private fetchList(): Observable<readonly AbwabTemplateSummaryVm[]> {
+  private fetchList(): Observable<readonly AbwabTemplateSummaryDto[]> {
     this.listRequest?.unsubscribe();
     this.listLoadingState.set(true);
     this.listErrorState.set(null);

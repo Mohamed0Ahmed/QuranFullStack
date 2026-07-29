@@ -5,52 +5,55 @@
 
 /** Arabic counts do not read like English ones: 1 and 2 have their own forms, 3–10 take the
  * broken plural, and 11+ take the accusative singular. «سيتم أرشفة 1 بابًا» is wrong Arabic,
- * and this product is Arabic-first, so every user-facing door count goes through here. */
-function doorCountPhrase(count: number): string {
-  if (count === 0) {
-    return 'لا أبواب';
-  }
-  if (count === 1) {
-    return 'باب واحد';
-  }
-  if (count === 2) {
-    return 'بابين';
-  }
-  if (count <= 10) {
-    return `${count} أبواب`;
-  }
-  return `${count} بابًا`;
+ * and this product is Arabic-first, so every user-facing count goes through here — one branch,
+ * one noun table per counted noun. */
+interface ArabicCountForms {
+  /** Only where zero has its own wording. Without it, zero falls to `few` («0 عناصر»), which is
+   * what a chip on a freshly created template wants — there the numeral is the point. */
+  readonly zero?: string;
+  readonly one: string;
+  readonly two: string;
+  /** 3–10, the broken plural. */
+  readonly few: string;
+  /** 11+, the accusative singular. */
+  readonly many: string;
 }
 
-/** Same Arabic number forms again, for «عنصر» — a template node. Zero is «0 عناصر» rather than
- * `doorCountPhrase`'s «لا أبواب» shape: it is a chip on a freshly created template, where the
- * numeral is the point. */
-function elementCountPhrase(count: number): string {
+function countPhrase(count: number, forms: ArabicCountForms): string {
+  if (count === 0 && forms.zero !== undefined) {
+    return forms.zero;
+  }
   if (count === 1) {
-    return 'عنصر واحد';
+    return forms.one;
   }
   if (count === 2) {
-    return 'عنصرين';
+    return forms.two;
   }
-  if (count <= 10) {
-    return `${count} عناصر`;
-  }
-  return `${count} عنصرًا`;
+  return `${count} ${count <= 10 ? forms.few : forms.many}`;
 }
 
-/** Same Arabic number forms as `doorCountPhrase`, for the feminine «علاقة». */
-function relationCountPhrase(count: number): string {
-  if (count === 1) {
-    return 'علاقة واحدة';
-  }
-  if (count === 2) {
-    return 'علاقتين';
-  }
-  if (count <= 10) {
-    return `${count} علاقات`;
-  }
-  return `${count} علاقة`;
-}
+const DOOR_FORMS: ArabicCountForms = {
+  zero: 'لا أبواب',
+  one: 'باب واحد',
+  two: 'بابين',
+  few: 'أبواب',
+  many: 'بابًا',
+};
+
+/** A template node. */
+const ELEMENT_FORMS: ArabicCountForms = { one: 'عنصر واحد', two: 'عنصرين', few: 'عناصر', many: 'عنصرًا' };
+
+/** Feminine «علاقة». */
+const RELATION_FORMS: ArabicCountForms = { one: 'علاقة واحدة', two: 'علاقتين', few: 'علاقات', many: 'علاقة' };
+
+/** The doors a template copy targets — the noun carries its adjective, so the phrase stays
+ * grammatical at every count instead of interpolating a bare numeral before «مستهدف». */
+const TARGET_FORMS: ArabicCountForms = {
+  one: 'باب مستهدف',
+  two: 'بابين مستهدفين',
+  few: 'أبواب مستهدفة',
+  many: 'بابًا مستهدفًا',
+};
 
 export const ABWAB_LABELS = {
   pageTitle: 'الأبواب',
@@ -116,7 +119,7 @@ export const ABWAB_LABELS = {
   trackingArchiveActiveValue: 'نشط',
 
   movePickerTitleSingle: (doorName: string): string => `نقل «${doorName}»`,
-  movePickerTitleBulk: (count: number): string => `نقل ${doorCountPhrase(count)}`,
+  movePickerTitleBulk: (count: number): string => `نقل ${countPhrase(count, DOOR_FORMS)}`,
   movePickerDescription: 'اختر الوجهة — باب يجعله فرعًا له، أو «كباب رئيسي».',
   asMainDoorOption: 'كباب رئيسي (أعلى الشجرة)',
   noSectionOption: 'بلا قسم',
@@ -134,7 +137,7 @@ export const ABWAB_LABELS = {
   restoreDetachedAnnouncement: 'استُرجع الباب خارج قسمه المحذوف',
 
   bulkConflictMessage: (names: string): string => `فشلت العملية كاملة — حدث تعارض على: ${names}`,
-  archiveConfirm: (count: number): string => `سيتم أرشفة ${doorCountPhrase(count)}`,
+  archiveConfirm: (count: number): string => `سيتم أرشفة ${countPhrase(count, DOOR_FORMS)}`,
 
   loadErrorFallback: 'تعذر تحميل شجرة الأبواب. حاول مرة أخرى.',
   emptyTreeMessage: 'لا توجد أبواب بعد.',
@@ -174,13 +177,14 @@ export const ABWAB_LABELS = {
   relationAlreadyLinked: 'مرتبط بالفعل بهذا النوع',
   relationNoneSelected: 'لم تختر شيئًا بعد',
   relationSelectedSummary: (names: readonly string[]): string => `${names.length} مختار: ${names.join('، ')}`,
-  relationAddButton: (count: number): string => (count <= 1 ? 'أضف العلاقة' : `أضف ${relationCountPhrase(count)}`),
+  relationAddButton: (count: number): string =>
+    count <= 1 ? 'أضف العلاقة' : `أضف ${countPhrase(count, RELATION_FORMS)}`,
   relationsCloseButton: 'إغلاق',
 
   // Bulk mode opens the same modal with the selection as the fixed target list, so the picker
   // chooses the single anchor instead (plan §7 T602).
   relationsBulkAddOp: 'إضافة علاقة',
-  relationsBulkTitle: (count: number): string => `إضافة علاقة لـ ${doorCountPhrase(count)}`,
+  relationsBulkTitle: (count: number): string => `إضافة علاقة لـ ${countPhrase(count, DOOR_FORMS)}`,
   relationsBulkAnchorHint: 'اختر الباب الذي ترتبط به الأبواب المحددة',
   // The pill must name the side the picker chooses, and in this mode that is the ANCHOR, not the
   // targets. Reusing the door-mode pair here would state the opposite of what the row stores:
@@ -203,7 +207,7 @@ export const ABWAB_LABELS = {
   newTemplateButton: '+ قالب جديد',
   newTemplateNameLabel: 'اسم القالب',
   newTemplateNamePlaceholder: 'اسم القالب… (Enter)',
-  templateElementCount: (count: number): string => elementCountPhrase(count),
+  templateElementCount: (count: number): string => countPhrase(count, ELEMENT_FORMS),
   editTemplateButton: 'تعديل القالب',
   deleteTemplateButton: 'حذف القالب',
   copyToDoorsButton: 'نسخ إلى أبواب…',
@@ -219,6 +223,10 @@ export const ABWAB_LABELS = {
   templateAddChildAriaLabel: (nodeName: string): string => `إضافة عنصر تحت «${nodeName}»`,
   templateNodeMenuAriaLabel: (nodeName: string): string => `عمليات «${nodeName}»`,
   templateAddChildPlaceholder: 'إضافة عنصر… (Enter)',
+  // Not the copy modal's pair: there the chevron opens sub-doors, here it opens the template's
+  // own sub-elements, and a screen reader must hear the noun the tree actually holds.
+  templateNodeExpandAriaLabel: (nodeName: string): string => `عرض العناصر الفرعية لـ«${nodeName}»`,
+  templateNodeCollapseAriaLabel: (nodeName: string): string => `إخفاء العناصر الفرعية لـ«${nodeName}»`,
   templateNodeEditOp: 'تعديل العنصر',
   templateNodeAddChildOp: 'إضافة عنصر فرعي',
   templateNodeDeleteOp: 'حذف العنصر',
@@ -236,7 +244,7 @@ export const ABWAB_LABELS = {
   templateCopyTitle: (templateName: string): string => `نسخ «${templateName}»`,
   templateCopyDescription: 'اختر الأبواب المستهدفة — القالب سيُنسخ كاملًا (بجذره وكل فروعه) داخل كل باب تختاره.',
   templateCopyPreview: (templateName: string, count: number): string =>
-    `كل باب مستهدف سيكسب ابنًا جديدًا: «${templateName}» وبداخله ${elementCountPhrase(count)} بكامل تفرعها.`,
+    `كل باب مستهدف سيكسب ابنًا جديدًا: «${templateName}» وبداخله ${countPhrase(count, ELEMENT_FORMS)} بكامل تفرعها.`,
   templateCopyPreviewNoRoot: 'لا يمكن النسخ كباب رئيسي — الهدف بابٌ موجود دائمًا.',
   // The single most likely wrong expectation this feature invites (plan §5.6), so it is stated
   // before the copy happens rather than discovered afterwards.
@@ -245,14 +253,15 @@ export const ABWAB_LABELS = {
   templateCopyExpandAriaLabel: (doorName: string): string => `عرض الأبواب الفرعية لـ«${doorName}»`,
   templateCopyCollapseAriaLabel: (doorName: string): string => `إخفاء الأبواب الفرعية لـ«${doorName}»`,
   templateCopyNoneSelected: 'لم تختر شيئًا بعد',
-  templateCopySelectedSummary: (names: readonly string[]): string => `${names.length} مستهدف: ${names.join('، ')}`,
+  templateCopySelectedSummary: (names: readonly string[]): string =>
+    `${countPhrase(names.length, TARGET_FORMS)}: ${names.join('، ')}`,
   templateCopyConfirmButton: (count: number): string =>
-    count <= 1 ? 'انسخ القالب' : `انسخ إلى ${doorCountPhrase(count)}`,
+    count <= 1 ? 'انسخ القالب' : `انسخ إلى ${countPhrase(count, DOOR_FORMS)}`,
   templateCopyEmptyDoors: 'لا توجد أبواب حية لنسخ القالب إليها.',
 
   templateCreatedAnnouncement: 'أُنشئ القالب',
   templateDeletedAnnouncement: 'حُذف القالب',
-  templateAppliedAnnouncement: (count: number): string => `تم النسخ إلى ${doorCountPhrase(count)}`,
+  templateAppliedAnnouncement: (count: number): string => `تم النسخ إلى ${countPhrase(count, DOOR_FORMS)}`,
 
   writeConflictFallback: 'حدث تعارض أثناء الحفظ. يرجى تحديث البيانات والمحاولة مرة أخرى.',
   writeInvalidFallback: 'تعذر تنفيذ العملية. تحقق من البيانات وحاول مرة أخرى.',

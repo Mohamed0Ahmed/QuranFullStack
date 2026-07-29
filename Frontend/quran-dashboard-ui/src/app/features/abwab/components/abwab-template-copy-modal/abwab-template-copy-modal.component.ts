@@ -56,7 +56,7 @@ export class AbwabTemplateCopyModalComponent {
   readonly doorsLoading = input(false);
   readonly doorsError = input<string | null>(null);
   readonly applyTemplate = input.required<
-    (targetDoorIds: readonly number[]) => Observable<AbwabWriteOutcome<AbwabDoorDto[]>>
+    (targetDoorIds: readonly number[]) => Observable<AbwabWriteOutcome<AbwabDoorDto[] | null>>
   >();
 
   readonly closed = output<void>();

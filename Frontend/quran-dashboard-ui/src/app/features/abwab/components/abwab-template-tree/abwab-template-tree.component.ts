@@ -85,8 +85,8 @@ export class AbwabTemplateTreeComponent {
 
   protected expandAriaLabel(row: AbwabTemplateTreeRow): string {
     return row.isExpanded
-      ? ABWAB_LABELS.templateCopyCollapseAriaLabel(row.node.name)
-      : ABWAB_LABELS.templateCopyExpandAriaLabel(row.node.name);
+      ? ABWAB_LABELS.templateNodeCollapseAriaLabel(row.node.name)
+      : ABWAB_LABELS.templateNodeExpandAriaLabel(row.node.name);
   }
 
   protected toggleExpanded(nodeId: number): void {

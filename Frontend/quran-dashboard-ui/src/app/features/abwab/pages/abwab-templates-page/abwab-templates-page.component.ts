@@ -177,9 +177,11 @@ export class AbwabTemplatesPageComponent implements OnInit {
       this.namingTemplate.set(false);
       this.newTemplateName.set('');
       // Selecting the new template is what puts its root — the only node it has — on screen so
-      // it can be authored through the full modal.
+      // it can be authored through the full modal. Through `selectTemplate`, not the facade
+      // directly: every selection change must also close the overlays, or a node id from the
+      // previous template survives the switch in a still-open modal or confirm.
       if (outcome.data) {
-        this.facade.select(outcome.data.id);
+        this.selectTemplate(outcome.data.id);
       }
     });
   }
@@ -217,23 +219,23 @@ export class AbwabTemplatesPageComponent implements OnInit {
     if (state?.mode === 'edit') {
       return this.controller.editNode(state.nodeId, fields);
     }
-    const templateId = this.facade.selectedTemplateId();
-    if (state === null || templateId === null) {
+    const template = this.facade.selectedTemplate();
+    if (state === null || template === null) {
       // Unreachable: the modal only opens over a selected template. No request is invented for a
       // state that would have to fabricate an id to send.
       return of<AbwabWriteOutcome<unknown>>({ kind: 'invalid', message: ABWAB_LABELS.writeInvalidFallback });
     }
-    return this.controller.addNode(templateId, state.parentNodeId, fields);
+    return this.controller.addNode(template.id, state.parentNodeId, fields);
   };
 
   protected onQuickAddRequested(name: string): void {
-    const templateId = this.facade.selectedTemplateId();
-    const rootId = this.facade.selectedTemplate()?.root?.id;
-    if (templateId === null || rootId === undefined) {
+    const template = this.facade.selectedTemplate();
+    const rootId = template?.root?.id;
+    if (!template || rootId === undefined) {
       return;
     }
     this.controller
-      .addNode(templateId, rootId, { name, description: '', representativeAyahText: '', aliases: [] })
+      .addNode(template.id, rootId, { name, description: '', representativeAyahText: '', aliases: [] })
       .subscribe();
   }
 
@@ -276,12 +278,12 @@ export class AbwabTemplatesPageComponent implements OnInit {
   }
 
   protected confirmTemplateDelete(): void {
-    const templateId = this.facade.selectedTemplateId();
+    const template = this.facade.selectedTemplate();
     this.confirmingTemplateDelete.set(false);
-    if (templateId === null) {
+    if (template === null) {
       return;
     }
-    this.controller.deleteTemplate(templateId).subscribe((outcome) => {
+    this.controller.deleteTemplate(template.id).subscribe((outcome) => {
       if (outcome.kind === 'success') {
         this.facade.clearSelection();
       }
@@ -303,13 +305,22 @@ export class AbwabTemplatesPageComponent implements OnInit {
 
   /** Bound into the copy modal as a function input. The apply refreshes nothing here: it writes
    * doors, and `AbwabPageComponent.ngOnInit` calls `facade.load()` on every entry, so returning
-   * to `/abwab` is what makes the copies visible. */
-  protected readonly applyTemplate = (targetDoorIds: readonly number[]): Observable<AbwabWriteOutcome<AbwabDoorDto[]>> => {
-    const templateId = this.facade.selectedTemplateId();
-    if (templateId === null) {
-      return of<AbwabWriteOutcome<AbwabDoorDto[]>>({ kind: 'invalid', message: ABWAB_LABELS.writeInvalidFallback });
+   * to `/abwab` is what makes the copies visible.
+   *
+   * The id comes off the same object the modal's preview renders from, never from
+   * `selectedTemplateId()`: the two can only ever name the same template that way, so a copy
+   * cannot land under a template the user was not shown. */
+  protected readonly applyTemplate = (
+    targetDoorIds: readonly number[],
+  ): Observable<AbwabWriteOutcome<AbwabDoorDto[] | null>> => {
+    const template = this.facade.selectedTemplate();
+    if (template === null) {
+      return of<AbwabWriteOutcome<AbwabDoorDto[] | null>>({
+        kind: 'invalid',
+        message: ABWAB_LABELS.writeInvalidFallback,
+      });
     }
-    return this.controller.applyTemplate(templateId, targetDoorIds);
+    return this.controller.applyTemplate(template.id, targetDoorIds);
   };
 
   protected ctxEdit(): void {

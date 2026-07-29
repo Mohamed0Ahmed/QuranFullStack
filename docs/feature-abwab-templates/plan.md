@@ -1038,6 +1038,19 @@ dev DB with at least two sections and one section-less door so those cases are r
 - [x] Full Frontend suite + `npm run build` before the Slice B PR (T705, phases 7–8) —
       **190 spec files / 2,158 tests / 0 failures** (183.91 s) and a clean production build;
       the focused Tier A abwab glob ran green at every phase boundary (21 files / 216 tests)
+- [x] **Engineering-review fix round (2026-07-30), before the Slice B PR.** One MAJOR: the copy
+      modal could preview one template while apply sent another, because the preview read
+      `selectedTemplate()` and every write read `selectedTemplateId()`. Fixed at both ends —
+      `selectedTemplate()` is now null unless the loaded template *is* the selected one, and all
+      four writes take their id off that object — so the two cannot disagree. Plus the five
+      MINOR/NOTE items: an Arabic counted-forms helper for the copy summary («N مستهدف» was bare),
+      «العناصر الفرعية» aria labels for the workshop tree's chevron, one `countPhrase(count, forms)`
+      replacing three near-identical helpers, `AbwabTemplateSummaryVm` dropped for the DTO it
+      duplicated, and `T | null` on the write outcome replacing the `as T` cast. The page-TS/SCSS
+      soft-threshold overrun and the Enter-only naming row are **resolved by documentation** in
+      `features/abwab/README.md` (justification + split trigger), per the review's own wording —
+      not by an unpinned refactor of the one page file no spec covers. Re-verified Tier C:
+      **191 spec files / 2,161 tests / 0 failures** (205.45 s) and a clean production build
 - [x] `abwab-door-modal.component.spec.ts` green **unchanged** after the form extraction — the
       verified claim T703 rests on: **11/11 passed, zero diff to the spec file**. The
       extraction kept every `data-testid` through a `testIdPrefix` input defaulting to
@@ -1076,7 +1089,9 @@ dev DB with at least two sections and one section-less door so those cases are r
       subject**: T705 turned out to need no repair, so no test file was edited
 - [x] `TESTING_STRATEGY.md` §1 frontend counts re-measured at the Slice B boundary (T904's
       remaining half) — 190 files / 2,158 tests, unchanged, which is the evidence that the form
-      extraction did not adjust a spec to fit itself
+      extraction did not adjust a spec to fit itself; **re-measured again after the review-fix
+      round at 191 / 2,161**, the one new file being the facade spec that pins the MAJOR fix
+      (`TESTING_STRATEGY.md` §1 and `docs/TESTING_DEBT.md` row 9 both updated to match)
 - [ ] Branches `abwab-templates-a` (merged as **#53**) and `abwab-templates-b` off `dev`; PRs
       into `dev`. **Never `main`.** Slice B's branch exists and is committed; **the PR is not
       opened** — that is the user's call

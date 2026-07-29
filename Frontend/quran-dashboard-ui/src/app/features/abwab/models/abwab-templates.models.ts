@@ -1,14 +1,6 @@
 import { AbwabTemplateDto } from '../../../core/api/generated/models/abwab-template-dto';
 import { AbwabTemplateNodeDto } from '../../../core/api/generated/models/abwab-template-node-dto';
 
-/** One row in the workshop's template list. `nodeCount` counts the root's live descendants,
- * excluding the root itself — the contract's «N عناصر» chip (`abwab-templates-concept.html:186`). */
-export interface AbwabTemplateSummaryVm {
-  readonly id: number;
-  readonly name: string;
-  readonly nodeCount: number;
-}
-
 /** One node of the template tree, built from the flat `AbwabTemplateDto.nodes` list. */
 export interface AbwabTemplateNodeVm {
   readonly id: number;

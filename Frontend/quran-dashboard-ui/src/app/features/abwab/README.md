@@ -111,7 +111,15 @@ nine), four of them reads.
 - `pages/abwab-templates-page/` — the `/abwab/templates` shell: the template list with
   «+ قالب جديد», the editor panel, the node/template actions, the row context menu, and
   the two confirms. It owns the overlay state itself (page-scoped) while the caches stay
-  root-scoped.
+  root-scoped. **Its TS sits just over the 300-line soft threshold and its SCSS two lines
+  over 200** — deliberately, not yet split: ~22 of those lines are the one-line label
+  getters the TDZ rule mandates, the page carries no URL state at all (unlike
+  `abwab-page`, whose six URL keys were half of what forced its overlay controller out),
+  and the page has no spec of its own, so an extraction here would be an unpinned
+  refactor of the one file nothing verifies. **The trigger that forces the split** is a
+  sixth overlay, a URL-state contract arriving on this route, or crossing the 400-line
+  hard threshold — at which point the overlay signals and their handlers move to a
+  page-scoped `abwab-templates-overlays.controller.ts` on the `abwab-page` precedent.
 - `components/abwab-relations-modal/` — the door's relations: four display groups
   (تشابه · تضاد · «أبواب أكثر شمولية» · «أبواب أقل شمولية», empty ones dropped), the type
   segment, the direction pill with its live preview, and an expandable/searchable door
@@ -303,6 +311,21 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   policy, so both call the module-scope `toAbwabWriteFailure` in `abwab-write.controller.ts` —
   one status→outcome mapping, two refresh targets. Do not "reunify" them by making the
   templates writes go through the doors controller; do not copy the policy either.
+- **The workshop's two inline authoring rows commit on Enter, with no submit button.**
+  «+ قالب جديد» opens a naming field in the list, signposted «اسم القالب… (Enter)», and the
+  tree's quick-add row works the same way («إضافة عنصر… (Enter)») — both from the approved
+  contract. The page's two *confirm* surfaces do have buttons; these two do not, and adding one
+  to either alone would fork the page's own idiom.
+- **The workshop never names one template and writes to another.** `selectedTemplate()` is
+  `null` unless the loaded template's own `id` equals the selected id, and every write in the
+  page (apply, quick-add, add-node, delete-template) takes its id **off that object**, never
+  from `selectedTemplateId()`. Two sources for "which template?" is what would let a failed
+  switch — the list highlighting B, the editor and the copy preview still showing A — send B's
+  id to apply; and because a copy is detached at birth (below), there is no provenance to trace
+  the wrong copies back by. This is the one place where the `AbwabSnapshotFacade` "leave the
+  previous value in place on failure" contract does **not** carry over: that facade owns a
+  single resource, this one changes resource on every `select()`. A refresh of the *same*
+  template does not trip the check, so writes never blink the editor.
 - **The apply refreshes nothing, on purpose.** It writes door rows, but
   `AbwabPageComponent.ngOnInit` calls `facade.load()` on every entry, so returning to `/abwab`
   is what makes the copies visible. Coupling the workshop to the doors facade would buy a

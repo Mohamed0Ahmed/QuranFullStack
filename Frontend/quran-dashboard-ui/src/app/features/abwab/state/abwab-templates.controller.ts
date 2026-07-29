@@ -34,7 +34,7 @@ export class AbwabTemplatesController {
   private readonly announcementState = signal<string | null>(null);
   readonly announcement = this.announcementState.asReadonly();
 
-  createTemplate(name: string): Observable<AbwabWriteOutcome<AbwabTemplateDto>> {
+  createTemplate(name: string): Observable<AbwabWriteOutcome<AbwabTemplateDto | null>> {
     // The other three authoring fields are `null` at birth: creation is a name-only prompt, and
     // the root is then edited through the full authoring modal like every other node (plan T704).
     return this.dispatch(
@@ -52,15 +52,15 @@ export class AbwabTemplatesController {
     templateId: number,
     parentNodeId: number | null,
     fields: AbwabAuthoringFields,
-  ): Observable<AbwabWriteOutcome<AbwabTemplateNodeDto>> {
+  ): Observable<AbwabWriteOutcome<AbwabTemplateNodeDto | null>> {
     return this.dispatch(this.api.addNode(templateId, { parentNodeId, ...toWireFields(fields) }), 'both');
   }
 
-  editNode(nodeId: number, fields: AbwabAuthoringFields): Observable<AbwabWriteOutcome<AbwabTemplateNodeDto>> {
+  editNode(nodeId: number, fields: AbwabAuthoringFields): Observable<AbwabWriteOutcome<AbwabTemplateNodeDto | null>> {
     return this.dispatch(this.api.editNode(nodeId, toWireFields(fields)), 'both');
   }
 
-  reorderNode(nodeId: number, position: number): Observable<AbwabWriteOutcome<AbwabTemplateNodeDto>> {
+  reorderNode(nodeId: number, position: number): Observable<AbwabWriteOutcome<AbwabTemplateNodeDto | null>> {
     return this.dispatch(this.api.reorderNode(nodeId, { position }), 'selected');
   }
 
@@ -68,7 +68,10 @@ export class AbwabTemplatesController {
     return this.dispatch(this.api.deleteNode(nodeId), 'both');
   }
 
-  applyTemplate(templateId: number, targetDoorIds: readonly number[]): Observable<AbwabWriteOutcome<AbwabDoorDto[]>> {
+  applyTemplate(
+    templateId: number,
+    targetDoorIds: readonly number[],
+  ): Observable<AbwabWriteOutcome<AbwabDoorDto[] | null>> {
     return this.dispatch(
       this.api.applyTemplate(templateId, { targetDoorIds: [...targetDoorIds] }),
       'none',
@@ -80,10 +83,10 @@ export class AbwabTemplatesController {
     request$: Observable<ApiResponse<T> | null>,
     refresh: AbwabTemplatesRefresh,
     successMessage?: string,
-  ): Observable<AbwabWriteOutcome<T>> {
+  ): Observable<AbwabWriteOutcome<T | null>> {
     return request$.pipe(
       map((response) => this.handleSuccess(response, refresh, successMessage)),
-      catchError((err: unknown) => of(this.handleFailure<T>(err))),
+      catchError((err: unknown) => of(this.handleFailure<T | null>(err))),
     );
   }
 
@@ -91,12 +94,13 @@ export class AbwabTemplatesController {
     response: ApiResponse<T> | null,
     refresh: AbwabTemplatesRefresh,
     successMessage?: string,
-  ): AbwabWriteOutcome<T> {
+  ): AbwabWriteOutcome<T | null> {
     // Both delete routes answer `204 No Content`, and HttpClient parses an empty body as `null`.
     // Only a success is ever a 204 — every failure arrives as a 4xx through `catchError` — so a
     // null response is a payload-less success. Dereferencing `isSuccess` first throws, gets
-    // swallowed as a transport error, and reports failure on a committed write.
-    const data = (response?.data ?? null) as T;
+    // swallowed as a transport error, and reports failure on a committed write. `data` is
+    // therefore nullable on the success arm too: it is what a 204 carries.
+    const data = response?.data ?? null;
     if (response === null || response.isSuccess) {
       this.announcementState.set(successMessage ?? null);
       this.applyRefresh(refresh);
