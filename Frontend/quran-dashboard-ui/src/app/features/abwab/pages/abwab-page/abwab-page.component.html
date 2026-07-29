@@ -125,10 +125,12 @@
             (addChildRequested)="overlays.openCreateChild()"
             (editRequested)="overlays.openEdit()"
             (moveRequested)="overlays.openMovePicker()"
+            (relationsRequested)="overlays.openRelations()"
             (archiveRequested)="overlays.requestArchive()"
             (clearRequested)="onClearSelection()"
             (bulkModeToggled)="onBulkModeToggled($event)"
             (bulkMoveRequested)="overlays.openBulkMovePicker()"
+            (bulkRelationsRequested)="overlays.openBulkRelations()"
             (bulkArchiveRequested)="overlays.requestBulkArchive()"
             (bulkClearRequested)="onBulkClearRequested()"
           />
@@ -211,6 +213,19 @@
   (confirmed)="overlays.confirmMove($event)"
 />
 
+<qd-abwab-relations-modal
+  [open]="overlays.relationsModalOpen()"
+  [anchorDoorId]="overlays.relationsAnchorDoorId()"
+  [anchorDoorName]="overlays.relationsAnchorName()"
+  [anchorPickMode]="overlays.relationsAnchorPickMode()"
+  [bulkTargets]="overlays.relationsBulkTargets()"
+  [liveRoots]="facade.snapshot()?.liveRoots ?? []"
+  [loadRelations]="overlays.loadRelations"
+  [addRelations]="overlays.addRelations"
+  [deleteRelation]="overlays.deleteRelation"
+  (closed)="overlays.closeRelationsModal()"
+/>
+
 <qd-abwab-sections-modal
   [open]="overlays.sectionsModalOpen()"
   [sections]="sections()"
@@ -232,6 +247,7 @@
     <button type="button" role="menuitem" data-testid="abwab-page-ctx-edit" (click)="overlays.ctxEdit()">{{ editOpLabel }}</button>
     <button type="button" role="menuitem" data-testid="abwab-page-ctx-add-child" (click)="overlays.ctxAddChild()">{{ addChildOpLabel }}</button>
     <button type="button" role="menuitem" data-testid="abwab-page-ctx-move" (click)="overlays.ctxMove()">{{ moveOpLabel }}</button>
+    <button type="button" role="menuitem" data-testid="abwab-page-ctx-relations" (click)="overlays.ctxRelations()">{{ relationsOpLabel }}</button>
     <button type="button" role="menuitem" class="abwab-page__ctx-item--danger" data-testid="abwab-page-ctx-archive" (click)="overlays.ctxArchive()">
       {{ archiveLabel }}
     </button>

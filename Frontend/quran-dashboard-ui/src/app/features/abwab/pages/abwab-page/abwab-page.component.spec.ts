@@ -448,7 +448,7 @@ describe('AbwabPageComponent', () => {
 
       const menu = root.querySelector('[data-testid="abwab-page-context-menu"]');
       expect(menu).toBeTruthy();
-      expect(Array.from(menu!.querySelectorAll('[role="menuitem"]'))).toHaveLength(4);
+      expect(Array.from(menu!.querySelectorAll('[role="menuitem"]'))).toHaveLength(5);
 
       (root.querySelector('[data-testid="abwab-page-ctx-edit"]') as HTMLElement).click();
       fixture.detectChanges();
@@ -566,7 +566,7 @@ describe('AbwabPageComponent', () => {
   });
 
   describe('T511 — the row context menu', () => {
-    it('right-click opens a menu with exactly edit/add-child/move/archive and nothing else', () => {
+    it('right-click opens a menu with exactly edit/add-child/move/relations/archive and nothing else', () => {
       const fixture = render();
       const root = fixture.nativeElement as HTMLElement;
 
@@ -578,8 +578,7 @@ describe('AbwabPageComponent', () => {
       const menu = root.querySelector('[data-testid="abwab-page-context-menu"]');
       expect(menu).toBeTruthy();
       const items = Array.from(menu!.querySelectorAll('[role="menuitem"]'));
-      expect(items).toHaveLength(4);
-      expect(menu!.textContent).not.toContain('العلاقات');
+      expect(items).toHaveLength(5);
       expect(menu!.textContent).not.toContain('الحماية');
     });
 

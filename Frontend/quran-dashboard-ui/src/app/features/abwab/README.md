@@ -25,7 +25,8 @@ auto-retried.
   `state/abwab-page-overlays.controller.ts`.
 - `state/abwab-page-overlays.controller.ts` — owns open/closed state and the dispatch
   glue for the door modal, single/bulk archive confirm, the move picker, the sections
-  modal, and the row context menu. Split out of the page component once composing six
+  modal, the relations modal (open/closed + anchor + mode only), and the row context
+  menu. Split out of the page component once composing six
   overlays pushed that file toward the component-TS soft threshold
   (`FRONTEND_STRUCTURE.md`'s Large Page Split guidance) — it holds state/orchestration
   only, no template of its own. **Provided by `AbwabPageComponent`, not
@@ -47,6 +48,9 @@ auto-retried.
   invariant holds. `⋯`, right-click, and the keyboard `ContextMenu`/`Shift+F10` path all
   emit `menuRequested` **with an anchor point** — the pointer position for the mouse paths,
   the focused row's rect for the keyboard one — and the page shell renders the menu there.
+  A row with live relations also carries the `.flag.rel` chip («علاقات», `relationCount > 0`
+  only); the archive view and the cards render no flag, since an archived door's visible
+  relation count is always 0.
 - `components/abwab-cards/` — the drill-down grid: `cardId` names only the
   drilled-into parent (not a full path array) — the breadcrumb chain is derived by
   walking `parentId` up from it via `byId`, so the URL never needs an array. Fails
@@ -57,10 +61,10 @@ auto-retried.
   with «استرجع الأب أولًا») — never re-derived by walking `byId`. No child-count badge:
   every archived door's live-child count is always 0, so the badge would be meaningless.
 - `components/abwab-side-panel/` — active door + single-door operations (add child,
-  edit, move, archive) plus bulk mode: the toggle, its `.on` state (tint + accent-text
-  + hairline, **not** a solid fill — the first allowed-green fix, `plan-slice-b.md` T503),
-  and the bulk bar (count, names, bulk move/archive/clear). **No** relations/protection
-  entries (`plan.md` §5.1). No reorder button — the tree's own inline number editor is
+  edit, move, relations, archive) plus bulk mode: the toggle, its `.on` state (tint +
+  accent-text + hairline, **not** a solid fill — the first allowed-green fix,
+  `plan-slice-b.md` T503), and the bulk bar (count, names, bulk move/relations/archive/
+  clear). **No** protection entry (`plan.md` §5.1). No reorder button — the tree's own inline number editor is
   the one reorder affordance; a second control doing the same thing would be redundant.
   This panel is the second of the contract's three add-child paths; the tree row's own
   `＋` and the row menu are the other two.
@@ -80,6 +84,15 @@ auto-retried.
   chips (composing the extended `qd-chip` with its `removable` affordance — the second
   allowed-green fix), a dirty guard on close, and an inline error surface for the
   backend message. Composes `.qd-modal`/`.qd-modal-backdrop` + `qdModalScrollLock`.
+- `components/abwab-relations-modal/` — the door's relations: four display groups
+  (تشابه · تضاد · «أبواب أكثر شمولية» · «أبواب أقل شمولية», empty ones dropped), the type
+  segment, the direction pill with its live preview, and an expandable/searchable door
+  picker that adds N targets in **one** call. Takes its read and its two writes as
+  function inputs (bound by the page to `state/abwab-relations.controller.ts`), the
+  `abwab-sections-modal` precedent. `anchorPickMode` inverts the picker for the bulk
+  entry: the selected doors become the fixed target list and the picker single-selects
+  the anchor, so the add call keeps one shape. Direction is always stated from the
+  anchor's side — «أعم/أخص» appears nowhere in the copy.
 - `components/abwab-announcer/` — one `aria-live="polite"` `role="status"` region for
   operation messages; a feature-scoped stand-in for a toast primitive this one
   feature does not warrant (`plan-slice-b.md` §4.1).
@@ -215,8 +228,10 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **Labels use the TDZ getter pattern**, same as `features/words/README.md`: read
   `abwab.labels.ts` consts via component **getters**, never `readonly` field
   initialisers, or they resolve to `undefined` in the bundled test build.
-- **Zero dead controls.** Nothing for relations, protection, templates, per-node flags,
-  or the «الأبواب الرئيسية» tab, anywhere in this feature.
+- **Zero dead controls.** Nothing for protection, templates, or the «الأبواب الرئيسية»
+  tab, anywhere in this feature. Relations became real controls with `abwab-relations`;
+  the tree's `.flag.rel` chip is the one deliberate non-control — it is a chip, not a
+  button, with no tab stop and no click handler.
 - **A `204 No Content` arrives as a `null` envelope, not `{isSuccess, data}`.** Single-door
   archive (`DELETE api/abwab/doors/{id}`) and a successful section delete
   (`DELETE api/abwab/sections/{id}`) are the two routes that answer 204, and Angular's

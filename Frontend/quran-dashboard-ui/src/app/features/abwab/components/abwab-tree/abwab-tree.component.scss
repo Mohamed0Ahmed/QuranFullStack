@@ -80,6 +80,23 @@
   flex: none;
 }
 
+.abwab-tree__flags {
+  display: inline-flex;
+  gap: 0.1875rem;
+  flex: none;
+}
+
+/* A chip, not a control: no tab stop and no click handler, so the row's roving tabindex is
+   untouched (plan §7 T603). */
+.abwab-tree__flag {
+  font-size: 0.625rem;
+  border-radius: var(--qd-radius-sm);
+  padding: 1px var(--qd-space-1);
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+  border: 1px solid var(--qd-border-accent);
+}
+
 .abwab-tree__checkbox {
   flex: none;
   accent-color: var(--qd-accent);

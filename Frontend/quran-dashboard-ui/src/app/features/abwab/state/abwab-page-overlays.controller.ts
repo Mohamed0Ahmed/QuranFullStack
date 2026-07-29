@@ -4,7 +4,8 @@ import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabSelectionStore } from './abwab-selection.store';
 import { AbwabWriteController } from './abwab-write.controller';
 import { AbwabSectionsController } from './abwab-sections.controller';
-import { AbwabNode } from '../models/abwab.models';
+import { AbwabRelationsController } from './abwab-relations.controller';
+import { AbwabNode, AbwabRelationDirectionKind, AbwabRelationKind } from '../models/abwab.models';
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
 import { ABWAB_LABELS } from '../models/abwab.labels';
 import { AbwabMoveDestination } from '../components/abwab-move-picker/abwab-move-picker.component';
@@ -32,6 +33,7 @@ export class AbwabPageOverlaysController {
   private readonly selection = inject(AbwabSelectionStore);
   private readonly writeController = inject(AbwabWriteController);
   private readonly sectionsController = inject(AbwabSectionsController);
+  private readonly relationsController = inject(AbwabRelationsController);
 
   private readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
 
@@ -233,6 +235,59 @@ export class AbwabPageOverlaysController {
     this.sectionsController.renameSection(id, name, version);
   readonly deleteSection = (id: number) => this.sectionsController.deleteSection(id);
 
+  // Relations modal (T604). Only open/closed + anchor + mode live here; the modal owns its own
+  // type/direction/picks/search state.
+  readonly relationsModalOpen = signal(false);
+  readonly relationsAnchorPickMode = signal(false);
+  private readonly relationsAnchorId = signal<number | null>(null);
+
+  readonly relationsAnchorDoorId = this.relationsAnchorId.asReadonly();
+
+  readonly relationsAnchorName = computed(() => {
+    const id = this.relationsAnchorId();
+    return id === null ? '' : (this.byId().get(id)?.name ?? '');
+  });
+
+  readonly relationsBulkTargets = computed(() => {
+    const byId = this.byId();
+    return Array.from(this.selection.bulkSet().keys(), (id) => ({
+      id,
+      name: byId.get(id)?.name ?? String(id),
+    }));
+  });
+
+  openRelations(): void {
+    const door = this.selectedDoor();
+    if (!door) {
+      return;
+    }
+    this.relationsAnchorPickMode.set(false);
+    this.relationsAnchorId.set(door.id);
+    this.relationsModalOpen.set(true);
+  }
+
+  openBulkRelations(): void {
+    if (this.selection.bulkCount() === 0) {
+      return;
+    }
+    this.relationsAnchorPickMode.set(true);
+    this.relationsAnchorId.set(null);
+    this.relationsModalOpen.set(true);
+  }
+
+  closeRelationsModal(): void {
+    this.relationsModalOpen.set(false);
+  }
+
+  readonly loadRelations = (doorId: number) => this.relationsController.loadFor(doorId);
+  readonly addRelations = (
+    anchorDoorId: number,
+    kind: AbwabRelationKind,
+    direction: AbwabRelationDirectionKind | null,
+    targetDoorIds: readonly number[],
+  ) => this.relationsController.addRelations(anchorDoorId, kind, direction, targetDoorIds);
+  readonly deleteRelation = (relationId: number) => this.relationsController.deleteRelation(relationId);
+
   // Row context menu (T511) — right-click/keyboard both funnel through `menuRequested`.
   readonly contextMenuDoorId = signal<number | null>(null);
   readonly contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -263,6 +318,10 @@ export class AbwabPageOverlaysController {
 
   ctxArchive(): void {
     this.runContextAction(() => this.requestArchive());
+  }
+
+  ctxRelations(): void {
+    this.runContextAction(() => this.openRelations());
   }
 
   private runContextAction(action: () => void): void {

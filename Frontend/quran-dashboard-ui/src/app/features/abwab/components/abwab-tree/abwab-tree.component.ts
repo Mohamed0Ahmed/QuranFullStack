@@ -115,6 +115,10 @@ export class AbwabTreeComponent {
     this.bulkToggled.emit(id);
   }
 
+  protected get relationsFlagLabel(): string {
+    return ABWAB_LABELS.relationsFlagLabel;
+  }
+
   protected addChildAriaLabel(name: string): string {
     return ABWAB_LABELS.rowAddChildAriaLabel(name);
   }

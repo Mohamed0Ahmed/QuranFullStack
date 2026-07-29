@@ -1,0 +1,355 @@
+import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { Observable } from 'rxjs';
+
+import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
+import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
+import { AbwabRelationsLoadResult } from '../../state/abwab-relations.controller';
+import {
+  AbwabNode,
+  AbwabRelationDirectionKind,
+  AbwabRelationGroupKey,
+  AbwabRelationGroupVm,
+  AbwabRelationKind,
+  AbwabRelationVm,
+  groupAbwabRelations,
+} from '../../models/abwab.models';
+import { AbwabDoorRelationDto } from '../../../../core/api/generated/models/abwab-door-relation-dto';
+import { ABWAB_LABELS } from '../../models/abwab.labels';
+
+export interface AbwabRelationTarget {
+  readonly id: number;
+  readonly name: string;
+}
+
+interface AbwabRelationPickerRow {
+  readonly node: AbwabNode;
+  readonly depth: number;
+  readonly hasChildren: boolean;
+  readonly isExpanded: boolean;
+  readonly isLinked: boolean;
+}
+
+const TYPE_ORDER: readonly AbwabRelationKind[] = ['similarity', 'opposition', 'comprehensiveness'];
+
+const GROUP_LABELS: Readonly<Record<AbwabRelationGroupKey, string>> = {
+  similarity: ABWAB_LABELS.relationGroupSimilarity,
+  opposition: ABWAB_LABELS.relationGroupOpposition,
+  'more-comprehensive': ABWAB_LABELS.relationGroupMoreComprehensive,
+  'less-comprehensive': ABWAB_LABELS.relationGroupLessComprehensive,
+};
+
+const TYPE_LABELS: Readonly<Record<AbwabRelationKind, string>> = {
+  similarity: ABWAB_LABELS.relationTypeSimilarity,
+  opposition: ABWAB_LABELS.relationTypeOpposition,
+  comprehensiveness: ABWAB_LABELS.relationTypeComprehensiveness,
+};
+
+/** The four display groups collapse back onto three dot colors: both شمولية groups are the same
+ * relation type seen from the two ends, so they share one marker (contract `:202`). */
+const GROUP_DOT_KIND: Readonly<Record<AbwabRelationGroupKey, AbwabRelationKind>> = {
+  similarity: 'similarity',
+  opposition: 'opposition',
+  'more-comprehensive': 'comprehensiveness',
+  'less-comprehensive': 'comprehensiveness',
+};
+
+function subtreeMatches(node: AbwabNode, query: string): boolean {
+  return node.name.includes(query) || node.children.some((child) => subtreeMatches(child, query));
+}
+
+/**
+ * The relations modal (plan §7 T601/T602), implementing `docs/design-preview/abwab-relations-concept.html`:
+ * the four display groups, the type segment, the direction pill with its live preview, an
+ * expandable/searchable door picker, and one multi-target add. Presentational in the
+ * `abwab-sections-modal` sense — the read and the two writes arrive as function inputs, bound by
+ * the page to `AbwabRelationsController`, so this component never reaches for the facade.
+ *
+ * Two modes, one component (§4, bulk entry). `anchorPickMode` inverts which side the picker
+ * chooses: normally the anchor is the open door and the picker selects N targets; in bulk mode
+ * the N selected doors are the fixed targets and the picker single-selects the anchor. Direction
+ * stays anchor-relative in both, so the add call has one shape either way.
+ */
+@Component({
+  selector: 'qd-abwab-relations-modal',
+  standalone: true,
+  imports: [QdChipComponent, ModalScrollLockDirective],
+  templateUrl: './abwab-relations-modal.component.html',
+  styleUrl: './abwab-relations-modal.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class AbwabRelationsModalComponent {
+  readonly open = input(false);
+  readonly anchorDoorId = input<number | null>(null);
+  readonly anchorDoorName = input('');
+  readonly anchorPickMode = input(false);
+  readonly bulkTargets = input<readonly AbwabRelationTarget[]>([]);
+  readonly liveRoots = input<readonly AbwabNode[]>([]);
+  readonly loadRelations = input.required<(doorId: number) => Observable<AbwabRelationsLoadResult>>();
+  readonly addRelations = input.required<
+    (
+      anchorDoorId: number,
+      kind: AbwabRelationKind,
+      direction: AbwabRelationDirectionKind | null,
+      targetDoorIds: readonly number[],
+    ) => Observable<AbwabWriteOutcome<AbwabDoorRelationDto[]>>
+  >();
+  readonly deleteRelation = input.required<(relationId: number) => Observable<AbwabWriteOutcome<unknown>>>();
+
+  readonly closed = output<void>();
+
+  protected readonly relations = signal<readonly AbwabRelationVm[]>([]);
+  protected readonly errorMessage = signal<string | null>(null);
+  protected readonly type = signal<AbwabRelationKind>('similarity');
+  protected readonly direction = signal<AbwabRelationDirectionKind>('anchor-more');
+  protected readonly searchQuery = signal('');
+  protected readonly pickedIds = signal<ReadonlySet<number>>(new Set());
+  private readonly expandedIds = signal<ReadonlySet<number>>(new Set());
+
+  protected readonly typeOptions = TYPE_ORDER;
+
+  protected get addTitle(): string { return ABWAB_LABELS.relationAddTitle; }
+  protected get descriptionText(): string { return ABWAB_LABELS.relationsModalDescription; }
+  protected get emptyText(): string { return ABWAB_LABELS.relationsEmpty; }
+  protected get directionLabel(): string { return ABWAB_LABELS.relationDirectionLabel; }
+  protected get anchorMoreLabel(): string { return ABWAB_LABELS.relationDirectionAnchorMore; }
+  protected get anchorLessLabel(): string { return ABWAB_LABELS.relationDirectionAnchorLess; }
+  protected get searchPlaceholder(): string { return ABWAB_LABELS.relationPickerPlaceholder; }
+  protected get alreadyLinkedLabel(): string { return ABWAB_LABELS.relationAlreadyLinked; }
+  protected get noneSelectedLabel(): string { return ABWAB_LABELS.relationNoneSelected; }
+  protected get bulkAnchorHint(): string { return ABWAB_LABELS.relationsBulkAnchorHint; }
+  protected get closeLabel(): string { return ABWAB_LABELS.relationsCloseButton; }
+  protected get deleteAriaLabel(): string { return ABWAB_LABELS.relationDeleteAriaLabel; }
+
+  protected typeLabel(kind: AbwabRelationKind): string { return TYPE_LABELS[kind]; }
+  protected groupLabel(key: AbwabRelationGroupKey): string { return GROUP_LABELS[key]; }
+  protected groupDotKind(key: AbwabRelationGroupKey): AbwabRelationKind { return GROUP_DOT_KIND[key]; }
+
+  protected readonly titleText = computed(() =>
+    this.anchorPickMode()
+      ? ABWAB_LABELS.relationsBulkTitle(this.bulkTargets().length)
+      : ABWAB_LABELS.relationsModalTitle(this.anchorDoorName()),
+  );
+
+  protected readonly groups = computed<readonly AbwabRelationGroupVm[]>(() => groupAbwabRelations(this.relations()));
+
+  private readonly nodesById = computed(() => {
+    const byId = new Map<number, AbwabNode>();
+    const walk = (node: AbwabNode): void => {
+      byId.set(node.id, node);
+      node.children.forEach(walk);
+    };
+    this.liveRoots().forEach(walk);
+    return byId;
+  });
+
+  /** Never pickable: the anchor itself in door mode (contract `:221`), and every fixed target in
+   * anchor-pick mode — an anchor drawn from the bulk set would be a self-relation. */
+  private readonly excludedIds = computed<ReadonlySet<number>>(() => {
+    if (this.anchorPickMode()) {
+      return new Set(this.bulkTargets().map((target) => target.id));
+    }
+    const anchorId = this.anchorDoorId();
+    return anchorId === null ? new Set<number>() : new Set([anchorId]);
+  });
+
+  /** "Already linked" is per (pair, type) with no direction term (§5.2), so switching the type
+   * segment re-computes which rows are blocked. Empty in anchor-pick mode: the flag would have to
+   * mean "all N pairs already exist", a rule the user cannot see (T602). */
+  private readonly linkedIds = computed<ReadonlySet<number>>(() => {
+    if (this.anchorPickMode()) {
+      return new Set<number>();
+    }
+    const kind = this.type();
+    return new Set(this.relations().filter((relation) => relation.kind === kind).map((relation) => relation.otherDoorId));
+  });
+
+  protected readonly pickerRows = computed<readonly AbwabRelationPickerRow[]>(() => {
+    const query = this.searchQuery().trim();
+    const excluded = this.excludedIds();
+    const linked = this.linkedIds();
+    const expanded = this.expandedIds();
+    const rows: AbwabRelationPickerRow[] = [];
+
+    const walk = (node: AbwabNode, depth: number): void => {
+      if (query !== '' && !subtreeMatches(node, query)) {
+        return;
+      }
+      const hasChildren = node.children.length > 0;
+      // A search forces every matching path open (contract `:224`), so a deep match is never
+      // hidden behind a collapsed ancestor the user never touched.
+      const isExpanded = expanded.has(node.id) || (query !== '' && hasChildren);
+      // An excluded door is skipped but its subtree is not: a door may relate to its own
+      // ancestor or descendant (§6.2), so hiding the anchor's children would remove a case the
+      // backend deliberately allows. Children keep the excluded node's depth so the list has no
+      // orphaned indent.
+      const isExcluded = excluded.has(node.id);
+      if (!isExcluded) {
+        rows.push({ node, depth, hasChildren, isExpanded, isLinked: linked.has(node.id) });
+      }
+      if (isExcluded || isExpanded) {
+        node.children.forEach((child) => walk(child, isExcluded ? depth : depth + 1));
+      }
+    };
+
+    this.liveRoots().forEach((root) => walk(root, 0));
+    return rows;
+  });
+
+  protected readonly pickedNames = computed(() => {
+    const byId = this.nodesById();
+    return Array.from(this.pickedIds(), (id) => byId.get(id)?.name ?? String(id));
+  });
+
+  /** Door mode counts the picked targets; anchor-pick mode counts the fixed bulk targets, which
+   * is how many relations the one call actually creates once an anchor exists. */
+  protected readonly addCount = computed(() => {
+    if (!this.anchorPickMode()) {
+      return this.pickedIds().size;
+    }
+    return this.pickedIds().size === 1 ? this.bulkTargets().length : 0;
+  });
+
+  protected readonly addButtonLabel = computed(() => ABWAB_LABELS.relationAddButton(this.addCount()));
+
+  protected readonly selectedSummary = computed(() => ABWAB_LABELS.relationSelectedSummary(this.pickedNames()));
+
+  protected readonly directionRowVisible = computed(() => this.type() === 'comprehensiveness');
+
+  protected readonly directionPreview = computed(() => {
+    const anchorIsMore = this.direction() === 'anchor-more';
+    if (!this.anchorPickMode()) {
+      return ABWAB_LABELS.relationDirectionPreview(this.anchorDoorName(), anchorIsMore);
+    }
+    const anchorName = this.pickedNames()[0];
+    return anchorName === undefined
+      ? this.bulkAnchorHint
+      : ABWAB_LABELS.relationsBulkDirectionPreview(this.bulkTargets().length, anchorName, anchorIsMore);
+  });
+
+  constructor() {
+    effect(() => {
+      const isOpen = this.open();
+      const anchorId = this.anchorDoorId();
+      untracked(() => {
+        if (!isOpen) {
+          return;
+        }
+        this.resetDraft();
+        this.relations.set([]);
+        this.errorMessage.set(null);
+        if (!this.anchorPickMode() && anchorId !== null) {
+          this.reload(anchorId);
+        }
+      });
+    });
+  }
+
+  protected pickType(kind: AbwabRelationKind): void {
+    if (kind === this.type()) {
+      return;
+    }
+    this.type.set(kind);
+    // Picks are cleared with the type (contract `:268`): "already linked" is per type, so a
+    // carried-over pick could be one the new type blocks.
+    this.pickedIds.set(new Set());
+  }
+
+  protected pickDirection(value: AbwabRelationDirectionKind): void {
+    this.direction.set(value);
+  }
+
+  protected onSearchInput(event: Event): void {
+    this.searchQuery.set((event.target as HTMLInputElement).value);
+  }
+
+  protected toggleExpanded(event: Event, doorId: number): void {
+    event.stopPropagation();
+    const next = new Set(this.expandedIds());
+    if (!next.delete(doorId)) {
+      next.add(doorId);
+    }
+    this.expandedIds.set(next);
+  }
+
+  protected togglePicked(row: AbwabRelationPickerRow): void {
+    if (row.isLinked) {
+      return;
+    }
+    if (this.anchorPickMode()) {
+      this.pickedIds.set(this.pickedIds().has(row.node.id) ? new Set() : new Set([row.node.id]));
+      return;
+    }
+    const next = new Set(this.pickedIds());
+    if (!next.delete(row.node.id)) {
+      next.add(row.node.id);
+    }
+    this.pickedIds.set(next);
+  }
+
+  protected isPicked(doorId: number): boolean {
+    return this.pickedIds().has(doorId);
+  }
+
+  protected add(): void {
+    const picked = Array.from(this.pickedIds());
+    const anchorPick = this.anchorPickMode();
+    const anchorId = anchorPick ? (picked[0] ?? null) : this.anchorDoorId();
+    const targetIds = anchorPick ? this.bulkTargets().map((target) => target.id) : picked;
+    if (anchorId === null || targetIds.length === 0) {
+      return;
+    }
+    const direction = this.type() === 'comprehensiveness' ? this.direction() : null;
+    this.addRelations()(anchorId, this.type(), direction, targetIds).subscribe((outcome) => {
+      if (outcome.kind !== 'success') {
+        this.errorMessage.set(outcome.message);
+        return;
+      }
+      this.errorMessage.set(null);
+      this.pickedIds.set(new Set());
+      // Anchor-pick mode shows no groups, so there is nothing here that could confirm the write;
+      // closing hands the user back to the tree, where the flags did move.
+      if (anchorPick) {
+        this.closed.emit();
+        return;
+      }
+      this.reload(anchorId);
+    });
+  }
+
+  protected remove(relationId: number): void {
+    const anchorId = this.anchorDoorId();
+    this.deleteRelation()(relationId).subscribe((outcome) => {
+      if (outcome.kind !== 'success') {
+        this.errorMessage.set(outcome.message);
+        return;
+      }
+      this.errorMessage.set(null);
+      if (anchorId !== null) {
+        this.reload(anchorId);
+      }
+    });
+  }
+
+  protected close(): void {
+    this.closed.emit();
+  }
+
+  private reload(anchorId: number): void {
+    this.loadRelations()(anchorId).subscribe((result) => {
+      if (result.kind === 'success') {
+        this.relations.set(result.relations);
+      } else {
+        this.errorMessage.set(result.message);
+      }
+    });
+  }
+
+  private resetDraft(): void {
+    this.type.set('similarity');
+    this.direction.set('anchor-more');
+    this.searchQuery.set('');
+    this.pickedIds.set(new Set());
+    this.expandedIds.set(new Set());
+  }
+}
