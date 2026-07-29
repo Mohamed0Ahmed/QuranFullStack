@@ -15,6 +15,8 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   `qd-pagination` are built from these values and the reserved slots that stand in for a
   not-yet-mounted control row are sized from the same ones, so a reservation can never drift from
   its control. Size a new reserved slot from these tokens; never re-measure the control by hand.
+  Also holds the `--qd-z-*` layer scale (`.architecture/UI_STYLE_SYSTEM.md` §4) — every
+  stacking `z-index` in the app is one of these rungs; never write a bare `z-index`.
 - `_themes.scss` — dark-theme overrides for the same token surface (`--qd-accent-fg` and
   `--qd-selected-bg` are intentionally theme-invariant and not overridden here).
 - `_typography.scss` — font-face declarations and shared Arabic-first type classes.

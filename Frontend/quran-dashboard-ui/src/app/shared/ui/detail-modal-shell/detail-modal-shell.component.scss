@@ -98,9 +98,9 @@
 // floating layer, so it carries the floating shadow.
 .detail-modal-shell__restore {
   position: fixed;
-  inset-block-start: calc(var(--qd-space-4) + 3.5rem);
+  inset-block-start: calc(var(--qd-space-4) + var(--qd-navbar-block-size));
   inset-inline-end: var(--qd-space-4);
-  z-index: 40;
+  z-index: var(--qd-z-floating);
   padding: var(--qd-space-2) var(--qd-space-3);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);

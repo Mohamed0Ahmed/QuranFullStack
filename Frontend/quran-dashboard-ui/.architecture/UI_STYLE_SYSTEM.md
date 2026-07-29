@@ -158,6 +158,17 @@ superseded prototype reference):
 - motion durations (fast ~140ms, base ~220ms)
 - radius
 - spacing scale
+- layer scale (stacking order for every fixed/absolute layer in the app), ascending:
+  `--qd-z-sticky` (page chrome / sticky headers) → `--qd-z-popover` (selector/filter
+  panels) → `--qd-z-floating` (a fixed control floating over page content, e.g. the
+  detail-modal-shell restore button) → `--qd-z-mobile-nav` (navbar dropdown + mobile
+  menu) → `--qd-z-menu-backdrop` / `--qd-z-menu` (`qd-context-menu`) →
+  `--qd-z-modal-backdrop` / `--qd-z-modal` (`.qd-modal-backdrop` / a future direct
+  modal-box consumer). **Never write a bare `z-index`** — always reference one of
+  these tokens. The sole exception at time of writing is the abwab context-menu's two
+  page-local copies (`abwab-page.component.scss`, `abwab-templates-page.component.scss`),
+  pending their extraction onto `qd-context-menu`, which consumes
+  `--qd-z-menu-backdrop`/`--qd-z-menu` from birth.
 
 Example shape only — **do not force exact colors yet** (the real palette is
 resolved in `DESIGN.md`):

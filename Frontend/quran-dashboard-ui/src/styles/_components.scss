@@ -543,7 +543,7 @@ button.qd-interactive-surface {
 .qd-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: var(--qd-z-modal-backdrop);
   display: flex;
   align-items: center;
   justify-content: center;
