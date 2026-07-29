@@ -156,4 +156,8 @@ public static class ApiMessages
         doorNames.Count == 0
             ? AbwabDoorRelationDuplicate
             : $"{AbwabDoorRelationDuplicatePrefix}: {string.Join("، ", doorNames)}";
+
+    public const string AbwabTemplatesLoaded = "تم تحميل القوالب";
+    public const string AbwabTemplateLoaded = "تم تحميل القالب";
+    public const string AbwabTemplateNotFound = "القالب غير موجود";
 }
