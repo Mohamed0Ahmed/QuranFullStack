@@ -277,6 +277,11 @@ internal static class SmokeRouteCatalog
             Method = HttpMethod.Post, ParityOnly = true,
         },
 
+        new("api/abwab/doors/{doorId:int}/relations", "/api/abwab/doors/1/relations", HttpStatusCode.NotFound)
+        {
+            ParityOnly = true,
+        },
+
         // api/abwab/tree — AbwabTreeController. Unlike its sibling write routes, this one IS dispatched
         // by the generic sweep: GetAbwabTreeHandler has no NotFound branch at all, so it derives 200 with
         // an empty snapshot against the migrated-but-empty schema regardless of what any other test left

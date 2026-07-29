@@ -33,4 +33,5 @@ public sealed record AbwabTreeDoorDto(
     uint Version,
     bool IsArchived,
     int DirectChildCount,
+    int RelationCount,
     IReadOnlyList<string> Aliases);

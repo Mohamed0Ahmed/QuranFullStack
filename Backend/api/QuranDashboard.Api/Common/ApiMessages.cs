@@ -137,4 +137,6 @@ public static class ApiMessages
     public const string AbwabDoorScopeNotApplicable = "الترتيب العام غير متاح للأبواب الفرعية";
 
     public const string AbwabTreeLoaded = "تم تحميل شجرة الأبواب";
+
+    public const string AbwabDoorRelationsLoaded = "تم تحميل علاقات الباب";
 }
