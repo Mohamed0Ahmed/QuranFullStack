@@ -747,25 +747,32 @@ local dev DB with two sandbox sections so cross-section cases are reachable.
 
 ## 12. Obligations checklist
 
-- [ ] Migration by EF tooling only, on explicit go-ahead; **local apply only**; name/files/build
-      reported (T104)
-- [ ] Canonical smoke dump regenerated after the migration — a stale dump **fails loud** (T105)
-- [ ] Three `SmokeRouteCatalog` entries, **all `ParityOnly`** (T204, T305), **plus** the
+- [x] Migration by EF tooling only, on explicit go-ahead; **local apply only**; name/files/build
+      reported (T104) — `20260729135714_AddAbwabDoorRelations`
+- [x] Canonical smoke dump regenerated after the migration — a stale dump **fails loud** (T105)
+- [x] Three `SmokeRouteCatalog` entries, **all `ParityOnly`** (T204, T305), **plus** the
       `api/abwab/tree` entry's contract-change comment and re-checked `DerivedStatus` (T204).
       **Mandatory gate, not debt**
-- [ ] `Tests.Abwab` + `Tests.Api` + `Tests.Smoke.` run at phases 2, 3 and at the PR boundary,
-      each with the `Tests.Smoke.Data` **ran/skipped** statement
-- [ ] Full Frontend suite + `npm run build` before the PR (T605, phase 6)
-- [ ] `docs/TESTING_DEBT.md` created, each line naming its paying trigger; pointer added to
+- [x] `Tests.Abwab` + `Tests.Api` + `Tests.Smoke.` run at phases 2, 3 and at the PR boundary,
+      each with the `Tests.Smoke.Data` **ran/skipped** statement — PR boundary (2026-07-29):
+      full suite 1,843 passed / 0 skipped, no-pipeline 1,086, smoke **140 passed, 0 skipped
+      (data tier RAN)**, `Tests.Abwab` 46
+- [x] Full Frontend suite + `npm run build` before the PR (T605, phase 6) — 190 files / 2,158
+      tests, build clean; e2e re-run too: 28 + 20 = 48 passed
+- [x] `docs/TESTING_DEBT.md` created, each line naming its paying trigger; pointer added to
       `docs/README.md` (T703)
-- [ ] `Writes/Abwab/README.md` + `Reads/Abwab/README.md` + `features/abwab/README.md` updated in
+- [x] `Writes/Abwab/README.md` + `Reads/Abwab/README.md` + `features/abwab/README.md` updated in
       the same change, including the **"Zero dead controls"** correction and the endpoint counts
-      (T701, T702)
-- [ ] `TESTING_STRATEGY.md` counts re-measured and the partition identity re-verified (T704)
-- [ ] Root `CLAUDE.md` Active-Feature line → `abwab-relations` (T101)
-- [ ] The §10 manual pass walked by the user before merge (T705)
-- [ ] Clean-code self-check (`.claude/skills/engineering-review/references/clean-code-guard/`)
+      (T701, T702) — 13 writes / 15 endpoints, measured off the controllers
+- [x] `TESTING_STRATEGY.md` counts re-measured and the partition identity re-verified (T704) —
+      `1,086 + 617 + 140 = 1,843`, every term unchanged, which is itself the finding
+- [x] Root `CLAUDE.md` Active-Feature line → `abwab-relations` (T101)
+- [ ] The §10 manual pass walked by the user before merge (T705) — **the one open item**
+- [x] Clean-code self-check (`.claude/skills/engineering-review/references/clean-code-guard/`)
       before delivery, per the root `CLAUDE.md`. The test-code self-check applies **narrowly to
-      T605's fixture repair** — test files are edited, so it is not out of scope, but there is no
-      new coverage for it to judge
-- [ ] Branch `abwab-relations` off `dev`; PR into `dev`. **Never `main`**
+      T605's fixture repair and one e2e assertion** — test files are edited, so it is not out of
+      scope, but there is no new coverage for it to judge. Three places pinned the old "no
+      relations control" truth and all three were repaired, not extended:
+      `abwab-side-panel.component.spec.ts`, `abwab-page.component.spec.ts`, and
+      `e2e/abwab-operations.e2e.ts` (the last was not anticipated by the plan)
+- [ ] Branch `abwab-relations` off `dev`; PR into `dev`. **Never `main`** — branch done, PR open

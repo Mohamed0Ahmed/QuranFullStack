@@ -4,16 +4,21 @@
 
 ## What this area does
 
-One reader, `EfAbwabTreeReader`, backs the single read endpoint of the Abwab feature —
-`GET api/abwab/tree` (`GetAbwabTreeHandler`, `AbwabTreeController`). It returns one complete,
-versioned snapshot of the doors/sections outline: no paging, no filtering. The write side lives
-beside it at `../../Writes/Abwab/` (`EfAbwabSectionsWriter`, `EfAbwabDoorsWriter`); the domain
-entities are `Backend/domain/QuranDashboard.Domain/Abwab/` (`AbwabSection`, `AbwabDoor`,
-`AbwabDoorAlias`).
+Two readers back the Abwab feature's two read endpoints. `EfAbwabTreeReader` serves
+`GET api/abwab/tree` (`GetAbwabTreeHandler`, `AbwabTreeController`) — one complete, versioned
+snapshot of the doors/sections outline: no paging, no filtering. `EfAbwabRelationsReader` serves
+`GET api/abwab/doors/{doorId}/relations` (`GetDoorRelationsHandler`,
+`AbwabDoorRelationsController`) — one door's visible relations, always stated from that door's side.
+The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
+`Backend/domain/QuranDashboard.Domain/Abwab/` (`AbwabSection`, `AbwabDoor`, `AbwabDoorAlias`,
+`AbwabDoorRelation`).
 
 ## Key pieces
 
-- `EfAbwabTreeReader.GetTreeAsync` — the one query this area exposes. `AsNoTracking` throughout.
+- `EfAbwabTreeReader.GetTreeAsync` — the snapshot query. `AsNoTracking` throughout.
+- `EfAbwabRelationsReader.GetForDoorAsync` — one door's relations. Returns `null` for an unknown
+  door so the handler can answer `404`; an **empty list** means the door exists and has nothing
+  visible. Those two are not interchangeable (the `IAyahStudyReader` convention).
 
 ## Shape and invariants (read before changing)
 
@@ -54,14 +59,45 @@ entities are `Backend/domain/QuranDashboard.Domain/Abwab/` (`AbwabSection`, `Abw
   (`OrderValue`, `Id`) exactly as before, and the client is the one that sorts the superset by
   `GlobalOrderValue` — consistent with "flat, not nested" above, where shaping the outline is a
   consumer job, not this reader's.
+- **Dormancy is a read-time join, never a stored column.** A relation is visible iff its own
+  `deleted_at IS NULL` **and both endpoint doors** are live; both readers express that as a join on
+  `abwab_doors` for `door_a_id` and `door_b_id`. There is no `is_dormant` column, deliberately: it
+  would have to be rewritten by every archive, bulk-archive, restore, and archive-subtree sweep —
+  i.e. it would drift on exactly the paths that are hardest to test. Archiving a door therefore
+  hides its relations from **both** sides and drops both partners' counts, with no write touching a
+  relation row, and restoring brings them straight back. The partial unique index filters on the
+  relation's own `deleted_at` only, so a dormant row still occupies its pair, which is what makes
+  restore collision-free.
+- **A relation's direction is resolved per viewer, never stored twice.** One row carries
+  `broader_door_id` (the more comprehensive endpoint); each reader converts it to an
+  anchor-relative `AbwabRelationDirection` — `AnchorMoreComprehensive` when `broader_door_id` is the
+  door being read. The same row therefore reports opposite directions to its two doors, which is the
+  whole point. **Do not put the two-sided "broader"/"narrower" words on the wire** — they read from
+  two different perspectives and cannot be disambiguated by a consumer.
+- **`RelationCount` counts LIVE-endpoint relations only**, the same judgment call `DirectChildCount`
+  and `DoorsInScopeCount` carry above: it is the "how many relations are on this door right now"
+  badge. An archived door's count is therefore always 0, and so is a live door's count for a partner
+  that is archived. One grouped query per snapshot (`GetLiveRelationCountsAsync`), incrementing
+  **both** endpoints of each visible row — never one query per door, which would turn the snapshot
+  into an N+1.
+- **Snapshot `Version` deliberately ignores `abwab_door_relations`.** `Version` is
+  `max(updated_at, deleted_at)` across sections, doors, and aliases only, so a relation write changes
+  the snapshot's `RelationCount` values without moving `Version`. That is safe **because `Version` is
+  diagnostics-only** — nothing does conflict detection with it (`features/abwab/README.md` says so on
+  the client side too). Widening it to a fourth table would imply a guarantee it does not make.
 - **No caching.** Unlike the Words explorers' readers, this one is not wrapped in a caching decorator:
   Abwab is live admin-authored data with no invalidation story yet, and caching a snapshot an admin is
   actively editing would be a correctness risk, not a convenience.
 
 ## Related
 
-- Write side: `../../Writes/Abwab/` (`EfAbwabSectionsWriter`, `EfAbwabDoorsWriter`) and its `README.md`.
+- Write side: `../../Writes/Abwab/` (`EfAbwabSectionsWriter`, `EfAbwabDoorsWriter`,
+  `EfAbwabRelationsWriter`) and its `README.md`.
 - Domain entities: `Backend/domain/QuranDashboard.Domain/Abwab/`.
-- Handler: `application/QuranDashboard.Application/Abwab/Queries/GetAbwabTree/`.
-- Controller: `api/QuranDashboard.Api/Controllers/Abwab/AbwabTreeController.cs` (`../../../../api/QuranDashboard.Api/Controllers/README.md`).
-- Response DTOs: `application/QuranDashboard.Application.Abstractions/Abwab/Responses/AbwabTreeDto.cs`.
+- Handlers: `application/QuranDashboard.Application/Abwab/Queries/GetAbwabTree/` and
+  `.../Queries/GetDoorRelations/`.
+- Controllers: `api/QuranDashboard.Api/Controllers/Abwab/AbwabTreeController.cs`,
+  `AbwabDoorRelationsController.cs` (`../../../../api/QuranDashboard.Api/Controllers/README.md`).
+- Response DTOs: `application/QuranDashboard.Application.Abstractions/Abwab/Responses/AbwabTreeDto.cs`,
+  `AbwabDoorRelationDto.cs`.
+- Tests: the relations reader has none — see `docs/TESTING_DEBT.md` for the gap and its trigger.

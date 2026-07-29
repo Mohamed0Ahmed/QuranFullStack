@@ -13,6 +13,7 @@ Where things live now:
 - **Feature plans** → `specs/<feature>/` hosts per-feature Spec-Kit planning (spec/plan/tasks/contracts) for open features plus the N-2 buffer. Current contract index → `docs/contracts/`.
 - **How to work / how to write code** → `AGENTS.md` / `CLAUDE.md` / `.architecture/*`.
 - **Which tests to run and when** → `TESTING_STRATEGY.md` (workspace root) — execution tiers A–E, pipeline triggers, and the PR/release gates. Not a planning doc and not superseded by anything here.
+- **Which tests were deliberately not written** → `docs/TESTING_DEBT.md` — one row per skipped area, each naming the concrete change that pays it. Not a place to defer a tier `TESTING_STRATEGY.md` requires, and never a home for `SmokeRouteCatalog` parity entries (those are a build-level gate).
 - **Evidence / reference** (audits, imports, diagnostics, DB inventory) → `Backend/report/`.
 
 Add a new `docs/feature-XXX-<name>/` folder only for genuinely new pre-spec planning; do

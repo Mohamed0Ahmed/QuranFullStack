@@ -5,10 +5,13 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 
 ## Route families
 
-- `Abwab/` — `api/abwab/sections` and `api/abwab/doors` (eleven write routes: create/rename/delete on
-  sections; create/edit/move/reorder/bulk-move/bulk-archive/delete/restore on doors) plus the read
-  `api/abwab/tree` (one versioned snapshot: sections + doors, archived doors included and flagged,
-  aliases, per-door direct-child count and per-section live-doors count, no paging). All routes are
+- `Abwab/` — `api/abwab/sections`, `api/abwab/doors`, and `api/abwab/relations` (thirteen write
+  routes: create/rename/delete on sections; create/edit/move/reorder/bulk-move/bulk-archive/delete/
+  restore on doors; add-N and delete-one on relations) plus two reads — `api/abwab/tree` (one
+  versioned snapshot: sections + doors, archived doors included and flagged, aliases, per-door
+  direct-child and relation counts, per-section live-doors count, no paging) and
+  `api/abwab/doors/{doorId}/relations` (one door's visible relations, `404` for an unknown door,
+  `200` with `[]` for a door with none). Fifteen routes in all. All routes are
   `Open` — this is the repository's first write surface and it ships without authentication in Slice A
   (see feature plan §9/§10); it must not reach production before a write policy attaches. Optimistic
   concurrency is `uint xmin`, surfaced as `409` in the shared envelope. Creating a door under a parent
@@ -16,8 +19,13 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   overwrite. Restore is the one write whose
   `200` body is not the entity alone: it returns `AbwabRestoredDoorDto { door, detachedFromArchivedSection }`,
   because a door restored out of a section archived meanwhile comes back with `sectionId: null` and no
-  caller can tell that from a door that never had a section. `AbwabSectionsController` and
-  `AbwabDoorsController` carry no `///` XML docs (root `CLAUDE.md` comment policy — see "Generated
+  caller can tell that from a door that never had a section. The relation routes are the one write
+  family that carries **no version token**: they touch no door row, so no `xmin` moves and the only
+  `409` they can produce is the duplicate pair (same two doors + same type, either direction) —
+  mapped by `AbwabDoorRelationsController`, which owns its own status mapping exactly as the two
+  other Abwab controllers own theirs. Self-relation and an archived endpoint are `400`; an unknown
+  door id is `404`; the multi-target add is all-or-nothing. None of the three Abwab controllers
+  carries `///` XML docs (root `CLAUDE.md` comment policy — see "Generated
   contract artifacts" below for what that means for the exported spec).
 - `Access/` — `api/access/me`; the authenticated caller's provisioned user. Carries `[Authorize]`
   (authenticated-only) and get-or-create provisions the local user on first login (email verified

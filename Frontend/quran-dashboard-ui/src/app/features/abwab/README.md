@@ -3,20 +3,22 @@
 **HOW rules:** `.architecture/UI_STYLE_SYSTEM.md`, `.architecture/FRONTEND_STRUCTURE.md`,
 `.architecture/API_INTEGRATION_GUIDELINES.md` (project root). This file is the WHAT.
 
-**Status: Slice B2 complete** — the full page (tree, cards, bulk mode, move, reorder,
-search, archive view, sections management, row context menu — Slice B1, phases 4 + 5)
-plus the browser e2e flows and the two test-doc amendments
-(`docs/feature-abwab-doors/plan-slice-b2.md`). The routes are `Open` (no auth) per
-`plan.md` §10 — **do not** include this feature in a `dev → main` release until write
-protection lands.
+**Status: Slice B2 complete**, plus the superset's global order and door relations — the
+full page (tree, cards, bulk mode, move, reorder, search, archive view, sections
+management, row context menu — Slice B1, phases 4 + 5), the browser e2e flows and the two
+test-doc amendments (`docs/feature-abwab-doors/plan-slice-b2.md`), and the relations modal
+with its three entry points. The routes are `Open` (no auth) per `plan.md` §10 — **do not**
+include this feature in a `dev → main` release until write protection lands; that block now
+covers three more write-capable routes.
 
 ## What this feature does
 
-Renders the `GET api/abwab/tree` snapshot as a tree and as drill-down cards at
-`/abwab`, and drives the eleven write endpoints — create, edit, move, reorder, bulk
-move, bulk archive, archive, restore, and the three section commands — with
-optimistic-concurrency conflicts (`409`) always surfaced, never swallowed or
-auto-retried.
+Renders the `GET api/abwab/tree` snapshot as a tree and as drill-down cards at `/abwab`,
+reads a door's relations from `GET api/abwab/doors/{doorId}/relations`, and drives the
+thirteen write endpoints — create, edit, move, reorder, bulk move, bulk archive, archive,
+restore, the three section commands, and relations add/delete — with optimistic-concurrency
+conflicts (`409`) always surfaced, never swallowed or auto-retried. Fifteen endpoints in
+all.
 
 ## Render chain & key pieces
 
@@ -112,8 +114,13 @@ auto-retried.
 - `state/abwab-sections.controller.ts` — the section-facing write surface: reads
   `sections` live from the facade snapshot (never cached) and forwards
   create/rename/delete to the shared write controller above.
+- `state/abwab-relations.controller.ts` — the relations-facing surface, built the same
+  way: it owns only what is relation-specific (the per-door fetch and the wire↔domain
+  mapping of both enums) and forwards both writes to the shared write controller, so the
+  409 policy and the refresh-after-write invariant stay in one place for all three
+  aggregates.
 - `state/abwab-url-sync.ts` — parses/builds the six query keys below, fail-closed.
-- `data-access/abwab.api.ts` — the twelve endpoints under `/api/abwab`.
+- `data-access/abwab.api.ts` — the fifteen endpoints under `/api/abwab`.
 - `models/abwab.models.ts` / `models/abwab.labels.ts` — view models and every Arabic
   string (read via TDZ-safe getters in consumers, never `readonly` field
   initialisers).
@@ -232,9 +239,21 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   tab, anywhere in this feature. Relations became real controls with `abwab-relations`;
   the tree's `.flag.rel` chip is the one deliberate non-control — it is a chip, not a
   button, with no tab stop and no click handler.
+- **Relations get no entry point and no flag in the archive view — derived, not decided.** Every
+  archived door's visible relation count is always 0 (the backend hides a relation whose endpoint
+  is archived, `Reads/Abwab/README.md`), so a flag there would be permanently absent and a menu
+  entry would open an always-empty modal. Same derivation this README already makes for the
+  archive view's child-count badge. Nobody should "add it back for symmetry". Cards render no
+  flag either — the tree contract renders only `protected` there.
+- **Relation writes carry no `version` and still refresh.** They touch no door row, so no `xmin`
+  moves and no stale-token 409 is reachable; the only 409 those routes produce is the duplicate
+  pair. They still go through `abwab-write.controller.ts` rather than around it, because they
+  change `relationCount` on **two** rows of the snapshot and the refresh-after-write invariant is
+  what keeps those honest. Do not add a token "for consistency" with the door writes.
 - **A `204 No Content` arrives as a `null` envelope, not `{isSuccess, data}`.** Single-door
-  archive (`DELETE api/abwab/doors/{id}`) and a successful section delete
-  (`DELETE api/abwab/sections/{id}`) are the two routes that answer 204, and Angular's
+  archive (`DELETE api/abwab/doors/{id}`), a successful section delete
+  (`DELETE api/abwab/sections/{id}`), and a relation delete
+  (`DELETE api/abwab/relations/{id}`) are the routes that answer 204, and Angular's
   `HttpClient` parses an empty body as `null`. `abwab-write.controller.ts#handleSuccess`
   therefore treats a null response as a payload-less success: only a success is ever a 204,
   since every failure arrives as a 4xx through `catchError`. Dereferencing `response.isSuccess`
@@ -242,7 +261,9 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   and leaves the UI reporting failure while the backend write has committed. Vitest missed it
   because the specs mocked `AbwabApi` with well-formed envelopes; the browser suite caught it.
   Both the null-envelope path and the real 204 flush are now pinned by tests, and
-  `abwab-archive.e2e.ts` drives archive through the UI end to end.
+  `abwab-archive.e2e.ts` drives archive through the UI end to end. The relation delete rides on
+  that same already-pinned `handleSuccess` branch but has no test of its own
+  (`docs/TESTING_DEBT.md`).
 
 ## Browser e2e (Slice B2)
 

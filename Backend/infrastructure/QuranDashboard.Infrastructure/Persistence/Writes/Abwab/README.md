@@ -5,28 +5,35 @@
 ## What this area does
 
 `Persistence/Writes/` is the repository's **first** write area, and this folder is its only occupant:
-`EfAbwabSectionsWriter` and `EfAbwabDoorsWriter` back the eleven `/api/abwab` write endpoints
-(`api/QuranDashboard.Api/Controllers/Abwab/`). The read sibling is `../../Reads/Abwab/`. Conventions
-established here are the precedent for every later write feature — change them deliberately, not
-incidentally.
+`EfAbwabSectionsWriter`, `EfAbwabDoorsWriter`, and `EfAbwabRelationsWriter` back the thirteen
+`/api/abwab` write endpoints (`api/QuranDashboard.Api/Controllers/Abwab/`). The read sibling is
+`../../Reads/Abwab/`. Conventions established here are the precedent for every later write feature —
+change them deliberately, not incidentally.
 
 ## Key pieces
 
 - `EfAbwabSectionsWriter` — create / rename / delete-empty. Implements `IAbwabSectionsWriter`.
 - `EfAbwabDoorsWriter` — create / edit / move / reorder / bulk-move / bulk-archive / archive / restore.
   Implements `IAbwabDoorsWriter`.
+- `EfAbwabRelationsWriter` — add N relations in one call / soft-delete one. Implements
+  `IAbwabRelationsWriter`.
 
 ## Conventions and invariants (read before changing)
 
-- **One seam per aggregate, no EF types cross it.** Application never references EF Core, so each writer
-  catches `DbUpdateConcurrencyException` and `PostgresException` `23505` itself and rethrows the plain
-  types in `Application.Abstractions/Abwab/` (`AbwabStaleVersionException`, `AbwabDuplicateNameException`,
-  …). **Every** `SaveChangesAsync` in this folder goes through one of the two translating helpers —
-  a bare save is how a raw EF exception reaches the global handler as a 500 instead of a 409.
+- **One seam per aggregate, no EF types cross it.** Application never references EF Core, so each of the
+  three writers catches `DbUpdateConcurrencyException` and `PostgresException` `23505` itself and rethrows
+  the plain types in `Application.Abstractions/Abwab/` (`AbwabStaleVersionException`,
+  `AbwabDuplicateNameException`, `AbwabRelationDuplicateException`, …). **Every** `SaveChangesAsync` in this
+  folder goes through a translating helper — a bare save is how a raw EF exception reaches the global
+  handler as a 500 instead of a 409.
   - `SaveTranslatingWriteExceptionsAsync` — writes that put a row **into** the unique index's live scope
     (create, edit, move, bulk-move, restore): both a stale token and a duplicate name are reachable.
   - `SaveTranslatingConcurrencyAsync` — writes that only move a row **out** of it (archive, reorder,
     section delete): a duplicate-name violation is structurally impossible, so only the token can fail.
+  - `EfAbwabRelationsWriter.SaveTranslatingDuplicateAsync` — its **own** third helper, deliberately not
+    one of the two above. Those are keyed to the doors/sections duplicate-**name** message and would
+    report the wrong constraint entirely; the relations index is `(door_a_id, door_b_id, relation_type)`.
+    Relation writes carry no version token (see below), so a stale-token branch would be unreachable code.
 - **Optimistic concurrency is Postgres `xmin`.** The client's last-seen token is applied as
   `db.Entry(x).Property(x => x.Version).OriginalValue`, never `CurrentValue` — overriding `CurrentValue`
   would compare the row against the value the writer's own query just re-read, which can never conflict.
@@ -103,13 +110,41 @@ incidentally.
   or moved-to-nested still comes back from the read, so it is dropped via `excludeIds`; a door
   being restored or moved nested→root does **not** come back (the read still shows its old
   `deleted_at`/`parent_id`), so it is appended in code, never inferred from the read.
-- **Restore appends, in both spaces.** A restored root goes to the end of its per-scope order
-  (existing) and the end of the global sequence (new) — never back to a remembered position, since
-  resequencing already destroyed it.
+- **Relations are attached to doors, not to structure — and no door write touches them.** Move,
+  reorder, archive, bulk-archive, restore, and every section write leave `abwab_door_relations`
+  completely alone. A relation whose endpoint is archived becomes invisible by the read side's join,
+  not by a write here (`../../Reads/Abwab/README.md`, dormancy). Two consequences worth stating
+  because both are tempting to "fix":
+  - **Relations never block archiving**, and archiving never cascades into them. There is no
+    "delete this door's relations" step anywhere in `EfAbwabDoorsWriter`, deliberately — restore
+    would then have nothing to bring back.
+  - **Restore re-adds nothing.** The rows were never deleted, so a revive path would be a second,
+    redundant write.
+- **Relation writes carry no version token.** They touch `abwab_door_relations` only, so no door's
+  `xmin` moves and there is nothing for a stale-token 409 to compare. The relation row still has its
+  own `xmin` for symmetry with the two other abwab tables, but **nothing reads it** — delete addresses
+  a row by id, add creates. Do not add a `version` to the delete body "for consistency": a token
+  nothing checks is a lie in the contract.
+- **Add is all-or-nothing, like bulk move/archive.** One call carries the anchor, the type, an
+  optional direction, and N targets; any refusal — self (`400`), unknown id (`404`), archived endpoint
+  (`400`), duplicate pair (`409`) — fails the whole batch before `SaveChanges`. `GuardAgainstExistingAsync`
+  runs the duplicate check up front purely so the `409` can **name** the colliding doors; `23505` names
+  no row. The catch in the save helper stays as the race backstop, with no names.
+- **The canonical pair is the writer's job.** Every row is stored `door_a_id < door_b_id` via
+  `Math.Min`/`Math.Max` **for all three types**, directional included, and `broader_door_id` carries the
+  direction (`NOT NULL` exactly for `Comprehensiveness`). That is what makes "delete from either side
+  deletes the row" structural rather than handler logic, and what makes A-more-than-B and
+  B-more-than-A the same row — i.e. a duplicate — which a `(source, target, type)` index could not
+  express. Flipping a direction is delete + re-add; there is no update path.
+- **Delete is soft, and nothing revives.** `DeleteAsync` sets `deleted_at`/`updated_at` and returns a
+  `bool`; a missing or already-deleted row is `false`, not an exception (the `IAbwabSectionsWriter`
+  convention). Re-adding the same pair creates a **new** row — the partial unique index filters on
+  `deleted_at IS NULL`, so the old one no longer occupies the pair. A `DbUpdateConcurrencyException`
+  here means a concurrent delete won; the row is gone either way, so it reports `false` rather than 500.
 
 ## Related
 
-- Read side: `../../Reads/Abwab/` (`EfAbwabTreeReader`) and its `README.md`.
+- Read side: `../../Reads/Abwab/` (`EfAbwabTreeReader`, `EfAbwabRelationsReader`) and its `README.md`.
 - Contracts and exception types: `application/QuranDashboard.Application.Abstractions/Abwab/`.
 - Handlers: `application/QuranDashboard.Application/Abwab/Commands/`.
 - Controllers and status mapping: `api/QuranDashboard.Api/Controllers/Abwab/`
@@ -117,3 +152,6 @@ incidentally.
 - Domain entities: `Backend/domain/QuranDashboard.Domain/Abwab/`.
 - Tests: `Backend/tests/QuranDashboard.Tests/Abwab/` (writer behavior) and
   `Backend/tests/QuranDashboard.Tests/Smoke/SmokeAbwabWriteTests.cs` (status/envelope contract).
+  **`EfAbwabRelationsWriter` has none of either** — the relations feature wrote no tests by decision;
+  its three routes are catalogued `ParityOnly`, and the gap plus what pays it is recorded in
+  `docs/TESTING_DEBT.md`.
