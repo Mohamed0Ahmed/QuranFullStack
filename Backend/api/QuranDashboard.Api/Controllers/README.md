@@ -5,13 +5,16 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 
 ## Route families
 
-- `Abwab/` — `api/abwab/sections`, `api/abwab/doors`, and `api/abwab/relations` (thirteen write
+- `Abwab/` — `api/abwab/sections`, `api/abwab/doors`, `api/abwab/relations`, `api/abwab/templates`,
+  and `api/abwab/template-nodes` (twenty write
   routes: create/rename/delete on sections; create/edit/move/reorder/bulk-move/bulk-archive/delete/
-  restore on doors; add-N and delete-one on relations) plus two reads — `api/abwab/tree` (one
+  restore on doors; add-N and delete-one on relations; create/delete plus apply on templates; and
+  add/edit/reorder/delete on template nodes) plus four reads — `api/abwab/tree` (one
   versioned snapshot: sections + doors, archived doors included and flagged, aliases, per-door
-  direct-child and relation counts, per-section live-doors count, no paging) and
+  direct-child and relation counts, per-section live-doors count, no paging),
   `api/abwab/doors/{doorId}/relations` (one door's visible relations, `404` for an unknown door,
-  `200` with `[]` for a door with none). Fifteen routes in all. All routes are
+  `200` with `[]` for a door with none), and `api/abwab/templates` + `api/abwab/templates/{templateId}`
+  (the admin-only door templates and one template's flat node list). Twenty-four routes in all. All routes are
   `Open` — this is the repository's first write surface and it ships without authentication in Slice A
   (see feature plan §9/§10); it must not reach production before a write policy attaches. Optimistic
   concurrency is `uint xmin`, surfaced as `409` in the shared envelope. Creating a door under a parent
@@ -22,9 +25,20 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   caller can tell that from a door that never had a section. The relation routes are the one write
   family that carries **no version token**: they touch no door row, so no `xmin` moves and the only
   `409` they can produce is the duplicate pair (same two doors + same type, either direction) —
-  mapped by `AbwabDoorRelationsController`, which owns its own status mapping exactly as the two
-  other Abwab controllers own theirs. Self-relation and an archived endpoint are `400`; an unknown
-  door id is `404`; the multi-target add is all-or-nothing. None of the three Abwab controllers
+  mapped by `AbwabDoorRelationsController`, which owns its own status mapping exactly as the other
+  Abwab controllers own theirs. Self-relation and an archived endpoint are `400`; an unknown
+  door id is `404`; the multi-target add is all-or-nothing. The template routes carry **no version
+  token** either, and split across two controllers because nine actions on one would sit at the
+  200-line threshold: `AbwabTemplatesController` owns the template list/detail/create/delete plus
+  the apply, `AbwabTemplateNodesController` owns the four node writes under
+  `api/abwab/template-nodes/{nodeId}`. A template's name is its root node's name, so there is no
+  rename route — editing the root through the node edit **is** the rename. The root refuses
+  reordering and deletion alike (`400`); deleting the template is the way. The apply copies the
+  template subtree as a **new child** of each target door and is all-or-nothing: an empty target
+  list is `400` (which is also how "never a root door" is enforced at the wire), an archived target
+  is `400`, an unknown template or target is `404`, and a target that already has a live child
+  named like the template root fails the whole batch with one `409` naming every colliding target.
+  None of the Abwab controllers
   carries `///` XML docs (root `CLAUDE.md` comment policy — see "Generated
   contract artifacts" below for what that means for the exported spec).
 - `Access/` — `api/access/me`; the authenticated caller's provisioned user. Carries `[Authorize]`
