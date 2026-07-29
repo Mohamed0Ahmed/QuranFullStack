@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>قوالب الأبواب — تصور التصميم</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --qd-bg:#f6f4ee; --qd-surface:#fffdf8; --qd-section-bg:#fbf8f0;
+    --qd-recessed:#f0ede2; --qd-text:#2b2a26; --qd-muted:#6f6b62;
+    --qd-border:#e7e2d7; --qd-border-strong:#d5cfbf; --qd-primary:#2f6d5f;
+    --qd-primary-soft:#e8f0ed; --qd-danger:#9c4a3c;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--qd-bg); color:var(--qd-text);
+    font-family:'IBM Plex Sans Arabic',system-ui,sans-serif; font-size:14px; min-height:100vh;}
+
+  header.page{max-width:1180px; margin:0 auto; padding:26px 24px 0; display:flex;
+    align-items:flex-start; justify-content:space-between; gap:16px;}
+  .page h1{font-size:21px; font-weight:700;}
+  .page p.sub{color:var(--qd-muted); margin-top:4px; font-size:13px;}
+  .btn{border:1px solid var(--qd-border-strong); background:var(--qd-surface);
+    color:var(--qd-text); border-radius:8px; padding:7px 14px; font-size:13px;
+    font-family:inherit; cursor:pointer;}
+  .btn:hover{background:var(--qd-recessed);}
+  .btn.primary{background:var(--qd-primary); border-color:var(--qd-primary); color:#fff;}
+  .btn.primary:hover{background:#285d51;}
+  .btn.primary:disabled{opacity:.45; cursor:default;}
+
+  .layout{max-width:1180px; margin:18px auto 60px; padding:0 24px; display:flex; gap:16px;
+    align-items:flex-start;}
+
+  /* قايمة القوالب */
+  aside{width:250px; flex:none; display:flex; flex-direction:column; gap:8px;}
+  .tpl-item{background:var(--qd-surface); border:1px solid var(--qd-border);
+    border-radius:10px; padding:12px 14px; cursor:pointer;}
+  .tpl-item:hover{border-color:var(--qd-border-strong);}
+  .tpl-item.active{border-color:var(--qd-primary); background:var(--qd-primary-soft);}
+  .tpl-item .t{font-weight:600; font-size:13.5px;}
+  .tpl-item .c{color:var(--qd-muted); font-size:11.5px; margin-top:3px;}
+  .add-tpl{border:1px dashed var(--qd-border-strong); background:transparent;
+    color:var(--qd-muted); border-radius:10px; padding:11px; font-family:inherit;
+    font-size:13px; cursor:pointer;}
+  .add-tpl:hover{color:var(--qd-primary); background:var(--qd-primary-soft);}
+
+  /* محرر القالب */
+  .editor{flex:1; min-width:0; background:var(--qd-surface); border:1px solid var(--qd-border);
+    border-radius:12px; padding:16px; min-height:420px;}
+  .editor-head{display:flex; align-items:center; justify-content:space-between;
+    gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+  .editor-head h3{font-size:15px; display:flex; gap:8px; align-items:center;}
+  .editor-head .cnt{font-size:11px; color:var(--qd-muted); background:var(--qd-section-bg);
+    border:1px solid var(--qd-border); border-radius:10px; padding:1px 8px;}
+
+  .row{display:flex; align-items:center; gap:6px; padding:5px 8px; border-radius:7px; cursor:pointer;}
+  .row:hover{background:var(--qd-recessed);}
+  .chevron{width:16px; height:16px; display:inline-flex; align-items:center;
+    justify-content:center; color:var(--qd-muted); transition:transform .12s; flex:none; cursor:pointer;}
+  .node.open > .row .chevron{transform:rotate(-90deg);}
+  .chevron.leaf{visibility:hidden;}
+  .num{font-size:11px; color:var(--qd-muted); background:var(--qd-section-bg);
+    border:1px solid var(--qd-border); border-radius:5px; padding:0 5px; min-width:20px;
+    text-align:center; flex:none;}
+  .name{flex:1; font-size:13.5px;}
+  .row.tpl-root > .name{font-weight:700;}
+  .actions{display:none; gap:2px;}
+  .row:hover .actions{display:inline-flex;}
+  .act{border:none; background:transparent; width:24px; height:24px; border-radius:6px;
+    color:var(--qd-muted); cursor:pointer; font-size:14px;}
+  .act:hover{background:var(--qd-surface); color:var(--qd-primary);
+    outline:1px solid var(--qd-border-strong);}
+  .children{margin-inline-start:22px; border-inline-start:1px solid var(--qd-border);
+    padding-inline-start:4px; display:none;}
+  .node.open > .children{display:block;}
+  .add-row{display:flex; gap:6px; padding:4px 8px; margin-inline-start:22px;}
+  .add-row input{border:1px solid var(--qd-primary); border-radius:6px; padding:5px 10px;
+    font-family:inherit; font-size:13px; flex:1; max-width:260px;}
+
+  /* مودال التطبيق */
+  .overlay{position:fixed; inset:0; background:rgba(43,42,38,.35); display:none;
+    align-items:center; justify-content:center; padding:20px; z-index:50;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--qd-surface); border-radius:14px; width:min(560px,94vw);
+    max-height:88vh; overflow:auto; box-shadow:0 8px 24px rgba(43,42,38,.2); padding:22px;}
+  .modal h3{font-size:16px;}
+  .modal p.desc{color:var(--qd-muted); font-size:12.5px; margin:4px 0 12px;}
+  .preview{background:var(--qd-section-bg); border:1px solid var(--qd-border);
+    border-radius:10px; padding:10px 14px; font-size:12.5px; margin-bottom:12px;}
+  .preview b{color:var(--qd-primary);}
+  .picker{border:1px solid var(--qd-border); border-radius:10px;
+    background:var(--qd-section-bg); padding:10px;}
+  .picker input{width:100%; border:1px solid var(--qd-border); border-radius:8px;
+    padding:7px 12px; font-family:inherit; font-size:13px; background:var(--qd-surface);}
+  .pick-list{max-height:200px; overflow:auto; margin-top:8px;}
+  .pick-row{display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:7px; cursor:pointer;}
+  .pick-row:hover{background:var(--qd-recessed);}
+  .pick-row input{width:15px; height:15px; accent-color:var(--qd-primary);}
+  .pk-chevron{width:14px; display:inline-flex; justify-content:center; color:var(--qd-muted);
+    flex:none; cursor:pointer; transition:transform .12s; border-radius:4px;}
+  .pk-chevron:hover{background:var(--qd-recessed);}
+  .sel-bar{margin-top:10px; font-size:12.5px; color:var(--qd-muted); min-height:18px;}
+  .sel-bar .n{color:var(--qd-primary); font-weight:700;}
+  .foot{display:flex; gap:8px; margin-top:14px;}
+
+  .hint{max-width:1180px; margin:8px auto 0; padding:0 24px; color:var(--qd-muted); font-size:12px;}
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div>
+    <h1>قوالب الأبواب</h1>
+    <p class="sub">هياكل جاهزة تُنسخ داخل أي باب — للمشرفين فقط، لا تظهر للزوار.</p>
+  </div>
+  <button class="btn">↩ العودة للأبواب</button>
+</header>
+
+<div class="layout">
+  <aside id="tplList"></aside>
+
+  <div class="editor">
+    <div class="editor-head">
+      <h3 id="tplName">أركان الإيمان <span class="cnt" id="tplCount">6 عناصر</span></h3>
+      <div style="display:flex; gap:8px;">
+        <button class="btn">إعادة تسمية</button>
+        <button class="btn primary" id="applyBtn">نسخ إلى أبواب…</button>
+      </div>
+    </div>
+    <div id="tplTree"></div>
+    <div class="add-row" style="margin-inline-start:8px; margin-top:6px;">
+      <span class="num">＋</span>
+      <input placeholder="إضافة عنصر جذري للقالب… (Enter)">
+    </div>
+  </div>
+</div>
+
+<p class="hint">تصور تفاعلي — القالب نفسه شجرة بتتحرر زي شجرة الأبواب بالظبط (＋ للفروع، هوفر للأكشنز) · «نسخ إلى أبواب…» بيفتح منتقي متعدد: القالب بيتنسخ <b>كاملًا بجذره</b> ابنًا لكل باب تختاره — ولا يمكن يبقى بابًا رئيسيًا.</p>
+
+<!-- مودال التطبيق -->
+<div class="overlay" id="applyOverlay">
+  <div class="modal">
+    <h3>نسخ «أركان الإيمان»</h3>
+    <p class="desc">اختر الأبواب المستهدفة — القالب سيُنسخ كاملًا (بجذره وكل فروعه) داخل كل باب تختاره.</p>
+    <div class="preview">
+      كل باب مستهدف سيكسب ابنًا جديدًا: <b>«أركان الإيمان»</b> وبداخله 6 عناصر بكامل تفرعها.
+      <br>لا يمكن النسخ كباب رئيسي — الهدف بابٌ موجود دائمًا.
+    </div>
+    <div class="picker">
+      <input id="pickSearch" placeholder="ابحث واختر بابًا أو أكثر…">
+      <div class="pick-list" id="pickList"></div>
+      <div class="sel-bar" id="selBar">لم تختر شيئًا بعد</div>
+    </div>
+    <div class="foot">
+      <button class="btn primary" id="confirmApply" disabled>انسخ القالب</button>
+      <button class="btn" onclick="document.getElementById('applyOverlay').classList.remove('open')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TEMPLATES=[
+ {name:'أركان الإيمان',kids:[
+   {name:'الإيمان بالله'},{name:'الإيمان بالملائكة'},{name:'الإيمان بالكتب'},
+   {name:'الإيمان بالرسل'},{name:'الإيمان باليوم الآخر',kids:[{name:'علاماته'},{name:'أهواله'}]},
+   {name:'الإيمان بالقدر'},
+ ]},
+ {name:'أركان الإسلام',kids:[
+   {name:'الشهادتان'},{name:'الصلاة'},{name:'الزكاة'},{name:'الصوم'},{name:'الحج'},
+ ]},
+ {name:'هيكل باب فقهي',kids:[
+   {name:'التعريف'},{name:'الأدلة',kids:[{name:'من القرآن'},{name:'من السنة'}]},
+   {name:'الأحكام'},{name:'مسائل معاصرة'},
+ ]},
+];
+const DOORS=[
+ {name:'العلم بالله',kids:[{name:'الألوهية'},{name:'الربوبية'},{name:'الأسماء والصفات'}]},
+ {name:'الرسول ﷺ',kids:[{name:'مسمياته'},{name:'مهامه'}]},
+ {name:'العقيدة',kids:[{name:'الإيمان'},{name:'التوحيد'}]},
+ {name:'الجنة'},{name:'النار'},{name:'الخلق',kids:[{name:'الانسان'},{name:'الكونيات'}]},
+];
+let curTpl=0;
+const sel=new Set(); const expanded=new Set();
+
+function countNodes(n){return (n.kids||[]).reduce((a,k)=>a+countNodes(k),n.kids?n.kids.length:0);}
+
+function renderTplList(){
+  const list=document.getElementById('tplList'); list.innerHTML='';
+  TEMPLATES.forEach((t,i)=>{
+    const el=document.createElement('div');
+    el.className='tpl-item'+(i===curTpl?' active':'');
+    el.innerHTML=`<div class="t">${t.name}</div><div class="c">${countNodes(t)} عناصر</div>`;
+    el.onclick=()=>{curTpl=i; renderTplList(); renderTplTree();};
+    list.appendChild(el);
+  });
+  const add=document.createElement('button'); add.className='add-tpl';
+  add.textContent='+ قالب جديد';
+  list.appendChild(add);
+}
+
+function renderNode(d,depth){
+  const node=document.createElement('div'); node.className='node open';
+  const row=document.createElement('div'); row.className='row'+(depth===0?' tpl-root':'');
+  const hasKids=d.kids&&d.kids.length;
+  row.innerHTML=`
+    <span class="chevron ${hasKids?'':'leaf'}">‹</span>
+    <span class="num">${depth===0?'◆':''}</span>
+    <span class="name">${d.name}</span>
+    <span class="actions">
+      <button class="act" title="إضافة فرع">＋</button>
+      <button class="act" title="المزيد">⋯</button>
+    </span>`;
+  row.querySelector('.chevron').onclick=e=>{e.stopPropagation(); node.classList.toggle('open');};
+  node.appendChild(row);
+  const wrap=document.createElement('div'); wrap.className='children';
+  (d.kids||[]).forEach(k=>wrap.appendChild(renderNode(k,depth+1)));
+  node.appendChild(wrap);
+  return node;
+}
+function renderTplTree(){
+  const t=TEMPLATES[curTpl];
+  document.getElementById('tplName').childNodes[0].textContent=t.name+' ';
+  document.getElementById('tplCount').textContent=countNodes(t)+' عناصر';
+  const tree=document.getElementById('tplTree'); tree.innerHTML='';
+  tree.appendChild(renderNode(t,0));
+  document.querySelector('#applyOverlay h3').textContent=`نسخ «${t.name}»`;
+  document.querySelector('.preview b').textContent=`«${t.name}»`;
+}
+
+function subtreeMatches(n,q){return n.name.includes(q)||(n.kids||[]).some(k=>subtreeMatches(k,q));}
+function renderPickRow(node,depth,list,q){
+  if(q&&!subtreeMatches(node,q))return;
+  const hasKids=node.kids&&node.kids.length;
+  const open=expanded.has(node.name)||(q&&hasKids);
+  const row=document.createElement('div'); row.className='pick-row';
+  row.style.paddingInlineStart=(8+depth*20)+'px';
+  row.innerHTML=`
+    <span class="pk-chevron" style="visibility:${hasKids?'visible':'hidden'};
+      transform:rotate(${open?'-90deg':'0'});">‹</span>
+    <input type="checkbox" ${sel.has(node.name)?'checked':''}>
+    <span class="name">${node.name}</span>`;
+  const chev=row.querySelector('.pk-chevron');
+  if(hasKids)chev.onclick=e=>{e.stopPropagation();
+    expanded.has(node.name)?expanded.delete(node.name):expanded.add(node.name); renderPickList();};
+  row.onclick=e=>{
+    if(e.target===chev)return;
+    if(e.target.tagName!=='INPUT'){const cb=row.querySelector('input'); cb.checked=!cb.checked;}
+    row.querySelector('input').checked?sel.add(node.name):sel.delete(node.name);
+    updateSelBar();
+  };
+  list.appendChild(row);
+  if(hasKids&&open)node.kids.forEach(k=>renderPickRow(k,depth+1,list,q));
+}
+function renderPickList(){
+  const q=document.getElementById('pickSearch').value.trim();
+  const list=document.getElementById('pickList'); list.innerHTML='';
+  DOORS.forEach(n=>renderPickRow(n,0,list,q));
+}
+function updateSelBar(){
+  const bar=document.getElementById('selBar'); const btn=document.getElementById('confirmApply');
+  if(!sel.size){bar.textContent='لم تختر شيئًا بعد'; btn.disabled=true; btn.textContent='انسخ القالب'; return;}
+  bar.innerHTML=`<span class="n">${sel.size}</span> مستهدف: ${[...sel].join('، ')}`;
+  btn.disabled=false;
+  btn.textContent=sel.size===1?'انسخ القالب':`انسخ إلى ${sel.size} أبواب`;
+}
+document.getElementById('applyBtn').onclick=()=>{
+  sel.clear(); updateSelBar(); renderPickList();
+  document.getElementById('applyOverlay').classList.add('open');
+};
+document.getElementById('pickSearch').oninput=renderPickList;
+document.getElementById('confirmApply').onclick=()=>{
+  document.getElementById('applyOverlay').classList.remove('open');
+};
+
+renderTplList(); renderTplTree();
+</script>
+</body>
+</html>
