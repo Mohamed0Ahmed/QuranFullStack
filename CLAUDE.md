@@ -203,9 +203,7 @@ enterprise greige.
 
 ## Active Spec Kit Feature
 
-- Open: `abwab-global-order` — an independent root order for «كل الأبواب» (superset), separate
-  from each section's own order. Plan: `docs/feature-abwab-global-order/plan.md`. Depends on
-  `docs/feature-abwab-doors/plan.md` §4 (Ordering), which it changes.
+- Open: None.
 - When a feature opens, record it here as: feature slug, its `specs/<feature>/plan.md`, and
   its `docs/feature-XXX-*/` decision record. Clear this section back to "None" when the
   feature closes and its planning artifacts are swept per the lifecycle rule above.
