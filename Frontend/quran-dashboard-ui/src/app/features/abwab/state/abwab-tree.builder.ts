@@ -6,6 +6,15 @@ function byOrderThenId(a: AbwabTreeDoorDto, b: AbwabTreeDoorDto): number {
   return a.orderValue - b.orderValue || a.id - b.id;
 }
 
+/** Live roots only (§5's invariant) — the superset's own order, independent of `orderValue`. */
+function byGlobalOrderThenId(a: AbwabTreeDoorDto, b: AbwabTreeDoorDto): number {
+  return (a.globalOrderValue ?? 0) - (b.globalOrderValue ?? 0) || a.id - b.id;
+}
+
+function byNodeOrderThenId(a: AbwabNode, b: AbwabNode): number {
+  return a.orderValue - b.orderValue || a.id - b.id;
+}
+
 /**
  * Snapshot DTO → view-model tree. Pure (plan-slice-b.md §7 T406): builds parent/child
  * links, sorts siblings gap-tolerantly, and partitions archived doors into their own
@@ -48,6 +57,7 @@ export function buildAbwabTreeSnapshot(dto: AbwabTreeDto): AbwabTreeSnapshotVm {
       sectionId: doorDto.sectionId,
       parentId: doorDto.parentId,
       orderValue: doorDto.orderValue,
+      globalOrderValue: doorDto.globalOrderValue,
       version: doorDto.version,
       isArchived: doorDto.isArchived,
       depth,
@@ -58,9 +68,10 @@ export function buildAbwabTreeSnapshot(dto: AbwabTreeDto): AbwabTreeSnapshotVm {
     return node;
   }
 
+  // The superset's own order (T402) — independent of any section's orderValue.
   const liveRoots = dto.doors
     .filter((d) => !d.isArchived && d.parentId == null)
-    .sort(byOrderThenId)
+    .sort(byGlobalOrderThenId)
     .map((d) => build(d, 0, false));
 
   const archivedRoots = dto.doors
@@ -77,8 +88,14 @@ export function buildAbwabTreeSnapshot(dto: AbwabTreeDto): AbwabTreeSnapshotVm {
   };
 }
 
-/** «كل الأبواب» (`sectionId === null`) is every root; a specific section keeps only its own roots — a
- * nested door's section always matches its parent's (plan.md §13.5), so filtering at the root is enough. */
+/** «كل الأبواب» (`sectionId === null`) is every root, already in `liveRoots`' own global order
+ * (T402) — left as-is. A specific section re-sorts by its own `orderValue` (§5's other order
+ * space): `liveRoots` is globally ordered now, and that order has nothing to do with any one
+ * section's `1..N`, so keeping it would show a section's roots out of their own sequence. A
+ * nested door's section always matches its parent's (plan.md §13.5), so filtering at the root
+ * is enough. `.filter()` on a `readonly AbwabNode[]` returns a fresh mutable array — sorting
+ * that copy, not the shared snapshot array, is what makes `.sort()` legal without widening the
+ * return type (which would drop the guard against an in-place sort of `liveRoots` itself). */
 export function filterAbwabRootsBySection(
   roots: readonly AbwabNode[],
   sectionId: number | null,
@@ -86,7 +103,7 @@ export function filterAbwabRootsBySection(
   if (sectionId === null) {
     return roots;
   }
-  return roots.filter((root) => root.sectionId === sectionId);
+  return roots.filter((root) => root.sectionId === sectionId).sort(byNodeOrderThenId);
 }
 
 export interface AbwabSearchResult {

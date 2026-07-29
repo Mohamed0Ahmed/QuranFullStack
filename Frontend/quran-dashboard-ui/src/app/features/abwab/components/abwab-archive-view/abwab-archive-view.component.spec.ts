@@ -12,6 +12,7 @@ function node(overrides: Partial<AbwabNode> & { id: number; name: string }): Abw
     sectionId: null,
     parentId: null,
     orderValue: overrides.id,
+    globalOrderValue: null,
     version: 1,
     isArchived: true,
     depth: 0,

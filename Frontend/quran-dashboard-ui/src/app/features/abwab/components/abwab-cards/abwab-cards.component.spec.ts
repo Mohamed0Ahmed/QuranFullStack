@@ -12,6 +12,7 @@ function node(overrides: Partial<AbwabNode> & { id: number; name: string }): Abw
     sectionId: null,
     parentId: null,
     orderValue: overrides.id,
+    globalOrderValue: overrides.id,
     version: 1,
     isArchived: false,
     depth: 0,
@@ -126,6 +127,31 @@ describe('AbwabCardsComponent', () => {
       (crumbs[1] as HTMLElement).click(); // «جذر»
 
       expect(crumbSelected).toEqual([null, 1]);
+    });
+  });
+
+  describe('T404 — the order badge follows orderScope at the top level only', () => {
+    const topRoot = node({ id: 1, name: 'جذر', orderValue: 1, globalOrderValue: 42 });
+
+    it('shows globalOrderValue at the top level when the superset is active', () => {
+      const root = render({ roots: [topRoot], orderScope: 'global' }).nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-card-1"] .abwab-cards__order')?.textContent?.trim()).toBe('42');
+    });
+
+    it('keeps orderValue at the top level when a section is active, even though roots is unchanged', () => {
+      const root = render({ roots: [topRoot], orderScope: 'section' }).nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-card-1"] .abwab-cards__order')?.textContent?.trim()).toBe('1');
+    });
+
+    it('keeps orderValue on a drilled-in level even under orderScope=global — cardId is no longer null', () => {
+      const child = node({ id: 2, name: 'ابن', parentId: 1, depth: 1, orderValue: 1, globalOrderValue: 42 });
+      const parent = node({ id: 1, name: 'جذر', orderValue: 1, globalOrderValue: 7, children: [child] });
+      const byId = new Map<number, AbwabNode>([
+        [1, parent],
+        [2, child],
+      ]);
+      const root = render({ roots: [parent], byId, cardId: 1, orderScope: 'global' }).nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-card-2"] .abwab-cards__order')?.textContent?.trim()).toBe('1');
     });
   });
 

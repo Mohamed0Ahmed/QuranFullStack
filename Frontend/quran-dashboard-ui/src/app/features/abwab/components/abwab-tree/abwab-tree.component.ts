@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output, signal } from '@angular/core';
 
-import { AbwabNode } from '../../models/abwab.models';
+import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import {
   AbwabTreeRow,
@@ -41,6 +41,9 @@ export class AbwabTreeComponent {
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly roots = input<readonly AbwabNode[]>([]);
+  /** Which order space depth-0 rows display/edit. Rows at depth > 0 always use `orderValue`
+   * (§5 — `globalOrderValue` is `NULL` past the root) regardless of this input. */
+  readonly orderScope = input<AbwabOrderScope>('section');
   readonly ariaLabel = input('');
   readonly selectedId = input<number | null>(null);
   readonly bulkMode = input(false);
@@ -55,7 +58,7 @@ export class AbwabTreeComponent {
    * (`ContextMenu`/`Shift+F10`, anchored to the focused row) all place the menu themselves
    * instead of the page guessing from a separate `contextmenu` listener. */
   readonly menuRequested = output<AbwabTreeMenuRequest>();
-  readonly orderCommitted = output<{ id: number; position: number }>();
+  readonly orderCommitted = output<{ id: number; position: number; scope: AbwabOrderScope }>();
 
   private readonly manuallyExpandedIds = signal<ReadonlySet<number>>(new Set());
   private readonly manualFocusId = signal<number | null>(null);
@@ -163,6 +166,15 @@ export class AbwabTreeComponent {
     this.toggleExpanded(row.id);
   }
 
+  /** Depth > 0 always stays on `orderValue` — `globalOrderValue` is `NULL` there by construction. */
+  protected scopeFor(node: AbwabNode): AbwabOrderScope {
+    return node.depth === 0 && this.orderScope() === 'global' ? 'global' : 'section';
+  }
+
+  protected displayOrder(node: AbwabNode): number {
+    return this.scopeFor(node) === 'global' ? (node.globalOrderValue ?? node.orderValue) : node.orderValue;
+  }
+
   protected onOrderClick(event: Event, id: number): void {
     event.stopPropagation();
     this.editingId.set(id);
@@ -184,8 +196,9 @@ export class AbwabTreeComponent {
     this.editingId.set(null);
     const input = target as HTMLInputElement | null;
     const value = input ? Number(input.value) : Number.NaN;
-    if (Number.isInteger(value) && value >= 1) {
-      this.orderCommitted.emit({ id, position: value });
+    const node = this.nodesById().get(id);
+    if (node && Number.isInteger(value) && value >= 1) {
+      this.orderCommitted.emit({ id, position: value, scope: this.scopeFor(node) });
     }
   }
 

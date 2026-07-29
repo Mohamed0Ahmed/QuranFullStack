@@ -11,6 +11,7 @@ function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string 
     aliases: [],
     description: null,
     directChildCount: 0,
+    globalOrderValue: overrides.parentId == null ? overrides.id : null,
     isArchived: false,
     orderValue: overrides.id,
     parentId: null,
@@ -218,10 +219,10 @@ describe('AbwabTreeComponent', () => {
   });
 
   describe('M29 — inline order editing commits on Enter and reverts on Escape', () => {
-    it('commits a new position on Enter', () => {
+    it('commits a new position on Enter, tagged with the section scope by default', () => {
       const fixture = render();
-      const committed: Array<{ id: number; position: number }> = [];
-      fixture.componentInstance.orderCommitted.subscribe((event: { id: number; position: number }) =>
+      const committed: Array<{ id: number; position: number; scope: string }> = [];
+      fixture.componentInstance.orderCommitted.subscribe((event: { id: number; position: number; scope: string }) =>
         committed.push(event),
       );
 
@@ -236,7 +237,7 @@ describe('AbwabTreeComponent', () => {
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       fixture.detectChanges();
 
-      expect(committed).toEqual([{ id: 1, position: 5 }]);
+      expect(committed).toEqual([{ id: 1, position: 5, scope: 'section' }]);
       expect(root.querySelector('[data-testid="abwab-tree-order-input-1"]')).toBeNull();
     });
 
@@ -259,6 +260,71 @@ describe('AbwabTreeComponent', () => {
       expect(committed).toHaveLength(0);
       expect(root.querySelector('[data-testid="abwab-tree-order-input-1"]')).toBeNull();
       expect(root.querySelector('[data-testid="abwab-tree-order-1"]')?.textContent?.trim()).toBe('1');
+    });
+  });
+
+  describe('T403 — orderScope controls which order space depth-0 rows show/edit', () => {
+    // Root 3 (جذر-2): orderValue 2, globalOrderValue 3 — deliberately different, so a test that
+    // reads the wrong field is caught rather than passing by coincidence.
+    it('renders globalOrderValue at depth 0 under orderScope=global, leaving depth-1 rows on orderValue', () => {
+      const fixture = render({ orderScope: 'global' });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-tree-order-3"]')?.textContent?.trim()).toBe('3');
+
+      // Expand root 1 to reveal its depth-1 child row.
+      (root.querySelector('[data-testid="abwab-tree-chevron-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-tree-order-2"]')?.textContent?.trim()).toBe('1'); // depth 1, untouched
+    });
+
+    it('renders orderValue at depth 0 under orderScope=section (the default)', () => {
+      const root = render({ orderScope: 'section' }).nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-tree-order-3"]')?.textContent?.trim()).toBe('2');
+    });
+
+    it('emits scope="global" for a depth-0 commit under orderScope=global', () => {
+      const fixture = render({ orderScope: 'global' });
+      const committed: Array<{ id: number; position: number; scope: string }> = [];
+      fixture.componentInstance.orderCommitted.subscribe((event: { id: number; position: number; scope: string }) =>
+        committed.push(event),
+      );
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-order-3"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+      const input = root.querySelector('[data-testid="abwab-tree-order-input-3"]') as HTMLInputElement;
+      input.value = '7';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(committed).toEqual([{ id: 3, position: 7, scope: 'global' }]);
+    });
+
+    it('still emits scope="section" for a depth-1 row even under orderScope=global — globalOrderValue is NULL past the root', () => {
+      const fixture = render({ orderScope: 'global' });
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-chevron-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      const committed: Array<{ id: number; position: number; scope: string }> = [];
+      fixture.componentInstance.orderCommitted.subscribe((event: { id: number; position: number; scope: string }) =>
+        committed.push(event),
+      );
+
+      (root.querySelector('[data-testid="abwab-tree-order-2"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+      const input = root.querySelector('[data-testid="abwab-tree-order-input-2"]') as HTMLInputElement;
+      input.value = '9';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(committed).toEqual([{ id: 2, position: 9, scope: 'section' }]);
     });
   });
 });
