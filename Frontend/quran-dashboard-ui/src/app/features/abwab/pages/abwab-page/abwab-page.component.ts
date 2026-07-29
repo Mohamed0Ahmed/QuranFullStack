@@ -5,22 +5,30 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbwabSnapshotFacade } from '../../state/abwab-snapshot.facade';
 import { AbwabSelectionStore } from '../../state/abwab-selection.store';
 import { AbwabWriteController } from '../../state/abwab-write.controller';
-import { filterAbwabRootsBySection } from '../../state/abwab-tree.builder';
+import { AbwabPageOverlaysController } from '../../state/abwab-page-overlays.controller';
+import { filterAbwabRootsBySection, pruneAbwabNodesToVisible, searchAbwabNodes } from '../../state/abwab-tree.builder';
 import { parseAbwabQueryParams, buildAbwabQueryParams } from '../../state/abwab-url-sync';
-import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
+import { AbwabNode, AbwabView } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabToolbarComponent } from '../../components/abwab-toolbar/abwab-toolbar.component';
 import { AbwabTreeComponent } from '../../components/abwab-tree/abwab-tree.component';
+import { AbwabCardsComponent } from '../../components/abwab-cards/abwab-cards.component';
+import { AbwabArchiveViewComponent } from '../../components/abwab-archive-view/abwab-archive-view.component';
 import { AbwabSidePanelComponent } from '../../components/abwab-side-panel/abwab-side-panel.component';
 import { AbwabAnnouncerComponent } from '../../components/abwab-announcer/abwab-announcer.component';
 import { AbwabDoorModalComponent } from '../../components/abwab-door-modal/abwab-door-modal.component';
+import { AbwabMovePickerComponent } from '../../components/abwab-move-picker/abwab-move-picker.component';
+import { AbwabSectionsModalComponent } from '../../components/abwab-sections-modal/abwab-sections-modal.component';
 
 /**
- * Route shell for `/abwab` (plan-slice-b.md T415): URL ⇄ state wiring, composing the
- * toolbar, tree, side panel, announcer and door modal. Cards, bulk mode, the move
- * picker, the archive view, and sections management are phase-5 additions (T501–T511);
- * nothing for them is rendered here yet — a control with no working target is a dead
- * control.
+ * Route shell for `/abwab` (plan-slice-b.md T415/T501-T511): URL ⇄ state wiring,
+ * composing the toolbar, tree/cards, archive view, side panel, announcer and the
+ * overlays (door modal, move picker, sections modal, archive confirms, context menu —
+ * all owned by `AbwabPageOverlaysController`, split out once this file approached the
+ * component-TS soft threshold). Every one of the six URL keys (`section`/`view`/
+ * `archive`/`door`/`card`/`q`) is parsed in one subscription so no view is left reading
+ * a param nobody restores (a gap phase 4 left: `view`/`archive`/`card`/`q` were parsed
+ * and discarded, and `selection.setArchiveViewActive` was never called at all).
  */
 @Component({
   selector: 'qd-abwab-page',
@@ -28,9 +36,13 @@ import { AbwabDoorModalComponent } from '../../components/abwab-door-modal/abwab
   imports: [
     AbwabToolbarComponent,
     AbwabTreeComponent,
+    AbwabCardsComponent,
+    AbwabArchiveViewComponent,
     AbwabSidePanelComponent,
     AbwabAnnouncerComponent,
     AbwabDoorModalComponent,
+    AbwabMovePickerComponent,
+    AbwabSectionsModalComponent,
   ],
   templateUrl: './abwab-page.component.html',
   styleUrl: './abwab-page.component.scss',
@@ -44,50 +56,65 @@ export class AbwabPageComponent implements OnInit {
   protected readonly facade = inject(AbwabSnapshotFacade);
   protected readonly selection = inject(AbwabSelectionStore);
   protected readonly writeController = inject(AbwabWriteController);
+  protected readonly overlays = inject(AbwabPageOverlaysController);
 
   private readonly doorParam = signal<number | null>(null);
+  protected readonly activeSectionId = signal<number | null>(null);
+  protected readonly viewParam = signal<AbwabView>('tree');
+  protected readonly archiveParam = signal(false);
+  protected readonly cardParam = signal<number | null>(null);
+  protected readonly searchQueryParam = signal('');
 
   protected readonly sections = computed(() => this.facade.snapshot()?.sections ?? []);
-  protected readonly activeSectionId = signal<number | null>(null);
+  protected readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
 
   protected readonly visibleRoots = computed(() => {
     const snapshot = this.facade.snapshot();
     return snapshot ? filterAbwabRootsBySection(snapshot.liveRoots, this.activeSectionId()) : [];
   });
 
-  protected readonly selectedDoor = computed<AbwabDoorDto | null>(() => {
-    const id = this.selection.selectedDoorId();
-    const node = id !== null ? this.facade.snapshot()?.byId.get(id) : undefined;
-    if (!node) {
-      return null;
-    }
-    return {
-      id: node.id,
-      name: node.name,
-      description: node.description,
-      representativeAyahText: node.representativeAyahText,
-      aliases: [...node.aliases],
-      parentId: node.parentId,
-      sectionId: node.sectionId,
-      orderValue: node.orderValue,
-      version: node.version,
-    };
+  private readonly searchResult = computed(() => searchAbwabNodes(this.visibleRoots(), this.searchQueryParam()));
+
+  protected readonly displayRoots = computed(() => {
+    const result = this.searchResult();
+    return result.isFiltering ? pruneAbwabNodesToVisible(this.visibleRoots(), result.visibleIds) : this.visibleRoots();
   });
 
-  protected readonly modalOpen = signal(false);
-  protected readonly modalDoor = signal<AbwabDoorDto | null>(null);
-  protected readonly modalParentId = signal<number | null>(null);
-  protected readonly modalParentName = signal<string | null>(null);
-  protected readonly archiveConfirming = signal(false);
+  protected readonly forceExpandedIds = computed(() => this.searchResult().autoExpandedIds);
+
+  protected readonly archivedRoots = computed(() => this.facade.snapshot()?.archivedRoots ?? []);
+  private readonly archiveSearchResult = computed(() => searchAbwabNodes(this.archivedRoots(), this.searchQueryParam()));
+  protected readonly displayArchivedRoots = computed(() => {
+    const result = this.archiveSearchResult();
+    return result.isFiltering
+      ? pruneAbwabNodesToVisible(this.archivedRoots(), result.visibleIds)
+      : this.archivedRoots();
+  });
+
+  protected readonly bulkSelectedIds = computed(() => new Set(this.selection.bulkSet().keys()));
+  protected readonly bulkNames = computed(() => {
+    const snapshot = this.facade.snapshot();
+    return Array.from(this.selection.bulkSet().keys()).map((id) => snapshot?.byId.get(id)?.name ?? String(id));
+  });
+
+  protected readonly selectedDoor = this.overlays.selectedDoor;
 
   protected get pageTitle(): string { return ABWAB_LABELS.pageTitle; }
   protected get pageSubtitle(): string { return ABWAB_LABELS.pageSubtitle; }
   protected get addRootLabel(): string { return ABWAB_LABELS.addRootDoorButton; }
+  protected get addRootGhostLabel(): string { return ABWAB_LABELS.addRootGhost; }
+  protected get archiveButtonLabel(): string { return ABWAB_LABELS.archiveButton; }
+  protected get manageSectionsLabel(): string { return ABWAB_LABELS.manageSectionsButton; }
   protected get treeAriaLabel(): string { return ABWAB_LABELS.treeAriaLabel; }
+  protected get archiveTreeAriaLabel(): string { return ABWAB_LABELS.archiveTreeAriaLabel; }
   protected get emptyLabel(): string { return ABWAB_LABELS.emptyTreeMessage; }
+  protected get archiveEmptyLabel(): string { return ABWAB_LABELS.archiveEmptyMessage; }
   protected get loadingLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
   protected get archiveLabel(): string { return ABWAB_LABELS.archiveOp; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
+  protected get editOpLabel(): string { return ABWAB_LABELS.editOp; }
+  protected get addChildOpLabel(): string { return ABWAB_LABELS.addChildOp; }
+  protected get moveOpLabel(): string { return ABWAB_LABELS.moveOp; }
 
   constructor() {
     // Restores the `door` deep link once both the URL and the snapshot are ready —
@@ -112,11 +139,36 @@ export class AbwabPageComponent implements OnInit {
       const parsed = parseAbwabQueryParams(params);
       this.activeSectionId.set(parsed.section);
       this.doorParam.set(parsed.door);
+      this.viewParam.set(parsed.view);
+      this.archiveParam.set(parsed.archive);
+      this.cardParam.set(parsed.card);
+      this.searchQueryParam.set(parsed.q);
+      this.selection.setArchiveViewActive(parsed.archive);
     });
   }
 
   protected onSectionChanged(sectionId: number | null): void {
     this.updateQueryParams(buildAbwabQueryParams({ section: sectionId }));
+  }
+
+  protected onViewChanged(view: AbwabView): void {
+    this.updateQueryParams(buildAbwabQueryParams({ view }));
+  }
+
+  protected onSearchQueryChanged(q: string): void {
+    this.updateQueryParams(buildAbwabQueryParams({ q }));
+  }
+
+  protected onCardDrilled(id: number): void {
+    this.updateQueryParams(buildAbwabQueryParams({ card: id }));
+  }
+
+  protected onCardCrumbSelected(id: number | null): void {
+    this.updateQueryParams(buildAbwabQueryParams({ card: id }));
+  }
+
+  protected onArchiveToggle(): void {
+    this.updateQueryParams(buildAbwabQueryParams({ archive: !this.archiveParam() }));
   }
 
   protected onTreeSelected(doorId: number): void {
@@ -133,71 +185,41 @@ export class AbwabPageComponent implements OnInit {
     this.updateQueryParams(buildAbwabQueryParams({ door: null }));
   }
 
-  protected openCreateRoot(): void {
-    this.modalDoor.set(null);
-    this.modalParentId.set(null);
-    this.modalParentName.set(null);
-    this.modalOpen.set(true);
+  protected onBulkModeToggled(on: boolean): void {
+    this.selection.setBulkMode(on);
   }
 
-  protected openCreateChild(): void {
-    const door = this.selectedDoor();
-    if (!door) {
+  protected onBulkToggled(id: number): void {
+    const node = this.byId().get(id);
+    this.selection.toggleBulk(id, node?.version ?? 0);
+  }
+
+  protected onBulkClearRequested(): void {
+    this.selection.clearBulk();
+  }
+
+  protected confirmArchiveAndClearUrl(): void {
+    this.overlays.confirmArchive(() => this.updateQueryParams(buildAbwabQueryParams({ door: null })));
+  }
+
+  protected onOrderCommitted(event: { id: number; position: number }): void {
+    const node = this.byId().get(event.id);
+    if (!node) {
       return;
     }
-    this.modalDoor.set(null);
-    this.modalParentId.set(door.id);
-    this.modalParentName.set(door.name);
-    this.modalOpen.set(true);
+    this.writeController.reorderDoor(event.id, { position: event.position, version: node.version }).subscribe();
   }
 
-  protected openEdit(): void {
-    const door = this.selectedDoor();
-    if (!door) {
+  protected onRestoreRequested(id: number): void {
+    const node = this.byId().get(id);
+    if (!node) {
       return;
     }
-    this.modalDoor.set(door);
-    this.modalParentId.set(null);
-    this.modalParentName.set(null);
-    this.modalOpen.set(true);
+    this.writeController.restoreDoor(id, node.version).subscribe();
   }
 
-  protected onModalClosed(): void {
-    this.modalOpen.set(false);
-  }
-
-  protected onModalSaved(): void {
-    // The write controller already refreshed the snapshot and rebound selection (§4.6);
-    // the modal closes itself via its own `closed` emit on the same success path.
-  }
-
-  protected requestArchive(): void {
-    if (this.selectedDoor()) {
-      this.archiveConfirming.set(true);
-    }
-  }
-
-  protected archiveConfirmMessage(): string {
-    const door = this.selectedDoor();
-    return door ? this.writeController.archiveConfirmMessageFor(door.id) : '';
-  }
-
-  protected confirmArchive(): void {
-    const door = this.selectedDoor();
-    this.archiveConfirming.set(false);
-    if (!door) {
-      return;
-    }
-    this.writeController.archiveDoor(door.id, door.version).subscribe((outcome) => {
-      if (outcome.kind === 'success') {
-        this.selection.clearSelection();
-        this.updateQueryParams(buildAbwabQueryParams({ door: null }));
-      }
-    });
-  }
-
-  protected cancelArchiveConfirm(): void {
-    this.archiveConfirming.set(false);
+  protected onTreeAreaContextMenu(event: MouseEvent): void {
+    this.overlays.setContextMenuPosition(event.clientX, event.clientY);
   }
 
   private updateQueryParams(changes: Record<string, string | null>): void {

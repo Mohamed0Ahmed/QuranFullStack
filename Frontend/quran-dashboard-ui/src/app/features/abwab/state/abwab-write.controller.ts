@@ -34,9 +34,12 @@ function countLiveSubtree(node: AbwabNode): number {
 }
 
 /**
- * Every door/section write, the outcome→message mapping, and the §2.7 409 policy: unsaved
- * input stays with the caller (this controller never owns form state), still-valid context
- * is untouched, an invalidated single selection is cleared, the message is surfaced via
+ * Every door write, plus the section commands (`state/abwab-sections.controller.ts`
+ * delegates its `createSection`/`renameSection`/`deleteSection` calls here rather than
+ * re-implementing them) — the outcome→message mapping and the §2.7 409 policy live in
+ * exactly one place for both aggregates, not scattered per-command. Unsaved input stays
+ * with the caller (this controller never owns form state), still-valid context is
+ * untouched, an invalidated single selection is cleared, the message is surfaced via
  * `announcement`, and nothing here ever auto-retries — the caller decides whether to retry.
  *
  * Bulk conflicts are deliberately different (§6.2 M17): the backend's bulk-conflict
@@ -62,6 +65,35 @@ export class AbwabWriteController {
 
   readonly archiveConfirmMessageFor = (doorId: number): string =>
     ABWAB_LABELS.archiveConfirm(this.liveSubtreeCountFor(doorId));
+
+  /** Union, not sum (T504): if one selected door is an ancestor of another selected
+   * door, summing `liveSubtreeCountFor` per id double-counts their shared descendants.
+   * Walking every selected subtree into one id set and counting the set is correct
+   * regardless of ancestor/descendant overlap in the selection. */
+  readonly bulkArchiveConfirmMessage = (doorIds: readonly number[]): string =>
+    ABWAB_LABELS.archiveConfirm(this.bulkLiveSubtreeCount(doorIds));
+
+  private bulkLiveSubtreeCount(doorIds: readonly number[]): number {
+    const snapshot = this.facade.snapshot();
+    if (!snapshot) {
+      return 0;
+    }
+    const counted = new Set<number>();
+    const walk = (node: AbwabNode): void => {
+      if (counted.has(node.id)) {
+        return;
+      }
+      counted.add(node.id);
+      node.children.forEach(walk);
+    };
+    for (const id of doorIds) {
+      const node = snapshot.byId.get(id);
+      if (node && !node.isArchived) {
+        walk(node);
+      }
+    }
+    return counted.size;
+  }
 
   createSection(command: CreateSectionCommand): Observable<AbwabWriteOutcome<AbwabSectionDto>> {
     return this.dispatch(this.api.createSection(command));

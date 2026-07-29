@@ -220,6 +220,32 @@ describe('AbwabWriteController', () => {
     });
   });
 
+  describe('T504 — bulk-archive count is a union, not a sum, over an ancestor+descendant selection', () => {
+    it('counts each door once even when a selected door is an ancestor of another selected door', () => {
+      const { controller, facade } = setup({
+        getTree: () =>
+          of(
+            ok<AbwabTreeDto>({
+              doors: [
+                door({ id: 1, name: 'جذر' }),
+                door({ id: 2, name: 'ابن', parentId: 1 }),
+                door({ id: 3, name: 'حفيد', parentId: 2 }),
+                door({ id: 4, name: 'شقيق منفصل' }),
+              ],
+              sections: [],
+              version: 'v',
+            }),
+          ),
+      });
+      facade.load();
+
+      // Selecting both the root (1) and its own descendant (2): summing
+      // liveSubtreeCountFor(1)=3 + liveSubtreeCountFor(2)=2 would wrongly report 5.
+      // The correct union is {1,2,3,4} = 4.
+      expect(controller.bulkArchiveConfirmMessage([1, 2, 4])).toBe(ABWAB_LABELS.archiveConfirm(4));
+    });
+  });
+
   describe('M19 — restore maps detachedFromArchivedSection to its announcement', () => {
     it('announces the detach message when the flag is true', () => {
       const { controller } = setup({

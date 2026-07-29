@@ -15,6 +15,7 @@ export const ABWAB_LABELS = {
   archiveButton: 'الأرشيف',
   manageSectionsButton: 'إدارة الأقسام',
   addRootDoorButton: 'باب رئيسي جديد',
+  addRootGhost: 'إضافة باب رئيسي',
 
   treeAriaLabel: 'شجرة الأبواب',
   archiveTreeAriaLabel: 'شجرة الأبواب المؤرشفة',
@@ -79,6 +80,7 @@ export const ABWAB_LABELS = {
   sectionDeleteConflict: 'القسم يحتوي أبوابًا نشطة',
 
   archiveViewTitle: 'الأرشيف',
+  archiveEmptyMessage: 'لا توجد أبواب مؤرشفة.',
   restoreButton: 'استرجاع',
   restoreParentFirstHint: 'استرجع الأب أولًا',
   restoreDetachedAnnouncement: 'استُرجع الباب خارج قسمه المحذوف',

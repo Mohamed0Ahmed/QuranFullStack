@@ -5,6 +5,7 @@ import { AbwabTreeDto } from '../../../core/api/generated/models/abwab-tree-dto'
 import {
   buildAbwabTreeSnapshot,
   filterAbwabRootsBySection,
+  pruneAbwabNodesToVisible,
   searchAbwabNodes,
 } from './abwab-tree.builder';
 
@@ -131,5 +132,36 @@ describe('searchAbwabNodes — M4', () => {
 
     expect(result.isFiltering).toBe(false);
     expect(result.matchedIds.size).toBe(0);
+  });
+});
+
+describe('pruneAbwabNodesToVisible — T507 (search-filtered rendering, M4/M31)', () => {
+  it('drops a root and its whole subtree when absent from visibleIds, keeping a matching branch intact', () => {
+    const snapshot = buildAbwabTreeSnapshot(
+      tree([
+        door({ id: 1, name: 'مطابق', orderValue: 1 }),
+        door({ id: 2, name: 'ابن المطابق', parentId: 1, orderValue: 1 }),
+        door({ id: 3, name: 'غير ذي صلة', orderValue: 2 }),
+      ]),
+    );
+
+    const pruned = pruneAbwabNodesToVisible(snapshot.liveRoots, new Set([1, 2]));
+
+    expect(pruned.map((n) => n.name)).toEqual(['مطابق']);
+    expect(pruned[0].children.map((n) => n.name)).toEqual(['ابن المطابق']);
+  });
+
+  it('prunes a non-matching sibling out of an otherwise-visible parent’s children', () => {
+    const snapshot = buildAbwabTreeSnapshot(
+      tree([
+        door({ id: 1, name: 'أب', orderValue: 1 }),
+        door({ id: 2, name: 'ابن مطابق', parentId: 1, orderValue: 1 }),
+        door({ id: 3, name: 'ابن غير مطابق', parentId: 1, orderValue: 2 }),
+      ]),
+    );
+
+    const pruned = pruneAbwabNodesToVisible(snapshot.liveRoots, new Set([1, 2]));
+
+    expect(pruned[0].children.map((n) => n.name)).toEqual(['ابن مطابق']);
   });
 });

@@ -13,6 +13,7 @@
         [attr.data-testid]="'abwab-tree-row-' + node.id"
         (click)="onRowClick(node.id)"
         (dblclick)="onRowDblClick(row)"
+        (contextmenu)="onRowContextMenu($event, node.id)"
         (keydown)="onKeydown($event)"
       >
         @if (bulkMode()) {

@@ -43,6 +43,93 @@
   margin-block-start: var(--qd-space-2);
 }
 
+.abwab-page__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  flex-wrap: wrap;
+}
+
+/* Toggle state per §16.1 — tint + accent text + hairline, never a solid fill. */
+.abwab-page__header-btn--active {
+  background: var(--qd-selected-bg);
+  color: var(--qd-accent-text);
+  border-color: var(--qd-border-accent);
+}
+
+.abwab-page__add-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qd-space-1);
+  margin-block-start: var(--qd-space-2);
+  border: none;
+  background: transparent;
+  color: var(--qd-text-muted);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-radius: var(--qd-radius-sm);
+  cursor: pointer;
+}
+
+.abwab-page__add-ghost:hover {
+  background: var(--qd-surface-hover);
+  color: var(--qd-accent-text);
+}
+
+.abwab-page__add-ghost:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -2px;
+}
+
+.abwab-page__ctx-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  background: transparent;
+}
+
+.abwab-page__ctx-menu {
+  position: fixed;
+  z-index: 50;
+  min-inline-size: 11rem;
+  background: var(--qd-surface);
+  border: 1px solid var(--qd-border-strong);
+  border-radius: var(--qd-radius-md);
+  box-shadow: var(--qd-shadow-lg);
+  padding: var(--qd-space-1);
+  display: flex;
+  flex-direction: column;
+}
+
+.abwab-page__ctx-menu button {
+  display: flex;
+  inline-size: 100%;
+  border: none;
+  background: transparent;
+  text-align: start;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-radius: var(--qd-radius-sm);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--qd-text);
+  cursor: pointer;
+}
+
+.abwab-page__ctx-menu button:hover {
+  background: var(--qd-surface-hover);
+}
+
+.abwab-page__ctx-menu button:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -2px;
+}
+
+.abwab-page__ctx-item--danger:hover {
+  background: var(--qd-danger-tint);
+  color: var(--qd-danger);
+}
+
 @media (max-width: 900px) {
   .abwab-page__layout {
     flex-direction: column;

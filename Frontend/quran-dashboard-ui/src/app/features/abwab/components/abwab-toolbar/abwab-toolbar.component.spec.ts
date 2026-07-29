@@ -52,4 +52,30 @@ describe('AbwabToolbarComponent', () => {
 
     expect(changes).toEqual([1, null]);
   });
+
+  describe('T502 — the tree/cards view toggle', () => {
+    it('marks the active view button and emits viewChanged when the other is clicked', () => {
+      const fixture = render({ view: 'tree' });
+      const changes: string[] = [];
+      fixture.componentInstance.viewChanged.subscribe((view: string) => changes.push(view));
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-toolbar-view-tree"]')?.classList).toContain(
+        'abwab-toolbar__view-btn--active',
+      );
+
+      (root.querySelector('[data-testid="abwab-toolbar-view-cards"]') as HTMLElement).click();
+
+      expect(changes).toEqual(['cards']);
+    });
+  });
+
+  describe('T508 — hideSectionControls (the archive view has no live section grouping)', () => {
+    it('hides the section tabs and view toggle, keeping the search box, when set', () => {
+      const root = render({ hideSectionControls: true }).nativeElement as HTMLElement;
+      expect(root.querySelector('[role="tab"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-toolbar-view-tree"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-toolbar-search"]')).toBeTruthy();
+    });
+  });
 });

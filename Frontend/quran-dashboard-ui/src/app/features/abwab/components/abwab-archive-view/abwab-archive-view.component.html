@@ -1,0 +1,46 @@
+<div class="abwab-archive-view" role="tree" [attr.aria-label]="ariaLabel()" data-testid="abwab-archive-view">
+  @for (row of visibleRows(); track row.id) {
+    @let node = nodesById().get(row.id);
+    @if (node) {
+      <div
+        class="abwab-archive-view__row"
+        role="treeitem"
+        [attr.aria-level]="node.depth + 1"
+        [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
+        [attr.tabindex]="rovingId() === node.id ? 0 : -1"
+        [style.--abwab-archive-depth]="node.depth"
+        [attr.data-testid]="'abwab-archive-row-' + node.id"
+        (keydown)="onKeydown($event)"
+      >
+        <button
+          type="button"
+          class="abwab-archive-view__chevron"
+          [class.abwab-archive-view__chevron--leaf]="!row.hasChildren"
+          [attr.data-testid]="'abwab-archive-chevron-' + node.id"
+          (click)="onChevronClick($event, row)"
+        >
+          @if (row.hasChildren) {
+            <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
+          }
+        </button>
+
+        <span class="abwab-archive-view__name">{{ node.name }}</span>
+
+        <button
+          type="button"
+          class="abwab-archive-view__restore"
+          [disabled]="node.depth > 0"
+          [attr.data-testid]="'abwab-archive-restore-' + node.id"
+          (click)="onRestoreClick(node.id)"
+        >
+          {{ restoreLabel }}
+        </button>
+        @if (node.depth > 0) {
+          <span class="abwab-archive-view__hint" [attr.data-testid]="'abwab-archive-restore-hint-' + node.id">
+            {{ restoreParentFirstHint }}
+          </span>
+        }
+      </div>
+    }
+  }
+</div>

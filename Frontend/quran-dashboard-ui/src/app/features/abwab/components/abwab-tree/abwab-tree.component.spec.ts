@@ -111,6 +111,39 @@ describe('AbwabTreeComponent', () => {
     expect(selected).toEqual([]);
   });
 
+  describe('T511 — right-click opens the row menu (the mouse path; ContextMenu/Shift+F10 already covers keyboard)', () => {
+    it('selects the row and emits menuRequested, preventing the native context menu', () => {
+      const fixture = render();
+      const selected: number[] = [];
+      const menuRequested: number[] = [];
+      fixture.componentInstance.selected.subscribe((id: number) => selected.push(id));
+      fixture.componentInstance.menuRequested.subscribe((id: number) => menuRequested.push(id));
+
+      const rootRow = (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="abwab-tree-row-1"]',
+      ) as HTMLElement;
+      const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+      rootRow.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(selected).toEqual([1]);
+      expect(menuRequested).toEqual([1]);
+    });
+
+    it('does nothing in bulk mode (bulk rows have no context menu)', () => {
+      const fixture = render({ bulkMode: true });
+      const menuRequested: number[] = [];
+      fixture.componentInstance.menuRequested.subscribe((id: number) => menuRequested.push(id));
+
+      const rootRow = (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="abwab-tree-row-1"]',
+      ) as HTMLElement;
+      rootRow.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+
+      expect(menuRequested).toEqual([]);
+    });
+  });
+
   describe('M29 — inline order editing commits on Enter and reverts on Escape', () => {
     it('commits a new position on Enter', () => {
       const fixture = render();

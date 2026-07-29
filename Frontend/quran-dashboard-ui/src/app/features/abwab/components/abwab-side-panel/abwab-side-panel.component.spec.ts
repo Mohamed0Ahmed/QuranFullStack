@@ -85,4 +85,78 @@ describe('AbwabSidePanelComponent', () => {
 
     expect(cleared).toHaveLength(1);
   });
+
+  it('emits moveRequested for the move-to op', () => {
+    const fixture = render({ selectedDoor: DOOR });
+    const moved: void[] = [];
+    fixture.componentInstance.moveRequested.subscribe(() => moved.push(undefined));
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLElement>('[data-testid="abwab-side-panel-op-move"]')
+      ?.click();
+
+    expect(moved).toHaveLength(1);
+  });
+
+  describe('T503 — bulk mode', () => {
+    it('toggles bulk mode and reflects the .on state via a tint class, never a solid fill', () => {
+      const fixture = render({ bulkMode: false });
+      const toggled: boolean[] = [];
+      fixture.componentInstance.bulkModeToggled.subscribe((on: boolean) => toggled.push(on));
+      const root = fixture.nativeElement as HTMLElement;
+      const toggleBtn = root.querySelector('[data-testid="abwab-side-panel-bulk-toggle"]');
+      expect(toggleBtn?.classList).not.toContain('abwab-side-panel__op--on');
+
+      (toggleBtn as HTMLElement).click();
+
+      expect(toggled).toEqual([true]);
+    });
+
+    it('marks the toggle as on and disables single-door ops while bulk mode is active', () => {
+      const fixture = render({ selectedDoor: DOOR, bulkMode: true });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-toggle"]')?.classList).toContain(
+        'abwab-side-panel__op--on',
+      );
+    });
+
+    it('disables the bulk toggle while the archive view is active (M23)', () => {
+      const fixture = render({ archiveViewActive: true });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(
+        (root.querySelector('[data-testid="abwab-side-panel-bulk-toggle"]') as HTMLButtonElement).disabled,
+      ).toBe(true);
+    });
+
+    it('shows the bulk bar with the count and names, and emits bulk move/archive/clear', () => {
+      const fixture = render({ bulkMode: true, bulkCount: 2, bulkNames: ['الألوهية', 'الربوبية'] });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent).toContain('2');
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-names"]')?.textContent).toContain('الألوهية');
+
+      const bulkMoved: void[] = [];
+      const bulkArchived: void[] = [];
+      const bulkCleared: void[] = [];
+      fixture.componentInstance.bulkMoveRequested.subscribe(() => bulkMoved.push(undefined));
+      fixture.componentInstance.bulkArchiveRequested.subscribe(() => bulkArchived.push(undefined));
+      fixture.componentInstance.bulkClearRequested.subscribe(() => bulkCleared.push(undefined));
+
+      (root.querySelector('[data-testid="abwab-side-panel-bulk-move"]') as HTMLElement).click();
+      (root.querySelector('[data-testid="abwab-side-panel-bulk-archive"]') as HTMLElement).click();
+      (root.querySelector('[data-testid="abwab-side-panel-bulk-clear"]') as HTMLElement).click();
+
+      expect(bulkMoved).toHaveLength(1);
+      expect(bulkArchived).toHaveLength(1);
+      expect(bulkCleared).toHaveLength(1);
+    });
+
+    it('hides the bulk bar entirely while bulk mode is off', () => {
+      const fixture = render({ bulkMode: false });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-bar"]')).toBeNull();
+    });
+  });
 });

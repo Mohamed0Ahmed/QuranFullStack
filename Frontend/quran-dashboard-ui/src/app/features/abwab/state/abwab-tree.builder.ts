@@ -150,3 +150,22 @@ export function searchAbwabNodes(roots: readonly AbwabNode[], query: string): Ab
 
   return { isFiltering: true, matchedIds, visibleIds, autoExpandedIds };
 }
+
+/** Rebuilds a node list keeping only ids in `visibleIds`, recursing into children
+ * (T507 — search filtering for the tree/cards/archive views). `visibleIds` already
+ * contains every match plus its strict ancestors (searchAbwabNodes' output), so a
+ * kept parent's non-matching, non-ancestor children are the only thing this drops. */
+export function pruneAbwabNodesToVisible(
+  nodes: readonly AbwabNode[],
+  visibleIds: ReadonlySet<number>,
+): readonly AbwabNode[] {
+  const result: AbwabNode[] = [];
+  for (const node of nodes) {
+    if (!visibleIds.has(node.id)) {
+      continue;
+    }
+    const children = pruneAbwabNodesToVisible(node.children, visibleIds);
+    result.push(children === node.children ? node : { ...node, children });
+  }
+  return result;
+}

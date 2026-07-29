@@ -14,8 +14,10 @@ import {
  * Renders flat (one row per visible node, indented by `depth`) rather than nesting
  * `role="group"` per level — `aria-level` already conveys depth to assistive tech, and a
  * flat list keeps roving-tabindex/keyboard wiring in one place; revisit only if an AT
- * regression is found. No relations/protection controls (plan.md §5.1) and no row
- * actions here — those compose in later phases (side panel, context menu).
+ * regression is found. No relations/protection controls (plan.md §5.1) and no inline
+ * row-action buttons here — edit/add-child/move/archive live in the side panel and the
+ * row context menu (`abwab-page-overlays.controller.ts`), which compose this tree
+ * rather than the other way around.
  */
 @Component({
   selector: 'qd-abwab-tree',
@@ -93,6 +95,16 @@ export class AbwabTreeComponent {
   protected onCheckboxClick(event: Event, id: number): void {
     event.stopPropagation();
     this.bulkToggled.emit(id);
+  }
+
+  protected onRowContextMenu(event: Event, id: number): void {
+    event.preventDefault();
+    if (this.bulkMode()) {
+      return;
+    }
+    this.manualFocusId.set(id);
+    this.selected.emit(id);
+    this.menuRequested.emit(id);
   }
 
   protected onRowDblClick(row: AbwabTreeRow): void {

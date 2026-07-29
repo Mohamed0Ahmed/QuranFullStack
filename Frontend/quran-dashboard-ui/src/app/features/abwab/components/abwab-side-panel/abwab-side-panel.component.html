@@ -23,9 +23,22 @@
     <div class="abwab-side-panel__ops">
       <button
         type="button"
+        class="abwab-side-panel__op abwab-side-panel__op--toggle"
+        [class.abwab-side-panel__op--on]="bulkMode()"
+        data-testid="abwab-side-panel-bulk-toggle"
+        [disabled]="archiveViewActive()"
+        (click)="toggleBulkMode()"
+      >
+        {{ bulkToggleLabel }}
+      </button>
+
+      <hr class="abwab-side-panel__sep" />
+
+      <button
+        type="button"
         class="abwab-side-panel__op"
         data-testid="abwab-side-panel-op-add-child"
-        [disabled]="selectedDoor() === null"
+        [disabled]="selectedDoor() === null || bulkMode()"
         (click)="addChildRequested.emit()"
       >
         {{ addChildLabel }}
@@ -34,20 +47,57 @@
         type="button"
         class="abwab-side-panel__op"
         data-testid="abwab-side-panel-op-edit"
-        [disabled]="selectedDoor() === null"
+        [disabled]="selectedDoor() === null || bulkMode()"
         (click)="editRequested.emit()"
       >
         {{ editLabel }}
       </button>
       <button
         type="button"
+        class="abwab-side-panel__op"
+        data-testid="abwab-side-panel-op-move"
+        [disabled]="selectedDoor() === null || bulkMode()"
+        (click)="moveRequested.emit()"
+      >
+        {{ moveLabel }}
+      </button>
+      <button
+        type="button"
         class="abwab-side-panel__op abwab-side-panel__op--danger"
         data-testid="abwab-side-panel-op-archive"
-        [disabled]="selectedDoor() === null"
+        [disabled]="selectedDoor() === null || bulkMode()"
         (click)="archiveRequested.emit()"
       >
         {{ archiveLabel }}
       </button>
     </div>
   </div>
+
+  @if (bulkMode()) {
+    <div class="qd-card abwab-side-panel__bulk-bar" data-testid="abwab-side-panel-bulk-bar">
+      <div>
+        <span class="abwab-side-panel__bulk-count" data-testid="abwab-side-panel-bulk-count">{{ bulkCount() }}</span>
+        {{ bulkCountSuffix }}
+      </div>
+      <div class="abwab-side-panel__bulk-names" data-testid="abwab-side-panel-bulk-names">
+        {{ bulkNames().join('، ') || '—' }}
+      </div>
+      <div class="abwab-side-panel__bulk-actions">
+        <button type="button" class="abwab-side-panel__op" data-testid="abwab-side-panel-bulk-move" (click)="bulkMoveRequested.emit()">
+          {{ bulkMoveAllLabel }}
+        </button>
+        <button
+          type="button"
+          class="abwab-side-panel__op abwab-side-panel__op--danger"
+          data-testid="abwab-side-panel-bulk-archive"
+          (click)="bulkArchiveRequested.emit()"
+        >
+          {{ bulkArchiveAllLabel }}
+        </button>
+        <button type="button" class="abwab-side-panel__op" data-testid="abwab-side-panel-bulk-clear" (click)="bulkClearRequested.emit()">
+          {{ bulkClearLabel }}
+        </button>
+      </div>
+    </div>
+  }
 </div>
