@@ -139,4 +139,21 @@ public static class ApiMessages
     public const string AbwabTreeLoaded = "تم تحميل شجرة الأبواب";
 
     public const string AbwabDoorRelationsLoaded = "تم تحميل علاقات الباب";
+    public const string AbwabDoorRelationsCreated = "تم إنشاء العلاقات";
+    public const string AbwabDoorRelationsInvalidRequest = "يجب اختيار باب واحد على الأقل";
+    public const string AbwabDoorRelationInvalidType = "نوع العلاقة غير صالح";
+    public const string AbwabDoorRelationInvalidDirection = "اتجاه الشمولية غير صالح";
+    public const string AbwabDoorRelationSelf = "لا يمكن ربط الباب بنفسه";
+    public const string AbwabDoorRelationArchivedDoor = "لا يمكن إنشاء علاقة مع باب مؤرشف";
+    public const string AbwabDoorRelationDuplicate = "توجد علاقة من هذا النوع بالفعل مع هذا الباب";
+    public const string AbwabDoorRelationNotFound = "العلاقة غير موجودة";
+
+    // The pre-check names the colliding doors; the 23505 race backstop cannot, since Postgres does not
+    // report which row lost. Both paths answer 409, and only the naming differs.
+    private const string AbwabDoorRelationDuplicatePrefix = "توجد علاقة من هذا النوع بالفعل مع";
+
+    public static string AbwabDoorRelationDuplicateWith(IReadOnlyList<string> doorNames) =>
+        doorNames.Count == 0
+            ? AbwabDoorRelationDuplicate
+            : $"{AbwabDoorRelationDuplicatePrefix}: {string.Join("، ", doorNames)}";
 }

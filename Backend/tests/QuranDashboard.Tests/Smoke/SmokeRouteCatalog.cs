@@ -277,11 +277,29 @@ internal static class SmokeRouteCatalog
             Method = HttpMethod.Post, ParityOnly = true,
         },
 
+        // api/abwab/doors/{doorId:int}/relations and api/abwab/relations/{relationId:int} —
+        // AbwabDoorRelationsController. The GET is ParityOnly despite being a safe read, unlike the
+        // mushaf {verseKey} reads: SmokeAbwabWriteTests creates doors in this same shared schema, so a
+        // dispatched /api/abwab/doors/1/relations would answer 200 rather than the derived 404 whenever
+        // a created door holds id 1. The two writes are ParityOnly for the sibling routes' own reason.
         new("api/abwab/doors/{doorId:int}/relations", "/api/abwab/doors/1/relations", HttpStatusCode.NotFound)
         {
             ParityOnly = true,
         },
+        new("api/abwab/doors/{doorId:int}/relations", "/api/abwab/doors/1/relations", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
+        new("api/abwab/relations/{relationId:int}", "/api/abwab/relations/1", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Delete, ParityOnly = true,
+        },
 
+        // abwab-relations: the response contract gained AbwabTreeDoorDto.RelationCount. DerivedStatus is
+        // unchanged at 200 — re-checked, not assumed: the handler still has no NotFound branch, so an
+        // empty schema answers 200 with an empty snapshot exactly as before, and the new field is a
+        // live-only count that is simply 0 there.
+        //
         // api/abwab/tree — AbwabTreeController. Unlike its sibling write routes, this one IS dispatched
         // by the generic sweep: GetAbwabTreeHandler has no NotFound branch at all, so it derives 200 with
         // an empty snapshot against the migrated-but-empty schema regardless of what any other test left

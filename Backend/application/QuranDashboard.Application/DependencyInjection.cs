@@ -12,6 +12,8 @@ using QuranDashboard.Application.Abwab.Commands.Doors.DeleteDoor;
 using QuranDashboard.Application.Abwab.Commands.Doors.RestoreDoor;
 using QuranDashboard.Application.Abwab.Queries.GetAbwabTree;
 using QuranDashboard.Application.Abwab.Queries.GetDoorRelations;
+using QuranDashboard.Application.Abwab.Commands.Relations.AddDoorRelations;
+using QuranDashboard.Application.Abwab.Commands.Relations.DeleteDoorRelation;
 using QuranDashboard.Application.Access.Commands.ProvisionCurrentUser;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation.Validation;
@@ -148,6 +150,8 @@ public static class DependencyInjection
         services.AddScoped<RestoreDoorHandler>();
         services.AddScoped<GetAbwabTreeHandler>();
         services.AddScoped<GetDoorRelationsHandler>();
+        services.AddScoped<AddDoorRelationsHandler>();
+        services.AddScoped<DeleteDoorRelationHandler>();
 
         return services;
     }
