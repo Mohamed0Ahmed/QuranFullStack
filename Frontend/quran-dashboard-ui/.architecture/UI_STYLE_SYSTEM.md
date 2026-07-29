@@ -880,3 +880,41 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   content always sizes itself.
 - Compose, do not re-style — a new loading state is a `shape`/`rowTemplate` input,
   not a new component.
+
+### `.qd-checkbox` / `.qd-check-row`
+- **Purpose:** the one checkbox box + label-row pairing app-wide (bulk-select in
+  `abwab-tree`/`abwab-cards`, pick-lists in `abwab-relations-modal`/
+  `abwab-template-copy-modal`).
+- **Shape:** utility classes, not a component — `.qd-checkbox` sizes and colors a
+  native `<input type="checkbox">`; `.qd-check-row` is the flex wrapper that pairs
+  it with its label at a fixed gap.
+- **Geometry / color:** a fixed `--qd-checkbox-size` square (`0.9375rem`, reached
+  through the app's own rem scale — same step as `--qd-btn-font-size` and
+  `.qd-input`/`.qd-select`'s font-size — rather than a raw px; it equals the
+  approved concept's `15px` at the app's unscaled root,
+  `abwab-relations-concept.html:84`), `flex: none`, `margin: 0`, and
+  `accent-color: var(--qd-accent)` — no new hue, and correct in both themes since
+  `--qd-accent` is defined per theme (`_tokens.scss` light / `_themes.scss` dark
+  override) with zero `_themes.scss` change needed here.
+- **Row gap:** `.qd-check-row` is `display: flex; align-items: center` with a
+  single `--qd-space-2` gap between box and label, so the audit's "checkbox far
+  from its label" gap cannot be reintroduced per call-site.
+- **Accessible name (contract, not optional):** every checkbox composing
+  `.qd-checkbox` MUST carry a real `<label for>` or an `aria-label` naming what it
+  selects. **Known debt at time of writing:** three of the four existing checkbox
+  call-sites (`abwab-tree`, `abwab-cards`, `abwab-relations-modal`) have neither;
+  only `abwab-template-copy-modal` supplies an `aria-label`. Paying this down is
+  Slice C/D's job when those call-sites compose this class — named here so the
+  contract is honest rather than aspirational.
+- **Zero consumers at ship time:** this slice adds the classes with no call-site
+  changes (plan §2, out of scope here); Slice C/D wires the four existing
+  checkboxes onto them.
+- **Composing means deleting the local rule, not adding beside it.** Under Angular
+  emulated encapsulation a call-site selector like
+  `.abwab-relations-modal__pick-row input[type='checkbox']` outranks the global
+  `.qd-checkbox` class on specificity — adding the class without deleting the local
+  rule leaves the old size/accent in force with no visible change, which reads as
+  "done" and is not (the same specificity trap §17's `.qd-modal` entry names for
+  the modal geometry work).
+- Compose, do not re-style — a call-site needing a different box size or accent is
+  a signal to extend this contract, not fork it.

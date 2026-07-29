@@ -16,13 +16,18 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   not-yet-mounted control row are sized from the same ones, so a reservation can never drift from
   its control. Size a new reserved slot from these tokens; never re-measure the control by hand.
   Also holds the `--qd-z-*` layer scale (`.architecture/UI_STYLE_SYSTEM.md` §4) — every
-  stacking `z-index` in the app is one of these rungs; never write a bare `z-index`.
+  stacking `z-index` in the app is one of these rungs; never write a bare `z-index`. Also
+  holds `--qd-checkbox-size`, the fixed box size `.qd-checkbox` (`_forms.scss`) is built
+  from.
 - `_themes.scss` — dark-theme overrides for the same token surface (`--qd-accent-fg` and
   `--qd-selected-bg` are intentionally theme-invariant and not overridden here).
 - `_typography.scss` — font-face declarations and shared Arabic-first type classes.
 - `_breakpoints.scss` — canonical Sass breakpoints; mirrored in `../app/shared/layout/breakpoints.ts`.
 - `_layout.scss` — shell, navbar, footer, container, and page-level layout primitives.
-- `_forms.scss` — shared input/select styling and focus behavior.
+- `_forms.scss` — shared input/select styling and focus behavior. Also holds the
+  `.qd-checkbox` / `.qd-check-row` family (`.architecture/UI_STYLE_SYSTEM.md` §17) — a
+  fixed `--qd-checkbox-size` box plus a fixed-gap label row; call-sites compose them and
+  never re-declare box size or accent locally.
 - `_components.scss` — global cards, buttons, badges, modal, detail-panel, and skeleton patterns.
 - `_utilities.scss` — small utility classes such as screen-reader-only, flex, spacing, and stable scrollbars.
 - `_words-explorer-layout.scss` — shared layout pieces for words explorer intro/toolbar surfaces.
