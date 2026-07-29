@@ -13,6 +13,7 @@ using QuranDashboard.Application.Abwab.Commands.Doors.RestoreDoor;
 using QuranDashboard.Application.Abwab.Queries.GetAbwabTree;
 using QuranDashboard.Application.Abwab.Queries.GetDoorRelations;
 using QuranDashboard.Application.Abwab.Commands.Templates.AddTemplateNode;
+using QuranDashboard.Application.Abwab.Commands.Templates.ApplyTemplate;
 using QuranDashboard.Application.Abwab.Commands.Templates.CreateTemplate;
 using QuranDashboard.Application.Abwab.Commands.Templates.DeleteTemplate;
 using QuranDashboard.Application.Abwab.Commands.Templates.DeleteTemplateNode;
@@ -169,6 +170,7 @@ public static class DependencyInjection
         services.AddScoped<EditTemplateNodeHandler>();
         services.AddScoped<ReorderTemplateNodeHandler>();
         services.AddScoped<DeleteTemplateNodeHandler>();
+        services.AddScoped<ApplyTemplateHandler>();
 
         return services;
     }

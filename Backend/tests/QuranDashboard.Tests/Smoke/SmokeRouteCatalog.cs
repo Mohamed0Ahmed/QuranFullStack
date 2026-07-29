@@ -349,6 +349,10 @@ internal static class SmokeRouteCatalog
         {
             Method = HttpMethod.Delete, ParityOnly = true,
         },
+        new("api/abwab/templates/{templateId:int}/apply", "/api/abwab/templates/1/apply", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
     ];
 
     // The sweep's theory data is the Path alone (a string is serializable, so every route is an

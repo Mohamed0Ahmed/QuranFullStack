@@ -173,4 +173,18 @@ public static class ApiMessages
     public const string AbwabTemplateNodeInvalidPosition = "الترتيب المطلوب خارج نطاق العناصر المجاورة";
     public const string AbwabTemplateRootNotReorderable = "جذر القالب ليس له عناصر مجاورة لإعادة ترتيبها";
     public const string AbwabTemplateRootNotDeletable = "لا يمكن حذف جذر القالب، احذف القالب نفسه";
+
+    public const string AbwabTemplateApplied = "تم نسخ القالب";
+    public const string AbwabTemplateApplyNoTargets = "يجب اختيار باب مستهدف واحد على الأقل";
+    public const string AbwabTemplateApplyTargetArchived = "لا يمكن النسخ داخل باب مؤرشف";
+    public const string AbwabTemplateApplyCollision = "يوجد باب بنفس اسم جذر القالب داخل الباب المستهدف";
+
+    // The whole copy fails on any collision (all-or-nothing), so the message names every target that
+    // blocked it. The 23505 race backstop names none, and falls back to the sentence above.
+    private const string AbwabTemplateApplyCollisionPrefix = "لم يتم النسخ: يوجد باب بنفس اسم جذر القالب داخل";
+
+    public static string AbwabTemplateApplyCollisionWith(IReadOnlyList<string> doorNames) =>
+        doorNames.Count == 0
+            ? AbwabTemplateApplyCollision
+            : $"{AbwabTemplateApplyCollisionPrefix}: {string.Join("، ", doorNames)}";
 }

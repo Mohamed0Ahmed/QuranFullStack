@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Abwab.Responses;
+using QuranDashboard.Application.Abwab.Commands.Templates.ApplyTemplate;
 using QuranDashboard.Application.Abwab.Commands.Templates.CreateTemplate;
 using QuranDashboard.Application.Abwab.Commands.Templates.DeleteTemplate;
 using QuranDashboard.Application.Abwab.Queries.GetTemplate;
@@ -12,7 +13,8 @@ public sealed class AbwabTemplatesController(
     GetTemplatesHandler getTemplatesHandler,
     GetTemplateHandler getTemplateHandler,
     CreateTemplateHandler createTemplateHandler,
-    DeleteTemplateHandler deleteTemplateHandler) : ControllerBase
+    DeleteTemplateHandler deleteTemplateHandler,
+    ApplyTemplateHandler applyTemplateHandler) : ControllerBase
 {
     [HttpGet("templates")]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<AbwabTemplateSummaryDto>>>> GetAll(
@@ -76,6 +78,35 @@ public sealed class AbwabTemplatesController(
             DeleteTemplateOutcome.NotFound =>
                 NotFound(ApiResponse<object>.Fail(ApiMessages.AbwabTemplateNotFound)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(DeleteTemplateOutcome)} variant."),
+        };
+    }
+
+    [HttpPost("templates/{templateId:int}/apply")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<AbwabDoorDto>>>> Apply(
+        int templateId, [FromBody] ApplyTemplateBody body, CancellationToken cancellationToken)
+    {
+        var outcome = await applyTemplateHandler.HandleAsync(
+            new ApplyTemplateCommand(templateId, body.TargetDoorIds), cancellationToken);
+
+        return outcome switch
+        {
+            // A multi-create has no single resource URI, so the location is the collection the new
+            // doors joined — the AbwabDoorRelationsController judgment.
+            ApplyTemplateOutcome.Success success =>
+                Created("api/abwab/doors",
+                    ApiResponse<IReadOnlyList<AbwabDoorDto>>.Ok(success.CreatedDoors, ApiMessages.AbwabTemplateApplied)),
+            ApplyTemplateOutcome.InvalidRequest =>
+                BadRequest(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabTemplateApplyNoTargets)),
+            ApplyTemplateOutcome.TargetArchived =>
+                BadRequest(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabTemplateApplyTargetArchived)),
+            ApplyTemplateOutcome.TemplateNotFound =>
+                NotFound(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabTemplateNotFound)),
+            ApplyTemplateOutcome.TargetNotFound =>
+                NotFound(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabDoorNotFound)),
+            ApplyTemplateOutcome.Collision collision =>
+                Conflict(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(
+                    ApiMessages.AbwabTemplateApplyCollisionWith(collision.DoorNames))),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(ApplyTemplateOutcome)} variant."),
         };
     }
 }
