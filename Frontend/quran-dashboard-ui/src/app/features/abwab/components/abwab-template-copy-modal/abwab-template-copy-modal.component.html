@@ -69,7 +69,19 @@
               <span class="abwab-template-copy-modal__pick-name">{{ row.node.name }}</span>
             </div>
           } @empty {
-            <p class="qd-empty-state" data-testid="abwab-template-copy-modal-empty">{{ emptyDoorsLabel }}</p>
+            <!-- Loading and error are separated from empty for the same reason the doors page
+                 separates them: an unresolved fetch is not an answer about how many doors exist. -->
+            @if (doorsLoading()) {
+              <p class="qd-loading-state" role="status" data-testid="abwab-template-copy-modal-loading">
+                {{ loadingDoorsLabel }}
+              </p>
+            } @else if (doorsError()) {
+              <p class="qd-error-state" role="alert" data-testid="abwab-template-copy-modal-doors-error">
+                {{ doorsError() }}
+              </p>
+            } @else {
+              <p class="qd-empty-state" data-testid="abwab-template-copy-modal-empty">{{ emptyDoorsLabel }}</p>
+            }
           }
         </div>
         <p class="abwab-template-copy-modal__selected" data-testid="abwab-template-copy-modal-selected">

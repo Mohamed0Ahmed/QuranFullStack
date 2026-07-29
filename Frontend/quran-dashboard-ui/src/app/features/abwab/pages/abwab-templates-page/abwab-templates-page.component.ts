@@ -70,6 +70,12 @@ export class AbwabTemplatesPageComponent implements OnInit {
    * the workshop is reachable directly by URL, so the doors snapshot may never have been
    * loaded — and loading it on every entry would buy a request the picker often never uses. */
   protected readonly liveRoots = computed(() => this.doorsFacade.snapshot()?.liveRoots ?? []);
+  /** Only while there is nothing to show — once a snapshot exists the facade leaves it in place
+   * across a refresh, so the picker keeps rendering doors rather than blinking to a status line. */
+  protected readonly doorsLoading = computed(() => this.doorsFacade.isLoading() && !this.doorsFacade.snapshot());
+  protected readonly doorsError = computed(() =>
+    this.doorsFacade.snapshot() ? null : this.doorsFacade.errorMessage(),
+  );
 
   private readonly nodesById = computed(() => collectAbwabTemplateNodes(this.facade.selectedTemplate()?.root ?? null));
 

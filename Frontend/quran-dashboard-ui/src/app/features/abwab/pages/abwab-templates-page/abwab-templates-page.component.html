@@ -195,6 +195,8 @@
   [templateName]="facade.selectedTemplate()?.name ?? ''"
   [templateNodeCount]="facade.selectedTemplate()?.nodeCount ?? 0"
   [liveRoots]="liveRoots()"
+  [doorsLoading]="doorsLoading()"
+  [doorsError]="doorsError()"
   [applyTemplate]="applyTemplate"
   (closed)="closeCopyModal()"
 />

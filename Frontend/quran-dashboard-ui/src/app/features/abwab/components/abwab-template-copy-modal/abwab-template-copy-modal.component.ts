@@ -49,6 +49,12 @@ export class AbwabTemplateCopyModalComponent {
   readonly templateName = input('');
   readonly templateNodeCount = input(0);
   readonly liveRoots = input<readonly AbwabNode[]>([]);
+  /** The doors snapshot is fetched as this modal opens, so an empty picker means "still
+   * loading" until it resolves. Saying «لا توجد أبواب حية» there would be a positive false
+   * statement, not a flash of nothing — and it is exactly what direct URL entry to the
+   * workshop would hit, where no snapshot was ever loaded. */
+  readonly doorsLoading = input(false);
+  readonly doorsError = input<string | null>(null);
   readonly applyTemplate = input.required<
     (targetDoorIds: readonly number[]) => Observable<AbwabWriteOutcome<AbwabDoorDto[]>>
   >();
@@ -67,6 +73,7 @@ export class AbwabTemplateCopyModalComponent {
   protected get searchPlaceholder(): string { return ABWAB_LABELS.templateCopySearchPlaceholder; }
   protected get noneSelectedLabel(): string { return ABWAB_LABELS.templateCopyNoneSelected; }
   protected get emptyDoorsLabel(): string { return ABWAB_LABELS.templateCopyEmptyDoors; }
+  protected get loadingDoorsLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
 
   protected readonly titleText = computed(() => ABWAB_LABELS.templateCopyTitle(this.templateName()));

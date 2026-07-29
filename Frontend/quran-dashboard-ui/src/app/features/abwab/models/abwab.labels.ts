@@ -32,7 +32,7 @@ function elementCountPhrase(count: number): string {
   if (count === 2) {
     return 'عنصرين';
   }
-  if (count === 0 || count <= 10) {
+  if (count <= 10) {
     return `${count} عناصر`;
   }
   return `${count} عنصرًا`;
