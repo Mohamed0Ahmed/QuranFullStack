@@ -1,0 +1,67 @@
+<div class="abwab-tree" role="tree" [attr.aria-label]="ariaLabel()" data-testid="abwab-tree">
+  @for (row of visibleRows(); track row.id) {
+    @let node = nodesById().get(row.id);
+    @if (node) {
+      <div
+        class="abwab-tree__row"
+        role="treeitem"
+        [attr.aria-level]="node.depth + 1"
+        [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
+        [attr.aria-selected]="selectedId() === node.id"
+        [attr.tabindex]="rovingId() === node.id ? 0 : -1"
+        [style.--abwab-tree-depth]="node.depth"
+        [attr.data-testid]="'abwab-tree-row-' + node.id"
+        (click)="onRowClick(node.id)"
+        (dblclick)="onRowDblClick(row)"
+        (keydown)="onKeydown($event)"
+      >
+        @if (bulkMode()) {
+          <input
+            type="checkbox"
+            class="abwab-tree__checkbox"
+            [checked]="bulkSelectedIds().has(node.id)"
+            [attr.data-testid]="'abwab-tree-checkbox-' + node.id"
+            (click)="onCheckboxClick($event, node.id)"
+          />
+        }
+        <button
+          type="button"
+          class="abwab-tree__chevron"
+          [class.abwab-tree__chevron--leaf]="!row.hasChildren"
+          [attr.data-testid]="'abwab-tree-chevron-' + node.id"
+          [attr.tabindex]="-1"
+          (click)="onChevronClick($event, row)"
+        >
+          @if (row.hasChildren) {
+            <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
+          }
+        </button>
+
+        @if (editingId() === node.id) {
+          <input
+            type="number"
+            min="1"
+            class="abwab-tree__order-input"
+            [value]="node.orderValue"
+            [attr.data-testid]="'abwab-tree-order-input-' + node.id"
+            (click)="$event.stopPropagation()"
+            (keydown)="onOrderKeydown($event, node.id)"
+            (blur)="commitOrderEdit(node.id, $event.target)"
+          />
+        } @else {
+          <span
+            class="abwab-tree__order"
+            [attr.data-testid]="'abwab-tree-order-' + node.id"
+            (click)="onOrderClick($event, node.id)"
+            >{{ node.orderValue }}</span
+          >
+        }
+
+        <span class="abwab-tree__name">{{ node.name }}</span>
+        @if (row.hasChildren) {
+          <span class="abwab-tree__count">{{ node.liveChildCount }}</span>
+        }
+      </div>
+    }
+  }
+</div>

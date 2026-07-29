@@ -1,0 +1,97 @@
+.abwab-door-modal__context {
+  color: var(--qd-text-muted);
+  font-size: 0.8125rem;
+  margin-block-end: var(--qd-space-3);
+}
+
+.abwab-door-modal__error {
+  color: var(--qd-danger);
+  background: var(--qd-danger-tint);
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  font-size: 0.8125rem;
+  margin-block-end: var(--qd-space-3);
+}
+
+.abwab-door-modal__field {
+  margin-block-end: var(--qd-space-3);
+}
+
+.abwab-door-modal__field label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+  margin-block-end: var(--qd-space-1);
+  font-weight: 700;
+}
+
+.abwab-door-modal__field input,
+.abwab-door-modal__field textarea {
+  inline-size: 100%;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.abwab-door-modal__field input:focus-visible,
+.abwab-door-modal__field textarea:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -1px;
+}
+
+.abwab-door-modal__hint {
+  font-size: 0.6875rem;
+  color: var(--qd-text-muted);
+  margin-block-start: var(--qd-space-1);
+}
+
+.abwab-door-modal__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-1);
+  margin-block-start: var(--qd-space-2);
+}
+
+.abwab-door-modal__meta {
+  background: var(--qd-section-bg);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  margin-block-end: var(--qd-space-3);
+}
+
+.abwab-door-modal__meta h5 {
+  font-size: 0.6875rem;
+  color: var(--qd-text-muted);
+  margin-block-end: var(--qd-space-1);
+}
+
+.abwab-door-modal__meta-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+  padding-block: 1px;
+}
+
+.abwab-door-modal__meta-line span:last-child {
+  color: var(--qd-text);
+}
+
+.abwab-door-modal__discard-confirm {
+  border: 1px solid var(--qd-border-accent);
+  background: var(--qd-selected-bg);
+  border-radius: var(--qd-radius-md);
+  padding: var(--qd-space-3);
+}
+
+.abwab-door-modal__discard-actions,
+.abwab-door-modal__foot {
+  display: flex;
+  gap: var(--qd-space-2);
+  margin-block-start: var(--qd-space-3);
+}

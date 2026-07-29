@@ -11,7 +11,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'mushaf', labelAr: 'قارئ المصحف', labelEn: 'Mushaf Reader', route: '/dashboard/mushaf', group: 'primary' },
   { key: 'words', labelAr: 'الكلمات والجذور', labelEn: 'Words & Roots', route: '/dashboard/words', group: 'primary' },
   { key: 'tafsirs', labelAr: 'التفاسير', labelEn: 'Tafsirs', route: '/tafsirs', group: 'primary' },
-  { key: 'gates', labelAr: 'الأبواب', labelEn: 'Gates', route: '/gates', group: 'primary' },
+  { key: 'abwab', labelAr: 'الأبواب', labelEn: 'Abwab', route: '/abwab', group: 'primary' },
   { key: 'resources', labelAr: 'المصادر', labelEn: 'Resources', route: '/resources', group: 'primary' },
   { key: 'i3rab', labelAr: 'الإعراب', labelEn: 'I\'rab', route: '/i3rab', group: 'more' },
   { key: 'translations', labelAr: 'الترجمات', labelEn: 'Translations', route: '/translations', group: 'more' },

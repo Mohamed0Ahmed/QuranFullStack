@@ -105,4 +105,44 @@ describe('QdChipComponent', () => {
 
     expect(emitted).toHaveLength(1);
   });
+
+  describe('removable (plan-slice-b.md T412 — the alias-chip remove affordance)', () => {
+    it('renders a static, non-button wrapper carrying a nested remove button', () => {
+      const fixture = render({ removable: true, removeAriaLabel: 'إزالة التوحيد' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      const wrapper = root.querySelector('[data-testid="qd-chip"]') as HTMLElement;
+      expect(wrapper.tagName).toBe('SPAN');
+
+      const removeButton = root.querySelector('[data-testid="qd-chip-remove"]') as HTMLButtonElement;
+      expect(removeButton).toBeTruthy();
+      expect(removeButton.tagName).toBe('BUTTON');
+      expect(removeButton.getAttribute('aria-label')).toBe('إزالة التوحيد');
+    });
+
+    it('emits remove (not chipClick) when the nested button is clicked, and does not bubble to a parent click handler', () => {
+      const fixture = render({ removable: true, removeAriaLabel: 'إزالة' });
+      const removed: void[] = [];
+      const clicked: void[] = [];
+      fixture.componentInstance.remove.subscribe(() => removed.push(undefined));
+      fixture.componentInstance.chipClick.subscribe(() => clicked.push(undefined));
+
+      const removeButton = (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="qd-chip-remove"]',
+      ) as HTMLButtonElement;
+      removeButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(removed).toHaveLength(1);
+      expect(clicked).toHaveLength(0);
+    });
+
+    it('never writes an inline style on the remove button (tint/hairline only, no solid fill)', () => {
+      const fixture = render({ removable: true, removeAriaLabel: 'إزالة' });
+      const removeButton = (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="qd-chip-remove"]',
+      ) as HTMLButtonElement;
+
+      expect(removeButton.getAttribute('style')).toBeNull();
+    });
+  });
 });

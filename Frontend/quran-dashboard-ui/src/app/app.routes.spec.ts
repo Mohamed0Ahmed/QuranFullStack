@@ -4,6 +4,7 @@ import { Route, Routes } from '@angular/router';
 import { routes } from './app.routes';
 import { MUSHAF_ROUTES } from './features/mushaf/mushaf.routes';
 import { WORDS_ROUTES } from './features/words/words.routes';
+import { ABWAB_ROUTES } from './features/abwab/abwab.routes';
 
 // Public-browse posture regression guard (Feature 033, Phase 2): asserts NO route carries an
 // activation guard. Pure config assertion — no router harness.
@@ -22,6 +23,7 @@ const GUARD_KEYS = ['canActivate', 'canActivateChild', 'canMatch'] as const;
 const STATIC_LAZY_ROUTE_ARRAYS: Readonly<Record<string, Routes>> = {
   mushaf: MUSHAF_ROUTES,
   words: WORDS_ROUTES,
+  abwab: ABWAB_ROUTES,
 };
 
 // Flattens the route tree, substituting the statically-imported arrays for lazy `loadChildren`

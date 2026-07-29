@@ -1,0 +1,22 @@
+<qd-tabs [ariaLabel]="sectionTabsAriaLabel" class="abwab-toolbar__tabs">
+  <button
+    type="button"
+    qdTab
+    [selected]="activeSectionId() === null"
+    data-testid="abwab-toolbar-tab-all"
+    (click)="selectSection(null)"
+  >
+    {{ allDoorsTabLabel }}
+  </button>
+  @for (section of sections(); track section.id) {
+    <button
+      type="button"
+      qdTab
+      [selected]="activeSectionId() === section.id"
+      [attr.data-testid]="'abwab-toolbar-tab-' + section.id"
+      (click)="selectSection(section.id)"
+    >
+      {{ section.name }}
+    </button>
+  }
+</qd-tabs>

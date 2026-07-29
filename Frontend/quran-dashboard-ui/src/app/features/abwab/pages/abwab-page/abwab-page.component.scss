@@ -1,0 +1,55 @@
+.abwab-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+  flex-wrap: wrap;
+}
+
+.abwab-page__layout {
+  display: flex;
+  gap: var(--qd-space-4);
+  align-items: flex-start;
+  margin-block-start: var(--qd-space-3);
+}
+
+.abwab-page__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.abwab-page__tree-card {
+  min-height: 20rem;
+}
+
+.abwab-page__side {
+  inline-size: 18rem;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+  position: sticky;
+  top: var(--qd-space-4);
+}
+
+.abwab-page__archive-confirm {
+  border: 1px solid var(--qd-border-accent);
+  background: var(--qd-danger-tint);
+}
+
+.abwab-page__archive-actions {
+  display: flex;
+  gap: var(--qd-space-2);
+  margin-block-start: var(--qd-space-2);
+}
+
+@media (max-width: 900px) {
+  .abwab-page__layout {
+    flex-direction: column;
+  }
+
+  .abwab-page__side {
+    inline-size: 100%;
+    position: static;
+  }
+}

@@ -1,0 +1,95 @@
+<div class="qd-page abwab-page" data-testid="abwab-page">
+  <div class="qd-container">
+    <header class="qd-page-header abwab-page__header">
+      <div>
+        <h1 class="qd-page-title">{{ pageTitle }}</h1>
+        <p class="qd-text-muted">{{ pageSubtitle }}</p>
+      </div>
+      <button
+        type="button"
+        class="qd-btn qd-btn-primary"
+        data-testid="abwab-page-add-root"
+        (click)="openCreateRoot()"
+      >
+        {{ addRootLabel }}
+      </button>
+    </header>
+
+    <qd-abwab-announcer [message]="writeController.announcement()" />
+
+    @if (facade.isLoading() && !facade.snapshot()) {
+      <p class="qd-loading-state" role="status">{{ loadingLabel }}</p>
+    } @else if (facade.errorMessage() && !facade.snapshot()) {
+      <p class="qd-error-state" role="alert">{{ facade.errorMessage() }}</p>
+    } @else {
+      <qd-abwab-toolbar
+        [sections]="sections()"
+        [activeSectionId]="activeSectionId()"
+        (sectionChanged)="onSectionChanged($event)"
+      />
+
+      <div class="abwab-page__layout">
+        <div class="abwab-page__main">
+          <div class="qd-card abwab-page__tree-card">
+            @if (visibleRoots().length === 0) {
+              <p class="qd-empty-state" data-testid="abwab-page-empty">{{ emptyLabel }}</p>
+            } @else {
+              <qd-abwab-tree
+                [roots]="visibleRoots()"
+                [ariaLabel]="treeAriaLabel"
+                [selectedId]="selection.selectedDoorId()"
+                (selected)="onTreeSelected($event)"
+              />
+            }
+          </div>
+        </div>
+        <aside class="abwab-page__side">
+          <qd-abwab-side-panel
+            [selectedDoor]="selectedDoor()"
+            (addChildRequested)="openCreateChild()"
+            (editRequested)="openEdit()"
+            (archiveRequested)="requestArchive()"
+            (clearRequested)="onClearSelection()"
+          />
+          @if (archiveConfirming()) {
+            <div
+              class="qd-card abwab-page__archive-confirm"
+              role="alertdialog"
+              data-testid="abwab-page-archive-confirm"
+            >
+              <p>{{ archiveConfirmMessage() }}</p>
+              <div class="abwab-page__archive-actions">
+                <button
+                  type="button"
+                  class="qd-btn qd-btn-primary"
+                  data-testid="abwab-page-archive-confirm-yes"
+                  (click)="confirmArchive()"
+                >
+                  {{ archiveLabel }}
+                </button>
+                <button
+                  type="button"
+                  class="qd-btn qd-btn-ghost"
+                  data-testid="abwab-page-archive-confirm-no"
+                  (click)="cancelArchiveConfirm()"
+                >
+                  {{ cancelLabel }}
+                </button>
+              </div>
+            </div>
+          }
+        </aside>
+      </div>
+    }
+  </div>
+</div>
+
+<qd-abwab-door-modal
+  [open]="modalOpen()"
+  [door]="modalDoor()"
+  [parentId]="modalParentId()"
+  [parentName]="modalParentName()"
+  [activeSectionId]="activeSectionId()"
+  (closed)="onModalClosed()"
+  (saved)="onModalSaved()"
+/>
