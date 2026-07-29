@@ -1,0 +1,79 @@
+.abwab-sections-modal__error {
+  color: var(--qd-danger);
+  background: var(--qd-danger-tint);
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  font-size: 0.8125rem;
+  margin-block-end: var(--qd-space-3);
+}
+
+.abwab-sections-modal__list {
+  list-style: none;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  max-block-size: 14rem;
+  overflow: auto;
+  margin-block-end: var(--qd-space-3);
+}
+
+.abwab-sections-modal__row {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-block-end: 1px solid var(--qd-border);
+}
+
+.abwab-sections-modal__row:last-child {
+  border-block-end: none;
+}
+
+.abwab-sections-modal__name {
+  flex: 1;
+  font-size: 0.85rem;
+}
+
+.abwab-sections-modal__row input[type='text'] {
+  flex: 1;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-1) var(--qd-space-2);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+}
+
+.abwab-sections-modal__row input[type='text']:focus-visible,
+.abwab-sections-modal__add input:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -1px;
+}
+
+.abwab-sections-modal__add {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  margin-block-end: var(--qd-space-2);
+}
+
+.abwab-sections-modal__add label {
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+}
+
+.abwab-sections-modal__add input {
+  flex: 1;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.abwab-sections-modal__foot {
+  display: flex;
+  justify-content: flex-end;
+}

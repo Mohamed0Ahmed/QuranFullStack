@@ -685,14 +685,24 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 
 ### `qd-chip`
 - **Purpose:** the one selectable/informational chip (filters, association
-  popovers, count badges).
+  popovers, count badges) — and, since Abwab Slice B (plan-slice-b.md T412), the one
+  removable chip (alias chips in the door-details modal).
 - **Inputs / roles:** `selected`, `disabled`, `as?='button'|'a'`, optional
-  trailing `count`.
+  trailing `count`; `removable?=false` + `removeAriaLabel` for the remove
+  affordance, emitting a `remove` output.
 - **Selected / hover / disabled:** selected = `--qd-selected-bg` +
   `--qd-accent-text` + `--qd-border-accent` (§16.1) — **no solid green fill**;
   hover = `--qd-surface-hover`; disabled is visually muted and non-interactive.
-- **Backing classes:** `.qd-chip`, `.qd-chip--pill`, `.qd-chip.qd-is-selected`,
-  `.qd-chip__count`. Compose, do not re-style.
+- **Removable variant:** when `removable` is true the chip renders a static
+  `<span>` wrapper (not the `button`/`a` from `as`) with a nested `<button
+  class="qd-chip__remove">` carrying the caller's Arabic `aria-label` — nesting an
+  interactive remove control inside another `<button>`/`<a>` is invalid HTML, so a
+  removable chip is informational, not itself clickable. The remove button is
+  tint/hairline only on hover (`--qd-surface-hover` + `--qd-accent-text`), never a
+  solid fill.
+- **Backing classes:** `.qd-chip`, `.qd-chip--pill`, `.qd-chip--static`,
+  `.qd-chip.qd-is-selected`, `.qd-chip__count`, `.qd-chip__remove`. Compose, do not
+  re-style.
 
 ### `qd-state`
 - **Purpose:** the one empty / loading / error presentation.

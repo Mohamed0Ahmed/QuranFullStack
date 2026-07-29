@@ -1,0 +1,14 @@
+.abwab-announcer {
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-section-bg);
+  color: var(--qd-text);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  font-size: 0.8125rem;
+  min-height: 1.25rem;
+}
+
+.abwab-announcer--empty {
+  border-color: transparent;
+  background: transparent;
+}

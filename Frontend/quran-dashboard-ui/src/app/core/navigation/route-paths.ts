@@ -19,6 +19,7 @@ export function navLabel(key: string): string {
 export const DASHBOARD_ROUTE_PATH = navRoute('dashboard');
 export const MUSHAF_ROUTE_PATH = navRoute('mushaf');
 export const WORDS_ROUTE_PATH = navRoute('words');
+export const ABWAB_ROUTE_PATH = navRoute('abwab');
 
 /** Public OIDC redirect landing route segment (Feature 033); matches the `logto.redirectUri`. */
 export const CALLBACK_PATH = 'callback' as const;

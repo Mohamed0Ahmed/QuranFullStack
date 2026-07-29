@@ -1,0 +1,237 @@
+<div class="qd-page abwab-page" data-testid="abwab-page">
+  <div class="qd-container">
+    <header class="qd-page-header abwab-page__header">
+      <div>
+        <h1 class="qd-page-title">{{ pageTitle }}</h1>
+        <p class="qd-text-muted">{{ pageSubtitle }}</p>
+      </div>
+      <div class="abwab-page__header-actions">
+        <button
+          type="button"
+          class="qd-btn"
+          [class.abwab-page__header-btn--active]="archiveParam()"
+          data-testid="abwab-page-archive-toggle"
+          (click)="onArchiveToggle()"
+        >
+          {{ archiveButtonLabel }}
+        </button>
+        <button
+          type="button"
+          class="qd-btn"
+          data-testid="abwab-page-manage-sections"
+          (click)="overlays.openSectionsModal()"
+        >
+          {{ manageSectionsLabel }}
+        </button>
+        @if (!archiveParam()) {
+          <button
+            type="button"
+            class="qd-btn qd-btn-primary"
+            data-testid="abwab-page-add-root"
+            (click)="overlays.openCreateRoot()"
+          >
+            {{ addRootLabel }}
+          </button>
+        }
+      </div>
+    </header>
+
+    <qd-abwab-announcer [message]="writeController.announcement()" />
+
+    @if (facade.isLoading() && !facade.snapshot()) {
+      <p class="qd-loading-state" role="status">{{ loadingLabel }}</p>
+    } @else if (facade.errorMessage() && !facade.snapshot()) {
+      <p class="qd-error-state" role="alert">{{ facade.errorMessage() }}</p>
+    } @else {
+      <qd-abwab-toolbar
+        [sections]="sections()"
+        [activeSectionId]="activeSectionId()"
+        [view]="viewParam()"
+        [searchQuery]="searchQueryParam()"
+        [hideSectionControls]="archiveParam()"
+        (sectionChanged)="onSectionChanged($event)"
+        (viewChanged)="onViewChanged($event)"
+        (searchQueryChanged)="onSearchQueryChanged($event)"
+      />
+
+      <div class="abwab-page__layout">
+        <div class="abwab-page__main">
+          @if (archiveParam()) {
+            <div class="qd-card abwab-page__tree-card">
+              @if (displayArchivedRoots().length === 0) {
+                <p class="qd-empty-state" data-testid="abwab-page-archive-empty">{{ archiveEmptyLabel }}</p>
+              } @else {
+                <qd-abwab-archive-view
+                  [roots]="displayArchivedRoots()"
+                  [ariaLabel]="archiveTreeAriaLabel"
+                  (restoreRequested)="onRestoreRequested($event)"
+                />
+              }
+            </div>
+          } @else if (viewParam() === 'cards') {
+            <div class="qd-card abwab-page__tree-card">
+              <qd-abwab-cards
+                [roots]="displayRoots()"
+                [byId]="byId()"
+                [cardId]="cardParam()"
+                [selectedId]="selection.selectedDoorId()"
+                [bulkMode]="selection.bulkMode()"
+                [bulkSelectedIds]="bulkSelectedIds()"
+                (selected)="onTreeSelected($event)"
+                (bulkToggled)="onBulkToggled($event)"
+                (drilled)="onCardDrilled($event)"
+                (crumbSelected)="onCardCrumbSelected($event)"
+              />
+            </div>
+          } @else {
+            <div class="qd-card abwab-page__tree-card">
+              @if (displayRoots().length === 0) {
+                <p class="qd-empty-state" data-testid="abwab-page-empty">{{ emptyLabel }}</p>
+              } @else {
+                <qd-abwab-tree
+                  [roots]="displayRoots()"
+                  [ariaLabel]="treeAriaLabel"
+                  [selectedId]="selection.selectedDoorId()"
+                  [bulkMode]="selection.bulkMode()"
+                  [bulkSelectedIds]="bulkSelectedIds()"
+                  [forceExpandedIds]="forceExpandedIds()"
+                  (selected)="onTreeSelected($event)"
+                  (bulkToggled)="onBulkToggled($event)"
+                  (addChildRequested)="overlays.openCreateChild()"
+                  (menuRequested)="onMenuRequested($event)"
+                  (orderCommitted)="onOrderCommitted($event)"
+                />
+              }
+              <button
+                type="button"
+                class="abwab-page__add-ghost"
+                data-testid="abwab-page-add-root-ghost"
+                (click)="overlays.openCreateRoot()"
+              >
+                {{ addRootGhostLabel }}
+              </button>
+            </div>
+          }
+        </div>
+        <aside class="abwab-page__side">
+          <qd-abwab-side-panel
+            [selectedDoor]="selectedDoor()"
+            [bulkMode]="selection.bulkMode()"
+            [bulkCount]="selection.bulkCount()"
+            [bulkNames]="bulkNames()"
+            [archiveViewActive]="archiveParam()"
+            (addChildRequested)="overlays.openCreateChild()"
+            (editRequested)="overlays.openEdit()"
+            (moveRequested)="overlays.openMovePicker()"
+            (archiveRequested)="overlays.requestArchive()"
+            (clearRequested)="onClearSelection()"
+            (bulkModeToggled)="onBulkModeToggled($event)"
+            (bulkMoveRequested)="overlays.openBulkMovePicker()"
+            (bulkArchiveRequested)="overlays.requestBulkArchive()"
+            (bulkClearRequested)="onBulkClearRequested()"
+          />
+          @if (overlays.archiveConfirming()) {
+            <div
+              class="qd-card abwab-page__archive-confirm"
+              role="alertdialog"
+              data-testid="abwab-page-archive-confirm"
+            >
+              <p>{{ overlays.archiveConfirmMessage() }}</p>
+              <div class="abwab-page__archive-actions">
+                <button
+                  type="button"
+                  class="qd-btn qd-btn-primary"
+                  data-testid="abwab-page-archive-confirm-yes"
+                  (click)="confirmArchiveAndClearUrl()"
+                >
+                  {{ archiveLabel }}
+                </button>
+                <button
+                  type="button"
+                  class="qd-btn qd-btn-ghost"
+                  data-testid="abwab-page-archive-confirm-no"
+                  (click)="overlays.cancelArchiveConfirm()"
+                >
+                  {{ cancelLabel }}
+                </button>
+              </div>
+            </div>
+          }
+          @if (overlays.bulkArchiveConfirming()) {
+            <div
+              class="qd-card abwab-page__archive-confirm"
+              role="alertdialog"
+              data-testid="abwab-page-bulk-archive-confirm"
+            >
+              <p>{{ overlays.bulkArchiveConfirmMessage() }}</p>
+              <div class="abwab-page__archive-actions">
+                <button
+                  type="button"
+                  class="qd-btn qd-btn-primary"
+                  data-testid="abwab-page-bulk-archive-confirm-yes"
+                  (click)="overlays.confirmBulkArchive()"
+                >
+                  {{ archiveLabel }}
+                </button>
+                <button
+                  type="button"
+                  class="qd-btn qd-btn-ghost"
+                  data-testid="abwab-page-bulk-archive-confirm-no"
+                  (click)="overlays.cancelBulkArchiveConfirm()"
+                >
+                  {{ cancelLabel }}
+                </button>
+              </div>
+            </div>
+          }
+        </aside>
+      </div>
+    }
+  </div>
+</div>
+
+<qd-abwab-door-modal
+  [open]="overlays.modalOpen()"
+  [door]="overlays.modalDoor()"
+  [parentId]="overlays.modalParentId()"
+  [parentName]="overlays.modalParentName()"
+  [activeSectionId]="activeSectionId()"
+  (closed)="overlays.closeModal()"
+/>
+
+<qd-abwab-move-picker
+  [open]="overlays.movePickerOpen()"
+  [sections]="sections()"
+  [liveRoots]="facade.snapshot()?.liveRoots ?? []"
+  [excludedIds]="overlays.moveExcludedIds()"
+  [titleText]="overlays.moveTitleText()"
+  (closed)="overlays.closeMovePicker()"
+  (confirmed)="overlays.confirmMove($event)"
+/>
+
+<qd-abwab-sections-modal
+  [open]="overlays.sectionsModalOpen()"
+  [sections]="sections()"
+  [createSection]="overlays.createSection"
+  [renameSection]="overlays.renameSection"
+  [deleteSection]="overlays.deleteSection"
+  (closed)="overlays.closeSectionsModal()"
+/>
+
+@if (overlays.contextMenuDoorId() !== null) {
+  <div class="abwab-page__ctx-backdrop" data-testid="abwab-page-ctx-backdrop" (click)="overlays.closeContextMenu()"></div>
+  <div
+    class="abwab-page__ctx-menu"
+    role="menu"
+    data-testid="abwab-page-context-menu"
+    [style.left.px]="overlays.contextMenuPosition().x"
+    [style.top.px]="overlays.contextMenuPosition().y"
+  >
+    <button type="button" role="menuitem" data-testid="abwab-page-ctx-edit" (click)="overlays.ctxEdit()">{{ editOpLabel }}</button>
+    <button type="button" role="menuitem" data-testid="abwab-page-ctx-add-child" (click)="overlays.ctxAddChild()">{{ addChildOpLabel }}</button>
+    <button type="button" role="menuitem" data-testid="abwab-page-ctx-move" (click)="overlays.ctxMove()">{{ moveOpLabel }}</button>
+    <button type="button" role="menuitem" class="abwab-page__ctx-item--danger" data-testid="abwab-page-ctx-archive" (click)="overlays.ctxArchive()">
+      {{ archiveLabel }}
+    </button>
+  </div>
+}

@@ -1,4 +1,28 @@
-@if (elementType() === 'a') {
+<ng-template #labelAndCount>
+  <span class="qd-chip__label"><ng-content></ng-content></span>
+  @if (count() !== null) {
+    <span class="qd-chip__count" data-testid="qd-chip-count">{{ count() }}</span>
+  }
+</ng-template>
+
+@if (removable()) {
+  <span
+    class="qd-chip qd-chip--pill qd-chip--static"
+    [class.qd-is-selected]="selected()"
+    [class.qd-chip--disabled]="disabled()"
+    data-testid="qd-chip"
+  >
+    <ng-container [ngTemplateOutlet]="labelAndCount"></ng-container>
+    <button
+      type="button"
+      class="qd-chip__remove"
+      [attr.aria-label]="removeAriaLabel()"
+      [disabled]="disabled()"
+      data-testid="qd-chip-remove"
+      (click)="onRemoveClick($event)"
+    >×</button>
+  </span>
+} @else if (elementType() === 'a') {
   <a
     class="qd-chip qd-chip--pill"
     [class.qd-is-selected]="selected()"
@@ -11,10 +35,7 @@
     data-testid="qd-chip"
     (click)="onClick($event)"
   >
-    <span class="qd-chip__label"><ng-content></ng-content></span>
-    @if (count() !== null) {
-      <span class="qd-chip__count" data-testid="qd-chip-count">{{ count() }}</span>
-    }
+    <ng-container [ngTemplateOutlet]="labelAndCount"></ng-container>
   </a>
 } @else {
   <button
@@ -27,9 +48,6 @@
     data-testid="qd-chip"
     (click)="onClick($event)"
   >
-    <span class="qd-chip__label"><ng-content></ng-content></span>
-    @if (count() !== null) {
-      <span class="qd-chip__count" data-testid="qd-chip-count">{{ count() }}</span>
-    }
+    <ng-container [ngTemplateOutlet]="labelAndCount"></ng-container>
   </button>
 }

@@ -16,13 +16,12 @@ The **Backend** baselines below were re-taken **2026-07-29** (Abwab feature, Sli
 re-measured after the archived-parent create smoke that closed the last gap in the
 section-inheritance fix) on a developer machine with Docker up,
 `resources/import-sources/` staged, and the canonical dump at
-`resources/db-dumps/quran-canonical/` present, against this tree. The **Frontend** row is
-carried forward from the 2026-07-27 measurement and was NOT re-run on 2026-07-29 — no Frontend
-spec file changed (only generated API model files were added, unconsumed by any component in
-this Backend-only slice), so it is reproduced rather than re-measured (§2: no success claim
-without fresh output; this row is a carried baseline, not evidence for any gate). The pipeline
-row is likewise **derived, not re-run** on 2026-07-29: `1,827 − 1,076 − 134 = 617`, unchanged,
-which is what the partition identity below is for:
+`resources/db-dumps/quran-canonical/` present, against this tree. The **Frontend** row was
+re-measured at the end of Abwab Slice B2 — 190 spec files, up from 169 before Slice B, since
+B1 added the whole `features/abwab/` unit-spec tree. Slice B2 itself added only `e2e/` specs
+and doc prose, plus the two unit regressions covering the `204 No Content` null-envelope path
+that the browser suite uncovered. The pipeline row is **derived, not re-run** on 2026-07-29:
+`1,827 − 1,076 − 134 = 617`, unchanged, which is what the partition identity below is for:
 
 | Run | Tests | Duration | Skipped |
 | --- | --- | --- | --- |
@@ -30,7 +29,7 @@ which is what the partition identity below is for:
 | Backend no-pipeline (Tier B/C) | 1,076 | 18-20 s | 0 |
 | Backend ten pipeline families (Tier D) — derived, last timed 2026-07-28 | 617 | 3 m 54 s | 0 |
 | Backend route smoke (§3 Tier A/C route gate) | 134 | 51-52 s | 0 |
-| Frontend full suite (169 spec files) — carried from 2026-07-27 | 1,938 | 171 s | 0 |
+| Frontend full suite (190 spec files) — re-measured after the Slice B2 review fixes | 2,142 | 207.54 s | 0 |
 
 Counts and durations are indicative, not contractual. The zero-skip column holds only
 because the staged canonical resources *and* the canonical dump were present; on a machine
@@ -366,13 +365,14 @@ npm test -- --include="src/app/features/words/data-access/*.spec.ts"
 # Focused feature glob (93 files, 1,384 tests, ~98 s):
 npm test -- --include="src/app/features/words/**/*.spec.ts"
 
-# Full Frontend suite (169 files, 1,938 tests, ~2.9 min):
+# Full Frontend suite (190 files, 2,142 tests, 207.54 s — re-measured after the B2 review fixes):
 npm test
 
 # Production build (separate from tests — the test builder ignores dist/):
 npm run build
 
-# Browser E2E — opt-in, chromium only, boots both servers (see e2e/README.md):
+# Browser E2E — opt-in, chromium only, boots both servers (see e2e/README.md).
+# 47 passed, ~1.6 m with 2 workers, re-measured after the B2 review fixes (was 28 / ~57 s pre-B2):
 npm run e2e                       # headless
 npm run e2e:headed                # visible browser
 npm run e2e:ui                    # Playwright UI mode
@@ -384,11 +384,38 @@ in `src/app/core/` and `src/app/shared/`, with app-shell specs at `src/app/*.spe
 
 The E2E suite boots the Angular dev server **and** the backend `https` launch profile
 (`ASPNETCORE_ENVIRONMENT=Development`), so it reads the real local `quran_dashboard` database.
-Every flow is read-only and every count assertion is loose; do not add write flows to it without
-first moving it onto an isolated database. It requires `dotnet build Backend/QuranDashboard.sln`
-beforehand (the backend boots with `--no-build`) and mkcert certificates in the frontend project
-root. It is **not** the backend route-smoke tier (§3 Tier A/C, §5) and does not substitute for it:
-the smoke tier is a required gate for route/contract/auth changes, the E2E layer is not.
+Every flow is read-only and every count assertion is loose, **with one named, deliberate
+exception**: the four Abwab specs (`abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`,
+`abwab-archive.e2e.ts`, `abwab-url-and-a11y.e2e.ts`, added in Slice B2,
+`docs/feature-abwab-doors/plan-slice-b2.md`) write against the local dev DB through a per-test
+sandbox section created over the API (`e2e/fixtures/abwab.ts`), not the seeded/canonical data.
+**This knowingly overrides the precondition above** — it does not move the suite onto an
+isolated database first, because no such database exists yet for this suite. The sandbox is the
+mitigation: each test's section name embeds the worker index and a timestamp so the two parallel
+workers (`fullyParallel: true, workers: 2`) never collide, no test asserts a global count (only
+ids its own sandbox produced), and teardown archives **every live door in the sandbox section**
+— swept from the tree by `sectionId`, since flows create doors through the UI too and those ids
+were never handed out by the fixture — and then deletes the now-empty section. That order is
+forced, not stylistic: section delete `409`s while live doors remain. Each archive re-reads the
+door's current version first, because every write resequences the scope and bumps its siblings'
+`xmin`; archiving from one up-front snapshot succeeds once and then `409`s silently for the rest,
+which is what used to leave live sandbox doors and undeleted sandbox sections behind. Teardown is
+best-effort, so a flow that already broke does not get a second, masking failure from it.
+**The residue that remains is archived doors, and it is permanent, not "self-cleaning":** there is
+no hard delete and no section restore in this feature, so every run leaves its sandbox doors
+**archived** in the local dev DB forever, and restoring one later reports
+`detachedFromArchivedSection: true` since its section is gone. What must **not** remain after a run
+is any live `e2e-sandbox-*` door or any `e2e-sandbox-*` section — either one is a teardown bug, not
+accepted residue, and `GET /api/abwab/tree` is how you check. This is tolerable on a local,
+disposable dev database with loose, id-scoped assertions.
+**The precondition above is reinstated** — future write flows for other features again require an
+isolated e2e database first — the moment this suite runs anywhere the accumulating archived
+residue is not acceptable, or the sandbox-per-test mitigation stops being sufficient (e.g. a
+future flow that cannot be scoped to ids it created itself). It requires
+`dotnet build Backend/QuranDashboard.sln` beforehand (the backend boots with `--no-build`) and
+mkcert certificates in the frontend project root. It is **not** the backend route-smoke tier
+(§3 Tier A/C, §5) and does not substitute for it: the smoke tier is a required gate for
+route/contract/auth changes, the E2E layer is not.
 
 ## 7. Build requirements
 

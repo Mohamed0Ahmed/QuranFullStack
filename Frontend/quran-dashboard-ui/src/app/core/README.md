@@ -86,9 +86,11 @@ per-feature.
   anonymously (the Phase-1 blanket `authGuard` was removed, decision record §G1). URLs are
   unchanged. `/callback` (`CALLBACK_PATH`, the `features/auth/` landing page) is public and
   sits before the `**` wildcard in `app.routes.ts`. The placeholder nav routes (e.g.
-  `/tafsirs`, `/gates`) stay top-level and unguarded. Nothing is protected in this phase:
-  the reusable `roleGuard` exists but is attached to no route — a future admin feature
-  wires it onto its own admin routes.
+  `/tafsirs`) stay top-level and unguarded. `/abwab` (Abwab doors & sections, Slice B) is a
+  real top-level lazy feature route, same unguarded posture — see
+  `../features/abwab/README.md`. Nothing is protected in this phase: the reusable
+  `roleGuard` exists but is attached to no route — a future admin feature wires it onto its
+  own admin routes.
 - Interceptor order matters (`secureUrlInterceptor`, then `authInterceptor()`, then
   `devLatencyInterceptor`); keep registration order in `app.config.ts`. `authInterceptor()`
   (from `angular-auth-oidc-client`) attaches the Logto Bearer token only to requests under

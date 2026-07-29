@@ -203,8 +203,10 @@ enterprise greige.
 
 ## Active Spec Kit Feature
 
-- Open: `abwab-doors-a` (Abwab doors & sections, Slice A — backend only). Plan:
-  `docs/feature-abwab-doors/plan.md`. Design contract: `docs/design-preview/abwab-tree-concept.html`.
+- Open: `abwab-doors-b` — Slice B active (Abwab doors & sections, frontend). Plans:
+  `docs/feature-abwab-doors/plan-slice-b.md` (B1, phases 4-5) and `plan-slice-b2.md` (B2,
+  phase 6 — e2e). Slice A background: `docs/feature-abwab-doors/plan.md`.
+  Design contract: `docs/design-preview/abwab-tree-concept.html`.
 - When a feature opens, record it here as: feature slug, its `specs/<feature>/plan.md`, and
   its `docs/feature-XXX-*/` decision record. Clear this section back to "None" when the
   feature closes and its planning artifacts are swept per the lifecycle rule above.

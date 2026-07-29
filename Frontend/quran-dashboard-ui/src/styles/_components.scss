@@ -289,6 +289,47 @@ button.qd-interactive-surface {
   color: var(--qd-accent-text);
 }
 
+/* Removable chips (plan-slice-b.md T412) are a static wrapper, not a clickable chip. */
+.qd-chip--static {
+  cursor: default;
+}
+
+.qd-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1rem;
+  block-size: 1rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--qd-radius-pill);
+  background: transparent;
+  color: var(--qd-text-muted);
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--qd-t-fast), color var(--qd-t-fast);
+}
+
+.qd-chip__remove:hover:not(:disabled) {
+  background: var(--qd-surface-hover);
+  color: var(--qd-accent-text);
+}
+
+.qd-chip__remove:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: 1px;
+}
+
+.qd-chip__remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.qd-chip.qd-is-selected .qd-chip__remove:hover:not(:disabled) {
+  background: var(--qd-surface);
+}
+
 /* --- qd-state (UI_STYLE_SYSTEM.md §17 loading/empty/error family) ---
    Backed by the existing .qd-empty-state / .qd-loading-state / .qd-error-state
    classes below (kept as-is); only .qd-error-state gains the danger-on-tint

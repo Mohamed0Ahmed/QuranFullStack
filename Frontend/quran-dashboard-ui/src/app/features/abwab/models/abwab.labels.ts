@@ -1,0 +1,116 @@
+// Every Arabic string the Abwab feature shows lives here (root CLAUDE.md: Arabic strings
+// live only in this file). Consumers read these through TDZ-safe getters — never
+// `readonly` field initialisers — per the words/README label-getter rule; that rule binds
+// the *consumer*, not this module.
+
+/** Arabic counts do not read like English ones: 1 and 2 have their own forms, 3–10 take the
+ * broken plural, and 11+ take the accusative singular. «سيتم أرشفة 1 بابًا» is wrong Arabic,
+ * and this product is Arabic-first, so every user-facing door count goes through here. */
+function doorCountPhrase(count: number): string {
+  if (count === 0) {
+    return 'لا أبواب';
+  }
+  if (count === 1) {
+    return 'باب واحد';
+  }
+  if (count === 2) {
+    return 'بابين';
+  }
+  if (count <= 10) {
+    return `${count} أبواب`;
+  }
+  return `${count} بابًا`;
+}
+
+export const ABWAB_LABELS = {
+  pageTitle: 'الأبواب',
+  pageSubtitle: 'هيكل التصنيفات القرآنية — كل عملية تتم في مكانها.',
+
+  allDoorsTab: 'كل الأبواب',
+  sectionTabsAriaLabel: 'أقسام الأبواب',
+  searchLabel: 'ابحث في الأبواب',
+  searchPlaceholder: 'ابحث في الأبواب… (يفلتر الشجرة مباشرة)',
+  viewToggleTree: 'شجرة',
+  viewToggleCards: 'بطاقات',
+  archiveButton: 'الأرشيف',
+  manageSectionsButton: 'إدارة الأقسام',
+  addRootDoorButton: 'باب رئيسي جديد',
+  addRootGhost: 'إضافة باب رئيسي',
+
+  treeAriaLabel: 'شجرة الأبواب',
+  archiveTreeAriaLabel: 'شجرة الأبواب المؤرشفة',
+  rowAddChildAriaLabel: (doorName: string): string => `إضافة باب فرعي تحت «${doorName}»`,
+  rowMenuAriaLabel: (doorName: string): string => `عمليات «${doorName}»`,
+
+  activeDoorHeading: 'الباب النشط',
+  noSelectionHint: 'اختر بابًا من الشجرة أو البطاقات',
+  clearSelection: 'مسح',
+  operationsHeading: 'العمليات',
+  bulkToggleLabel: 'تحديد جماعي',
+  addChildOp: 'إضافة باب فرعي',
+  editOp: 'تعديل التفاصيل',
+  moveOp: 'نقل إلى…',
+  archiveOp: 'أرشفة',
+
+  bulkCountSuffix: 'باب محدد',
+  bulkMoveAll: 'نقل الكل إلى…',
+  bulkArchiveAll: 'أرشفة الكل',
+  bulkClear: 'إلغاء التحديد',
+
+  addDoorTitle: 'إضافة باب جديد',
+  editDoorTitle: 'تعديل تفاصيل الباب',
+  contextRoot: 'سيُضاف كباب رئيسي',
+  contextParent: (parentName: string): string => `سيُضاف تحت: «${parentName}»`,
+  contextEdit: (doorName: string): string => `تعديل «${doorName}»`,
+  nameFieldLabel: 'اسم الباب',
+  descriptionFieldLabel: 'وصف الباب',
+  descriptionPlaceholder: 'وصف مختصر يظهر للمشرفين…',
+  ayahFieldLabel: 'آية تمثل الباب',
+  ayahPlaceholder: 'نص حر — مقتطف يمثّل الباب',
+  ayahHint: 'نص يكتبه المشرف، وليس مرجعًا قرآنيًا مُتحقَّقًا.',
+  aliasFieldLabel: 'أسماء الباب للبحث',
+  aliasPlaceholder: 'اكتب اسمًا واضغط Enter لإضافته',
+  removeAliasAriaLabel: (alias: string): string => `إزالة ${alias}`,
+  saveButton: 'حفظ',
+  cancelButton: 'إلغاء',
+  dirtyCloseConfirm: 'هناك تغييرات غير محفوظة — هل تريد تجاهلها؟',
+  discardChangesButton: 'تجاهل التغييرات',
+  keepEditingButton: 'متابعة التعديل',
+  nameRequiredError: 'اسم الباب مطلوب',
+  trackingDataHeading: 'بيانات التتبع',
+  trackingAddedByLabel: 'أُضيف بواسطة',
+  trackingAddedByPlaceholder: '— (يُملأ مع تفعيل الحسابات)',
+  trackingApprovedLabel: 'اعتمده',
+  trackingApprovedPlaceholder: '— (لم يُعتمد بعد)',
+  trackingArchiveLabel: 'الأرشفة',
+  trackingArchiveActiveValue: 'نشط',
+
+  movePickerTitleSingle: (doorName: string): string => `نقل «${doorName}»`,
+  movePickerTitleBulk: (count: number): string => `نقل ${doorCountPhrase(count)}`,
+  movePickerDescription: 'اختر الوجهة — باب يجعله فرعًا له، أو «كباب رئيسي».',
+  asMainDoorOption: 'كباب رئيسي (أعلى الشجرة)',
+  noSectionOption: 'بلا قسم',
+  moveConfirm: 'نقل',
+
+  sectionsModalTitle: 'إدارة الأقسام',
+  sectionNameLabel: 'اسم القسم',
+  addSectionButton: 'إضافة قسم',
+  renameSectionButton: 'إعادة تسمية',
+  deleteSectionButton: 'حذف',
+
+  archiveEmptyMessage: 'لا توجد أبواب مؤرشفة.',
+  restoreButton: 'استرجاع',
+  restoreParentFirstHint: 'استرجع الأب أولًا',
+  restoreDetachedAnnouncement: 'استُرجع الباب خارج قسمه المحذوف',
+
+  bulkConflictMessage: (names: string): string => `فشلت العملية كاملة — حدث تعارض على: ${names}`,
+  archiveConfirm: (count: number): string => `سيتم أرشفة ${doorCountPhrase(count)}`,
+
+  loadErrorFallback: 'تعذر تحميل شجرة الأبواب. حاول مرة أخرى.',
+  emptyTreeMessage: 'لا توجد أبواب بعد.',
+  loadingTreeMessage: 'جارٍ تحميل شجرة الأبواب...',
+
+  writeConflictFallback: 'حدث تعارض أثناء الحفظ. يرجى تحديث البيانات والمحاولة مرة أخرى.',
+  writeInvalidFallback: 'تعذر تنفيذ العملية. تحقق من البيانات وحاول مرة أخرى.',
+  writeTransportFallback: 'تعذر الاتصال بالخادم. حاول مرة أخرى.',
+} as const;
