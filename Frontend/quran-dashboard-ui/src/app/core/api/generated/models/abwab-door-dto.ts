@@ -4,6 +4,7 @@
 export interface AbwabDoorDto {
   aliases: Array<string>;
   description: string | null;
+  globalOrderValue: number | null;
   id: number;
   name: string;
   orderValue: number;
