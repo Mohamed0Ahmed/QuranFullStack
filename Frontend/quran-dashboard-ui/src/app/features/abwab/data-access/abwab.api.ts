@@ -18,6 +18,8 @@ import { BulkMoveDoorsCommand } from '../../../core/api/generated/models/bulk-mo
 import { BulkArchiveDoorsCommand } from '../../../core/api/generated/models/bulk-archive-doors-command';
 import { DeleteDoorBody } from '../../../core/api/generated/models/delete-door-body';
 import { RestoreDoorBody } from '../../../core/api/generated/models/restore-door-body';
+import { AbwabDoorRelationDto } from '../../../core/api/generated/models/abwab-door-relation-dto';
+import { AddDoorRelationsBody } from '../../../core/api/generated/models/add-door-relations-body';
 
 /**
  * Wire body for door creation. `sectionId` is optional here (unlike the generated
@@ -87,5 +89,18 @@ export class AbwabApi {
 
   restoreDoor(id: number, body: RestoreDoorBody): Observable<ApiResponse<AbwabRestoredDoorDto>> {
     return this.http.post<ApiResponse<AbwabRestoredDoorDto>>(`${this.base}/doors/${id}/restore`, body);
+  }
+
+  getDoorRelations(doorId: number): Observable<ApiResponse<AbwabDoorRelationDto[]>> {
+    return this.http.get<ApiResponse<AbwabDoorRelationDto[]>>(`${this.base}/doors/${doorId}/relations`);
+  }
+
+  addDoorRelations(doorId: number, body: AddDoorRelationsBody): Observable<ApiResponse<AbwabDoorRelationDto[]>> {
+    return this.http.post<ApiResponse<AbwabDoorRelationDto[]>>(`${this.base}/doors/${doorId}/relations`, body);
+  }
+
+  // 204 No Content on success, so HttpClient yields `null` rather than an envelope.
+  deleteRelation(relationId: number): Observable<ApiResponse<unknown> | null> {
+    return this.http.delete<ApiResponse<unknown> | null>(`${this.base}/relations/${relationId}`);
   }
 }

@@ -22,6 +22,20 @@ function doorCountPhrase(count: number): string {
   return `${count} بابًا`;
 }
 
+/** Same Arabic number forms as `doorCountPhrase`, for the feminine «علاقة». */
+function relationCountPhrase(count: number): string {
+  if (count === 1) {
+    return 'علاقة واحدة';
+  }
+  if (count === 2) {
+    return 'علاقتين';
+  }
+  if (count <= 10) {
+    return `${count} علاقات`;
+  }
+  return `${count} علاقة`;
+}
+
 export const ABWAB_LABELS = {
   pageTitle: 'الأبواب',
   pageSubtitle: 'هيكل التصنيفات القرآنية — كل عملية تتم في مكانها.',
@@ -109,6 +123,47 @@ export const ABWAB_LABELS = {
   loadErrorFallback: 'تعذر تحميل شجرة الأبواب. حاول مرة أخرى.',
   emptyTreeMessage: 'لا توجد أبواب بعد.',
   loadingTreeMessage: 'جارٍ تحميل شجرة الأبواب...',
+
+  // Relations. Copy is the approved contract's (docs/design-preview/abwab-relations-concept.html),
+  // with one deliberate exception: the contract's `TYPE_META.hier.label` («أعم / أخص», :183) and its
+  // hint paragraph (:155) violate the locked comprehensiveness-only vocabulary. Both are unreachable
+  // in the contract's own rendering, and neither string is reproduced here.
+  relationsOp: 'العلاقات',
+  relationsFlagLabel: 'علاقات',
+  relationsModalTitle: (doorName: string): string => `علاقات «${doorName}»`,
+  relationsModalDescription: 'العلاقات المتبادلة تظهر تلقائيًا عند الطرف الآخر. الحذف من هنا يحذفها من الطرفين.',
+  relationsEmpty: 'لا توجد علاقات لهذا الباب بعد — أضف أول علاقة من الأسفل.',
+  relationsLoadError: 'تعذر تحميل علاقات الباب.',
+  relationDeleteAriaLabel: 'حذف العلاقة',
+
+  relationGroupSimilarity: 'تشابه',
+  relationGroupOpposition: 'تضاد',
+  relationGroupMoreComprehensive: 'أبواب أكثر شمولية',
+  relationGroupLessComprehensive: 'أبواب أقل شمولية',
+
+  relationAddTitle: 'إضافة علاقة جديدة',
+  relationTypeSimilarity: 'تشابه',
+  relationTypeOpposition: 'تضاد',
+  relationTypeComprehensiveness: 'شمولية',
+  relationDirectionLabel: 'الاتجاه:',
+  relationDirectionAnchorMore: 'المحدد أقل شمولية',
+  relationDirectionAnchorLess: 'المحدد أكثر شمولية',
+  relationDirectionPreview: (doorName: string, anchorIsMore: boolean): string =>
+    `الأبواب اللي هتختارها ${anchorIsMore ? 'أقل شمولية' : 'أكثر شمولية'} من «${doorName}»`,
+  relationPickerPlaceholder: 'ابحث واختر بابًا أو أكثر… (تقدر تربط كذا باب مرة واحدة)',
+  relationAlreadyLinked: 'مرتبط بالفعل بهذا النوع',
+  relationNoneSelected: 'لم تختر شيئًا بعد',
+  relationSelectedSummary: (names: readonly string[]): string => `${names.length} مختار: ${names.join('، ')}`,
+  relationAddButton: (count: number): string => (count <= 1 ? 'أضف العلاقة' : `أضف ${relationCountPhrase(count)}`),
+  relationsCloseButton: 'إغلاق',
+
+  // Bulk mode opens the same modal with the selection as the fixed target list, so the picker
+  // chooses the single anchor instead (plan §7 T602).
+  relationsBulkAddOp: 'إضافة علاقة',
+  relationsBulkTitle: (count: number): string => `إضافة علاقة لـ ${doorCountPhrase(count)}`,
+  relationsBulkAnchorHint: 'اختر الباب الذي ترتبط به الأبواب المحددة',
+  relationsBulkDirectionPreview: (count: number, doorName: string, anchorIsMore: boolean): string =>
+    `الأبواب المحددة (${count}) هتبقى ${anchorIsMore ? 'أقل شمولية' : 'أكثر شمولية'} من «${doorName}»`,
 
   writeConflictFallback: 'حدث تعارض أثناء الحفظ. يرجى تحديث البيانات والمحاولة مرة أخرى.',
   writeInvalidFallback: 'تعذر تنفيذ العملية. تحقق من البيانات وحاول مرة أخرى.',
