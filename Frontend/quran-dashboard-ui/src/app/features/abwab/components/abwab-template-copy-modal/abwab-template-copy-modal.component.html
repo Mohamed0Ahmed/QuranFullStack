@@ -1,0 +1,101 @@
+@if (open()) {
+  <div class="qd-modal-backdrop" data-testid="abwab-template-copy-modal-backdrop" (click)="close()">
+    <section
+      class="qd-modal abwab-template-copy-modal"
+      role="dialog"
+      aria-modal="true"
+      dir="rtl"
+      [attr.aria-labelledby]="titleId"
+      qdModalScrollLock
+      data-testid="abwab-template-copy-modal"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="close()"
+    >
+      <h3 [id]="titleId">{{ titleText() }}</h3>
+      <p class="abwab-template-copy-modal__desc">{{ descriptionText }}</p>
+
+      @if (errorMessage()) {
+        <p class="abwab-template-copy-modal__error" role="alert" data-testid="abwab-template-copy-modal-error">
+          {{ errorMessage() }}
+        </p>
+      }
+
+      <div class="abwab-template-copy-modal__preview" data-testid="abwab-template-copy-modal-preview">
+        <p>{{ previewText() }}</p>
+        <p>{{ previewNoRootText }}</p>
+        <p>{{ previewDetachedText }}</p>
+      </div>
+
+      <div class="abwab-template-copy-modal__picker">
+        <input
+          type="text"
+          [placeholder]="searchPlaceholder"
+          [attr.aria-label]="searchPlaceholder"
+          [value]="searchQuery()"
+          data-testid="abwab-template-copy-modal-search"
+          (input)="onSearchInput($event)"
+        />
+        <div class="abwab-template-copy-modal__pick-list">
+          @for (row of pickerRows(); track row.node.id) {
+            <div
+              class="abwab-template-copy-modal__pick-row"
+              [style.--abwab-template-copy-depth]="row.depth"
+              [attr.data-testid]="'abwab-template-copy-modal-pick-' + row.node.id"
+              (click)="togglePicked(row)"
+            >
+              <!-- A leaf keeps the element for alignment only: no tab stop, nothing to announce. -->
+              <button
+                type="button"
+                class="abwab-template-copy-modal__pick-chevron"
+                [class.abwab-template-copy-modal__pick-chevron--leaf]="!row.hasChildren"
+                [attr.tabindex]="row.hasChildren ? null : -1"
+                [attr.aria-hidden]="row.hasChildren ? null : true"
+                [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
+                [attr.aria-label]="row.hasChildren ? expandAriaLabel(row) : null"
+                [attr.data-testid]="'abwab-template-copy-modal-pick-chevron-' + row.node.id"
+                (click)="toggleExpanded($event, row.node.id)"
+              >
+                @if (row.hasChildren) {
+                  <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
+                }
+              </button>
+              <input
+                type="checkbox"
+                [checked]="isPicked(row.node.id)"
+                [attr.aria-label]="row.node.name"
+                [attr.data-testid]="'abwab-template-copy-modal-pick-checkbox-' + row.node.id"
+                (click)="$event.preventDefault()"
+              />
+              <span class="abwab-template-copy-modal__pick-name">{{ row.node.name }}</span>
+            </div>
+          } @empty {
+            <p class="qd-empty-state" data-testid="abwab-template-copy-modal-empty">{{ emptyDoorsLabel }}</p>
+          }
+        </div>
+        <p class="abwab-template-copy-modal__selected" data-testid="abwab-template-copy-modal-selected">
+          {{ pickedIds().size === 0 ? noneSelectedLabel : selectedSummary() }}
+        </p>
+      </div>
+
+      <div class="abwab-template-copy-modal__foot">
+        <button
+          type="button"
+          class="qd-btn qd-btn-primary"
+          [disabled]="pickedIds().size === 0"
+          data-testid="abwab-template-copy-modal-confirm"
+          (click)="confirm()"
+        >
+          {{ confirmLabel() }}
+        </button>
+        <button
+          type="button"
+          class="qd-btn qd-btn-ghost"
+          data-testid="abwab-template-copy-modal-cancel"
+          (click)="close()"
+        >
+          {{ cancelLabel }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

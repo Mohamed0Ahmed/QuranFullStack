@@ -24,6 +24,11 @@
           {{ manageSectionsLabel }}
         </button>
         @if (!archiveParam()) {
+          <!-- Hidden in the archive view like the add-root button: a template applies to live
+               doors only, so the entry would lead nowhere usable there. -->
+          <a class="qd-btn" [routerLink]="templatesRoutePath" data-testid="abwab-page-templates">
+            {{ templatesLabel }}
+          </a>
           <button
             type="button"
             class="qd-btn qd-btn-primary"

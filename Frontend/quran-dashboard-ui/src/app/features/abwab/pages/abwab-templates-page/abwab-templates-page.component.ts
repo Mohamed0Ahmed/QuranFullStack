@@ -5,6 +5,7 @@ import { Observable, of } from 'rxjs';
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 import { AbwabTemplatesFacade } from '../../state/abwab-templates.facade';
 import { AbwabTemplatesController } from '../../state/abwab-templates.controller';
+import { AbwabSnapshotFacade } from '../../state/abwab-snapshot.facade';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import {
   AbwabAuthoringFields,
@@ -18,6 +19,8 @@ import {
   AbwabTemplateTreeComponent,
 } from '../../components/abwab-template-tree/abwab-template-tree.component';
 import { AbwabTemplateNodeModalComponent } from '../../components/abwab-template-node-modal/abwab-template-node-modal.component';
+import { AbwabTemplateCopyModalComponent } from '../../components/abwab-template-copy-modal/abwab-template-copy-modal.component';
+import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
 
 /** What the node modal is currently authoring. `parentNodeId` is the new node's parent when
  * adding; `nodeId` is the edited node when editing. */
@@ -36,7 +39,13 @@ type AbwabNodeModalState =
 @Component({
   selector: 'qd-abwab-templates-page',
   standalone: true,
-  imports: [RouterLink, AbwabAnnouncerComponent, AbwabTemplateTreeComponent, AbwabTemplateNodeModalComponent],
+  imports: [
+    RouterLink,
+    AbwabAnnouncerComponent,
+    AbwabTemplateTreeComponent,
+    AbwabTemplateNodeModalComponent,
+    AbwabTemplateCopyModalComponent,
+  ],
   templateUrl: './abwab-templates-page.component.html',
   styleUrl: './abwab-templates-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,6 +53,7 @@ type AbwabNodeModalState =
 export class AbwabTemplatesPageComponent implements OnInit {
   protected readonly facade = inject(AbwabTemplatesFacade);
   protected readonly controller = inject(AbwabTemplatesController);
+  private readonly doorsFacade = inject(AbwabSnapshotFacade);
 
   protected readonly doorsRoutePath = `/${ABWAB_ROUTE_PATH}`;
 
@@ -54,6 +64,12 @@ export class AbwabTemplatesPageComponent implements OnInit {
   protected readonly contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
   protected readonly deletingNodeId = signal<number | null>(null);
   protected readonly confirmingTemplateDelete = signal(false);
+  protected readonly copyModalOpen = signal(false);
+
+  /** The picker's only source. It is fetched when the modal opens rather than on page entry:
+   * the workshop is reachable directly by URL, so the doors snapshot may never have been
+   * loaded — and loading it on every entry would buy a request the picker often never uses. */
+  protected readonly liveRoots = computed(() => this.doorsFacade.snapshot()?.liveRoots ?? []);
 
   private readonly nodesById = computed(() => collectAbwabTemplateNodes(this.facade.selectedTemplate()?.root ?? null));
 
@@ -103,6 +119,7 @@ export class AbwabTemplatesPageComponent implements OnInit {
   protected get newTemplateNamePlaceholder(): string { return ABWAB_LABELS.newTemplateNamePlaceholder; }
   protected get editTemplateLabel(): string { return ABWAB_LABELS.editTemplateButton; }
   protected get deleteTemplateLabel(): string { return ABWAB_LABELS.deleteTemplateButton; }
+  protected get copyToDoorsLabel(): string { return ABWAB_LABELS.copyToDoorsButton; }
   protected get templatesListAriaLabel(): string { return ABWAB_LABELS.templatesListAriaLabel; }
   protected get templateTreeAriaLabel(): string { return ABWAB_LABELS.templateTreeAriaLabel; }
   protected get templatesEmptyMessage(): string { return ABWAB_LABELS.templatesEmptyMessage; }
@@ -269,6 +286,26 @@ export class AbwabTemplatesPageComponent implements OnInit {
     this.confirmingTemplateDelete.set(false);
   }
 
+  protected openCopyModal(): void {
+    this.doorsFacade.load();
+    this.copyModalOpen.set(true);
+  }
+
+  protected closeCopyModal(): void {
+    this.copyModalOpen.set(false);
+  }
+
+  /** Bound into the copy modal as a function input. The apply refreshes nothing here: it writes
+   * doors, and `AbwabPageComponent.ngOnInit` calls `facade.load()` on every entry, so returning
+   * to `/abwab` is what makes the copies visible. */
+  protected readonly applyTemplate = (targetDoorIds: readonly number[]): Observable<AbwabWriteOutcome<AbwabDoorDto[]>> => {
+    const templateId = this.facade.selectedTemplateId();
+    if (templateId === null) {
+      return of<AbwabWriteOutcome<AbwabDoorDto[]>>({ kind: 'invalid', message: ABWAB_LABELS.writeInvalidFallback });
+    }
+    return this.controller.applyTemplate(templateId, targetDoorIds);
+  };
+
   protected ctxEdit(): void {
     const nodeId = this.contextMenuNodeId();
     if (nodeId !== null) {
@@ -288,5 +325,6 @@ export class AbwabTemplatesPageComponent implements OnInit {
     this.contextMenuNodeId.set(null);
     this.deletingNodeId.set(null);
     this.confirmingTemplateDelete.set(false);
+    this.copyModalOpen.set(false);
   }
 }

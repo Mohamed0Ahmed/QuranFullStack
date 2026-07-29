@@ -83,6 +83,14 @@
               <div class="abwab-templates-page__editor-actions">
                 <button
                   type="button"
+                  class="qd-btn qd-btn-primary"
+                  data-testid="abwab-templates-page-copy"
+                  (click)="openCopyModal()"
+                >
+                  {{ copyToDoorsLabel }}
+                </button>
+                <button
+                  type="button"
                   class="qd-btn"
                   data-testid="abwab-templates-page-edit-template"
                   (click)="editRoot()"
@@ -180,6 +188,15 @@
   [contextName]="nodeModalContextName()"
   [submitNode]="submitNode"
   (closed)="closeNodeModal()"
+/>
+
+<qd-abwab-template-copy-modal
+  [open]="copyModalOpen()"
+  [templateName]="facade.selectedTemplate()?.name ?? ''"
+  [templateNodeCount]="facade.selectedTemplate()?.nodeCount ?? 0"
+  [liveRoots]="liveRoots()"
+  [applyTemplate]="applyTemplate"
+  (closed)="closeCopyModal()"
 />
 
 @if (contextMenuNodeId() !== null) {
