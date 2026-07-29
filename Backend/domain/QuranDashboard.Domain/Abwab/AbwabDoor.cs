@@ -17,6 +17,11 @@ public sealed class AbwabDoor
 
     public int OrderValue { get; set; }
 
+    // NULL everywhere except live root doors: GlobalOrderValue IS NOT NULL ⟺
+    // (ParentId IS NULL AND DeletedAtUtc IS NULL). Independent of OrderValue — the superset's
+    // own ordering space, never touched by a Section-scoped reorder (plan §5).
+    public int? GlobalOrderValue { get; set; }
+
     public DateTimeOffset CreatedAtUtc { get; set; }
     public int? CreatedBy { get; set; }
     public DateTimeOffset UpdatedAtUtc { get; set; }
