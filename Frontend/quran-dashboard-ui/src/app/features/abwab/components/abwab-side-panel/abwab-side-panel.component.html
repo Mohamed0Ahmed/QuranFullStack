@@ -63,6 +63,15 @@
       </button>
       <button
         type="button"
+        class="abwab-side-panel__op"
+        data-testid="abwab-side-panel-op-relations"
+        [disabled]="selectedDoor() === null || bulkMode()"
+        (click)="relationsRequested.emit()"
+      >
+        {{ relationsLabel }}
+      </button>
+      <button
+        type="button"
         class="abwab-side-panel__op abwab-side-panel__op--danger"
         data-testid="abwab-side-panel-op-archive"
         [disabled]="selectedDoor() === null || bulkMode()"
@@ -85,6 +94,14 @@
       <div class="abwab-side-panel__bulk-actions">
         <button type="button" class="abwab-side-panel__op" data-testid="abwab-side-panel-bulk-move" (click)="bulkMoveRequested.emit()">
           {{ bulkMoveAllLabel }}
+        </button>
+        <button
+          type="button"
+          class="abwab-side-panel__op"
+          data-testid="abwab-side-panel-bulk-relations"
+          (click)="bulkRelationsRequested.emit()"
+        >
+          {{ bulkRelationsLabel }}
         </button>
         <button
           type="button"

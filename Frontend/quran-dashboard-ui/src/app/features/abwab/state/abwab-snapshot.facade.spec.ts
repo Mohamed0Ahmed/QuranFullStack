@@ -15,6 +15,7 @@ const DOOR = {
   representativeAyahText: null,
   aliases: [],
   directChildCount: 0,
+  relationCount: 0,
   isArchived: false,
   parentId: null,
   sectionId: null,

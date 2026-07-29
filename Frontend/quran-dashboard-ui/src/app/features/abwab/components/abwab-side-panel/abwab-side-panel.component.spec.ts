@@ -50,7 +50,7 @@ describe('AbwabSidePanelComponent', () => {
     expect(buttons.every((b) => !b.disabled)).toBe(true);
   });
 
-  it('emits addChild/editRequested/archiveRequested and never renders relations/protection entries', () => {
+  it('emits addChild/editRequested/archiveRequested and never renders a protection entry', () => {
     const fixture = render({ selectedDoor: DOOR });
     const root = fixture.nativeElement as HTMLElement;
 
@@ -69,9 +69,7 @@ describe('AbwabSidePanelComponent', () => {
     expect(edit).toHaveLength(1);
     expect(archive).toHaveLength(1);
 
-    expect(root.textContent).not.toContain('العلاقات');
     expect(root.textContent).not.toContain('الحماية');
-    expect(root.querySelector('[data-testid="abwab-side-panel-op-relations"]')).toBeNull();
     expect(root.querySelector('[data-testid="abwab-side-panel-op-protect"]')).toBeNull();
   });
 

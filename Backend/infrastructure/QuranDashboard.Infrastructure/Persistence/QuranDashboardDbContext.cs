@@ -56,6 +56,7 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<AbwabSection> AbwabSections => Set<AbwabSection>();
     public DbSet<AbwabDoor> AbwabDoors => Set<AbwabDoor>();
     public DbSet<AbwabDoorAlias> AbwabDoorAliases => Set<AbwabDoorAlias>();
+    public DbSet<AbwabDoorRelation> AbwabDoorRelations => Set<AbwabDoorRelation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

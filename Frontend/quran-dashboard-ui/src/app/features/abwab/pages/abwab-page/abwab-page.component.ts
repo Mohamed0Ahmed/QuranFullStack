@@ -19,6 +19,7 @@ import { AbwabAnnouncerComponent } from '../../components/abwab-announcer/abwab-
 import { AbwabDoorModalComponent } from '../../components/abwab-door-modal/abwab-door-modal.component';
 import { AbwabMovePickerComponent } from '../../components/abwab-move-picker/abwab-move-picker.component';
 import { AbwabSectionsModalComponent } from '../../components/abwab-sections-modal/abwab-sections-modal.component';
+import { AbwabRelationsModalComponent } from '../../components/abwab-relations-modal/abwab-relations-modal.component';
 
 /**
  * Route shell for `/abwab` (plan-slice-b.md T415/T501-T511): URL ⇄ state wiring,
@@ -43,6 +44,7 @@ import { AbwabSectionsModalComponent } from '../../components/abwab-sections-mod
     AbwabDoorModalComponent,
     AbwabMovePickerComponent,
     AbwabSectionsModalComponent,
+    AbwabRelationsModalComponent,
   ],
   templateUrl: './abwab-page.component.html',
   styleUrl: './abwab-page.component.scss',
@@ -119,6 +121,7 @@ export class AbwabPageComponent implements OnInit {
   protected get editOpLabel(): string { return ABWAB_LABELS.editOp; }
   protected get addChildOpLabel(): string { return ABWAB_LABELS.addChildOp; }
   protected get moveOpLabel(): string { return ABWAB_LABELS.moveOp; }
+  protected get relationsOpLabel(): string { return ABWAB_LABELS.relationsOp; }
 
   constructor() {
     // Restores the `door` deep link once both the URL and the snapshot are ready —

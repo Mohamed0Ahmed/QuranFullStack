@@ -1,0 +1,278 @@
+.abwab-relations-modal h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.abwab-relations-modal__desc,
+.abwab-relations-modal__preview,
+.abwab-relations-modal__selected,
+.abwab-relations-modal__empty {
+  color: var(--qd-text-muted);
+  font-size: 0.78rem;
+}
+
+.abwab-relations-modal__count,
+.abwab-relations-modal__already {
+  color: var(--qd-text-muted);
+  font-size: 0.6875rem;
+}
+
+.abwab-relations-modal__group h4,
+.abwab-relations-modal__picker-hint {
+  color: var(--qd-text-muted);
+  font-size: 0.75rem;
+  margin-block-end: var(--qd-space-1);
+}
+
+.abwab-relations-modal__count {
+  background: var(--qd-section-bg);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-pill);
+  padding-inline: var(--qd-space-2);
+}
+
+.abwab-relations-modal__desc {
+  margin-block: var(--qd-space-1) var(--qd-space-3);
+}
+
+.abwab-relations-modal__error {
+  color: var(--qd-danger);
+  background: var(--qd-danger-tint);
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  font-size: 0.8125rem;
+  margin-block-end: var(--qd-space-3);
+}
+
+.abwab-relations-modal__group {
+  margin-block-end: var(--qd-space-3);
+}
+
+.abwab-relations-modal__group h4 {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+/* Three markers, not four: both شمولية groups are one type seen from opposite ends. The
+   contract's slate blue has no token in the parchment+green palette, so the third marker is the
+   muted ink rather than a pasted hex (UI_STYLE_SYSTEM §12). */
+.abwab-relations-modal__dot {
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 50%;
+  flex: none;
+}
+
+.abwab-relations-modal__dot--similarity {
+  background: var(--qd-accent);
+}
+
+.abwab-relations-modal__dot--opposition {
+  background: var(--qd-warning);
+}
+
+.abwab-relations-modal__dot--comprehensiveness {
+  background: var(--qd-text-muted);
+}
+
+.abwab-relations-modal__chips,
+.abwab-relations-modal__targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-1);
+}
+
+.abwab-relations-modal__targets {
+  margin-block-end: var(--qd-space-3);
+}
+
+.abwab-relations-modal__target {
+  font-size: 0.8125rem;
+  background: var(--qd-section-bg);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  padding: var(--qd-space-1) var(--qd-space-2);
+}
+
+.abwab-relations-modal__empty {
+  background: var(--qd-section-bg);
+  border: 1px dashed var(--qd-border-strong);
+  border-radius: var(--qd-radius-md);
+  padding: var(--qd-space-3);
+  text-align: center;
+}
+
+.abwab-relations-modal__divider {
+  border: none;
+  block-size: 1px;
+  background: var(--qd-border);
+  margin-block: var(--qd-space-4) var(--qd-space-3);
+}
+
+.abwab-relations-modal__add-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  margin-block-end: var(--qd-space-2);
+}
+
+.abwab-relations-modal__types {
+  display: flex;
+  gap: var(--qd-space-1);
+  inline-size: fit-content;
+  padding: var(--qd-space-1);
+}
+
+.abwab-relations-modal__types,
+.abwab-relations-modal__direction,
+.abwab-relations-modal__picker {
+  background: var(--qd-section-bg);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+}
+
+.abwab-relations-modal__type {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qd-space-1);
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-1) var(--qd-space-3);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--qd-text-muted);
+  cursor: pointer;
+}
+
+.abwab-relations-modal__type--active {
+  background: var(--qd-surface);
+  border-color: var(--qd-border);
+  color: var(--qd-text);
+  font-weight: 600;
+}
+
+.abwab-relations-modal__type:focus-visible,
+.abwab-relations-modal__pill button:focus-visible,
+.abwab-relations-modal__picker input:focus-visible,
+.abwab-relations-modal__pick-chevron:focus-visible,
+.abwab-relations-modal__pick-row input:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -1px;
+}
+
+/* The checkbox and the chevron are the row's two tab stops, so keyboard focus has to read as a
+   row highlight — the row itself is not focusable and gets no ring of its own. */
+.abwab-relations-modal__pick-row:has(:focus-visible) {
+  background: var(--qd-surface-hover);
+}
+
+.abwab-relations-modal__direction {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+  font-size: 0.78rem;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  margin-block-start: var(--qd-space-2);
+}
+
+.abwab-relations-modal__pill {
+  display: flex;
+  border: 1px solid var(--qd-border-strong);
+  border-radius: var(--qd-radius-sm);
+  overflow: hidden;
+}
+
+.abwab-relations-modal__pill button {
+  border: none;
+  background: var(--qd-surface);
+  padding: var(--qd-space-1) var(--qd-space-3);
+  font-family: inherit;
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+  cursor: pointer;
+}
+
+.abwab-relations-modal__pill-btn--active {
+  background: var(--qd-selected-bg);
+  color: var(--qd-accent-text);
+  font-weight: 600;
+}
+
+.abwab-relations-modal__picker {
+  margin-block-start: var(--qd-space-3);
+  padding: var(--qd-space-2);
+}
+
+.abwab-relations-modal__picker input {
+  inline-size: 100%;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+}
+
+.abwab-relations-modal__pick-list {
+  max-block-size: 11rem;
+  overflow: auto;
+  margin-block-start: var(--qd-space-2);
+}
+
+.abwab-relations-modal__pick-row {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  padding: var(--qd-space-1) var(--qd-space-2);
+  padding-inline-start: calc(var(--abwab-relations-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
+  border-radius: var(--qd-radius-sm);
+  cursor: pointer;
+}
+
+.abwab-relations-modal__pick-row:hover {
+  background: var(--qd-surface-hover);
+}
+
+.abwab-relations-modal__pick-row--disabled,
+.abwab-relations-modal__pick-row--disabled:hover {
+  opacity: 0.45;
+  cursor: default;
+  background: transparent;
+}
+
+.abwab-relations-modal__pick-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex: none;
+  border: none;
+  background: transparent;
+  color: var(--qd-text-muted);
+  cursor: pointer;
+}
+
+.abwab-relations-modal__pick-chevron--leaf {
+  visibility: hidden;
+}
+
+.abwab-relations-modal__pick-name {
+  flex: 1;
+  font-size: 0.8125rem;
+}
+
+.abwab-relations-modal__selected {
+  margin-block-start: var(--qd-space-2);
+  min-block-size: 1.25rem;
+}
+
+.abwab-relations-modal__foot {
+  display: flex;
+  gap: var(--qd-space-2);
+  margin-block-start: var(--qd-space-3);
+}

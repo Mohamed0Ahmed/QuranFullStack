@@ -1,5 +1,7 @@
 import { AbwabTreeSectionDto } from '../../../core/api/generated/models/abwab-tree-section-dto';
 import { AbwabReorderScope } from '../../../core/api/generated/models/abwab-reorder-scope';
+import { AbwabRelationType } from '../../../core/api/generated/models/abwab-relation-type';
+import { AbwabRelationDirection } from '../../../core/api/generated/models/abwab-relation-direction';
 
 export type AbwabView = 'tree' | 'cards';
 
@@ -13,6 +15,85 @@ export const ABWAB_ORDER_SCOPE_TO_WIRE: Readonly<Record<AbwabOrderScope, AbwabRe
   section: 1,
   global: 2,
 };
+
+/** The three relation types, as readable names. Mapped to the wire's numeric enums only at the
+ * dispatch boundary, exactly like `AbwabOrderScope` above. */
+export type AbwabRelationKind = 'similarity' | 'opposition' | 'comprehensiveness';
+
+/** Direction is stated from the ANCHOR door's side — the door whose modal is open. The design
+ * contract uses "broader"/"narrower" from two different perspectives, so neither word appears here
+ * or on the wire (plan §5.3). */
+export type AbwabRelationDirectionKind = 'anchor-more' | 'anchor-less';
+
+export const ABWAB_RELATION_KIND_TO_WIRE: Readonly<Record<AbwabRelationKind, AbwabRelationType>> = {
+  similarity: 1,
+  opposition: 2,
+  comprehensiveness: 3,
+};
+
+export const ABWAB_RELATION_KIND_FROM_WIRE: Readonly<Record<AbwabRelationType, AbwabRelationKind>> = {
+  1: 'similarity',
+  2: 'opposition',
+  3: 'comprehensiveness',
+};
+
+export const ABWAB_RELATION_DIRECTION_TO_WIRE: Readonly<
+  Record<AbwabRelationDirectionKind, AbwabRelationDirection>
+> = {
+  'anchor-more': 1,
+  'anchor-less': 2,
+};
+
+export const ABWAB_RELATION_DIRECTION_FROM_WIRE: Readonly<
+  Record<AbwabRelationDirection, AbwabRelationDirectionKind>
+> = {
+  1: 'anchor-more',
+  2: 'anchor-less',
+};
+
+/** One relation as the open modal sees it: always the OTHER door, and a direction already resolved
+ * from this door's perspective by the backend. */
+export interface AbwabRelationVm {
+  readonly id: number;
+  readonly otherDoorId: number;
+  readonly otherDoorName: string;
+  readonly kind: AbwabRelationKind;
+  readonly direction: AbwabRelationDirectionKind | null;
+}
+
+/** Four display groups, not three types: one comprehensiveness row lands in a different group on
+ * each of its two doors. */
+export type AbwabRelationGroupKey = 'similarity' | 'opposition' | 'more-comprehensive' | 'less-comprehensive';
+
+export interface AbwabRelationGroupVm {
+  readonly key: AbwabRelationGroupKey;
+  readonly relations: readonly AbwabRelationVm[];
+}
+
+/** Contract order (`abwab-relations-concept.html:193-198`): تشابه · تضاد · أكثر شمولية · أقل شمولية.
+ * Empty groups are dropped — the contract renders only the ones that have rows. */
+const ABWAB_RELATION_GROUP_ORDER: readonly AbwabRelationGroupKey[] = [
+  'similarity',
+  'opposition',
+  'more-comprehensive',
+  'less-comprehensive',
+];
+
+/** The one place §5.3's rule lives: the anchor being the more comprehensive side means the OTHER
+ * door is the less comprehensive one, so the row is displayed under «أبواب أقل شمولية». */
+export function abwabRelationGroupKey(relation: AbwabRelationVm): AbwabRelationGroupKey {
+  if (relation.kind !== 'comprehensiveness') {
+    return relation.kind;
+  }
+  return relation.direction === 'anchor-more' ? 'less-comprehensive' : 'more-comprehensive';
+}
+
+export function groupAbwabRelations(relations: readonly AbwabRelationVm[]): readonly AbwabRelationGroupVm[] {
+  return ABWAB_RELATION_GROUP_ORDER.map((key) => ({
+    key,
+    relations: relations.filter((relation) => abwabRelationGroupKey(relation) === key),
+  })).filter((group) => group.relations.length > 0);
+}
 
 const ABWAB_VIEWS: ReadonlySet<string> = new Set<AbwabView>(['tree', 'cards']);
 
@@ -42,6 +123,9 @@ export interface AbwabNode {
   readonly depth: number;
   /** Direct live (non-archived) children count — drives the tree's `.count` badge. */
   readonly liveChildCount: number;
+  /** Visible relations only: a relation whose other endpoint is archived is dormant and counts 0,
+   * so an archived door's count is always 0 and its row never shows the flag. */
+  readonly relationCount: number;
   readonly children: readonly AbwabNode[];
 }
 

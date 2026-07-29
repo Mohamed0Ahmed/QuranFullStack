@@ -176,6 +176,87 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.ToTable("abwab_door_aliases", (string)null);
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoorRelation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at");
+
+                    b.Property<int?>("ApprovedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("approved_by");
+
+                    b.Property<int?>("BroaderDoorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("broader_door_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<int>("DoorAId")
+                        .HasColumnType("integer")
+                        .HasColumnName("door_a_id");
+
+                    b.Property<int>("DoorBId")
+                        .HasColumnType("integer")
+                        .HasColumnName("door_b_id");
+
+                    b.Property<int>("RelationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("relation_type");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedAtUtc");
+
+                    b.HasIndex("DoorBId");
+
+                    b.HasIndex("DoorAId", "DoorBId", "RelationType")
+                        .IsUnique()
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.ToTable("abwab_door_relations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_abwab_door_relations_canonical_pair", "door_a_id < door_b_id");
+
+                            t.HasCheckConstraint("CK_abwab_door_relations_direction", "(relation_type = 3) = (broader_door_id IS NOT NULL) AND (broader_door_id IS NULL OR broader_door_id IN (door_a_id, door_b_id))");
+                        });
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabSection", b =>
                 {
                     b.Property<int>("Id")
@@ -2461,6 +2542,21 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("DoorId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoorRelation", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoor", null)
+                        .WithMany()
+                        .HasForeignKey("DoorAId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoor", null)
+                        .WithMany()
+                        .HasForeignKey("DoorBId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

@@ -20,6 +20,7 @@ function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string 
     aliases: [],
     description: null,
     directChildCount: 0,
+    relationCount: 0,
     globalOrderValue: null,
     isArchived: false,
     orderValue: overrides.id,

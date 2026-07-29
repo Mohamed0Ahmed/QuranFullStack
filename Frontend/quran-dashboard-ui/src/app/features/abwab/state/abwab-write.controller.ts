@@ -18,6 +18,8 @@ import { AbwabBulkDoorRef } from '../../../core/api/generated/models/abwab-bulk-
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
 import { AbwabSectionDto } from '../../../core/api/generated/models/abwab-section-dto';
 import { AbwabRestoredDoorDto } from '../../../core/api/generated/models/abwab-restored-door-dto';
+import { AbwabDoorRelationDto } from '../../../core/api/generated/models/abwab-door-relation-dto';
+import { AddDoorRelationsBody } from '../../../core/api/generated/models/add-door-relations-body';
 
 type AbwabWriteFailureOutcome =
   | { readonly kind: 'conflict'; readonly message: string }
@@ -153,6 +155,17 @@ export class AbwabWriteController {
       map((response) => this.handleSuccess(response)),
       catchError((err: unknown) => of(this.handleBulkFailure<number[]>(err))),
     );
+  }
+
+  // Relation writes carry no version token — they move no door's xmin, so no stale-token 409 is
+  // reachable — but they still go through `dispatch`, because they change relation counts on two
+  // rows of the snapshot and the refresh-after-write invariant is what keeps those honest.
+  addDoorRelations(doorId: number, body: AddDoorRelationsBody): Observable<AbwabWriteOutcome<AbwabDoorRelationDto[]>> {
+    return this.dispatch(this.api.addDoorRelations(doorId, body));
+  }
+
+  deleteRelation(relationId: number): Observable<AbwabWriteOutcome<unknown>> {
+    return this.dispatch(this.api.deleteRelation(relationId));
   }
 
   private currentBulkRefs(): AbwabBulkDoorRef[] {

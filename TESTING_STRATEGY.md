@@ -13,25 +13,34 @@ its own scope. Test *quality* rules (test-guard, CODING_PRINCIPLES) and Quranic 
 safety rules are unaffected and always apply.
 
 The **Backend** baselines below were re-taken **2026-07-29** at the close of the
-`abwab-global-order` feature (phase 5, T505) on a developer machine with Docker up,
+`abwab-relations` feature (phase 7, T704) on a developer machine with Docker up,
 `resources/import-sources/` staged, and the canonical dump at
 `resources/db-dumps/quran-canonical/` present (regenerated against this tree's migration head
-as part of this re-measurement — a stale dump fails loud rather than skipping, per §3 Tier A/C).
-`Tests.Abwab` grew from 36 to 46 (the second, independent root order's schema and write-behavior
-tests) and the route smoke tier grew from 134 to 140 (`SmokeAbwabWriteTests`' new `Global`-scope
-cases). The **Frontend** row was re-measured the same date: still 190 spec files, 2,142 → 2,158
-tests (the builder/tree/cards/move-picker/page/write-controller cases the same feature added).
-The pipeline row is **derived, not re-run** on 2026-07-29 — this feature touches no pipeline
-namespace: `1,843 − 1,086 − 140 = 617`, unchanged, which is what the partition identity below is
-for:
+when `abwab-relations` added its migration — a stale dump fails loud rather than skipping, per
+§3 Tier A/C).
+
+**Every number below is unchanged from the previous re-measurement, and that is the finding.**
+`abwab-relations` wrote **no tests at all**, by explicit decision (the gaps and their paying
+triggers are in `docs/TESTING_DEBT.md`), so `Tests.Abwab` stayed at **46** and the Frontend suite
+stayed at 190 files / 2,158 tests — the phase-6 work repaired existing fixtures rather than adding
+cases, and an unchanged Frontend count is the check that it did.
+
+The route smoke tier also stayed at **140**, which contradicts the feature plan's expectation that
+it would grow: all three new relations routes are catalogued **`ParityOnly`**, so they satisfy
+`SmokeCoverageParityTests` — which is two `[Fact]`s over the whole catalog, not a per-route
+theory — without adding a dispatched case. Recorded here because the plan's prediction, not the
+measurement, was wrong.
+
+The pipeline row is **derived, not re-run** — this feature touches no pipeline namespace:
+`1,843 − 1,086 − 140 = 617`, which is what the partition identity below is for:
 
 | Run | Tests | Duration | Skipped |
 | --- | --- | --- | --- |
-| Backend full suite | 1,843 | 5 m 34 s | 0 |
-| Backend no-pipeline (Tier B/C) | 1,086 | ~21 s | 0 |
+| Backend full suite | 1,843 | 5 m 46 s | 0 |
+| Backend no-pipeline (Tier B/C) | 1,086 | ~23 s | 0 |
 | Backend ten pipeline families (Tier D) — derived, last timed 2026-07-28 | 617 | 3 m 54 s | 0 |
-| Backend route smoke (§3 Tier A/C route gate) | 140 | ~52 s | 0 |
-| Frontend full suite (190 spec files) | 2,158 | 205.65 s | 0 |
+| Backend route smoke (§3 Tier A/C route gate) | 140 | ~45 s | 0 |
+| Frontend full suite (190 spec files) | 2,158 | 185.39 s | 0 |
 
 Counts and durations are indicative, not contractual. The zero-skip column holds only
 because the staged canonical resources *and* the canonical dump were present; on a machine
@@ -184,6 +193,10 @@ forward unchanged). A present dump that is corrupt or stale — sha256 or migrat
 fails loud rather than skipping, which is what happened on this feature's own first re-measurement
 pass: the dump predated the `AddAbwabGlobalOrderValue` migration and was regenerated
 (`Backend/scripts/create-smoke-dump --yes`) before the 140-passed number above was taken.
+The same rule bit again in `abwab-relations`: `AddAbwabDoorRelations` moved the migration head,
+so the dump was regenerated with the same command as part of that feature's phase 1 before any
+smoke run counted as evidence. **Any migration invalidates the dump — regenerate it in the same
+change, never at the next run's expense.**
 "140 passed, 0 skipped" and "127 passed, data tier skipped" are both valid evidence; an
 unqualified "smoke passed" is not.
 
@@ -340,12 +353,12 @@ current code state (§7).
 **Partition check (re-measured 2026-07-29, not asserted):** the no-pipeline filter, the
 all-pipeline filter, and the smoke filter partition the suite losslessly —
 **1,086 + 617 + 140 = 1,843**, exactly the full-suite total, with zero failures and zero
-skips. Three of the four runs were fresh on 2026-07-29; the pipeline term is the identity's
-remainder rather than a fourth run, which is legitimate only because the other three were
-measured against this same tree. `Tests.Abwab` (46 tests, up from 36: schema, write
-behavior, and tree-read tests for the second, global root order added by `abwab-global-order`)
-landed in the no-pipeline set by default, exactly as this paragraph predicts a new top-level
-namespace will; no pipeline filter needed a change since Abwab tables are non-pipeline. No test
+skips. Three of the four runs were fresh on 2026-07-29 **against the `abwab-relations` tree**;
+the pipeline term is the identity's remainder rather than a fourth run, which is legitimate only
+because the other three were measured against this same tree. `Tests.Abwab` is **still 46** —
+`abwab-relations` added a fourth table, three routes, and a whole frontend modal without adding a
+single test, deliberately (`docs/TESTING_DEBT.md`), so the identity holds by all three terms
+standing still rather than by two moving together. No test
 family falls outside all three tiers, and none is
 counted twice. Re-verify this three-way identity whenever a namespace is added: a new
 top-level namespace lands in the no-pipeline set by default, a new *pipeline* family must be
@@ -371,7 +384,7 @@ npm test -- --include="src/app/features/words/data-access/*.spec.ts"
 # Focused feature glob (93 files, 1,384 tests, ~98 s):
 npm test -- --include="src/app/features/words/**/*.spec.ts"
 
-# Full Frontend suite (190 files, 2,158 tests, ~205.65 s):
+# Full Frontend suite (190 files, 2,158 tests, ~185 s):
 npm test
 
 # Production build (separate from tests — the test builder ignores dist/):

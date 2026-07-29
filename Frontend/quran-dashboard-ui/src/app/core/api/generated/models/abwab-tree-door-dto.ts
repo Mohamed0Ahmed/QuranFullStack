@@ -11,6 +11,7 @@ export interface AbwabTreeDoorDto {
   name: string;
   orderValue: number;
   parentId: number | null;
+  relationCount: number;
   representativeAyahText: string | null;
   sectionId: number | null;
   version: number;

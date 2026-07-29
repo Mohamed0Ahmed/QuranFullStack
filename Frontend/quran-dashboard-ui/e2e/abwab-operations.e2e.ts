@@ -101,7 +101,7 @@ test('bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
   await expect(page.getByTestId(`abwab-tree-row-${bulkB.id}`)).toHaveCount(0);
 });
 
-test('row context menu offers exactly edit / add-child / move / archive', async ({ page, abwabSandbox }) => {
+test('row context menu offers exactly edit / add-child / move / relations / archive', async ({ page, abwabSandbox }) => {
   const door = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('ctx-menu') });
 
   await page.goto(`/abwab?section=${abwabSandbox.sectionId}`);
@@ -112,10 +112,11 @@ test('row context menu offers exactly edit / add-child / move / archive', async 
   await expect(menu.getByTestId('abwab-page-ctx-edit')).toBeVisible();
   await expect(menu.getByTestId('abwab-page-ctx-add-child')).toBeVisible();
   await expect(menu.getByTestId('abwab-page-ctx-move')).toBeVisible();
+  await expect(menu.getByTestId('abwab-page-ctx-relations')).toBeVisible();
   await expect(menu.getByTestId('abwab-page-ctx-archive')).toBeVisible();
 
-  // Zero dead controls (plan.md §5.1) — pinned at the browser level, not just in specs.
-  await expect(page.getByTestId('abwab-side-panel-op-relations')).toHaveCount(0);
+  // Zero dead controls (plan.md §5.1) — pinned at the browser level, not just in specs. Relations
+  // stopped being one when `abwab-relations` gave them a real read; protection has not.
   await expect(page.getByTestId('abwab-side-panel-op-protect')).toHaveCount(0);
 
   await page.getByTestId('abwab-page-ctx-backdrop').click();
