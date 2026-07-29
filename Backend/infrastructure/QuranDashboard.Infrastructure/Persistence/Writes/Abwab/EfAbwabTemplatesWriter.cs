@@ -29,7 +29,7 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
             Name = name,
             Description = description,
             RepresentativeAyahText = representativeAyahText,
-            Aliases = [.. aliases],
+            Aliases = AbwabAliasNormalization.Normalize(aliases),
             OrderValue = 1,
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
@@ -110,7 +110,7 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
             Name = name,
             Description = description,
             RepresentativeAyahText = representativeAyahText,
-            Aliases = [.. aliases],
+            Aliases = AbwabAliasNormalization.Normalize(aliases),
             OrderValue = nextOrder,
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
@@ -130,8 +130,7 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
         IReadOnlyList<string> aliases,
         CancellationToken cancellationToken)
     {
-        var node = await db.AbwabTemplateNodes
-            .FirstOrDefaultAsync(n => n.Id == nodeId && n.DeletedAtUtc == null, cancellationToken);
+        var node = await FindLiveNodeAsync(nodeId, cancellationToken);
         if (node is null)
         {
             return null;
@@ -141,7 +140,9 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
         node.Description = description;
         node.RepresentativeAyahText = representativeAyahText;
         // A NEW array, never an in-place mutation: EF change-tracks this property by reference.
-        node.Aliases = [.. aliases];
+        // Normalized on the way in, like a door's aliases — otherwise a template node keeps blank and
+        // untrimmed entries that the copy would silently drop, and the two would disagree.
+        node.Aliases = AbwabAliasNormalization.Normalize(aliases);
         node.UpdatedAtUtc = DateTimeOffset.UtcNow;
 
         await SaveTranslatingDuplicateNameAsync(cancellationToken);
@@ -152,8 +153,7 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
     public async Task<AbwabTemplateNodeDto?> ReorderNodeAsync(
         int nodeId, int position, CancellationToken cancellationToken)
     {
-        var node = await db.AbwabTemplateNodes
-            .FirstOrDefaultAsync(n => n.Id == nodeId && n.DeletedAtUtc == null, cancellationToken);
+        var node = await FindLiveNodeAsync(nodeId, cancellationToken);
         if (node is null)
         {
             return null;
@@ -189,8 +189,7 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
     public async Task<AbwabTemplateNodeDeleteResult> DeleteNodeAsync(
         int nodeId, CancellationToken cancellationToken)
     {
-        var node = await db.AbwabTemplateNodes
-            .FirstOrDefaultAsync(n => n.Id == nodeId && n.DeletedAtUtc == null, cancellationToken);
+        var node = await FindLiveNodeAsync(nodeId, cancellationToken);
         if (node is null)
         {
             return AbwabTemplateNodeDeleteResult.NotFound;
@@ -226,6 +225,16 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
 
         return AbwabTemplateNodeDeleteResult.Deleted;
     }
+
+    // A node whose TEMPLATE is soft-deleted is not addressable. Both reads answer 404 for such a
+    // template, so a node write that still succeeded would be a read/write asymmetry on routes that
+    // ship without authentication — the node id alone is enough to reach one.
+    private Task<AbwabTemplateNode?> FindLiveNodeAsync(int nodeId, CancellationToken cancellationToken) =>
+        db.AbwabTemplateNodes
+            .Where(n => n.Id == nodeId
+                && n.DeletedAtUtc == null
+                && db.AbwabTemplates.Any(t => t.Id == n.TemplateId && t.DeletedAtUtc == null))
+            .FirstOrDefaultAsync(cancellationToken);
 
     private static HashSet<int> CollectSubtreeIds(IReadOnlyList<AbwabTemplateNode> liveNodes, int rootId)
     {

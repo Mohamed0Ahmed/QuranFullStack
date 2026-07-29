@@ -52,6 +52,10 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
             throw new AbwabNotFoundException();
         }
 
+        // The response lists one created root per target, and the collision message names targets in
+        // the same order — both follow the CALLER's order, not whatever order the database returned.
+        targets = [.. targets.OrderBy(t => targetIds.IndexOf(t.Id))];
+
         if (targets.Exists(t => t.DeletedAtUtc != null))
         {
             throw new AbwabTemplateTargetArchivedException();
@@ -83,6 +87,9 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
 
         foreach (var target in targets)
         {
+            // Scoped by parent alone, where CreateAsync scopes by (section, parent). Equivalent here
+            // and not a shortcut: every live child of a door carries that door's section by the
+            // cascade invariant, so the section term could only ever narrow the count to itself.
             var nextOrder = await db.AbwabDoors.CountAsync(
                 d => d.ParentId == target.Id && d.DeletedAtUtc == null, cancellationToken) + 1;
 
@@ -128,7 +135,7 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
 
         await transaction.CommitAsync(cancellationToken);
 
-        var rootAliases = NormalizeAliases(rootNode.Aliases);
+        var rootAliases = AbwabAliasNormalization.Normalize(rootNode.Aliases);
         return createdRoots
             .Select(copied => new AbwabDoorDto(
                 copied.Door.Id,
@@ -163,7 +170,7 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
 
     private void AddAliases(int doorId, IReadOnlyList<string> aliases, DateTimeOffset now)
     {
-        foreach (var value in NormalizeAliases(aliases))
+        foreach (var value in AbwabAliasNormalization.Normalize(aliases))
         {
             db.AbwabDoorAliases.Add(new AbwabDoorAlias
             {
@@ -174,9 +181,6 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
             });
         }
     }
-
-    private static IReadOnlyList<string> NormalizeAliases(IReadOnlyList<string> aliases) =>
-        aliases.Select(a => a.Trim()).Where(a => a.Length > 0).Distinct().ToList();
 
     // The duplicate here genuinely IS a door name — the inverse of the relations writer's case,
     // where the door-name-keyed message would have been the wrong constraint entirely. Only

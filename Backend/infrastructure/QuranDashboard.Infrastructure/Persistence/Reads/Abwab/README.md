@@ -96,8 +96,9 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
   has nothing to return for the one field the list renders, and both reads treat it as not-found
   rather than emitting an empty name. Unreachable today (create always writes the root), stated
   because node rows are soft-deleted and this reader is what filters them.
-- **The templates list is one query, not one per template.** Root name and live descendant count are
-  read in a single join and grouped afterwards — the `GetLiveRelationCountsAsync` rule.
+- **The templates list is one query, not one per template, and it aggregates in SQL.** Root name and
+  live descendant count are correlated subqueries inside one statement — the `GetLiveRelationCountsAsync`
+  rule, plus the second half of it: what crosses the wire is one row per template, never one per node.
 - **Templates never touch the snapshot.** `abwab_templates` / `abwab_template_nodes` are separate
   admin tables, so no `AbwabTreeDoorDto` field, no `Version` term, and no filter here changes because
   of them. An applied template shows up as ordinary doors on the next snapshot read, with nothing
@@ -120,5 +121,5 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
 - Response DTOs: `application/QuranDashboard.Application.Abstractions/Abwab/Responses/AbwabTreeDto.cs`,
   `AbwabDoorRelationDto.cs`, `AbwabTemplateDto.cs`, `AbwabTemplateSummaryDto.cs`,
   `AbwabTemplateNodeDto.cs`.
-- Tests: the relations and templates readers have none — see `docs/TESTING_DEBT.md` for the gaps and
-  their triggers.
+- Tests: the relations and templates readers have none. The relations gap and its trigger are in
+  `docs/TESTING_DEBT.md`; the templates rows land with that feature's frontend slice.

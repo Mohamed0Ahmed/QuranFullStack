@@ -7,37 +7,30 @@ internal sealed class EfAbwabTemplatesReader(QuranDashboardDbContext db) : IAbwa
 {
     public async Task<IReadOnlyList<AbwabTemplateSummaryDto>> GetAllAsync(CancellationToken cancellationToken)
     {
-        // One query for every template's root name and node count, never one per template — the
-        // N+1 the tree reader's own count query avoids.
-        var rows = await (
-            from node in db.AbwabTemplateNodes.AsNoTracking()
-            join template in db.AbwabTemplates.AsNoTracking() on node.TemplateId equals template.Id
-            where template.DeletedAtUtc == null && node.DeletedAtUtc == null
-            select new
+        // One round trip, and the count is computed in SQL rather than by materializing a row per
+        // node: what crosses the wire is one row per template, not one per node in the database.
+        var rows = await db.AbwabTemplates.AsNoTracking()
+            .Where(t => t.DeletedAtUtc == null)
+            .OrderBy(t => t.CreatedAtUtc)
+            .ThenBy(t => t.Id)
+            .Select(t => new
             {
-                node.TemplateId,
-                node.ParentNodeId,
-                node.Name,
-                TemplateCreatedAtUtc = template.CreatedAtUtc,
+                t.Id,
+                RootName = db.AbwabTemplateNodes
+                    .Where(n => n.TemplateId == t.Id && n.ParentNodeId == null && n.DeletedAtUtc == null)
+                    .Select(n => n.Name)
+                    .FirstOrDefault(),
+                DescendantCount = db.AbwabTemplateNodes
+                    .Count(n => n.TemplateId == t.Id && n.ParentNodeId != null && n.DeletedAtUtc == null),
             })
             .ToListAsync(cancellationToken);
 
+        // A rootless template is skipped, matching GetAsync's null. Unreachable today — create is the
+        // only path and it always writes the root — but the name has no value to return, and the list
+        // UI renders nothing else.
         return rows
-            .GroupBy(row => row.TemplateId)
-            .Select(group => new
-            {
-                TemplateId = group.Key,
-                Root = group.FirstOrDefault(row => row.ParentNodeId is null),
-                DescendantCount = group.Count(row => row.ParentNodeId is not null),
-                CreatedAtUtc = group.First().TemplateCreatedAtUtc,
-            })
-            // A rootless template is skipped, matching GetAsync's null. Unreachable today — create
-            // is the only path and it always writes the root — but the name has no value to return,
-            // and the list UI renders nothing else.
-            .Where(entry => entry.Root is not null)
-            .OrderBy(entry => entry.CreatedAtUtc)
-            .ThenBy(entry => entry.TemplateId)
-            .Select(entry => new AbwabTemplateSummaryDto(entry.TemplateId, entry.Root!.Name, entry.DescendantCount))
+            .Where(row => row.RootName is not null)
+            .Select(row => new AbwabTemplateSummaryDto(row.Id, row.RootName!, row.DescendantCount))
             .ToList();
     }
 
