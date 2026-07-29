@@ -56,7 +56,10 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
   Chromium only. It boots the Angular dev server *and* the backend `https` profile, so it needs
   mkcert certificates, a migrated local `quran_dashboard`, and a prior
   `dotnet build Backend/QuranDashboard.sln`. Specs live in `e2e/` and MUST be named `*.e2e.ts` —
-  a `*.spec.ts` there would be collected by the Vitest builder. See `e2e/README.md`.
+  a `*.spec.ts` there would be collected by the Vitest builder. `npm run e2e` runs two Playwright
+  projects in sequence — `default` (2 workers) then the five Abwab specs at `--workers=1`, since
+  a `Global`-scope Abwab reorder resequences every live root and can race a second worker. See
+  `e2e/README.md`.
 
 ## Invariants
 

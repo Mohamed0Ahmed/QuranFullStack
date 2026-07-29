@@ -1,6 +1,18 @@
 import { AbwabTreeSectionDto } from '../../../core/api/generated/models/abwab-tree-section-dto';
+import { AbwabReorderScope } from '../../../core/api/generated/models/abwab-reorder-scope';
 
 export type AbwabView = 'tree' | 'cards';
+
+/** Which order space a reorder acts on (plan.md §4 — two independent spaces, zero coupling).
+ * `'section'` is the existing per-`(section, parent)` order; `'global'` is «كل الأبواب»'s own,
+ * root-doors-only order. Kept as a readable domain type in this feature's own view models;
+ * mapped to the wire's numeric `AbwabReorderScope` only at the dispatch boundary. */
+export type AbwabOrderScope = 'global' | 'section';
+
+export const ABWAB_ORDER_SCOPE_TO_WIRE: Readonly<Record<AbwabOrderScope, AbwabReorderScope>> = {
+  section: 1,
+  global: 2,
+};
 
 const ABWAB_VIEWS: ReadonlySet<string> = new Set<AbwabView>(['tree', 'cards']);
 
@@ -22,6 +34,9 @@ export interface AbwabNode {
   readonly sectionId: number | null;
   readonly parentId: number | null;
   readonly orderValue: number;
+  /** Live root doors only — `null` at any depth > 0 and for every archived door
+   * (`global_order_value IS NOT NULL ⟺ parent_id IS NULL AND deleted_at IS NULL`, plan.md §5). */
+  readonly globalOrderValue: number | null;
   readonly version: number;
   readonly isArchived: boolean;
   readonly depth: number;

@@ -50,6 +50,7 @@ export class AbwabPageOverlaysController {
       parentId: node.parentId,
       sectionId: node.sectionId,
       orderValue: node.orderValue,
+      globalOrderValue: node.globalOrderValue,
       version: node.version,
     };
   });

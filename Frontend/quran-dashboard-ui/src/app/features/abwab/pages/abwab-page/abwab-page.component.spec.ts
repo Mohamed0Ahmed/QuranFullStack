@@ -15,6 +15,7 @@ function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string 
     aliases: [],
     description: null,
     directChildCount: 0,
+    globalOrderValue: overrides.parentId == null && !overrides.isArchived ? overrides.id : null,
     isArchived: false,
     orderValue: overrides.id,
     parentId: null,
@@ -31,8 +32,10 @@ function ok<T>(data: T): ApiResponse<T> {
 
 const TREE: AbwabTreeDto = {
   doors: [
-    door({ id: 1, name: 'العلم بالله', sectionId: 1, orderValue: 1 }),
-    door({ id: 2, name: 'الرسول', sectionId: 1, orderValue: 2 }),
+    // orderValue and globalOrderValue deliberately differ here (1 vs 9, 2 vs 8) — a test
+    // that reads the wrong field is caught rather than passing on coincidentally equal values.
+    door({ id: 1, name: 'العلم بالله', sectionId: 1, orderValue: 1, globalOrderValue: 9 }),
+    door({ id: 2, name: 'الرسول', sectionId: 1, orderValue: 2, globalOrderValue: 8 }),
     door({ id: 3, name: 'باب مؤرشف', isArchived: true, orderValue: 3 }),
   ],
   sections: [{ id: 1, name: 'اللغة العربية', orderValue: 1, version: 1, doorsInScopeCount: 2 }],
@@ -228,7 +231,7 @@ describe('AbwabPageComponent', () => {
   });
 
   describe('T506 — reorder wiring', () => {
-    it('dispatches reorderDoor with the committed position and the door’s current version', () => {
+    it('dispatches reorderDoor with the committed position, the door’s current version, and scope=Global (2) in «كل الأبواب»', () => {
       const fixture = render();
       const root = fixture.nativeElement as HTMLElement;
 
@@ -240,7 +243,38 @@ describe('AbwabPageComponent', () => {
       input.value = '2';
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 
-      expect(reorderDoor).toHaveBeenCalledWith(1, { position: 2, version: 1 });
+      // No section selected (query params empty) ⇒ the superset is active ⇒ AbwabOrderScope
+      // 'global' ⇒ wire value 2 (AbwabReorderScope.Global) — never 'Section' by default.
+      expect(reorderDoor).toHaveBeenCalledWith(1, { position: 2, scope: 2, version: 1 });
+    });
+
+    it('T405 — dispatches reorderDoor with scope=Section (1) once a section tab is active', () => {
+      queryParamMap$.next(convertToParamMap({ section: '1' }));
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-tree-order-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+      const input = root.querySelector('[data-testid="abwab-tree-order-input-1"]') as HTMLInputElement;
+      input.value = '2';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(reorderDoor).toHaveBeenCalledWith(1, { position: 2, scope: 1, version: 1 });
+    });
+  });
+
+  describe('T402/T405 — the order badge itself swaps with the derived scope', () => {
+    it('shows globalOrderValue in «كل الأبواب» and orderValue once a section tab is active', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-tree-order-1"]')?.textContent?.trim()).toBe('9');
+
+      queryParamMap$.next(convertToParamMap({ section: '1' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-tree-order-1"]')?.textContent?.trim()).toBe('1');
     });
   });
 

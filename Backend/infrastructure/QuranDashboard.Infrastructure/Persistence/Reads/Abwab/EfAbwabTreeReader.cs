@@ -47,7 +47,7 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
         var doorDtos = doors
             .Select(d => new AbwabTreeDoorDto(
                 d.Id, d.SectionId, d.ParentId, d.Name, d.Description, d.RepresentativeAyahText,
-                d.OrderValue, d.Version, d.DeletedAtUtc != null, liveChildCounts.GetValueOrDefault(d.Id),
+                d.OrderValue, d.GlobalOrderValue, d.Version, d.DeletedAtUtc != null, liveChildCounts.GetValueOrDefault(d.Id),
                 aliasesByDoor.GetValueOrDefault(d.Id, [])))
             .ToList();
 

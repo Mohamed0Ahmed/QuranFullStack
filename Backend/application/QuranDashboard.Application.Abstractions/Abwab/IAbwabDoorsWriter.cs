@@ -39,8 +39,11 @@ public interface IAbwabDoorsWriter
         uint expectedVersion,
         CancellationToken cancellationToken);
 
-    // Null = door missing or archived. Throws AbwabStaleVersionException, AbwabInvalidPositionException.
-    Task<AbwabDoorDto?> ReorderAsync(int id, int position, uint expectedVersion, CancellationToken cancellationToken);
+    // Null = door missing or archived. Throws AbwabStaleVersionException, AbwabInvalidPositionException,
+    // AbwabScopeNotApplicableException (Global on a nested door). Section renumbers OrderValue in the
+    // door's own (section, parent) scope; Global renumbers GlobalOrderValue across every live root,
+    // and never touches OrderValue — the two spaces are independent (plan §5).
+    Task<AbwabDoorDto?> ReorderAsync(int id, int position, AbwabReorderScope scope, uint expectedVersion, CancellationToken cancellationToken);
 
     // Throws AbwabNotFoundException, AbwabParentNotFoundException, AbwabSectionNotFoundException,
     // AbwabCycleException, AbwabDuplicateNameException, AbwabStaleVersionException. All-or-nothing.

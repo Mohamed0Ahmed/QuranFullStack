@@ -251,6 +251,11 @@ internal static class SmokeRouteCatalog
         {
             Method = HttpMethod.Post, ParityOnly = true,
         },
+        // abwab-global-order: the body gained a required Scope (Section | Global). DerivedStatus is
+        // unchanged at 404 — ParityOnly routes are never dispatched by the sweep (SmokeRoutePipelineTests
+        // excludes them), so this value is documentation, not an assertion the sweep runs. "Well-formed"
+        // now means "carries a valid scope"; door 1 still doesn't exist against the empty schema either
+        // way, so the derived status stays 404, not 400 — confirmed, not assumed (plan §7 T208).
         new("api/abwab/doors/{id:int}/order", "/api/abwab/doors/1/order", HttpStatusCode.NotFound)
         {
             Method = HttpMethod.Post, ParityOnly = true,

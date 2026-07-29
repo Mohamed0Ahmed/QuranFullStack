@@ -21,6 +21,7 @@ const SAMPLE_DOOR: AbwabDoorDto = {
   parentId: null,
   sectionId: 1,
   orderValue: 1,
+  globalOrderValue: 1,
   version: 1,
 };
 
@@ -150,10 +151,10 @@ describe('AbwabApi', () => {
   });
 
   it('reorderDoor sends POST /api/abwab/doors/{id}/order', async () => {
-    const promise = firstValueFrom(api.reorderDoor(1, { position: 3, version: 2 }));
+    const promise = firstValueFrom(api.reorderDoor(1, { position: 3, scope: 1, version: 2 }));
     const req = httpMock.expectOne(`${BASE}/doors/1/order`);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ position: 3, version: 2 });
+    expect(req.request.body).toEqual({ position: 3, scope: 1, version: 2 });
 
     req.flush(ok<AbwabDoorDto>(SAMPLE_DOOR));
     await promise;

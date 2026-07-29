@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text;
+using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Smoke;
@@ -462,7 +463,7 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         await CreateDoorAsync(client, "الثالث");
 
         using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{secondId}/order",
-            new { position = 1, version = secondVersion });
+            new { position = 1, scope = AbwabReorderScope.Section, version = secondVersion });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var orderValues = await GetDoorOrderValuesAsync(null, null);
@@ -479,9 +480,90 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
 
         var (id, version) = await CreateDoorAsync(client, "باب وحيد");
 
-        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{id}/order", new { position = 5, version });
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{id}/order",
+            new { position = 5, scope = AbwabReorderScope.Section, version });
 
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorInvalidPosition);
+    }
+
+    [Fact]
+    public async Task ReorderDoor_WithGlobalScope_ToValidPosition_ReturnsOk()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (firstId, _) = await CreateDoorAsync(client, "الأول عالميًا");
+        var (secondId, secondVersion) = await CreateDoorAsync(client, "الثاني عالميًا");
+        var firstGlobalBefore = (await GetDoorAsync(firstId)).GlobalOrderValue!.Value;
+        var secondGlobalBefore = (await GetDoorAsync(secondId)).GlobalOrderValue!.Value;
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{secondId}/order",
+            new { position = 1, scope = AbwabReorderScope.Global, version = secondVersion });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await GetDoorAsync(firstId)).OrderValue.Should().Be(1, "a Global reorder must never touch the per-section OrderValue");
+
+        // The write itself: second took first's old global position, and first shifted to what was
+        // second's — proving the endpoint actually renumbers GlobalOrderValue, not a no-op.
+        (await GetDoorAsync(secondId)).GlobalOrderValue.Should().Be(firstGlobalBefore);
+        (await GetDoorAsync(firstId)).GlobalOrderValue.Should().Be(secondGlobalBefore);
+    }
+
+    [Fact]
+    public async Task ReorderDoor_WithGlobalScope_OutOfRange_ReturnsBadRequest()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, version) = await CreateDoorAsync(client, "باب وحيد عالميًا");
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{id}/order",
+            new { position = 5, scope = AbwabReorderScope.Global, version });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorInvalidPosition);
+    }
+
+    [Fact]
+    public async Task ReorderDoor_WithGlobalScope_OnNestedDoor_ReturnsBadRequest()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (parentId, _) = await CreateDoorAsync(client, "أب لباب يرفض الترتيب العام");
+        var (childId, childVersion) = await CreateDoorAsync(client, "ابن يرفض الترتيب العام", parentId: parentId);
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{childId}/order",
+            new { position = 1, scope = AbwabReorderScope.Global, version = childVersion });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorScopeNotApplicable);
+    }
+
+    [Fact]
+    public async Task ReorderDoor_WithMissingScope_ReturnsBadRequest()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, version) = await CreateDoorAsync(client, "باب بلا نطاق ترتيب");
+
+        // No scope key at all: System.Text.Json leaves it at the enum's unmapped default (plan §6),
+        // which must be refused, not silently treated as Section.
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{id}/order", new { position = 1, version });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorInvalidScope);
+    }
+
+    [Fact]
+    public async Task ReorderDoor_WithUnknownScope_ReturnsBadRequest()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, version) = await CreateDoorAsync(client, "باب لنطاق ترتيب غير معروف");
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{id}/order", new { position = 1, scope = 99, version });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorInvalidScope);
     }
 
     // §6's move row lists "duplicate at target" as its own 409, distinct from stale and cycle: two doors
@@ -510,7 +592,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         using var client = fixture.CreateClient();
 
         var (id, _) = await CreateDoorAsync(client, "باب لفحص ربط الترتيب");
-        using var content = new StringContent("{\"position\":1,\"version\":null}", Encoding.UTF8, "application/json");
+        using var content = new StringContent(
+            "{\"position\":1,\"scope\":1,\"version\":null}", Encoding.UTF8, "application/json");
 
         using var response = await client.PostAsync($"/api/abwab/doors/{id}/order", content);
 
@@ -523,7 +606,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         await fixture.ResetAbwabAsync();
         using var client = fixture.CreateClient();
 
-        using var response = await client.PostAsJsonAsync("/api/abwab/doors/999999/order", new { position = 1, version = 0u });
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors/999999/order",
+            new { position = 1, scope = AbwabReorderScope.Section, version = 0u });
 
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabDoorNotFound);
     }
@@ -534,10 +618,24 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         await fixture.ResetAbwabAsync();
         using var client = fixture.CreateClient();
 
-        var (id, _) = await CreateDoorAsync(client, "باب لإعادة ترتيب متزامنة");
+        var (id, _) = await CreateDoorAsync(client, "باب لإعادة ترتيب قسمي متزامنة");
 
         using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{id}/order",
-            new { position = 1, version = 999_999u });
+            new { position = 1, scope = AbwabReorderScope.Section, version = 999_999u });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorStaleVersion);
+    }
+
+    [Fact]
+    public async Task ReorderDoor_WithGlobalScope_AndStaleVersion_ReturnsConflict()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, _) = await CreateDoorAsync(client, "باب لإعادة ترتيب عام متزامنة");
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{id}/order",
+            new { position = 1, scope = AbwabReorderScope.Global, version = 999_999u });
 
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorStaleVersion);
     }
@@ -985,12 +1083,12 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         return client.SendAsync(request);
     }
 
-    private async Task<(int? SectionId, int? ParentId, int OrderValue, uint Version, DateTimeOffset? DeletedAtUtc)> GetDoorAsync(int id)
+    private async Task<(int? SectionId, int? ParentId, int OrderValue, int? GlobalOrderValue, uint Version, DateTimeOffset? DeletedAtUtc)> GetDoorAsync(int id)
     {
         using var scope = fixture.ApiServices.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var door = await db.AbwabDoors.AsNoTracking().SingleAsync(d => d.Id == id);
-        return (door.SectionId, door.ParentId, door.OrderValue, door.Version, door.DeletedAtUtc);
+        return (door.SectionId, door.ParentId, door.OrderValue, door.GlobalOrderValue, door.Version, door.DeletedAtUtc);
     }
 
     private async Task<IReadOnlyDictionary<int, int>> GetDoorOrderValuesAsync(int? sectionId, int? parentId)

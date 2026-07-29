@@ -13,6 +13,7 @@ function node(overrides: Partial<AbwabNode> & { id: number; name: string }): Abw
     sectionId: null,
     parentId: null,
     orderValue: overrides.id,
+    globalOrderValue: overrides.id,
     version: 1,
     isArchived: false,
     depth: 0,
@@ -115,6 +116,23 @@ describe('AbwabMovePickerComponent — M30', () => {
     (fixture.nativeElement.querySelector('[data-testid="abwab-move-picker-confirm"]') as HTMLElement).click();
 
     expect(confirmed).toEqual([{ targetParentId: null, targetSectionId: null }]);
+  });
+
+  it('T402 — the destination order follows liveRoots’ given order (the superset’s global order), not a per-section re-sort by orderValue', () => {
+    // orderValue says door 6 ("أ") comes before door 5 ("ب") in section 1's own order — but
+    // liveRoots (the global order this component is handed) lists 5 before 6, so the
+    // destination list must too, per the T402 decision recorded on the component.
+    const doorFive = node({ id: 5, name: 'ب', sectionId: 1, orderValue: 2 });
+    const doorSix = node({ id: 6, name: 'أ', sectionId: 1, orderValue: 1 });
+    const fixture = render({ liveRoots: [doorFive, doorSix] });
+
+    (fixture.nativeElement.querySelector('[data-testid="abwab-move-picker-section-1"]') as HTMLElement).click();
+    fixture.detectChanges();
+
+    const destIds = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid^="abwab-move-picker-dest-"]'),
+    ).map((el) => el.getAttribute('data-testid'));
+    expect(destIds).toEqual(['abwab-move-picker-dest-asmain', 'abwab-move-picker-dest-5', 'abwab-move-picker-dest-6']);
   });
 
   it('emits closed on cancel without confirming', () => {

@@ -101,7 +101,11 @@ public sealed class AbwabDoorsController(
     public async Task<ActionResult<ApiResponse<AbwabDoorDto>>> Reorder(
         int id, [FromBody] ReorderDoorBody body, CancellationToken cancellationToken)
     {
-        var outcome = await reorderHandler.HandleAsync(new ReorderDoorCommand(id, body.Position, body.Version), cancellationToken);
+        // An omitted scope lands on the enum's unmapped default (0, plan §6) rather than Section — the
+        // guard here is what refuses that, before the command ever reaches the handler.
+        var outcome = Enum.IsDefined(body.Scope)
+            ? await reorderHandler.HandleAsync(new ReorderDoorCommand(id, body.Position, body.Scope, body.Version), cancellationToken)
+            : new ReorderDoorOutcome.InvalidScope();
 
         return outcome switch
         {
@@ -111,6 +115,10 @@ public sealed class AbwabDoorsController(
                 NotFound(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorNotFound)),
             ReorderDoorOutcome.InvalidPosition =>
                 BadRequest(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorInvalidPosition)),
+            ReorderDoorOutcome.InvalidScope =>
+                BadRequest(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorInvalidScope)),
+            ReorderDoorOutcome.ScopeNotApplicable =>
+                BadRequest(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorScopeNotApplicable)),
             ReorderDoorOutcome.StaleVersion =>
                 Conflict(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorStaleVersion)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(ReorderDoorOutcome)} variant."),

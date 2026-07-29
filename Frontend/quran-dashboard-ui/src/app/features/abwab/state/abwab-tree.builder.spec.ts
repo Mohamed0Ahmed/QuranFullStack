@@ -14,6 +14,7 @@ function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string 
     aliases: [],
     description: null,
     directChildCount: 0,
+    globalOrderValue: null,
     isArchived: false,
     orderValue: overrides.id,
     parentId: null,
@@ -29,16 +30,52 @@ function tree(doors: AbwabTreeDoorDto[]): AbwabTreeDto {
 }
 
 describe('buildAbwabTreeSnapshot', () => {
-  it('M1 — orders siblings by orderValue and tolerates gaps', () => {
+  it('M1 — orders live roots by globalOrderValue, independent of orderValue, and tolerates gaps', () => {
     const snapshot = buildAbwabTreeSnapshot(
       tree([
-        door({ id: 1, name: 'A', orderValue: 10 }),
-        door({ id: 2, name: 'B', orderValue: 1 }),
-        door({ id: 3, name: 'C', orderValue: 5 }),
+        door({ id: 1, name: 'A', orderValue: 1, globalOrderValue: 10 }),
+        door({ id: 2, name: 'B', orderValue: 2, globalOrderValue: 1 }),
+        door({ id: 3, name: 'C', orderValue: 3, globalOrderValue: 5 }),
       ]),
     );
 
+    // orderValue alone would give [A, B, C]; globalOrderValue gives [B, C, A] — proves the
+    // superset's own order drives root placement, not the per-scope order (plan.md §3).
     expect(snapshot.liveRoots.map((n) => n.name)).toEqual(['B', 'C', 'A']);
+  });
+
+  it('breaks a globalOrderValue tie by id (hardening — the column has no unique index, plan.md §6)', () => {
+    const snapshot = buildAbwabTreeSnapshot(
+      tree([
+        door({ id: 2, name: 'higher-id', orderValue: 1, globalOrderValue: 1 }),
+        door({ id: 1, name: 'lower-id', orderValue: 2, globalOrderValue: 1 }),
+      ]),
+    );
+
+    expect(snapshot.liveRoots.map((n) => n.name)).toEqual(['lower-id', 'higher-id']);
+  });
+
+  it('nested children still order by orderValue — globalOrderValue is NULL past the root and never consulted', () => {
+    const snapshot = buildAbwabTreeSnapshot(
+      tree([
+        door({ id: 1, name: 'root', orderValue: 1, globalOrderValue: 1 }),
+        door({ id: 2, name: 'child-b', parentId: 1, orderValue: 1 }),
+        door({ id: 3, name: 'child-a', parentId: 1, orderValue: 2 }),
+      ]),
+    );
+
+    expect(snapshot.liveRoots[0].children.map((n) => n.name)).toEqual(['child-b', 'child-a']);
+  });
+
+  it('archived roots keep ordering by orderValue — they carry no meaningful globalOrderValue (§5 invariant)', () => {
+    const snapshot = buildAbwabTreeSnapshot(
+      tree([
+        door({ id: 1, name: 'archived-late', isArchived: true, orderValue: 2, globalOrderValue: null }),
+        door({ id: 2, name: 'archived-early', isArchived: true, orderValue: 1, globalOrderValue: null }),
+      ]),
+    );
+
+    expect(snapshot.archivedRoots.map((n) => n.name)).toEqual(['archived-early', 'archived-late']);
   });
 
   it('M2 — partitions archived doors out of the live tree into the archive tree', () => {
@@ -91,8 +128,8 @@ describe('filterAbwabRootsBySection — M3', () => {
   it('keeps section-less doors in «كل الأبواب» (null) and excludes them from a specific section tab', () => {
     const snapshot = buildAbwabTreeSnapshot(
       tree([
-        door({ id: 1, name: 'sectionless', sectionId: null, orderValue: 1 }),
-        door({ id: 2, name: 'sectioned', sectionId: 5, orderValue: 2 }),
+        door({ id: 1, name: 'sectionless', sectionId: null, orderValue: 1, globalOrderValue: 1 }),
+        door({ id: 2, name: 'sectioned', sectionId: 5, orderValue: 2, globalOrderValue: 2 }),
       ]),
     );
 
@@ -101,6 +138,25 @@ describe('filterAbwabRootsBySection — M3', () => {
 
     const sectionFive = filterAbwabRootsBySection(snapshot.liveRoots, 5);
     expect(sectionFive.map((n) => n.name)).toEqual(['sectioned']);
+  });
+
+  it('T402 — re-sorts a specific section’s roots by their own orderValue, undoing the superset’s global order', () => {
+    const snapshot = buildAbwabTreeSnapshot(
+      tree([
+        door({ id: 1, name: 'first-in-section', sectionId: 9, orderValue: 1, globalOrderValue: 20 }),
+        door({ id: 2, name: 'second-in-section', sectionId: 9, orderValue: 2, globalOrderValue: 5 }),
+      ]),
+    );
+
+    // «كل الأبواب» order (by globalOrderValue): second-in-section (5) before first-in-section (20).
+    expect(snapshot.liveRoots.map((n) => n.name)).toEqual(['second-in-section', 'first-in-section']);
+
+    // Section 9's own tab re-sorts back to orderValue: first-in-section (1) before second-in-section (2).
+    const sectionNine = filterAbwabRootsBySection(snapshot.liveRoots, 9);
+    expect(sectionNine.map((n) => n.name)).toEqual(['first-in-section', 'second-in-section']);
+
+    // The re-sort operates on a copy — the shared superset order is untouched.
+    expect(snapshot.liveRoots.map((n) => n.name)).toEqual(['second-in-section', 'first-in-section']);
   });
 });
 

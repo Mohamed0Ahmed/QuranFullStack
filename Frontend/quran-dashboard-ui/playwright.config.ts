@@ -30,7 +30,13 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'off',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // Split so `npm run e2e` can run Abwab at --workers=1 (T502): a Global-scope reorder
+  // resequences every live root in the database, so two Abwab specs in different workers can
+  // race the same rows — see e2e/README.md. Every other spec stays read-only and unaffected.
+  projects: [
+    { name: 'default', testIgnore: /abwab-.*\.e2e\.ts$/, use: { ...devices['Desktop Chrome'] } },
+    { name: 'abwab', testMatch: /abwab-.*\.e2e\.ts$/, use: { ...devices['Desktop Chrome'] } },
+  ],
   webServer: [
     {
       ...SHARED_WEB_SERVER_OPTIONS,

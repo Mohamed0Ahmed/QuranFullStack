@@ -24,6 +24,14 @@ interface AbwabMovePickerRow {
  * (deviation from plan.md §4's "expandable door tree" wording, recorded in the phase
  * completion note). `excludedIds` is the moved door(s) plus every descendant — the
  * client half of the cycle guard; the server's `409 WouldCycle` remains authoritative.
+ *
+ * **T402 decision:** `liveRoots` now arrives in the superset's global order, not per-section
+ * `orderValue` order (`abwab-tree.builder.ts`). `destinationRows` walks it as given, so a
+ * section's destination doors here follow the global order too. Deliberate, not a side
+ * effect: this list is a destination picker, not an ordered outline of any one section — the
+ * doors are the same regardless of which order they're listed in, and re-sorting to
+ * `orderValue` would mean fetching/deriving a second order this component has no other use
+ * for. Pinned by `abwab-move-picker.component.spec.ts`.
  */
 @Component({
   selector: 'qd-abwab-move-picker',

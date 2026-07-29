@@ -5,6 +5,7 @@ export interface AbwabTreeDoorDto {
   aliases: Array<string>;
   description: string | null;
   directChildCount: number;
+  globalOrderValue: number | null;
   id: number;
   isArchived: boolean;
   name: string;

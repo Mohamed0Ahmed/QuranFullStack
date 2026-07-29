@@ -43,7 +43,7 @@
             type="number"
             min="1"
             class="abwab-tree__order-input"
-            [value]="node.orderValue"
+            [value]="displayOrder(node)"
             [attr.data-testid]="'abwab-tree-order-input-' + node.id"
             (click)="$event.stopPropagation()"
             (keydown)="onOrderKeydown($event, node.id)"
@@ -54,7 +54,7 @@
             class="abwab-tree__order"
             [attr.data-testid]="'abwab-tree-order-' + node.id"
             (click)="onOrderClick($event, node.id)"
-            >{{ node.orderValue }}</span
+            >{{ displayOrder(node) }}</span
           >
         }
 

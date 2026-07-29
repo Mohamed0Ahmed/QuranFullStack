@@ -29,6 +29,7 @@ public sealed record AbwabTreeDoorDto(
     string? Description,
     string? RepresentativeAyahText,
     int OrderValue,
+    int? GlobalOrderValue,
     uint Version,
     bool IsArchived,
     int DirectChildCount,

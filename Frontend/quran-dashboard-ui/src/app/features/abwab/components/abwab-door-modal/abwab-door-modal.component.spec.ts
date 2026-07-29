@@ -18,6 +18,7 @@ const EXISTING_DOOR: AbwabDoorDto = {
   parentId: null,
   sectionId: 1,
   orderValue: 1,
+  globalOrderValue: null,
   version: 3,
 };
 

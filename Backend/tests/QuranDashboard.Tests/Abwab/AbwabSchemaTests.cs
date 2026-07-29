@@ -32,6 +32,28 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
           AND ic.relname = @indexName
         """;
 
+    private const string IndexFilterSql = """
+        SELECT pg_get_expr(ix.indpred, ix.indrelid)
+        FROM pg_class tc
+        JOIN pg_namespace tn ON tn.oid = tc.relnamespace
+        JOIN pg_index ix ON ix.indrelid = tc.oid
+        JOIN pg_class ic ON ic.oid = ix.indexrelid
+        WHERE tn.nspname = 'public'
+          AND tc.relname = @tableName
+          AND ic.relname = @indexName
+        """;
+
+    private const string IndexesOnColumnSql = """
+        SELECT DISTINCT ix.indisunique
+        FROM pg_class tc
+        JOIN pg_namespace tn ON tn.oid = tc.relnamespace
+        JOIN pg_index ix ON ix.indrelid = tc.oid
+        JOIN pg_attribute a ON a.attrelid = tc.oid AND a.attnum = ANY(ix.indkey)
+        WHERE tn.nspname = 'public'
+          AND tc.relname = @tableName
+          AND a.attname = @columnName
+        """;
+
     private static readonly string[] ExpectedAuditSeedColumns =
     [
         "created_at", "created_by",
@@ -48,7 +70,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     private static readonly string[] ExpectedDoorColumns =
     [
         "id", "section_id", "parent_id", "name", "description", "representative_ayah_text",
-        "order_value", .. ExpectedAuditSeedColumns
+        "order_value", "global_order_value", .. ExpectedAuditSeedColumns
     ];
 
     private static readonly string[] ExpectedDoorAliasColumns =
@@ -90,7 +112,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     }
 
     [Fact]
-    public async Task Doors_table_has_the_four_required_indexes()
+    public async Task Doors_table_has_the_five_required_indexes()
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
@@ -103,6 +125,39 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
             isUnique: false, ["deleted_at"]);
         await AssertIndexAsync(connection, "abwab_doors", "IX_abwab_doors_section_id_parent_id_name",
             isUnique: true, ["section_id", "parent_id", "name"]);
+        await AssertIndexAsync(connection, "abwab_doors", "IX_abwab_doors_global_order_value",
+            isUnique: false, ["global_order_value"]);
+    }
+
+    [Fact]
+    public async Task Global_order_value_index_is_partial_to_live_root_doors()
+    {
+        // Without this, deleting .HasFilter(...) from AbwabDoorConfiguration would still pass
+        // Doors_table_has_the_five_required_indexes — that test checks name/uniqueness/columns,
+        // never the predicate the index exists to enforce.
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var connection = await OpenConnectionAsync(scope.ServiceProvider);
+
+        await using var command = new NpgsqlCommand(IndexFilterSql, connection);
+        command.Parameters.AddWithValue("tableName", "abwab_doors");
+        command.Parameters.AddWithValue("indexName", "IX_abwab_doors_global_order_value");
+        var filter = (string?)await command.ExecuteScalarAsync();
+
+        filter.Should().Be("((parent_id IS NULL) AND (deleted_at IS NULL))");
+    }
+
+    [Fact]
+    public async Task Global_order_value_has_no_unique_index()
+    {
+        // Positive assertion (plan §6): a Postgres unique index is checked per statement, so
+        // 1..N global resequencing (one UPDATE per row) would transiently violate one and die
+        // mid-transaction. This trips if a later "hardening" PR adds one back.
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var connection = await OpenConnectionAsync(scope.ServiceProvider);
+
+        var indexes = await QueryIndexesOnColumnAsync(connection, "abwab_doors", "global_order_value");
+        indexes.Should().NotBeEmpty();
+        indexes.Should().OnlyContain(isUnique => isUnique == false);
     }
 
     [Fact]
@@ -320,6 +375,23 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
         }
 
         return columns;
+    }
+
+    private static async Task<IReadOnlyList<bool>> QueryIndexesOnColumnAsync(
+        NpgsqlConnection connection, string tableName, string columnName)
+    {
+        await using var command = new NpgsqlCommand(IndexesOnColumnSql, connection);
+        command.Parameters.AddWithValue("tableName", tableName);
+        command.Parameters.AddWithValue("columnName", columnName);
+
+        var indexes = new List<bool>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            indexes.Add(reader.GetBoolean(0));
+        }
+
+        return indexes;
     }
 
     private static async Task AssertIndexAsync(

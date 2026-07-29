@@ -19,6 +19,7 @@ const DOOR = {
   parentId: null,
   sectionId: null,
   orderValue: 1,
+  globalOrderValue: 1,
   version: 1,
 };
 

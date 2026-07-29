@@ -8,7 +8,7 @@ import { AbwabWriteController } from '../../state/abwab-write.controller';
 import { AbwabPageOverlaysController } from '../../state/abwab-page-overlays.controller';
 import { filterAbwabRootsBySection, pruneAbwabNodesToVisible, searchAbwabNodes } from '../../state/abwab-tree.builder';
 import { parseAbwabQueryParams, buildAbwabQueryParams } from '../../state/abwab-url-sync';
-import { AbwabNode, AbwabView } from '../../models/abwab.models';
+import { ABWAB_ORDER_SCOPE_TO_WIRE, AbwabNode, AbwabOrderScope, AbwabView } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabToolbarComponent } from '../../components/abwab-toolbar/abwab-toolbar.component';
 import { AbwabTreeComponent, AbwabTreeMenuRequest } from '../../components/abwab-tree/abwab-tree.component';
@@ -68,6 +68,9 @@ export class AbwabPageComponent implements OnInit {
 
   protected readonly sections = computed(() => this.facade.snapshot()?.sections ?? []);
   protected readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
+
+  /** «كل الأبواب» (no active section) is the superset — its own, independent order (plan.md §4). */
+  protected readonly orderScope = computed<AbwabOrderScope>(() => (this.activeSectionId() === null ? 'global' : 'section'));
 
   protected readonly visibleRoots = computed(() => {
     const snapshot = this.facade.snapshot();
@@ -216,12 +219,18 @@ export class AbwabPageComponent implements OnInit {
     this.overlays.confirmArchive(() => this.updateQueryParams(buildAbwabQueryParams({ door: null })));
   }
 
-  protected onOrderCommitted(event: { id: number; position: number }): void {
+  protected onOrderCommitted(event: { id: number; position: number; scope: AbwabOrderScope }): void {
     const node = this.byId().get(event.id);
     if (!node) {
       return;
     }
-    this.writeController.reorderDoor(event.id, { position: event.position, version: node.version }).subscribe();
+    this.writeController
+      .reorderDoor(event.id, {
+        position: event.position,
+        scope: ABWAB_ORDER_SCOPE_TO_WIRE[event.scope],
+        version: node.version,
+      })
+      .subscribe();
   }
 
   protected onRestoreRequested(id: number): void {

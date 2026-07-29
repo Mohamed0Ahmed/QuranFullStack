@@ -13,12 +13,14 @@ import { AbwabTreeDto } from '../../../core/api/generated/models/abwab-tree-dto'
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { BulkMoveDoorsCommand } from '../../../core/api/generated/models/bulk-move-doors-command';
+import { ReorderDoorBody } from '../../../core/api/generated/models/reorder-door-body';
 
 function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string }): AbwabTreeDoorDto {
   return {
     aliases: [],
     description: null,
     directChildCount: 0,
+    globalOrderValue: null,
     isArchived: false,
     orderValue: overrides.id,
     parentId: null,
@@ -42,6 +44,7 @@ const EDITED_DOOR: AbwabDoorDto = {
   parentId: null,
   sectionId: null,
   orderValue: 1,
+  globalOrderValue: 1,
   version: 2,
 };
 
@@ -55,6 +58,7 @@ interface FakeApi {
   createDoor?: () => Observable<ApiResponse<AbwabDoorDto>>;
   archiveDoor?: () => Observable<ApiResponse<unknown>>;
   restoreDoor?: () => Observable<ApiResponse<unknown>>;
+  reorderDoor?: (id: number, body: ReorderDoorBody) => Observable<ApiResponse<AbwabDoorDto>>;
   bulkMoveDoors?: (command: BulkMoveDoorsCommand) => Observable<ApiResponse<AbwabDoorDto[]>>;
   bulkArchiveDoors?: () => Observable<ApiResponse<number[]>>;
 }
@@ -312,6 +316,26 @@ describe('AbwabWriteController', () => {
       expect(outcome).toEqual({ kind: 'success', data: null });
       expect(controller.announcement()).toBeNull();
       expect(treeCalls).toBe(1);
+    });
+  });
+
+  describe('T406 — reorderDoor forwards the scope on the wire unchanged', () => {
+    it.each([
+      ['Section', 1 as const],
+      ['Global', 2 as const],
+    ])('passes scope=%s straight through to the API body', (_label, scope) => {
+      let capturedBody: ReorderDoorBody | null = null;
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        reorderDoor: (id, body) => {
+          capturedBody = body;
+          return of(ok<AbwabDoorDto>(EDITED_DOOR));
+        },
+      });
+
+      controller.reorderDoor(1, { position: 3, scope, version: 1 }).subscribe();
+
+      expect(capturedBody).toEqual({ position: 3, scope, version: 1 });
     });
   });
 

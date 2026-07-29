@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
-import { AbwabNode } from '../../models/abwab.models';
+import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 export interface AbwabCardsCrumb {
@@ -26,6 +26,9 @@ export class AbwabCardsComponent {
   readonly roots = input<readonly AbwabNode[]>([]);
   readonly byId = input<ReadonlyMap<number, AbwabNode>>(new Map());
   readonly cardId = input<number | null>(null);
+  /** Top level only (T404) — global applies when the superset is active **and** `cardId` is
+   * null; every drilled-in level is a per-parent scope and stays on `orderValue`. */
+  readonly orderScope = input<AbwabOrderScope>('section');
   readonly selectedId = input<number | null>(null);
   readonly bulkMode = input(false);
   readonly bulkSelectedIds = input<ReadonlySet<number>>(new Set());
@@ -65,6 +68,11 @@ export class AbwabCardsComponent {
     const path = this.path();
     return path.length > 0 ? path[path.length - 1].children : this.roots();
   });
+
+  protected displayOrder(node: AbwabNode): number {
+    const isTopLevel = this.cardId() === null;
+    return isTopLevel && this.orderScope() === 'global' ? (node.globalOrderValue ?? node.orderValue) : node.orderValue;
+  }
 
   protected onCardClick(node: AbwabNode): void {
     if (this.bulkMode()) {

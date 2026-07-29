@@ -133,6 +133,8 @@ public static class ApiMessages
     public const string AbwabDoorWouldCycle = "لا يمكن نقل الباب إلى داخل فرعه الخاص";
     public const string AbwabDoorInvalidPosition = "الترتيب المطلوب خارج نطاق الأبواب المجاورة";
     public const string AbwabDoorParentStillArchived = "لا يمكن استعادة الباب لأن الباب الأب ما زال مؤرشفًا";
+    public const string AbwabDoorInvalidScope = "نطاق الترتيب غير صالح";
+    public const string AbwabDoorScopeNotApplicable = "الترتيب العام غير متاح للأبواب الفرعية";
 
     public const string AbwabTreeLoaded = "تم تحميل شجرة الأبواب";
 }
