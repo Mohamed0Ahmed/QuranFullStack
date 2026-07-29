@@ -15,7 +15,7 @@ public sealed class ReorderDoorHandler(
 
         try
         {
-            var door = await writer.ReorderAsync(command.Id, command.Position, command.Version, cancellationToken);
+            var door = await writer.ReorderAsync(command.Id, command.Position, command.Scope, command.Version, cancellationToken);
             if (door is null)
             {
                 logger.LogWarning("Not found {feature} {operation} {doorId}", FeatureName, OperationName, command.Id);
@@ -29,6 +29,11 @@ public sealed class ReorderDoorHandler(
         {
             logger.LogWarning("Rejected {feature} {operation} {reason} {doorId}", FeatureName, OperationName, "invalidPosition", command.Id);
             return new ReorderDoorOutcome.InvalidPosition();
+        }
+        catch (AbwabScopeNotApplicableException)
+        {
+            logger.LogWarning("Rejected {feature} {operation} {reason} {doorId}", FeatureName, OperationName, "scopeNotApplicable", command.Id);
+            return new ReorderDoorOutcome.ScopeNotApplicable();
         }
         catch (AbwabStaleVersionException)
         {

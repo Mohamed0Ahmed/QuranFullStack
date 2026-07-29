@@ -9,5 +9,7 @@ public abstract record ReorderDoorOutcome
     public sealed record Success(AbwabDoorDto Door) : ReorderDoorOutcome;
     public sealed record NotFound : ReorderDoorOutcome;
     public sealed record InvalidPosition : ReorderDoorOutcome;
+    public sealed record InvalidScope : ReorderDoorOutcome;
+    public sealed record ScopeNotApplicable : ReorderDoorOutcome;
     public sealed record StaleVersion : ReorderDoorOutcome;
 }

@@ -8,5 +8,6 @@ public sealed record AbwabDoorDto(
     string? Description,
     string? RepresentativeAyahText,
     int OrderValue,
+    int? GlobalOrderValue,
     uint Version,
     IReadOnlyList<string> Aliases);

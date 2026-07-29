@@ -35,6 +35,11 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
 
         db.AbwabDoors.Add(door);
 
+        if (parentId is null)
+        {
+            await MaintainGlobalOrderAsync(new HashSet<int>(), [door], cancellationToken);
+        }
+
         // Two SaveChanges calls (door, then aliases keyed by its generated id) need an explicit
         // transaction to stay atomic — EF's implicit per-SaveChanges transaction only covers one call.
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
@@ -135,12 +140,24 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
 
         Resequence(destinationSiblings.Append(door));
 
+        // Root membership is what moves the global sequence, not the section: a root→root move across
+        // sections leaves it untouched (plan §5's discriminating case), so neither branch fires there.
+        if (oldParentId is null && targetParentId is not null)
+        {
+            door.GlobalOrderValue = null;
+            await MaintainGlobalOrderAsync(new HashSet<int> { id }, [], cancellationToken);
+        }
+        else if (oldParentId is not null && targetParentId is null)
+        {
+            await MaintainGlobalOrderAsync(new HashSet<int>(), [door], cancellationToken);
+        }
+
         await SaveTranslatingWriteExceptionsAsync(door.Name, cancellationToken);
 
         return await ToDtoAsync(door, cancellationToken);
     }
 
-    public async Task<AbwabDoorDto?> ReorderAsync(int id, int position, uint expectedVersion, CancellationToken cancellationToken)
+    public async Task<AbwabDoorDto?> ReorderAsync(int id, int position, AbwabReorderScope scope, uint expectedVersion, CancellationToken cancellationToken)
     {
         var door = await db.AbwabDoors.FirstOrDefaultAsync(d => d.Id == id && d.DeletedAtUtc == null, cancellationToken);
         if (door is null)
@@ -148,21 +165,50 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
             return null;
         }
 
+        if (scope == AbwabReorderScope.Global)
+        {
+            if (door.ParentId.HasValue)
+            {
+                throw new AbwabScopeNotApplicableException();
+            }
+
+            var liveRoots = await db.AbwabDoors
+                .Where(d => d.ParentId == null && d.DeletedAtUtc == null)
+                .OrderBy(d => d.GlobalOrderValue).ThenBy(d => d.Id)
+                .ToListAsync(cancellationToken);
+
+            return await ReorderWithinAsync(door, position, expectedVersion, liveRoots, ResequenceGlobal, cancellationToken);
+        }
+
         var siblings = await db.AbwabDoors
             .Where(d => d.SectionId == door.SectionId && d.ParentId == door.ParentId && d.DeletedAtUtc == null)
             .OrderBy(d => d.OrderValue)
             .ToListAsync(cancellationToken);
 
-        if (position < 1 || position > siblings.Count)
+        return await ReorderWithinAsync(door, position, expectedVersion, siblings, Resequence, cancellationToken);
+    }
+
+    // Shared tail for both reorder scopes: bound the position against the ordered set the door already
+    // belongs to, move it, renumber, save. Section and Global differ only in which set and which
+    // property Resequence/ResequenceGlobal renumber — never both (plan §5's whole point).
+    private async Task<AbwabDoorDto> ReorderWithinAsync(
+        AbwabDoor door,
+        int position,
+        uint expectedVersion,
+        List<AbwabDoor> orderedSet,
+        Action<IEnumerable<AbwabDoor>> resequence,
+        CancellationToken cancellationToken)
+    {
+        if (position < 1 || position > orderedSet.Count)
         {
             throw new AbwabInvalidPositionException();
         }
 
         db.Entry(door).Property(d => d.Version).OriginalValue = expectedVersion;
 
-        siblings.RemoveAll(s => s.Id == id);
-        siblings.Insert(position - 1, door);
-        Resequence(siblings);
+        orderedSet.RemoveAll(d => d.Id == door.Id);
+        orderedSet.Insert(position - 1, door);
+        resequence(orderedSet);
 
         door.UpdatedAtUtc = DateTimeOffset.UtcNow;
 
@@ -220,14 +266,30 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
             .Where(scope => scope != (resolvedSectionId, targetParentId))
             .ToList();
 
+        // Root membership per door, by the same three rows MoveAsync uses — root→root across sections
+        // leaves the global sequence untouched, so it contributes to neither set (plan §5).
+        var globalDepartures = new HashSet<int>();
+        var globalArrivals = new List<AbwabDoor>();
+
         foreach (var doorRef in doors)
         {
             var door = loaded.Single(d => d.Id == doorRef.DoorId);
             db.Entry(door).Property(d => d.Version).OriginalValue = doorRef.Version;
 
+            var wasRoot = door.ParentId is null;
             door.SectionId = resolvedSectionId;
             door.ParentId = targetParentId;
             door.UpdatedAtUtc = now;
+
+            if (wasRoot && targetParentId is not null)
+            {
+                door.GlobalOrderValue = null;
+                globalDepartures.Add(door.Id);
+            }
+            else if (!wasRoot && targetParentId is null)
+            {
+                globalArrivals.Add(door);
+            }
         }
 
         if (sectionChanged)
@@ -245,6 +307,12 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         // way to keep it contiguous when a moved door's old scope is also the destination.
         Resequence(existingDestinationSiblings
             .Concat(doors.Select(doorRef => loaded.Single(d => d.Id == doorRef.DoorId))));
+
+        // One ResequenceGlobal for the whole batch, in the batch's own order — not one per door.
+        if (globalDepartures.Count > 0 || globalArrivals.Count > 0)
+        {
+            await MaintainGlobalOrderAsync(globalDepartures, globalArrivals, cancellationToken);
+        }
 
         await SaveTranslatingWriteExceptionsAsync(null, cancellationToken);
 
@@ -281,6 +349,9 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         var archivedIds = new HashSet<int>();
         var oldScopes = loaded.Select(d => (d.SectionId, d.ParentId)).Distinct().ToList();
         var topLevelIds = loaded.Select(d => d.Id).ToHashSet();
+        // Only the top-level roots among the selection carry a global value — a swept-in descendant
+        // was never one, and ArchiveSubtreeAsync only nulls the door it was called with.
+        var globalDepartures = loaded.Where(d => d.ParentId is null).Select(d => d.Id).ToHashSet();
         var childrenByParent = await LoadChildrenByParentAsync(cancellationToken);
 
         foreach (var door in loaded)
@@ -291,6 +362,12 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         foreach (var (sectionId, parentId) in oldScopes)
         {
             await ResequenceSiblingsExcludingAsync(sectionId, parentId, topLevelIds, cancellationToken);
+        }
+
+        // One ResequenceGlobal for the whole batch.
+        if (globalDepartures.Count > 0)
+        {
+            await MaintainGlobalOrderAsync(globalDepartures, [], cancellationToken);
         }
 
         await SaveTranslatingConcurrencyAsync(cancellationToken);
@@ -311,9 +388,15 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         var now = DateTimeOffset.UtcNow;
         var oldSectionId = door.SectionId;
         var oldParentId = door.ParentId;
+        var wasRoot = oldParentId is null;
 
         await ArchiveSubtreeAsync(door, await LoadChildrenByParentAsync(cancellationToken), now, cancellationToken);
         await ResequenceSiblingsExcludingAsync(oldSectionId, oldParentId, new HashSet<int> { id }, cancellationToken);
+
+        if (wasRoot)
+        {
+            await MaintainGlobalOrderAsync(new HashSet<int> { id }, [], cancellationToken);
+        }
 
         await SaveTranslatingConcurrencyAsync(cancellationToken);
 
@@ -381,6 +464,14 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
                     descendant.SectionId = null;
                 }
             }
+        }
+
+        // Same rule as OrderValue: restore moves a root back INTO the global sequence, appended last
+        // (§5.2 — derived, not guessed). ParentId is the only thing that matters here; the section
+        // detach above changes SectionId, never root membership.
+        if (door.ParentId is null)
+        {
+            await MaintainGlobalOrderAsync(new HashSet<int>(), [door], cancellationToken);
         }
 
         // Restore is the only write that moves a row back INTO a scope. That scope was renumbered 1..N-1
@@ -521,6 +612,12 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         door.DeletedAtUtc = now;
         door.UpdatedAtUtc = now;
 
+        // Descendants are never roots, so only the archived door itself can be carrying a global value.
+        if (door.ParentId is null)
+        {
+            door.GlobalOrderValue = null;
+        }
+
         var descendantIds = CollectDescendantIds(childrenByParent, door.Id);
         if (descendantIds.Count == 0)
         {
@@ -604,6 +701,33 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         }
     }
 
+    private static void ResequenceGlobal(IEnumerable<AbwabDoor> orderedRoots)
+    {
+        var position = 1;
+        foreach (var door in orderedRoots)
+        {
+            door.GlobalOrderValue = position++;
+        }
+    }
+
+    // Global maintenance shared by every write that can change ROOT membership (create, move,
+    // bulk-move, archive, bulk-archive, restore). Reads every live root — an accepted cost, since the
+    // sequence is global by definition and cannot be narrowed the way a (section, parent) scope query
+    // narrows (plan §6). Like ResequenceSiblingsExcludingAsync, the read still shows pre-SaveChanges
+    // values: excludeIds drops a departing root whose in-memory archive/move-to-nested the read cannot
+    // see yet, and arrivals are appended because for the same reason the read can never return them —
+    // a restored root still shows deleted_at set, a nested→root move still shows parent_id set.
+    private async Task MaintainGlobalOrderAsync(
+        IReadOnlySet<int> excludeIds, IReadOnlyList<AbwabDoor> arrivals, CancellationToken cancellationToken)
+    {
+        var liveRoots = await db.AbwabDoors
+            .Where(d => d.ParentId == null && d.DeletedAtUtc == null)
+            .OrderBy(d => d.GlobalOrderValue).ThenBy(d => d.Id)
+            .ToListAsync(cancellationToken);
+
+        ResequenceGlobal(liveRoots.Where(d => !excludeIds.Contains(d.Id)).Concat(arrivals));
+    }
+
     // Reused by both Create (existingLive is empty, so every alias is an insert) and Edit (a full diff).
     private async Task ReplaceAliasesAsync(int doorId, IReadOnlyList<string> newAliases, DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -645,7 +769,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
 
         return new AbwabDoorDto(
             door.Id, door.SectionId, door.ParentId, door.Name, door.Description,
-            door.RepresentativeAyahText, door.OrderValue, door.Version, aliases);
+            door.RepresentativeAyahText, door.OrderValue, door.GlobalOrderValue, door.Version, aliases);
     }
 
     private async Task<IReadOnlyList<AbwabDoorDto>> ToDtosAsync(IEnumerable<AbwabDoor> doors, CancellationToken cancellationToken)

@@ -110,7 +110,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
         await writer.CreateAsync(section.Id, null, "الثاني", null, null, [], CancellationToken.None);
         var third = await writer.CreateAsync(section.Id, null, "الثالث", null, null, [], CancellationToken.None);
 
-        var moved = await writer.ReorderAsync(third.Id, 1, third.Version, CancellationToken.None);
+        var moved = await writer.ReorderAsync(third.Id, 1, AbwabReorderScope.Section, third.Version, CancellationToken.None);
 
         moved.Should().NotBeNull();
         moved!.OrderValue.Should().Be(1);
@@ -123,6 +123,174 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
             .ToListAsync();
 
         orderValues.Should().BeEquivalentTo([1, 2, 3], options => options.WithStrictOrdering());
+    }
+
+    // §5.1's whole point, proved both directions: a Section reorder never touches GlobalOrderValue,
+    // and (below) a Global reorder never touches OrderValue. The two spaces are independent.
+    [Fact]
+    public async Task ReorderAsync_WithSectionScope_LeavesGlobalOrderValueUntouched()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+
+        var section = await sections.CreateAsync("سلوك: قسم لترتيب قسمي لا يمس العام", CancellationToken.None);
+        var first = await writer.CreateAsync(section.Id, null, "سلوك: أول باب لترتيب قسمي", null, null, [], CancellationToken.None);
+        var second = await writer.CreateAsync(section.Id, null, "سلوك: ثاني باب لترتيب قسمي", null, null, [], CancellationToken.None);
+
+        await writer.ReorderAsync(second.Id, 1, AbwabReorderScope.Section, second.Version, CancellationToken.None);
+
+        (await ReloadAsync(scope, first.Id)).GlobalOrderValue.Should().Be(first.GlobalOrderValue);
+        (await ReloadAsync(scope, second.Id)).GlobalOrderValue.Should().Be(second.GlobalOrderValue);
+    }
+
+    [Fact]
+    public async Task ReorderAsync_WithGlobalScope_LeavesOrderValueUntouched()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+
+        var section = await sections.CreateAsync("سلوك: قسم لترتيب عام لا يمس القسمي", CancellationToken.None);
+        var first = await writer.CreateAsync(section.Id, null, "سلوك: أول باب لترتيب عام", null, null, [], CancellationToken.None);
+        var second = await writer.CreateAsync(section.Id, null, "سلوك: ثاني باب لترتيب عام", null, null, [], CancellationToken.None);
+
+        // Created back-to-back with nothing else touching the global sequence in between, so their
+        // global positions are contiguous regardless of what the shared table already holds.
+        var firstGlobalBefore = first.GlobalOrderValue!.Value;
+        var secondGlobalBefore = second.GlobalOrderValue!.Value;
+        secondGlobalBefore.Should().Be(firstGlobalBefore + 1);
+
+        await writer.ReorderAsync(second.Id, firstGlobalBefore, AbwabReorderScope.Global, second.Version, CancellationToken.None);
+
+        (await ReloadAsync(scope, first.Id)).OrderValue.Should().Be(1);
+        (await ReloadAsync(scope, second.Id)).OrderValue.Should().Be(2);
+
+        // The write itself: second took first's old global position, and first shifted to what was
+        // second's — proving the Global branch actually renumbers GlobalOrderValue, not a no-op.
+        (await ReloadAsync(scope, second.Id)).GlobalOrderValue.Should().Be(firstGlobalBefore);
+        (await ReloadAsync(scope, first.Id)).GlobalOrderValue.Should().Be(secondGlobalBefore);
+    }
+
+    // The discriminating case from plan §5.1: root membership, not section membership, is what moves
+    // the global sequence — a root that changes section but stays a root leaves it untouched.
+    [Fact]
+    public async Task MoveAsync_RootToRootAcrossSections_LeavesGlobalOrderValueUnchanged()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+
+        var origin = await sections.CreateAsync("سلوك: قسم مصدر لنقل جذري عام", CancellationToken.None);
+        var destination = await sections.CreateAsync("سلوك: قسم وجهة لنقل جذري عام", CancellationToken.None);
+        var door = await writer.CreateAsync(origin.Id, null, "سلوك: باب ينتقل جذريًا بين قسمين", null, null, [], CancellationToken.None);
+
+        var moved = await writer.MoveAsync(door.Id, destination.Id, null, door.Version, CancellationToken.None);
+
+        moved!.SectionId.Should().Be(destination.Id);
+        moved.GlobalOrderValue.Should().Be(door.GlobalOrderValue);
+    }
+
+    // §6's third trap, exercised through MoveAsync directly: a nested→root move still shows
+    // parent_id set in the database read (pre-SaveChanges), so MaintainGlobalOrderAsync's "remaining"
+    // query can never return it — it must be appended in code, or this silently drops the door.
+    [Fact]
+    public async Task MoveAsync_NestedToRoot_AppendsToEndOfGlobalSequence()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var parent = await writer.CreateAsync(null, null, "سلوك: أب لابن ينتقل إلى الجذر", null, null, [], CancellationToken.None);
+        var child = await writer.CreateAsync(null, parent.Id, "سلوك: ابن ينتقل إلى الجذر عالميًا", null, null, [], CancellationToken.None);
+
+        var liveRootCountBeforeMove = await dbContext.AbwabDoors
+            .CountAsync(d => d.ParentId == null && d.DeletedAtUtc == null);
+
+        var moved = await writer.MoveAsync(child.Id, null, null, child.Version, CancellationToken.None);
+
+        moved!.GlobalOrderValue.Should().Be(liveRootCountBeforeMove + 1);
+    }
+
+    // The mirror case: a root→nested move nulls the door's own global value and shifts every LATER
+    // root down by one, the same relative-delta proof DeleteAsync's archive test below uses.
+    [Fact]
+    public async Task MoveAsync_RootToNested_NullsGlobalOrderValueAndShiftsLaterRootsDown()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+
+        var section = await sections.CreateAsync("سلوك: قسم لنقل جذر إلى ابن يزيح ما بعده", CancellationToken.None);
+        var parent = await writer.CreateAsync(section.Id, null, "سلوك: أب يستقبل جذرًا سابقًا", null, null, [], CancellationToken.None);
+        var mover = await writer.CreateAsync(section.Id, null, "سلوك: جذر ينتقل إلى ابن", null, null, [], CancellationToken.None);
+        var later = await writer.CreateAsync(section.Id, null, "سلوك: جذر لاحق يُزاح لأسفل", null, null, [], CancellationToken.None);
+        var laterGlobalBefore = later.GlobalOrderValue!.Value;
+
+        var moved = await writer.MoveAsync(mover.Id, null, parent.Id, mover.Version, CancellationToken.None);
+
+        moved!.GlobalOrderValue.Should().BeNull();
+        (await ReloadAsync(scope, later.Id)).GlobalOrderValue.Should().Be(laterGlobalBefore - 1);
+    }
+
+    // Archive nulls the archived root's own global value and shifts every LATER root down by one —
+    // proved as a relative delta, not an absolute count, since the global sequence spans the whole
+    // shared table (every other test's root doors included), not just this test's own section.
+    [Fact]
+    public async Task DeleteAsync_ArchivesRoot_NullsGlobalOrderValueAndShiftsLaterRootsDown()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+
+        var section = await sections.CreateAsync("سلوك: قسم لأرشفة جذر يزيح ما بعده", CancellationToken.None);
+        var first = await writer.CreateAsync(section.Id, null, "سلوك: أول جذر للأرشفة العامة", null, null, [], CancellationToken.None);
+        var second = await writer.CreateAsync(section.Id, null, "سلوك: ثاني جذر للأرشفة العامة", null, null, [], CancellationToken.None);
+        var third = await writer.CreateAsync(section.Id, null, "سلوك: ثالث جذر للأرشفة العامة", null, null, [], CancellationToken.None);
+        var thirdGlobalBefore = third.GlobalOrderValue!.Value;
+
+        await writer.DeleteAsync(second.Id, second.Version, CancellationToken.None);
+
+        (await ReloadAsync(scope, second.Id)).GlobalOrderValue.Should().BeNull();
+        (await ReloadAsync(scope, first.Id)).GlobalOrderValue.Should().Be(first.GlobalOrderValue);
+        (await ReloadAsync(scope, third.Id)).GlobalOrderValue.Should().Be(thirdGlobalBefore - 1);
+    }
+
+    // §5.2: restore appends at the end of the CURRENT global sequence, derived from
+    // EfAbwabDoorsWriter.cs's existing restore-appends-in-its-own-scope semantic, not guessed.
+    [Fact]
+    public async Task RestoreAsync_OfArchivedRoot_AppendsToEndOfGlobalSequence()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var door = await writer.CreateAsync(null, null, "سلوك: جذر يُستعاد آخر التسلسل العام", null, null, [], CancellationToken.None);
+        await writer.DeleteAsync(door.Id, door.Version, CancellationToken.None);
+        var archived = await ReloadAsync(scope, door.Id);
+
+        var liveRootCountBeforeRestore = await dbContext.AbwabDoors
+            .CountAsync(d => d.ParentId == null && d.DeletedAtUtc == null);
+
+        var restored = await writer.RestoreAsync(door.Id, archived.Version, CancellationToken.None);
+
+        restored!.Door.GlobalOrderValue.Should().Be(liveRootCountBeforeRestore + 1);
+    }
+
+    // A section-less root (SectionId null) is an ordinary root for the global sequence's purposes —
+    // its per-scope home is (NULL, NULL), but it shares the one global sequence with every other root.
+    [Fact]
+    public async Task CreateAsync_SectionLessRoot_ParticipatesInGlobalSequenceWithSectionedRoots()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+
+        var section = await sections.CreateAsync("سلوك: قسم لجذر يليه جذر بلا قسم", CancellationToken.None);
+        var sectioned = await writer.CreateAsync(section.Id, null, "سلوك: جذر داخل قسم للتسلسل العام", null, null, [], CancellationToken.None);
+        var sectionLess = await writer.CreateAsync(null, null, "سلوك: جذر بلا قسم للتسلسل العام", null, null, [], CancellationToken.None);
+
+        sectionLess.GlobalOrderValue.Should().Be(sectioned.GlobalOrderValue + 1);
     }
 
     // Discriminating case for BulkMoveAsync: when a moved door's OLD scope IS the destination scope,
