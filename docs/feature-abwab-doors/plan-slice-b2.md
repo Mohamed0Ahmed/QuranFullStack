@@ -72,7 +72,7 @@ Read before writing any flow. Each of these has already broken a suite somewhere
 |---|---|
 | Page | `abwab-page`, `abwab-page-empty`, `abwab-page-add-root`, `abwab-page-add-root-ghost`, `abwab-page-archive-toggle`, `abwab-page-manage-sections`, `abwab-page-archive-empty` |
 | Toolbar | `abwab-toolbar-tab-all`, `abwab-toolbar-tab-<sectionId>`, `abwab-toolbar-search`, `abwab-toolbar-view-tree`, `abwab-toolbar-view-cards` |
-| Tree | `abwab-tree`, `abwab-tree-row-<id>`, `abwab-tree-chevron-<id>`, `abwab-tree-checkbox-<id>`, `abwab-tree-order-<id>`, `abwab-tree-order-input-<id>` |
+| Tree | `abwab-tree`, `abwab-tree-row-<id>`, `abwab-tree-chevron-<id>`, `abwab-tree-checkbox-<id>`, `abwab-tree-order-<id>`, `abwab-tree-order-input-<id>`, `abwab-tree-add-child-<id>`, `abwab-tree-more-<id>` (the contract's `＋`/`⋯` hover actions, added in the post-review fix pass) |
 | Cards | `abwab-cards`, `abwab-card-<id>`, `abwab-card-checkbox-<id>`, `abwab-cards-crumb` |
 | Side panel | `abwab-side-panel-active-door`, `abwab-side-panel-empty`, `abwab-side-panel-clear`, `abwab-side-panel-op-add-child`, `-op-edit`, `-op-move`, `-op-archive`, `abwab-side-panel-bulk-toggle`, `-bulk-bar`, `-bulk-count`, `-bulk-names`, `-bulk-move`, `-bulk-archive`, `-bulk-clear` |
 | Door modal | `abwab-door-modal`, `-backdrop`, `-name`, `-description`, `-ayah`, `-alias-input`, `-context`, `-meta`, `-error`, `-save`, `-cancel`, `-discard-confirm`, `-discard-confirm-yes`, `-discard-confirm-no` |

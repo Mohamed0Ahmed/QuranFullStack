@@ -216,7 +216,9 @@ describe('AbwabWriteController', () => {
       facade.load();
 
       // root(1) + live child(2) + live grandchild(3) = 3; the archived sibling(4) does not count.
-      expect(controller.liveSubtreeCountFor(1)).toBe(3);
+      // Asserted through the confirm message the cell names, not just the helper behind it.
+      expect(controller.archiveConfirmMessageFor(1)).toBe(ABWAB_LABELS.archiveConfirm(3));
+      expect(controller.archiveConfirmMessageFor(1)).toContain('3 أبواب');
     });
   });
 

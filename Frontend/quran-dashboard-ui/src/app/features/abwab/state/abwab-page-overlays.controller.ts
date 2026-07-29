@@ -18,8 +18,15 @@ import { AbwabMoveDestination } from '../components/abwab-move-picker/abwab-move
  * renders every dialog and reads/calls into this controller. URL-side effects (writing
  * `door=null` back after an archive) stay the page's job via the optional callbacks
  * below — this controller has no `Router`/`ActivatedRoute` dependency.
+ *
+ * **Deliberately not `providedIn: 'root'`** — `AbwabPageComponent` provides it, so its
+ * lifetime is the page's. Same rule as `features/words/state/*-detail.controller.ts`
+ * ("Not `providedIn: 'root'`: … each overlay adapter provides its own component-scoped
+ * instance"): caches and data facades are app-scoped, overlay state is not. A root-scoped
+ * instance survives leaving `/abwab`, and the page renders every dialog outside its
+ * loading/error guard, so a left-open modal would paint again on re-entry.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class AbwabPageOverlaysController {
   private readonly facade = inject(AbwabSnapshotFacade);
   private readonly selection = inject(AbwabSelectionStore);

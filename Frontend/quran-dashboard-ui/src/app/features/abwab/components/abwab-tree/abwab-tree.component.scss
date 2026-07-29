@@ -84,3 +84,46 @@
   flex: none;
   accent-color: var(--qd-accent);
 }
+
+/* Row actions follow the design contract (abwab-tree-concept.html:114): revealed on hover
+   and on the selected row. `visibility` rather than `display` keeps the row height stable,
+   and :focus-within keeps them reachable once focus lands inside. */
+.abwab-tree__actions {
+  display: inline-flex;
+  gap: var(--qd-space-1);
+  flex: none;
+  visibility: hidden;
+}
+
+.abwab-tree__row:hover .abwab-tree__actions,
+.abwab-tree__row[aria-selected='true'] .abwab-tree__actions,
+.abwab-tree__actions:focus-within {
+  visibility: visible;
+}
+
+.abwab-tree__act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--qd-radius-sm);
+  background: transparent;
+  color: var(--qd-text-muted);
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--qd-t-fast), color var(--qd-t-fast);
+}
+
+.abwab-tree__act:hover {
+  background: var(--qd-surface);
+  color: var(--qd-accent-text);
+}
+
+.abwab-tree__act:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: 1px;
+}

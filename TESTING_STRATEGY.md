@@ -29,7 +29,7 @@ that the browser suite uncovered. The pipeline row is **derived, not re-run** on
 | Backend no-pipeline (Tier B/C) | 1,076 | 18-20 s | 0 |
 | Backend ten pipeline families (Tier D) — derived, last timed 2026-07-28 | 617 | 3 m 54 s | 0 |
 | Backend route smoke (§3 Tier A/C route gate) | 134 | 51-52 s | 0 |
-| Frontend full suite (190 spec files) — re-measured after Slice B2 | 2,126 | 182.91 s | — |
+| Frontend full suite (190 spec files) — re-measured after the Slice B2 review fixes | 2,142 | 207.54 s | 0 |
 
 Counts and durations are indicative, not contractual. The zero-skip column holds only
 because the staged canonical resources *and* the canonical dump were present; on a machine
@@ -365,14 +365,14 @@ npm test -- --include="src/app/features/words/data-access/*.spec.ts"
 # Focused feature glob (93 files, 1,384 tests, ~98 s):
 npm test -- --include="src/app/features/words/**/*.spec.ts"
 
-# Full Frontend suite (190 files, 2,126 tests, 182.91 s — re-measured post-Slice-B2):
+# Full Frontend suite (190 files, 2,142 tests, 207.54 s — re-measured after the B2 review fixes):
 npm test
 
 # Production build (separate from tests — the test builder ignores dist/):
 npm run build
 
 # Browser E2E — opt-in, chromium only, boots both servers (see e2e/README.md).
-# 45 passed, ~1.5 m with 2 workers, re-measured post-Slice-B2 (was 28 passed / ~57 s pre-B2):
+# 47 passed, ~1.6 m with 2 workers, re-measured after the B2 review fixes (was 28 / ~57 s pre-B2):
 npm run e2e                       # headless
 npm run e2e:headed                # visible browser
 npm run e2e:ui                    # Playwright UI mode
@@ -393,13 +393,21 @@ sandbox section created over the API (`e2e/fixtures/abwab.ts`), not the seeded/c
 isolated database first, because no such database exists yet for this suite. The sandbox is the
 mitigation: each test's section name embeds the worker index and a timestamp so the two parallel
 workers (`fullyParallel: true, workers: 2`) never collide, no test asserts a global count (only
-ids its own sandbox produced), and teardown archives every door it created and then deletes the
-now-empty section — the only lawful order, since section delete `409`s while live doors remain —
-best-effort, so a flow that already broke does not get a second, masking failure from teardown.
-**The residue is real and permanent, not "self-cleaning":** there is no hard delete and no section
-restore in this feature, so every run leaves its sandbox doors **archived** in the local dev DB
-forever, and restoring one later reports `detachedFromArchivedSection: true` since its section is
-gone. This is tolerable on a local, disposable dev database with loose, id-scoped assertions.
+ids its own sandbox produced), and teardown archives **every live door in the sandbox section**
+— swept from the tree by `sectionId`, since flows create doors through the UI too and those ids
+were never handed out by the fixture — and then deletes the now-empty section. That order is
+forced, not stylistic: section delete `409`s while live doors remain. Each archive re-reads the
+door's current version first, because every write resequences the scope and bumps its siblings'
+`xmin`; archiving from one up-front snapshot succeeds once and then `409`s silently for the rest,
+which is what used to leave live sandbox doors and undeleted sandbox sections behind. Teardown is
+best-effort, so a flow that already broke does not get a second, masking failure from it.
+**The residue that remains is archived doors, and it is permanent, not "self-cleaning":** there is
+no hard delete and no section restore in this feature, so every run leaves its sandbox doors
+**archived** in the local dev DB forever, and restoring one later reports
+`detachedFromArchivedSection: true` since its section is gone. What must **not** remain after a run
+is any live `e2e-sandbox-*` door or any `e2e-sandbox-*` section — either one is a teardown bug, not
+accepted residue, and `GET /api/abwab/tree` is how you check. This is tolerable on a local,
+disposable dev database with loose, id-scoped assertions.
 **The precondition above is reinstated** — future write flows for other features again require an
 isolated e2e database first — the moment this suite runs anywhere the accumulating archived
 residue is not acceptable, or the sandbox-per-test mitigation stops being sufficient (e.g. a

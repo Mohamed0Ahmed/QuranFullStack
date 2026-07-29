@@ -195,9 +195,12 @@ describe('AbwabApi', () => {
     await promise;
   });
 
-  // The two routes that answer 204 hand back a null envelope, not `{isSuccess, data}`.
-  // Flushing a well-formed envelope here would assert a response the backend never sends.
-  it('archiveDoor emits null when the backend answers 204 No Content', async () => {
+  // Wire-contract pins, NOT regression tests: these assert what the two 204 routes put on
+  // the wire (an empty body, which HttpClient parses as `null`) so no future spec flushes a
+  // well-formed envelope the backend never sends. They pass regardless of how the write
+  // controller handles that null — the regression for that lives in
+  // abwab-write.controller.spec.ts's "204 No Content" block.
+  it('wire contract: archiveDoor emits null when the backend answers 204 No Content', async () => {
     const promise = firstValueFrom(api.archiveDoor(1, { version: 2 }));
     const req = httpMock.expectOne(`${BASE}/doors/1`);
 
@@ -205,7 +208,7 @@ describe('AbwabApi', () => {
     expect(await promise).toBeNull();
   });
 
-  it('deleteSection emits null when the backend answers 204 No Content', async () => {
+  it('wire contract: deleteSection emits null when the backend answers 204 No Content', async () => {
     const promise = firstValueFrom(api.deleteSection(1));
     const req = httpMock.expectOne(`${BASE}/sections/1`);
 

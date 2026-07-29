@@ -26,6 +26,11 @@ test('archiving a door through the UI removes it from the live tree and reports 
   await page.goto(`/abwab?section=${abwabSandbox.sectionId}`);
   await page.getByTestId(`abwab-tree-row-${door.id}`).click();
   await page.getByTestId('abwab-side-panel-op-archive').click();
+
+  // M18: the confirm names the live-subtree count derived from the snapshot — one leaf door
+  // here, in the singular Arabic form.
+  await expect(page.getByTestId('abwab-page-archive-confirm')).toContainText('سيتم أرشفة باب واحد');
+
   await page.getByTestId('abwab-page-archive-confirm-yes').click();
 
   await expect(page.getByTestId(`abwab-tree-row-${door.id}`)).toHaveCount(0);

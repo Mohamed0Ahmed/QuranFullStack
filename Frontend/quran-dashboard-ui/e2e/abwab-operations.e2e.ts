@@ -92,7 +92,9 @@ test('bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
   // so the archive confirm below counts the same union of two live doors.
   await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('2');
   await page.getByTestId('abwab-side-panel-bulk-archive').click();
-  await expect(page.getByTestId('abwab-page-bulk-archive-confirm')).toContainText('2');
+  // Two doors is the Arabic dual, so the confirm reads «بابين» and carries no digit — the
+  // union count is what is being asserted, in the form a reader actually sees.
+  await expect(page.getByTestId('abwab-page-bulk-archive-confirm')).toContainText('سيتم أرشفة بابين');
   await page.getByTestId('abwab-page-bulk-archive-confirm-yes').click();
 
   await expect(page.getByTestId(`abwab-tree-row-${bulkA.id}`)).toHaveCount(0);
@@ -118,4 +120,33 @@ test('row context menu offers exactly edit / add-child / move / archive', async 
 
   await page.getByTestId('abwab-page-ctx-backdrop').click();
   await expect(menu).toBeHidden();
+});
+
+test('the row hover actions: ⋯ opens the same menu without right-click, ＋ opens the child modal', async ({
+  page,
+  abwabSandbox,
+}) => {
+  // The design contract puts both on every row (abwab-tree-concept.html:114, 436-443); ⋯ is
+  // the only mouse path to the row menu that is not right-click, and ＋ is the third
+  // add-child path alongside the side panel and the menu (plan-slice-b.md §6.2).
+  const door = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('row-actions') });
+
+  await page.goto(`/abwab?section=${abwabSandbox.sectionId}`);
+
+  // Both actions are hover-revealed per the contract, so they are genuinely not actionable
+  // until the row is hovered — hovering first is the flow a user performs, not a workaround.
+  const row = page.getByTestId(`abwab-tree-row-${door.id}`);
+  await row.hover();
+  await expect(page.getByTestId(`abwab-tree-more-${door.id}`)).toBeVisible();
+
+  await page.getByTestId(`abwab-tree-more-${door.id}`).click();
+  await expect(page.getByTestId('abwab-page-context-menu')).toBeVisible();
+  await page.getByTestId('abwab-page-ctx-backdrop').click();
+  await expect(page.getByTestId('abwab-page-context-menu')).toBeHidden();
+
+  // The row is selected now, so the contract keeps its actions visible without a hover
+  // (`.row.selected .actions` at abwab-tree-concept.html:114).
+  await expect(page.getByTestId(`abwab-tree-add-child-${door.id}`)).toBeVisible();
+  await page.getByTestId(`abwab-tree-add-child-${door.id}`).click();
+  await expect(page.getByTestId('abwab-door-modal-context')).toHaveText(`سيُضاف تحت: «${door.name}»`);
 });

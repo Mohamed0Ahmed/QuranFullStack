@@ -2,6 +2,26 @@
 // live only in this file). Consumers read these through TDZ-safe getters — never
 // `readonly` field initialisers — per the words/README label-getter rule; that rule binds
 // the *consumer*, not this module.
+
+/** Arabic counts do not read like English ones: 1 and 2 have their own forms, 3–10 take the
+ * broken plural, and 11+ take the accusative singular. «سيتم أرشفة 1 بابًا» is wrong Arabic,
+ * and this product is Arabic-first, so every user-facing door count goes through here. */
+function doorCountPhrase(count: number): string {
+  if (count === 0) {
+    return 'لا أبواب';
+  }
+  if (count === 1) {
+    return 'باب واحد';
+  }
+  if (count === 2) {
+    return 'بابين';
+  }
+  if (count <= 10) {
+    return `${count} أبواب`;
+  }
+  return `${count} بابًا`;
+}
+
 export const ABWAB_LABELS = {
   pageTitle: 'الأبواب',
   pageSubtitle: 'هيكل التصنيفات القرآنية — كل عملية تتم في مكانها.',
@@ -19,7 +39,8 @@ export const ABWAB_LABELS = {
 
   treeAriaLabel: 'شجرة الأبواب',
   archiveTreeAriaLabel: 'شجرة الأبواب المؤرشفة',
-  addChildGhost: 'إضافة باب فرعي',
+  rowAddChildAriaLabel: (doorName: string): string => `إضافة باب فرعي تحت «${doorName}»`,
+  rowMenuAriaLabel: (doorName: string): string => `عمليات «${doorName}»`,
 
   activeDoorHeading: 'الباب النشط',
   noSelectionHint: 'اختر بابًا من الشجرة أو البطاقات',
@@ -29,7 +50,6 @@ export const ABWAB_LABELS = {
   addChildOp: 'إضافة باب فرعي',
   editOp: 'تعديل التفاصيل',
   moveOp: 'نقل إلى…',
-  reorderOp: 'تغيير الترتيب',
   archiveOp: 'أرشفة',
 
   bulkCountSuffix: 'باب محدد',
@@ -66,7 +86,7 @@ export const ABWAB_LABELS = {
   trackingArchiveActiveValue: 'نشط',
 
   movePickerTitleSingle: (doorName: string): string => `نقل «${doorName}»`,
-  movePickerTitleBulk: (count: number): string => `نقل ${count} أبواب`,
+  movePickerTitleBulk: (count: number): string => `نقل ${doorCountPhrase(count)}`,
   movePickerDescription: 'اختر الوجهة — باب يجعله فرعًا له، أو «كباب رئيسي».',
   asMainDoorOption: 'كباب رئيسي (أعلى الشجرة)',
   noSectionOption: 'بلا قسم',
@@ -77,17 +97,14 @@ export const ABWAB_LABELS = {
   addSectionButton: 'إضافة قسم',
   renameSectionButton: 'إعادة تسمية',
   deleteSectionButton: 'حذف',
-  sectionDeleteConflict: 'القسم يحتوي أبوابًا نشطة',
 
-  archiveViewTitle: 'الأرشيف',
   archiveEmptyMessage: 'لا توجد أبواب مؤرشفة.',
   restoreButton: 'استرجاع',
   restoreParentFirstHint: 'استرجع الأب أولًا',
   restoreDetachedAnnouncement: 'استُرجع الباب خارج قسمه المحذوف',
 
   bulkConflictMessage: (names: string): string => `فشلت العملية كاملة — حدث تعارض على: ${names}`,
-  archiveConfirm: (count: number): string => `سيتم أرشفة ${count} بابًا`,
-  noAutoRetryHint: 'لم تتم إعادة المحاولة تلقائيًا — عدّل واحفظ مجددًا.',
+  archiveConfirm: (count: number): string => `سيتم أرشفة ${doorCountPhrase(count)}`,
 
   loadErrorFallback: 'تعذر تحميل شجرة الأبواب. حاول مرة أخرى.',
   emptyTreeMessage: 'لا توجد أبواب بعد.',

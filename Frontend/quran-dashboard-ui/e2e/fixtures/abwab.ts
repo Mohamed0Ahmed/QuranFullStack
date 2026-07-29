@@ -73,6 +73,7 @@ interface AbwabTreeDoorRow {
   readonly id: number;
   readonly version: number;
   readonly isArchived: boolean;
+  readonly sectionId: number | null;
 }
 
 async function fetchTreeDoors(request: APIRequestContext): Promise<Map<number, AbwabTreeDoorRow>> {
@@ -100,34 +101,82 @@ async function archiveDoorViaApi(request: APIRequestContext, doorId: number): Pr
  * nothing in here throws. Archive-then-delete is the only lawful order (section delete
  * `409`s while it holds live doors, `AbwabSectionsController.cs:71`); R20's detach flow
  * (T604) deletes its own section mid-test, so the delete below 404s there and is swallowed.
+ *
+ * Two things this has to get right, both learned the hard way from real residue:
+ *
+ * 1. **Re-read the version before every archive.** Every write resequences its scope to
+ *    `1..N`, which bumps every sibling's `xmin` (plan-slice-b.md §4.6/R10). Archiving from
+ *    one up-front snapshot therefore succeeds for the first door and `409`s for all the
+ *    rest — silently, because a `409` is a response, not a thrown error. One fetch per
+ *    archive is the price of the invariant.
+ * 2. **Sweep the section, not just the ids the fixture handed out.** Flows create doors
+ *    *through the UI*, and those ids were never recorded here. A door the sweep misses stays
+ *    live, which then `409`s the section delete, which leaves the section in the tab strip
+ *    too. Section membership is inherited from the parent, so scoping by `sectionId` covers
+ *    UI-created roots and their children alike.
  */
-async function teardownSandbox(
+async function archiveEverythingIn(
   request: APIRequestContext,
-  sectionId: number,
+  sectionIds: ReadonlySet<number>,
   doorIds: ReadonlySet<number>,
 ): Promise<void> {
-  try {
-    const doorsById = await fetchTreeDoors(request);
-    for (const id of doorIds) {
-      const door = doorsById.get(id);
-      if (!door || door.isArchived) {
-        continue; // already gone or already archived by the test itself — nothing to do
-      }
-      await request
-        .delete(`${API_BASE}/api/abwab/doors/${id}`, { data: { version: door.version } })
-        .catch(() => undefined);
-    }
-  } catch {
-    // A broken fetch here must not mask the test's own assertion failure.
-  }
+  const isSandboxDoor = (door: AbwabTreeDoorRow): boolean =>
+    !door.isArchived && ((door.sectionId !== null && sectionIds.has(door.sectionId)) || doorIds.has(door.id));
 
-  await request.delete(`${API_BASE}/api/abwab/sections/${sectionId}`).catch(() => undefined);
+  // Bounded rather than `while (true)`: a door that refuses to archive must end the loop,
+  // not spin it. The bound is generous against any single test's door count.
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const doorsById = await fetchTreeDoors(request);
+    const next = [...doorsById.values()].find(isSandboxDoor);
+    if (!next) {
+      return;
+    }
+    const res = await request
+      .delete(`${API_BASE}/api/abwab/doors/${next.id}`, { data: { version: next.version } })
+      .catch(() => null);
+    if (!res || !res.ok()) {
+      return; // cannot make progress; leave the rest rather than spin or throw
+    }
+  }
+}
+
+async function sectionExists(request: APIRequestContext, sectionId: number): Promise<boolean> {
+  const res = await request.get(`${API_BASE}/api/abwab/tree`);
+  const json = await res.json();
+  const sections = (json?.['data']?.['sections'] ?? []) as Array<{ id: number }>;
+  return sections.some((section) => section.id === sectionId);
+}
+
+async function teardownSandbox(
+  request: APIRequestContext,
+  sectionIds: ReadonlySet<number>,
+  doorIds: ReadonlySet<number>,
+): Promise<void> {
+  for (const sectionId of sectionIds) {
+    // Retried, not fire-and-forget: two workers write one database concurrently, and a
+    // section delete can lose a race and answer non-2xx even though nothing is wrong with
+    // it — a single silent attempt is how a deletable section survived a run. Re-sweep
+    // before each attempt so a door created between attempts cannot block the delete.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        await archiveEverythingIn(request, sectionIds, doorIds);
+        const res = await request.delete(`${API_BASE}/api/abwab/sections/${sectionId}`);
+        if (res.ok() || res.status() === 404 || !(await sectionExists(request, sectionId))) {
+          break; // gone, or the flow deleted it itself (R20's detach case)
+        }
+      } catch {
+        // Best-effort (R19): teardown must never raise a second failure that masks the
+        // test's own. Fall through to the next attempt, then give up quietly.
+      }
+    }
+  }
 }
 
 export const test = base.extend<{ abwabSandbox: AbwabSandbox }>({
   abwabSandbox: async ({ request }, use, testInfo) => {
     const sectionName = `e2e-sandbox-w${testInfo.workerIndex}-${Date.now()}`;
     const sectionId = await createSectionViaApi(request, sectionName);
+    const sectionIds = new Set<number>([sectionId]);
     const doorIds = new Set<number>();
 
     const sandbox: AbwabSandbox = {
@@ -144,7 +193,7 @@ export const test = base.extend<{ abwabSandbox: AbwabSandbox }>({
 
     await use(sandbox);
 
-    await teardownSandbox(request, sectionId, doorIds);
+    await teardownSandbox(request, sectionIds, doorIds);
   },
 });
 

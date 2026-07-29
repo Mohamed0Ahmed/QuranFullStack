@@ -35,6 +35,31 @@ test('sections modal: rename updates the tab, and delete is blocked by a live do
   await expect(page.getByTestId(`abwab-toolbar-tab-${abwabSandbox.sectionId}`)).toContainText(renamedName);
 });
 
+test('sections modal: deleting a section holding only archived doors succeeds through the UI', async ({
+  page,
+  abwabSandbox,
+}) => {
+  // The success half of the 409 branch above, and the second member of the `204 No Content`
+  // class: `DELETE api/abwab/sections/{id}` answers 204, which HttpClient hands the write
+  // controller as a `null` envelope rather than `{isSuccess, data}`. Single-door archive is
+  // the other member and is driven through the UI by abwab-archive.e2e.ts; without this
+  // flow, the modal's own 204 path is only ever exercised against a mocked envelope.
+  const door = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('archived-before-delete') });
+  await abwabSandbox.archiveDoor(door.id);
+
+  await page.goto(`/abwab?section=${abwabSandbox.sectionId}`);
+  await page.getByTestId('abwab-page-manage-sections').click();
+  await expect(page.getByTestId(`abwab-sections-modal-row-${abwabSandbox.sectionId}`)).toBeVisible();
+
+  await page.getByTestId(`abwab-sections-modal-delete-${abwabSandbox.sectionId}`).click();
+
+  await expect(page.getByTestId(`abwab-sections-modal-row-${abwabSandbox.sectionId}`)).toHaveCount(0);
+  await expect(page.getByTestId('abwab-sections-modal-error')).toHaveCount(0);
+
+  await page.getByTestId('abwab-sections-modal-close').click();
+  await expect(page.getByTestId(`abwab-toolbar-tab-${abwabSandbox.sectionId}`)).toHaveCount(0);
+});
+
 test('root and child door creation via the modal, including alias chips', async ({ page, abwabSandbox }) => {
   await page.goto(`/abwab?section=${abwabSandbox.sectionId}`);
   await expect(page.getByTestId('abwab-page')).toBeVisible();

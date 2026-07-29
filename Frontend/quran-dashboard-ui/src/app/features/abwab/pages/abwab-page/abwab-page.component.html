@@ -54,7 +54,7 @@
         (searchQueryChanged)="onSearchQueryChanged($event)"
       />
 
-      <div class="abwab-page__layout" (contextmenu)="onTreeAreaContextMenu($event)">
+      <div class="abwab-page__layout">
         <div class="abwab-page__main">
           @if (archiveParam()) {
             <div class="qd-card abwab-page__tree-card">
@@ -97,7 +97,8 @@
                   [forceExpandedIds]="forceExpandedIds()"
                   (selected)="onTreeSelected($event)"
                   (bulkToggled)="onBulkToggled($event)"
-                  (menuRequested)="overlays.requestContextMenu($event)"
+                  (addChildRequested)="overlays.openCreateChild()"
+                  (menuRequested)="onMenuRequested($event)"
                   (orderCommitted)="onOrderCommitted($event)"
                 />
               }

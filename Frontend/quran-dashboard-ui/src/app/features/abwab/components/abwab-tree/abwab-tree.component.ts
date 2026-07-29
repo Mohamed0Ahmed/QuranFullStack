@@ -1,11 +1,18 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output, signal } from '@angular/core';
 
 import { AbwabNode } from '../../models/abwab.models';
+import { ABWAB_LABELS } from '../../models/abwab.labels';
 import {
   AbwabTreeRow,
   flattenVisibleAbwabRows,
   resolveAbwabTreeKeyboardIntent,
 } from './abwab-tree-keyboard.controller';
+
+export interface AbwabTreeMenuRequest {
+  readonly id: number;
+  readonly x: number;
+  readonly y: number;
+}
 
 /**
  * Presentational Abwab tree (plan-slice-b.md T413): `role="tree"` + `treeitem` rows,
@@ -14,10 +21,14 @@ import {
  * Renders flat (one row per visible node, indented by `depth`) rather than nesting
  * `role="group"` per level — `aria-level` already conveys depth to assistive tech, and a
  * flat list keeps roving-tabindex/keyboard wiring in one place; revisit only if an AT
- * regression is found. No relations/protection controls (plan.md §5.1) and no inline
- * row-action buttons here — edit/add-child/move/archive live in the side panel and the
- * row context menu (`abwab-page-overlays.controller.ts`), which compose this tree
- * rather than the other way around.
+ * regression is found.
+ *
+ * Rows carry the design contract's two hover actions (`abwab-tree-concept.html:114,436-443`):
+ * `＋` (add child) and `⋯` (open the row menu), revealed on hover and on the selected row.
+ * They are the contract's *third* add-child path alongside the side panel and the context
+ * menu (plan-slice-b.md §6.2), and `⋯` is the only mouse path to the row menu that is not
+ * right-click. No relations/protection controls (plan.md §5.1): edit/move/archive stay in
+ * the side panel and the menu, which compose this tree rather than the other way around.
  */
 @Component({
   selector: 'qd-abwab-tree',
@@ -39,7 +50,11 @@ export class AbwabTreeComponent {
 
   readonly selected = output<number>();
   readonly bulkToggled = output<number>();
-  readonly menuRequested = output<number>();
+  readonly addChildRequested = output<number>();
+  /** Carries the anchor point, so the mouse paths (right-click, `⋯`) and the keyboard path
+   * (`ContextMenu`/`Shift+F10`, anchored to the focused row) all place the menu themselves
+   * instead of the page guessing from a separate `contextmenu` listener. */
+  readonly menuRequested = output<AbwabTreeMenuRequest>();
   readonly orderCommitted = output<{ id: number; position: number }>();
 
   private readonly manuallyExpandedIds = signal<ReadonlySet<number>>(new Set());
@@ -97,14 +112,40 @@ export class AbwabTreeComponent {
     this.bulkToggled.emit(id);
   }
 
-  protected onRowContextMenu(event: Event, id: number): void {
+  protected addChildAriaLabel(name: string): string {
+    return ABWAB_LABELS.rowAddChildAriaLabel(name);
+  }
+
+  protected menuAriaLabel(name: string): string {
+    return ABWAB_LABELS.rowMenuAriaLabel(name);
+  }
+
+  protected onRowContextMenu(event: MouseEvent, id: number): void {
     event.preventDefault();
     if (this.bulkMode()) {
       return;
     }
+    this.openMenuFor(id, event.clientX, event.clientY);
+  }
+
+  protected onAddChildClick(event: Event, id: number): void {
+    event.stopPropagation();
     this.manualFocusId.set(id);
     this.selected.emit(id);
-    this.menuRequested.emit(id);
+    this.addChildRequested.emit(id);
+  }
+
+  protected onMoreClick(event: MouseEvent, id: number): void {
+    event.stopPropagation();
+    this.openMenuFor(id, event.clientX, event.clientY);
+  }
+
+  private openMenuFor(id: number, x: number, y: number): void {
+    this.manualFocusId.set(id);
+    // Select first: the menu acts on the row it opened over, and the page writes
+    // `door=<id>` on selection — so every menu path leaves the URL agreeing with the store.
+    this.selected.emit(id);
+    this.menuRequested.emit({ id, x, y });
   }
 
   protected onRowDblClick(row: AbwabTreeRow): void {
@@ -185,10 +226,14 @@ export class AbwabTreeComponent {
         event.preventDefault();
         this.bulkToggled.emit(intent.id);
         break;
-      case 'openMenu':
+      case 'openMenu': {
         event.preventDefault();
-        this.menuRequested.emit(intent.id);
+        // Anchor to the focused row rather than the viewport origin — a keyboard user has no
+        // pointer position, and a menu pinned at (0,0) is not a usable keyboard path.
+        const rect = this.rowElement(intent.id)?.getBoundingClientRect();
+        this.openMenuFor(intent.id, rect?.left ?? 0, rect?.bottom ?? 0);
         break;
+      }
       case 'none':
         break;
     }
@@ -211,12 +256,12 @@ export class AbwabTreeComponent {
     });
   }
 
+  private rowElement(id: number): HTMLElement | null {
+    return this.elementRef.nativeElement.querySelector<HTMLElement>(`[data-testid="abwab-tree-row-${id}"]`);
+  }
+
   private focusRow(id: number): void {
-    queueMicrotask(() => {
-      this.elementRef.nativeElement
-        .querySelector<HTMLElement>(`[data-testid="abwab-tree-row-${id}"]`)
-        ?.focus();
-    });
+    queueMicrotask(() => this.rowElement(id)?.focus());
   }
 
   private resolveDirection(): 'ltr' | 'rtl' {

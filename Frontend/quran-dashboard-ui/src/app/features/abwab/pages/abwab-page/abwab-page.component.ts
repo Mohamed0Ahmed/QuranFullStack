@@ -11,7 +11,7 @@ import { parseAbwabQueryParams, buildAbwabQueryParams } from '../../state/abwab-
 import { AbwabNode, AbwabView } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabToolbarComponent } from '../../components/abwab-toolbar/abwab-toolbar.component';
-import { AbwabTreeComponent } from '../../components/abwab-tree/abwab-tree.component';
+import { AbwabTreeComponent, AbwabTreeMenuRequest } from '../../components/abwab-tree/abwab-tree.component';
 import { AbwabCardsComponent } from '../../components/abwab-cards/abwab-cards.component';
 import { AbwabArchiveViewComponent } from '../../components/abwab-archive-view/abwab-archive-view.component';
 import { AbwabSidePanelComponent } from '../../components/abwab-side-panel/abwab-side-panel.component';
@@ -47,6 +47,7 @@ import { AbwabSectionsModalComponent } from '../../components/abwab-sections-mod
   templateUrl: './abwab-page.component.html',
   styleUrl: './abwab-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [AbwabPageOverlaysController],
 })
 export class AbwabPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -144,6 +145,14 @@ export class AbwabPageComponent implements OnInit {
       this.cardParam.set(parsed.card);
       this.searchQueryParam.set(parsed.q);
       this.selection.setArchiveViewActive(parsed.archive);
+      // The URL is the single source of truth for the selection, exactly as it already is
+      // for view/archive/card/q. `buildAbwabQueryParams` drops `door` whenever the scope
+      // changes (§4.4: a selection is not meaningful across scopes), so without this the
+      // store would keep a door the URL has abandoned — and the side panel would keep
+      // offering edit/move/archive on a door that is no longer on screen (M22).
+      if (parsed.door === null) {
+        this.selection.clearSelection();
+      }
     });
   }
 
@@ -191,7 +200,12 @@ export class AbwabPageComponent implements OnInit {
 
   protected onBulkToggled(id: number): void {
     const node = this.byId().get(id);
-    this.selection.toggleBulk(id, node?.version ?? 0);
+    if (!node) {
+      // No sentinel version: a fabricated token cannot succeed, and bulk is all-or-nothing,
+      // so one bogus entry would 409 the whole operation with nothing the user can act on.
+      return;
+    }
+    this.selection.toggleBulk(id, node.version);
   }
 
   protected onBulkClearRequested(): void {
@@ -218,8 +232,9 @@ export class AbwabPageComponent implements OnInit {
     this.writeController.restoreDoor(id, node.version).subscribe();
   }
 
-  protected onTreeAreaContextMenu(event: MouseEvent): void {
-    this.overlays.setContextMenuPosition(event.clientX, event.clientY);
+  protected onMenuRequested(request: AbwabTreeMenuRequest): void {
+    this.overlays.setContextMenuPosition(request.x, request.y);
+    this.overlays.requestContextMenu(request.id);
   }
 
   private updateQueryParams(changes: Record<string, string | null>): void {

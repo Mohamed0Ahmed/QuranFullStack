@@ -9,10 +9,12 @@ import { buildAbwabTreeSnapshot } from './abwab-tree.builder';
 
 /**
  * Owns the `GET api/abwab/tree` snapshot: loading/error/empty state, and the pure
- * DTO → view-model build (abwab-tree.builder.ts). `load()` and `refresh()` share one
- * `fetch()` — `refresh()` returns the in-flight observable (rather than firing a second
- * request) so the write controller can chain `selection.rebindTo(...)` onto the exact
- * snapshot this call produced (§4.6).
+ * DTO → view-model build (abwab-tree.builder.ts). `load()` and `refresh()` both go through
+ * `fetch()`, which always issues a **new** request and cancels any still-pending one —
+ * §4.6's refetch-after-every-write invariant means a coalesced or cached read would hand
+ * back exactly the stale snapshot the invariant exists to prevent. The returned observable
+ * is `shareReplay(1)`-backed so the caller (the write controller) sees the same snapshot the
+ * internal subscription produced and can chain `selection.rebindTo(...)` onto it.
  *
  * On failure the previous snapshot is left in place — API_INTEGRATION_GUIDELINES.md:
  * "do not leave pages blank during loading or failure." Only a successful response

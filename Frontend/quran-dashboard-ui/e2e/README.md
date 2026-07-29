@@ -43,17 +43,24 @@ npm run e2e:typecheck                    # tsc over e2e/ + playwright.config.ts
   the live local dev DB without writing to it; exact row counts would break on the next reseed.
   The four Abwab specs are a deliberate, named exception (`docs/feature-abwab-doors/plan-slice-b2.md`
   §2, and `TESTING_STRATEGY.md` §6, which this amendment mirrors): each test creates its own
-  uniquely-named sandbox section over the API (`fixtures/abwab.ts`), drives real writes against
-  it through the UI, and tears down by archiving every door it created and then deleting the
-  now-empty section — the only lawful order, since section delete `409`s while live doors remain.
-  Teardown is best-effort and never masks a test's own failure (R19), and no Abwab test asserts a
-  global count — each one only ever asserts on the ids its own sandbox produced (R18).
-  **The residue is real and permanent, not "self-cleaning":** there is no hard delete and no
-  section restore, so every run leaves its sandbox doors **archived** in the local dev DB forever,
-  and any future restore of one reports `detachedFromArchivedSection: true` since its section is
-  gone. This is accepted on a local dev DB with loose, id-scoped assertions; it would need to be
-  revisited (per the same `TESTING_STRATEGY.md` §6 note) before this suite runs anywhere but a
-  disposable local database.
+  uniquely-named sandbox section over the API (`fixtures/abwab.ts`) and drives real writes
+  against it through the UI. Teardown archives **every live door in that section** — swept from
+  the tree by `sectionId`, not just the ids the fixture handed out, because flows also create
+  doors through the UI — and then deletes the now-empty section. That order is forced, not
+  stylistic: section delete `409`s while live doors remain. Each archive re-reads the door's
+  current version first, since every write resequences the scope and bumps its siblings'
+  `xmin`; archiving from one up-front snapshot succeeds once and then `409`s silently for the
+  rest, which is what used to leave live sandbox doors and undeleted sandbox sections behind.
+  Teardown is best-effort and never masks a test's own failure (R19), and no Abwab test asserts
+  a global count — each one only ever asserts on the ids its own sandbox produced (R18).
+  **The residue that remains is archived doors, and it is permanent, not "self-cleaning":**
+  there is no hard delete and no section restore, so every run leaves its sandbox doors
+  **archived** in the local dev DB forever, and any future restore of one reports
+  `detachedFromArchivedSection: true` since its section is gone. What must **not** remain after
+  a run is any live `e2e-sandbox-*` door or any `e2e-sandbox-*` section — either one is a
+  teardown bug, not accepted residue. This is accepted on a local dev DB with loose, id-scoped
+  assertions; it would need to be revisited (per the same `TESTING_STRATEGY.md` §6 note) before
+  this suite runs anywhere but a disposable local database.
 - Both servers boot with `reuseExistingServer`, and the backend readiness gate is
   `GET https://localhost:5015/api/health`, which answers 503 when the database is unreachable.
 - **Never leave a server running on :4200 or :5015 outside Playwright's control.** A stray

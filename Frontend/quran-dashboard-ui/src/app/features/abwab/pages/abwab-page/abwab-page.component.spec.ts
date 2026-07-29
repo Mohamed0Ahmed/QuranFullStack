@@ -92,7 +92,7 @@ describe('AbwabPageComponent', () => {
     expect(root.querySelector('qd-abwab-announcer')).toBeTruthy();
   });
 
-  describe('M31 (partial — cards/search deferred to phase 5) — archived doors are unreachable from the live tree and tabs', () => {
+  describe('M31 — archived doors are unreachable from the live tree and tabs', () => {
     it('never renders the archived door as a tree row', () => {
       const root = render().nativeElement as HTMLElement;
       expect(root.querySelector('[data-testid="abwab-tree-row-3"]')).toBeNull();
@@ -329,6 +329,96 @@ describe('AbwabPageComponent', () => {
       expect(root.querySelector('[data-testid="abwab-side-panel-empty"]')).toBeTruthy();
       expect(root.querySelector('[data-testid="abwab-side-panel-active-door"]')).toBeNull();
     });
+
+    // The path the test above cannot reach: entering the archive view *with a live door
+    // already selected*. `buildAbwabQueryParams` drops `door` on that transition (§4.4), so
+    // the store must follow the URL — otherwise the archive view keeps offering
+    // edit/move/archive on a live door that is nowhere on screen.
+    it('clears a live selection when the archive toggle drops door from the URL', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-tree-row-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-side-panel-active-door"]')).toBeTruthy();
+
+      (root.querySelector('[data-testid="abwab-page-archive-toggle"]') as HTMLElement).click();
+      queryParamMap$.next(convertToParamMap({ archive: '1' })); // what the navigate above produces
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-side-panel-active-door"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-side-panel-empty"]')).toBeTruthy();
+      expect(root.querySelector<HTMLButtonElement>('[data-testid="abwab-side-panel-op-archive"]')?.disabled).toBe(
+        true,
+      );
+    });
+
+    it('clears a selection when a section switch drops door from the URL', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-tree-row-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-side-panel-active-door"]')).toBeTruthy();
+
+      queryParamMap$.next(convertToParamMap({ section: '1' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-side-panel-active-door"]')).toBeNull();
+    });
+  });
+
+  describe('overlay state is page-scoped, not application-scoped', () => {
+    // AbwabPageOverlaysController is provided by the page, not `providedIn: 'root'` (same
+    // rule as words' *-detail.controller.ts). Root scope would survive leaving /abwab, and
+    // every dialog renders outside the loading/error guard — so a left-open modal would
+    // paint again on re-entry, before any data loads.
+    it('does not carry a left-open modal into a freshly created page', () => {
+      const first = render();
+      const firstRoot = first.nativeElement as HTMLElement;
+      (firstRoot.querySelector('[data-testid="abwab-page-add-root"]') as HTMLElement).click();
+      first.detectChanges();
+      expect(firstRoot.querySelector('[data-testid="abwab-door-modal"]')).toBeTruthy();
+
+      first.destroy();
+
+      const second = render();
+      expect((second.nativeElement as HTMLElement).querySelector('[data-testid="abwab-door-modal"]')).toBeNull();
+    });
+  });
+
+  describe('the contract row actions (abwab-tree-concept.html:114) — ＋ and ⋯', () => {
+    it('＋ selects the row and opens the create modal scoped to it as parent', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-tree-add-child-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-door-modal-context"]')?.textContent).toContain('العلم بالله');
+    });
+
+    it('⋯ opens the same row menu right-click does, without needing right-click', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-tree-more-2"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      const menu = root.querySelector('[data-testid="abwab-page-context-menu"]');
+      expect(menu).toBeTruthy();
+      expect(Array.from(menu!.querySelectorAll('[role="menuitem"]'))).toHaveLength(4);
+
+      (root.querySelector('[data-testid="abwab-page-ctx-edit"]') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-door-modal-name"]')).toHaveProperty('value', 'الرسول');
+    });
   });
 
   describe('Search filters the archive tree while archive=1 (M4/M31)', () => {
@@ -383,7 +473,11 @@ describe('AbwabPageComponent', () => {
       (root.querySelector('[data-testid="abwab-side-panel-bulk-move"]') as HTMLElement).click();
       fixture.detectChanges();
 
-      expect(root.querySelector('[data-testid="abwab-move-picker"]')?.textContent).toContain('2');
+      // Two doors reads as the Arabic dual «بابين», not «2 أبواب» — the title is counted
+      // through ABWAB_LABELS.movePickerTitleBulk, so assert what a reader actually sees.
+      expect(root.querySelector('[data-testid="abwab-move-picker"]')?.textContent).toContain(
+        ABWAB_LABELS.movePickerTitleBulk(2),
+      );
       (root.querySelector('[data-testid="abwab-move-picker-section-none"]') as HTMLElement).click();
       fixture.detectChanges();
       (root.querySelector('[data-testid="abwab-move-picker-dest-asmain"]') as HTMLElement).click();

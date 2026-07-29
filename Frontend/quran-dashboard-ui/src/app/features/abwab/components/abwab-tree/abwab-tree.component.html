@@ -62,6 +62,31 @@
         @if (row.hasChildren) {
           <span class="abwab-tree__count">{{ node.liveChildCount }}</span>
         }
+
+        @if (!bulkMode()) {
+          <span class="abwab-tree__actions">
+            <button
+              type="button"
+              class="abwab-tree__act"
+              [attr.aria-label]="addChildAriaLabel(node.name)"
+              [attr.data-testid]="'abwab-tree-add-child-' + node.id"
+              [attr.tabindex]="-1"
+              (click)="onAddChildClick($event, node.id)"
+            >
+              <span aria-hidden="true">＋</span>
+            </button>
+            <button
+              type="button"
+              class="abwab-tree__act"
+              [attr.aria-label]="menuAriaLabel(node.name)"
+              [attr.data-testid]="'abwab-tree-more-' + node.id"
+              [attr.tabindex]="-1"
+              (click)="onMoreClick($event, node.id)"
+            >
+              <span aria-hidden="true">⋯</span>
+            </button>
+          </span>
+        }
       </div>
     }
   }

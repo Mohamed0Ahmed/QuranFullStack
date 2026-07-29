@@ -28,7 +28,8 @@ auto-retried.
   modal, and the row context menu. Split out of the page component once composing six
   overlays pushed that file toward the component-TS soft threshold
   (`FRONTEND_STRUCTURE.md`'s Large Page Split guidance) — it holds state/orchestration
-  only, no template of its own.
+  only, no template of its own. **Provided by `AbwabPageComponent`, not
+  `providedIn: 'root'`** — see the Gotchas below.
 - `components/abwab-toolbar/` — «كل الأبواب» + one tab per section (composing
   `qd-tabs`/`qdTab`, **no** «الأبواب الرئيسية» tab per `plan.md` §5.1), the name+alias
   search box, and the tree/cards view toggle. `hideSectionControls` hides the tabs and
@@ -40,8 +41,12 @@ auto-retried.
   collapses/exits). Renders **flat** (one row per visible node, `aria-level` conveys
   depth) rather than nesting `role="group"` per level. Inline reorder editing (click
   the order number → input, Enter commits, Escape reverts) dispatches through
-  `reorderDoor`. Right-click (and the keyboard `ContextMenu`/`Shift+F10` path) opens the
-  row context menu via `menuRequested`; the menu itself is rendered by the page shell.
+  `reorderDoor`. Rows carry the contract's two hover actions (`abwab-tree-concept.html:114`,
+  `:436-443`): `＋` (add child) and `⋯` (open the row menu), revealed on hover and on the
+  selected row, hidden in bulk mode, and kept out of the tab order so the roving-tabindex
+  invariant holds. `⋯`, right-click, and the keyboard `ContextMenu`/`Shift+F10` path all
+  emit `menuRequested` **with an anchor point** — the pointer position for the mouse paths,
+  the focused row's rect for the keyboard one — and the page shell renders the menu there.
 - `components/abwab-cards/` — the drill-down grid: `cardId` names only the
   drilled-into parent (not a full path array) — the breadcrumb chain is derived by
   walking `parentId` up from it via `byId`, so the URL never needs an array. Fails
@@ -57,6 +62,8 @@ auto-retried.
   and the bulk bar (count, names, bulk move/archive/clear). **No** relations/protection
   entries (`plan.md` §5.1). No reorder button — the tree's own inline number editor is
   the one reorder affordance; a second control doing the same thing would be redundant.
+  This panel is the second of the contract's three add-child paths; the tree row's own
+  `＋` and the row menu are the other two.
 - `components/abwab-move-picker/` — the two-stage destination picker shared by single
   and bulk move: stage one picks a section (including «بلا قسم»), stage two picks a
   destination door in it or «كباب رئيسي». Renders flat, indented by depth, rather than
@@ -113,6 +120,13 @@ Fails closed to the defaults on anything invalid. Switching `section`, or turnin
 `archive` on, clears `door` and `card` (a selection is not meaningful across scopes);
 turning `archive` off restores neither.
 
+**The URL is the single source of truth for the selection.** `AbwabPageComponent` clears
+`AbwabSelectionStore` whenever a param emission carries no `door`, and every path that
+selects a door (row click, `＋`, `⋯`, right-click, the keyboard menu key) writes `door=<id>`
+before acting. Without that, the invalidation above would hold in the URL and silently fail
+in the store — leaving the side panel offering edit/move/archive on a door that is no longer
+in scope, which is exactly what §6.2's M22 cell forbids.
+
 ## Gotchas / invariants (read before changing)
 
 - **Refresh-after-write is an invariant, not an optimization.** Every write
@@ -154,19 +168,31 @@ turning `archive` off restores neither.
   cleared on conflict — a single-door conflict, by contrast, clears just that door's
   now-invalidated selection.
 - **The section-delete conflict copy the UI actually shows is the backend's, not the
-  plan's.** `abwab.labels.ts#sectionDeleteConflict` («القسم يحتوي أبوابًا نشطة») is the
-  string `plan-slice-b.md` §2 locks and is used only as a fallback when a 409 carries
-  no backend message. In practice `AbwabSectionsController.cs` / `ApiMessages.cs`
-  always sends «لا يمكن حذف القسم لاحتوائه على أبواب حالية» on this conflict, and the
-  write controller's 409 policy prefers the backend message when present — so that is
-  what renders. Reported as a contract-vs-decision conflict rather than silently
-  reconciling one string into the other; `abwab-sections.controller.spec.ts`'s M27
-  test is pinned against the real backend copy.
+  plan's.** `plan-slice-b.md` §2 locks «القسم يحتوي أبوابًا نشطة», but
+  `AbwabSectionsController.cs` / `ApiMessages.cs` always send «لا يمكن حذف القسم لاحتوائه
+  على أبواب حالية» on this conflict, and the write controller's 409 policy prefers the
+  backend message whenever one is present. The plan's string therefore **never renders**,
+  and no constant for it exists in `abwab.labels.ts` — a "fallback" that can only be
+  reached when the backend omits its own message would be dead code dressed as a
+  safeguard, and the generic `writeConflictFallback` already covers that case. Reported as
+  a contract-vs-decision conflict rather than silently reconciling one string into the
+  other; the M27 test is pinned against the real backend copy.
 - **`AbwabDoorDto` carries no audit-seed columns on the wire** (no `createdAt`/
   `createdBy`/`approvedAt`/`approvedBy` — verified against the generated model and
   `openapi/swagger.json`). The door modal's tracking-data box shows only what is
   honestly derivable (archive status) or an explicit "not available yet" placeholder
   for added-by/approved-by; it does not fabricate a date the DTO cannot back.
+- **Overlay state is page-scoped; caches are app-scoped.** `AbwabPageOverlaysController` is
+  provided by `AbwabPageComponent`, not `providedIn: 'root'` — the same split
+  `features/words/state/*-detail.controller.ts` makes ("Not `providedIn: 'root'`: … each
+  overlay adapter provides its own component-scoped instance"). Root scope would outlive
+  `/abwab`, and the page renders every dialog **outside** its loading/error guard, so a
+  left-open modal would paint again on re-entry before any data loads. The snapshot facade
+  and the selection store stay root-scoped on purpose; only the overlay state is per-page.
+- **Counted door labels go through the Arabic number forms.** `archiveConfirm` and
+  `movePickerTitleBulk` share one helper covering singular («باب واحد»), dual («بابين»),
+  3–10 («N أبواب») and 11+ («N بابًا»). Do not interpolate a bare count into new copy —
+  «سيتم أرشفة 1 بابًا» is wrong Arabic and this product is Arabic-first.
 - **Labels use the TDZ getter pattern**, same as `features/words/README.md`: read
   `abwab.labels.ts` consts via component **getters**, never `readonly` field
   initialisers, or they resolve to `undefined` in the bundled test build.
@@ -191,10 +217,18 @@ turning `archive` off restores neither.
 sections, root/child doors with alias chips, the dirty guard, inline reorder, single and
 bulk move, bulk archive, the row context menu, archive/restore including the
 parent-must-restore-first rule and the detach announcement, all six URL query keys, and
-the tree's ARIA/roving-tabindex/RTL keyboard model. `e2e/fixtures/abwab.ts` is the shared
-sandbox: each test creates its own uniquely-named section over the API, and tears down by
-archiving every door it created and then deleting the section — see `e2e/README.md` and
-`TESTING_STRATEGY.md` §6 for the residue this leaves in the local dev DB.
+the tree's ARIA/roving-tabindex/RTL keyboard model, plus both halves of the section-delete
+contract (409 while a live door remains, and the `204 No Content` success once its doors are
+archived).
+
+`e2e/fixtures/abwab.ts` is the shared sandbox: each test creates its own uniquely-named
+section over the API, and tears down by archiving **every live door in that section** — not
+only the ids it handed out, since flows create doors through the UI too — and then deleting
+the now-empty section. Teardown re-reads each door's version immediately before archiving it:
+every write resequences the scope, so archiving from one up-front snapshot succeeds once and
+then `409`s silently for the rest, which is what previously left live sandbox doors and
+undeleted sandbox sections behind. See `e2e/README.md` and `TESTING_STRATEGY.md` §6 for the
+residue that legitimately remains.
 
 ## Related
 

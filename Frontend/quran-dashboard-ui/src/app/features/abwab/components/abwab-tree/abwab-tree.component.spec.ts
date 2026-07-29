@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 
-import { AbwabTreeComponent } from './abwab-tree.component';
+import { AbwabTreeComponent, AbwabTreeMenuRequest } from './abwab-tree.component';
 import { AbwabTreeDoorDto } from '../../../../core/api/generated/models/abwab-tree-door-dto';
 import { AbwabTreeDto } from '../../../../core/api/generated/models/abwab-tree-dto';
 import { buildAbwabTreeSnapshot } from '../../state/abwab-tree.builder';
@@ -112,28 +112,28 @@ describe('AbwabTreeComponent', () => {
   });
 
   describe('T511 — right-click opens the row menu (the mouse path; ContextMenu/Shift+F10 already covers keyboard)', () => {
-    it('selects the row and emits menuRequested, preventing the native context menu', () => {
+    it('selects the row and emits menuRequested at the pointer, preventing the native context menu', () => {
       const fixture = render();
       const selected: number[] = [];
-      const menuRequested: number[] = [];
+      const menuRequested: AbwabTreeMenuRequest[] = [];
       fixture.componentInstance.selected.subscribe((id: number) => selected.push(id));
-      fixture.componentInstance.menuRequested.subscribe((id: number) => menuRequested.push(id));
+      fixture.componentInstance.menuRequested.subscribe((r: AbwabTreeMenuRequest) => menuRequested.push(r));
 
       const rootRow = (fixture.nativeElement as HTMLElement).querySelector(
         '[data-testid="abwab-tree-row-1"]',
       ) as HTMLElement;
-      const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+      const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 120, clientY: 40 });
       rootRow.dispatchEvent(event);
 
       expect(event.defaultPrevented).toBe(true);
       expect(selected).toEqual([1]);
-      expect(menuRequested).toEqual([1]);
+      expect(menuRequested).toEqual([{ id: 1, x: 120, y: 40 }]);
     });
 
     it('does nothing in bulk mode (bulk rows have no context menu)', () => {
       const fixture = render({ bulkMode: true });
-      const menuRequested: number[] = [];
-      fixture.componentInstance.menuRequested.subscribe((id: number) => menuRequested.push(id));
+      const menuRequested: unknown[] = [];
+      fixture.componentInstance.menuRequested.subscribe((r: unknown) => menuRequested.push(r));
 
       const rootRow = (fixture.nativeElement as HTMLElement).querySelector(
         '[data-testid="abwab-tree-row-1"]',
@@ -141,6 +141,79 @@ describe('AbwabTreeComponent', () => {
       rootRow.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
 
       expect(menuRequested).toEqual([]);
+    });
+
+    it('the keyboard path anchors the menu to the focused row, not the viewport origin', () => {
+      const fixture = render();
+      const menuRequested: AbwabTreeMenuRequest[] = [];
+      fixture.componentInstance.menuRequested.subscribe((r: AbwabTreeMenuRequest) => menuRequested.push(r));
+
+      const rootRow = (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="abwab-tree-row-1"]',
+      ) as HTMLElement;
+      rootRow.getBoundingClientRect = () => ({ left: 200, bottom: 88 }) as DOMRect;
+      rootRow.dispatchEvent(new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true }));
+
+      expect(menuRequested).toEqual([{ id: 1, x: 200, y: 88 }]);
+    });
+  });
+
+  describe('the design contract’s row actions (abwab-tree-concept.html:114, 436-443)', () => {
+    it('renders ＋ and ⋯ on every row, each with an Arabic aria-label naming the door', () => {
+      const root = render().nativeElement as HTMLElement;
+
+      const add = root.querySelector('[data-testid="abwab-tree-add-child-1"]') as HTMLButtonElement;
+      const more = root.querySelector('[data-testid="abwab-tree-more-1"]') as HTMLButtonElement;
+
+      expect(add.getAttribute('aria-label')).toBe('إضافة باب فرعي تحت «جذر-1»');
+      expect(more.getAttribute('aria-label')).toBe('عمليات «جذر-1»');
+    });
+
+    it('＋ selects the row and emits addChildRequested, without also toggling expand', () => {
+      const fixture = render();
+      const selected: number[] = [];
+      const addChild: number[] = [];
+      fixture.componentInstance.selected.subscribe((id: number) => selected.push(id));
+      fixture.componentInstance.addChildRequested.subscribe((id: number) => addChild.push(id));
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-add-child-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      expect(selected).toEqual([1]);
+      expect(addChild).toEqual([1]);
+      expect(root.querySelector('[data-testid="abwab-tree-row-1"]')?.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('⋯ is a second mouse path to the row menu, without right-click', () => {
+      const fixture = render();
+      const menuRequested: AbwabTreeMenuRequest[] = [];
+      fixture.componentInstance.menuRequested.subscribe((r: AbwabTreeMenuRequest) => menuRequested.push(r));
+
+      (fixture.nativeElement as HTMLElement)
+        .querySelector('[data-testid="abwab-tree-more-1"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 70, clientY: 30 }));
+
+      expect(menuRequested).toEqual([{ id: 1, x: 70, y: 30 }]);
+    });
+
+    it('hides both actions in bulk mode (rows carry checkboxes, not per-row operations)', () => {
+      const root = render({ bulkMode: true }).nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-add-child-1"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-tree-more-1"]')).toBeNull();
+    });
+
+    it('keeps the roving-tabindex invariant: the actions are never extra tab stops', () => {
+      const root = render().nativeElement as HTMLElement;
+
+      const actionStops = Array.from(root.querySelectorAll('.abwab-tree__act')).filter(
+        (el) => el.getAttribute('tabindex') !== '-1',
+      );
+      expect(actionStops).toHaveLength(0);
+      expect(root.querySelectorAll('[data-testid^="abwab-tree-row-"][tabindex="0"]')).toHaveLength(1);
     });
   });
 
