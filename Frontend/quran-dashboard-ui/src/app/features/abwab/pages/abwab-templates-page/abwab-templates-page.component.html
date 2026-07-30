@@ -11,7 +11,21 @@
     <qd-abwab-announcer [message]="controller.announcement()" />
 
     @if (facade.isLoading() && facade.templates().length === 0) {
-      <p class="qd-loading-state" role="status">{{ templatesLoadingMessage }}</p>
+      <!-- The list and the editor panel both stay mounted so the layout does not collapse to a
+           single line during a cold load — same reasoning as the doors page's tree skeleton. -->
+      <div class="abwab-templates-page__layout">
+        <aside class="abwab-templates-page__list" [attr.aria-label]="templatesListAriaLabel">
+          <qd-skeleton-rows
+            class="abwab-templates-page__list-skeleton"
+            [count]="5"
+            rowTemplate="1fr"
+            [loadingLabel]="templatesLoadingMessage"
+          />
+        </aside>
+        <div class="qd-card abwab-templates-page__editor abwab-templates-page__editor--loading">
+          <qd-panel-skeleton shape="panel" />
+        </div>
+      </div>
     } @else if (facade.errorMessage() && facade.templates().length === 0) {
       <p class="qd-error-state" role="alert">{{ facade.errorMessage() }}</p>
     } @else {

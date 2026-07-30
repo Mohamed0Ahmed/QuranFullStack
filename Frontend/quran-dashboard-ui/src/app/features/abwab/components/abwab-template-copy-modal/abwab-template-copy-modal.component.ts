@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, input, output, si
 import { Observable } from 'rxjs';
 
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabNode } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -39,7 +40,7 @@ function subtreeMatches(node: AbwabNode, query: string): boolean {
 @Component({
   selector: 'qd-abwab-template-copy-modal',
   standalone: true,
-  imports: [ModalScrollLockDirective],
+  imports: [ModalScrollLockDirective, QdSkeletonRowsComponent],
   templateUrl: './abwab-template-copy-modal.component.html',
   styleUrl: './abwab-template-copy-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -22,6 +22,8 @@ import { AbwabTemplateNodeModalComponent } from '../../components/abwab-template
 import { AbwabTemplateCopyModalComponent } from '../../components/abwab-template-copy-modal/abwab-template-copy-modal.component';
 import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
+import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
+import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 
 /** What the node modal is currently authoring. `parentNodeId` is the new node's parent when
  * adding; `nodeId` is the edited node when editing. */
@@ -47,6 +49,8 @@ type AbwabNodeModalState =
     AbwabTemplateNodeModalComponent,
     AbwabTemplateCopyModalComponent,
     QdContextMenuComponent,
+    QdSkeletonRowsComponent,
+    ExplorerPanelSkeletonComponent,
   ],
   templateUrl: './abwab-templates-page.component.html',
   styleUrl: './abwab-templates-page.component.scss',

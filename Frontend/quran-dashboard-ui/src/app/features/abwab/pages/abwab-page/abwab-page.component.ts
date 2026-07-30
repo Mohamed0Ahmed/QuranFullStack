@@ -22,6 +22,7 @@ import { AbwabSectionsModalComponent } from '../../components/abwab-sections-mod
 import { AbwabRelationsModalComponent } from '../../components/abwab-relations-modal/abwab-relations-modal.component';
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
+import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 
 /**
  * Route shell for `/abwab` (plan-slice-b.md T415/T501-T511): URL ⇄ state wiring,
@@ -49,6 +50,7 @@ import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/conte
     AbwabSectionsModalComponent,
     AbwabRelationsModalComponent,
     QdContextMenuComponent,
+    QdSkeletonRowsComponent,
   ],
   templateUrl: './abwab-page.component.html',
   styleUrl: './abwab-page.component.scss',

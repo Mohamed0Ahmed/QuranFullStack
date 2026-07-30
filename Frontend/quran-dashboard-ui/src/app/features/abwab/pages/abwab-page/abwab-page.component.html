@@ -44,7 +44,26 @@
     <qd-abwab-announcer [message]="writeController.announcement()" />
 
     @if (facade.isLoading() && !facade.snapshot()) {
-      <p class="qd-loading-state" role="status">{{ loadingLabel }}</p>
+      <!-- The toolbar stays mounted while the tree loads (deliberate behavior change from the
+           old text loader, which replaced toolbar and tree both) so the frame does not collapse
+           to a single line during a cold load — §5.2/§4.7. -->
+      <qd-abwab-toolbar
+        [sections]="sections()"
+        [activeSectionId]="activeSectionId()"
+        [view]="viewParam()"
+        [searchQuery]="searchQueryParam()"
+        [hideSectionControls]="archiveParam()"
+        (sectionChanged)="onSectionChanged($event)"
+        (viewChanged)="onViewChanged($event)"
+        (searchQueryChanged)="onSearchQueryChanged($event)"
+      />
+      <div class="abwab-page__layout">
+        <div class="abwab-page__main">
+          <div class="qd-card abwab-page__tree-card">
+            <qd-skeleton-rows [count]="6" rowTemplate="1.25rem 1fr auto" [loadingLabel]="loadingLabel" />
+          </div>
+        </div>
+      </div>
     } @else if (facade.errorMessage() && !facade.snapshot()) {
       <p class="qd-error-state" role="alert">{{ facade.errorMessage() }}</p>
     } @else {
