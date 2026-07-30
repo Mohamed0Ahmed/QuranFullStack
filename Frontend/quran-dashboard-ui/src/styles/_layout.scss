@@ -43,6 +43,25 @@
   padding-inline: var(--qd-space-4);
 }
 
+// `.qd-explorer-frame` is kept as a thin alias so the five explorer call-sites keep working
+// untouched (dual-selector precedent: explorer-panel-skeleton.component.ts:16); new call-sites
+// use `.qd-page-frame`. Moved here from `_words-explorer-layout.scss` (Slice B2, T702) because
+// it is shared page-frame furniture, not words-specific. `box-sizing: border-box` is load-bearing
+// for the viewport reservation phase 8 adds — the app has no global border-box (§5.3 of the slice
+// B plan), so this is the one selector opting a page frame into it.
+.qd-page-frame,
+.qd-explorer-frame {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: var(--qd-space-4);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-block-end: calc(var(--qd-space-5) + (var(--qd-space-4) * 1.55)); // leaves room for mobile stat bars
+}
+
 .qd-footer {
   position: relative;
   padding: var(--qd-space-4) var(--qd-space-5);

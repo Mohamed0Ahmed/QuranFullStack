@@ -287,3 +287,132 @@ against T503's numbers, not T101's, because T503 is the run that already reflect
 
 No new warnings. This run is the only pre-B2-change comparison point for every later "no
 regression" claim in B2; T1102 measures against these numbers, not T101's or T503's directly.
+
+## Phase 7 (T701–T704) — the page frame, item 1
+
+Branch `ux-slice-b2-frame`, working tree was clean at T601 (`cbebce8c`) before phase 7's edits.
+
+### T701/T702 — rename and move
+
+`.qd-explorer-frame` → `.qd-page-frame` with `.qd-explorer-frame` kept as an alias on the same
+rule block (dual selector: `.qd-page-frame, .qd-explorer-frame { … }`), moved from
+`src/styles/_words-explorer-layout.scss:53-63` to `src/styles/_layout.scss`, immediately after
+`.qd-container`. `box-sizing: border-box` and every other declaration carried over unchanged.
+
+Import order verified by reading `src/styles.scss:1-11` rather than assumed: `layout` (line 4)
+loads before `words-explorer-layout` (line 6), so the rule now compiles *earlier* in the
+cascade than before. Confirmed safe: `.qd-explorer-frame`/`.qd-page-frame` has exactly one
+definition site in the whole codebase (`grep -rn "\.qd-explorer-frame\|\.qd-page-frame"
+src/styles/ src/app/` returns only the new `_layout.scss` block plus doc prose and the five HTML
+call-sites), so there is no second rule at equal specificity for the earlier position to lose
+a tie-break against.
+
+### T703 — call-sites + browser verification
+
+Added `qd-page-frame` to `abwab-page.component.html:2` and
+`abwab-templates-page.component.html:2` (`qd-container qd-page-frame`).
+
+**Browser verification performed** (not skipped): built the backend
+(`dotnet build Backend/QuranDashboard.sln`), started it (`dotnet run --no-build --urls
+https://localhost:5015`, healthy — `GET /api/health` returned `status: healthy`), started the
+frontend (`npm start`, `https://localhost:4200`), and drove it with the `claude-in-chrome` MCP
+tool (the user's real Chrome, which trusts the already-installed mkcert root CA — the Playwright
+MCP browser and the headless chrome-devtools-mcp browser both failed with
+`ERR_CERT_AUTHORITY_INVALID` and were abandoned in favor of this tool). Abwab's routes are
+public-read (no auth guard), so no Logto sign-in was needed to view them.
+
+Observed via `getComputedStyle` + `getBoundingClientRect` at `/abwab` (1873px content width):
+
+| Property | `.qd-page-frame` on `abwab-page` | `.qd-explorer-frame` on `/dashboard/words/roots` |
+|---|---|---|
+| `display` | `flex` | `flex` |
+| `flexDirection` | `column` | `column` |
+| `gap` | `0px` | `0px` |
+| `boxSizing` | `border-box` | `border-box` |
+| `paddingInline` | `16px` | `16px` |
+| `paddingBlockEnd` | `48.8px` | `48.8px` |
+| `width` | `100%` (`1873px` computed) | `100%` (`1873px` computed) |
+| `maxWidth` | `none` | `none` |
+| `marginInline` | `0px` | `0px` |
+
+Identical values on both sides of the alias — the five explorer call-sites are unaffected, and
+abwab's new call-site gets the same rule. `roots-explorer-page` was screenshotted before and
+after the change area was touched (full-bleed table, no visual difference from the pre-Phase-7
+shape); `abwab-page` and `abwab-templates-page` were screenshotted too — both render full-bleed
+with no console errors (`read_console_messages`, `onlyErrors: true`, empty on all three pages).
+
+**§5.1's two flex caveats, checked in the browser, not assumed:**
+
+1. **Column-flex frame vs. `.abwab-page__layout`'s row.** `getComputedStyle` on
+   `.abwab-page__layout` returned `display: flex`, `flexDirection: row`, `gap: 16px`,
+   `marginBlockStart: 12px`. Nested inside the frame's `flexDirection: column; gap: 0`, this
+   renders exactly as expected — no clipping, no gap collapse, no overlap. The frame's `gap: 0`
+   does not remove spacing between the header and the layout row; `.abwab-page__layout`'s own
+   `margin-block-start` supplies it, confirmed both in the computed style and visually (toolbar
+   and side panel sit at the same vertical position, correctly gapped from the page header,
+   across both screenshots taken at 1568×783).
+2. **The frame's mobile-stat-bar `padding-block-end` (48.8px) against abwab's own bottom
+   spacing.** Scrolled to the bottom of `/abwab`: there is a consistent ~49px gap between the
+   last tree row / side panel content and the app footer. This is the frame's fixed
+   `padding-block-end`, applied unconditionally (not media-gated), and it is **not new** —
+   `getComputedStyle` on `.qd-explorer-frame` at `/dashboard/words/roots` returned the identical
+   `48.8px`, i.e. the five explorer pages already carry this same bottom gap today. Abwab
+   inherits the existing trait of the shared class rather than acquiring a new one. No visual
+   double-gap or squeeze was observed against `.abwab-page__tree-card`'s own padding or
+   `.abwab-page__side`'s `gap`.
+
+### T704 — docs
+
+Updated: `src/styles/README.md` (`_layout.scss` bullet documents `.qd-page-frame`, the alias,
+and that new call-sites use the neutral name; `_words-explorer-layout.scss` bullet notes the
+rule moved out), `.architecture/UI_STYLE_SYSTEM.md` §2 (new paragraph after the "Current state"
+note), `src/app/features/words/README.md` (new paragraph in "Shared pattern" naming the rename/
+move/alias and the five call-sites), `src/app/features/abwab/README.md` (new "Gotchas" bullet
+recording the frame, `box-sizing: border-box` being load-bearing for the later viewport
+reservation, and both browser-verified caveats above).
+
+**Sweep for dangling references** (`grep -rn "_words-explorer-layout.scss:5[0-9]\|
+_words-explorer-layout.scss:6[0-3]"` and `grep -rn "qd-explorer-frame" src/`):
+
+| Hit | Disposition |
+|---|---|
+| `docs/abwab-ux-audit.md:57` cites `_words-explorer-layout.scss:53-63` | **Left as-is, by design.** Cross-cutting audit, never swept (root `CLAUDE.md` lifecycle rule; same disposition as B1's T504 sweep item 9). |
+| `docs/feature-ux-slice-b/plan.md:182,273,300,507` cite the same old lines/class | **Left as-is, by design.** This plan's §5 is "measured on `dev` at plan time" — a frozen snapshot, not a live description of current code; editing it mid-execution would misrepresent when it was captured. Same convention `docs/feature-ux-slice-a/{plan,evidence}.md` already follow. |
+| Every other `qd-explorer-frame` hit in `src/` | **Current, not dangling.** Only the new `_layout.scss` definition, the four just-updated READMEs, and the five untouched explorer HTML call-sites. |
+
+### Tier B gate
+
+Commands run from `Frontend/quran-dashboard-ui/`, `VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`
+preserved (baked into `npm test`, no direct `ng test` call):
+
+```bash
+npm test
+```
+
+Result: **191 spec files passed (191) / 2164 tests passed (2164) / 0 failed.** Duration 189.48s.
+
+**Delta vs T601 (191 files / 2164 tests): +0 files, +0 tests — exact match**, as expected for a
+zero-test-change phase (§3, §7.1). No spec was edited or added.
+
+```bash
+npm run build
+```
+
+Result: **green.** `ng build` completed in 16.883s, output at `dist/quran-dashboard-ui`. Same
+four pre-existing budget categories as T601, with one real, explained, sub-kilobyte delta:
+
+- initial bundle exceeded the 500.00 kB budget by **68.83 kB (568.83 kB total)** — **+20 bytes
+  vs T601's 568.81 kB.** Expected: the global stylesheet now carries one extra selector string,
+  `.qd-page-frame,` (15 chars plus minifier overhead), added to the dual-selector rule. Not a
+  regression — it is the literal, minimal cost of the alias mechanism itself.
+- `selected-word-section.component.scss` exceeded its 4.00 kB budget by 649 bytes — unchanged from T601
+- `selected-ayah-section.component.scss` exceeded its 4.00 kB budget by 1.85 kB — unchanged from T601
+- `abwab-relations-modal.component.scss` exceeded its 4.00 kB budget by 1.08 kB — unchanged from T601
+
+No new warning categories. No errors.
+
+**Obligations checked at close of phase 7:** `.qd-page-frame` shipped with `.qd-explorer-frame`
+as a working alias; five explorer call-sites untouched and green (Tier B + browser); abwab
+full-bleed on both pages; both §5.1 flex caveats checked in the browser and recorded above. The
+viewport-reservation and `box-sizing: border-box` proof-in-diff obligations belong to phase 8,
+not this phase.

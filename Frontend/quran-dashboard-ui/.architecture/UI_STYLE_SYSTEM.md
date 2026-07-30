@@ -104,6 +104,13 @@ Rules:
 > contract for how these partials are consumed; this section still governs file
 > organization. Only add a new global partial when it holds a genuinely reusable,
 > app-wide pattern — do not scaffold speculative empty files.
+>
+> `.qd-page-frame` (`_layout.scss`, beside `.qd-container`) is the full-bleed page-frame rule —
+> `box-sizing: border-box`, no width cap, column flex, a reserved mobile-stat-bar
+> `padding-block-end`. It was `.qd-explorer-frame` in `_words-explorer-layout.scss` until Slice B2
+> renamed and moved it (the frame stopped being words-only once Abwab adopted it); the old name is
+> kept as a working alias on the same rule so the five existing explorer call-sites are untouched.
+> New call-sites use `.qd-page-frame`.
 
 ## 3. Naming Convention
 

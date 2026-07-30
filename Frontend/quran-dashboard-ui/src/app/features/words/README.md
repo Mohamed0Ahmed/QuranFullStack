@@ -37,6 +37,13 @@ Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/col
 `utils/explorer-keyboard-nav.scheduler.ts`, `utils/verse-key.ts`, and the
 `components/` table + list + panel set.
 
+Each page's root wraps `qd-container` in the shared full-bleed page-frame class. That class was
+`qd-explorer-frame` and lived in `styles/_words-explorer-layout.scss`; Slice B2 renamed it to the
+feature-neutral `qd-page-frame` and moved it to `styles/_layout.scss` beside `qd-container` once
+Abwab adopted it too, keeping `qd-explorer-frame` as a working alias on the same rule so these
+five call-sites (`*-explorer-page.component.html:2`, `unique-words-page.component.html:2`) did
+not need to change. See `styles/README.md` and `.architecture/UI_STYLE_SYSTEM.md` §2.
+
 ## Global entity-detail overlay (Feature 029, Change B)
 
 - `entity-detail-overlay/` owns the persistent global detail overlay: the host component

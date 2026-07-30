@@ -25,7 +25,13 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   `--qd-selected-bg` are intentionally theme-invariant and not overridden here).
 - `_typography.scss` — font-face declarations and shared Arabic-first type classes.
 - `_breakpoints.scss` — canonical Sass breakpoints; mirrored in `../app/shared/layout/breakpoints.ts`.
-- `_layout.scss` — shell, navbar, footer, container, and page-level layout primitives.
+- `_layout.scss` — shell, navbar, footer, container, and page-level layout primitives. Also
+  holds `.qd-page-frame` (`.architecture/UI_STYLE_SYSTEM.md` §2) — the full-bleed page-frame
+  rule (`box-sizing: border-box`, no `.qd-container` width cap, column flex, the mobile-stat-bar
+  `padding-block-end`), beside `.qd-container` since it is shared page furniture, not
+  words-specific. `.qd-explorer-frame` is kept as a working alias on the same rule (Slice B2,
+  T701/T702) so the five existing explorer call-sites keep working untouched — dual-selector
+  precedent: `explorer-panel-skeleton.component.ts:16`. New call-sites use `.qd-page-frame`.
 - `_forms.scss` — shared input/select styling and focus behavior. Also holds the
   `.qd-checkbox` / `.qd-check-row` family (`.architecture/UI_STYLE_SYSTEM.md` §17) — a
   fixed `--qd-checkbox-size` box plus a fixed-gap label row; call-sites compose them and
@@ -44,6 +50,7 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   entity names") — the one flexible-with-ellipsis rule for a truncatable entity-name column;
   pair it with `--qd-name-min-inline-size` (`_tokens.scss`) for a reserved minimum.
 - `_words-explorer-layout.scss` — shared layout pieces for words explorer intro/toolbar surfaces.
+  (The page-frame rule that used to live here moved to `_layout.scss` — see above.)
 - `_words-explainer.scss` — shared visual primitives for the Words explainer hero example regions
   (global, not component-scoped, because pages project their own example markup via `<ng-content>`).
 - `_explorer-tables.scss` — responsive shared table/list rules for explorer pages.

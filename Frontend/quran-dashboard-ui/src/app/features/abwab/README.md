@@ -207,6 +207,16 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 
 ## Gotchas / invariants (read before changing)
 
+- **Both pages are full-bleed on the shared page frame, not the reading-measure container.**
+  `abwab-page.component.html:2` and `abwab-templates-page.component.html:2` compose
+  `qd-container qd-page-frame` (Slice B2, T703) — the frame that used to be `qd-explorer-frame`,
+  words-only (`styles/README.md`). `box-sizing: border-box` on the frame is load-bearing for the
+  later viewport reservation (item 4), not decorative. Verified in the browser: `.abwab-page__layout`
+  is its own flex **row** nested inside the frame's column-flex context with `gap: 0` — no visual
+  conflict, `.abwab-page__layout`'s own `margin-block-start` supplies the gap from the header. The
+  frame's fixed `padding-block-end` (sized for words' mobile stat bars) leaves the same bottom gap
+  above the footer on both abwab pages that the five explorer pages already carry unconditionally
+  (not media-gated) — not a new imbalance, just the shared class's existing trait extended here.
 - **Refresh-after-write is an invariant, not an optimization.** Every write
   resequences its scope to `1..N`, which bumps every sibling's `xmin` too. A root-affecting
   write additionally maintains the global order (below) in the same request, which resequences
