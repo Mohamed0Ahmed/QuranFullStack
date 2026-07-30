@@ -731,6 +731,19 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   status color.
 - Supersedes ad-hoc `.qd-empty-state` / `.qd-loading-state` / `.qd-error-state`
   usage; those classes remain as the backing layer. Compose, do not re-style.
+- **`reserve` (optional, `boolean`, default `false`):** additive input applying the
+  §N3 no-layout-shift doctrine (see the Loading/skeleton system entry above; not
+  restated here) to this component. On, the **message span** (not the container —
+  its padding alone already exceeds one control row, so a container-level
+  reservation would be a no-op) carries
+  `min-block-size: var(--qd-control-block-size)` — the shared control-geometry
+  token family `.qd-checkbox` / `.qd-modal--fixed` already draw from
+  (`styles/README.md`'s "size a new reserved slot from these tokens; never
+  re-measure the control by hand" rule) — so its box never appears/disappears;
+  only its text fades in, opacity only, static under `prefers-reduced-motion`,
+  mirroring `qd-detail-modal-shell`'s count span (above). Default off, so today's
+  seven call-sites are unaffected. This entry only adds the capability —
+  composing `reserve` into abwab's error surfaces is a later slice's task.
 
 ### `.qd-explorer-table`
 - **Purpose:** the one table implementation for all 5 explorer tables (roots,

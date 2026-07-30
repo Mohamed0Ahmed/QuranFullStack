@@ -1,12 +1,19 @@
 @switch (variant()) {
   @case ('loading') {
-    <div class="qd-loading-state" role="status" aria-live="polite" aria-busy="true" data-testid="qd-state-loading">
-      <span>{{ message() }}</span>
+    <div
+      class="qd-loading-state"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      data-testid="qd-state-loading"
+      [class.qd-state--reserve]="reserve()"
+    >
+      <span class="qd-state__message" [class.qd-state__message--visible]="message() !== ''">{{ message() }}</span>
     </div>
   }
   @case ('error') {
-    <div class="qd-error-state" role="alert" data-testid="qd-state-error">
-      <span>{{ message() }}</span>
+    <div class="qd-error-state" role="alert" data-testid="qd-state-error" [class.qd-state--reserve]="reserve()">
+      <span class="qd-state__message" [class.qd-state__message--visible]="message() !== ''">{{ message() }}</span>
       @if (actionLabel(); as label) {
         <button type="button" class="qd-btn qd-btn-secondary qd-state__action" data-testid="qd-state-action" (click)="action.emit()">
           {{ label }}
@@ -15,8 +22,8 @@
     </div>
   }
   @default {
-    <div class="qd-empty-state" role="status" data-testid="qd-state-empty">
-      <span>{{ message() }}</span>
+    <div class="qd-empty-state" role="status" data-testid="qd-state-empty" [class.qd-state--reserve]="reserve()">
+      <span class="qd-state__message" [class.qd-state__message--visible]="message() !== ''">{{ message() }}</span>
     </div>
   }
 }

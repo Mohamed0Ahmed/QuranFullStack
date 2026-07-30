@@ -22,7 +22,9 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   renderer, and navigation. Consumers: Words `ayah-matches-list`, Mushaf `similar-ayahs-card`
   items and `mutashabihat-groups-card` occurrences. See `UI_STYLE_SYSTEM.md` §17.
 - `ui/state/` — `qd-state`, the one empty/loading/error presentation; backed by the existing
-  `.qd-empty-state`/`.qd-loading-state`/`.qd-error-state` classes. See `UI_STYLE_SYSTEM.md` §17.
+  `.qd-empty-state`/`.qd-loading-state`/`.qd-error-state` classes. Carries an additive `reserve`
+  input (default off) for the §N3 no-layout-shift box; no current call-site turns it on. See
+  `UI_STYLE_SYSTEM.md` §17.
 - `ui/skeleton/` — `qd-skeleton-rows`, renders N skeleton rows into a caller-supplied
   `grid-template-columns` string so loading rows match loaded rows exactly; plus the pure
   `splitGridTemplateColumns` helper it's built on.

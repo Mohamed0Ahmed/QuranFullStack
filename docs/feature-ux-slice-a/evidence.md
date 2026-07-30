@@ -484,6 +484,131 @@ touched.
   phase 3's 567.71 kB / 67.71 kB) — a further ~0.47 kB drift from the new
   `.qd-modal--fixed` rule block, not a regression. No build errors.
 
+## Phase 5 verification
+
+### `reserve` input — signature and default
+
+`src/app/shared/ui/state/state.component.ts`:
+
+```ts
+readonly reserve = input(false);
+```
+
+Additive, `boolean`, default `false`. No existing `qd-state` call-site sets it, so all
+seven keep today's rendered output.
+
+### Reserved-box token
+
+`min-block-size: var(--qd-control-block-size)` — the existing shared control-geometry
+token (`_tokens.scss`, the same family `--qd-pagination-slot-block-size`,
+`.qd-checkbox`'s `--qd-checkbox-size`, and `.qd-modal--fixed` already draw from). This
+token already fit the "one reserved control row" shape `qd-state`'s box needs, so **no
+new token was added** to `_tokens.scss` — `styles/README.md`'s "size a new reserved slot
+from these tokens; never re-measure the control by hand" rule was satisfied by reuse,
+not extension.
+
+**Placement correction made during review (advisor catch, before commit):** the first
+draft put `min-block-size` on the container div (`.qd-state--reserve`). That is a no-op —
+`.qd-empty-state`/`.qd-loading-state`/`.qd-error-state` (`_components.scss:522-533`)
+already carry `padding: var(--qd-space-6)` (2rem) on both block edges, 4rem total, which
+alone exceeds `--qd-control-block-size` (≈2.5rem), so the container is never at risk of
+being shorter than the reservation regardless of message content — the rule would apply
+but never bind. It is sized correctly on `.qd-state__message` (the span) instead, per
+the fix below.
+
+### Markup/CSS change (`state.component.html` / `.scss`)
+
+- Each of the three `@switch` branches gains `[class.qd-state--reserve]="reserve()"` on
+  its container div (present only when `reserve()` is true — no class when false, so the
+  seven existing call-sites render byte-identical markup).
+- The message, previously interpolated directly (`<span>{{ message() }}</span>`), is now
+  wrapped `<span class="qd-state__message" [class.qd-state__message--visible]="message()
+  !== ''">…</span>` in all three branches, unconditionally. This is inert without the
+  `.qd-state--reserve` ancestor class — no CSS rule in `state.component.scss` matches
+  `.qd-state__message` alone, so opacity stays at the browser default (1) exactly as
+  before for all seven untouched call-sites; `textContent`, `role`, and interactive
+  elements are unaffected (verified by the seven pre-existing tests staying green
+  unmodified).
+- `.qd-state--reserve .qd-state__message` carries `display: block` (set explicitly
+  rather than relied on via the parent's flex blockification, so the reservation still
+  holds if the container's layout ever changes) + `min-block-size: var(--qd-control-block-size)`,
+  starting at `opacity: 0` and transitioning to `1` via `.qd-state__message--visible`
+  (`transition: opacity var(--qd-t-fast)`) — opacity only, no translate/height animation.
+  `@media (prefers-reduced-motion: reduce)` zeroes the transition, mirroring
+  `detail-modal-shell.component.scss`'s reduced-motion block for its count span.
+- Precedents copied verbatim: `explorer-result-count.component.html` (all three states
+  render the same one-line box shape) and `detail-modal-shell.component.html:37-44` +
+  `.scss:58-71` (box always rendered, reserved `min-inline-size`, text-only opacity fade,
+  `--visible` modifier-class naming) — including the detail here that the count span's
+  `min-inline-size` also lands on the child element (a flex item of its header), not the
+  container, which is what this correction converges onto.
+
+### `state.component.spec.ts` — new assertions (T502)
+
+Three new tests appended (file not created — extends the existing spec, `+0` files):
+
+1. `reserve` off leaves no `.qd-state--reserve` in the DOM (regression guard for the
+   seven existing call-sites).
+2. `reserve` on keeps the box (`data-testid="qd-state-empty"`) mounted with the reserved
+   class even when `message` is `''`.
+3. `reserve` on toggles `.qd-state__message--visible` off for an empty message and on
+   once the message is non-empty.
+
+Test count: **13** in this file (10 baseline + 3), consistent with the plan's "+2 to +3"
+budget at the top of that range.
+
+### Docs (T503)
+
+- `.architecture/UI_STYLE_SYSTEM.md` §17's `qd-state` entry gains a `reserve` bullet
+  stating the input, default, the `--qd-control-block-size` token reuse, the opacity-only
+  fade, and explicitly cross-referencing "the Loading/skeleton system entry above" for
+  the §N3 no-layout-shift doctrine **instead of restating it** — the two cannot drift
+  because N3's text lives in exactly one place.
+- `src/app/shared/README.md`'s `ui/state/` bullet now names the `reserve` input, its
+  default-off state, and that no current call-site turns it on.
+
+### Call-sites-untouched grep
+
+```bash
+grep -rn "qd-state" src/app --include="*.html" | grep -v "shared/ui/state/state.component.html"
+```
+
+→ seven matches, all bare `<qd-state …>` usages with no `reserve`/`[reserve]` attribute
+(`word-drilldown-modal`, the four `*-detail-overlay-adapter` components, and
+`auth-callback` ×2). A follow-up `grep -A5 "qd-state" … | grep -i reserve` (scoped to the
+call-sites, excluding the component itself) returned **no matches** — confirming none of
+the seven passes `reserve`.
+
+### Commands run
+
+```bash
+cd Frontend/quran-dashboard-ui
+npm test
+npm run build
+```
+
+`npm test` ran unmodified — the `VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2` cap baked into
+`package.json`'s `test` script was not overridden or bypassed.
+
+### Vitest suite result
+
+- Test files: **191 passed (191)** — **+0** vs T101/phase 2–4 baseline (191)
+- Tests: **2164 passed (2164)** — **+3** vs the 2161 baseline (T502's three new
+  assertions; no other spec's count moved, confirming the `reserve` input did not touch
+  any of the seven existing call-sites' observable behavior)
+- Failed: **0**, Skipped: **0**
+- Duration (Vitest-reported): **170.46 s** (final run, after the reservation-placement
+  correction below)
+
+### Build result
+
+- Result: **success** — `Application bundle generation complete.` (14.954 s, final run)
+- Same three pre-existing SCSS-budget warnings (`abwab-relations-modal`,
+  `selected-word-section`, `selected-ayah-section`) and the same initial-bundle-over-budget
+  warning, **568.18 kB** (over budget by 68.18 kB — unchanged from phase 4, since this
+  phase's CSS lives in the component's own scoped stylesheet, not a shared global
+  partial). No build errors.
+
 ## T605 e2e evidence
 
 pending — phase 6

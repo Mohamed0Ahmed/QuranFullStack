@@ -20,5 +20,10 @@ export class QdStateComponent {
   /** Arabic label of the error's single recovery action; omit for plain text. */
   readonly actionLabel = input<string | null>(null);
 
+  // Additive, default off: every existing call-site stays byte-identical. On, the box's
+  // block-size is reserved (never appears/disappears) and only the message fades in — see
+  // state.component.scss and UI_STYLE_SYSTEM.md §17 (qd-state) / its N3 cross-reference.
+  readonly reserve = input(false);
+
   readonly action = output<void>();
 }
