@@ -241,3 +241,49 @@ names and literals still missed a stale prose claim last time).
 | 8 | `abwab-page.component.html:12-38` cited in the same `abwab-templates` plan (T802, the «القوالب» entry) | **Clean.** Still accurate — the header block (lines 3-40 currently) is untouched by any B1 phase. |
 | 9 | Every other `file:line` citation into the six B1-edited files, in `docs/abwab-ux-audit.md`, `docs/feature-ux-slice-a/{plan,evidence}.md`, `docs/feature-abwab-global-order/*` | **Left as-is, by design.** `docs/abwab-ux-audit.md` is the cross-cutting source audit multiple slices (A, B, …) execute against — root `CLAUDE.md`'s lifecycle rule names "cross-cutting audits" as evidence that is never swept, and its citations are "as observed at audit time" snapshots, same convention `docs/feature-ux-slice-a/{plan,evidence}.md` (N-2 buffer, frozen) already follow. `docs/feature-abwab-global-order/*` belongs to an already-closed feature outside this phase's scope. |
 | 10 | `abwab-page.component.spec.ts:477` (`abwab-page-archive-empty` assertion) | **Verified, not dangling.** Still exactly at line 477: `expect(root.querySelector('[data-testid="abwab-page-archive-empty"]')).toBeTruthy();` — confirmed by reading the file, and it passed in T503's full run. |
+
+## T601 — B2 re-baseline (post-B1-merge, pre-B2-code)
+
+Branch tip (working tree clean, no B2 code edits made before this run):
+`e5c7060d26b5c939875be9fd32234199370b1b67` on `ux-slice-b2-frame` (`Merge branch
+'ux-slice-b1-states' into dev`). Per §7 phase 6: B1 changed abwab markup, so this run's
+comparison point is B1's own closing T503 numbers (191 files / 2164 tests), not Slice A's.
+
+Commands run from `Frontend/quran-dashboard-ui/`, script invoked as-is (the
+`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2` cap baked into `npm test` was preserved, no direct
+`ng test` call was made):
+
+```bash
+npm test
+```
+
+Result: **191 spec files passed (191) / 2164 tests passed (2164) / 0 failed.**
+
+```
+Test Files  191 passed (191)
+     Tests  2164 passed (2164)
+   Start at  16:05:37
+   Duration  181.49s (transform 5.98s, setup 73.17s, collect 14.31s, tests 56.12s, environment 165.19s, prepare 16.73s)
+```
+
+**Delta vs T503 (B1's close, 191 files / 2164 tests): +0 files, +0 tests — exact match.** No
+spec drifted between the B1 merge into `dev` and this branch tip.
+
+```bash
+npm run build
+```
+
+Result: **green.** `ng build` completed in 14.875s, output at `dist/quran-dashboard-ui`. No
+errors. The same four pre-existing budget warnings as T503, byte-for-byte unchanged (compared
+against T503's numbers, not T101's, because T503 is the run that already reflects B1's edits to
+`abwab-relations-modal.component.scss`):
+
+- initial bundle exceeded the 500.00 kB budget by 68.81 kB (568.81 kB total) — unchanged from T101/T503
+- `selected-word-section.component.scss` exceeded its 4.00 kB budget by 649 bytes — unchanged from T101/T503
+- `selected-ayah-section.component.scss` exceeded its 4.00 kB budget by 1.85 kB — unchanged from T101/T503
+- `abwab-relations-modal.component.scss` exceeded its 4.00 kB budget by 1.08 kB — **unchanged from
+  T503** (this is the number after B1's phase 3/5 SCSS deletions shrank it from T101's 1.51 kB
+  overage; no further drift since B1 closed)
+
+No new warnings. This run is the only pre-B2-change comparison point for every later "no
+regression" claim in B2; T1102 measures against these numbers, not T101's or T503's directly.
