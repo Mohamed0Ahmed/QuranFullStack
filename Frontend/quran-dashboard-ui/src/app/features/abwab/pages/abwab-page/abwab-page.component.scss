@@ -37,6 +37,40 @@
   background: var(--qd-danger-tint);
 }
 
+/* T502 measured the loaded tree row at 32px against a 12px skeleton row, falsifying §4.7's
+   claim that `rowTemplate="1.25rem 1fr auto"` alone matched the row: it matches the column
+   widths, not the block-size. `.abwab-tree` is a gapless column flex, so its pitch is the row's
+   own 32px; `qd-skeleton-rows` adds `--qd-space-2` between rows, so a 1.5rem bar restores pitch
+   parity. `--qd-skeleton-h` is the primitive's documented parameter (`_components.scss`), and it
+   inherits, so this reaches the spans inside the shared component without editing it.
+   Residual, stated rather than hidden: the skeleton's gap is not parameterized, so n rows come
+   out one gap (8px) short of n loaded rows. Exact total parity is unreachable through this lever
+   alone, and the card absorbs the difference. */
+.abwab-page__tree-skeleton {
+  --qd-skeleton-h: 1.5rem;
+}
+
+/* T403 — reserves the archive-confirm card's height so it mounting/unmounting cannot grow the
+   sticky aside (N3 doctrine). Derived, not eyeballed, the same way `--qd-pagination-slot-block-size`
+   is (`_tokens.scss`/`_words-explorer-layout.scss`): the card's own constituent parts, read off
+   `_components.scss` and this file rather than measured in a live render.
+   `.qd-card` contributes 2 × `--qd-space-4` padding-block + 2 × its 1px border-block; the message
+   is a plain, unstyled `<p>` — Tailwind's preflight sets `html { line-height: 1.5 }` over the
+   unset 1rem body font-size, so one line is 1.5rem, and `ABWAB_LABELS.archiveConfirm()` is always
+   the short "سيتم أرشفة <count phrase>" (never a door name), so it never wraps at this aside's
+   18rem width; `.abwab-page__archive-actions`'s own leading margin (`--qd-space-2`) plus one
+   `.qd-btn` row (`--qd-control-block-size`) account for the actions line. Kept local to this
+   component rather than promoted to a shared token: this slot is abwab-specific, and B1's blast
+   radius is `features/abwab/**` only. */
+.abwab-page__archive-confirm-slot {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-block-size: calc(
+    2 * var(--qd-space-4) + 2px + 1.5rem + var(--qd-space-2) + var(--qd-control-block-size)
+  );
+}
+
 .abwab-page__archive-actions {
   display: flex;
   gap: var(--qd-space-2);

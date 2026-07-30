@@ -5,6 +5,7 @@ import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab
 import { AbwabSectionDto } from '../../../../core/api/generated/models/abwab-section-dto';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 
 /**
  * List / add / rename / delete-empty for sections (plan-slice-b.md T510). Presentational:
@@ -18,6 +19,7 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 @Component({
   selector: 'qd-abwab-sections-modal',
   standalone: true,
+  imports: [QdStateComponent],
   templateUrl: './abwab-sections-modal.component.html',
   styleUrl: './abwab-sections-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

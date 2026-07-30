@@ -14,10 +14,8 @@
       <h3 [id]="titleId">{{ titleText() }}</h3>
       <p class="abwab-template-copy-modal__desc">{{ descriptionText }}</p>
 
-      @if (errorMessage()) {
-        <p class="abwab-template-copy-modal__error" role="alert" data-testid="abwab-template-copy-modal-error">
-          {{ errorMessage() }}
-        </p>
+      @if (errorMessage(); as error) {
+        <qd-state variant="error" [reserve]="true" [message]="error" data-testid="abwab-template-copy-modal-error" />
       }
 
       <div class="abwab-template-copy-modal__preview" data-testid="abwab-template-copy-modal-preview">
@@ -35,7 +33,7 @@
           data-testid="abwab-template-copy-modal-search"
           (input)="onSearchInput($event)"
         />
-        <div class="abwab-template-copy-modal__pick-list">
+        <div class="abwab-template-copy-modal__pick-list qd-scroll-stable">
           @for (row of pickerRows(); track row.node.id) {
             <div
               class="abwab-template-copy-modal__pick-row"
@@ -72,15 +70,23 @@
             <!-- Loading and error are separated from empty for the same reason the doors page
                  separates them: an unresolved fetch is not an answer about how many doors exist. -->
             @if (doorsLoading()) {
-              <p class="qd-loading-state" role="status" data-testid="abwab-template-copy-modal-loading">
-                {{ loadingDoorsLabel }}
-              </p>
+              <qd-skeleton-rows
+                [count]="6"
+                rowTemplate="1.1rem 0.9375rem 1fr"
+                [loadingLabel]="loadingDoorsLabel"
+                data-testid="abwab-template-copy-modal-loading"
+              />
             } @else if (doorsError()) {
-              <p class="qd-error-state" role="alert" data-testid="abwab-template-copy-modal-doors-error">
-                {{ doorsError() }}
-              </p>
+              <qd-state
+                variant="error"
+                [reserve]="true"
+                [message]="doorsError() ?? ''"
+                [actionLabel]="retryLabel"
+                (action)="retryDoors.emit()"
+                data-testid="abwab-template-copy-modal-doors-error"
+              />
             } @else {
-              <p class="qd-empty-state" data-testid="abwab-template-copy-modal-empty">{{ emptyDoorsLabel }}</p>
+              <qd-state variant="empty" [message]="emptyDoorsLabel" data-testid="abwab-template-copy-modal-empty" />
             }
           }
         </div>

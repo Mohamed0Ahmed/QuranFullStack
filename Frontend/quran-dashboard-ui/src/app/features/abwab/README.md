@@ -286,6 +286,25 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   `/abwab`, and the page renders every dialog **outside** its loading/error guard, so a
   left-open modal would paint again on re-entry before any data loads. The snapshot facade
   and the selection store stay root-scoped on purpose; only the overlay state is per-page.
+- **Loading/empty/error surfaces are composed, not hand-rolled.** Every text-only loading,
+  empty, and error site across `abwab-page`, `abwab-templates-page`, the template copy modal,
+  and the relations modal now composes `qd-skeleton-rows`/`qd-panel-skeleton` (loading) or
+  `qd-state` (empty/error) — `UI_STYLE_SYSTEM.md` §17. Only two error sites carry the single
+  `actionLabel` retry §17 permits — the doors page's own snapshot-load failure and the copy
+  modal's doors-load failure, both wired to `AbwabSnapshotFacade.load()` — because those are
+  the two transport reads abwab previously offered no recovery from at all. The templates
+  page's «اختر قالبًا» empty site still doubles as a silent per-template loading indicator:
+  `AbwabTemplatesFacade.fetchSelected` sets no loading flag, so a slow per-template fetch and
+  "nothing selected" render identically. A `selectedLoading` signal would fix it but is not
+  free — it would touch the specced `abwab-templates.facade.spec.ts` — so it stays a named gap
+  rather than a silent one.
+- **A skeleton's `rowTemplate` sizes its columns, never its rows.** `qd-skeleton-rows` defaults
+  to a 0.75rem bar, so a call-site whose loaded row is taller must say so with a
+  `--qd-skeleton-h` override on the host — the doors tree does (1.5rem, giving 32px pitch against
+  the gapless tree's measured 32px row), and the templates list does (3.75rem). The primitive's
+  own inter-row `gap` is **not** parameterized, so *n* skeleton rows always land one gap short of
+  *n* gapless loaded rows; that residual is the primitive's, not the call-site's, and closing it
+  means changing `shared/ui/skeleton/`.
 - **Counted door labels go through the Arabic number forms.** `archiveConfirm` and
   `movePickerTitleBulk` share one helper covering singular («باب واحد»), dual («بابين»),
   3–10 («N أبواب») and 11+ («N بابًا»). Do not interpolate a bare count into new copy —

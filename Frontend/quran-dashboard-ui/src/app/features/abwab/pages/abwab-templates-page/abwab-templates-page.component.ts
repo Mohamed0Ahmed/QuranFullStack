@@ -22,6 +22,9 @@ import { AbwabTemplateNodeModalComponent } from '../../components/abwab-template
 import { AbwabTemplateCopyModalComponent } from '../../components/abwab-template-copy-modal/abwab-template-copy-modal.component';
 import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
+import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
+import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
+import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 
 /** What the node modal is currently authoring. `parentNodeId` is the new node's parent when
  * adding; `nodeId` is the edited node when editing. */
@@ -47,6 +50,9 @@ type AbwabNodeModalState =
     AbwabTemplateNodeModalComponent,
     AbwabTemplateCopyModalComponent,
     QdContextMenuComponent,
+    QdSkeletonRowsComponent,
+    ExplorerPanelSkeletonComponent,
+    QdStateComponent,
   ],
   templateUrl: './abwab-templates-page.component.html',
   styleUrl: './abwab-templates-page.component.scss',
@@ -303,6 +309,13 @@ export class AbwabTemplatesPageComponent implements OnInit {
 
   protected closeCopyModal(): void {
     this.copyModalOpen.set(false);
+  }
+
+  /** The picker's only recovery from a failed doors fetch — today there is none. Re-issues the
+   * same load `openCopyModal` triggers; the facade's own `fetch()` cancels any still-pending
+   * request, so a retry while the first request is in flight is safe. */
+  protected retryDoorsLoad(): void {
+    this.doorsFacade.load();
   }
 
   /** Bound into the copy modal as a function input. The apply refreshes nothing here: it writes

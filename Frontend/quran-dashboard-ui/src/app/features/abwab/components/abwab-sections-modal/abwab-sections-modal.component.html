@@ -3,10 +3,8 @@
     <section class="qd-modal abwab-sections-modal" dir="rtl" data-testid="abwab-sections-modal" (click)="$event.stopPropagation()">
       <h3>{{ title }}</h3>
 
-      @if (errorMessage()) {
-        <p class="abwab-sections-modal__error" role="alert" data-testid="abwab-sections-modal-error">
-          {{ errorMessage() }}
-        </p>
+      @if (errorMessage(); as error) {
+        <qd-state variant="error" [reserve]="true" [message]="error" data-testid="abwab-sections-modal-error" />
       }
 
       <ul class="abwab-sections-modal__list">

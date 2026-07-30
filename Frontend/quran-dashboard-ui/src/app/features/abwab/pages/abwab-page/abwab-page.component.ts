@@ -22,6 +22,8 @@ import { AbwabSectionsModalComponent } from '../../components/abwab-sections-mod
 import { AbwabRelationsModalComponent } from '../../components/abwab-relations-modal/abwab-relations-modal.component';
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
+import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
+import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 
 /**
  * Route shell for `/abwab` (plan-slice-b.md T415/T501-T511): URL ⇄ state wiring,
@@ -49,6 +51,8 @@ import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/conte
     AbwabSectionsModalComponent,
     AbwabRelationsModalComponent,
     QdContextMenuComponent,
+    QdSkeletonRowsComponent,
+    QdStateComponent,
   ],
   templateUrl: './abwab-page.component.html',
   styleUrl: './abwab-page.component.scss',
@@ -125,6 +129,7 @@ export class AbwabPageComponent implements OnInit {
   protected get loadingLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
   protected get archiveLabel(): string { return ABWAB_LABELS.archiveOp; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
+  protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
   protected get editOpLabel(): string { return ABWAB_LABELS.editOp; }
   protected get addChildOpLabel(): string { return ABWAB_LABELS.addChildOp; }
   protected get moveOpLabel(): string { return ABWAB_LABELS.moveOp; }

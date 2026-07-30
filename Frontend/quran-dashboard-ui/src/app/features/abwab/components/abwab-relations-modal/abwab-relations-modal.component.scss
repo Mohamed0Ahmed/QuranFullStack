@@ -6,8 +6,7 @@
 
 .abwab-relations-modal__desc,
 .abwab-relations-modal__preview,
-.abwab-relations-modal__selected,
-.abwab-relations-modal__empty {
+.abwab-relations-modal__selected {
   color: var(--qd-text-muted);
   font-size: 0.78rem;
 }
@@ -34,15 +33,6 @@
 
 .abwab-relations-modal__desc {
   margin-block: var(--qd-space-1) var(--qd-space-3);
-}
-
-.abwab-relations-modal__error {
-  color: var(--qd-danger);
-  background: var(--qd-danger-tint);
-  border-radius: var(--qd-radius-sm);
-  padding: var(--qd-space-2) var(--qd-space-3);
-  font-size: 0.8125rem;
-  margin-block-end: var(--qd-space-3);
 }
 
 .abwab-relations-modal__group {
@@ -94,14 +84,6 @@
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
   padding: var(--qd-space-1) var(--qd-space-2);
-}
-
-.abwab-relations-modal__empty {
-  background: var(--qd-section-bg);
-  border: 1px dashed var(--qd-border-strong);
-  border-radius: var(--qd-radius-md);
-  padding: var(--qd-space-3);
-  text-align: center;
 }
 
 .abwab-relations-modal__divider {
