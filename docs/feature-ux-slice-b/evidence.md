@@ -1161,12 +1161,15 @@ Vitest suite or the build.
 `npx playwright test --project=abwab --workers=1 e2e/abwab-tmp-layout-stability.e2e.ts` against a
 local dev server + local backend (`https://localhost:4200` / `https://localhost:5015`) and the
 local `quran_dashboard` dev DB, using the `abwabSandbox` fixture plus one extra API-created empty
-section for the `empty` macro-state (same mechanism T502 used). Fixed viewport `1440×900`. A
-second, one-off temporary spec, `e2e/abwab-tmp-tabwrap-check.e2e.ts`, was added afterward to
-settle the open question in point 3 below (whether the toolbar-wrap finding reproduces on
-near-realistic data) and is described there. **Both deleted after their runs** — confirmed absent
-from the tree (`ls e2e/*tmp*` → no match) and no stray dev server left on `:4200`/`:5015`
-afterward (`pkill` on both, then re-verified with a `curl` timeout against both health endpoints).
+section for the `empty` macro-state (same mechanism T502 used). Fixed viewport `1440×900`. Two
+further one-off temporary specs were added afterward, each to settle a specific open question
+raised by review of this run's numbers and described inline where they apply below:
+`e2e/abwab-tmp-tabwrap-check.e2e.ts` (whether the toolbar-wrap finding reproduces on
+near-realistic, non-sandbox data) and `e2e/abwab-tmp-toolbar-height-check.e2e.ts` (whether the
+266.3-vs-269.3px split is state-driven or driven by which toolbar children render). **All three
+deleted after their runs** — confirmed absent from the tree (`ls e2e/*tmp*` → no match) each time,
+and no stray dev server left on `:4200`/`:5015` afterward (`pkill`/`fuser -k`, re-verified with a
+`curl` timeout against both health endpoints each time).
 
 **A methodology bug was found and fixed in the harness itself before trusting its numbers.** The
 first cut waited only for `abwab-toolbar-search` to be visible before capturing — but the toolbar
@@ -1181,17 +1184,41 @@ harness controls, not to ambient DB content. Confirmed the fix mattered by re-ru
 after: the "loaded" cells' `toolbarBottom` changed from 269.3 (1 tab, wrong) to 318.8 (6 tabs,
 real) once the race was closed.
 
-**Degenerate cells folded, not silently skipped.** The full cross-product is view × state × search
-= 3 × 4 × 3 = 36 cells; 16 were captured. The remaining 20 are structurally identical to a
-captured cell, not skipped: `loading` and `error` render the exact same markup for `tree` and
-`cards` (`abwab-page.component.html:82-115`, the branch checks `facade.isLoading()`/
-`facade.errorMessage()` only, never `viewParam()`), differing from `archive` solely via
-`hideSectionControls`; and `search` cannot filter a branch with no snapshot to search over, so
-`loading`/`error` have no independent search axis at all — the 3 `loading` + 3 `error` cells
-already cover every `view × search` combination those two states can produce. `loaded / archive /
-search off` is the one cell excluded outright, same as T502: the local dev DB carries ~1,033
-archived e2e-residue doors, an unbounded, ever-growing number unrelated to this phase's
-reservations.
+**Degenerate cells folded, not silently skipped — corrected accounting.** The full cross-product
+is view × state × search = 3 × 4 × 3 = **36 cells**. A prior draft of this section claimed
+"16 captured + 20 folded" (= 37, an arithmetic error caught in review); the corrected, cell-by-cell
+count is **16 captured + 18 folded + 2 excluded = 36**:
+
+| State | Captured | Folded (proven identical to a captured cell) | Excluded |
+|---|---|---|---|
+| `loading` (3 views × 3 searches = 9) | 3 (`tree`/`cards`/`archive`, search irrelevant) | 6 | 0 |
+| `error` (9) | 3 (same) | 6 | 0 |
+| `loaded` (9) | 8 (`tree`×3, `cards`×3, `archive`×2 — match/no-match) | 0 | 1 (`archive`/off) |
+| `empty` (9) | 2 (`tree`, `cards` — search irrelevant on an empty result set) | 6 | 1 (`archive`/off-equivalent) |
+| **Total** | **16** | **18** | **2** |
+
+The folds are proven from the source, not assumed:
+- **`loading`/`error` (6+6=12 folded):** the branches at `abwab-page.component.html:82-115` check
+  only `facade.isLoading()`/`facade.errorMessage()`, never `searchQueryParam()` — a search query
+  cannot filter a snapshot that does not exist yet, so all 3 search variants of `loading`/`error`
+  render identically to the captured (search-agnostic) cell, for all three views.
+- **`empty`/`tree`+`cards` (4 folded):** `displayRoots`/`displayArchivedRoots` are already
+  length-0 before any search filter runs (`abwab-page.component.ts`'s `visibleRoots` computed);
+  filtering an empty set with any query still yields 0 results, so `qd-state variant="empty"`
+  renders identically regardless of the search term.
+- **`empty`/`archive` (2 folded + 1 excluded-equivalent):** `archivedRoots` is
+  `computed(() => this.facade.snapshot()?.archivedRoots ?? [])` — **not** filtered by
+  `activeSectionId` at all (unlike `visibleRoots`, which explicitly calls
+  `filterAbwabRootsBySection`). The archive view therefore renders the identical global archived
+  list regardless of which section — including this phase's deliberately-empty one — happens to
+  be active in the URL, so `empty/archive/match` and `empty/archive/no-match` are the same render
+  as the already-captured `loaded/archive/match`/`no-match`, and `empty/archive/off` is the same
+  unbounded-residue phenomenon as `loaded/archive/off` (below), not independently measured either.
+
+**Two cells excluded, not folded, same reason for both:** `loaded/archive/search-off` and its
+`empty/archive/search-off` equivalent — the local dev DB carries ~1,033 archived e2e-residue
+doors, an unbounded, ever-growing number unrelated to this phase's reservations, so no equality
+claim is made for either.
 
 **The invariant element** is `.abwab-page` (the frame, `data-testid="abwab-page"`) plus
 `.abwab-toolbar`, measured via `getBoundingClientRect()` (Playwright `boundingBox()`) after
@@ -1247,27 +1274,72 @@ reservations.
 **What does *not* hold, measured and reported honestly, not adjusted to pass:**
 
 3. **`toolbarBottom` — i.e. the toolbar's own height — is not invariant across the 16 cells.** It
-   takes exactly three values, and each is fully explained by a real, structural cause:
-   - **266.296875px** whenever `archiveParam()` is true (`loaded/archive`, `loading/archive`,
-     `error/archive`) — `hideSectionControls` hides the section-tab row entirely in the archive
-     view, a pre-existing behavior (§5.6/toolbar contract), not something this slice touches.
-   - **269.296875px** whenever the tree snapshot has not yet arrived (`loading/tree`,
-     `loading/cards`, `error/tree`, `error/cards`) — `sections()` reads
-     `facade.snapshot()?.sections ?? []`, and `snapshot()` is `null` in both branches by
-     construction, so only the "all doors" tab renders (1 tab, single line, 40.5px toolbar height).
-   - **318.796875px** whenever the tree snapshot *has* arrived and section controls are shown
-     (`loaded/tree`, `loaded/cards` all three search variants, `empty/tree`, `empty/cards`) — the
-     full section-tab list renders (6 tabs on this local dev DB: 2 real sections + 1 pre-existing
-     ambient e2e-residue section this harness did not create + this harness's own 2 sandbox/empty
-     sections).
+   takes exactly three values: **266.296875px**, **269.296875px**, **318.796875px**. A coordinator
+   review of the first draft of this section correctly flagged that only the 318.8px value had
+   been root-caused (the tab-wrap finding below) — the 266.3-vs-269.3 split, a 3px gap living
+   entirely inside the toolbar's own box (`toolbarTop` is 228.796875px in **all** 16 cells, so
+   none of this 3px comes from anything above the toolbar), had been asserted but not explained.
+   It is now.
 
-   **The mechanism, corrected after an advisor review caught a wrong first draft:** it is *not*
-   the tab strip itself wrapping onto two lines. A direct DOM measurement of `.abwab-toolbar__tabs`
-   (`getBoundingClientRect().height`) is **40.5px in both the 1-tab and the 6-tab case** — the tab
-   row never grows past one line. What wraps is the **outer** `.abwab-toolbar`
-   (`display: flex; flex-wrap: wrap`, `abwab-toolbar.component.scss:1-6`), which holds the tab
-   strip, the search input (`min-inline-size: 12rem` = 192px), and the view toggle as three
-   flex children on one row. The tab strip's own width grew from 84px (1 tab) to 1160px (6 tabs,
+   **The 266.3-vs-269.3 split, explained and directly measured — not a state defect, not a
+   search defect, something else: which children the toolbar's own flex row has.**
+   `abwab-toolbar.component.html` gates **both** the tab strip *and* the tree/cards view toggle
+   behind the same `@if (!hideSectionControls())` — archive's toolbar therefore renders **one**
+   child (the search input alone), never two. `.abwab-toolbar { display: flex; align-items:
+   center; flex-wrap: wrap }` sizes each flex line to its tallest child, and the three
+   candidate children have different intrinsic heights: `.abwab-toolbar__tabs` (hosting
+   `qd-tabs`/`.qd-tabs__tab`, whose own padding is taller) measures **40.5px**; the search input
+   and the view toggle both measure **37.5px**. Directly measured (`abwab-tmp-toolbar-height-
+   check.e2e.ts`) on a fresh, ambient (no sandbox) load of `/abwab` and `/abwab?archive=1`,
+   confirming the arithmetic rather than only deriving it:
+
+   | View | Children present | Measured `.abwab-toolbar` height | `toolbarTop`+height |
+   |---|---|---|---|
+   | non-archive (`archiveParam()` false) | tabs (40.5px) + search (37.5px) + toggle (37.5px), one line | **40.5px** | 228.796875 + 40.5 = **269.296875** ✓ |
+   | archive (`archiveParam()` true) | search only (37.5px) | **37.5px** | 228.796875 + 37.5 = **266.296875** ✓ |
+
+   Both figures match the table's measured `toolbarBottom` values exactly. **This settles the
+   coordinator's question directly: the 266.3-vs-269.3 split is not on state and not on search —
+   it is on `archiveParam()`.** Within archive, `toolbarBottom` is 266.3px for `loading`, `error`,
+   and both captured `loaded` cells alike — genuinely constant across every state, because
+   `hideSectionControls` depends only on `archiveParam()`, never on the lifecycle. Within
+   non-archive, the same 3px comparison holds only between `loading` and `error`: both measure
+   269.3px identically (the "all doors" tab always renders, snapshot or not, and one tab alone
+   never wraps). **This is not a claim that non-archive `toolbarBottom` is state-independent
+   overall** — it visibly is not: `loaded`/`empty` measure 318.8px in the same view, a real
+   escalation the wrap paragraph below explains. The distinction is between two different
+   mechanisms on the same flex row: the **3px gap** (`.qd-tabs` vs `.qd-input`'s own intrinsic
+   height) is driven by `archiveParam()` and is state-independent by construction; the further
+   **49.5px escalation** to 318.8px is driven by tab *count*, which happens to correlate with the
+   lifecycle only because `sections()` is empty until the snapshot arrives — the same phenomenon
+   as the wrap finding below, not a third, independent cause.
+
+   This 40.5px-vs-37.5px gap is itself a real, small, **pre-existing** styling detail — `qd-tabs`'
+   own vertical padding renders 3px taller than `.qd-input`/the toggle buttons — not introduced or
+   touched by any of B1/B2's seven deliverables (`abwab-toolbar.component.html/scss` is untouched
+   by this slice; `qd-tabs`, `.qd-input`, and the toggle button styles are shared/pre-existing
+   primitives). It is the same underlying mechanism (which children exist, and their own
+   intrinsic heights, on a `flex-wrap: wrap` row) that also explains 318.8px below — not two
+   unrelated causes, one continuum.
+
+   **Verdict on the 3px, per the coordinator's own branch condition:** it does not split on
+   state, so it is **not** an N3/§17 violation requiring "fix the code, not the assertion" — it is
+   a **scoped, named exception**, not a code defect. A user only crosses the archive/non-archive
+   boundary by deliberately clicking the archive toggle, which is a full content change (tabs and
+   the tree/cards toggle are meant to disappear — "the archive view has no live section grouping",
+   `abwab-toolbar.component.ts`'s own doc comment), the same class of allowed content difference
+   as switching `tree`↔`cards`. `toolbarTop` (228.796875px) and `frameHeight` (892px) are
+   pixel-identical across that transition — nothing above or around the toolbar moves; only the
+   toolbar's own box legitimately reflects which controls are actually present.
+
+   **The 318.8px wrap case — corrected after the same review caught a wrong first draft.** It is
+   *not* the tab strip itself wrapping onto two lines. A direct DOM measurement of
+   `.abwab-toolbar__tabs` (`getBoundingClientRect().height`) is **40.5px in both the 1-tab and the
+   6-tab case** — the tab row never grows past one line. What wraps is the **outer**
+   `.abwab-toolbar` (`display: flex; flex-wrap: wrap`, `abwab-toolbar.component.scss:1-6`), which
+   holds the tab strip, the search input (`min-inline-size: 12rem` = 192px), and the view toggle
+   as three flex children on one row. The tab strip's own width grew from 84px (1 tab) to 1160px
+   (6 tabs,
    4 of them long e2e-generated names) against a 1361px toolbar width — leaving only 201px for a
    search box that refuses to shrink below 192px plus a 117px toggle plus two 12px gaps (201px <
    192 + 117 + 24 = 333px needed), so the search box and toggle wrap onto their own line below the
@@ -1438,7 +1510,7 @@ during execution, already escalated and documented at the phase that made the ca
 | 11 | Arabic counted-noun forms used for both stats; «كل الأبواب» has its own copy | **TRUE for the half that applies; the other half is deviation #2, already documented.** | «كل الأبواب» (`allDoorsTab`) and the second stat's label (`statOpenScopeDoors` = «أبواب هذا التبويب») are two distinct static strings — «كل الأبواب» does have its own copy, confirmed via the live screenshot text in phase 10's evidence ("كل الأبواب:13" / "أبواب هذا التبويب:13"). **Deviation #2:** neither label routes through `countPhrase`'s forms tables, because `qd-result-count` always renders `"{{ labelPrefix() }}: {{ count() }}"` — feeding a counted-noun phrase into `labelPrefix` would print the digit twice ("12 بابًا: 12"). Phase 10's own T1004 section states this reasoning in full (including that the advisor was consulted before writing the task), and `features/abwab/README.md`'s stats-bar paragraph states it too ("Neither label goes through `countPhrase`... not a counted-noun sentence, so the bare-count rule below does not reach it") — a deliberate, reasoned exception, not an oversight, and it is written down where the next reader will find it. |
 | 12 | Three `UI_STYLE_SYSTEM.md` entries written (viewport reservation, sticky chrome, chrome-inert) plus the `qd-result-count` §17 entry and the §2 frame amendment | **TRUE** | All five confirmed present by heading this phase (`### Viewport reservation`, `### Sticky app chrome`, `### Chrome-inert rule`, `### qd-result-count`, plus §2's "Current state" paragraph naming the rename). |
 | 13 | `styles/README.md`, `shared/README.md`, `features/words/README.md`, `features/abwab/README.md` all amended | **TRUE** | All four re-read in full this phase (T1103 #13) and confirmed to describe B2's changes accurately — the frame rename/alias, the sticky navbar and its rung, the viewport reservation's scope, the chrome-inert rule, the `qd-result-count` promotion, and the stats bar's two definitions. |
-| 14 | §7.2 acceptance run at T1101 across the full matrix | **TRUE, run — with a mixed, honestly-reported result, not an unqualified pass.** | This phase's own T1101, above: the 3×4×3=36-cell matrix was run as 16 captured cells (20 folded as structurally identical, 1 excluded per the T502 precedent). `frameHeight` and `toolbarTop` are invariant across all 16 with no exception — the headline claim. `toolbarBottom` is **not** invariant (three values); the mechanism was measured and traced to a pre-existing `qd-tabs`/toolbar capacity limit that does not reproduce on the app's real, near-realistic ambient data (verified by direct measurement, not derivation) and is out of this slice's seven-deliverable scope. See T1101 in full for the honest accounting. |
+| 14 | §7.2 acceptance run at T1101 across the full matrix | **TRUE, run — with a mixed, honestly-reported result, not an unqualified pass.** | This phase's own T1101, above: the 3×4×3=36-cell matrix was run as 16 captured cells (18 folded as structurally identical — proven from source, not assumed — and 2 excluded per the T502 precedent). `frameHeight` and `toolbarTop` are invariant across all 16 with no exception — the headline claim. `toolbarBottom` is **not** invariant (three values); both root causes were measured directly (not derived) and both are scoped, named exceptions, not N3/§17 defects: the 266.3-vs-269.3px 3px gap splits on `archiveParam()` (which toolbar children render — a deliberate content difference on user-initiated archive toggle, not a state-transition shift), and the 269.3-vs-318.8px 49.5px escalation is a pre-existing `qd-tabs`/toolbar capacity limit tied to ambient tab count that does not reproduce on the app's real, near-realistic ambient data (verified by direct measurement). Neither splits on loading-vs-loaded state or on the search query. See T1101 in full for the honest accounting. |
 | 15 | T1102 delta explained (expected +0 files, +2–4 tests); T1103 grep clean including prose | **TRUE** | T1102 above: +0 files, +3 tests, inside range. T1103 above: swept including prose, one dangling reference found and fixed (`docs/feature-abwab-templates/plan.md`), everything else clean or frozen-by-design. |
 | 16 | Root `CLAUDE.md` "Active Spec Kit Feature" updated at B1 start and cleared at B2 close; `docs/feature-ux-slice-b/` retained while the UX series is open | **NOT YET — deferred to merge, by this phase's own explicit instruction, not an oversight.** | The entry was updated at B1 start (T102) and is still present, unmodified, in root `CLAUDE.md` as of this phase. Per this phase's task instructions: "§9 says it is cleared at B2 close. B2 closes when this branch merges, not now; the branch is not merged yet... Leave the entry in place, but flag in your report what the main thread should do at merge time." Left in place, not cleared. **Flag for the main thread:** when `ux-slice-b2-frame` merges into `dev`, clear the `ux-slice-b` line from root `CLAUDE.md`'s "Active Spec Kit Feature" section (leaving `abwab-templates`, which stays open). `docs/feature-ux-slice-b/` itself is correctly retained per the Slice A precedent and is not touched by this instruction. |
 
