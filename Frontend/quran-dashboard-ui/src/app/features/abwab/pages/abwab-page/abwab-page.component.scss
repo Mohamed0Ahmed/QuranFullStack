@@ -7,6 +7,17 @@
   min-block-size: calc(100dvh - var(--qd-navbar-block-size));
 }
 
+// Item 17's stats bar (Slice B2, T1003) — the shape of `.uw-toolbar-recess__stat`
+// (`_words-explorer-layout.scss`), reused as abwab-local tokens rather than the `uw-`-prefixed
+// words class itself: phase 7 (T701-T704) just de-words-ified the shared frame class for the
+// same reason, and this page owns no `.uw-toolbar-recess` wrapper to begin with.
+.abwab-page__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-4);
+  margin-block-end: var(--qd-space-3);
+}
+
 .abwab-page__header {
   display: flex;
   align-items: flex-start;

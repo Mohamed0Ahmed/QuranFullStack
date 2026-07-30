@@ -1242,3 +1242,38 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   dialog's, not the drawer's) still holds in this state — confirmed both by that
   spec and by a live count of enabled `.cdk-focus-trap-anchor` elements in the
   browser (`evidence.md` phase 9).
+
+### `qd-result-count`
+- **Purpose:** a one-line "label: N" stat that holds its line across loading/error/
+  loaded instead of unmounting and resizing whatever it sits above (Feature 026,
+  US4). Three states render the same line box: loaded shows the label plus the
+  number; loading shows an `aria-hidden` skeleton bar with sr-only loading text
+  (`role="status"`); error shows an `aria-hidden` muted placeholder (`—`) — the
+  page's own error surface stays the only place that announces or explains a
+  failure. Never a card, never a KPI row — `PRODUCT.md`'s anti-reference list names
+  "identical gradient stat cards" explicitly.
+- **Promoted to `shared/ui/result-count/` in Slice B2 (T1001)**, class
+  `ExplorerResultCountComponent`, selector `qd-result-count, qd-explorer-result-count`
+  — the same dual-selector alias mechanism as `qd-panel-skeleton,
+  qd-explorer-panel-skeleton` (`ui/explorer-panel-skeleton/`), kept so the four
+  existing words explorer call-sites (Unique Words, Roots, Lemmas, Stems) and their
+  spec needed no template change, only an import-path update. New call-sites (item
+  17's abwab stats bar) use the neutral `qd-result-count` selector.
+- **Its own labels are read through a TDZ-safe getter**
+  (`result-count.labels.ts` → `protected get labels()`), never a `readonly` field —
+  a `readonly` field resolves to `undefined` in the bundled test build (temporal
+  dead zone). This is the same rule `features/words/README.md` and
+  `features/abwab/README.md` state for their own `*.labels.ts` files; the promotion
+  preserved the idiom rather than dropping it on the move.
+- **Renders `labelPrefix()`: `count()` — a data-display idiom, not a counted-noun
+  sentence.** Every consumer (the four words explorers' "عدد الجذور: 1642"-shaped
+  copy, and item 17's abwab «كل الأبواب: N» / «أبواب هذا التبويب: N») passes a
+  static `labelPrefix` and the raw digit; none run the count through
+  `abwab.labels.ts`'s `countPhrase` agreement forms, because "label: N" is a stat
+  display, not a sentence embedding a counted noun — the "never a bare interpolated
+  count" rule targets sentence-shaped copy like `archiveConfirm`, not this shape.
+- **Item 17's second consumer, abwab's stats bar, is two instances above the
+  toolbar** (`abwab-page.component.html`), both live-only and both derived from the
+  existing tree snapshot with no new backend read — see `features/abwab/README.md`
+  for the two numbers, the nullable-`sectionId` caveat, and why the stats stay
+  mounted through every tab switch.

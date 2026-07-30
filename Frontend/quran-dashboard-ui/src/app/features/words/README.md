@@ -194,13 +194,17 @@ not need to change. See `styles/README.md` and `.architecture/UI_STYLE_SYSTEM.md
   §17 (`.qd-explorer-table` → column-header sorting).
 - **Identity is clean imlaei-simple** (display Uthmani) — mirrors the backend read models.
 - **Headline result-count stat** (Feature 026, US4) on the four "normal" explorers (Unique Words, Roots,
-  Lemmas, Stems): the shared presentational `explorer-result-count` component renders the label-prefix
-  phrasing **"عدد الـ…: N"** (عدد الكلمات / عدد الجذور / عدد الصيغ المعجمية / عدد الأصول الصرفية) from the
-  page's existing `listState().totalCount` — no new backend read or aggregation. It sits in the toolbar
-  recess beside search/sort. States: list loading → non-interactive skeleton; list error → renders nothing
-  (the table shell's own error state owns the message); zero results → "0". Because the total is the filtered
-  query's own count, the stat reflects search/filters by construction and never disagrees with pagination.
-  Word Types uses the separate four-count scope summary, not this stat.
+  Lemmas, Stems): the presentational `qd-result-count` component (class `ExplorerResultCountComponent`)
+  renders the label-prefix phrasing **"عدد الـ…: N"** (عدد الكلمات / عدد الجذور / عدد الصيغ المعجمية /
+  عدد الأصول الصرفية) from the page's existing `listState().totalCount` — no new backend read or
+  aggregation. It sits in the toolbar recess beside search/sort. States: list loading → non-interactive
+  skeleton; list error → renders nothing (the table shell's own error state owns the message); zero
+  results → "0". Because the total is the filtered query's own count, the stat reflects search/filters
+  by construction and never disagrees with pagination. Word Types uses the separate four-count scope
+  summary, not this stat. **The component left this feature in Slice B2 (T1001)**: it now lives at
+  `shared/ui/result-count/` (abwab is a second consumer), reachable here only under the alias selector
+  `qd-explorer-result-count` — see `shared/README.md` for the component, its TDZ-safe label getter, and
+  why the alias exists.
 - **Count-range filters** (Feature 026, US5; chips reshaped in Feature 030, N4) on the four normal
   explorers: the shared `explorer-count-range-filter` component offers exactly **three chips per
   metric** — `أكثر من N` / `أقل من N` / `مخصّص` (`aria-pressed`, RTL) — over exactly the count columns each

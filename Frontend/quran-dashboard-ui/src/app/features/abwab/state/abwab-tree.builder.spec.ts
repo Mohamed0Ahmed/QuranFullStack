@@ -4,6 +4,8 @@ import { AbwabTreeDoorDto } from '../../../core/api/generated/models/abwab-tree-
 import { AbwabTreeDto } from '../../../core/api/generated/models/abwab-tree-dto';
 import {
   buildAbwabTreeSnapshot,
+  countAbwabDoorsInOpenScope,
+  countLiveAbwabDoors,
   filterAbwabRootsBySection,
   pruneAbwabNodesToVisible,
   searchAbwabNodes,
@@ -189,6 +191,32 @@ describe('searchAbwabNodes — M4', () => {
 
     expect(result.isFiltering).toBe(false);
     expect(result.matchedIds.size).toBe(0);
+  });
+});
+
+describe('countLiveAbwabDoors / countAbwabDoorsInOpenScope — item 17 stats bar (Slice B2, T1002)', () => {
+  it('counts live doors only (excluding section-less doors are still counted, archived are not), and reads the open scope from doorsInScopeCount without asserting the two sum', () => {
+    const snapshot = buildAbwabTreeSnapshot({
+      doors: [
+        door({ id: 1, name: 'in-section', sectionId: 9, orderValue: 1 }),
+        door({ id: 2, name: 'section-less', sectionId: null, orderValue: 2 }),
+        door({ id: 3, name: 'archived-in-section', sectionId: 9, isArchived: true, orderValue: 3 }),
+      ],
+      sections: [{ id: 9, name: 'قسم', orderValue: 1, version: 1, doorsInScopeCount: 1 }],
+      version: 'v1',
+    });
+
+    const total = countLiveAbwabDoors(snapshot.byId);
+    expect(total).toBe(2);
+
+    // The section's own doorsInScopeCount (1) is intentionally LESS than the total (2) —
+    // sectionId is nullable, so a live door (id 2) sits outside every section's count. The two
+    // numbers deliberately do not sum to anything meaningful; this only checks each in isolation.
+    expect(countAbwabDoorsInOpenScope(snapshot.sections, 9, total)).toBe(1);
+    expect(countAbwabDoorsInOpenScope(snapshot.sections, 42, total)).toBe(0);
+
+    // «كل الأبواب» (no active section) falls back to the same live-only total.
+    expect(countAbwabDoorsInOpenScope(snapshot.sections, null, total)).toBe(total);
   });
 });
 

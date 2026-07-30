@@ -354,6 +354,22 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   own inter-row `gap` is **not** parameterized, so *n* skeleton rows always land one gap short of
   *n* gapless loaded rows; that residual is the primitive's, not the call-site's, and closing it
   means changing `shared/ui/skeleton/`.
+- **The stats bar (item 17, Slice B2, T1001-T1004) is two `qd-result-count` instances above the
+  toolbar, both derived from the existing snapshot — no backend call added.** «كل الأبواب» is
+  **total live doors**, counted frontend-side (`countLiveAbwabDoors`, `abwab-tree.builder.ts`);
+  the second is **doors in the currently open tab**, reading the backend-computed
+  `AbwabTreeSectionDto.doorsInScopeCount` for a specific section tab, or falling back to the same
+  live-only total on «كل الأبواب» itself (`countAbwabDoorsInOpenScope`). **The two numbers are
+  live-only by definition — the same choice every other count in this feature makes — and are
+  deliberately not reconcilable by arithmetic**: `AbwabNode.sectionId` is `number | null`, so a
+  live door can belong to no section, meaning Σ `doorsInScopeCount` over every section can sit
+  below the total. Do not "fix" this by summing sections instead of counting live doors, and do
+  not add a test asserting the two sum. Both stats stay mounted through loading/error/loaded and
+  through every tab switch (never conditionally unmounted), matching every other §17 composition
+  in this feature — an unmounting stat would move the toolbar under it exactly the way the old
+  per-branch loaders used to (§4.6-adjacent). Neither label goes through `countPhrase`: the shared
+  component renders a "label: N" data-display line (the four words explorers' own precedent), not
+  a counted-noun sentence, so the bare-count rule below does not reach it.
 - **Counted door labels go through the Arabic number forms.** `archiveConfirm` and
   `movePickerTitleBulk` share one helper covering singular («باب واحد»), dual («بابين»),
   3–10 («N أبواب») and 11+ («N بابًا»). Do not interpolate a bare count into new copy —

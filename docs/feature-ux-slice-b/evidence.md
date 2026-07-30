@@ -917,3 +917,231 @@ observed live on the real DOM, not only asserted by the spec; `qdModalScrollLock
 `abwab-sections-modal` and `abwab-move-picker`, both intentional behavior changes named above;
 phase 8's frame geometry re-verified unchanged after the box-tree change; Vitest/build deltas
 explained (+0/+1, +0.32 kB then unchanged after the rung fix) and re-confirmed after the fix.
+
+## Phase 10 (T1001–T1005) — the stats bar, item 17
+
+Branch `ux-slice-b2-frame`, working tree clean at phase 9's close before this phase's edits.
+
+### T1001 — promoting `explorer-result-count` to `shared/ui/result-count/`
+
+Moved via `git mv` (rename, not delete-and-recreate — confirmed in `git status` as `R`, not `D`+`A`):
+`explorer-result-count.component.ts/.html/.scss/.spec.ts` from
+`features/words/components/explorer-result-count/` to `shared/ui/result-count/`, filenames
+unchanged. **Kept the class name `ExplorerResultCountComponent`** (renaming it would have forced
+edits to all four words pages' `imports: […]` arrays for zero behavioral gain) and kept every
+internal class/testid (`.explorer-result-count*`, `explorer-result-count-*`) byte-identical — the
+moved spec asserts them and passed unedited.
+
+Selector became `'qd-result-count, qd-explorer-result-count'` (dual selector, same mechanism as
+`qd-panel-skeleton, qd-explorer-panel-skeleton` at `explorer-panel-skeleton.component.ts:16`).
+`WORDS_RESULT_COUNT_LABELS` moved to a new file, `shared/ui/result-count/result-count.labels.ts`,
+renamed `RESULT_COUNT_LABELS` (grepped first: its only reader anywhere in the repo was the
+component itself, so no re-export was needed); the component's own TDZ-safe getter
+(`protected get labels() { return RESULT_COUNT_LABELS; }`) is unchanged in shape, only its import
+target moved — the idiom was preserved, not dropped, on the move.
+
+**Precedent for abwab importing a component whose class still says "Explorer"**, confirmed before
+using it: `abwab-templates-page.component.ts` already imports `ExplorerPanelSkeletonComponent`
+from `shared/ui/explorer-panel-skeleton/` and consumes it via the neutral `qd-panel-skeleton`
+selector. `abwab-page.component.ts` now does the identical thing with
+`ExplorerResultCountComponent` / `qd-result-count`.
+
+**Four words call-sites, not five** (the plan's own text says "five"; measured here instead of
+assumed): `grep -rln "qd-explorer-result-count\|ExplorerResultCountComponent"` returns exactly
+Roots, Lemmas, Stems, Unique Words — `features/words/README.md` itself states "Word Types uses
+the separate four-count scope summary, not this stat," so there never was a fifth page consumer.
+Only the four pages' **TS import path** changed (`'../../components/explorer-result-count/…'` →
+`'../../../../shared/ui/result-count/explorer-result-count.component'`, depth verified against an
+existing `shared/ui/pagination` import already in the same four files); their `.html` templates
+are untouched, since the alias selector keeps `<qd-explorer-result-count>` resolving to the same
+component.
+
+### T1002 — deriving the two numbers, live-only
+
+Two pure functions added to `abwab-tree.builder.ts` (the specced module the plan names):
+
+- `countLiveAbwabDoors(byId)` — iterates `AbwabTreeSnapshotVm.byId` and counts every
+  `!isArchived` node. This is «كل الأبواب»'s number.
+- `countAbwabDoorsInOpenScope(sections, activeSectionId, totalLiveDoors)` — returns the section's
+  own `doorsInScopeCount` (already on the wire) for a specific section, or the live-only total
+  itself when `activeSectionId === null` («كل الأبواب» has no per-section count to read, and
+  "everything" and "the open scope" are the same set on that tab).
+
+**The live-only choice is stated in a comment at each function**, and **no test in this phase
+asserts the two numbers sum** — the one new test
+(`abwab-tree.builder.spec.ts`, "item 17 stats bar") builds a snapshot with one section-less live
+door, one in-section live door, and one archived door in that section, and checks
+`countLiveAbwabDoors` (2, archived excluded, section-less counted) and
+`countAbwabDoorsInOpenScope` (1 for the section — deliberately less than the total 2, with a
+comment explaining why; 0 for an unknown section id; the total itself for `null`) as three
+independent facts, never their sum.
+
+`abwab-page.component.ts` wires both as computed signals (`totalLiveDoorsCount`,
+`openScopeDoorsCount`) reading the page's existing `byId`/`sections`/`activeSectionId` signals —
+no new subscription, no new API call.
+
+### T1003 — composing the stat bar
+
+Two `<qd-result-count>` instances in a new `.abwab-page__stats` block
+(`abwab-page.component.html`), mounted directly above `<qd-abwab-toolbar>` and **always
+mounted** (no `@if`) through every loading/error/loaded state and every tab switch — matching the
+toolbar's own T402 reasoning: an unmounting stat would move the toolbar under it, exactly the
+regression this slice exists to remove. `[loading]`/`[hasError]` wired off
+`facade.isLoading() && !facade.snapshot()` / `!!facade.errorMessage() && !facade.snapshot()`,
+the same conditions the page's own loading/error branches already use two lines below.
+
+**Styling: abwab-local tokens, not the `uw-` prefixed words class.** `.abwab-page__stats` reuses
+`.uw-toolbar-recess__stat`'s *shape* (a flex row, `gap: var(--qd-space-4)`,
+`margin-block-end: var(--qd-space-3)`) rather than the words-owned class itself — recorded as a
+deliberate choice, not an oversight: phase 7 (T701–T704) just finished de-words-ifying the shared
+page-frame class for the identical reason, and this page owns no `.uw-toolbar-recess` wrapper to
+extend in the first place. Two lines, not a card — `PRODUCT.md:90-91`'s anti-reference list is
+named directly in the code comment.
+
+**Bounded risk named, not hidden:** `flex-wrap: wrap` means the row's height is width-dependent —
+at the 1440×900 viewport §7.2's harness uses, both stats sit on one line trivially, so T1101 will
+not exercise the wrap. At a narrow enough width the two labels plus a digit that shrinks from four
+digits to one between tab switches could cross the wrap threshold and change the block's height,
+moving the toolbar under it — the same class of regression this slice targets, just at a width
+this phase did not measure.
+
+### T1004 — Arabic copy: the `countPhrase` clause does not apply here, stated rather than forced
+
+**Consulted the advisor before writing this task**, specifically on how "run counts through
+`countPhrase`" squares with `qd-result-count`'s fixed template. The answer, verified against the
+component's own `.html` (`{{ labelPrefix() }}: {{ count() }}`, plus `ariaLabel =
+\`${labelPrefix()}: ${count()}\``): **the component always renders the label and the raw digit as
+two separate pieces of one line — "label: N" — a data-display idiom already shipped, unremarked,
+on all four words pages ("عدد الجذور: 1642").** Feeding a `countPhrase` agreement string (e.g.
+"12 بابًا") into `labelPrefix` would render **"12 بابًا: 12"** — worse Arabic than the plain
+form, with the digit duplicated — and the only way to avoid that duplication is a new
+`valueText`/`ariaLabel`-override input on the shared component, which is a change five words
+pages' worth of consumers do not otherwise need and which the phase's own test-budget line
+(0 new spec files) does not have room to earn tests for.
+
+**Conclusion: `T1004`'s "never a bare interpolated count" clause is satisfied (the two new labels
+embed no count at all), but its "through `countPhrase`'s forms tables" and "extend the existing
+data-driven agreement cases" clauses do not apply to this shape of copy** — they presuppose a
+count-taking label function, and this pattern is a stat display, not a counted-noun sentence. This
+is stated here rather than forced: no sentence-shaped label was invented just to have something to
+feed `countPhrase`.
+
+What shipped instead: two **static** `ABWAB_LABELS` entries. `allDoorsTab` («كل الأبواب») is
+reused verbatim as the total stat's label — one string, one concept, no duplicate constant. A new
+entry, `statOpenScopeDoors` = «أبواب هذا التبويب» ("doors in this tab"), is deliberately worded to
+cover both cases the second stat renders: a specific section's count, or (on «كل الأبواب») the
+same number as the first stat — "the tab" reads correctly either way, whereas "the active section"
+would be false when no section is active. A small pin test was added to `abwab.labels.spec.ts`'s
+existing **"the locked strings"** describe block (not the count-agreement `it.each` block, which
+this copy does not use) asserting both label values and that they differ.
+
+### Browser verification
+
+Backend built (`dotnet build QuranDashboard.sln`, 0 warnings/errors after one transient CLR crash
+on the first attempt — retried clean) and run (`dotnet run --no-build --urls
+https://localhost:5015`, `/api/health` → healthy). Frontend via `npm start`
+(`https://localhost:4200`). Driven with the `claude-in-chrome` MCP tool per prior phases' finding.
+Both servers stopped after verification, before the Tier B gate.
+
+**The stats bar renders quietly and correctly at `/abwab`:** `data-testid="abwab-page-stat-total"`
+read "كل الأبواب:13", `data-testid="abwab-page-stat-open-scope"` read "أبواب هذا التبويب:13" on
+«كل الأبواب» (the two legitimately coincide there, as designed). Both lines are plain inline text
+above the toolbar — no card, no gradient, no KPI-row visual weight — matching the screenshot.
+
+**The section stat recomputes, and the toolbar does not move:** clicking the «الجهاد» section tab
+navigated to `?section=217` and the open-scope stat became "أبواب هذا التبويب:1" (that section
+holds one live door) while the total stat stayed "كل الأبواب:13". Measured
+`.abwab-toolbar.getBoundingClientRect()` before and after the tab switch (and again after
+switching back to «كل الأبواب»): `top: 228.796875` in **all three** captures, pixel-identical —
+the stats bar's own height never changes across a tab switch, so it cannot move the toolbar
+beneath it. No console errors on any of the three states (`read_console_messages`, `onlyErrors:
+true`, empty).
+
+**The archive view was also checked, not assumed:** at `?archive=1` both stats still read
+"13" — correct by construction (both are defined as live-door counts, never an archive count;
+item 17 was never scoped to the archive), though a user glancing at "13" while scrolling past
+hundreds of e2e-residue archived doors could misread it as an archive count. Not a defect against
+this phase's own definition, named here as a UX observation for whoever next revisits the stats
+bar's scope. No console errors.
+
+**Known wart, reasoned from the code rather than re-driven in the browser:** `?archive=1` alone
+was tested with no `section` param, but toggling archive does not clear `section` (only `door`/
+`card`), and `hideSectionControls` hides the tabs while `activeSectionId` stays whatever it was.
+So `?archive=1&section=217` would show «أبواب هذا التبويب» still computing that section's
+`doorsInScopeCount` while no tab is visible to name — a label naming a UI element the user cannot
+see. Not exercised live; flagged for whoever next touches this scope rather than silently left for
+phase 11 to discover.
+
+**All four words explorer pages are visually and functionally unchanged by the promotion,**
+checked individually, not just built: Roots ("عدد الجذور:1642"), Unique Words
+(`/dashboard/words/unique/tashkeel`, "عدد الكلمات:21294"), Lemmas ("عدد الصيغ المعجمية:4817"),
+Stems ("عدد الأصول الصرفية:11843") — all read via `document.querySelector('qd-explorer-result-count,
+qd-result-count')`, all resolving through the alias selector to the moved component, all with
+empty `read_console_messages({onlyErrors:true})`.
+
+### Tier B gate
+
+Commands run from `Frontend/quran-dashboard-ui/`, `VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`
+preserved (baked into `npm test`, no direct `ng test` call):
+
+```bash
+npm test
+```
+
+Result: **191 spec files passed (191) / 2167 tests passed (2167) / 0 failed.** Duration 167.16s.
+
+**Delta vs T601 (191 files / 2164 tests): +0 files, +3 tests** — 1 from phase 9's T904
+(`isLocked`), 2 from this phase: `abwab-tree.builder.spec.ts`'s one new `it` (T1002) and
+`abwab.labels.spec.ts`'s one new `it` (T1004, pinning the two static labels — see above for why
+the count-agreement `it.each` block itself gained no new rows). **Within the plan's own +2–4
+expectation for all of B2** (T1102, phase 11, will re-confirm against T601 directly). No spec
+file was added; no existing spec was edited beyond the two additive `it` blocks above and the
+import-path changes in the four words pages (which touched no assertion).
+
+```bash
+npm run build
+```
+
+Result: **green.** `ng build` completed in 12.967s, output at `dist/quran-dashboard-ui`. Same
+four pre-existing budget categories as phase 9's close, **byte-for-byte unchanged**
+(initial bundle 569.15 kB — identical to phase 9's post-rung-fix number; the four label-file/
+component-move edits are non-global TS/HTML, so no global stylesheet or shared-chunk byte moved):
+
+- initial bundle exceeded the 500.00 kB budget by 69.16 kB (569.15 kB total) — unchanged from phase 9
+- `selected-word-section.component.scss` exceeded its 4.00 kB budget by 649 bytes — unchanged
+- `selected-ayah-section.component.scss` exceeded its 4.00 kB budget by 1.85 kB — unchanged
+- `abwab-relations-modal.component.scss` exceeded its 4.00 kB budget by 1.08 kB — unchanged
+
+No new warning categories. No errors.
+
+### Files touched
+
+Moved (via `git mv`): `explorer-result-count.component.{ts,html,scss}` and its `.spec.ts`,
+`features/words/components/explorer-result-count/` → `shared/ui/result-count/`.
+
+New: `shared/ui/result-count/result-count.labels.ts`.
+
+Edited: `features/words/models/words-shared.labels.ts` (removed `WORDS_RESULT_COUNT_LABELS`),
+`shared/ui/result-count/explorer-result-count.component.ts` (selector, import, comment),
+`roots-explorer-page.component.ts` / `lemmas-explorer-page.component.ts` /
+`stems-explorer-page.component.ts` / `unique-words-page.component.ts` (import path only),
+`features/abwab/state/abwab-tree.builder.ts` (+2 exported functions),
+`features/abwab/state/abwab-tree.builder.spec.ts` (+1 test),
+`features/abwab/pages/abwab-page/abwab-page.component.ts` (+2 computed signals, +2 label getters,
++1 import, +1 `imports` array entry),
+`features/abwab/pages/abwab-page/abwab-page.component.html` (+`.abwab-page__stats` block),
+`features/abwab/pages/abwab-page/abwab-page.component.scss` (+1 rule),
+`features/abwab/models/abwab.labels.ts` (+1 label), `features/abwab/models/abwab.labels.spec.ts`
+(+1 test). Docs: `features/words/README.md`, `shared/README.md`, `features/abwab/README.md`,
+`.architecture/UI_STYLE_SYSTEM.md` (§17, new `qd-result-count` entry).
+
+**Obligations checked at close of phase 10:** `qd-result-count` promoted with the alias selector
+in place, TDZ getter idiom preserved (traced through both the getter's shape and its new import
+target), spec moved with it (file-count-neutral — a rename, not a new file); both stats derived
+from the existing snapshot with no backend call added (verified: no new import of `AbwabApi` or
+any HTTP client in any file this phase touched); the live-only definition and the
+nullable-section caveat both written down (`abwab-tree.builder.ts` comments,
+`features/abwab/README.md`); the two stats' labels are distinct and neither is a bare interpolated
+count (T1004's inapplicable clause named explicitly above, not silently skipped); four
+`UI_STYLE_SYSTEM.md`/README amendments made; Tier B delta explained and inside the plan's own
+range.

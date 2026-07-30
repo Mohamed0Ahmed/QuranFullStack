@@ -8,7 +8,7 @@ import { PaginationComponent } from '../../../../shared/ui/pagination/pagination
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { ExplorerCountRangeFilterComponent } from '../../components/explorer-count-range-filter/explorer-count-range-filter.component';
-import { ExplorerResultCountComponent } from '../../components/explorer-result-count/explorer-result-count.component';
+import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
 import { ExplorerSearchRowComponent } from '../../components/explorer-search-row/explorer-search-row.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { RootDetailsPanelComponent } from '../../components/root-details-panel/root-details-panel.component';
