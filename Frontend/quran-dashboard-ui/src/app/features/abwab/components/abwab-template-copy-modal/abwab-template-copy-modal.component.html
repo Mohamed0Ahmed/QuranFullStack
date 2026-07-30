@@ -14,10 +14,8 @@
       <h3 [id]="titleId">{{ titleText() }}</h3>
       <p class="abwab-template-copy-modal__desc">{{ descriptionText }}</p>
 
-      @if (errorMessage()) {
-        <p class="abwab-template-copy-modal__error" role="alert" data-testid="abwab-template-copy-modal-error">
-          {{ errorMessage() }}
-        </p>
+      @if (errorMessage(); as error) {
+        <qd-state variant="error" [reserve]="true" [message]="error" data-testid="abwab-template-copy-modal-error" />
       }
 
       <div class="abwab-template-copy-modal__preview" data-testid="abwab-template-copy-modal-preview">
@@ -81,6 +79,7 @@
             } @else if (doorsError()) {
               <qd-state
                 variant="error"
+                [reserve]="true"
                 [message]="doorsError() ?? ''"
                 [actionLabel]="retryLabel"
                 (action)="retryDoors.emit()"

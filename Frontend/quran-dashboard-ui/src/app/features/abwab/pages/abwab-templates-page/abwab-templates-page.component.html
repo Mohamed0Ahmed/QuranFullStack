@@ -27,7 +27,7 @@
         </div>
       </div>
     } @else if (facade.errorMessage() && facade.templates().length === 0) {
-      <qd-state variant="error" [message]="facade.errorMessage() ?? ''" />
+      <qd-state variant="error" [reserve]="true" [message]="facade.errorMessage() ?? ''" />
     } @else {
       <div class="abwab-templates-page__layout">
         <aside class="abwab-templates-page__list" [attr.aria-label]="templatesListAriaLabel">
@@ -76,7 +76,12 @@
 
         <div class="qd-card abwab-templates-page__editor">
           @if (facade.selectedErrorMessage(); as selectedError) {
-            <qd-state variant="error" [message]="selectedError" data-testid="abwab-templates-page-template-error" />
+            <qd-state
+              variant="error"
+              [reserve]="true"
+              [message]="selectedError"
+              data-testid="abwab-templates-page-template-error"
+            />
           }
 
           @let template = facade.selectedTemplate();

@@ -43,20 +43,22 @@
 
     <qd-abwab-announcer [message]="writeController.announcement()" />
 
+    <!-- The toolbar is mounted once for loading, error and loaded alike (T402): the old chain
+         swapped the entire toolbar + tree subtree for a one-line loader or error, collapsing the
+         frame to a single line — §5.2/§4.7. Hoisting it here means only the content below it
+         ever changes shape. -->
+    <qd-abwab-toolbar
+      [sections]="sections()"
+      [activeSectionId]="activeSectionId()"
+      [view]="viewParam()"
+      [searchQuery]="searchQueryParam()"
+      [hideSectionControls]="archiveParam()"
+      (sectionChanged)="onSectionChanged($event)"
+      (viewChanged)="onViewChanged($event)"
+      (searchQueryChanged)="onSearchQueryChanged($event)"
+    />
+
     @if (facade.isLoading() && !facade.snapshot()) {
-      <!-- The toolbar stays mounted while the tree loads (deliberate behavior change from the
-           old text loader, which replaced toolbar and tree both) so the frame does not collapse
-           to a single line during a cold load — §5.2/§4.7. -->
-      <qd-abwab-toolbar
-        [sections]="sections()"
-        [activeSectionId]="activeSectionId()"
-        [view]="viewParam()"
-        [searchQuery]="searchQueryParam()"
-        [hideSectionControls]="archiveParam()"
-        (sectionChanged)="onSectionChanged($event)"
-        (viewChanged)="onViewChanged($event)"
-        (searchQueryChanged)="onSearchQueryChanged($event)"
-      />
       <div class="abwab-page__layout">
         <div class="abwab-page__main">
           <div class="qd-card abwab-page__tree-card">
@@ -65,24 +67,27 @@
         </div>
       </div>
     } @else if (facade.errorMessage() && !facade.snapshot()) {
-      <qd-state
-        variant="error"
-        [message]="facade.errorMessage() ?? ''"
-        [actionLabel]="retryLabel"
-        (action)="facade.load()"
-      />
+      <!-- The error is a reserved slot inside the frame (T402), not a replacement of it: the
+           card that would otherwise hold the tree/cards/archive view holds the error instead, so
+           the toolbar above never disappears and the layout keeps its shape. This branch is only
+           reachable before any load has ever succeeded — AbwabSnapshotFacade's `rawTree` is
+           written only on success, never cleared on failure, so a refresh failure with data
+           already loaded leaves `snapshot()` non-null and falls through to the loaded branch
+           below instead, per the facade's own "leave the previous value in place" contract. -->
+      <div class="abwab-page__layout">
+        <div class="abwab-page__main">
+          <div class="qd-card abwab-page__tree-card">
+            <qd-state
+              variant="error"
+              [reserve]="true"
+              [message]="facade.errorMessage() ?? ''"
+              [actionLabel]="retryLabel"
+              (action)="facade.load()"
+            />
+          </div>
+        </div>
+      </div>
     } @else {
-      <qd-abwab-toolbar
-        [sections]="sections()"
-        [activeSectionId]="activeSectionId()"
-        [view]="viewParam()"
-        [searchQuery]="searchQueryParam()"
-        [hideSectionControls]="archiveParam()"
-        (sectionChanged)="onSectionChanged($event)"
-        (viewChanged)="onViewChanged($event)"
-        (searchQueryChanged)="onSearchQueryChanged($event)"
-      />
-
       <div class="abwab-page__layout">
         <div class="abwab-page__main">
           @if (archiveParam()) {
@@ -163,60 +168,67 @@
             (bulkArchiveRequested)="overlays.requestBulkArchive()"
             (bulkClearRequested)="onBulkClearRequested()"
           />
-          @if (overlays.archiveConfirming()) {
-            <div
-              class="qd-card abwab-page__archive-confirm"
-              role="alertdialog"
-              data-testid="abwab-page-archive-confirm"
-            >
-              <p>{{ overlays.archiveConfirmMessage() }}</p>
-              <div class="abwab-page__archive-actions">
-                <button
-                  type="button"
-                  class="qd-btn qd-btn-primary"
-                  data-testid="abwab-page-archive-confirm-yes"
-                  (click)="confirmArchiveAndClearUrl()"
-                >
-                  {{ archiveLabel }}
-                </button>
-                <button
-                  type="button"
-                  class="qd-btn qd-btn-ghost"
-                  data-testid="abwab-page-archive-confirm-no"
-                  (click)="overlays.cancelArchiveConfirm()"
-                >
-                  {{ cancelLabel }}
-                </button>
+          <!-- T403: reserves the archive-confirm card's height so mounting/unmounting either
+               card cannot grow the sticky aside and shift whatever sits below it (N3 doctrine).
+               This is a card, not a text state, so it reserves via min-block-size on this slot
+               rather than via qd-state's own `reserve` — see the SCSS comment for the measured
+               derivation. -->
+          <div class="abwab-page__archive-confirm-slot">
+            @if (overlays.archiveConfirming()) {
+              <div
+                class="qd-card abwab-page__archive-confirm"
+                role="alertdialog"
+                data-testid="abwab-page-archive-confirm"
+              >
+                <p>{{ overlays.archiveConfirmMessage() }}</p>
+                <div class="abwab-page__archive-actions">
+                  <button
+                    type="button"
+                    class="qd-btn qd-btn-primary"
+                    data-testid="abwab-page-archive-confirm-yes"
+                    (click)="confirmArchiveAndClearUrl()"
+                  >
+                    {{ archiveLabel }}
+                  </button>
+                  <button
+                    type="button"
+                    class="qd-btn qd-btn-ghost"
+                    data-testid="abwab-page-archive-confirm-no"
+                    (click)="overlays.cancelArchiveConfirm()"
+                  >
+                    {{ cancelLabel }}
+                  </button>
+                </div>
               </div>
-            </div>
-          }
-          @if (overlays.bulkArchiveConfirming()) {
-            <div
-              class="qd-card abwab-page__archive-confirm"
-              role="alertdialog"
-              data-testid="abwab-page-bulk-archive-confirm"
-            >
-              <p>{{ overlays.bulkArchiveConfirmMessage() }}</p>
-              <div class="abwab-page__archive-actions">
-                <button
-                  type="button"
-                  class="qd-btn qd-btn-primary"
-                  data-testid="abwab-page-bulk-archive-confirm-yes"
-                  (click)="overlays.confirmBulkArchive()"
-                >
-                  {{ archiveLabel }}
-                </button>
-                <button
-                  type="button"
-                  class="qd-btn qd-btn-ghost"
-                  data-testid="abwab-page-bulk-archive-confirm-no"
-                  (click)="overlays.cancelBulkArchiveConfirm()"
-                >
-                  {{ cancelLabel }}
-                </button>
+            }
+            @if (overlays.bulkArchiveConfirming()) {
+              <div
+                class="qd-card abwab-page__archive-confirm"
+                role="alertdialog"
+                data-testid="abwab-page-bulk-archive-confirm"
+              >
+                <p>{{ overlays.bulkArchiveConfirmMessage() }}</p>
+                <div class="abwab-page__archive-actions">
+                  <button
+                    type="button"
+                    class="qd-btn qd-btn-primary"
+                    data-testid="abwab-page-bulk-archive-confirm-yes"
+                    (click)="overlays.confirmBulkArchive()"
+                  >
+                    {{ archiveLabel }}
+                  </button>
+                  <button
+                    type="button"
+                    class="qd-btn qd-btn-ghost"
+                    data-testid="abwab-page-bulk-archive-confirm-no"
+                    (click)="overlays.cancelBulkArchiveConfirm()"
+                  >
+                    {{ cancelLabel }}
+                  </button>
+                </div>
               </div>
-            </div>
-          }
+            }
+          </div>
         </aside>
       </div>
     }
