@@ -1090,3 +1090,42 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - Compose, do not re-style — a surface that seems to need a fixed name column
   should re-read the paragraph above before reaching for `inline-size` instead of
   `.qd-truncate`.
+
+### Viewport reservation
+- **Purpose:** a page's content region reserves a full viewport below the navbar, so
+  no state change (loading → loaded → empty → error) resizes the page frame. Slice
+  B2's item 4; the shell already made the page *scroll* one footer-height
+  (`.qd-shell-viewport { min-height: 100vh }`, `_layout.scss`) — this is the
+  separate, narrower claim that a page's own content fills what the shell reserves.
+- **The arithmetic is always `100dvh` minus the navbar token, never a footer
+  number:** `min-block-size: calc(100dvh - var(--qd-navbar-block-size))`. A
+  `--qd-footer-block-size` token was considered and refused — the footer has no
+  stable height (`qd-footer.component.html`'s health indicator has three branches,
+  one with a retry button, all free to wrap at narrow widths), so a token for it
+  would be a magic number wearing a token's clothes. The reservation instead lets
+  the footer sit wholly below the fold, unconditionally.
+- **Requires `box-sizing: border-box` on the element carrying the reservation.**
+  The app has no global `border-box`; without it the reservation overshoots the
+  viewport by that element's own padding under the default `content-box`.
+  `.qd-page-frame` (`_layout.scss`) already carries `border-box`, which is why the
+  page-frame rename (§2) is a prerequisite of this pattern, not a coincidence.
+- **Abwab-local for now.** The reservation lives on `abwab-page.component.scss`
+  (`.abwab-page__frame`), not on the shared `.qd-page-frame` rule — promoting it
+  there would silently reserve a viewport on all five explorer pages, which nobody
+  has measured. **Generalize it only when** a second feature's page needs the same
+  state-stability guarantee; at that point promote the rule onto `.qd-page-frame`
+  itself and re-verify the five explorer pages' bottom-of-page geometry (their
+  existing `padding-block-end` mobile-stat-bar reservation interacts with any
+  `min-block-size` added alongside it) rather than assuming the abwab measurement
+  transfers.
+- **Reserving space is not enough — the content must stretch into it.** The
+  reservation on the frame only bounds the frame; a child card still collapses to
+  its own content unless something in the chain between frame and card carries
+  `flex: 1; min-block-size: 0`. Abwab's chain: `.abwab-page__frame` (the
+  reservation) → `.abwab-page__layout` (`flex: 1; min-block-size: 0`) →
+  `.abwab-page__main` (`align-self: stretch`, its own column flex context) →
+  `.abwab-page__tree-card` (`flex: 1; min-block-size: 0`, replacing a fixed
+  `min-height`). The row's `align-items: flex-start` stays put rather than becoming
+  `stretch` — `.abwab-page__side` is `position: sticky`, and stretching the row
+  would give the sticky aside zero scroll travel, silently breaking it. Stretch the
+  main column with `align-self`, not the row with `align-items`.

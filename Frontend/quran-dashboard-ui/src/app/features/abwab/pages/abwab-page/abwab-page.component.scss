@@ -1,3 +1,12 @@
+// T801 — the viewport reservation (NEW PATTERN, `UI_STYLE_SYSTEM.md` §17 "Viewport reservation").
+// `.qd-page-frame` (`_layout.scss`) already carries `box-sizing: border-box`, which this needs —
+// without it the reservation would overshoot the viewport by `.qd-page-frame`'s own inline
+// padding under the app's default `content-box`. Abwab-local for now: kept on this component
+// rather than promoted onto `.qd-page-frame` itself, so the five explorer pages are untouched.
+.abwab-page__frame {
+  min-block-size: calc(100dvh - var(--qd-navbar-block-size));
+}
+
 .abwab-page__header {
   display: flex;
   align-items: flex-start;
@@ -8,18 +17,30 @@
 
 .abwab-page__layout {
   display: flex;
+  flex: 1;
+  min-block-size: 0;
   gap: var(--qd-space-4);
   align-items: flex-start;
   margin-block-start: var(--qd-space-3);
 }
 
+// `align-items: flex-start` on the row above is load-bearing for `.abwab-page__side`'s
+// `position: sticky` (a stretched aside would have zero scroll travel), so only the main
+// column opts into filling the frame's reserved viewport (T802).
 .abwab-page__main {
   flex: 1;
   min-width: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
 }
 
+// Replaces the old `min-height: 20rem` (T802): the card now stretches to fill whatever the
+// frame's `min-block-size` reservation leaves it, so no state — loading, loaded, empty, error —
+// can resize the frame itself. See `.abwab-page__frame` above for the reservation.
 .abwab-page__tree-card {
-  min-height: 20rem;
+  flex: 1;
+  min-block-size: 0;
 }
 
 .abwab-page__side {

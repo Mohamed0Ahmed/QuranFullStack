@@ -416,3 +416,228 @@ as a working alias; five explorer call-sites untouched and green (Tier B + brows
 full-bleed on both pages; both §5.1 flex caveats checked in the browser and recorded above. The
 viewport-reservation and `box-sizing: border-box` proof-in-diff obligations belong to phase 8,
 not this phase.
+
+## Phase 8 (T801–T803) — the viewport reservation, item 4
+
+Branch `ux-slice-b2-frame`, working tree clean at phase 7's close (`d037b25b`) before this
+phase's edits.
+
+**Scope decision, made before writing code:** the doors page (`abwab-page.component`) only, not
+the templates page. §7.2's invariant names `.abwab-page`, T802 enumerates exactly one card
+(`.abwab-page__tree-card`) and one declaration to remove (`min-height: 20rem`), and the
+acceptance axes (tree/cards/archive) exist only on the doors page.
+`abwab-templates-page.component`'s editor panel keeps its own `min-block-size: 22rem`
+(`abwab-templates-page.component.scss:94`) untouched — it is named nowhere in phase 8 and that
+page's editor already has a different, unspecified stretch story from phase 2's `--loading`
+flex modifier. Verified in the browser (below) that the templates page's frame carries no
+reservation and is byte-for-byte unaffected.
+
+### T801 — the reservation, and why it is not on `.qd-page-frame`
+
+Added `.abwab-page__frame` to `abwab-page.component.html:2` (alongside the existing
+`qd-container qd-page-frame`) and, in `abwab-page.component.scss`, a new rule:
+
+```scss
+.abwab-page__frame {
+  min-block-size: calc(100dvh - var(--qd-navbar-block-size));
+}
+```
+
+**Abwab-local by construction, not by convention:** the reservation is a new selector on the
+abwab component's own stylesheet, not an addition to `.qd-page-frame` in `_layout.scss`.
+Promoting it onto the shared rule would have silently reserved a viewport on all five explorer
+pages with zero measurement — exactly the premature generalization §1/T803 forbids ("abwab-local
+for now"). `UI_STYLE_SYSTEM.md`'s new "Viewport reservation" entry (§17, T803) names the
+concrete trigger for promoting it later.
+
+**`box-sizing: border-box` assertion — read from the source, then confirmed live in the same
+browser session that measured the frame (not two separate claims):**
+
+```
+$ grep -n "box-sizing: border-box" Frontend/quran-dashboard-ui/src/styles/_layout.scss
+58:  box-sizing: border-box;
+```
+
+That line is inside the `.qd-page-frame, .qd-explorer-frame` rule block committed in phase 7
+(`d037b25b`) — it does not appear in this phase's diff because `.qd-page-frame` is already on
+the abwab frame element from T703; `.abwab-page__frame` is a second class on the *same* element,
+so it inherits `border-box` from the first. Confirmed live via `getComputedStyle` on the actual
+DOM element carrying both classes: `boxSizing: "border-box"`. Without it, the reservation would
+overshoot the viewport by `.qd-page-frame`'s own `padding-inline` and `padding-block-end`
+(48.8 px, measured in phase 7) under the default `content-box` — that padding is exactly what
+`border-box` absorbs into the declared `min-block-size` instead of adding on top of it.
+
+**Note on unit:** the shell's own viewport reservation (`_layout.scss:8`,
+`.qd-shell-viewport { min-height: 100vh }`) uses `100vh`; T801's text specifies `100dvh`
+(matching `--qd-mushaf-panel-height`'s existing arithmetic at `_tokens.scss:77`) and that is
+what shipped. The two units can diverge on mobile browsers with a collapsing address bar; not
+exercised in this desktop verification, flagged so a future reader does not read the mismatch as
+a copy-paste error.
+
+### T802 — making the reservation stretch the content, not just bound the frame
+
+Four-link chain (`abwab-page.component.scss`), replacing the old fixed
+`min-height: 20rem` on `.abwab-page__tree-card`:
+
+```scss
+.abwab-page__layout {
+  display: flex;
+  flex: 1;                 // new
+  min-block-size: 0;       // new
+  gap: var(--qd-space-4);
+  align-items: flex-start; // UNCHANGED — see below
+  margin-block-start: var(--qd-space-3);
+}
+
+.abwab-page__main {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;     // new
+  display: flex;            // new
+  flex-direction: column;   // new
+}
+
+.abwab-page__tree-card {
+  flex: 1;             // was: min-height: 20rem
+  min-block-size: 0;   // was: min-height: 20rem
+}
+```
+
+**`.abwab-page__layout` keeps `align-items: flex-start`, not `stretch`.** `.abwab-page__side` is
+`position: sticky`; stretching the row to the frame's full height would give the sticky aside
+zero scroll travel, silently breaking it (and would have made phase 9's T902 re-base a dead
+behavior). Only `.abwab-page__main` opts into filling the frame, via `align-self: stretch` on
+itself rather than `align-items: stretch` on its parent row.
+
+Verified before editing: `grep -rn "20rem\|tree-card\|abwab-page__layout\|abwab-page__main"
+src/app/features/abwab/pages/abwab-page/` returned no spec hits — zero-test-change, confirmed
+by the T503-baseline-matching Vitest run below, not assumed.
+
+### Browser verification
+
+Backend built (`dotnet build Backend/QuranDashboard.sln`, 0 warnings/errors) and run
+(`dotnet run --no-build --urls https://localhost:5015`, `/api/health` → healthy). Frontend run
+via `npm start` (`https://localhost:4200`). Driven with the `claude-in-chrome` MCP tool per
+phase 7's finding (Playwright MCP and headless chrome-devtools MCP both fail on the mkcert cert
+with `ERR_CERT_AUTHORITY_INVALID`). Both servers were stopped (`pkill`) after verification,
+before running the Tier B gate.
+
+**Geometry at the one viewport this environment's browser window would actually hold**
+(`window.innerHeight` 903 px throughout — `resize_window` calls to 1600×900 and 1400×560 did not
+visibly change `window.innerHeight`/`outerHeight` in this environment, confirmed by re-reading
+`window.outerWidth/outerHeight` after the call, which still reported the full 1920×1080 screen;
+noted as an environment limitation, not a finding about the code — the `calc(100dvh - …)`
+formula is viewport-size-independent by construction, so a single confirmed viewport proves the
+arithmetic):
+
+| Quantity | Measured | Expected | Match |
+|---|---|---|---|
+| `--qd-navbar-block-size` (`.qd-navbar` rect height) | 56 px | 3.5 rem = 56 px | yes |
+| `window.innerHeight` | 903 px | — | — |
+| `.abwab-page__frame` computed `min-block-size` | 847 px | `903 − 56 = 847` | **exact** |
+| `.abwab-page__frame` `getBoundingClientRect().height` (tree view, modest data) | 847 px | = min-block-size (content smaller than floor) | **exact** |
+| `.abwab-page__frame` `boxSizing` | `border-box` | `border-box` | yes |
+| Frame `top` | 80 px | navbar 56 + `.qd-page` top padding 24 (`--qd-space-5`) | **exact** |
+| `qd-footer` `top` (page bottom, no archived residue) | 1007 px | navbar 56 + page padding-top 24 + frame 903-min-analog… see overshoot note below | see below |
+
+**The frame does not overshoot the viewport itself** (847 px computed exactly equals
+`903 − 56`); the outer `.qd-page.abwab-page` wrapper's own block padding
+(`padding: var(--qd-space-5) var(--qd-space-4)`, 24 px top **and** bottom, `_layout.scss:74`)
+sits *outside* the frame and is not part of this reservation — §4.2's constraint is only that
+the reservation's own arithmetic never cite a footer number, which it does not. Measured on the
+first page load (959 px viewport before the browser window's chrome/tab-strip stabilized):
+`document.documentElement.scrollHeight − window.innerHeight` gap before the footer was
+`1007 − 959 = 48 px`, exactly `2 × --qd-space-5` (2 × 24 px) — the page wrapper's own top+bottom
+padding, explained and not a defect. The footer itself sits wholly below that, its own height
+varying with its health-indicator branch (120 px observed with the DB check rendered) — never
+folded into the reservation's calc, per §4.2.
+
+**The content actually stretches (T802 proven, not aspirational) — measured across four states
+at the same viewport, in one script so no window resize could occur between them:**
+
+| State | Frame height | Frame top | `.abwab-page__tree-card` height | Toolbar top/bottom |
+|---|---|---|---|---|
+| `tree`, loaded (small sandbox section) | 847 px | 80 px | 632.9 px | 192.8 / 233.3 |
+| `cards`, loaded | 847 px | 80 px | 632.9 px | 192.8 / 233.3 |
+| `tree`, search matches nothing (`qd-state variant="empty"`, `abwab-page-empty`) | 847 px | 80 px | 632.9 px | 192.8 / 233.3 |
+| `tree`, search cleared | 847 px | 80 px | 632.9 px | 192.8 / 233.3 |
+| `tree`, transport error, no snapshot (backend killed, `qd-state variant="error"` + retry, backend restarted after) | 847 px | 80 px | — (card replaced by `qd-state`) | 192.8 / 233.3 |
+
+Frame height, frame top and toolbar position are **pixel-identical** across all five
+loaded/empty/error cells. The toolbar stays mounted through the error state (T402, phase 4;
+confirmed still holding here) — visible text read from the DOM: *"تعذر تحميل شجرة الأبواب. حاول
+مرة أخرى. إعادة المحاولة"*.
+
+**Loading state — verified by construction, not pixel-captured.** Killing the local backend
+makes the connection refuse instantly (no observable pending window on localhost), so the
+skeleton branch (`abwab-page.component.html:61-73`) could not be caught mid-flight by polling at
+100 ms intervals; a controlled delay/route-interception harness is explicitly phase 11's job
+(T1101), not this phase's. Construction argument instead: all three `@if` branches
+(loading/error-without-snapshot/loaded) wrap their content in the *same*
+`.abwab-page__layout > .abwab-page__main > .qd-card.abwab-page__tree-card` markup
+(confirmed by reading `abwab-page.component.html:61-155`), and the geometry chain above (frame
+`min-block-size` → `.abwab-page__layout` `flex:1` → `.abwab-page__main`
+`align-self:stretch` → `.abwab-page__tree-card` `flex:1; min-block-size:0`) is indifferent to
+what the card's children are — `qd-skeleton-rows` included. The loaded/empty/error cells already
+measured pixel-identical is the empirical half of that argument; the shared markup is the
+structural half.
+
+**One real dataset stretched the frame past the floor, and that is correct, not a regression.**
+The archive view (`?archive=1`) on this local dev DB carries **1,033 archived items**
+(residue from repeated e2e sandbox runs, per `Frontend/quran-dashboard-ui/CLAUDE.md`'s own note
+that the abwab e2e specs "leave archived residue by design") — its frame grew to 9533 px, far
+past the 847 px floor. `min-block-size` is a floor, not a cap: when real content genuinely
+exceeds the reserved viewport, the frame (and the page) grows and the page scrolls further, the
+same as it always could. This is not the layout-shift item 4 guards against — that guard is
+about *state changes at the same amount of content* (which the table above proves holds), not
+about a page becoming taller because there is more to show.
+
+**Nothing leaked through the shared `.qd-page-frame` class:**
+
+| Page | Selector checked | `min-block-size` | Carries `abwab-page__frame`? |
+|---|---|---|---|
+| `abwab-templates-page` (`/abwab/templates`) | `.qd-page-frame` | `0px` | no |
+| `roots-explorer-page` (`/dashboard/words/roots`) | `.qd-explorer-frame` | `0px` | no (different literal class; same shared rule, `boxSizing: border-box` still present, unaffected) |
+
+Both pages render full-bleed with no console errors (`read_console_messages`, `onlyErrors:
+true`, empty) and no visual regression versus their phase-7 screenshots.
+
+### Tier B gate
+
+Commands run from `Frontend/quran-dashboard-ui/`, `VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`
+preserved (baked into `npm test`, no direct `ng test` call):
+
+```bash
+npm test
+```
+
+Result: **191 spec files passed (191) / 2164 tests passed (2164) / 0 failed.** Duration 178.92s.
+
+**Delta vs T601 (191 files / 2164 tests): +0 files, +0 tests — exact match**, as expected for a
+zero-test-change phase (§3, §7.1, confirmed by the pre-edit spec grep above). No spec was edited
+or added.
+
+```bash
+npm run build
+```
+
+Result: **green.** `ng build` completed in 15.176s, output at `dist/quran-dashboard-ui`. Same
+four pre-existing budget categories as phase 7's close, **byte-for-byte unchanged** (this
+phase's only edits are component-scoped SCSS/HTML plus doc files — no global stylesheet bytes
+added):
+
+- initial bundle exceeded the 500.00 kB budget by 68.83 kB (568.83 kB total) — unchanged from phase 7
+- `selected-word-section.component.scss` exceeded its 4.00 kB budget by 649 bytes — unchanged
+- `selected-ayah-section.component.scss` exceeded its 4.00 kB budget by 1.85 kB — unchanged
+- `abwab-relations-modal.component.scss` exceeded its 4.00 kB budget by 1.08 kB — unchanged
+
+No new warning categories. No errors.
+
+**Obligations checked at close of phase 8:** the viewport reservation ships with
+`box-sizing: border-box` proven present (source read + live `getComputedStyle`, same session);
+the reservation stays abwab-local (`UI_STYLE_SYSTEM.md` §17 entry states the arithmetic, the
+`border-box` prerequisite, and the concrete generalization trigger); the content stretches into
+the reservation and no state resizes the frame (measured across five states, plus the
+construction argument for `loading`); `features/abwab/README.md` records the scope decision
+(doors page only) and the four-link stretch chain. T101→T601→phase-7→phase-8 Vitest/build
+deltas are unbroken at +0/+0 and byte-identical budgets.

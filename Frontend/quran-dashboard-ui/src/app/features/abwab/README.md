@@ -217,6 +217,18 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   frame's fixed `padding-block-end` (sized for words' mobile stat bars) leaves the same bottom gap
   above the footer on both abwab pages that the five explorer pages already carry unconditionally
   (not media-gated) — not a new imbalance, just the shared class's existing trait extended here.
+- **The doors page (`abwab-page.component`) reserves a full viewport (Slice B2, T801-T802) — the
+  templates page does not.** `.abwab-page__frame` adds `min-block-size: calc(100dvh -
+  var(--qd-navbar-block-size))` on top of the shared `.qd-page-frame`; abwab-local for now, see
+  `UI_STYLE_SYSTEM.md` §17 "Viewport reservation" for the arithmetic, the `border-box`
+  prerequisite and the generalization trigger. The reservation only bounds the frame — filling it
+  is a four-link chain: `.abwab-page__layout` (`flex: 1; min-block-size: 0`) →
+  `.abwab-page__main` (`align-self: stretch`) → `.qd-card.abwab-page__tree-card` (`flex: 1;
+  min-block-size: 0`, replacing the old fixed `min-height: 20rem`). `.abwab-page__layout` keeps
+  `align-items: flex-start` (not `stretch`) because `.abwab-page__side` is `position: sticky` and
+  a stretched row would zero out its scroll travel. Scoped to the doors page's tree/cards/archive
+  card only — `abwab-templates-page.component`'s editor panel keeps its own `min-block-size:
+  22rem` and is out of this phase's scope.
 - **Refresh-after-write is an invariant, not an optimization.** Every write
   resequences its scope to `1..N`, which bumps every sibling's `xmin` too. A root-affecting
   write additionally maintains the global order (below) in the same request, which resequences
