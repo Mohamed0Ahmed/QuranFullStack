@@ -677,8 +677,9 @@ them. Nothing is expected to break (no existing DTO changed, by design).
   409-policy sharing that justified reusing it for sections and relations does not apply, since
   the only 409 here is a duplicate name with a backend message.
   **The apply write does not refresh the doors snapshot** — `AbwabPageComponent.ngOnInit` calls
-  `facade.load()` on every entry (`abwab-page.component.ts:155-156`), so returning to `/abwab`
-  always refetches. Coupling the workshop to the doors facade would buy a fetch nobody sees.
+  `facade.load()` on every entry (`abwab-page.component.ts:171-172`, moved from `:155-156` by
+  Slice B2's own edits to this file), so returning to `/abwab` always refetches. Coupling the
+  workshop to the doors facade would buy a fetch nobody sees.
 - **T604 — `abwab.labels.ts`.** Every Arabic string for the workshop: page title/subtitle,
   «قالب جديد», «تعديل القالب», «نسخ إلى أبواب…», «العودة للأبواب», the node action labels, the
   copy modal's title/description/**preview** (including the detachment sentence, §5.6), the

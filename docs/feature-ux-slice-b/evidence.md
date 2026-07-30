@@ -1145,3 +1145,302 @@ nullable-section caveat both written down (`abwab-tree.builder.ts` comments,
 count (T1004's inapplicable clause named explicitly above, not silently skipped); four
 `UI_STYLE_SYSTEM.md`/README amendments made; Tier B delta explained and inside the plan's own
 range.
+
+## Phase 11 (T1101–T1103) — B2 verification and doc integrity
+
+Branch `ux-slice-b2-frame`, working tree clean at phase 10's close before this phase's work.
+This phase makes **no source edits** — it is verification-only plus one dangling-doc repoint —
+so it introduces nothing for Tier B to regress.
+
+### T1101 — layout-stability acceptance, full matrix (§7.2)
+
+Extraction-style evidence for the layout-stability claim; not a tier and no substitute for the
+Vitest suite or the build.
+
+**Harness:** a temporary Playwright spec, `e2e/abwab-tmp-layout-stability.e2e.ts`, run as
+`npx playwright test --project=abwab --workers=1 e2e/abwab-tmp-layout-stability.e2e.ts` against a
+local dev server + local backend (`https://localhost:4200` / `https://localhost:5015`) and the
+local `quran_dashboard` dev DB, using the `abwabSandbox` fixture plus one extra API-created empty
+section for the `empty` macro-state (same mechanism T502 used). Fixed viewport `1440×900`. A
+second, one-off temporary spec, `e2e/abwab-tmp-tabwrap-check.e2e.ts`, was added afterward to
+settle the open question in point 3 below (whether the toolbar-wrap finding reproduces on
+near-realistic data) and is described there. **Both deleted after their runs** — confirmed absent
+from the tree (`ls e2e/*tmp*` → no match) and no stray dev server left on `:4200`/`:5015`
+afterward (`pkill` on both, then re-verified with a `curl` timeout against both health endpoints).
+
+**A methodology bug was found and fixed in the harness itself before trusting its numbers.** The
+first cut waited only for `abwab-toolbar-search` to be visible before capturing — but the toolbar
+mounts unconditionally in the loading branch too (T402), so that wait is satisfied *before* the
+tree snapshot (and therefore `sections()`, which drives the toolbar's own section tabs) has
+arrived. The `loaded/tree/off` cell was captured mid-flight, during the still-loading render, and
+produced a false "1 tab, single-line toolbar" reading — a race in the harness, not the app.
+Fixed by waiting for the real "data has arrived" signal instead: `qd-skeleton-rows` reaching zero
+count (`gotoAndWaitLoaded`) plus, for the `loaded`/`empty` loops, waiting for the sandbox's own
+section tab (`abwab-toolbar-tab-<sandbox section id>`) to be visible — a signal tied to data this
+harness controls, not to ambient DB content. Confirmed the fix mattered by re-running before and
+after: the "loaded" cells' `toolbarBottom` changed from 269.3 (1 tab, wrong) to 318.8 (6 tabs,
+real) once the race was closed.
+
+**Degenerate cells folded, not silently skipped.** The full cross-product is view × state × search
+= 3 × 4 × 3 = 36 cells; 16 were captured. The remaining 20 are structurally identical to a
+captured cell, not skipped: `loading` and `error` render the exact same markup for `tree` and
+`cards` (`abwab-page.component.html:82-115`, the branch checks `facade.isLoading()`/
+`facade.errorMessage()` only, never `viewParam()`), differing from `archive` solely via
+`hideSectionControls`; and `search` cannot filter a branch with no snapshot to search over, so
+`loading`/`error` have no independent search axis at all — the 3 `loading` + 3 `error` cells
+already cover every `view × search` combination those two states can produce. `loaded / archive /
+search off` is the one cell excluded outright, same as T502: the local dev DB carries ~1,033
+archived e2e-residue doors, an unbounded, ever-growing number unrelated to this phase's
+reservations.
+
+**The invariant element** is `.abwab-page` (the frame, `data-testid="abwab-page"`) plus
+`.abwab-toolbar`, measured via `getBoundingClientRect()` (Playwright `boundingBox()`) after
+awaiting `document.fonts.ready` on every capture (same font-swap precaution T502 used).
+
+| Cell | frameHeight (px) | toolbarTop (px) | toolbarBottom (px) |
+|---|---|---|---|
+| loaded / tree / search off | 892 | 228.796875 | 318.796875 |
+| loaded / tree / search match | 892 | 228.796875 | 318.796875 |
+| loaded / tree / search no-match | 892 | 228.796875 | 318.796875 |
+| loaded / cards / search off | 892 | 228.796875 | 318.796875 |
+| loaded / cards / search match | 892 | 228.796875 | 318.796875 |
+| loaded / cards / search no-match | 892 | 228.796875 | 318.796875 |
+| loaded / archive / search match | 892 | 228.796875 | 266.296875 |
+| loaded / archive / search no-match | 892 | 228.796875 | 266.296875 |
+| empty / tree | 892 | 228.796875 | 318.796875 |
+| empty / cards | 892 | 228.796875 | 318.796875 |
+| loading / tree | 892 | 228.796875 | 269.296875 |
+| loading / cards | 892 | 228.796875 | 269.296875 |
+| loading / archive | 892 | 228.796875 | 266.296875 |
+| error / tree | 892 | 228.796875 | 269.296875 |
+| error / cards | 892 | 228.796875 | 269.296875 |
+| error / archive | 892 | 228.796875 | 266.296875 |
+
+`loaded / archive / search off` is excluded by design, same as T502: the local dev DB carries
+~1,033 archived e2e-residue doors, an unbounded, ever-growing number unrelated to this phase's
+reservations.
+
+**What this proves (asserted and green — the headline claim, closed):**
+
+1. **`frameHeight` is 892px in all 16 cells, with no exception.** This is the gap B1's own T502
+   evidence explicitly left open (item (a): "`loaded` is taller than that same view's own
+   `loading`/`error`", scheduled for "**B2 phase 8 (T801/T802)**... §7.2 itself schedules the
+   full-matrix run a second time at T1101, after B2 lands, for exactly this reason"). It is now
+   closed: no state (loading/loaded/empty/error), view (tree/cards/archive), or search condition
+   moves the frame by a single pixel. The viewport reservation (T801/T802) holds under every
+   condition this matrix drives, including through the ambient toolbar-height variability found
+   below — proof the reservation architecture (`.abwab-page__frame`'s `min-block-size` plus the
+   four-link stretch chain) is robust to more than what B1/B2 anticipated. **892px is
+   self-explanatory, not a new number to take on faith:** `.abwab-page` is the outer `.qd-page`
+   wrapper (`data-testid="abwab-page"`), one level above `.abwab-page__frame`, which carries the
+   actual `min-block-size: calc(100dvh - var(--qd-navbar-block-size))` reservation phase 8
+   measured at 847px against a 903px viewport. This run's viewport is 900px, so the reservation
+   itself is `900 − 56 = 844px`; `.qd-page`'s own `padding: var(--qd-space-5) var(--qd-space-4)`
+   (`_layout.scss:74`) adds `2 × 24px = 48px` of block padding **outside** the frame (§4.2's own
+   point: the reservation's arithmetic never includes this). `844 + 48 = 892px`, exact.
+2. **`toolbarTop` is 228.796875px in all 16 cells, with no exception.** T402's B1-era fix (the
+   toolbar stays mounted through every state) still holds after B2's frame/sticky-navbar/stats-bar
+   changes landed on top of it. (The absolute value moved from T502's 192.8px to 228.8px — an
+   expected, structural +36px from T1003's always-mounted stats bar sitting above the toolbar,
+   not a regression.)
+
+**What does *not* hold, measured and reported honestly, not adjusted to pass:**
+
+3. **`toolbarBottom` — i.e. the toolbar's own height — is not invariant across the 16 cells.** It
+   takes exactly three values, and each is fully explained by a real, structural cause:
+   - **266.296875px** whenever `archiveParam()` is true (`loaded/archive`, `loading/archive`,
+     `error/archive`) — `hideSectionControls` hides the section-tab row entirely in the archive
+     view, a pre-existing behavior (§5.6/toolbar contract), not something this slice touches.
+   - **269.296875px** whenever the tree snapshot has not yet arrived (`loading/tree`,
+     `loading/cards`, `error/tree`, `error/cards`) — `sections()` reads
+     `facade.snapshot()?.sections ?? []`, and `snapshot()` is `null` in both branches by
+     construction, so only the "all doors" tab renders (1 tab, single line, 40.5px toolbar height).
+   - **318.796875px** whenever the tree snapshot *has* arrived and section controls are shown
+     (`loaded/tree`, `loaded/cards` all three search variants, `empty/tree`, `empty/cards`) — the
+     full section-tab list renders (6 tabs on this local dev DB: 2 real sections + 1 pre-existing
+     ambient e2e-residue section this harness did not create + this harness's own 2 sandbox/empty
+     sections).
+
+   **The mechanism, corrected after an advisor review caught a wrong first draft:** it is *not*
+   the tab strip itself wrapping onto two lines. A direct DOM measurement of `.abwab-toolbar__tabs`
+   (`getBoundingClientRect().height`) is **40.5px in both the 1-tab and the 6-tab case** — the tab
+   row never grows past one line. What wraps is the **outer** `.abwab-toolbar`
+   (`display: flex; flex-wrap: wrap`, `abwab-toolbar.component.scss:1-6`), which holds the tab
+   strip, the search input (`min-inline-size: 12rem` = 192px), and the view toggle as three
+   flex children on one row. The tab strip's own width grew from 84px (1 tab) to 1160px (6 tabs,
+   4 of them long e2e-generated names) against a 1361px toolbar width — leaving only 201px for a
+   search box that refuses to shrink below 192px plus a 117px toggle plus two 12px gaps (201px <
+   192 + 117 + 24 = 333px needed), so the search box and toggle wrap onto their own line below the
+   tabs — measured, not estimated: `318.796875 − 269.296875 = 49.5px` added, which decomposes
+   exactly into the search box's own 37.5px height plus one 12px `--qd-space-3` row gap. Measured
+   threshold: wrap triggers once the tab strip alone exceeds `1361 − 192 − 117 − 24 = 1028px`.
+
+   **Verified against the current, near-realistic ambient database, not just derived:** a direct
+   measurement (temporary, deleted immediately after) of `/abwab` with **no sandbox created** —
+   i.e. only the app's real data plus the one pre-existing ambient residue section this harness
+   did not create — found 4 tabs totaling **621px** of tab-strip width (`كل الأبواب` 84px +
+   `اللغات` 62px + `الانبياء` 61px + the 51-character residue name `e2e-sandbox-w0-…-layout-
+   empty-section` 414px), well under the 1028px threshold: **the toolbar does not wrap**, single
+   line, same 40.5px height regardless of loading/loaded. With the two real sections alone
+   (84 + 62 + 61 = 207px) the margin is even larger. **This means the 318.8px cells above are not
+   a defect that reproduces on the real product data today** — they are an artifact of this
+   harness's own two long, timestamp-named sandbox tabs (T502's own precedent for creating a
+   sandbox section, unavoidable per §7.2's own instruction to reach the `empty` macro-state) pushing
+   the tab strip past a threshold that 3 real, short-named tabs sit nowhere near. The honest
+   characterization is a **latent capacity limit**, not an active regression: `.abwab-toolbar`'s
+   `flex-wrap: wrap` has no cap on section count or name length, so a real deployment that
+   accumulates enough sections (or one long enough section name) could still hit it — but nothing
+   B1/B2 shipped changed this threshold or this mechanism; `qd-tabs` and `.abwab-toolbar`'s own
+   `flex-wrap: wrap` were not touched by any of items 1/2/3/4/5/6/17.
+
+   **What B1/B2 did change is when the toolbar-growth window exists at all.** Before T402, the
+   `loading`/`error` branches replaced the entire toolbar+tree subtree with one line of text — the
+   toolbar was not present to grow or shrink at all, so this intra-toolbar shape change was
+   invisible (masked by the far larger vanish-and-reappear shift). T402 (phase 4, B1) mounted the
+   toolbar unconditionally through every state, which is what makes the `sections()`-arrives
+   transition (and therefore this capacity limit, on a database that happens to be over it) newly
+   *observable* — visible now because the far larger shift is gone, not introduced by B1/B2. And
+   whenever it does occur, T801/T802's frame reservation (point 1, above) absorbs all of it: the
+   *frame* still never moves; only the toolbar/content split inside it does, since
+   `.abwab-page__layout` is `flex: 1; min-block-size: 0`. Flagged for whoever next revisits
+   abwab's toolbar or the `qd-tabs` primitive (a capacity cap, a tab-name length limit, or a
+   narrower search `min-inline-size` at this viewport would all close it); not fixed here, both
+   because it sits outside this phase's seven-deliverable scope and because T1103's hard bounds
+   forbid unscoped source edits.
+
+   Distinct from the archived-doors residue note above: the extra *section* driving this
+   (`e2e-sandbox-w0-1785413500729-layout-empty-section`, id 362) is confirmed pre-existing, not
+   created by this phase's four harness runs — verified via `GET /api/abwab/tree` before and
+   after each run, with the one section this phase's own first, failed run accidentally left
+   behind deleted by hand before the final measurement run.
+
+**Skeleton row height vs. loaded row height — B1's T502 residual, re-measured as promised:**
+
+| Quantity | Value |
+|---|---|
+| Loaded tree row (`.abwab-tree__row`) height | 32px |
+| Skeleton row (`qd-skeleton-row-0`) height | 24px |
+
+T502 predicted, but could not re-measure in the browser (the dev server had already been torn
+down), that the `--qd-skeleton-h: 1.5rem` fix landed in `abwab-page.component.scss` during B1
+phase 5 would produce a 24px skeleton row against the 32px loaded row, closing to **pitch**
+parity (24px bar + 8px `--qd-space-2` gap = 32px, matching the loaded row's own pitch) while
+leaving the row's own **box** 8px short — an unparameterized-gap residual, not a caller-fixable
+defect. Measured here: **exactly 24px**, confirming the derivation held. The 8px gap between
+24px and 32px is the same residual T502 already named and left to whoever next edits
+`shared/ui/skeleton/` to parameterize the gap; `.abwab-page__tree-card` still absorbs it. Also
+confirmed live (measured pixel-identical across `loaded`/`loading`/`error`/`empty` in the table
+above): **the reserved error slot does not change the frame's height when it fills** — `frameHeight`
+is 892px whether the error `qd-state` is present or not.
+
+### T1102 — Tier B gate (post-phase-10, no source changes)
+
+Commands run from `Frontend/quran-dashboard-ui/`, script invoked as-is (the
+`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2` cap baked into `npm test` was preserved, no direct
+`ng test` call was made):
+
+```bash
+npm test
+```
+
+Result: **191 spec files passed (191) / 2167 tests passed (2167) / 0 failed.**
+
+```
+Test Files  191 passed (191)
+     Tests  2167 passed (2167)
+   Start at  19:25:39
+   Duration  168.04s
+```
+
+**Delta vs T601 (191 files / 2164 tests): +0 files, +3 tests — exactly matching phase 10's own
+close, independently re-confirmed here.** The three additive tests are, as phase 9/10 already
+recorded: `scroll-lock.service.spec.ts`'s `isLocked` case (T904, phase 9, +1),
+`abwab-tree.builder.spec.ts`'s "item 17 stats bar" case (T1002, phase 10, +1), and
+`abwab.labels.spec.ts`'s locked-strings pin for the two new stat labels (T1004, phase 10, +1).
+Within the plan's own **+2–4** expectation for all of B2 combined (§7 phase 11 bullet). No spec
+file was added or removed between phase 10's close and this run — the working tree was clean
+before this phase's own single doc-repoint edit (below), and Vitest does not touch docs.
+
+```bash
+npm run build
+```
+
+Result: **green.** `ng build` completed in 15.012s, output at
+`Frontend/quran-dashboard-ui/dist/quran-dashboard-ui`. Same four pre-existing budget categories
+as phase 10's close, **byte-for-byte unchanged** — expected, since this phase made zero edits to
+any file `ng build` compiles (the harness lived only under `e2e/`, outside the build, and was
+deleted before this gate ran):
+
+- initial bundle exceeded the 500.00 kB budget by 69.16 kB (569.15 kB total) — unchanged from phase 10
+- `selected-word-section.component.scss` exceeded its 4.00 kB budget by 649 bytes — unchanged
+- `selected-ayah-section.component.scss` exceeded its 4.00 kB budget by 1.85 kB — unchanged
+- `abwab-relations-modal.component.scss` exceeded its 4.00 kB budget by 1.08 kB — unchanged
+
+No new warning categories. No errors. `git status --short` was empty in both `Frontend/quran-dashboard-ui/`
+and repo root immediately before this gate ran, confirming no stray edits (including the temp
+harness, already deleted) were present.
+
+### T1103 — dangling-reference sweep, including prose
+
+`grep -rn` across code, tests, e2e, skills, docs, READMEs, `.specify/`, `.architecture/`,
+`docs/contracts/` for everything B2 moved or renamed, per the plan's own list, plus every
+`file:line` citation into the six named files (`_layout.scss`, `_words-explorer-layout.scss`,
+`_tokens.scss`, `app.ts`, `top-navbar.component.*`, `scroll-lock.service.ts`, and the two abwab
+pages), plus prose (Slice A's own lesson: a class-name/literal grep alone missed a stale prose
+claim in `UI_STYLE_SYSTEM.md` §4 last time).
+
+| # | Item swept | Disposition |
+|---|---|---|
+| 1 | `.qd-explorer-frame` (renamed to `.qd-page-frame`, alias kept) | **Clean.** Definition site (`_layout.scss`), all five explorer HTML call-sites, and four READMEs all describe the current alias correctly. No stray references outside `docs/abwab-ux-audit.md` / `docs/feature-ux-slice-a/plan.md` / this slice's own `plan.md` (all frozen, below). |
+| 2 | `explorer-result-count`'s old path (`features/words/components/explorer-result-count/`) and `WORDS_RESULT_COUNT_LABELS` (renamed `RESULT_COUNT_LABELS`, moved to `shared/ui/result-count/result-count.labels.ts`) | **Clean.** No live code or README references the old path or the old constant name; both only appear inside this slice's own `plan.md`/`evidence.md` (frozen/historical). Verified the new location exists (`shared/ui/result-count/{explorer-result-count.component.*, result-count.labels.ts}`) and the selector is `qd-result-count, qd-explorer-result-count` as documented. |
+| 3 | `--qd-mushaf-sticky-top`, `--qd-mushaf-panel-height`, `--qd-z-sticky`, `--qd-z-mobile-nav` | **Clean.** All live citations (`_tokens.scss`'s own comments, `UI_STYLE_SYSTEM.md` §4/§17, `styles/README.md`, `features/abwab/README.md`, the two live source files that consume them) describe the current, post-T902/T903 arithmetic and rung correctly. Citations with specific line numbers into these tokens exist only in frozen docs (below). |
+| 4 | Every `file:line` citation into `_layout.scss`, `_words-explorer-layout.scss`, `_tokens.scss` | **Clean.** No live doc (`styles/README.md`, `UI_STYLE_SYSTEM.md`, `shared/README.md`, feature READMEs) cites these three files with a specific line number at all — they're referenced by name/section only, which cannot go dangling. All line-numbered citations exist only in frozen docs (below). |
+| 5 | Every `file:line` citation into `app.ts` | **Clean.** `app.ts:14` is the only line cited anywhere, and `app.ts` itself is unchanged by B2 (confirmed: line 14 is still the `[attr.inert]`/`[attr.aria-hidden]` pairing). Cited correctly in `UI_STYLE_SYSTEM.md` §17, `top-navbar.component.ts`'s own new comment, and `features/abwab/README.md`. |
+| 6 | Every `file:line` citation into `top-navbar.component.*` | **`top-navbar.component.html` gained 6 lines and `.ts` gained ~8** (T901's `[attr.inert]`/`[attr.aria-hidden]` bindings, T904's `ScrollLockService` injection/comment), shifting every line number below the insertion point. **No live doc cites a specific line number into either file** — the only line-numbered citations found (`top-navbar.component.html:44-60`, `:62-74`, `:8-61`, `:286-300`, `:8`; `top-navbar.component.ts:29-31,82-94`, `:45-56`, `:58-71`) are in `docs/abwab-ux-audit.md` (frozen, never swept) and `docs/feature-ux-slice-a/plan.md` (closed feature, frozen) and `docs/feature-033-auth-roles-permissions/{plan.md,decision-record.md}` (a **different, closed feature**, frozen by the same general convention — flagged explicitly since it is outside this slice's own history but was caught by this sweep's file-scoped grep). None needed repointing because none are live. |
+| 7 | Every `file:line` citation into `scroll-lock.service.ts` | **Clean.** All citations (`:14`, `:9-31`, `:13-31`, `:13-22`) are in `docs/abwab-ux-audit.md` (frozen) and the two slices' own `plan.md` files (this slice's own is frozen per phase 7's convention; Slice A's is a closed, frozen feature). No live doc cites a line number into this file. |
+| 8 | Every `file:line` citation into `abwab-page.component.*` and `abwab-templates-page.component.*` | **One dangling reference found and fixed** (below); everything else clean. |
+| 9 | `docs/feature-abwab-templates/plan.md:680` — `AbwabPageComponent.ngOnInit`/`facade.load()` cited as `abwab-page.component.ts:155-156` | **Fixed (dangling).** `abwab-page.component.ts` gained lines across phases 8–10 (computed signals, label getters, imports); the real location is now `:171-172`, confirmed by reading the file. `abwab-templates` is a currently-open feature (root `CLAUDE.md` Active Spec Kit Feature), so its plan is a live document, not frozen evidence — same disposition B1's own T504 gave this exact file for a different line. |
+| 10 | `docs/feature-abwab-templates/plan.md:787-788` — «القوالب» entry cited as `abwab-page.component.html:12-38` | **Verified, not dangling.** The cited element (`data-testid="abwab-page-templates"`) is at lines 29–31 of the current file, inside the cited 12–38 range. Header block itself unshifted by B2 (T801 only appended a class name to line 2; T1003's stats-bar insertion landed *after* line 42, outside this range). |
+| 11 | `features/abwab/README.md:211` — `abwab-page.component.html:2` / `abwab-templates-page.component.html:2` | **Verified, not dangling.** Both files' line 2 still reads `qd-container qd-page-frame` (plus `abwab-page__frame` on the doors page), confirmed by reading both files. |
+| 12 | `docs/feature-abwab-global-order/plan.md:353` and `Backend/report/feature-abwab-global-order/003-phase3-contract-regeneration.md:39` — both cite `abwab-page.component.ts:224` | **Found, not repointed — frozen by design.** `abwab-global-order` is not in root `CLAUDE.md`'s Active Spec Kit Feature list, i.e. a closed feature; its `docs/feature-abwab-global-order/` and `Backend/report/feature-abwab-global-order/` folders are frozen snapshots, same disposition this phase's own instructions name for `docs/abwab-ux-audit.md` and other closed features. Explicitly not silently skipped: found, named, left alone. |
+| 13 | Prose check (Slice A's own lesson — a literal/class-name grep alone missed a stale prose claim in `UI_STYLE_SYSTEM.md` §4 last time) | **Clean.** Re-read `UI_STYLE_SYSTEM.md` §4's layer-scale prose in full: it correctly states `.qd-navbar` sits at `--qd-z-mobile-nav` alongside its dropdown/mobile-menu and that `--qd-z-sticky` is for "in-page sticky headers **with no descendant menus of their own**" — this is the exact rung-choice reasoning T903 arrived at, written accurately, not left describing the plan's original (superseded) intent of putting the navbar on `--qd-z-sticky`. Also re-read `styles/README.md`'s `_layout.scss`/`_tokens.scss` bullets and `features/abwab/README.md`'s "Gotchas" section in full prose (not just grepped) — both correctly describe the `--qd-z-mobile-nav` resolution, the `display: contents` fix, and the viewport reservation's scope (doors page only). |
+| 14 | `docs/contracts/`, `.specify/`, `.claude/` skills | **Clean.** No hits for any moved item in any of these locations. |
+
+**Left as-is, by design (the established convention, followed explicitly rather than silently
+skipped):** `docs/abwab-ux-audit.md` (cross-cutting audit spanning multiple slices, never swept —
+root `CLAUDE.md`'s lifecycle rule), `docs/feature-ux-slice-a/{plan.md,evidence.md}` (closed
+feature, frozen), `docs/feature-ux-slice-b/plan.md` (this slice's own plan — §5 is explicitly "as
+measured at plan time", a frozen snapshot per the convention phase 7's own T704 sweep already
+established and is not re-litigated here), `docs/engineering-review-full-project-2026-07-18.md`
+(a dated, point-in-time engineering-review report — evidence whose facts are not restated by a
+live document, per root `CLAUDE.md`'s evidence-preservation rule), `docs/feature-abwab-global-order/`
+and its `Backend/report/` counterpart (closed feature), `docs/feature-033-auth-roles-permissions/`
+(a different closed feature, caught incidentally by the `top-navbar.component.*` sweep).
+
+## §9 obligations checklist — the B2 half, walked item by item
+
+Per the plan's own instruction, two items were resolved differently from the plan's literal text
+during execution, already escalated and documented at the phase that made the call. They are
+**verified below, not re-decided.**
+
+| # | Item | TRUE? | Evidence |
+|---|---|---|---|
+| 1 | `.qd-page-frame` shipped with `.qd-explorer-frame` as a working alias; five explorer call-sites untouched and green | **TRUE** | Phase 7 T701/T702/T704; re-verified this phase (T1103 #1): dual-selector rule in `_layout.scss`, five explorer HTML call-sites unchanged, Tier B green throughout. |
+| 2 | Abwab full-bleed on both pages; the two §5.1 flex caveats checked in the browser and recorded | **TRUE** | Phase 7 T703: `getComputedStyle`/`getBoundingClientRect` browser verification, both caveats (column-flex-frame-vs-row-layout, mobile-stat-bar `padding-block-end`) checked and recorded with live measurements. |
+| 3 | The viewport reservation ships with `box-sizing: border-box` proven present | **TRUE** | Phase 8 T801: source grep + live `getComputedStyle` in the same browser session, `boxSizing: "border-box"` confirmed on the element carrying both `.qd-page-frame` and `.abwab-page__frame`. |
+| 4 | Sticky navbar on `--qd-z-sticky`; both re-based sticky offsets (mushaf + abwab side panel) verified flush | **TRUE, with the documented deviation.** | The navbar is sticky and both offsets (mushaf `68px`, abwab side panel `72px`) are verified flush — phase 9 T901/T902. **Deviation #1** (already escalated and resolved at phase 9, not re-litigated here): the navbar itself ships on `--qd-z-mobile-nav` (45), not `--qd-z-sticky` (5) — `--qd-z-sticky` was found live to clamp the navbar's own dropdown/mobile-menu beneath page popovers and the `detail-modal-shell` restore control, an app-breaking regression the plan's literal text did not anticipate. `UI_STYLE_SYSTEM.md` §4/§17, `styles/README.md`, and `features/abwab/README.md` all describe the resolved rung accurately (re-read in full at T1103 #13, not just grepped). |
+| 5 | `--qd-mushaf-panel-height` re-checked for double subtraction | **TRUE** | Phase 9 T902/T903: checked, no double-subtraction found. A *different*, adjacent single-omission gap (the formula ignored `--qd-mushaf-sticky-top`'s extra `--qd-space-3`) was found and fixed in the same pass — recorded distinctly, not conflated with the thing that was checked and found clean. |
+| 6 | Navbar dropdowns still escape the new stacking context | **TRUE, this is deviation #1 itself.** | Initial finding at `--qd-z-sticky`: failed (dropdown trapped by the navbar's own stacking context, confirmed via `elementFromPoint()` probes and an isolated repro). Escalated, resolved by moving `.qd-navbar` to `--qd-z-mobile-nav`. Four live re-verification cases all passed post-fix (T903): dropdown vs. a `--qd-z-floating` probe, dropdown-rung vs. the real `detail-modal-shell__restore` control, `.mobile-menu` vs. a popover, sticky navbar vs. a popover on a scrolled page. `docs/feature-ux-slice-b/plan.md`'s own text (§7 phase 9 bullet, §9 line 700) still says `--qd-z-sticky` — that is the frozen plan-time snapshot (T1103 #6 disposition), not a live claim; the live docs (`UI_STYLE_SYSTEM.md`, both READMEs) all state the resolved rung correctly. |
+| 7 | `ScrollLockService` exposes lock state; navbar inert + `aria-hidden` paired as `app.ts:14` does; `app.nested-layers.spec.ts` run and the inert-inside-inert observation recorded | **TRUE** | Phase 9 T904: `isLocked` computed signal added (specced, `scroll-lock.service.spec.ts` +1 test); `[attr.inert]`/`[attr.aria-hidden]` pairing on `.qd-navbar` copies `app.ts:14` exactly; `app.nested-layers.spec.ts` run 4/4; inert-inside-inert state observed live on the real DOM (both `qd-app-shell[inert]` and `.qd-navbar[inert]` simultaneously non-null with a words drawer open under the global overlay), not only asserted by the spec. |
+| 8 | `qdModalScrollLock` added to `abwab-sections-modal` and `abwab-move-picker` — named as an intentional behavior change, not slipped in | **TRUE** | Phase 9 T905: added to both, verified live (both now lock body scroll and inert the navbar); named explicitly as one of "two intentional behavior changes" in both the evidence log and `features/abwab/README.md`'s Gotchas section. |
+| 9 | `qd-result-count` promoted to `shared/ui/`, alias selector in place, TDZ getter idiom preserved, spec moved with it | **TRUE** | Phase 10 T1001; re-verified this phase (T1103 #2): `shared/ui/result-count/` holds the component, its spec, and `result-count.labels.ts`; selector is `qd-result-count, qd-explorer-result-count`; the TDZ-safe getter is unchanged in shape, only its import target moved. |
+| 10 | Both stats derived from the snapshot with no backend call added; the live-only definition and the nullable-section caveat both written down | **TRUE** | Phase 10 T1002; re-verified this phase: `abwab-tree.builder.ts`'s two new functions read only `byId`/`sections`, no new `AbwabApi`/`HttpClient` import anywhere this phase touched; `features/abwab/README.md`'s stats-bar paragraph (re-read in full at T1103 #13) states the live-only choice and the `Σ doorsInScopeCount ≤ total` caveat explicitly. |
+| 11 | Arabic counted-noun forms used for both stats; «كل الأبواب» has its own copy | **TRUE for the half that applies; the other half is deviation #2, already documented.** | «كل الأبواب» (`allDoorsTab`) and the second stat's label (`statOpenScopeDoors` = «أبواب هذا التبويب») are two distinct static strings — «كل الأبواب» does have its own copy, confirmed via the live screenshot text in phase 10's evidence ("كل الأبواب:13" / "أبواب هذا التبويب:13"). **Deviation #2:** neither label routes through `countPhrase`'s forms tables, because `qd-result-count` always renders `"{{ labelPrefix() }}: {{ count() }}"` — feeding a counted-noun phrase into `labelPrefix` would print the digit twice ("12 بابًا: 12"). Phase 10's own T1004 section states this reasoning in full (including that the advisor was consulted before writing the task), and `features/abwab/README.md`'s stats-bar paragraph states it too ("Neither label goes through `countPhrase`... not a counted-noun sentence, so the bare-count rule below does not reach it") — a deliberate, reasoned exception, not an oversight, and it is written down where the next reader will find it. |
+| 12 | Three `UI_STYLE_SYSTEM.md` entries written (viewport reservation, sticky chrome, chrome-inert) plus the `qd-result-count` §17 entry and the §2 frame amendment | **TRUE** | All five confirmed present by heading this phase (`### Viewport reservation`, `### Sticky app chrome`, `### Chrome-inert rule`, `### qd-result-count`, plus §2's "Current state" paragraph naming the rename). |
+| 13 | `styles/README.md`, `shared/README.md`, `features/words/README.md`, `features/abwab/README.md` all amended | **TRUE** | All four re-read in full this phase (T1103 #13) and confirmed to describe B2's changes accurately — the frame rename/alias, the sticky navbar and its rung, the viewport reservation's scope, the chrome-inert rule, the `qd-result-count` promotion, and the stats bar's two definitions. |
+| 14 | §7.2 acceptance run at T1101 across the full matrix | **TRUE, run — with a mixed, honestly-reported result, not an unqualified pass.** | This phase's own T1101, above: the 3×4×3=36-cell matrix was run as 16 captured cells (20 folded as structurally identical, 1 excluded per the T502 precedent). `frameHeight` and `toolbarTop` are invariant across all 16 with no exception — the headline claim. `toolbarBottom` is **not** invariant (three values); the mechanism was measured and traced to a pre-existing `qd-tabs`/toolbar capacity limit that does not reproduce on the app's real, near-realistic ambient data (verified by direct measurement, not derivation) and is out of this slice's seven-deliverable scope. See T1101 in full for the honest accounting. |
+| 15 | T1102 delta explained (expected +0 files, +2–4 tests); T1103 grep clean including prose | **TRUE** | T1102 above: +0 files, +3 tests, inside range. T1103 above: swept including prose, one dangling reference found and fixed (`docs/feature-abwab-templates/plan.md`), everything else clean or frozen-by-design. |
+| 16 | Root `CLAUDE.md` "Active Spec Kit Feature" updated at B1 start and cleared at B2 close; `docs/feature-ux-slice-b/` retained while the UX series is open | **NOT YET — deferred to merge, by this phase's own explicit instruction, not an oversight.** | The entry was updated at B1 start (T102) and is still present, unmodified, in root `CLAUDE.md` as of this phase. Per this phase's task instructions: "§9 says it is cleared at B2 close. B2 closes when this branch merges, not now; the branch is not merged yet... Leave the entry in place, but flag in your report what the main thread should do at merge time." Left in place, not cleared. **Flag for the main thread:** when `ux-slice-b2-frame` merges into `dev`, clear the `ux-slice-b` line from root `CLAUDE.md`'s "Active Spec Kit Feature" section (leaving `abwab-templates`, which stays open). `docs/feature-ux-slice-b/` itself is correctly retained per the Slice A precedent and is not touched by this instruction. |
+
+**Summary: 15 of 16 items TRUE as of this phase's close; item 16 is intentionally deferred to
+merge time, not failed.** No item is FALSE.
