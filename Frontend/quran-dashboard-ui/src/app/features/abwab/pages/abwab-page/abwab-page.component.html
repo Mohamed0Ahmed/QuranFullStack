@@ -62,7 +62,12 @@
       <div class="abwab-page__layout">
         <div class="abwab-page__main">
           <div class="qd-card abwab-page__tree-card">
-            <qd-skeleton-rows [count]="6" rowTemplate="1.25rem 1fr auto" [loadingLabel]="loadingLabel" />
+            <qd-skeleton-rows
+              class="abwab-page__tree-skeleton"
+              [count]="6"
+              rowTemplate="1.25rem 1fr auto"
+              [loadingLabel]="loadingLabel"
+            />
           </div>
         </div>
       </div>

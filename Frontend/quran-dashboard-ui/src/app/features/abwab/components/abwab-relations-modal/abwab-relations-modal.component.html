@@ -115,7 +115,7 @@
           data-testid="abwab-relations-modal-search"
           (input)="onSearchInput($event)"
         />
-        <div class="abwab-relations-modal__pick-list">
+        <div class="abwab-relations-modal__pick-list qd-scroll-stable">
           @for (row of pickerRows(); track row.node.id) {
             <div
               class="abwab-relations-modal__pick-row"

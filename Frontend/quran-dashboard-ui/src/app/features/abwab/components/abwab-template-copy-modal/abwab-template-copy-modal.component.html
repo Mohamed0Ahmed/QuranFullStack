@@ -33,7 +33,7 @@
           data-testid="abwab-template-copy-modal-search"
           (input)="onSearchInput($event)"
         />
-        <div class="abwab-template-copy-modal__pick-list">
+        <div class="abwab-template-copy-modal__pick-list qd-scroll-stable">
           @for (row of pickerRows(); track row.node.id) {
             <div
               class="abwab-template-copy-modal__pick-row"

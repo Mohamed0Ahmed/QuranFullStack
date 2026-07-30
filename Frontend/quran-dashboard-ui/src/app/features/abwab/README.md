@@ -298,6 +298,13 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   "nothing selected" render identically. A `selectedLoading` signal would fix it but is not
   free — it would touch the specced `abwab-templates.facade.spec.ts` — so it stays a named gap
   rather than a silent one.
+- **A skeleton's `rowTemplate` sizes its columns, never its rows.** `qd-skeleton-rows` defaults
+  to a 0.75rem bar, so a call-site whose loaded row is taller must say so with a
+  `--qd-skeleton-h` override on the host — the doors tree does (1.5rem, giving 32px pitch against
+  the gapless tree's measured 32px row), and the templates list does (3.75rem). The primitive's
+  own inter-row `gap` is **not** parameterized, so *n* skeleton rows always land one gap short of
+  *n* gapless loaded rows; that residual is the primitive's, not the call-site's, and closing it
+  means changing `shared/ui/skeleton/`.
 - **Counted door labels go through the Arabic number forms.** `archiveConfirm` and
   `movePickerTitleBulk` share one helper covering singular («باب واحد»), dual («بابين»),
   3–10 («N أبواب») and 11+ («N بابًا»). Do not interpolate a bare count into new copy —

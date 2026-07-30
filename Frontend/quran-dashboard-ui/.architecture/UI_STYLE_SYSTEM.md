@@ -975,9 +975,9 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   under Angular emulated encapsulation. Three abwab modals already set an
   inner `max-block-size` that becomes redundant, and arguably wrong, once the
   modal body is the single scroller:
-  `abwab-sections-modal.component.scss:14` (14rem list),
-  `abwab-template-copy-modal.component.scss:52` (13rem pick-list), and
-  `abwab-relations-modal.component.scss:221` (11rem pick-list — measured at
+  `abwab-sections-modal.component.scss:5` (14rem list),
+  `abwab-template-copy-modal.component.scss:43` (13rem pick-list), and
+  `abwab-relations-modal.component.scss:203` (11rem pick-list — measured at
   T401 to be doing the scrolling `__body` is supposed to do). Composing the
   modifier means **deleting** these local caps, not adding the class beside
   them.
