@@ -206,9 +206,6 @@ enterprise greige.
 - Open: `abwab-templates` — `docs/feature-abwab-templates/plan.md` (plan + decision record; this
   feature does not populate `specs/`, following `abwab-doors`, `abwab-global-order`, and
   `abwab-relations`).
-- Open: `ux-slice-a` — `docs/feature-ux-slice-a/plan.md` (plan; this feature does not populate
-  `specs/`, same as `abwab-templates`). Working branch is `ux-audit-slice-a` (the plan §10 named
-  it `ux-slice-a`; the branch already existed under the longer name and was not renamed).
 - When a feature opens, record it here as: feature slug, its `specs/<feature>/plan.md`, and
   its `docs/feature-XXX-*/` decision record. Clear this section back to "None" when the
   feature closes and its planning artifacts are swept per the lifecycle rule above.

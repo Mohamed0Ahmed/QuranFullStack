@@ -1282,3 +1282,24 @@ pre-slice code per T201's "keep today's numbers"), so the published rung order i
 while the arithmetic does not enforce it; and `--qd-z-modal` still has no consumer. Recorded
 because plan §8's risk register names exactly this failure mode — *"a z-index scale that omits a
 consumer becomes authoritative and wrong."*
+
+## Slice close-out (2026-07-30)
+
+The user confirmed the phase-4 observation resolved and the eye pass green, and called the merge.
+`ux-audit-slice-a` merged into `dev` with a merge commit (one revert point, per plan §10) and the
+branch deleted. `dev` was unmoved from the branch point (`3ef4135b`) at merge time, so no
+integration re-verification was owed beyond phase 8's Tier B gate: **191 test files / 2164 tests
+green, `npm run build` green**.
+
+§9 item 12 now reads: T102's record **cleared** from root `CLAUDE.md`'s "Active Spec Kit Feature"
+(`abwab-templates` left in place, still open).
+
+**`docs/feature-ux-slice-a/` is deliberately NOT swept.** The lifecycle rule sweeps a feature's
+planning artifacts at feature close, but Slice A is one slice of an open UX series: `docs/`
+`abwab-ux-audit.md` splits the work across Slices A–I, and this plan's own §2/§3 name Slices
+B, C, D, F, and G as the consumers of the six primitives landed here — where `--fixed` gets
+applied, where `.qd-checkbox` reaches its four call-sites, where `reserve` reaches abwab's error
+surfaces, where `.qd-truncate` reaches the eleven name sites, and where the context menu's
+keyboard path and viewport clamping get built. That makes this folder an **open-feature** artifact
+under the N-2 rule, not a closed one. It is swept when the UX series closes, not when Slice A
+merges.
