@@ -198,10 +198,14 @@ building what exists.
 - **Class:** MIXED — sticky is an established technique, sticky app chrome is new.
 - **Fix / Size:** **token**, with three constraints that must be honored in the same change:
   1. **z-index budget.** `.qd-modal-backdrop` is `z-index: 50` (`styles/_components.scss:543-546`)
-     and abwab's context menu uses 49/50 (`abwab-page.component.scss:85-103`). A sticky navbar
-     must sit **below 49**, or modals and row menus paint under the chrome. Nothing in the
-     repo declares a z-index scale — adding `--qd-z-navbar / --qd-z-menu / --qd-z-modal`
-     tokens is the right-sized fix and is itself a small NEW PATTERN owing a §4 token note.
+     and abwab's context menu uses `--qd-z-menu-backdrop`/`--qd-z-menu` (49/50). A sticky navbar
+     must sit **below 49**, or modals and row menus paint under the chrome. **Done — Slice A**:
+     the `--qd-z-*` layer scale now exists in `_tokens.scss` (`--qd-z-mobile-nav` holds the
+     navbar's dropdown/mobile-menu rungs below every modal layer), and the menu's z-index moved
+     with it into `shared/ui/context-menu/context-menu.component.ts` when the shared primitive
+     was extracted (the old bare literals at `abwab-page.component.scss:88,94` and
+     `abwab-templates-page.component.scss:146,152` no longer exist). Slice B still owns
+     composing the sticky navbar itself against `--qd-z-sticky`.
   2. **`--qd-mushaf-panel-height`** (`styles/_tokens.scss:77`) subtracts the navbar from
      `100dvh`. Sticky keeps the navbar in flow, so the arithmetic survives — but say so, and
      re-check the mushaf reader visually, because sticky + an inner 100dvh-minus-navbar panel
@@ -833,7 +837,7 @@ This is the item with the most ripples, and several reach the backend.
 
 **Half of this already exists.** Reporting the real gap.
 
-- **What exists:** `abwab-templates-page.component.html:208-251` already renders a row context
+- **What exists:** `abwab-templates-page.component.html:208-245` already renders a row context
   menu (edit / add-child / delete-node, with the root swapping delete-node for
   delete-template), and `abwab-template-tree` already emits `menuRequested`.
 - **The real gap — three of the doors tree's four menu paths are missing.**
@@ -869,6 +873,12 @@ This is the item with the most ripples, and several reach the backend.
   `qd-context-menu` (backdrop + positioned `role="menu"` + item styling + Escape + focus
   handling) into `shared/ui/`, compose it from both pages, and add its §17 entry. Do (b)
   **before** (a) or the parity work lands in code that is about to move.
+  **(b) done — Slice A** (`docs/feature-ux-slice-a/plan.md` phase 6): `shared/ui/context-menu/`
+  now exists, both pages compose it, both duplicated SCSS blocks are deleted, and its §17 entry
+  is written (`.architecture/UI_STYLE_SYSTEM.md`, `qd-context-menu` entry — including the two
+  gaps it deliberately left open: no viewport clamping, no focus management into the menu).
+  **(a) remains open**, unmoved, for whichever slice takes `abwab-template-tree`'s keyboard/
+  right-click parity (plan §2 names it Slice G).
 - **Adjacent instances:** `abwab-cards` (`abwab-cards.component.html`) offers no row menu at
   all — the tree does, cards do not, and no README records that as deliberate. Worth a
   decision. `abwab-archive-view` correctly has none (restore-only is a recorded invariant).

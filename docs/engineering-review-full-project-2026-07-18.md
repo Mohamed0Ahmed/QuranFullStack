@@ -1524,6 +1524,8 @@ Verification status legend: **CONFIRMED** = independently re-verified against so
 
 **Suggested fix:** Use `calc(var(--qd-space-4) + var(--qd-navbar-block-size))`.
 
+**Fixed — `docs/feature-ux-slice-a/plan.md` T204, 2026-07-30:** `detail-modal-shell.component.scss:101` now reads `inset-block-start: calc(var(--qd-space-4) + var(--qd-navbar-block-size))`, exactly the suggested fix. (The `_tokens.scss:78` citation for the token itself was already off by two lines before this change — the token has been at `_tokens.scss:76` since before this review was written; unrelated to the fix above.)
+
 ### N31. `Frontend/quran-dashboard-ui/src/app/shared/ui/placeholder-page/placeholder-page.component.ts:12`
 
 *category: clean-code · found by: fe-shared-styles · verification: NOTE-unverified*

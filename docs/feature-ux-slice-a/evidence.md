@@ -959,8 +959,271 @@ npm run build
 
 ## T801 post-change verification
 
-pending — phase 8
+**Measured:** 2026-07-30, branch `ux-audit-slice-a`, working tree clean (all seven prior
+phases already committed), immediately before phase 8's doc edits.
+
+### Commands run
+
+```bash
+cd Frontend/quran-dashboard-ui
+time npm test
+time npm run build
+```
+
+`npm test` ran unmodified — the `VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2` cap baked into
+`package.json`'s `test` script was not overridden or bypassed (verified by reading
+`package.json`'s `test` entry immediately before the run).
+
+### Vitest suite result
+
+- Test files: **191 passed (191)**
+- Tests: **2164 passed (2164)**
+- Failed: **0**, Skipped: **0**
+- Duration (Vitest-reported): **167.47 s** (transform 5.44s, setup 67.80s, collect 13.07s,
+  tests 50.88s, environment 151.84s, prepare 15.49s)
+- Wall-clock (`time`): **3 m 7.97 s** (187.97 s)
+
+### Delta vs T101 baseline (191 files / 2161 tests)
+
+| | T101 baseline | T801 measured | Delta |
+|---|---|---|---|
+| Test files | 191 | 191 | **+0** |
+| Tests | 2161 | 2164 | **+3** |
+
+**Matches the plan's prediction exactly** (§6 phase 8: "+0 files and +2–3 tests"). The
+delta is fully accounted for by phase 5's T502 (three new assertions appended to the
+already-specced `state.component.spec.ts`: `reserve` off leaves no `.qd-state--reserve`
+in the DOM; `reserve` on keeps the box mounted with an empty message; `reserve` on toggles
+`.qd-state__message--visible` on/off with message content). No other phase added, removed,
+or renamed a test file, and no other spec's test count moved between phase baselines
+(phases 2, 3, 4, 6, 7 all measured 191/2161 or 191/2164 unchanged from the phase before
+them — see their individual "Phase N verification" sections above). The count has been
+stable at 2164 since phase 5 landed; phases 6 and 7 (the context-menu extraction and the
+truncate utility) added zero test changes, consistent with plan §3's "no new tests except
+phase 5" claim holding through to the end of the slice.
+
+### Build result
+
+- Result: **success** — `Application bundle generation complete.` (14.666 s)
+- Wall-clock (`time`): **15.539 s**
+- Same three pre-existing SCSS-budget warnings as every prior phase measurement
+  (`selected-ayah-section`, `selected-word-section`, `abwab-relations-modal`) and the same
+  initial-bundle-over-budget warning, **568.81 kB** (over budget by 68.81 kB) — byte-identical
+  to phase 7's final measurement, confirming no doc-only work between phase 7 and T801 touched
+  the compiled bundle. No build errors.
+
+**Tier B satisfied**: full Frontend Vitest suite + `npm run build`, both green, fork cap
+preserved, as required by plan §7 for a slice touching `shared/` + `styles/` + the app shell's
+token layer.
 
 ## T802 grep sweep
 
-pending — phase 8
+**Measured:** 2026-07-30, branch `ux-audit-slice-a`, repo root
+`/projects/Dashboard/App` (whole repo, not just `Frontend/`).
+
+### 1. Deleted page-level context-menu SCSS class names
+
+```bash
+$ grep -rn "abwab-page__ctx-backdrop\|abwab-page__ctx-menu\|abwab-page__ctx-item\|abwab-templates-page__ctx-backdrop\|abwab-templates-page__ctx-menu\|abwab-templates-page__ctx-item" \
+    --include="*.ts" --include="*.html" --include="*.scss" --include="*.md" .
+```
+
+**Result: zero live references.** The only hit anywhere in the repo is inside
+`docs/feature-ux-slice-a/evidence.md`'s own phase 6 section, which quotes this exact grep
+command as evidence the class names are gone — not a reference to the classes themselves.
+Also checked `e2e/**` and `.specify/`, `.claude/` directly — zero hits in both.
+
+### 2. Bare `z-index` literals
+
+```bash
+$ grep -rn "z-index:" Frontend/quran-dashboard-ui/src --include="*.scss" | grep -v "var(--qd-z-"
+(no output)
+```
+
+**Zero bare numeric `z-index` declarations anywhere in `src/` outside `_tokens.scss`.**
+(`_tokens.scss` itself was excluded from the grep since it is where the rungs are declared;
+a repeat of phase 6's own repo-wide proof, re-run fresh at phase 8 rather than trusted from
+the earlier phase.) The only prose hits for the bare string `z-index` (unfiltered) are
+`styles/README.md:19`'s sentence stating the rule and `_tokens.scss`'s own comment — neither
+is a declaration.
+
+### 3. `.qd-modal` mentions in docs — do they need to say the base is width-only or reference `--fixed`?
+
+```bash
+$ grep -rln "qd-modal\b" docs specs .specify Frontend/quran-dashboard-ui/.architecture
+docs/feature-ux-slice-a/evidence.md
+docs/feature-abwab-doors/plan-slice-b.md
+docs/abwab-ux-audit.md
+docs/feature-ux-slice-a/plan.md
+docs/feature-abwab-templates/plan.md
+Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md
+docs/feature-abwab-relations/plan.md
+```
+
+Checked each:
+
+- `UI_STYLE_SYSTEM.md` — already carries the correct, current contract (phase 4's `.qd-modal`
+  / `.qd-modal--fixed` §17 entry: base stays width-only/scroller-less, `--fixed` is the opt-in).
+  No fix needed.
+- `docs/feature-ux-slice-a/plan.md` / `evidence.md` — this slice's own planning/evidence
+  record; describes the base correctly as of measurement time. No fix needed.
+- `docs/abwab-ux-audit.md` — the pre-slice audit; its item 7 ("Every modal needs fixed width
+  AND height with internal scroll") is the **problem statement** `.qd-modal--fixed` now
+  answers. Left as historical diagnosis (matches the doc's own "read-only, working doc"
+  framing) — it does not claim anything about `.qd-modal` that is now false (the base really
+  is still `width: min(100%, 36rem)` with no block-size, exactly as item 7 describes).
+- `docs/feature-abwab-doors/plan-slice-b.md:470`, `docs/feature-abwab-templates/plan.md:768`,
+  `docs/feature-abwab-relations/plan.md:509` — each states that an abwab modal composes
+  `.qd-modal`/`.qd-modal-backdrop` + `qdModalScrollLock`. Still true: none of the six abwab
+  modals were converged onto `--fixed` in this slice (plan §2 explicitly defers that to
+  Slice C), so these statements remain accurate. Not dangling.
+
+### 4. Line-number citations into files this slice edited
+
+Checked every citation in `docs/abwab-ux-audit.md` (the highest-risk document, since it
+predates this slice and cites `abwab-page.component.scss`, `abwab-templates-page.component.scss`,
+`detail-modal-shell.component.scss`, `_components.scss`, `_tokens.scss`, `_utilities.scss`,
+`_forms.scss`, `top-navbar.component.scss` by line number) against the actual current file
+content and against `git diff cbbfdbac..HEAD` hunk locations for each file, so drift is proven
+rather than assumed:
+
+- **`abwab-page.component.scss:85-103`** (audit line 201, describing "abwab's context menu
+  uses 49/50") — **dangling, fixed.** That line range is the exact block T602 deleted (the
+  file went from 142 to 94 lines); nothing at those lines today is the context menu. **Fixed**
+  in `docs/abwab-ux-audit.md`: rewrote the sentence to say the z-index budget item is now
+  done (Slice A's `--qd-z-*` scale + the menu's move into
+  `shared/ui/context-menu/context-menu.component.ts`) and dropped the now-wrong line citation,
+  naming instead where the old bare literals used to be (`abwab-page.component.scss:88,94`,
+  `abwab-templates-page.component.scss:146,152`) as no-longer-existing.
+- **`abwab-templates-page.component.html:208-251`** (audit line 840, item 21's "What exists")
+  — **stale end-line, fixed.** T603 composed `qd-context-menu` in the same start position
+  (`@if (contextMenuNodeId() !== null) {` is still line 208 — confirmed unaffected, the diff
+  hunk starts at 206) but the block is now shorter (208–245, not 208–251) since composing the
+  shared primitive takes fewer lines than the old duplicated markup. **Fixed**: citation
+  corrected to `:208-245`.
+- **Item 21's closure state** — the audit's "Fix / Size" bullet for item 21 described (a) the
+  template-tree keyboard/right-click parity work and (b) the menu extraction as both still
+  open. (b) is now done. **Fixed**: added a note under the (a)/(b) split recording "(b) done —
+  Slice A" with the primitive's path and §17 entry, and "(a) remains open" for whichever slice
+  takes the template-tree keyboard work (plan §2 names Slice G) — so the next agent reading
+  this audit item does not re-scope already-shipped work.
+- **`abwab-page.component.scss:21-23`** (tree-card min-height, audit line 137) — checked
+  against current file: unchanged, still lines 21-23 exactly (the deleted block was later in
+  the file, after this rule). Not dangling.
+- **`abwab-page.component.scss:31-33`** (sticky side panel, audit line 197) — checked: unchanged,
+  still lines 31-33 exactly, same reason. Not dangling.
+- **`abwab-page.component.html`** citations (lines 2, 47, 49, 67, 95, 104, 142-195, 3-42, and
+  `feature-abwab-templates/plan.md:787`'s `:12-38`) — all sit before line 241, and `git diff`
+  confirms T602's edit is a same-line-count swap starting at line 243 (a `div` swapped for
+  `<qd-context-menu>` with an equal net line count in that hunk region, well after any of these
+  citations). Not dangling.
+- **`abwab-templates-page.component.html`** citations at lines 14, 16, 20-32, 29, 59, 65,
+  65-68, 75, 82 — all before line 206, where T603's diff hunk starts. Not dangling.
+- **`detail-modal-shell.component.scss:28-35`** (cited from both the audit and
+  `UI_STYLE_SYSTEM.md:1048`), **`:12-15, 91-93, 140`**, **`:62-63`** — T204's edit is an
+  in-place same-line substitution at line ~101 (`3.5rem` → `var(--qd-navbar-block-size)`,
+  `z-index: 40` → `var(--qd-z-floating)` at the restore control), confirmed via
+  `git diff --stat`/hunk headers: no lines added or removed, so nothing before or after line
+  101 shifted. Not dangling.
+- **`_components.scss:543-546`** (`.qd-modal-backdrop`), **`:554-564`** (`.qd-modal` base),
+  **`:208-222`** — the first diff hunk (`@@ -543,7 +543,7 @@`) is a same-line-count token
+  substitution; the new content (`.qd-modal--fixed` etc.) is inserted starting at old line 563,
+  after all three cited ranges. Not dangling.
+- **`_tokens.scss:77`, `:94`, `:107`** — the phase 2/3/7 insertions all start at old line 147
+  (`@@ -147,6 +147,58 @@`); every citation ≤146 is unaffected. Not dangling.
+- **`_utilities.scss:54-56`** (`.qd-scroll-stable`) — the phase 7 insertion hunk
+  (`@@ -54,3 +54,10 @@`) preserves the first 3 old lines verbatim before appending
+  `.qd-truncate` after them; `.qd-scroll-stable` is still at 54-56. Not dangling.
+- **`_forms.scss:39`** (an unrelated pre-existing engineering-review citation) — phase 3's
+  insertion hunk (`@@ -84,3 +84,22 @@`) appends after line 84, well past line 39. Not dangling.
+- **`top-navbar.component.scss`** — no doc cites a specific line in this file (confirmed by
+  grep); T203's edit does shift lines after 60 by +2, but nothing points at them. Not dangling.
+- **`mushaf-header-navigation.component.scss:7`**, **`source-selector.component.scss:89`**,
+  **`surah-jump-picker.component.scss:57`**, **`explorer-association-filter.component.scss:71`**
+  — all cited only from this slice's own plan/evidence tables, verified against the live files
+  during phase 2 and re-confirmed unchanged since (single-line token substitutions, no line
+  count change). Not dangling.
+- **`styles/_layout.scss:7-11`, `:26-37`** (audit lines 133, 192) — `_layout.scss` does not
+  appear in this slice's `git diff --stat` at all; confirmed via `git diff cbbfdbac..HEAD --
+  src/styles/_layout.scss` (empty) and `git log -1 -- src/styles/_layout.scss` (last touched by
+  an unrelated pre-slice commit, `26dcab9e`). Not dangling — file untouched by this slice.
+- **`docs/engineering-review-full-project-2026-07-18.md`** — this file is itself a dated,
+  point-in-time snapshot (header: "Date: 2026-07-18, Branch reviewed:
+  `033-auth-roles-permissions`", frontend test counts of 1829/1832 already stale against
+  today's 2164), explicitly excluded from `docs/` freshness expectations by its own
+  "Excluded: `docs/` content review (stale)" line — but it was still grepped (it matched the
+  per-file citation loop) and its hits into files this slice edited were adjudicated rather
+  than skipped, since T802's brief is to check the whole repo:
+  - **N30** (`detail-modal-shell.component.scss:101`) — **describes the exact defect T204
+    fixed** (hardcoded `3.5rem` → `var(--qd-navbar-block-size)`). **Fixed**: annotated N30
+    in place with a "Fixed — T204, 2026-07-30" note recording the actual resulting line, kept
+    the original finding text intact (review findings are an audit trail, not live prose to
+    rewrite). Also noted in the same annotation that the finding's own `_tokens.scss:78`
+    citation for the token was already off by two lines **before this slice ever ran** —
+    confirmed via `git show cbbfdbac:.../_tokens.scss` showing `--qd-navbar-block-size` already
+    at line 76 at this slice's own baseline commit, so that particular drift predates and is
+    unrelated to Slice A.
+  - **M19** (`state.component.html:11`, `state.component.scss:6`) — describes a
+    `qd-button`/`qd-btn` phantom-class bug. Checked against the pre-slice baseline
+    (`git show cbbfdbac:.../state.component.html`): the button already read
+    `class="qd-btn qd-btn-secondary qd-state__action"` at the baseline commit, **before** any
+    Slice A edit — the fix this finding suggested had already landed in an earlier, unrelated
+    commit. This citation was already stale when Slice A started and Slice A's own edit to
+    `state.component.html` (T501, wrapping the message span) did not touch the button line.
+    **Determination: out of this slice's remit** — T802 sweeps for references to things
+    *this slice* moved; M19's drift predates Slice A and belongs to whoever last touched that
+    button markup, not to this phase. Left unannotated (no Slice A action caused or resolves
+    it).
+
+### 5. README describing the abwab context menu as page-rendered markup
+
+`features/abwab/README.md` already reads "the page shell composes the shared
+`qd-context-menu` (`../../shared/ui/context-menu/`) there, projecting its own operation
+buttons in" (line 56) and names the SCSS-block deletion at line 121 — this was fixed in phase
+6 itself (T604), re-verified here rather than re-trusted: grepped for "renders the menu" and
+"page-rendered markup" repo-wide, zero hits remain. Not dangling.
+
+### Sweep verdict
+
+**Four stale-citation candidates found in `docs/`; three fixed, one adjudicated out-of-remit:**
+
+- `docs/abwab-ux-audit.md` audit item 6 (stale z-index citation) — **fixed**.
+- `docs/abwab-ux-audit.md` audit item 21 (stale html line-range + unrecorded closure) —
+  **fixed**.
+- `docs/engineering-review-full-project-2026-07-18.md` N30 (describes a defect T204 already
+  fixed) — **fixed** (annotated in place).
+- `docs/engineering-review-full-project-2026-07-18.md` M19 (phantom-class citation) —
+  **checked, determined out of this slice's remit**: the drift predates Slice A's baseline
+  and no Slice A edit touched the cited line; left as-is rather than annotated, since
+  annotating it would misattribute an unrelated, earlier fix to this slice.
+
+Every other citation checked into every file this slice touched — across `docs/`,
+`.architecture/`, every README, `e2e/`, `.specify/`, `.claude/` — was verified against the
+live tree and against `git diff` hunk boundaries, and found accurate. No fix was made
+anywhere else because none was needed.
+
+## Phase 8 verification
+
+**Measured:** 2026-07-30, branch `ux-audit-slice-a`. T801 (Tier B gate) and T802 (grep sweep)
+both executed; three stale references found and fixed (two in `docs/abwab-ux-audit.md`, one
+in `docs/engineering-review-full-project-2026-07-18.md`), one more checked and determined
+out of this slice's remit (see the T802 sweep verdict above).
+
+### §9 obligations checklist — verified against the tree, not assumed
+
+| # | Obligation | Verdict | Evidence checked |
+|---|---|---|---|
+| 1 | Six primitives/rules shipped; six §17 entries written, including phase 4's `explorer-detail-modal` convergence trigger | **VERIFIED** | Counted against the task brief's own enumeration (checkbox, modal, state's `reserve`, context-menu, truncatable names, plus §4's layer-scale category) — six touch-points, all present: `grep -n "^### " UI_STYLE_SYSTEM.md` shows **four new §17 headings** (`.qd-checkbox` / `.qd-check-row`, `.qd-modal` / `.qd-modal--fixed`, `qd-context-menu`, `Truncatable entity names`); **one existing §17 entry amended** (`qd-state` gains the `reserve` bullet, read directly at line 734); **one §4 category added** (the layer-scale bullet at line 131 listing all eight `--qd-z-*` rungs and the "never write a bare `z-index`" rule). 4 + 1 + 1 = 6. Read the `.qd-modal--fixed` entry directly: it states the convergence trigger for `explorer-detail-modal` in the required wording ("the next change that touches any of the five words detail modals' geometry converges all five onto `--fixed`"). |
+| 2 | `styles/README.md` amended for `_tokens.scss`, `_forms.scss`, `_components.scss`, `_utilities.scss` | **VERIFIED** | Read `styles/README.md` lines 8-46 directly: all four bullets name their new addition (layer scale + checkbox token + truncate token in `_tokens.scss`; `.qd-checkbox`/`.qd-check-row` in `_forms.scss`; `.qd-modal--fixed` + slots + `.qd-context-menu__item` in `_components.scss`; `.qd-truncate` in `_utilities.scss`). |
+| 3 | `src/app/shared/README.md` amended for `ui/state/` and `ui/context-menu/` | **VERIFIED** | `grep -n "context-menu\|ui/state" shared/README.md` shows both bullets present (line 16 `ui/context-menu/`, line 38 `ui/state/`). |
+| 4 | `UI_STYLE_SYSTEM.md` §4 carries the layer-scale token category | **VERIFIED** | §4 (line 131) contains the "layer scale (stacking order for every fixed/absolute layer in the app)" bullet with the full ascending rung list and the "never write a bare `z-index`" rule. |
+| 5 | `features/abwab/README.md` records that both pages compose the shared menu | **VERIFIED** | Line 56: "the page shell composes the shared `qd-context-menu` (`../../shared/ui/context-menu/`) there, projecting its own operation buttons in"; line 121 records the SCSS deletion. Covers both pages (the `abwab-tree` bullet and the templates-workshop bullet). |
+| 6 | Zero bare `z-index` literals remain outside `_tokens.scss` | **VERIFIED** | T802 sweep item 2, re-run fresh at phase 8: `grep -rn "z-index:" src --include="*.scss" \| grep -v "var(--qd-z-"` → no output. |
+| 7 | Both duplicated context-menu SCSS blocks deleted (not just one) | **VERIFIED** | `abwab-page.component.scss` (142→94 lines, 48 deleted / 0 added, confirmed phase 6) and `abwab-templates-page.component.scss` (202→168 lines, 44 deleted / 10 added — the 10 added are the page-scoped danger-override, not a re-added menu shell, confirmed phase 6). T802's class-name grep confirms zero references to any of the six deleted BEM class names anywhere in the repo. |
+| 8 | T101 and T801 evidence recorded, with the test-count delta explained | **VERIFIED** | T101 above (191/2161); T801 above (191/2164, +0/+3, explained as T502's three assertions, cross-checked against every intermediate phase measurement staying flat since phase 5). |
+| 9 | T605 evidence recorded, labelled as extraction evidence and not as a tier | **VERIFIED** | "## T605 e2e evidence" section states verbatim: "This is evidence for the context-menu extraction only — it is explicitly NOT a tier and never a substitute for the Vitest suite or the build," citing both `Frontend/quran-dashboard-ui/CLAUDE.md` and `TESTING_STRATEGY.md` §6. |
+| 10 | T802 grep clean — no dangling reference to anything moved | **VERIFIED, with three findings fixed and one adjudicated as out-of-remit in this phase** | See "T802 grep sweep" above: three stale references found and fixed (`docs/abwab-ux-audit.md` items 6 and 21; `docs/engineering-review-full-project-2026-07-18.md` N30), and one (`M19`) checked and determined to predate Slice A with no Slice A cause, left unannotated on that basis. Everything else checked (class names, z-index literals, `.qd-modal` mentions, README wording, every other line citation into every file this slice touched, including `_layout.scss` confirmed untouched) was already accurate. |
+| 11 | T203 either done or explicitly deferred to Slice B in writing, not silently dropped | **VERIFIED — done, shape (a)** | "## T203 decision" section above: "T203 is IN SCOPE for Slice A. Shape (a) chosen by the user on 2026-07-30 — lower `.dropdown-menu` / `.mobile-menu` beneath `--qd-z-modal-backdrop`. Shape (b) ... stays deferred to Slice B." Phase 2 verification confirms the actual CSS change (`z-index: 100`→`var(--qd-z-mobile-nav)`, `z-index: 200`→ same). Not silently dropped — recorded in writing before phase 2 executed. |
+| 12 | Root `CLAUDE.md` "Active Spec Kit Feature" updated at start (T102) and cleared at close, and `docs/feature-ux-slice-a/` swept per the lifecycle rule | **N/A-and-why (partial: first half VERIFIED, second half correctly NOT YET DONE)** | Root `CLAUDE.md`'s "Active Spec Kit Feature" section (read directly) lists both `abwab-templates` **and** `ux-slice-a`, satisfying T102's "updated at start" half. The "cleared at close" / "folder swept" half is explicitly **not** this phase's job: the task brief for this very phase states "this slice is not closed yet — the orchestrator and user decide that," and plan §9's own item is phrased as a close-time obligation, not a phase-8 one. Marking this NOT MET would be wrong (nothing failed); it is correctly still open, pending the orchestrator's close decision. |
+
+**Summary: 11 of 12 items VERIFIED; item 12 is half-done by design (T102 done; the close-time half is out of this phase's authority and correctly not yet executed).** No item required new code or a call-site application to close — the three T802 findings were doc-only fixes, made in this phase per the task's instruction to fix small, in-scope gaps rather than only report them; the fourth (M19) was checked and correctly left alone since it predates and is unrelated to this slice.
