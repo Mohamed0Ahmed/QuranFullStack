@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
+import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabNode } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -40,7 +41,7 @@ function subtreeMatches(node: AbwabNode, query: string): boolean {
 @Component({
   selector: 'qd-abwab-template-copy-modal',
   standalone: true,
-  imports: [ModalScrollLockDirective, QdSkeletonRowsComponent],
+  imports: [ModalScrollLockDirective, QdSkeletonRowsComponent, QdStateComponent],
   templateUrl: './abwab-template-copy-modal.component.html',
   styleUrl: './abwab-template-copy-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,6 +62,9 @@ export class AbwabTemplateCopyModalComponent {
   >();
 
   readonly closed = output<void>();
+  /** Abwab today offers no recovery from a failed doors fetch at all; this is the retry the
+   * parent page's `AbwabSnapshotFacade` already supports via `load()`. */
+  readonly retryDoors = output<void>();
 
   protected readonly titleId = `abwab-template-copy-modal-title-${nextModalId++}`;
   protected readonly errorMessage = signal<string | null>(null);
@@ -76,6 +80,7 @@ export class AbwabTemplateCopyModalComponent {
   protected get emptyDoorsLabel(): string { return ABWAB_LABELS.templateCopyEmptyDoors; }
   protected get loadingDoorsLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
+  protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
 
   protected readonly titleText = computed(() => ABWAB_LABELS.templateCopyTitle(this.templateName()));
 

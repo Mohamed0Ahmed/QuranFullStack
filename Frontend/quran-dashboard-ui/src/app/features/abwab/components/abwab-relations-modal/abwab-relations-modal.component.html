@@ -19,10 +19,8 @@
       </h3>
       <p class="abwab-relations-modal__desc">{{ descriptionText }}</p>
 
-      @if (errorMessage()) {
-        <p class="abwab-relations-modal__error" role="alert" data-testid="abwab-relations-modal-error">
-          {{ errorMessage() }}
-        </p>
+      @if (errorMessage(); as error) {
+        <qd-state variant="error" [message]="error" data-testid="abwab-relations-modal-error" />
       }
 
       @if (anchorPickMode()) {
@@ -33,7 +31,7 @@
         </div>
       } @else {
         @if (groups().length === 0) {
-          <p class="abwab-relations-modal__empty" data-testid="abwab-relations-modal-empty">{{ emptyText }}</p>
+          <qd-state variant="empty" [message]="emptyText" data-testid="abwab-relations-modal-empty" />
         } @else {
           @for (group of groups(); track group.key) {
             <div class="abwab-relations-modal__group" [attr.data-testid]="'abwab-relations-modal-group-' + group.key">

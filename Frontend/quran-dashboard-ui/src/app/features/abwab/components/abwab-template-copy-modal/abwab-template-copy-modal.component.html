@@ -79,11 +79,15 @@
                 data-testid="abwab-template-copy-modal-loading"
               />
             } @else if (doorsError()) {
-              <p class="qd-error-state" role="alert" data-testid="abwab-template-copy-modal-doors-error">
-                {{ doorsError() }}
-              </p>
+              <qd-state
+                variant="error"
+                [message]="doorsError() ?? ''"
+                [actionLabel]="retryLabel"
+                (action)="retryDoors.emit()"
+                data-testid="abwab-template-copy-modal-doors-error"
+              />
             } @else {
-              <p class="qd-empty-state" data-testid="abwab-template-copy-modal-empty">{{ emptyDoorsLabel }}</p>
+              <qd-state variant="empty" [message]="emptyDoorsLabel" data-testid="abwab-template-copy-modal-empty" />
             }
           }
         </div>

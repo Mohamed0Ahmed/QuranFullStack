@@ -106,6 +106,7 @@ export const ABWAB_LABELS = {
   removeAliasAriaLabel: (alias: string): string => `إزالة ${alias}`,
   saveButton: 'حفظ',
   cancelButton: 'إلغاء',
+  retryButton: 'إعادة المحاولة',
   dirtyCloseConfirm: 'هناك تغييرات غير محفوظة — هل تريد تجاهلها؟',
   discardChangesButton: 'تجاهل التغييرات',
   keepEditingButton: 'متابعة التعديل',

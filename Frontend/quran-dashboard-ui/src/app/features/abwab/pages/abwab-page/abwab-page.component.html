@@ -65,7 +65,12 @@
         </div>
       </div>
     } @else if (facade.errorMessage() && !facade.snapshot()) {
-      <p class="qd-error-state" role="alert">{{ facade.errorMessage() }}</p>
+      <qd-state
+        variant="error"
+        [message]="facade.errorMessage() ?? ''"
+        [actionLabel]="retryLabel"
+        (action)="facade.load()"
+      />
     } @else {
       <qd-abwab-toolbar
         [sections]="sections()"
@@ -83,7 +88,7 @@
           @if (archiveParam()) {
             <div class="qd-card abwab-page__tree-card">
               @if (displayArchivedRoots().length === 0) {
-                <p class="qd-empty-state" data-testid="abwab-page-archive-empty">{{ archiveEmptyLabel }}</p>
+                <qd-state variant="empty" [message]="archiveEmptyLabel" data-testid="abwab-page-archive-empty" />
               } @else {
                 <qd-abwab-archive-view
                   [roots]="displayArchivedRoots()"
@@ -111,7 +116,7 @@
           } @else {
             <div class="qd-card abwab-page__tree-card">
               @if (displayRoots().length === 0) {
-                <p class="qd-empty-state" data-testid="abwab-page-empty">{{ emptyLabel }}</p>
+                <qd-state variant="empty" [message]="emptyLabel" data-testid="abwab-page-empty" />
               } @else {
                 <qd-abwab-tree
                   [roots]="displayRoots()"

@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 
 import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabRelationsLoadResult } from '../../state/abwab-relations.controller';
 import {
@@ -75,7 +76,7 @@ function subtreeMatches(node: AbwabNode, query: string): boolean {
 @Component({
   selector: 'qd-abwab-relations-modal',
   standalone: true,
-  imports: [QdChipComponent, ModalScrollLockDirective],
+  imports: [QdChipComponent, ModalScrollLockDirective, QdStateComponent],
   templateUrl: './abwab-relations-modal.component.html',
   styleUrl: './abwab-relations-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

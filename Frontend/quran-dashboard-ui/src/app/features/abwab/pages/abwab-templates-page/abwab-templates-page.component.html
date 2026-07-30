@@ -27,7 +27,7 @@
         </div>
       </div>
     } @else if (facade.errorMessage() && facade.templates().length === 0) {
-      <p class="qd-error-state" role="alert">{{ facade.errorMessage() }}</p>
+      <qd-state variant="error" [message]="facade.errorMessage() ?? ''" />
     } @else {
       <div class="abwab-templates-page__layout">
         <aside class="abwab-templates-page__list" [attr.aria-label]="templatesListAriaLabel">
@@ -70,15 +70,13 @@
           }
 
           @if (facade.isEmpty() && !namingTemplate()) {
-            <p class="qd-empty-state" data-testid="abwab-templates-page-empty">{{ templatesEmptyMessage }}</p>
+            <qd-state variant="empty" [message]="templatesEmptyMessage" data-testid="abwab-templates-page-empty" />
           }
         </aside>
 
         <div class="qd-card abwab-templates-page__editor">
-          @if (facade.selectedErrorMessage()) {
-            <p class="qd-error-state" role="alert" data-testid="abwab-templates-page-template-error">
-              {{ facade.selectedErrorMessage() }}
-            </p>
+          @if (facade.selectedErrorMessage(); as selectedError) {
+            <qd-state variant="error" [message]="selectedError" data-testid="abwab-templates-page-template-error" />
           }
 
           @let template = facade.selectedTemplate();
@@ -86,9 +84,7 @@
             <!-- A failed load already says why nothing is here; stacking «اختر قالبًا» under the
                  error would read as a second, contradictory status. -->
             @if (!facade.selectedErrorMessage()) {
-              <p class="qd-empty-state" data-testid="abwab-templates-page-none-selected">
-                {{ templateNoneSelectedMessage }}
-              </p>
+              <qd-state variant="empty" [message]="templateNoneSelectedMessage" data-testid="abwab-templates-page-none-selected" />
             }
           } @else {
             <div class="abwab-templates-page__editor-head">
@@ -217,6 +213,7 @@
   [doorsError]="doorsError()"
   [applyTemplate]="applyTemplate"
   (closed)="closeCopyModal()"
+  (retryDoors)="retryDoorsLoad()"
 />
 
 @if (contextMenuNodeId() !== null) {
