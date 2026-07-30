@@ -165,10 +165,14 @@ superseded prototype reference):
   menu) → `--qd-z-menu-backdrop` / `--qd-z-menu` (`qd-context-menu`) →
   `--qd-z-modal-backdrop` / `--qd-z-modal` (`.qd-modal-backdrop` / a future direct
   modal-box consumer). **Never write a bare `z-index`** — always reference one of
-  these tokens. The sole exception at time of writing is the abwab context-menu's two
-  page-local copies (`abwab-page.component.scss`, `abwab-templates-page.component.scss`),
-  pending their extraction onto `qd-context-menu`, which consumes
-  `--qd-z-menu-backdrop`/`--qd-z-menu` from birth.
+  these tokens. There are no exceptions: every stacking layer in the app resolves through
+  this scale.
+  Two caveats the numbers carry, both inherited rather than chosen: `--qd-z-menu` and
+  `--qd-z-modal-backdrop` currently resolve to the **same** value, so the rung order above
+  is authoritative but the arithmetic does not enforce it — a context menu and a modal
+  backdrop rendered as siblings tie, and DOM order decides. And `--qd-z-modal` has no
+  consumer yet (`.qd-modal` itself stacks inside its backdrop). Whoever first needs either
+  rung to win by number should respace the scale, not add a literal.
 
 Example shape only — **do not force exact colors yet** (the real palette is
 resolved in `DESIGN.md`):

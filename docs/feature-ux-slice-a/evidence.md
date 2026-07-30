@@ -1227,3 +1227,58 @@ out of this slice's remit (see the T802 sweep verdict above).
 | 12 | Root `CLAUDE.md` "Active Spec Kit Feature" updated at start (T102) and cleared at close, and `docs/feature-ux-slice-a/` swept per the lifecycle rule | **N/A-and-why (partial: first half VERIFIED, second half correctly NOT YET DONE)** | Root `CLAUDE.md`'s "Active Spec Kit Feature" section (read directly) lists both `abwab-templates` **and** `ux-slice-a`, satisfying T102's "updated at start" half. The "cleared at close" / "folder swept" half is explicitly **not** this phase's job: the task brief for this very phase states "this slice is not closed yet — the orchestrator and user decide that," and plan §9's own item is phrased as a close-time obligation, not a phase-8 one. Marking this NOT MET would be wrong (nothing failed); it is correctly still open, pending the orchestrator's close decision. |
 
 **Summary: 11 of 12 items VERIFIED; item 12 is half-done by design (T102 done; the close-time half is out of this phase's authority and correctly not yet executed).** No item required new code or a call-site application to close — the three T802 findings were doc-only fixes, made in this phase per the task's instruction to fix small, in-scope gaps rather than only report them; the fourth (M19) was checked and correctly left alone since it predates and is unrelated to this slice.
+
+## T203 verification — measured, not just asserted (orchestrator, 2026-07-30)
+
+Plan §5.6 records that **no spec asserts any `z-index`**, so T801's Vitest suite and
+`npm run build` are structurally blind to the slice's one behavioral change. Two runs close
+that gap.
+
+**1. Regression guard — did lowering the navbar break the navbar?**
+
+```
+npx playwright test e2e/shell-nav.e2e.ts --project=default
+→ 3 passed (22.7s)
+```
+
+`e2e/shell-nav.e2e.ts` covers the app-shell navbar and both its dropdown menus (`e2e/README.md`).
+All three flows pass with `.dropdown-menu` at 100→`--qd-z-mobile-nav` (45) and `.mobile-menu` at
+200→45. Read-only spec, no dev-DB residue.
+
+**2. Positive proof — is the defect actually fixed?**
+
+A temporary Playwright harness (`e2e/abwab-tmp-t203.e2e.ts`, deleted after the run) opened the
+relations modal on a sandbox door and hit-tested the navbar's own pixels:
+
+| Probe | Result |
+|---|---|
+| `--qd-z-mobile-nav` vs `--qd-z-modal-backdrop` | `45` < `50` — the ordering the defect inverted |
+| `elementFromPoint` over `nav-words-trigger`, **no modal open** | `nav-words-trigger` — the navbar owns its pixels normally |
+| `elementFromPoint` over `nav-words-trigger`, **modal open** | `abwab-relations-modal-backdrop` (computed `z-index: 50`) |
+
+**Finding worth carrying to Slice B:** shape (a) delivers more than "paints below". Because the
+backdrop is `inset: 0` and now outranks the navbar, it also **intercepts the pointer over the
+navbar**, so a mouse user can no longer open a navbar dropdown at all while an abwab modal is
+open — the user-visible effect plan §5.4 assigned to shape (b), obtained without touching
+`ScrollLockService`. The harness's first attempt failed precisely on this: Playwright reported
+*"`<div class="qd-modal-backdrop">` … intercepts pointer events"* when trying to hover the trigger.
+
+**What is still NOT fixed, stated honestly:** the abwab modals do not make the shell `inert`
+(only the global detail overlay does, `app.ts:13-14`), so the navbar trigger remains
+**focusable**. A keyboard user can still open a dropdown with a modal open; it now renders
+*beneath* the dim backdrop instead of over the dialog. Shape (b) — suppressing navbar menus
+outright while a modal is open — therefore remains genuinely open for Slice B, and is the
+keyboard half of this defect.
+
+## Post-phase-8 doc correction (orchestrator, 2026-07-30)
+
+`UI_STYLE_SYSTEM.md` §4's layer-scale entry still claimed the abwab context menu's two
+page-local `z-index` copies were the scale's "sole exception, pending their extraction" — stale
+the moment T602/T603 deleted both blocks. Phase 8's sweep grepped for the deleted *class names*
+and for bare literals, both of which came back clean, and so missed a prose claim that named
+neither. Rewritten to state there are no exceptions, plus the two caveats the numbers carry:
+`--qd-z-menu` and `--qd-z-modal-backdrop` resolve to the **same** value (inherited from the
+pre-slice code per T201's "keep today's numbers"), so the published rung order is authoritative
+while the arithmetic does not enforce it; and `--qd-z-modal` still has no consumer. Recorded
+because plan §8's risk register names exactly this failure mode — *"a z-index scale that omits a
+consumer becomes authoritative and wrong."*
