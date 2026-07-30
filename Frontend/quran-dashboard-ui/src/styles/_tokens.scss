@@ -158,6 +158,22 @@
      reconcile once that call-site composes this token. */
   --qd-checkbox-size: 0.9375rem;
 
+  /* `.qd-truncate`'s reserved minimum (`_utilities.scss`), for a truncatable entity-name
+     column that wants "flexible with a floor" instead of unbounded shrink-to-nothing
+     (`flex: 1; min-inline-size: var(--qd-name-min-inline-size)`). No existing name-render
+     site sets a minimum today (UI_STYLE_SYSTEM.md §17's new truncatable-names entry), so
+     this is derived from the one shipped site that already has this exact shape on the
+     same abwab surface: `abwab-toolbar.component.scss`'s `.abwab-toolbar__search { flex: 1;
+     min-inline-size: 12rem; }`. Checked against `abwab-tree`'s row budget (audit's
+     "~36rem-ish column"): checkbox 0.9375rem + chevron 1.25rem + order pill ~1.25rem + count
+     ~2rem + flags ~3.2rem + two row actions ~3rem + six `--qd-space-2` gaps ~3rem ≈ 14.6rem
+     of fixed siblings, leaving roughly 21rem for the name at depth 0 — 12rem fits with room
+     to spare even several indent levels deep. Independent corroboration:
+     `.abwab-cards__grid`'s `minmax(13rem, 1fr)` card minimum, minus two `--qd-space-3` card
+     paddings, is a ~11.5rem content box — the same order of magnitude on a different
+     surface. */
+  --qd-name-min-inline-size: 12rem;
+
   /* Layer scale (UI_STYLE_SYSTEM.md §4). Every stacking `z-index` in the app is one of
      these rungs — never write a bare z-index. The four abwab context-menu literals that
      used to live at abwab-page.component.scss:88,94 and

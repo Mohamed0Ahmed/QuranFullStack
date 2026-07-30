@@ -1037,3 +1037,45 @@ fills, resting borders — stays **banned as solid green**: use a tint,
      unchanged. Reconciling the two recipes into one is a later slice's call, not this
      extraction's.
 - Compose, do not re-style.
+
+### Truncatable entity names
+- **Purpose:** the one rule for any entity name that can overflow its row/column
+  (door names, template names, and their eleven abwab render sites at the time of
+  writing — trees, cards, the archive view, move/relations/copy pick-lists, the
+  side panel, the sections modal, the templates page).
+- **The app's rule is flexible-with-ellipsis, not a hard column.** Every existing
+  precedent truncates a name/title inside a flexible item —
+  `detail-modal-shell.component.scss:28-35`'s `__title` (`flex: 1; min-inline-size:
+  0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap`) is the
+  canonical shape, and `abwab-tree.component.scss:70-75`'s own `__name` already
+  does the same. **This section states that as the rule, in both directions:** a
+  name column composes `.qd-truncate` (`_utilities.scss`) on a flex item that owns
+  `flex: 1` (or a reserved floor via `flex: 1; min-inline-size:
+  var(--qd-name-min-inline-size)`, `_tokens.scss`, for a column that must not
+  shrink to nothing under sibling pressure — see its derivation comment there). A
+  **hard, fixed `inline-size` name column is a per-surface exception, not a second
+  house rule** — it trades away exactly the flexibility every other truncated name
+  in the app relies on, so a surface reaching for one must write down, at that
+  call-site, why its layout cannot tolerate a shrinking name column the way every
+  other one does. The audit that produced this entry found a request for a fixed
+  name width where every existing precedent was flexible; this paragraph is where
+  that gets settled once, so a later reviewer does not re-litigate it per
+  call-site.
+- **Mandatory `[title]`, not optional:** any element composing `.qd-truncate` (or
+  otherwise capable of visually truncating) MUST carry `[title]="fullName"` so the
+  full name is available on hover/long-press once the ellipsis hides it —
+  precedent `word-type-filter.component.html:57`:
+  `<span class="word-type-filter__child-label" [title]="child.label.ar">{{
+  child.label.ar }}</span>`. A truncated name with no `[title]` is a contract
+  violation, not a style nit.
+- **Known debt named honestly:** none of the eleven abwab name-render sites
+  compose `.qd-truncate`, the reserved-minimum token, or `[title]` yet as of this
+  entry — three of the eleven are missing the ellipsis half entirely and all
+  eleven are missing `[title]`. This slice ships the primitive and the rule only;
+  wiring the eleven sites onto it is Slice C/D's job, named here so it reads as
+  tracked debt, not an oversight.
+- **Zero consumers at ship time:** `.qd-truncate` and `--qd-name-min-inline-size`
+  ship with no call-site changes (plan §2, out of scope here).
+- Compose, do not re-style — a surface that seems to need a fixed name column
+  should re-read the paragraph above before reaching for `inline-size` instead of
+  `.qd-truncate`.

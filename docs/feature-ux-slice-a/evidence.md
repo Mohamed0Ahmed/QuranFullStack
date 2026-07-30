@@ -803,6 +803,160 @@ leave archived residue behind **by design** (`features/abwab/README.md`,
 Temp artifacts (`test-results/`, `playwright-report/`) were removed after the run so
 nothing gets committed.
 
+## Phase 7 verification
+
+**Measured:** 2026-07-30, branch `ux-audit-slice-a`, immediately after the phase 7 edits
+(T701–T702), before commit. Parent commit `028788d6` (phase 6).
+
+### `.qd-truncate` — selector added (`src/styles/_utilities.scss`)
+
+```scss
+.qd-truncate {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+```
+
+Shaped exactly on `.qd-scroll-stable` (`_utilities.scss:54-56`, immediately above) — a
+single-concern utility, no selector nesting, no `flex` declaration. It deliberately does
+**not** set `flex`: the call-site owns its flex context, matching the app's existing
+flexible-with-ellipsis shape (`detail-modal-shell.component.scss:28-35`'s `__title`), not
+a hard column.
+
+### `--qd-name-min-inline-size` — token added (`src/styles/_tokens.scss`), value and derivation
+
+**Chosen: `12rem`.** No existing name-render site in the app sets a reserved minimum
+today — `abwab-tree.component.scss:70-75`'s `__name` is `flex: 1` with no
+`min-inline-size` (shrinks to nothing under sibling pressure), and this is exactly the
+gap the audit's item 15 names as a "NEW pattern." The value is therefore derived, not
+invented, from two independent real anchors:
+
+1. **Primary anchor — the one shipped site with this exact shape, on the same abwab
+   surface:** `abwab-toolbar.component.scss:13-14` — `.abwab-toolbar__search { flex: 1;
+   min-inline-size: 12rem; }`. This is the only place in the codebase that already
+   composes `flex: 1` with a reserved `min-inline-size` floor, which is precisely the
+   shape the audit recommends for names (§15: *"implement it as a reserved minimum
+   (`flex: 1; min-inline-size: <token>`) rather than a hard `inline-size`"*).
+2. **Arithmetic check against `abwab-tree`'s row budget** (audit item 14's "~36rem-ish
+   column"): fixed siblings in a bulk-mode row — checkbox `--qd-checkbox-size`
+   (0.9375rem) + chevron (1.25rem) + order pill (~1.25rem, `min-inline-size`) + count
+   (~2rem estimated) + flags (~3.2rem estimated, two chips + gap) + two row-hover
+   actions (~3rem estimated) + six `--qd-space-2` (0.5rem) gaps between these elements
+   (~3rem) ≈ **14.6rem of fixed siblings**, leaving roughly **21rem** for the name at
+   depth 0 in a 36rem column. `12rem` fits comfortably with margin for several indent
+   levels (`padding-inline-start: calc(var(--abwab-tree-depth, 0) * var(--qd-space-5) +
+   var(--qd-space-2))`) before it would need to shrink below its floor.
+3. **Independent corroboration, different surface:** `abwab-cards.component.scss:39`'s
+   `.abwab-cards__grid { grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); }`
+   reserves a whole door **card** at a 13rem floor; minus two `--qd-space-3` (0.75rem)
+   card paddings, that is a ~11.5rem content box — the same order of magnitude as
+   `12rem`, arrived at independently from an unrelated layout (a card grid, not a flex
+   row).
+
+The full derivation is recorded as a block comment beside the token in `_tokens.scss`,
+matching the form of the existing `--qd-checkbox-size` comment.
+
+```scss
+--qd-name-min-inline-size: 12rem;
+```
+
+### §17 entry location and how it forecloses hard-coded widths
+
+`.architecture/UI_STYLE_SYSTEM.md` §17, new `### Truncatable entity names` entry
+appended after the `### qd-context-menu` entry (the section's last entry before this
+phase). It states, in this order:
+
+- **The flexible-with-ellipsis rule as *the* rule** — cites
+  `detail-modal-shell.component.scss:28-35`'s `__title` and `abwab-tree`'s own `__name`
+  as the two existing precedents, and names `.qd-truncate` + optionally
+  `var(--qd-name-min-inline-size)` as how a call-site composes it.
+- **A hard fixed `inline-size` name column is stated as a per-surface exception, not an
+  equal alternative** — a surface reaching for one must write down, at that call-site,
+  why its layout cannot tolerate a shrinking name column the way every other one does.
+  This is written so a later agent reading the entry cannot treat the audit's own
+  escape-hatch language ("if the user wants a truly hard column, do it as a grid
+  column") as a sanctioned equal option — the entry frames the grid-column route as
+  something requiring its own written justification, not a co-equal choice with
+  flexible-with-ellipsis.
+- **The mandatory `[title]` obligation**, citing `word-type-filter.component.html:57`
+  (`<span class="word-type-filter__child-label" [title]="child.label.ar">…</span>`) as
+  the app's existing ellipsis+tooltip precedent, stated as a contract violation (not a
+  style nit) when missing.
+- **The known debt named honestly:** none of the eleven abwab name-render sites compose
+  `.qd-truncate`, the token, or `[title]` yet; three of the eleven are missing the
+  ellipsis half entirely and all eleven are missing `[title]`; wiring them is Slice
+  C/D's job.
+- **Zero consumers at ship time**, matching this phase's actual diff.
+
+### `styles/README.md`
+
+- `_utilities.scss` bullet now names `.qd-truncate` and points to
+  `--qd-name-min-inline-size` for the reserved-minimum pairing.
+- `_tokens.scss` bullet gains a clause naming `--qd-name-min-inline-size` and its §17
+  cross-reference.
+
+### Zero-consumers grep (proves no component file was touched, no visual change)
+
+```
+$ grep -rn "qd-truncate\b" src/ --include="*.html" --include="*.ts" --include="*.scss" \
+    | grep -v "^src/styles/_utilities.scss"
+src/styles/_tokens.scss:161:  /* `.qd-truncate`'s reserved minimum (`_utilities.scss`), for a truncatable entity-name
+
+$ grep -rln "qd-truncate\b" src/ --include="*.html" --include="*.ts" --include="*.scss"
+src/styles/_utilities.scss
+src/styles/_tokens.scss
+
+$ grep -rln "qd-name-min-inline-size\b" src/ --include="*.html" --include="*.ts" --include="*.scss"
+src/styles/_tokens.scss
+```
+
+The only hit for `qd-truncate` outside its own definition file is the doc comment
+beside the token in `_tokens.scss` — not a class reference. `qd-name-min-inline-size`
+has exactly one hit: its own declaration. **No `.html`/`.ts` file references either
+name, and no component file (`.html`/`.ts`/component `.scss`) was touched this phase** —
+confirmed by `git status --porcelain` listing exactly the five files in scope
+(`docs/feature-ux-slice-a/evidence.md`, `.architecture/UI_STYLE_SYSTEM.md`,
+`src/styles/README.md`, `src/styles/_tokens.scss`, `src/styles/_utilities.scss`).
+
+### Clean-code self-check
+
+Ran against `.claude/skills/engineering-review/references/clean-code-guard/` per root
+`CLAUDE.md`: two new selectors and one token, each single-concern, named for what they
+are (`qd-truncate`, `qd-name-min-inline-size`), no dead code, no premature abstraction
+(one utility, one token — not a component), the `12rem` value carries its derivation as
+a comment rather than standing as a bare magic number, and no comment narrates WHAT the
+four declarations already say.
+
+### Commands run
+
+```bash
+cd Frontend/quran-dashboard-ui
+npm test
+npm run build
+```
+
+`npm test` ran unmodified — the `VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2` cap baked into
+`package.json`'s `test` script was not overridden or bypassed.
+
+### Vitest suite result
+
+- Test files: **191 passed (191)** — **+0** vs phase 6's 191
+- Tests: **2164 passed (2164)** — **+0** vs phase 6's 2164 (no new tests this phase, per
+  plan §3/§7 — phase 5's T502 remains the only new assertions in the slice)
+- Failed: **0**, Skipped: **0**
+- Duration (Vitest-reported): **167.67 s**
+
+### Build result
+
+- Result: **success** — `Application bundle generation complete.` (14.708 s)
+- Same three pre-existing SCSS-budget warnings (`selected-ayah-section`,
+  `abwab-relations-modal`, `selected-word-section`) and the same initial-bundle-over-budget
+  warning, now **568.81 kB** (over budget by 68.81 kB, vs phase 6's 568.69 kB / 68.69 kB)
+  — a ~0.12 kB drift from the new `.qd-truncate` rule and the `--qd-name-min-inline-size`
+  token plus its derivation comment, not a regression. No build errors.
+
 ## T801 post-change verification
 
 pending — phase 8

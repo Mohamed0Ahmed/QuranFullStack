@@ -18,7 +18,9 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   Also holds the `--qd-z-*` layer scale (`.architecture/UI_STYLE_SYSTEM.md` §4) — every
   stacking `z-index` in the app is one of these rungs; never write a bare `z-index`. Also
   holds `--qd-checkbox-size`, the fixed box size `.qd-checkbox` (`_forms.scss`) is built
-  from.
+  from. Also holds `--qd-name-min-inline-size` — the reserved-minimum floor a truncatable
+  entity-name column pairs with `.qd-truncate` (`_utilities.scss`), per
+  `.architecture/UI_STYLE_SYSTEM.md` §17's "Truncatable entity names" entry.
 - `_themes.scss` — dark-theme overrides for the same token surface (`--qd-accent-fg` and
   `--qd-selected-bg` are intentionally theme-invariant and not overridden here).
 - `_typography.scss` — font-face declarations and shared Arabic-first type classes.
@@ -37,7 +39,10 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   styling `shared/ui/context-menu/`'s `qd-context-menu` projects its content into; global
   because a rule scoped to the primitive's own stylesheet cannot reach content the *consumer*
   projects via `<ng-content>` (the `.qd-tabs__tab` precedent).
-- `_utilities.scss` — small utility classes such as screen-reader-only, flex, spacing, and stable scrollbars.
+- `_utilities.scss` — small utility classes such as screen-reader-only, flex, spacing, and stable
+  scrollbars. Also holds `.qd-truncate` (`.architecture/UI_STYLE_SYSTEM.md` §17 "Truncatable
+  entity names") — the one flexible-with-ellipsis rule for a truncatable entity-name column;
+  pair it with `--qd-name-min-inline-size` (`_tokens.scss`) for a reserved minimum.
 - `_words-explorer-layout.scss` — shared layout pieces for words explorer intro/toolbar surfaces.
 - `_words-explainer.scss` — shared visual primitives for the Words explainer hero example regions
   (global, not component-scoped, because pages project their own example markup via `<ng-content>`).
