@@ -84,3 +84,22 @@
     transition: none;
   }
 }
+
+.qd-checkbox {
+  inline-size: var(--qd-checkbox-size);
+  block-size: var(--qd-checkbox-size);
+  flex: none;
+  margin: 0;
+  accent-color: var(--qd-accent);
+
+  &:focus-visible {
+    outline: 2px solid var(--qd-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.qd-check-row {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+}

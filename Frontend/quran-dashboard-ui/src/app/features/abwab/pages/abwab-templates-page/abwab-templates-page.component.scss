@@ -140,51 +140,17 @@
   margin-block-start: var(--qd-space-3);
 }
 
-.abwab-templates-page__ctx-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 49;
-  background: transparent;
-}
-
-.abwab-templates-page__ctx-menu {
-  position: fixed;
-  z-index: 50;
-  min-inline-size: 11rem;
-  background: var(--qd-surface);
-  border: 1px solid var(--qd-border-strong);
-  border-radius: var(--qd-radius-md);
-  box-shadow: var(--qd-shadow-lg);
-  padding: var(--qd-space-1);
-  display: flex;
-  flex-direction: column;
-}
-
-.abwab-templates-page__ctx-menu button {
-  display: flex;
-  inline-size: 100%;
-  border: none;
-  background: transparent;
-  text-align: start;
-  padding: var(--qd-space-2) var(--qd-space-3);
-  border-radius: var(--qd-radius-sm);
-  font-family: inherit;
-  font-size: 0.8125rem;
-  color: var(--qd-text);
-  cursor: pointer;
-}
-
-.abwab-templates-page__ctx-menu button:hover {
-  background: var(--qd-surface-hover);
-}
-
-.abwab-templates-page__ctx-menu button:focus-visible {
-  outline: 2px solid var(--qd-focus-ring);
-  outline-offset: -2px;
-}
-
-.abwab-templates-page__ctx-item--danger {
+// This page's delete item has always read red at rest, unlike the doors page's hover-only
+// danger idiom the shared `.qd-context-menu__item--danger` modifier carries (verified: the
+// two pages' pre-extraction rules were not byte-identical here). Kept as a page-scoped
+// override so this page's rendering stays visually unchanged (plan §3); reconciling the two
+// recipes is a later slice's call (see the §17 context-menu entry).
+.qd-context-menu__item--danger {
   color: var(--qd-danger);
+
+  &:hover {
+    background: var(--qd-surface-hover);
+  }
 }
 
 @media (max-width: 60rem) {

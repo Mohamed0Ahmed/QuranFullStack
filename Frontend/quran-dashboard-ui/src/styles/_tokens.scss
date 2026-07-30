@@ -147,6 +147,58 @@
   );
 
   --qd-segment-card-min-height: 5.6rem;
+
+  /* `.qd-checkbox`'s fixed square box (`_forms.scss`). 0.9375rem == 15px at the app's
+     unscaled 16px root — the exact value the approved concept specifies
+     (abwab-relations-concept.html:84), reached through the app's own rem scale rather
+     than a raw px: it is the same step as --qd-btn-font-size and .qd-input/.qd-select's
+     font-size, not a one-off. abwab-template-copy-modal.component.scss:75-76 sets its
+     neighboring pick-chevron icon (not the checkbox itself, which has no size today) to a
+     local 1.1rem with no basis in either the concept or this scale — Slice C's to
+     reconcile once that call-site composes this token. */
+  --qd-checkbox-size: 0.9375rem;
+
+  /* `.qd-truncate`'s reserved minimum (`_utilities.scss`), for a truncatable entity-name
+     column that wants "flexible with a floor" instead of unbounded shrink-to-nothing
+     (`flex: 1; min-inline-size: var(--qd-name-min-inline-size)`). No existing name-render
+     site sets a minimum today (UI_STYLE_SYSTEM.md §17's new truncatable-names entry), so
+     this is derived from the one shipped site that already has this exact shape on the
+     same abwab surface: `abwab-toolbar.component.scss`'s `.abwab-toolbar__search { flex: 1;
+     min-inline-size: 12rem; }`. Checked against `abwab-tree`'s row budget (audit's
+     "~36rem-ish column"): checkbox 0.9375rem + chevron 1.25rem + order pill ~1.25rem + count
+     ~2rem + flags ~3.2rem + two row actions ~3rem + six `--qd-space-2` gaps ~3rem ≈ 14.6rem
+     of fixed siblings, leaving roughly 21rem for the name at depth 0 — 12rem fits with room
+     to spare even several indent levels deep. Independent corroboration:
+     `.abwab-cards__grid`'s `minmax(13rem, 1fr)` card minimum, minus two `--qd-space-3` card
+     paddings, is a ~11.5rem content box — the same order of magnitude on a different
+     surface. */
+  --qd-name-min-inline-size: 12rem;
+
+  /* Layer scale (UI_STYLE_SYSTEM.md §4). Every stacking `z-index` in the app is one of
+     these rungs — never write a bare z-index. The four abwab context-menu literals that
+     used to live at abwab-page.component.scss:88,94 and
+     abwab-templates-page.component.scss:146,152 were the sole exception until Slice A
+     phase 6 moved both pages onto the shared `qd-context-menu` component
+     (`shared/ui/context-menu/`), which consumes --qd-z-menu-backdrop/--qd-z-menu from
+     birth — zero bare z-index literals remain outside this file.
+     Ascending: sticky < popover < floating < mobile-nav < menu-backdrop < menu ==
+     modal-backdrop < modal. --qd-z-mobile-nav sits below --qd-z-modal-backdrop
+     deliberately — the navbar's dropdown/mobile menu used to paint at 100/200, above
+     every modal backdrop (50); that was a latent defect (nothing made the shell inert
+     under an open abwab modal), fixed here by lowering the rung rather than the modal.
+     --qd-z-menu == --qd-z-modal-backdrop (50) is an inherited collision, not introduced
+     by this change — the context-menu and the modal backdrop never need to compete
+     because a modal open state does not currently suppress the menu (Slice B territory).
+     --qd-z-modal has no consumer yet (`.qd-modal` paints via DOM order inside its
+     backdrop's stacking context); reserved for the day a modal box needs to escape it. */
+  --qd-z-sticky: 5;             /* page chrome / sticky headers; Slice B's sticky navbar consumes this rung */
+  --qd-z-popover: 30;           /* selector/filter popover panels */
+  --qd-z-floating: 40;          /* the detail-modal-shell restore control */
+  --qd-z-mobile-nav: 45;        /* navbar dropdown + mobile menu — see note above */
+  --qd-z-menu-backdrop: 49;     /* qd-context-menu backdrop */
+  --qd-z-menu: 50;              /* qd-context-menu */
+  --qd-z-modal-backdrop: 50;    /* .qd-modal-backdrop */
+  --qd-z-modal: 51;             /* reserved for a future direct modal-box consumer */
 }
 
 /* The bar tightens its own leading margin on phones; the token carries that so the reserved slot

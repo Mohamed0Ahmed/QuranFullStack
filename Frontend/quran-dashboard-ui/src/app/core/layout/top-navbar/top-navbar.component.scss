@@ -60,7 +60,9 @@
   position: absolute;
   top: 100%;
   inset-inline-start: 0;
-  z-index: 100;
+  /* Below --qd-z-modal-backdrop (was 100, above every modal): an abwab modal does not
+     make the shell inert, so an open navbar dropdown could paint over the dialog. */
+  z-index: var(--qd-z-mobile-nav);
   background: var(--qd-surface);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
@@ -133,7 +135,8 @@
 .mobile-menu {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  /* Same rung/reasoning as .dropdown-menu above (was 200). */
+  z-index: var(--qd-z-mobile-nav);
   background: var(--qd-overlay);
 }
 

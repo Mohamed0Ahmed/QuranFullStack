@@ -13,6 +13,20 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   them. See `UI_STYLE_SYSTEM.md` §17.
 - `ui/chip/` — `qd-chip`, the one selectable/informational chip (button or anchor, optional
   trailing count). See `UI_STYLE_SYSTEM.md` §17.
+- `ui/context-menu/` — `qd-context-menu`, the one row/node context-menu shell (Slice A, both
+  Abwab pages' row menus). Owns a `position: fixed; inset: 0` backdrop and a positioned
+  `role="menu"` box (`[x, y]` via a `position` input), both keyed off the shared `--qd-z-*`
+  layer scale, plus a document-level `keydown.escape` dismissal (`dismissed` output) — added
+  because none of the four paths that open the menu puts focus inside it, so an
+  element-bound handler could never fire. `menuTestId` / `backdropTestId` inputs keep each
+  page's test ids byte-identical through the extraction. Items are projected content
+  (`<ng-content>`): the primitive knows nothing about doors or template nodes, and the item
+  hover/focus/danger styling lives in the global `.qd-context-menu__item` classes
+  (`_components.scss`), not this component's own stylesheet, since content the *consumer*
+  projects sits outside the primitive's emulated-encapsulation boundary. Deliberately does
+  **not** clamp to the viewport (positions from the caller's raw pointer coords, matching
+  both prior copies) and does **not** manage focus into the menu — see
+  `UI_STYLE_SYSTEM.md` §17 for both gaps. See `UI_STYLE_SYSTEM.md` §17.
 - `ui/ayah-card/` — `qdAyahCard` (attribute component, host class `qd-ayah-card`), the one
   presentation-only flat frame for ayah-shaped list items (recessed warm card background
   `--qd-ayah-card-bg`, hairline border, control radius, compact padding/gap; no shadow, no
@@ -22,7 +36,9 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   renderer, and navigation. Consumers: Words `ayah-matches-list`, Mushaf `similar-ayahs-card`
   items and `mutashabihat-groups-card` occurrences. See `UI_STYLE_SYSTEM.md` §17.
 - `ui/state/` — `qd-state`, the one empty/loading/error presentation; backed by the existing
-  `.qd-empty-state`/`.qd-loading-state`/`.qd-error-state` classes. See `UI_STYLE_SYSTEM.md` §17.
+  `.qd-empty-state`/`.qd-loading-state`/`.qd-error-state` classes. Carries an additive `reserve`
+  input (default off) for the §N3 no-layout-shift box; no current call-site turns it on. See
+  `UI_STYLE_SYSTEM.md` §17.
 - `ui/skeleton/` — `qd-skeleton-rows`, renders N skeleton rows into a caller-supplied
   `grid-template-columns` string so loading rows match loaded rows exactly; plus the pure
   `splitGridTemplateColumns` helper it's built on.

@@ -158,6 +158,21 @@ superseded prototype reference):
 - motion durations (fast ~140ms, base ~220ms)
 - radius
 - spacing scale
+- layer scale (stacking order for every fixed/absolute layer in the app), ascending:
+  `--qd-z-sticky` (page chrome / sticky headers) → `--qd-z-popover` (selector/filter
+  panels) → `--qd-z-floating` (a fixed control floating over page content, e.g. the
+  detail-modal-shell restore button) → `--qd-z-mobile-nav` (navbar dropdown + mobile
+  menu) → `--qd-z-menu-backdrop` / `--qd-z-menu` (`qd-context-menu`) →
+  `--qd-z-modal-backdrop` / `--qd-z-modal` (`.qd-modal-backdrop` / a future direct
+  modal-box consumer). **Never write a bare `z-index`** — always reference one of
+  these tokens. There are no exceptions: every stacking layer in the app resolves through
+  this scale.
+  Two caveats the numbers carry, both inherited rather than chosen: `--qd-z-menu` and
+  `--qd-z-modal-backdrop` currently resolve to the **same** value, so the rung order above
+  is authoritative but the arithmetic does not enforce it — a context menu and a modal
+  backdrop rendered as siblings tie, and DOM order decides. And `--qd-z-modal` has no
+  consumer yet (`.qd-modal` itself stacks inside its backdrop). Whoever first needs either
+  rung to win by number should respace the scale, not add a literal.
 
 Example shape only — **do not force exact colors yet** (the real palette is
 resolved in `DESIGN.md`):
@@ -720,6 +735,19 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   status color.
 - Supersedes ad-hoc `.qd-empty-state` / `.qd-loading-state` / `.qd-error-state`
   usage; those classes remain as the backing layer. Compose, do not re-style.
+- **`reserve` (optional, `boolean`, default `false`):** additive input applying the
+  §N3 no-layout-shift doctrine (see the Loading/skeleton system entry above; not
+  restated here) to this component. On, the **message span** (not the container —
+  its padding alone already exceeds one control row, so a container-level
+  reservation would be a no-op) carries
+  `min-block-size: var(--qd-control-block-size)` — the shared control-geometry
+  token family `.qd-checkbox` / `.qd-modal--fixed` already draw from
+  (`styles/README.md`'s "size a new reserved slot from these tokens; never
+  re-measure the control by hand" rule) — so its box never appears/disappears;
+  only its text fades in, opacity only, static under `prefers-reduced-motion`,
+  mirroring `qd-detail-modal-shell`'s count span (above). Default off, so today's
+  seven call-sites are unaffected. This entry only adds the capability —
+  composing `reserve` into abwab's error surfaces is a later slice's task.
 
 ### `.qd-explorer-table`
 - **Purpose:** the one table implementation for all 5 explorer tables (roots,
@@ -869,3 +897,189 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   content always sizes itself.
 - Compose, do not re-style — a new loading state is a `shape`/`rowTemplate` input,
   not a new component.
+
+### `.qd-checkbox` / `.qd-check-row`
+- **Purpose:** the one checkbox box + label-row pairing app-wide (bulk-select in
+  `abwab-tree`/`abwab-cards`, pick-lists in `abwab-relations-modal`/
+  `abwab-template-copy-modal`).
+- **Shape:** utility classes, not a component — `.qd-checkbox` sizes and colors a
+  native `<input type="checkbox">`; `.qd-check-row` is the flex wrapper that pairs
+  it with its label at a fixed gap.
+- **Geometry / color:** a fixed `--qd-checkbox-size` square (`0.9375rem`, reached
+  through the app's own rem scale — same step as `--qd-btn-font-size` and
+  `.qd-input`/`.qd-select`'s font-size — rather than a raw px; it equals the
+  approved concept's `15px` at the app's unscaled root,
+  `abwab-relations-concept.html:84`), `flex: none`, `margin: 0`, and
+  `accent-color: var(--qd-accent)` — no new hue, and correct in both themes since
+  `--qd-accent` is defined per theme (`_tokens.scss` light / `_themes.scss` dark
+  override) with zero `_themes.scss` change needed here.
+- **Row gap:** `.qd-check-row` is `display: flex; align-items: center` with a
+  single `--qd-space-2` gap between box and label, so the audit's "checkbox far
+  from its label" gap cannot be reintroduced per call-site.
+- **Accessible name (contract, not optional):** every checkbox composing
+  `.qd-checkbox` MUST carry a real `<label for>` or an `aria-label` naming what it
+  selects. **Known debt at time of writing:** three of the four existing checkbox
+  call-sites (`abwab-tree`, `abwab-cards`, `abwab-relations-modal`) have neither;
+  only `abwab-template-copy-modal` supplies an `aria-label`. Paying this down is
+  Slice C/D's job when those call-sites compose this class — named here so the
+  contract is honest rather than aspirational.
+- **Zero consumers at ship time:** this slice adds the classes with no call-site
+  changes (plan §2, out of scope here); Slice C/D wires the four existing
+  checkboxes onto them.
+- **Composing means deleting the local rule, not adding beside it.** Under Angular
+  emulated encapsulation a call-site selector like
+  `.abwab-relations-modal__pick-row input[type='checkbox']` outranks the global
+  `.qd-checkbox` class on specificity — adding the class without deleting the local
+  rule leaves the old size/accent in force with no visible change, which reads as
+  "done" and is not (the same specificity trap §17's `.qd-modal` entry names for
+  the modal geometry work).
+- Compose, do not re-style — a call-site needing a different box size or accent is
+  a signal to extend this contract, not fork it.
+
+### `.qd-modal` / `.qd-modal--fixed`
+- **The base is width-only and scroller-less, and stays that way.** `.qd-modal`
+  (`_components.scss`) sets surface/border/radius/shadow/padding and
+  `width: min(100%, 36rem)` — no block-size, no scroller, no `overflow`. It is
+  what the six abwab modals compose today and must keep composing unmodified.
+- **`--fixed` is the opt-in that carries this section's geometry rule** (a fixed
+  block-size, never `max-block-size`): `display: flex; flex-direction: column;
+  block-size: min(92dvh, 44rem); padding: 0; overflow: hidden`. `dvh`, not `vh`,
+  matching every other modal block-size in the app. `44rem` is
+  `qd-detail-modal-shell`'s own value — reused deliberately so the app converges
+  on one fixed modal height instead of gaining a fourth geometry.
+- **Slot contract:** `.qd-modal__head` / `.qd-modal__foot` are `flex-shrink: 0`
+  with their own `--qd-space-5` padding (the same step the base's uniform
+  padding uses, so composing surfaces keep today's rhythm); `.qd-modal__body`
+  is `flex: 1; min-block-size: 0; overflow-y: auto` — the **only** scroller —
+  with `padding-inline: var(--qd-space-5)` and `scrollbar-gutter: stable` so
+  the reserved scrollbar track cannot reflow content width once the list
+  crosses the scroll threshold (the same class of defect as audit item 3, one
+  level down). **`__body` has no block padding by design** — the gap at the
+  head/body and body/foot seams comes entirely from `__head`'s
+  `padding-block-end` and `__foot`'s `padding-block-start`, so `__foot` is
+  load-bearing for that gap, not an optional slot. A `--fixed` dialog composed
+  without a foot must give `__body` its own `padding-block-end` or its last
+  content line sits flush against the dialog's bottom edge. Phone
+  (≤ `$qd-bp-phone-max`) tightens to `--qd-space-3` padding and
+  `block-size: min(94dvh, 44rem)`, mirroring `qd-detail-modal-shell`'s own
+  phone rule — but **not** its backdrop padding: `.qd-modal-backdrop` is the
+  shared base for all twelve modal consumers, so `--fixed` does not touch it.
+- **Why opt-in and not a base change:** `.qd-modal.explorer-detail-modal` sets
+  `max-height: min(90vh, 36rem)` but never `height`/`block-size`. A block-size
+  added to the base would therefore also apply to it — silently clamping the
+  five shipped words detail modals that use that variant. `--fixed` is how a
+  consumer reaches this section's geometry rule without that collision; the
+  base must never gain a block-size.
+- **Specificity trap when composing:** the same trap named in the `.qd-checkbox`
+  entry above — an existing call-site rule can outrank `.qd-modal--fixed`
+  under Angular emulated encapsulation. Three abwab modals already set an
+  inner `max-block-size` that becomes redundant, and arguably wrong, once the
+  modal body is the single scroller:
+  `abwab-sections-modal.component.scss:14` (14rem list),
+  `abwab-template-copy-modal.component.scss:52` (13rem pick-list), and
+  `abwab-relations-modal.component.scss:221` (11rem pick-list — measured at
+  T401 to be doing the scrolling `__body` is supposed to do). Composing the
+  modifier means **deleting** these local caps, not adding the class beside
+  them.
+- **Convergence trigger for `.qd-modal.explorer-detail-modal` (required, not
+  optional):** `--fixed` deliberately reuses `qd-detail-modal-shell`'s own
+  `44rem` rather than introducing a new height, so no new modal height enters
+  the system by this change. `.qd-modal.explorer-detail-modal` is therefore
+  the **one remaining** violation of this section's rule — `max-height` on
+  desktop instead of a fixed block-size. This section tolerates
+  `qd-detail-modal-shell` as a genuinely separate component; it must not
+  silently tolerate a second, permanent exception. **The next change that
+  touches any of the five words detail modals' geometry converges all five
+  onto `--fixed` and deletes the `vh` hold-out.**
+- **Zero consumers at ship time:** this slice adds `--fixed` and its slots with
+  no call-site changes and no markup restructuring (plan §2, out of scope
+  here); applying it to the six abwab modals is Slice C's job.
+
+### `qd-context-menu`
+- **Purpose:** the one row/node context-menu shell app-wide (Abwab's doors tree row menu
+  and the templates workshop's node tree row menu — the two pre-existing copies this
+  primitive replaces).
+- **Inputs / outputs:** `position: {x, y}` (positions the menu via
+  `[style.left.px]`/`[style.top.px]`, unchanged from both prior copies); `menuTestId` /
+  `backdropTestId` (both `string`, required) — **non-negotiable**, because 4 Vitest
+  assertions and ~8 Playwright assertions select `abwab-page-context-menu` /
+  `abwab-page-ctx-backdrop` / the templates-page equivalents by test id, and inputs are
+  what let the extraction keep them byte-identical; `dismissed` output, emitted on
+  backdrop click and on `Escape`.
+- **Shape:** a `position: fixed; inset: 0` transparent backdrop at
+  `--qd-z-menu-backdrop`, and a positioned `role="menu"` box at `--qd-z-menu`. Items are
+  **projected content** (`<ng-content>`) carrying their own test ids, labels, and click
+  handlers — the primitive learns nothing about doors or template nodes.
+- **Item styling lives outside this component, on purpose:** hover, the `:focus-visible`
+  ring, and the `--danger` item variant are the global `.qd-context-menu__item` /
+  `.qd-context-menu__item--danger` classes in `_components.scss` (the `.qd-tabs__tab`
+  precedent) — content projected via `<ng-content>` is compiled in the *consumer's*
+  template under Angular's emulated encapsulation, so a rule scoped to this component's
+  own stylesheet would never reach it. Consumers apply the classes directly to their own
+  projected buttons.
+- **Escape dismissal is document-level** (`@HostListener('document:keydown.escape')`,
+  copying `top-navbar.component.ts`), not bound to the menu element, because none of the
+  four paths that open a menu (right-click, the row's `⋯`, or either page's keyboard
+  path) puts focus inside it — an element-bound handler would never receive the key.
+  **This is the one place this primitive is not literally behavior-preserving:** neither
+  prior copy dismissed on `Escape`. Deliberate, additive a11y gain, not a bug.
+- **Three gaps this primitive deliberately did not fix** — named so a future reader does
+  not assume a shared, contracted primitive already covers them:
+  1. **No viewport clamping.** Both prior copies positioned from raw pointer coordinates
+     with no bounds check; the faithful extraction preserves that, so a menu opened near
+     the inline-start edge under RTL can still overflow the viewport.
+  2. **No focus management into the menu.** Neither prior copy moved focus into it on
+     open; adding that changes keyboard behavior on a shipped surface and belongs to
+     Slice G's row-menu keyboard-path work, not this extraction.
+  3. **The `--danger` item's rest-state color is not unified.** The two prior copies
+     were not byte-identical here: the doors page's danger item was plain-colored until
+     hover (`--qd-danger-tint` background + `--qd-danger` text on `:hover` only, the
+     `abwab-side-panel__op--danger` app-wide idiom); the templates page's danger item
+     read `--qd-danger` at rest, unconditionally. The shared `--danger` modifier carries
+     the doors page's hover-only idiom; the templates page keeps a short page-scoped
+     override (`abwab-templates-page.component.scss`) so its own rendering stays
+     unchanged. Reconciling the two recipes into one is a later slice's call, not this
+     extraction's.
+- Compose, do not re-style.
+
+### Truncatable entity names
+- **Purpose:** the one rule for any entity name that can overflow its row/column
+  (door names, template names, and their eleven abwab render sites at the time of
+  writing — trees, cards, the archive view, move/relations/copy pick-lists, the
+  side panel, the sections modal, the templates page).
+- **The app's rule is flexible-with-ellipsis, not a hard column.** Every existing
+  precedent truncates a name/title inside a flexible item —
+  `detail-modal-shell.component.scss:28-35`'s `__title` (`flex: 1; min-inline-size:
+  0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap`) is the
+  canonical shape, and `abwab-tree.component.scss:70-75`'s own `__name` already
+  does the same. **This section states that as the rule, in both directions:** a
+  name column composes `.qd-truncate` (`_utilities.scss`) on a flex item that owns
+  `flex: 1` (or a reserved floor via `flex: 1; min-inline-size:
+  var(--qd-name-min-inline-size)`, `_tokens.scss`, for a column that must not
+  shrink to nothing under sibling pressure — see its derivation comment there). A
+  **hard, fixed `inline-size` name column is a per-surface exception, not a second
+  house rule** — it trades away exactly the flexibility every other truncated name
+  in the app relies on, so a surface reaching for one must write down, at that
+  call-site, why its layout cannot tolerate a shrinking name column the way every
+  other one does. The audit that produced this entry found a request for a fixed
+  name width where every existing precedent was flexible; this paragraph is where
+  that gets settled once, so a later reviewer does not re-litigate it per
+  call-site.
+- **Mandatory `[title]`, not optional:** any element composing `.qd-truncate` (or
+  otherwise capable of visually truncating) MUST carry `[title]="fullName"` so the
+  full name is available on hover/long-press once the ellipsis hides it —
+  precedent `word-type-filter.component.html:57`:
+  `<span class="word-type-filter__child-label" [title]="child.label.ar">{{
+  child.label.ar }}</span>`. A truncated name with no `[title]` is a contract
+  violation, not a style nit.
+- **Known debt named honestly:** none of the eleven abwab name-render sites
+  compose `.qd-truncate`, the reserved-minimum token, or `[title]` yet as of this
+  entry — three of the eleven are missing the ellipsis half entirely and all
+  eleven are missing `[title]`. This slice ships the primitive and the rule only;
+  wiring the eleven sites onto it is Slice C/D's job, named here so it reads as
+  tracked debt, not an oversight.
+- **Zero consumers at ship time:** `.qd-truncate` and `--qd-name-min-inline-size`
+  ship with no call-site changes (plan §2, out of scope here).
+- Compose, do not re-style — a surface that seems to need a fixed name column
+  should re-read the paragraph above before reaching for `inline-size` instead of
+  `.qd-truncate`.

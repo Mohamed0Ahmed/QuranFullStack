@@ -241,20 +241,18 @@
 />
 
 @if (overlays.contextMenuDoorId() !== null) {
-  <div class="abwab-page__ctx-backdrop" data-testid="abwab-page-ctx-backdrop" (click)="overlays.closeContextMenu()"></div>
-  <div
-    class="abwab-page__ctx-menu"
-    role="menu"
-    data-testid="abwab-page-context-menu"
-    [style.left.px]="overlays.contextMenuPosition().x"
-    [style.top.px]="overlays.contextMenuPosition().y"
+  <qd-context-menu
+    [position]="overlays.contextMenuPosition()"
+    menuTestId="abwab-page-context-menu"
+    backdropTestId="abwab-page-ctx-backdrop"
+    (dismissed)="overlays.closeContextMenu()"
   >
-    <button type="button" role="menuitem" data-testid="abwab-page-ctx-edit" (click)="overlays.ctxEdit()">{{ editOpLabel }}</button>
-    <button type="button" role="menuitem" data-testid="abwab-page-ctx-add-child" (click)="overlays.ctxAddChild()">{{ addChildOpLabel }}</button>
-    <button type="button" role="menuitem" data-testid="abwab-page-ctx-move" (click)="overlays.ctxMove()">{{ moveOpLabel }}</button>
-    <button type="button" role="menuitem" data-testid="abwab-page-ctx-relations" (click)="overlays.ctxRelations()">{{ relationsOpLabel }}</button>
-    <button type="button" role="menuitem" class="abwab-page__ctx-item--danger" data-testid="abwab-page-ctx-archive" (click)="overlays.ctxArchive()">
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-edit" (click)="overlays.ctxEdit()">{{ editOpLabel }}</button>
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-add-child" (click)="overlays.ctxAddChild()">{{ addChildOpLabel }}</button>
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-move" (click)="overlays.ctxMove()">{{ moveOpLabel }}</button>
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-relations" (click)="overlays.ctxRelations()">{{ relationsOpLabel }}</button>
+    <button type="button" role="menuitem" class="qd-context-menu__item qd-context-menu__item--danger" data-testid="abwab-page-ctx-archive" (click)="overlays.ctxArchive()">
       {{ archiveLabel }}
     </button>
-  </div>
+  </qd-context-menu>
 }

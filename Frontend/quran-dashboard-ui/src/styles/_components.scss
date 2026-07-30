@@ -543,7 +543,7 @@ button.qd-interactive-surface {
 .qd-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: var(--qd-z-modal-backdrop);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -561,6 +561,85 @@ button.qd-interactive-surface {
   box-shadow: var(--qd-shadow-lg);
   padding: var(--qd-space-5);
   width: min(100%, 36rem);
+}
+
+// Opt-in geometry modifier (UI_STYLE_SYSTEM.md §17 `.qd-modal` entry) — never
+// merged into the base above. `.qd-modal.explorer-detail-modal` sets
+// `max-height` but no `height`/`block-size`, so a block-size on the base would
+// apply there too and clamp five shipped words modals; --fixed is how a
+// consumer opts into §17's "fixed block-size, never max-block-size" rule
+// without that collision.
+.qd-modal--fixed {
+  display: flex;
+  flex-direction: column;
+  block-size: min(92dvh, 44rem);
+  padding: 0;
+  overflow: hidden;
+}
+
+.qd-modal__head,
+.qd-modal__foot {
+  flex-shrink: 0;
+  padding: var(--qd-space-5);
+}
+
+// The only scroller inside --fixed; stable gutter so the reserved scrollbar
+// track cannot reflow content width when the list crosses the scroll
+// threshold (audit item 3, one level down from the page-level fix).
+.qd-modal__body {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding-inline: var(--qd-space-5);
+}
+
+@media (max-width: bp.$qd-bp-phone-max) {
+  .qd-modal--fixed {
+    block-size: min(94dvh, 44rem);
+  }
+
+  .qd-modal__head,
+  .qd-modal__foot {
+    padding: var(--qd-space-3);
+  }
+
+  .qd-modal__body {
+    padding-inline: var(--qd-space-3);
+  }
+}
+
+// Item styling for `qd-context-menu`'s projected content (`shared/ui/context-menu/`).
+// Global, not scoped to the primitive's own stylesheet: these classes are applied by
+// consumer templates directly onto their own projected buttons, so a rule scoped to the
+// primitive's component stylesheet would never reach them under emulated encapsulation
+// (the same reason `.qd-tabs__tab` lives here rather than in `tabs.component.scss`).
+.qd-context-menu__item {
+  display: flex;
+  inline-size: 100%;
+  border: none;
+  background: transparent;
+  text-align: start;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-radius: var(--qd-radius-sm);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--qd-text);
+  cursor: pointer;
+}
+
+.qd-context-menu__item:hover {
+  background: var(--qd-surface-hover);
+}
+
+.qd-context-menu__item:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -2px;
+}
+
+.qd-context-menu__item--danger:hover {
+  background: var(--qd-danger-tint);
+  color: var(--qd-danger);
 }
 
 .qd-skeleton {
