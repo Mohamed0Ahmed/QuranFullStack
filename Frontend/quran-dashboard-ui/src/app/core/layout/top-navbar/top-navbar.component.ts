@@ -7,7 +7,13 @@ import { NAV_ITEMS, NavItem } from '../../navigation/nav-items';
 import { WORDS_ROUTE_PATH } from '../../navigation/route-paths';
 import { WORDS_MENU_ITEMS } from '../../navigation/words-nav-items';
 import { ThemeService } from '../../theme/theme.service';
+import { ScrollLockService } from '../../../shared/ui/modal-scroll-lock/scroll-lock.service';
 
+// The navbar goes inert while any modal dialog holds the scroll lock (Slice B2, T904 —
+// UI_STYLE_SYSTEM.md §17 "Chrome-inert rule"). Sticky chrome (T901) would otherwise stay
+// keyboard-reachable under a dialog it renders alongside (nine surfaces today: four abwab
+// modals + five words drawers/dialogs), which is `app.ts:14`'s shell-inert precedent applied
+// at the one level that does not also inert the dialog itself.
 @Component({
   selector: 'qd-top-navbar',
   standalone: true,
@@ -20,6 +26,8 @@ export class TopNavbarComponent {
   private readonly elementRef = inject(ElementRef);
   private readonly themeService = inject(ThemeService);
   private readonly oidcSecurityService = inject(OidcSecurityService);
+  private readonly scrollLock = inject(ScrollLockService);
+  protected readonly locked = this.scrollLock.isLocked;
 
   readonly allItems: NavItem[] = NAV_ITEMS;
   readonly primaryItems = NAV_ITEMS.filter((i) => i.group === 'primary');

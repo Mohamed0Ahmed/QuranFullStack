@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, input, output, si
 import { AbwabNode } from '../../models/abwab.models';
 import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 
 export interface AbwabMoveDestination {
   readonly targetParentId: number | null;
@@ -36,6 +37,7 @@ interface AbwabMovePickerRow {
 @Component({
   selector: 'qd-abwab-move-picker',
   standalone: true,
+  imports: [ModalScrollLockDirective],
   templateUrl: './abwab-move-picker.component.html',
   styleUrl: './abwab-move-picker.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

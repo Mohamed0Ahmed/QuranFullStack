@@ -1,4 +1,10 @@
-<nav class="qd-navbar" role="navigation" aria-label="التنقل الرئيسي">
+<nav
+  class="qd-navbar"
+  role="navigation"
+  aria-label="التنقل الرئيسي"
+  [attr.inert]="locked() ? '' : null"
+  [attr.aria-hidden]="locked() ? true : null"
+>
   <a class="brand" routerLink="/">
     <span class="qd-page-title">المنهج القرآني</span>
   </a>

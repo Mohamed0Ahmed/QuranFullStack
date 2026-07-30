@@ -50,7 +50,8 @@
   flex-direction: column;
   gap: var(--qd-space-3);
   position: sticky;
-  top: var(--qd-space-4);
+  // Re-based under the sticky navbar (Slice B2, T902) — was `var(--qd-space-4)` alone.
+  top: calc(var(--qd-navbar-block-size) + var(--qd-space-4));
 }
 
 .abwab-page__archive-confirm {

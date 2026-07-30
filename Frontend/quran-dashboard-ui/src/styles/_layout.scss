@@ -23,6 +23,18 @@
   overflow: visible;
 }
 
+// Sticky app chrome (Slice B2, T901, NEW PATTERN — UI_STYLE_SYSTEM.md §17 "Sticky app chrome").
+// `position: sticky` unconditionally creates a stacking context (every engine, regardless of
+// z-index) — so the navbar's OWN rung becomes the ceiling every descendant is capped at,
+// including its dropdown (`.dropdown-menu`) and its mobile overlay (`.mobile-menu`), both of
+// which already declare `--qd-z-mobile-nav` for themselves (`top-navbar.component.scss`). Putting
+// the navbar on that same rung, not `--qd-z-sticky`, is what makes their existing intent hold
+// again: it beats page popovers (30) and the detail-modal-shell restore control (40) — both of
+// which now paint OVER the navbar's box on a scrolled page if the navbar sits any lower — while
+// staying below `--qd-z-menu-backdrop`/`--qd-z-menu`/`--qd-z-modal-backdrop` (49/50), so a
+// `qd-context-menu` and any modal still paint above the chrome. `--qd-z-sticky` (5) stays reserved
+// for genuinely in-page sticky elements (`mushaf-header-navigation.component.scss`) that don't
+// carry their own competing descendants.
 .qd-navbar {
   display: flex;
   align-items: center;
@@ -34,6 +46,9 @@
   padding: var(--qd-space-3) var(--qd-space-5);
   background: var(--qd-chrome-bg);
   border-block-end: 1px solid var(--qd-border);
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--qd-z-mobile-nav);
 }
 
 .qd-container {

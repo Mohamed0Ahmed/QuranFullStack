@@ -1,6 +1,12 @@
 @if (open()) {
   <div class="qd-modal-backdrop" data-testid="abwab-sections-modal-backdrop" (click)="close()">
-    <section class="qd-modal abwab-sections-modal" dir="rtl" data-testid="abwab-sections-modal" (click)="$event.stopPropagation()">
+    <section
+      class="qd-modal abwab-sections-modal"
+      dir="rtl"
+      qdModalScrollLock
+      data-testid="abwab-sections-modal"
+      (click)="$event.stopPropagation()"
+    >
       <h3>{{ title }}</h3>
 
       @if (errorMessage(); as error) {

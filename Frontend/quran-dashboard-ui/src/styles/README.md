@@ -20,7 +20,12 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   holds `--qd-checkbox-size`, the fixed box size `.qd-checkbox` (`_forms.scss`) is built
   from. Also holds `--qd-name-min-inline-size` — the reserved-minimum floor a truncatable
   entity-name column pairs with `.qd-truncate` (`_utilities.scss`), per
-  `.architecture/UI_STYLE_SYSTEM.md` §17's "Truncatable entity names" entry.
+  `.architecture/UI_STYLE_SYSTEM.md` §17's "Truncatable entity names" entry. Also holds
+  `--qd-mushaf-sticky-top` and `--qd-mushaf-panel-height` (Slice B2, T902) — both re-based
+  onto `--qd-navbar-block-size` now that the navbar is sticky; `--qd-mushaf-panel-height`
+  derives from `--qd-mushaf-sticky-top`, not the bare navbar token, or the panel's stuck
+  bottom edge lands past the viewport (`.architecture/UI_STYLE_SYSTEM.md` §17 "Sticky app
+  chrome").
 - `_themes.scss` — dark-theme overrides for the same token surface (`--qd-accent-fg` and
   `--qd-selected-bg` are intentionally theme-invariant and not overridden here).
 - `_typography.scss` — font-face declarations and shared Arabic-first type classes.
@@ -32,6 +37,12 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   words-specific. `.qd-explorer-frame` is kept as a working alias on the same rule (Slice B2,
   T701/T702) so the five existing explorer call-sites keep working untouched — dual-selector
   precedent: `explorer-panel-skeleton.component.ts:16`. New call-sites use `.qd-page-frame`.
+  `.qd-navbar` is `position: sticky` on `--qd-z-mobile-nav`, **not** `--qd-z-sticky` (Slice B2,
+  T901/T903) — see `.architecture/UI_STYLE_SYSTEM.md` §17 "Sticky app chrome" for the
+  containing-block gotcha (`top-navbar.component.scss`'s `:host { display: contents }` is
+  load-bearing, not decorative) and why the navbar's own rung has to match the rung its
+  dropdown/mobile-menu already declare, since sticky positioning makes the navbar's rung a
+  ceiling for everything inside it.
 - `_forms.scss` — shared input/select styling and focus behavior. Also holds the
   `.qd-checkbox` / `.qd-check-row` family (`.architecture/UI_STYLE_SYSTEM.md` §17) — a
   fixed `--qd-checkbox-size` box plus a fixed-gap label row; call-sites compose them and

@@ -6,6 +6,7 @@ import { AbwabSectionDto } from '../../../../core/api/generated/models/abwab-sec
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 
 /**
  * List / add / rename / delete-empty for sections (plan-slice-b.md T510). Presentational:
@@ -19,7 +20,7 @@ import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 @Component({
   selector: 'qd-abwab-sections-modal',
   standalone: true,
-  imports: [QdStateComponent],
+  imports: [QdStateComponent, ModalScrollLockDirective],
   templateUrl: './abwab-sections-modal.component.html',
   styleUrl: './abwab-sections-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

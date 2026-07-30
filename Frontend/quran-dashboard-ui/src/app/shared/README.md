@@ -65,7 +65,17 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 - `ui/modal-scroll-lock/` — `qdModalScrollLock` directive + `ScrollLockService`, the
   **reference-counted** body scroll lock (Feature 029): overlapping layers (responsive
   drawer + global overlay) each acquire/release; the body unlocks only when the last
-  holder releases. Never lock `document.body` directly.
+  holder releases. Never lock `document.body` directly. `ScrollLockService.isLocked` (Slice
+  B2, T904) is a public signal derived from the same lock count — `.qd-navbar`
+  (`core/layout/top-navbar/`) reads it to go `[inert]`/`[aria-hidden]` while any modal dialog
+  holds the lock, so this is the one piece of state the chrome-inert rule reads; do not add a
+  second "any modal open" service (`.architecture/UI_STYLE_SYSTEM.md` §17 "Chrome-inert
+  rule"). Nine surfaces hold the lock as of this phase: six abwab modals
+  (`abwab-door-modal`, `abwab-relations-modal`, `abwab-template-copy-modal`,
+  `abwab-template-node-modal`, plus `abwab-sections-modal`/`abwab-move-picker` added at
+  T905) and five words detail surfaces/dialogs (`root-details-panel`,
+  `lemma-details-panel`, `stem-details-panel`, `word-type-details-panel`,
+  `word-drilldown-modal`).
 - `ui/pagination/` — reusable pagination component, windowing helpers, labels, and tests.
 - `ui/placeholder-page/` — generic placeholder page that reads its title from route data.
 - `ui/safe-html/` — HTML sanitizing pipe for trusted API-backed markup display.

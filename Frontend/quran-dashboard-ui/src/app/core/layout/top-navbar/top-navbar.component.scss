@@ -1,3 +1,16 @@
+// `display: contents` (Slice B2, T901) drops the component host out of the box tree so
+// `.qd-navbar` becomes the direct flex item of `.qd-shell-viewport` (903px+) instead of this
+// host. Without it, the host wraps `.qd-navbar` in a block exactly as tall as the navbar
+// itself (flex items are blockified) — a sticky box's travel is clamped to its containing
+// block's content box, so a containing block exactly the element's own height gives it zero
+// travel: it can never leave its static position and just scrolls away with the page. Spec
+// behavior in every engine, not a Chrome quirk — confirmed in the browser (`evidence.md`
+// phase 9). Any future sticky element wrapped tightly by its own component host hits the
+// same wall; the remedy generalizes (`UI_STYLE_SYSTEM.md` §17 "Sticky app chrome").
+:host {
+  display: contents;
+}
+
 .brand {
   text-decoration: none;
   color: inherit;

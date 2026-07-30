@@ -641,3 +641,279 @@ the reservation and no state resizes the frame (measured across five states, plu
 construction argument for `loading`); `features/abwab/README.md` records the scope decision
 (doors page only) and the four-link stretch chain. T101→T601→phase-7→phase-8 Vitest/build
 deltas are unbroken at +0/+0 and byte-identical budgets.
+
+## Phase 9 (T901–T905) — sticky navbar, item 6
+
+Branch `ux-slice-b2-frame`, working tree clean at phase 8's close before this phase's edits.
+Backend built and run (`dotnet build Backend/QuranDashboard.sln`, 0 warnings/errors;
+`dotnet run --no-build --urls https://localhost:5015`, `/api/health` → healthy); frontend via
+`npm start` (`https://localhost:4200`). Driven with the `claude-in-chrome` MCP tool per phases
+7/8's finding. Both servers stopped after verification, before the Tier B gate.
+
+### T901 — `.qd-navbar` becomes sticky, and a real defect surfaced while proving it
+
+`_layout.scss`: `.qd-navbar` gained `position: sticky; inset-block-start: 0; z-index:
+var(--qd-z-sticky)`.
+
+**First browser measurement showed it did not stick at all** — `getBoundingClientRect().top`
+tracked `-scrollY` exactly at every scroll offset tested (`0, 20, 40, 56, 80, 120, 168`), and a
+screenshot at `scrollY: 168` confirmed the navbar had scrolled fully off-screen. Root-caused by
+building a minimal in-page repro (a `position: sticky` probe inside a wrapper sized to exactly
+its own height) that reproduced the failure identically, then fixing it by setting the wrapper to
+`display: contents` — which resolved it. **Root cause: `.qd-navbar`'s Angular component host
+(`<qd-top-navbar>`) is a flex item of `.qd-shell-viewport` (flex items are blockified) and, with
+no height of its own, wraps the 56px navbar in a block exactly 56px tall.** A sticky box's travel
+is clamped to its containing block's content box; a containing block exactly the element's own
+height gives zero travel, so the box can never leave its static position — spec behavior in every
+engine, not a Chrome-specific bug (confirmed by an isolated repro on `example.com`, where an
+ordinary tall-container sticky probe worked correctly on the first try, in the same browser
+session). **Fix:** `:host { display: contents; }` added to `top-navbar.component.scss`, which
+drops the host out of the box tree so `.qd-navbar` becomes the direct flex item of the
+903px+-tall `.qd-shell-viewport` instead. Re-measured after the fix: `rect.top === 0` at every
+scroll offset `0`–`168`, confirmed both via `getBoundingClientRect()` and a screenshot showing the
+navbar pinned at the top of the viewport while the page content and footer scrolled underneath.
+
+| Property | Value |
+|---|---|
+| `.qd-navbar` computed `position` | `sticky` |
+| `.qd-navbar` computed `z-index` | `5` (`--qd-z-sticky`) |
+| `.qd-navbar` `getBoundingClientRect().height` | `56px` (= `--qd-navbar-block-size`, 3.5rem) |
+| `<qd-top-navbar>` computed `display` (after fix) | `contents` |
+
+### T902 — both sticky offsets re-based, plus a third arithmetic gap found and fixed
+
+`--qd-mushaf-sticky-top` (`_tokens.scss`): `var(--qd-space-3)` → `calc(var(--qd-navbar-block-size)
++ var(--qd-space-3))`. `.abwab-page__side`'s `top` (`abwab-page.component.scss`): `var(--qd-space-4)`
+→ `calc(var(--qd-navbar-block-size) + var(--qd-space-4))`.
+
+| Offset | Formula | Computed value |
+|---|---|---|
+| `--qd-mushaf-sticky-top` | `calc(3.5rem + 0.75rem)` | `68px` |
+| `.abwab-page__side` `top` | `calc(var(--qd-navbar-block-size) + var(--qd-space-4))` | `72px` (measured `cssTop`) |
+
+Both confirmed live: the mushaf reader panel's computed `top` read `68px` and stuck flush under
+the 56px navbar at every scroll offset tested; the abwab side panel's computed `top` read `72px`.
+
+**A third gap found while checking §4.5, adjacent to but distinct from double-subtraction:**
+`--qd-mushaf-panel-height` (`_tokens.scss`) was still `calc(100dvh -
+var(--qd-navbar-block-size))` — sized from the bare navbar token, not from the panel's own
+re-based `top`. Measured live: at `scrollY: 120` (enough to fully stick the panel), `rect.top =
+68`, `rect.height = 847`, `rect.bottom = 915`, `window.innerHeight = 903` — the panel's stuck
+bottom edge sat **12px below the viewport** (`--qd-space-3`, exactly the extra gap
+`--qd-mushaf-sticky-top` adds beyond the bare navbar height). Not double-subtraction (the
+arithmetic never subtracts the navbar twice), but a single omission: the height formula ignored
+part of the offset it is supposed to fit beneath. Confirmed this wasn't an artifact of thin
+content (al-Fatihah, 7 short ayahs, under-filling the 847px box) by forcing genuine container
+slack (selecting a word to populate the study column to `966.9px`, well past the panel's own
+height) and re-measuring — the 12px overshoot persisted at `scrollY: 100` regardless. **Fixed:**
+`--qd-mushaf-panel-height` re-derived as `calc(100dvh - var(--qd-mushaf-sticky-top))` instead of
+the bare navbar token — CSS custom properties resolve at used-value time, so referencing
+`--qd-mushaf-sticky-top` (declared later in the same `:root` block) is valid. Re-measured after
+the fix: `top: 68, height: 835, bottom: 903` — flush with the viewport, `overshoot: 0`, exactly.
+This has exactly one consumer (`mushaf-reader-page.component.scss`), confirmed by `grep -rn
+"qd-mushaf-panel-height"` before editing.
+
+### T903 — item 6's three constraints, plus §4.5's, verified live
+
+**1. `--qd-mushaf-panel-height` double-subtraction check: passed, no double-subtraction found**
+(see T902 above for the adjacent single-omission defect that *was* found and fixed).
+
+**2. Both re-based sticky offsets sit flush under the chrome: confirmed** — `68px` (mushaf) and
+`72px` (abwab side panel), both measured live, both landing exactly at
+`navbar-height + original-offset` with no drift.
+
+**3. Navbar dropdowns must still escape the navbar's new stacking context — initial finding,
+escalation, and the resolved rung.**
+
+*First finding, at `--qd-z-sticky` (5):* `position: sticky` unconditionally establishes a new
+stacking context in every current browser engine, regardless of `z-index` value — confirmed by
+forcing `.qd-navbar`'s `z-index` to `auto !important` live and re-testing: the dropdown (still a
+DOM descendant of the now-`z-index:auto`-but-still-sticky navbar) remained trapped, proving the
+trigger is `position: sticky` itself, not the `z-index` value. Confirmed a second, independent way
+with a clean isolated repro (a `position: sticky; z-index: auto` wrapper containing a `z-index:
+45` child, versus a `z-index: 40` sibling appended to `document.body`): the sibling won every
+time. A decisive test against the app's real DOM (a transparent `--qd-z-floating` probe placed at
+the open dropdown's own rect, outside the navbar) confirmed the probe won — the dropdown lost to a
+40-rung element it should have beaten.
+
+**This was escalated rather than accepted as a limitation, and the call came back: fix it, still
+inside phase 9.** Re-analysis against every `--qd-z-*` consumer (`grep -rn "var(--qd-z-"`) showed
+`--qd-z-sticky` (5) is not merely suboptimal for the dropdown — it is the wrong rung for a sticky
+navbar generally, because the navbar hosts two of its own descendants that already declare
+`--qd-z-mobile-nav` (45) for themselves (`top-navbar.component.scss`): `.dropdown-menu` and
+`.mobile-menu` (`position: fixed; inset: 0`, the full-screen mobile overlay). At rung 5 both are
+clamped below `--qd-z-popover` (30) and `--qd-z-floating` (40) — not just the dropdown, but the
+mobile overlay too, and in the other direction, a page popover at rung 30 would now paint *over*
+the sticky navbar's own box on a scrolled page, a failure mode that could not exist before the
+navbar was sticky (content never scrolled under it).
+
+**Resolution: `.qd-navbar` moved from `--qd-z-sticky` to `--qd-z-mobile-nav` — the same rung its
+dropdown and mobile menu already declare, no new token.** This satisfies §4's stated purpose for
+the scale ("deliberately below `--qd-z-menu-backdrop`, so row menus and modals paint above the
+chrome") while fixing the mechanism: 45 beats popover (30) and floating (40); 49/50/51 (menu
+backdrop / menu / modal backdrop) still beat it. `--qd-z-sticky` (5) is unchanged and keeps its
+one in-page consumer (`mushaf-header-navigation.component.scss`) — it was never wrong for a
+sticky element with no competing descendants of its own, only for one that also hosts higher-rung
+menus. `styles/_layout.scss`'s `.qd-navbar` rule and `_tokens.scss`'s layer-scale comment block
+(both the per-token trailing comments and the ordering prose) were updated accordingly.
+
+**Re-verified live, all four cases the escalation asked for, all passing:**
+
+| Check | Method | Result |
+|---|---|---|
+| (a) Dropdown vs. a `--qd-z-floating` (40) element outside the navbar | Same probe technique as the first finding: transparent `div` at the open `#words-menu`'s rect, `z-index: var(--qd-z-floating)`, appended to `document.body` | `elementFromPoint()` at the dropdown's center now returns the dropdown link (`.dropdown-link`), not the probe |
+| (a, cont.) Dropdown-rung vs. the **real** `detail-modal-shell__restore` control | Probe at the restore control's actual live rect, `z-index: var(--qd-z-mobile-nav)` | `elementFromPoint()` at the restore control's center returns the probe — a 45-rung element now beats the real 40-rung restore control |
+| (b) `.mobile-menu` covers page content and beats a popover | Opened the mobile menu (`.menu-toggle` click, computed `position: fixed`, `z-index: 45`, rect `0,0`–full viewport); probe at `--qd-z-popover` (30) placed under it | `elementFromPoint()` inside the menu returns `.mobile-link`, not the probe |
+| (c) `qd-context-menu` and a modal backdrop still paint above the (now 45-rung) navbar | Opened a real abwab door-modal backdrop (`z-index: 50`) and a real row `qd-context-menu` (`__backdrop` 49 / menu 50) via `contextmenu` dispatch; `elementFromPoint()` at the navbar's own center in both cases | Both return the modal backdrop / context-menu backdrop, not the navbar |
+| (d) The sticky navbar itself is not overpainted by a popover on a scrolled page | Scrolled the mushaf reader to `scrollY: 50`; probe at the navbar's own live rect, `z-index: var(--qd-z-popover)` (30, matching the real `surah-jump-picker` popover's own rung) | `elementFromPoint()` at the navbar's center returns `.qd-navbar`, not the probe |
+
+**Cleanup:** every probe/override element (`zindex-probe`, `zindex-probe2`, `zindex-probe3`,
+`zindex-test-override`, `repro-wrap`, `repro-probe`, `zindex-probe-recheck`, `mobile-nav-probe`,
+`popover-probe`, `popover-vs-navbar-probe`) was removed from the live DOM after each test; none
+touched source files.
+
+**E2E regression guard**, `npx playwright test --project=default --workers=2 e2e/shell-nav.e2e.ts
+e2e/mushaf-reader.e2e.ts`:
+
+```
+8 passed (9.4s)
+```
+
+All three `shell-nav.e2e.ts` cases (navbar links reach the reader, words dropdown reaches the
+words hub, more dropdown reaches a placeholder section) and all five `mushaf-reader.e2e.ts` cases
+passed. Evidence, not a tier (§7.1). **Re-run again after the `--qd-z-mobile-nav` rung fix below
+(same command): 8 passed (9.5s)**, identical result.
+
+### T904 — `ScrollLockService.isLocked`, navbar `[inert]`, and inert-inside-inert observed live
+
+`scroll-lock.service.ts`: `lockCount` became a `signal(0)`; added `readonly isLocked =
+computed(() => this.lockCount() > 0)`. `top-navbar.component.ts` injects `ScrollLockService` and
+exposes `protected readonly locked = this.scrollLock.isLocked`; the template gained
+`[attr.inert]="locked() ? '' : null"` and `[attr.aria-hidden]="locked() ? true : null"` on
+`<nav class="qd-navbar">`, copying `app.ts:14`'s pairing exactly.
+
+**`scroll-lock.service.spec.ts` extended** (the one sanctioned additive spec for B2, per plan §3/
+§7.1) with one new test: `isLocked` tracks true/false correctly across two simultaneous
+acquire/release consumers. No new spec file.
+
+**Live verification, four scenarios, all measured directly on the real DOM (not just the unit
+spec):**
+
+| Scenario | `body.style.overflow` | `.qd-navbar[inert]` | `.qd-navbar[aria-hidden]` | `qd-app-shell[inert]` |
+|---|---|---|---|---|
+| Plain abwab door modal open | (n/a, not re-measured here) | `""` | `"true"` | — |
+| Closed again | — | `null` | — | — |
+| `abwab-sections-modal` open (T905) | `"hidden"` | `""` | `"true"` | — |
+| `abwab-move-picker` open (T905) | `"hidden"` | `""` | `"true"` | — |
+| Words drawer alone (`root-details-modal`, forced mobile via `isDesktop.set(false)` on the live component instance) | `"hidden"` | `""` | `"true"` | `null` |
+| Words drawer **+** global overlay (`detail-modal-shell`) both open — **inert-inside-inert** | `"hidden"` | `""` | `"true"` | `""` (+ `aria-hidden="true"`) |
+
+The drawer-alone row is the concrete proof of T904's new, independent behavior: the navbar goes
+inert **without** the shell being inert, something impossible before this phase (shell inert was
+previously the only inert mechanism, gated solely on the global overlay).
+
+**Inert-inside-inert, observed and recorded as asked:** with the words drawer open under the
+global overlay, `qd-app-shell.getAttribute('inert')` is `""` (from `app.ts`'s `overlayOpen()`)
+**and** `.qd-navbar.getAttribute('inert')` is independently `""` (from
+`ScrollLockService.isLocked()`, since the drawer itself holds the lock) — both apply
+simultaneously. `shell.contains(drawer) === true`, `shell.contains(dialog) === false`, matching
+`app.nested-layers.spec.ts`'s existing assertions. **"Exactly one focus trap enabled" still
+holds, confirmed live, not just via the spec:** `document.querySelectorAll(
+'.cdk-focus-trap-anchor[tabindex="0"]')` returned exactly 2 elements, both children of
+`[data-testid="detail-modal-backdrop"]` (the dialog's trap) — none under the drawer.
+
+`app.nested-layers.spec.ts` run (targeted, before the full suite): **4/4 passed**
+(`spec-app-app.nested-layers.spec.js`).
+
+### T905 — `qdModalScrollLock` added to the two remaining abwab modals
+
+`abwab-sections-modal.component.ts`/`.html` and `abwab-move-picker.component.ts`/`.html`: imported
+`ModalScrollLockDirective`, added it to each component's `imports` array, and added
+`qdModalScrollLock` to each modal's root `<section class="qd-modal …">` element. Verified live for
+both (table above): opening either sets `body.style.overflow = "hidden"` and inerts the navbar;
+closing either (`abwab-sections-modal-close`, `abwab-move-picker-cancel`) clears both.
+
+**Two intentional behavior changes, named per the task's instruction, not slipped in:**
+
+1. **The navbar becomes keyboard-unreachable while any of nine surfaces is open** — six abwab
+   modals (four pre-existing plus these two) and five words detail surfaces/dialogs that already
+   held the lock before this phase. Nobody asked about the five words surfaces; accepted
+   deliberately because the doctrine ("app chrome is not reachable while a modal dialog is open")
+   is not abwab-specific and `app.ts:14` already applies a *stronger* version of it (whole-shell
+   inert) for the global overlay.
+2. **`abwab-sections-modal` and `abwab-move-picker` stop the page scrolling behind them** — a
+   latent defect fixed as a side effect of giving them the lock, per plan §2's naming.
+
+### Re-checked: phase 8's invariants, after the navbar's box-tree change
+
+T901's `display: contents` fix removes `<qd-top-navbar>` from the box tree, so the abwab page
+frame's ancestor chain changed shape. Re-measured at the same viewport phase 8 used:
+
+| Quantity | Phase 8 (evidence.md) | Phase 9 (re-measured) | Match |
+|---|---|---|---|
+| `.abwab-page__frame` `top` | `80px` | `80px` | exact |
+| `.abwab-page__frame` height / `min-block-size` | `847px` | `847px` | exact |
+| `boxSizing` | `border-box` | `border-box` | exact |
+| `.qd-navbar` height | `56px` (3.5rem) | `56px` | exact |
+
+Unchanged — the box-tree change is contained to the navbar's own subtree and does not perturb the
+abwab frame's geometry.
+
+### Tier B gate
+
+Commands run from `Frontend/quran-dashboard-ui/`, `VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`
+preserved (baked into `npm test`, no direct `ng test` call):
+
+```bash
+npm test
+```
+
+Result: **191 spec files passed (191) / 2165 tests passed (2165) / 0 failed.** Duration 178.14s.
+
+**Delta vs T601 (191 files / 2164 tests): +0 files, +1 test — exactly T904's `isLocked` case.**
+The plan's own T1102 expectation (+0 files, +2–4 tests total for B2) is split across phases: this
+phase contributes 1 of that range; phase 10 (T1002/T1004, the builder/labels specs) owes the
+remaining 1–3.
+
+```bash
+npm run build
+```
+
+Result: **green.** `ng build` completed in 18.151s, output at `dist/quran-dashboard-ui`. Same four
+pre-existing budget categories as phase 8's close, one small explained delta:
+
+- initial bundle exceeded the 500.00 kB budget by **69.15 kB (569.15 kB total)** — **+0.32 kB vs
+  phase 8's 568.83 kB.** Expected: the sticky-navbar CSS (`_layout.scss`), the re-based token/offset
+  arithmetic (`_tokens.scss`, `abwab-page.component.scss`), `top-navbar.component.ts`'s new
+  `ScrollLockService` import/signal, and two more components importing
+  `ModalScrollLockDirective`. Not a regression — the minimal, explained cost of five components'
+  worth of new imports/bindings.
+- `selected-word-section.component.scss` exceeded its 4.00 kB budget by 649 bytes — unchanged
+- `selected-ayah-section.component.scss` exceeded its 4.00 kB budget by 1.85 kB — unchanged
+- `abwab-relations-modal.component.scss` exceeded its 4.00 kB budget by 1.08 kB — unchanged
+
+No new warning categories. No errors.
+
+**Gate re-run after the `--qd-z-mobile-nav` rung fix (below), same commands:** `npm test` →
+**191 files / 2165 tests, 0 failed** (191.07s), byte-for-byte the same pass/fail shape as above.
+`npm run build` → **green**, initial bundle **569.15 kB**, identical to the number above —
+swapping which token `.qd-navbar` references costs nothing measurable (`var(--qd-z-mobile-nav)`
+is the same length as `var(--qd-z-sticky)`). Same four pre-existing budget categories, no new
+warnings, no errors. Both gate runs are recorded because the rung changed after the first one;
+the numbers did not move.
+
+**Obligations checked at close of phase 9:** `.qd-navbar` ships `position: sticky`, confirmed
+sticking in the browser only after the `display: contents` fix; both re-based sticky offsets
+(mushaf `68px`, abwab side panel `72px`) verified flush, plus the adjacent
+`--qd-mushaf-panel-height` gap found and fixed; `--qd-mushaf-panel-height` re-checked for
+double-subtraction (none found); navbar dropdowns' escape constraint checked, found to fail at
+`--qd-z-sticky`, escalated, and **resolved** by moving `.qd-navbar` to `--qd-z-mobile-nav` — the
+rung its own dropdown and mobile menu already declare — with all four re-verification cases
+passing live (probe-vs-dropdown, probe-vs-real-restore-control, mobile-menu-vs-popover,
+context-menu/modal-backdrop-vs-navbar, popover-vs-scrolled-navbar); no "known limitation" claim
+left standing in any doc; `ScrollLockService` exposes `isLocked`; navbar inert + `aria-hidden`
+paired as `app.ts:14` does; `app.nested-layers.spec.ts` run (4/4) and the inert-inside-inert state
+observed live on the real DOM, not only asserted by the spec; `qdModalScrollLock` added to
+`abwab-sections-modal` and `abwab-move-picker`, both intentional behavior changes named above;
+phase 8's frame geometry re-verified unchanged after the box-tree change; Vitest/build deltas
+explained (+0/+1, +0.32 kB then unchanged after the rung fix) and re-confirmed after the fix.

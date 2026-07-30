@@ -74,7 +74,12 @@
   --qd-mushaf-text-column-width: 28rem;
   --qd-mushaf-surah-header-frame-width: 12rem;
   --qd-navbar-block-size: 3.5rem;
-  --qd-mushaf-panel-height: calc(100dvh - var(--qd-navbar-block-size));
+  // Sized off `--qd-mushaf-sticky-top` (below), not the bare navbar token (Slice B2, T902/T903):
+  // the panel's stuck top is navbar + --qd-space-3, so a height measured from the navbar alone
+  // pushes its bottom edge that same --qd-space-3 past the viewport once stuck. CSS custom
+  // properties resolve at used-value time, so referencing a token declared later in this same
+  // block is fine — no declaration-order requirement.
+  --qd-mushaf-panel-height: calc(100dvh - var(--qd-mushaf-sticky-top));
   --qd-mushaf-word-selection-indicator: var(--qd-accent);
   /* Mushaf word interaction ladder: canvas < hover < selection. Both washes tint the
      selection indicator, so hover reads as "pre-selection" of the same word, and both are
@@ -104,7 +109,9 @@
   --qd-mushaf-word-selection-ring: color-mix(in oklch, var(--qd-mushaf-word-selection-indicator) 55%, transparent);
   --qd-mushaf-ayah-marker-font-size: 1.5rem;
   --qd-mushaf-ayah-marker-color: var(--qd-text-muted);
-  --qd-mushaf-sticky-top: var(--qd-space-3);
+  // Re-based under the sticky navbar (Slice B2, T902) — the navbar now stays in view while
+  // scrolling, so the panel's own top offset must clear it, not just --qd-space-3.
+  --qd-mushaf-sticky-top: calc(var(--qd-navbar-block-size) + var(--qd-space-3));
 
   --qd-segment-cat-1: oklch(0.521 0.089 69.2);
   --qd-segment-cat-2: oklch(0.490 0.068 176.3);
@@ -190,11 +197,23 @@
      by this change — the context-menu and the modal backdrop never need to compete
      because a modal open state does not currently suppress the menu (Slice B territory).
      --qd-z-modal has no consumer yet (`.qd-modal` paints via DOM order inside its
-     backdrop's stacking context); reserved for the day a modal box needs to escape it. */
-  --qd-z-sticky: 5;             /* page chrome / sticky headers; Slice B's sticky navbar consumes this rung */
+     backdrop's stacking context); reserved for the day a modal box needs to escape it.
+
+     `.qd-navbar` itself is ALSO --qd-z-mobile-nav, not --qd-z-sticky (Slice B2, T901/T903).
+     `position: sticky` unconditionally creates a stacking context in every engine regardless
+     of z-index, so a sticky element's own rung becomes the ceiling every descendant is capped
+     at — the navbar's dropdown and mobile menu are descendants that already declare
+     --qd-z-mobile-nav for themselves, so the navbar has to sit on that same rung or it clamps
+     them below it (verified: at --qd-z-sticky the dropdown lost to a synthetic --qd-z-floating
+     probe placed outside the navbar, and page popovers at 30 would paint over the sticky
+     navbar's own box on a scrolled page — a failure mode that didn't exist before the navbar
+     was sticky, since content never scrolled under it). --qd-z-sticky (5) stays reserved for a
+     genuinely in-page sticky element with no competing descendants of its own
+     (mushaf-header-navigation.component.scss is the one consumer). */
+  --qd-z-sticky: 5;             /* in-page sticky headers with no descendant menus of their own */
   --qd-z-popover: 30;           /* selector/filter popover panels */
   --qd-z-floating: 40;          /* the detail-modal-shell restore control */
-  --qd-z-mobile-nav: 45;        /* navbar dropdown + mobile menu — see note above */
+  --qd-z-mobile-nav: 45;        /* .qd-navbar itself (sticky, T901/T903) + its dropdown + mobile menu — see note above */
   --qd-z-menu-backdrop: 49;     /* qd-context-menu backdrop */
   --qd-z-menu: 50;              /* qd-context-menu */
   --qd-z-modal-backdrop: 50;    /* .qd-modal-backdrop */

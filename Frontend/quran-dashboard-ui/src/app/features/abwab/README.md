@@ -229,6 +229,33 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   a stretched row would zero out its scroll travel. Scoped to the doors page's tree/cards/archive
   card only — `abwab-templates-page.component`'s editor panel keeps its own `min-block-size:
   22rem` and is out of this phase's scope.
+- **`.qd-navbar` is sticky and goes inert while any modal dialog is open (Slice B2, T901/T904).**
+  `.abwab-page__side`'s own sticky `top` is re-based onto `--qd-navbar-block-size`
+  (`abwab-page.component.scss`) so it sits flush under the now-always-visible chrome instead of
+  under the old scrolled-away navbar. Two intentional behavior changes ship with this phase, both
+  named per `docs/feature-ux-slice-b/plan.md` §9: (1) the navbar is keyboard-unreachable while any
+  of abwab's six modals — now including `abwab-sections-modal` and `abwab-move-picker` (T905,
+  below) — is open, same doctrine `app.ts` already applies to the global words overlay; (2) both
+  those two modals now lock body scroll like the other four, so the page no longer scrolls behind
+  them. See `.architecture/UI_STYLE_SYSTEM.md` §17 "Chrome-inert rule".
+- **`abwab-sections-modal` and `abwab-move-picker` carry `qdModalScrollLock` as of T905** — the
+  two abwab modals that previously held no lock at all. Every abwab modal now participates
+  uniformly in the chrome-inert rule above; do not add a seventh abwab modal without it.
+- **`.qd-navbar` sits on `--qd-z-mobile-nav` (45), not `--qd-z-sticky` (5) — the rung its own
+  dropdown and mobile menu already declare, because sticky positioning makes the navbar's own
+  rung a ceiling for everything inside it.** `position: sticky` unconditionally creates a
+  stacking context (every engine, regardless of `z-index`), so a sticky element's descendants
+  can never paint above what the element's own rung permits, no matter their own declared
+  z-index. Putting the navbar on `--qd-z-sticky` — the reflexive "lowest rung" choice — would
+  have clamped `.dropdown-menu` and `.mobile-menu` down to 5, breaking three real surfaces
+  (verified against every `--qd-z-*` consumer): the dropdown loses to the `detail-modal-shell`
+  restore control (40); `.mobile-menu`, a full-screen overlay, would paint under page popovers
+  (30); and page popovers would paint *over* the sticky navbar itself on a scrolled page — a
+  failure mode that didn't exist before the navbar was sticky. `--qd-z-mobile-nav` fixes all
+  three while staying below `--qd-z-menu-backdrop`/`--qd-z-menu`/`--qd-z-modal-backdrop`, so a
+  `qd-context-menu` and any modal still paint above the chrome. See
+  `.architecture/UI_STYLE_SYSTEM.md` §17 "Sticky app chrome" for the full reasoning and the live
+  verification of all four cases.
 - **Refresh-after-write is an invariant, not an optimization.** Every write
   resequences its scope to `1..N`, which bumps every sibling's `xmin` too. A root-affecting
   write additionally maintains the global order (below) in the same request, which resequences
