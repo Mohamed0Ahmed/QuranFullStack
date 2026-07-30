@@ -609,9 +609,199 @@ npm run build
   phase's CSS lives in the component's own scoped stylesheet, not a shared global
   partial). No build errors.
 
+## Phase 6 verification
+
+**Measured:** 2026-07-30, branch `ux-audit-slice-a`, immediately after the phase 6 edits
+(T601–T605), before commit. Parent commit `ab436c570788dc3e9c09933135cb7ce5ef113f32`.
+
+### New primitive
+
+`src/app/shared/ui/context-menu/` — `QdContextMenuComponent` (`qd-context-menu`),
+standalone, `OnPush`:
+
+- **Inputs:** `position: input.required<{ x: number; y: number }>()`,
+  `menuTestId: input.required<string>()`, `backdropTestId: input.required<string>()`.
+- **Output:** `dismissed = output<void>()`, emitted on backdrop click and on
+  `@HostListener('document:keydown.escape')`.
+- Renders a `position: fixed; inset: 0` transparent backdrop at
+  `var(--qd-z-menu-backdrop)` and a positioned `role="menu"` box at
+  `var(--qd-z-menu)` (`[style.left.px]`/`[style.top.px]` off `position()`), with
+  `<ng-content />` for projected items.
+- Item styling (hover, `:focus-visible` ring, `--danger` variant) lives as **global**
+  classes in `src/styles/_components.scss` (`.qd-context-menu__item` /
+  `.qd-context-menu__item--danger`), not in the component's own stylesheet — content
+  projected via `<ng-content>` is compiled under the *consumer's* Angular emulated
+  encapsulation, so a scoped rule in `context-menu.component.scss` would never reach it
+  (the `.qd-tabs__tab` precedent, verified against `src/app/shared/ui/tabs/tabs.component.scss`,
+  which is empty of item styling for the same reason).
+- **No new spec file** — plan §3 permits new tests only in phase 5 (T502); a
+  `context-menu.component.spec.ts` would have moved the file count off the target
+  191/2164.
+
+### Danger-variant divergence found and preserved (not unified)
+
+Re-reading both pre-extraction SCSS blocks byte-for-byte found they were **not**
+identical, despite the plan's premise: `abwab-page.component.scss:128-131` colored the
+archive item red **only on `:hover`** (tint background + danger text, the same idiom as
+`abwab-side-panel.component.scss:70-73`'s `__op--danger:hover`); the templates page's
+`abwab-templates-page.component.scss:186-188` colored its delete item red **at rest,
+unconditionally**, with no override on hover. Per plan §3's "no visual change to any
+shipped surface" (one flagged exception, already spent on T203), both behaviors were
+preserved rather than unified:
+
+- The shared `.qd-context-menu__item--danger` (`_components.scss`) carries the
+  hover-only idiom — `abwab-page` renders byte-identically to before.
+- `abwab-templates-page.component.scss` keeps a 9-line page-scoped override (comment +
+  rule) reproducing its own always-red-at-rest look, so its rendering is also
+  unchanged. Named as a third gap in the new §17 `qd-context-menu` entry and flagged for
+  reconciliation as a later slice's call, not this extraction's.
+
+### T602 — `abwab-page` composition
+
+- `abwab-page.component.html:243-260` (old) → composes `<qd-context-menu>` with
+  `menuTestId="abwab-page-context-menu"`, `backdropTestId="abwab-page-ctx-backdrop"`,
+  `[position]="overlays.contextMenuPosition()"`, `(dismissed)="overlays.closeContextMenu()"`;
+  the 5 projected buttons keep their exact `data-testid`s and gain
+  `class="qd-context-menu__item"` (`--danger` added on the archive item only).
+- **`abwab-page.component.scss`: 48 lines deleted, 0 added** (backdrop, menu, item,
+  hover, focus, danger, including the two bare `z-index: 49`/`z-index: 50` literals at
+  old `:88,94`) — file went from 142 lines to 94 lines, confirmed by `git diff --stat`
+  (the media query and everything before the deleted block are untouched).
+- `abwab-page.component.ts` — added the `QdContextMenuComponent` import and its entry in
+  the `imports` array. No other line changed.
+
+### T603 — `abwab-templates-page` composition
+
+- `abwab-templates-page.component.html:208-251` (old) → composes `<qd-context-menu>`
+  with `menuTestId="abwab-templates-page-context-menu"`,
+  `backdropTestId="abwab-templates-page-ctx-backdrop"`,
+  `[position]="contextMenuPosition()"`, `(dismissed)="closeContextMenu()"`; the 4
+  projected buttons (edit, add-child, delete-template, delete-node) keep their exact
+  `data-testid`s and gain `class="qd-context-menu__item"` (`--danger` on both delete
+  items). **The root-vs-node `@if (contextMenuIsRoot())`/`@else` swap and its
+  explanatory comment stay in the page**, unmoved — page logic, not menu shell.
+- **`abwab-templates-page.component.scss`: 44 lines deleted, 10 lines added**
+  (backdrop, menu, item, hover, focus, danger, including the two bare `z-index: 49`/
+  `z-index: 50` literals at old `:146,152`, replaced by the danger-override documented
+  above), confirmed by `git diff --stat` — file went from 202 lines to 168 lines.
+- `abwab-templates-page.component.ts` — added the `QdContextMenuComponent` import and
+  its entry in the `imports` array. No other line changed.
+
+### Zero bare `z-index` literals outside `_tokens.scss` — proven repo-wide
+
+```bash
+$ grep -rn "z-index" src/ | grep -v "var(--qd-z-"
+src/styles/README.md:19:  stacking `z-index` in the app is one of these rungs; never write a bare `z-index`. Also
+src/styles/_tokens.scss:161:  /* Layer scale (UI_STYLE_SYSTEM.md §4). Every stacking `z-index` in the app is one of
+src/styles/_tokens.scss:162:     these rungs — never write a bare z-index. The four abwab context-menu literals that
+```
+
+Every remaining hit is prose (a README sentence and a `_tokens.scss` comment), not a
+declaration. **Zero** bare numeric `z-index` declarations remain anywhere in `src/`
+outside `_tokens.scss` itself — satisfying plan §9's checklist item, completed by this
+phase as T202 (phase 2) deliberately deferred it here. The `_tokens.scss` comment
+written in phase 2 (which forward-referenced "the Slice A phase that moves them onto
+`--qd-z-menu-backdrop`/`--qd-z-menu`") was updated in this phase to record that the move
+happened, rather than left describing a still-future step.
+
+### Old class names — zero dangling references
+
+```bash
+$ grep -rn "abwab-page__ctx-backdrop\|abwab-page__ctx-menu\|abwab-page__ctx-item\|abwab-templates-page__ctx-backdrop\|abwab-templates-page__ctx-menu\|abwab-templates-page__ctx-item" \
+    --include="*.ts" --include="*.html" --include="*.scss" --include="*.md" .
+(no output)
+```
+
+Checked across `src/`, `e2e/`, `docs/`, `.architecture/` (the whole repo) — no stray
+reference to any of the six deleted class names anywhere.
+
+### No spec file edited
+
+`git status --porcelain` before commit lists no file under `*.spec.ts` or `e2e/*.e2e.ts`
+— confirmed no test assertion was touched to make the suite pass; the 4 Vitest
+assertions (`abwab-page.component.spec.ts:449,453,578,593`, unmoved by this phase's
+edits since the test file itself was not touched) and the e2e assertions passed
+unmodified.
+
+### Docs
+
+- `.architecture/UI_STYLE_SYSTEM.md` §17 — new `### qd-context-menu` entry (after the
+  `.qd-modal` / `.qd-modal--fixed` entry): purpose, inputs/outputs, the projected-items
+  boundary, why item styling is global not scoped, the document-level Escape and its
+  reason (the one additive a11y gain, called out as such), and **three** named gaps —
+  no viewport clamping, no focus management into the menu, and the danger-rest-state
+  divergence (with both recipes named and which page keeps the override).
+- `src/app/shared/README.md` — new `ui/context-menu/` bullet naming the same contract
+  points at a glance.
+- `src/app/features/abwab/README.md` — the `abwab-tree` bullet's "the page shell renders
+  the menu there" (previously describing the menu as page-rendered markup) corrected to
+  "the page shell composes the shared `qd-context-menu` … there, projecting its own
+  operation buttons in"; the `abwab-templates-page` bullet's stale "**its SCSS two lines
+  over 200**" claim corrected to record the file dropping back under 200 lines once this
+  phase moved the row menu off it (a factual claim this phase's own edit falsified, fixed
+  in the same change per the root `CLAUDE.md`'s README-freshness rule).
+
+### Commands run
+
+```bash
+cd Frontend/quran-dashboard-ui
+npm test
+npm run build
+```
+
+`npm test` ran unmodified — the `VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2` cap baked into
+`package.json`'s `test` script was not overridden or bypassed.
+
+### Vitest suite result
+
+- Test files: **191 passed (191)** — **+0** vs phase 5's 191
+- Tests: **2164 passed (2164)** — **+0** vs phase 5's 2164 (no new tests this phase, per
+  plan §3/§7 — phase 5's T502 remains the only new assertions in the slice)
+- Failed: **0**, Skipped: **0**
+- Duration (Vitest-reported): **168.57 s**
+
+### Build result
+
+- Result: **success** — `Application bundle generation complete.` (15.034 s)
+- Same three pre-existing SCSS-budget warnings (`selected-ayah-section`,
+  `abwab-relations-modal`, `selected-word-section`) and the same initial-bundle-over-budget
+  warning, now **568.69 kB** (over budget by 68.69 kB, vs phase 5's 568.18 kB / 68.18 kB)
+  — a ~0.5 kB drift from the new shared component plus the global
+  `.qd-context-menu__item` classes, not a regression. No build errors.
+
 ## T605 e2e evidence
 
-pending — phase 6
+**This is evidence for the context-menu extraction only — it is explicitly NOT a tier
+and never a substitute for the Vitest suite or the build**
+(`Frontend/quran-dashboard-ui/CLAUDE.md`; `TESTING_STRATEGY.md` §6). Restated here and
+in the phase report per the plan's own instruction to state this twice.
+
+**Measured:** 2026-07-30. Dev server (`https://localhost:4200`) and backend
+(`https://localhost:5015`) were not already running; Playwright's `webServer` config
+booted both (`npm run start:https` / `dotnet run …` against the already-built
+`Backend/QuranDashboard.sln`) inside its own 180s/120s timeouts. Postgres was already up
+(`pg_isready` → accepting connections).
+
+### Command run
+
+```bash
+npx playwright test e2e/abwab-operations.e2e.ts e2e/abwab-url-and-a11y.e2e.ts --project=abwab --workers=1
+```
+
+### Result
+
+**11 passed (54.5s)**, 0 failed — including the two locked assertions named in plan
+§5.6/the verification instructions: `e2e/abwab-operations.e2e.ts:110-146` ("row context
+menu offers exactly edit / add-child / move / relations / archive") and
+`e2e/abwab-url-and-a11y.e2e.ts:149` (Shift+F10 opens `abwab-page-context-menu`). Neither
+spec file was edited.
+
+These specs write to the local dev DB through `e2e/fixtures/abwab.ts`'s sandbox and
+leave archived residue behind **by design** (`features/abwab/README.md`,
+`TESTING_STRATEGY.md` §6) — not a failure of this run.
+
+Temp artifacts (`test-results/`, `playwright-report/`) were removed after the run so
+nothing gets committed.
 
 ## T801 post-change verification
 

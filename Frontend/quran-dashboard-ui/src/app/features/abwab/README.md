@@ -52,7 +52,11 @@ nine), four of them reads.
   selected row, hidden in bulk mode, and kept out of the tab order so the roving-tabindex
   invariant holds. `⋯`, right-click, and the keyboard `ContextMenu`/`Shift+F10` path all
   emit `menuRequested` **with an anchor point** — the pointer position for the mouse paths,
-  the focused row's rect for the keyboard one — and the page shell renders the menu there.
+  the focused row's rect for the keyboard one — and the page shell composes the shared
+  `qd-context-menu` (`../../shared/ui/context-menu/`) there, projecting its own operation
+  buttons in (Slice A, phase 6 — both `abwab-page` and `abwab-templates-page` compose it now,
+  each keeping only its own page-specific items and, for the templates workshop, the
+  root-vs-node item swap).
   A row with live relations also carries the `.flag.rel` chip («علاقات», `relationCount > 0`
   only); the archive view and the cards render no flag, since an archived door's visible
   relation count is always 0.
@@ -111,9 +115,11 @@ nine), four of them reads.
 - `pages/abwab-templates-page/` — the `/abwab/templates` shell: the template list with
   «+ قالب جديد», the editor panel, the node/template actions, the row context menu, and
   the two confirms. It owns the overlay state itself (page-scoped) while the caches stay
-  root-scoped. **Its TS sits just over the 300-line soft threshold and its SCSS two lines
-  over 200** — deliberately, not yet split: ~22 of those lines are the one-line label
-  getters the TDZ rule mandates, the page carries no URL state at all (unlike
+  root-scoped. **Its TS sits just over the 300-line soft threshold** — deliberately, not
+  yet split: ~22 of those lines are the one-line label getters the TDZ rule mandates
+  (its SCSS dropped back under the 200-line threshold once Slice A phase 6 moved the row
+  context menu's markup/styling onto the shared `qd-context-menu`), the page carries no
+  URL state at all (unlike
   `abwab-page`, whose six URL keys were half of what forced its overlay controller out),
   and the page has no spec of its own, so an extraction here would be an unpinned
   refactor of the one file nothing verifies. **The trigger that forces the split** is a

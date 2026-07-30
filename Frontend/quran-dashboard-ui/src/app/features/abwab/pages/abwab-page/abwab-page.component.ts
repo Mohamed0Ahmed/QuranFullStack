@@ -21,6 +21,7 @@ import { AbwabMovePickerComponent } from '../../components/abwab-move-picker/abw
 import { AbwabSectionsModalComponent } from '../../components/abwab-sections-modal/abwab-sections-modal.component';
 import { AbwabRelationsModalComponent } from '../../components/abwab-relations-modal/abwab-relations-modal.component';
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
+import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
 
 /**
  * Route shell for `/abwab` (plan-slice-b.md T415/T501-T511): URL ⇄ state wiring,
@@ -47,6 +48,7 @@ import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
     AbwabMovePickerComponent,
     AbwabSectionsModalComponent,
     AbwabRelationsModalComponent,
+    QdContextMenuComponent,
   ],
   templateUrl: './abwab-page.component.html',
   styleUrl: './abwab-page.component.scss',

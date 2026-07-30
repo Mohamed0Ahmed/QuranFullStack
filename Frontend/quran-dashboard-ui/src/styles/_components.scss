@@ -609,6 +609,39 @@ button.qd-interactive-surface {
   }
 }
 
+// Item styling for `qd-context-menu`'s projected content (`shared/ui/context-menu/`).
+// Global, not scoped to the primitive's own stylesheet: these classes are applied by
+// consumer templates directly onto their own projected buttons, so a rule scoped to the
+// primitive's component stylesheet would never reach them under emulated encapsulation
+// (the same reason `.qd-tabs__tab` lives here rather than in `tabs.component.scss`).
+.qd-context-menu__item {
+  display: flex;
+  inline-size: 100%;
+  border: none;
+  background: transparent;
+  text-align: start;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-radius: var(--qd-radius-sm);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--qd-text);
+  cursor: pointer;
+}
+
+.qd-context-menu__item:hover {
+  background: var(--qd-surface-hover);
+}
+
+.qd-context-menu__item:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -2px;
+}
+
+.qd-context-menu__item--danger:hover {
+  background: var(--qd-danger-tint);
+  color: var(--qd-danger);
+}
+
 .qd-skeleton {
   display: block;
   /* Parameterized sizing (UI_STYLE_SYSTEM.md §17 loading/skeleton system).

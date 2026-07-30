@@ -206,22 +206,16 @@
 />
 
 @if (contextMenuNodeId() !== null) {
-  <div
-    class="abwab-templates-page__ctx-backdrop"
-    data-testid="abwab-templates-page-ctx-backdrop"
-    (click)="closeContextMenu()"
-  ></div>
-  <div
-    class="abwab-templates-page__ctx-menu"
-    role="menu"
-    data-testid="abwab-templates-page-context-menu"
-    [style.left.px]="contextMenuPosition().x"
-    [style.top.px]="contextMenuPosition().y"
+  <qd-context-menu
+    [position]="contextMenuPosition()"
+    menuTestId="abwab-templates-page-context-menu"
+    backdropTestId="abwab-templates-page-ctx-backdrop"
+    (dismissed)="closeContextMenu()"
   >
-    <button type="button" role="menuitem" data-testid="abwab-templates-page-ctx-edit" (click)="ctxEdit()">
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-templates-page-ctx-edit" (click)="ctxEdit()">
       {{ nodeEditOpLabel }}
     </button>
-    <button type="button" role="menuitem" data-testid="abwab-templates-page-ctx-add-child" (click)="ctxAddChild()">
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-templates-page-ctx-add-child" (click)="ctxAddChild()">
       {{ nodeAddChildOpLabel }}
     </button>
     <!-- The root has no node delete: deleting the template is the way (the API refuses the root
@@ -230,7 +224,7 @@
       <button
         type="button"
         role="menuitem"
-        class="abwab-templates-page__ctx-item--danger"
+        class="qd-context-menu__item qd-context-menu__item--danger"
         data-testid="abwab-templates-page-ctx-delete-template"
         (click)="requestTemplateDelete()"
       >
@@ -240,12 +234,12 @@
       <button
         type="button"
         role="menuitem"
-        class="abwab-templates-page__ctx-item--danger"
+        class="qd-context-menu__item qd-context-menu__item--danger"
         data-testid="abwab-templates-page-ctx-delete-node"
         (click)="requestNodeDelete()"
       >
         {{ nodeDeleteOpLabel }}
       </button>
     }
-  </div>
+  </qd-context-menu>
 }

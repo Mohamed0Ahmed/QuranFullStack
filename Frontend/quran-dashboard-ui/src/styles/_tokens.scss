@@ -159,10 +159,12 @@
   --qd-checkbox-size: 0.9375rem;
 
   /* Layer scale (UI_STYLE_SYSTEM.md §4). Every stacking `z-index` in the app is one of
-     these rungs — never write a bare z-index (the four abwab context-menu literals at
-     abwab-page.component.scss:88,94 and abwab-templates-page.component.scss:146,152 are
-     the sole exception, and only until the Slice A phase that moves them onto
-     --qd-z-menu-backdrop/--qd-z-menu inside the shared qd-context-menu component).
+     these rungs — never write a bare z-index. The four abwab context-menu literals that
+     used to live at abwab-page.component.scss:88,94 and
+     abwab-templates-page.component.scss:146,152 were the sole exception until Slice A
+     phase 6 moved both pages onto the shared `qd-context-menu` component
+     (`shared/ui/context-menu/`), which consumes --qd-z-menu-backdrop/--qd-z-menu from
+     birth — zero bare z-index literals remain outside this file.
      Ascending: sticky < popover < floating < mobile-nav < menu-backdrop < menu ==
      modal-backdrop < modal. --qd-z-mobile-nav sits below --qd-z-modal-backdrop
      deliberately — the navbar's dropdown/mobile menu used to paint at 100/200, above

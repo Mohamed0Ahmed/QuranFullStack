@@ -990,3 +990,50 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Zero consumers at ship time:** this slice adds `--fixed` and its slots with
   no call-site changes and no markup restructuring (plan §2, out of scope
   here); applying it to the six abwab modals is Slice C's job.
+
+### `qd-context-menu`
+- **Purpose:** the one row/node context-menu shell app-wide (Abwab's doors tree row menu
+  and the templates workshop's node tree row menu — the two pre-existing copies this
+  primitive replaces).
+- **Inputs / outputs:** `position: {x, y}` (positions the menu via
+  `[style.left.px]`/`[style.top.px]`, unchanged from both prior copies); `menuTestId` /
+  `backdropTestId` (both `string`, required) — **non-negotiable**, because 4 Vitest
+  assertions and ~8 Playwright assertions select `abwab-page-context-menu` /
+  `abwab-page-ctx-backdrop` / the templates-page equivalents by test id, and inputs are
+  what let the extraction keep them byte-identical; `dismissed` output, emitted on
+  backdrop click and on `Escape`.
+- **Shape:** a `position: fixed; inset: 0` transparent backdrop at
+  `--qd-z-menu-backdrop`, and a positioned `role="menu"` box at `--qd-z-menu`. Items are
+  **projected content** (`<ng-content>`) carrying their own test ids, labels, and click
+  handlers — the primitive learns nothing about doors or template nodes.
+- **Item styling lives outside this component, on purpose:** hover, the `:focus-visible`
+  ring, and the `--danger` item variant are the global `.qd-context-menu__item` /
+  `.qd-context-menu__item--danger` classes in `_components.scss` (the `.qd-tabs__tab`
+  precedent) — content projected via `<ng-content>` is compiled in the *consumer's*
+  template under Angular's emulated encapsulation, so a rule scoped to this component's
+  own stylesheet would never reach it. Consumers apply the classes directly to their own
+  projected buttons.
+- **Escape dismissal is document-level** (`@HostListener('document:keydown.escape')`,
+  copying `top-navbar.component.ts`), not bound to the menu element, because none of the
+  four paths that open a menu (right-click, the row's `⋯`, or either page's keyboard
+  path) puts focus inside it — an element-bound handler would never receive the key.
+  **This is the one place this primitive is not literally behavior-preserving:** neither
+  prior copy dismissed on `Escape`. Deliberate, additive a11y gain, not a bug.
+- **Three gaps this primitive deliberately did not fix** — named so a future reader does
+  not assume a shared, contracted primitive already covers them:
+  1. **No viewport clamping.** Both prior copies positioned from raw pointer coordinates
+     with no bounds check; the faithful extraction preserves that, so a menu opened near
+     the inline-start edge under RTL can still overflow the viewport.
+  2. **No focus management into the menu.** Neither prior copy moved focus into it on
+     open; adding that changes keyboard behavior on a shipped surface and belongs to
+     Slice G's row-menu keyboard-path work, not this extraction.
+  3. **The `--danger` item's rest-state color is not unified.** The two prior copies
+     were not byte-identical here: the doors page's danger item was plain-colored until
+     hover (`--qd-danger-tint` background + `--qd-danger` text on `:hover` only, the
+     `abwab-side-panel__op--danger` app-wide idiom); the templates page's danger item
+     read `--qd-danger` at rest, unconditionally. The shared `--danger` modifier carries
+     the doors page's hover-only idiom; the templates page keeps a short page-scoped
+     override (`abwab-templates-page.component.scss`) so its own rendering stays
+     unchanged. Reconciling the two recipes into one is a later slice's call, not this
+     extraction's.
+- Compose, do not re-style.

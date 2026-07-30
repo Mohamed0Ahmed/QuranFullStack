@@ -32,7 +32,11 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   Also holds `.qd-modal--fixed` (`.architecture/UI_STYLE_SYSTEM.md` §17) — the opt-in fixed
   block-size modifier for `.qd-modal`, plus its `.qd-modal__head` / `.qd-modal__body` /
   `.qd-modal__foot` slots; the bare `.qd-modal` base stays width-only and scroller-less, so
-  compose the modifier rather than adding a block-size to a call-site.
+  compose the modifier rather than adding a block-size to a call-site. Also holds
+  `.qd-context-menu__item` / `--danger` (`.architecture/UI_STYLE_SYSTEM.md` §17) — the item
+  styling `shared/ui/context-menu/`'s `qd-context-menu` projects its content into; global
+  because a rule scoped to the primitive's own stylesheet cannot reach content the *consumer*
+  projects via `<ng-content>` (the `.qd-tabs__tab` precedent).
 - `_utilities.scss` — small utility classes such as screen-reader-only, flex, spacing, and stable scrollbars.
 - `_words-explorer-layout.scss` — shared layout pieces for words explorer intro/toolbar surfaces.
 - `_words-explainer.scss` — shared visual primitives for the Words explainer hero example regions
