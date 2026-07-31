@@ -6,7 +6,13 @@ import { AbwabSnapshotFacade } from '../../state/abwab-snapshot.facade';
 import { AbwabSelectionStore } from '../../state/abwab-selection.store';
 import { AbwabWriteController } from '../../state/abwab-write.controller';
 import { AbwabPageOverlaysController } from '../../state/abwab-page-overlays.controller';
-import { filterAbwabRootsBySection, pruneAbwabNodesToVisible, searchAbwabNodes } from '../../state/abwab-tree.builder';
+import {
+  countAbwabDoorsInOpenScope,
+  countLiveAbwabDoors,
+  filterAbwabRootsBySection,
+  pruneAbwabNodesToVisible,
+  searchAbwabNodes,
+} from '../../state/abwab-tree.builder';
 import { parseAbwabQueryParams, buildAbwabQueryParams } from '../../state/abwab-url-sync';
 import { ABWAB_ORDER_SCOPE_TO_WIRE, AbwabNode, AbwabOrderScope, AbwabView } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -22,6 +28,7 @@ import { AbwabSectionsModalComponent } from '../../components/abwab-sections-mod
 import { AbwabRelationsModalComponent } from '../../components/abwab-relations-modal/abwab-relations-modal.component';
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
+import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 
@@ -51,6 +58,7 @@ import { QdStateComponent } from '../../../../shared/ui/state/state.component';
     AbwabSectionsModalComponent,
     AbwabRelationsModalComponent,
     QdContextMenuComponent,
+    ExplorerResultCountComponent,
     QdSkeletonRowsComponent,
     QdStateComponent,
   ],
@@ -83,6 +91,12 @@ export class AbwabPageComponent implements OnInit {
 
   /** «كل الأبواب» (no active section) is the superset — its own, independent order (plan.md §4). */
   protected readonly orderScope = computed<AbwabOrderScope>(() => (this.activeSectionId() === null ? 'global' : 'section'));
+
+  /** Item 17's stats bar (Slice B2, T1002) — both numbers, live-only by definition, §5.7. */
+  protected readonly totalLiveDoorsCount = computed(() => countLiveAbwabDoors(this.byId()));
+  protected readonly openScopeDoorsCount = computed(() =>
+    countAbwabDoorsInOpenScope(this.sections(), this.activeSectionId(), this.totalLiveDoorsCount()),
+  );
 
   protected readonly visibleRoots = computed(() => {
     const snapshot = this.facade.snapshot();
@@ -134,6 +148,8 @@ export class AbwabPageComponent implements OnInit {
   protected get addChildOpLabel(): string { return ABWAB_LABELS.addChildOp; }
   protected get moveOpLabel(): string { return ABWAB_LABELS.moveOp; }
   protected get relationsOpLabel(): string { return ABWAB_LABELS.relationsOp; }
+  protected get statAllDoorsLabel(): string { return ABWAB_LABELS.allDoorsTab; }
+  protected get statOpenScopeLabel(): string { return ABWAB_LABELS.statOpenScopeDoors; }
 
   constructor() {
     // Restores the `door` deep link once both the URL and the snapshot are ready —

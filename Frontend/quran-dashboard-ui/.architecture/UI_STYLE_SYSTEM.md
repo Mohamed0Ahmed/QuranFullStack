@@ -104,6 +104,13 @@ Rules:
 > contract for how these partials are consumed; this section still governs file
 > organization. Only add a new global partial when it holds a genuinely reusable,
 > app-wide pattern — do not scaffold speculative empty files.
+>
+> `.qd-page-frame` (`_layout.scss`, beside `.qd-container`) is the full-bleed page-frame rule —
+> `box-sizing: border-box`, no width cap, column flex, a reserved mobile-stat-bar
+> `padding-block-end`. It was `.qd-explorer-frame` in `_words-explorer-layout.scss` until Slice B2
+> renamed and moved it (the frame stopped being words-only once Abwab adopted it); the old name is
+> kept as a working alias on the same rule so the five existing explorer call-sites are untouched.
+> New call-sites use `.qd-page-frame`.
 
 ## 3. Naming Convention
 
@@ -159,14 +166,16 @@ superseded prototype reference):
 - radius
 - spacing scale
 - layer scale (stacking order for every fixed/absolute layer in the app), ascending:
-  `--qd-z-sticky` (page chrome / sticky headers) → `--qd-z-popover` (selector/filter
-  panels) → `--qd-z-floating` (a fixed control floating over page content, e.g. the
-  detail-modal-shell restore button) → `--qd-z-mobile-nav` (navbar dropdown + mobile
-  menu) → `--qd-z-menu-backdrop` / `--qd-z-menu` (`qd-context-menu`) →
-  `--qd-z-modal-backdrop` / `--qd-z-modal` (`.qd-modal-backdrop` / a future direct
-  modal-box consumer). **Never write a bare `z-index`** — always reference one of
-  these tokens. There are no exceptions: every stacking layer in the app resolves through
-  this scale.
+  `--qd-z-sticky` (in-page sticky headers with no descendant menus of their own, e.g.
+  `mushaf-header-navigation`) → `--qd-z-popover` (selector/filter panels) →
+  `--qd-z-floating` (a fixed control floating over page content, e.g. the
+  detail-modal-shell restore button) → `--qd-z-mobile-nav` (`.qd-navbar` itself — sticky,
+  Slice B2 T901/T903 — plus its dropdown and mobile menu, all three on the same rung so the
+  sticky navbar's own stacking context never clamps its own menus below what they declare)
+  → `--qd-z-menu-backdrop` / `--qd-z-menu` (`qd-context-menu`) → `--qd-z-modal-backdrop` /
+  `--qd-z-modal` (`.qd-modal-backdrop` / a future direct modal-box consumer). **Never write a
+  bare `z-index`** — always reference one of these tokens. There are no exceptions: every
+  stacking layer in the app resolves through this scale.
   Two caveats the numbers carry, both inherited rather than chosen: `--qd-z-menu` and
   `--qd-z-modal-backdrop` currently resolve to the **same** value, so the rung order above
   is authoritative but the arithmetic does not enforce it — a context menu and a modal
@@ -1083,3 +1092,188 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - Compose, do not re-style — a surface that seems to need a fixed name column
   should re-read the paragraph above before reaching for `inline-size` instead of
   `.qd-truncate`.
+
+### Viewport reservation
+- **Purpose:** a page's content region reserves a full viewport below the navbar, so
+  no state change (loading → loaded → empty → error) resizes the page frame. Slice
+  B2's item 4; the shell already made the page *scroll* one footer-height
+  (`.qd-shell-viewport { min-height: 100vh }`, `_layout.scss`) — this is the
+  separate, narrower claim that a page's own content fills what the shell reserves.
+- **The arithmetic is always `100dvh` minus the navbar token, never a footer
+  number:** `min-block-size: calc(100dvh - var(--qd-navbar-block-size))`. A
+  `--qd-footer-block-size` token was considered and refused — the footer has no
+  stable height (`qd-footer.component.html`'s health indicator has three branches,
+  one with a retry button, all free to wrap at narrow widths), so a token for it
+  would be a magic number wearing a token's clothes. The reservation instead lets
+  the footer sit wholly below the fold, unconditionally.
+- **Requires `box-sizing: border-box` on the element carrying the reservation.**
+  The app has no global `border-box`; without it the reservation overshoots the
+  viewport by that element's own padding under the default `content-box`.
+  `.qd-page-frame` (`_layout.scss`) already carries `border-box`, which is why the
+  page-frame rename (§2) is a prerequisite of this pattern, not a coincidence.
+- **Abwab-local for now.** The reservation lives on `abwab-page.component.scss`
+  (`.abwab-page__frame`), not on the shared `.qd-page-frame` rule — promoting it
+  there would silently reserve a viewport on all five explorer pages, which nobody
+  has measured. **Generalize it only when** a second feature's page needs the same
+  state-stability guarantee; at that point promote the rule onto `.qd-page-frame`
+  itself and re-verify the five explorer pages' bottom-of-page geometry (their
+  existing `padding-block-end` mobile-stat-bar reservation interacts with any
+  `min-block-size` added alongside it) rather than assuming the abwab measurement
+  transfers.
+- **Reserving space is not enough — the content must stretch into it.** The
+  reservation on the frame only bounds the frame; a child card still collapses to
+  its own content unless something in the chain between frame and card carries
+  `flex: 1; min-block-size: 0`. Abwab's chain: `.abwab-page__frame` (the
+  reservation) → `.abwab-page__layout` (`flex: 1; min-block-size: 0`) →
+  `.abwab-page__main` (`align-self: stretch`, its own column flex context) →
+  `.abwab-page__tree-card` (`flex: 1; min-block-size: 0`, replacing a fixed
+  `min-height`). The row's `align-items: flex-start` stays put rather than becoming
+  `stretch` — `.abwab-page__side` is `position: sticky`, and stretching the row
+  would give the sticky aside zero scroll travel, silently breaking it. Stretch the
+  main column with `align-self`, not the row with `align-items`.
+
+### Sticky app chrome
+- **Purpose:** `.qd-navbar` (`_layout.scss`) stays visible while the page scrolls —
+  Slice B2, item 6, T901. `position: sticky; inset-block-start: 0; z-index:
+  var(--qd-z-mobile-nav)`, **not** `--qd-z-sticky` — see the stacking-context entry below
+  for why the rung had to be `--qd-z-mobile-nav`, the one its own dropdown and mobile menu
+  already declare.
+- **A sticky element's containing block must be TALLER than the element itself, or
+  it never sticks at all — not a Chrome quirk, spec behavior in every engine.** A
+  sticky box's travel is clamped to its containing block's content box; when the
+  containing block is exactly the element's own height, available travel is zero,
+  so the box can never leave its static position and just scrolls away with the
+  page. This is the single most common real-world cause of "sticky doesn't stick,"
+  and it bit this exact rung: `.qd-navbar`'s Angular component host
+  (`<qd-top-navbar>`) is a flex item of `.qd-shell-viewport` (flex items are
+  blockified), and with no height of its own it wraps the 56px navbar in a 56px
+  box — zero travel. The fix is `:host { display: contents; }` on
+  `top-navbar.component.scss`, which drops the host out of the box tree so
+  `.qd-navbar` becomes the direct flex item of the (903px+) `.qd-shell-viewport`
+  instead. **Any future sticky element whose component host wraps it tightly hits
+  the same wall** — check the sticky element's actual containing block in the
+  browser before shipping, not just its computed `position`/`top`.
+- **Both viewport-relative sticky offsets that predate this rung had to be
+  re-based onto it, or two shipped surfaces regress (T902):**
+  `--qd-mushaf-sticky-top` (`_tokens.scss`) and `.abwab-page__side`'s `top`
+  (`abwab-page.component.scss`) both become `calc(var(--qd-navbar-block-size) +
+  <existing offset>)`. **`--qd-mushaf-panel-height` had to be re-derived from the
+  re-based offset, not just the bare navbar token** — sizing it as `100dvh -
+  var(--qd-navbar-block-size)` leaves the panel's stuck bottom edge exactly
+  `--qd-mushaf-sticky-top`'s extra gap (`--qd-space-3`) past the viewport once
+  stuck, since the height formula never accounted for that gap. Re-derived as
+  `100dvh - var(--qd-mushaf-sticky-top)` instead (`_tokens.scss`), which makes the
+  panel's stuck bottom edge land exactly flush with the viewport by construction:
+  CSS custom properties resolve at used-value time, so referencing a token declared
+  later in the same block is fine. **The lesson generalizes: a sticky element's own
+  height/`min-block-size`/`max-block-size` must be measured from its OWN stuck
+  `top`, never from a shorter token that ignores part of that offset** — the two
+  will only coincide by accident.
+- **A sticky element's own rung must be the SAME rung its descendant menus already declare, or
+  it clamps them — this is a real mechanism, resolved by rung choice, not a limitation.**
+  `position: sticky` unconditionally establishes a new stacking context in every current engine,
+  regardless of `z-index` value (verified: forcing `.qd-navbar`'s `z-index` to `auto` does not
+  restore the escape — sticky itself is the trigger, confirmed with an isolated repro on this
+  app's own page). `.qd-navbar`'s own dropdown menu and mobile-menu overlay
+  (`top-navbar.component.scss`) both already declare `--qd-z-mobile-nav` (45) for themselves.
+  Putting `.qd-navbar` on `--qd-z-sticky` (5) instead — the first, wrong instinct, since it reads
+  as "the lowest rung, so everything else wins" — clamps those descendants down to 5 against
+  anything painting *outside* the navbar, regardless of their own declared z-index. **That isn't
+  only a dropdown problem: confirmed against every z-scale consumer (`grep -rn "var(--qd-z-"`),
+  it silently breaks three real surfaces once the navbar is sticky:**
+  1. `.dropdown-menu` (`--qd-z-mobile-nav`) loses to a `--qd-z-floating` (40) sibling outside the
+     navbar — confirmed live with a synthetic probe positioned over an open dropdown.
+  2. `.mobile-menu` (`--qd-z-mobile-nav`, `position: fixed; inset: 0`, the full-screen mobile nav
+     overlay) would paint *below* every page popover (`--qd-z-popover` = 30) and below
+     `.detail-modal-shell__restore` (`--qd-z-floating` = 40) — a visible regression, not latent.
+  3. Page popovers (`source-selector`, `surah-jump-picker`, `explorer-association-filter`, all
+     `--qd-z-popover` = 30) would paint *over* the sticky navbar's own box on a scrolled page — a
+     failure mode that did not exist before the navbar was sticky, since content never used to
+     scroll under it.
+  **Resolution: `.qd-navbar` sits on `--qd-z-mobile-nav` (45), the same rung its dropdown and
+  mobile menu already declare** — not a new token, and not a respacing of the scale. This
+  satisfies the scale's stated purpose exactly (§4: "deliberately below `--qd-z-menu-backdrop`,
+  so row menus and modals paint above the chrome") while fixing the mechanism: 45 beats popover
+  (30) and floating (40), so a `qd-context-menu`/modal backdrop still paints above the chrome at
+  49/50/51. Re-verified live after the fix: an open dropdown now beats a `--qd-z-floating` probe
+  at the same screen position; `.mobile-menu` covers page content; a `qd-context-menu` and a modal
+  backdrop still paint above the sticky navbar; a page popover no longer overpaints the navbar on
+  a scrolled page. **`--qd-z-sticky` (5) stays reserved for a genuinely in-page sticky element
+  with no competing descendants of its own** (`mushaf-header-navigation.component.scss` is the one
+  consumer) — the failure mode above is specific to a sticky element that *also* hosts its own
+  higher-rung menus, which is why respacing the whole scale was rejected: nothing else on the
+  scale has that shape.
+
+### Chrome-inert rule
+- **Purpose:** while any modal dialog holds `ScrollLockService`'s lock, `.qd-navbar`
+  itself goes `[inert]` + `[aria-hidden="true"]` — Slice B2, item 6's keyboard half,
+  T904, completing Slice A's T203. Copies `app.ts:14`'s existing shell-inert pairing
+  at the one level that does not also inert the dialog: `inert` goes on **the
+  navbar, not the shell**, because abwab's modals render *inside* `<main>`, inside
+  the shell — shell-level inert would inert the dialog itself. `.qd-navbar` is a
+  sibling of `<main>`, so inerting it leaves every dialog interactive.
+- **`ScrollLockService.lockCount` is the one piece of state every modal dialog in
+  the app already holds** (`shared/ui/modal-scroll-lock/`) — it gained a
+  signal-backed `isLocked` computed for this (`scroll-lock.service.ts`), rather than
+  a second "any modal open" service, which would duplicate `lockCount`'s job and
+  give two sources of truth for the same fact.
+- **Blast radius: nine surfaces, enumerated because it reaches beyond abwab.** Four
+  abwab modals (`abwab-door-modal`, `abwab-relations-modal`,
+  `abwab-template-copy-modal`, `abwab-template-node-modal`) plus, as of this phase,
+  `abwab-sections-modal` and `abwab-move-picker` (T905 — they render real
+  `.qd-modal`/`.qd-modal-backdrop` dialogs and previously held no lock, so the page
+  also scrolled behind them; both gaps close together) — six abwab modals in all —
+  plus **five words surfaces** that already held the lock before this phase
+  (`root-details-panel`, `lemma-details-panel`, `stem-details-panel`,
+  `word-type-details-panel`, `word-drilldown-modal`). The navbar is
+  keyboard-unreachable while any of these nine is open. This is an intentional
+  behavior change on five shipped words surfaces nobody asked about, accepted
+  deliberately: each of the nine is a modal dialog, "app chrome is not reachable
+  while a modal dialog is open" is not an abwab-only doctrine, and the precedent is
+  *stronger* — `app.ts:14` already inerts the entire shell for the global overlay.
+- **Inert-inside-inert is real and was observed live, not just unit-tested.** With a
+  words drawer (e.g. `root-details-panel`, holding the lock) open *under* the global
+  detail overlay (`app.ts`'s `overlayOpen()`, which inerts the whole shell): the
+  shell carries `inert`/`aria-hidden` from `app.ts`, and `.qd-navbar` — itself a
+  shell descendant, already inert by cascade — *also* carries its own explicit
+  `inert`/`aria-hidden` from `ScrollLockService.isLocked()`. Both apply
+  simultaneously and harmlessly; browsers treat nested/duplicate `inert` as
+  idempotent. `app.nested-layers.spec.ts`'s "exactly one focus trap enabled" (the
+  dialog's, not the drawer's) still holds in this state — confirmed both by that
+  spec and by a live count of enabled `.cdk-focus-trap-anchor` elements in the
+  browser (`evidence.md` phase 9).
+
+### `qd-result-count`
+- **Purpose:** a one-line "label: N" stat that holds its line across loading/error/
+  loaded instead of unmounting and resizing whatever it sits above (Feature 026,
+  US4). Three states render the same line box: loaded shows the label plus the
+  number; loading shows an `aria-hidden` skeleton bar with sr-only loading text
+  (`role="status"`); error shows an `aria-hidden` muted placeholder (`—`) — the
+  page's own error surface stays the only place that announces or explains a
+  failure. Never a card, never a KPI row — `PRODUCT.md`'s anti-reference list names
+  "identical gradient stat cards" explicitly.
+- **Promoted to `shared/ui/result-count/` in Slice B2 (T1001)**, class
+  `ExplorerResultCountComponent`, selector `qd-result-count, qd-explorer-result-count`
+  — the same dual-selector alias mechanism as `qd-panel-skeleton,
+  qd-explorer-panel-skeleton` (`ui/explorer-panel-skeleton/`), kept so the four
+  existing words explorer call-sites (Unique Words, Roots, Lemmas, Stems) and their
+  spec needed no template change, only an import-path update. New call-sites (item
+  17's abwab stats bar) use the neutral `qd-result-count` selector.
+- **Its own labels are read through a TDZ-safe getter**
+  (`result-count.labels.ts` → `protected get labels()`), never a `readonly` field —
+  a `readonly` field resolves to `undefined` in the bundled test build (temporal
+  dead zone). This is the same rule `features/words/README.md` and
+  `features/abwab/README.md` state for their own `*.labels.ts` files; the promotion
+  preserved the idiom rather than dropping it on the move.
+- **Renders `labelPrefix()`: `count()` — a data-display idiom, not a counted-noun
+  sentence.** Every consumer (the four words explorers' "عدد الجذور: 1642"-shaped
+  copy, and item 17's abwab «كل الأبواب: N» / «أبواب هذا التبويب: N») passes a
+  static `labelPrefix` and the raw digit; none run the count through
+  `abwab.labels.ts`'s `countPhrase` agreement forms, because "label: N" is a stat
+  display, not a sentence embedding a counted noun — the "never a bare interpolated
+  count" rule targets sentence-shaped copy like `archiveConfirm`, not this shape.
+- **Item 17's second consumer, abwab's stats bar, is two instances above the
+  toolbar** (`abwab-page.component.html`), both live-only and both derived from the
+  existing tree snapshot with no new backend read — see `features/abwab/README.md`
+  for the two numbers, the nullable-`sectionId` caveat, and why the stats stay
+  mounted through every tab switch.

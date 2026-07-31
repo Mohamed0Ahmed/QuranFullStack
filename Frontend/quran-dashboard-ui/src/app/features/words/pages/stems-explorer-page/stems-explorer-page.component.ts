@@ -13,7 +13,7 @@ import {
   ExplorerAssociationFilterComponent,
 } from '../../components/explorer-association-filter/explorer-association-filter.component';
 import { WordsAssociationOptionsService } from '../../data-access/words-association-options.service';
-import { ExplorerResultCountComponent } from '../../components/explorer-result-count/explorer-result-count.component';
+import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
 import { ExplorerSearchRowComponent } from '../../components/explorer-search-row/explorer-search-row.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { StemAyahTypeFiltersComponent } from '../../components/stem-ayah-type-filters/stem-ayah-type-filters.component';

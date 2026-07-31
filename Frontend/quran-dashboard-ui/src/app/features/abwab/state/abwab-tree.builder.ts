@@ -1,5 +1,6 @@
 import { AbwabTreeDoorDto } from '../../../core/api/generated/models/abwab-tree-door-dto';
 import { AbwabTreeDto } from '../../../core/api/generated/models/abwab-tree-dto';
+import { AbwabTreeSectionDto } from '../../../core/api/generated/models/abwab-tree-section-dto';
 import { AbwabNode, AbwabTreeSnapshotVm } from '../models/abwab.models';
 
 function byOrderThenId(a: AbwabTreeDoorDto, b: AbwabTreeDoorDto): number {
@@ -167,6 +168,43 @@ export function searchAbwabNodes(roots: readonly AbwabNode[], query: string): Ab
   }
 
   return { isFiltering: true, matchedIds, visibleIds, autoExpandedIds };
+}
+
+/**
+ * Total live (non-archived) doors — item 17's «كل الأبواب» stat. **Live-only, deliberately**:
+ * matches every other count in this feature and is NOT Σ `AbwabTreeSectionDto.doorsInScopeCount`
+ * over `sections`, because `AbwabNode.sectionId` is nullable (a live door can belong to no
+ * section) — the two stats are not reconcilable by arithmetic and must never be asserted to sum
+ * (plan §5.7).
+ */
+export function countLiveAbwabDoors(byId: ReadonlyMap<number, AbwabNode>): number {
+  let count = 0;
+  for (const node of byId.values()) {
+    if (!node.isArchived) {
+      count++;
+    }
+  }
+  return count;
+}
+
+/**
+ * Doors in the currently open toolbar tab, item 17's second stat. «كل الأبواب»
+ * (`activeSectionId === null`) has no per-section count on the wire, so it falls back to the
+ * same live-only total as the first stat — the two numbers legitimately agree there, because
+ * "everything" and "the open scope" are the same set on that tab. A specific section reads the
+ * backend-computed `doorsInScopeCount` (every live door with that section at any depth, already
+ * on the wire) rather than recomputing it — recomputing it here would silently diverge from the
+ * backend's own definition the moment the two drift.
+ */
+export function countAbwabDoorsInOpenScope(
+  sections: readonly AbwabTreeSectionDto[],
+  activeSectionId: number | null,
+  totalLiveDoors: number,
+): number {
+  if (activeSectionId === null) {
+    return totalLiveDoors;
+  }
+  return sections.find((section) => section.id === activeSectionId)?.doorsInScopeCount ?? 0;
 }
 
 /** Rebuilds a node list keeping only ids in `visibleIds`, recursing into children

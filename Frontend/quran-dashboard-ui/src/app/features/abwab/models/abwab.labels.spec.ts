@@ -24,6 +24,16 @@ describe('ABWAB_LABELS — the locked strings', () => {
   it('the live-subtree archive confirm names the count', () => {
     expect(ABWAB_LABELS.archiveConfirm(3)).toBe('سيتم أرشفة 3 أبواب');
   });
+
+  // Item 17's stats bar (Slice B2, T1004): both labels are static — the shared `qd-result-count`
+  // renders "label: N" (a data-display idiom, not a counted-noun sentence, per every words
+  // call-site), so neither goes through `countPhrase`. `allDoorsTab` doubles as the total stat's
+  // label; the open-scope stat gets its own so the two lines are never textually identical.
+  it('the stats bar labels are distinct and neither interpolates a count', () => {
+    expect(ABWAB_LABELS.allDoorsTab).toBe('كل الأبواب');
+    expect(ABWAB_LABELS.statOpenScopeDoors).toBe('أبواب هذا التبويب');
+    expect(ABWAB_LABELS.statOpenScopeDoors).not.toBe(ABWAB_LABELS.allDoorsTab);
+  });
 });
 
 // Arabic counts have singular, dual, 3–10 and 11+ forms; «سيتم أرشفة 1 بابًا» is wrong

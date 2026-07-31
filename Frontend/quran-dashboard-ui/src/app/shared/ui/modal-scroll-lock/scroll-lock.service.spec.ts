@@ -49,4 +49,20 @@ describe('ScrollLockService', () => {
     service.release();
     expect(document.body.style.overflow).toBe('scroll');
   });
+
+  it('isLocked tracks whether any holder still holds the lock, across two simultaneous consumers', () => {
+    expect(service.isLocked()).toBe(false);
+
+    service.acquire(); // responsive drawer
+    expect(service.isLocked()).toBe(true);
+
+    service.acquire(); // global overlay on top
+    expect(service.isLocked()).toBe(true);
+
+    service.release(); // one layer goes away
+    expect(service.isLocked()).toBe(true);
+
+    service.release(); // last holder releases
+    expect(service.isLocked()).toBe(false);
+  });
 });

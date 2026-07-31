@@ -61,6 +61,16 @@ export const ABWAB_LABELS = {
 
   allDoorsTab: 'كل الأبواب',
   sectionTabsAriaLabel: 'أقسام الأبواب',
+  // Item 17's stats bar (Slice B2, T1003/T1004): `allDoorsTab` above doubles as the total stat's
+  // label — it is already the right noun phrase and reusing it keeps one string per concept. The
+  // open-scope stat needs its own, distinct label because it names a different quantity (a
+  // total vs. "whatever the current tab shows") and gets its own so the two lines never read as
+  // duplicates of each other even when their numbers happen to coincide on «كل الأبواب» itself.
+  // Both stats render through the shared `qd-result-count`'s "label: N" idiom (precedent:
+  // `explorer-result-count.component.html`, four words pages), which is a data-display convention,
+  // not a counted-noun sentence — so neither label goes through `countPhrase`; see
+  // features/abwab/README.md for why «سيتم أرشفة 1 بابًا»'s rule does not reach this pattern.
+  statOpenScopeDoors: 'أبواب هذا التبويب',
   searchLabel: 'ابحث في الأبواب',
   searchPlaceholder: 'ابحث في الأبواب… (يفلتر الشجرة مباشرة)',
   viewToggleTree: 'شجرة',

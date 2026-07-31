@@ -207,6 +207,55 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 
 ## Gotchas / invariants (read before changing)
 
+- **Both pages are full-bleed on the shared page frame, not the reading-measure container.**
+  `abwab-page.component.html:2` and `abwab-templates-page.component.html:2` compose
+  `qd-container qd-page-frame` (Slice B2, T703) — the frame that used to be `qd-explorer-frame`,
+  words-only (`styles/README.md`). `box-sizing: border-box` on the frame is load-bearing for the
+  later viewport reservation (item 4), not decorative. Verified in the browser: `.abwab-page__layout`
+  is its own flex **row** nested inside the frame's column-flex context with `gap: 0` — no visual
+  conflict, `.abwab-page__layout`'s own `margin-block-start` supplies the gap from the header. The
+  frame's fixed `padding-block-end` (sized for words' mobile stat bars) leaves the same bottom gap
+  above the footer on both abwab pages that the five explorer pages already carry unconditionally
+  (not media-gated) — not a new imbalance, just the shared class's existing trait extended here.
+- **The doors page (`abwab-page.component`) reserves a full viewport (Slice B2, T801-T802) — the
+  templates page does not.** `.abwab-page__frame` adds `min-block-size: calc(100dvh -
+  var(--qd-navbar-block-size))` on top of the shared `.qd-page-frame`; abwab-local for now, see
+  `UI_STYLE_SYSTEM.md` §17 "Viewport reservation" for the arithmetic, the `border-box`
+  prerequisite and the generalization trigger. The reservation only bounds the frame — filling it
+  is a four-link chain: `.abwab-page__layout` (`flex: 1; min-block-size: 0`) →
+  `.abwab-page__main` (`align-self: stretch`) → `.qd-card.abwab-page__tree-card` (`flex: 1;
+  min-block-size: 0`, replacing the old fixed `min-height: 20rem`). `.abwab-page__layout` keeps
+  `align-items: flex-start` (not `stretch`) because `.abwab-page__side` is `position: sticky` and
+  a stretched row would zero out its scroll travel. Scoped to the doors page's tree/cards/archive
+  card only — `abwab-templates-page.component`'s editor panel keeps its own `min-block-size:
+  22rem` and is out of this phase's scope.
+- **`.qd-navbar` is sticky and goes inert while any modal dialog is open (Slice B2, T901/T904).**
+  `.abwab-page__side`'s own sticky `top` is re-based onto `--qd-navbar-block-size`
+  (`abwab-page.component.scss`) so it sits flush under the now-always-visible chrome instead of
+  under the old scrolled-away navbar. Two intentional behavior changes ship with this phase, both
+  named per `docs/feature-ux-slice-b/plan.md` §9: (1) the navbar is keyboard-unreachable while any
+  of abwab's six modals — now including `abwab-sections-modal` and `abwab-move-picker` (T905,
+  below) — is open, same doctrine `app.ts` already applies to the global words overlay; (2) both
+  those two modals now lock body scroll like the other four, so the page no longer scrolls behind
+  them. See `.architecture/UI_STYLE_SYSTEM.md` §17 "Chrome-inert rule".
+- **`abwab-sections-modal` and `abwab-move-picker` carry `qdModalScrollLock` as of T905** — the
+  two abwab modals that previously held no lock at all. Every abwab modal now participates
+  uniformly in the chrome-inert rule above; do not add a seventh abwab modal without it.
+- **`.qd-navbar` sits on `--qd-z-mobile-nav` (45), not `--qd-z-sticky` (5) — the rung its own
+  dropdown and mobile menu already declare, because sticky positioning makes the navbar's own
+  rung a ceiling for everything inside it.** `position: sticky` unconditionally creates a
+  stacking context (every engine, regardless of `z-index`), so a sticky element's descendants
+  can never paint above what the element's own rung permits, no matter their own declared
+  z-index. Putting the navbar on `--qd-z-sticky` — the reflexive "lowest rung" choice — would
+  have clamped `.dropdown-menu` and `.mobile-menu` down to 5, breaking three real surfaces
+  (verified against every `--qd-z-*` consumer): the dropdown loses to the `detail-modal-shell`
+  restore control (40); `.mobile-menu`, a full-screen overlay, would paint under page popovers
+  (30); and page popovers would paint *over* the sticky navbar itself on a scrolled page — a
+  failure mode that didn't exist before the navbar was sticky. `--qd-z-mobile-nav` fixes all
+  three while staying below `--qd-z-menu-backdrop`/`--qd-z-menu`/`--qd-z-modal-backdrop`, so a
+  `qd-context-menu` and any modal still paint above the chrome. See
+  `.architecture/UI_STYLE_SYSTEM.md` §17 "Sticky app chrome" for the full reasoning and the live
+  verification of all four cases.
 - **Refresh-after-write is an invariant, not an optimization.** Every write
   resequences its scope to `1..N`, which bumps every sibling's `xmin` too. A root-affecting
   write additionally maintains the global order (below) in the same request, which resequences
@@ -305,6 +354,22 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   own inter-row `gap` is **not** parameterized, so *n* skeleton rows always land one gap short of
   *n* gapless loaded rows; that residual is the primitive's, not the call-site's, and closing it
   means changing `shared/ui/skeleton/`.
+- **The stats bar (item 17, Slice B2, T1001-T1004) is two `qd-result-count` instances above the
+  toolbar, both derived from the existing snapshot — no backend call added.** «كل الأبواب» is
+  **total live doors**, counted frontend-side (`countLiveAbwabDoors`, `abwab-tree.builder.ts`);
+  the second is **doors in the currently open tab**, reading the backend-computed
+  `AbwabTreeSectionDto.doorsInScopeCount` for a specific section tab, or falling back to the same
+  live-only total on «كل الأبواب» itself (`countAbwabDoorsInOpenScope`). **The two numbers are
+  live-only by definition — the same choice every other count in this feature makes — and are
+  deliberately not reconcilable by arithmetic**: `AbwabNode.sectionId` is `number | null`, so a
+  live door can belong to no section, meaning Σ `doorsInScopeCount` over every section can sit
+  below the total. Do not "fix" this by summing sections instead of counting live doors, and do
+  not add a test asserting the two sum. Both stats stay mounted through loading/error/loaded and
+  through every tab switch (never conditionally unmounted), matching every other §17 composition
+  in this feature — an unmounting stat would move the toolbar under it exactly the way the old
+  per-branch loaders used to (§4.6-adjacent). Neither label goes through `countPhrase`: the shared
+  component renders a "label: N" data-display line (the four words explorers' own precedent), not
+  a counted-noun sentence, so the bare-count rule below does not reach it.
 - **Counted door labels go through the Arabic number forms.** `archiveConfirm` and
   `movePickerTitleBulk` share one helper covering singular («باب واحد»), dual («بابين»),
   3–10 («N أبواب») and 11+ («N بابًا»). Do not interpolate a bare count into new copy —

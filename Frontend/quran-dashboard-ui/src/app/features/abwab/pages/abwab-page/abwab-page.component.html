@@ -1,5 +1,5 @@
 <div class="qd-page abwab-page" data-testid="abwab-page">
-  <div class="qd-container">
+  <div class="qd-container qd-page-frame abwab-page__frame">
     <header class="qd-page-header abwab-page__header">
       <div>
         <h1 class="qd-page-title">{{ pageTitle }}</h1>
@@ -42,6 +42,27 @@
     </header>
 
     <qd-abwab-announcer [message]="writeController.announcement()" />
+
+    <!-- Item 17's stats bar (Slice B2, T1003): a quiet inline stat line, never a card
+         (PRODUCT.md's anti-reference list names "identical gradient stat cards" — §5.7). Both
+         instances stay mounted through loading/error/loaded alike, same reasoning as the toolbar
+         below, so switching tabs or a transient load never moves the toolbar under it. -->
+    <div class="abwab-page__stats">
+      <qd-result-count
+        data-testid="abwab-page-stat-total"
+        [count]="totalLiveDoorsCount()"
+        [labelPrefix]="statAllDoorsLabel"
+        [loading]="facade.isLoading() && !facade.snapshot()"
+        [hasError]="!!facade.errorMessage() && !facade.snapshot()"
+      />
+      <qd-result-count
+        data-testid="abwab-page-stat-open-scope"
+        [count]="openScopeDoorsCount()"
+        [labelPrefix]="statOpenScopeLabel"
+        [loading]="facade.isLoading() && !facade.snapshot()"
+        [hasError]="!!facade.errorMessage() && !facade.snapshot()"
+      />
+    </div>
 
     <!-- The toolbar is mounted once for loading, error and loaded alike (T402): the old chain
          swapped the entire toolbar + tree subtree for a one-line loader or error, collapsing the
