@@ -1,7 +1,7 @@
 .abwab-template-copy-modal__desc {
   color: var(--qd-text-muted);
   font-size: 0.78rem;
-  margin-block: var(--qd-space-1) var(--qd-space-3);
+  margin-block-start: var(--qd-space-1);
 }
 
 .abwab-template-copy-modal__preview {
@@ -23,13 +23,6 @@
   padding: var(--qd-space-2);
 }
 
-/* Interim: the host still owns the list cap so the extraction commit is visually inert. It is
-   handed over as a custom property because component style encapsulation would keep a host
-   selector from reaching the picker's own list element. Deleted with the geometry change. */
-.abwab-template-copy-modal__picker qd-abwab-door-picker {
-  --abwab-door-picker-list-max: 13rem;
-}
-
 .abwab-template-copy-modal__selected {
   margin-block-start: var(--qd-space-2);
   font-size: 0.75rem;
@@ -40,5 +33,4 @@
 .abwab-template-copy-modal__foot {
   display: flex;
   gap: var(--qd-space-2);
-  margin-block-start: var(--qd-space-3);
 }

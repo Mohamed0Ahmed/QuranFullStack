@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked, viewChild } from '@angular/core';
+import { A11yModule } from '@angular/cdk/a11y';
 import { Observable } from 'rxjs';
 
 import { AbwabDoorPickerComponent } from '../abwab-door-picker/abwab-door-picker.component';
@@ -65,7 +66,7 @@ let nextModalId = 0;
 @Component({
   selector: 'qd-abwab-relations-modal',
   standalone: true,
-  imports: [AbwabDoorPickerComponent, QdChipComponent, ModalScrollLockDirective, QdStateComponent],
+  imports: [A11yModule, AbwabDoorPickerComponent, QdChipComponent, ModalScrollLockDirective, QdStateComponent],
   templateUrl: './abwab-relations-modal.component.html',
   styleUrl: './abwab-relations-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -216,6 +217,9 @@ export class AbwabRelationsModalComponent {
         if (!this.anchorPickMode() && anchorId !== null) {
           this.reload(anchorId);
         }
+        // Both modes open on a list, so the trap's auto-capture would stop at the first chip or
+        // tab; queuing this lands the real target after that capture.
+        setTimeout(() => this.picker()?.focusSearch());
       });
     });
   }

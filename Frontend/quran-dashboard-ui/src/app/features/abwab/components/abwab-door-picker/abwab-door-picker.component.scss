@@ -21,11 +21,9 @@
   outline-offset: -1px;
 }
 
-/* Set by a host modal only for as long as it still owns a height cap; the picker itself
-   states no geometry (UI_STYLE_SYSTEM §17). */
+/* No height of its own and no scroller of its own: inside a fixed-height dialog the single
+   scroller is `.qd-modal__body` (UI_STYLE_SYSTEM §17). */
 .abwab-door-picker__list {
-  max-block-size: var(--abwab-door-picker-list-max, none);
-  overflow: auto;
   margin-block-start: var(--qd-space-2);
 }
 

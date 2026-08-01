@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked, viewChild } from '@angular/core';
+import { A11yModule } from '@angular/cdk/a11y';
 import { Observable } from 'rxjs';
 
 import { AbwabDoorPickerComponent, AbwabDoorPickerStatus } from '../abwab-door-picker/abwab-door-picker.component';
@@ -24,7 +25,7 @@ let nextModalId = 0;
 @Component({
   selector: 'qd-abwab-template-copy-modal',
   standalone: true,
-  imports: [AbwabDoorPickerComponent, ModalScrollLockDirective, QdStateComponent],
+  imports: [A11yModule, AbwabDoorPickerComponent, ModalScrollLockDirective, QdStateComponent],
   templateUrl: './abwab-template-copy-modal.component.html',
   styleUrl: './abwab-template-copy-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -106,9 +107,13 @@ export class AbwabTemplateCopyModalComponent {
     effect(() => {
       const isOpen = this.open();
       untracked(() => {
-        if (isOpen) {
-          this.resetDraft();
+        if (!isOpen) {
+          return;
         }
+        this.resetDraft();
+        // Queued so it lands after the trap's auto-capture, which would otherwise stop at the
+        // first control above the list.
+        setTimeout(() => this.picker()?.focusSearch());
       });
     });
   }

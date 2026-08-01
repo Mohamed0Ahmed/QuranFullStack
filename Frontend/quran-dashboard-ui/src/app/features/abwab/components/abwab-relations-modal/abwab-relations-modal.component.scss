@@ -31,7 +31,7 @@
 }
 
 .abwab-relations-modal__desc {
-  margin-block: var(--qd-space-1) var(--qd-space-3);
+  margin-block-start: var(--qd-space-1);
 }
 
 .abwab-relations-modal__group {
@@ -178,13 +178,6 @@
   padding: var(--qd-space-2);
 }
 
-/* Interim: the host still owns the list cap so the extraction commit is visually inert. It is
-   handed over as a custom property because component style encapsulation would keep a host
-   selector from reaching the picker's own list element. Deleted with the geometry change. */
-.abwab-relations-modal__picker qd-abwab-door-picker {
-  --abwab-door-picker-list-max: 11rem;
-}
-
 .abwab-relations-modal__selected {
   margin-block-start: var(--qd-space-2);
   min-block-size: 1.25rem;
@@ -193,5 +186,4 @@
 .abwab-relations-modal__foot {
   display: flex;
   gap: var(--qd-space-2);
-  margin-block-start: var(--qd-space-3);
 }

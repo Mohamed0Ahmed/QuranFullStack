@@ -166,6 +166,25 @@ describe('AbwabTemplateCopyModalComponent', () => {
       expect(closed).toHaveLength(2);
     });
 
+    it('opens with focus on the picker search, inside the trapped dialog', async () => {
+      const { fixture, root, el } = render();
+      await fixture.whenStable();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(document.activeElement).toBe(el('abwab-template-copy-modal-search'));
+      expect(root.querySelector('[data-testid="abwab-template-copy-modal"]')!.contains(document.activeElement)).toBe(
+        true,
+      );
+    });
+
+    it('keeps the actions out of the scrolling body', () => {
+      const { root } = render();
+
+      const foot = root.querySelector('.qd-modal__foot')!;
+      expect(foot.querySelector('[data-testid="abwab-template-copy-modal-confirm"]')).toBeTruthy();
+      expect(root.querySelector('.qd-modal__body')!.contains(foot)).toBe(false);
+    });
+
     it('clicking inside the dialog does not close it', () => {
       const { fixture, el } = render();
       const closed: void[] = [];
