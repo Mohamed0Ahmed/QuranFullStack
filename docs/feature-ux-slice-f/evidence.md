@@ -62,3 +62,31 @@ Plan: `docs/feature-ux-slice-f/plan.md`. Branch: `ux-slice-f-sections`, off `dev
 - `.architecture/UI_STYLE_SYSTEM.md` §17 — the `qd-tabs` entry gains a count-meta bullet: rendered by the call-site (the directive cannot project a child element), Latin digits with `tabular-nums`, always rendered and dimmed at zero via `--empty` (opacity only), visible digits `aria-hidden` with the accessible name carried by the tab.
 - `docs/TESTING_DEBT.md` — new `ux-slice-f` section (2026-08-01) with rows F1 (writer behavior, uncovered anywhere), F2 (the duplicate-`OrderValue` condition itself), F3 (section-reorder smoke, `ParityOnly`).
 - Preliminary grep sweep (`twenty write`, `20 write`, `create / rename / delete-empty`) — the only remaining hits are closed-feature planning docs (`docs/feature-abwab-doors/plan.md`, `docs/feature-abwab-templates/plan.md`) and this slice's own `plan.md`, all historical records left as-is per repo law. T903 repeats the full sweep (including `doorsInScopeCount`) at close-out.
+
+## Phase 9 — T901 (Tier C against the T101 baseline)
+
+| Check | Baseline (T101) | Close (T901) | Delta |
+|---|---|---|---|
+| Backend build | 0/0 warnings/errors, 35.8s | 0/0 warnings/errors, 39.7s (one transient MSB3883 file-lock retried mid-slice, unrelated) | — |
+| No-pipeline regression | 1086 passed | **1086 passed** | **0 — backend test count unchanged**, as declared (§4.2-17: zero new backend tests, posture) |
+| Route-smoke tier | 140 passed | **140 passed** | 0, both parity directions still hold with the new route catalogued |
+| `Tests.Smoke.Data` | RAN (13 passed, dump present) | **RAN** (13 passed, same dump) | — |
+| `check-api-contract` | clean | **clean**, `git status --short` empty after the run | — |
+| Frontend tests | 193 files / 2316 tests | **193 files / 2343 tests** | **+27**, see breakdown below |
+| Frontend build | succeeded, 17.9s, 2 pre-existing budget warnings | **succeeded, 21.1s, same 2 warnings, none new** | — |
+
+**+27 vs the plan's declared "+10 to +18" (§4.2-17) — explained, not a defect.** Per-file delta:
+`abwab-tree.builder.spec.ts` +4, `abwab-toolbar.component.spec.ts` +4, `abwab-sections-modal.component.spec.ts` +7,
+`abwab.api.spec.ts` +1, `abwab-write.controller.spec.ts` +4, `abwab.labels.spec.ts` +7 — sums to 27 and
+accounts for the whole suite-wide delta with nothing left over. Every one of those cells is a behavior
+named explicitly in the plan (T502/T603/T701/T703's own cell lists), so the gap between the estimate and
+the actual count is granularity, not scope: the labels file pins `ROOT_DOOR_FORMS` with a six-row
+`it.each` (0/1/2/3/10/11) rather than one assertion per form, per the workspace's data-driven-test
+convention (`test-guard`), and Vitest counts each `it.each` row as its own test. Zero tests removed,
+zero new spec files, fork cap (`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`) preserved unchanged in
+`package.json`, no `.only`/`.skip`/`xit`/`xdescribe` introduced (grepped clean).
+
+**Tier B**, on both grounds the plan names: the global stylesheet `src/styles/_components.scss` was
+edited (`.qd-tabs__count--empty`), and this slice completes a full backend+frontend vertical slice. The
+same `npm test` + `npm run build` above satisfies both B and C — one run, two triggers. Confirmed
+`shared/` carries no edit (DRIFT-4): `git diff --stat dev...HEAD -- Frontend/quran-dashboard-ui/src/app/shared` is empty, so `qdTab`/`qd-tabs` behavior is unchanged and no shared-primitive spec is owed.
