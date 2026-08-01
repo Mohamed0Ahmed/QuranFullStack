@@ -294,6 +294,9 @@ is one unparameterized root-scoped tree GET, and the relations read is keyed by 
 uncached (`state/abwab-relations.controller.ts`), so a restored relations modal re-fetches
 honestly. This is the one row of this table a future caching design must **not** pick up —
 adding the key to a scope or cache input would be a contract change, not an optimisation.
+The caching that since landed honors this: the tree validator is a server-side generation
+counter keyed on nothing from the URL, the snapshot read is still one unparameterized tree
+GET, and the relations read is still uncached and unconditional.
 
 **Restoring reopens the overlay, not a draft.** The key encodes *which* overlay is
 restorable and nothing else; a reopened door modal is pristine from the snapshot, the same
@@ -505,7 +508,26 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   destination list, not an ordered outline, so following the superset's own order there is
   coherent — pinned by a spec case in `abwab-move-picker.component.spec.ts`, not a side effect.
 - **`AbwabTreeDto.version` is diagnostics only.** Per-row `xmin` tokens are the only
-  concurrency currency; do not build snapshot-level conflict detection on it.
+  concurrency currency; do not build snapshot-level conflict detection on it. It is **also
+  not the cache validator**: the `ETag` these reads now carry is a server-side generation
+  counter (backend process memory, no row data). Three distinct jobs — `version` describes,
+  `xmin` detects conflicts, the `ETag` validates a cached representation — and mixing any two
+  is how a diagnostics field quietly becomes a correctness one.
+- **The facades hold an `If-None-Match` validator beside the value it validates, as one unit.**
+  `AbwabSnapshotFacade` holds one; `AbwabTemplatesFacade` holds one for the list and one keyed
+  by the selected template's id, so a validator never travels to a different template. Value
+  and validator are written together on a `200`, kept together on a failure and on a `304`, and
+  dropped together when the value is cleared (`clearSelection`).
+- **A `304` means "keep the current value", not an error.** Angular delivers it on the error
+  channel — only `2xx` counts as ok — so each facade checks `err.status === 304` **before** its
+  generic error branch: loading ends, the value and validator stay, and **no error is set**.
+  A `304` therefore never shows a banner, and a real failure still does.
+- **The route-entry `load()` stays unconditional** (`abwab-page.component.ts`). With a validator
+  held it costs a `304` and zero body bytes rather than a full snapshot; there is no TTL and no
+  second cache layer in front of the facades on either end.
+- **The archive view is a partition of the cached snapshot, not a cacheable resource.**
+  `archivedRoots` is built client-side from the same tree entry, and toggling it issues no
+  request at all. Do not give it a cache key, a validator, or a route of its own.
 - **`createDoor` omits `sectionId` from the wire body whenever `parentId` is set** —
   the backend derives the section from the parent and 400s on a stated mismatch.
   `AbwabApi#createDoor` builds the body without the key (not `sectionId: undefined`;

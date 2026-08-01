@@ -89,6 +89,10 @@ Lightweight rules:
 - `200 OK` — successful reads/commands that return a body.
 - `201 Created` — successful creation when a resource is created.
 - `204 No Content` — only when intentionally returning no body.
+- `304 Not Modified` — conditional GETs only, in response to an `If-None-Match` that
+  matches the current validator. No body, ever; `ETag` and `Cache-Control` headers are
+  required on it. The second sanctioned bodiless status after `204`, and the first that
+  is not the success of a write — see section 5.
 - `400 Bad Request` — invalid input.
 - `401 Unauthorized` — missing/invalid authentication (later).
 - `403 Forbidden` — authenticated but not allowed (later).
@@ -136,6 +140,31 @@ Rules:
   controllers/handlers/services.
 - Use message keys/resources/constants close to the owning feature when possible.
 - Shared messages only go to a truly shared/common location.
+
+### Conditional GETs
+
+A read may support revalidation. When it does, these rules bind — the envelope itself does
+not change, the rule is scoped to the conditional read:
+
+- Every `200` from a conditional read carries `ETag` plus `Cache-Control: no-store`. The
+  `no-store` is load-bearing: without it an `ETag`-bearing response is heuristically
+  revalidatable by the browser's own cache, which becomes a second, invisible validator layer
+  racing the client's explicit one.
+- A matching `If-None-Match` returns `304` with **no body** and the same two headers. The
+  `304` path must not run the query — a revalidation that still reads the database has bought
+  nothing.
+- **Validators are opaque server-side generations, never derived from row data.** A validator
+  built out of a payload hash or a data-derived version field turns a diagnostics field into a
+  concurrency-adjacent one; keep the two apart.
+- Comparison is **exact ordinal match against a member** of the request's list, and
+  **fail-open**: an absent, malformed, or `*` header earns a full `200`. `*` is deliberately
+  not given its RFC 9110 meaning — for a single first-party client, a mis-sent header should
+  cost a body, never a stale representation.
+- A `404` carries no validator headers: an absence has no representation to validate.
+- The abwab reads are the implementation today. Their **single-instance constraint and its
+  migration path** live in
+  `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md` —
+  read it before adding a second instance or a second conditional read; it is not restated here.
 
 See also section 10 (Localization and Messages) and the localization rules in
 `AGENTS.md` / `CLAUDE.md`.
