@@ -6,32 +6,15 @@
         <p class="qd-text-muted">{{ pageSubtitle }}</p>
       </div>
       <div class="abwab-page__header-actions">
-        @if (restorableModal(); as retained) {
-          <!-- The only thing on screen that says a closed overlay is still waiting, so it names
-               the overlay rather than saying «استعادة» alone. In flow with the other header
-               controls — it is a control, not a floating layer, so it takes no z-band. -->
-          <span class="abwab-page__restore">
-            <button
-              #modalRestoreControl
-              type="button"
-              class="qd-btn abwab-page__restore-btn"
-              data-testid="abwab-page-modal-restore"
-              (click)="onModalRestoreRequested()"
-            >
-              {{ modalRestoreLabel(retained.kind) }}
-            </button>
-            <button
-              type="button"
-              class="abwab-page__restore-discard"
-              data-testid="abwab-page-modal-discard"
-              [attr.aria-label]="modalDiscardAriaLabel(retained.kind)"
-              (click)="onModalDiscardRequested()"
-            >
-              ×
-            </button>
-          </span>
+        @if (modalUrl.restorableModal(); as retained) {
+          <qd-abwab-modal-restore
+            [kind]="retained.kind"
+            (restore)="onModalRestoreRequested()"
+            (discard)="onModalDiscardRequested()"
+          />
         }
         <button
+          #headerFallbackFocus
           type="button"
           class="qd-btn"
           [class.abwab-page__header-btn--active]="archiveParam()"

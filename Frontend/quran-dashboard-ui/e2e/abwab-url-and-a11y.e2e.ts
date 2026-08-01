@@ -109,6 +109,10 @@ test('modal=<kind> survives a reload, and the retained state is reachable by Bac
   // Restore is a push, so Back returns to the closed state rather than skipping past it.
   await page.getByTestId('abwab-page-modal-restore').press('Enter');
   await expect(page.getByTestId('abwab-door-modal')).toBeVisible();
+  // Visibility alone would not prove the trap re-armed — focus could still be sitting on the
+  // control the restore destroyed. Slice C's `cdkTrapFocusAutoCapture` does the re-capture;
+  // this asserts it landed, without reimplementing it.
+  await expect(page.getByTestId('abwab-door-modal-name')).toBeFocused();
 
   await page.goBack();
   await expect(page.getByTestId('abwab-door-modal')).toHaveCount(0);
@@ -129,6 +133,9 @@ test('the restore control’s X discards the key entirely', async ({ page, abwab
   await expect(page).not.toHaveURL(/modal=/);
   await expect(page.getByTestId('abwab-page-modal-restore')).toHaveCount(0);
   await expect(page.getByTestId('abwab-door-modal')).toHaveCount(0);
+  // The X removes itself, so focus is handed to the next header control rather than dropped
+  // on `<body>` — a keyboard user keeps their place in the row.
+  await expect(page.getByTestId('abwab-page-archive-toggle')).toBeFocused();
 });
 
 test('cards drill-down writes card=<id>, and the breadcrumb walks back', async ({ page, abwabSandbox }) => {

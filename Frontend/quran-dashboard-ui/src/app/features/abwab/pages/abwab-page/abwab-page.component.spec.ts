@@ -953,20 +953,6 @@ describe('AbwabPageComponent', () => {
       expect(lastCallExtras()).toMatchObject({ queryParams: { modal: null }, replaceUrl: true });
     });
 
-    it('restore pushes the kind back open; discard replaces the key away', () => {
-      const fixture = renderAt({ modal: 'sections-closed' });
-      const page = fixture.componentInstance as unknown as {
-        onModalRestoreRequested: () => void;
-        onModalDiscardRequested: () => void;
-      };
-
-      page.onModalRestoreRequested();
-      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: 'sections' }, replaceUrl: false });
-
-      page.onModalDiscardRequested();
-      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: null }, replaceUrl: true });
-    });
-
     it('restore does nothing when the parsed state is already open or absent', () => {
       const fixture = renderAt({ modal: 'sections' });
       const page = fixture.componentInstance as unknown as { onModalRestoreRequested: () => void };
@@ -1022,9 +1008,7 @@ describe('AbwabPageComponent', () => {
       const root = fixture.nativeElement as HTMLElement;
 
       expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeNull();
-      expect(
-        (fixture.componentInstance as unknown as { restorableModal: () => unknown }).restorableModal(),
-      ).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
     });
 
     it('an emission carrying -closed closes the open overlay — the Back path', () => {
@@ -1036,6 +1020,59 @@ describe('AbwabPageComponent', () => {
       fixture.detectChanges();
 
       expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeNull();
+    });
+
+    it('a URL-driven close discards an unsaved draft without raising the confirm', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit' });
+      const root = fixture.nativeElement as HTMLElement;
+      const nameInput = root.querySelector('[data-testid="abwab-door-modal-name"]') as HTMLInputElement;
+      nameInput.value = 'مسودة لم تُحفظ';
+      nameInput.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      // Cancelling by gesture raises the dirty confirm; Back does not. The URL is the single
+      // source of truth, so a URL that says the overlay is closed closes it — and restoring
+      // returns a pristine overlay rather than the draft (README, «Restoring reopens the
+      // overlay, not a draft»).
+      params$.next(convertToParamMap({ door: '1', modal: 'edit-closed' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-door-modal-discard-confirm"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeTruthy();
+    });
+
+    it('an emission that moves door= under an unchanged kind rebinds to the new subject', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit' });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-door-modal-name"]')).toHaveProperty('value', 'العلم بالله');
+
+      params$.next(convertToParamMap({ door: '2', modal: 'edit' }));
+      fixture.detectChanges();
+
+      // The subject is tracked beside the kind, so this reads as a different overlay. Comparing
+      // kinds alone would leave the editor bound to door 1 while the URL named door 2.
+      expect(root.querySelector('[data-testid="abwab-door-modal-name"]')).toHaveProperty('value', 'الرسول');
+    });
+
+    it('a parsed key does not hijack a bulk-opened overlay into single-subject mode', () => {
+      const fixture = renderAt({ door: '1' });
+      const root = fixture.nativeElement as HTMLElement;
+      click(root, 'abwab-side-panel-bulk-toggle');
+      fixture.detectChanges();
+      click(root, 'abwab-tree-checkbox-1');
+      fixture.detectChanges();
+      click(root, 'abwab-tree-checkbox-2');
+      fixture.detectChanges();
+      click(root, 'abwab-side-panel-bulk-move');
+      fixture.detectChanges();
+      const bulkTitle = root.querySelector('[data-testid="abwab-move-picker"] h3')?.textContent;
+      expect(bulkTitle).toBe(ABWAB_LABELS.movePickerTitleBulk(2));
+
+      params$.next(convertToParamMap({ door: '1', modal: 'move' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-move-picker"] h3')?.textContent).toBe(bulkTitle);
     });
 
     it('the echo of a gesture’s own patch is a no-op, not a second open', () => {
@@ -1135,6 +1172,21 @@ describe('AbwabPageComponent', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(document.activeElement).toBe(root.querySelector('[data-testid="abwab-page-modal-restore"]'));
+      root.remove();
+    });
+
+    it('focus moves to the next header control after the discard X removes itself', async () => {
+      const fixture = renderAt({ door: '1', modal: 'edit-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+      document.body.appendChild(root);
+
+      click(root, 'abwab-page-modal-discard');
+      params$.next(convertToParamMap({ door: '1' }));
+      fixture.detectChanges();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Without the handoff the activated control is gone and focus falls to `<body>`.
+      expect(document.activeElement).toBe(root.querySelector('[data-testid="abwab-page-archive-toggle"]'));
       root.remove();
     });
 

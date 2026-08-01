@@ -134,13 +134,27 @@ No new token, hue or z-band was introduced.
 | Closing (T701) | 193 | **2313** — all passing, 215.83s |
 | Delta | 0 | **+54 cases**, zero removed, zero new spec files |
 
-**The declared band in the plan (4.2-12: +12–25) is exceeded, and the reason is
-mechanical, not scope creep.** That band counted `it()` declarations; the measured number
-counts cases, and this slice leans on `it.each` because test-guard requires variants to be
-data-driven. Nine `it.each` declarations across the url-sync spec and the page spec expand
-into roughly forty cases on their own. Net-new `it()`/`it.each` **declarations** are ~25 —
-inside the declared band. Zero tests were removed and zero new spec files were created;
-every touched surface already had a suite.
+**The declared band in the plan (4.2-12: +12–25) is exceeded on both accountings.** The
+band counted `it()` declarations; the measured number counts cases, and this slice leans on
+`it.each` because test-guard requires variants to be data-driven. Six `it.each`
+declarations across the url-sync spec and the page spec expand into 16 cases on their own.
+Zero tests were removed and zero new spec files were created; every touched surface already
+had a suite.
+
+**Correction (engineering review, 2026-08-01).** An earlier draft of this section claimed
+"~25 net-new declarations — inside the declared band" and "nine `it.each` declarations …
+roughly forty cases". Both were wrong. Counted at the closing commit:
+
+| | Net-new `it()` | Net-new `it.each()` | Declarations | Cases |
+|---|---|---|---|---|
+| `abwab-url-sync.spec.ts` | +7 | +3 | 10 | 17 |
+| `abwab.models.spec.ts` | +2 | 0 | 2 | 2 |
+| `abwab-page.component.spec.ts` | +28 | +3 | 31 | 37 |
+| **Total** | **+37** | **+6** | **43** | **56** |
+
+So the delta is **outside** 4.2-12's band whether counted as declarations (43) or as cases
+(56). The direction — a net increase driven by data-driven variants — is the plan's, but the
+arithmetic that made it look in-band was not. Recorded rather than restated.
 
 ## T701 / T702 — closing gates
 
@@ -179,6 +193,49 @@ itself so the reveal stays one navigation. Both are pinned.
   and D evidence folders, which keep their historical wording because evidence is not
   rewritten.
 
+## Engineering review round (2026-08-01) — findings and what changed
+
+A review of the whole branch against `plan.md` and audit item 11 returned CHANGES
+REQUESTED: two MAJOR, four MINOR, six NOTE. What the review confirmed as correct is not
+repeated here; what it changed is:
+
+| # | Finding | Resolution |
+|---|---|---|
+| 1 | MAJOR — `abwab-page.component.ts` at **745** lines against a 400-line hard threshold (440 on `dev`, so +305 branch-owned), with no split proposed | **Reduced, not cleared.** The `modal` key's page-side machinery moved to `state/abwab-modal-url.controller.ts` (201 lines, no Router — same boundary as the overlays controller) and the restore control to `components/abwab-modal-restore/`. Page TS **745 → 647**, SCSS **210 → 161** (back under its soft threshold), HTML **350 → 333**. 647 still breaches the hard threshold; the residual is pre-existing route-shell structure, and the next seam (the Slice D reveal machinery) is named in the README rather than smuggled into a feature slice |
+| 2 | MAJOR — a URL-driven close bypasses the door/sections modals' unsaved-changes confirm; unrecorded and unpinned | Decided and recorded: the URL is authoritative, so a URL-inferred close discards the draft silently and restore returns a pristine overlay. Stated in the README's history paragraph and pinned by a page spec that asserts the confirm does **not** appear |
+| 3 | MINOR — the scope/cache-neutrality verdict lived only here, and this file is swept at feature close | Moved into the README's URL-contract section as a durable paragraph, per `plan.md` §8's own mitigation ("the README table gives Slice I one authoritative row to read") |
+| 4 | MINOR — this file's declaration arithmetic was wrong | Corrected above, with the count per file |
+| 5 | MINOR — the discard X removes the focused element, dropping focus to `<body>` | Focus is handed to the next header control. Pinned in the page spec and asserted in the e2e |
+| 6 | MINOR — the discard's focus ring omitted `.qd-btn`'s `box-shadow: var(--qd-ring)`, so one control focused two ways | Added; the two halves now focus identically |
+| 7 | NOTE — the e2e proved the restore trap re-armed only by visibility | Now asserts the modal's name field is focused after the keyboard restore |
+| 8 | NOTE — the reveal clears the key by push, a fifth history flavor outside 4.2-5's list | Recorded in the README's history paragraph, with why Back must undo a reveal |
+| 9 | NOTE — reconciliation compared kinds only, so an emission moving `door=` under an unchanged kind would leave the overlay on the old subject | The tracked state now carries the subject beside the kind; pinned |
+| 10 | NOTE — restoring a retained key while a bulk-opened move picker / relations modal was on screen converted it to single-subject mode | `reconcileOpen` refuses to open an overlay that is already open; pinned |
+| 11 | NOTE — the live guard does not check section/archive scope | No change: `plan.md` §8 discharges scope through the build-level invalidation rule, and the guard is no weaker than the `door=` key it depends on |
+| 12 | NOTE — page HTML over its soft threshold | 350 → 333 as a side effect of the restore-control extraction; still over 300, unchanged in kind from `dev`'s 324 |
+
+One test was deleted in this round — "restore pushes the kind back open; discard replaces
+the key away", a direct-call duplicate of two DOM-driven tests asserting the same navigation
+args in the same file. Four were added (the dirty-close bypass, subject rebinding, the bulk
+hijack guard, discard focus).
+
+### Closing gates, re-run after the review fixes
+
+| Gate | Command | Result |
+|---|---|---|
+| Tier C — full Vitest | `npm test` | **193 files / 2316 tests, all passing** |
+| Tier C — build | `npm run build` | **succeeds** |
+
+Build warnings, recorded in full this time: the two pre-existing `features/mushaf/` SCSS
+budget warnings **and** an initial-bundle budget warning (569.54 kB against a 500 kB
+budget) that the T101 baseline entry omitted. The warning is not this slice's: `/abwab` is
+lazy-loaded (`abwab-page-component` is a lazy chunk), so nothing this branch adds can reach
+the initial bundle.
+
+The e2e amendments in this round (two added assertions, no new tests) were **not re-run** —
+that layer needs a live backend and is never a gate. The behavior both assert is pinned in
+Vitest, which was run.
+
 ## Obligations (§9)
 
 - [x] Baseline recorded before any change; closing Tier C compared against it
@@ -192,5 +249,5 @@ itself so the reveal stays one navigation. Both are pinned.
 - [x] README: contract row, invalidation paragraph, refined page-scoped invariant, no-draft rule, templates revisit outcome
 - [x] Both audit-named gates amended in the same change; nine existing assertions grew one key each, none deleted (D1)
 - [x] Cache/scope identity untouched — stated from measurement above, not assumed
-- [x] Zero tests removed; fork cap preserved (via the `npm test` script); no e2e cited as a gate. **Test delta is outside 4.2-12's declared band and explained above** rather than waved through
+- [x] Fork cap preserved (via the `npm test` script); no e2e cited as a gate. **Test delta is outside 4.2-12's declared band on both accountings and explained above** rather than waved through. Zero tests removed by the slice itself; the review round deleted exactly one direct-call duplicate whose behavior two DOM tests already assert
 - [x] No backend change; no planning folder deleted or repointed; branch targets `dev`

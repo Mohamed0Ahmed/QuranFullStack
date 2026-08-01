@@ -18,6 +18,7 @@ import { AbwabSnapshotFacade } from '../../state/abwab-snapshot.facade';
 import { AbwabSelectionStore } from '../../state/abwab-selection.store';
 import { AbwabWriteController } from '../../state/abwab-write.controller';
 import { AbwabPageOverlaysController } from '../../state/abwab-page-overlays.controller';
+import { AbwabModalUrlController, DOOR_MODAL_KINDS } from '../../state/abwab-modal-url.controller';
 import {
   countAbwabDoorsInOpenScope,
   countLiveAbwabDoors,
@@ -29,11 +30,9 @@ import { parseAbwabQueryParams, buildAbwabQueryParams } from '../../state/abwab-
 import {
   ABWAB_ORDER_SCOPE_TO_WIRE,
   AbwabModalKind,
-  AbwabModalState,
   AbwabNode,
   AbwabOrderScope,
   AbwabView,
-  isDoorDependentAbwabModalKind,
 } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabToolbarComponent } from '../../components/abwab-toolbar/abwab-toolbar.component';
@@ -48,6 +47,7 @@ import {
   AbwabMovePickerComponent,
 } from '../../components/abwab-move-picker/abwab-move-picker.component';
 import { AbwabSectionsModalComponent } from '../../components/abwab-sections-modal/abwab-sections-modal.component';
+import { AbwabModalRestoreComponent } from '../../components/abwab-modal-restore/abwab-modal-restore.component';
 import { AbwabRelationsModalComponent } from '../../components/abwab-relations-modal/abwab-relations-modal.component';
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
@@ -68,10 +68,6 @@ const NO_ROOTS: readonly AbwabNode[] = [];
 /** How long the reveal mark is held. Must match the animation duration in
  * `abwab-tree.component.scss`, which decays over the same span. */
 const REVEAL_HOLD_MS = 3000;
-
-/** The three modes the one door modal serves — which of them it is showing is the private
- * signal set the opener wrote, so the URL kind is the page's own record of it. */
-const DOOR_MODAL_KINDS: readonly AbwabModalKind[] = ['create', 'child', 'edit'];
 
 /**
  * Route shell for `/abwab` (plan-slice-b.md T415/T501-T511): URL ⇄ state wiring,
@@ -98,6 +94,7 @@ const DOOR_MODAL_KINDS: readonly AbwabModalKind[] = ['create', 'child', 'edit'];
     AbwabMovePickerComponent,
     AbwabSectionsModalComponent,
     AbwabRelationsModalComponent,
+    AbwabModalRestoreComponent,
     QdContextMenuComponent,
     ExplorerResultCountComponent,
     QdSkeletonRowsComponent,
@@ -106,7 +103,7 @@ const DOOR_MODAL_KINDS: readonly AbwabModalKind[] = ['create', 'child', 'edit'];
   templateUrl: './abwab-page.component.html',
   styleUrl: './abwab-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [AbwabPageOverlaysController],
+  providers: [AbwabPageOverlaysController, AbwabModalUrlController],
 })
 export class AbwabPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -118,6 +115,7 @@ export class AbwabPageComponent implements OnInit {
   protected readonly selection = inject(AbwabSelectionStore);
   protected readonly writeController = inject(AbwabWriteController);
   protected readonly overlays = inject(AbwabPageOverlaysController);
+  protected readonly modalUrl = inject(AbwabModalUrlController);
 
   protected readonly templatesRoutePath = `/${ABWAB_ROUTE_PATH}/templates`;
 
@@ -127,9 +125,11 @@ export class AbwabPageComponent implements OnInit {
   protected readonly archiveParam = signal(false);
   protected readonly cardParam = signal<number | null>(null);
   protected readonly searchQueryParam = signal('');
-  protected readonly modalParam = signal<AbwabModalState | null>(null);
 
-  private readonly modalRestoreControl = viewChild<ElementRef<HTMLButtonElement>>('modalRestoreControl');
+  private readonly modalRestoreControl = viewChild(AbwabModalRestoreComponent);
+  /** Where focus goes when the discard X removes itself — without it focus would fall to
+   * `<body>` and a keyboard user would lose the header row entirely. */
+  private readonly headerFallbackFocus = viewChild<ElementRef<HTMLButtonElement>>('headerFallbackFocus');
 
   protected readonly sections = computed(() => this.facade.snapshot()?.sections ?? []);
   protected readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
@@ -173,12 +173,6 @@ export class AbwabPageComponent implements OnInit {
   /** Set when a reveal navigates, cleared by the param emission that lands it. */
   private revealPending = false;
 
-  /** Which overlay this page currently holds open **on the URL's behalf** — the one piece of
-   * state that makes reconciliation a transition rather than a per-emission assertion. It is
-   * null while a bulk gesture owns the move picker or the relations modal, which is what
-   * keeps those session-transient overlays out of the URL's reach (plan-slice-e.md §2). */
-  private openedModalKind: AbwabModalKind | null = null;
-
   /** Set by the door modal's `saved` output, read by the `closed` that follows it. */
   private doorModalCommitted = false;
 
@@ -221,14 +215,6 @@ export class AbwabPageComponent implements OnInit {
 
   protected readonly selectedDoor = this.overlays.selectedDoor;
 
-  /** The retained state the restore control renders from — null while the key is absent,
-   * open, or pointing at a subject that cannot be restored (the same live guard the restore
-   * effect applies), so an inert key shows no affordance at all. */
-  protected readonly restorableModal = computed<AbwabModalState | null>(() => {
-    const modal = this.modalParam();
-    return modal !== null && modal.closed && this.canOpenModalKind(modal.kind) ? modal : null;
-  });
-
   protected get pageTitle(): string { return ABWAB_LABELS.pageTitle; }
   protected get pageSubtitle(): string { return ABWAB_LABELS.pageSubtitle; }
   protected get addRootLabel(): string { return ABWAB_LABELS.addRootDoorButton; }
@@ -250,12 +236,6 @@ export class AbwabPageComponent implements OnInit {
   protected get relationsOpLabel(): string { return ABWAB_LABELS.relationsOp; }
   protected get statAllDoorsLabel(): string { return ABWAB_LABELS.allDoorsTab; }
   protected get statOpenScopeLabel(): string { return ABWAB_LABELS.statOpenScopeDoors; }
-  protected modalRestoreLabel(kind: AbwabModalKind): string {
-    return ABWAB_LABELS.modalRestoreLabel(ABWAB_LABELS.modalKindNames[kind]);
-  }
-  protected modalDiscardAriaLabel(kind: AbwabModalKind): string {
-    return ABWAB_LABELS.modalDiscardAriaLabel(ABWAB_LABELS.modalKindNames[kind]);
-  }
 
   constructor() {
     // Restores the `door` deep link once both the URL and the snapshot are ready —
@@ -279,96 +259,12 @@ export class AbwabPageComponent implements OnInit {
     // when the subject settles; the decision itself is `untracked`, because reconciliation
     // only ever reads the URL into state.
     effect(() => {
-      const modal = this.modalParam();
+      this.modalUrl.modal();
       this.facade.snapshot();
       this.doorParam();
       this.selectedDoor();
-      untracked(() => this.reconcileModalOpen(modal !== null && !modal.closed ? modal.kind : null));
+      untracked(() => this.modalUrl.reconcileOpen());
     });
-  }
-
-  /** Both halves act only on the delta between what the page holds open and what the URL
-   * asks for, which is what makes the echo of a gesture's own patch a no-op — re-opening an
-   * already-open door modal would reset the form under the user.
-   *
-   * Closing is driven by the param emission and **not** by the effect: between a gesture's
-   * navigation and the emission that lands it, the URL still says nothing, and an effect
-   * that read that as "close everything" would shut the modal the click just opened. The
-   * emission fires exactly when the URL genuinely changed, which is the only moment a close
-   * can be inferred from it. */
-  private reconcileModalClose(target: AbwabModalKind | null): void {
-    if (this.openedModalKind === null || target === this.openedModalKind) {
-      return;
-    }
-    this.closeOverlayFor(this.openedModalKind);
-    this.openedModalKind = null;
-  }
-
-  private reconcileModalOpen(target: AbwabModalKind | null): void {
-    if (target === null || this.openedModalKind !== null || !this.canOpenModalKind(target)) {
-      return;
-    }
-    this.openOverlayFor(target);
-    this.openedModalKind = target;
-  }
-
-  /** Door-dependent kinds need a subject that is bound **and live**. `byId` holds archived
-   * nodes and the `door=` effect checks presence only, so a crafted `modal=edit` on an
-   * archived door would otherwise open an editor over something the tree does not show.
-   * The fail-closed outcome is the one a dead `door=` already produces: nothing happens and
-   * the key sits inert. */
-  private canOpenModalKind(kind: AbwabModalKind): boolean {
-    if (!isDoorDependentAbwabModalKind(kind)) {
-      return this.facade.snapshot() !== null;
-    }
-    const doorId = this.doorParam();
-    if (doorId === null) {
-      return false;
-    }
-    const node = this.byId().get(doorId);
-    return !!node && !node.isArchived && this.selectedDoor()?.id === doorId;
-  }
-
-  private openOverlayFor(kind: AbwabModalKind): void {
-    switch (kind) {
-      case 'create':
-        this.overlays.openCreateRoot();
-        return;
-      case 'child':
-        this.overlays.openCreateChild();
-        return;
-      case 'edit':
-        this.overlays.openEdit();
-        return;
-      case 'move':
-        this.overlays.openMovePicker();
-        return;
-      case 'sections':
-        this.overlays.openSectionsModal();
-        return;
-      case 'relations':
-        this.overlays.openRelations();
-        return;
-    }
-  }
-
-  private closeOverlayFor(kind: AbwabModalKind): void {
-    switch (kind) {
-      case 'create':
-      case 'child':
-      case 'edit':
-        this.overlays.closeModal();
-        return;
-      case 'move':
-        this.overlays.closeMovePicker();
-        return;
-      case 'sections':
-        this.overlays.closeSectionsModal();
-        return;
-      case 'relations':
-        this.overlays.closeRelationsModal();
-        return;
-    }
   }
 
   ngOnInit(): void {
@@ -381,8 +277,7 @@ export class AbwabPageComponent implements OnInit {
       this.archiveParam.set(parsed.archive);
       this.cardParam.set(parsed.card);
       this.searchQueryParam.set(parsed.q);
-      this.modalParam.set(parsed.modal);
-      this.reconcileModalClose(parsed.modal !== null && !parsed.modal.closed ? parsed.modal.kind : null);
+      this.modalUrl.syncFromUrl(parsed.modal, parsed.door);
       this.selection.setArchiveViewActive(parsed.archive);
       // The URL is the single source of truth for the selection, exactly as it already is
       // for view/archive/card/q. `buildAbwabQueryParams` drops `door` whenever the scope
@@ -530,7 +425,7 @@ export class AbwabPageComponent implements OnInit {
     this.overlays.closeRelationsModal();
     // The single patch below already discards the key; clearing the tracked kind here rather
     // than waiting for the emission keeps this one navigation instead of two.
-    this.openedModalKind = null;
+    this.modalUrl.releaseTracking();
     this.revealAnnouncement.set(null);
     this.revealTargetId.set(doorId);
     this.revealSequence.update((n) => n + 1);
@@ -594,12 +489,12 @@ export class AbwabPageComponent implements OnInit {
   // navigation, and `openedModalKind` makes the echo a no-op when it arrives.
 
   protected onCreateRootRequested(): void {
-    this.openOverlayFor('create');
+    this.modalUrl.open('create');
     this.commitModalOpen('create');
   }
 
   protected onSectionsRequested(): void {
-    this.openOverlayFor('sections');
+    this.modalUrl.open('sections');
     this.commitModalOpen('sections');
   }
 
@@ -627,7 +522,7 @@ export class AbwabPageComponent implements OnInit {
     if (!node) {
       return;
     }
-    this.openOverlayFor('child');
+    this.modalUrl.open('child');
     this.commitModalOpen('child', doorId);
   }
 
@@ -681,38 +576,45 @@ export class AbwabPageComponent implements OnInit {
   }
 
   protected onModalRestoreRequested(): void {
-    const modal = this.modalParam();
-    if (modal === null || !modal.closed) {
+    const retained = this.modalUrl.restorableModal();
+    if (retained === null) {
       return;
     }
     // A push, so Back returns to the closed state rather than skipping past it.
-    this.updateQueryParams(buildAbwabQueryParams({ modal: { kind: modal.kind, closed: false } }));
+    this.updateQueryParams(buildAbwabQueryParams({ modal: { kind: retained.kind, closed: false } }));
   }
 
   protected onModalDiscardRequested(): void {
     this.updateQueryParams(buildAbwabQueryParams({ modal: null }), true);
+    // The X removes itself, so focus has to be handed somewhere deliberately; the discard's
+    // own trap-free close would otherwise drop it on `<body>`.
+    this.focusQueued(() => this.headerFallbackFocus()?.nativeElement.focus());
   }
 
   /** `kinds` is what this overlay can be holding on the URL's behalf. A mismatch means a bulk
-   * gesture opened it — the key was never written, so closing must not write one either. */
+   * gesture opened it — the key was never written, so closing must not write one either.
+   *
+   * A `discard` close hands focus to nobody on purpose: those paths (a saved door, a confirmed
+   * move, the reveal's dead-target guard) still have the modal's own `cdkTrapFocusAutoCapture`
+   * releasing, which returns focus to whatever opened it. */
   private closeUrlBackedModal(kinds: readonly AbwabModalKind[], close: () => void, discard = false): void {
-    const kind = this.openedModalKind;
+    const kind = this.modalUrl.urlBackedKind(kinds);
     close();
-    if (kind === null || !kinds.includes(kind)) {
+    if (kind === null) {
       return;
     }
-    this.openedModalKind = null;
+    this.modalUrl.releaseTracking();
     this.updateQueryParams(buildAbwabQueryParams({ modal: discard ? null : { kind, closed: true } }), true);
     if (!discard) {
-      this.focusRestoreControl();
+      this.focusQueued(() => this.modalRestoreControl()?.focusRestore());
     }
   }
 
-  /** Queued, not immediate: the control does not exist until the retained state renders, and
-   * the modal's focus trap is still releasing on this tick. Same shape as the words shell's
-   * `detail-modal-shell.component.ts:91-95`, which solved the identical race. */
-  private focusRestoreControl(): void {
-    setTimeout(() => this.modalRestoreControl()?.nativeElement.focus(), 0);
+  /** Queued, not immediate: the target does not exist until the navigation's emission renders
+   * it, and the modal's focus trap is still releasing on this tick. Same shape as the words
+   * shell's `detail-modal-shell.component.ts:91-95`, which solved the identical race. */
+  private focusQueued(focus: () => void): void {
+    setTimeout(focus, 0);
   }
 
   private openOnSelectedDoor(kind: AbwabModalKind): void {
@@ -720,12 +622,12 @@ export class AbwabPageComponent implements OnInit {
     if (!door) {
       return;
     }
-    this.openOverlayFor(kind);
+    this.modalUrl.open(kind);
     this.commitModalOpen(kind, door.id);
   }
 
   private commitModalOpen(kind: AbwabModalKind, doorId?: number): void {
-    this.openedModalKind = kind;
+    this.modalUrl.trackOpen(kind, doorId ?? null);
     this.updateQueryParams(
       buildAbwabQueryParams({
         ...(doorId === undefined ? {} : { door: doorId }),
