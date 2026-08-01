@@ -34,4 +34,8 @@ export class AbwabSectionsController {
   deleteSection(id: number): Observable<AbwabWriteOutcome<unknown>> {
     return this.writeController.deleteSection(id);
   }
+
+  reorderSection(id: number, position: number, version: number): Observable<AbwabWriteOutcome<AbwabSectionDto>> {
+    return this.writeController.reorderSection(id, { position, version });
+  }
 }

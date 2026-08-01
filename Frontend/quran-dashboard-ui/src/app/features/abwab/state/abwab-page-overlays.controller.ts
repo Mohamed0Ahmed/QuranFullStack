@@ -236,6 +236,8 @@ export class AbwabPageOverlaysController {
   readonly renameSection = (id: number, name: string, version: number) =>
     this.sectionsController.renameSection(id, name, version);
   readonly deleteSection = (id: number) => this.sectionsController.deleteSection(id);
+  readonly reorderSection = (id: number, position: number, version: number) =>
+    this.sectionsController.reorderSection(id, position, version);
 
   // Relations modal (T604). Only open/closed + anchor + mode live here; the modal owns its own
   // type/direction/picks/search state.

@@ -80,6 +80,16 @@ describe('AbwabApi', () => {
     await promise;
   });
 
+  it('reorderSection sends POST /api/abwab/sections/{id}/order with position and version', async () => {
+    const promise = firstValueFrom(api.reorderSection(1, { position: 3, version: 2 }));
+    const req = httpMock.expectOne(`${BASE}/sections/1/order`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ position: 3, version: 2 });
+
+    req.flush(ok<AbwabSectionDto>(SAMPLE_SECTION));
+    await promise;
+  });
+
   it('createDoor at root sends the section id in the body', async () => {
     const promise = firstValueFrom(
       api.createDoor({

@@ -11,9 +11,11 @@ import { ABWAB_LABELS } from '../models/abwab.labels';
 import { AbwabTreeDoorDto } from '../../../core/api/generated/models/abwab-tree-door-dto';
 import { AbwabTreeDto } from '../../../core/api/generated/models/abwab-tree-dto';
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
+import { AbwabSectionDto } from '../../../core/api/generated/models/abwab-section-dto';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { BulkMoveDoorsCommand } from '../../../core/api/generated/models/bulk-move-doors-command';
 import { ReorderDoorBody } from '../../../core/api/generated/models/reorder-door-body';
+import { ReorderSectionBody } from '../../../core/api/generated/models/reorder-section-body';
 
 function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string }): AbwabTreeDoorDto {
   return {
@@ -49,6 +51,8 @@ const EDITED_DOOR: AbwabDoorDto = {
   version: 2,
 };
 
+const REORDERED_SECTION: AbwabSectionDto = { id: 1, name: 'اللغة العربية', orderValue: 3, version: 4 };
+
 function httpError(status: number, message: string): HttpErrorResponse {
   return new HttpErrorResponse({ status, error: { isSuccess: false, message, data: null } });
 }
@@ -60,6 +64,7 @@ interface FakeApi {
   archiveDoor?: () => Observable<ApiResponse<unknown>>;
   restoreDoor?: () => Observable<ApiResponse<unknown>>;
   reorderDoor?: (id: number, body: ReorderDoorBody) => Observable<ApiResponse<AbwabDoorDto>>;
+  reorderSection?: (id: number, body: ReorderSectionBody) => Observable<ApiResponse<AbwabSectionDto>>;
   bulkMoveDoors?: (command: BulkMoveDoorsCommand) => Observable<ApiResponse<AbwabDoorDto[]>>;
   bulkArchiveDoors?: () => Observable<ApiResponse<number[]>>;
 }
@@ -451,6 +456,62 @@ describe('AbwabWriteController', () => {
       controller.reorderDoor(1, { position: 3, scope, version: 1 }).subscribe();
 
       expect(capturedBody).toEqual({ position: 3, scope, version: 1 });
+    });
+  });
+
+  describe('T502 — reorderSection: success refreshes, 409/400 map through the shared policy, no door selection cleared', () => {
+    it('refreshes the facade snapshot on success', () => {
+      let treeCalls = 0;
+      const { controller, facade } = setup({
+        getTree: () => {
+          treeCalls += 1;
+          return of(ok<AbwabTreeDto>({ doors: [], sections: [{ id: 1, name: 'اللغة العربية', orderValue: 3, version: 4, doorsInScopeCount: 0 }], version: 'v2' }));
+        },
+        reorderSection: () => of(ok<AbwabSectionDto>(REORDERED_SECTION)),
+      });
+
+      let outcome: unknown;
+      controller.reorderSection(1, { position: 3, version: 3 }).subscribe((result) => (outcome = result));
+
+      expect(outcome).toEqual({ kind: 'success', data: REORDERED_SECTION });
+      expect(treeCalls).toBe(1);
+      expect(facade.snapshot()?.sections[0].orderValue).toBe(3);
+    });
+
+    it('maps a 409 to conflict with the backend message', () => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        reorderSection: () => throwError(() => httpError(409, 'تم تعديل القسم من مستخدم آخر')),
+      });
+
+      let outcome: unknown;
+      controller.reorderSection(1, { position: 3, version: 1 }).subscribe((result) => (outcome = result));
+
+      expect(outcome).toEqual({ kind: 'conflict', message: 'تم تعديل القسم من مستخدم آخر' });
+    });
+
+    it('maps a 400 to invalid with the backend message', () => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        reorderSection: () => throwError(() => httpError(400, 'الترتيب المطلوب خارج نطاق الأقسام')),
+      });
+
+      let outcome: unknown;
+      controller.reorderSection(1, { position: 99, version: 1 }).subscribe((result) => (outcome = result));
+
+      expect(outcome).toEqual({ kind: 'invalid', message: 'الترتيب المطلوب خارج نطاق الأقسام' });
+    });
+
+    it('does not clear the door selection on a 409 — a section write invalidates no door', () => {
+      const { controller, selection } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        reorderSection: () => throwError(() => httpError(409, 'تعارض')),
+      });
+      selection.select(1, 1);
+
+      controller.reorderSection(1, { position: 3, version: 1 }).subscribe();
+
+      expect(selection.selectedDoorId()).toBe(1);
     });
   });
 

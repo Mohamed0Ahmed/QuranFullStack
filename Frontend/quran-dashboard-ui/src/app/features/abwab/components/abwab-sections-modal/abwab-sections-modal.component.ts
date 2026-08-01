@@ -12,8 +12,8 @@ import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-loc
 let nextModalId = 0;
 
 /**
- * List / add / rename / delete-empty for sections (plan-slice-b.md T510). Presentational:
- * the three write functions are inputs (bound by the page shell to
+ * List / add / rename / reorder / delete-empty for sections (plan-slice-b.md T510).
+ * Presentational: the write functions are inputs (bound by the page shell to
  * `AbwabSectionsController`) rather than an injected service, so this component's own
  * spec exercises the M27/M28 outcomes without standing up the controller/facade chain.
  * Rename always reads the section's row from the live `sections` input at submit time
@@ -40,6 +40,9 @@ export class AbwabSectionsModalComponent {
     (id: number, name: string, version: number) => Observable<AbwabWriteOutcome<AbwabSectionDto>>
   >();
   readonly deleteSection = input.required<(id: number) => Observable<AbwabWriteOutcome<unknown>>>();
+  readonly reorderSection = input.required<
+    (id: number, position: number, version: number) => Observable<AbwabWriteOutcome<AbwabSectionDto>>
+  >();
 
   readonly closed = output<void>();
 

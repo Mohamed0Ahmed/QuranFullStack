@@ -10,6 +10,7 @@ import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto'
 import { AbwabRestoredDoorDto } from '../../../core/api/generated/models/abwab-restored-door-dto';
 import { CreateSectionCommand } from '../../../core/api/generated/models/create-section-command';
 import { RenameSectionBody } from '../../../core/api/generated/models/rename-section-body';
+import { ReorderSectionBody } from '../../../core/api/generated/models/reorder-section-body';
 import { CreateDoorCommand } from '../../../core/api/generated/models/create-door-command';
 import { EditDoorBody } from '../../../core/api/generated/models/edit-door-body';
 import { MoveDoorBody } from '../../../core/api/generated/models/move-door-body';
@@ -55,6 +56,10 @@ export class AbwabApi {
   // 204 No Content on success, so HttpClient yields `null` rather than an envelope.
   deleteSection(id: number): Observable<ApiResponse<unknown> | null> {
     return this.http.delete<ApiResponse<unknown> | null>(`${this.base}/sections/${id}`);
+  }
+
+  reorderSection(id: number, body: ReorderSectionBody): Observable<ApiResponse<AbwabSectionDto>> {
+    return this.http.post<ApiResponse<AbwabSectionDto>>(`${this.base}/sections/${id}/order`, body);
   }
 
   createDoor(command: CreateDoorCommand): Observable<ApiResponse<AbwabDoorDto>> {

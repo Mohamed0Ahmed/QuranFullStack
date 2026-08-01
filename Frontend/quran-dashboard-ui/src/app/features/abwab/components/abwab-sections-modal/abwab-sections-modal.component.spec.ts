@@ -23,12 +23,14 @@ function render(handlers: {
   createSection?: ReturnType<typeof vi.fn>;
   renameSection?: ReturnType<typeof vi.fn>;
   deleteSection?: ReturnType<typeof vi.fn>;
+  reorderSection?: ReturnType<typeof vi.fn>;
   sections?: AbwabTreeSectionDto[];
 } = {}) {
   getTestBed().resetTestingModule();
   const createSection = handlers.createSection ?? vi.fn().mockReturnValue(of(success({ id: 2, name: 'x', orderValue: 2, version: 1 })));
   const renameSection = handlers.renameSection ?? vi.fn().mockReturnValue(of(success()));
   const deleteSection = handlers.deleteSection ?? vi.fn().mockReturnValue(of(success()));
+  const reorderSection = handlers.reorderSection ?? vi.fn().mockReturnValue(of(success({ id: 1, name: 'x', orderValue: 1, version: 4 })));
 
   TestBed.configureTestingModule({
     imports: [AbwabSectionsModalComponent],
@@ -39,8 +41,9 @@ function render(handlers: {
   fixture.componentRef.setInput('createSection', createSection);
   fixture.componentRef.setInput('renameSection', renameSection);
   fixture.componentRef.setInput('deleteSection', deleteSection);
+  fixture.componentRef.setInput('reorderSection', reorderSection);
   fixture.detectChanges();
-  return { fixture, createSection, renameSection, deleteSection };
+  return { fixture, createSection, renameSection, deleteSection, reorderSection };
 }
 
 describe('AbwabSectionsModalComponent', () => {

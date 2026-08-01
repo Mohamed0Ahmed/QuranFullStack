@@ -10,6 +10,7 @@ import { AbwabNode } from '../models/abwab.models';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { CreateSectionCommand } from '../../../core/api/generated/models/create-section-command';
 import { RenameSectionBody } from '../../../core/api/generated/models/rename-section-body';
+import { ReorderSectionBody } from '../../../core/api/generated/models/reorder-section-body';
 import { CreateDoorCommand } from '../../../core/api/generated/models/create-door-command';
 import { EditDoorBody } from '../../../core/api/generated/models/edit-door-body';
 import { MoveDoorBody } from '../../../core/api/generated/models/move-door-body';
@@ -125,6 +126,12 @@ export class AbwabWriteController {
 
   deleteSection(id: number): Observable<AbwabWriteOutcome<unknown>> {
     return this.dispatch(this.api.deleteSection(id));
+  }
+
+  // No conflictClearsSelectionId, matching renameSection: a section write invalidates no
+  // door selection.
+  reorderSection(id: number, body: ReorderSectionBody): Observable<AbwabWriteOutcome<AbwabSectionDto>> {
+    return this.dispatch(this.api.reorderSection(id, body));
   }
 
   createDoor(command: CreateDoorCommand): Observable<AbwabWriteOutcome<AbwabDoorDto>> {
