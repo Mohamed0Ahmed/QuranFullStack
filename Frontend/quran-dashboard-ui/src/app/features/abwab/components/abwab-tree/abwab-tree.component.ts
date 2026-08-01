@@ -59,6 +59,10 @@ export class AbwabTreeComponent {
    * instead of the page guessing from a separate `contextmenu` listener. */
   readonly menuRequested = output<AbwabTreeMenuRequest>();
   readonly orderCommitted = output<{ id: number; position: number; scope: AbwabOrderScope }>();
+  /** The row's relations chip is a control (Slice D, audit item 13): the page selects the
+   * door and opens the relations modal on it, the select-then-act shape every other row
+   * path already follows. */
+  readonly relationsRequested = output<number>();
 
   private readonly manuallyExpandedIds = signal<ReadonlySet<number>>(new Set());
   private readonly manualFocusId = signal<number | null>(null);
@@ -117,6 +121,21 @@ export class AbwabTreeComponent {
 
   protected get relationsFlagLabel(): string {
     return ABWAB_LABELS.relationsFlagLabel;
+  }
+
+  protected relationsAriaLabel(name: string, count: number): string {
+    return ABWAB_LABELS.rowRelationsAriaLabel(name, count);
+  }
+
+  protected onFlagClick(event: Event, id: number): void {
+    event.stopPropagation();
+    // Inert in bulk mode, like the row actions are hidden there: the row click means "toggle
+    // this door's bulk selection", and a control that opened a modal instead would fight it.
+    if (this.bulkMode()) {
+      return;
+    }
+    this.manualFocusId.set(id);
+    this.relationsRequested.emit(id);
   }
 
   protected addChildAriaLabel(name: string): string {

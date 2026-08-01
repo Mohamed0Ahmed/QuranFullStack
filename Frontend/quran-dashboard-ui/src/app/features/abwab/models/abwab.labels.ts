@@ -43,8 +43,16 @@ const DOOR_FORMS: ArabicCountForms = {
 /** A template node. */
 const ELEMENT_FORMS: ArabicCountForms = { one: 'عنصر واحد', two: 'عنصرين', few: 'عناصر', many: 'عنصرًا' };
 
-/** Feminine «علاقة». */
-const RELATION_FORMS: ArabicCountForms = { one: 'علاقة واحدة', two: 'علاقتين', few: 'علاقات', many: 'علاقة' };
+/** Feminine «علاقة». The zero form exists for the tree row's relations control, which is
+ * rendered on every row and has to say "none" rather than «0 علاقات» — the add button, the
+ * only other consumer, never reaches `countPhrase` below a count of two. */
+const RELATION_FORMS: ArabicCountForms = {
+  zero: 'لا علاقات',
+  one: 'علاقة واحدة',
+  two: 'علاقتين',
+  few: 'علاقات',
+  many: 'علاقة',
+};
 
 /** The doors a template copy targets — the noun carries its adjective, so the phrase stays
  * grammatical at every count instead of interpolating a bare numeral before «مستهدف». */
@@ -84,6 +92,10 @@ export const ABWAB_LABELS = {
   archiveTreeAriaLabel: 'شجرة الأبواب المؤرشفة',
   rowAddChildAriaLabel: (doorName: string): string => `إضافة باب فرعي تحت «${doorName}»`,
   rowMenuAriaLabel: (doorName: string): string => `عمليات «${doorName}»`,
+  // The flag renders on every row now, including rows with none, so the count has to be in
+  // the name — otherwise a screen reader hears the same «علاقات» on every row in the tree.
+  rowRelationsAriaLabel: (doorName: string, count: number): string =>
+    `عرض علاقات «${doorName}» — ${countPhrase(count, RELATION_FORMS)}`,
 
   activeDoorHeading: 'الباب النشط',
   noSelectionHint: 'اختر بابًا من الشجرة أو البطاقات',

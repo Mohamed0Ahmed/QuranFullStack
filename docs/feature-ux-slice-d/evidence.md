@@ -291,3 +291,26 @@ npx playwright test --project=abwab --workers=1 -g "inline reorder"
 The added step fills `99` into a door's order input, clicks the toolbar search to blur it,
 and asserts the pill still reads its old position **and** that the two sibling positions
 are unchanged — a cancel that left the scope resequenced would pass a pill-only assertion.
+
+## T501/T502 — the flag reversal, checked in the browser
+
+Both themes, `https://localhost:4200/abwab`, real data:
+
+- **Light** (parchment + green): rows with relations carry a green-tinted «علاقات» pill;
+  «قصص الانبياء» and «المتشابهات» (zero relations) carry the same pill as a muted hairline.
+- **Dark** (navy + gold): the same two states in gold tint vs muted hairline.
+- No new hue in either — the tint is `--qd-accent-tint` / `--qd-border-accent`, the empty
+  state is `--qd-border` + `--qd-text-muted`.
+
+Clicking the flag on «الجهاد» — a row that was **not** selected — from a page whose URL
+carried no `door`:
+
+```
+url after click      ?door=337
+modal title          «علاقات «الجهاد»»  (count chip: 2)
+tree tab stops       1
+```
+
+So the select-then-act order holds (the modal opened on the clicked door, not on the
+previous selection), the URL agrees with the store, and the roving-tabindex invariant is
+untouched — the flag adds a control per row and **no** tab stop.

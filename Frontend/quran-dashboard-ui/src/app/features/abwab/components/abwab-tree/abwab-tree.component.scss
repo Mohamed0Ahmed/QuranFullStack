@@ -45,17 +45,27 @@
   visibility: hidden;
 }
 
-.abwab-tree__order {
-  font-size: 0.6875rem;
-  color: var(--qd-text-muted);
-  background: var(--qd-section-bg);
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-sm);
-  padding-inline: 0.3rem;
-  min-inline-size: 1.25rem;
-  text-align: center;
+/* One vocabulary for the row's metadata (Slice D, audit item 13): the order pill, the
+   child count and the relations flag all compose the `qd-chip` backing classes, and this
+   file only compresses them to the tree row's scale. The `word-type-filter` child button is
+   the precedent for composing those classes with a local sizing rule rather than
+   re-declaring border/background/hover/focus per call-site. The order pill stays a control
+   with its click-to-edit affordance — it aligns to the chip metrics but is not a `qd-chip`
+   component, because the chip contract has no editable-number variant and inventing one for
+   a single consumer would fork it. */
+.abwab-tree__order,
+.abwab-tree__flag {
   flex: none;
-  cursor: pointer;
+  gap: 0;
+  padding: 0 var(--qd-space-1);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+
+.abwab-tree__order {
+  min-inline-size: 1.5rem;
+  justify-content: center;
+  color: var(--qd-text-muted);
 }
 
 .abwab-tree__order-input {
@@ -74,10 +84,11 @@
   white-space: nowrap;
 }
 
+/* `.qd-chip__count` supplies the pill, the recessed fill and the tabular numerals; only the
+   row's smaller type is local. */
 .abwab-tree__count {
-  font-size: 0.75rem;
-  color: var(--qd-text-muted);
   flex: none;
+  font-size: 0.6875rem;
 }
 
 .abwab-tree__flags {
@@ -86,15 +97,18 @@
   flex: none;
 }
 
-/* A chip, not a control: no tab stop and no click handler, so the row's roving tabindex is
-   untouched (plan §7 T603). */
+/* The accent tint is the "has relations" mark, so the empty state drops it for a muted
+   hairline rather than dimming the same tint — a faded accent still reads as "some". */
 .abwab-tree__flag {
-  font-size: 0.625rem;
-  border-radius: var(--qd-radius-sm);
-  padding: 1px var(--qd-space-1);
   background: var(--qd-accent-tint);
   color: var(--qd-accent-text);
-  border: 1px solid var(--qd-border-accent);
+  border-color: var(--qd-border-accent);
+}
+
+.abwab-tree__flag--empty {
+  background: transparent;
+  color: var(--qd-text-muted);
+  border-color: var(--qd-border);
 }
 
 .abwab-tree__checkbox {

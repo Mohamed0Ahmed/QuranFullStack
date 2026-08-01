@@ -5,6 +5,7 @@ import { AbwabTreeComponent, AbwabTreeMenuRequest } from './abwab-tree.component
 import { AbwabTreeDoorDto } from '../../../../core/api/generated/models/abwab-tree-door-dto';
 import { AbwabTreeDto } from '../../../../core/api/generated/models/abwab-tree-dto';
 import { buildAbwabTreeSnapshot } from '../../state/abwab-tree.builder';
+import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string }): AbwabTreeDoorDto {
   return {
@@ -28,7 +29,7 @@ function tree(doors: AbwabTreeDoorDto[]) {
 }
 
 const SAMPLE = tree([
-  door({ id: 1, name: 'جذر-1', orderValue: 1 }),
+  door({ id: 1, name: 'جذر-1', orderValue: 1, relationCount: 3 }),
   door({ id: 2, name: 'ابن', parentId: 1, orderValue: 1 }),
   door({ id: 3, name: 'جذر-2', orderValue: 2 }),
 ]);
@@ -369,6 +370,75 @@ describe('AbwabTreeComponent', () => {
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 
       expect(committed).toEqual([{ id: 2, position: 9, scope: 'section' }]);
+    });
+  });
+
+  describe('audit item 13 — the relations flag is on every row and is a control', () => {
+    it('renders on a row with no relations, dimmed, and names the count for a screen reader', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const empty = root.querySelector('[data-testid="abwab-tree-flag-rel-3"]') as HTMLElement;
+      expect(empty).toBeTruthy();
+      expect(empty.classList.contains('abwab-tree__flag--empty')).toBe(true);
+      expect(empty.getAttribute('aria-label')).toBe(ABWAB_LABELS.rowRelationsAriaLabel('جذر-2', 0));
+      expect(empty.getAttribute('aria-label')).toContain('لا علاقات');
+    });
+
+    it('renders undimmed with the count in its name on a row that has relations', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const flag = root.querySelector('[data-testid="abwab-tree-flag-rel-1"]') as HTMLElement;
+      expect(flag.classList.contains('abwab-tree__flag--empty')).toBe(false);
+      expect(flag.getAttribute('aria-label')).toBe(ABWAB_LABELS.rowRelationsAriaLabel('جذر-1', 3));
+      expect(flag.getAttribute('aria-label')).toContain('3 علاقات');
+    });
+
+    it('emits relationsRequested with the row id, and does not select or open the row menu', () => {
+      const fixture = render();
+      const requested: number[] = [];
+      const selected: number[] = [];
+      const menus: AbwabTreeMenuRequest[] = [];
+      fixture.componentInstance.relationsRequested.subscribe((id: number) => requested.push(id));
+      fixture.componentInstance.selected.subscribe((id: number) => selected.push(id));
+      fixture.componentInstance.menuRequested.subscribe((r: AbwabTreeMenuRequest) => menus.push(r));
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-flag-rel-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+
+      expect(requested).toEqual([1]);
+      // The page does the selecting, off `relationsRequested` — the tree must not also emit
+      // `selected`, or the click would run the select-then-act sequence twice.
+      expect(selected).toHaveLength(0);
+      expect(menus).toHaveLength(0);
+    });
+
+    it('is inert in bulk mode, and the click never reaches the row’s bulk toggle', () => {
+      const fixture = render({ bulkMode: true });
+      const requested: number[] = [];
+      const toggled: number[] = [];
+      fixture.componentInstance.relationsRequested.subscribe((id: number) => requested.push(id));
+      fixture.componentInstance.bulkToggled.subscribe((id: number) => toggled.push(id));
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-flag-rel-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+
+      expect(requested).toHaveLength(0);
+      expect(toggled).toHaveLength(0);
+    });
+
+    it('adds no tab stop to the row', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const flags = [...root.querySelectorAll('[data-testid^="abwab-tree-flag-rel-"]')];
+      expect(flags.length).toBeGreaterThan(0);
+      expect(flags.every((el) => el.getAttribute('tabindex') === '-1')).toBe(true);
     });
   });
 });

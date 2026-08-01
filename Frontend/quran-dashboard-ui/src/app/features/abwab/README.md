@@ -62,9 +62,15 @@ nine), four of them reads.
   buttons in (Slice A, phase 6 — both `abwab-page` and `abwab-templates-page` compose it now,
   each keeping only its own page-specific items and, for the templates workshop, the
   root-vs-node item swap).
-  A row with live relations also carries the `.flag.rel` chip («علاقات», `relationCount > 0`
-  only); the archive view and the cards render no flag, since an archived door's visible
-  relation count is always 0.
+  **Every** row carries the «علاقات» flag, and it is a control: dimmed to a muted hairline at
+  zero, accent-tinted once the door has relations, and clicking it emits `relationsRequested`,
+  which the page turns into select-the-door-then-open-the-relations-modal. It renders at zero
+  too because a flag that only appears when there is something to see cannot answer "does this
+  door have relations?" — the absent state was indistinguishable from a door the user had not
+  looked at. Like the two row actions it is `tabindex="-1"`, so the roving-tabindex invariant
+  holds, and it is inert in bulk mode, where a row click means "toggle this door". The archive
+  view and the cards still render no flag, since an archived door's visible relation count is
+  always 0 (see the derivation in the Gotchas).
 - `components/abwab-cards/` — the drill-down grid: `cardId` names only the
   drilled-into parent (not a full path array) — the breadcrumb chain is derived by
   walking `parentId` up from it via `byId`, so the URL never needs an array. Fails
@@ -429,12 +435,15 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **Labels use the TDZ getter pattern**, same as `features/words/README.md`: read
   `abwab.labels.ts` consts via component **getters**, never `readonly` field
   initialisers, or they resolve to `undefined` in the bundled test build.
-- **Zero dead controls.** Nothing for protection or the «الأبواب الرئيسية» tab, anywhere
-  in this feature. Relations became real controls with `abwab-relations`, and **templates
-  became real with `abwab-templates`**: «القوالب» in the doors header routes to a
-  workshop backed by nine live endpoints, so the rule now holds by the entry existing
-  rather than by its absence. The tree's `.flag.rel` chip is the one deliberate
-  non-control — it is a chip, not a button, with no tab stop and no click handler.
+- **Zero dead controls, and now no exception.** Nothing for protection or the «الأبواب
+  الرئيسية» tab, anywhere in this feature. Relations became real controls with
+  `abwab-relations`, and **templates became real with `abwab-templates`**: «القوالب» in the
+  doors header routes to a workshop backed by nine live endpoints, so the rule holds by the
+  entry existing rather than by its absence. The tree's relations flag used to be the one
+  deliberate non-control — a chip with no tab stop and no handler. It is a button now
+  (Slice D), so what the rule protects is stated positively instead: **every affordance that
+  looks pressable is**, and the only things this feature renders as inert are pure data: the
+  row's count badges.
 - **Relations get no entry point and no flag in the archive view — derived, not decided.** Every
   archived door's visible relation count is always 0 (the backend hides a relation whose endpoint
   is archived, `Reads/Abwab/README.md`), so a flag there would be permanently absent and a menu

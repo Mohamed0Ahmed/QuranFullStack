@@ -272,6 +272,20 @@ export class AbwabPageComponent implements OnInit {
     this.writeController.restoreDoor(id, node.version).subscribe();
   }
 
+  /** Select-then-act (README "The URL is the single source of truth for the selection"), in the
+   * `runContextAction` order: the store is written **synchronously** before `openRelations()`,
+   * which reads `selectedDoor()`. Waiting for the URL subscription to echo `door=` back would
+   * open the modal on whatever was selected before. */
+  protected onRelationsRequested(doorId: number): void {
+    const node = this.byId().get(doorId);
+    if (!node) {
+      return;
+    }
+    this.updateQueryParams(buildAbwabQueryParams({ door: doorId }));
+    this.selection.select(doorId, node.version);
+    this.overlays.openRelations();
+  }
+
   protected onMenuRequested(request: AbwabTreeMenuRequest): void {
     this.overlays.setContextMenuPosition(request.x, request.y);
     this.overlays.requestContextMenu(request.id);
