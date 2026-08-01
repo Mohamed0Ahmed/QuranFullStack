@@ -243,9 +243,11 @@ export class AbwabRelationsModalComponent {
         if (!this.anchorPickMode() && anchorId !== null) {
           this.reload(anchorId);
         }
-        // Both modes open on a list, so the trap's auto-capture would stop at the first chip or
-        // tab. Queued rather than called inline: that capture runs during the render that
-        // follows this effect and would overwrite a synchronous focus here.
+        // Both modes open on a list, so the trap's capture would stop at the first chip or tab
+        // were the picker's search not marked `cdkFocusInitial`. With that mark the trap lands
+        // here itself, and this call normally re-focuses what is already focused. It stays as the
+        // jsdom path — auto-capture cannot fire there — and as the guard for a capture that
+        // resolves before the picker renders.
         setTimeout(() => this.picker()?.focusSearch());
       });
     });

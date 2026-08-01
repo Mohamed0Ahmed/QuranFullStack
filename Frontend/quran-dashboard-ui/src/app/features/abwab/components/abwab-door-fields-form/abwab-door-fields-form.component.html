@@ -4,8 +4,11 @@
 
 <div class="abwab-door-fields-form__field">
   <label [attr.for]="testIdPrefix() + '-name'">{{ nameLabel }} *</label>
+  <!-- cdkFocusInitial: see the picker's search input — both hosts are auto-capturing modals
+    that want this field, so the trap lands here once rather than being corrected. -->
   <input
     #nameInput
+    cdkFocusInitial
     [id]="testIdPrefix() + '-name'"
     type="text"
     [value]="name()"

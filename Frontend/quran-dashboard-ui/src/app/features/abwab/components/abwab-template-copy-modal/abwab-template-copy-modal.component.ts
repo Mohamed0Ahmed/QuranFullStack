@@ -111,9 +111,10 @@ export class AbwabTemplateCopyModalComponent {
           return;
         }
         this.resetDraft();
-        // Queued rather than called inline: the trap's own auto-capture runs during the render
-        // that follows this effect, and would otherwise overwrite this with the first control
-        // above the list.
+        // The trap now captures straight onto the picker's search (`cdkFocusInitial`), instead of
+        // the first control above the list, so this call normally re-focuses what is already
+        // focused. It stays as the jsdom path — auto-capture cannot fire there — and as the guard
+        // for a capture that resolves before the picker renders.
         setTimeout(() => this.picker()?.focusSearch());
       });
     });

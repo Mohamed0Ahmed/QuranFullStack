@@ -1028,7 +1028,11 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Consumers:** the six abwab modals (`abwab-door-modal`,
   `abwab-template-node-modal`, `abwab-sections-modal`, `abwab-move-picker`,
   `abwab-relations-modal`, `abwab-template-copy-modal`), all composed by Slice C
-  with `__head`/`__body`/`__foot` and an unconditional `cdkTrapFocus`. The
+  with `__head`/`__body`/`__foot` and an unconditional `cdkTrapFocus`. A modal
+  that wants a control other than the first tabbable one marks that control
+  `cdkFocusInitial` rather than moving focus itself after the trap captures —
+  one focus move, and `cdkTrapFocusAutoCapture` stays on, which is the only
+  thing that returns focus to the trigger on close. The
   shallow ones (door, template-node) render with empty space below the fields:
   that is this section's "zero resize" trade, not a defect to fix back to
   content height.
