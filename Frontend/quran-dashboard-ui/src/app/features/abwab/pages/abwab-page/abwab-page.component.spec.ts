@@ -675,14 +675,14 @@ describe('AbwabPageComponent', () => {
 
       // The explicit `door` has to survive the scope-invalidation clear `section` triggers —
       // that override is why this is one navigation instead of two.
-      expect(lastPatch()).toEqual({ section: '2', door: '4', card: null });
+      expect(lastPatch()).toEqual({ section: '2', door: '4', card: null, modal: null });
     });
 
     it('section-less target while a section tab is open: clears section rather than keeping it', () => {
       const fixture = renderReveal({ section: '1' });
       reveal(fixture, 5);
 
-      expect(lastPatch()).toEqual({ section: null, door: '5', card: null });
+      expect(lastPatch()).toEqual({ section: null, door: '5', card: null, modal: null });
     });
 
     it('cards view: the patch switches back to the tree, because the item is reveal-in-tree', () => {
