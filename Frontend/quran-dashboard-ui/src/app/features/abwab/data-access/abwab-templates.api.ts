@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { conditionalHeaders } from './conditional-request';
 import { environment } from '../../../../environments/environment';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AbwabTemplateSummaryDto } from '../../../core/api/generated/models/abwab-template-summary-dto';
@@ -23,12 +24,19 @@ export class AbwabTemplatesApi {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiBaseUrl}/api/abwab`;
 
-  getTemplates(): Observable<ApiResponse<AbwabTemplateSummaryDto[]>> {
-    return this.http.get<ApiResponse<AbwabTemplateSummaryDto[]>>(`${this.base}/templates`);
+  // The two conditional reads: `observe: 'response'` so the facade can store the ETag beside the value.
+  getTemplates(etag: string | null = null): Observable<HttpResponse<ApiResponse<AbwabTemplateSummaryDto[]>>> {
+    return this.http.get<ApiResponse<AbwabTemplateSummaryDto[]>>(`${this.base}/templates`, {
+      observe: 'response',
+      headers: conditionalHeaders(etag),
+    });
   }
 
-  getTemplate(templateId: number): Observable<ApiResponse<AbwabTemplateDto>> {
-    return this.http.get<ApiResponse<AbwabTemplateDto>>(`${this.base}/templates/${templateId}`);
+  getTemplate(templateId: number, etag: string | null = null): Observable<HttpResponse<ApiResponse<AbwabTemplateDto>>> {
+    return this.http.get<ApiResponse<AbwabTemplateDto>>(`${this.base}/templates/${templateId}`, {
+      observe: 'response',
+      headers: conditionalHeaders(etag),
+    });
   }
 
   createTemplate(body: CreateTemplateBody): Observable<ApiResponse<AbwabTemplateDto>> {

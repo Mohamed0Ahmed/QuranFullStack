@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
-import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, of, throwError } from 'rxjs';
+import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
+import { Observable, map, of, throwError } from 'rxjs';
 
 import { AbwabWriteController } from './abwab-write.controller';
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
@@ -76,7 +76,15 @@ function setup(fakeApi: FakeApi) {
       AbwabWriteController,
       AbwabSnapshotFacade,
       AbwabSelectionStore,
-      { provide: AbwabApi, useValue: fakeApi },
+      // getTree observes the whole response now; the fakes stay envelope-shaped and are wrapped
+      // headerless here, so no test below sends or stores a validator.
+      {
+        provide: AbwabApi,
+        useValue: {
+          ...fakeApi,
+          getTree: () => fakeApi.getTree().pipe(map((envelope) => new HttpResponse({ body: envelope }))),
+        },
+      },
     ],
   });
   return {

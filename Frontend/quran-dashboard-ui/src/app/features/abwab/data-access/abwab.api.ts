@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { conditionalHeaders } from './conditional-request';
 import { environment } from '../../../../environments/environment';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AbwabTreeDto } from '../../../core/api/generated/models/abwab-tree-dto';
@@ -41,8 +42,13 @@ export class AbwabApi {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiBaseUrl}/api/abwab`;
 
-  getTree(): Observable<ApiResponse<AbwabTreeDto>> {
-    return this.http.get<ApiResponse<AbwabTreeDto>>(`${this.base}/tree`);
+  // The only read that observes the response rather than the body: the caller needs the ETag header
+  // beside the envelope. Mapping stays the facade's job.
+  getTree(etag: string | null = null): Observable<HttpResponse<ApiResponse<AbwabTreeDto>>> {
+    return this.http.get<ApiResponse<AbwabTreeDto>>(`${this.base}/tree`, {
+      observe: 'response',
+      headers: conditionalHeaders(etag),
+    });
   }
 
   createSection(command: CreateSectionCommand): Observable<ApiResponse<AbwabSectionDto>> {

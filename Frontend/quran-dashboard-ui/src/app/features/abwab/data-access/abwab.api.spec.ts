@@ -46,7 +46,7 @@ describe('AbwabApi', () => {
 
     const response = ok<AbwabTreeDto>({ doors: [], sections: [], version: null });
     req.flush(response);
-    await expect(promise).resolves.toEqual(response);
+    await expect(promise).resolves.toMatchObject({ body: response });
   });
 
   it('createSection sends POST /api/abwab/sections with the name', async () => {

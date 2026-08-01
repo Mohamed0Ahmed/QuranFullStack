@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { Observable, Subscription, catchError, map, of, shareReplay, tap } from 'rxjs';
 
 import { AbwabTemplatesApi } from '../data-access/abwab-templates.api';
@@ -7,6 +8,12 @@ import { AbwabTemplateDto } from '../../../core/api/generated/models/abwab-templ
 import { AbwabTemplateVm, buildAbwabTemplateTree } from '../models/abwab-templates.models';
 import { ABWAB_LABELS } from '../models/abwab.labels';
 
+// HttpClient routes a 304 to the error channel because only 2xx counts as ok. It is not a failure:
+// the held value and its validator are current, so both stay and no error is set.
+function isNotModified(error: unknown): boolean {
+  return error instanceof HttpErrorResponse && error.status === HttpStatusCode.NotModified;
+}
+
 /**
  * Owns the template list and the selected template's tree, on the `AbwabSnapshotFacade`
  * contract: `refresh()` always issues a new request rather than replaying a cached one, and on
@@ -14,13 +21,20 @@ import { ABWAB_LABELS } from '../models/abwab.labels';
  *
  * Root-scoped like the doors snapshot — it is a cache, not overlay state
  * (`features/abwab/README.md`, "Overlay state is page-scoped; caches are app-scoped").
+ *
+ * Two validators, each stored beside the value it validates and written with it: one for the list,
+ * one keyed by the selected template's id. A `304` keeps value and validator and reports nothing.
  */
 @Injectable({ providedIn: 'root' })
 export class AbwabTemplatesFacade {
   private readonly api = inject(AbwabTemplatesApi);
 
   private readonly rawList = signal<readonly AbwabTemplateSummaryDto[] | null>(null);
+  private listEtagState: string | null = null;
   private readonly rawSelected = signal<AbwabTemplateDto | null>(null);
+  // Id-keyed so a validator can never travel across templates: it is sent only for the id it was
+  // issued for, and selecting a different template simply finds no validator to send.
+  private selectedEtagState: { id: number; etag: string } | null = null;
   private readonly listLoadingState = signal(false);
   private readonly listErrorState = signal<string | null>(null);
   private readonly selectedErrorState = signal<string | null>(null);
@@ -78,6 +92,9 @@ export class AbwabTemplatesFacade {
     this.selectedRequest?.unsubscribe();
     this.selectedIdState.set(null);
     this.rawSelected.set(null);
+    // Dropped with the value it validates: keeping it would let a re-select of the same template be
+    // answered 304 with nothing left to render against.
+    this.selectedEtagState = null;
     this.selectedErrorState.set(null);
     this.selectedLoadingState.set(false);
   }
@@ -97,19 +114,27 @@ export class AbwabTemplatesFacade {
     this.listLoadingState.set(true);
     this.listErrorState.set(null);
 
-    const request$ = this.api.getTemplates().pipe(
+    const request$ = this.api.getTemplates(this.listEtagState).pipe(
       tap((response) => {
         this.listLoadingState.set(false);
-        if (response.isSuccess && response.data) {
-          this.rawList.set(response.data);
+        const envelope = response.body;
+        if (envelope?.isSuccess && envelope.data) {
+          this.rawList.set(envelope.data);
+          this.listEtagState = response.headers.get('ETag');
           this.listErrorState.set(null);
         } else {
-          this.listErrorState.set(response.message ?? ABWAB_LABELS.templatesLoadError);
+          this.listErrorState.set(envelope?.message ?? ABWAB_LABELS.templatesLoadError);
         }
       }),
       map(() => this.templates()),
-      catchError(() => {
+      catchError((error: unknown) => {
         this.listLoadingState.set(false);
+
+        // 304: the held list and its validator are current. Keep both, report nothing.
+        if (isNotModified(error)) {
+          return of(this.templates());
+        }
+
         this.listErrorState.set(ABWAB_LABELS.templatesLoadError);
         return of(this.templates());
       }),
@@ -125,19 +150,29 @@ export class AbwabTemplatesFacade {
     this.selectedErrorState.set(null);
     this.selectedLoadingState.set(true);
 
-    const request$ = this.api.getTemplate(templateId).pipe(
+    const heldEtag = this.selectedEtagState?.id === templateId ? this.selectedEtagState.etag : null;
+
+    const request$ = this.api.getTemplate(templateId, heldEtag).pipe(
       tap((response) => {
         this.selectedLoadingState.set(false);
-        if (response.isSuccess && response.data) {
-          this.rawSelected.set(response.data);
+        const envelope = response.body;
+        if (envelope?.isSuccess && envelope.data) {
+          this.rawSelected.set(envelope.data);
+          const etag = response.headers.get('ETag');
+          this.selectedEtagState = etag ? { id: templateId, etag } : null;
           this.selectedErrorState.set(null);
         } else {
-          this.selectedErrorState.set(response.message ?? ABWAB_LABELS.templateLoadError);
+          this.selectedErrorState.set(envelope?.message ?? ABWAB_LABELS.templateLoadError);
         }
       }),
       map(() => this.selectedTemplate()),
-      catchError(() => {
+      catchError((error: unknown) => {
         this.selectedLoadingState.set(false);
+
+        if (isNotModified(error)) {
+          return of(this.selectedTemplate());
+        }
+
         this.selectedErrorState.set(ABWAB_LABELS.templateLoadError);
         return of(this.selectedTemplate());
       }),
