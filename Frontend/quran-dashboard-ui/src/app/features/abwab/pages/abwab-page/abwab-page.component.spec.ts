@@ -1066,6 +1066,72 @@ describe('AbwabPageComponent', () => {
       expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeTruthy();
     });
 
+    it('renders the restore control only for a retained state, naming the overlay it holds', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      const restore = root.querySelector('[data-testid="abwab-page-modal-restore"]');
+      expect(restore?.textContent?.trim()).toBe(
+        ABWAB_LABELS.modalRestoreLabel(ABWAB_LABELS.modalKindNames['edit']),
+      );
+      expect(
+        root.querySelector('[data-testid="abwab-page-modal-discard"]')?.getAttribute('aria-label'),
+      ).toBe(ABWAB_LABELS.modalDiscardAriaLabel(ABWAB_LABELS.modalKindNames['edit']));
+    });
+
+    it('shows no restore control while the overlay is open, or when the key is absent', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit' });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
+
+      params$.next(convertToParamMap({}));
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
+    });
+
+    it('the restore control round-trips: clicking it reopens the overlay through the URL', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-page-modal-restore');
+      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: 'edit' }, replaceUrl: false });
+
+      params$.next(convertToParamMap({ door: '1', modal: 'edit' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
+    });
+
+    it('the X clears the key, and the control goes with it', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-page-modal-discard');
+      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: null }, replaceUrl: true });
+
+      params$.next(convertToParamMap({ door: '1' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
+    });
+
+    it('focus lands on the restore control after a retaining close', async () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      document.body.appendChild(root);
+      click(root, 'abwab-page-manage-sections');
+      fixture.detectChanges();
+
+      (root.querySelector('[data-testid="abwab-sections-modal-close"]') as HTMLElement).click();
+      params$.next(convertToParamMap({ modal: 'sections-closed' }));
+      fixture.detectChanges();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(document.activeElement).toBe(root.querySelector('[data-testid="abwab-page-modal-restore"]'));
+      root.remove();
+    });
+
     it('the bulk overlays never write the key — their subject is bulkSet, which is not URL state', () => {
       const fixture = renderAt();
       const root = fixture.nativeElement as HTMLElement;

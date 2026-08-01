@@ -9,6 +9,7 @@ import {
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -127,6 +128,8 @@ export class AbwabPageComponent implements OnInit {
   protected readonly cardParam = signal<number | null>(null);
   protected readonly searchQueryParam = signal('');
   protected readonly modalParam = signal<AbwabModalState | null>(null);
+
+  private readonly modalRestoreControl = viewChild<ElementRef<HTMLButtonElement>>('modalRestoreControl');
 
   protected readonly sections = computed(() => this.facade.snapshot()?.sections ?? []);
   protected readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
@@ -247,6 +250,12 @@ export class AbwabPageComponent implements OnInit {
   protected get relationsOpLabel(): string { return ABWAB_LABELS.relationsOp; }
   protected get statAllDoorsLabel(): string { return ABWAB_LABELS.allDoorsTab; }
   protected get statOpenScopeLabel(): string { return ABWAB_LABELS.statOpenScopeDoors; }
+  protected modalRestoreLabel(kind: AbwabModalKind): string {
+    return ABWAB_LABELS.modalRestoreLabel(ABWAB_LABELS.modalKindNames[kind]);
+  }
+  protected modalDiscardAriaLabel(kind: AbwabModalKind): string {
+    return ABWAB_LABELS.modalDiscardAriaLabel(ABWAB_LABELS.modalKindNames[kind]);
+  }
 
   constructor() {
     // Restores the `door` deep link once both the URL and the snapshot are ready —
@@ -682,6 +691,16 @@ export class AbwabPageComponent implements OnInit {
     }
     this.openedModalKind = null;
     this.updateQueryParams(buildAbwabQueryParams({ modal: discard ? null : { kind, closed: true } }), true);
+    if (!discard) {
+      this.focusRestoreControl();
+    }
+  }
+
+  /** Queued, not immediate: the control does not exist until the retained state renders, and
+   * the modal's focus trap is still releasing on this tick. Same shape as the words shell's
+   * `detail-modal-shell.component.ts:91-95`, which solved the identical race. */
+  private focusRestoreControl(): void {
+    setTimeout(() => this.modalRestoreControl()?.nativeElement.focus(), 0);
   }
 
   private openOnSelectedDoor(kind: AbwabModalKind): void {

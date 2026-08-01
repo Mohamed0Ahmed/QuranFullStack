@@ -1,3 +1,5 @@
+import type { AbwabModalKind } from './abwab.models';
+
 // Every Arabic string the Abwab feature shows lives here (root CLAUDE.md: Arabic strings
 // live only in this file). Consumers read these through TDZ-safe getters — never
 // `readonly` field initialisers — per the words/README label-getter rule; that rule binds
@@ -212,6 +214,20 @@ export const ABWAB_LABELS = {
   // The reveal's guard: defensively unreachable (the read hides relations whose endpoint is
   // archived), so this says what did not happen rather than blaming the user.
   revealUnavailable: 'تعذر إظهار الباب — لم يعد موجودًا في الشجرة',
+
+  // Audit item 11. The restore control is the only thing on screen that says which overlay
+  // is waiting, so it names the overlay rather than saying «استعادة» alone — and the discard
+  // X, having no text of its own, names it too.
+  modalKindNames: {
+    create: 'إضافة باب رئيسي',
+    child: 'إضافة باب فرعي',
+    edit: 'تعديل الباب',
+    move: 'نقل الباب',
+    sections: 'إدارة الأقسام',
+    relations: 'علاقات الباب',
+  } as Record<AbwabModalKind, string>,
+  modalRestoreLabel: (kindName: string): string => `استعادة ${kindName}`,
+  modalDiscardAriaLabel: (kindName: string): string => `تجاهل ${kindName}`,
 
   relationGroupSimilarity: 'تشابه',
   relationGroupOpposition: 'تضاد',
