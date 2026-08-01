@@ -107,7 +107,7 @@ public sealed class AbwabTemplatesController(
                 NotFound(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabDoorNotFound)),
             ApplyTemplateOutcome.Collision collision =>
                 Conflict(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(
-                    ApiMessages.AbwabTemplateApplyCollisionWith(collision.DoorNames))),
+                    ApiMessages.AbwabTemplateApplyCollisionWith(collision.Collisions))),
             _ => throw new InvalidOperationException($"Unhandled {nameof(ApplyTemplateOutcome)} variant."),
         };
     }

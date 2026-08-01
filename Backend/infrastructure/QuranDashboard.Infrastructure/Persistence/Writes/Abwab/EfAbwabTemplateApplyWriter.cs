@@ -8,9 +8,14 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab;
 /// What this writer deliberately does NOT do, and why — each is a door-write mechanism with no work
 /// here: no global-order maintenance (a copy is never a root, so it never joins that sequence); no
 /// resequencing (every insert appends into a scope it either just created or is the newest member
-/// of, so all touched scopes stay 1..N by construction); no per-node section resolution (the section
-/// is read once off each target and carried down the whole subtree, which is the cascade invariant
-/// stated directly).
+/// of — the level-1 offset (<c>nextOrder + i</c>) is what keeps this true when N children land in
+/// one save — so all touched scopes stay 1..N by construction); no per-node section resolution (the
+/// section is read once off each target and carried down the whole subtree, which is the cascade
+/// invariant stated directly).
+///
+/// Copies the template root's DIRECT CHILDREN as new children of each target, recursively copying
+/// each of their subtrees. The root itself is never copied (ux-slice-g reversal of the original
+/// "root becomes a new child" axiom — docs/feature-abwab-templates/plan.md §5.1).
 /// </remarks>
 internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : IAbwabTemplateApplyWriter
 {
@@ -42,6 +47,19 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
         var rootNode = nodes.Find(n => n.ParentNodeId is null)
             ?? throw new AbwabTemplateNotFoundException();
 
+        var childrenByParentNode = nodes
+            .Where(n => n.ParentNodeId is not null)
+            .GroupBy(n => n.ParentNodeId!.Value)
+            .ToDictionary(group => group.Key, group => group.OrderBy(n => n.OrderValue).ThenBy(n => n.Id).ToList());
+
+        // The template's emptiness is a property of the template alone — it does not depend on which
+        // doors were picked, so this refusal fires before the target reads. Consequence: an empty
+        // template applied to an archived target returns THIS 400, not the archived-target 400.
+        if (!childrenByParentNode.TryGetValue(rootNode.Id, out var rootChildren) || rootChildren.Count == 0)
+        {
+            throw new AbwabTemplateEmptyException();
+        }
+
         var targets = await db.AbwabDoors.AsNoTracking()
             .Where(d => targetIds.Contains(d.Id))
             .Select(d => new { d.Id, d.Name, d.SectionId, d.DeletedAtUtc })
@@ -52,8 +70,9 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
             throw new AbwabNotFoundException();
         }
 
-        // The response lists one created root per target, and the collision message names targets in
-        // the same order — both follow the CALLER's order, not whatever order the database returned.
+        // The response lists N created children per target (the root's direct children), and the
+        // collision message names (target, child) pairs in the same order — the CALLER's target
+        // order, then the template's own sibling order for the names under each target.
         targets = [.. targets.OrderBy(t => targetIds.IndexOf(t.Id))];
 
         if (targets.Exists(t => t.DeletedAtUtc != null))
@@ -61,29 +80,35 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
             throw new AbwabTemplateTargetArchivedException();
         }
 
-        // Named up front so the 409 can say WHICH targets collided; 23505 names no row. The catch in
-        // the save helper stays as the race backstop, without names.
-        var collidingTargetIds = await db.AbwabDoors.AsNoTracking()
+        // Named up front so the 409 can say WHICH child name collided under WHICH target; 23505
+        // names no row. The catch in the save helper stays as the race backstop, without names.
+        var rootChildNames = rootChildren.Select(c => c.Name).ToHashSet();
+        var collisionHits = await db.AbwabDoors.AsNoTracking()
             .Where(d => d.ParentId != null
                 && targetIds.Contains(d.ParentId!.Value)
-                && d.Name == rootNode.Name
+                && rootChildNames.Contains(d.Name)
                 && d.DeletedAtUtc == null)
-            .Select(d => d.ParentId!.Value)
+            .Select(d => new { ParentId = d.ParentId!.Value, d.Name })
             .ToListAsync(cancellationToken);
 
-        if (collidingTargetIds.Count > 0)
+        if (collisionHits.Count > 0)
         {
-            throw new AbwabTemplateApplyCollisionException(
-                targets.Where(t => collidingTargetIds.Contains(t.Id)).Select(t => t.Name).ToList());
+            var siblingOrderByName = rootChildren
+                .Select((child, index) => (child.Name, index))
+                .ToDictionary(x => x.Name, x => x.index);
+
+            var pairs = targets
+                .SelectMany(target => collisionHits
+                    .Where(hit => hit.ParentId == target.Id)
+                    .OrderBy(hit => siblingOrderByName[hit.Name])
+                    .Select(hit => new AbwabTemplateApplyCollisionPair(target.Name, hit.Name)))
+                .ToList();
+
+            throw new AbwabTemplateApplyCollisionException(pairs);
         }
 
-        var childrenByParentNode = nodes
-            .Where(n => n.ParentNodeId is not null)
-            .GroupBy(n => n.ParentNodeId!.Value)
-            .ToDictionary(group => group.Key, group => group.OrderBy(n => n.OrderValue).ThenBy(n => n.Id).ToList());
-
         var now = DateTimeOffset.UtcNow;
-        var createdRoots = new List<CopiedNode>(targets.Count);
+        var createdRoots = new List<CopiedNode>(targets.Count * rootChildren.Count);
 
         foreach (var target in targets)
         {
@@ -93,9 +118,16 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
             var nextOrder = await db.AbwabDoors.CountAsync(
                 d => d.ParentId == target.Id && d.DeletedAtUtc == null, cancellationToken) + 1;
 
-            var copiedRoot = NewDoor(rootNode, target.SectionId, target.Id, nextOrder, now);
-            db.AbwabDoors.Add(copiedRoot);
-            createdRoots.Add(new CopiedNode(copiedRoot, rootNode, target.SectionId));
+            // The root's direct children seed the BFS descent below, offset by their index so all N
+            // land contiguously at nextOrder..nextOrder+N-1 — level 1's exception to the verbatim-
+            // OrderValue rule the descent loop applies at every deeper level.
+            for (var i = 0; i < rootChildren.Count; i++)
+            {
+                var child = rootChildren[i];
+                var copiedChild = NewDoor(child, target.SectionId, target.Id, nextOrder + i, now);
+                db.AbwabDoors.Add(copiedChild);
+                createdRoots.Add(new CopiedNode(copiedChild, child, target.SectionId));
+            }
         }
 
         // AbwabDoor carries no parent navigation property, so a child's ParentId can only be set
@@ -135,7 +167,9 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
 
         await transaction.CommitAsync(cancellationToken);
 
-        var rootAliases = AbwabAliasNormalization.Normalize(rootNode.Aliases);
+        // Each door carries its OWN node's aliases — not the root's (ux-slice-g DRIFT-1). The alias
+        // ROWS were already correct at any seed (AddAliases above is per-node); this only fixes what
+        // the response payload reports.
         return createdRoots
             .Select(copied => new AbwabDoorDto(
                 copied.Door.Id,
@@ -147,7 +181,7 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
                 copied.Door.OrderValue,
                 copied.Door.GlobalOrderValue,
                 copied.Door.Version,
-                rootAliases))
+                AbwabAliasNormalization.Normalize(copied.Node.Aliases)))
             .ToList();
     }
 

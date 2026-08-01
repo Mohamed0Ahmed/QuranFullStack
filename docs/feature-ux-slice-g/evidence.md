@@ -90,3 +90,26 @@ new("api/abwab/templates/{templateId:int}/apply", "/api/abwab/templates/1/apply"
 Matches exactly — same route template, same probe URL, same `NotFound` constraint, same
 `ParityOnly = true`. No edit made, per DRIFT-3. `dotnet build Backend/QuranDashboard.sln`
 green after T201-T204 (additive only, writer untouched): 0 warnings, 0 errors, 29.9s.
+
+## Phase 3 — T301-T304: the writer rewrite
+
+All five pieces (collision exception retype, outcome/handler, `ApiMessages` formatter, the
+writer's pre-check, the empty guard, the seed/offset, and the per-node alias fix) landed
+together, per the plan's note that they are green only as one commit.
+
+- `AbwabTemplateApplyCollisionException` now carries `IReadOnlyList<AbwabTemplateApplyCollisionPair>`
+  as `Collisions`. `ApplyTemplateOutcome.Collision` retyped to match; handler reads `ex.Collisions`.
+- `ApiMessages.cs` gained its first `using` (`QuranDashboard.Application.Abstractions.Abwab`) — no
+  CS0118 collision, because the pair type keeps its `Pair` suffix distinct from the
+  `AbwabTemplateApplyCollision` constant, exactly as §4.2-9 anticipated.
+- Writer reordered: `childrenByParentNode` now builds immediately after `rootNode` is found (moved
+  ahead of the target reads), the empty-root guard reads `rootChildren` off it and throws before any
+  target is read, the collision pre-check queries the child-name set instead of the root's name and
+  builds `(target, child)` pairs in caller-target-order then template-sibling-order, and the seed
+  loop replaces the single `copiedRoot` with one door per `rootChildren[i]` at `nextOrder + i`. The
+  BFS descent loop (`:107-134` pre-rewrite) is untouched. The response `Select` now normalizes each
+  `copied.Node.Aliases` instead of a single `rootAliases` (DRIFT-1).
+- `dotnet build Backend/QuranDashboard.sln`: 0 warnings, 0 errors, 28.9s.
+- `dotnet test … --filter "FullyQualifiedName~QuranDashboard.Tests.Abwab"`: 46 passed, 0 failed,
+  0 skipped, 7s — no regression in the existing Abwab suite (no dedicated apply-writer behavior
+  test exists yet; that gap is `TESTING_DEBT.md` row 7, restated in Phase 8).

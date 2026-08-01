@@ -1,3 +1,5 @@
+using QuranDashboard.Application.Abstractions.Abwab;
+
 namespace QuranDashboard.Api.Common;
 
 public static class ApiMessages
@@ -180,14 +182,15 @@ public static class ApiMessages
     public const string AbwabTemplateApplyNoTargets = "يجب اختيار باب مستهدف واحد على الأقل";
     public const string AbwabTemplateApplyTargetArchived = "لا يمكن النسخ داخل باب مؤرشف";
     public const string AbwabTemplateApplyEmpty = "القالب لا يحتوي عناصر لنسخها";
-    public const string AbwabTemplateApplyCollision = "يوجد باب بنفس اسم جذر القالب داخل الباب المستهدف";
+    public const string AbwabTemplateApplyCollision = "يوجد باب بنفس اسم أحد عناصر القالب داخل الباب المستهدف";
 
-    // The whole copy fails on any collision (all-or-nothing), so the message names every target that
-    // blocked it. The 23505 race backstop names none, and falls back to the sentence above.
-    private const string AbwabTemplateApplyCollisionPrefix = "لم يتم النسخ: يوجد باب بنفس اسم جذر القالب داخل";
+    // The whole copy fails on any collision (all-or-nothing), so the message names every
+    // (target, child) pair that blocked it. The 23505 race backstop names none, and falls back to
+    // the sentence above.
+    private const string AbwabTemplateApplyCollisionPrefix = "لم يتم النسخ — أسماء موجودة داخل الأبواب المستهدفة";
 
-    public static string AbwabTemplateApplyCollisionWith(IReadOnlyList<string> doorNames) =>
-        doorNames.Count == 0
+    public static string AbwabTemplateApplyCollisionWith(IReadOnlyList<AbwabTemplateApplyCollisionPair> collisions) =>
+        collisions.Count == 0
             ? AbwabTemplateApplyCollision
-            : $"{AbwabTemplateApplyCollisionPrefix}: {string.Join("، ", doorNames)}";
+            : $"{AbwabTemplateApplyCollisionPrefix}: {string.Join("، ", collisions.Select(c => $"«{c.TargetName}» ← «{c.ChildName}»"))}";
 }

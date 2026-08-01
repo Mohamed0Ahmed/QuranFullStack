@@ -1,3 +1,4 @@
+using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Application.Abstractions.Abwab.Responses;
 
 namespace QuranDashboard.Application.Abwab.Commands.Templates.ApplyTemplate;
@@ -12,5 +13,5 @@ public abstract record ApplyTemplateOutcome
     public sealed record TargetNotFound : ApplyTemplateOutcome;
     public sealed record TargetArchived : ApplyTemplateOutcome;
     public sealed record EmptyTemplate : ApplyTemplateOutcome;
-    public sealed record Collision(IReadOnlyList<string> DoorNames) : ApplyTemplateOutcome;
+    public sealed record Collision(IReadOnlyList<AbwabTemplateApplyCollisionPair> Collisions) : ApplyTemplateOutcome;
 }

@@ -53,7 +53,7 @@ public sealed class ApplyTemplateHandler(
         catch (AbwabTemplateApplyCollisionException ex)
         {
             logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "nameCollision");
-            return new ApplyTemplateOutcome.Collision(ex.DoorNames);
+            return new ApplyTemplateOutcome.Collision(ex.Collisions);
         }
     }
 }
