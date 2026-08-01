@@ -458,6 +458,9 @@ existing copies); §6.4's concurrency cells other than the ones re-derived; §8 
 | `abwab-template-tree.component.ts` | `:26-28` (why a list, not `role="tree"`) | amended to name the keyboard path that was added and why the role is still not claimed |
 | `features/abwab/README.md` | `:657-666`, `:677-684`, `:733` | apply paragraph re-derived; workshop-tree list-role paragraph amended; the concept's «بجذره» recorded as superseded |
 | `Writes/Abwab/README.md` | `:179-199` | "A template is a door subtree, and applying it is a plain door create repeated" and "Applying is all-or-nothing, and **the only collision is at the root**" — the second title is now false and the paragraph is rewritten |
+| `IAbwabTemplatesWriter.cs` | `:18-19` (one-root rationale) | **T104 finding.** Quoted the old axiom sentence as the reason a second root is forbidden. Rephrased to not depend on the axiom's wording; the one-root invariant itself is untouched |
+| `AbwabTemplateNode.cs` | `:8-10` (`ParentNodeId` doc, same rationale) | **T104 finding**, same treatment |
+| `AbwabTemplateNodeConfiguration.cs` | `:88-90` (unique-root index comment, same rationale) | **T104 finding**, same treatment |
 
 **Record as superseded, do not edit:** `docs/design-preview/abwab-templates-concept.html:139,145`
 («كاملًا بجذره»), cited as a design contract at `features/abwab/README.md:733` and at

@@ -87,8 +87,8 @@ public sealed class AbwabTemplateNodeConfiguration : IEntityTypeConfiguration<Ab
             .OnDelete(DeleteBehavior.Restrict);
 
         // Exactly one live root per template. Without it the mockup's own "add a root element"
-        // control could produce a second root, and "the template root becomes a new child of each
-        // target door" would be undefined.
+        // control could produce a second root, and the apply's children-only copy would not know
+        // which root's children to copy.
         builder.HasIndex(n => n.TemplateId)
             .IsUnique()
             .HasFilter("parent_node_id IS NULL AND deleted_at IS NULL");

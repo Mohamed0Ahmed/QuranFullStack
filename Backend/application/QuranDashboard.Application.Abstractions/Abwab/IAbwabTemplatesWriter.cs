@@ -16,7 +16,7 @@ public interface IAbwabTemplatesWriter
     Task<bool> DeleteAsync(int templateId, CancellationToken cancellationToken);
 
     // parentNodeId is NOT nullable: every added node is a child of something. A second root would
-    // make "the template root becomes a new child of each target" undefined.
+    // leave the apply's children-only copy unable to tell which root's children to copy.
     Task<AbwabTemplateNodeDto> AddNodeAsync(
         int templateId,
         int parentNodeId,

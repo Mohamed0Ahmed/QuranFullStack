@@ -7,8 +7,8 @@ public sealed class AbwabTemplateNode
     public int TemplateId { get; set; }
 
     // NULL for the template's root, and exactly one live row per template may hold NULL — the
-    // invariant the deep copy rests on, since "the template root becomes a new child of each
-    // target" is undefined with two roots.
+    // invariant the deep copy rests on, since with two roots the apply could not tell which
+    // root's children to copy.
     public int? ParentNodeId { get; set; }
 
     // The same four authoring fields a door carries, because a template IS a door subtree and its

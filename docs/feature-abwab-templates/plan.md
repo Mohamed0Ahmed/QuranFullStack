@@ -113,14 +113,14 @@ contradicts a decision, §9 names the line and the decision wins.
 | Storage | **Separate admin tables** — `abwab_templates` (identity + lifecycle) and `abwab_template_nodes` (the subtree). **Not** hidden doors: the visitor-facing door invariants stay clean |
 | The root | **The root is a node row** (`parent_node_id IS NULL`), and there is **exactly one per template**, enforced by a partial unique index (§5.2). `abwab_templates` carries **no `name` column** — the template's name *is* its root node's name |
 | Node aliases | Stored **on the node row** as `text[]`, not in a third table — the two-table decision forecloses `abwab_template_node_aliases` (§5.3) |
-| Apply | **Deep copy.** The template root becomes a **new child** of each target door, full depth, all four fields, sibling order preserved |
+| Apply | **Deep copy, children-only.** The template root's direct children each become a new child of the target door, recursively, with their own subtrees, all four fields; sibling order preserved with a level-1 offset (`nextOrder + i`), deeper levels keep their verbatim `OrderValue`. The root itself is never copied |
 | Multi-target | **One** endpoint call, N targets, **all-or-nothing**, per the bulk precedent (`features/abwab/README.md`, "Bulk is all-or-nothing") |
 | Never a root | A copy is never a new root door. Empty `targetDoorIds` → `400`; there is no wire shape that could express "as a root" (§6.1) |
 | Detachment | Copies are **ordinary doors from birth** — no back-link, no provenance. Editing the template later never touches earlier copies (§5.6) |
 | Placement | Each copy **appends at the end of the target's children** (`CreateAsync`'s `count + 1` precedent) and **inherits the target's `section_id`** at every depth (the cascade invariant, `Writes/Abwab/README.md`) |
 | Global order | Untouched. `global_order_value IS NOT NULL ⟺ parent_id IS NULL AND deleted_at IS NULL`, and a copy is never a root, so no copied door ever gets one (§5.7) |
 | Uniqueness inside a template | `UNIQUE (template_id, parent_node_id, name) WHERE deleted_at IS NULL`, `NULLS NOT DISTINCT` — the doors' index, one table over. It is what makes a deep copy collide **only at the root** (§5.5) |
-| Apply collision | The per-sibling door index is the authority. If any target already has a live child named like the template root, the **whole apply fails** with one `409` naming every colliding target (all-or-nothing) |
+| Apply collision | The per-sibling door index is the authority. If any target already has a live child named like one of the template root's **direct children**, the **whole apply fails** with one `409` naming every colliding `(target, child)` pair, in the caller's target order then the template's sibling order (all-or-nothing) |
 | Template delete | **Soft**, on the template row only. Node rows are untouched — the reader filters by the template's own `deleted_at`, so cascading would be ceremony. **Restore is out of scope this slice** |
 | Node delete | **Soft, and it takes the node's subtree with it** — a template child has no meaning without its parent. Siblings resequence to `1..N`. Deleting the **root** is refused `400`; deleting the template is the way |
 | Version tokens | **No version token on any templates route** — the `abwab-relations` decision, for the same reason (§5.4). Both tables still map `xmin`; nothing reads it |
@@ -137,7 +137,7 @@ contradicts a decision, §9 names the line and the decision wins.
 | 2 | `GET api/abwab/templates/{templateId:int}` | `200` template + flat node list | `404` |
 | 3 | `POST api/abwab/templates` | `201` (creates template **and** its root node) | `400` empty name |
 | 4 | `DELETE api/abwab/templates/{templateId:int}` | `204` | `404` |
-| 5 | `POST api/abwab/templates/{templateId:int}/apply` | `201` created root doors | `400` empty targets / archived target, `404` unknown template or target, `409` name collision |
+| 5 | `POST api/abwab/templates/{templateId:int}/apply` | `201` created doors, N per target (the root's live children and their subtrees) | `400` empty targets / archived target / empty-root template, `404` unknown template or target, `409` per-`(target, child)` name collision |
 | 6 | `POST api/abwab/templates/{templateId:int}/nodes` | `201` node | `400`, `404`, `409` duplicate sibling name |
 | 7 | `PUT api/abwab/template-nodes/{nodeId:int}` | `200` node | `400`, `404`, `409` |
 | 8 | `POST api/abwab/template-nodes/{nodeId:int}/order` | `200` node | `400` (root has no siblings / out of range), `404` |
@@ -157,8 +157,9 @@ the shape `AbwabDoorRelationsController` already uses.
 
 ### 5.1 The one sentence everything derives from
 
-> **Applying a template inserts a copy of its root node as a NEW CHILD of each target door,
-> and recursively copies that node's subtree beneath it.**
+> **Applying a template inserts copies of the template root's DIRECT CHILDREN as new children
+> of each target door, recursively copying each of their subtrees. The template's root node is
+> never copied.**
 
 Every matrix cell in §6 is a consequence of that sentence plus the doors' own write invariants.
 
@@ -244,9 +245,13 @@ entirely:
 UNIQUE (template_id, parent_node_id, name) WHERE deleted_at IS NULL   -- NULLS NOT DISTINCT
 ```
 
-With it, **the only collision an apply can hit is at the root**: the template root's name
-against the target door's existing live children. That is one comprehensible message
-(§6.1), and it is the *only* `409` the apply route can produce.
+With it, the root's own children are guaranteed internally distinct — which is exactly what
+guarantees the apply's pre-check name set (the root's direct-child names) has no duplicates
+inside itself. It says nothing about the *target's* existing children, though: each target can
+independently collide on any of those names, so the collision surface is **N names per
+target**, not one name across every target (ux-slice-g). The `409` is still one comprehensible
+message — now it lists every colliding `(target, child)` pair (§6.1) — and it is still the only
+`409` the apply route can produce.
 
 `NULLS NOT DISTINCT` is load-bearing for the same reason it is on doors: `parent_node_id` is
 `NULL` for the root, and Postgres NULLs do not collide by default — without it the one-root
@@ -321,20 +326,25 @@ Mandatory section. "Live" = `deleted_at IS NULL`. Every cell has a matching manu
 
 ### 6.1 Apply × target door states
 
-Anchor case: template «أركان الإيمان» (root + 6 nodes, one of them with 2 grandchildren),
-applied to N selected doors.
+**Re-derived for ux-slice-g (§5.1's children-only axiom); not the pre-reversal table.**
+Anchor case: template «أركان الإيمان» whose root has N direct children (one of them with 2
+grandchildren of its own), applied to selected doors.
 
 | Target state | Outcome | Why |
 |---|---|---|
-| **Live door, no name clash** | `201`. Target gains one new child «أركان الإيمان» with the full subtree beneath it, appended last | §5.1 |
-| **Live door that already has a live child «أركان الإيمان»** | `409`, **nothing is created anywhere** — the whole apply fails, message names the colliding target(s) | the doors unique index + all-or-nothing |
+| **Live door, no name clash** | `201`. Target gains the root's **N direct children** as new children, each with its full subtree, at `nextOrder … nextOrder+N-1`; deeper levels keep their verbatim `OrderValue` | ux-slice-g §5.1, §4.2-6 |
+| **Live door that already has a live child named like one of the root's direct children** | `409`, **nothing is created anywhere** — the whole apply fails, message names every colliding `(target, child)` pair | doors unique index + all-or-nothing (ux-slice-g §4.2-4) |
+| **…several of the root's child names collide under one target** | `409`, message lists every pair for that target, in the template's sibling order | ux-slice-g §4.2-5 |
+| **…several targets each collide** | `409`, pairs grouped by target in the caller's target order | ux-slice-g §4.2-5 |
 | **…whose colliding child is archived** | `201`. The index filters on `deleted_at IS NULL`, so an archived child does not occupy the name | same rule the doors create path already has |
 | **Archived target** | `400` — the copy would be born invisible, and the target is read-only (`features/abwab/README.md`, "Archived doors are read-only"). Unreachable from the UI: the picker lists live doors only | the relations archived-target precedent |
+| **Empty-root template** (root has no live children) applied to any target | **`400`** «القالب لا يحتوي عناصر لنسخها», raised writer-side, **before** the target reads | ux-slice-g §4.1-2 — new cell, the reversal's loudest consequence |
+| **…and the target is also archived** | `400` empty-template, **not** `400` archived-target — the empty-root guard fires first | ux-slice-g §4.2-7 |
 | **Section-less target** (`section_id IS NULL`) | `201`. The whole copied subtree inherits `section_id = NULL` — a first-class state (§R8 of the doors plan) | cascade invariant |
 | **Nested target, any depth** | `201`. Doors nest without limit; the copy just deepens the branch | no depth limit exists |
 | **Two targets, one an ancestor of the other** | `201`. **Both get their own copy** — no dedup, no union | See below |
 | **Unknown target id** | `404`, whole apply refused | |
-| **Empty `targetDoorIds`** | `400`. **This is the "no root-level application" rule** — there is no wire shape that expresses "as a root", so the refusal is the empty-list refusal, not a rejected mode | §3 |
+| **Empty `targetDoorIds`** | `400`. **This is the "no root-level application" rule** — there is no wire shape that expresses "as a root", so the refusal is the empty-list refusal, not a rejected mode. Unrelated to the reversal | §3 |
 | **Unknown template id** | `404` | |
 | **Deleted (soft) template** | `404` — a deleted template is gone, not hidden | §4 |
 
@@ -358,24 +368,28 @@ copy, so **the confirm count is the number of targets, always**. Do not "fix" th
 
 ### 6.3 Deep-copy edge cells
 
+**Re-derived for ux-slice-g.** The empty-template and applied-twice cells flip outcome; the
+sibling-order cell gains the level-1 offset; the rest survive.
+
 | Case | Outcome |
 |---|---|
-| **Empty template** (root only, no children) | Legal. Target gains one childless door. This is the default state of every newly created template |
-| **Single-child template** | Legal, trivially |
-| **3+ levels deep** | Legal; recursion has no depth limit, matching doors |
+| **Empty template** (root only, no live children) | **`400`** «القالب لا يحتوي عناصر لنسخها» — **flips from "Legal" pre-reversal.** This is the default state of every newly created template, so every new template refuses apply until it gains a child (ux-slice-g §4.1-2, §11) |
+| **Single-child template** | Legal. That one child lands at exactly `nextOrder` — the level-1 offset degenerates to the old behavior, which is why it must be tested at N ≥ 2 |
+| **3+ levels deep** | Legal; recursion has no depth limit, matching doors. Only level 1 is offset; everything below is verbatim |
 | **A node with empty description / no ayah / no aliases** | Copied as `NULL` / `NULL` / `{}` — the same nullability doors already allow |
-| **A node with aliases** | Copied into `abwab_door_aliases` rows for the created door, live, in order |
-| **Sibling order** | Preserved exactly: the copy's `order_value` is the node's `order_value`, which is `1..N` by the template's own resequencing |
-| **Duplicate name *inside* the template** | **Unrepresentable** (§5.5) — refused at authoring time with a `409`, long before any apply |
-| **Same template applied twice to the same target** | Second apply → `409` (the first copy now occupies the name). Correct and intended: two identical sibling subtrees would be indistinguishable |
+| **A node with aliases, at any level including level 1** | Copied into `abwab_door_aliases` rows for the created door, live, in order; the response DTO reports **that node's own** aliases (ux-slice-g DRIFT-1) |
+| **Sibling order** | Level 1 lands at `nextOrder + i` (i = the child's index in the template's own `(OrderValue, Id)` order); depth ≥ 2 keeps its verbatim `OrderValue`. Every touched scope in the target stays `1..N` (ux-slice-g §4.2-6) |
+| **Duplicate name *inside* the template** | **Unrepresentable** (§5.5) — refused at authoring time with a `409`, long before any apply. This is what guarantees the collision pre-check's name set has no duplicates |
+| **Same template applied twice to the same target** | Second apply → `409`, keyed on **the first copy's children's names**, not the root's — **the rule survives, its key changes** (ux-slice-g) |
+| **Same template applied twice, first apply's children since archived** | `201` — the archived-child rule (§6.1) one apply later |
 
 ### 6.4 Concurrency cells
 
 | Case | Outcome |
 |---|---|
 | **Apply × a concurrent template edit** | The apply reads its nodes **once, inside its own transaction**. Postgres default isolation is READ COMMITTED, so a concurrent edit either commits before that read (copied) or after it (not copied). **Both are legitimate**; no token is offered because the user holds no template version (§5.4) |
-| **Apply × apply on the same target** | Both compute `nextOrder = count + 1` and can produce a duplicate `order_value`. **Apply inherits this from `CreateAsync` and introduces nothing new** — reads tolerate gaps and ties, ordering by `OrderValue` then `Id` (`Reads/Abwab/README.md`). Do not invent a guard here that door create does not have |
-| **Apply × apply of the *same* template on the same target** | One wins, the other `409`s on the root name. The unique index is the arbiter |
+| **Apply × apply on the same target** | Both compute `nextOrder = count + 1` and can produce a duplicate `order_value`. **Apply inherits this from `CreateAsync` and introduces nothing new** — reads tolerate gaps and ties, ordering by `OrderValue` then `Id` (`Reads/Abwab/README.md`). The ux-slice-g level-1 offset makes the collision wider (N rows, not one) but not different in kind. Do not invent a guard here that door create does not have |
+| **Apply × apply of the *same* template on the same target** | One wins, the other `409`s on **the children's names** (post-reversal), not the root's. The unique index is the arbiter; key changed, arbiter unchanged |
 | **Node edit × node delete** | The delete wins or the edit wins; a missing row is `404`, never a 500 |
 | **Template delete × apply** | The apply reads the template row first; a deleted one is `404` |
 
@@ -903,7 +917,8 @@ saying plainly rather than by reference:
   and is not one.
 - **The apply's `23505` helper is the *inverse* of the relations case.** There, the door-name-keyed
   helper was wrong; here the collision genuinely **is** a door name. Still pre-check up front so
-  the `409` can name the target — `23505` names no row.
+  the `409` can name the colliding `(target, child)` pair — `23505` names no row (post-reversal:
+  ux-slice-g, §4.2-9).
 - **Do not add a `version` to any templates route** (§5.4) — nothing checks it.
 - **Do not build a template↔copy link** (§5.6). No provenance column, no "update all copies", no
   badge on copied doors. The preview copy promises the opposite.
@@ -918,6 +933,10 @@ saying plainly rather than by reference:
 - **`AbwabTreeDoorDto` must not change** (§5.7). If T501 shows it moved, something is wrong.
 - **The M10/M33 `sectionId` defense-in-depth stays in the door modal's shell** (T703), not in the
   extracted form.
+- **Do not subtract one from `templateNodeCount` anywhere** (ux-slice-g DRIFT-2). Post-reversal,
+  created doors per target equals `NodeCount` exactly — the count already excludes the root
+  (§5.2), and the apply now copies precisely the set `NodeCount` counts. Subtracting one is an
+  off-by-one, not a fix.
 
 ---
 
