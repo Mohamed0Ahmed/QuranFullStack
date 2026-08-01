@@ -240,8 +240,12 @@ describe('AbwabDoorModalComponent', () => {
 
       const root = fixture.nativeElement as HTMLElement;
       const dialog = root.querySelector('[data-testid="abwab-door-modal"]')!;
-      expect(document.activeElement).toBe(root.querySelector('[data-testid="abwab-door-modal-name"]'));
+      const nameField = root.querySelector('[data-testid="abwab-door-modal-name"]')!;
+      expect(document.activeElement).toBe(nameField);
       expect(dialog.contains(document.activeElement)).toBe(true);
+      // The queued focus above is only half the contract: the trap's own auto-capture must aim at
+      // the same field, or the modal opens with two focus moves instead of one.
+      expect(nameField.hasAttribute('cdkFocusInitial')).toBe(true);
     });
 
     it('closes on Escape when nothing was edited', () => {

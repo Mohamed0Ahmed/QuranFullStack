@@ -227,6 +227,9 @@ describe('AbwabRelationsModalComponent', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(document.activeElement).toBe(el('abwab-relations-modal-search'));
+      // The queued focus above is only half the contract: the trap's own auto-capture must aim at
+      // the same input, or the modal opens on the first type tab and is then corrected.
+      expect(el('abwab-relations-modal-search')!.hasAttribute('cdkFocusInitial')).toBe(true);
     });
 
     it('never offers a fixed target as the anchor, keeps its subtree, and adds anchor-first', () => {

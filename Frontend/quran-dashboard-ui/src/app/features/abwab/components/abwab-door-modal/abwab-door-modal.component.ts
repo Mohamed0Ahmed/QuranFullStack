@@ -103,8 +103,10 @@ export class AbwabDoorModalComponent {
       }
       this.errorMessage.set(null);
       this.confirmingDiscard.set(false);
-      // Queued rather than called inline: the trap's own auto-capture runs during the render
-      // that follows this effect, so a synchronous focus here would be overwritten by it.
+      // The trap now captures straight onto this field (`cdkFocusInitial` in the fields form), so
+      // this call normally re-focuses what is already focused and fires no second focus event.
+      // It stays as the jsdom path — auto-capture cannot fire there — and as the guard for a
+      // capture that resolves before the field renders.
       setTimeout(() => this.fieldsForm()?.focusFirstField());
     });
   }

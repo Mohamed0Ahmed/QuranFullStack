@@ -1,5 +1,9 @@
+<!-- cdkFocusInitial: both hosts are modals whose trap auto-captures, and both want the search
+  focused. Marking it here makes the trap's own single capture land on it, instead of landing
+  on the first chip/tab and being corrected by a second focus move. -->
 <input
   #searchInput
+  cdkFocusInitial
   type="text"
   [placeholder]="searchPlaceholder()"
   [attr.aria-label]="searchPlaceholder()"

@@ -276,7 +276,7 @@
 <qd-abwab-move-picker
   [open]="overlays.movePickerOpen()"
   [sections]="sections()"
-  [liveRoots]="facade.snapshot()?.liveRoots ?? []"
+  [liveRoots]="pickerLiveRoots()"
   [excludedIds]="overlays.moveExcludedIds()"
   [titleText]="overlays.moveTitleText()"
   (closed)="overlays.closeMovePicker()"
@@ -289,7 +289,7 @@
   [anchorDoorName]="overlays.relationsAnchorName()"
   [anchorPickMode]="overlays.relationsAnchorPickMode()"
   [bulkTargets]="overlays.relationsBulkTargets()"
-  [liveRoots]="facade.snapshot()?.liveRoots ?? []"
+  [liveRoots]="pickerLiveRoots()"
   [loadRelations]="overlays.loadRelations"
   [addRelations]="overlays.addRelations"
   [deleteRelation]="overlays.deleteRelation"

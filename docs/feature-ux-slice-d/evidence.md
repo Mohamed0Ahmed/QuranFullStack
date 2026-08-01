@@ -602,3 +602,75 @@ once «كل الأبواب» was separated from a section tab, the chip needed a
 element-type assertions could not provide, and the bulk-archive fix grew a
 set-empties-after-success case when the reproduction showed that is where the bug actually
 starts.
+
+## Follow-up — F1 and F2 accepted and fixed (branch `ux-slice-d-perf`)
+
+The user accepted both minor findings from T201 after the slice merged (PR #56, `2f58a506`).
+They are fixed on their own branch off `dev`, as plan §2 "Out" requires. Three corrections to
+what T201/T202 recorded, in descending importance:
+
+**1. The recorded F1 fix was wrong and would have regressed a11y.** T202 proposed dropping
+`cdkTrapFocusAutoCapture` on the modals that correct focus themselves. `CdkTrapFocus` stores
+the element to return focus to *only* inside `_captureFocus()`, which runs only under
+auto-capture (`@angular/cdk/fesm2022/a11y-module.mjs:571-603`), and `ngOnDestroy` restores from
+that stored element. Dropping the attribute therefore drops focus-return-on-close. Nothing else
+in abwab covers it: the only other focus restore in the feature is
+`abwab-tree.component.ts:353` `focusRow`, which serves the tree's roving tabindex for arrow-key
+navigation, not modal close.
+
+**The fix actually applied: aim the capture instead of correcting it.** The wanted control now
+carries `cdkFocusInitial`, which is what the trap's own capture reads
+(`focusInitialElement`, a11y-module.mjs:387-413), so one focus move replaces two and
+auto-capture stays on.
+
+**2. Four modals self-correct, not two** as F1's text said — door, template-node, relations and
+copy. Two file edits cover all four, because the target lives in a shared child each:
+`abwab-door-fields-form` (name field) serves the door and template-node modals,
+`abwab-door-picker` (search) serves the relations and copy modals. Verified those are the only
+consumers: `qd-abwab-door-picker` appears in exactly two templates and
+`qd-abwab-door-fields-form` in exactly two. Sections and the move picker contain neither and
+keep the trap's default first tabbable, unchanged.
+
+**3. The queued `focusFirstField()` / `focusSearch()` calls stay.** They are the only focus path
+in jsdom (auto-capture cannot move focus there) and they guard a capture that resolves before
+the target renders. Post-fix they re-focus what is already focused, which fires no event — so
+they cost nothing in the browser.
+
+### F1 verified in the browser (the suite cannot see this)
+
+Same method as T201: `focusin` recorded in capture phase on `https://localhost:4200/abwab`
+against the local backend, real dataset, dev build.
+
+| | Before (T201) | After |
+|---|---|---|
+| Relations modal open | `t=28.9ms` → type tab «تشابه», `t=33.7ms` → search | `t=+43.7ms` → search only |
+| Door modal open | not measured | one move, `t=+65.5ms` → name field |
+| Focus on close | not measured | returns to the trigger — relations to `abwab-tree-flag-rel-336`, door to `abwab-page-add-root` |
+
+The close row is the one that matters most: it is the behavior the recorded fix would have
+removed, measured working with the applied fix.
+
+**F2 is not browser-measured**, and was not in T201 either — it is a code-read finding. The
+fix is by construction: both `[liveRoots]` bindings now read one memoized `pickerLiveRoots`
+computed over a module-scope `NO_ROOTS`, so the reference is stable in every state including
+the null-snapshot window. A template sweep found no other allocating binding in `abwab/` or
+`shared/` — those two lines were the whole defect class.
+
+### Cost recorded, not hidden
+
+`cdkFocusInitial` makes the CDK warn once per modal open under jsdom, because its focusable
+check fails there unconditionally on zero-size boxes — 60 warnings across the abwab suite, each
+dumping a whole element. That exact message is now filtered in `src/test-setup.ts`. It carries
+no signal in jsdom by construction; every other warning still passes through.
+
+### Verification
+
+| Gate | Result |
+|---|---|
+| Full Vitest (Tier C, fork cap intact) | **193 files / 2259 tests passed** — same as the slice-close baseline; two assertions added to existing tests, no new test |
+| `npm run build` | green, the same three pre-existing budget warnings |
+| Browser | table above |
+
+The two new assertions pin the attribute where focus is already asserted
+(`abwab-door-modal.component.spec.ts`, `abwab-relations-modal.component.spec.ts`) rather than
+adding spec files for two children that have none.

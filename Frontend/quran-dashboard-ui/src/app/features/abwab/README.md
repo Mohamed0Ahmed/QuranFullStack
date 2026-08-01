@@ -326,13 +326,20 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   - **The traps are unconditional**, unlike the words dialogs' `drawerTrapEnabled` pattern. That
     rule governs *nesting*, and abwab modals never stack — under the entity-detail overlay or
     each other. A future change that makes them nest must revisit this.
-  - **Auto-capture is corrected where it lands wrong.** The door and template-node modals focus
-    the name field through `abwab-door-fields-form.focusFirstField()`; the relations and copy
-    modals focus the picker search through `AbwabDoorPickerComponent.focusSearch()`. Both are
-    queued as a task so they land *after* the trap's own capture. Sections and the move picker
-    keep plain auto-capture. Note this is verifiable only in a browser — jsdom gives every
-    element a zero-size box, so the CDK's focusable check rejects the target and auto-capture
-    never fires there.
+  - **Auto-capture is aimed, not corrected after the fact.** Four modals want a control the trap
+    would not pick on its own: the door and template-node modals want the name field, the
+    relations and copy modals the picker search. Each of those two targets carries
+    `cdkFocusInitial` — in `abwab-door-fields-form` and `abwab-door-picker` respectively, so two
+    attributes serve all four modals — which is what the trap's own capture reads, so a modal
+    opens with **one** focus move. The queued `focusFirstField()` / `focusSearch()` calls stay
+    behind it: they are the only path in jsdom, and they cover a capture that resolves before the
+    target renders. Do not "simplify" this by dropping `cdkTrapFocusAutoCapture` — the CDK stores
+    the previously focused element *only* inside auto-capture, so dropping it silently stops focus
+    returning to the trigger on close. Sections and the move picker want the trap's default first
+    tabbable and mark nothing. Where focus lands is verifiable only in a browser: jsdom gives every
+    element a zero-size box, so the CDK's focusable check rejects every target, auto-capture never
+    moves focus there, and its "not focusable" warning is filtered in `src/test-setup.ts` as the
+    pure noise it is.
   - **Shallow modals render with empty space** below their content, because `--fixed` is a fixed
     `min(92dvh, 44rem)`. That is §17's "zero resize" trade, accepted deliberately; do not "fix"
     it back to content height.

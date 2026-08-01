@@ -47,6 +47,12 @@ import { QdStateComponent } from '../../../../shared/ui/state/state.component';
  * a fresh `new Set()` per evaluation would re-run the tree's expand effect on every tick. */
 const NO_IDS: ReadonlySet<number> = new Set<number>();
 
+/** Same reason as `NO_IDS`, for the two pickers fed `liveRoots`: an inline `?? []` in the
+ * template allocates a fresh array on every change-detection tick, which marks both OnPush
+ * modals dirty for as long as the snapshot is absent — the load window, and every error
+ * state until a retry succeeds. */
+const NO_ROOTS: readonly AbwabNode[] = [];
+
 /** How long the reveal mark is held. Must match the animation duration in
  * `abwab-tree.component.scss`, which decays over the same span. */
 const REVEAL_HOLD_MS = 3000;
@@ -166,6 +172,9 @@ export class AbwabPageComponent implements OnInit {
     }
     return chain;
   });
+
+  /** The unfiltered live roots the move picker and the relations modal both browse. */
+  protected readonly pickerLiveRoots = computed<readonly AbwabNode[]>(() => this.facade.snapshot()?.liveRoots ?? NO_ROOTS);
 
   protected readonly archivedRoots = computed(() => this.facade.snapshot()?.archivedRoots ?? []);
   private readonly archiveSearchResult = computed(() => searchAbwabNodes(this.archivedRoots(), this.searchQueryParam()));
