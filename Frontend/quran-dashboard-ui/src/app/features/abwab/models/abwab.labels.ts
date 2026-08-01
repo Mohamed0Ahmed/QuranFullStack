@@ -54,6 +54,16 @@ const RELATION_FORMS: ArabicCountForms = {
   many: 'علاقة',
 };
 
+/** Tree levels below a door — «مستوى». Zero has its own wording because most rows are leaves,
+ * and «0 مستويات» is not how the absence of nesting is said. */
+const LEVEL_FORMS: ArabicCountForms = {
+  zero: 'لا تفرّع',
+  one: 'مستوى واحد',
+  two: 'مستويين',
+  few: 'مستويات',
+  many: 'مستوى',
+};
+
 /** The doors a template copy targets — the noun carries its adjective, so the phrase stays
  * grammatical at every count instead of interpolating a bare numeral before «مستهدف». */
 const TARGET_FORMS: ArabicCountForms = {
@@ -96,6 +106,17 @@ export const ABWAB_LABELS = {
   // the name — otherwise a screen reader hears the same «علاقات» on every row in the tree.
   rowRelationsAriaLabel: (doorName: string, count: number): string =>
     `عرض علاقات «${doorName}» — ${countPhrase(count, RELATION_FORMS)}`,
+
+  // The row's three count badges. Each is a bare numeral on screen, so the accessible name is
+  // the only place its meaning exists; «تحته مباشرة» vs «في كل المستويات» is exactly the
+  // distinction the two counts make, and the depth label has to pin "levels below this door"
+  // rather than the door's own position in the tree.
+  rowChildCountAriaLabel: (count: number): string => `${countPhrase(count, DOOR_FORMS)} تحته مباشرة`,
+  rowDescendantCountAriaLabel: (count: number): string =>
+    `${countPhrase(count, DOOR_FORMS)} تحته في كل المستويات`,
+  rowDepthAriaLabel: (depth: number): string => `أعمق تفرّع تحته: ${countPhrase(depth, LEVEL_FORMS)}`,
+  /** The visible depth badge — a bare numeral would read as a fourth count. */
+  rowDepthBadge: (depth: number): string => `ع${depth}`,
 
   activeDoorHeading: 'الباب النشط',
   noSelectionHint: 'اختر بابًا من الشجرة أو البطاقات',

@@ -127,6 +127,22 @@ export class AbwabTreeComponent {
     return ABWAB_LABELS.rowRelationsAriaLabel(name, count);
   }
 
+  protected childCountAriaLabel(count: number): string {
+    return ABWAB_LABELS.rowChildCountAriaLabel(count);
+  }
+
+  protected descendantCountAriaLabel(count: number): string {
+    return ABWAB_LABELS.rowDescendantCountAriaLabel(count);
+  }
+
+  protected depthAriaLabel(depth: number): string {
+    return ABWAB_LABELS.rowDepthAriaLabel(depth);
+  }
+
+  protected depthBadge(depth: number): string {
+    return ABWAB_LABELS.rowDepthBadge(depth);
+  }
+
   protected onFlagClick(event: Event, id: number): void {
     event.stopPropagation();
     // Inert in bulk mode, like the row actions are hidden there: the row click means "toggle

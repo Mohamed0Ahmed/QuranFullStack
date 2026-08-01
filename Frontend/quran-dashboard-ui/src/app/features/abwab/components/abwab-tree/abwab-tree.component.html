@@ -60,7 +60,24 @@
 
         <span class="abwab-tree__name">{{ node.name }}</span>
         @if (row.hasChildren) {
-          <span class="abwab-tree__count qd-chip__count">{{ node.liveChildCount }}</span>
+          <span
+            class="abwab-tree__count qd-chip__count"
+            [attr.aria-label]="childCountAriaLabel(node.liveChildCount)"
+            [attr.data-testid]="'abwab-tree-count-' + node.id"
+            >{{ node.liveChildCount }}</span
+          >
+          <span
+            class="abwab-tree__count abwab-tree__count--wide qd-chip__count"
+            [attr.aria-label]="descendantCountAriaLabel(node.liveDescendantCount)"
+            [attr.data-testid]="'abwab-tree-descendants-' + node.id"
+            >{{ node.liveDescendantCount }}</span
+          >
+          <span
+            class="abwab-tree__count abwab-tree__count--wide qd-chip__count"
+            [attr.aria-label]="depthAriaLabel(node.maxRelativeDepth)"
+            [attr.data-testid]="'abwab-tree-depth-' + node.id"
+            >{{ depthBadge(node.maxRelativeDepth) }}</span
+          >
         }
         <span class="abwab-tree__flags">
           <button

@@ -123,6 +123,14 @@ export interface AbwabNode {
   readonly depth: number;
   /** Direct live (non-archived) children count — drives the tree's `.count` badge. */
   readonly liveChildCount: number;
+  /** Every live descendant at any depth, the door itself excluded. Live-only like every other
+   * count in this feature: an archived subtree never inflates it. */
+  readonly liveDescendantCount: number;
+  /** How many levels of live descendants hang below this door — child + grandchild +
+   * great-grandchild is **3**. Relative to the door, never `depth`, and not derivable from
+   * `liveDescendantCount`: a chain of three and a fan of three both count 3 descendants but
+   * measure 3 and 1 here. */
+  readonly maxRelativeDepth: number;
   /** Visible relations only: a relation whose other endpoint is archived is dormant and counts 0,
    * so an archived door's count is always 0 and its row never shows the flag. */
   readonly relationCount: number;

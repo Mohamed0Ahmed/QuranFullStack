@@ -49,6 +49,10 @@ export function buildAbwabTreeSnapshot(dto: AbwabTreeDto): AbwabTreeSnapshotVm {
       (child) => includeArchivedChildren || !child.isArchived,
     );
     const children = childDtos.map((child) => build(child, depth + 1, includeArchivedChildren));
+    // Both derivations are memoized onto the node here rather than computed in the tree
+    // component: they are pure functions of the built subtree, and the children are already
+    // built, so each is one level of arithmetic over values the recursion just produced.
+    const liveChildren = children.filter((child) => !child.isArchived);
     const node: AbwabNode = {
       id: doorDto.id,
       name: doorDto.name,
@@ -62,7 +66,15 @@ export function buildAbwabTreeSnapshot(dto: AbwabTreeDto): AbwabTreeSnapshotVm {
       version: doorDto.version,
       isArchived: doorDto.isArchived,
       depth,
-      liveChildCount: children.filter((child) => !child.isArchived).length,
+      liveChildCount: liveChildren.length,
+      liveDescendantCount: liveChildren.reduce(
+        (sum, child) => sum + 1 + child.liveDescendantCount,
+        0,
+      ),
+      maxRelativeDepth: liveChildren.reduce(
+        (deepest, child) => Math.max(deepest, 1 + child.maxRelativeDepth),
+        0,
+      ),
       relationCount: doorDto.relationCount,
       children,
     };

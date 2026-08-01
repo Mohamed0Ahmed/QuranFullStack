@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .abwab-tree {
   display: flex;
   flex-direction: column;
@@ -89,6 +91,18 @@
 .abwab-tree__count {
   flex: none;
   font-size: 0.6875rem;
+}
+
+/* Row width budget (audit item 14). Priority, widest to narrowest: the name is the only
+   shrinkable item (ellipsis, `.qd-truncate`), then order pill > actions > direct-children
+   count > descendants/depth > flag. Below the tablet breakpoint the two badges this slice
+   added drop out; the direct-children count — the one the design contract itself specifies —
+   survives at every width. §17's detail-shell "Header priority" is the reasoning precedent:
+   drop whole items rather than shrink every item toward illegibility. */
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .abwab-tree__count--wide {
+    display: none;
+  }
 }
 
 .abwab-tree__flags {

@@ -441,4 +441,57 @@ describe('AbwabTreeComponent', () => {
       expect(flags.every((el) => el.getAttribute('tabindex') === '-1')).toBe(true);
     });
   });
+
+  describe('audit item 14 — the row’s three count badges', () => {
+    it('renders all three on a branch row, reading the builder’s values', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-count-1"]')?.textContent?.trim()).toBe('1');
+      expect(root.querySelector('[data-testid="abwab-tree-descendants-1"]')?.textContent?.trim()).toBe('1');
+      expect(root.querySelector('[data-testid="abwab-tree-depth-1"]')?.textContent?.trim()).toBe(
+        ABWAB_LABELS.rowDepthBadge(1),
+      );
+    });
+
+    it('renders none of them on a leaf row', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-count-3"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-tree-descendants-3"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-tree-depth-3"]')).toBeNull();
+    });
+
+    // Bare numerals on screen, so the accessible name is the only place the meaning lives —
+    // and the two counts must not read as the same thing to a screen reader.
+    it('names each badge distinctly, pinning "levels below this door" for the depth one', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-count-1"]')?.getAttribute('aria-label')).toBe(
+        ABWAB_LABELS.rowChildCountAriaLabel(1),
+      );
+      expect(root.querySelector('[data-testid="abwab-tree-descendants-1"]')?.getAttribute('aria-label')).toBe(
+        ABWAB_LABELS.rowDescendantCountAriaLabel(1),
+      );
+      expect(root.querySelector('[data-testid="abwab-tree-depth-1"]')?.getAttribute('aria-label')).toBe(
+        ABWAB_LABELS.rowDepthAriaLabel(1),
+      );
+      expect(ABWAB_LABELS.rowChildCountAriaLabel(1)).not.toBe(ABWAB_LABELS.rowDescendantCountAriaLabel(1));
+    });
+
+    // The media query itself is untestable in jsdom; what a spec can pin is that exactly the
+    // two badges this slice added carry the class the query drops, and the contract's own
+    // direct-children count does not.
+    it('marks only the two new badges as the ones that drop below the tablet breakpoint', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-count-1"]')?.classList.contains('abwab-tree__count--wide')).toBe(false);
+      expect(root.querySelector('[data-testid="abwab-tree-descendants-1"]')?.classList.contains('abwab-tree__count--wide')).toBe(true);
+      expect(root.querySelector('[data-testid="abwab-tree-depth-1"]')?.classList.contains('abwab-tree__count--wide')).toBe(true);
+    });
+  });
+
 });

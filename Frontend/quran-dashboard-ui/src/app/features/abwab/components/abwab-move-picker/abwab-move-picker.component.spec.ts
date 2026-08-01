@@ -18,6 +18,8 @@ function node(overrides: Partial<AbwabNode> & { id: number; name: string }): Abw
     isArchived: false,
     depth: 0,
     liveChildCount: 0,
+    liveDescendantCount: 0,
+    maxRelativeDepth: 0,
     relationCount: 0,
     children: [],
     ...overrides,

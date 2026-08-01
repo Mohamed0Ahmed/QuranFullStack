@@ -71,6 +71,18 @@ nine), four of them reads.
   holds, and it is inert in bulk mode, where a row click means "toggle this door". The archive
   view and the cards still render no flag, since an archived door's visible relation count is
   always 0 (see the derivation in the Gotchas).
+  A branch row carries **three** count badges: direct live children (the design contract's
+  own, `abwab-tree-concept.html:107`), total live descendants at any depth, and the deepest
+  live nesting below the door (`ع3` = three levels). The last two are a commissioned
+  extension of the contract, not a missed line. All three are live-only, both derivations are
+  memoized on the node by `abwab-tree.builder.ts`, and each carries its own Arabic
+  `aria-label`, since on screen they are bare numerals — a chain of three and a fan of three
+  both show `3` descendants but `ع3` vs `ع1`, and the label is where that meaning lives.
+  **Row width priority, widest to narrowest: name > order pill > actions > children count >
+  descendants/depth badges > flag.** The name is the only shrinkable item (`.qd-truncate`);
+  everything else is `flex: none`. Below `$qd-bp-tablet-max` the descendants and depth badges
+  are dropped rather than everything being squeezed — the contract's own children count
+  survives at every width.
 - `components/abwab-cards/` — the drill-down grid: `cardId` names only the
   drilled-into parent (not a full path array) — the breadcrumb chain is derived by
   walking `parentId` up from it via `byId`, so the URL never needs an array. Fails

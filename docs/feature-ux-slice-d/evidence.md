@@ -314,3 +314,42 @@ tree tab stops       1
 So the select-then-act order holds (the modal opened on the clicked door, not on the
 previous selection), the URL agrees with the store, and the roving-tabindex invariant is
 untouched — the flag adds a control per row and **no** tab stop.
+
+## T602 — the row width budget, measured
+
+Real data, `https://localhost:4200/abwab`, every branch expanded. Badges read straight off
+the builder — «باب العلم بالله» renders `1 · 6 · ع2` (one direct child, six live
+descendants, two levels deep), and its child «الثمرات» renders `5 · 5 · ع1`, which is the
+chain-vs-fan distinction visible on live content.
+
+**Collapse boundary, checked on both sides:**
+
+| Viewport | children count | descendants | depth |
+|---|---|---|---|
+| 1024 px | `flex` | `flex` | `flex` |
+| 1023 px | `flex` | `none` | `none` |
+
+At 1023 px the row reads «⌄ 1 باب العلم بالله 1 علاقات» — the contract's own children count
+survives, the two commissioned badges drop.
+
+**The budget's acceptance — the name is the only thing that gives.** A deliberately long
+Arabic name («باب العلم بالله وأسمائه الحسنى وصفاته العلى ومعرفة آثارها في خلقه وشرعه
+وقدره») in a tree card squeezed to four widths:
+
+| Tree card | name width | name ellipsized | flag clipped | count clipped | row overflows |
+|---|---|---|---|---|---|
+| 900 px | 602 px | no | no | no | no |
+| 620 px | 322 px | **yes** | no | no | no |
+| 420 px | 122 px | **yes** | no | no | no |
+| 320 px | 22 px | **yes** | no | no | no |
+
+So the priority holds in practice: the name ellipsizes first and everything else keeps its
+size, and the row never overflows.
+
+**`--qd-name-min-inline-size` is deliberately NOT applied to the tree name** (T701 asks
+which sites need it, recorded here because this is the measurement that answers it). At the
+narrowest viewport the page actually reaches, the name still holds **184 px** beside all
+three badges and the flag — not "shrunk to nothing". The 22 px reading above comes from
+forcing the card to 320 px, a width no real layout produces. Adding a 12 rem (192 px) floor
+would exceed that measured 184 px and start overflowing the row instead, trading a readable
+truncation for a broken one.
