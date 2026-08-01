@@ -240,8 +240,14 @@ inert-surface count (nine → eleven; it had been stale since abwab reached six 
 Temporary artifacts removed: both Playwright driver scripts used for the browser evidence, and
 the seeded reproduction/acceptance doors (672–678) are archived, the accepted dev-DB convention.
 
-**The slice's Active-Feature record is deliberately still open** in the root `CLAUDE.md` — the
-lifecycle rule clears it at merge, as a separate `chore` commit (the `b84385f0` precedent).
+**The slice's Active-Feature record is cleared in its own `chore` commit** on this branch (the
+`b84385f0` precedent), so the PR that merges the work also closes the record.
+
+**The N-2 planning sweep is deliberately NOT part of that commit.** Closing this slice makes it
+the newest closed feature, which evicts the oldest of the two currently buffered
+(`docs/feature-abwab-templates/` and the Slice B artifacts). That eviction is a deletion with a
+`grep -rn`-the-whole-repo repoint obligation attached, and it is a separate decision from merging
+this work — it is left for whoever runs the next lifecycle pass rather than folded in here.
 
 ## Post-verification fix — the door modal's error surface
 
