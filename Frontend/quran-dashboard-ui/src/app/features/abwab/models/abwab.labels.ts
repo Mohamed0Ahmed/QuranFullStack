@@ -43,8 +43,26 @@ const DOOR_FORMS: ArabicCountForms = {
 /** A template node. */
 const ELEMENT_FORMS: ArabicCountForms = { one: 'عنصر واحد', two: 'عنصرين', few: 'عناصر', many: 'عنصرًا' };
 
-/** Feminine «علاقة». */
-const RELATION_FORMS: ArabicCountForms = { one: 'علاقة واحدة', two: 'علاقتين', few: 'علاقات', many: 'علاقة' };
+/** Feminine «علاقة». The zero form exists for the tree row's relations control, which is
+ * rendered on every row and has to say "none" rather than «0 علاقات» — the add button, the
+ * only other consumer, never reaches `countPhrase` below a count of two. */
+const RELATION_FORMS: ArabicCountForms = {
+  zero: 'لا علاقات',
+  one: 'علاقة واحدة',
+  two: 'علاقتين',
+  few: 'علاقات',
+  many: 'علاقة',
+};
+
+/** Tree levels below a door — «مستوى». Zero has its own wording because most rows are leaves,
+ * and «0 مستويات» is not how the absence of nesting is said. */
+const LEVEL_FORMS: ArabicCountForms = {
+  zero: 'لا تفرّع',
+  one: 'مستوى واحد',
+  two: 'مستويين',
+  few: 'مستويات',
+  many: 'مستوى',
+};
 
 /** The doors a template copy targets — the noun carries its adjective, so the phrase stays
  * grammatical at every count instead of interpolating a bare numeral before «مستهدف». */
@@ -84,6 +102,21 @@ export const ABWAB_LABELS = {
   archiveTreeAriaLabel: 'شجرة الأبواب المؤرشفة',
   rowAddChildAriaLabel: (doorName: string): string => `إضافة باب فرعي تحت «${doorName}»`,
   rowMenuAriaLabel: (doorName: string): string => `عمليات «${doorName}»`,
+  // The flag renders on every row now, including rows with none, so the count has to be in
+  // the name — otherwise a screen reader hears the same «علاقات» on every row in the tree.
+  rowRelationsAriaLabel: (doorName: string, count: number): string =>
+    `عرض علاقات «${doorName}» — ${countPhrase(count, RELATION_FORMS)}`,
+
+  // The row's three count badges. Each is a bare numeral on screen, so the accessible name is
+  // the only place its meaning exists; «تحته مباشرة» vs «في كل المستويات» is exactly the
+  // distinction the two counts make, and the depth label has to pin "levels below this door"
+  // rather than the door's own position in the tree.
+  rowChildCountAriaLabel: (count: number): string => `${countPhrase(count, DOOR_FORMS)} تحته مباشرة`,
+  rowDescendantCountAriaLabel: (count: number): string =>
+    `${countPhrase(count, DOOR_FORMS)} تحته في كل المستويات`,
+  rowDepthAriaLabel: (depth: number): string => `أعمق تفرّع تحته: ${countPhrase(depth, LEVEL_FORMS)}`,
+  /** The visible depth badge — a bare numeral would read as a fourth count. */
+  rowDepthBadge: (depth: number): string => `ع${depth}`,
 
   activeDoorHeading: 'الباب النشط',
   noSelectionHint: 'اختر بابًا من الشجرة أو البطاقات',
@@ -148,6 +181,12 @@ export const ABWAB_LABELS = {
   restoreDetachedAnnouncement: 'استُرجع الباب خارج قسمه المحذوف',
 
   bulkConflictMessage: (names: string): string => `فشلت العملية كاملة — حدث تعارض على: ${names}`,
+  // The backend's bulk 404 is generic («الباب غير موجود») and names no door, but the snapshot
+  // knows every door's name and archive state, so the frontend names them itself — the
+  // `bulkConflictMessage` precedent one line up. Phrased as a noun phrase after «تعذر العثور
+  // على» so it stays grammatical at every count instead of needing verb agreement per form.
+  bulkVanishedMessage: (count: number, names: string): string =>
+    `فشلت العملية كاملة — تعذر العثور على ${countPhrase(count, DOOR_FORMS)}: ${names}`,
   archiveConfirm: (count: number): string => `سيتم أرشفة ${countPhrase(count, DOOR_FORMS)}`,
 
   loadErrorFallback: 'تعذر تحميل شجرة الأبواب. حاول مرة أخرى.',
@@ -167,6 +206,12 @@ export const ABWAB_LABELS = {
   // Every group renders several of these buttons at once, so a static name would leave a screen
   // reader with N identical «حذف العلاقة» controls and no way to tell them apart.
   relationDeleteAriaLabel: (doorName: string): string => `حذف العلاقة مع «${doorName}»`,
+  // The chip now carries two controls, so neither can rely on the chip's text to say what it
+  // does — «إظهار في الشجرة» and «حذف العلاقة» have to be distinguishable by name alone.
+  relationRevealAriaLabel: (doorName: string): string => `إظهار «${doorName}» في الشجرة`,
+  // The reveal's guard: defensively unreachable (the read hides relations whose endpoint is
+  // archived), so this says what did not happen rather than blaming the user.
+  revealUnavailable: 'تعذر إظهار الباب — لم يعد موجودًا في الشجرة',
 
   relationGroupSimilarity: 'تشابه',
   relationGroupOpposition: 'تضاد',

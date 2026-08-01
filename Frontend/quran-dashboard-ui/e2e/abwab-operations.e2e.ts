@@ -5,7 +5,7 @@ import { expect, test } from './fixtures/abwab';
 // all-or-nothing confirm), and the row context menu — including the "must stay absent"
 // assertion for the relations/protection controls (plan.md §5.1).
 
-test('inline reorder: Enter commits and resequences siblings, Escape reverts', async ({ page, abwabSandbox }) => {
+test('inline reorder: Enter commits and resequences siblings; Escape and blur cancel', async ({ page, abwabSandbox }) => {
   const doorA = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('reorder-a') });
   const doorB = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('reorder-b') });
   const doorC = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('reorder-c') });
@@ -31,6 +31,16 @@ test('inline reorder: Enter commits and resequences siblings, Escape reverts', a
 
   await expect(page.getByTestId(`abwab-tree-order-input-${doorA.id}`)).toBeHidden();
   await expect(page.getByTestId(`abwab-tree-order-${doorA.id}`)).toHaveText('2');
+
+  // Blur cancels too (Slice D): clicking away from a typed number must not resequence.
+  await page.getByTestId(`abwab-tree-order-${doorA.id}`).click();
+  await page.getByTestId(`abwab-tree-order-input-${doorA.id}`).fill('99');
+  await page.getByTestId('abwab-toolbar-search').click();
+
+  await expect(page.getByTestId(`abwab-tree-order-input-${doorA.id}`)).toBeHidden();
+  await expect(page.getByTestId(`abwab-tree-order-${doorA.id}`)).toHaveText('2');
+  await expect(page.getByTestId(`abwab-tree-order-${doorC.id}`)).toHaveText('1');
+  await expect(page.getByTestId(`abwab-tree-order-${doorB.id}`)).toHaveText('3');
 });
 
 test('single move: into a destination, then back out as a main door', async ({ page, abwabSandbox }) => {
@@ -99,6 +109,10 @@ test('bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
 
   await expect(page.getByTestId(`abwab-tree-row-${bulkA.id}`)).toHaveCount(0);
   await expect(page.getByTestId(`abwab-tree-row-${bulkB.id}`)).toHaveCount(0);
+
+  // The rebind drops archived ids as well as missing ones (Slice D). Without this the set
+  // kept both now-archived doors with freshly rebound versions, and the next submit 404'd.
+  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('0');
 });
 
 test('row context menu offers exactly edit / add-child / move / relations / archive', async ({ page, abwabSandbox }) => {

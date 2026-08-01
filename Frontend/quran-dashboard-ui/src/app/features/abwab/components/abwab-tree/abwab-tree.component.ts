@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -50,6 +61,13 @@ export class AbwabTreeComponent {
   readonly bulkSelectedIds = input<ReadonlySet<number>>(new Set());
   /** Ids a caller (e.g. search auto-expand, T507) forces open, unioned with manual toggles. */
   readonly forceExpandedIds = input<ReadonlySet<number>>(new Set());
+  /** Ids to open **once**, merged into the manual set rather than unioned like
+   * `forceExpandedIds` — a forced-open id cannot be collapsed, and a reveal that permanently
+   * locked its target's ancestor chain open would be a worse bug than the one it fixes.
+   * Seeding hands those ancestors back to the user's own chevrons immediately. */
+  readonly expandSeedIds = input<ReadonlySet<number>>(new Set());
+  /** The row currently carrying the reveal mark; the page clears it on its own timer. */
+  readonly revealedId = input<number | null>(null);
 
   readonly selected = output<number>();
   readonly bulkToggled = output<number>();
@@ -59,10 +77,24 @@ export class AbwabTreeComponent {
    * instead of the page guessing from a separate `contextmenu` listener. */
   readonly menuRequested = output<AbwabTreeMenuRequest>();
   readonly orderCommitted = output<{ id: number; position: number; scope: AbwabOrderScope }>();
+  /** The row's relations chip is a control (Slice D, audit item 13): the page selects the
+   * door and opens the relations modal on it, the select-then-act shape every other row
+   * path already follows. */
+  readonly relationsRequested = output<number>();
 
   private readonly manuallyExpandedIds = signal<ReadonlySet<number>>(new Set());
   private readonly manualFocusId = signal<number | null>(null);
   protected readonly editingId = signal<number | null>(null);
+
+  constructor() {
+    effect(() => {
+      const seed = this.expandSeedIds();
+      if (seed.size === 0) {
+        return;
+      }
+      untracked(() => this.manuallyExpandedIds.update((current) => new Set([...current, ...seed])));
+    });
+  }
 
   private readonly effectiveExpandedIds = computed(
     () => new Set([...this.manuallyExpandedIds(), ...this.forceExpandedIds()]),
@@ -117,6 +149,37 @@ export class AbwabTreeComponent {
 
   protected get relationsFlagLabel(): string {
     return ABWAB_LABELS.relationsFlagLabel;
+  }
+
+  protected relationsAriaLabel(name: string, count: number): string {
+    return ABWAB_LABELS.rowRelationsAriaLabel(name, count);
+  }
+
+  protected childCountAriaLabel(count: number): string {
+    return ABWAB_LABELS.rowChildCountAriaLabel(count);
+  }
+
+  protected descendantCountAriaLabel(count: number): string {
+    return ABWAB_LABELS.rowDescendantCountAriaLabel(count);
+  }
+
+  protected depthAriaLabel(depth: number): string {
+    return ABWAB_LABELS.rowDepthAriaLabel(depth);
+  }
+
+  protected depthBadge(depth: number): string {
+    return ABWAB_LABELS.rowDepthBadge(depth);
+  }
+
+  protected onFlagClick(event: Event, id: number): void {
+    event.stopPropagation();
+    // Inert in bulk mode, like the row actions are hidden there: the row click means "toggle
+    // this door's bulk selection", and a control that opened a modal instead would fight it.
+    if (this.bulkMode()) {
+      return;
+    }
+    this.manualFocusId.set(id);
+    this.relationsRequested.emit(id);
   }
 
   protected addChildAriaLabel(name: string): string {
@@ -189,8 +252,18 @@ export class AbwabTreeComponent {
     if (event.key === 'Enter') {
       this.commitOrderEdit(id, event.target);
     } else if (event.key === 'Escape') {
-      this.editingId.set(null);
+      this.cancelOrderEdit(id);
     }
+  }
+
+  /** Enter is the only commit — blur and Escape both abandon the edit. Guarded on the same
+   * id as `commitOrderEdit`, so the blur that follows an Enter commit (the input unmounts
+   * under the focused element) finds `editingId` already cleared and does nothing. */
+  protected cancelOrderEdit(id: number): void {
+    if (this.editingId() !== id) {
+      return;
+    }
+    this.editingId.set(null);
   }
 
   protected commitOrderEdit(id: number, target: EventTarget | null): void {

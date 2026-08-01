@@ -23,6 +23,8 @@ function node(id: number, name: string, children: readonly AbwabNode[] = []): Ab
     isArchived: false,
     depth: 0,
     liveChildCount: children.length,
+    liveDescendantCount: children.length,
+    maxRelativeDepth: children.length > 0 ? 1 : 0,
     relationCount: 0,
     children,
   };
@@ -374,5 +376,41 @@ describe('AbwabRelationsModalComponent', () => {
 
     expect(el('abwab-relations-modal-error')).toBeNull();
     expect(el('abwab-relations-modal-selected')?.textContent?.trim()).toBe(ABWAB_LABELS.relationNoneSelected);
+  });
+  describe('audit item 10 — the relation name is a second control on the chip', () => {
+    it('emits revealRequested with the other door’s id, and names the control for a screen reader', () => {
+      const { fixture, root } = render({ relations: [relation(10, 42, 'الصبر', 'similarity')] });
+      const revealed: number[] = [];
+      fixture.componentInstance.revealRequested.subscribe((id: number) => revealed.push(id));
+
+      const label = root.querySelector('[data-testid="qd-chip-label"]') as HTMLButtonElement;
+      expect(label.getAttribute('aria-label')).toBe(ABWAB_LABELS.relationRevealAriaLabel('الصبر'));
+      expect(label.textContent?.trim()).toBe('الصبر');
+
+      label.click();
+      fixture.detectChanges();
+
+      // The id carried is the OTHER door's, not the relation row's — a reveal of relation 10
+      // would be a reveal of nothing.
+      expect(revealed).toEqual([42]);
+    });
+
+    it('keeps remove independent: removing does not reveal, revealing does not remove', () => {
+      const { fixture, root, deleteRelation } = render({
+        relations: [relation(10, 42, 'الصبر', 'similarity')],
+      });
+      const revealed: number[] = [];
+      fixture.componentInstance.revealRequested.subscribe((id: number) => revealed.push(id));
+
+      (root.querySelector('[data-testid="qd-chip-label"]') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(revealed).toEqual([42]);
+      expect(deleteRelation).not.toHaveBeenCalled();
+
+      (root.querySelector('[data-testid="qd-chip-remove"]') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(deleteRelation).toHaveBeenCalledWith(10);
+      expect(revealed).toEqual([42]);
+    });
   });
 });

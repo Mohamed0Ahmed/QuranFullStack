@@ -125,6 +125,78 @@ describe('buildAbwabTreeSnapshot', () => {
     expect(snapshot.liveRoots[0].depth).toBe(0);
     expect(snapshot.liveRoots[0].children[0].depth).toBe(1);
   });
+
+  describe('audit item 14 — liveDescendantCount and maxRelativeDepth', () => {
+    it('leaves both at 0 for a leaf', () => {
+      const snapshot = buildAbwabTreeSnapshot(tree([door({ id: 1, name: 'ورقة' })]));
+
+      expect(snapshot.liveRoots[0].liveDescendantCount).toBe(0);
+      expect(snapshot.liveRoots[0].maxRelativeDepth).toBe(0);
+    });
+
+    // The worked example the audit pins: child + grandchild + great-grandchild ⇒ depth 3,
+    // measured from the door, never from `node.depth`.
+    it('measures depth relative to the door, so a three-link chain is 3 at the root and 1 at the grandchild', () => {
+      const snapshot = buildAbwabTreeSnapshot(
+        tree([
+          door({ id: 1, name: 'جذر' }),
+          door({ id: 2, name: 'ابن', parentId: 1 }),
+          door({ id: 3, name: 'حفيد', parentId: 2 }),
+          door({ id: 4, name: 'ابن الحفيد', parentId: 3 }),
+        ]),
+      );
+
+      const root = snapshot.liveRoots[0];
+      expect(root.maxRelativeDepth).toBe(3);
+      expect(root.liveDescendantCount).toBe(3);
+
+      const grandchild = snapshot.byId.get(3)!;
+      expect(grandchild.depth).toBe(2); // absolute position in the tree…
+      expect(grandchild.maxRelativeDepth).toBe(1); // …and one level of its own below it
+      expect(grandchild.liveDescendantCount).toBe(1);
+    });
+
+    it('separates a deep chain from a wide fan — same descendant count, different depth', () => {
+      const chain = buildAbwabTreeSnapshot(
+        tree([
+          door({ id: 1, name: 'سلسلة' }),
+          door({ id: 2, name: 'س-1', parentId: 1 }),
+          door({ id: 3, name: 'س-2', parentId: 2 }),
+          door({ id: 4, name: 'س-3', parentId: 3 }),
+        ]),
+      ).liveRoots[0];
+      const fan = buildAbwabTreeSnapshot(
+        tree([
+          door({ id: 1, name: 'مروحة' }),
+          door({ id: 2, name: 'م-1', parentId: 1 }),
+          door({ id: 3, name: 'م-2', parentId: 1 }),
+          door({ id: 4, name: 'م-3', parentId: 1 }),
+        ]),
+      ).liveRoots[0];
+
+      expect(chain.liveDescendantCount).toBe(fan.liveDescendantCount);
+      expect(chain.maxRelativeDepth).toBe(3);
+      expect(fan.maxRelativeDepth).toBe(1);
+    });
+
+    it('excludes an archived subtree from both counts', () => {
+      const snapshot = buildAbwabTreeSnapshot(
+        tree([
+          door({ id: 1, name: 'جذر' }),
+          door({ id: 2, name: 'ابن حي', parentId: 1 }),
+          door({ id: 3, name: 'فرع مؤرشف', parentId: 1, isArchived: true }),
+          door({ id: 4, name: 'تحت المؤرشف', parentId: 3, isArchived: true }),
+          door({ id: 5, name: 'أعمق تحت المؤرشف', parentId: 4, isArchived: true }),
+        ]),
+      );
+
+      // The archived branch is two levels deeper than the live one, so a build that counted it
+      // would report 4 descendants and depth 3 instead of 1 and 1.
+      const root = snapshot.liveRoots[0];
+      expect(root.liveDescendantCount).toBe(1);
+      expect(root.maxRelativeDepth).toBe(1);
+    });
+  });
 });
 
 describe('filterAbwabRootsBySection — M3', () => {

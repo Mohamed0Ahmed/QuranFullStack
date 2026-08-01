@@ -1,5 +1,22 @@
+<!-- Declared once and rendered through an outlet, because two `<ng-content>` elements
+     sharing one selector would leave the second slot permanently empty. -->
+<ng-template #labelContent><ng-content></ng-content></ng-template>
+
 <ng-template #labelAndCount>
-  <span class="qd-chip__label"><ng-content></ng-content></span>
+  @if (labelIsButton()) {
+    <button
+      type="button"
+      class="qd-chip__label qd-chip__label--clickable"
+      [attr.aria-label]="labelAriaLabel()"
+      [disabled]="disabled()"
+      data-testid="qd-chip-label"
+      (click)="onLabelClick($event)"
+    >
+      <ng-container [ngTemplateOutlet]="labelContent"></ng-container>
+    </button>
+  } @else {
+    <span class="qd-chip__label"><ng-container [ngTemplateOutlet]="labelContent"></ng-container></span>
+  }
   @if (count() !== null) {
     <span class="qd-chip__count" data-testid="qd-chip-count">{{ count() }}</span>
   }

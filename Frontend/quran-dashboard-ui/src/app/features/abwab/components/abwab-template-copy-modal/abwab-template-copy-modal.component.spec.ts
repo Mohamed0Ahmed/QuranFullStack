@@ -23,6 +23,8 @@ function node(id: number, name: string, children: readonly AbwabNode[] = []): Ab
     isArchived: false,
     depth: 0,
     liveChildCount: children.length,
+    liveDescendantCount: children.length,
+    maxRelativeDepth: children.length > 0 ? 1 : 0,
     relationCount: 0,
     children,
   };

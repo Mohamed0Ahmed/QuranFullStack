@@ -42,7 +42,7 @@
                 </button>
                 <button type="button" class="qd-btn qd-btn-ghost" (click)="cancelRename()">{{ cancelLabel }}</button>
               } @else {
-                <span class="abwab-sections-modal__name">{{ section.name }}</span>
+                <span class="abwab-sections-modal__name qd-truncate" [title]="section.name">{{ section.name }}</span>
                 <button
                   type="button"
                   class="qd-btn qd-btn-ghost"

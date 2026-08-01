@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .abwab-tree {
   display: flex;
   flex-direction: column;
@@ -23,6 +25,38 @@
   color: var(--qd-accent-text);
 }
 
+/* The reveal mark (audit item 10). It CANNOT be a background tint: `--qd-selected-bg` IS
+   `--qd-accent-tint` in both themes (`_tokens.scss` / `_themes.scss`), and a reveal always
+   lands on the row it just selected — so a tint highlight would be an exact zero-delta
+   against the row's own selected fill. The outline carries the signal instead, because a
+   selected row has no border or outline at rest, and it decays to transparent over the same
+   ~3s the page holds the class. This is `_tokens.scss:94`'s recorded lesson read the other
+   way round: there a mark too close to hover read as a flash; here a mark equal to selected
+   would not read at all. */
+@keyframes abwab-tree-reveal {
+  from {
+    outline-color: var(--qd-accent);
+  }
+  to {
+    outline-color: transparent;
+  }
+}
+
+.abwab-tree__row--revealed {
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  animation: abwab-tree-reveal 3s ease-out;
+}
+
+/* §15-F/§17's blanket rule: no decay, the same mark held for the same duration. */
+@media (prefers-reduced-motion: reduce) {
+  .abwab-tree__row--revealed {
+    animation: none;
+    outline-color: var(--qd-accent);
+  }
+}
+
+/* Focus still wins over the reveal — a keyboard user must always see where focus is. */
 .abwab-tree__row:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: -2px;
@@ -45,17 +79,27 @@
   visibility: hidden;
 }
 
-.abwab-tree__order {
-  font-size: 0.6875rem;
-  color: var(--qd-text-muted);
-  background: var(--qd-section-bg);
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-sm);
-  padding-inline: 0.3rem;
-  min-inline-size: 1.25rem;
-  text-align: center;
+/* One vocabulary for the row's metadata (Slice D, audit item 13): the order pill, the
+   child count and the relations flag all compose the `qd-chip` backing classes, and this
+   file only compresses them to the tree row's scale. The `word-type-filter` child button is
+   the precedent for composing those classes with a local sizing rule rather than
+   re-declaring border/background/hover/focus per call-site. The order pill stays a control
+   with its click-to-edit affordance — it aligns to the chip metrics but is not a `qd-chip`
+   component, because the chip contract has no editable-number variant and inventing one for
+   a single consumer would fork it. */
+.abwab-tree__order,
+.abwab-tree__flag {
   flex: none;
-  cursor: pointer;
+  gap: 0;
+  padding: 0 var(--qd-space-1);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+
+.abwab-tree__order {
+  min-inline-size: 1.5rem;
+  justify-content: center;
+  color: var(--qd-text-muted);
 }
 
 .abwab-tree__order-input {
@@ -69,15 +113,25 @@
 
 .abwab-tree__name {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
+/* `.qd-chip__count` supplies the pill, the recessed fill and the tabular numerals; only the
+   row's smaller type is local. */
 .abwab-tree__count {
-  font-size: 0.75rem;
-  color: var(--qd-text-muted);
   flex: none;
+  font-size: 0.6875rem;
+}
+
+/* Row width budget (audit item 14). Priority, widest to narrowest: the name is the only
+   shrinkable item (ellipsis, `.qd-truncate`), then order pill > actions > direct-children
+   count > descendants/depth > flag. Below the tablet breakpoint the two badges this slice
+   added drop out; the direct-children count — the one the design contract itself specifies —
+   survives at every width. §17's detail-shell "Header priority" is the reasoning precedent:
+   drop whole items rather than shrink every item toward illegibility. */
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .abwab-tree__count--wide {
+    display: none;
+  }
 }
 
 .abwab-tree__flags {
@@ -86,20 +140,18 @@
   flex: none;
 }
 
-/* A chip, not a control: no tab stop and no click handler, so the row's roving tabindex is
-   untouched (plan §7 T603). */
+/* The accent tint is the "has relations" mark, so the empty state drops it for a muted
+   hairline rather than dimming the same tint — a faded accent still reads as "some". */
 .abwab-tree__flag {
-  font-size: 0.625rem;
-  border-radius: var(--qd-radius-sm);
-  padding: 1px var(--qd-space-1);
   background: var(--qd-accent-tint);
   color: var(--qd-accent-text);
-  border: 1px solid var(--qd-border-accent);
+  border-color: var(--qd-border-accent);
 }
 
-.abwab-tree__checkbox {
-  flex: none;
-  accent-color: var(--qd-accent);
+.abwab-tree__flag--empty {
+  background: transparent;
+  color: var(--qd-text-muted);
+  border-color: var(--qd-border);
 }
 
 /* Row actions follow the design contract (abwab-tree-concept.html:114): revealed on hover

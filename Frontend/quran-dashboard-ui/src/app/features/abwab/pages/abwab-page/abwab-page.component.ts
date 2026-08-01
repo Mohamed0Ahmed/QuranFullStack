@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -31,6 +42,14 @@ import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/conte
 import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+
+/** Shared empty set, so `revealExpandSeedIds` keeps one identity while no reveal is running —
+ * a fresh `new Set()` per evaluation would re-run the tree's expand effect on every tick. */
+const NO_IDS: ReadonlySet<number> = new Set<number>();
+
+/** How long the reveal mark is held. Must match the animation duration in
+ * `abwab-tree.component.scss`, which decays over the same span. */
+const REVEAL_HOLD_MS = 3000;
 
 /**
  * Route shell for `/abwab` (plan-slice-b.md T415/T501-T511): URL ⇄ state wiring,
@@ -71,6 +90,7 @@ export class AbwabPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly facade = inject(AbwabSnapshotFacade);
   protected readonly selection = inject(AbwabSelectionStore);
@@ -111,6 +131,41 @@ export class AbwabPageComponent implements OnInit {
   });
 
   protected readonly forceExpandedIds = computed(() => this.searchResult().autoExpandedIds);
+
+  // Reveal-in-tree (audit item 10). `revealTargetId` is what the reveal is *about*;
+  // `revealedId` is what currently carries the mark. They are separate because the mark is
+  // released on a timer while the target survives until then, and because the mark must not
+  // appear until the navigation it depends on has actually landed.
+  private readonly revealTargetId = signal<number | null>(null);
+  /** Bumped on every reveal, and read by the seed computed purely to invalidate it. Without
+   * it, revealing the **same** door twice while the first reveal is still held is a no-op
+   * write (`Object.is`), the seed never recomputes, and a chain the user collapsed in between
+   * stays collapsed — leaving the reveal marking a row that is not on screen. */
+  private readonly revealSequence = signal(0);
+  protected readonly revealedId = signal<number | null>(null);
+  protected readonly revealAnnouncement = signal<string | null>(null);
+  private revealTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Set when a reveal navigates, cleared by the param emission that lands it. */
+  private revealPending = false;
+
+  /** The target's ancestor chain, walked up `parentId` the way the cards breadcrumb does.
+   * Handed to the tree as a **seed**, not a force: forced-open ids cannot be collapsed, and a
+   * reveal that locked the chain open would trade one bug for a worse one. */
+  protected readonly revealExpandSeedIds = computed<ReadonlySet<number>>(() => {
+    this.revealSequence();
+    const targetId = this.revealTargetId();
+    if (targetId === null) {
+      return NO_IDS;
+    }
+    const byId = this.byId();
+    const chain = new Set<number>();
+    let parentId = byId.get(targetId)?.parentId ?? null;
+    while (parentId !== null && !chain.has(parentId)) {
+      chain.add(parentId);
+      parentId = byId.get(parentId)?.parentId ?? null;
+    }
+    return chain;
+  });
 
   protected readonly archivedRoots = computed(() => this.facade.snapshot()?.archivedRoots ?? []);
   private readonly archiveSearchResult = computed(() => searchAbwabNodes(this.archivedRoots(), this.searchQueryParam()));
@@ -187,7 +242,20 @@ export class AbwabPageComponent implements OnInit {
       if (parsed.door === null) {
         this.selection.clearSelection();
       }
+
+      // Any navigation retires a stale reveal message, so a failed reveal cannot outlive the
+      // next thing that happens and mask a write's own announcement.
+      this.revealAnnouncement.set(null);
+      // `revealPending` rather than "is nothing marked yet": within the hold window any other
+      // navigation (a keystroke writing `q`, say) also emits with `door` still equal to the
+      // target, and re-arming the mark and the scroll off that would be wrong.
+      const revealTarget = this.revealTargetId();
+      if (this.revealPending && revealTarget !== null && parsed.door === revealTarget) {
+        this.revealPending = false;
+        this.startReveal(revealTarget);
+      }
     });
+    this.destroyRef.onDestroy(() => this.clearRevealTimer());
   }
 
   protected onSectionChanged(sectionId: number | null): void {
@@ -270,6 +338,86 @@ export class AbwabPageComponent implements OnInit {
       return;
     }
     this.writeController.restoreDoor(id, node.version).subscribe();
+  }
+
+  /** Select-then-act (README "The URL is the single source of truth for the selection"), in the
+   * `runContextAction` order: the store is written **synchronously** before `openRelations()`,
+   * which reads `selectedDoor()`. Waiting for the URL subscription to echo `door=` back would
+   * open the modal on whatever was selected before. */
+  protected onRelationsRequested(doorId: number): void {
+    const node = this.byId().get(doorId);
+    if (!node) {
+      return;
+    }
+    this.updateQueryParams(buildAbwabQueryParams({ door: doorId }));
+    this.selection.select(doorId, node.version);
+    this.overlays.openRelations();
+  }
+
+  /**
+   * Reveal a related door in the tree (audit item 10). Every state the target can be in is
+   * folded into **one** query patch, so there is one navigation and no race between them:
+   * `door` always; `section` when the target lives elsewhere (an explicit `door` in the same
+   * change overrides the scope-invalidation clear, `abwab-url-sync.ts`); `view: 'tree'` when
+   * the cards drill is open, since the item is reveal-in-*tree*; and `q` cleared when a search
+   * is filtering, because a reveal that leaves its target pruned breaks the promise the click
+   * makes.
+   *
+   * The archived/missing guard is defensively unreachable — the relations read hides any
+   * relation whose endpoint is archived — and is kept anyway, so an impossible state is a
+   * visible non-action rather than a silent broken reveal.
+   */
+  protected onRevealRequested(doorId: number): void {
+    this.overlays.closeRelationsModal();
+    const node = this.byId().get(doorId);
+    if (!node || node.isArchived) {
+      this.revealAnnouncement.set(ABWAB_LABELS.revealUnavailable);
+      return;
+    }
+    this.revealAnnouncement.set(null);
+    this.revealTargetId.set(doorId);
+    this.revealSequence.update((n) => n + 1);
+    this.revealPending = true;
+    this.updateQueryParams(
+      buildAbwabQueryParams({
+        door: doorId,
+        // Only when the active tab genuinely excludes the target. «كل الأبواب» shows every
+        // door, section-less ones included, so switching to the target's own tab there would
+        // narrow the view for no reason; a *section* tab that isn't the target's does exclude
+        // it, and then the reveal lands where the door actually lives.
+        ...(this.activeSectionId() !== null && node.sectionId !== this.activeSectionId()
+          ? { section: node.sectionId }
+          : {}),
+        ...(this.viewParam() === 'cards' ? { view: 'tree' as AbwabView } : {}),
+        ...(this.searchQueryParam() !== '' ? { q: '' } : {}),
+      }),
+    );
+  }
+
+  /** Keyed off the param emission rather than the click: the rows that must exist for the
+   * scroll to find anything are rendered by the change detection that emission triggers, and
+   * in the cross-section / cards / search cases they do not exist before it at all. */
+  private startReveal(doorId: number): void {
+    this.revealedId.set(doorId);
+    this.clearRevealTimer();
+    this.revealTimer = setTimeout(() => {
+      this.revealedId.set(null);
+      this.revealTargetId.set(null);
+      this.revealTimer = null;
+    }, REVEAL_HOLD_MS);
+    queueMicrotask(() => {
+      const row = this.elementRef.nativeElement.querySelector(`[data-testid="abwab-tree-row-${doorId}"]`);
+      // jsdom gives elements no `scrollIntoView`, and the reveal must not throw where it is
+      // simply unavailable — the mark and the expand are the parts that carry the behavior.
+      row?.scrollIntoView?.({ block: 'nearest' });
+    });
+  }
+
+  private clearRevealTimer(): void {
+    if (this.revealTimer !== null) {
+      clearTimeout(this.revealTimer);
+      this.revealTimer = null;
+    }
   }
 
   protected onMenuRequested(request: AbwabTreeMenuRequest): void {

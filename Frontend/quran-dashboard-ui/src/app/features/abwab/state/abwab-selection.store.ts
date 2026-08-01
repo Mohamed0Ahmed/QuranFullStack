@@ -81,7 +81,18 @@ export class AbwabSelectionStore {
   }
 
   /** After every write (plan-slice-b.md §4.6): rebind every token by id from the fresh
-   * snapshot, dropping ids the write made vanish (M24). */
+   * snapshot, dropping ids the write made vanish (M24).
+   *
+   * "Vanished" includes **archived-in-snapshot**, and for the bulk set that is the only
+   * form it ever takes in production: an archive is a soft delete, and the builder keeps
+   * every archived door in `byId` (it builds `archivedRoots` too), so a missing-only test
+   * drops nothing and leaves a just-archived door in the set with a freshly rebound
+   * version — which the next bulk submit sends, earning an all-or-nothing 404.
+   *
+   * The single selection deliberately keeps the missing-only rule: an archived single
+   * selection is already cleared by the archive-confirm flow and by the URL's own
+   * scope-invalidation, and the archive view needs the selection to survive to offer
+   * restore. Bulk is the only place a stale id reaches a write. */
   rebindTo(snapshot: AbwabTreeSnapshotVm): void {
     this.state.update((current) => {
       const selectedNode =
@@ -90,7 +101,7 @@ export class AbwabSelectionStore {
       const nextBulk = new Map<number, number>();
       for (const doorId of current.bulkSet.keys()) {
         const node = snapshot.byId.get(doorId);
-        if (node) {
+        if (node && !node.isArchived) {
           nextBulk.set(doorId, node.version);
         }
       }

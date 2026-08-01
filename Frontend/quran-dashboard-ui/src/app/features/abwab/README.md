@@ -46,8 +46,13 @@ nine), four of them reads.
   (RTL-mirrored per the `qd-tabs` precedent: ArrowLeft expands/enters, ArrowRight
   collapses/exits). Renders **flat** (one row per visible node, `aria-level` conveys
   depth) rather than nesting `role="group"` per level. Inline reorder editing (click
-  the order number → input, Enter commits, Escape reverts) dispatches through
-  `reorderDoor`. Rows carry the contract's two hover actions (`abwab-tree-concept.html:114`,
+  the order number → input) dispatches through `reorderDoor`, and **Enter is the only
+  commit — blur and Escape both cancel.** Blur used to commit; that made clicking away
+  from a half-typed number resequence a scope the user never confirmed, and it is the one
+  grammar in this feature where an unconfirmed value could be written. Enter-only matches
+  the workshop's two inline authoring rows, which already commit on Enter with no submit
+  button (see below). Saying "Enter commits, Escape reverts" and staying silent on blur is
+  what let the two drift apart, so all three are named here. Rows carry the contract's two hover actions (`abwab-tree-concept.html:114`,
   `:436-443`): `＋` (add child) and `⋯` (open the row menu), revealed on hover and on the
   selected row, hidden in bulk mode, and kept out of the tab order so the roving-tabindex
   invariant holds. `⋯`, right-click, and the keyboard `ContextMenu`/`Shift+F10` path all
@@ -57,9 +62,27 @@ nine), four of them reads.
   buttons in (Slice A, phase 6 — both `abwab-page` and `abwab-templates-page` compose it now,
   each keeping only its own page-specific items and, for the templates workshop, the
   root-vs-node item swap).
-  A row with live relations also carries the `.flag.rel` chip («علاقات», `relationCount > 0`
-  only); the archive view and the cards render no flag, since an archived door's visible
-  relation count is always 0.
+  **Every** row carries the «علاقات» flag, and it is a control: dimmed to a muted hairline at
+  zero, accent-tinted once the door has relations, and clicking it emits `relationsRequested`,
+  which the page turns into select-the-door-then-open-the-relations-modal. It renders at zero
+  too because a flag that only appears when there is something to see cannot answer "does this
+  door have relations?" — the absent state was indistinguishable from a door the user had not
+  looked at. Like the two row actions it is `tabindex="-1"`, so the roving-tabindex invariant
+  holds, and it is inert in bulk mode, where a row click means "toggle this door". The archive
+  view and the cards still render no flag, since an archived door's visible relation count is
+  always 0 (see the derivation in the Gotchas).
+  A branch row carries **three** count badges: direct live children (the design contract's
+  own, `abwab-tree-concept.html:107`), total live descendants at any depth, and the deepest
+  live nesting below the door (`ع3` = three levels). The last two are a commissioned
+  extension of the contract, not a missed line. All three are live-only, both derivations are
+  memoized on the node by `abwab-tree.builder.ts`, and each carries its own Arabic
+  `aria-label`, since on screen they are bare numerals — a chain of three and a fan of three
+  both show `3` descendants but `ع3` vs `ع1`, and the label is where that meaning lives.
+  **Row width priority, widest to narrowest: name > order pill > actions > children count >
+  descendants/depth badges > flag.** The name is the only shrinkable item (`.qd-truncate`);
+  everything else is `flex: none`. Below `$qd-bp-tablet-max` the descendants and depth badges
+  are dropped rather than everything being squeezed — the contract's own children count
+  survives at every width.
 - `components/abwab-cards/` — the drill-down grid: `cardId` names only the
   drilled-into parent (not a full path array) — the breadcrumb chain is derived by
   walking `parentId` up from it via `byId`, so the URL never needs an array. Fails
@@ -158,6 +181,10 @@ nine), four of them reads.
   makes the label state the opposite of what the row stores in one of the two modes. The
   picker's expand chevron is a real tab stop with `aria-expanded` — search auto-expand is a
   convenience, not the keyboard path to a nested door.
+  **Each related door's name is a control** (Slice D): it composes `qd-chip`'s
+  `labelClickable` opt-in, so one chip carries two independent controls — reveal that door in
+  the tree, or remove the relation — and emits `revealRequested` with the *other* door's id.
+  The modal knows nothing about the tree, the URL, or scope; the page owns all of that.
 - `components/abwab-announcer/` — one `aria-live="polite"` `role="status"` region for
   operation messages; a feature-scoped stand-in for a toast primitive this one
   feature does not warrant (`plan-slice-b.md` §4.1).
@@ -205,6 +232,36 @@ nine), four of them reads.
 | `door` | positive int | no selection |
 | `card` | positive int (the drilled-into parent — the breadcrumb chain is derived from it, not stored as an array) | the top card level |
 | `q` | free text | no search |
+
+**Reveal-in-tree writes only the keys above — the contract gains no seventh key.** A
+relation chip's name reveals that door in the doors tree, and every state it can be in is
+folded into **one** `buildAbwabQueryParams` patch, so there is one navigation and no race:
+`door` always; `section` **only when a section tab is active and it is not the target's**
+(«كل الأبواب» already shows every door, so narrowing to the target's tab there would be
+gratuitous — and an explicit `door` in the same change survives the scope-invalidation
+clear, which is what makes the cross-section case one navigation instead of two);
+`view: 'tree'` when the cards drill is open, since the item is reveal-in-*tree*; and `q`
+cleared when a search is filtering, because a reveal that leaves its target pruned by
+`pruneAbwabNodesToVisible` breaks the promise the click makes.
+
+Three things about it are load-bearing and easy to undo by accident:
+
+- **The mark and the scroll are keyed off the param emission, not the click.** The rows
+  that must exist for either to mean anything are rendered by the change detection that
+  emission triggers — and in the cross-section, cards and search cases they do not exist
+  before it at all.
+- **The ancestor chain is *seeded* into the tree's manual expansion, not forced.**
+  `forceExpandedIds` is unioned with manual toggles and cannot be collapsed, so a reveal
+  routed through it would lock the target's ancestors open for the rest of the session.
+  `expandSeedIds` merges once and hands the chevrons straight back to the user.
+- **The highlight is an outline, never a tint** — `--qd-selected-bg` *is*
+  `--qd-accent-tint`, and the reveal always lands on the row it just selected, so a tint
+  would be invisible by construction. See `UI_STYLE_SYSTEM.md` §17 "Reveal highlight".
+
+The archived/missing guard is defensively unreachable — the relations read hides any
+relation whose endpoint is archived, and the archive view offers no relations entry point —
+and exists anyway, so an impossible state is a visible non-action with an announcement
+rather than a silent broken reveal.
 
 **`/abwab/templates` carries no URL state at all** — no selected-template key, no expanded
 set. Deliberate: every key above is a documented contract with a fail-closed parse and a
@@ -303,6 +360,17 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   regardless of scope, so no frontend code changes because of this — but it does mean a narrower,
   scope-only refresh would no longer be safe. Skipping the refresh reproduces spurious `409`s on
   the very next write.
+- **"Dropping ids that vanished" means archived, not missing — for the bulk set.** The §4.6
+  rebind rule reads as if a vanished door leaves the snapshot; none does. An archive is a soft
+  delete, and `abwab-tree.builder.ts` sets **every** door into `byId`, archived ones included
+  (it builds `archivedRoots` through the same `build()`), so the naive `if (node)` test never
+  fired in production: a just-archived door stayed in the bulk set with a **freshly rebound**
+  version. Nothing looked stale, and the next bulk submit sent it — the writer loads live rows
+  only, the count mismatches, and the whole all-or-nothing operation 404s on the generic
+  «الباب غير موجود». `rebindTo` therefore tests `node && !node.isArchived` for the bulk set, and
+  `AbwabWriteController` filters the refs again at submit. The **single** selection keeps the
+  missing-only rule on purpose: the archive-confirm flow and the URL's scope invalidation
+  already clear it, and the archive view needs it to survive so restore has a subject.
 - **Two independent root orders: superset vs section.** Root doors carry a second, independent
   order, `globalOrderValue`, used **only** by «كل الأبواب» (the superset —
   `activeSectionId() === null`); every section tab keeps ordering and editing by `orderValue`, and
@@ -413,12 +481,15 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **Labels use the TDZ getter pattern**, same as `features/words/README.md`: read
   `abwab.labels.ts` consts via component **getters**, never `readonly` field
   initialisers, or they resolve to `undefined` in the bundled test build.
-- **Zero dead controls.** Nothing for protection or the «الأبواب الرئيسية» tab, anywhere
-  in this feature. Relations became real controls with `abwab-relations`, and **templates
-  became real with `abwab-templates`**: «القوالب» in the doors header routes to a
-  workshop backed by nine live endpoints, so the rule now holds by the entry existing
-  rather than by its absence. The tree's `.flag.rel` chip is the one deliberate
-  non-control — it is a chip, not a button, with no tab stop and no click handler.
+- **Zero dead controls, and now no exception.** Nothing for protection or the «الأبواب
+  الرئيسية» tab, anywhere in this feature. Relations became real controls with
+  `abwab-relations`, and **templates became real with `abwab-templates`**: «القوالب» in the
+  doors header routes to a workshop backed by nine live endpoints, so the rule holds by the
+  entry existing rather than by its absence. The tree's relations flag used to be the one
+  deliberate non-control — a chip with no tab stop and no handler. It is a button now
+  (Slice D), so what the rule protects is stated positively instead: **every affordance that
+  looks pressable is**, and the only things this feature renders as inert are pure data: the
+  row's count badges.
 - **Relations get no entry point and no flag in the archive view — derived, not decided.** Every
   archived door's visible relation count is always 0 (the backend hides a relation whose endpoint
   is archived, `Reads/Abwab/README.md`), so a flag there would be permanently absent and a menu

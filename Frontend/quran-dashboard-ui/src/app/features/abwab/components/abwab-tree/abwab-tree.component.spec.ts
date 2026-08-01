@@ -5,6 +5,7 @@ import { AbwabTreeComponent, AbwabTreeMenuRequest } from './abwab-tree.component
 import { AbwabTreeDoorDto } from '../../../../core/api/generated/models/abwab-tree-door-dto';
 import { AbwabTreeDto } from '../../../../core/api/generated/models/abwab-tree-dto';
 import { buildAbwabTreeSnapshot } from '../../state/abwab-tree.builder';
+import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string }): AbwabTreeDoorDto {
   return {
@@ -28,7 +29,7 @@ function tree(doors: AbwabTreeDoorDto[]) {
 }
 
 const SAMPLE = tree([
-  door({ id: 1, name: 'جذر-1', orderValue: 1 }),
+  door({ id: 1, name: 'جذر-1', orderValue: 1, relationCount: 3 }),
   door({ id: 2, name: 'ابن', parentId: 1, orderValue: 1 }),
   door({ id: 3, name: 'جذر-2', orderValue: 2 }),
 ]);
@@ -219,7 +220,7 @@ describe('AbwabTreeComponent', () => {
     });
   });
 
-  describe('M29 — inline order editing commits on Enter and reverts on Escape', () => {
+  describe('M29 — inline order editing commits on Enter; blur and Escape both cancel', () => {
     it('commits a new position on Enter, tagged with the section scope by default', () => {
       const fixture = render();
       const committed: Array<{ id: number; position: number; scope: string }> = [];
@@ -261,6 +262,49 @@ describe('AbwabTreeComponent', () => {
       expect(committed).toHaveLength(0);
       expect(root.querySelector('[data-testid="abwab-tree-order-input-1"]')).toBeNull();
       expect(root.querySelector('[data-testid="abwab-tree-order-1"]')?.textContent?.trim()).toBe('1');
+    });
+
+    it('cancels without emitting when the input loses focus after typing', () => {
+      const fixture = render();
+      const committed: unknown[] = [];
+      fixture.componentInstance.orderCommitted.subscribe((event: unknown) => committed.push(event));
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-order-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      const input = root.querySelector('[data-testid="abwab-tree-order-input-1"]') as HTMLInputElement;
+      input.value = '99';
+      input.dispatchEvent(new FocusEvent('blur'));
+      fixture.detectChanges();
+
+      expect(committed).toHaveLength(0);
+      expect(root.querySelector('[data-testid="abwab-tree-order-input-1"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-tree-order-1"]')?.textContent?.trim()).toBe('1');
+    });
+
+    // The real browser sequence: Enter commits, the input unmounts under the focused element,
+    // and a blur fires on the way out. Exactly one emission, and no cancel undoing it.
+    it('emits exactly once when the blur follows an Enter commit', () => {
+      const fixture = render();
+      const committed: unknown[] = [];
+      fixture.componentInstance.orderCommitted.subscribe((event: unknown) => committed.push(event));
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-order-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      const input = root.querySelector('[data-testid="abwab-tree-order-input-1"]') as HTMLInputElement;
+      input.value = '5';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      input.dispatchEvent(new FocusEvent('blur'));
+      fixture.detectChanges();
+
+      expect(committed).toEqual([{ id: 1, position: 5, scope: 'section' }]);
     });
   });
 
@@ -328,4 +372,137 @@ describe('AbwabTreeComponent', () => {
       expect(committed).toEqual([{ id: 2, position: 9, scope: 'section' }]);
     });
   });
+
+  describe('audit item 13 — the relations flag is on every row and is a control', () => {
+    it('renders on a row with no relations, dimmed, and names the count for a screen reader', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const empty = root.querySelector('[data-testid="abwab-tree-flag-rel-3"]') as HTMLElement;
+      expect(empty).toBeTruthy();
+      expect(empty.classList.contains('abwab-tree__flag--empty')).toBe(true);
+      expect(empty.getAttribute('aria-label')).toBe(ABWAB_LABELS.rowRelationsAriaLabel('جذر-2', 0));
+      expect(empty.getAttribute('aria-label')).toContain('لا علاقات');
+    });
+
+    it('renders undimmed with the count in its name on a row that has relations', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const flag = root.querySelector('[data-testid="abwab-tree-flag-rel-1"]') as HTMLElement;
+      expect(flag.classList.contains('abwab-tree__flag--empty')).toBe(false);
+      expect(flag.getAttribute('aria-label')).toBe(ABWAB_LABELS.rowRelationsAriaLabel('جذر-1', 3));
+      expect(flag.getAttribute('aria-label')).toContain('3 علاقات');
+    });
+
+    it('emits relationsRequested with the row id, and does not select or open the row menu', () => {
+      const fixture = render();
+      const requested: number[] = [];
+      const selected: number[] = [];
+      const menus: AbwabTreeMenuRequest[] = [];
+      fixture.componentInstance.relationsRequested.subscribe((id: number) => requested.push(id));
+      fixture.componentInstance.selected.subscribe((id: number) => selected.push(id));
+      fixture.componentInstance.menuRequested.subscribe((r: AbwabTreeMenuRequest) => menus.push(r));
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-flag-rel-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+
+      expect(requested).toEqual([1]);
+      // The page does the selecting, off `relationsRequested` — the tree must not also emit
+      // `selected`, or the click would run the select-then-act sequence twice.
+      expect(selected).toHaveLength(0);
+      expect(menus).toHaveLength(0);
+    });
+
+    it('is inert in bulk mode, and the click never reaches the row’s bulk toggle', () => {
+      const fixture = render({ bulkMode: true });
+      const requested: number[] = [];
+      const toggled: number[] = [];
+      fixture.componentInstance.relationsRequested.subscribe((id: number) => requested.push(id));
+      fixture.componentInstance.bulkToggled.subscribe((id: number) => toggled.push(id));
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-flag-rel-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+
+      expect(requested).toHaveLength(0);
+      expect(toggled).toHaveLength(0);
+    });
+
+    it('adds no tab stop to the row', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const flags = [...root.querySelectorAll('[data-testid^="abwab-tree-flag-rel-"]')];
+      expect(flags.length).toBeGreaterThan(0);
+      expect(flags.every((el) => el.getAttribute('tabindex') === '-1')).toBe(true);
+    });
+  });
+
+  describe('§17 — the bulk checkbox composes the shared class and names its door', () => {
+    it('carries qd-checkbox and an aria-label naming the row’s door', () => {
+      const fixture = render({ bulkMode: true });
+      const root = fixture.nativeElement as HTMLElement;
+
+      const checkbox = root.querySelector('[data-testid="abwab-tree-checkbox-1"]');
+      expect(checkbox?.classList.contains('qd-checkbox')).toBe(true);
+      expect(checkbox?.getAttribute('aria-label')).toBe('جذر-1');
+    });
+  });
+
+  describe('audit item 14 — the row’s three count badges', () => {
+    it('renders all three on a branch row, reading the builder’s values', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-count-1"]')?.textContent?.trim()).toBe('1');
+      expect(root.querySelector('[data-testid="abwab-tree-descendants-1"]')?.textContent?.trim()).toBe('1');
+      expect(root.querySelector('[data-testid="abwab-tree-depth-1"]')?.textContent?.trim()).toBe(
+        ABWAB_LABELS.rowDepthBadge(1),
+      );
+    });
+
+    it('renders none of them on a leaf row', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-count-3"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-tree-descendants-3"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-tree-depth-3"]')).toBeNull();
+    });
+
+    // Bare numerals on screen, so the accessible name is the only place the meaning lives —
+    // and the two counts must not read as the same thing to a screen reader.
+    it('names each badge distinctly, pinning "levels below this door" for the depth one', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-count-1"]')?.getAttribute('aria-label')).toBe(
+        ABWAB_LABELS.rowChildCountAriaLabel(1),
+      );
+      expect(root.querySelector('[data-testid="abwab-tree-descendants-1"]')?.getAttribute('aria-label')).toBe(
+        ABWAB_LABELS.rowDescendantCountAriaLabel(1),
+      );
+      expect(root.querySelector('[data-testid="abwab-tree-depth-1"]')?.getAttribute('aria-label')).toBe(
+        ABWAB_LABELS.rowDepthAriaLabel(1),
+      );
+      expect(ABWAB_LABELS.rowChildCountAriaLabel(1)).not.toBe(ABWAB_LABELS.rowDescendantCountAriaLabel(1));
+    });
+
+    // The media query itself is untestable in jsdom; what a spec can pin is that exactly the
+    // two badges this slice added carry the class the query drops, and the contract's own
+    // direct-children count does not.
+    it('marks only the two new badges as the ones that drop below the tablet breakpoint', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-count-1"]')?.classList.contains('abwab-tree__count--wide')).toBe(false);
+      expect(root.querySelector('[data-testid="abwab-tree-descendants-1"]')?.classList.contains('abwab-tree__count--wide')).toBe(true);
+      expect(root.querySelector('[data-testid="abwab-tree-depth-1"]')?.classList.contains('abwab-tree__count--wide')).toBe(true);
+    });
+  });
+
 });

@@ -4,6 +4,7 @@
     @if (node) {
       <div
         class="abwab-tree__row"
+        [class.abwab-tree__row--revealed]="revealedId() === node.id"
         role="treeitem"
         [attr.aria-level]="node.depth + 1"
         [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
@@ -19,8 +20,9 @@
         @if (bulkMode()) {
           <input
             type="checkbox"
-            class="abwab-tree__checkbox"
+            class="qd-checkbox"
             [checked]="bulkSelectedIds().has(node.id)"
+            [attr.aria-label]="node.name"
             [attr.data-testid]="'abwab-tree-checkbox-' + node.id"
             (click)="onCheckboxClick($event, node.id)"
           />
@@ -47,26 +49,51 @@
             [attr.data-testid]="'abwab-tree-order-input-' + node.id"
             (click)="$event.stopPropagation()"
             (keydown)="onOrderKeydown($event, node.id)"
-            (blur)="commitOrderEdit(node.id, $event.target)"
+            (blur)="cancelOrderEdit(node.id)"
           />
         } @else {
           <span
-            class="abwab-tree__order"
+            class="abwab-tree__order qd-chip qd-chip--pill"
             [attr.data-testid]="'abwab-tree-order-' + node.id"
             (click)="onOrderClick($event, node.id)"
             >{{ displayOrder(node) }}</span
           >
         }
 
-        <span class="abwab-tree__name">{{ node.name }}</span>
+        <span class="abwab-tree__name qd-truncate" [title]="node.name">{{ node.name }}</span>
         @if (row.hasChildren) {
-          <span class="abwab-tree__count">{{ node.liveChildCount }}</span>
+          <span
+            class="abwab-tree__count qd-chip__count"
+            [attr.aria-label]="childCountAriaLabel(node.liveChildCount)"
+            [attr.data-testid]="'abwab-tree-count-' + node.id"
+            >{{ node.liveChildCount }}</span
+          >
+          <span
+            class="abwab-tree__count abwab-tree__count--wide qd-chip__count"
+            [attr.aria-label]="descendantCountAriaLabel(node.liveDescendantCount)"
+            [attr.data-testid]="'abwab-tree-descendants-' + node.id"
+            >{{ node.liveDescendantCount }}</span
+          >
+          <span
+            class="abwab-tree__count abwab-tree__count--wide qd-chip__count"
+            [attr.aria-label]="depthAriaLabel(node.maxRelativeDepth)"
+            [attr.data-testid]="'abwab-tree-depth-' + node.id"
+            >{{ depthBadge(node.maxRelativeDepth) }}</span
+          >
         }
-        @if (node.relationCount > 0) {
-          <span class="abwab-tree__flags">
-            <span class="abwab-tree__flag" [attr.data-testid]="'abwab-tree-flag-rel-' + node.id">{{ relationsFlagLabel }}</span>
-          </span>
-        }
+        <span class="abwab-tree__flags">
+          <button
+            type="button"
+            class="abwab-tree__flag qd-chip qd-chip--pill"
+            [class.abwab-tree__flag--empty]="node.relationCount === 0"
+            [attr.aria-label]="relationsAriaLabel(node.name, node.relationCount)"
+            [attr.data-testid]="'abwab-tree-flag-rel-' + node.id"
+            [attr.tabindex]="-1"
+            (click)="onFlagClick($event, node.id)"
+          >
+            {{ relationsFlagLabel }}
+          </button>
+        </span>
 
         @if (!bulkMode()) {
           <span class="abwab-tree__actions">

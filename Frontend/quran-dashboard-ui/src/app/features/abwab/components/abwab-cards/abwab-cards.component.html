@@ -2,8 +2,9 @@
   <nav class="abwab-cards__crumbs" [attr.aria-label]="allDoorsCrumbLabel">
     <button
       type="button"
-      class="abwab-cards__crumb"
+      class="abwab-cards__crumb qd-truncate"
       [class.abwab-cards__crumb--current]="crumbs().length === 0"
+      [title]="allDoorsCrumbLabel"
       data-testid="abwab-cards-crumb"
       (click)="onCrumbClick(null)"
     >
@@ -13,8 +14,9 @@
       <span class="abwab-cards__crumb-sep" aria-hidden="true">‹</span>
       <button
         type="button"
-        class="abwab-cards__crumb"
+        class="abwab-cards__crumb qd-truncate"
         [class.abwab-cards__crumb--current]="$last"
+        [title]="crumb.name"
         data-testid="abwab-cards-crumb"
         (click)="onCrumbClick(crumb.id)"
       >
@@ -36,15 +38,16 @@
         @if (bulkMode()) {
           <input
             type="checkbox"
-            class="abwab-cards__checkbox"
+            class="abwab-cards__checkbox qd-checkbox"
             [checked]="bulkSelectedIds().has(node.id)"
+            [attr.aria-label]="node.name"
             [attr.data-testid]="'abwab-card-checkbox-' + node.id"
             (click)="onCheckboxClick($event, node.id)"
           />
         }
         <div class="abwab-cards__title">
           <span class="abwab-cards__order">{{ displayOrder(node) }}</span>
-          {{ node.name }}
+          <span class="abwab-cards__name qd-truncate" [title]="node.name">{{ node.name }}</span>
         </div>
         <div class="abwab-cards__meta">
           {{ node.children.length > 0 ? node.liveChildCount : '' }}
