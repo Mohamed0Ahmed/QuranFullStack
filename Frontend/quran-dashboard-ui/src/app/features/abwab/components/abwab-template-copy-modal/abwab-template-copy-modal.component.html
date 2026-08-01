@@ -24,7 +24,11 @@
         }
 
         <div class="abwab-template-copy-modal__preview" data-testid="abwab-template-copy-modal-preview">
-          <p>{{ previewText() }}</p>
+          @if (hasElements()) {
+            <p>{{ previewText() }}</p>
+          } @else {
+            <qd-state variant="empty" [message]="emptyTemplateText" data-testid="abwab-template-copy-modal-empty" />
+          }
           <p>{{ previewNoRootText }}</p>
           <p>{{ previewDetachedText }}</p>
         </div>
@@ -52,7 +56,7 @@
           <button
             type="button"
             class="qd-btn qd-btn-primary"
-            [disabled]="pickedIds().size === 0"
+            [disabled]="!hasElements() || pickedIds().size === 0"
             data-testid="abwab-template-copy-modal-confirm"
             (click)="confirm()"
           >

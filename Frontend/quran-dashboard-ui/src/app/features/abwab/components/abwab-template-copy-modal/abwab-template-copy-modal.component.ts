@@ -14,13 +14,17 @@ let nextModalId = 0;
 
 /**
  * «نسخ إلى أبواب…» — the multi-target picker for applying a template
- * (`abwab-templates-concept.html:142-160`). The preview states the whole contract before the
- * write: what each target gains, that a copy can never be a root door, and — the sentence the
- * mockup does not have — that the copies are independent of the template from birth (plan §5.6).
+ * (`abwab-templates-concept.html:142-160`, superseded by the ux-slice-g reversal below). The
+ * preview states the whole contract before the write: each target gains the template's
+ * elements (never the root itself, since ux-slice-g), that a copy can never be a root door, and
+ * — the sentence the mockup does not have — that the copies are independent of the template
+ * from birth (plan §5.6).
  *
  * The picker lists live doors only and offers no root-level option, which is what makes the
  * route's empty-targets `400` unreachable through the UI; the refusal exists so the route is not
- * a hole, not because a control leads to it.
+ * a hole, not because a control leads to it. The writer's empty-template `400` is the same kind
+ * of guarantee — this modal's `hasElements` affordance only makes it legible before the write; it
+ * is a courtesy, not the check (§4.2-11).
  */
 @Component({
   selector: 'qd-abwab-template-copy-modal',
@@ -57,6 +61,7 @@ export class AbwabTemplateCopyModalComponent {
   protected readonly pickedIds = signal<ReadonlySet<number>>(new Set());
 
   protected get descriptionText(): string { return ABWAB_LABELS.templateCopyDescription; }
+  protected get emptyTemplateText(): string { return ABWAB_LABELS.templateCopyEmptyTemplate; }
   protected get previewNoRootText(): string { return ABWAB_LABELS.templateCopyPreviewNoRoot; }
   protected get previewDetachedText(): string { return ABWAB_LABELS.templateCopyPreviewDetached; }
   protected get searchPlaceholder(): string { return ABWAB_LABELS.templateCopySearchPlaceholder; }
@@ -71,6 +76,11 @@ export class AbwabTemplateCopyModalComponent {
   protected readonly previewText = computed(() =>
     ABWAB_LABELS.templateCopyPreview(this.templateName(), this.templateNodeCount()),
   );
+
+  /** A courtesy, not the guarantee: the writer's empty-template `400` is authoritative. This only
+   * keeps a stale list from showing a disabled-looking confirm that would otherwise still promise
+   * copies a template that has since lost its last child cannot produce (§4.2-11). */
+  protected readonly hasElements = computed(() => this.templateNodeCount() > 0);
 
   /** The picker's own empty/loading/error block only renders when it has no rows, so mapping the
    * two snapshot inputs onto the status is exhaustive: whatever is not loading or failed is the

@@ -133,3 +133,16 @@ route's `SmokeRouteCatalog` entry needed no edit, and the parity gate agrees.
 (§4.2-3): the request shape is unchanged, the response type is unchanged, and the controller
 carries no `[ProducesResponseType]`, so the new `400` adds nothing to the OpenAPI document.
 `git status --short` empty after the run — nothing to commit for this phase.
+
+## Phase 6 — T601-T603: the copy modal tells the truth
+
+- `templateCopyDescription` and `templateCopyPreview` rewritten to children-only wording;
+  `count` in the preview is untouched (§5.3/DRIFT-2). New `templateCopyEmptyTemplate`.
+  `templateCopyPreviewNoRoot`/`Detached`/`templateCopyConfirmButton` untouched.
+- `hasElements = computed(() => templateNodeCount() > 0)` added; the preview block swaps to a
+  `qd-state variant="empty"` when false, and the confirm button's `[disabled]` gains the
+  `!hasElements()` term alongside the existing `pickedIds().size === 0` term. No new SCSS rule —
+  `qd-state` fits the existing flex-column preview container.
+- `npm test -- --include="…/abwab-template-copy-modal/**/*.spec.ts"`: 11 passed, 0 failed —
+  unedited. The spec's default `templateNodeCount` fixture (4) keeps every existing case's
+  `hasElements()` true, so T602 could not have touched their outcomes.

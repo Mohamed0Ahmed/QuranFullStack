@@ -348,9 +348,10 @@ export const ABWAB_LABELS = {
   templateNodeContextEdit: (nodeName: string): string => `تعديل «${nodeName}»`,
 
   templateCopyTitle: (templateName: string): string => `نسخ «${templateName}»`,
-  templateCopyDescription: 'اختر الأبواب المستهدفة — القالب سيُنسخ كاملًا (بجذره وكل فروعه) داخل كل باب تختاره.',
+  templateCopyDescription: 'اختر الأبواب المستهدفة — عناصر القالب (بدون جذره) ستُنسخ داخل كل باب تختاره.',
   templateCopyPreview: (templateName: string, count: number): string =>
-    `كل باب مستهدف سيكسب ابنًا جديدًا: «${templateName}» وبداخله ${countPhrase(count, ELEMENT_FORMS)} بكامل تفرعها.`,
+    `كل باب مستهدف سيكسب ${countPhrase(count, ELEMENT_FORMS)} من «${templateName}» بكامل تفرعها — جذر القالب نفسه لا يُنسخ.`,
+  templateCopyEmptyTemplate: 'هذا القالب لا يحتوي عناصر — أضف عنصرًا واحدًا على الأقل قبل النسخ.',
   templateCopyPreviewNoRoot: 'لا يمكن النسخ كباب رئيسي — الهدف بابٌ موجود دائمًا.',
   // The single most likely wrong expectation this feature invites (plan §5.6), so it is stated
   // before the copy happens rather than discovered afterwards.
