@@ -16,11 +16,12 @@ create/delete, node add/edit/reorder/delete, and the apply).
 
 Renders the `GET api/abwab/tree` snapshot as a tree and as drill-down cards at `/abwab`,
 reads a door's relations from `GET api/abwab/doors/{doorId}/relations`, authors reusable door
-subtrees at `/abwab/templates`, and drives the **twenty** write endpoints — create, edit,
-move, reorder, bulk move, bulk archive, archive, restore, the three section commands,
+subtrees at `/abwab/templates`, and drives the **twenty-one** write endpoints — create, edit,
+move, reorder, bulk move, bulk archive, archive, restore, the four section commands (create,
+rename, reorder, delete),
 relations add/delete, template create/delete, template-node add/edit/reorder/delete, and the
 apply — with optimistic-concurrency conflicts (`409`) always surfaced, never swallowed or
-auto-retried. **Twenty-four** endpoints in all across the two data-access files (fifteen +
+auto-retried. **Twenty-five** endpoints in all across the two data-access files (sixteen +
 nine), four of them reads.
 
 ## Render chain & key pieces

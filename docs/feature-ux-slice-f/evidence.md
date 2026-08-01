@@ -166,3 +166,49 @@ fix and after) passed 23/23.
 Both manually-started dev servers were stopped after this pass (`kill` on the recorded PIDs, confirmed
 by `curl` timing out on both `:4200` and `:5015`), per the e2e README's own rule against a stray server
 outside Playwright's control.
+
+## T903 — Close-out sweep
+
+Full-repo grep for `twenty`, `20 write`, `create / rename / delete`, `doorsInScopeCount`, plus
+`Twenty-four`/`twenty-four` (added per the T901 review — the string this slice itself changed in
+`Controllers/README.md`), against `*.md`/`*.cs`/`*.ts`, excluding `node_modules`/`dist`/`bin`/`obj`:
+
+- **One real gap found and fixed** — the frontend `features/abwab/README.md`'s own "What this feature
+  does" paragraph (not the toolbar/sections-modal/refresh/stats-bar paragraphs Phase 8 already touched)
+  still read "**twenty** write endpoints… the **three** section commands… **Twenty-four** endpoints in
+  all… (fifteen + nine)". Fixed to twenty-one / four section commands (create, rename, reorder, delete)
+  / twenty-five / (sixteen + nine) — recounted directly from the two data-access files
+  (`grep -c "):\s*Observable<"` on `abwab.api.ts` → 16, `abwab-templates.api.ts` → 9, unchanged), not
+  copied from the other README's number.
+- **Every other hit is either a live doc already true** (the two backend READMEs, this frontend README
+  now, all reading twenty-one/twenty-five consistently) **or historical, left as-is per repo law**:
+  closed-slice `docs/feature-ux-slice-c/evidence.md`, `docs/feature-ux-slice-d/evidence.md`,
+  `docs/feature-abwab-doors/plan.md`, `docs/feature-abwab-templates/plan.md`,
+  `docs/feature-abwab-relations/plan.md`, `docs/abwab-ux-audit.md`, `docs/feature-ux-slice-b/{plan,evidence}.md`,
+  and this slice's own `plan.md` (the Precondition/DRIFT tables are measurements taken *at plan time*,
+  not living facts — the established convention every prior slice's plan.md already follows).
+  `doorsInScopeCount` hits are all the still-correct, unchanged DTO field and its consumers/tests
+  (verified true, not touched, in Phase 8's `Reads/Abwab/README.md` check) — none needed a change.
+- The Active-Feature record in root `CLAUDE.md` stays pointed at `ux-slice-f` — it clears at merge, not
+  before (§ root `CLAUDE.md`, "Active Spec Kit Feature").
+
+## Close-out summary
+
+| | Baseline (T101) | Close (T901/T903) |
+|---|---|---|
+| Backend: no-pipeline regression | 1086 passed | 1086 passed — unchanged |
+| Backend: route-smoke tier | 140 passed | 140 passed — unchanged, both parity directions hold |
+| Backend: `Tests.Smoke.Data` | **RAN** (13 passed, dump present) | **RAN** (13 passed, same dump) |
+| Backend: `check-api-contract` | clean | clean (re-verified after every regeneration and again at close) |
+| Frontend: unit tests | 193 files / 2316 tests | 193 files / 2343 tests (+27, explained in T901) |
+| Frontend: `npm run build` | clean, 2 pre-existing budget warnings | clean, same 2 warnings, none new |
+| Frontend: `npx playwright test --project=abwab` | not run (pre-existing, unmeasured) | **23/23**, twice (before and after the T902 focus-fix) |
+| `Reads/Abwab/README.md` | — | verify-only, confirmed still true, no edit |
+| Docs true again | — | 3 backend/frontend READMEs, `UI_STYLE_SYSTEM.md` §17, `TESTING_DEBT.md` (F1-F3), all cross-checked in T903 |
+
+**22 plan tasks, all closed.** One out-of-scope defect (T602 follow-up focus-loss on a real reorder) found
+by T902's browser pass and fixed in the same branch, not deferred, because it directly undermines the
+plan's own stated accessibility goal for the feature it just shipped. All 18 items in `plan.md` §9's
+obligations checklist verified individually against the phase evidence above and the actual diff (zero
+migration files, zero `EfAbwabDoorsWriter.cs` edits, `shared/` untouched, fork cap unchanged — each
+checked directly, not assumed). Ready for PR into `dev` — no `dev → main` merge, per plan §2/§3.
