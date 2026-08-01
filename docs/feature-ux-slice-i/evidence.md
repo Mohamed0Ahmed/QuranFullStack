@@ -98,3 +98,40 @@ resequence touched, not a structural change. No other data was written.
 This is the whole Phase 2 correctness core, and **nothing on the wire changed**: same statuses,
 same envelopes, no `ETag`, no `Cache-Control`. It is the plan's recorded split seam — revertable
 without any client noticing.
+
+## Phase 3 — The conditional HTTP surface
+
+| Gate | Result |
+|---|---|
+| `dotnet build` | Succeeded, 0 warnings, 0 errors. |
+| `Tests.Api` | 60 passed, 0 failed, 0 skipped. 14 s — unchanged from T101. |
+| **Route-smoke tier** | **140 passed**, 0 failed, **0 skipped**. 48 s. |
+| **`Tests.Smoke.Data`** | **RAN** (0 skipped of 140 — the dump was present, same gate as T101). |
+| `SmokeRouteCatalog` | **Unedited** — `git status` shows no test file in the Phase 3 diff. No route was added and no verb/template/constraint changed, so no entry was owed (DRIFT-6), and the three catalogued read entries still pass because the smoke client sends no `If-None-Match`. |
+
+### The §6a matrix, observed on the wire (`curl`, local dataset)
+
+The tree validator at the time of the run was `"abwab-tree-8292fd82-0"` — boot id `8292fd82`,
+generation `0`.
+
+| §6a row | Request | Observed |
+|---|---|---|
+| 1 / 5 | `GET /api/abwab/tree`, no header | `200`, 140,188 B, `ETag: "abwab-tree-8292fd82-0"`, `Cache-Control: no-store` |
+| 2 | same, `If-None-Match:` current validator | **`304`, 0 bytes**, `ETag` + `Cache-Control: no-store` present |
+| 2 (cost) | the `304` above, EF `Executed DbCommand` count before/after | **8 → 8 — zero database queries on the `304` path** |
+| 4 | `If-None-Match: "garbage"` | `200`, full body — fail-open |
+| 4 | `If-None-Match: *` | `200`, full body — the deliberate RFC deviation |
+| 4 (list form) | `If-None-Match: "nope", "abwab-tree-8292fd82-0"` | `304` — exact member match inside a list |
+| resource scoping | templates-list validator sent to `GET /api/abwab/tree` | `200` — a list validator cannot `304` another resource |
+| resource scoping | templates-list validator sent to `GET /api/abwab/templates/3` | `200`, 965 B |
+| 1 / 2 (templates) | list: `200` + `ETag: "abwab-templates-8292fd82-0"`; then matching → `304`, 0 B. Detail id 3: `200` + `ETag: "abwab-template-3-8292fd82-0"`; then matching → `304`, 0 B |
+| `404` arm | `GET /api/abwab/templates/999999` | `404` with **no `ETag` and no `Cache-Control`** — an absence has no representation to validate |
+| **7 — the just-wrote client** | captured `"abwab-tree-8292fd82-0"`, `POST /api/abwab/sections` (`201`), then re-GET **with the pre-write validator** | **`200`, 140,271 B, `ETag: "abwab-tree-8292fd82-1"`** — the trap the design exists to prevent did not fire |
+| generation independence | captured the tree validator, `POST /api/abwab/templates` (`201`), then re-GET the tree with it | `304` — a templates write leaves the tree generation alone |
+
+Both probe rows (`__probe-2` section, `__probe-template`) were deleted afterwards (`204` each);
+no probe data remains.
+
+**T303 (CORS).** `.WithExposedHeaders(HeaderNames.ETag)` added to the `AngularDev` policy.
+`curl` is same-origin-blind, so this is asserted where it can actually fail — T503's browser
+walk records whether the facade stored a non-null validator.
