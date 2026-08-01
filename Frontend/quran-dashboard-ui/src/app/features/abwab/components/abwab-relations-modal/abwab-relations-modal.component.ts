@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 
 import { AbwabDoorPickerComponent } from '../abwab-door-picker/abwab-door-picker.component';
 import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
+import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
+import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
@@ -66,7 +68,15 @@ let nextModalId = 0;
 @Component({
   selector: 'qd-abwab-relations-modal',
   standalone: true,
-  imports: [A11yModule, AbwabDoorPickerComponent, QdChipComponent, ModalScrollLockDirective, QdStateComponent],
+  imports: [
+    A11yModule,
+    AbwabDoorPickerComponent,
+    ModalScrollLockDirective,
+    QdChipComponent,
+    QdStateComponent,
+    QdTabDirective,
+    QdTabsComponent,
+  ],
   templateUrl: './abwab-relations-modal.component.html',
   styleUrl: './abwab-relations-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -106,6 +116,7 @@ export class AbwabRelationsModalComponent {
   protected get descriptionText(): string { return ABWAB_LABELS.relationsModalDescription; }
   protected get emptyText(): string { return ABWAB_LABELS.relationsEmpty; }
   protected get directionLabel(): string { return ABWAB_LABELS.relationDirectionLabel; }
+  protected get typeTabsAriaLabel(): string { return ABWAB_LABELS.relationTypeTabsAriaLabel; }
   protected get searchPlaceholder(): string { return ABWAB_LABELS.relationPickerPlaceholder; }
   protected get alreadyLinkedLabel(): string { return ABWAB_LABELS.relationAlreadyLinked; }
   protected get noneSelectedLabel(): string { return ABWAB_LABELS.relationNoneSelected; }

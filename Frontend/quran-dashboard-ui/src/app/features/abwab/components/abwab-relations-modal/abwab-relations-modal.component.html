@@ -17,7 +17,9 @@
         <h3 [id]="titleId">
           {{ titleText() }}
           @if (!anchorPickMode()) {
-            <span class="abwab-relations-modal__count" data-testid="abwab-relations-modal-count">{{ relations().length }}</span>
+            <span class="qd-chip qd-chip--pill qd-chip--static" data-testid="abwab-relations-modal-count">
+              {{ relations().length }}
+            </span>
           }
         </h3>
         <p class="abwab-relations-modal__desc">{{ descriptionText }}</p>
@@ -31,7 +33,7 @@
         @if (anchorPickMode()) {
           <div class="abwab-relations-modal__targets" data-testid="abwab-relations-modal-targets">
             @for (target of bulkTargets(); track target.id) {
-              <span class="abwab-relations-modal__target">{{ target.name }}</span>
+              <span class="abwab-relations-modal__target qd-truncate" [title]="target.name">{{ target.name }}</span>
             }
           </div>
         } @else {
@@ -64,13 +66,12 @@
 
         <div class="abwab-relations-modal__add-title">{{ addTitle }}</div>
 
-        <div class="abwab-relations-modal__types" role="group">
+        <qd-tabs [ariaLabel]="typeTabsAriaLabel" class="abwab-relations-modal__types">
           @for (kind of typeOptions; track kind) {
             <button
               type="button"
-              class="abwab-relations-modal__type"
-              [class.abwab-relations-modal__type--active]="type() === kind"
-              [attr.aria-pressed]="type() === kind"
+              qdTab
+              [selected]="type() === kind"
               [attr.data-testid]="'abwab-relations-modal-type-' + kind"
               (click)="pickType(kind)"
             >
@@ -78,7 +79,7 @@
               {{ typeLabel(kind) }}
             </button>
           }
-        </div>
+        </qd-tabs>
 
         @if (directionRowVisible()) {
           <div class="abwab-relations-modal__direction" data-testid="abwab-relations-modal-direction">

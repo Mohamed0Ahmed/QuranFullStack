@@ -172,6 +172,7 @@ export const ABWAB_LABELS = {
   relationGroupLessComprehensive: 'أبواب أقل شمولية',
 
   relationAddTitle: 'إضافة علاقة جديدة',
+  relationTypeTabsAriaLabel: 'نوع العلاقة',
   relationTypeSimilarity: 'تشابه',
   relationTypeOpposition: 'تضاد',
   relationTypeComprehensiveness: 'شمولية',
