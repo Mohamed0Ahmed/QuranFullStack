@@ -1,3 +1,4 @@
+using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Application.Abstractions.Abwab.Responses;
 using QuranDashboard.Application.Abwab.Commands.Templates.ApplyTemplate;
 using QuranDashboard.Application.Abwab.Commands.Templates.CreateTemplate;
@@ -14,12 +15,21 @@ public sealed class AbwabTemplatesController(
     GetTemplateHandler getTemplateHandler,
     CreateTemplateHandler createTemplateHandler,
     DeleteTemplateHandler deleteTemplateHandler,
-    ApplyTemplateHandler applyTemplateHandler) : ControllerBase
+    ApplyTemplateHandler applyTemplateHandler,
+    IAbwabCacheValidators validators) : ControllerBase
 {
     [HttpGet("templates")]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<AbwabTemplateSummaryDto>>>> GetAll(
         CancellationToken cancellationToken)
     {
+        var etag = validators.TemplatesListETag();
+        ConditionalGet.SetValidatorHeaders(Response, etag);
+
+        if (ConditionalGet.Matches(Request, etag))
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
         var outcome = await getTemplatesHandler.HandleAsync(new GetTemplatesQuery(), cancellationToken);
 
         return outcome switch
@@ -34,12 +44,22 @@ public sealed class AbwabTemplatesController(
     public async Task<ActionResult<ApiResponse<AbwabTemplateDto>>> Get(
         int templateId, CancellationToken cancellationToken)
     {
+        var etag = validators.TemplateETag(templateId);
+
+        if (ConditionalGet.Matches(Request, etag))
+        {
+            ConditionalGet.SetValidatorHeaders(Response, etag);
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
         var outcome = await getTemplateHandler.HandleAsync(new GetTemplateQuery(templateId), cancellationToken);
 
+        // A 404 carries no validator headers: there is no representation to validate, and an ETag on an
+        // absence would invite a client to revalidate a resource it never had.
         return outcome switch
         {
             GetTemplateOutcome.Success success =>
-                Ok(ApiResponse<AbwabTemplateDto>.Ok(success.Template, ApiMessages.AbwabTemplateLoaded)),
+                OkWithValidator(ApiResponse<AbwabTemplateDto>.Ok(success.Template, ApiMessages.AbwabTemplateLoaded), etag),
             GetTemplateOutcome.NotFound =>
                 NotFound(ApiResponse<AbwabTemplateDto>.Fail(ApiMessages.AbwabTemplateNotFound)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetTemplateOutcome)} variant."),
@@ -110,5 +130,11 @@ public sealed class AbwabTemplatesController(
                     ApiMessages.AbwabTemplateApplyCollisionWith(collision.Collisions))),
             _ => throw new InvalidOperationException($"Unhandled {nameof(ApplyTemplateOutcome)} variant."),
         };
+    }
+
+    private OkObjectResult OkWithValidator<T>(ApiResponse<T> body, string etag)
+    {
+        ConditionalGet.SetValidatorHeaders(Response, etag);
+        return Ok(body);
     }
 }
