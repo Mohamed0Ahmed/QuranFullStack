@@ -111,3 +111,27 @@ pre-existing thinness as about what this slice adds to it.
 
 H4 is the honest one to flag: the posture's logic applies to it same as the rest, but the file,
 fixture, and pattern all exist, so the marginal cost is a fraction of H1-H3.
+
+## ux-slice-i (branch `ux-slice-i`, 2026-08-02)
+
+Posture: **no new test suites**, rush-period decision (plan §4.1-8). Every existing suite ran
+before merge, including the route-smoke tier — required here because response semantics changed on
+three existing routes — with `Tests.Smoke.Data` **RAN** stated for both runs
+(`docs/feature-ux-slice-i/evidence.md`). No `SmokeRouteCatalog` entry was owed: no route was added
+and the smoke client sends no `If-None-Match`, so every catalogued expectation still holds.
+
+Stated plainly: this is the series' highest-risk correctness work — the backend's first
+invalidation machinery and the frontend's first conditional request — and the posture gives the
+**new** behavior zero automated coverage. All of it rides on the browser walk recorded in
+`evidence.md` plus the smoke tier's "unconditional requests still answer as catalogued" guarantee.
+
+| # | Uncovered area | Where | Pays it |
+|---|---|---|---|
+| I1 | **The generation lifecycle** — capture-before-load never serving a validator newer than its data; the `finally` bump firing on the partially-committed implicit-transaction paths; boot-scoped validators never colliding across restarts. All three hold by construction and are asserted by nothing | `Infrastructure/Caching/Abwab/` | The next cached resource, **or** the multi-instance migration (`Persistence/Reads/Abwab/README.md`) — a shared-generation implementation has to prove exactly these properties anyway |
+| I2 | **The conditional-GET contract of the three reads** — match → `304` bodiless with `ETag` + `Cache-Control`, mismatch → `200` + fresh `ETag`, malformed and `*` → fail-open `200`, `404` with no validator headers, and the `304` path running zero queries. All three routes are already catalogued, so these are additional dispatched cases, not new entries | `Tests/Smoke/` | When write protection lands and `/api/abwab` stops being `Open` (the standing trigger for every abwab smoke row), **or** the next change to any conditional read |
+| I3 | **The facades' `304` path** — keeps value and validator, sets no error, ends loading; the id-keyed selected validator never travels across templates and is dropped by `clearSelection`. Assertable today with no new harness: these specs stub the api object, so a `304` is `throwError(() => new HttpErrorResponse({ status: 304 }))` and a validator round-trip is `of(new HttpResponse({ body, headers }))` — **not** `HttpTestingController.flush`, which these specs do not use. Cheapest row here | `abwab-snapshot.facade.spec.ts`, `abwab-templates.facade.spec.ts` | The next change to either facade or to the api layer's response shape |
+| I4 | **The just-wrote invariant end to end** — load `/abwab`, rename a door, assert the refetch was a `200` (not a `304`) and the new name renders. The whole design exists for this row and only a browser proves it | `e2e/` | The next write path added to abwab, or the multi-instance migration — both re-open the ordering question |
+
+I3 is the honest one to flag: unlike H's rows it needs no browser and no new harness, and the two
+spec files it names were already edited in this slice for the response-shape change. Deferring it
+is a choice, not a constraint.

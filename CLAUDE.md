@@ -203,10 +203,7 @@ enterprise greige.
 
 ## Active Spec Kit Feature
 
-`ux-slice-i` — the abwab cache slice (no Spec Kit workspace; planned outside `specs/`).
-
-- Plan: `docs/feature-ux-slice-i/plan.md`
-- Evidence: `docs/feature-ux-slice-i/evidence.md`
+None.
 
 - When a feature opens, record it here as: feature slug, its `specs/<feature>/plan.md`, and
   its `docs/feature-XXX-*/` decision record. Clear this section back to "None" when the
