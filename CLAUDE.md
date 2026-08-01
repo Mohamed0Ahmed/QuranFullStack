@@ -203,8 +203,12 @@ enterprise greige.
 
 ## Active Spec Kit Feature
 
-None.
-
+- `ux-slice-h` — navbar (UX audit item 22): «الأبواب» becomes a hover dropdown with three
+  children («الرئيسية», «قوالب الأبواب», «الأرشيف»), generalizing the words dropdown into a
+  data-driven `NavItem.children` branch instead of a second hard-coded special case; the
+  flat mobile list gains all children (words and abwab). Plan and evidence:
+  `docs/feature-ux-slice-h/plan.md`, `docs/feature-ux-slice-h/evidence.md`. No `specs/`
+  workspace — this slice is plan-driven, not Spec Kit.
 - When a feature opens, record it here as: feature slug, its `specs/<feature>/plan.md`, and
   its `docs/feature-XXX-*/` decision record. Clear this section back to "None" when the
   feature closes and its planning artifacts are swept per the lifecycle rule above.
