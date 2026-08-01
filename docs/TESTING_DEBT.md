@@ -64,3 +64,16 @@ most: it crosses the template writes, the deep copy, the doors read, and detachm
 preserved every `data-testid` through a `testIdPrefix` input precisely so that spec keeps
 pinning the behavior it always pinned. The form has no spec of its own, and does not need one
 while that remains true.
+
+## ux-slice-f (branch `ux-slice-f-sections`, 2026-08-01)
+
+Posture: **no new test suites**, rush-period decision (plan §4.1-6). Existing suites ran before
+merge; the route-smoke tier is exempt from the posture and ran regardless (not debt-able, see
+above). Nothing in this feature's evidence claims backend behavioral coverage for the new writer
+method — the frontend cells in Phases 5-7 do claim coverage for what they assert.
+
+| # | Uncovered area | Where | Pays it |
+|---|---|---|---|
+| F1 | **The section reorder writer's behavior** — contiguous `1..N` across every live section, first→last and last→first, single-section no-op, out-of-range refusal, the stale-token 409, and the sibling-token 409 that makes the resequence all-or-nothing | `Persistence/Writes/Abwab/EfAbwabSectionsWriter.ReorderAsync` | The next change to the sections writer, **or** the fix for the `CountAsync + 1` / non-resequencing-delete gap (F2) — both have to re-derive these rules anyway. `AbwabDoorWriteBehaviorTests.cs` (`ReorderAsync_ProducesContiguousOrderValues`) is the shape it copies |
+| F2 | **The duplicate-`OrderValue` condition itself** — create assigns `count(live) + 1` while delete resequences nothing, so two live sections can share an `OrderValue`; nothing anywhere asserts the reorder stays correct under it, and nothing asserts the heal | `EfAbwabSectionsWriter.cs` (`CreateAsync`, `DeleteAsync`) | Whoever fixes the create/delete gap. Until then the correctness rests entirely on the `(OrderValue, Id)` tie-break (`Writes/Abwab/README.md`), which is documented and untested |
+| F3 | **Section reorder smoke** — the `200`/`400`/`404`/`409` status and envelope contract of the new route (catalogued `ParityOnly`, i.e. listed but not dispatched). The doors cases at `SmokeAbwabWriteTests.cs` are the template | When write protection lands and `/api/abwab` stops being `Open`: the auth cases force a dispatched test per route regardless |

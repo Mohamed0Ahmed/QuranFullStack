@@ -5,14 +5,14 @@
 ## What this area does
 
 `Persistence/Writes/` is the repository's **first** write area, and this folder is its only occupant:
-five writers back the twenty `/api/abwab` write endpoints
+five writers back the twenty-one `/api/abwab` write endpoints
 (`api/QuranDashboard.Api/Controllers/Abwab/`). The read sibling is `../../Reads/Abwab/`. Conventions
 established here are the precedent for every later write feature — change them deliberately, not
 incidentally.
 
 ## Key pieces
 
-- `EfAbwabSectionsWriter` — create / rename / delete-empty. Implements `IAbwabSectionsWriter`.
+- `EfAbwabSectionsWriter` — create / rename / reorder / delete-empty. Implements `IAbwabSectionsWriter`.
 - `EfAbwabDoorsWriter` — create / edit / move / reorder / bulk-move / bulk-archive / archive / restore.
   Implements `IAbwabDoorsWriter`.
 - `EfAbwabRelationsWriter` — add N relations in one call / soft-delete one. Implements
@@ -72,6 +72,17 @@ incidentally.
     `AbwabDoorWriteBehaviorTests` has a discriminating test for each.
   - Restore is the only write that puts a row **back into** a scope, so it renumbers too. Its scope was
     left at `1..N-1` by the archive that removed the door.
+- **`EfAbwabSectionsWriter.ReorderAsync` resequences the WHOLE table, not a scope — sections have
+  one order space, not `(section_id, parent_id)`.** Every reorder therefore stales every other live
+  section's `xmin`, exactly like a `Global` door reorder; the frontend's refresh-after-write
+  invariant (`features/abwab/README.md`) is what keeps the next write correct, not anything here.
+  **The ordered read tie-breaks on `Id`, not a bare `OrderBy(OrderValue)`** — a deliberate deviation
+  from `EfAbwabDoorsWriter`'s section-scope reorder, because `EfAbwabTreeReader` tie-breaks the same
+  way (`../../Reads/Abwab/README.md`) and `CreateAsync`'s `count(live) + 1` alongside `DeleteAsync`'s
+  non-resequencing delete leave duplicate `OrderValue`s reachable today. Matching the reader's own
+  order is what makes "position 3" mean the third row on screen even while a duplicate exists — the
+  reorder also heals the sequence back to `1..N` whenever it runs. That duplicate-`OrderValue`
+  condition is not fixed here (`docs/TESTING_DEBT.md` rows F1/F2); it is worked around.
 - **Archive claims a subtree; restore returns exactly what that archive claimed.** `ArchiveSubtreeAsync`
   only touches **live** descendants, so a descendant archived earlier by a separate operation is not part
   of the claim. `RestoreAsync` therefore matches descendants on the archive's own `deleted_at` timestamp,

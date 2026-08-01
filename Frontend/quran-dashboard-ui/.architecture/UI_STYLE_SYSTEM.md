@@ -706,6 +706,12 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   disabled is non-interactive and drops out of the roving tab order.
 - **Backing classes:** `.qd-tabs`, `.qd-tabs__tab`, `.qd-tabs__tab.qd-is-selected`,
   `.qd-tabs__count`. Compose, do not re-style.
+- **Count meta (`.qd-tabs__count`):** rendered by the call-site's template, not by `qdTab` —
+  the directive is host-bindings-only and cannot project a child element. Latin digits,
+  `tabular-nums`; **always** rendered, dimmed at zero via `.qd-tabs__count--empty` (opacity
+  only, so it composes with the selected-state rule instead of forking a second one). The
+  visible digits are `aria-hidden="true"`; the tab's own `aria-label` carries the accessible
+  count (item 19 of the abwab UX audit).
 
 ### `qd-chip`
 - **Purpose:** the one selectable/informational chip (filters, association

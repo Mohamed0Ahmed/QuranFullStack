@@ -58,7 +58,18 @@ nine), four of them reads.
   `qd-tabs`/`qdTab`, **no** «الأبواب الرئيسية» tab per `plan.md` §5.1), the name+alias
   search box, and the tree/cards view toggle. `hideSectionControls` hides the tabs and
   the view toggle while the archive view is active — they have no live section
-  grouping to act on there — leaving only search, which still filters the archive tree.
+  grouping to act on there — leaving only search, which still filters the archive tree
+  (so the archive view never grows a root-count badge either — there is no tab strip
+  there to carry one).
+  - **Item 19's root-count badge** renders `.qd-tabs__count` at the call-site on every
+    tab, composing `qd-tabs`'s backing class rather than adding a directive input —
+    `qdTab` stays a host-bindings-only directive and cannot project a child span.
+    **Root doors only** (`state/abwab-tree.builder.ts`'s `rootCountBySectionId`), a
+    different question from item 17's shipped `doorsInScopeCount` stat below, which
+    counts at any depth. Visible digits are Latin and `aria-hidden`; the tab's own
+    `aria-label` carries the counted-noun phrase (`ROOT_DOOR_FORMS`
+    in `models/abwab.labels.ts`) so the two numbers are distinguishable in the
+    accessible layer, not only by convention.
 - `components/abwab-tree/` — presentational tree (`role="tree"`/`treeitem`, full ARIA,
   roving tabindex) + `abwab-tree-keyboard.controller.ts`, a pure, DOM-free key model
   (RTL-mirrored per the `qd-tabs` precedent: ArrowLeft expands/enters, ArrowRight
@@ -124,17 +135,28 @@ nine), four of them reads.
   a collapsible tree (every door at any depth is already a valid target — see
   Gotchas). `excludedIds` is the moved door(s) plus every descendant, the client half of
   the cycle guard; the server's `409 WouldCycle` stays authoritative.
-- `components/abwab-sections-modal/` — list / add / rename / delete-empty, with full
+- `components/abwab-sections-modal/` — list / add / rename / reorder / delete-empty, with full
   dialog semantics and a dirty guard as of Slice C (a typed section name or an altered
   rename draft raises the door modal's confirm strip; an opened-but-unedited rename is
   not dirty). **Its drafts live on the component, and the page hosts it as a static
   sibling, so it must reset them on open** — unlike the door modal, whose drafts sit in
   a child that `@if (open())` destroys. Skip that reset and «تجاهل التغييرات» hides the
-  draft instead of discarding it. Takes its three write functions as inputs (bound by the page to
+  draft instead of discarding it. Takes its four write functions as inputs (bound by the page to
   `state/abwab-sections.controller.ts`) rather than injecting a service, so its own spec
   exercises the 409/success outcomes without the facade/controller chain. Rename always
   reads the section's row from the live `sections` input at submit time, never a value
   captured when edit mode opened.
+  - **The order editor (Slice F, item 18) reuses the tree's editor grammar**: click the
+    order chip → an `<input type="number" min="1">`, **Enter commits, blur and Escape
+    both cancel**, seeded from and submitted against the section's *live* row exactly
+    like rename. Its own `editingOrderId` signal is separate from `editingId` — an open
+    order edit is **not** unsaved work, so it does not raise the dirty guard. Its trigger
+    is a real `<button>`, not the tree's `<span>`: the modal's rows already carry real
+    buttons for rename/delete, and reusing the tree's dead `<span>` here would be a step
+    backward. **The Escape guard is mandatory, not cosmetic**: the dialog itself binds
+    `(keydown.escape)="requestClose()"`, so the editor's keydown handler opens with
+    `event.stopPropagation()` — without it, Escape-to-cancel-an-edit would close the
+    whole modal (and write `modal=sections-closed` to the URL, post-Slice-E).
 - `components/abwab-door-fields-form/` — the four authoring fields shared by a door and
   a template node (name/description/ayah-text/alias chips, composing the extended
   `qd-chip` with its `removable` affordance — the second allowed-green fix), their dirty
@@ -441,7 +463,11 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   resequences its scope to `1..N`, which bumps every sibling's `xmin` too. A root-affecting
   write additionally maintains the global order (below) in the same request, which resequences
   **every live root everywhere** — so after any such write, the stale version tokens are not
-  confined to one scope at all. `abwab-write.controller.ts` refetches the whole snapshot and
+  confined to one scope at all. **A section reorder is the same shape, table-wide**: sections
+  have one order space (not per-scope like doors), so `EfAbwabSectionsWriter.ReorderAsync`
+  resequences every live section on every call (`Writes/Abwab/README.md`) — the second
+  whole-scope resequencer in this feature, after the doors' `Global` reorder.
+  `abwab-write.controller.ts` refetches the whole snapshot and
   rebinds every cached version (`abwab-selection.store.ts#rebindTo`) after every success
   regardless of scope, so no frontend code changes because of this — but it does mean a narrower,
   scope-only refresh would no longer be safe. Skipping the refresh reproduces spurious `409`s on
@@ -568,6 +594,10 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   per-branch loaders used to (§4.6-adjacent). Neither label goes through `countPhrase`: the shared
   component renders a "label: N" data-display line (the four words explorers' own precedent), not
   a counted-noun sentence, so the bare-count rule below does not reach it.
+  **Item 19's tab badge (below) answers a different question and must never be asserted to agree
+  with either stat** — «12» beside the toolbar and «3» on a tab are both correct at once, because
+  one counts all depths and the other counts root doors only; no test or doc may treat them as the
+  same number reused twice.
 - **Counted door labels go through the Arabic number forms.** `archiveConfirm` and
   `movePickerTitleBulk` share one helper covering singular («باب واحد»), dual («بابين»),
   3–10 («N أبواب») and 11+ («N بابًا»). Do not interpolate a bare count into new copy —

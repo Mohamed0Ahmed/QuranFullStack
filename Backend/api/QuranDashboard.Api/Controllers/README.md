@@ -6,15 +6,15 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 ## Route families
 
 - `Abwab/` — `api/abwab/sections`, `api/abwab/doors`, `api/abwab/relations`, `api/abwab/templates`,
-  and `api/abwab/template-nodes` (twenty write
-  routes: create/rename/delete on sections; create/edit/move/reorder/bulk-move/bulk-archive/delete/
+  and `api/abwab/template-nodes` (twenty-one write
+  routes: create/rename/reorder/delete on sections; create/edit/move/reorder/bulk-move/bulk-archive/delete/
   restore on doors; add-N and delete-one on relations; create/delete plus apply on templates; and
   add/edit/reorder/delete on template nodes) plus four reads — `api/abwab/tree` (one
   versioned snapshot: sections + doors, archived doors included and flagged, aliases, per-door
   direct-child and relation counts, per-section live-doors count, no paging),
   `api/abwab/doors/{doorId}/relations` (one door's visible relations, `404` for an unknown door,
   `200` with `[]` for a door with none), and `api/abwab/templates` + `api/abwab/templates/{templateId}`
-  (the admin-only door templates and one template's flat node list). Twenty-four routes in all. All routes are
+  (the admin-only door templates and one template's flat node list). Twenty-five routes in all. All routes are
   `Open` — this is the repository's first write surface and it ships without authentication in Slice A
   (see feature plan §9/§10); it must not reach production before a write policy attaches. Optimistic
   concurrency is `uint xmin`, surfaced as `409` in the shared envelope. Creating a door under a parent
