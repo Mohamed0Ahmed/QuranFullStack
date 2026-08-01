@@ -75,12 +75,29 @@ const TARGET_FORMS: ArabicCountForms = {
   many: 'بابًا مستهدفًا',
 };
 
+/** Item 19's badge — ROOT doors, distinct from the plain `DOOR_FORMS` above (item 17's
+ * all-depths stat), because the adjective «رئيسي» changes agreement with the count form and
+ * cannot be concatenated onto `DOOR_FORMS` (§4.2-13). No zero form: the badge's own zero-state
+ * is a visual dim (`--empty`), not a distinct accessible phrase. */
+const ROOT_DOOR_FORMS: ArabicCountForms = {
+  one: 'باب رئيسي واحد',
+  two: 'بابان رئيسيان',
+  few: 'أبواب رئيسية',
+  many: 'بابًا رئيسيًا',
+};
+
 export const ABWAB_LABELS = {
   pageTitle: 'الأبواب',
   pageSubtitle: 'هيكل التصنيفات القرآنية — كل عملية تتم في مكانها.',
 
   allDoorsTab: 'كل الأبواب',
   sectionTabsAriaLabel: 'أقسام الأبواب',
+  // Item 19's badge digits are Latin and aria-hidden (§17's count-meta convention) — the tab
+  // itself carries the accessible name, distinct from item 17's shipped stat («أبواب») so a
+  // screen reader hears which question is being answered (root doors, not all-depth doors).
+  tabRootCountAriaLabel: (sectionName: string, count: number): string =>
+    `«${sectionName}»: ${countPhrase(count, ROOT_DOOR_FORMS)}`,
+  allDoorsTabRootCountAriaLabel: (count: number): string => `كل الأبواب: ${countPhrase(count, ROOT_DOOR_FORMS)}`,
   // Item 17's stats bar (Slice B2, T1003/T1004): `allDoorsTab` above doubles as the total stat's
   // label — it is already the right noun phrase and reusing it keeps one string per concept. The
   // open-scope stat needs its own, distinct label because it names a different quantity (a

@@ -24,6 +24,11 @@ export class AbwabToolbarComponent {
   readonly activeSectionId = input<number | null>(null);
   readonly view = input<AbwabView>('tree');
   readonly searchQuery = input('');
+  /** Item 19 — root doors per section (state/abwab-tree.builder.ts), and the total for «كل
+   * الأبواب». Not derivable from `sections` here: `doorsInScopeCount` on the DTO answers a
+   * different question (all depths, item 17's shipped stat) — see abwab.labels.ts. */
+  readonly rootCountBySectionId = input<ReadonlyMap<number, number>>(new Map());
+  readonly totalRootCount = input(0);
   /** The archive view has no live section grouping (plan.md §4.5) — tabs and the
    * tree/cards toggle would be inert controls there, so the caller hides them,
    * keeping only search (matrix M4/M31: search still filters the archive tree). */
@@ -39,6 +44,18 @@ export class AbwabToolbarComponent {
   protected get searchPlaceholder(): string { return ABWAB_LABELS.searchPlaceholder; }
   protected get treeViewLabel(): string { return ABWAB_LABELS.viewToggleTree; }
   protected get cardsViewLabel(): string { return ABWAB_LABELS.viewToggleCards; }
+
+  protected rootCountFor(sectionId: number): number {
+    return this.rootCountBySectionId().get(sectionId) ?? 0;
+  }
+
+  protected sectionCountAriaLabel(sectionName: string, sectionId: number): string {
+    return ABWAB_LABELS.tabRootCountAriaLabel(sectionName, this.rootCountFor(sectionId));
+  }
+
+  protected get allDoorsCountAriaLabel(): string {
+    return ABWAB_LABELS.allDoorsTabRootCountAriaLabel(this.totalRootCount());
+  }
 
   protected selectSection(sectionId: number | null): void {
     this.sectionChanged.emit(sectionId);

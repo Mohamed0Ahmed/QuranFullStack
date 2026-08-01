@@ -105,7 +105,11 @@ describe('AbwabPageComponent', () => {
 
     it('only lists real (non-derived) sections as tabs — an archived door never manufactures a tab', () => {
       const root = render().nativeElement as HTMLElement;
-      const tabLabels = Array.from(root.querySelectorAll('[role="tab"]')).map((el) => el.textContent?.trim());
+      // The tab's visible label is its leading text node; the count badge (item 19) is a
+      // sibling <span> appended after it, so a bare textContent read would include the count.
+      const tabLabels = Array.from(root.querySelectorAll('[role="tab"]')).map(
+        (el) => el.childNodes[0]?.textContent?.trim(),
+      );
       expect(tabLabels).toEqual(['كل الأبواب', 'اللغة العربية']);
     });
   });

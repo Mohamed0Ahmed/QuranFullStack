@@ -197,6 +197,53 @@ describe('buildAbwabTreeSnapshot', () => {
       expect(root.maxRelativeDepth).toBe(1);
     });
   });
+
+  describe('item 19 — rootCountBySectionId', () => {
+    it('counts roots only — a nested door in the section does not count', () => {
+      const snapshot = buildAbwabTreeSnapshot(
+        tree([
+          door({ id: 1, name: 'root', sectionId: 5 }),
+          door({ id: 2, name: 'child', parentId: 1, sectionId: 5 }),
+        ]),
+      );
+
+      expect(snapshot.rootCountBySectionId.get(5)).toBe(1);
+    });
+
+    it('excludes archived roots', () => {
+      const snapshot = buildAbwabTreeSnapshot(
+        tree([
+          door({ id: 1, name: 'live-root', sectionId: 5 }),
+          door({ id: 2, name: 'archived-root', sectionId: 5, isArchived: true }),
+        ]),
+      );
+
+      expect(snapshot.rootCountBySectionId.get(5)).toBe(1);
+    });
+
+    it('omits a section with no roots rather than zero-defaulting an entry', () => {
+      const snapshot = buildAbwabTreeSnapshot(tree([door({ id: 1, name: 'root', sectionId: 5 })]));
+
+      expect(snapshot.rootCountBySectionId.has(9)).toBe(false);
+    });
+
+    // §4.2-12's non-identity: a live root with sectionId === null contributes to no entry, so
+    // the map's sum can be strictly less than liveRoots.length — «كل الأبواب» must read the
+    // latter, never Σ over this map.
+    it('sums to less than liveRoots.length when a root sits outside every section', () => {
+      const snapshot = buildAbwabTreeSnapshot(
+        tree([
+          door({ id: 1, name: 'in-section', sectionId: 5 }),
+          door({ id: 2, name: 'outside-every-section', sectionId: null }),
+        ]),
+      );
+
+      expect(snapshot.liveRoots).toHaveLength(2);
+      const total = Array.from(snapshot.rootCountBySectionId.values()).reduce((sum, n) => sum + n, 0);
+      expect(total).toBe(1);
+      expect(total).toBeLessThan(snapshot.liveRoots.length);
+    });
+  });
 });
 
 describe('filterAbwabRootsBySection — M3', () => {

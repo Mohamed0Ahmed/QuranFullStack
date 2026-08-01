@@ -5,20 +5,34 @@
         type="button"
         qdTab
         [selected]="activeSectionId() === null"
+        [attr.aria-label]="allDoorsCountAriaLabel"
         data-testid="abwab-toolbar-tab-all"
         (click)="selectSection(null)"
       >
         {{ allDoorsTabLabel }}
+        <span
+          class="qd-tabs__count"
+          [class.qd-tabs__count--empty]="totalRootCount() === 0"
+          aria-hidden="true"
+          data-testid="abwab-toolbar-tab-all-count"
+        >{{ totalRootCount() }}</span>
       </button>
       @for (section of sections(); track section.id) {
         <button
           type="button"
           qdTab
           [selected]="activeSectionId() === section.id"
+          [attr.aria-label]="sectionCountAriaLabel(section.name, section.id)"
           [attr.data-testid]="'abwab-toolbar-tab-' + section.id"
           (click)="selectSection(section.id)"
         >
           {{ section.name }}
+          <span
+            class="qd-tabs__count"
+            [class.qd-tabs__count--empty]="rootCountFor(section.id) === 0"
+            aria-hidden="true"
+            [attr.data-testid]="'abwab-toolbar-tab-' + section.id + '-count'"
+          >{{ rootCountFor(section.id) }}</span>
         </button>
       }
     </qd-tabs>

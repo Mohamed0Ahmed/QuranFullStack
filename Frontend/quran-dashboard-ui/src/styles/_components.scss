@@ -224,6 +224,12 @@ button.qd-interactive-surface {
   color: var(--qd-accent-text);
 }
 
+// Opacity only (not background/color, which the selected-state rule above already owns) —
+// composes with both tab states instead of forking a second selected+empty rule.
+.qd-tabs__count--empty {
+  opacity: 0.5;
+}
+
 /* --- qd-chip (UI_STYLE_SYSTEM.md §17 qd-chip) --- */
 
 .qd-chip {

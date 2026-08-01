@@ -82,6 +82,8 @@
       [view]="viewParam()"
       [searchQuery]="searchQueryParam()"
       [hideSectionControls]="archiveParam()"
+      [rootCountBySectionId]="rootCountBySectionId()"
+      [totalRootCount]="totalRootCount()"
       (sectionChanged)="onSectionChanged($event)"
       (viewChanged)="onViewChanged($event)"
       (searchQueryChanged)="onSearchQueryChanged($event)"

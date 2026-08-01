@@ -134,6 +134,13 @@ export class AbwabPageComponent implements OnInit {
   protected readonly sections = computed(() => this.facade.snapshot()?.sections ?? []);
   protected readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
 
+  /** Item 19's badge inputs. `totalRootCount` is `liveRoots.length`, NOT a sum over
+   * `rootCountBySectionId` — a live root can sit outside every section (§4.2-12). */
+  protected readonly rootCountBySectionId = computed(
+    () => this.facade.snapshot()?.rootCountBySectionId ?? new Map<number, number>(),
+  );
+  protected readonly totalRootCount = computed(() => this.facade.snapshot()?.liveRoots.length ?? 0);
+
   /** «كل الأبواب» (no active section) is the superset — its own, independent order (plan.md §4). */
   protected readonly orderScope = computed<AbwabOrderScope>(() => (this.activeSectionId() === null ? 'global' : 'section'));
 

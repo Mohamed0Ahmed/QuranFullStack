@@ -52,3 +52,23 @@ describe('ABWAB_LABELS — Arabic number agreement on counted doors', () => {
     expect(ABWAB_LABELS.movePickerTitleBulk(count)).toBe(move);
   });
 });
+
+// Item 19's badge — ROOT_DOOR_FORMS, distinct from DOOR_FORMS (item 17) because the adjective
+// «رئيسي» carries its own agreement per count form (§4.2-13). No zero form is pinned: the
+// badge's zero-state is a visual dim, not a distinct accessible phrase.
+describe('ABWAB_LABELS — root-door count agreement on the tab badge (§4.2-13)', () => {
+  it.each([
+    [0, '«اللغة العربية»: 0 أبواب رئيسية'],
+    [1, '«اللغة العربية»: باب رئيسي واحد'],
+    [2, '«اللغة العربية»: بابان رئيسيان'],
+    [3, '«اللغة العربية»: 3 أبواب رئيسية'],
+    [10, '«اللغة العربية»: 10 أبواب رئيسية'],
+    [11, '«اللغة العربية»: 11 بابًا رئيسيًا'],
+  ])('count %i reads correctly in a section tab’s accessible name', (count, expected) => {
+    expect(ABWAB_LABELS.tabRootCountAriaLabel('اللغة العربية', count)).toBe(expected);
+  });
+
+  it('«كل الأبواب» names itself rather than a section', () => {
+    expect(ABWAB_LABELS.allDoorsTabRootCountAriaLabel(8)).toBe('كل الأبواب: 8 أبواب رئيسية');
+  });
+});

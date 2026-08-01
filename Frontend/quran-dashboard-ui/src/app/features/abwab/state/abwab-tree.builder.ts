@@ -93,10 +93,21 @@ export function buildAbwabTreeSnapshot(dto: AbwabTreeDto): AbwabTreeSnapshotVm {
     .sort(byOrderThenId)
     .map((d) => build(d, 0, true));
 
+  // Item 19: root doors per section, built alongside liveRoots in the same pass. A root with
+  // sectionId === null (outside every section) contributes to no entry — that is why Σ over
+  // this map is not liveRoots.length, and «كل الأبواب» must read the latter, not the sum.
+  const rootCountBySectionId = new Map<number, number>();
+  for (const root of liveRoots) {
+    if (root.sectionId !== null) {
+      rootCountBySectionId.set(root.sectionId, (rootCountBySectionId.get(root.sectionId) ?? 0) + 1);
+    }
+  }
+
   return {
     sections: dto.sections,
     liveRoots,
     archivedRoots,
+    rootCountBySectionId,
     byId,
     version: dto.version,
   };

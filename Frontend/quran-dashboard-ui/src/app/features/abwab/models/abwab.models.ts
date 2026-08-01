@@ -181,6 +181,10 @@ export interface AbwabTreeSnapshotVm {
   readonly sections: readonly AbwabTreeSectionDto[];
   readonly liveRoots: readonly AbwabNode[];
   readonly archivedRoots: readonly AbwabNode[];
+  /** Item 19 — ROOT doors only, per section. Not reconcilable with `liveRoots.length` by
+   * arithmetic: a live root can have `sectionId === null` (outside every section), so summing
+   * this map's values can be strictly less than the total (abwab-tree.builder.ts). */
+  readonly rootCountBySectionId: ReadonlyMap<number, number>;
   /** O(1) lookup for selection rebinding and search-ancestor walks. */
   readonly byId: ReadonlyMap<number, AbwabNode>;
   /** Diagnostics only — never used for conflict detection (plan-slice-b.md §7 T407). */
