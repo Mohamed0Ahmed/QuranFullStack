@@ -525,6 +525,31 @@ Each edit landed with its own phase; this is the check that none was missed.
 creates one. Its only abwab row is the relation-delete success path, which this slice does
 not touch. Stated here rather than by editing the file.
 
+## A defect the specs missed, found at close and fixed
+
+Worth recording as its own item, because a spec suite passed over it.
+
+**Reproduced in the browser:** reveal a nested door, collapse its ancestor **inside** the
+~3 s hold window, then reveal the *same* door again from the modal.
+
+```
+first reveal              row 720 rendered and marked
+collapse ancestor 336     row 720 gone            ← correct: the chain is collapsible
+second reveal (same door) row 720 NOT rendered    ← the mark lands on a row nobody can see
+```
+
+**Cause.** `revealTargetId.set(doorId)` with the value it already holds is a no-op write
+(`Object.is`), so the seed computed never recomputes, the tree's merge effect never fires,
+and the chain the user just collapsed stays collapsed. The existing collapsible-chain spec
+could not catch it: it collapses *once* and never reveals the same door twice.
+
+**Fix.** A `revealSequence` counter, bumped per reveal and read by the seed computed purely
+to invalidate it, plus a `revealPending` flag so the mark and the scroll re-arm on the
+emission that lands *this* reveal and not on any other navigation inside the hold window
+(a keystroke writing `q` also emits with `door` unchanged). Re-verified in the browser —
+`row720: true, revealed: true` on the second reveal — and pinned by a spec that reveals the
+same door twice with a collapse between.
+
 ## T904 — close-out sweep
 
 `grep -rn` across `src/`, `e2e/`, `docs/` and `specs/` for everything deleted:
@@ -550,19 +575,19 @@ contract, auth path or model binding was.
 | | baseline (T101) | closing (T901) | delta |
 |---|---|---|---|
 | test **files** | 193 | 193 | **0** |
-| tests | 2219 | 2258 | **+39** |
-| suite duration | 198.28 s | 211.07 s | +12.8 s |
+| tests | 2219 | 2259 | **+40** |
+| suite duration | 198.28 s | 203.42 s | +5.1 s |
 | build | complete, 3 pre-existing warnings | complete, the same 3 | — |
-| `abwab-page-component` chunk | 103.34 kB / 18.19 kB | 108.17 kB / 19.08 kB | +4.83 kB / +0.89 kB |
+| `abwab-page-component` chunk | 103.34 kB / 18.19 kB | 108.30 kB / 19.14 kB | +4.96 kB / +0.95 kB |
 
 Both runs exit 0. **Zero tests removed, zero spec files added** — every touched surface
 already had a spec, exactly as §4.2-10 predicted.
 
-**The +39 is above the plan's declared +15–30, so here is the whole of it:**
+**The +40 is above the plan's declared +15–30, so here is the whole of it:**
 
 | Spec | + | What |
 |---|---|---|
-| `abwab-page.component.spec.ts` | 8 | the reveal's five per-state patches, the superset case, the guard, the expand-and-mark, the collapsible-chain |
+| `abwab-page.component.spec.ts` | 9 | the reveal's five per-state patches, the superset case, the guard, the expand-and-mark, the collapsible-chain, the repeat-reveal defect below |
 | `abwab-tree.component.spec.ts` | 12 | blur-cancel + Enter-then-blur-once (2), flag states/click/bulk-inert/tabindex (5), badges (4), checkbox name (1) |
 | `chip.component.spec.ts` | 5 | the label-control opt-in, including projection in both arms |
 | `abwab-write.controller.spec.ts` | 4 | submit filter, 404-names-doors, empty-diff fallback, set-empties-after-success |

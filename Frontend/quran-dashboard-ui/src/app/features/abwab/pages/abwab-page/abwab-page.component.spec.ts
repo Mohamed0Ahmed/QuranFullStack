@@ -733,6 +733,31 @@ describe('AbwabPageComponent', () => {
       expect(root.querySelector('[data-testid="abwab-tree-row-3"]')?.classList.contains('abwab-tree__row--revealed')).toBe(true);
     });
 
+    // Found in the browser, not by a spec: collapse inside the hold window and reveal the
+    // same door again, and the naive version re-marks a row that is no longer on screen —
+    // setting revealTargetId to the value it already holds is a no-op write, so the seed
+    // never recomputes and the collapsed chain stays collapsed.
+    it('re-opens the chain when the same door is revealed twice with a collapse in between', () => {
+      const fixture = renderReveal({ section: '1' });
+      reveal(fixture, 3);
+      params$.next(convertToParamMap({ section: '1', door: '3' }));
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-chevron-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-tree-row-3"]')).toBeNull();
+
+      reveal(fixture, 3);
+      params$.next(convertToParamMap({ section: '1', door: '3' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-tree-row-3"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-tree-row-3"]')?.classList.contains('abwab-tree__row--revealed')).toBe(true);
+    });
+
     it('leaves the revealed chain collapsible — the expand is a seed, not a lock', () => {
       const fixture = renderReveal({ section: '1' });
       reveal(fixture, 3);

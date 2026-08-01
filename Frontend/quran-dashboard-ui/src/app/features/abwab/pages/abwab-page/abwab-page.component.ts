@@ -137,14 +137,22 @@ export class AbwabPageComponent implements OnInit {
   // released on a timer while the target survives until then, and because the mark must not
   // appear until the navigation it depends on has actually landed.
   private readonly revealTargetId = signal<number | null>(null);
+  /** Bumped on every reveal, and read by the seed computed purely to invalidate it. Without
+   * it, revealing the **same** door twice while the first reveal is still held is a no-op
+   * write (`Object.is`), the seed never recomputes, and a chain the user collapsed in between
+   * stays collapsed — leaving the reveal marking a row that is not on screen. */
+  private readonly revealSequence = signal(0);
   protected readonly revealedId = signal<number | null>(null);
   protected readonly revealAnnouncement = signal<string | null>(null);
   private revealTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Set when a reveal navigates, cleared by the param emission that lands it. */
+  private revealPending = false;
 
   /** The target's ancestor chain, walked up `parentId` the way the cards breadcrumb does.
    * Handed to the tree as a **seed**, not a force: forced-open ids cannot be collapsed, and a
    * reveal that locked the chain open would trade one bug for a worse one. */
   protected readonly revealExpandSeedIds = computed<ReadonlySet<number>>(() => {
+    this.revealSequence();
     const targetId = this.revealTargetId();
     if (targetId === null) {
       return NO_IDS;
@@ -238,8 +246,12 @@ export class AbwabPageComponent implements OnInit {
       // Any navigation retires a stale reveal message, so a failed reveal cannot outlive the
       // next thing that happens and mask a write's own announcement.
       this.revealAnnouncement.set(null);
+      // `revealPending` rather than "is nothing marked yet": within the hold window any other
+      // navigation (a keystroke writing `q`, say) also emits with `door` still equal to the
+      // target, and re-arming the mark and the scroll off that would be wrong.
       const revealTarget = this.revealTargetId();
-      if (revealTarget !== null && parsed.door === revealTarget && this.revealedId() === null) {
+      if (this.revealPending && revealTarget !== null && parsed.door === revealTarget) {
+        this.revealPending = false;
         this.startReveal(revealTarget);
       }
     });
@@ -364,6 +376,8 @@ export class AbwabPageComponent implements OnInit {
     }
     this.revealAnnouncement.set(null);
     this.revealTargetId.set(doorId);
+    this.revealSequence.update((n) => n + 1);
+    this.revealPending = true;
     this.updateQueryParams(
       buildAbwabQueryParams({
         door: doorId,
