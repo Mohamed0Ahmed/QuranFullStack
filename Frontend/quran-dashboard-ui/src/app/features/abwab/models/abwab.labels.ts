@@ -225,7 +225,7 @@ export const ABWAB_LABELS = {
     move: 'نقل الباب',
     sections: 'إدارة الأقسام',
     relations: 'علاقات الباب',
-  } as Record<AbwabModalKind, string>,
+  } satisfies Record<AbwabModalKind, string>,
   modalRestoreLabel: (kindName: string): string => `استعادة ${kindName}`,
   modalDiscardAriaLabel: (kindName: string): string => `تجاهل ${kindName}`,
 
