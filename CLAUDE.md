@@ -203,10 +203,8 @@ enterprise greige.
 
 ## Active Spec Kit Feature
 
-- `ux-slice-f` — sections (UX audit items 18-19): `POST api/abwab/sections/{id:int}/order`
-  plus the per-section root-door count badge on the tab strip. Plan and evidence:
-  `docs/feature-ux-slice-f/plan.md`, `docs/feature-ux-slice-f/evidence.md`. No `specs/`
-  workspace — this slice is plan-driven, not Spec Kit.
+None.
+
 - When a feature opens, record it here as: feature slug, its `specs/<feature>/plan.md`, and
   its `docs/feature-XXX-*/` decision record. Clear this section back to "None" when the
   feature closes and its planning artifacts are swept per the lifecycle rule above.
