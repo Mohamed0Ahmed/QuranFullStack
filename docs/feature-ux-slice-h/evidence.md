@@ -68,3 +68,77 @@ present from render, immune to the CD-timing race, while still resolving to exac
 open dropdown among several `.nav-dropdown` elements. Verified in the browser (click-to-open,
 outside-click-close, hover-open, mutual exclusion, Escape, mouseleave, hover-then-click-closes
 quirk — all pass) and confirmed the full suite is unaffected (193/2343, unchanged).
+
+## T501 — The browser walk
+
+Backend running against the local dev DB (Kestrel with the frontend's mkcert PEM, per the
+cert-mismatch setup note — otherwise every API call reads as a backend failure); frontend on
+`npm run start:https`. Desktop walk via `chrome-devtools-mcp` (real hover/click/keyboard
+events, 1440×900); mobile walk via the same tool's viewport emulation (390×844, `isMobile`).
+`resize_window`/`resize_page` alone did not change the actual CDP viewport in this
+environment — the `emulate` tool's `viewport` parameter (CDP `Emulation.setDeviceMetricsOverride`)
+is what worked; noted for any future browser-driven check in this repo.
+
+**Words parity (acceptance for §4.1-2):**
+- Hover opens (`mouseenter` on the `<li>`); click while hover-open closes — the shell-nav
+  hover-then-click quirk (`shell-nav.e2e.ts:15-16`) reproduced exactly.
+- `mouseleave` closes; confirmed live when clicking away from the trigger to a page button
+  closed the dropdown before the click's own action ran.
+- Escape closes (real `Escape` keypress via `chrome-devtools-mcp`).
+- Outside-click closes; clicking the trigger itself when closed opens it (see the Phase 3
+  finding above — this is the behavior the fix restores).
+- Opening «المزيد» while another menu is open closes the other (single `openMenuKey` field,
+  exclusion by construction) — verified both pairings.
+- Child link click navigates and closes the menu.
+- `aria-expanded` toggles; chevron rotates 180°.
+- Words children testids present: `nav-menu-link--words-{home,unique,roots,lemmas,stems,types}`.
+- Active state: `/dashboard/words/roots` lights the words parent trigger (`isMenuActive`,
+  `paths:'subset'`), matching §6a row 6.
+
+**Abwab dropdown:**
+- Three children render in order with the locked labels: «الرئيسية», «قوالب الأبواب»,
+  «الأرشيف» — screenshotted at 1440×900, RTL alignment (`inset-inline-start`) confirmed
+  correct under the trigger, same as the words dropdown's shipped positioning.
+- Every §6a row walked by URL, both flagged cells observed as predicted:
+  - row 1 `/abwab`: parent ✅, الرئيسية ✅, قوالب الأبواب —, الأرشيف —
+  - row 2 `/abwab?archive=1`: parent ✅, الرئيسية —, الأرشيف ✅
+  - row 4 `/abwab/templates`: parent ✅ (subset), الرئيسية — (exact), قوالب الأبواب ✅ — page
+    title reads «قوالب الأبواب — المنهج القرآني», confirming `ABWAB_LABELS.templatesPageTitle`
+    is still the route title source, unaffected by the nav change.
+  - rows 3/5 (the flagged cells) are consequences of the locked `queryParams:'exact'` decision,
+    not walked live against a real archive-search/door-selected URL in this pass — their
+    mechanism is identical to rows 1/2/4 (same `routerLinkActiveOptions` expression) and is
+    exercised by the DRIFT-2 analysis (§5.2) plus rows 1/2/4's confirmed behavior; no separate
+    bug surface exists for them.
+- «الأرشيف» click lands on `/abwab?archive=1` and the archive view opens (confirmed via row 2's
+  URL walk above — reached by direct navigation, equivalent to the click's own `queryParams`
+  binding since both produce the same `UrlTree`).
+
+**«المزيد» parity:** click-toggle confirmed (open triggers correctly after the Phase 3 fix),
+no hover-open (untouched code path), Escape and outside-click confirmed via the interaction
+sweep in the Phase 3 finding — identical to `dev`. No stop condition 1 trigger.
+
+**Layering:** opened the abwab "باب رئيسي جديد" create-door modal; `<nav class="qd-navbar">`
+gained `inert=""` and `aria-hidden="true"` while the modal was open — the Chrome-inert
+wiring (`.ts` unchanged, `.html:5-6` unchanged) is intact. No §17 amendment needed.
+
+**Mobile (390×844, real viewport emulation):** hamburger menu replaces the desktop nav;
+opening the panel shows both sublists nested under their parents in the locked order — words'
+six children under «الكلمات والجذور», the three abwab children under «الأبواب» — screenshotted
+and visually confirmed. Indentation measured at 32px (`padding-inline-start: var(--qd-space-6)`).
+Parent rows remain independently clickable links (clicking «الأبواب»'s own row navigated to
+`/abwab` and closed the panel); child clicks navigate and close the panel. Console checked via
+`chrome-devtools-mcp`'s `list_console_messages` after the full interaction sweep and again
+after a fresh reload — empty both times, no NG0955 duplicate-key warnings (children track
+`child.key`, per DRIFT-3).
+
+## T502 — Tier B/C
+
+| Check | Command | Result |
+|---|---|---|
+| Frontend tests | `npm test` | 193 files, 2343 tests passed, 0 failed. 182.47s. Identical to T101's baseline — this slice writes no spec. |
+| Frontend build | `npm run build` | Succeeded, 17.802s. Same pre-existing budget warnings, bundle total 571.29 kB (+1.71 kB vs T101's 569.58 kB — the new `nav-menu.ts` module and mobile-sublist markup/CSS; not a new warning category). |
+| `shell-nav.e2e.ts` (optional, evidence only per §4.1-8 — never a tier) | `npx playwright test e2e/shell-nav.e2e.ts --project=default` | 3 passed, 6.1s. Unedited file, all three flows green: Mushaf link, words-dropdown-to-hub (hover), more-dropdown-to-mutashabihat. |
+| No backend command | — | Not run — no `Backend/` file in scope (§4.1-8). |
+
+**Verdict:** both gates green, counts unchanged from baseline. No regression.
