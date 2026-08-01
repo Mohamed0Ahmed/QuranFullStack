@@ -40,7 +40,7 @@ the backend has zero HTTP caching today. Each repeat re-queries the database; th
 times are warm-EF/warm-Postgres effects, not caching.
 
 **Baseline verdict: green.** Stop condition 5 does not fire. T501/T502 must reproduce
-1,086 / 60 / 140 / 191 files / 2,161 tests unchanged — this slice writes no test.
+1,086 / 60 / 140 / 193 files / 2,343 tests unchanged — this slice writes no test.
 
 ## T102 — Sweep for recorded statements this slice falsifies
 
@@ -190,3 +190,68 @@ that would let a re-select of the same template be answered `304` with nothing l
 the page would sit on «اختر قالبًا» forever. The validator is therefore dropped with the value it
 validates, which is the plan's own one-unit rule (§4.2-12) applied to the one path where the value
 is cleared rather than replaced.
+
+## Phase 5 — Verification
+
+### T501 — Backend gates (final)
+
+| Gate | Result | vs T101 |
+|---|---|---|
+| `dotnet build Backend/QuranDashboard.sln` | Succeeded, 0 warnings, 0 errors | same |
+| No-pipeline regression | 1,086 passed, 0 failed, 0 skipped, 21 s | **unchanged** |
+| `Tests.Api` | 60 passed, 13 s | **unchanged** |
+| Route-smoke tier | 140 passed, 0 skipped, 52 s | **unchanged** |
+| **`Tests.Smoke.Data`** | **RAN** (0 skipped of 140) | same as T101 |
+
+### T502 — Frontend gates
+
+`npm test`: **193 files / 2,343 tests passed, 0 failed** — identical to T101. `npm run build`
+succeeded with the three pre-existing budget warnings and no new ones.
+
+### T503 — The browser walk
+
+Setup: Kestrel on the `https` profile started with the frontend's own mkcert PEM
+(`Frontend/quran-dashboard-ui/localhost.pem` / `-key.pem`) — without it every API call reads as a
+backend failure — plus `npm run start:https` on `https://localhost:4200`. Statuses below are read
+from the browser's network log; where that log proved unreliable (see the artifact note) the
+backend's own handler log is used instead, and which source was used is stated.
+
+| §6a row / walk step | Observed |
+|---|---|
+| First `/abwab` load | `GET /api/abwab/tree` → `200`, page renders 6 root doors, 35 total |
+| **DRIFT-5 acceptance — the validator was actually readable** | Re-entering `/abwab` in-app issued `OPTIONS /api/abwab/tree` → `204` followed by `GET` → **`304`**. A `304` is only reachable if the facade read the `ETag` off a cross-origin response and sent it back, so `WithExposedHeaders("ETag")` is doing its job. The preflight is itself the proof that `If-None-Match` was on the request |
+| Row 2 — the `304` revisit | Content rendered immediately: `treeitem` count 6, **no skeleton** (`document.querySelector('[class*="skeleton"]')` → null), no error banner |
+| **Row 7 — the just-wrote client** | Renamed door 337 «الجهاد» → «الجهاد المعدل» through the app's edit modal: `PUT /api/abwab/doors/337` → `200`, then the funnel's refetch `OPTIONS` → `204`, `GET /api/abwab/tree` → **`200`** (not `304`), and the new name rendered. Renamed back the same way; the tree re-rendered «الجهاد» |
+| Archive view — locked decision 5 live | Toggling الأرشيف moved the URL to `?archive=1` and issued **zero** API requests (`performance.getEntriesByType('resource')` filtered to `/api/abwab` → length 0). The archive really is a partition of the cached snapshot |
+| Templates list | First `/abwab/templates` entry → `GET /api/abwab/templates` `200`; re-entry in-app → `OPTIONS` `204` + `GET` **`304`** |
+| Template detail | Selecting «الثمرات» → `GET /api/abwab/templates/3` → `200` |
+| **Generation independence** | Created a template through the UI: `POST /api/abwab/templates` `201` → templates list refetch **`200`** and detail `200`. Immediately navigating to `/abwab` gave `GET /api/abwab/tree` → **`304`** — a templates write does not touch the tree generation. The temporary template was then deleted through the UI (`DELETE` `204`); the list is back to its three templates |
+| **Row 13 — relations evict the tree** | Added a relation on door 336 through the relations modal: `POST /api/abwab/doors/336/relations` → `201`, then `OPTIONS` `204` + `GET /api/abwab/tree` → **`200`** (evicted). The relation was deleted again (`DELETE /api/abwab/relations/48` → `204`, chip count back to 3). The relations read itself was a plain `200` **with no preflight** both times — unconditional by design (§4.2-9) |
+| Row 4 — malformed headers | `curl` (Phase 3 table): `"garbage"` → `200`, `*` → `200`, and a list containing the current validator → `304` |
+| **Row 8 — restart** | Backend restarted; the new process's validator was `"abwab-tree-70b3e363-0"` against the previous process's `"abwab-tree-26bbe37b-0"` — boot ids differ, so no pre-restart validator can match. Authoritative count from the backend's own log after the restart: **2** `Completed Abwab GetAbwabTree` lines — one for the `curl` that read the new `ETag`, one for the browser's single post-restart refetch. Every later in-app revisit produced **no handler line at all** and the browser log showed `304`. Exactly one refetch per client per resource, then `304`s resume |
+| Error path — first-load failure | With the backend stopped, a fresh `/abwab` load showed the error banner «تعذر تحميل شجرة الأبواب. حاول مرة أخرى.» and 0 tree items |
+| Error path — refetch failure | With the backend stopped and a snapshot already held, an in-app revisit **kept all 6 root doors and 35 doors on screen and set no error banner**. This is `dev` behavior, not a change: the banner is gated on `facade.errorMessage() && !facade.snapshot()` (`abwab-page.component.html:64,71,105`), so a failed *refresh* over live content has always been silent. Recorded because the plan's T503 line expects a banner here; the plan describes the first-load case |
+| Recovery | Backend restarted; the next in-app revisit rendered content again with no error, then `304`s resumed |
+| A `304` never presents as an error | Every observed `304` left the error banner absent and the content in place — the two states are visibly distinct (banner + empty vs no banner + content) |
+
+**Browser-log artifact, stated so nobody reads it as a finding.** The extension's network log
+reported `503` for several `/api/abwab/tree` entries whose requests demonstrably succeeded or were
+cancelled — they cluster around (a) the facade's own `pendingRequest?.unsubscribe()` cancelling an
+in-flight request and (b) the first request issued over a keep-alive connection to a process that
+had just been restarted. The backend log contains **no `503` and no error entry** for any of them,
+and `curl` against the same endpoint at the same moments returned `200`. Where a status mattered,
+it was taken from the backend's handler log rather than from the extension.
+
+### The measurement
+
+Same process, warm, `curl` against `https://localhost:5015`:
+
+| Request | Body bytes | Time |
+|---|---|---|
+| `GET /api/abwab/tree` — `200`, three runs | 140,189 | 0.0137 s / 0.0143 s / 0.0139 s |
+| `GET /api/abwab/tree` — `304` (matching `If-None-Match`), three runs | **0** | 0.0082 s / 0.0083 s / 0.0079 s |
+| T101 baseline (`dev`, no cache, no ETag) — cold / warm | 140,187 | 3.434 s cold, 0.032 s warm |
+
+So a revalidation costs **zero body bytes and ~0.008 s** against ~140 kB and ~0.014 s for a cached
+`200` — and against the 3.4 s cold read the baseline measured. The `304` path was separately shown
+to run **zero database queries** (Phase 3's `Executed DbCommand` count).
