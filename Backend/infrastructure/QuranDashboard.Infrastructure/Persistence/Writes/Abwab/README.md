@@ -176,13 +176,18 @@ incidentally.
   `deleted_at IS NULL`, so the old one no longer occupies the pair. A `DbUpdateConcurrencyException`
   here means a concurrent delete won; the row is gone either way, so it reports `false` rather than 500.
 
-- **A template is a door subtree, and applying it is a plain door create repeated.** The template root
-  becomes a **new child** of each target — never a root door — with the whole subtree beneath it, all
-  four authoring fields, and sibling order carried through verbatim. What the copy therefore does
-  **not** need, each a mechanism that would be wrong here rather than merely unused:
+- **A template is a door subtree, and applying it copies the root's DIRECT CHILDREN — never the root
+  itself.** Each of the root's children becomes a new child of every target, recursively, with its own
+  subtree beneath it, all four authoring fields. The response is **N created doors per target**
+  (`IReadOnlyList<AbwabDoorDto>`, type unchanged, meaning changed), not one root door per target.
+  Sibling order is carried through **almost** verbatim: level 1 lands at `nextOrder + i` (`i` = the
+  child's index in the template's own `(OrderValue, Id)` order); every level below keeps its verbatim
+  `OrderValue`. What the copy therefore does **not** need, each a mechanism that would be wrong here
+  rather than merely unused:
   - **no global-order maintenance** — a copy is never a root, so it never joins that sequence;
   - **no resequencing** — every insert appends into a scope it either just created or is the newest
-    member of, so every touched scope is `1..N` by construction;
+    member of; the level-1 offset is what keeps this true when N children land in one save, so every
+    touched scope is `1..N` by construction;
   - **no per-node section resolution** — the section is read once off each target and carried down the
     whole subtree, which is the cascade invariant above stated directly instead of re-derived.
 - **The copy descends one level per `SaveChanges`, inside one transaction.** `AbwabDoor` has no parent
@@ -191,12 +196,16 @@ incidentally.
   all-or-nothing, and each level's alias rows are flushed with the next level's doors. **Do not
   "optimize" this into a single save** — it would need a navigation property this entity deliberately
   does not have.
-- **Applying is all-or-nothing, and the only collision is at the root.** The target's live children are
-  checked for the root node's name **before** anything is inserted, so the `409` can name every target
-  that blocked it; the template's own `(template_id, parent_node_id, name)` unique index makes an
-  internal collision unrepresentable, which is what confines the failure to that one comprehensible
-  case. An archived target is refused `400`; an empty target list is refused `400`, and that refusal
-  **is** the "never a root door" rule — no wire shape expresses root-level application.
+- **Applying is all-or-nothing, and the collision is per child name, not root name.** The target's live
+  children are checked against the root's **direct child names** before anything is inserted, so the
+  `409` can name every `(target, child)` pair that blocked it, ordered by the caller's target order
+  then the template's own sibling order; the template's own `(template_id, parent_node_id, name)`
+  unique index still makes an internal collision among those children unrepresentable, which is what
+  confines the failure to comprehensible pairs. An archived target is refused `400`; an empty target
+  list is refused `400` — the "never a root door" rule, since no wire shape expresses root-level
+  application — and an **empty-root template** (no live children) is refused a third, distinct `400`
+  **before any target is read**: the template's emptiness does not depend on which doors were picked,
+  so refusing it first is the cheaper and more honest refusal.
 - **A copy is detached at birth.** No provenance column, no back-link. Editing or deleting the template
   later never touches doors copied from it, and no door write consults a template. Do not add a link
   "so copies can be updated" — the modal's own copy promises the opposite.

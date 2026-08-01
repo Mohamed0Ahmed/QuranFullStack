@@ -176,3 +176,25 @@ is no reason to expect it regressed — recorded as not directly observed rather
 Two Chrome-DevTools-MCP screenshot calls timed out transiently mid-walk (`Page.captureScreenshot`
 timeout) with no console errors and no loss of app state across the retry — treated as an
 automation-channel hiccup, not an application defect.
+
+## Phase 8 — T801-T803: docs true again
+
+- `Persistence/Writes/Abwab/README.md:179-199` re-derived: the "template is a door subtree"
+  paragraph now states children-only copy, the response's new meaning (N doors/target,
+  `IReadOnlyList<AbwabDoorDto>` type unchanged), and the level-1 offset; the descend-one-level
+  paragraph is untouched (BFS loop unchanged); "the only collision is at the root" rewritten to
+  the per-`(target, child)` rule plus the new empty-template `400` and its ordering ahead of the
+  archived-target check. `:20-23`, `:44-46`, `:47-49`, `:224-229` verified still true, untouched.
+  `Persistence/Reads/Abwab/README.md:99-101` and `api/…/Controllers/README.md` verified
+  verify-only — neither claims anything the reversal falsifies.
+- `features/abwab/README.md`: new bullet stating the children-only reversal (no such claim
+  existed pre-slice to amend); workshop-tree list-role paragraph amended to name the
+  `ContextMenu`/`Shift+F10` path and why the role stays unclaimed; the design-preview concept's
+  «كاملًا بجذره» recorded as superseded beside its citation (not edited, §4.2-16);
+  `abwab-cards`' missing row menu recorded as an open decision for a later slice. `:17-25`
+  endpoint counts verified unchanged (no route added). `.architecture/UI_STYLE_SYSTEM.md` §17's
+  `qd-context-menu` entry verified verify-only: both recorded gaps (no viewport clamping, no
+  focus management into the menu) stay open, matching T703's empirical walk — the keyboard path
+  leaves focus outside the menu, same as the other three paths.
+- `docs/TESTING_DEBT.md`: row 7 (`abwab-templates` section) restated to the reversal's surface;
+  row 9 widened to name the two new menu paths. New `## ux-slice-g` section added with G1-G4.

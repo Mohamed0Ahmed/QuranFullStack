@@ -116,7 +116,11 @@ nine), four of them reads.
 - `components/abwab-cards/` — the drill-down grid: `cardId` names only the
   drilled-into parent (not a full path array) — the breadcrumb chain is derived by
   walking `parentId` up from it via `byId`, so the URL never needs an array. Fails
-  closed to the root level for an archived or unknown `cardId` (M25/M31).
+  closed to the root level for an archived or unknown `cardId` (M25/M31). **Has no row
+  context menu** — unlike the doors tree and, since ux-slice-g, the templates workshop tree.
+  Recorded as an open decision for a later slice, not an oversight to close here: a third menu
+  consumer landing in the same slice as the second would land in a slice whose test posture
+  cannot cover either.
 - `components/abwab-archive-view/` — the archived hierarchy, restore-only
   (`plan.md` §4.5). A-live vs A-arch is read straight off the builder's tree partition
   (`node.depth === 0` ⇒ restorable, `depth > 0` ⇒ parent is archived ⇒ restore disabled
@@ -654,6 +658,13 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   fetch nobody sees. The doors snapshot *is* fetched when the copy modal opens — the picker
   is its only consumer, and the workshop is reachable directly by URL, so it cannot assume
   `/abwab` was visited first.
+- **Applying copies the template root's direct children, never the root itself** (reversed in
+  ux-slice-g — see `docs/feature-abwab-templates/plan.md` §5.1). Each target gains N new
+  children, one per the root's direct children, each with its own subtree; the copy modal's
+  description and preview (`abwab-template-copy-modal.component.ts`, `abwab.labels.ts`) state
+  this before the write. An empty-root template (no live children — the default state of every
+  newly created template) is refused server-side with a `400`; the modal's `hasElements`
+  affordance only makes that legible before the confirm click, it is not the guarantee.
 - **A template copy is detached at birth.** No `templateId` column, no provenance, no
   back-link, nothing marking a door as template-derived. Editing or deleting the template
   later never touches earlier copies, and the copy modal's preview says so *before* the write
@@ -680,7 +691,12 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   not implement. `aria-level` still conveys depth and every control is a real tab stop.
   Reusing `AbwabTreeComponent` itself was rejected up front, not discovered mid-work: it is
   typed on `AbwabNode` and carries selection/bulk/roving-tabindex/URL concerns this page has
-  none of, plus a spec suite pinned to that behavior.
+  none of, plus a spec suite pinned to that behavior. **ux-slice-g adds a third row-menu path —
+  `ContextMenu`/`Shift+F10`, alongside `⋯` and right-click** — without moving this line: the row
+  `<div>` itself catches the key as it bubbles from whichever of the row's own controls (chevron
+  / `＋` / `⋯`) has focus, so no row becomes a tab stop and no arrow-key navigation is added.
+  Adding a menu key is not the same contract as arrow-key navigation between rows, so the role
+  stays unclaimed.
 - **The M10/M33 `sectionId` defense-in-depth stays in the door modal's shell**, not in the
   extracted `abwab-door-fields-form`. The form has no concept of a section and must not
   acquire one; the shell is the layer that decides *whether* a section applies.
@@ -730,5 +746,7 @@ residue that legitimately remains.
   `docs/feature-abwab-doors/plan-slice-b2.md` (Slice B2, this e2e slice), and
   `docs/feature-abwab-doors/plan.md` (Slice A, backend).
 - Design contracts: `docs/design-preview/abwab-tree-concept.html`,
-  `abwab-relations-concept.html`, and `abwab-templates-concept.html`.
+  `abwab-relations-concept.html`, and `abwab-templates-concept.html` — **its «كاملًا بجذره» copy
+  apply description is superseded by ux-slice-g's children-only reversal** (`:139`, `:145`); the
+  historical mockup is not edited, this note is the record.
 - Shared UI primitives: `../../shared/README.md`.
