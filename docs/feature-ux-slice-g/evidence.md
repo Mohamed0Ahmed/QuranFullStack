@@ -126,3 +126,10 @@ together, per the plan's note that they are green only as one commit.
 
 `SmokeCoverageParityTests` passed inside the 140 — the proof DRIFT-3 was read right: the apply
 route's `SmokeRouteCatalog` entry needed no edit, and the parity gate agrees.
+
+## Phase 5 — T501: contract regeneration, expected clean
+
+`Backend/scripts/check-api-contract` → **"API contract up to date."** — clean, as expected
+(§4.2-3): the request shape is unchanged, the response type is unchanged, and the controller
+carries no `[ProducesResponseType]`, so the new `400` adds nothing to the OpenAPI document.
+`git status --short` empty after the run — nothing to commit for this phase.
