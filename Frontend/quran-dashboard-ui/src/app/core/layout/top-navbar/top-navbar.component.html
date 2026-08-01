@@ -308,6 +308,24 @@
             >
               {{ item.labelAr }}
             </a>
+            @if (item.children) {
+              <ul class="mobile-menu-sublist">
+                @for (child of item.children; track child.key) {
+                  <li>
+                    <a
+                      class="qd-btn qd-btn-ghost mobile-link"
+                      [routerLink]="child.route"
+                      [queryParams]="child.queryParams ?? null"
+                      routerLinkActive="active"
+                      [routerLinkActiveOptions]="{ exact: child.route === item.route }"
+                      (click)="closeMobile()"
+                    >
+                      {{ child.labelAr }}
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
           </li>
         }
       </ul>
