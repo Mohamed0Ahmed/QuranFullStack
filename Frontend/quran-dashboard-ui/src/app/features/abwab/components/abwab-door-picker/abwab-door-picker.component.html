@@ -10,7 +10,7 @@
 <div class="abwab-door-picker__list qd-scroll-stable">
   @for (row of rows(); track row.node.id) {
     <div
-      class="abwab-door-picker__row"
+      class="abwab-door-picker__row qd-check-row"
       [class.abwab-door-picker__row--disabled]="row.isDisabled"
       [style.--abwab-door-picker-depth]="row.depth"
       [attr.data-testid]="testIdPrefix() + '-pick-' + row.node.id"
@@ -34,13 +34,14 @@
       </button>
       <input
         type="checkbox"
+        class="qd-checkbox"
         [checked]="isPicked(row.node.id)"
         [disabled]="row.isDisabled"
         [attr.aria-label]="row.node.name"
         [attr.data-testid]="testIdPrefix() + '-pick-checkbox-' + row.node.id"
         (click)="$event.preventDefault()"
       />
-      <span class="abwab-door-picker__name">{{ row.node.name }}</span>
+      <span class="abwab-door-picker__name qd-truncate" [title]="row.node.name">{{ row.node.name }}</span>
       @if (row.isDisabled && disabledTag()) {
         <span class="abwab-door-picker__tag">{{ disabledTag() }}</span>
       }

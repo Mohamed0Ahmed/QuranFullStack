@@ -13,9 +13,10 @@
   font-size: 0.8125rem;
 }
 
+/* The checkbox is deliberately absent: its focus ring belongs to `.qd-checkbox`, and a local
+   rule here would outrank the primitive rather than compose it (UI_STYLE_SYSTEM §17). */
 :host > input:focus-visible,
-.abwab-door-picker__chevron:focus-visible,
-.abwab-door-picker__row input:focus-visible {
+.abwab-door-picker__chevron:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: -1px;
 }
@@ -28,10 +29,9 @@
   margin-block-start: var(--qd-space-2);
 }
 
+/* Layout (display/align/gap) comes from `.qd-check-row`; only the row's own indent, hit area,
+   and states live here. */
 .abwab-door-picker__row {
-  display: flex;
-  align-items: center;
-  gap: var(--qd-space-2);
   padding: var(--qd-space-1) var(--qd-space-2);
   padding-inline-start: calc(var(--abwab-door-picker-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
   border-radius: var(--qd-radius-sm);
@@ -70,11 +70,6 @@
 
 .abwab-door-picker__chevron--leaf {
   visibility: hidden;
-}
-
-.abwab-door-picker__row input[type='checkbox'] {
-  flex: none;
-  accent-color: var(--qd-accent);
 }
 
 .abwab-door-picker__name {
