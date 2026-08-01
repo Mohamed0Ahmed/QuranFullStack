@@ -293,3 +293,52 @@ The abwab UX/UI overhaul series (Slices A–I) is complete with this slice. The 
 **planning-artifact cleanup pass** — the root `CLAUDE.md` lifecycle rule and the N-2 buffer
 arithmetic across the nine slice folders plus the audit — is the next piece of work and is
 commissioned separately. This slice schedules none of it.
+
+## Close-out — the branch diff against §2, and §9 item by item
+
+### The whole diff, reconciled
+
+`git diff dev...ux-slice-i --stat` — 34 files, +2,024 / −56. Every entry is either in §2's in-scope
+list or one of the deviations already recorded above:
+
+- **In scope, backend:** `API_GUIDELINES.md`; `Api/Common/ConditionalGet.cs` (new — the shared
+  header comparison the two controllers use); `AbwabTreeController.cs`, `AbwabTemplatesController.cs`,
+  `ServiceCollectionExtensions.cs`; `Application.Abstractions/Abwab/IAbwabCacheInvalidator.cs` +
+  `IAbwabCacheValidators.cs`; the seven `Infrastructure/Caching/Abwab/` files;
+  `AbwabDependencyInjection.cs`; both abwab persistence READMEs.
+- **In scope, frontend:** `API_INTEGRATION_GUIDELINES.md`, `features/abwab/README.md`,
+  `abwab.api.ts`, `abwab-snapshot.facade.ts`, `abwab-templates.facade.ts`.
+- **Recorded deviations:** `data-access/conditional-request.ts` (new one-function file) and
+  `abwab-templates.api.ts` (where two of the three reads actually live).
+- **The spec-shape finding:** six `*.spec.ts` files, stub construction only.
+- **Docs:** `docs/TESTING_DEBT.md`, `docs/feature-ux-slice-i/{plan,evidence}.md`.
+- **Root `CLAUDE.md` is absent from the diff** — set at T101 and cleared at T602, so it nets to zero
+  against `dev`, which is exactly the intended end state.
+
+**What is absent is the point:** no `SmokeRouteCatalog.cs`, no `Caching/Quran/**`, no
+`CacheLoadGate.cs`, no `AbwabTreeDto.cs`, no `EfAbwabTreeReader.cs` / `EfAbwabTemplatesReader.cs`,
+no `AbwabDoorRelationsController.cs` / `EfAbwabRelationsReader.cs`, and no writer body — the Ef
+writers are untouched; they are only re-registered. Nothing outside the plan's scope moved.
+
+### §9 obligations checklist
+
+| # | Obligation | Verdict | Evidenced by |
+|---|---|---|---|
+| 1 | All 21 write routes flow through an invalidating decorator; bypass census re-run finds no 22nd path | ✅ | 5 `Invalidating*` registrations in `AbwabDependencyInjection`; T602 census returns nothing outside the seams |
+| 2 | The bump is in `finally`, after the inner writer returns, with no handler or controller edited | ✅ | The five decorator files; no handler is in the diff |
+| 3 | The tree entry is one indivisible entry; nothing keys a cache on section, scope, or archive state | ✅ | `CachedAbwabTreeReader` — a single fixed key `abwab:tree`; archive toggle issued zero requests in T503 |
+| 4 | The three reads answer §6a exactly, including row 4 (fail-open) and row 7 (just-wrote `200`), and the `304` path runs zero DB queries | ✅ | Phase 3 curl matrix (all eight rows) + T503's browser rows; `Executed DbCommand` unchanged across a `304` |
+| 5 | `ETag` + `Cache-Control: no-store` on every `200` and `304` from the three reads; the `404` detail arm carries neither | ✅ (tree path measured; the rest by construction) | Measured on the tree's `200` and `304` and on the `404` arm (no headers). Both headers are written by the single `ConditionalGet.SetValidatorHeaders` call every arm uses, so the templates arms cannot carry one without the other |
+| 6 | `.WithExposedHeaders("ETag")` is in the CORS policy and T503 recorded a readable validator | ✅ | `ServiceCollectionExtensions.cs`; the browser's `OPTIONS` + `304` pair, unreachable without a stored validator |
+| 7 | The relations read is byte-identical to `dev`; relations writes bump the tree generation | ✅ | Neither the relations controller nor its reader appears in the diff; `InvalidatingAbwabRelationsWriter` bumps the tree, walked live (relation add → tree `200`) |
+| 8 | Facades hold validator-beside-value as one unit; `304` keeps both, sets no error, flashes no skeleton; facade specs passed **unedited** | ⚠️ partly — see the Phase 4 finding | Behavior ✅ (both facades + T503). "Specs unedited" ❌ **and unreachable by construction**: the specs stub the api object, so `observe: 'response'` forces a stub-shape change. Stub construction only, zero assertions moved |
+| 9 | The route-entry `load()` is still unconditional; no TTL on either end | ✅ | `abwab-page.component.ts` untouched; no `MemoryCacheEntryOptions` anywhere in `Caching/Abwab/` |
+| 10 | `AbwabTreeDto.Version`, `GetSnapshotVersionAsync`, `xmin` handling and every `Caching/Quran` file untouched | ✅ | None of them appear in the branch diff |
+| 11 | `SmokeRouteCatalog` unedited; the smoke tier ran at T303 and T501 with `Tests.Smoke.Data` stated each time | ✅ | Absent from the branch diff; both runs 140 passed / 0 skipped, **RAN** stated both times |
+| 12 | The six §5.4 files amended, including the single-instance constraint + migration path and the distinguish-don't-weaken `version` gotcha | ✅ | T601 table |
+| 13 | `TESTING_DEBT.md` carries `ux-slice-i` rows I1–I4 | ✅ | T602 |
+| 14 | All gates green with T101 counts unchanged; the `200`-vs-`304` byte and timing measurements recorded | ✅ | T501 / T502 tables; the measurement table |
+| 15 | Root `CLAUDE.md` back to `None`; no planning folder deleted, swept, or repointed; no package installed; no `dev → main` merge; the close-out names the cleanup pass | ✅ | T602 + the diff reconciliation above; no package manifest is in the diff |
+
+One item is not a clean ✅ (#8's "specs unedited"), and it is the plan's own premise that failed
+rather than the implementation — recorded in full under Phase 4.
