@@ -99,6 +99,10 @@ test('bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
 
   await expect(page.getByTestId(`abwab-tree-row-${bulkA.id}`)).toHaveCount(0);
   await expect(page.getByTestId(`abwab-tree-row-${bulkB.id}`)).toHaveCount(0);
+
+  // The rebind drops archived ids as well as missing ones (Slice D). Without this the set
+  // kept both now-archived doors with freshly rebound versions, and the next submit 404'd.
+  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('0');
 });
 
 test('row context menu offers exactly edit / add-child / move / relations / archive', async ({ page, abwabSandbox }) => {

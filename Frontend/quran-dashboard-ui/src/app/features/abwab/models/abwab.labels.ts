@@ -148,6 +148,12 @@ export const ABWAB_LABELS = {
   restoreDetachedAnnouncement: 'استُرجع الباب خارج قسمه المحذوف',
 
   bulkConflictMessage: (names: string): string => `فشلت العملية كاملة — حدث تعارض على: ${names}`,
+  // The backend's bulk 404 is generic («الباب غير موجود») and names no door, but the snapshot
+  // knows every door's name and archive state, so the frontend names them itself — the
+  // `bulkConflictMessage` precedent one line up. Phrased as a noun phrase after «تعذر العثور
+  // على» so it stays grammatical at every count instead of needing verb agreement per form.
+  bulkVanishedMessage: (count: number, names: string): string =>
+    `فشلت العملية كاملة — تعذر العثور على ${countPhrase(count, DOOR_FORMS)}: ${names}`,
   archiveConfirm: (count: number): string => `سيتم أرشفة ${countPhrase(count, DOOR_FORMS)}`,
 
   loadErrorFallback: 'تعذر تحميل شجرة الأبواب. حاول مرة أخرى.',

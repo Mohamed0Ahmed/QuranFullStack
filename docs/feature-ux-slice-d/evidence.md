@@ -223,3 +223,55 @@ Two things this pins beyond the plan's reading:
 
 After the 404 the bulk bar **still** holds both ids, so the state is self-perpetuating:
 every further submit re-sends the same two dead doors.
+
+## T303 (second half) — the same flows after the fix
+
+Same backend, same UI, on the fixed code. Fresh sandboxes so nothing carried over.
+
+### The original failure no longer happens
+
+Section `384` «سلايس-د-بعد-الإصلاح», root `681` «ب-أب», child `682` «ب-ابن». Identical
+steps to the pre-fix run:
+
+| Step | Pre-fix | Post-fix |
+|---|---|---|
+| bulk bar before archive | «2 باب محدد — ب-أب، ب-ابن» | «2 باب محدد — ب-أب، ب-ابن» |
+| confirm strip | «سيتم أرشفة بابين» | «سيتم أرشفة بابين» |
+| tree after success | empty | empty |
+| **bulk bar after success** | **«2 باب محدد» (both archived ids kept)** | **«0 باب محدد»** |
+| second submit | `404` «الباب غير موجود» | not reachable — nothing is selected |
+
+So the reported bug is closed at the root: `rebindTo` drops the archived ids, and the
+confirm/submit disagreement («سيتم أرشفة لا أبواب» beside a request carrying two doors)
+cannot arise.
+
+### The 404 that remains, and what it now says
+
+With the drop and the submit filter in place, the only 404 still reachable is the one this
+client could not have known about: another client archived the doors after this page's
+snapshot was taken. Forced deliberately — two doors selected in the UI (section `385`,
+doors `683` «ت-أول» and `684` «ت-ثانٍ»), then both archived over the API from outside the
+page, then «أرشفة الكل» pressed in the still-stale UI:
+
+```
+POST /api/abwab/doors/bulk-archive        404   {"isSuccess":false,"message":"الباب غير موجود",...}
+GET  /api/abwab/tree                      200   (the recovery refetch)
+announcer: «فشلت العملية كاملة — تعذر العثور على بابين: ت-أول، ت-ثانٍ»
+bulk bar:  «0 باب محدد»
+```
+
+Both halves of the plan's requirement hold: the message **names** the doors the generic
+backend payload could not, and the set heals itself instead of staying poisoned.
+
+### Phase 3 gate — checked, not tripped
+
+The plan's gate stops the phase if the frontend "genuinely cannot name the offending
+door(s) from the snapshot". It can, but the ordering matters and the first implementation
+got it wrong: diffing the attempted refs against the **current** snapshot names nothing,
+because a door this client already knows is archived is filtered out before submitting and
+so is never attempted. The diff has to run against the snapshot the failure **refetches** —
+which is exactly what plan §4.2-1(c) says ("refresh the snapshot, `rebindTo`, diff the
+*attempted* refs against the fresh snapshot"). `handleBulkFailure` therefore returns an
+observable for the 404 branch so the message is computed after the refresh lands, and the
+returned outcome and the announcement carry the same string. No backend change; the gate
+did not need to fire.

@@ -125,5 +125,55 @@ describe('AbwabSelectionStore', () => {
 
       expect(store.bulkSet()).toEqual(new Map([[1, 9]]));
     });
+
+    // The case above constructs "vanished" by omitting the door from the DTO — a state the
+    // wire cannot produce, because an archive is a soft delete and the door stays in the
+    // snapshot. These two use the production shape instead.
+    it('drops a bulk id whose door came back archived, not missing', () => {
+      const store = setup();
+      store.setBulkMode(true);
+      store.toggleBulk(1, 1);
+      store.toggleBulk(2, 1);
+
+      const afterArchivingDoor2 = buildAbwabTreeSnapshot(
+        tree([
+          door({ id: 1, name: 'باب-1', version: 9 }),
+          door({ id: 2, name: 'باب-2', version: 9, isArchived: true }),
+        ]),
+      );
+      store.rebindTo(afterArchivingDoor2);
+
+      expect(store.bulkSet()).toEqual(new Map([[1, 9]]));
+    });
+
+    it('empties the bulk set when every selected door came back archived', () => {
+      const store = setup();
+      store.setBulkMode(true);
+      store.toggleBulk(1, 1);
+      store.toggleBulk(2, 1);
+
+      const afterArchivingBoth = buildAbwabTreeSnapshot(
+        tree([
+          door({ id: 1, name: 'باب-1', version: 9, isArchived: true }),
+          door({ id: 2, name: 'باب-2', version: 9, isArchived: true, parentId: 1 }),
+        ]),
+      );
+      store.rebindTo(afterArchivingBoth);
+
+      expect(store.bulkSet().size).toBe(0);
+    });
+
+    it('keeps the single selection bound to a door that came back archived', () => {
+      const store = setup();
+      store.select(1, 1);
+
+      const archived = buildAbwabTreeSnapshot(
+        tree([door({ id: 1, name: 'باب-1', version: 9, isArchived: true })]),
+      );
+      store.rebindTo(archived);
+
+      expect(store.selectedDoorId()).toBe(1);
+      expect(store.selectedVersion()).toBe(9);
+    });
   });
 });

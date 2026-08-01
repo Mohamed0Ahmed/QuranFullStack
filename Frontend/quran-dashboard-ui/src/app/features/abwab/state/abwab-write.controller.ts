@@ -163,7 +163,7 @@ export class AbwabWriteController {
     const doors = this.currentBulkRefs();
     return this.api.bulkMoveDoors({ doors, targetParentId, targetSectionId }).pipe(
       map((response) => this.handleSuccess(response)),
-      catchError((err: unknown) => of(this.handleBulkFailure<AbwabDoorDto[]>(err))),
+      catchError((err: unknown) => this.handleBulkFailure<AbwabDoorDto[]>(err, doors)),
     );
   }
 
@@ -171,7 +171,7 @@ export class AbwabWriteController {
     const doors = this.currentBulkRefs();
     return this.api.bulkArchiveDoors({ doors }).pipe(
       map((response) => this.handleSuccess(response)),
-      catchError((err: unknown) => of(this.handleBulkFailure<number[]>(err))),
+      catchError((err: unknown) => this.handleBulkFailure<number[]>(err, doors)),
     );
   }
 
@@ -186,8 +186,19 @@ export class AbwabWriteController {
     return this.dispatch(this.api.deleteRelation(relationId));
   }
 
+  /** Defense in depth beside `AbwabSelectionStore#rebindTo`'s archived-drop: whatever the set
+   * holds, only doors the current snapshot still shows live are submitted, so the confirm count
+   * (`bulkLiveSubtreeCount`, live-only) and the submitted refs cannot disagree. With no snapshot
+   * loaded there is nothing to filter against, so the set passes through unfiltered rather than
+   * being silently emptied. */
   private currentBulkRefs(): AbwabBulkDoorRef[] {
-    return Array.from(this.selection.bulkSet(), ([doorId, version]) => ({ doorId, version }));
+    const byId = this.facade.snapshot()?.byId;
+    return Array.from(this.selection.bulkSet(), ([doorId, version]) => ({ doorId, version })).filter(
+      (ref) => {
+        const node = byId?.get(ref.doorId);
+        return byId === undefined || (node !== undefined && !node.isArchived);
+      },
+    );
   }
 
   private dispatch<T>(request$: Observable<ApiResponse<T> | null>, conflictClearsSelectionId?: number): Observable<AbwabWriteOutcome<T>> {
@@ -215,11 +226,7 @@ export class AbwabWriteController {
       } else {
         this.announcementState.set(null);
       }
-      this.facade.refresh().subscribe((snapshot) => {
-        if (snapshot) {
-          this.selection.rebindTo(snapshot);
-        }
-      });
+      this.refreshAndRebind();
       return { kind: 'success', data };
     }
     const message = response.message ?? ABWAB_LABELS.writeInvalidFallback;
@@ -238,16 +245,37 @@ export class AbwabWriteController {
     return outcome;
   }
 
-  private handleBulkFailure<T>(err: unknown): AbwabWriteOutcome<T> {
+  /** Returns an observable, unlike `handleFailure`, because the 404 branch has to see a
+   * *refreshed* snapshot before it can say which door is gone: a 404 the local snapshot could
+   * already explain never reaches the wire (`currentBulkRefs` filtered it), so by construction
+   * the only 404s left are the ones this client has not learned about yet. */
+  private handleBulkFailure<T>(
+    err: unknown,
+    attempted: readonly AbwabBulkDoorRef[],
+  ): Observable<AbwabWriteOutcome<T>> {
     const outcome = this.toFailureOutcome(err);
-    if (outcome.kind !== 'conflict') {
-      this.announcementState.set(outcome.message);
-      return outcome;
+    if (outcome.kind === 'conflict') {
+      // Bulk selection is preserved on conflict (M17) — see the class doc for why.
+      const message = this.bulkConflictMessage();
+      this.announcementState.set(message);
+      return of({ kind: 'conflict', message });
     }
-    // Bulk selection is preserved on conflict (M17) — see the class doc for why.
-    const message = this.bulkConflictMessage();
-    this.announcementState.set(message);
-    return { kind: 'conflict', message };
+    if (outcome.kind !== 'invalid') {
+      this.announcementState.set(outcome.message);
+      return of(outcome);
+    }
+    // The backend's bulk 404 is «الباب غير موجود» and identifies no door, so refetch, rebind
+    // (which drops whatever is now archived), and name the offenders from what came back.
+    return this.facade.refresh().pipe(
+      map((snapshot) => {
+        if (snapshot) {
+          this.selection.rebindTo(snapshot);
+        }
+        const message = this.bulkVanishedMessage(attempted, snapshot?.byId) ?? outcome.message;
+        this.announcementState.set(message);
+        return { kind: 'invalid', message };
+      }),
+    );
   }
 
   private bulkConflictMessage(): string {
@@ -256,6 +284,34 @@ export class AbwabWriteController {
       (doorId) => snapshot?.byId.get(doorId)?.name ?? String(doorId),
     );
     return ABWAB_LABELS.bulkConflictMessage(names.join('، '));
+  }
+
+  /** `null` when the fresh snapshot can still account for every attempted door — the caller then
+   * keeps the backend's own generic message rather than inventing a name for a door it cannot
+   * see is gone (the refresh itself failed, or the write failed for some other reason). */
+  private bulkVanishedMessage(
+    attempted: readonly AbwabBulkDoorRef[],
+    byId: ReadonlyMap<number, AbwabNode> | undefined,
+  ): string | null {
+    if (!byId) {
+      return null;
+    }
+    const names: string[] = [];
+    for (const ref of attempted) {
+      const node = byId.get(ref.doorId);
+      if (node === undefined || node.isArchived) {
+        names.push(node?.name ?? String(ref.doorId));
+      }
+    }
+    return names.length === 0 ? null : ABWAB_LABELS.bulkVanishedMessage(names.length, names.join('، '));
+  }
+
+  private refreshAndRebind(): void {
+    this.facade.refresh().subscribe((snapshot) => {
+      if (snapshot) {
+        this.selection.rebindTo(snapshot);
+      }
+    });
   }
 
   private toFailureOutcome(err: unknown): AbwabWriteFailureOutcome {

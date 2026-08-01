@@ -201,6 +201,120 @@ describe('AbwabWriteController', () => {
     });
   });
 
+  describe('the bulk-archive stale-id 404 (Slice D): archived ids never reach the wire, and a 404 names doors', () => {
+    const parentAndChildBothArchived: AbwabTreeDto = {
+      doors: [
+        door({ id: 1, name: 'د-أب', isArchived: true, version: 9 }),
+        door({ id: 2, name: 'د-ابن', parentId: 1, isArchived: true, version: 9 }),
+        door({ id: 3, name: 'باب حي', version: 9 }),
+      ],
+      sections: [],
+      version: 'v',
+    };
+
+    it('submits only doors the snapshot still shows live', () => {
+      let captured: BulkMoveDoorsCommand | null = null;
+      const { controller, facade, selection } = setup({
+        getTree: () => of(ok<AbwabTreeDto>(parentAndChildBothArchived)),
+        bulkMoveDoors: (command) => {
+          captured = command;
+          return of(ok<AbwabDoorDto[]>([]));
+        },
+      });
+      facade.load();
+      selection.setBulkMode(true);
+      // Straight into the set, bypassing the rebind that would already have dropped them —
+      // the filter has to hold on its own.
+      selection.toggleBulk(1, 9);
+      selection.toggleBulk(2, 9);
+      selection.toggleBulk(3, 9);
+
+      controller.bulkMoveDoors(null, null).subscribe();
+
+      expect(captured).toEqual({ doors: [{ doorId: 3, version: 9 }], targetParentId: null, targetSectionId: null });
+    });
+
+    // The only 404 that can still reach the user: another client archived the doors, so this
+    // client's snapshot still showed them live and the submit filter had no reason to drop them.
+    it('names the vanished doors on a 404, reading them off the snapshot the failure refetches', () => {
+      let getTreeCalls = 0;
+      const { controller, facade, selection } = setup({
+        getTree: () => {
+          getTreeCalls += 1;
+          return of(
+            ok<AbwabTreeDto>(
+              getTreeCalls === 1
+                ? {
+                    doors: [door({ id: 1, name: 'د-أب' }), door({ id: 2, name: 'د-ابن', parentId: 1 })],
+                    sections: [],
+                    version: 'v',
+                  }
+                : parentAndChildBothArchived,
+            ),
+          );
+        },
+        bulkArchiveDoors: () => throwError(() => httpError(404, 'الباب غير موجود')),
+      });
+      facade.load();
+      selection.setBulkMode(true);
+      selection.toggleBulk(1, 1);
+      selection.toggleBulk(2, 1);
+
+      let outcome: unknown;
+      controller.bulkArchiveDoors().subscribe((result) => (outcome = result));
+
+      const expected = ABWAB_LABELS.bulkVanishedMessage(2, 'د-أب، د-ابن');
+      expect(outcome).toEqual({ kind: 'invalid', message: expected });
+      expect(controller.announcement()).toBe(expected);
+      expect(selection.bulkSet().size).toBe(0); // the refresh's rebind dropped them
+    });
+
+    it('falls back to the backend message when the refreshed snapshot still shows every attempted door live', () => {
+      const { controller, facade, selection } = setup({
+        getTree: () =>
+          of(ok<AbwabTreeDto>({ doors: [door({ id: 3, name: 'باب حي', version: 9 })], sections: [], version: 'v' })),
+        bulkArchiveDoors: () => throwError(() => httpError(404, 'الباب غير موجود')),
+      });
+      facade.load();
+      selection.setBulkMode(true);
+      selection.toggleBulk(3, 9);
+
+      let outcome: unknown;
+      controller.bulkArchiveDoors().subscribe((result) => (outcome = result));
+
+      expect(outcome).toEqual({ kind: 'invalid', message: 'الباب غير موجود' });
+    });
+
+    it('drops the archived ids from the bulk set after a successful bulk archive', () => {
+      let getTreeCalls = 0;
+      const { controller, facade, selection } = setup({
+        getTree: () => {
+          getTreeCalls += 1;
+          return of(
+            ok<AbwabTreeDto>(
+              getTreeCalls === 1
+                ? {
+                    doors: [door({ id: 1, name: 'د-أب' }), door({ id: 2, name: 'د-ابن', parentId: 1 })],
+                    sections: [],
+                    version: 'v',
+                  }
+                : parentAndChildBothArchived,
+            ),
+          );
+        },
+        bulkArchiveDoors: () => of(ok<number[]>([1, 2])),
+      });
+      facade.load();
+      selection.setBulkMode(true);
+      selection.toggleBulk(1, 1);
+      selection.toggleBulk(2, 1);
+
+      controller.bulkArchiveDoors().subscribe();
+
+      expect(selection.bulkSet().size).toBe(0);
+    });
+  });
+
   describe('M18 — archive confirms with the live-subtree count derived from the snapshot', () => {
     it('counts the door itself plus every live descendant, two levels deep', () => {
       const { controller, facade } = setup({

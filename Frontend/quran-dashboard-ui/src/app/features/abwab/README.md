@@ -303,6 +303,17 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   regardless of scope, so no frontend code changes because of this — but it does mean a narrower,
   scope-only refresh would no longer be safe. Skipping the refresh reproduces spurious `409`s on
   the very next write.
+- **"Dropping ids that vanished" means archived, not missing — for the bulk set.** The §4.6
+  rebind rule reads as if a vanished door leaves the snapshot; none does. An archive is a soft
+  delete, and `abwab-tree.builder.ts` sets **every** door into `byId`, archived ones included
+  (it builds `archivedRoots` through the same `build()`), so the naive `if (node)` test never
+  fired in production: a just-archived door stayed in the bulk set with a **freshly rebound**
+  version. Nothing looked stale, and the next bulk submit sent it — the writer loads live rows
+  only, the count mismatches, and the whole all-or-nothing operation 404s on the generic
+  «الباب غير موجود». `rebindTo` therefore tests `node && !node.isArchived` for the bulk set, and
+  `AbwabWriteController` filters the refs again at submit. The **single** selection keeps the
+  missing-only rule on purpose: the archive-confirm flow and the URL's scope invalidation
+  already clear it, and the archive view needs it to survive so restore has a subject.
 - **Two independent root orders: superset vs section.** Root doors carry a second, independent
   order, `globalOrderValue`, used **only** by «كل الأبواب» (the superset —
   `activeSectionId() === null`); every section tab keeps ordering and editing by `orderValue`, and
