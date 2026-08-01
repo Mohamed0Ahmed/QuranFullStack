@@ -1,4 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
 import { Observable } from 'rxjs';
 
@@ -33,6 +46,9 @@ let nextModalId = 0;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AbwabSectionsModalComponent {
+  private readonly injector = inject(Injector);
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+
   readonly open = input(false);
   readonly sections = input<readonly AbwabTreeSectionDto[]>([]);
   readonly createSection = input.required<(name: string) => Observable<AbwabWriteOutcome<AbwabSectionDto>>>();
@@ -51,8 +67,14 @@ export class AbwabSectionsModalComponent {
   protected readonly newSectionName = signal('');
   protected readonly editingId = signal<number | null>(null);
   protected readonly editingName = signal('');
+  // Separate from editingId on purpose (§4.2-15): a rename and an order edit are independent
+  // drafts, and only a rename/typed-name counts as unsaved work — see isDirty below.
+  protected readonly editingOrderId = signal<number | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly confirmingDiscard = signal(false);
+
+  // Unique at any moment: only one row's editing branch renders the input at a time.
+  private readonly orderInput = viewChild<ElementRef<HTMLInputElement>>('orderInput');
 
   /** Unsaved work is a typed section name or a rename draft that differs from the saved name;
    * an opened rename the user has not altered is not a change to discard. */
@@ -80,6 +102,14 @@ export class AbwabSectionsModalComponent {
   protected get discardChangesLabel(): string { return ABWAB_LABELS.discardChangesButton; }
   protected get keepEditingLabel(): string { return ABWAB_LABELS.keepEditingButton; }
 
+  protected orderAriaLabel(sectionName: string, order: number): string {
+    return ABWAB_LABELS.sectionOrderAriaLabel(sectionName, order);
+  }
+
+  protected orderInputAriaLabel(sectionName: string): string {
+    return ABWAB_LABELS.sectionOrderInputAriaLabel(sectionName);
+  }
+
   constructor() {
     // This modal is a static sibling on the page shell, so the instance outlives every close and
     // only its inner template is destroyed — unlike the door modal, whose drafts live in a
@@ -97,6 +127,7 @@ export class AbwabSectionsModalComponent {
     this.newSectionName.set('');
     this.editingId.set(null);
     this.editingName.set('');
+    this.editingOrderId.set(null);
     this.errorMessage.set(null);
     this.confirmingDiscard.set(false);
   }
@@ -154,6 +185,72 @@ export class AbwabSectionsModalComponent {
     this.deleteSection()(id).subscribe((outcome) => {
       this.errorMessage.set(outcome.kind === 'success' ? null : outcome.message);
     });
+  }
+
+  protected startOrderEdit(section: AbwabTreeSectionDto, event: Event): void {
+    // Stops here (not just on the input) so a future row-level click handler cannot fight it.
+    event.stopPropagation();
+    this.editingOrderId.set(section.id);
+    this.errorMessage.set(null);
+    afterNextRender(() => this.orderInput()?.nativeElement.focus(), { injector: this.injector });
+  }
+
+  protected onOrderKeydown(event: KeyboardEvent, id: number): void {
+    // Mandatory, not cosmetic: the dialog binds (keydown.escape)="requestClose()" on itself, and
+    // without this the modal would close under an in-progress order edit (§4.2-9).
+    event.stopPropagation();
+    if (event.key === 'Enter') {
+      this.commitOrderEdit(id, event.target);
+    } else if (event.key === 'Escape') {
+      this.cancelOrderEdit(id);
+    }
+  }
+
+  /** Guarded on the same id as commitOrderEdit, so the blur that follows an Enter commit (the
+   * input unmounts under the focused element) finds editingOrderId already cleared and does
+   * nothing — the tree's order editor uses the same guard. */
+  protected cancelOrderEdit(id: number): void {
+    if (this.editingOrderId() !== id) {
+      return;
+    }
+    this.editingOrderId.set(null);
+    this.focusOrderButton(id);
+  }
+
+  protected commitOrderEdit(id: number, target: EventTarget | null): void {
+    if (this.editingOrderId() !== id) {
+      return;
+    }
+    this.editingOrderId.set(null);
+    this.focusOrderButton(id);
+
+    const input = target as HTMLInputElement | null;
+    const value = input ? Number(input.value) : Number.NaN;
+    if (!Number.isInteger(value) || value < 1) {
+      return;
+    }
+    // The row's *current* version, read at submit time — never a value captured when the
+    // editor opened (matches saveRename above).
+    const current = this.sections().find((section) => section.id === id);
+    if (!current) {
+      return;
+    }
+    this.reorderSection()(id, value, current.version).subscribe((outcome) => {
+      this.errorMessage.set(outcome.kind === 'success' ? null : outcome.message);
+    });
+  }
+
+  // No viewChild here: at commit/cancel time every row not being edited renders its own order
+  // button under the same #orderButton template reference, so a single viewChild() query would
+  // be ambiguous about which row's button to return focus to. Scoping by this row's own testid
+  // through the host ElementRef is unambiguous.
+  private focusOrderButton(id: number): void {
+    afterNextRender(
+      () => this.elementRef.nativeElement
+        .querySelector<HTMLButtonElement>(`[data-testid="abwab-sections-modal-order-${id}"]`)
+        ?.focus(),
+      { injector: this.injector },
+    );
   }
 
   protected requestClose(): void {

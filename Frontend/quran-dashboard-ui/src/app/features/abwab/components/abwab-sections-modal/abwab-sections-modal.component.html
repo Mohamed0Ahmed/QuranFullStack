@@ -25,6 +25,28 @@
         <ul class="abwab-sections-modal__list">
           @for (section of sections(); track section.id) {
             <li class="abwab-sections-modal__row" [attr.data-testid]="'abwab-sections-modal-row-' + section.id">
+              @if (editingOrderId() === section.id) {
+                <input
+                  #orderInput
+                  type="number"
+                  min="1"
+                  class="abwab-sections-modal__order-input"
+                  [value]="section.orderValue"
+                  [attr.aria-label]="orderInputAriaLabel(section.name)"
+                  [attr.data-testid]="'abwab-sections-modal-order-input-' + section.id"
+                  (click)="$event.stopPropagation()"
+                  (keydown)="onOrderKeydown($event, section.id)"
+                  (blur)="cancelOrderEdit(section.id)"
+                />
+              } @else {
+                <button
+                  type="button"
+                  class="abwab-sections-modal__order qd-chip qd-chip--pill"
+                  [attr.aria-label]="orderAriaLabel(section.name, section.orderValue)"
+                  [attr.data-testid]="'abwab-sections-modal-order-' + section.id"
+                  (click)="startOrderEdit(section, $event)"
+                >{{ section.orderValue }}</button>
+              }
               @if (editingId() === section.id) {
                 <input
                   type="text"

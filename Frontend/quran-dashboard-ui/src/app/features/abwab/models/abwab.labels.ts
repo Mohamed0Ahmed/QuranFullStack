@@ -176,6 +176,10 @@ export const ABWAB_LABELS = {
   addSectionButton: 'إضافة قسم',
   renameSectionButton: 'إعادة تسمية',
   deleteSectionButton: 'حذف',
+  // The order trigger's visible content is a bare numeral (the tree's chip convention), so its
+  // accessible name has to say both which section and what the number means.
+  sectionOrderAriaLabel: (sectionName: string, order: number): string => `ترتيب «${sectionName}»: ${order}`,
+  sectionOrderInputAriaLabel: (sectionName: string): string => `أدخل ترتيبًا جديدًا لـ«${sectionName}»`,
 
   archiveEmptyMessage: 'لا توجد أبواب مؤرشفة.',
   restoreButton: 'استرجاع',

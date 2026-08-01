@@ -80,6 +80,115 @@ describe('AbwabSectionsModalComponent', () => {
     expect(renameSection).toHaveBeenCalledWith(1, 'اسم معدّل', 3);
   });
 
+  describe('T601-602 — the order editor: click opens, Enter commits, Escape/blur cancel', () => {
+    function keydown(el: Element, key: string): void {
+      el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+    }
+
+    it('click opens the editor seeded with the current order', () => {
+      const { fixture } = render();
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-sections-modal-order-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      const input = root.querySelector<HTMLInputElement>('[data-testid="abwab-sections-modal-order-input-1"]')!;
+      expect(input).toBeTruthy();
+      expect(input.value).toBe('1');
+    });
+
+    it('Enter submits reorderSection with the id, the typed position, and the live version', () => {
+      const { fixture, reorderSection } = render();
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-sections-modal-order-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      const input = root.querySelector<HTMLInputElement>('[data-testid="abwab-sections-modal-order-input-1"]')!;
+      input.value = '2';
+      keydown(input, 'Enter');
+
+      expect(reorderSection).toHaveBeenCalledWith(1, 2, 3);
+    });
+
+    it('Escape cancels the edit and the modal stays open (§4.2-9)', () => {
+      const { fixture, reorderSection } = render();
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-sections-modal-order-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      const input = root.querySelector<HTMLInputElement>('[data-testid="abwab-sections-modal-order-input-1"]')!;
+      keydown(input, 'Escape');
+      fixture.detectChanges();
+
+      expect(reorderSection).not.toHaveBeenCalled();
+      expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-sections-modal-order-input-1"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-sections-modal-order-1"]')).toBeTruthy();
+    });
+
+    it('blur cancels without submitting', () => {
+      const { fixture, reorderSection } = render();
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-sections-modal-order-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      const input = root.querySelector<HTMLInputElement>('[data-testid="abwab-sections-modal-order-input-1"]')!;
+      input.value = '2';
+      input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
+      fixture.detectChanges();
+
+      expect(reorderSection).not.toHaveBeenCalled();
+      expect(root.querySelector('[data-testid="abwab-sections-modal-order-input-1"]')).toBeNull();
+    });
+
+    it('a non-integer or zero input submits nothing', () => {
+      const { fixture, reorderSection } = render();
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-sections-modal-order-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      const input = root.querySelector<HTMLInputElement>('[data-testid="abwab-sections-modal-order-input-1"]')!;
+      input.value = '0';
+      keydown(input, 'Enter');
+
+      expect(reorderSection).not.toHaveBeenCalled();
+    });
+
+    it('a 409 outcome renders the error strip', () => {
+      const backendMessage = 'تم تعديل القسم من مستخدم آخر، يرجى التحديث والمحاولة مرة أخرى';
+      const { fixture } = render({ reorderSection: vi.fn().mockReturnValue(of(conflict(backendMessage))) });
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-sections-modal-order-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      const input = root.querySelector<HTMLInputElement>('[data-testid="abwab-sections-modal-order-input-1"]')!;
+      input.value = '2';
+      keydown(input, 'Enter');
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-sections-modal-error"]')?.textContent).toContain(
+        backendMessage,
+      );
+    });
+
+    // An open order edit is not unsaved work (§4.2-15) — Escape closes immediately, and the
+    // static-sibling reset on reopen still clears it so a reopen never shows a stale edit.
+    it('resetDraft on reopen clears an open order edit', () => {
+      const { fixture } = render();
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-sections-modal-order-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-sections-modal-order-input-1"]')).toBeTruthy();
+
+      fixture.componentRef.setInput('open', false);
+      fixture.detectChanges();
+      fixture.componentRef.setInput('open', true);
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-sections-modal-order-input-1"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-sections-modal-order-1"]')).toBeTruthy();
+    });
+  });
+
   describe('M27 — delete answers a 409 and keeps the modal open', () => {
     it('shows the backend conflict message inline and never closes the modal', () => {
       const backendMessage = 'لا يمكن حذف القسم لاحتوائه على أبواب حالية';
@@ -286,7 +395,9 @@ describe('AbwabSectionsModalComponent', () => {
 
       expect(dialog.hasAttribute('cdkTrapFocus')).toBe(true);
       expect(dialog.hasAttribute('cdkTrapFocusAutoCapture')).toBe(true);
-      expect(dialog.querySelector('button')).toBe(root.querySelector('[data-testid="abwab-sections-modal-rename-1"]'));
+      // The order trigger is a real <button> (§4.2-16) and renders before rename/delete in DOM
+      // order, so it — not rename — is now the row's first focusable control.
+      expect(dialog.querySelector('button')).toBe(root.querySelector('[data-testid="abwab-sections-modal-order-1"]'));
     });
 
     it('keeps the close control and the guard out of the scrolling body', () => {
