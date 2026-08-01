@@ -255,3 +255,41 @@ Same process, warm, `curl` against `https://localhost:5015`:
 So a revalidation costs **zero body bytes and ~0.008 s** against ~140 kB and ~0.014 s for a cached
 `200` — and against the 3.4 s cold read the baseline measured. The `304` path was separately shown
 to run **zero database queries** (Phase 3's `Executed DbCommand` count).
+
+## Phase 6 — Docs true again
+
+### T601 — The amendment pass
+
+| File | What changed |
+|---|---|
+| `Backend/.architecture/API_GUIDELINES.md` | §4 gains `304 Not Modified` as the second sanctioned bodiless status. §5 gains a **Conditional GETs** subsection: `ETag` + `Cache-Control: no-store` on every `200`, `304` bodiless with the same headers and **no query**, opaque server-generation validators, exact ordinal member match with fail-open on malformed and `*`, no validator headers on a `404`, and a pointer — not a restatement — to the reads README for the single-instance constraint. |
+| `.architecture/API_INTEGRATION_GUIDELINES.md` | "HTTP Errors vs Backend Failure Responses" gains its third category: a `304` on the error channel is not a failure; handle it before the generic branch; validator lives beside the value as one unit and is dropped with it; per-resource validators are id-keyed; `observe: 'response'` is the sanctioned shape; and `ETag` is unreadable cross-origin without `WithExposedHeaders` — verifiable only in a browser. |
+| `Persistence/Reads/Abwab/README.md` | The "No caching" bullet is replaced by a **Caching and invalidation** section: the two decorators, the entry inventory, the generation stamp and capture-before-load rule, why `CacheLoadGate` is not reused, why a template-detail miss is never cached, the archive-is-not-a-resource rule, the relations exclusion, and the **single-instance constraint with its migration path**. The `Version`-ignores-relations bullet gains the clause that the cache validator ignores `Version` right back. |
+| `Persistence/Writes/Abwab/README.md` | Gains the eviction obligation as a convention: every writer interface is DI-wrapped by an invalidating decorator; the bump is in `finally` (why); it runs after the inner commit and before the handler resumes (why that satisfies the ordering rule by construction); and **a sixth writer or a new interface method must go through its decorator** — the compile error is the guard, the `finally` bump is the review line. |
+| `features/abwab/README.md` | The `version` gotcha is amended to **distinguish, not weaken**: `version` describes, `xmin` detects conflicts, the `ETag` validates a representation. New gotchas: validator-beside-value as one unit (including the id-keyed selected validator and its `clearSelection` drop), `304` = keep current value and never a banner, the route-entry `load()` stays unconditional and now costs a `304`, and the archive view is a partition of the cached snapshot rather than a cacheable resource. The «`modal` enters no `ETag`» paragraph gains the confirming clause from T102. |
+| `docs/TESTING_DEBT.md` | New `ux-slice-i` section with rows I1–I4 (T602). |
+| root `CLAUDE.md` | Active Spec Kit Feature set at T101, back to `None` at T602. |
+
+### T602 — Debt, sweep, close-out
+
+- `docs/TESTING_DEBT.md` gains the `ux-slice-i` section, rows **I1–I4**. Row I3's wording names the
+  harness these specs actually use — stubbing the api with `throwError(() => new HttpErrorResponse({ status: 304 }))` —
+  rather than the plan's `HttpTestingController.flush`, which they do not use; a row naming the wrong
+  harness is not payable.
+- **T102's sweep re-run.** `No caching` and `no invalidation` now match **only inside the amended
+  text itself** (`Reads/Abwab/README.md:108-109`, the sentence recording that the old rule stood
+  while there was no invalidation story). Remaining `diagnostics only` hits are all still-true
+  statements: the amended feature-README gotcha, `abwab.models.ts:190`, `AbwabDoorRelation.cs:35`,
+  and unrelated logging/test uses. No unamended falsified statement remains.
+- **Bypass census re-run at close.** Grepping every abwab `DbSet` name across `Backend/` outside
+  `Persistence/{Reads,Writes}/Abwab/`, migrations, EF configurations and tests returns **nothing** —
+  no 22nd write path, so all 21 routes still reach an invalidator through one of the five decorated
+  writer seams (5 `Invalidating*` registrations in `AbwabDependencyInjection`).
+- **No planning folder was deleted, swept, or repointed**, per the standing decision.
+
+### Close-out
+
+The abwab UX/UI overhaul series (Slices A–I) is complete with this slice. The deferred
+**planning-artifact cleanup pass** — the root `CLAUDE.md` lifecycle rule and the N-2 buffer
+arithmetic across the nine slice folders plus the audit — is the next piece of work and is
+commissioned separately. This slice schedules none of it.
