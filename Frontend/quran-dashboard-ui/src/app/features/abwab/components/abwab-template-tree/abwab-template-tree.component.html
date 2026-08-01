@@ -7,6 +7,8 @@
       [attr.aria-level]="row.node.depth + 1"
       [style.--abwab-template-tree-depth]="row.node.depth"
       [attr.data-testid]="'abwab-template-tree-row-' + row.node.id"
+      (contextmenu)="onRowContextMenu($event, row.node.id)"
+      (keydown)="onRowKeydown($event, row.node.id)"
     >
       <!-- A leaf keeps the element for alignment only: no tab stop, nothing to announce. -->
       <button

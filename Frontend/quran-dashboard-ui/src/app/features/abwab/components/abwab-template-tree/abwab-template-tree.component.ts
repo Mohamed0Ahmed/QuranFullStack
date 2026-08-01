@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, input, output, signal } from '@angular/core';
 
 import { AbwabTemplateNodeVm } from '../../models/abwab-templates.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -25,9 +25,13 @@ interface AbwabTemplateTreeRow {
  * It renders a list rather than `role="tree"`, deliberately: the doors tree earns that role with
  * a full RTL-mirrored keyboard model, and claiming the role without the arrow-key model would
  * promise a navigation contract this component does not implement. Every row is reachable by Tab
- * through its own controls, and `aria-level` still conveys depth.
+ * through its own controls, and `aria-level` still conveys depth. ux-slice-g adds `ContextMenu` /
+ * `Shift+F10` as a third path to the same row menu (alongside `⋯` and right-click): the row `<div>`
+ * catches the key as it bubbles from whichever of the row's own controls has focus, so no row
+ * becomes a tab stop and this reasoning still holds.
  *
- * Presentational — every action is an output and no service is injected.
+ * Presentational — every action is an output; the only injected dependency is `ElementRef`, read
+ * to anchor the keyboard menu path at the focused row's own bounding rect.
  */
 @Component({
   selector: 'qd-abwab-template-tree',
@@ -37,6 +41,8 @@ interface AbwabTemplateTreeRow {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AbwabTemplateTreeComponent {
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+
   readonly root = input<AbwabTemplateNodeVm | null>(null);
   readonly ariaLabel = input('');
 
@@ -103,6 +109,32 @@ export class AbwabTemplateTreeComponent {
 
   protected onMoreClick(event: MouseEvent, nodeId: number): void {
     this.menuRequested.emit({ nodeId, x: event.clientX, y: event.clientY });
+  }
+
+  /** No bulk-mode guard here, unlike the doors tree's equivalent: the workshop tree has no bulk
+   * mode, so importing the guard would be a branch that can never be taken. */
+  protected onRowContextMenu(event: MouseEvent, nodeId: number): void {
+    event.preventDefault();
+    this.menuRequested.emit({ nodeId, x: event.clientX, y: event.clientY });
+  }
+
+  /** Bubbles from whichever of the row's own controls (chevron / ＋ / ⋯) has focus — there is no
+   * roving-tabindex model here, so the row itself is what catches the key. Anchored at the row's
+   * own bounding rect, falling back to (0, 0) only if the row is missing — a menu pinned at the
+   * viewport origin is not a usable keyboard path (the doors tree's own reason, carried over). */
+  protected onRowKeydown(event: KeyboardEvent, nodeId: number): void {
+    if (event.key !== 'ContextMenu' && !(event.key === 'F10' && event.shiftKey)) {
+      return;
+    }
+    event.preventDefault();
+    const rect = this.rowElement(nodeId)?.getBoundingClientRect();
+    this.menuRequested.emit({ nodeId, x: rect?.left ?? 0, y: rect?.bottom ?? 0 });
+  }
+
+  private rowElement(nodeId: number): HTMLElement | null {
+    return this.elementRef.nativeElement.querySelector<HTMLElement>(
+      `[data-testid="abwab-template-tree-row-${nodeId}"]`,
+    );
   }
 
   /** The root has no siblings, so its chip is the `◆` marker and is not an order editor. */

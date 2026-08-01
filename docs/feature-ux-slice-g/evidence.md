@@ -146,3 +146,33 @@ carries no `[ProducesResponseType]`, so the new `400` adds nothing to the OpenAP
 - `npm test -- --include="…/abwab-template-copy-modal/**/*.spec.ts"`: 11 passed, 0 failed —
   unedited. The spec's default `templateNodeCount` fixture (4) keeps every existing case's
   `hasElements()` true, so T602 could not have touched their outcomes.
+
+## Phase 7 — T701-T703: item 21(a), browser-walked
+
+Backend started with Kestrel serving the frontend's mkcert PEM
+(`ASPNETCORE_Kestrel__Certificates__Default__Path`/`KeyPath` → `Frontend/quran-dashboard-ui/
+localhost.pem`/`localhost-key.pem`), `dotnet run --project api/QuranDashboard.Api --launch-profile
+https`; frontend `npm run start:https`. Local Postgres, template «الثمرات» (root + 4 children),
+one child («اهدافه») given a grandchild («هدف فرعي») to make it genuinely two-level for this walk
+— left in place afterwards and reused as the T902 acceptance-pass fixture.
+
+Walked at `/abwab/templates`, jsdom cannot reach any of this (Precondition table — no spec exists
+for this component):
+
+| Step | Result |
+|---|---|
+| Right-click a row | Custom `qd-context-menu` opens at the pointer; the browser's native menu does not appear |
+| `Escape` | Dismisses |
+| Focus `⋯`, then `Shift+F10` | Menu opens anchored under the row's start edge (not the viewport origin) |
+| Focus the chevron (via click, toggling collapse), then `Shift+F10` | Same menu, same anchor — confirms the keydown bubbles from whichever control has focus, not just `⋯` |
+| Tab from the chevron to `＋`, then `Shift+F10` | Same again — third control confirmed |
+| Click outside (backdrop) | Dismisses |
+| `⋯` and right-click on the **root** row («الثمرات») | Both open the menu with **«حذف القالب»** in place of «حذف العنصر» — the root-vs-node swap (page-side, already built in Slice A/21(a) precondition) is untouched by the two new emit paths |
+
+**Not forced this walk:** the RTL near-edge overflow gap. No row in this template's tree
+happened to render near the viewport edge, and the primitive itself is untouched (§3), so there
+is no reason to expect it regressed — recorded as not directly observed rather than claimed.
+
+Two Chrome-DevTools-MCP screenshot calls timed out transiently mid-walk (`Page.captureScreenshot`
+timeout) with no console errors and no loss of app state across the retry — treated as an
+automation-channel hiccup, not an application defect.
