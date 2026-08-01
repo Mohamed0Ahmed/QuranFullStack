@@ -28,6 +28,7 @@ import { parseAbwabQueryParams, buildAbwabQueryParams } from '../../state/abwab-
 import {
   ABWAB_ORDER_SCOPE_TO_WIRE,
   AbwabModalKind,
+  AbwabModalState,
   AbwabNode,
   AbwabOrderScope,
   AbwabView,
@@ -40,7 +41,10 @@ import { AbwabArchiveViewComponent } from '../../components/abwab-archive-view/a
 import { AbwabSidePanelComponent } from '../../components/abwab-side-panel/abwab-side-panel.component';
 import { AbwabAnnouncerComponent } from '../../components/abwab-announcer/abwab-announcer.component';
 import { AbwabDoorModalComponent } from '../../components/abwab-door-modal/abwab-door-modal.component';
-import { AbwabMovePickerComponent } from '../../components/abwab-move-picker/abwab-move-picker.component';
+import {
+  AbwabMoveDestination,
+  AbwabMovePickerComponent,
+} from '../../components/abwab-move-picker/abwab-move-picker.component';
 import { AbwabSectionsModalComponent } from '../../components/abwab-sections-modal/abwab-sections-modal.component';
 import { AbwabRelationsModalComponent } from '../../components/abwab-relations-modal/abwab-relations-modal.component';
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
@@ -62,6 +66,10 @@ const NO_ROOTS: readonly AbwabNode[] = [];
 /** How long the reveal mark is held. Must match the animation duration in
  * `abwab-tree.component.scss`, which decays over the same span. */
 const REVEAL_HOLD_MS = 3000;
+
+/** The three modes the one door modal serves — which of them it is showing is the private
+ * signal set the opener wrote, so the URL kind is the page's own record of it. */
+const DOOR_MODAL_KINDS: readonly AbwabModalKind[] = ['create', 'child', 'edit'];
 
 /**
  * Route shell for `/abwab` (plan-slice-b.md T415/T501-T511): URL ⇄ state wiring,
@@ -117,6 +125,7 @@ export class AbwabPageComponent implements OnInit {
   protected readonly archiveParam = signal(false);
   protected readonly cardParam = signal<number | null>(null);
   protected readonly searchQueryParam = signal('');
+  protected readonly modalParam = signal<AbwabModalState | null>(null);
 
   protected readonly sections = computed(() => this.facade.snapshot()?.sections ?? []);
   protected readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
@@ -165,6 +174,9 @@ export class AbwabPageComponent implements OnInit {
    * null while a bulk gesture owns the move picker or the relations modal, which is what
    * keeps those session-transient overlays out of the URL's reach (plan-slice-e.md §2). */
   private openedModalKind: AbwabModalKind | null = null;
+
+  /** Set by the door modal's `saved` output, read by the `closed` that follows it. */
+  private doorModalCommitted = false;
 
   /** The target's ancestor chain, walked up `parentId` the way the cards breadcrumb does.
    * Handed to the tree as a **seed**, not a force: forced-open ids cannot be collapsed, and a
@@ -254,6 +266,7 @@ export class AbwabPageComponent implements OnInit {
       this.archiveParam.set(parsed.archive);
       this.cardParam.set(parsed.card);
       this.searchQueryParam.set(parsed.q);
+      this.modalParam.set(parsed.modal);
       this.selection.setArchiveViewActive(parsed.archive);
       // The URL is the single source of truth for the selection, exactly as it already is
       // for view/archive/card/q. `buildAbwabQueryParams` drops `door` whenever the scope
@@ -504,6 +517,64 @@ export class AbwabPageComponent implements OnInit {
 
   protected onCtxRelations(): void {
     this.overlays.ctxRelations((id) => this.commitModalOpen('relations', id));
+  }
+
+  // Closing keeps the overlay in the URL in a retained state, so the page can offer it back
+  // (the words overlay's contract, `detail-overlay-history.service.ts:125-141`). Retains and
+  // discards both replace, so the closed state never becomes its own Back target; only
+  // opening and restoring push.
+
+  protected onDoorModalSaved(): void {
+    this.doorModalCommitted = true;
+  }
+
+  protected onDoorModalClosed(): void {
+    // A saved door has nothing left to restore — offering to reopen the form it was written
+    // in would point at work that is already committed.
+    const committed = this.doorModalCommitted;
+    this.doorModalCommitted = false;
+    this.closeUrlBackedModal(DOOR_MODAL_KINDS, () => this.overlays.closeModal(), committed);
+  }
+
+  protected onMovePickerClosed(): void {
+    this.closeUrlBackedModal(['move'], () => this.overlays.closeMovePicker());
+  }
+
+  protected onMoveConfirmed(destination: AbwabMoveDestination): void {
+    this.closeUrlBackedModal(['move'], () => this.overlays.confirmMove(destination), true);
+  }
+
+  protected onSectionsModalClosed(): void {
+    this.closeUrlBackedModal(['sections'], () => this.overlays.closeSectionsModal());
+  }
+
+  protected onRelationsModalClosed(): void {
+    this.closeUrlBackedModal(['relations'], () => this.overlays.closeRelationsModal());
+  }
+
+  protected onModalRestoreRequested(): void {
+    const modal = this.modalParam();
+    if (modal === null || !modal.closed) {
+      return;
+    }
+    // A push, so Back returns to the closed state rather than skipping past it.
+    this.updateQueryParams(buildAbwabQueryParams({ modal: { kind: modal.kind, closed: false } }));
+  }
+
+  protected onModalDiscardRequested(): void {
+    this.updateQueryParams(buildAbwabQueryParams({ modal: null }), true);
+  }
+
+  /** `kinds` is what this overlay can be holding on the URL's behalf. A mismatch means a bulk
+   * gesture opened it — the key was never written, so closing must not write one either. */
+  private closeUrlBackedModal(kinds: readonly AbwabModalKind[], close: () => void, discard = false): void {
+    const kind = this.openedModalKind;
+    close();
+    if (kind === null || !kinds.includes(kind)) {
+      return;
+    }
+    this.openedModalKind = null;
+    this.updateQueryParams(buildAbwabQueryParams({ modal: discard ? null : { kind, closed: true } }), true);
   }
 
   private openOnSelectedDoor(kind: AbwabModalKind, open: () => void): void {

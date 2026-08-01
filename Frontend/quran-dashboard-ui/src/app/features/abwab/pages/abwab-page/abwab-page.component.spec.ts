@@ -884,6 +884,111 @@ describe('AbwabPageComponent', () => {
       expect(lastPatch()).toEqual({ door: '2' });
     });
 
+    function lastCallExtras(): { queryParams: Record<string, string | null>; replaceUrl?: boolean } {
+      const calls = (modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+      return calls[calls.length - 1][1] as { queryParams: Record<string, string | null>; replaceUrl?: boolean };
+    }
+
+    it('opening pushes, so the closed state it came from stays reachable by Back', () => {
+      const root = renderAt().nativeElement as HTMLElement;
+
+      click(root, 'abwab-page-manage-sections');
+
+      expect(lastCallExtras().replaceUrl).toBe(false);
+    });
+
+    it('Escape on an open modal retains it as <kind>-closed, by replace', () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      click(root, 'abwab-page-manage-sections');
+      fixture.detectChanges();
+
+      (root.querySelector('[data-testid="abwab-sections-modal-close"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: 'sections-closed' }, replaceUrl: true });
+      expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeNull();
+    });
+
+    it('a saved door discards the key instead of retaining it — the form’s work is committed', async () => {
+      const createDoor = vi.fn().mockReturnValue(of(ok(door({ id: 9, name: 'باب جديد' }))));
+      getTestBed().resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [AbwabPageComponent],
+        providers: [
+          provideRouter([]),
+          {
+            provide: AbwabApi,
+            useValue: { getTree: vi.fn().mockReturnValue(of(ok(TREE))), createDoor },
+          },
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: params$, snapshot: { queryParamMap: convertToParamMap({}) } },
+          },
+        ],
+      }).compileComponents();
+      modalRouter = TestBed.inject(Router);
+      vi.spyOn(modalRouter, 'navigate').mockResolvedValue(true);
+
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-page-add-root');
+      fixture.detectChanges();
+      const nameInput = root.querySelector('[data-testid="abwab-door-modal-name"]') as HTMLInputElement;
+      nameInput.value = 'باب جديد';
+      nameInput.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      (root.querySelector('[data-testid="abwab-door-modal-save"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      expect(createDoor).toHaveBeenCalled();
+      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: null }, replaceUrl: true });
+    });
+
+    it('restore pushes the kind back open; discard replaces the key away', () => {
+      const fixture = renderAt({ modal: 'sections-closed' });
+      const page = fixture.componentInstance as unknown as {
+        onModalRestoreRequested: () => void;
+        onModalDiscardRequested: () => void;
+      };
+
+      page.onModalRestoreRequested();
+      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: 'sections' }, replaceUrl: false });
+
+      page.onModalDiscardRequested();
+      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: null }, replaceUrl: true });
+    });
+
+    it('restore does nothing when the parsed state is already open or absent', () => {
+      const fixture = renderAt({ modal: 'sections' });
+      const page = fixture.componentInstance as unknown as { onModalRestoreRequested: () => void };
+      const before = (modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls.length;
+
+      page.onModalRestoreRequested();
+
+      expect((modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls).toHaveLength(before);
+    });
+
+    it('closing a bulk-opened overlay writes nothing — the URL never held it', () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      click(root, 'abwab-side-panel-bulk-toggle');
+      fixture.detectChanges();
+      click(root, 'abwab-tree-checkbox-2');
+      fixture.detectChanges();
+      click(root, 'abwab-side-panel-bulk-move');
+      fixture.detectChanges();
+      const before = (modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls.length;
+
+      (root.querySelector('[data-testid="abwab-move-picker-cancel"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      expect((modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls).toHaveLength(before);
+      expect(root.querySelector('[data-testid="abwab-move-picker"]')).toBeNull();
+    });
+
     it('the bulk overlays never write the key — their subject is bulkSet, which is not URL state', () => {
       const fixture = renderAt();
       const root = fixture.nativeElement as HTMLElement;

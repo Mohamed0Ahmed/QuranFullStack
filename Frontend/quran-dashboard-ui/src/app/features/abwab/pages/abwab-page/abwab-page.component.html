@@ -270,7 +270,8 @@
   [parentId]="overlays.modalParentId()"
   [parentName]="overlays.modalParentName()"
   [activeSectionId]="activeSectionId()"
-  (closed)="overlays.closeModal()"
+  (saved)="onDoorModalSaved()"
+  (closed)="onDoorModalClosed()"
 />
 
 <qd-abwab-move-picker
@@ -279,8 +280,8 @@
   [liveRoots]="pickerLiveRoots()"
   [excludedIds]="overlays.moveExcludedIds()"
   [titleText]="overlays.moveTitleText()"
-  (closed)="overlays.closeMovePicker()"
-  (confirmed)="overlays.confirmMove($event)"
+  (closed)="onMovePickerClosed()"
+  (confirmed)="onMoveConfirmed($event)"
 />
 
 <qd-abwab-relations-modal
@@ -293,7 +294,7 @@
   [loadRelations]="overlays.loadRelations"
   [addRelations]="overlays.addRelations"
   [deleteRelation]="overlays.deleteRelation"
-  (closed)="overlays.closeRelationsModal()"
+  (closed)="onRelationsModalClosed()"
   (revealRequested)="onRevealRequested($event)"
 />
 
@@ -303,7 +304,7 @@
   [createSection]="overlays.createSection"
   [renameSection]="overlays.renameSection"
   [deleteSection]="overlays.deleteSection"
-  (closed)="overlays.closeSectionsModal()"
+  (closed)="onSectionsModalClosed()"
 />
 
 @if (overlays.contextMenuDoorId() !== null) {
