@@ -41,7 +41,7 @@
       </div>
     </header>
 
-    <qd-abwab-announcer [message]="writeController.announcement()" />
+    <qd-abwab-announcer [message]="revealAnnouncement() ?? writeController.announcement()" />
 
     <!-- Item 17's stats bar (Slice B2, T1003): a quiet inline stat line, never a card
          (PRODUCT.md's anti-reference list names "identical gradient stat cards" — §5.7). Both
@@ -157,6 +157,8 @@
                   [bulkMode]="selection.bulkMode()"
                   [bulkSelectedIds]="bulkSelectedIds()"
                   [forceExpandedIds]="forceExpandedIds()"
+                  [expandSeedIds]="revealExpandSeedIds()"
+                  [revealedId]="revealedId()"
                   (selected)="onTreeSelected($event)"
                   (bulkToggled)="onBulkToggled($event)"
                   (addChildRequested)="overlays.openCreateChild()"
@@ -292,6 +294,7 @@
   [addRelations]="overlays.addRelations"
   [deleteRelation]="overlays.deleteRelation"
   (closed)="overlays.closeRelationsModal()"
+  (revealRequested)="onRevealRequested($event)"
 />
 
 <qd-abwab-sections-modal

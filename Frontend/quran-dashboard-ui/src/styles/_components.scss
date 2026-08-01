@@ -289,6 +289,35 @@ button.qd-interactive-surface {
   color: var(--qd-accent-text);
 }
 
+/* The label's opt-in control (Slice D): a removable chip's static wrapper is what makes a
+   nested button legal, so the name can act while `×` removes. Inherits the chip's own type
+   and color and adds only the affordance, so an opted-in chip reads as one chip with two
+   controls rather than a button glued inside a pill. */
+.qd-chip__label--clickable {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.qd-chip__label--clickable:hover:not(:disabled) {
+  color: var(--qd-accent-text);
+  text-decoration: underline;
+}
+
+.qd-chip__label--clickable:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--qd-radius-sm);
+}
+
+.qd-chip__label--clickable:disabled {
+  cursor: not-allowed;
+}
+
 /* Removable chips (plan-slice-b.md T412) are a static wrapper, not a clickable chip. */
 .qd-chip--static {
   cursor: default;

@@ -181,6 +181,10 @@ nine), four of them reads.
   makes the label state the opposite of what the row stores in one of the two modes. The
   picker's expand chevron is a real tab stop with `aria-expanded` — search auto-expand is a
   convenience, not the keyboard path to a nested door.
+  **Each related door's name is a control** (Slice D): it composes `qd-chip`'s
+  `labelClickable` opt-in, so one chip carries two independent controls — reveal that door in
+  the tree, or remove the relation — and emits `revealRequested` with the *other* door's id.
+  The modal knows nothing about the tree, the URL, or scope; the page owns all of that.
 - `components/abwab-announcer/` — one `aria-live="polite"` `role="status"` region for
   operation messages; a feature-scoped stand-in for a toast primitive this one
   feature does not warrant (`plan-slice-b.md` §4.1).
@@ -228,6 +232,36 @@ nine), four of them reads.
 | `door` | positive int | no selection |
 | `card` | positive int (the drilled-into parent — the breadcrumb chain is derived from it, not stored as an array) | the top card level |
 | `q` | free text | no search |
+
+**Reveal-in-tree writes only the keys above — the contract gains no seventh key.** A
+relation chip's name reveals that door in the doors tree, and every state it can be in is
+folded into **one** `buildAbwabQueryParams` patch, so there is one navigation and no race:
+`door` always; `section` **only when a section tab is active and it is not the target's**
+(«كل الأبواب» already shows every door, so narrowing to the target's tab there would be
+gratuitous — and an explicit `door` in the same change survives the scope-invalidation
+clear, which is what makes the cross-section case one navigation instead of two);
+`view: 'tree'` when the cards drill is open, since the item is reveal-in-*tree*; and `q`
+cleared when a search is filtering, because a reveal that leaves its target pruned by
+`pruneAbwabNodesToVisible` breaks the promise the click makes.
+
+Three things about it are load-bearing and easy to undo by accident:
+
+- **The mark and the scroll are keyed off the param emission, not the click.** The rows
+  that must exist for either to mean anything are rendered by the change detection that
+  emission triggers — and in the cross-section, cards and search cases they do not exist
+  before it at all.
+- **The ancestor chain is *seeded* into the tree's manual expansion, not forced.**
+  `forceExpandedIds` is unioned with manual toggles and cannot be collapsed, so a reveal
+  routed through it would lock the target's ancestors open for the rest of the session.
+  `expandSeedIds` merges once and hands the chevrons straight back to the user.
+- **The highlight is an outline, never a tint** — `--qd-selected-bg` *is*
+  `--qd-accent-tint`, and the reveal always lands on the row it just selected, so a tint
+  would be invisible by construction. See `UI_STYLE_SYSTEM.md` §17 "Reveal highlight".
+
+The archived/missing guard is defensively unreachable — the relations read hides any
+relation whose endpoint is archived, and the archive view offers no relations entry point —
+and exists anyway, so an impossible state is a visible non-action with an announcement
+rather than a silent broken reveal.
 
 **`/abwab/templates` carries no URL state at all** — no selected-template key, no expanded
 set. Deliberate: every key above is a documented contract with a fail-closed parse and a

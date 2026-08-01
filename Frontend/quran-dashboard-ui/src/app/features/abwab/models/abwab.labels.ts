@@ -206,6 +206,12 @@ export const ABWAB_LABELS = {
   // Every group renders several of these buttons at once, so a static name would leave a screen
   // reader with N identical «حذف العلاقة» controls and no way to tell them apart.
   relationDeleteAriaLabel: (doorName: string): string => `حذف العلاقة مع «${doorName}»`,
+  // The chip now carries two controls, so neither can rely on the chip's text to say what it
+  // does — «إظهار في الشجرة» and «حذف العلاقة» have to be distinguishable by name alone.
+  relationRevealAriaLabel: (doorName: string): string => `إظهار «${doorName}» في الشجرة`,
+  // The reveal's guard: defensively unreachable (the read hides relations whose endpoint is
+  // archived), so this says what did not happen rather than blaming the user.
+  revealUnavailable: 'تعذر إظهار الباب — لم يعد موجودًا في الشجرة',
 
   relationGroupSimilarity: 'تشابه',
   relationGroupOpposition: 'تضاد',

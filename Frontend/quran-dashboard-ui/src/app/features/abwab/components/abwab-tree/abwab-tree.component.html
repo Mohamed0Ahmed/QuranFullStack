@@ -4,6 +4,7 @@
     @if (node) {
       <div
         class="abwab-tree__row"
+        [class.abwab-tree__row--revealed]="revealedId() === node.id"
         role="treeitem"
         [attr.aria-level]="node.depth + 1"
         [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"

@@ -100,6 +100,9 @@ export class AbwabRelationsModalComponent {
   readonly deleteRelation = input.required<(relationId: number) => Observable<AbwabWriteOutcome<unknown>>>();
 
   readonly closed = output<void>();
+  /** The related door's name is a control now (audit item 10): it asks the page to reveal that
+   * door in the tree. The modal itself knows nothing about the tree, the URL, or scope. */
+  readonly revealRequested = output<number>();
 
   private readonly picker = viewChild(AbwabDoorPickerComponent);
 
@@ -124,6 +127,11 @@ export class AbwabRelationsModalComponent {
   protected get closeLabel(): string { return ABWAB_LABELS.relationsCloseButton; }
 
   protected deleteAriaLabel(doorName: string): string { return ABWAB_LABELS.relationDeleteAriaLabel(doorName); }
+  protected revealAriaLabel(doorName: string): string { return ABWAB_LABELS.relationRevealAriaLabel(doorName); }
+
+  protected requestReveal(otherDoorId: number): void {
+    this.revealRequested.emit(otherDoorId);
+  }
 
   /** Door mode's placeholder invites several doors; anchor-pick mode takes exactly one, and the
    * picker's radio affordance should not be the only place that says so. */

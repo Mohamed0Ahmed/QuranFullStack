@@ -375,3 +375,73 @@ Three sites needed a shape change before a class could help, recorded in §17 wi
 the card title and the templates editor title each had the name in the same text node as a
 sibling chip (so nothing could truncate independently), and the move picker renders its row
 names as the button's own text (and `text-overflow` needs a block box).
+
+## T804 — reveal-in-tree, browser acceptance
+
+All against the live backend and real data.
+
+**The chip is two controls.** Opening «باب العلم بالله»'s relations renders three chips
+whose labels are `BUTTON`s carrying «إظهار «الجهاد» في الشجرة» and so on, with the
+projected door name intact inside each.
+
+**Reveal from the superset, same scope:**
+
+```
+click «الجهاد» label → url ?door=337   modal closed
+row 337: revealed=true, outline-width 2px,
+         animation abwab-tree-reveal 3s, aria-selected=true
+after 3.2s: revealed=false
+```
+
+**Reveal from cards view with an active search — the two-state case, in one navigation:**
+
+```
+before: ?door=336&view=cards&q=العلم    tree absent, cards present
+after:  ?door=337&view=tree             cards gone, tree present,
+                                        target row rendered and marked,
+                                        search box empty
+```
+
+**Why the mark is an outline and not a tint — measured, both themes:**
+
+| | light | dark |
+|---|---|---|
+| `--qd-selected-bg` | `oklch(0.954 0.010 164.9)` | `oklch(0.250 0.030 281.2)` |
+| `--qd-accent-tint` | `oklch(0.954 0.010 164.9)` | `oklch(0.250 0.030 281.2)` |
+| revealed row's computed background | `oklch(0.954 0.01 164.9)` | `oklch(0.25 0.03 281.2)` |
+| selected row's `outline-style` at rest | `none` | `none` |
+| `--qd-accent` (the mark) | `oklch(0.490 0.068 176.3)` | `oklch(0.772 0.098 82.0)` |
+
+`--qd-selected-bg` **is** `--qd-accent-tint` in both themes, and a reveal always lands on
+the row it has just selected — so the plan's "derive the highlight from `--qd-selected-bg`"
+would have produced an exact zero-delta mark: correct-looking code that highlights nothing.
+The outline is used instead, and it is a genuinely new signal because a selected row
+carries `outline-style: none` at rest. Against `_tokens.scss:89-101`'s measured ladder the
+mark's lightness delta from the row it sits on is **0.464 (light)** and **0.522 (dark)**,
+far above that ladder's hover step (0.038 / 0.046) and its selected step (0.076 / 0.145) —
+i.e. comfortably above the rung §4.2-9 required, in the direction that was actually
+available. Recorded in `UI_STYLE_SYSTEM.md` §17 "Reveal highlight" as the app's rule.
+
+**Reduced motion**, read back off the shipped CSSOM:
+
+```
+@media (prefers-reduced-motion: reduce)
+  .abwab-tree__row--revealed { animation: none; outline-color: var(--qd-accent); }
+@keyframes abwab-tree-reveal { 0% { outline-color: var(--qd-accent) } 100% { outline-color: transparent } }
+```
+
+The mark is held statically at full strength for the same ~3s the page holds the class.
+
+### Two plan corrections worth recording
+
+1. **`qd-chip` has two consumers, not five.** §4.2-10/§9 say "the five existing consumers
+   render byte-identically". `grep -rl '<qd-chip'` finds exactly two:
+   `abwab-door-fields-form` (alias chips) and `abwab-relations-modal`. Both are unaffected
+   (the opt-in defaults off) and both specs pass unchanged — the obligation holds, the
+   count in the plan does not.
+2. **`section` is patched only when a *section tab* is active.** §4.2-8 says "when the
+   target's differs from active", which fires on «كل الأبواب» too, since `null ≠ 217`. The
+   first implementation did exactly that and the browser showed why it is wrong: revealing
+   from the superset narrowed the view to the target's own tab for no reason, because the
+   superset already contained the target. The rule now matches the plan's own parenthetical
+   ("or section-less door **while a section tab is active**"), and both cases are specced.

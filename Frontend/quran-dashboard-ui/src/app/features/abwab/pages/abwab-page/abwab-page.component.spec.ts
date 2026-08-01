@@ -596,4 +596,156 @@ describe('AbwabPageComponent', () => {
       expect(root.querySelector('[data-testid="abwab-door-modal-name"]')).toHaveProperty('value', 'الرسول');
     });
   });
+  // Its own TestBed: the reveal's five states need a nested door, a second section and a
+  // section-less door, and bolting those onto the shared TREE would rewrite the tab-label and
+  // stat expectations every other test in this file makes.
+  describe('audit item 10 — reveal-in-tree from the relations modal', () => {
+    const REVEAL_TREE: AbwabTreeDto = {
+      doors: [
+        door({ id: 1, name: 'جذر', sectionId: 1, orderValue: 1 }),
+        door({ id: 2, name: 'ابن', sectionId: 1, parentId: 1, orderValue: 1 }),
+        door({ id: 3, name: 'حفيد', sectionId: 1, parentId: 2, orderValue: 1 }),
+        door({ id: 4, name: 'باب قسم آخر', sectionId: 2, orderValue: 1 }),
+        door({ id: 5, name: 'باب بلا قسم', orderValue: 2 }),
+        door({ id: 6, name: 'باب مؤرشف', sectionId: 1, isArchived: true, orderValue: 3 }),
+      ],
+      sections: [
+        { id: 1, name: 'قسم أول', orderValue: 1, version: 1, doorsInScopeCount: 3 },
+        { id: 2, name: 'قسم ثانٍ', orderValue: 2, version: 1, doorsInScopeCount: 1 },
+      ],
+      version: 'v1',
+    };
+
+    const params$ = new BehaviorSubject(convertToParamMap({}));
+    let revealRouter: Router;
+
+    beforeEach(async () => {
+      getTestBed().resetTestingModule();
+      params$.next(convertToParamMap({}));
+      await TestBed.configureTestingModule({
+        imports: [AbwabPageComponent],
+        providers: [
+          provideRouter([]),
+          { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(of(ok(REVEAL_TREE))) } },
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: params$, snapshot: { queryParamMap: convertToParamMap({}) } },
+          },
+        ],
+      }).compileComponents();
+      revealRouter = TestBed.inject(Router);
+      vi.spyOn(revealRouter, 'navigate').mockResolvedValue(true);
+    });
+
+    function renderReveal(params: Record<string, string> = {}) {
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      fixture.detectChanges();
+      params$.next(convertToParamMap(params));
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    function reveal(fixture: { componentInstance: unknown }, doorId: number): void {
+      (fixture.componentInstance as { onRevealRequested: (id: number) => void }).onRevealRequested(doorId);
+    }
+
+    function lastPatch(): Record<string, string | null> {
+      const calls = (revealRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+      const extras = calls[calls.length - 1][1] as { queryParams: Record<string, string | null> };
+      return extras.queryParams;
+    }
+
+    it('same scope: patches door only', () => {
+      const fixture = renderReveal({ section: '1' });
+      reveal(fixture, 3);
+
+      expect(lastPatch()).toEqual({ door: '3' });
+    });
+
+    it('«كل الأبواب»: patches door only, because the superset already contains every target', () => {
+      const fixture = renderReveal({});
+      reveal(fixture, 4);
+
+      expect(lastPatch()).toEqual({ door: '4' });
+    });
+
+    it('other section: one patch carrying the target’s own section beside the explicit door', () => {
+      const fixture = renderReveal({ section: '1' });
+      reveal(fixture, 4);
+
+      // The explicit `door` has to survive the scope-invalidation clear `section` triggers —
+      // that override is why this is one navigation instead of two.
+      expect(lastPatch()).toEqual({ section: '2', door: '4', card: null });
+    });
+
+    it('section-less target while a section tab is open: clears section rather than keeping it', () => {
+      const fixture = renderReveal({ section: '1' });
+      reveal(fixture, 5);
+
+      expect(lastPatch()).toEqual({ section: null, door: '5', card: null });
+    });
+
+    it('cards view: the patch switches back to the tree, because the item is reveal-in-tree', () => {
+      const fixture = renderReveal({ section: '1', view: 'cards' });
+      reveal(fixture, 3);
+
+      expect(lastPatch()).toEqual({ view: 'tree', door: '3' });
+    });
+
+    it('active search: the patch clears q, so the target cannot land pruned', () => {
+      const fixture = renderReveal({ section: '1', q: 'جذر' });
+      reveal(fixture, 3);
+
+      expect(lastPatch()).toEqual({ q: null, door: '3' });
+    });
+
+    it('archived or unknown target: no navigation, and the announcer says why', () => {
+      const fixture = renderReveal({ section: '1' });
+      const before = (revealRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls.length;
+
+      reveal(fixture, 6);
+      reveal(fixture, 999);
+      fixture.detectChanges();
+
+      expect((revealRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls).toHaveLength(before);
+      expect(
+        (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-announcer"]')?.textContent?.trim(),
+      ).toBe(ABWAB_LABELS.revealUnavailable);
+    });
+
+    it('opens the target’s ancestor chain and marks the row once the param emission lands', () => {
+      const fixture = renderReveal({ section: '1' });
+      reveal(fixture, 3);
+      // The reveal waits for the URL to come back, exactly as the cross-section and cards
+      // cases require — nothing is marked before that.
+      fixture.detectChanges();
+      expect(
+        (fixture.nativeElement as HTMLElement).querySelector('.abwab-tree__row--revealed'),
+      ).toBeNull();
+
+      params$.next(convertToParamMap({ section: '1', door: '3' }));
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      // Both ancestors opened, so the depth-2 target is on screen at all.
+      expect(root.querySelector('[data-testid="abwab-tree-row-2"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-tree-row-3"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-tree-row-3"]')?.classList.contains('abwab-tree__row--revealed')).toBe(true);
+    });
+
+    it('leaves the revealed chain collapsible — the expand is a seed, not a lock', () => {
+      const fixture = renderReveal({ section: '1' });
+      reveal(fixture, 3);
+      params$.next(convertToParamMap({ section: '1', door: '3' }));
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-chevron-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-tree-row-2"]')).toBeNull();
+    });
+  });
 });

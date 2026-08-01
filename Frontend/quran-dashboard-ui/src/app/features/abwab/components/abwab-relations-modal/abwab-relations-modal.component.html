@@ -51,7 +51,10 @@
                     <qd-chip
                       [removable]="true"
                       [removeAriaLabel]="deleteAriaLabel(relation.otherDoorName)"
+                      [labelClickable]="true"
+                      [labelAriaLabel]="revealAriaLabel(relation.otherDoorName)"
                       (remove)="remove(relation.id)"
+                      (labelClick)="requestReveal(relation.otherDoorId)"
                     >
                       {{ relation.otherDoorName }}
                     </qd-chip>

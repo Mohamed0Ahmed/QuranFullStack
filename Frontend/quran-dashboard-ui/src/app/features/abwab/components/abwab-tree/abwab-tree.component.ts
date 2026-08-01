@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -50,6 +61,13 @@ export class AbwabTreeComponent {
   readonly bulkSelectedIds = input<ReadonlySet<number>>(new Set());
   /** Ids a caller (e.g. search auto-expand, T507) forces open, unioned with manual toggles. */
   readonly forceExpandedIds = input<ReadonlySet<number>>(new Set());
+  /** Ids to open **once**, merged into the manual set rather than unioned like
+   * `forceExpandedIds` — a forced-open id cannot be collapsed, and a reveal that permanently
+   * locked its target's ancestor chain open would be a worse bug than the one it fixes.
+   * Seeding hands those ancestors back to the user's own chevrons immediately. */
+  readonly expandSeedIds = input<ReadonlySet<number>>(new Set());
+  /** The row currently carrying the reveal mark; the page clears it on its own timer. */
+  readonly revealedId = input<number | null>(null);
 
   readonly selected = output<number>();
   readonly bulkToggled = output<number>();
@@ -67,6 +85,16 @@ export class AbwabTreeComponent {
   private readonly manuallyExpandedIds = signal<ReadonlySet<number>>(new Set());
   private readonly manualFocusId = signal<number | null>(null);
   protected readonly editingId = signal<number | null>(null);
+
+  constructor() {
+    effect(() => {
+      const seed = this.expandSeedIds();
+      if (seed.size === 0) {
+        return;
+      }
+      untracked(() => this.manuallyExpandedIds.update((current) => new Set([...current, ...seed])));
+    });
+  }
 
   private readonly effectiveExpandedIds = computed(
     () => new Set([...this.manuallyExpandedIds(), ...this.forceExpandedIds()]),

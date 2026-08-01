@@ -724,9 +724,23 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   removable chip is informational, not itself clickable. The remove button is
   tint/hairline only on hover (`--qd-surface-hover` + `--qd-accent-text`), never a
   solid fill.
+- **Clickable label (`labelClickable`, opt-in, default off — Slice D):** renders the
+  chip's label as a nested `<button>` (`.qd-chip__label--clickable`, emitting
+  `labelClick`, named by `labelAriaLabel`), so a removable chip can carry **two**
+  independent controls — a name that acts and an `×` that removes. Honored **only**
+  in the removable branch, and that guard is the contract, not caution: the other
+  two branches *are* a `<button>`/`<a>`, and the removable branch's static `<span>`
+  wrapper is precisely what makes the nesting legal. This extends the base rather
+  than forking it — the alternative, hand-rolled buttons inside each consumer's
+  `ng-content`, would have every future consumer re-inventing focus and hover
+  styling. Implementation note for anyone editing the template: the label wrapper is
+  chosen by an `@if`, so the projected content is declared **once** in its own
+  `ng-template` and rendered through an outlet in both arms — two `<ng-content>`
+  elements sharing one selector would leave the second slot permanently empty while
+  every element-type assertion still passed.
 - **Backing classes:** `.qd-chip`, `.qd-chip--pill`, `.qd-chip--static`,
-  `.qd-chip.qd-is-selected`, `.qd-chip__count`, `.qd-chip__remove`. Compose, do not
-  re-style.
+  `.qd-chip.qd-is-selected`, `.qd-chip__count`, `.qd-chip__remove`,
+  `.qd-chip__label`, `.qd-chip__label--clickable`. Compose, do not re-style.
 
 ### `qd-state`
 - **Purpose:** the one empty / loading / error presentation.
@@ -1115,6 +1129,38 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - Compose, do not re-style — a surface that seems to need a fixed name column
   should re-read the paragraph above before reaching for `inline-size` instead of
   `.qd-truncate`.
+
+### Reveal highlight (the app's "here it is" mark)
+
+- **Purpose:** the one way to answer "where did that go?" — a control elsewhere
+  navigates to a row/item and the destination has to identify itself on arrival.
+  First consumer: abwab's reveal-in-tree, where a relation chip in the modal reveals
+  the related door in the doors tree.
+- **It cannot be a background tint, and this is the trap worth stating first.**
+  `--qd-selected-bg` **is** `--qd-accent-tint` in both themes (`_tokens.scss`
+  light, `_themes.scss` dark — measured: light `oklch(0.954 0.010 164.9)`, dark
+  `oklch(0.250 0.030 281.2)`), and a reveal lands on the row it has just selected.
+  A tint highlight is therefore an exact **zero-delta** against the destination's own
+  selected fill: the code looks right, ships, and marks nothing. Read `_tokens.scss:94`'s
+  recorded lesson the other way round — there a mark too *close* to hover read as a
+  flash; here a mark *equal* to selected does not read at all.
+- **The mark is an outline**, because a selected row carries `outline-style: none` at
+  rest, so a ring is a genuinely new signal rather than a competing fill: `2px solid
+  var(--qd-accent)` at `outline-offset: -2px`, decaying to `transparent` over ~3s
+  through a keyframe animation, with the consuming component clearing the class on the
+  **same** duration so nothing lingers invisibly. No new hue — `--qd-accent` is on
+  §16.3's allowed list and is defined per theme.
+- **Reduced motion (§15-F/§17's blanket rule):** `animation: none` plus the mark held
+  statically at full strength for the same span. The reveal must still *say where*; it
+  just must not animate.
+- **Focus keeps precedence.** `:focus-visible`'s own outline is declared after the
+  reveal rule, so a keyboard user never loses the focus ring to a decaying mark.
+- **The class is a signal the host owns, not a self-clearing effect.** The consumer
+  holds the marked id in a signal and clears it on a timer it also clears on destroy;
+  the CSS only renders it. Keeping the timer with the host is what lets the same host
+  key the mark off the navigation that makes the destination exist (see the abwab
+  README's reveal note) instead of off the click.
+- Compose, do not re-style — a second consumer takes this class shape, not a new one.
 
 ### Viewport reservation
 - **Purpose:** a page's content region reserves a full viewport below the navbar, so

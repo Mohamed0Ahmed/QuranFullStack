@@ -25,6 +25,38 @@
   color: var(--qd-accent-text);
 }
 
+/* The reveal mark (audit item 10). It CANNOT be a background tint: `--qd-selected-bg` IS
+   `--qd-accent-tint` in both themes (`_tokens.scss` / `_themes.scss`), and a reveal always
+   lands on the row it just selected — so a tint highlight would be an exact zero-delta
+   against the row's own selected fill. The outline carries the signal instead, because a
+   selected row has no border or outline at rest, and it decays to transparent over the same
+   ~3s the page holds the class. This is `_tokens.scss:94`'s recorded lesson read the other
+   way round: there a mark too close to hover read as a flash; here a mark equal to selected
+   would not read at all. */
+@keyframes abwab-tree-reveal {
+  from {
+    outline-color: var(--qd-accent);
+  }
+  to {
+    outline-color: transparent;
+  }
+}
+
+.abwab-tree__row--revealed {
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  animation: abwab-tree-reveal 3s ease-out;
+}
+
+/* §15-F/§17's blanket rule: no decay, the same mark held for the same duration. */
+@media (prefers-reduced-motion: reduce) {
+  .abwab-tree__row--revealed {
+    animation: none;
+    outline-color: var(--qd-accent);
+  }
+}
+
+/* Focus still wins over the reveal — a keyboard user must always see where focus is. */
 .abwab-tree__row:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: -2px;
