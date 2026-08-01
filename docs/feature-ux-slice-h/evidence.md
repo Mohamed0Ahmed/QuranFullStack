@@ -105,11 +105,12 @@ is what worked; noted for any future browser-driven check in this repo.
   - row 4 `/abwab/templates`: parent ✅ (subset), الرئيسية — (exact), قوالب الأبواب ✅ — page
     title reads «قوالب الأبواب — المنهج القرآني», confirming `ABWAB_LABELS.templatesPageTitle`
     is still the route title source, unaffected by the nav change.
-  - rows 3/5 (the flagged cells) are consequences of the locked `queryParams:'exact'` decision,
-    not walked live against a real archive-search/door-selected URL in this pass — their
-    mechanism is identical to rows 1/2/4 (same `routerLinkActiveOptions` expression) and is
-    exercised by the DRIFT-2 analysis (§5.2) plus rows 1/2/4's confirmed behavior; no separate
-    bug surface exists for them.
+  - row 3 `/abwab?archive=1&q=x` (archive search): parent ✅, all three children — including
+    الأرشيف, the flagged cell — walked live; matches §6a exactly.
+  - row 5 `/abwab?door=5` (a live-view param set): parent ✅, all three children — including
+    الرئيسية, the flagged cell — walked live; matches §6a exactly.
+  - Both flagged cells are consequences of the locked `queryParams:'exact'` decision (§4.2-7);
+    seeing them unlit here is the confirmation the plan called for, not a defect.
 - «الأرشيف» click lands on `/abwab?archive=1` and the archive view opens (confirmed via row 2's
   URL walk above — reached by direct navigation, equivalent to the click's own `queryParams`
   binding since both produce the same `UrlTree`).
