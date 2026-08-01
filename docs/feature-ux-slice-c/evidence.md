@@ -34,3 +34,58 @@ There is no CI (`TESTING_STRATEGY.md` §8); both runs above are local gates.
 - `docs/feature-abwab-templates/` deliberately **not** swept — it is inside the N-2
   buffer of most-recently-closed features.
 - Branch `ux-slice-c-modals` created off `dev`.
+
+## T201 — Reproduction of the Slice A relations-read observation
+
+Run against the local dev backend (`https://localhost:5015`, Development, local Postgres
+`quran_dashboard`, `/api/health` reporting `database: healthy`) with the Angular dev
+server on `https://localhost:4200`. Abwab endpoints carry no `[Authorize]` and there is no
+global fallback policy, so the calls below are unauthenticated by design, exactly like the
+e2e sandbox fixture.
+
+| Step | Call | Result |
+|---|---|---|
+| 1 | `POST /api/abwab/doors` ×2 (`slice-c-repro-a`, `slice-c-repro-b`, section 217) | `201` — ids **672** and **673**, both live |
+| 2 | `POST /api/abwab/doors/672/relations` `{type:1, direction:null, targetDoorIds:[673]}` | `201` — relation id **42**, `type:1`, `otherDoorName: slice-c-repro-b` |
+| 3a | `GET /api/abwab/doors/672/relations` | `200` — `[{id:42, otherDoorId:673, otherDoorName:"slice-c-repro-b", type:1}]` |
+| 3b | `GET /api/abwab/doors/673/relations` | `200` — the mirrored row (`otherDoorId:672`) |
+| 3c | `GET /api/abwab/tree` | `relationCount = 1` on **both** 672 and 673 |
+| 4 | Relations modal opened on door 672 in the browser | count pill **1**; one group «تشابه» containing the chip «slice-c-repro-b» |
+| 5a | `DELETE /api/abwab/doors/673` (version 9252) | `204` |
+| 5b | `GET /api/abwab/doors/672/relations` | `200` with **`data: []`** |
+| 5c | `GET /api/abwab/tree` | `relationCount = 0` on both; 673 `isArchived: true` |
+| 5d | `POST /api/abwab/doors/672/relations` targeting the archived 673 | `400` «لا يمكن إنشاء علاقة مع باب مؤرشف» |
+| 6 | Cleanup: `DELETE /api/abwab/doors/672` | `204` (archived residue is the accepted dev-DB convention) |
+
+Notes for anyone repeating this:
+
+- The create-relations body field is `type` (numeric `AbwabRelationType`: 1 similarity,
+  2 opposition, 3 comprehensiveness), not `kind`. A `kind` payload 400s with
+  «نوع العلاقة غير صالح».
+- The browser step could not run through the Chrome-extension driver: the ASP.NET dev
+  certificate is untrusted in a fresh Chromium profile, so every `https://localhost:5015`
+  call fails `ERR_CERT_AUTHORITY_INVALID` and the page renders its tree-load error. It was
+  run through the project's own Playwright with `ignoreHTTPSErrors: true` — the same
+  setting `playwright.config.ts` uses — from a throwaway script that was deleted after the
+  evidence was taken (the B2 temporary-artifact precedent).
+
+## T202 — Verdict on the observation: **closed, not a bug**
+
+Steps 3 and 4 show the relation present on live doors, over the API and in the UI, on both
+sides of the pair, with the tree counts agreeing. The gate condition in `plan.md` §6 Phase 2
+("relation missing on live doors") **did not occur**, so the slice proceeds.
+
+Step 5 reproduces the recorded symptom pair exactly — empty relations list **and** count 0 —
+by the one input that produces it: an archived endpoint. That is the dormancy derivation
+working as specified (`Reads/Abwab/README.md:67-75`), not a read or cache fault. Step 5d
+closes the remaining alternative: the writer refuses archived endpoints outright, so a
+relation cannot be born dormant; a dormant relation can only be one whose door was archived
+after the fact.
+
+Most plausible explanation of the Slice A observation, consistent with every measurement
+here: that harness POSTed against leftover archived `e2e-sandbox-*` doors, which the e2e
+teardown leaves in the dev DB by design (`e2e/fixtures/abwab.ts:86-95`), and the read it
+then judged "wrong" was correct dormancy.
+
+`docs/TESTING_DEBT.md` rows 2 and 5 (the backend dormancy join tests and the e2e dormancy
+flow) remain **unpaid and unaffected** — a manual reproduction is evidence, not a test.
