@@ -130,3 +130,83 @@ opened from its real trigger in the browser. Screenshot: `relations-modal-accept
 **Sanctioned deviation from the mock:** the active tab is §16.1 (`--qd-selected-bg` +
 `--qd-accent-text` + `--qd-border-accent`), not the concept's surface+bold. §16.1 outranks an
 ad-hoc active state, per the audit and plan decision 4.1-2.
+
+## T801 — Closing run against the T101 baseline
+
+| | Baseline (T101) | Closing (T801) | Delta |
+|---|---|---|---|
+| Test files | 191 | **193** | +2 |
+| Tests | 2167 | **2206** | +39 |
+| Failures | 0 | **0** | — |
+| Vitest duration | 205.25 s | 203.08 s | — |
+| `npm run build` | success | **success** | — |
+| Initial bundle | 569.15 kB | 569.06 kB | −0.09 kB |
+
+The delta is exactly the one stated in advance: +2 spec files (relations modal, template-copy
+modal) and +39 tests, inside the predicted +30–50 — the two new suites plus the extensions to
+the door, sections, move-picker, and templates-facade specs. Nothing was removed.
+
+Build warnings: the three pre-existing budget warnings remain unchanged, and
+`abwab-relations-modal.component.scss` **dropped off the list** — it was 5.08 kB against a 4 kB
+budget at baseline, and the rules that moved into `abwab-door-picker` or died with the redesign
+took it back under.
+
+Tier B rather than Tier A because the slice reshaped surfaces that had no specs at all. No
+backend change, so no `dotnet test` and no route-smoke tier. There is no CI: both runs are local.
+
+## T802 — Keyboard-only acceptance, all six modals
+
+Driven in the browser from each modal's real trigger. Every modal: focus lands on the intended
+control, twenty Tab presses never leave the dialog, the shell slots are present, and Escape does
+the right thing.
+
+| Modal | Focus on open | Tab stays inside (×20) | `--fixed` + head/body/foot | role / aria-modal / labelledby | Height | Escape |
+|---|---|---|---|---|---|---|
+| `abwab-door-modal` (dirty) | `-name` | ✅ | ✅ | ✅ | 704 px | raises the discard guard, does not close ✅ |
+| `abwab-relations-modal` | `-search` | ✅ | ✅ | ✅ | 704 px | closes ✅ |
+| `abwab-move-picker` | `-section-none` (first tabbable) | ✅ | ✅ | ✅ | 704 px | closes ✅ |
+| `abwab-sections-modal` | first rename button (first tabbable) | ✅ | ✅ | ✅ | 704 px | closes ✅ |
+| `abwab-template-node-modal` | `-name` | ✅ | ✅ | ✅ | 704 px | closes ✅ |
+| `abwab-template-copy-modal` | `-search` | ✅ | ✅ | ✅ | 704 px | closes ✅ |
+
+All six render at the same 704 px — `min(92dvh, 44rem)` at a 900 px-tall viewport — which is the
+"zero resize" contract holding across modals of very different content depth.
+
+**Geometry byte-share.** Each modal's shell block (backdrop line through the `__head` open tag)
+was extracted and normalised on the three sanctioned variables — component name, testid, close
+handler. All six normalise to **identical** text.
+
+**Cap grep.** `max-block-size` across the six modal folders plus `abwab-door-picker`: **zero
+hits**.
+
+## T804 — Close-out
+
+Swept the repo (`src`, `e2e`, `.architecture`, `docs/contracts`, `docs/TESTING_DEBT.md`) for every
+selector, class, label, and path this slice deleted or renamed — `__type--active`, the
+hand-rolled `__count` and `__already` rules, all four `__pick-*` picker classes,
+`abwab-door-fields-form__error`, the two dead copy-modal aria-label factories, and the deleted
+caps. Two live references needed repointing, both fixed here rather than left dangling:
+
+- `docs/TESTING_DEBT.md` row 5 said "same trigger as row 4"; row 4 is deleted (paid), so row 5
+  now states its own trigger and points at this file for what the manual reproduction did and
+  did not cover.
+- `UI_STYLE_SYSTEM.md`'s `.qd-checkbox` specificity-trap example named
+  `.abwab-relations-modal__pick-row`, a selector that no longer exists; it now uses a generic
+  shape and notes where that one went.
+
+Matches inside `docs/abwab-ux-audit.md`, `docs/feature-ux-slice-a/evidence.md`, and
+`docs/feature-ux-slice-b/plan.md` were left alone deliberately: those are dated records of what
+was true when they were written, not live pointers.
+
+Docs updated in the same change as the facts they describe: the abwab README (one door picker,
+the shared shell contract and its four consequences, the sections dirty guard, the paid
+`selectedLoading` gotcha), `UI_STYLE_SYSTEM.md` §17 (the `--fixed` entry's consumer list and
+cap rule, the checkbox and truncation debt lines narrowed to the page surfaces Slice D owns),
+`docs/TESTING_DEBT.md` (row 4 deleted, row 9 narrowed, rows 2/5 untouched), and the navbar's
+inert-surface count (nine → eleven; it had been stale since abwab reached six modals).
+
+Temporary artifacts removed: both Playwright driver scripts used for the browser evidence, and
+the seeded reproduction/acceptance doors (672–678) are archived, the accepted dev-DB convention.
+
+**The slice's Active-Feature record is deliberately still open** in the root `CLAUDE.md` — the
+lifecycle rule clears it at merge, as a separate `chore` commit (the `b84385f0` precedent).

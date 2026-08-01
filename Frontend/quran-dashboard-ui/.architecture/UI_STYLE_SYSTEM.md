@@ -927,17 +927,17 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   from its label" gap cannot be reintroduced per call-site.
 - **Accessible name (contract, not optional):** every checkbox composing
   `.qd-checkbox` MUST carry a real `<label for>` or an `aria-label` naming what it
-  selects. **Known debt at time of writing:** three of the four existing checkbox
-  call-sites (`abwab-tree`, `abwab-cards`, `abwab-relations-modal`) have neither;
-  only `abwab-template-copy-modal` supplies an `aria-label`. Paying this down is
-  Slice C/D's job when those call-sites compose this class — named here so the
-  contract is honest rather than aspirational.
-- **Zero consumers at ship time:** this slice adds the classes with no call-site
-  changes (plan §2, out of scope here); Slice C/D wires the four existing
-  checkboxes onto them.
+  selects. **Remaining debt:** `abwab-tree` and `abwab-cards` still have neither —
+  Slice D's job when those page surfaces compose this class. Every checkbox a
+  *modal* renders is paid: the two duplicated pickers became one
+  `abwab-door-picker`, whose rows compose `.qd-check-row` and name each box after
+  its door.
+- **Consumers:** `abwab-door-picker` (both modal call-sites); `abwab-tree` and
+  `abwab-cards` still to come.
 - **Composing means deleting the local rule, not adding beside it.** Under Angular
   emulated encapsulation a call-site selector like
-  `.abwab-relations-modal__pick-row input[type='checkbox']` outranks the global
+  `.some-modal__pick-row input[type='checkbox']` (the shape both abwab pickers carried
+  before Slice C folded them into `abwab-door-picker`) outranks the global
   `.qd-checkbox` class on specificity — adding the class without deleting the local
   rule leaves the old size/accent in force with no visible change, which reads as
   "done" and is not (the same specificity trap §17's `.qd-modal` entry names for
@@ -981,15 +981,14 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   base must never gain a block-size.
 - **Specificity trap when composing:** the same trap named in the `.qd-checkbox`
   entry above — an existing call-site rule can outrank `.qd-modal--fixed`
-  under Angular emulated encapsulation. Three abwab modals already set an
-  inner `max-block-size` that becomes redundant, and arguably wrong, once the
-  modal body is the single scroller:
-  `abwab-sections-modal.component.scss:5` (14rem list),
-  `abwab-template-copy-modal.component.scss:43` (13rem pick-list), and
-  `abwab-relations-modal.component.scss:203` (11rem pick-list — measured at
-  T401 to be doing the scrolling `__body` is supposed to do). Composing the
-  modifier means **deleting** these local caps, not adding the class beside
-  them.
+  under Angular emulated encapsulation. Composing the modifier means
+  **deleting** any inner `max-block-size`, not adding the class beside it.
+  Slice C deleted four such caps when it composed the modifier on the six
+  abwab modals — the sections list (14rem), the copy and relations pick-lists
+  (13rem and 11rem), and the move picker's destination list (15rem, which no
+  audit had inventoried) — along with the nested scrollers they implied. The
+  standing rule the greps enforce: **no `max-block-size` in a modal's own
+  SCSS.**
 - **Convergence trigger for `.qd-modal.explorer-detail-modal` (required, not
   optional):** `--fixed` deliberately reuses `qd-detail-modal-shell`'s own
   `44rem` rather than introducing a new height, so no new modal height enters
@@ -1000,9 +999,13 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   silently tolerate a second, permanent exception. **The next change that
   touches any of the five words detail modals' geometry converges all five
   onto `--fixed` and deletes the `vh` hold-out.**
-- **Zero consumers at ship time:** this slice adds `--fixed` and its slots with
-  no call-site changes and no markup restructuring (plan §2, out of scope
-  here); applying it to the six abwab modals is Slice C's job.
+- **Consumers:** the six abwab modals (`abwab-door-modal`,
+  `abwab-template-node-modal`, `abwab-sections-modal`, `abwab-move-picker`,
+  `abwab-relations-modal`, `abwab-template-copy-modal`), all composed by Slice C
+  with `__head`/`__body`/`__foot` and an unconditional `cdkTrapFocus`. The
+  shallow ones (door, template-node) render with empty space below the fields:
+  that is this section's "zero resize" trade, not a defect to fix back to
+  content height.
 
 ### `qd-context-menu`
 - **Purpose:** the one row/node context-menu shell app-wide (Abwab's doors tree row menu
@@ -1081,14 +1084,12 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   `<span class="word-type-filter__child-label" [title]="child.label.ar">{{
   child.label.ar }}</span>`. A truncated name with no `[title]` is a contract
   violation, not a style nit.
-- **Known debt named honestly:** none of the eleven abwab name-render sites
-  compose `.qd-truncate`, the reserved-minimum token, or `[title]` yet as of this
-  entry — three of the eleven are missing the ellipsis half entirely and all
-  eleven are missing `[title]`. This slice ships the primitive and the rule only;
-  wiring the eleven sites onto it is Slice C/D's job, named here so it reads as
-  tracked debt, not an oversight.
-- **Zero consumers at ship time:** `.qd-truncate` and `--qd-name-min-inline-size`
-  ship with no call-site changes (plan §2, out of scope here).
+- **Remaining debt named honestly:** Slice C composed the rule on the sites inside
+  the abwab modals — the door picker's row names and the relations modal's bulk
+  target chips, each with its mandatory `[title]`. The name-render sites on the
+  abwab *page* surfaces (tree, cards, sections list, templates list) are still
+  unwired; that is Slice D's, named here so it reads as tracked debt rather than
+  an oversight.
 - Compose, do not re-style — a surface that seems to need a fixed name column
   should re-read the paragraph above before reaching for `inline-size` instead of
   `.qd-truncate`.
