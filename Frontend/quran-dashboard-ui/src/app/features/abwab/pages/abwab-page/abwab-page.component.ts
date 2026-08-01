@@ -78,8 +78,8 @@ const DOOR_MODAL_KINDS: readonly AbwabModalKind[] = ['create', 'child', 'edit'];
  * composing the toolbar, tree/cards, archive view, side panel, announcer and the
  * overlays (door modal, move picker, sections modal, archive confirms, context menu —
  * all owned by `AbwabPageOverlaysController`, split out once this file approached the
- * component-TS soft threshold). Every one of the six URL keys (`section`/`view`/
- * `archive`/`door`/`card`/`q`) is parsed in one subscription so no view is left reading
+ * component-TS soft threshold). Every one of the seven URL keys (`section`/`view`/
+ * `archive`/`door`/`card`/`q`/`modal`) is parsed in one subscription so no view is left reading
  * a param nobody restores (a gap phase 4 left: `view`/`archive`/`card`/`q` were parsed
  * and discarded, and `selection.setArchiveViewActive` was never called at all).
  */
