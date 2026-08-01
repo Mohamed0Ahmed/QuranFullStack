@@ -32,14 +32,18 @@
           <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
         }
       </button>
+      <!-- Radio under `single`: the control itself has to say "exactly one", not just the hint
+           above it. The row's click handler stays the one writer either way. -->
       <input
-        type="checkbox"
         class="qd-checkbox"
+        [attr.type]="single() ? 'radio' : 'checkbox'"
+        [attr.name]="single() ? pickerName : null"
         [checked]="isPicked(row.node.id)"
         [disabled]="row.isDisabled"
         [attr.aria-label]="row.node.name"
         [attr.data-testid]="testIdPrefix() + '-pick-checkbox-' + row.node.id"
         (click)="$event.preventDefault()"
+        (change)="onRowChange(row)"
       />
       <span class="abwab-door-picker__name qd-truncate" [title]="row.node.name">{{ row.node.name }}</span>
       @if (row.isDisabled && disabledTag()) {
@@ -65,8 +69,14 @@
         (action)="retry.emit()"
         [attr.data-testid]="testIdPrefix() + '-doors-error'"
       />
-    } @else if (status() === 'empty') {
-      <qd-state variant="empty" [message]="emptyMessage()" [attr.data-testid]="testIdPrefix() + '-empty'" />
+    } @else if (searchFoundNothing()) {
+      <qd-state variant="empty" [message]="noMatchesLabel" [attr.data-testid]="testIdPrefix() + '-no-matches'" />
+    } @else {
+      <!-- Fallthrough, not a `status === 'empty'` branch: an empty list with no other stated
+           reason always owes the user an answer, including for a host that never drives status.
+           `-doors-empty`, not `-empty`, for the same reason the error above is `-doors-error`:
+           the prefix is the host's, and the relations modal owns an `-empty` of its own. -->
+      <qd-state variant="empty" [message]="emptyMessage()" [attr.data-testid]="testIdPrefix() + '-doors-empty'" />
     }
   }
 </div>

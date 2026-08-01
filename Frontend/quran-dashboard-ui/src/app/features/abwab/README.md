@@ -86,7 +86,10 @@ nine), four of them reads.
 - `components/abwab-sections-modal/` — list / add / rename / delete-empty, with full
   dialog semantics and a dirty guard as of Slice C (a typed section name or an altered
   rename draft raises the door modal's confirm strip; an opened-but-unedited rename is
-  not dirty). Takes its three write functions as inputs (bound by the page to
+  not dirty). **Its drafts live on the component, and the page hosts it as a static
+  sibling, so it must reset them on open** — unlike the door modal, whose drafts sit in
+  a child that `@if (open())` destroys. Skip that reset and «تجاهل التغييرات» hides the
+  draft instead of discarding it. Takes its three write functions as inputs (bound by the page to
   `state/abwab-sections.controller.ts`) rather than injecting a service, so its own spec
   exercises the 409/success outcomes without the facade/controller chain. Rename always
   reads the section's row from the live `sections` input at submit time, never a value
@@ -108,7 +111,12 @@ nine), four of them reads.
   and emits `toggled`, and `excludedIds` hides a door **without** hiding its subtree,
   since a door may relate to its own ancestor. `testIdPrefix` keeps each host's existing
   testids. Rows compose `.qd-check-row`/`.qd-checkbox`/`.qd-truncate`, so it states no
-  geometry of its own.
+  geometry of its own. Two things the picker owns that consumer-owned selection cannot
+  cover: `single` picks the **affordance** (radio, not checkbox — a checkbox promises
+  "pick any number" and anchor-pick mode takes one), and an unmatched search renders the
+  picker's own «لا يوجد باب مطابق» rather than the host's `emptyMessage`, because "your
+  query found nothing" and "there is nothing to pick" are different answers and only one
+  of them is true when doors are one keystroke away.
 - `components/abwab-template-node-modal/` — the template node's shell around the same
   form. Its submit is a **function input** bound by the workshop page to
   `AbwabTemplatesController` (the `abwab-sections-modal` precedent), and it renders no
@@ -466,7 +474,10 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   in bulk mode and the copy modal its multi-select, and the picker knows about neither. Existing
   `data-testid`s survive through `testIdPrefix`, which is what made the extraction provably
   behavior-preserving (both specs passed it unedited). Do not re-fork it for a third caller;
-  add an input.
+  add an input. **Consumer-owned selection is not consumer-owned *affordance*:** the picker
+  still has to render a control that tells the truth about how many doors are choosable, which
+  is what `single` is for. Anchor-pick selection is select-only for the same reason — a radio
+  group offers no click-the-selected-one-to-clear gesture, so the component does not invent one.
 - **The template tree renders a list, not `role="tree"`.** `AbwabTreeComponent` earns that
   role with a full RTL-mirrored keyboard model (`abwab-tree-keyboard.controller.ts`); claiming
   the role without the arrow-key model would promise a navigation contract the workshop does

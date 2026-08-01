@@ -50,7 +50,7 @@
                   @for (relation of group.relations; track relation.id) {
                     <qd-chip
                       [removable]="true"
-                      [removeAriaLabel]="deleteAriaLabel"
+                      [removeAriaLabel]="deleteAriaLabel(relation.otherDoorName)"
                       (remove)="remove(relation.id)"
                     >
                       {{ relation.otherDoorName }}
@@ -120,7 +120,9 @@
             [excludedIds]="excludedIdList()"
             [disabledIds]="linkedIdList()"
             [disabledTag]="alreadyLinkedLabel"
-            [searchPlaceholder]="searchPlaceholder"
+            [emptyMessage]="pickerEmptyLabel"
+            [single]="anchorPickMode()"
+            [searchPlaceholder]="searchPlaceholder()"
             testIdPrefix="abwab-relations-modal"
             (toggled)="togglePicked($event)"
           />

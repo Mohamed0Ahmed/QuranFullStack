@@ -50,6 +50,7 @@ interface RenderOptions {
   readonly anchorPickMode?: boolean;
   readonly bulkTargets?: readonly AbwabRelationTarget[];
   readonly addOutcome?: AbwabWriteOutcome<never>;
+  readonly liveRoots?: readonly AbwabNode[];
 }
 
 function render(options: RenderOptions = {}) {
@@ -67,7 +68,7 @@ function render(options: RenderOptions = {}) {
   fixture.componentRef.setInput('anchorDoorName', 'الباب المرساة');
   fixture.componentRef.setInput('anchorPickMode', options.anchorPickMode ?? false);
   fixture.componentRef.setInput('bulkTargets', options.bulkTargets ?? []);
-  fixture.componentRef.setInput('liveRoots', ROOTS);
+  fixture.componentRef.setInput('liveRoots', options.liveRoots ?? ROOTS);
   fixture.componentRef.setInput('loadRelations', loadRelations);
   fixture.componentRef.setInput('addRelations', addRelations);
   fixture.componentRef.setInput('deleteRelation', deleteRelation);
@@ -176,6 +177,56 @@ describe('AbwabRelationsModalComponent', () => {
       expect(el('abwab-relations-modal-add')?.textContent?.trim()).toBe(ABWAB_LABELS.relationAddButton(2));
     });
 
+    // Behavior alone is not the whole contract: a checkbox promises "pick any number", and this
+    // mode accepts exactly one. The control and the placeholder both have to say so, or the only
+    // way to learn the rule is to pick a second door and watch the first vanish.
+    it('renders the choice as a radio group and says "one door" in the search placeholder', () => {
+      const { el } = render({ anchorPickMode: true, bulkTargets });
+
+      const anchorBox = el('abwab-relations-modal-pick-checkbox-1') as HTMLInputElement;
+      expect(anchorBox.type).toBe('radio');
+      // One group, and a group name that cannot be shared with another picker on the page: radio
+      // grouping is document-scoped by name, and emulated encapsulation does not scope it.
+      expect(anchorBox.name).toBe(el('abwab-relations-modal-pick-checkbox-4')!.getAttribute('name'));
+      expect(anchorBox.name).not.toBe('abwab-relations-modal-pick');
+      expect(anchorBox.name).toMatch(/^abwab-door-picker-\d+$/);
+      expect(el('abwab-relations-modal-search')?.getAttribute('placeholder')).toBe(
+        ABWAB_LABELS.relationsBulkAnchorPlaceholder,
+      );
+    });
+
+    it('leaves door mode on checkboxes, where several targets really are pickable', () => {
+      const { el } = render();
+
+      expect((el('abwab-relations-modal-pick-checkbox-2') as HTMLInputElement).type).toBe('checkbox');
+      expect(el('abwab-relations-modal-search')?.getAttribute('placeholder')).toBe(
+        ABWAB_LABELS.relationPickerPlaceholder,
+      );
+    });
+
+    // Arrow keys move a radio group's selection and fire `change` without the click the row
+    // listens to; without that path wired the control would tick while the anchor stayed put.
+    it('follows keyboard radio selection, not just clicks', () => {
+      const { fixture, el, pickedRows } = render({ anchorPickMode: true, bulkTargets });
+
+      const target = el('abwab-relations-modal-pick-checkbox-4') as HTMLInputElement;
+      target.checked = true;
+      target.dispatchEvent(new Event('change', { bubbles: true }));
+      fixture.detectChanges();
+
+      expect(pickedRows()).toHaveLength(1);
+      expect((el('abwab-relations-modal-pick-checkbox-4') as HTMLInputElement).checked).toBe(true);
+      expect(el('abwab-relations-modal-add')?.textContent?.trim()).toBe(ABWAB_LABELS.relationAddButton(2));
+    });
+
+    it('opens with focus on the picker search in this mode too', async () => {
+      const { fixture, el } = render({ anchorPickMode: true, bulkTargets });
+      await fixture.whenStable();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(document.activeElement).toBe(el('abwab-relations-modal-search'));
+    });
+
     it('never offers a fixed target as the anchor, keeps its subtree, and adds anchor-first', () => {
       const { el, click, addRelations } = render({ anchorPickMode: true, bulkTargets });
 
@@ -234,6 +285,36 @@ describe('AbwabRelationsModalComponent', () => {
       expect(el('abwab-relations-modal-pick-3')).toBeTruthy();
       expect(el('abwab-relations-modal-pick-4')).toBeTruthy();
       expect(el('abwab-relations-modal-pick-2')).toBeNull();
+    });
+
+    // "Your query matched nothing" and "there is nothing to pick" are different answers, and the
+    // second one is false here — the doors are on screen the moment the query is cleared.
+    it('says the search matched nothing rather than claiming the tree is empty', () => {
+      const { el, search } = render();
+
+      search('لا وجود لهذا الباب');
+
+      expect(el('abwab-relations-modal-no-matches')?.textContent).toContain(ABWAB_LABELS.pickerNoMatches);
+      expect(el('abwab-relations-modal-doors-empty')).toBeNull();
+
+      search('');
+      expect(el('abwab-relations-modal-no-matches')).toBeNull();
+      expect(el('abwab-relations-modal-pick-2')).toBeTruthy();
+    });
+
+    // The mirror case: with no doors at all, a typed query does not make "no matches" the honest
+    // answer — there is genuinely nothing to pick, and that is the host's sentence to say.
+    it('still answers an empty tree with the host wording, query typed or not', () => {
+      const { el, search } = render({ liveRoots: [] });
+
+      expect(el('abwab-relations-modal-doors-empty')?.textContent).toContain(ABWAB_LABELS.relationPickerEmptyDoors);
+      // Distinct from the modal's own «لا توجد علاقات» — one prefix now serves the host and the
+      // picker, so the two empty states must not answer to the same testid.
+      expect(el('abwab-relations-modal-empty')?.textContent).toContain(ABWAB_LABELS.relationsEmpty);
+
+      search('أي شيء');
+      expect(el('abwab-relations-modal-no-matches')).toBeNull();
+      expect(el('abwab-relations-modal-doors-empty')?.textContent).toContain(ABWAB_LABELS.relationPickerEmptyDoors);
     });
   });
 

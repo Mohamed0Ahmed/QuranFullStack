@@ -268,6 +268,21 @@ describe('AbwabDoorModalComponent', () => {
       ).toBeTruthy();
     });
 
+    // The error surface is `qd-state`, which reserves a message row and carries the shared
+    // container's padding — rendered unconditionally it is a 105px empty danger box on every
+    // open, which is exactly what shipped once and was caught by a screenshot rather than here.
+    // Asserting the message text alone cannot fail on that bug; asserting absence can.
+    it('renders no error surface at all until a write actually fails', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-door-modal-error"]')).toBeNull();
+      expect(root.querySelector('[data-testid="qd-state-error"]')).toBeNull();
+
+      setName(fixture, 'باب جديد');
+      expect(root.querySelector('[data-testid="abwab-door-modal-error"]')).toBeNull();
+    });
+
     it('keeps the actions out of the scrolling body so the guard cannot scroll away', () => {
       const fixture = render();
       const root = fixture.nativeElement as HTMLElement;

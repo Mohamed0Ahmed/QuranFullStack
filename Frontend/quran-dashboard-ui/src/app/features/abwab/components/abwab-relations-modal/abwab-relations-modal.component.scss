@@ -65,6 +65,10 @@
   margin-block-end: var(--qd-space-3);
 }
 
+/* The `max-inline-size` is a ceiling, not §17's discouraged fixed name column: these chips sit in
+   a `flex-wrap` row with no `flex: 1` to share, so without a ceiling one long door name takes the
+   whole row and the remaining targets wrap under it one per line. The chip still shrinks freely
+   below the ceiling, which is the flexibility the fixed-column exception would have traded away. */
 .abwab-relations-modal__target {
   font-size: 0.8125rem;
   background: var(--qd-section-bg);

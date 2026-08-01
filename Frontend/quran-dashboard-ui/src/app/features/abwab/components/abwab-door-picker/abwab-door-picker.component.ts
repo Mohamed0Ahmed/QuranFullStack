@@ -7,6 +7,11 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 export type AbwabDoorPickerStatus = 'ready' | 'loading' | 'error' | 'empty';
 
+// Radio grouping is document-scoped by `name`, and emulated encapsulation does not scope an
+// attribute. Two pickers sharing a literal name would merge into one group across modals, so the
+// name is minted per instance the way these modals already mint their `titleId`.
+let nextPickerId = 0;
+
 interface AbwabDoorPickerRow {
   readonly node: AbwabNode;
   readonly depth: number;
@@ -26,7 +31,9 @@ function subtreeMatches(node: AbwabNode, query: string): boolean {
  * Selection is consumer-owned, like `qd-tabs`: the picker renders what `pickedIds` says and
  * emits `toggled`, so the two hosts keep their opposite selection rules — the relations modal
  * single-selects an anchor in bulk mode, the copy modal multi-selects targets — without the
- * picker knowing either.
+ * picker knowing either. `single` is the one thing the picker cannot infer from that: which
+ * *affordance* to render. It changes no selection logic, only checkbox vs radio, because a
+ * checkbox promises "pick any number" and anchor-pick mode accepts exactly one.
  *
  * `excludedIds` hides a door but never its subtree: a door may relate to its own ancestor or
  * descendant, so hiding the anchor's children would remove a case the backend allows. Children
@@ -46,11 +53,14 @@ export class AbwabDoorPickerComponent {
   readonly excludedIds = input<readonly number[]>([]);
   readonly disabledIds = input<readonly number[]>([]);
   readonly disabledTag = input('');
+  /** Affordance only — see the class doc. The host still owns what a pick does. */
+  readonly single = input(false);
   readonly status = input<AbwabDoorPickerStatus>('ready');
   readonly errorMessage = input('');
-  /** Required whenever a host drives `status` — a shared picker must not hold one consumer's
-   * wording for "there is nothing to pick". */
-  readonly emptyMessage = input('');
+  /** Required, not optional: "there is nothing to pick" is the fallthrough answer whenever the
+   * list is empty for no other stated reason, and a shared picker must not hold one consumer's
+   * wording for it. An optional input here bought a silent blank list for whoever forgot it. */
+  readonly emptyMessage = input.required<string>();
   readonly searchPlaceholder = input.required<string>();
   readonly testIdPrefix = input.required<string>();
 
@@ -64,6 +74,16 @@ export class AbwabDoorPickerComponent {
 
   protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
   protected get loadingLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
+  protected get noMatchesLabel(): string { return ABWAB_LABELS.pickerNoMatches; }
+
+  protected readonly pickerName = `abwab-door-picker-${nextPickerId++}`;
+
+  /** A search that filters every row out is not the host's "there is nothing to pick": the doors
+   * are there, the query just does not reach them. The `nodes()` term is what makes that true —
+   * a typed query over an genuinely empty tree is still the host's answer, not this one. */
+  protected readonly searchFoundNothing = computed(
+    () => this.searchQuery().trim() !== '' && this.nodes().length > 0,
+  );
 
   private readonly pickedSet = computed(() => new Set(this.pickedIds()));
 
@@ -129,6 +149,17 @@ export class AbwabDoorPickerComponent {
       return;
     }
     this.toggled.emit(row.node.id);
+  }
+
+  /** Radio groups move selection with the arrow keys, and that path fires `change` without the
+   * click the row handler listens to — without this, keyboard selection would tick the control
+   * while the host's state stayed on the previous door. Emitting twice when a click does happen
+   * is harmless: `single` selection is idempotent by definition. */
+  protected onRowChange(row: AbwabDoorPickerRow): void {
+    if (!this.single()) {
+      return;
+    }
+    this.togglePicked(row);
   }
 
   /** Closing a modal destroys this instance, so a reopen starts clean on its own. The host still

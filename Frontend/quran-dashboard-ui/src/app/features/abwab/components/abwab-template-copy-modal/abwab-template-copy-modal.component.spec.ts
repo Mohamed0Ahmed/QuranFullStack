@@ -140,7 +140,7 @@ describe('AbwabTemplateCopyModalComponent', () => {
     it('shows skeleton rows while loading, the error with a retry, and empty only when resolved', () => {
       const loading = render({ liveRoots: [], doorsLoading: true });
       expect(loading.el('abwab-template-copy-modal-loading')).toBeTruthy();
-      expect(loading.el('abwab-template-copy-modal-empty')).toBeNull();
+      expect(loading.el('abwab-template-copy-modal-doors-empty')).toBeNull();
 
       const failed = render({ liveRoots: [], doorsError: 'تعذر تحميل الأبواب' });
       expect(failed.el('abwab-template-copy-modal-doors-error')?.textContent).toContain('تعذر تحميل الأبواب');
@@ -150,7 +150,29 @@ describe('AbwabTemplateCopyModalComponent', () => {
       expect(retries).toHaveLength(1);
 
       const empty = render({ liveRoots: [] });
-      expect(empty.el('abwab-template-copy-modal-empty')?.textContent).toContain(ABWAB_LABELS.templateCopyEmptyDoors);
+      expect(empty.el('abwab-template-copy-modal-doors-empty')?.textContent).toContain(ABWAB_LABELS.templateCopyEmptyDoors);
+    });
+
+    // «لا توجد أبواب حية لنسخ القالب إليها» is a claim about the tree, and a search that matches
+    // nothing is not evidence for it — the doors come back the moment the query is cleared.
+    it('does not answer an unmatched search with "there are no live doors"', () => {
+      const { el, search } = render();
+
+      search('لا وجود لهذا الباب');
+
+      expect(el('abwab-template-copy-modal-no-matches')?.textContent).toContain(ABWAB_LABELS.pickerNoMatches);
+      expect(el('abwab-template-copy-modal-doors-empty')).toBeNull();
+    });
+
+    // And the mirror: a typed query over a genuinely empty tree is still «لا توجد أبواب حية».
+    // Guarding on "a query is typed" alone would trade one wrong answer for the opposite one.
+    it('does not let a typed query turn "no live doors" into "no matches"', () => {
+      const { el, search } = render({ liveRoots: [] });
+
+      search('أي شيء');
+
+      expect(el('abwab-template-copy-modal-no-matches')).toBeNull();
+      expect(el('abwab-template-copy-modal-doors-empty')?.textContent).toContain(ABWAB_LABELS.templateCopyEmptyDoors);
     });
   });
 

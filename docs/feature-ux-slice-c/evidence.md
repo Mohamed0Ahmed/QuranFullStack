@@ -82,33 +82,58 @@ closes the remaining alternative: the writer refuses archived endpoints outright
 relation cannot be born dormant; a dormant relation can only be one whose door was archived
 after the fact.
 
-Most plausible explanation of the Slice A observation, consistent with every measurement
-here: that harness POSTed against leftover archived `e2e-sandbox-*` doors, which the e2e
-teardown leaves in the dev DB by design (`e2e/fixtures/abwab.ts:86-95`), and the read it
-then judged "wrong" was correct dormancy.
+That last sentence rules out one story and pins another, and the two must not be conflated —
+an earlier revision of this section did conflate them. Because step 5d returns **400**, a
+harness POSTing at an already-archived door creates **no row at all**; the empty read that
+follows is a *failed write*, not dormancy, and it would only look like dormancy to a harness
+that ignored the POST status. The mechanism that actually produces the recorded symptom pair
+against a relation that was really created is the ordering one: both doors live at POST time
+(2xx, as in step 2), one of them archived afterwards — by a later `e2e-sandbox-*` teardown,
+which leaves archived doors in the dev DB by design (`e2e/fixtures/abwab.ts:86-95`) — and the
+read then correctly derives the relation as dormant.
+
+Most plausible explanation of the Slice A observation, consistent with every measurement here:
+that ordering. Whether the harness additionally swallowed a 400 on a second attempt is not
+determinable from this reproduction and is not claimed.
 
 `docs/TESTING_DEBT.md` rows 2 and 5 (the backend dormancy join tests and the e2e dormancy
 flow) remain **unpaid and unaffected** — a manual reproduction is evidence, not a test.
 
 ## Deviations from the plan, and why
 
-Three, each recorded where the plan named something the code could not carry:
+Four, each recorded where the plan named something the code could not carry:
 
-1. **No `single` input on `abwab-door-picker`** (plan T401's contract lists one). Selection is
-   consumer-owned, so the single-anchor rule lives in the relations modal's own `togglePicked`
-   and the picker never reads such a flag — shipping it would have been a dead input.
+1. **`single` on `abwab-door-picker` is an affordance flag, not a selection flag** (plan T401's
+   contract implies the latter). Selection stays consumer-owned — the single-anchor rule lives in
+   the relations modal's own `togglePicked` and the picker never reads the flag to decide *what a
+   pick does*. What the picker cannot infer, and what an engineering review caught as a real gap,
+   is which **control** to render: a checkbox promises "pick any number", and anchor-pick mode
+   accepts exactly one. `single` therefore ships, switching the row control to a named radio group
+   (and the relations modal to a one-door search placeholder). Anchor-pick selection became
+   select-only in the same change: a radio group has no click-the-selected-one-to-clear gesture,
+   so mirroring one would have been an affordance the control does not offer.
 2. **A fourth height cap existed.** The plan's inventory names three (sections 14rem, copy
    13rem, relations 11rem); `abwab-move-picker.component.scss` carried a 15rem cap on its
    destination list too. It is deleted with the others, along with the nested scrollers those
    caps implied — inside `--fixed` the only scroller is `.qd-modal__body`.
 3. **Focus-on-open is asserted differently than the plan assumed.** Where the plan calls for
    explicit focus (the door/template-node name field, the two picker searches) the component
-   places it and the spec asserts `document.activeElement` — those pass. Where it calls for
-   plain auto-capture (sections, move-picker), no unit assertion is possible: jsdom gives every
-   element a zero-size box, so the CDK's own focusable check rejects the target and auto-capture
-   never fires. Those specs assert the contract that produces the behavior (trap attached,
-   capture on, the intended control first in tab order) and the real focus is a browser fact,
-   recorded in the T802 matrix.
+   places it and the spec asserts `document.activeElement` — those pass, in **both** relations
+   modes. Where it calls for plain auto-capture (sections, move-picker), no unit assertion is
+   possible: jsdom gives every element a zero-size box, so the CDK's own focusable check rejects
+   the target and auto-capture never fires. Both of those specs assert the contract that produces
+   the behavior (trap attached, capture on, the intended control first in tab order) and the real
+   focus is a browser fact, recorded in the T802 matrix. *(The sections spec did not carry that
+   assertion when this deviation was first written — the claim was true of the move-picker only.
+   It has since been added, which is what makes the sentence above true rather than aspirational.)*
+4. **The doc updates landed one commit behind the facts they describe.** Plan T803 says "same
+   change as the facts" while scheduling itself into Phase 8, and Phase 8 is what happened: the
+   abwab README, `UI_STYLE_SYSTEM.md` §17, the navbar comment, and `TESTING_DEBT.md` all arrived
+   in `25b60f2a`, after the behavior commits they document. Only T702's `selectedLoading` gotcha
+   was removed in its own commit (`0d7b213b`), the way the workspace rule asks. Recorded rather
+   than rewritten: the merged tree is consistent and the cost was a bisect window, not a wrong
+   doc. The plan's own contradiction is the thing to avoid next time — a "docs true again" phase
+   cannot also be a same-change obligation.
 
 ## T604 — Relations modal, visual acceptance against the concept
 
@@ -171,6 +196,13 @@ the right thing.
 
 All six render at the same 704 px — `min(92dvh, 44rem)` at a 900 px-tall viewport — which is the
 "zero resize" contract holding across modals of very different content depth.
+
+**One row per modal, and the relations modal has two modes.** This matrix drove each modal from
+its real trigger once; the relations row is **door mode**. Anchor-pick mode shares the same
+open-effect (`abwab-relations-modal.component.ts` queues one `focusSearch()` for both branches),
+and it is pinned in the spec rather than here — `abwab-relations-modal.component.spec.ts`
+asserts `document.activeElement` on the search input in anchor-pick mode too. The door row
+records the **dirty** Escape (guard raised); the clean close is spec-covered.
 
 **Geometry byte-share.** Each modal's shell block (backdrop line through the `__head` open tag)
 was extracted and normalised on the three sanctioned variables — component name, testid, close
@@ -240,3 +272,91 @@ Two smaller things fixed in the same pass:
   It is now an `emptyMessage` input the host supplies.
 
 Full abwab suite and `npm run build` green after all three.
+
+## Post-review fixes — the engineering review's findings
+
+An engineering review of the whole branch found two defects that the suite could not have
+caught, plus a list of smaller ones. All are fixed here.
+
+**The sections modal's discard discarded nothing (the one user-visible defect).** `confirmDiscard()`
+emitted `closed` without clearing `newSectionName` / `editingId` / `editingName`, and the new
+open-effect reset only `confirmingDiscard`. The modal is a **static sibling** on the page shell
+(`abwab-page.component.html`), so the instance outlives every close — only its inner `@if`
+template is destroyed. Typing a section name, pressing Escape, and answering «تجاهل التغييرات»
+therefore *hid* the draft: the next open showed the text back and was dirty before a keystroke,
+so Escape immediately raised the guard again. A stale `errorMessage` survived the same way.
+
+The door modal never had this because its drafts live in `abwab-door-fields-form`, which sits
+*inside* `@if (open())` and is thrown away on close — decision 4.2-5 copied the trio's shape but
+not the destruction that makes discard mean discard. Fixed with a `resetDraft()` in the
+open-effect, matching what the relations and copy modals already do.
+
+**The `2d312de6` error-surface fix was unpinned.** The door spec's only `-error` assertion checks
+the message text after a failed write, and that assertion passes identically whether the surface
+is guarded or rendered unconditionally — the 105 px empty box could have come straight back.
+Fixed with an absence assertion on the happy path, which also covers the template-node modal
+through the shared form.
+
+Both new specs were verified to **fail** against the reverted fixes before being kept.
+
+The rest, in one pass:
+
+- **Anchor-pick affordance** — the `single` input (deviation 1 above): radio group + one-door
+  placeholder, select-only semantics, keyboard `change` path wired.
+- **The shared picker answered an unmatched search with its host's empty message** — «لا توجد
+  أبواب حية لنسخ القالب إليها» is a claim about the tree, and a query that matches nothing is not
+  evidence for it. New `pickerNoMatches` state, specced on both hosts, and guarded on *both*
+  terms (`query typed` **and** `nodes().length > 0`) so the mirror case — a typed query over a
+  genuinely empty tree — still gets the host's sentence. Both directions are specced.
+  (Pre-existing on `dev`; the unification carried it across, so it is paid here.)
+- **Two consequences of that path becoming reachable, each fixed in the same pass:**
+  - The picker's empty state was `status === 'empty'` only, which relations never sets — an empty
+    relations tree would have rendered a silent blank list. It is now the **fallthrough** branch
+    and `emptyMessage` is `input.required`, so no host can omit the answer; relations supplies
+    `relationPickerEmptyDoors`.
+  - **One deliberate testid change:** the picker's empty state moved from `<prefix>-empty` to
+    `<prefix>-doors-empty`. With one prefix serving host and picker, `abwab-relations-modal-empty`
+    was owned by the modal's own «لا توجد علاقات» — the same collision the picker's error already
+    avoided by being `-doors-error`. This is the one place decision 4.2-2's "existing testids
+    survive verbatim" is knowingly broken, because the alternative is two elements answering to
+    one id.
+- **The radio group name is minted per picker instance** (`abwab-door-picker-N`, the `titleId`
+  pattern), not derived from `testIdPrefix`. Radio grouping is document-scoped by `name` and
+  emulated encapsulation does not scope an attribute, so a literal name would merge two pickers
+  into one group. The spec asserts the shape, not just that two rows share it.
+- **Every relations chip's delete button was named «حذف العلاقة»** — N identical controls per
+  group. `relationDeleteAriaLabel` now names the door.
+- **The sections spec gained its trap assertion** (deviation 3's correction).
+- **`__target`'s `14rem`** now carries the per-call-site justification §17's truncation entry
+  requires of any name-column size.
+- **The move-picker's `__body` content** is indented inside the wrapper it gained.
+- **Evidence corrections**: T202's closing inference (below), the T802 matrix's mode coverage,
+  and deviation 4.
+
+Not changed, deliberately: `[reserve]="true"` inside an `@if` is a contradiction of that input's
+"never appears/disappears" purpose, but it is B1's shipped pattern at all four abwab sites and
+matching it beats diverging one of them — noted in `UI_STYLE_SYSTEM.md` §17 for whoever revisits
+`qd-state`. `TESTING_DEBT.md` row 5's trigger clause stays rewritten (row 4 is deleted, so "same
+trigger as row 4" would dangle); the row itself is untouched and unpaid. The template-node modal
+stays unspecced — row 9's narrowed remainder is its trigger.
+
+**Closing run after the review fixes** (the T801 table above is a point-in-time measurement and
+stays as recorded; this is the branch tip):
+
+| | T801 | After review fixes | Delta |
+|---|---|---|---|
+| Test files | 193 | **193** | — |
+| Tests | 2206 | **2219** | +13 |
+| Failures | 0 | **0** | — |
+| `npm run build` | success | **success** | — |
+| Initial bundle | 569.06 kB | 569.06 kB | — |
+
+The +13 are the specs the findings demanded: three sections-modal reset cases, the sections trap
+assertion, the door modal's error-absence case, four anchor-pick affordance/keyboard/focus cases,
+and — on each picker host — a matched-nothing case plus its mirror over an empty tree. Build
+warnings unchanged: the same three pre-existing budget lines, none new. Both runs local; there is
+no CI.
+
+Two of these specs were verified by reverting their fix and watching them fail, not by watching
+them pass: the sections reset (3 failures) and the door error-absence assertion (1). A spec that
+cannot fail is the exact defect the review found in the first place.

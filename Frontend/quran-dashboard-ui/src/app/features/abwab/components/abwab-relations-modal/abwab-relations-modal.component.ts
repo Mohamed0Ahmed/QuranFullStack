@@ -117,12 +117,19 @@ export class AbwabRelationsModalComponent {
   protected get emptyText(): string { return ABWAB_LABELS.relationsEmpty; }
   protected get directionLabel(): string { return ABWAB_LABELS.relationDirectionLabel; }
   protected get typeTabsAriaLabel(): string { return ABWAB_LABELS.relationTypeTabsAriaLabel; }
-  protected get searchPlaceholder(): string { return ABWAB_LABELS.relationPickerPlaceholder; }
   protected get alreadyLinkedLabel(): string { return ABWAB_LABELS.relationAlreadyLinked; }
+  protected get pickerEmptyLabel(): string { return ABWAB_LABELS.relationPickerEmptyDoors; }
   protected get noneSelectedLabel(): string { return ABWAB_LABELS.relationNoneSelected; }
   protected get bulkAnchorHint(): string { return ABWAB_LABELS.relationsBulkAnchorHint; }
   protected get closeLabel(): string { return ABWAB_LABELS.relationsCloseButton; }
-  protected get deleteAriaLabel(): string { return ABWAB_LABELS.relationDeleteAriaLabel; }
+
+  protected deleteAriaLabel(doorName: string): string { return ABWAB_LABELS.relationDeleteAriaLabel(doorName); }
+
+  /** Door mode's placeholder invites several doors; anchor-pick mode takes exactly one, and the
+   * picker's radio affordance should not be the only place that says so. */
+  protected readonly searchPlaceholder = computed(() =>
+    this.anchorPickMode() ? ABWAB_LABELS.relationsBulkAnchorPlaceholder : ABWAB_LABELS.relationPickerPlaceholder,
+  );
 
   /** The pill names whichever side the picker chooses, and the two modes choose opposite sides:
    * door mode picks the targets, anchor-pick mode picks the anchor. One pair of strings would
@@ -251,10 +258,11 @@ export class AbwabRelationsModalComponent {
   }
 
   /** Anchor-pick mode selects exactly one door — the picker renders what it is told and leaves
-   * which-selection-rule-applies to its host. */
+   * which-selection-rule-applies to its host. Selecting, not toggling: the control is a radio
+   * there, and a radio group has no "click the selected one to clear it" gesture to mirror. */
   protected togglePicked(doorId: number): void {
     if (this.anchorPickMode()) {
-      this.pickedIds.set(this.pickedIds().has(doorId) ? new Set() : new Set([doorId]));
+      this.pickedIds.set(new Set([doorId]));
       return;
     }
     const next = new Set(this.pickedIds());

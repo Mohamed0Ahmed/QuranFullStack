@@ -755,8 +755,21 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   re-measure the control by hand" rule) — so its box never appears/disappears;
   only its text fades in, opacity only, static under `prefers-reduced-motion`,
   mirroring `qd-detail-modal-shell`'s count span (above). Default off, so today's
-  seven call-sites are unaffected. This entry only adds the capability —
-  composing `reserve` into abwab's error surfaces is a later slice's task.
+  seven call-sites are unaffected.
+- **`reserve` under an `@if` reserves nothing, and abwab does exactly that — knowingly.**
+  All four abwab modal error surfaces render as
+  `@if (message; as m) { <qd-state variant="error" [reserve]="true" [message]="m" /> }`,
+  so the box appears and disappears with the message and the input's own contract
+  ("never appears/disappears") cannot hold; what survives is the message span's
+  `min-block-size` and a fade that never fires, since the element is born visible.
+  Slice C briefly rendered the door/template-node surface **unguarded** to honor the
+  input literally, and shipped a 105px empty danger box on every open of both modals
+  (the container's own `padding: var(--qd-space-6)` plus the reserved row, with nothing
+  in it) — reverted to match the other three. The lesson for whoever revisits this
+  input: `reserve` earns its keep where a box is **permanently mounted** and only its
+  content arrives late; guarding the whole component is the right call for an error
+  that is absent on the happy path, and those two uses want different tools. Do not
+  "fix" abwab's four sites by deleting the `@if`.
 
 ### `.qd-explorer-table`
 - **Purpose:** the one table implementation for all 5 explorer tables (roots,

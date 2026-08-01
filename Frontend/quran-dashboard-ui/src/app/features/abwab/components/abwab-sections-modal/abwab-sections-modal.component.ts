@@ -78,11 +78,24 @@ export class AbwabSectionsModalComponent {
   protected get keepEditingLabel(): string { return ABWAB_LABELS.keepEditingButton; }
 
   constructor() {
+    // This modal is a static sibling on the page shell, so the instance outlives every close and
+    // only its inner template is destroyed — unlike the door modal, whose drafts live in a
+    // `abwab-door-fields-form` that `@if (open())` throws away. Without this reset «تجاهل
+    // التغييرات» would hide the draft rather than discard it, and the next open would find the
+    // modal dirty before the user touched anything.
     effect(() => {
       if (this.open()) {
-        this.confirmingDiscard.set(false);
+        this.resetDraft();
       }
     });
+  }
+
+  private resetDraft(): void {
+    this.newSectionName.set('');
+    this.editingId.set(null);
+    this.editingName.set('');
+    this.errorMessage.set(null);
+    this.confirmingDiscard.set(false);
   }
 
   protected onNewNameInput(event: Event): void {

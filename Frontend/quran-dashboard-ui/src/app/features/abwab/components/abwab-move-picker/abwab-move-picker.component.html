@@ -19,53 +19,52 @@
       </header>
 
       <div class="qd-modal__body">
-
-      @if (stage() === 'section') {
-        <div class="abwab-move-picker__list">
-          <button
-            type="button"
-            class="abwab-move-picker__row"
-            data-testid="abwab-move-picker-section-none"
-            (click)="pickSection(null)"
-          >
-            {{ noSectionLabel }}
-          </button>
-          @for (section of sections(); track section.id) {
+        @if (stage() === 'section') {
+          <div class="abwab-move-picker__list">
             <button
               type="button"
               class="abwab-move-picker__row"
-              [attr.data-testid]="'abwab-move-picker-section-' + section.id"
-              (click)="pickSection(section.id)"
+              data-testid="abwab-move-picker-section-none"
+              (click)="pickSection(null)"
             >
-              {{ section.name }}
+              {{ noSectionLabel }}
             </button>
-          }
-        </div>
-      } @else {
-        <div class="abwab-move-picker__list">
-          <button
-            type="button"
-            class="abwab-move-picker__row"
-            [class.abwab-move-picker__row--picked]="pickedParentId() === null"
-            data-testid="abwab-move-picker-dest-asmain"
-            (click)="pickAsMain()"
-          >
-            {{ asMainDoorLabel }}
-          </button>
-          @for (row of destinationRows(); track row.node.id) {
+            @for (section of sections(); track section.id) {
+              <button
+                type="button"
+                class="abwab-move-picker__row"
+                [attr.data-testid]="'abwab-move-picker-section-' + section.id"
+                (click)="pickSection(section.id)"
+              >
+                {{ section.name }}
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="abwab-move-picker__list">
             <button
               type="button"
               class="abwab-move-picker__row"
-              [class.abwab-move-picker__row--picked]="pickedParentId() === row.node.id"
-              [style.--abwab-move-picker-depth]="row.depth"
-              [attr.data-testid]="'abwab-move-picker-dest-' + row.node.id"
-              (click)="pickParent(row.node.id)"
+              [class.abwab-move-picker__row--picked]="pickedParentId() === null"
+              data-testid="abwab-move-picker-dest-asmain"
+              (click)="pickAsMain()"
             >
-              {{ row.node.name }}
+              {{ asMainDoorLabel }}
             </button>
-          }
-        </div>
-      }
+            @for (row of destinationRows(); track row.node.id) {
+              <button
+                type="button"
+                class="abwab-move-picker__row"
+                [class.abwab-move-picker__row--picked]="pickedParentId() === row.node.id"
+                [style.--abwab-move-picker-depth]="row.depth"
+                [attr.data-testid]="'abwab-move-picker-dest-' + row.node.id"
+                (click)="pickParent(row.node.id)"
+              >
+                {{ row.node.name }}
+              </button>
+            }
+          </div>
+        }
       </div>
 
       <footer class="qd-modal__foot">
