@@ -64,3 +64,37 @@ Result — the plan-time prediction plus **one new hit**:
 
 Zero hits for `ETag` / `If-None-Match` / `304` / `Not Modified` in **code** on either end,
 confirming the plan's "NEW PATTERN on both ends" premise at execution time.
+
+## Phase 2 — Backend cache + invalidation, no HTTP change
+
+| Gate | Result |
+|---|---|
+| `dotnet build` after T202 (writer decorators) | Succeeded, 0 warnings, 0 errors. |
+| No-pipeline after T202 | 1,086 passed, 0 failed, 0 skipped. 19 s — **unchanged from T101**. |
+| `dotnet build` after T203 (cached readers) | Succeeded, 0 warnings, 0 errors. |
+| No-pipeline after T203 | 1,086 passed. 19 s. |
+| `Tests.Api` after T203 | 60 passed. 11 s. |
+
+**The singleton-identity check (the failure §7's gates cannot catch).** `AbwabCacheGeneration`
+is registered once as a concrete singleton with both interfaces forwarding to it
+(`AbwabDependencyInjection.cs`). Registering `IAbwabCacheInvalidator` and `IAbwabCacheValidators`
+separately against the type would build **two** counters — writers bumping one, readers/controllers
+reading the other — and every gate above would still be green while every client was served stale
+data forever. Verified against the real composed DI graph rather than by reading the registration:
+
+Kestrel on the `http` profile, EF's `Executed DbCommand` lines counted in the process log:
+
+| Step | Response | Cumulative `Executed DbCommand` |
+|---|---|---|
+| `GET /api/abwab/tree` (first) | `200`, 140,187 B, 0.380 s | 8 |
+| `GET /api/abwab/tree` (repeat) | `200`, 140,187 B, **0.015 s** | **8 — zero new queries: served from `IMemoryCache`** |
+| `POST /api/abwab/sections` (probe section) | `201` | 10 |
+| `GET /api/abwab/tree` (after the write) | `200`, **140,283 B** — the new section is present | 17 — **reloaded, so the write's bump reached the reader's stamp** |
+
+The probe section was then deleted (`204`) and the tree returned to 140,188 B — the one byte of
+difference from the baseline is the `xmin`-derived `version` digits of the rows the delete's
+resequence touched, not a structural change. No other data was written.
+
+This is the whole Phase 2 correctness core, and **nothing on the wire changed**: same statuses,
+same envelopes, no `ETag`, no `Cache-Control`. It is the plan's recorded split seam — revertable
+without any client noticing.
