@@ -50,6 +50,22 @@ incidentally.
   aggregate, feature, read model, **or use case**": the copy is a use case, and `EfAbwabDoorsWriter`
   is already 816 lines against that section's 600-line hard threshold, so hanging it there was never
   available. Every other writer here stays one-aggregate.
+- **Every writer interface here is DI-wrapped by an invalidating decorator, and that is not
+  optional.** `Infrastructure/Caching/Abwab/Invalidating*Writer` wraps each of the five interfaces and
+  bumps the cache generation the write's data belongs to: sections / doors / relations / **apply** bump
+  the tree, the templates writer bumps templates. Two rules make it correct rather than merely present:
+  - **The bump is in `finally`, not on success.** Several writes here run multiple saves on implicit
+    transactions, so a thrown translated exception does not prove nothing committed. Bumping after a
+    failed write costs one spurious refetch; not bumping after a partially committed one serves stale
+    data.
+  - **The bump happens after the inner writer returns — i.e. after its commit — and before the handler
+    resumes**, so a client that has just written can never be answered `304` or handed a pre-write
+    body. This ordering is by construction, not by discipline; no handler or controller calls the
+    invalidator.
+  - **A sixth writer, or a new method on any of these five, MUST be added to its decorator.** The
+    compile error is the guard — an interface cannot grow without the decorator failing to build — and
+    the `finally` bump is the line to check in review. A writer registered without its decorator would
+    silently reintroduce stale reads with every test still green.
 - **Aliases are normalized once, at the write seam, by `AbwabAliasNormalization`.** Trim, drop the
   empties, de-duplicate — and every alias write in this folder goes through it: the doors writer's
   `ReplaceAliasesAsync` diff, the template node writes that store a `text[]`, and the apply's alias

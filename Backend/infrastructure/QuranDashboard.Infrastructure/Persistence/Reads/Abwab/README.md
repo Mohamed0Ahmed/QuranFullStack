@@ -89,7 +89,9 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
   `max(updated_at, deleted_at)` across sections, doors, and aliases only, so a relation write changes
   the snapshot's `RelationCount` values without moving `Version`. That is safe **because `Version` is
   diagnostics-only** — nothing does conflict detection with it (`features/abwab/README.md` says so on
-  the client side too). Widening it to a fourth table would imply a guarantee it does not make.
+  the client side too), and nothing validates a cache with it either: the `ETag` is a server-side
+  generation counter, not row data (see the caching section). Widening it to a fourth table would
+  imply a guarantee it does not make.
 - **Templates are flat too, and a rootless template is not-found.** `AbwabTemplateDto.Nodes` carries
   `ParentNodeId` per node for the same reason the doors list does. Each template's display name is
   its **root node's** name — `abwab_templates` has no name column — so a template with no live root
@@ -103,9 +105,51 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
   admin tables, so no `AbwabTreeDoorDto` field, no `Version` term, and no filter here changes because
   of them. An applied template shows up as ordinary doors on the next snapshot read, with nothing
   marking them as template-derived.
-- **No caching.** Unlike the Words explorers' readers, this one is not wrapped in a caching decorator:
-  Abwab is live admin-authored data with no invalidation story yet, and caching a snapshot an admin is
-  actively editing would be a correctness risk, not a convenience.
+- **Both readers here ARE cached**, behind `Infrastructure/Caching/Abwab/`. The former "no caching"
+  rule stood only while there was no invalidation story; there is one now, and it is what makes
+  caching admin-authored data safe. See the section below.
+- **The relations read is the exception and stays uncached and unconditional.** The client fetches it
+  per modal-open with no held prior value, so a `304` would have nothing to render against and a
+  per-door validator would be a third cache resource for zero saved bytes.
+
+## Caching and invalidation
+
+`IAbwabTreeReader` and `IAbwabTemplatesReader` are wrapped by `CachedAbwabTreeReader` /
+`CachedAbwabTemplatesReader` (`Infrastructure/Caching/Abwab/`), registered in
+`AbwabDependencyInjection` the same concrete-Ef + interface→decorator way the `Caching/Quran`
+readers are.
+
+- **Entries.** `abwab:tree` holds the whole `AbwabTreeDto` as **one indivisible entry** — a
+  root-affecting write moves every row's `xmin`, so a per-section or live-vs-archive split would be
+  wrong rather than merely finer, and the archive view is a client-side partition of this same
+  snapshot, **not a cacheable resource of its own**. `abwab:templates` holds the list;
+  `abwab:template:{id}` holds one template. Both templates entries share one generation, so a node
+  edit on template A also invalidates B's cached detail — accepted at admin scale.
+- **Eviction is a generation stamp, never `IMemoryCache.Remove`.** `AbwabCacheGeneration` holds one
+  counter per resource; every write bumps its counter through an invalidating writer decorator, and a
+  cached entry is served only if its stored stamp still equals the current generation. There is **no
+  expiration on any entry** — eviction is write-driven and exact, not time-based.
+- **Capture before load.** Each reader reads the generation *before* querying and stamps the entry
+  with that captured value. A write committing mid-load therefore leaves the new entry already stale:
+  the failure direction is one extra query, never a stale hit.
+- **`CacheLoadGate` is deliberately not reused.** It cannot express "present but stale" — it returns
+  on `TryGetValue` before any generation check — and putting the generation in the key to work around
+  that would create the unbounded key space its own comment forbids. There is no single-flight here;
+  a single-admin product cannot produce a cold-miss stampede on one key.
+- **A miss on `abwab:template:{id}` is never cached.** Template ids come from the caller, so caching
+  absences would let an id probe grow the key space without bound.
+- **The cache validator ignores `Version` right back.** The `ETag` the API serves is this generation
+  counter plus a per-process boot id — server memory, no row data — so snapshot `Version` is neither
+  the concurrency currency (that is `xmin`) nor the cache validator. Three separate jobs.
+- **CONSTRAINT: this is correct for a single backend instance only.** The generation pair is
+  per-process memory. With two instances, a write on instance A leaves B's counter and B's cached
+  snapshot untouched, so B serves stale bodies and stale `304`s and the refresh-after-write invariant
+  breaks — spurious `409`s follow (`Frontend/quran-dashboard-ui/src/app/features/abwab/README.md`,
+  the refresh-after-write section). Production is Railway, currently single-instance; this is the same
+  recorded posture as the rate limiter's per-instance paragraph in `API_GUIDELINES.md`.
+  **Migration path if a second instance ever runs:** move the generation to shared state bumped inside
+  the write transaction — a one-row table or a sequence read by the validator — behind the existing
+  `IAbwabCacheInvalidator` / `IAbwabCacheValidators` interfaces, which no caller has to change.
 
 ## Related
 
