@@ -445,3 +445,135 @@ The mark is held statically at full strength for the same ~3s the page holds the
    from the superset narrowed the view to the target's own tab for no reason, because the
    superset already contained the target. The rule now matches the plan's own parenthetical
    ("or section-less door **while a section tab is active**"), and both cases are specced.
+
+## T902 — browser acceptance matrix
+
+One pass over the live page, real data. Every row is an observed value, not a description.
+
+**Roving tabindex — the invariant the flag and the badges could have broken:**
+
+```
+rows rendered            6
+rows with tabindex="0"   1
+focusable elements inside rows (tabindex ≠ -1)   0
+```
+
+The flag is a real `<button>` on every row and adds **zero** tab stops, alongside the two
+row actions.
+
+**The reorder reversal, both cancel paths:**
+
+| path | order before | order after | input dismissed |
+|---|---|---|---|
+| type `99`, blur | `2` | `2` | yes |
+| type `99`, Escape | `2` | `2` | yes |
+
+(Enter-commits is pinned by the M29 spec and by the e2e flow below.)
+
+**The flag at every count — all four Arabic forms exercised by live data:**
+
+| door | state | accessible name |
+|---|---|---|
+| باب العلم بالله | tinted | «عرض علاقات «باب العلم بالله» — 3 علاقات» |
+| الجهاد | tinted | «عرض علاقات «الجهاد» — علاقتين» |
+| الحمد والثناء | tinted | «عرض علاقات «الحمد والثناء» — علاقة واحدة» |
+| قصص الانبياء | dimmed | «عرض علاقات «قصص الانبياء» — لا علاقات» |
+
+**Checkbox accessible names, both surfaces:** all six tree checkboxes and all six card
+checkboxes are named after their own door («باب العلم بالله», «الجهاد», …). Card boxes
+compute `inline-size: 15px` (from `.qd-checkbox`) while keeping `position: absolute` (the
+card's own placement) — composition, not shadowing.
+
+Badges, the tablet collapse, the long-name budget and the reveal's five states are recorded
+under T602 and T804 above rather than repeated here.
+
+### The abwab e2e project, run once as extraction evidence (not a gate)
+
+```
+npx playwright test --project=abwab --workers=1
+20 passed (1.4m)
+```
+
+All twenty, including the two flows this slice amended:
+
+```
+✓ inline reorder: Enter commits and resequences siblings; Escape and blur cancel
+✓ bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
+```
+
+## T903 — doc integrity, cross-checked as a set
+
+Each edit landed with its own phase; this is the check that none was missed.
+
+| Document | Claim | Present |
+|---|---|---|
+| abwab README, render chain | Enter-only commit, blur and Escape cancel | ✓ |
+| abwab README, render chain | flag on every row, a control, `tabindex="-1"`, inert in bulk | ✓ |
+| abwab README, render chain | three badges, live-only, depth semantics, memoized in the builder | ✓ |
+| abwab README, render chain | row width priority + the tablet drop | ✓ |
+| abwab README, render chain | the relation name is a control emitting `revealRequested` | ✓ |
+| abwab README, URL contract | reveal writes existing keys only — no seventh key — plus the three load-bearing notes | ✓ |
+| abwab README, Gotchas | "Zero dead controls" restated positively, its exception gone | ✓ |
+| abwab README, Gotchas | §4.6's "vanished" includes archived-in-snapshot | ✓ |
+| `UI_STYLE_SYSTEM.md` §17 | `.qd-checkbox` debt marked paid, consumers updated | ✓ |
+| `UI_STYLE_SYSTEM.md` §17 | truncation debt marked paid, with the sites and the floor decision | ✓ |
+| `UI_STYLE_SYSTEM.md` §17 | `qd-chip` gains the `labelClickable` contract + backing classes | ✓ |
+| `UI_STYLE_SYSTEM.md` §17 | new "Reveal highlight" entry | ✓ |
+| `abwab-tree.component.scss` | the "A chip, not a control" comment gone **with** its rule | ✓ |
+
+`docs/TESTING_DEBT.md` is **untouched, deliberately**: this slice neither pays a row nor
+creates one. Its only abwab row is the relation-delete success path, which this slice does
+not touch. Stated here rather than by editing the file.
+
+## T904 — close-out sweep
+
+`grep -rn` across `src/`, `e2e/`, `docs/` and `specs/` for everything deleted:
+
+| Removed | Live references remaining |
+|---|---|
+| `.abwab-tree__checkbox` (rule + class) | **none** |
+| the `.abwab-tree__flag` "A chip, not a control… (plan §7 T603)" comment | **none in source** |
+| `commitOrderEdit`-on-blur in the doors tree | **none** — the only `(blur)="commitOrderEdit(...)"` left is `abwab-template-tree`'s, a different component the reversal deliberately does not touch (its order editor is the workshop's, and item 12 names the doors tree) |
+| the local ellipsis rules (tree / archive view / template tree) | **none** |
+| the local checkbox rules | cards keeps a placement-only rule, by design and stated in §17 |
+
+The remaining hits for the old flag comment and the old blur behavior are in
+`docs/abwab-ux-audit.md` and `docs/feature-ux-slice-d/plan.md`, which record what the code
+*was* — those are the audit trail, not dangling references.
+
+## T901 — closing Tier B against the T101 baseline
+
+Tier B rather than Tier A because `shared/ui/chip` changed. Frontend-only slice, so no
+`dotnet test` and no route-smoke tier: `SmokeRouteCatalog` is untouched because no route,
+contract, auth path or model binding was.
+
+| | baseline (T101) | closing (T901) | delta |
+|---|---|---|---|
+| test **files** | 193 | 193 | **0** |
+| tests | 2219 | 2258 | **+39** |
+| suite duration | 198.28 s | 211.07 s | +12.8 s |
+| build | complete, 3 pre-existing warnings | complete, the same 3 | — |
+| `abwab-page-component` chunk | 103.34 kB / 18.19 kB | 108.17 kB / 19.08 kB | +4.83 kB / +0.89 kB |
+
+Both runs exit 0. **Zero tests removed, zero spec files added** — every touched surface
+already had a spec, exactly as §4.2-10 predicted.
+
+**The +39 is above the plan's declared +15–30, so here is the whole of it:**
+
+| Spec | + | What |
+|---|---|---|
+| `abwab-page.component.spec.ts` | 8 | the reveal's five per-state patches, the superset case, the guard, the expand-and-mark, the collapsible-chain |
+| `abwab-tree.component.spec.ts` | 12 | blur-cancel + Enter-then-blur-once (2), flag states/click/bulk-inert/tabindex (5), badges (4), checkbox name (1) |
+| `chip.component.spec.ts` | 5 | the label-control opt-in, including projection in both arms |
+| `abwab-write.controller.spec.ts` | 4 | submit filter, 404-names-doors, empty-diff fallback, set-empties-after-success |
+| `abwab-tree.builder.spec.ts` | 4 | leaf, the worked depth example, chain-vs-fan, archived exclusion |
+| `abwab-selection.store.spec.ts` | 3 | archived-drop, all-archived, single-selection-survives |
+| `abwab-relations-modal.component.spec.ts` | 2 | reveal emits the other door's id; the two chip controls stay independent |
+| `abwab-cards.component.spec.ts` | 1 | checkbox named after its door |
+
+The overshoot is honest coverage, not padding: the plan's estimate predated three decisions
+execution had to make — the reveal's per-state patches became six cases rather than four
+once «كل الأبواب» was separated from a section tab, the chip needed a projection guard that
+element-type assertions could not provide, and the bulk-archive fix grew a
+set-empties-after-success case when the reproduction showed that is where the bug actually
+starts.
