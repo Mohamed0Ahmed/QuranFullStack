@@ -341,12 +341,10 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   `qd-state` (empty/error) — `UI_STYLE_SYSTEM.md` §17. Only two error sites carry the single
   `actionLabel` retry §17 permits — the doors page's own snapshot-load failure and the copy
   modal's doors-load failure, both wired to `AbwabSnapshotFacade.load()` — because those are
-  the two transport reads abwab previously offered no recovery from at all. The templates
-  page's «اختر قالبًا» empty site still doubles as a silent per-template loading indicator:
-  `AbwabTemplatesFacade.fetchSelected` sets no loading flag, so a slow per-template fetch and
-  "nothing selected" render identically. A `selectedLoading` signal would fix it but is not
-  free — it would touch the specced `abwab-templates.facade.spec.ts` — so it stays a named gap
-  rather than a silent one.
+  the two transport reads abwab previously offered no recovery from at all. The templates page's
+  «اختر قالبًا» now means only what it says: `AbwabTemplatesFacade.selectedLoading` covers the
+  per-template fetch window (null `selectedTemplate` throughout, since `select()` writes the id
+  first), and the detail region renders `qd-skeleton-rows` there instead.
 - **A skeleton's `rowTemplate` sizes its columns, never its rows.** `qd-skeleton-rows` defaults
   to a 0.75rem bar, so a call-site whose loaded row is taller must say so with a
   `--qd-skeleton-h` override on the host — the doors tree does (1.5rem, giving 32px pitch against

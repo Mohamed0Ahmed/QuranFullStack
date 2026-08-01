@@ -24,6 +24,7 @@ export class AbwabTemplatesFacade {
   private readonly listLoadingState = signal(false);
   private readonly listErrorState = signal<string | null>(null);
   private readonly selectedErrorState = signal<string | null>(null);
+  private readonly selectedLoadingState = signal(false);
   private readonly selectedIdState = signal<number | null>(null);
   private listRequest: Subscription | null = null;
   private selectedRequest: Subscription | null = null;
@@ -31,6 +32,11 @@ export class AbwabTemplatesFacade {
   readonly isLoading = this.listLoadingState.asReadonly();
   readonly errorMessage = this.listErrorState.asReadonly();
   readonly selectedErrorMessage = this.selectedErrorState.asReadonly();
+  /** True only while a per-template fetch is in flight. `selectedTemplate` is null for that whole
+   * window — `select()` writes the id before the request resolves — so without this the page
+   * cannot tell "nothing chosen" from "still loading" and says «اختر قالبًا» to a user who just
+   * chose one. */
+  readonly selectedLoading = this.selectedLoadingState.asReadonly();
   readonly selectedTemplateId = this.selectedIdState.asReadonly();
 
   /** Each row's `nodeCount` counts the root's live descendants, excluding the root itself — the
@@ -73,6 +79,7 @@ export class AbwabTemplatesFacade {
     this.selectedIdState.set(null);
     this.rawSelected.set(null);
     this.selectedErrorState.set(null);
+    this.selectedLoadingState.set(false);
   }
 
   /** Re-reads whatever is selected. Every write in the workshop changes the selected template's
@@ -116,9 +123,11 @@ export class AbwabTemplatesFacade {
   private fetchSelected(templateId: number): Observable<AbwabTemplateVm | null> {
     this.selectedRequest?.unsubscribe();
     this.selectedErrorState.set(null);
+    this.selectedLoadingState.set(true);
 
     const request$ = this.api.getTemplate(templateId).pipe(
       tap((response) => {
+        this.selectedLoadingState.set(false);
         if (response.isSuccess && response.data) {
           this.rawSelected.set(response.data);
           this.selectedErrorState.set(null);
@@ -128,6 +137,7 @@ export class AbwabTemplatesFacade {
       }),
       map(() => this.selectedTemplate()),
       catchError(() => {
+        this.selectedLoadingState.set(false);
         this.selectedErrorState.set(ABWAB_LABELS.templateLoadError);
         return of(this.selectedTemplate());
       }),

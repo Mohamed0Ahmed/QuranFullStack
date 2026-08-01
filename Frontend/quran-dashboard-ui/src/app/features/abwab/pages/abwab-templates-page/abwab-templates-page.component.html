@@ -85,7 +85,16 @@
           }
 
           @let template = facade.selectedTemplate();
-          @if (!template) {
+          @if (facade.selectedLoading()) {
+            <!-- The selected template is null for the whole in-flight window, so without this the
+                 empty state below would answer «اختر قالبًا» to a user who just chose one. -->
+            <qd-skeleton-rows
+              [count]="5"
+              rowTemplate="1fr"
+              [loadingLabel]="templateLoadingMessage"
+              data-testid="abwab-templates-page-selected-loading"
+            />
+          } @else if (!template) {
             <!-- A failed load already says why nothing is here; stacking «اختر قالبًا» under the
                  error would read as a second, contradictory status. -->
             @if (!facade.selectedErrorMessage()) {

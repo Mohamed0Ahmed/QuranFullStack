@@ -229,6 +229,7 @@ export const ABWAB_LABELS = {
   templatesEmptyMessage: 'لا توجد قوالب بعد — أنشئ أول قالب من الأعلى.',
   templateNoneSelectedMessage: 'اختر قالبًا من القائمة أو أنشئ قالبًا جديدًا.',
   templatesLoadingMessage: 'جارٍ تحميل القوالب...',
+  templateLoadingMessage: 'جارٍ تحميل القالب...',
   templatesLoadError: 'تعذر تحميل القوالب. حاول مرة أخرى.',
   templateLoadError: 'تعذر تحميل القالب.',
 
