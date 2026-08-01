@@ -45,6 +45,11 @@ public sealed class ApplyTemplateHandler(
             logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "targetArchived");
             return new ApplyTemplateOutcome.TargetArchived();
         }
+        catch (AbwabTemplateEmptyException)
+        {
+            logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "emptyTemplate");
+            return new ApplyTemplateOutcome.EmptyTemplate();
+        }
         catch (AbwabTemplateApplyCollisionException ex)
         {
             logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "nameCollision");

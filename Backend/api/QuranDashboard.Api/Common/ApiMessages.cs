@@ -179,6 +179,7 @@ public static class ApiMessages
     public const string AbwabTemplateApplied = "تم نسخ القالب";
     public const string AbwabTemplateApplyNoTargets = "يجب اختيار باب مستهدف واحد على الأقل";
     public const string AbwabTemplateApplyTargetArchived = "لا يمكن النسخ داخل باب مؤرشف";
+    public const string AbwabTemplateApplyEmpty = "القالب لا يحتوي عناصر لنسخها";
     public const string AbwabTemplateApplyCollision = "يوجد باب بنفس اسم جذر القالب داخل الباب المستهدف";
 
     // The whole copy fails on any collision (all-or-nothing), so the message names every target that

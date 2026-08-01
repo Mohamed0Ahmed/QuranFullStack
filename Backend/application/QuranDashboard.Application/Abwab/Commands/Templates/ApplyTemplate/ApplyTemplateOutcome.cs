@@ -11,5 +11,6 @@ public abstract record ApplyTemplateOutcome
     public sealed record TemplateNotFound : ApplyTemplateOutcome;
     public sealed record TargetNotFound : ApplyTemplateOutcome;
     public sealed record TargetArchived : ApplyTemplateOutcome;
+    public sealed record EmptyTemplate : ApplyTemplateOutcome;
     public sealed record Collision(IReadOnlyList<string> DoorNames) : ApplyTemplateOutcome;
 }

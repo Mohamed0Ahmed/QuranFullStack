@@ -7,8 +7,8 @@ namespace QuranDashboard.Application.Abstractions.Abwab;
 // templates writer nor a method on the doors writer.
 public interface IAbwabTemplateApplyWriter
 {
-    // Returns the created ROOT door per target. All-or-nothing: any refusal fails the whole batch
-    // before anything is inserted.
+    // Returns the created top-level doors, N per target (the template root's direct children).
+    // All-or-nothing: any refusal fails the whole batch before anything is inserted.
     Task<IReadOnlyList<AbwabDoorDto>> ApplyAsync(
         int templateId,
         IReadOnlyList<int> targetDoorIds,

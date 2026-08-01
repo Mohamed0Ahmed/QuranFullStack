@@ -75,3 +75,18 @@ Phrases run: «بجذره», `root becomes a new child`, `only collision is at t
 No hit was left undisposed. Three findings outside the original ledger were fixed in this
 phase; two categories (audit doc, historical phase narrative) were reviewed and deliberately
 left unedited with rationale recorded above.
+
+## Phase 2 — T204: SmokeRouteCatalog verification
+
+`SmokeRouteCatalog.cs:356-359` entry read and compared against DRIFT-3's expectation:
+
+```
+new("api/abwab/templates/{templateId:int}/apply", "/api/abwab/templates/1/apply", HttpStatusCode.NotFound)
+{
+    Method = HttpMethod.Post, ParityOnly = true,
+}
+```
+
+Matches exactly — same route template, same probe URL, same `NotFound` constraint, same
+`ParityOnly = true`. No edit made, per DRIFT-3. `dotnet build Backend/QuranDashboard.sln`
+green after T201-T204 (additive only, writer untouched): 0 warnings, 0 errors, 29.9s.

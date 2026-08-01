@@ -99,6 +99,8 @@ public sealed class AbwabTemplatesController(
                 BadRequest(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabTemplateApplyNoTargets)),
             ApplyTemplateOutcome.TargetArchived =>
                 BadRequest(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabTemplateApplyTargetArchived)),
+            ApplyTemplateOutcome.EmptyTemplate =>
+                BadRequest(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabTemplateApplyEmpty)),
             ApplyTemplateOutcome.TemplateNotFound =>
                 NotFound(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabTemplateNotFound)),
             ApplyTemplateOutcome.TargetNotFound =>
