@@ -182,3 +182,44 @@ adds page-side inputs to the relations modal for the reveal wiring, so any new b
 there must be a stable `computed` reference rather than an inline `?? []`/object literal,
 or it will widen exactly this path. Recorded here so the Phase 8 work accounts for it
 rather than repeating it.
+
+## T303 (first half) — The bulk-archive 404, reproduced on the pre-fix SHA
+
+Driven through the real UI at `https://localhost:4200/abwab` against the local backend,
+on branch `ux-slice-d-tree` at **`c2254f01`** — before any Phase 3 code change. Sandbox
+created over the API so no existing door was touched: section `383` «سلايس-د-اختبار»,
+root door `679` «د-أب», its child `680` «د-ابن».
+
+**Steps and observed state, in order:**
+
+1. `?section=383`, expand «د-أب», enter «تحديد جماعي», tick both rows.
+   → bulk bar reads **«2 باب محدد — د-أب، د-ابن»**.
+2. «أرشفة الكل» → confirm strip reads **«سيتم أرشفة بابين»** (the union count is right).
+3. Confirm → `POST /api/abwab/doors/bulk-archive` → **200**, snapshot refetched.
+   → the tree is now **empty** (`abwab-tree-row-*`: none), and the bulk bar **still**
+   reads «2 باب محدد — د-أب، د-ابن». The archived ids survived `rebindTo`.
+4. «أرشفة الكل» again → the confirm strip now reads **«سيتم أرشفة لا أبواب»** — the exact
+   disagreement the plan predicted (`bulkLiveSubtreeCount` walks live-only and counts 0,
+   while `currentBulkRefs()` is about to send 2).
+5. Confirm → `POST /api/abwab/doors/bulk-archive` → **404**.
+
+**The failing request, verbatim:**
+
+```
+POST https://localhost:5015/api/abwab/doors/bulk-archive   404
+request:  {"doors":[{"doorId":679,"version":9281},{"doorId":680,"version":9281}]}
+response: {"isSuccess":false,"message":"الباب غير موجود","data":null,"errors":[]}
+announcer: «الباب غير موجود»
+```
+
+Two things this pins beyond the plan's reading:
+
+- The versions sent are **`9281` — freshly rebound from the post-archive snapshot**, not
+  stale tokens. That is the proof that `rebindTo` re-bound the archived nodes instead of
+  dropping them: `byId` still contained them, so the `if (node)` test passed.
+- The failure is generic and names no door, exactly as `ApiMessages.cs` states — so the
+  message the user is left with cannot identify «د-أب» or «د-ابن». The frontend can,
+  because both names are in its own snapshot.
+
+After the 404 the bulk bar **still** holds both ids, so the state is self-perpetuating:
+every further submit re-sends the same two dead doors.
