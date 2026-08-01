@@ -9,6 +9,7 @@ import {
   inject,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -17,6 +18,7 @@ import { AbwabSnapshotFacade } from '../../state/abwab-snapshot.facade';
 import { AbwabSelectionStore } from '../../state/abwab-selection.store';
 import { AbwabWriteController } from '../../state/abwab-write.controller';
 import { AbwabPageOverlaysController } from '../../state/abwab-page-overlays.controller';
+import { AbwabModalUrlController, DOOR_MODAL_KINDS } from '../../state/abwab-modal-url.controller';
 import {
   countAbwabDoorsInOpenScope,
   countLiveAbwabDoors,
@@ -25,7 +27,13 @@ import {
   searchAbwabNodes,
 } from '../../state/abwab-tree.builder';
 import { parseAbwabQueryParams, buildAbwabQueryParams } from '../../state/abwab-url-sync';
-import { ABWAB_ORDER_SCOPE_TO_WIRE, AbwabNode, AbwabOrderScope, AbwabView } from '../../models/abwab.models';
+import {
+  ABWAB_ORDER_SCOPE_TO_WIRE,
+  AbwabModalKind,
+  AbwabNode,
+  AbwabOrderScope,
+  AbwabView,
+} from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabToolbarComponent } from '../../components/abwab-toolbar/abwab-toolbar.component';
 import { AbwabTreeComponent, AbwabTreeMenuRequest } from '../../components/abwab-tree/abwab-tree.component';
@@ -34,8 +42,12 @@ import { AbwabArchiveViewComponent } from '../../components/abwab-archive-view/a
 import { AbwabSidePanelComponent } from '../../components/abwab-side-panel/abwab-side-panel.component';
 import { AbwabAnnouncerComponent } from '../../components/abwab-announcer/abwab-announcer.component';
 import { AbwabDoorModalComponent } from '../../components/abwab-door-modal/abwab-door-modal.component';
-import { AbwabMovePickerComponent } from '../../components/abwab-move-picker/abwab-move-picker.component';
+import {
+  AbwabMoveDestination,
+  AbwabMovePickerComponent,
+} from '../../components/abwab-move-picker/abwab-move-picker.component';
 import { AbwabSectionsModalComponent } from '../../components/abwab-sections-modal/abwab-sections-modal.component';
+import { AbwabModalRestoreComponent } from '../../components/abwab-modal-restore/abwab-modal-restore.component';
 import { AbwabRelationsModalComponent } from '../../components/abwab-relations-modal/abwab-relations-modal.component';
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
@@ -62,8 +74,8 @@ const REVEAL_HOLD_MS = 3000;
  * composing the toolbar, tree/cards, archive view, side panel, announcer and the
  * overlays (door modal, move picker, sections modal, archive confirms, context menu —
  * all owned by `AbwabPageOverlaysController`, split out once this file approached the
- * component-TS soft threshold). Every one of the six URL keys (`section`/`view`/
- * `archive`/`door`/`card`/`q`) is parsed in one subscription so no view is left reading
+ * component-TS soft threshold). Every one of the seven URL keys (`section`/`view`/
+ * `archive`/`door`/`card`/`q`/`modal`) is parsed in one subscription so no view is left reading
  * a param nobody restores (a gap phase 4 left: `view`/`archive`/`card`/`q` were parsed
  * and discarded, and `selection.setArchiveViewActive` was never called at all).
  */
@@ -82,6 +94,7 @@ const REVEAL_HOLD_MS = 3000;
     AbwabMovePickerComponent,
     AbwabSectionsModalComponent,
     AbwabRelationsModalComponent,
+    AbwabModalRestoreComponent,
     QdContextMenuComponent,
     ExplorerResultCountComponent,
     QdSkeletonRowsComponent,
@@ -90,7 +103,7 @@ const REVEAL_HOLD_MS = 3000;
   templateUrl: './abwab-page.component.html',
   styleUrl: './abwab-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [AbwabPageOverlaysController],
+  providers: [AbwabPageOverlaysController, AbwabModalUrlController],
 })
 export class AbwabPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -102,6 +115,7 @@ export class AbwabPageComponent implements OnInit {
   protected readonly selection = inject(AbwabSelectionStore);
   protected readonly writeController = inject(AbwabWriteController);
   protected readonly overlays = inject(AbwabPageOverlaysController);
+  protected readonly modalUrl = inject(AbwabModalUrlController);
 
   protected readonly templatesRoutePath = `/${ABWAB_ROUTE_PATH}/templates`;
 
@@ -111,6 +125,11 @@ export class AbwabPageComponent implements OnInit {
   protected readonly archiveParam = signal(false);
   protected readonly cardParam = signal<number | null>(null);
   protected readonly searchQueryParam = signal('');
+
+  private readonly modalRestoreControl = viewChild(AbwabModalRestoreComponent);
+  /** Where focus goes when the discard X removes itself — without it focus would fall to
+   * `<body>` and a keyboard user would lose the header row entirely. */
+  private readonly headerFallbackFocus = viewChild<ElementRef<HTMLButtonElement>>('headerFallbackFocus');
 
   protected readonly sections = computed(() => this.facade.snapshot()?.sections ?? []);
   protected readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
@@ -153,6 +172,9 @@ export class AbwabPageComponent implements OnInit {
   private revealTimer: ReturnType<typeof setTimeout> | null = null;
   /** Set when a reveal navigates, cleared by the param emission that lands it. */
   private revealPending = false;
+
+  /** Set by the door modal's `saved` output, read by the `closed` that follows it. */
+  private doorModalCommitted = false;
 
   /** The target's ancestor chain, walked up `parentId` the way the cards breadcrumb does.
    * Handed to the tree as a **seed**, not a force: forced-open ids cannot be collapsed, and a
@@ -230,6 +252,19 @@ export class AbwabPageComponent implements OnInit {
         untracked(() => this.selection.select(doorId, node.version));
       }
     });
+
+    // Audit item 11's restore ordering, and only the **open** half of reconciliation.
+    // Declared after the `door=` effect so a deep link carrying both keys sees the selection
+    // already bound in the same flush. The three reads below exist to re-run this effect
+    // when the subject settles; the decision itself is `untracked`, because reconciliation
+    // only ever reads the URL into state.
+    effect(() => {
+      this.modalUrl.modal();
+      this.facade.snapshot();
+      this.doorParam();
+      this.selectedDoor();
+      untracked(() => this.modalUrl.reconcileOpen());
+    });
   }
 
   ngOnInit(): void {
@@ -242,6 +277,7 @@ export class AbwabPageComponent implements OnInit {
       this.archiveParam.set(parsed.archive);
       this.cardParam.set(parsed.card);
       this.searchQueryParam.set(parsed.q);
+      this.modalUrl.syncFromUrl(parsed.modal, parsed.door);
       this.selection.setArchiveViewActive(parsed.archive);
       // The URL is the single source of truth for the selection, exactly as it already is
       // for view/archive/card/q. `buildAbwabQueryParams` drops `door` whenever the scope
@@ -358,9 +394,9 @@ export class AbwabPageComponent implements OnInit {
     if (!node) {
       return;
     }
-    this.updateQueryParams(buildAbwabQueryParams({ door: doorId }));
     this.selection.select(doorId, node.version);
     this.overlays.openRelations();
+    this.commitModalOpen('relations', doorId);
   }
 
   /**
@@ -377,12 +413,19 @@ export class AbwabPageComponent implements OnInit {
    * visible non-action rather than a silent broken reveal.
    */
   protected onRevealRequested(doorId: number): void {
-    this.overlays.closeRelationsModal();
     const node = this.byId().get(doorId);
     if (!node || node.isArchived) {
+      // This branch navigates nowhere, so closing the modal has to carry the key itself —
+      // otherwise the modal shuts while `modal=relations` stays in the URL with no emission
+      // coming to reconcile it, and the overlay becomes unreachable for the page's lifetime.
+      this.closeUrlBackedModal(['relations'], () => this.overlays.closeRelationsModal(), true);
       this.revealAnnouncement.set(ABWAB_LABELS.revealUnavailable);
       return;
     }
+    this.overlays.closeRelationsModal();
+    // The single patch below already discards the key; clearing the tracked kind here rather
+    // than waiting for the emission keeps this one navigation instead of two.
+    this.modalUrl.releaseTracking();
     this.revealAnnouncement.set(null);
     this.revealTargetId.set(doorId);
     this.revealSequence.update((n) => n + 1);
@@ -390,6 +433,11 @@ export class AbwabPageComponent implements OnInit {
     this.updateQueryParams(
       buildAbwabQueryParams({
         door: doorId,
+        // The key carries no id of its own — its subject is always `door=`, which this patch
+        // is rewriting. Retaining `relations-closed` across a reveal would leave a restore
+        // control that reopens the **target's** relations while the user is expecting the
+        // source's, so the honest reading of "go to the tree" is to discard it.
+        modal: null,
         // Only when the active tab genuinely excludes the target. «كل الأبواب» shows every
         // door, section-less ones included, so switching to the target's own tab there would
         // narrow the view for no reason; a *section* tab that isn't the target's does exclude
@@ -434,7 +482,166 @@ export class AbwabPageComponent implements OnInit {
     this.overlays.requestContextMenu(request.id);
   }
 
-  private updateQueryParams(changes: Record<string, string | null>): void {
-    void this.router.navigate([], { relativeTo: this.route, queryParams: changes, queryParamsHandling: 'merge' });
+  // Audit item 11 — the restorable overlays. Every gesture below opens its overlay
+  // **synchronously**, exactly as it did before the key existed, and writes `modal=<kind>`
+  // in the same patch as any selection it changes. The URL is a record of what is open, not
+  // the mechanism that opens it: waiting for the emission would make every click wait on a
+  // navigation, and `openedModalKind` makes the echo a no-op when it arrives.
+
+  protected onCreateRootRequested(): void {
+    this.modalUrl.open('create');
+    this.commitModalOpen('create');
+  }
+
+  protected onSectionsRequested(): void {
+    this.modalUrl.open('sections');
+    this.commitModalOpen('sections');
+  }
+
+  protected onAddChildRequested(): void {
+    this.openOnSelectedDoor('child');
+  }
+
+  protected onEditRequested(): void {
+    this.openOnSelectedDoor('edit');
+  }
+
+  protected onMoveRequested(): void {
+    this.openOnSelectedDoor('move');
+  }
+
+  protected onRelationsOpenRequested(): void {
+    this.openOnSelectedDoor('relations');
+  }
+
+  /** The tree's `＋` selects the row and then asks for the child modal as two separate
+   * outputs (its own contract since Slice B), so this patch restates `door` rather than
+   * relying on the selection write that just preceded it. */
+  protected onTreeAddChildRequested(doorId: number): void {
+    const node = this.byId().get(doorId);
+    if (!node) {
+      return;
+    }
+    this.modalUrl.open('child');
+    this.commitModalOpen('child', doorId);
+  }
+
+  protected onCtxEdit(): void {
+    this.overlays.ctxEdit((id) => this.commitModalOpen('edit', id));
+  }
+
+  protected onCtxAddChild(): void {
+    this.overlays.ctxAddChild((id) => this.commitModalOpen('child', id));
+  }
+
+  protected onCtxMove(): void {
+    this.overlays.ctxMove((id) => this.commitModalOpen('move', id));
+  }
+
+  protected onCtxRelations(): void {
+    this.overlays.ctxRelations((id) => this.commitModalOpen('relations', id));
+  }
+
+  // Closing keeps the overlay in the URL in a retained state, so the page can offer it back
+  // (the words overlay's contract, `detail-overlay-history.service.ts:125-141`). Retains and
+  // discards both replace, so the closed state never becomes its own Back target; only
+  // opening and restoring push.
+
+  protected onDoorModalSaved(): void {
+    this.doorModalCommitted = true;
+  }
+
+  protected onDoorModalClosed(): void {
+    // A saved door has nothing left to restore — offering to reopen the form it was written
+    // in would point at work that is already committed.
+    const committed = this.doorModalCommitted;
+    this.doorModalCommitted = false;
+    this.closeUrlBackedModal(DOOR_MODAL_KINDS, () => this.overlays.closeModal(), committed);
+  }
+
+  protected onMovePickerClosed(): void {
+    this.closeUrlBackedModal(['move'], () => this.overlays.closeMovePicker());
+  }
+
+  protected onMoveConfirmed(destination: AbwabMoveDestination): void {
+    this.closeUrlBackedModal(['move'], () => this.overlays.confirmMove(destination), true);
+  }
+
+  protected onSectionsModalClosed(): void {
+    this.closeUrlBackedModal(['sections'], () => this.overlays.closeSectionsModal());
+  }
+
+  protected onRelationsModalClosed(): void {
+    this.closeUrlBackedModal(['relations'], () => this.overlays.closeRelationsModal());
+  }
+
+  protected onModalRestoreRequested(): void {
+    const retained = this.modalUrl.restorableModal();
+    if (retained === null) {
+      return;
+    }
+    // A push, so Back returns to the closed state rather than skipping past it.
+    this.updateQueryParams(buildAbwabQueryParams({ modal: { kind: retained.kind, closed: false } }));
+  }
+
+  protected onModalDiscardRequested(): void {
+    this.updateQueryParams(buildAbwabQueryParams({ modal: null }), true);
+    // The X removes itself, so focus has to be handed somewhere deliberately; the discard's
+    // own trap-free close would otherwise drop it on `<body>`.
+    this.focusQueued(() => this.headerFallbackFocus()?.nativeElement.focus());
+  }
+
+  /** `kinds` is what this overlay can be holding on the URL's behalf. A mismatch means a bulk
+   * gesture opened it — the key was never written, so closing must not write one either.
+   *
+   * A `discard` close hands focus to nobody on purpose: those paths (a saved door, a confirmed
+   * move, the reveal's dead-target guard) still have the modal's own `cdkTrapFocusAutoCapture`
+   * releasing, which returns focus to whatever opened it. */
+  private closeUrlBackedModal(kinds: readonly AbwabModalKind[], close: () => void, discard = false): void {
+    const kind = this.modalUrl.urlBackedKind(kinds);
+    close();
+    if (kind === null) {
+      return;
+    }
+    this.modalUrl.releaseTracking();
+    this.updateQueryParams(buildAbwabQueryParams({ modal: discard ? null : { kind, closed: true } }), true);
+    if (!discard) {
+      this.focusQueued(() => this.modalRestoreControl()?.focusRestore());
+    }
+  }
+
+  /** Queued, not immediate: the target does not exist until the navigation's emission renders
+   * it, and the modal's focus trap is still releasing on this tick. Same shape as the words
+   * shell's `detail-modal-shell.component.ts:91-95`, which solved the identical race. */
+  private focusQueued(focus: () => void): void {
+    setTimeout(focus, 0);
+  }
+
+  private openOnSelectedDoor(kind: AbwabModalKind): void {
+    const door = this.selectedDoor();
+    if (!door) {
+      return;
+    }
+    this.modalUrl.open(kind);
+    this.commitModalOpen(kind, door.id);
+  }
+
+  private commitModalOpen(kind: AbwabModalKind, doorId?: number): void {
+    this.modalUrl.trackOpen(kind, doorId ?? null);
+    this.updateQueryParams(
+      buildAbwabQueryParams({
+        ...(doorId === undefined ? {} : { door: doorId }),
+        modal: { kind, closed: false },
+      }),
+    );
+  }
+
+  private updateQueryParams(changes: Record<string, string | null>, replaceUrl = false): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: changes,
+      queryParamsHandling: 'merge',
+      replaceUrl,
+    });
   }
 }

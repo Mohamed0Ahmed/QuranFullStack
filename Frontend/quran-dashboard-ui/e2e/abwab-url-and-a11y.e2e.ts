@@ -1,9 +1,11 @@
 import { expect, test } from './fixtures/abwab';
 
-// URL state and a11y flow (plan-slice-b2.md T605): the six query keys round-trip through
-// reload and Back/Forward, invalid values fail closed to their defaults, cards drill-down
-// writes `card`, search matches by alias (not just name), and the tree's ARIA/roving-
-// tabindex/RTL keyboard model is exercised directly in the browser.
+// URL state and a11y flow (plan-slice-b2.md T605, extended by slice E for audit item 11):
+// the seven query keys round-trip through reload and Back/Forward, invalid values fail
+// closed to their defaults, cards drill-down writes `card`, search matches by alias (not
+// just name), a restorable overlay survives a reload and its retained state is reachable by
+// Back, and the tree's ARIA/roving-tabindex/RTL keyboard model is exercised directly in the
+// browser.
 
 test('section, view, door, and q survive a reload and Back/Forward', async ({ page, abwabSandbox }) => {
   const door = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('url-state') });
@@ -62,6 +64,78 @@ test('invalid query values fail closed to their defaults', async ({ page, abwabS
   await page.goto('/abwab?door=-1');
   await expect(page.getByTestId('abwab-side-panel-empty')).toBeVisible();
   await expect(page.getByTestId('abwab-side-panel-active-door')).toHaveCount(0);
+});
+
+test('invalid modal values fail closed, and a door-dependent kind needs a live door', async ({
+  page,
+  abwabSandbox,
+}) => {
+  const door = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('modal-fail-closed') });
+
+  await page.goto(`/abwab?section=${abwabSandbox.sectionId}&door=${door.id}&modal=banana`);
+  await expect(page.getByTestId('abwab-door-modal')).toHaveCount(0);
+  await expect(page.getByTestId('abwab-page-modal-restore')).toHaveCount(0);
+
+  // A door-dependent kind with no `door` at all has no subject to restore.
+  await page.goto(`/abwab?section=${abwabSandbox.sectionId}&modal=edit`);
+  await expect(page.getByTestId('abwab-door-modal')).toHaveCount(0);
+
+  // The key is never rewritten — it stays in the URL, inert, exactly as a dead `door=` does.
+  await expect(page).toHaveURL(/modal=edit/);
+});
+
+test('modal=<kind> survives a reload, and the retained state is reachable by Back', async ({
+  page,
+  abwabSandbox,
+}) => {
+  const door = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('modal-state') });
+
+  await page.goto(`/abwab?section=${abwabSandbox.sectionId}&door=${door.id}`);
+  await page.getByTestId(`abwab-tree-row-${door.id}`).click();
+  await page.getByTestId('abwab-side-panel-op-edit').click();
+  await expect(page.getByTestId('abwab-door-modal')).toBeVisible();
+  await expect(page).toHaveURL(/modal=edit/);
+
+  await page.reload();
+  await expect(page.getByTestId('abwab-door-modal')).toBeVisible();
+
+  // Escape retains: the modal closes, the key keeps it restorable, and focus lands on the
+  // control that says so.
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('abwab-door-modal')).toHaveCount(0);
+  await expect(page).toHaveURL(/modal=edit-closed/);
+  await expect(page.getByTestId('abwab-page-modal-restore')).toBeFocused();
+
+  // Restore is a push, so Back returns to the closed state rather than skipping past it.
+  await page.getByTestId('abwab-page-modal-restore').press('Enter');
+  await expect(page.getByTestId('abwab-door-modal')).toBeVisible();
+  // Visibility alone would not prove the trap re-armed — focus could still be sitting on the
+  // control the restore destroyed. Slice C's `cdkTrapFocusAutoCapture` does the re-capture;
+  // this asserts it landed, without reimplementing it.
+  await expect(page.getByTestId('abwab-door-modal-name')).toBeFocused();
+
+  await page.goBack();
+  await expect(page.getByTestId('abwab-door-modal')).toHaveCount(0);
+  await expect(page.getByTestId('abwab-page-modal-restore')).toBeVisible();
+
+  await page.goForward();
+  await expect(page.getByTestId('abwab-door-modal')).toBeVisible();
+});
+
+test('the restore control’s X discards the key entirely', async ({ page, abwabSandbox }) => {
+  const door = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('modal-discard') });
+
+  await page.goto(`/abwab?section=${abwabSandbox.sectionId}&door=${door.id}&modal=edit-closed`);
+  await expect(page.getByTestId('abwab-page-modal-restore')).toBeVisible();
+
+  await page.getByTestId('abwab-page-modal-discard').click();
+
+  await expect(page).not.toHaveURL(/modal=/);
+  await expect(page.getByTestId('abwab-page-modal-restore')).toHaveCount(0);
+  await expect(page.getByTestId('abwab-door-modal')).toHaveCount(0);
+  // The X removes itself, so focus is handed to the next header control rather than dropped
+  // on `<body>` — a keyboard user keeps their place in the row.
+  await expect(page.getByTestId('abwab-page-archive-toggle')).toBeFocused();
 });
 
 test('cards drill-down writes card=<id>, and the breadcrumb walks back', async ({ page, abwabSandbox }) => {

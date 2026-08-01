@@ -659,14 +659,14 @@ describe('AbwabPageComponent', () => {
       const fixture = renderReveal({ section: '1' });
       reveal(fixture, 3);
 
-      expect(lastPatch()).toEqual({ door: '3' });
+      expect(lastPatch()).toEqual({ door: '3', modal: null });
     });
 
     it('«كل الأبواب»: patches door only, because the superset already contains every target', () => {
       const fixture = renderReveal({});
       reveal(fixture, 4);
 
-      expect(lastPatch()).toEqual({ door: '4' });
+      expect(lastPatch()).toEqual({ door: '4', modal: null });
     });
 
     it('other section: one patch carrying the target’s own section beside the explicit door', () => {
@@ -675,28 +675,28 @@ describe('AbwabPageComponent', () => {
 
       // The explicit `door` has to survive the scope-invalidation clear `section` triggers —
       // that override is why this is one navigation instead of two.
-      expect(lastPatch()).toEqual({ section: '2', door: '4', card: null });
+      expect(lastPatch()).toEqual({ section: '2', door: '4', card: null, modal: null });
     });
 
     it('section-less target while a section tab is open: clears section rather than keeping it', () => {
       const fixture = renderReveal({ section: '1' });
       reveal(fixture, 5);
 
-      expect(lastPatch()).toEqual({ section: null, door: '5', card: null });
+      expect(lastPatch()).toEqual({ section: null, door: '5', card: null, modal: null });
     });
 
     it('cards view: the patch switches back to the tree, because the item is reveal-in-tree', () => {
       const fixture = renderReveal({ section: '1', view: 'cards' });
       reveal(fixture, 3);
 
-      expect(lastPatch()).toEqual({ view: 'tree', door: '3' });
+      expect(lastPatch()).toEqual({ view: 'tree', door: '3', modal: null });
     });
 
     it('active search: the patch clears q, so the target cannot land pruned', () => {
       const fixture = renderReveal({ section: '1', q: 'جذر' });
       reveal(fixture, 3);
 
-      expect(lastPatch()).toEqual({ q: null, door: '3' });
+      expect(lastPatch()).toEqual({ q: null, door: '3', modal: null });
     });
 
     it('archived or unknown target: no navigation, and the announcer says why', () => {
@@ -771,6 +771,510 @@ describe('AbwabPageComponent', () => {
       fixture.detectChanges();
 
       expect(root.querySelector('[data-testid="abwab-tree-row-2"]')).toBeNull();
+    });
+  });
+
+  describe('audit item 11 — opening a restorable overlay writes modal=<kind>', () => {
+    const params$ = new BehaviorSubject(convertToParamMap({}));
+    let modalRouter: Router;
+
+    beforeEach(async () => {
+      getTestBed().resetTestingModule();
+      params$.next(convertToParamMap({}));
+      await TestBed.configureTestingModule({
+        imports: [AbwabPageComponent],
+        providers: [
+          provideRouter([]),
+          {
+            provide: AbwabApi,
+            useValue: {
+              getTree: vi.fn().mockReturnValue(of(ok(TREE))),
+              getDoorRelations: vi.fn().mockReturnValue(of(ok([]))),
+            },
+          },
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: params$, snapshot: { queryParamMap: convertToParamMap({}) } },
+          },
+        ],
+      }).compileComponents();
+      modalRouter = TestBed.inject(Router);
+      vi.spyOn(modalRouter, 'navigate').mockResolvedValue(true);
+    });
+
+    function renderAt(params: Record<string, string> = {}) {
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      fixture.detectChanges();
+      params$.next(convertToParamMap(params));
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    function lastPatch(): Record<string, string | null> {
+      const calls = (modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+      const extras = calls[calls.length - 1][1] as { queryParams: Record<string, string | null> };
+      return extras.queryParams;
+    }
+
+    function click(root: HTMLElement, testId: string): void {
+      (root.querySelector(`[data-testid="${testId}"]`) as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+    }
+
+    it('the door-independent openers write the kind alone, with no door', () => {
+      const root = renderAt().nativeElement as HTMLElement;
+
+      click(root, 'abwab-page-add-root');
+      expect(lastPatch()).toEqual({ modal: 'create' });
+
+      click(root, 'abwab-page-manage-sections');
+      expect(lastPatch()).toEqual({ modal: 'sections' });
+    });
+
+    it.each([
+      ['abwab-side-panel-op-add-child', 'child'],
+      ['abwab-side-panel-op-edit', 'edit'],
+      ['abwab-side-panel-op-move', 'move'],
+      ['abwab-side-panel-op-relations', 'relations'],
+    ])('the side panel op %s folds door and modal into one patch', (testId, kind) => {
+      const fixture = renderAt({ door: '1' });
+      const root = fixture.nativeElement as HTMLElement;
+      click(root, 'abwab-tree-row-1');
+      fixture.detectChanges();
+
+      click(root, testId);
+
+      expect(lastPatch()).toEqual({ door: '1', modal: kind });
+    });
+
+    it.each([
+      ['abwab-page-ctx-edit', 'edit'],
+      ['abwab-page-ctx-add-child', 'child'],
+      ['abwab-page-ctx-move', 'move'],
+      ['abwab-page-ctx-relations', 'relations'],
+    ])('the context-menu action %s selects and opens in one patch', (testId, kind) => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-more-2"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      click(root, testId);
+
+      expect(lastPatch()).toEqual({ door: '2', modal: kind });
+    });
+
+    it('the tree’s ＋ restates the door beside the child kind', () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-tree-add-child-2');
+
+      expect(lastPatch()).toEqual({ door: '2', modal: 'child' });
+    });
+
+    it('the context-menu archive action stays out of the URL — a confirm is re-initiated, never restored', () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-more-2"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      click(root, 'abwab-page-ctx-archive');
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-page-archive-confirm"]')).toBeTruthy();
+      expect(lastPatch()).toEqual({ door: '2' });
+    });
+
+    function lastCallExtras(): { queryParams: Record<string, string | null>; replaceUrl?: boolean } {
+      const calls = (modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+      return calls[calls.length - 1][1] as { queryParams: Record<string, string | null>; replaceUrl?: boolean };
+    }
+
+    it('opening pushes, so the closed state it came from stays reachable by Back', () => {
+      const root = renderAt().nativeElement as HTMLElement;
+
+      click(root, 'abwab-page-manage-sections');
+
+      expect(lastCallExtras().replaceUrl).toBe(false);
+    });
+
+    it('Escape on an open modal retains it as <kind>-closed, by replace', () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      click(root, 'abwab-page-manage-sections');
+      fixture.detectChanges();
+
+      (root.querySelector('[data-testid="abwab-sections-modal-close"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: 'sections-closed' }, replaceUrl: true });
+      expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeNull();
+    });
+
+    it('a saved door discards the key instead of retaining it — the form’s work is committed', async () => {
+      const createDoor = vi.fn().mockReturnValue(of(ok(door({ id: 9, name: 'باب جديد' }))));
+      getTestBed().resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [AbwabPageComponent],
+        providers: [
+          provideRouter([]),
+          {
+            provide: AbwabApi,
+            useValue: { getTree: vi.fn().mockReturnValue(of(ok(TREE))), createDoor },
+          },
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: params$, snapshot: { queryParamMap: convertToParamMap({}) } },
+          },
+        ],
+      }).compileComponents();
+      modalRouter = TestBed.inject(Router);
+      vi.spyOn(modalRouter, 'navigate').mockResolvedValue(true);
+
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-page-add-root');
+      fixture.detectChanges();
+      const nameInput = root.querySelector('[data-testid="abwab-door-modal-name"]') as HTMLInputElement;
+      nameInput.value = 'باب جديد';
+      nameInput.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      (root.querySelector('[data-testid="abwab-door-modal-save"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      expect(createDoor).toHaveBeenCalled();
+      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: null }, replaceUrl: true });
+    });
+
+    it('restore does nothing when the parsed state is already open or absent', () => {
+      const fixture = renderAt({ modal: 'sections' });
+      const page = fixture.componentInstance as unknown as { onModalRestoreRequested: () => void };
+      const before = (modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls.length;
+
+      page.onModalRestoreRequested();
+
+      expect((modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls).toHaveLength(before);
+    });
+
+    it('closing a bulk-opened overlay writes nothing — the URL never held it', () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      click(root, 'abwab-side-panel-bulk-toggle');
+      fixture.detectChanges();
+      click(root, 'abwab-tree-checkbox-2');
+      fixture.detectChanges();
+      click(root, 'abwab-side-panel-bulk-move');
+      fixture.detectChanges();
+      const before = (modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls.length;
+
+      (root.querySelector('[data-testid="abwab-move-picker-cancel"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      expect((modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls).toHaveLength(before);
+      expect(root.querySelector('[data-testid="abwab-move-picker"]')).toBeNull();
+    });
+
+    it('a deep link opens the door-dependent kind only once the snapshot binds its subject', () => {
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      params$.next(convertToParamMap({ door: '1', modal: 'edit' }));
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-door-modal-name"]')).toHaveProperty(
+        'value',
+        'العلم بالله',
+      );
+    });
+
+    it('a door-independent kind deep-links without any door at all', () => {
+      const root = renderAt({ modal: 'sections' }).nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeTruthy();
+    });
+
+    it.each([
+      ['an archived door', '3'],
+      ['a door that is not in the snapshot', '999'],
+    ])('leaves the key inert for %s — nothing opens and no restore control renders', (_case, doorId) => {
+      const fixture = renderAt({ door: doorId, modal: 'edit' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
+    });
+
+    it('an emission carrying -closed closes the open overlay — the Back path', () => {
+      const fixture = renderAt({ modal: 'sections' });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeTruthy();
+
+      params$.next(convertToParamMap({ modal: 'sections-closed' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeNull();
+    });
+
+    it('a URL-driven close discards an unsaved draft without raising the confirm', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit' });
+      const root = fixture.nativeElement as HTMLElement;
+      const nameInput = root.querySelector('[data-testid="abwab-door-modal-name"]') as HTMLInputElement;
+      nameInput.value = 'مسودة لم تُحفظ';
+      nameInput.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      // Cancelling by gesture raises the dirty confirm; Back does not. The URL is the single
+      // source of truth, so a URL that says the overlay is closed closes it — and restoring
+      // returns a pristine overlay rather than the draft (README, «Restoring reopens the
+      // overlay, not a draft»).
+      params$.next(convertToParamMap({ door: '1', modal: 'edit-closed' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-door-modal-discard-confirm"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeTruthy();
+    });
+
+    it('an emission that moves door= under an unchanged kind rebinds to the new subject', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit' });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-door-modal-name"]')).toHaveProperty('value', 'العلم بالله');
+
+      params$.next(convertToParamMap({ door: '2', modal: 'edit' }));
+      fixture.detectChanges();
+
+      // The subject is tracked beside the kind, so this reads as a different overlay. Comparing
+      // kinds alone would leave the editor bound to door 1 while the URL named door 2.
+      expect(root.querySelector('[data-testid="abwab-door-modal-name"]')).toHaveProperty('value', 'الرسول');
+    });
+
+    it('a parsed key does not hijack a bulk-opened overlay into single-subject mode', () => {
+      const fixture = renderAt({ door: '1' });
+      const root = fixture.nativeElement as HTMLElement;
+      click(root, 'abwab-side-panel-bulk-toggle');
+      fixture.detectChanges();
+      click(root, 'abwab-tree-checkbox-1');
+      fixture.detectChanges();
+      click(root, 'abwab-tree-checkbox-2');
+      fixture.detectChanges();
+      click(root, 'abwab-side-panel-bulk-move');
+      fixture.detectChanges();
+      const bulkTitle = root.querySelector('[data-testid="abwab-move-picker"] h3')?.textContent;
+      expect(bulkTitle).toBe(ABWAB_LABELS.movePickerTitleBulk(2));
+
+      params$.next(convertToParamMap({ door: '1', modal: 'move' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-move-picker"] h3')?.textContent).toBe(bulkTitle);
+    });
+
+    it('the echo of a gesture’s own patch is a no-op, not a second open', () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      click(root, 'abwab-tree-row-1');
+      fixture.detectChanges();
+      click(root, 'abwab-side-panel-op-edit');
+      fixture.detectChanges();
+
+      const nameInput = root.querySelector('[data-testid="abwab-door-modal-name"]') as HTMLInputElement;
+      nameInput.value = 'مسودة';
+      nameInput.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      // The emission that lands the gesture's own patch, then an unrelated one: neither may
+      // re-run the opener, which would reset the field back to the snapshot's name.
+      params$.next(convertToParamMap({ door: '1', modal: 'edit' }));
+      fixture.detectChanges();
+      params$.next(convertToParamMap({ door: '1', modal: 'edit', q: 'بحث' }));
+      fixture.detectChanges();
+
+      expect((root.querySelector('[data-testid="abwab-door-modal-name"]') as HTMLInputElement).value).toBe('مسودة');
+    });
+
+    it('switching to another kind closes the first and opens the second', () => {
+      const fixture = renderAt({ modal: 'sections' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      params$.next(convertToParamMap({ modal: 'create' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeTruthy();
+    });
+
+    it('renders the restore control only for a retained state, naming the overlay it holds', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      const restore = root.querySelector('[data-testid="abwab-page-modal-restore"]');
+      expect(restore?.textContent?.trim()).toBe(
+        ABWAB_LABELS.modalRestoreLabel(ABWAB_LABELS.modalKindNames['edit']),
+      );
+      expect(
+        root.querySelector('[data-testid="abwab-page-modal-discard"]')?.getAttribute('aria-label'),
+      ).toBe(ABWAB_LABELS.modalDiscardAriaLabel(ABWAB_LABELS.modalKindNames['edit']));
+    });
+
+    it('shows no restore control while the overlay is open, or when the key is absent', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit' });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
+
+      params$.next(convertToParamMap({}));
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
+    });
+
+    it('the restore control round-trips: clicking it reopens the overlay through the URL', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-page-modal-restore');
+      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: 'edit' }, replaceUrl: false });
+
+      params$.next(convertToParamMap({ door: '1', modal: 'edit' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
+    });
+
+    it('the X clears the key, and the control goes with it', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-page-modal-discard');
+      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: null }, replaceUrl: true });
+
+      params$.next(convertToParamMap({ door: '1' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
+    });
+
+    it('focus lands on the restore control after a retaining close', async () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      document.body.appendChild(root);
+      click(root, 'abwab-page-manage-sections');
+      fixture.detectChanges();
+
+      (root.querySelector('[data-testid="abwab-sections-modal-close"]') as HTMLElement).click();
+      params$.next(convertToParamMap({ modal: 'sections-closed' }));
+      fixture.detectChanges();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(document.activeElement).toBe(root.querySelector('[data-testid="abwab-page-modal-restore"]'));
+      root.remove();
+    });
+
+    it('focus moves to the next header control after the discard X removes itself', async () => {
+      const fixture = renderAt({ door: '1', modal: 'edit-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+      document.body.appendChild(root);
+
+      click(root, 'abwab-page-modal-discard');
+      params$.next(convertToParamMap({ door: '1' }));
+      fixture.detectChanges();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // Without the handoff the activated control is gone and focus falls to `<body>`.
+      expect(document.activeElement).toBe(root.querySelector('[data-testid="abwab-page-archive-toggle"]'));
+      root.remove();
+    });
+
+    it('a reveal onto a dead target still clears the key it closed the modal for', () => {
+      const fixture = renderAt({ door: '1', modal: 'relations' });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-relations-modal"]')).toBeTruthy();
+
+      // The guard branch navigates nowhere on its own, so if the close did not carry the key
+      // the modal would shut with `modal=relations` stranded in the URL and no emission left
+      // to reconcile it — the overlay would be unreachable from then on.
+      (fixture.componentInstance as unknown as { onRevealRequested: (id: number) => void }).onRevealRequested(3);
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-relations-modal"]')).toBeNull();
+      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: null }, replaceUrl: true });
+
+      // And the page is genuinely reusable afterwards: reopening works.
+      params$.next(convertToParamMap({ door: '1' }));
+      fixture.detectChanges();
+      click(root, 'abwab-side-panel-op-relations');
+      expect(lastCallExtras()).toMatchObject({ queryParams: { door: '1', modal: 'relations' } });
+    });
+
+    it('a reveal discards the key in its single patch — the subject it named is being rewritten', () => {
+      const fixture = renderAt({ door: '1', modal: 'relations' });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-relations-modal"]')).toBeTruthy();
+
+      (fixture.componentInstance as unknown as { onRevealRequested: (id: number) => void }).onRevealRequested(2);
+
+      expect(lastPatch()).toEqual({ door: '2', modal: null });
+    });
+
+    it('switching section clears the key, and the overlay closes with it', () => {
+      const fixture = renderAt({ section: '1', door: '1', modal: 'edit' });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeTruthy();
+
+      click(root, 'abwab-toolbar-tab-all');
+      expect(lastPatch()).toMatchObject({ section: null, door: null, card: null, modal: null });
+
+      params$.next(convertToParamMap({}));
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
+    });
+
+    it('turning the archive view on clears a retained key too', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeTruthy();
+
+      click(root, 'abwab-page-archive-toggle');
+
+      expect(lastPatch()).toMatchObject({ archive: '1', door: null, card: null, modal: null });
+    });
+
+    it('archive success orphans a retained edit into inertness rather than a broken restore', () => {
+      const fixture = renderAt({ door: '1', modal: 'edit-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeTruthy();
+
+      // The archive-success callback clears `door=`; the key itself is never rewritten
+      // (fail-closed parse, no canonicalization), so it simply stops parsing.
+      params$.next(convertToParamMap({ modal: 'edit-closed' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeNull();
+    });
+
+    it('the bulk overlays never write the key — their subject is bulkSet, which is not URL state', () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      click(root, 'abwab-side-panel-bulk-toggle');
+      fixture.detectChanges();
+      click(root, 'abwab-tree-checkbox-2');
+      fixture.detectChanges();
+      const before = (modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls.length;
+
+      click(root, 'abwab-side-panel-bulk-move');
+      fixture.detectChanges();
+      click(root, 'abwab-side-panel-bulk-relations');
+      fixture.detectChanges();
+
+      expect((modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls).toHaveLength(before);
+      expect(root.querySelector('[data-testid="abwab-move-picker"]')).toBeTruthy();
     });
   });
 });

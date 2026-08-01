@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { ABWAB_QUERY_DEFAULTS, ABWAB_QUERY_KEYS, isAbwabView, isPositiveId } from './abwab.models';
+import {
+  ABWAB_QUERY_DEFAULTS,
+  ABWAB_QUERY_KEYS,
+  isAbwabModalKind,
+  isAbwabView,
+  isDoorDependentAbwabModalKind,
+  isPositiveId,
+} from './abwab.models';
 
 describe('isAbwabView', () => {
   it('accepts only the two known view modes', () => {
@@ -34,7 +41,7 @@ describe('isPositiveId', () => {
 });
 
 describe('ABWAB_QUERY_KEYS / ABWAB_QUERY_DEFAULTS', () => {
-  it('exposes the six locked query keys as stable strings', () => {
+  it('exposes the seven locked query keys as stable strings', () => {
     expect(ABWAB_QUERY_KEYS).toEqual({
       section: 'section',
       view: 'view',
@@ -42,6 +49,7 @@ describe('ABWAB_QUERY_KEYS / ABWAB_QUERY_DEFAULTS', () => {
       door: 'door',
       card: 'card',
       q: 'q',
+      modal: 'modal',
     });
   });
 
@@ -53,6 +61,28 @@ describe('ABWAB_QUERY_KEYS / ABWAB_QUERY_DEFAULTS', () => {
       door: null,
       card: null,
       q: '',
+      modal: null,
     });
+  });
+});
+
+describe('isAbwabModalKind / isDoorDependentAbwabModalKind', () => {
+  it('accepts exactly the six restorable kinds', () => {
+    for (const kind of ['create', 'child', 'edit', 'move', 'sections', 'relations']) {
+      expect(isAbwabModalKind(kind)).toBe(true);
+    }
+    expect(isAbwabModalKind('banana')).toBe(false);
+    expect(isAbwabModalKind('Edit')).toBe(false);
+    expect(isAbwabModalKind('')).toBe(false);
+    expect(isAbwabModalKind(null)).toBe(false);
+  });
+
+  it('marks only the kinds whose subject is door= as door-dependent', () => {
+    expect(isDoorDependentAbwabModalKind('child')).toBe(true);
+    expect(isDoorDependentAbwabModalKind('edit')).toBe(true);
+    expect(isDoorDependentAbwabModalKind('move')).toBe(true);
+    expect(isDoorDependentAbwabModalKind('relations')).toBe(true);
+    expect(isDoorDependentAbwabModalKind('create')).toBe(false);
+    expect(isDoorDependentAbwabModalKind('sections')).toBe(false);
   });
 });

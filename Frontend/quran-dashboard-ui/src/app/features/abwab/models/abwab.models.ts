@@ -5,6 +5,20 @@ import { AbwabRelationDirection } from '../../../core/api/generated/models/abwab
 
 export type AbwabView = 'tree' | 'cards';
 
+/**
+ * The restorable overlays (plan-slice-e.md §4.2-2). Every subject is derivable from
+ * `door=` plus the snapshot, which is why the key carries a kind and no id of its own —
+ * the bulk modes of the move picker and the relations modal read `bulkSet`, which is not
+ * URL state, and therefore never write this key.
+ */
+export type AbwabModalKind = 'create' | 'child' | 'edit' | 'move' | 'sections' | 'relations';
+
+/** `modal=<kind>` while open, `modal=<kind>-closed` while retained and restorable. */
+export interface AbwabModalState {
+  readonly kind: AbwabModalKind;
+  readonly closed: boolean;
+}
+
 /** Which order space a reorder acts on (plan.md §4 — two independent spaces, zero coupling).
  * `'section'` is the existing per-`(section, parent)` order; `'global'` is «كل الأبواب»'s own,
  * root-doors-only order. Kept as a readable domain type in this feature's own view models;
@@ -105,6 +119,31 @@ export function isPositiveId(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0;
 }
 
+const ABWAB_MODAL_KINDS: ReadonlySet<string> = new Set<AbwabModalKind>([
+  'create',
+  'child',
+  'edit',
+  'move',
+  'sections',
+  'relations',
+]);
+
+export function isAbwabModalKind(value: unknown): value is AbwabModalKind {
+  return typeof value === 'string' && ABWAB_MODAL_KINDS.has(value);
+}
+
+/** The four kinds whose subject is `door=` — they parse to nothing without a valid one. */
+const ABWAB_DOOR_DEPENDENT_MODAL_KINDS: ReadonlySet<AbwabModalKind> = new Set<AbwabModalKind>([
+  'child',
+  'edit',
+  'move',
+  'relations',
+]);
+
+export function isDoorDependentAbwabModalKind(kind: AbwabModalKind): boolean {
+  return ABWAB_DOOR_DEPENDENT_MODAL_KINDS.has(kind);
+}
+
 /** One tree row, built from `AbwabTreeDoorDto` plus its computed nesting (state/abwab-tree.builder.ts). */
 export interface AbwabNode {
   readonly id: number;
@@ -156,6 +195,7 @@ export const ABWAB_QUERY_KEYS = {
   door: 'door',
   card: 'card',
   q: 'q',
+  modal: 'modal',
 } as const;
 
 export interface AbwabQueryState {
@@ -165,6 +205,7 @@ export interface AbwabQueryState {
   readonly door: number | null;
   readonly card: number | null;
   readonly q: string;
+  readonly modal: AbwabModalState | null;
 }
 
 /** Every key fails closed to these when absent or invalid (plan-slice-b.md §4.4). */
@@ -175,4 +216,5 @@ export const ABWAB_QUERY_DEFAULTS: AbwabQueryState = {
   door: null,
   card: null,
   q: '',
+  modal: null,
 };

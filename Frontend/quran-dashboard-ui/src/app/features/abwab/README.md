@@ -25,9 +25,27 @@ nine), four of them reads.
 
 ## Render chain & key pieces
 
-- `pages/abwab-page/` — the route shell: parses all six URL keys into state, composes
+- `pages/abwab-page/` — the route shell: parses all seven URL keys into state, composes
   every child below, and delegates all overlay/dialog orchestration to
-  `state/abwab-page-overlays.controller.ts`.
+  `state/abwab-page-overlays.controller.ts` and `state/abwab-modal-url.controller.ts`.
+  **Its TS sits over the 400-line hard threshold** and is kept there knowingly: two
+  extractions have already come out of it (the overlay state, then the `modal` key's
+  machinery), and what remains is a route shell's own work — one `queryParamMap`
+  subscription, two settle-gated effects, the label getters the TDZ rule mandates, and one
+  thin handler per output of the fifteen children it composes. **The next seam, when the
+  file next has to grow**, is the reveal-in-tree machinery (audit item 10: the target/
+  sequence/mark signals, the hold timer and `onRevealRequested`) moving to a page-scoped
+  `abwab-reveal.controller.ts` on the same precedent — deliberately not done inside a
+  feature slice, because it would rewrite behavior pinned since Slice D for no user-visible
+  gain.
+- `state/abwab-modal-url.controller.ts` — audit item 11's page-side machinery for the
+  seventh key: which overlay the URL currently owns (kind **and** subject), whether a
+  parsed key may be acted on (the live-door guard), and the two halves of reconciliation.
+  Same boundary as the overlays controller — **no `Router`/`ActivatedRoute`**; the page
+  feeds URL values in and writes every key itself. Page-provided, not root.
+- `components/abwab-modal-restore/` — the retained overlay's restore control: the label
+  naming the overlay and the hairline-joined discard X. Presentational, page-driven; it
+  reads no URL and owns no state beyond its own focus entry point.
 - `state/abwab-page-overlays.controller.ts` — owns open/closed state and the dispatch
   glue for the door modal, single/bulk archive confirm, the move picker, the sections
   modal, the relations modal (open/closed + anchor + mode only), and the row context
@@ -160,7 +178,7 @@ nine), four of them reads.
   (its SCSS dropped back under the 200-line threshold once Slice A phase 6 moved the row
   context menu's markup/styling onto the shared `qd-context-menu`), the page carries no
   URL state at all (unlike
-  `abwab-page`, whose six URL keys were half of what forced its overlay controller out),
+  `abwab-page`, whose seven URL keys were half of what forced its overlay controller out),
   and the page has no spec of its own, so an extraction here would be an unpinned
   refactor of the one file nothing verifies. **The trigger that forces the split** is a
   sixth overlay, a URL-state contract arriving on this route, or crossing the 400-line
@@ -214,7 +232,7 @@ nine), four of them reads.
   previous value in place). Root-scoped: it is a cache.
 - `state/abwab-templates.controller.ts` — every templates write, its refresh target, and
   the announcement. **Not** `AbwabWriteController` — see Gotchas.
-- `state/abwab-url-sync.ts` — parses/builds the six query keys below, fail-closed.
+- `state/abwab-url-sync.ts` — parses/builds the seven query keys below, fail-closed.
 - `data-access/abwab.api.ts` — the fifteen doors/sections/relations endpoints under
   `/api/abwab`; `data-access/abwab-templates.api.ts` — the nine templates endpoints.
   Two files, not one: a separate route family, and nine of them.
@@ -232,11 +250,43 @@ nine), four of them reads.
 | `door` | positive int | no selection |
 | `card` | positive int (the drilled-into parent — the breadcrumb chain is derived from it, not stored as an array) | the top card level |
 | `q` | free text | no search |
+| `modal` | one of `create` \| `child` \| `edit` \| `move` \| `sections` \| `relations`, bare while the overlay is open and suffixed `-closed` while it is retained and restorable | no restorable overlay |
 
-**Reveal-in-tree writes only the keys above — the contract gains no seventh key.** A
-relation chip's name reveals that door in the doors tree, and every state it can be in is
-folded into **one** `buildAbwabQueryParams` patch, so there is one navigation and no race:
-`door` always; `section` **only when a section tab is active and it is not the target's**
+`modal` is the only key with a cross-key rule: the four door-dependent kinds (`child`,
+`edit`, `move`, `relations`) parse to nothing unless the **same** ParamMap carries a valid
+`door`, because the key names an overlay and never a subject — every restorable overlay's
+subject is derived from `door=` plus the snapshot. `create` and `sections` are
+door-independent. Restoring is stricter still than parsing: a door-dependent kind also
+needs its door to be **live**, since `byId` holds archived nodes and the `door=` effect
+checks presence only. A key that fails any of these is inert — nothing opens, no restore
+control renders, and (per the fail-closed convention below) the URL is not rewritten.
+
+**`modal` selects an overlay, never a data scope, and it enters no identity anywhere.** It
+is not part of any cache key, restore identity, history identity or ETag: the snapshot read
+is one unparameterized root-scoped tree GET, and the relations read is keyed by door id and
+uncached (`state/abwab-relations.controller.ts`), so a restored relations modal re-fetches
+honestly. This is the one row of this table a future caching design must **not** pick up —
+adding the key to a scope or cache input would be a contract change, not an optimisation.
+
+**Restoring reopens the overlay, not a draft.** The key encodes *which* overlay is
+restorable and nothing else; a reopened door modal is pristine from the snapshot, the same
+way the words frames are entity views rather than saved forms. Serialising form state into
+the URL is not a missing feature here, it is the thing this contract declines to do.
+
+Which overlays are in the contract is itself a rule: only the four true modals in their
+**single-subject** modes. The bulk move picker, the bulk relations anchor-pick, both
+archive confirms and the row context menu never write the key — their subjects are
+`bulkSet` (deliberately not URL state), a destructive confirmation that must be
+re-initiated rather than restored, and a transient position.
+
+**Reveal-in-tree writes the keys above, and the only thing it does to `modal` is clear
+it.** A relation chip's name reveals that door in the doors tree, and every state it can
+be in is folded into **one** `buildAbwabQueryParams` patch, so there is one navigation and
+no race: `door` always; `modal: null` always, because the seventh key carries no id of its
+own — its subject *is* `door=`, which this patch rewrites, so retaining
+`relations-closed` across a reveal would offer to reopen the **target's** relations while
+the user is expecting the source's; `section` **only when a section tab is active and it is
+not the target's**
 («كل الأبواب» already shows every door, so narrowing to the target's tab there would be
 gratuitous — and an explicit `door` in the same change survives the scope-invalidation
 clear, which is what makes the cross-section case one navigation instead of two);
@@ -266,11 +316,40 @@ rather than a silent broken reveal.
 **`/abwab/templates` carries no URL state at all** — no selected-template key, no expanded
 set. Deliberate: every key above is a documented contract with a fail-closed parse and a
 scope-invalidation rule, and the workshop has no deep link anyone asked for. Entering the
-route always starts with nothing selected.
+route always starts with nothing selected. **Revisited when `modal` was added (audit item
+11 required it) and retained:** the workshop's overlays are template-editor working state
+whose own subjects — the selected template, the editor node — are not URL state either, so
+a `modal` key there would restore an overlay onto nothing. Adding one would also fire the
+split trigger this README records for that route ("a URL-state contract arriving on this
+route") for no user benefit. This is a decision, not an oversight.
 
 Fails closed to the defaults on anything invalid. Switching `section`, or turning
-`archive` on, clears `door` and `card` (a selection is not meaningful across scopes);
-turning `archive` off restores neither.
+`archive` on, clears `door`, `card` **and `modal`** (neither a selection nor an overlay
+over it is meaningful across scopes — the rule stays uniform for the door-independent
+kinds too, because a scope switch is a context change and one rule beats a per-kind
+table); turning `archive` off restores none of them. An explicit `door`/`card`/`modal` in
+the same change overrides the clear.
+
+Opening a restorable overlay is a history **push**; closing it retains it as
+`<kind>-closed` by **replace**, so the closed state is not its own Back target; restoring
+pushes again, so Back returns to the closed state; the restore control's X clears the key
+by replace. Back past an X-clear therefore surfaces an *earlier* retained entry if one
+exists: the restore control reappears, no overlay reopens. The reveal is the one path that
+clears the key by **push** rather than replace — it is a navigation to a different door in
+its own right, so Back must undo it, and undoing it restores the relations modal on the
+source door along with `door=`. This mirrors the words overlay's contract
+(`core/navigation/detail-overlay/detail-overlay-history.service.ts`), which is where the
+shape was proven — abwab does not share that service, and deliberately did not generalise
+it.
+
+**A URL-driven close bypasses the door and sections modals' unsaved-changes confirm.**
+Closing by gesture (Escape, backdrop, the modal's own button) goes through each modal's
+`requestClose()` and raises the discard confirm when the form is dirty; a close inferred
+from the URL — browser Back, a `-closed` emission, a scope switch — goes through the
+overlay's `close` setter and drops the draft silently. Deliberate, and the direct
+consequence of the URL being the single source of truth: a URL that says the overlay is
+closed closes it, and restoring hands back a pristine overlay, never the draft. Pinned in
+the page spec so it stays a decision.
 
 **The URL is the single source of truth for the selection.** `AbwabPageComponent` clears
 `AbwabSelectionStore` whenever a param emission carries no `door`, and every path that
@@ -448,6 +527,14 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   `/abwab`, and the page renders every dialog **outside** its loading/error guard, so a
   left-open modal would paint again on re-entry before any data loads. The snapshot facade
   and the selection store stay root-scoped on purpose; only the overlay state is per-page.
+  **Audit item 11 refined this invariant; it did not break it.** The overlay *objects* are
+  still page-scoped and still die with the page — what now survives in the URL is the fact
+  that an overlay was closed and can be asked back. That is precisely the shape that makes
+  re-entry safe: the danger was never "the URL remembered something", it was a modal
+  painting itself over an empty page before any data loads. A retained `<kind>-closed`
+  paints nothing on arrival; it renders one control, and reopening waits for the same
+  settle point the `door=` deep link waits for. The restore is explicit, and the guard
+  refuses it outright when the subject is archived or gone.
 - **Loading/empty/error surfaces are composed, not hand-rolled.** Every text-only loading,
   empty, and error site across `abwab-page`, `abwab-templates-page`, the template copy modal,
   and the relations modal now composes `qd-skeleton-rows`/`qd-panel-skeleton` (loading) or
@@ -589,7 +676,8 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 `abwab-archive.e2e.ts`, `abwab-url-and-a11y.e2e.ts`, and `abwab-global-order.e2e.ts` drive this
 page end to end — sections, root/child doors with alias chips, the dirty guard, inline reorder,
 single and bulk move, bulk archive, the row context menu, archive/restore including the
-parent-must-restore-first rule and the detach announcement, all six URL query keys, the tree's
+parent-must-restore-first rule and the detach announcement, all seven URL query keys including a
+restorable overlay's reload/Back-Forward round trip, the tree's
 ARIA/roving-tabindex/RTL keyboard model, both halves of the section-delete contract (409 while a
 live door remains, and the `204 No Content` success once its doors are archived), and the
 superset/section order independence (a `Global` reorder leaves a section's `orderValue` untouched
