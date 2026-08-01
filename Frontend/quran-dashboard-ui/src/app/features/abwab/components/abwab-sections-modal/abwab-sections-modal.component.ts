@@ -274,9 +274,8 @@ export class AbwabSectionsModalComponent {
   }
 
   // No viewChild here: at commit/cancel time every row not being edited renders its own order
-  // button under the same #orderButton template reference, so a single viewChild() query would
-  // be ambiguous about which row's button to return focus to. Scoping by this row's own testid
-  // through the host ElementRef is unambiguous.
+  // button, so a single viewChild() query can't identify which row's button to return focus to.
+  // Scoping by this row's own testid through the host ElementRef is unambiguous.
   private focusOrderButton(id: number): void {
     afterNextRender(
       () => this.elementRef.nativeElement
