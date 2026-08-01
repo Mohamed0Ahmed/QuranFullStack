@@ -19,8 +19,9 @@
         @if (bulkMode()) {
           <input
             type="checkbox"
-            class="abwab-tree__checkbox"
+            class="qd-checkbox"
             [checked]="bulkSelectedIds().has(node.id)"
+            [attr.aria-label]="node.name"
             [attr.data-testid]="'abwab-tree-checkbox-' + node.id"
             (click)="onCheckboxClick($event, node.id)"
           />
@@ -58,7 +59,7 @@
           >
         }
 
-        <span class="abwab-tree__name">{{ node.name }}</span>
+        <span class="abwab-tree__name qd-truncate" [title]="node.name">{{ node.name }}</span>
         @if (row.hasChildren) {
           <span
             class="abwab-tree__count qd-chip__count"

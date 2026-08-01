@@ -442,6 +442,17 @@ describe('AbwabTreeComponent', () => {
     });
   });
 
+  describe('§17 — the bulk checkbox composes the shared class and names its door', () => {
+    it('carries qd-checkbox and an aria-label naming the row’s door', () => {
+      const fixture = render({ bulkMode: true });
+      const root = fixture.nativeElement as HTMLElement;
+
+      const checkbox = root.querySelector('[data-testid="abwab-tree-checkbox-1"]');
+      expect(checkbox?.classList.contains('qd-checkbox')).toBe(true);
+      expect(checkbox?.getAttribute('aria-label')).toBe('جذر-1');
+    });
+  });
+
   describe('audit item 14 — the row’s three count badges', () => {
     it('renders all three on a branch row, reading the builder’s values', () => {
       const fixture = render();

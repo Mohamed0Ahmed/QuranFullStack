@@ -36,7 +36,7 @@
                 [attr.data-testid]="'abwab-move-picker-section-' + section.id"
                 (click)="pickSection(section.id)"
               >
-                {{ section.name }}
+                <span class="abwab-move-picker__name qd-truncate" [title]="section.name">{{ section.name }}</span>
               </button>
             }
           </div>
@@ -60,7 +60,7 @@
                 [attr.data-testid]="'abwab-move-picker-dest-' + row.node.id"
                 (click)="pickParent(row.node.id)"
               >
-                {{ row.node.name }}
+                <span class="abwab-move-picker__name qd-truncate" [title]="row.node.name">{{ row.node.name }}</span>
               </button>
             }
           </div>

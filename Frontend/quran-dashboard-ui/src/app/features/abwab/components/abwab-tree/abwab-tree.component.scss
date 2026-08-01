@@ -81,9 +81,6 @@
 
 .abwab-tree__name {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* `.qd-chip__count` supplies the pill, the recessed fill and the tabular numerals; only the
@@ -123,11 +120,6 @@
   background: transparent;
   color: var(--qd-text-muted);
   border-color: var(--qd-border);
-}
-
-.abwab-tree__checkbox {
-  flex: none;
-  accent-color: var(--qd-accent);
 }
 
 /* Row actions follow the design contract (abwab-tree-concept.html:114): revealed on hover

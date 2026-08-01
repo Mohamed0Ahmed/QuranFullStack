@@ -37,6 +37,11 @@
   outline-offset: -2px;
 }
 
+/* `text-overflow` needs a block box, and a span inside the row button is inline. */
+.abwab-move-picker__name {
+  display: block;
+}
+
 .abwab-move-picker__row--picked {
   background: var(--qd-selected-bg);
   color: var(--qd-accent-text);

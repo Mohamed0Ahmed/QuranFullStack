@@ -353,3 +353,25 @@ three badges and the flag — not "shrunk to nothing". The 22 px reading above c
 forcing the card to 320 px, a width no real layout produces. Adding a 12 rem (192 px) floor
 would exceed that measured 184 px and start overflowing the row instead, trading a readable
 truncation for a broken one.
+
+## T701–T703 — the sweeps, verified in the browser
+
+Live page, after the change:
+
+| Surface | composes `.qd-truncate` | `[title]` present | ellipsis comes from the shared class |
+|---|---|---|---|
+| tree names (6 rows) | yes | yes | `text-overflow: ellipsis` ✓ |
+| cards breadcrumb | yes | yes | `text-overflow: ellipsis` ✓ |
+| card titles (6) | yes | yes | ✓ |
+
+Checkboxes in bulk mode (6 tree rows): every one carries `.qd-checkbox`, every one has a
+non-empty `aria-label`, computed size **15 px** (`--qd-checkbox-size` = 0.9375 rem) and
+computed `accent-color: oklch(0.49 0.068 176.3)` — i.e. the values are coming from the
+shared class, which is the check §17's specificity trap actually calls for: had the local
+rule survived, the box would still be the browser default size with the same accent and the
+composition would have read as done while changing nothing.
+
+Three sites needed a shape change before a class could help, recorded in §17 with the rest:
+the card title and the templates editor title each had the name in the same text node as a
+sibling chip (so nothing could truncate independently), and the move picker renders its row
+names as the button's own text (and `text-overflow` needs a block box).

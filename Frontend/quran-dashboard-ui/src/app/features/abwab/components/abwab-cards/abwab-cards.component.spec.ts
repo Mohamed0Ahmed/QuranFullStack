@@ -177,5 +177,14 @@ describe('AbwabCardsComponent', () => {
       const checkbox = root.querySelector<HTMLInputElement>('[data-testid="abwab-card-checkbox-4"]');
       expect(checkbox?.checked).toBe(true);
     });
+
+    // Several identical «مربع اختيار» in a grid tell a screen-reader user nothing about which
+    // door each one selects (§17's accessible-name contract, Slice D's half of the debt).
+    it('names each checkbox after its own door', () => {
+      const root = render({ bulkMode: true }).nativeElement as HTMLElement;
+      const checkbox = root.querySelector('[data-testid="abwab-card-checkbox-4"]');
+      expect(checkbox?.getAttribute('aria-label')).toBe('ورقة');
+      expect(checkbox?.classList.contains('qd-checkbox')).toBe(true);
+    });
   });
 });

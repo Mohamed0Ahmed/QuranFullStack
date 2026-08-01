@@ -77,9 +77,6 @@
 
 .abwab-template-tree__name {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Revealed on hover, the design contract's `.row:hover .actions`. `visibility` rather than

@@ -34,6 +34,11 @@
   font-weight: 700;
 }
 
+.abwab-cards__crumb {
+  display: block;
+  max-inline-size: 14rem;
+}
+
 .abwab-cards__crumb-sep {
   color: var(--qd-border-strong);
 }
@@ -82,11 +87,12 @@
   background: var(--qd-selected-bg);
 }
 
+/* Placement only — `.qd-checkbox` owns the size and the accent, and re-stating either here
+   would out-specificity the shared class for no visible reason (§17's named trap). */
 .abwab-cards__checkbox {
   position: absolute;
   inset-block-start: var(--qd-space-3);
   inset-inline-start: var(--qd-space-3);
-  accent-color: var(--qd-accent);
 }
 
 .abwab-cards__title {
@@ -94,6 +100,10 @@
   align-items: center;
   gap: var(--qd-space-2);
   font-weight: 700;
+}
+
+.abwab-cards__name {
+  flex: 1;
 }
 
 .abwab-cards__order {

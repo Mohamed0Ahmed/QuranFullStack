@@ -940,13 +940,12 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   from its label" gap cannot be reintroduced per call-site.
 - **Accessible name (contract, not optional):** every checkbox composing
   `.qd-checkbox` MUST carry a real `<label for>` or an `aria-label` naming what it
-  selects. **Remaining debt:** `abwab-tree` and `abwab-cards` still have neither —
-  Slice D's job when those page surfaces compose this class. Every checkbox a
-  *modal* renders is paid: the two duplicated pickers became one
-  `abwab-door-picker`, whose rows compose `.qd-check-row` and name each box after
-  its door.
-- **Consumers:** `abwab-door-picker` (both modal call-sites); `abwab-tree` and
-  `abwab-cards` still to come.
+  selects. **Debt paid (Slice D):** `abwab-tree` and `abwab-cards` compose the class
+  and name each box after its door, joining the modal pickers. `abwab-cards` keeps a
+  local rule for *placement only* — the card positions its box absolutely — and
+  states neither size nor accent, which is the boundary the trap below draws.
+- **Consumers:** `abwab-door-picker` (both modal call-sites), `abwab-tree`,
+  `abwab-cards`.
 - **Composing means deleting the local rule, not adding beside it.** Under Angular
   emulated encapsulation a call-site selector like
   `.some-modal__pick-row input[type='checkbox']` (the shape both abwab pickers carried
@@ -1097,12 +1096,22 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   `<span class="word-type-filter__child-label" [title]="child.label.ar">{{
   child.label.ar }}</span>`. A truncated name with no `[title]` is a contract
   violation, not a style nit.
-- **Remaining debt named honestly:** Slice C composed the rule on the sites inside
-  the abwab modals — the door picker's row names and the relations modal's bulk
-  target chips, each with its mandatory `[title]`. The name-render sites on the
-  abwab *page* surfaces (tree, cards, sections list, templates list) are still
-  unwired; that is Slice D's, named here so it reads as tracked debt rather than
-  an oversight.
+- **Debt paid (Slice D).** Slice C composed the rule inside the abwab modals — the
+  door picker's row names and the relations modal's bulk target chips. Slice D
+  finished the page surfaces: the doors tree, the archive view, the template tree,
+  the side panel's active door, the cards' title and breadcrumb trail, the sections
+  modal, the templates list and its editor title, and the move picker's two row
+  kinds. Every one composes `.qd-truncate` with its mandatory `[title]`, and each
+  local ellipsis rule it supersedes was **deleted**, not left beside it. Three of
+  those sites needed a shape change rather than a class: a name sharing one text
+  node with a sibling chip (the card title, the templates editor title) had to
+  become its own span before it could truncate independently, and the move picker's
+  row buttons needed an inner block-level span, since `text-overflow` needs a block
+  box. **No site took the `--qd-name-min-inline-size` floor**: measured at the
+  narrowest viewport the doors page reaches, the tree name still holds ~184 px
+  beside all three badges and the flag, and a 12 rem floor there would overflow the
+  row instead of truncating inside it. The token stays available for a surface that
+  measures differently.
 - Compose, do not re-style — a surface that seems to need a fixed name column
   should re-read the paragraph above before reaching for `inline-size` instead of
   `.qd-truncate`.
