@@ -11,22 +11,23 @@
 
   <ul class="nav-links desktop-nav">
     @for (item of primaryItems; track item.route) {
-      @if (item.key === 'words') {
+      @if (item.children) {
         <li
-          class="nav-item words-dropdown"
-          [class.open]="wordsOpen"
-          (mouseenter)="openWords()"
-          (mouseleave)="closeWords()"
+          class="nav-item nav-dropdown"
+          [class.open]="openMenuKey === item.key"
+          [attr.data-menu-key]="item.key"
+          (mouseenter)="openMenu(item.key)"
+          (mouseleave)="closeMenu(item.key)"
         >
           <button
             class="qd-btn qd-btn-ghost nav-link"
-            [class.active]="isWordsActive()"
+            [class.active]="isMenuActive(item)"
             type="button"
-            (click)="toggleWords()"
+            (click)="toggleMenu(item.key)"
             aria-haspopup="true"
-            aria-controls="words-menu"
-            [attr.aria-expanded]="wordsOpen"
-            data-testid="nav-words-trigger"
+            [attr.aria-controls]="item.key + '-menu'"
+            [attr.aria-expanded]="openMenuKey === item.key"
+            [attr.data-testid]="'nav-' + item.key + '-trigger'"
           >
             {{ item.labelAr }}
             <svg
@@ -47,18 +48,20 @@
               />
             </svg>
           </button>
-          @if (wordsOpen) {
-            <ul id="words-menu" class="dropdown-menu">
-              @for (sub of wordsMenuItems; track sub.route) {
+          @if (openMenuKey === item.key) {
+            <ul [id]="item.key + '-menu'" class="dropdown-menu">
+              @for (child of item.children; track child.key) {
                 <li>
                   <a
                     class="qd-btn qd-btn-ghost dropdown-link"
-                    [routerLink]="sub.route"
+                    [routerLink]="child.route"
+                    [queryParams]="child.queryParams ?? null"
                     routerLinkActive="active"
-                    [routerLinkActiveOptions]="{ exact: sub.route === wordsHubRoute }"
-                    (click)="closeWords()"
+                    [routerLinkActiveOptions]="{ exact: child.route === item.route }"
+                    [attr.data-testid]="'nav-menu-link--' + child.key"
+                    (click)="closeMenu(item.key)"
                   >
-                    {{ sub.labelAr }}
+                    {{ child.labelAr }}
                   </a>
                 </li>
               }
@@ -79,15 +82,19 @@
         </li>
       }
     }
-    <li class="nav-item more-dropdown" [class.open]="moreOpen">
+    <li
+      class="nav-item more-dropdown nav-dropdown"
+      [class.open]="openMenuKey === 'more'"
+      data-menu-key="more"
+    >
       <button
         class="qd-btn qd-btn-ghost nav-link"
         [class.active]="isMoreActive()"
         type="button"
-        (click)="toggleMore()"
+        (click)="toggleMenu('more')"
         aria-haspopup="true"
         aria-controls="more-menu"
-        [attr.aria-expanded]="moreOpen"
+        [attr.aria-expanded]="openMenuKey === 'more'"
         data-testid="nav-more-trigger"
       >
         المزيد
@@ -109,7 +116,7 @@
           />
         </svg>
       </button>
-      @if (moreOpen) {
+      @if (openMenuKey === 'more') {
         <ul id="more-menu" class="dropdown-menu">
           @for (item of moreItems; track item.route) {
             <li>
@@ -118,7 +125,7 @@
                 [routerLink]="item.route"
                 routerLinkActive="active"
                 [attr.data-testid]="'nav-menu-link--' + item.key"
-                (click)="closeMore()"
+                (click)="closeMenu('more')"
               >
                 {{ item.labelAr }}
               </a>

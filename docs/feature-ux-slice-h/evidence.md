@@ -46,3 +46,25 @@ Result — matches the plan-time prediction exactly, nothing new:
 
 Every hit is in §5.3's ledger or its do-not-touch list. No eighth consumer found (stop
 condition 2 stays clear).
+
+## Phase 3 — finding: `.nav-dropdown.open` outside-click selector self-closes on open
+
+§4.2-5's literal text ("the handler checks the single `el.querySelector('.nav-dropdown.open')`")
+was implemented as written, then caught by the browser check the Phase 3 gate requires ("words
+dropdown behaviorally identical in a quick manual check"): clicking any trigger from closed
+never opened it — the trigger's own `(click)` handler set `openMenuKey` synchronously, but the
+`document:click` listener (same bubbling event, same synchronous task) ran before Angular's
+change detection had applied the `[class.open]` binding, so `querySelector('.nav-dropdown.open')`
+still found nothing open and immediately closed what had just opened. The original per-menu
+handlers never hit this because they queried a **static** class (`.words-dropdown` /
+`.more-dropdown`, always present) rather than the CD-applied `.open` modifier.
+
+Original words/more handlers avoided the race by construction; the generalized version
+introduces it because one shared selector now has to distinguish *which* dropdown is open,
+and `.open` isn't the right thing to key on for that. Fix: each dropdown `<li>` also carries a
+static `[attr.data-menu-key]="item.key"` (`"more"` for the more `<li>`), and the outside-click
+handler queries `.nav-dropdown[data-menu-key="${openMenuKey}"]` instead — a static attribute
+present from render, immune to the CD-timing race, while still resolving to exactly the one
+open dropdown among several `.nav-dropdown` elements. Verified in the browser (click-to-open,
+outside-click-close, hover-open, mutual exclusion, Escape, mouseleave, hover-then-click-closes
+quirk — all pass) and confirmed the full suite is unaffected (193/2343, unchanged).
