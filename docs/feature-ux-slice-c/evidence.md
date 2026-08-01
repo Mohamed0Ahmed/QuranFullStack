@@ -89,3 +89,44 @@ then judged "wrong" was correct dormancy.
 
 `docs/TESTING_DEBT.md` rows 2 and 5 (the backend dormancy join tests and the e2e dormancy
 flow) remain **unpaid and unaffected** — a manual reproduction is evidence, not a test.
+
+## Deviations from the plan, and why
+
+Three, each recorded where the plan named something the code could not carry:
+
+1. **No `single` input on `abwab-door-picker`** (plan T401's contract lists one). Selection is
+   consumer-owned, so the single-anchor rule lives in the relations modal's own `togglePicked`
+   and the picker never reads such a flag — shipping it would have been a dead input.
+2. **A fourth height cap existed.** The plan's inventory names three (sections 14rem, copy
+   13rem, relations 11rem); `abwab-move-picker.component.scss` carried a 15rem cap on its
+   destination list too. It is deleted with the others, along with the nested scrollers those
+   caps implied — inside `--fixed` the only scroller is `.qd-modal__body`.
+3. **Focus-on-open is asserted differently than the plan assumed.** Where the plan calls for
+   explicit focus (the door/template-node name field, the two picker searches) the component
+   places it and the spec asserts `document.activeElement` — those pass. Where it calls for
+   plain auto-capture (sections, move-picker), no unit assertion is possible: jsdom gives every
+   element a zero-size box, so the CDK's own focusable check rejects the target and auto-capture
+   never fires. Those specs assert the contract that produces the behavior (trap attached,
+   capture on, the intended control first in tab order) and the real focus is a browser fact,
+   recorded in the T802 matrix.
+
+## T604 — Relations modal, visual acceptance against the concept
+
+Seeded door `slice-c-vis-anchor` (id 674) with one relation in each of the four display groups,
+opened from its real trigger in the browser. Screenshot: `relations-modal-acceptance.png`.
+
+| Concept element | Observed |
+|---|---|
+| One global count pill | «4», classes `qd-chip qd-chip--pill qd-chip--static` |
+| Four groups, dots + chips, empty ones omitted | all four render, in contract order, one chip each |
+| Type segment | `role="tablist"` labelled «نوع العلاقة»; three tabs; `aria-selected` on the active one; roving tabindex `0/-1/-1` |
+| Type segment keyboard model | ArrowLeft from the first tab moves focus to «تضاد» — RTL-correct, and something the hand-rolled `aria-pressed` strip never had |
+| Conditional direction row | absent under تشابه, present after switching to شمولية |
+| Picker + selected bar + foot | present; selected bar reads «لم تختر شيئًا بعد» |
+| Geometry | dialog 576 × 704 px (`min(92dvh, 44rem)` at this viewport), `.qd-modal__body` genuinely scrolling, foot pinned |
+| First focus | `abwab-relations-modal-search` |
+| Escape | closes the dialog |
+
+**Sanctioned deviation from the mock:** the active tab is §16.1 (`--qd-selected-bg` +
+`--qd-accent-text` + `--qd-border-accent`), not the concept's surface+bold. §16.1 outranks an
+ad-hoc active state, per the audit and plan decision 4.1-2.
