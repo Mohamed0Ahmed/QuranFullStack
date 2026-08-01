@@ -78,11 +78,15 @@ Plan: `docs/feature-ux-slice-f/plan.md`. Branch: `ux-slice-f-sections`, off `dev
 **+27 vs the plan's declared "+10 to +18" (§4.2-17) — explained, not a defect.** Per-file delta:
 `abwab-tree.builder.spec.ts` +4, `abwab-toolbar.component.spec.ts` +4, `abwab-sections-modal.component.spec.ts` +7,
 `abwab.api.spec.ts` +1, `abwab-write.controller.spec.ts` +4, `abwab.labels.spec.ts` +7 — sums to 27 and
-accounts for the whole suite-wide delta with nothing left over. Every one of those cells is a behavior
-named explicitly in the plan (T502/T603/T701/T703's own cell lists), so the gap between the estimate and
-the actual count is granularity, not scope: the labels file pins `ROOT_DOOR_FORMS` with a six-row
-`it.each` (0/1/2/3/10/11) rather than one assertion per form, per the workspace's data-driven-test
-convention (`test-guard`), and Vitest counts each `it.each` row as its own test. Zero tests removed,
+accounts for the whole suite-wide delta with nothing left over. Almost every one of those cells is a
+behavior named explicitly in the plan (T502/T603/T701/T703's own cell lists), so most of the gap
+between the estimate and the actual count is granularity, not scope: the labels file pins
+`ROOT_DOOR_FORMS` with a six-row `it.each` (0/1/2/3/10/11) rather than one assertion per form, per the
+workspace's data-driven-test convention (`test-guard`), and Vitest counts each `it.each` row as its own
+test. **One cell is genuinely outside the plan's enumerated list, named honestly rather than folded into
+"granularity":** the toolbar's "does not mark a non-zero count with the `--empty` class" case is
+negative-space coverage T703 did not ask for — cheap and correct on a CSS-class toggle, kept
+deliberately, not a scope creep worth reverting. Zero tests removed,
 zero new spec files, fork cap (`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`) preserved unchanged in
 `package.json`, no `.only`/`.skip`/`xit`/`xdescribe` introduced (grepped clean).
 
@@ -90,3 +94,75 @@ zero new spec files, fork cap (`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`) preserve
 edited (`.qd-tabs__count--empty`), and this slice completes a full backend+frontend vertical slice. The
 same `npm test` + `npm run build` above satisfies both B and C — one run, two triggers. Confirmed
 `shared/` carries no edit (DRIFT-4): `git diff --stat dev...HEAD -- Frontend/quran-dashboard-ui/src/app/shared` is empty, so `qdTab`/`qd-tabs` behavior is unchanged and no shared-primitive spec is owed.
+
+## Phase 9 — T902 (browser acceptance matrix)
+
+Both servers driven live: backend `dotnet run --project Backend/api/QuranDashboard.Api --launch-profile
+https --no-build` with `ASPNETCORE_Kestrel__Certificates__Default__Path`/`KeyPath` pointed at the
+frontend's mkcert `localhost.pem`/`localhost-key.pem` (absolute paths — `dotnet run`'s working directory
+is the project folder, so relative paths from the repo root resolve to the wrong file), frontend `npm run
+start:https`. Driven with `mcp__claude-in-chrome__*` against the real local Postgres `quran_dashboard`.
+Scope narrowed per a pre-walk advisor consult to what a unit spec structurally cannot check (jsdom
+cannot reproduce real focus/blur or the CDK's real auto-capture), plus the two full Playwright passes
+below — not the plan's full 14-item list; every other T902 item is already pinned by a Phase 5/6/7 unit
+cell or by the backend's own interaction matrix (§6a), and is cited here as unit/e2e coverage rather than
+re-walked by hand.
+
+- **`npx playwright test --project=abwab --workers=1` — 23/23 passed**, both before and after the fix
+  below (two full runs). This is real evidence the new order `<button>` and the new `.qd-tabs__count`
+  badge did not disturb any shipped Abwab flow's selectors or timing.
+- **Badges render live**: «كل الأبواب» showed the true root total (6), section tabs showed their own
+  root-only counts (1, 0) against a real snapshot — distinct from the door-count numbers elsewhere on
+  the page, confirming item 19 end to end.
+- **`cdkTrapFocusAutoCapture` lands on the order button** (first focusable control in the row, per
+  §4.2-16) — a real, usable control, not a surprise landing.
+- **T602 focus mechanism — click the order number, type, Enter, with no intermediate click**: focus
+  landed in the input automatically (seeded with the live value) purely from `startOrderEdit`'s
+  `afterNextRender`, with no forced `.focus()` call standing in for it the way Playwright's `fill()` does
+  in the e2e suite. Confirmed working.
+- **Blur cancels after only clicking the number, with no other click**: clicked the order button
+  (auto-focuses the input), then clicked an unrelated element (the modal title) without ever clicking
+  the input directly — the edit cancelled, no submission, matching the tree's grammar.
+- **A real reorder was dispatched against the live backend and resequenced correctly** — the swap
+  actually moved the row in the section list on both the modal and, after closing, the page's own tab
+  strip (**"after a successful reorder the toolbar tab strip renders in the new order" confirmed** — the
+  observable point of item 18, not just the modal list).
+- **Reopening the editor on the same row after a successful reorder seeds the fresh number**, not the
+  pre-reorder one — the unit spec's static fixture can't catch a stale-seed bug; the live backend
+  round-trip can, and did not show one.
+- **A real 400 (out-of-range position) surfaced the exact backend message** («الترتيب المطلوب خارج نطاق
+  الأقسام») in the modal's error strip, proving the shared 409/400 failure map carries the backend's
+  own Arabic message through to the UI end to end, not just in the mocked unit cell.
+- **The `--empty` badge treatment on the *selected* tab (§11 stop condition) checked via computed style
+  in both themes**: `opacity: 0.5`, `.qd-tabs__count--empty` present, selected-state `background`/`color`
+  from `.qd-tabs__tab.qd-is-selected .qd-tabs__count` applied underneath with no specificity fight, in
+  both light and dark (`data-theme="dark"`). No colour-override alternative needed — the plain opacity
+  treatment reads correctly as shipped.
+
+**One real defect found and fixed, not merely documented** — a genuine T602 follow-up, invisible to the
+Vitest/jsdom suite because jsdom cannot reproduce it: a reorder that actually **moves** a row (not a
+same-position no-op) is followed by refresh-after-write, which replaces `sections()` with a re-ordered
+array; `@for` then moves that row's DOM node to its new slot, which detaches and reattaches it —
+dropping the focus `focusOrderButton` had *already* correctly restored on the earlier, pre-refresh
+render, because that single `afterNextRender` fired before the network round trip's later render
+existed to catch. Isolated by A/B testing (a same-position commit preserved focus every time; an
+actual position change lost it every time) and by instrumenting `HTMLElement.prototype.focus` to log
+every call with a timestamp, which showed exactly two calls — input-open, then the immediate
+post-commit button-focus — with nothing after, ending on `<body>`.
+
+**Fix**: `abwab-sections-modal.component.ts` gains a `pendingOrderFocusId` signal, armed by
+`commitOrderEdit` right after the immediate `focusOrderButton(id)` call, and a second `effect()` that
+depends on `sections()` (reading `pendingOrderFocusId` via `untracked` so it does **not** also fire on
+the immediate, pre-refresh render) — it fires specifically on the later, refresh-triggered render and
+re-applies `focusOrderButton(id)` then, clearing the pending id so a later, unrelated reorder's refresh
+never steals focus back to a stale row. A failed write clears the pending id immediately, since no
+refresh follows a failure to consume it. Re-verified live after the fix: the focus log showed three
+calls — input-open, the immediate post-commit button-focus, and a third button-focus roughly 2.5s
+later (the real HTTP round trip) — ending on the button, not `<body>`. Regression-checked: the focused
+Vitest glob stayed at 393/393 (jsdom cannot exercise the new code path meaningfully, so no new unit
+cell was added for it — see the note above), and both Playwright `abwab` runs (before recording this
+fix and after) passed 23/23.
+
+Both manually-started dev servers were stopped after this pass (`kill` on the recorded PIDs, confirmed
+by `curl` timing out on both `:4200` and `:5015`), per the e2e README's own rule against a stray server
+outside Playwright's control.

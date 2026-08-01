@@ -10,6 +10,7 @@ import {
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
@@ -76,6 +77,14 @@ export class AbwabSectionsModalComponent {
   // Unique at any moment: only one row's editing branch renders the input at a time.
   private readonly orderInput = viewChild<ElementRef<HTMLInputElement>>('orderInput');
 
+  /** Set only by a successful commit (T602 follow-up, found in browser acceptance testing,
+   * T902): a reorder that actually moves the row is followed by a refresh-after-write that
+   * replaces `sections()` with a re-ordered array. `@for` then moves this row's DOM node to its
+   * new position, which — unlike updating a binding in place — detaches and reattaches it,
+   * dropping the focus `focusOrderButton` already restored on the earlier, pre-refresh render.
+   * The `effect` below watches `sections()` specifically to catch that second, later render. */
+  private readonly pendingOrderFocusId = signal<number | null>(null);
+
   /** Unsaved work is a typed section name or a rename draft that differs from the saved name;
    * an opened rename the user has not altered is not a change to discard. */
   private readonly isDirty = computed(() => {
@@ -121,6 +130,19 @@ export class AbwabSectionsModalComponent {
         this.resetDraft();
       }
     });
+
+    // Untracked read of pendingOrderFocusId: this effect must fire only when `sections()`
+    // itself changes (the post-refresh render), not when commitOrderEdit sets the pending id
+    // (that moment is handled synchronously by the immediate focusOrderButton call there).
+    effect(() => {
+      this.sections();
+      const id = untracked(this.pendingOrderFocusId);
+      if (id === null) {
+        return;
+      }
+      this.pendingOrderFocusId.set(null);
+      this.focusOrderButton(id);
+    });
   }
 
   private resetDraft(): void {
@@ -128,6 +150,7 @@ export class AbwabSectionsModalComponent {
     this.editingId.set(null);
     this.editingName.set('');
     this.editingOrderId.set(null);
+    this.pendingOrderFocusId.set(null);
     this.errorMessage.set(null);
     this.confirmingDiscard.set(false);
   }
@@ -235,8 +258,18 @@ export class AbwabSectionsModalComponent {
     if (!current) {
       return;
     }
+    // Armed here, consumed by the sections()-watching effect above — a successful reorder's
+    // refresh-after-write can move this row and drop the focus the line above just restored.
+    this.pendingOrderFocusId.set(id);
     this.reorderSection()(id, value, current.version).subscribe((outcome) => {
-      this.errorMessage.set(outcome.kind === 'success' ? null : outcome.message);
+      if (outcome.kind === 'success') {
+        this.errorMessage.set(null);
+      } else {
+        // No refresh follows a failure, so nothing will consume the pending id — clear it here
+        // or a later, unrelated reorder's refresh would steal focus back to this stale row.
+        this.pendingOrderFocusId.set(null);
+        this.errorMessage.set(outcome.message);
+      }
     });
   }
 
