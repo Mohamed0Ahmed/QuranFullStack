@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
+import { A11yModule } from '@angular/cdk/a11y';
 import { Observable } from 'rxjs';
 
 import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
@@ -8,6 +9,8 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 
+let nextModalId = 0;
+
 /**
  * List / add / rename / delete-empty for sections (plan-slice-b.md T510). Presentational:
  * the three write functions are inputs (bound by the page shell to
@@ -16,11 +19,15 @@ import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-loc
  * Rename always reads the section's row from the live `sections` input at submit time
  * (never a value captured when edit mode opened), since `version` goes stale the moment
  * any other write touches this scope.
+ *
+ * The dirty guard is this modal's one behavior change in Slice C: a rename draft or a typed
+ * section name is unsaved work, and closing used to discard it silently. It follows the door
+ * modal's trio rather than inventing a second confirmation shape.
  */
 @Component({
   selector: 'qd-abwab-sections-modal',
   standalone: true,
-  imports: [QdStateComponent, ModalScrollLockDirective],
+  imports: [A11yModule, QdStateComponent, ModalScrollLockDirective],
   templateUrl: './abwab-sections-modal.component.html',
   styleUrl: './abwab-sections-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,10 +43,27 @@ export class AbwabSectionsModalComponent {
 
   readonly closed = output<void>();
 
+  protected readonly titleId = `abwab-sections-modal-title-${nextModalId++}`;
+
   protected readonly newSectionName = signal('');
   protected readonly editingId = signal<number | null>(null);
   protected readonly editingName = signal('');
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly confirmingDiscard = signal(false);
+
+  /** Unsaved work is a typed section name or a rename draft that differs from the saved name;
+   * an opened rename the user has not altered is not a change to discard. */
+  private readonly isDirty = computed(() => {
+    if (this.newSectionName().trim() !== '') {
+      return true;
+    }
+    const editingId = this.editingId();
+    if (editingId === null) {
+      return false;
+    }
+    const saved = this.sections().find((section) => section.id === editingId);
+    return saved !== undefined && this.editingName() !== saved.name;
+  });
 
   protected get title(): string { return ABWAB_LABELS.sectionsModalTitle; }
   protected get nameLabel(): string { return ABWAB_LABELS.sectionNameLabel; }
@@ -49,6 +73,17 @@ export class AbwabSectionsModalComponent {
   protected get saveLabel(): string { return ABWAB_LABELS.saveButton; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
   protected get closeLabel(): string { return ABWAB_LABELS.cancelButton; }
+  protected get dirtyCloseConfirmMessage(): string { return ABWAB_LABELS.dirtyCloseConfirm; }
+  protected get discardChangesLabel(): string { return ABWAB_LABELS.discardChangesButton; }
+  protected get keepEditingLabel(): string { return ABWAB_LABELS.keepEditingButton; }
+
+  constructor() {
+    effect(() => {
+      if (this.open()) {
+        this.confirmingDiscard.set(false);
+      }
+    });
+  }
 
   protected onNewNameInput(event: Event): void {
     this.newSectionName.set((event.target as HTMLInputElement).value);
@@ -105,7 +140,20 @@ export class AbwabSectionsModalComponent {
     });
   }
 
-  protected close(): void {
+  protected requestClose(): void {
+    if (this.isDirty()) {
+      this.confirmingDiscard.set(true);
+      return;
+    }
     this.closed.emit();
+  }
+
+  protected confirmDiscard(): void {
+    this.confirmingDiscard.set(false);
+    this.closed.emit();
+  }
+
+  protected cancelDiscard(): void {
+    this.confirmingDiscard.set(false);
   }
 }

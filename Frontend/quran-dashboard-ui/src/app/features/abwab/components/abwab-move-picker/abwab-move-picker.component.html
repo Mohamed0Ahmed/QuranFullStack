@@ -1,14 +1,24 @@
 @if (open()) {
   <div class="qd-modal-backdrop" data-testid="abwab-move-picker-backdrop" (click)="cancel()">
     <section
-      class="qd-modal abwab-move-picker"
+      class="qd-modal qd-modal--fixed abwab-move-picker"
+      role="dialog"
+      aria-modal="true"
       dir="rtl"
+      [attr.aria-labelledby]="titleId"
       qdModalScrollLock
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
       data-testid="abwab-move-picker"
       (click)="$event.stopPropagation()"
+      (keydown.escape)="cancel()"
     >
-      <h3>{{ titleText() }}</h3>
-      <p class="abwab-move-picker__desc">{{ descriptionText }}</p>
+      <header class="qd-modal__head">
+        <h3 [id]="titleId">{{ titleText() }}</h3>
+        <p class="abwab-move-picker__desc">{{ descriptionText }}</p>
+      </header>
+
+      <div class="qd-modal__body">
 
       @if (stage() === 'section') {
         <div class="abwab-move-picker__list">
@@ -56,15 +66,18 @@
           }
         </div>
       }
-
-      <div class="abwab-move-picker__foot">
-        <button type="button" class="qd-btn qd-btn-primary" data-testid="abwab-move-picker-confirm" (click)="confirm()">
-          {{ confirmLabel }}
-        </button>
-        <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-move-picker-cancel" (click)="cancel()">
-          {{ cancelLabel }}
-        </button>
       </div>
+
+      <footer class="qd-modal__foot">
+        <div class="abwab-move-picker__foot">
+          <button type="button" class="qd-btn qd-btn-primary" data-testid="abwab-move-picker-confirm" (click)="confirm()">
+            {{ confirmLabel }}
+          </button>
+          <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-move-picker-cancel" (click)="cancel()">
+            {{ cancelLabel }}
+          </button>
+        </div>
+      </footer>
     </section>
   </div>
 }

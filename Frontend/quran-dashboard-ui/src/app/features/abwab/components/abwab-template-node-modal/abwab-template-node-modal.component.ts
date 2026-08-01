@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, input, output, signal, viewChild } from '@angular/core';
+import { A11yModule } from '@angular/cdk/a11y';
 import { Observable } from 'rxjs';
 
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
@@ -22,7 +23,7 @@ let nextModalId = 0;
 @Component({
   selector: 'qd-abwab-template-node-modal',
   standalone: true,
-  imports: [AbwabDoorFieldsFormComponent, ModalScrollLockDirective],
+  imports: [A11yModule, AbwabDoorFieldsFormComponent, ModalScrollLockDirective],
   templateUrl: './abwab-template-node-modal.component.html',
   styleUrl: './abwab-template-node-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -72,10 +73,14 @@ export class AbwabTemplateNodeModalComponent {
 
   constructor() {
     effect(() => {
-      if (this.open()) {
-        this.errorMessage.set(null);
-        this.confirmingDiscard.set(false);
+      if (!this.open()) {
+        return;
       }
+      this.errorMessage.set(null);
+      this.confirmingDiscard.set(false);
+      // Queued so it lands after the trap's auto-capture, which would otherwise stop at the
+      // reserved error box above the fields.
+      setTimeout(() => this.fieldsForm()?.focusFirstField());
     });
   }
 

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { A11yModule } from '@angular/cdk/a11y';
 
 import { AbwabNode } from '../../models/abwab.models';
 import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
@@ -34,10 +35,12 @@ interface AbwabMovePickerRow {
  * `orderValue` would mean fetching/deriving a second order this component has no other use
  * for. Pinned by `abwab-move-picker.component.spec.ts`.
  */
+let nextModalId = 0;
+
 @Component({
   selector: 'qd-abwab-move-picker',
   standalone: true,
-  imports: [ModalScrollLockDirective],
+  imports: [A11yModule, ModalScrollLockDirective],
   templateUrl: './abwab-move-picker.component.html',
   styleUrl: './abwab-move-picker.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,6 +54,8 @@ export class AbwabMovePickerComponent {
 
   readonly closed = output<void>();
   readonly confirmed = output<AbwabMoveDestination>();
+
+  protected readonly titleId = `abwab-move-picker-title-${nextModalId++}`;
 
   protected readonly stage = signal<'section' | 'destination'>('section');
   private readonly pickedSectionId = signal<number | null>(null);
