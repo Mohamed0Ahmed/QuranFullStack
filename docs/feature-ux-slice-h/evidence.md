@@ -142,3 +142,36 @@ after a fresh reload — empty both times, no NG0955 duplicate-key warnings (chi
 | No backend command | — | Not run — no `Backend/` file in scope (§4.1-8). |
 
 **Verdict:** both gates green, counts unchanged from baseline. No regression.
+
+## T601 — READMEs and §17
+
+`core/README.md:44-52` rewritten: the nav menu model is now described as three files
+(`nav-items.ts` flat registry, `words-nav-items.ts`, `nav-menu.ts` composition module), the
+import-cycle reason children live outside `NAV_ITEMS`, and «الأرشيف» as the app's first
+query-param nav entry. `words-nav-items.ts:15-16`'s comment clause was already extended during
+T201 (the "Consumed as `NavItem[]` via `nav-menu.ts`" sentence) — no further change needed.
+
+§17 verify-only pass: grepped `UI_STYLE_SYSTEM.md` for the old class names
+(`words-dropdown`/`more-dropdown`/`nav-dropdown`/`wordsOpen`/`moreOpen`) — zero hits, the
+"Sticky app chrome" and "Chrome-inert rule" entries describe z-rungs and inert wiring only,
+neither of which this slice touches. §5C's navbar visual rules (color/hover/pill) are
+untouched by a structural change. No amendment made — matches the plan's expectation exactly.
+
+## T602 — Debt and close-out
+
+`docs/TESTING_DEBT.md` gained the `ux-slice-h` section (rows H1-H4, verbatim from plan §7).
+
+Re-ran T102's sweep across `src/`, `e2e/`, `docs/`, `.architecture/`, and the frontend READMEs:
+every hit is either historical (`docs/abwab-ux-audit.md`, other slices' closed plans), this
+slice's own plan/evidence text, or expected live code (`WORDS_MENU_ITEMS` still exists,
+retyped per §4.2-2, not renamed; `core/README.md`'s own new description; `nav-menu.ts`'s
+الأرشيف entry). No stray `wordsOpen`, `words-dropdown`, or `nav-link--abwab` survives in live
+code.
+
+Root `CLAUDE.md` Active Spec Kit Feature cleared back to `None`. No planning folder deleted,
+swept, or repointed — deferred to the post-Slice-I cleanup pass per standing decision. No
+package install. No `dev → main` merge.
+
+Dev servers (backend on 5015/5014, frontend already running on 4200 before this session)
+left as found — the frontend server was pre-existing and reused throughout; the backend
+instance started for this verification was stopped after T602.

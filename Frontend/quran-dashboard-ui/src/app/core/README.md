@@ -44,12 +44,22 @@ per-feature.
 - `layout/` — `app-shell`, `top-navbar`, `footer`, `shell-layout.model.ts`.
 - `navigation/` — `route-paths.ts` (canonical route constants — incl. `DASHBOARD_ROUTE_PATH`
   and `CALLBACK_PATH` for the Feature-033 landing route — plus `navLabel(key)` for a
-  nav item's Arabic label) + `nav-items.ts` + `app-title.strategy.ts` (the `TitleStrategy`
+  nav item's Arabic label) + `app-title.strategy.ts` (the `TitleStrategy`
   registered in `app.config.ts`: browser-tab title = `<route title> — المنهج القرآني`, and
   the brand alone on the titleless `dashboard`/home route; each route supplies its own
-  `title` from its nav label or explorer page-title constant) + `words-nav-items.ts`
-  (`WORDS_MENU_ITEMS` — the Words-section sub-nav rendered as the top-navbar
-  "الكلمات والجذور" dropdown; routes from `route-paths`, labels owned here in core).
+  `title` from its nav label or explorer page-title constant). The nav menu model is three
+  files: `nav-items.ts` (the flat `NAV_ITEMS` registry — routes, titles, placeholder
+  derivation; `NavItem` also carries optional `children`/`queryParams`, navbar-presentation
+  fields that never enter this registry); `words-nav-items.ts` (`WORDS_MENU_ITEMS` as
+  `NavItem[]`, labels owned here in core, routes from `route-paths`); and `nav-menu.ts` (the
+  navbar's presentation tree — `NAV_MENU`, `NAV_ITEMS` with children attached from a
+  `childrenByParentKey` table). Children attach **outside** `NAV_ITEMS` because
+  `route-paths.ts` imports `NAV_ITEMS` and derives every route constant from it at module
+  init — nesting children into `nav-items.ts` would create an import cycle that hits a TDZ
+  `ReferenceError`; recorded here so nobody "simplifies" the children back in. The top-navbar
+  dropdown ("الكلمات والجذور", "الأبواب") is `@if (item.children)`, data-driven, not a
+  per-key template branch; «الأرشيف» (`/abwab` + `{archive:'1'}`) is the app's first
+  query-param nav entry.
 - `navigation/detail-overlay/` — the app-wide floating detail-overlay navigation layer
   (Feature 029, Change B): `detail-overlay.models.ts` (versioned `v1~…` frame union — the
   URL contract, deliberately decoupled from Words models), `detail-overlay-url-codec.ts`

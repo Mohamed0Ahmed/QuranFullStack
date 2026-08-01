@@ -93,3 +93,21 @@ this slice itself introduces.
 | G2 | **The empty-template refusal and its ordering** — the `400`, and that it fires **before** the archived-target check | `EfAbwabTemplateApplyWriter.cs`, `ApplyTemplateHandler.cs` | The next change to the apply refusal set, or the first time a second refusal wants to move ahead of the target reads |
 | G3 | **Apply smoke, narrowed** — the route's status/envelope contract now includes the new `400` and the re-shaped `409` message; still catalogued `ParityOnly` (listed but not dispatched) | `Tests/Smoke/`, `SmokeRouteCatalog.cs:356-359` | When write protection lands and `/api/abwab` stops being `Open`: the auth cases force a dispatched test per route regardless. Narrows row 8 above, does not replace it |
 | G4 | **The copy modal's empty-template affordance** — that the confirm button disables at `templateNodeCount() === 0` and the preview swaps to the empty state. **Cheapest row in this table**: the modal's spec already exists and covers everything else it does, so this is one `it` block, not a suite | `abwab-template-copy-modal.component.spec.ts` | The next change to the copy modal |
+
+## ux-slice-h (branch `ux-slice-h`, 2026-08-01)
+
+Posture: **no new test suites**, rush-period decision (plan §4.1-7). Existing suites ran before
+merge; no route-smoke tier runs — no `Backend/` file is in scope for this slice (§4.1-8), so
+there is nothing catalogued `ParityOnly` to narrow here either. `core/layout/top-navbar/` had no
+unit spec before this slice and gains none — the rows below are as much about the surface's
+pre-existing thinness as about what this slice adds to it.
+
+| # | Uncovered area | Where | Pays it |
+|---|---|---|---|
+| H1 | **The navbar itself, wholesale** — no unit spec exists at all: menu open/close state, `openMenuKey` mutual exclusion (now load-bearing for three menus instead of two), Escape/outside-click dismissal, `aria-expanded`, the inert-under-lock binding. This predates the slice; collapsing the state machine to one shared field raises the cost of it staying unpinned | `core/layout/top-navbar/` | The next change to the navbar or the nav model — auth-gated entries, a fourth dropdown, or Slice I if caching adds any nav affordance |
+| H2 | **The §6a active-state matrix** — the query-param cells (`/abwab?archive=1` and its neighbors) are exactly where a `routerLinkActiveOptions` regression hides, they are assertable in jsdom with a router harness, and nothing asserts them | `top-navbar.component.html`, `core/navigation/nav-menu.ts` | The next nav-entry addition, or any change to the abwab URL contract's `archive` key |
+| H3 | **The mobile flattened children** — nesting, indentation, parent-row navigability, per-row active state | `top-navbar.component.{html,scss}` | The next mobile-nav change |
+| H4 | **One e2e flow for the new dropdown** — hover «الأبواب», click «الأرشيف», land on `/abwab?archive=1` with the archive view open. `shell-nav.e2e.ts` is the shipped template; this is one ~10-line test in an existing file, the cheapest row here | `e2e/shell-nav.e2e.ts` | The next time the navbar or the abwab URL contract changes shape |
+
+H4 is the honest one to flag: the posture's logic applies to it same as the rest, but the file,
+fixture, and pattern all exist, so the marginal cost is a fraction of H1-H3.
