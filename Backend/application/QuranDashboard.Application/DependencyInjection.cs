@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abwab.Commands.Sections.CreateSection;
 using QuranDashboard.Application.Abwab.Commands.Sections.RenameSection;
 using QuranDashboard.Application.Abwab.Commands.Sections.DeleteSection;
+using QuranDashboard.Application.Abwab.Commands.Sections.ReorderSection;
 using QuranDashboard.Application.Abwab.Commands.Doors.CreateDoor;
 using QuranDashboard.Application.Abwab.Commands.Doors.EditDoor;
 using QuranDashboard.Application.Abwab.Commands.Doors.MoveDoor;
@@ -148,6 +149,7 @@ public static class DependencyInjection
         services.AddScoped<CreateSectionHandler>();
         services.AddScoped<RenameSectionHandler>();
         services.AddScoped<DeleteSectionHandler>();
+        services.AddScoped<ReorderSectionHandler>();
 
         services.AddScoped<CreateDoorHandler>();
         services.AddScoped<EditDoorHandler>();

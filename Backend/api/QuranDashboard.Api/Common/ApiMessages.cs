@@ -114,6 +114,8 @@ public static class ApiMessages
     public const string AbwabSectionDuplicateName = "يوجد قسم آخر بنفس الاسم";
     public const string AbwabSectionHasLiveDoors = "لا يمكن حذف القسم لاحتوائه على أبواب حالية";
     public const string AbwabSectionStaleVersion = "تم تعديل القسم من مستخدم آخر، يرجى التحديث والمحاولة مرة أخرى";
+    public const string AbwabSectionReordered = "تم تعديل ترتيب القسم";
+    public const string AbwabSectionInvalidPosition = "الترتيب المطلوب خارج نطاق الأقسام";
 
     public const string AbwabDoorCreated = "تم إنشاء الباب";
     public const string AbwabDoorEdited = "تم تعديل الباب";

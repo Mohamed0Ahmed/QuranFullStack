@@ -237,6 +237,10 @@ internal static class SmokeRouteCatalog
         {
             Method = HttpMethod.Delete, ParityOnly = true,
         },
+        new("api/abwab/sections/{id:int}/order", "/api/abwab/sections/1/order", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post, ParityOnly = true,
+        },
 
         // api/abwab/doors — AbwabDoorsController. Same ParityOnly rationale as sections above.
         new("api/abwab/doors", "/api/abwab/doors", HttpStatusCode.Created)

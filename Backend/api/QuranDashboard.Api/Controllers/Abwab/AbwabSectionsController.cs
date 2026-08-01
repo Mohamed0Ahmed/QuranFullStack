@@ -2,6 +2,7 @@ using QuranDashboard.Application.Abstractions.Abwab.Responses;
 using QuranDashboard.Application.Abwab.Commands.Sections.CreateSection;
 using QuranDashboard.Application.Abwab.Commands.Sections.RenameSection;
 using QuranDashboard.Application.Abwab.Commands.Sections.DeleteSection;
+using QuranDashboard.Application.Abwab.Commands.Sections.ReorderSection;
 
 namespace QuranDashboard.Api.Controllers.Abwab;
 
@@ -10,7 +11,8 @@ namespace QuranDashboard.Api.Controllers.Abwab;
 public sealed class AbwabSectionsController(
     CreateSectionHandler createHandler,
     RenameSectionHandler renameHandler,
-    DeleteSectionHandler deleteHandler) : ControllerBase
+    DeleteSectionHandler deleteHandler,
+    ReorderSectionHandler reorderHandler) : ControllerBase
 {
     [HttpPost]
     public async Task<ActionResult<ApiResponse<AbwabSectionDto>>> Create(
@@ -72,6 +74,27 @@ public sealed class AbwabSectionsController(
             DeleteSectionOutcome.StaleVersion =>
                 Conflict(ApiResponse<object>.Fail(ApiMessages.AbwabSectionStaleVersion)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(DeleteSectionOutcome)} variant."),
+        };
+    }
+
+    [HttpPost("{id:int}/order")]
+    public async Task<ActionResult<ApiResponse<AbwabSectionDto>>> Reorder(
+        int id, [FromBody] ReorderSectionBody body, CancellationToken cancellationToken)
+    {
+        var outcome = await reorderHandler.HandleAsync(
+            new ReorderSectionCommand(id, body.Position, body.Version), cancellationToken);
+
+        return outcome switch
+        {
+            ReorderSectionOutcome.Success success =>
+                Ok(ApiResponse<AbwabSectionDto>.Ok(success.Section, ApiMessages.AbwabSectionReordered)),
+            ReorderSectionOutcome.NotFound =>
+                NotFound(ApiResponse<AbwabSectionDto>.Fail(ApiMessages.AbwabSectionNotFound)),
+            ReorderSectionOutcome.InvalidPosition =>
+                BadRequest(ApiResponse<AbwabSectionDto>.Fail(ApiMessages.AbwabSectionInvalidPosition)),
+            ReorderSectionOutcome.StaleVersion =>
+                Conflict(ApiResponse<AbwabSectionDto>.Fail(ApiMessages.AbwabSectionStaleVersion)),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(ReorderSectionOutcome)} variant."),
         };
     }
 }
