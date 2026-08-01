@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked, viewChild } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { AbwabDoorPickerComponent } from '../abwab-door-picker/abwab-door-picker.component';
 import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
@@ -21,14 +22,6 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 export interface AbwabRelationTarget {
   readonly id: number;
   readonly name: string;
-}
-
-interface AbwabRelationPickerRow {
-  readonly node: AbwabNode;
-  readonly depth: number;
-  readonly hasChildren: boolean;
-  readonly isExpanded: boolean;
-  readonly isLinked: boolean;
 }
 
 const TYPE_ORDER: readonly AbwabRelationKind[] = ['similarity', 'opposition', 'comprehensiveness'];
@@ -57,10 +50,6 @@ const GROUP_DOT_KIND: Readonly<Record<AbwabRelationGroupKey, AbwabRelationKind>>
 
 let nextModalId = 0;
 
-function subtreeMatches(node: AbwabNode, query: string): boolean {
-  return node.name.includes(query) || node.children.some((child) => subtreeMatches(child, query));
-}
-
 /**
  * The relations modal (plan §7 T601/T602), implementing `docs/design-preview/abwab-relations-concept.html`:
  * the four display groups, the type segment, the direction pill with its live preview, an
@@ -76,7 +65,7 @@ function subtreeMatches(node: AbwabNode, query: string): boolean {
 @Component({
   selector: 'qd-abwab-relations-modal',
   standalone: true,
-  imports: [QdChipComponent, ModalScrollLockDirective, QdStateComponent],
+  imports: [AbwabDoorPickerComponent, QdChipComponent, ModalScrollLockDirective, QdStateComponent],
   templateUrl: './abwab-relations-modal.component.html',
   styleUrl: './abwab-relations-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -101,13 +90,13 @@ export class AbwabRelationsModalComponent {
 
   readonly closed = output<void>();
 
+  private readonly picker = viewChild(AbwabDoorPickerComponent);
+
   protected readonly relations = signal<readonly AbwabRelationVm[]>([]);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly type = signal<AbwabRelationKind>('similarity');
   protected readonly direction = signal<AbwabRelationDirectionKind>('anchor-more');
-  protected readonly searchQuery = signal('');
   protected readonly pickedIds = signal<ReadonlySet<number>>(new Set());
-  private readonly expandedIds = signal<ReadonlySet<number>>(new Set());
 
   protected readonly typeOptions = TYPE_ORDER;
   protected readonly titleId = `abwab-relations-modal-title-${nextModalId++}`;
@@ -135,12 +124,6 @@ export class AbwabRelationsModalComponent {
   );
 
   protected typeLabel(kind: AbwabRelationKind): string { return TYPE_LABELS[kind]; }
-
-  protected expandAriaLabel(row: AbwabRelationPickerRow): string {
-    return row.isExpanded
-      ? ABWAB_LABELS.relationPickerCollapseAriaLabel(row.node.name)
-      : ABWAB_LABELS.relationPickerExpandAriaLabel(row.node.name);
-  }
 
   protected groupLabel(key: AbwabRelationGroupKey): string { return GROUP_LABELS[key]; }
   protected groupDotKind(key: AbwabRelationGroupKey): AbwabRelationKind { return GROUP_DOT_KIND[key]; }
@@ -184,37 +167,9 @@ export class AbwabRelationsModalComponent {
     return new Set(this.relations().filter((relation) => relation.kind === kind).map((relation) => relation.otherDoorId));
   });
 
-  protected readonly pickerRows = computed<readonly AbwabRelationPickerRow[]>(() => {
-    const query = this.searchQuery().trim();
-    const excluded = this.excludedIds();
-    const linked = this.linkedIds();
-    const expanded = this.expandedIds();
-    const rows: AbwabRelationPickerRow[] = [];
-
-    const walk = (node: AbwabNode, depth: number): void => {
-      if (query !== '' && !subtreeMatches(node, query)) {
-        return;
-      }
-      const hasChildren = node.children.length > 0;
-      // A search forces every matching path open (contract `:224`), so a deep match is never
-      // hidden behind a collapsed ancestor the user never touched.
-      const isExpanded = expanded.has(node.id) || (query !== '' && hasChildren);
-      // An excluded door is skipped but its subtree is not: a door may relate to its own
-      // ancestor or descendant (§6.2), so hiding the anchor's children would remove a case the
-      // backend deliberately allows. Children keep the excluded node's depth so the list has no
-      // orphaned indent.
-      const isExcluded = excluded.has(node.id);
-      if (!isExcluded) {
-        rows.push({ node, depth, hasChildren, isExpanded, isLinked: linked.has(node.id) });
-      }
-      if (isExcluded || isExpanded) {
-        node.children.forEach((child) => walk(child, isExcluded ? depth : depth + 1));
-      }
-    };
-
-    this.liveRoots().forEach((root) => walk(root, 0));
-    return rows;
-  });
+  protected readonly pickedIdList = computed(() => Array.from(this.pickedIds()));
+  protected readonly excludedIdList = computed(() => Array.from(this.excludedIds()));
+  protected readonly linkedIdList = computed(() => Array.from(this.linkedIds()));
 
   protected readonly pickedNames = computed(() => {
     const byId = this.nodesById();
@@ -279,36 +234,18 @@ export class AbwabRelationsModalComponent {
     this.direction.set(value);
   }
 
-  protected onSearchInput(event: Event): void {
-    this.searchQuery.set((event.target as HTMLInputElement).value);
-  }
-
-  protected toggleExpanded(event: Event, doorId: number): void {
-    event.stopPropagation();
-    const next = new Set(this.expandedIds());
-    if (!next.delete(doorId)) {
-      next.add(doorId);
-    }
-    this.expandedIds.set(next);
-  }
-
-  protected togglePicked(row: AbwabRelationPickerRow): void {
-    if (row.isLinked) {
-      return;
-    }
+  /** Anchor-pick mode selects exactly one door — the picker renders what it is told and leaves
+   * which-selection-rule-applies to its host. */
+  protected togglePicked(doorId: number): void {
     if (this.anchorPickMode()) {
-      this.pickedIds.set(this.pickedIds().has(row.node.id) ? new Set() : new Set([row.node.id]));
+      this.pickedIds.set(this.pickedIds().has(doorId) ? new Set() : new Set([doorId]));
       return;
     }
     const next = new Set(this.pickedIds());
-    if (!next.delete(row.node.id)) {
-      next.add(row.node.id);
+    if (!next.delete(doorId)) {
+      next.add(doorId);
     }
     this.pickedIds.set(next);
-  }
-
-  protected isPicked(doorId: number): boolean {
-    return this.pickedIds().has(doorId);
   }
 
   protected add(): void {
@@ -368,8 +305,7 @@ export class AbwabRelationsModalComponent {
   private resetDraft(): void {
     this.type.set('similarity');
     this.direction.set('anchor-more');
-    this.searchQuery.set('');
     this.pickedIds.set(new Set());
-    this.expandedIds.set(new Set());
+    this.picker()?.reset();
   }
 }

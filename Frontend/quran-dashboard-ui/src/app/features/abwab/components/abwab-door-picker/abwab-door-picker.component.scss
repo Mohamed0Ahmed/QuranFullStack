@@ -1,0 +1,88 @@
+:host {
+  display: block;
+}
+
+:host > input {
+  inline-size: 100%;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+}
+
+:host > input:focus-visible,
+.abwab-door-picker__chevron:focus-visible,
+.abwab-door-picker__row input:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -1px;
+}
+
+/* Set by a host modal only for as long as it still owns a height cap; the picker itself
+   states no geometry (UI_STYLE_SYSTEM §17). */
+.abwab-door-picker__list {
+  max-block-size: var(--abwab-door-picker-list-max, none);
+  overflow: auto;
+  margin-block-start: var(--qd-space-2);
+}
+
+.abwab-door-picker__row {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  padding: var(--qd-space-1) var(--qd-space-2);
+  padding-inline-start: calc(var(--abwab-door-picker-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
+  border-radius: var(--qd-radius-sm);
+  cursor: pointer;
+}
+
+.abwab-door-picker__row:hover {
+  background: var(--qd-surface-hover);
+}
+
+/* The checkbox and the chevron are the row's two tab stops, so keyboard focus has to read as a
+   row highlight — the row itself is not focusable and gets no ring of its own. */
+.abwab-door-picker__row:has(:focus-visible) {
+  background: var(--qd-surface-hover);
+}
+
+.abwab-door-picker__row--disabled,
+.abwab-door-picker__row--disabled:hover {
+  opacity: 0.45;
+  cursor: default;
+  background: transparent;
+}
+
+.abwab-door-picker__chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1rem;
+  block-size: 1rem;
+  flex: none;
+  border: none;
+  background: transparent;
+  color: var(--qd-text-muted);
+  cursor: pointer;
+}
+
+.abwab-door-picker__chevron--leaf {
+  visibility: hidden;
+}
+
+.abwab-door-picker__row input[type='checkbox'] {
+  flex: none;
+  accent-color: var(--qd-accent);
+}
+
+.abwab-door-picker__name {
+  flex: 1;
+  font-size: 0.8125rem;
+}
+
+.abwab-door-picker__tag {
+  color: var(--qd-text-muted);
+  font-size: 0.6875rem;
+}

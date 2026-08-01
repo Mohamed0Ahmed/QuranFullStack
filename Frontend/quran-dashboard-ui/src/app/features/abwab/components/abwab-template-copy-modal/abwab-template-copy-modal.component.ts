@@ -1,26 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked, viewChild } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { AbwabDoorPickerComponent, AbwabDoorPickerStatus } from '../abwab-door-picker/abwab-door-picker.component';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
-import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabNode } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
 
-interface AbwabCopyPickerRow {
-  readonly node: AbwabNode;
-  readonly depth: number;
-  readonly hasChildren: boolean;
-  readonly isExpanded: boolean;
-}
-
 let nextModalId = 0;
-
-function subtreeMatches(node: AbwabNode, query: string): boolean {
-  return node.name.includes(query) || node.children.some((child) => subtreeMatches(child, query));
-}
 
 /**
  * «نسخ إلى أبواب…» — the multi-target picker for applying a template
@@ -31,17 +20,11 @@ function subtreeMatches(node: AbwabNode, query: string): boolean {
  * The picker lists live doors only and offers no root-level option, which is what makes the
  * route's empty-targets `400` unreachable through the UI; the refusal exists so the route is not
  * a hole, not because a control leads to it.
- *
- * The picker logic is deliberately duplicated from `abwab-relations-modal.component.ts:167-197`
- * rather than extracted: that component has **no spec at all** (`docs/TESTING_DEBT.md` row 4), so
- * unifying them under a no-new-tests posture would mean refactoring untested code to save ~30
- * lines. The unification trigger is row 4's own — when the relations modal next changes shape and
- * gets its specs, both pickers become one.
  */
 @Component({
   selector: 'qd-abwab-template-copy-modal',
   standalone: true,
-  imports: [ModalScrollLockDirective, QdSkeletonRowsComponent, QdStateComponent],
+  imports: [AbwabDoorPickerComponent, ModalScrollLockDirective, QdStateComponent],
   templateUrl: './abwab-template-copy-modal.component.html',
   styleUrl: './abwab-template-copy-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -66,11 +49,11 @@ export class AbwabTemplateCopyModalComponent {
    * parent page's `AbwabSnapshotFacade` already supports via `load()`. */
   readonly retryDoors = output<void>();
 
+  private readonly picker = viewChild(AbwabDoorPickerComponent);
+
   protected readonly titleId = `abwab-template-copy-modal-title-${nextModalId++}`;
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly searchQuery = signal('');
   protected readonly pickedIds = signal<ReadonlySet<number>>(new Set());
-  private readonly expandedIds = signal<ReadonlySet<number>>(new Set());
 
   protected get descriptionText(): string { return ABWAB_LABELS.templateCopyDescription; }
   protected get previewNoRootText(): string { return ABWAB_LABELS.templateCopyPreviewNoRoot; }
@@ -88,6 +71,15 @@ export class AbwabTemplateCopyModalComponent {
     ABWAB_LABELS.templateCopyPreview(this.templateName(), this.templateNodeCount()),
   );
 
+  /** The picker's own empty/loading/error block only renders when it has no rows, so mapping the
+   * two snapshot inputs onto the status is exhaustive: whatever is not loading or failed is the
+   * "no live doors" answer. */
+  protected readonly pickerStatus = computed<AbwabDoorPickerStatus>(() =>
+    this.doorsLoading() ? 'loading' : this.doorsError() ? 'error' : 'empty',
+  );
+
+  protected readonly pickedIdList = computed(() => Array.from(this.pickedIds()));
+
   private readonly nodesById = computed(() => {
     const byId = new Map<number, AbwabNode>();
     const walk = (node: AbwabNode): void => {
@@ -96,29 +88,6 @@ export class AbwabTemplateCopyModalComponent {
     };
     this.liveRoots().forEach(walk);
     return byId;
-  });
-
-  protected readonly pickerRows = computed<readonly AbwabCopyPickerRow[]>(() => {
-    const query = this.searchQuery().trim();
-    const expanded = this.expandedIds();
-    const rows: AbwabCopyPickerRow[] = [];
-
-    const walk = (node: AbwabNode, depth: number): void => {
-      if (query !== '' && !subtreeMatches(node, query)) {
-        return;
-      }
-      const hasChildren = node.children.length > 0;
-      // A search forces every matching path open, so a deep match is never hidden behind a
-      // collapsed ancestor the user never touched.
-      const isExpanded = expanded.has(node.id) || (query !== '' && hasChildren);
-      rows.push({ node, depth, hasChildren, isExpanded });
-      if (isExpanded) {
-        node.children.forEach((child) => walk(child, depth + 1));
-      }
-    };
-
-    this.liveRoots().forEach((root) => walk(root, 0));
-    return rows;
   });
 
   protected readonly pickedNames = computed(() => {
@@ -133,12 +102,6 @@ export class AbwabTemplateCopyModalComponent {
    * count, where archiving an ancestor already claims its descendants (plan §6.1). */
   protected readonly confirmLabel = computed(() => ABWAB_LABELS.templateCopyConfirmButton(this.pickedIds().size));
 
-  protected expandAriaLabel(row: AbwabCopyPickerRow): string {
-    return row.isExpanded
-      ? ABWAB_LABELS.templateCopyCollapseAriaLabel(row.node.name)
-      : ABWAB_LABELS.templateCopyExpandAriaLabel(row.node.name);
-  }
-
   constructor() {
     effect(() => {
       const isOpen = this.open();
@@ -150,29 +113,12 @@ export class AbwabTemplateCopyModalComponent {
     });
   }
 
-  protected onSearchInput(event: Event): void {
-    this.searchQuery.set((event.target as HTMLInputElement).value);
-  }
-
-  protected toggleExpanded(event: Event, doorId: number): void {
-    event.stopPropagation();
-    const next = new Set(this.expandedIds());
+  protected togglePicked(doorId: number): void {
+    const next = new Set(this.pickedIds());
     if (!next.delete(doorId)) {
       next.add(doorId);
     }
-    this.expandedIds.set(next);
-  }
-
-  protected togglePicked(row: AbwabCopyPickerRow): void {
-    const next = new Set(this.pickedIds());
-    if (!next.delete(row.node.id)) {
-      next.add(row.node.id);
-    }
     this.pickedIds.set(next);
-  }
-
-  protected isPicked(doorId: number): boolean {
-    return this.pickedIds().has(doorId);
   }
 
   protected confirm(): void {
@@ -199,8 +145,7 @@ export class AbwabTemplateCopyModalComponent {
 
   private resetDraft(): void {
     this.errorMessage.set(null);
-    this.searchQuery.set('');
     this.pickedIds.set(new Set());
-    this.expandedIds.set(new Set());
+    this.picker()?.reset();
   }
 }

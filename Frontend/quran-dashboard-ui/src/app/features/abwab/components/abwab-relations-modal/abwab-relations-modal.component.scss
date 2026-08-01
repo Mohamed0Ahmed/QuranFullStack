@@ -11,8 +11,7 @@
   font-size: 0.78rem;
 }
 
-.abwab-relations-modal__count,
-.abwab-relations-modal__already {
+.abwab-relations-modal__count {
   color: var(--qd-text-muted);
   font-size: 0.6875rem;
 }
@@ -136,18 +135,9 @@
 }
 
 .abwab-relations-modal__type:focus-visible,
-.abwab-relations-modal__pill button:focus-visible,
-.abwab-relations-modal__picker input:focus-visible,
-.abwab-relations-modal__pick-chevron:focus-visible,
-.abwab-relations-modal__pick-row input:focus-visible {
+.abwab-relations-modal__pill button:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: -1px;
-}
-
-/* The checkbox and the chevron are the row's two tab stops, so keyboard focus has to read as a
-   row highlight — the row itself is not focusable and gets no ring of its own. */
-.abwab-relations-modal__pick-row:has(:focus-visible) {
-  background: var(--qd-surface-hover);
 }
 
 .abwab-relations-modal__direction {
@@ -188,64 +178,11 @@
   padding: var(--qd-space-2);
 }
 
-.abwab-relations-modal__picker input {
-  inline-size: 100%;
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-sm);
-  padding: var(--qd-space-2) var(--qd-space-3);
-  background: var(--qd-surface);
-  color: var(--qd-text);
-  font-family: inherit;
-  font-size: 0.8125rem;
-}
-
-.abwab-relations-modal__pick-list {
-  max-block-size: 11rem;
-  overflow: auto;
-  margin-block-start: var(--qd-space-2);
-}
-
-.abwab-relations-modal__pick-row {
-  display: flex;
-  align-items: center;
-  gap: var(--qd-space-2);
-  padding: var(--qd-space-1) var(--qd-space-2);
-  padding-inline-start: calc(var(--abwab-relations-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
-  border-radius: var(--qd-radius-sm);
-  cursor: pointer;
-}
-
-.abwab-relations-modal__pick-row:hover {
-  background: var(--qd-surface-hover);
-}
-
-.abwab-relations-modal__pick-row--disabled,
-.abwab-relations-modal__pick-row--disabled:hover {
-  opacity: 0.45;
-  cursor: default;
-  background: transparent;
-}
-
-.abwab-relations-modal__pick-chevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 1rem;
-  block-size: 1rem;
-  flex: none;
-  border: none;
-  background: transparent;
-  color: var(--qd-text-muted);
-  cursor: pointer;
-}
-
-.abwab-relations-modal__pick-chevron--leaf {
-  visibility: hidden;
-}
-
-.abwab-relations-modal__pick-name {
-  flex: 1;
-  font-size: 0.8125rem;
+/* Interim: the host still owns the list cap so the extraction commit is visually inert. It is
+   handed over as a custom property because component style encapsulation would keep a host
+   selector from reaching the picker's own list element. Deleted with the geometry change. */
+.abwab-relations-modal__picker qd-abwab-door-picker {
+  --abwab-door-picker-list-max: 11rem;
 }
 
 .abwab-relations-modal__selected {

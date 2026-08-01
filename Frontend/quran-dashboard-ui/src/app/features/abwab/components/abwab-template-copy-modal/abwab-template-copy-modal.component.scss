@@ -23,75 +23,11 @@
   padding: var(--qd-space-2);
 }
 
-.abwab-template-copy-modal__picker > input {
-  inline-size: 100%;
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-sm);
-  padding: var(--qd-space-2) var(--qd-space-3);
-  background: var(--qd-surface);
-  color: var(--qd-text);
-  font-family: inherit;
-  font-size: 0.8125rem;
-}
-
-.abwab-template-copy-modal__picker > input:focus-visible {
-  outline: 2px solid var(--qd-focus-ring);
-  outline-offset: -1px;
-}
-
-.abwab-template-copy-modal__pick-list {
-  max-block-size: 13rem;
-  overflow-y: auto;
-  margin-block-start: var(--qd-space-2);
-}
-
-.abwab-template-copy-modal__pick-row {
-  display: flex;
-  align-items: center;
-  gap: var(--qd-space-2);
-  padding: var(--qd-space-1) var(--qd-space-2);
-  padding-inline-start: calc(var(--abwab-template-copy-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
-  border-radius: var(--qd-radius-sm);
-  cursor: pointer;
-}
-
-.abwab-template-copy-modal__pick-row:hover {
-  background: var(--qd-surface-hover);
-}
-
-.abwab-template-copy-modal__pick-chevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 1.1rem;
-  block-size: 1.1rem;
-  flex: none;
-  border: none;
-  background: transparent;
-  color: var(--qd-text-muted);
-  cursor: pointer;
-}
-
-.abwab-template-copy-modal__pick-chevron--leaf {
-  visibility: hidden;
-}
-
-.abwab-template-copy-modal__pick-chevron:focus-visible {
-  outline: 2px solid var(--qd-focus-ring);
-  outline-offset: 1px;
-}
-
-.abwab-template-copy-modal__pick-row input[type='checkbox'] {
-  flex: none;
-  accent-color: var(--qd-accent);
-}
-
-.abwab-template-copy-modal__pick-name {
-  flex: 1;
-  font-size: 0.8125rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* Interim: the host still owns the list cap so the extraction commit is visually inert. It is
+   handed over as a custom property because component style encapsulation would keep a host
+   selector from reaching the picker's own list element. Deleted with the geometry change. */
+.abwab-template-copy-modal__picker qd-abwab-door-picker {
+  --abwab-door-picker-list-max: 13rem;
 }
 
 .abwab-template-copy-modal__selected {

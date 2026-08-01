@@ -261,8 +261,6 @@ export const ABWAB_LABELS = {
   // before the copy happens rather than discovered afterwards.
   templateCopyPreviewDetached: 'النسخ مستقلة عن القالب: تعديل القالب لاحقًا أو حذفه لا يغيّر الأبواب المنسوخة.',
   templateCopySearchPlaceholder: 'ابحث واختر بابًا أو أكثر…',
-  templateCopyExpandAriaLabel: (doorName: string): string => `عرض الأبواب الفرعية لـ«${doorName}»`,
-  templateCopyCollapseAriaLabel: (doorName: string): string => `إخفاء الأبواب الفرعية لـ«${doorName}»`,
   templateCopyNoneSelected: 'لم تختر شيئًا بعد',
   templateCopySelectedSummary: (names: readonly string[]): string =>
     `${countPhrase(names.length, TARGET_FORMS)}: ${names.join('، ')}`,

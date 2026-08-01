@@ -108,52 +108,16 @@
         @if (anchorPickMode()) {
           <p class="abwab-relations-modal__picker-hint">{{ bulkAnchorHint }}</p>
         }
-        <input
-          type="text"
-          [placeholder]="searchPlaceholder"
-          [value]="searchQuery()"
-          data-testid="abwab-relations-modal-search"
-          (input)="onSearchInput($event)"
+        <qd-abwab-door-picker
+          [nodes]="liveRoots()"
+          [pickedIds]="pickedIdList()"
+          [excludedIds]="excludedIdList()"
+          [disabledIds]="linkedIdList()"
+          [disabledTag]="alreadyLinkedLabel"
+          [searchPlaceholder]="searchPlaceholder"
+          testIdPrefix="abwab-relations-modal"
+          (toggled)="togglePicked($event)"
         />
-        <div class="abwab-relations-modal__pick-list qd-scroll-stable">
-          @for (row of pickerRows(); track row.node.id) {
-            <div
-              class="abwab-relations-modal__pick-row"
-              [class.abwab-relations-modal__pick-row--disabled]="row.isLinked"
-              [style.--abwab-relations-depth]="row.depth"
-              [attr.data-testid]="'abwab-relations-modal-pick-' + row.node.id"
-              (click)="togglePicked(row)"
-            >
-              <!-- A leaf keeps the element for alignment only: no tab stop, nothing to announce. -->
-              <button
-                type="button"
-                class="abwab-relations-modal__pick-chevron"
-                [class.abwab-relations-modal__pick-chevron--leaf]="!row.hasChildren"
-                [attr.tabindex]="row.hasChildren ? null : -1"
-                [attr.aria-hidden]="row.hasChildren ? null : true"
-                [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
-                [attr.aria-label]="row.hasChildren ? expandAriaLabel(row) : null"
-                [attr.data-testid]="'abwab-relations-modal-pick-chevron-' + row.node.id"
-                (click)="toggleExpanded($event, row.node.id)"
-              >
-                @if (row.hasChildren) {
-                  <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
-                }
-              </button>
-              <input
-                type="checkbox"
-                [checked]="isPicked(row.node.id)"
-                [disabled]="row.isLinked"
-                [attr.data-testid]="'abwab-relations-modal-pick-checkbox-' + row.node.id"
-                (click)="$event.preventDefault()"
-              />
-              <span class="abwab-relations-modal__pick-name">{{ row.node.name }}</span>
-              @if (row.isLinked) {
-                <span class="abwab-relations-modal__already">{{ alreadyLinkedLabel }}</span>
-              }
-            </div>
-          }
-        </div>
         <p class="abwab-relations-modal__selected" data-testid="abwab-relations-modal-selected">
           {{ pickedIds().size === 0 ? noneSelectedLabel : selectedSummary() }}
         </p>
