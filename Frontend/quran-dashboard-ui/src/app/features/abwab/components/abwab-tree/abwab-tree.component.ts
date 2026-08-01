@@ -189,8 +189,18 @@ export class AbwabTreeComponent {
     if (event.key === 'Enter') {
       this.commitOrderEdit(id, event.target);
     } else if (event.key === 'Escape') {
-      this.editingId.set(null);
+      this.cancelOrderEdit(id);
     }
+  }
+
+  /** Enter is the only commit — blur and Escape both abandon the edit. Guarded on the same
+   * id as `commitOrderEdit`, so the blur that follows an Enter commit (the input unmounts
+   * under the focused element) finds `editingId` already cleared and does nothing. */
+  protected cancelOrderEdit(id: number): void {
+    if (this.editingId() !== id) {
+      return;
+    }
+    this.editingId.set(null);
   }
 
   protected commitOrderEdit(id: number, target: EventTarget | null): void {

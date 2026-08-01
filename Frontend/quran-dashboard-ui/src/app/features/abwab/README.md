@@ -46,8 +46,13 @@ nine), four of them reads.
   (RTL-mirrored per the `qd-tabs` precedent: ArrowLeft expands/enters, ArrowRight
   collapses/exits). Renders **flat** (one row per visible node, `aria-level` conveys
   depth) rather than nesting `role="group"` per level. Inline reorder editing (click
-  the order number → input, Enter commits, Escape reverts) dispatches through
-  `reorderDoor`. Rows carry the contract's two hover actions (`abwab-tree-concept.html:114`,
+  the order number → input) dispatches through `reorderDoor`, and **Enter is the only
+  commit — blur and Escape both cancel.** Blur used to commit; that made clicking away
+  from a half-typed number resequence a scope the user never confirmed, and it is the one
+  grammar in this feature where an unconfirmed value could be written. Enter-only matches
+  the workshop's two inline authoring rows, which already commit on Enter with no submit
+  button (see below). Saying "Enter commits, Escape reverts" and staying silent on blur is
+  what let the two drift apart, so all three are named here. Rows carry the contract's two hover actions (`abwab-tree-concept.html:114`,
   `:436-443`): `＋` (add child) and `⋯` (open the row menu), revealed on hover and on the
   selected row, hidden in bulk mode, and kept out of the tab order so the roving-tabindex
   invariant holds. `⋯`, right-click, and the keyboard `ContextMenu`/`Shift+F10` path all

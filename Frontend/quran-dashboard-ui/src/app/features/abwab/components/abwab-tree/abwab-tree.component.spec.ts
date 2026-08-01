@@ -219,7 +219,7 @@ describe('AbwabTreeComponent', () => {
     });
   });
 
-  describe('M29 — inline order editing commits on Enter and reverts on Escape', () => {
+  describe('M29 — inline order editing commits on Enter; blur and Escape both cancel', () => {
     it('commits a new position on Enter, tagged with the section scope by default', () => {
       const fixture = render();
       const committed: Array<{ id: number; position: number; scope: string }> = [];
@@ -261,6 +261,49 @@ describe('AbwabTreeComponent', () => {
       expect(committed).toHaveLength(0);
       expect(root.querySelector('[data-testid="abwab-tree-order-input-1"]')).toBeNull();
       expect(root.querySelector('[data-testid="abwab-tree-order-1"]')?.textContent?.trim()).toBe('1');
+    });
+
+    it('cancels without emitting when the input loses focus after typing', () => {
+      const fixture = render();
+      const committed: unknown[] = [];
+      fixture.componentInstance.orderCommitted.subscribe((event: unknown) => committed.push(event));
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-order-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      const input = root.querySelector('[data-testid="abwab-tree-order-input-1"]') as HTMLInputElement;
+      input.value = '99';
+      input.dispatchEvent(new FocusEvent('blur'));
+      fixture.detectChanges();
+
+      expect(committed).toHaveLength(0);
+      expect(root.querySelector('[data-testid="abwab-tree-order-input-1"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-tree-order-1"]')?.textContent?.trim()).toBe('1');
+    });
+
+    // The real browser sequence: Enter commits, the input unmounts under the focused element,
+    // and a blur fires on the way out. Exactly one emission, and no cancel undoing it.
+    it('emits exactly once when the blur follows an Enter commit', () => {
+      const fixture = render();
+      const committed: unknown[] = [];
+      fixture.componentInstance.orderCommitted.subscribe((event: unknown) => committed.push(event));
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-order-1"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      const input = root.querySelector('[data-testid="abwab-tree-order-input-1"]') as HTMLInputElement;
+      input.value = '5';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      input.dispatchEvent(new FocusEvent('blur'));
+      fixture.detectChanges();
+
+      expect(committed).toEqual([{ id: 1, position: 5, scope: 'section' }]);
     });
   });
 

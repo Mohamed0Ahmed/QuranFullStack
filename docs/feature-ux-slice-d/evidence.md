@@ -275,3 +275,19 @@ which is exactly what plan §4.2-1(c) says ("refresh the snapshot, `rebindTo`, d
 observable for the 404 branch so the message is computed after the refresh lands, and the
 returned outcome and the announcement carry the same string. No backend change; the gate
 did not need to fire.
+
+## T402 — the amended reorder e2e flow, run once
+
+Not a gate (`TESTING_STRATEGY.md` §8 / the plan's §7), just evidence the reversal holds in
+a real browser:
+
+```
+npx playwright test --project=abwab --workers=1 -g "inline reorder"
+✓ 1 [abwab] › abwab-operations.e2e.ts:8:5 › inline reorder: Enter commits and
+    resequences siblings; Escape and blur cancel (4.2s)
+1 passed (6.4s)
+```
+
+The added step fills `99` into a door's order input, clicks the toolbar search to blur it,
+and asserts the pill still reads its old position **and** that the two sibling positions
+are unchanged — a cancel that left the scope resequenced would pass a pill-only assertion.

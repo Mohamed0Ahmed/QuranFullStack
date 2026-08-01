@@ -47,7 +47,7 @@
             [attr.data-testid]="'abwab-tree-order-input-' + node.id"
             (click)="$event.stopPropagation()"
             (keydown)="onOrderKeydown($event, node.id)"
-            (blur)="commitOrderEdit(node.id, $event.target)"
+            (blur)="cancelOrderEdit(node.id)"
           />
         } @else {
           <span
