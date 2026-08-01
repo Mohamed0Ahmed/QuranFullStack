@@ -21,3 +21,14 @@ Plan: `docs/feature-ux-slice-f/plan.md`. Branch: `ux-slice-f-sections`, off `dev
 - Branch `ux-slice-f-sections` created off `dev` @ `7b0e8fba`.
 - Plan committed to the branch (not to `dev`).
 - Root `CLAUDE.md` "Active Spec Kit Feature" section updated: `ux-slice-e` entry (merged) replaced with `ux-slice-f`. `docs/feature-ux-slice-e/` left untouched — no planning-artifact sweep in this slice (§3).
+
+## Phase 2 — T201-T205 (backend route/writer/wiring/catalog)
+
+- `dotnet build Backend/QuranDashboard.sln` — succeeded, 0 warnings, 0 errors (after retrying past one transient MSB3883 file-lock error from a lingering build-server process, unrelated to this change).
+- `Tests.Abwab` — 46 passed, 0 failed (matches plan's precondition count — unchanged, no new backend tests per the rush-period posture).
+- `Tests.Api` — 60 passed, 0 failed (matches §5's catalog figure).
+
+## Phase 3 — T301 (route gate)
+
+- `dotnet test … --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."` — **140 passed, 0 failed, 0 skipped**, 47s. Same total as the T101 baseline: `SmokeCoverageParityTests` asserts both parity directions (every registered route has a catalog entry, every catalog entry maps to a registered route) as a fixed handful of tests over the whole catalog, not one test per route, so an unchanged total together with a passing run is the expected signal that the new `POST api/abwab/sections/{id:int}/order` entry landed correctly in both directions.
+- **`Tests.Smoke.Data` — RAN** (subset of the above; same `resources/db-dumps/quran-canonical/` dump as baseline, unchanged).
