@@ -531,6 +531,11 @@ export class AbwabPageComponent implements OnInit {
     this.updateQueryParams(
       buildAbwabQueryParams({
         door: doorId,
+        // The key carries no id of its own — its subject is always `door=`, which this patch
+        // is rewriting. Retaining `relations-closed` across a reveal would leave a restore
+        // control that reopens the **target's** relations while the user is expecting the
+        // source's, so the honest reading of "go to the tree" is to discard it.
+        modal: null,
         // Only when the active tab genuinely excludes the target. «كل الأبواب» shows every
         // door, section-less ones included, so switching to the target's own tab there would
         // narrow the view for no reason; a *section* tab that isn't the target's does exclude

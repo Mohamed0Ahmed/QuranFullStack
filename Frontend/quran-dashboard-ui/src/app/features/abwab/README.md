@@ -233,10 +233,14 @@ nine), four of them reads.
 | `card` | positive int (the drilled-into parent — the breadcrumb chain is derived from it, not stored as an array) | the top card level |
 | `q` | free text | no search |
 
-**Reveal-in-tree writes only the keys above — the contract gains no seventh key.** A
-relation chip's name reveals that door in the doors tree, and every state it can be in is
-folded into **one** `buildAbwabQueryParams` patch, so there is one navigation and no race:
-`door` always; `section` **only when a section tab is active and it is not the target's**
+**Reveal-in-tree writes the keys above, and the only thing it does to `modal` is clear
+it.** A relation chip's name reveals that door in the doors tree, and every state it can
+be in is folded into **one** `buildAbwabQueryParams` patch, so there is one navigation and
+no race: `door` always; `modal: null` always, because the seventh key carries no id of its
+own — its subject *is* `door=`, which this patch rewrites, so retaining
+`relations-closed` across a reveal would offer to reopen the **target's** relations while
+the user is expecting the source's; `section` **only when a section tab is active and it is
+not the target's**
 («كل الأبواب» already shows every door, so narrowing to the target's tab there would be
 gratuitous — and an explicit `door` in the same change survives the scope-invalidation
 clear, which is what makes the cross-section case one navigation instead of two);
