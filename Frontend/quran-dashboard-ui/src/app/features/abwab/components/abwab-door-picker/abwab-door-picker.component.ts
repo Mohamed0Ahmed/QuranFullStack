@@ -93,6 +93,8 @@ export class AbwabDoorPickerComponent {
     return rows;
   });
 
+  /** Both hosts open on a list, so their trap's auto-capture lands on a chip or a tab rather than
+   * the control the user came to type in; they call this to correct it. */
   focusSearch(): void {
     this.searchInput()?.nativeElement.focus();
   }
@@ -127,8 +129,9 @@ export class AbwabDoorPickerComponent {
     this.toggled.emit(row.node.id);
   }
 
-  /** Reopening a modal re-renders the same picker instance, so the draft state it owns has to be
-   * cleared from the host's own open-effect. */
+  /** Closing a modal destroys this instance, so a reopen starts clean on its own. The host still
+   * needs this for the path where it stays open and switches subject — a new anchor door must not
+   * inherit the previous one's search query and expanded branches. */
   reset(): void {
     this.searchQuery.set('');
     this.expandedIds.set(new Set());

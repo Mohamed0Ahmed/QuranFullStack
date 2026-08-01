@@ -1,12 +1,14 @@
-@if (errorMessage()) {
-  <p class="abwab-door-fields-form__error" role="alert" [attr.data-testid]="testIdPrefix() + '-error'">
-    {{ errorMessage() }}
-  </p>
-}
+<qd-state
+  variant="error"
+  [reserve]="true"
+  [message]="errorMessage() ?? ''"
+  [attr.data-testid]="testIdPrefix() + '-error'"
+/>
 
 <div class="abwab-door-fields-form__field">
   <label [attr.for]="testIdPrefix() + '-name'">{{ nameLabel }} *</label>
   <input
+    #nameInput
     [id]="testIdPrefix() + '-name'"
     type="text"
     [value]="name()"

@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
+import { A11yModule } from '@angular/cdk/a11y';
 
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 import { AbwabDoorFieldsFormComponent } from '../abwab-door-fields-form/abwab-door-fields-form.component';
@@ -30,7 +31,7 @@ let nextModalId = 0;
 @Component({
   selector: 'qd-abwab-door-modal',
   standalone: true,
-  imports: [AbwabDoorFieldsFormComponent, ModalScrollLockDirective],
+  imports: [A11yModule, AbwabDoorFieldsFormComponent, ModalScrollLockDirective],
   templateUrl: './abwab-door-modal.component.html',
   styleUrl: './abwab-door-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -97,10 +98,15 @@ export class AbwabDoorModalComponent {
     // The form resets itself from `initialFields`; this clears only what the shell owns. Reopening
     // must not surface the previous attempt's error or a half-answered discard prompt.
     effect(() => {
-      if (this.open()) {
-        this.errorMessage.set(null);
-        this.confirmingDiscard.set(false);
+      if (!this.open()) {
+        return;
       }
+      this.errorMessage.set(null);
+      this.confirmingDiscard.set(false);
+      // The trap auto-captures the first tabbable element during the render that follows this
+      // effect, and that is the error box, not a field. Queuing the real target as a task lands
+      // it after the capture rather than before it.
+      setTimeout(() => this.fieldsForm()?.focusFirstField());
     });
   }
 

@@ -1,62 +1,70 @@
 @if (open()) {
   <div class="qd-modal-backdrop" data-testid="abwab-door-modal-backdrop" (click)="requestClose()">
     <section
-      class="qd-modal abwab-door-modal"
+      class="qd-modal qd-modal--fixed abwab-door-modal"
       role="dialog"
       aria-modal="true"
       dir="rtl"
       [attr.aria-labelledby]="titleId"
       qdModalScrollLock
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
       data-testid="abwab-door-modal"
       (click)="$event.stopPropagation()"
       (keydown.escape)="requestClose()"
     >
-      <h3 [id]="titleId">{{ modalTitle }}</h3>
-      <p class="abwab-door-modal__context" data-testid="abwab-door-modal-context">{{ contextText }}</p>
+      <header class="qd-modal__head">
+        <h3 [id]="titleId">{{ modalTitle }}</h3>
+        <p class="abwab-door-modal__context" data-testid="abwab-door-modal-context">{{ contextText }}</p>
+      </header>
 
-      <qd-abwab-door-fields-form [value]="initialFields()" [errorMessage]="errorMessage()" />
+      <div class="qd-modal__body">
+        <qd-abwab-door-fields-form [value]="initialFields()" [errorMessage]="errorMessage()" />
 
-      @if (isEdit) {
-        <div class="abwab-door-modal__meta" data-testid="abwab-door-modal-meta">
-          <h5>{{ trackingHeading }}</h5>
-          <div class="abwab-door-modal__meta-line"><span>{{ trackingAddedByLabel }}</span><span>{{ trackingAddedByPlaceholder }}</span></div>
-          <div class="abwab-door-modal__meta-line"><span>{{ trackingApprovedLabel }}</span><span>{{ trackingApprovedPlaceholder }}</span></div>
-          <div class="abwab-door-modal__meta-line"><span>{{ trackingArchiveLabel }}</span><span>{{ trackingArchiveActiveValue }}</span></div>
-        </div>
-      }
+        @if (isEdit) {
+          <div class="abwab-door-modal__meta" data-testid="abwab-door-modal-meta">
+            <h5>{{ trackingHeading }}</h5>
+            <div class="abwab-door-modal__meta-line"><span>{{ trackingAddedByLabel }}</span><span>{{ trackingAddedByPlaceholder }}</span></div>
+            <div class="abwab-door-modal__meta-line"><span>{{ trackingApprovedLabel }}</span><span>{{ trackingApprovedPlaceholder }}</span></div>
+            <div class="abwab-door-modal__meta-line"><span>{{ trackingArchiveLabel }}</span><span>{{ trackingArchiveActiveValue }}</span></div>
+          </div>
+        }
+      </div>
 
-      @if (confirmingDiscard()) {
-        <div class="abwab-door-modal__discard-confirm" role="alertdialog" data-testid="abwab-door-modal-discard-confirm">
-          <p>{{ dirtyCloseConfirmMessage }}</p>
-          <div class="abwab-door-modal__discard-actions">
-            <button
-              type="button"
-              class="qd-btn"
-              data-testid="abwab-door-modal-discard-confirm-yes"
-              (click)="confirmDiscard()"
-            >
-              {{ discardChangesLabel }}
+      <footer class="qd-modal__foot">
+        @if (confirmingDiscard()) {
+          <div class="abwab-door-modal__discard-confirm" role="alertdialog" data-testid="abwab-door-modal-discard-confirm">
+            <p>{{ dirtyCloseConfirmMessage }}</p>
+            <div class="abwab-door-modal__discard-actions">
+              <button
+                type="button"
+                class="qd-btn"
+                data-testid="abwab-door-modal-discard-confirm-yes"
+                (click)="confirmDiscard()"
+              >
+                {{ discardChangesLabel }}
+              </button>
+              <button
+                type="button"
+                class="qd-btn qd-btn-ghost"
+                data-testid="abwab-door-modal-discard-confirm-no"
+                (click)="cancelDiscard()"
+              >
+                {{ keepEditingLabel }}
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="abwab-door-modal__foot">
+            <button type="button" class="qd-btn qd-btn-primary" data-testid="abwab-door-modal-save" (click)="submit()">
+              {{ saveLabel }}
             </button>
-            <button
-              type="button"
-              class="qd-btn qd-btn-ghost"
-              data-testid="abwab-door-modal-discard-confirm-no"
-              (click)="cancelDiscard()"
-            >
-              {{ keepEditingLabel }}
+            <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-door-modal-cancel" (click)="requestClose()">
+              {{ cancelLabel }}
             </button>
           </div>
-        </div>
-      } @else {
-        <div class="abwab-door-modal__foot">
-          <button type="button" class="qd-btn qd-btn-primary" data-testid="abwab-door-modal-save" (click)="submit()">
-            {{ saveLabel }}
-          </button>
-          <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-door-modal-cancel" (click)="requestClose()">
-            {{ cancelLabel }}
-          </button>
-        </div>
-      }
+        }
+      </footer>
     </section>
   </div>
 }
