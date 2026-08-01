@@ -1,9 +1,6 @@
-<qd-state
-  variant="error"
-  [reserve]="true"
-  [message]="errorMessage() ?? ''"
-  [attr.data-testid]="testIdPrefix() + '-error'"
-/>
+@if (errorMessage(); as error) {
+  <qd-state variant="error" [reserve]="true" [message]="error" [attr.data-testid]="testIdPrefix() + '-error'" />
+}
 
 <div class="abwab-door-fields-form__field">
   <label [attr.for]="testIdPrefix() + '-name'">{{ nameLabel }} *</label>

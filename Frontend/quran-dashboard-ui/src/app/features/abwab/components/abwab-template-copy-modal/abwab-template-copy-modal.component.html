@@ -35,6 +35,7 @@
             [pickedIds]="pickedIdList()"
             [status]="pickerStatus()"
             [errorMessage]="doorsError() ?? ''"
+            [emptyMessage]="emptyDoorsLabel"
             [searchPlaceholder]="searchPlaceholder"
             testIdPrefix="abwab-template-copy-modal"
             (toggled)="togglePicked($event)"

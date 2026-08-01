@@ -111,8 +111,9 @@ export class AbwabTemplateCopyModalComponent {
           return;
         }
         this.resetDraft();
-        // Queued so it lands after the trap's auto-capture, which would otherwise stop at the
-        // first control above the list.
+        // Queued rather than called inline: the trap's own auto-capture runs during the render
+        // that follows this effect, and would otherwise overwrite this with the first control
+        // above the list.
         setTimeout(() => this.picker()?.focusSearch());
       });
     });

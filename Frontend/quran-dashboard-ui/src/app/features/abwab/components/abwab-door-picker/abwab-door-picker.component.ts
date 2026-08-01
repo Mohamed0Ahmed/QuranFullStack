@@ -48,6 +48,9 @@ export class AbwabDoorPickerComponent {
   readonly disabledTag = input('');
   readonly status = input<AbwabDoorPickerStatus>('ready');
   readonly errorMessage = input('');
+  /** Required whenever a host drives `status` — a shared picker must not hold one consumer's
+   * wording for "there is nothing to pick". */
+  readonly emptyMessage = input('');
   readonly searchPlaceholder = input.required<string>();
   readonly testIdPrefix = input.required<string>();
 
@@ -61,7 +64,6 @@ export class AbwabDoorPickerComponent {
 
   protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
   protected get loadingLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
-  protected get emptyLabel(): string { return ABWAB_LABELS.templateCopyEmptyDoors; }
 
   private readonly pickedSet = computed(() => new Set(this.pickedIds()));
 

@@ -78,8 +78,8 @@ export class AbwabTemplateNodeModalComponent {
       }
       this.errorMessage.set(null);
       this.confirmingDiscard.set(false);
-      // Queued so it lands after the trap's auto-capture, which would otherwise stop at the
-      // reserved error box above the fields.
+      // Queued rather than called inline: the trap's own auto-capture runs during the render
+      // that follows this effect, so a synchronous focus here would be overwritten by it.
       setTimeout(() => this.fieldsForm()?.focusFirstField());
     });
   }

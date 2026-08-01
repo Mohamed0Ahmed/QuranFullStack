@@ -103,9 +103,8 @@ export class AbwabDoorModalComponent {
       }
       this.errorMessage.set(null);
       this.confirmingDiscard.set(false);
-      // The trap auto-captures the first tabbable element during the render that follows this
-      // effect, and that is the error box, not a field. Queuing the real target as a task lands
-      // it after the capture rather than before it.
+      // Queued rather than called inline: the trap's own auto-capture runs during the render
+      // that follows this effect, so a synchronous focus here would be overwritten by it.
       setTimeout(() => this.fieldsForm()?.focusFirstField());
     });
   }

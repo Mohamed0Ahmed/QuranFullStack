@@ -229,7 +229,8 @@ export class AbwabRelationsModalComponent {
           this.reload(anchorId);
         }
         // Both modes open on a list, so the trap's auto-capture would stop at the first chip or
-        // tab; queuing this lands the real target after that capture.
+        // tab. Queued rather than called inline: that capture runs during the render that
+        // follows this effect and would overwrite a synchronous focus here.
         setTimeout(() => this.picker()?.focusSearch());
       });
     });

@@ -66,7 +66,7 @@
         [attr.data-testid]="testIdPrefix() + '-doors-error'"
       />
     } @else if (status() === 'empty') {
-      <qd-state variant="empty" [message]="emptyLabel" [attr.data-testid]="testIdPrefix() + '-empty'" />
+      <qd-state variant="empty" [message]="emptyMessage()" [attr.data-testid]="testIdPrefix() + '-empty'" />
     }
   }
 </div>

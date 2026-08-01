@@ -210,3 +210,33 @@ the seeded reproduction/acceptance doors (672–678) are archived, the accepted 
 
 **The slice's Active-Feature record is deliberately still open** in the root `CLAUDE.md` — the
 lifecycle rule clears it at merge, as a separate `chore` commit (the `b84385f0` precedent).
+
+## Post-verification fix — the door modal's error surface
+
+The keyboard matrix collected DOM facts for all six modals but pixels for only the relations
+modal, and a screenshot of the door modal afterwards caught what the DOM checks could not:
+decision 4.2-7's `qd-state variant="error" [reserve]="true"` had been rendered
+**unconditionally**, so a **105 px** empty, danger-tinted, centre-aligned box sat between the
+title and the name field on every open of the door *and* template-node modals — the shared
+container's `padding: var(--qd-space-6)` plus `reserve`'s reserved message row, with nothing in
+it. The 11-test door spec did not catch it: it asserts the message's text when a write fails and
+never asserts absence on the happy path.
+
+Fixed by matching what the other four abwab modals already do —
+`@if (errorMessage(); as error) { <qd-state … [reserve]="true" /> }`. That keeps the composition
+the decision asks for (the surface is `qd-state`, not a hand-rolled `<p role="alert">`) and drops
+the empty box. Re-verified in the browser: no error element on the happy path, the name field
+sits directly under the context line.
+
+Two smaller things fixed in the same pass:
+
+- The queued-focus comments in the door and template-node modals claimed the trap would otherwise
+  capture "the error box". A `<div role="alert">` with no action button is not tabbable, so that
+  was never the reason; the comments now state the real one — the capture runs on the render
+  after the effect and would overwrite a synchronous focus.
+- `abwab-door-picker` held the copy modal's «لا توجد أبواب حية لنسخ القالب إليها» as its own
+  empty-state string. Unreachable today (relations always passes `status: 'ready'`), but a shared
+  component holding one consumer's wording is the divergence the unification exists to prevent.
+  It is now an `emptyMessage` input the host supplies.
+
+Full abwab suite and `npm run build` green after all three.
