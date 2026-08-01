@@ -93,6 +93,7 @@ export type { PageNavigationSummary } from './models/page-navigation-summary';
 export type { RenameSectionBody } from './models/rename-section-body';
 export type { RenderedSegmentDto } from './models/rendered-segment-dto';
 export type { ReorderDoorBody } from './models/reorder-door-body';
+export type { ReorderSectionBody } from './models/reorder-section-body';
 export type { ReorderTemplateNodeBody } from './models/reorder-template-node-body';
 export type { RestoreDoorBody } from './models/restore-door-body';
 export type { RootAyahMatchDto } from './models/root-ayah-match-dto';
