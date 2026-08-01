@@ -113,3 +113,16 @@ together, per the plan's note that they are green only as one commit.
 - `dotnet test … --filter "FullyQualifiedName~QuranDashboard.Tests.Abwab"`: 46 passed, 0 failed,
   0 skipped, 7s — no regression in the existing Abwab suite (no dedicated apply-writer behavior
   test exists yet; that gap is `TESTING_DEBT.md` row 7, restated in Phase 8).
+
+## Phase 4 — T401: the route gate the contract change owes
+
+| Check | Command | Result |
+|---|---|---|
+| Backend build | `dotnet build Backend/QuranDashboard.sln` | 0 warnings, 0 errors, 28.8s |
+| `Tests.Api` | `--filter "FullyQualifiedName~QuranDashboard.Tests.Api"` | 60 passed, 0 failed, 0 skipped, 11s — matches catalog |
+| Route-smoke tier | `--filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."` | 140 passed, 0 failed, 0 skipped, 47s |
+| **`Tests.Smoke.Data` — RAN** | subset of the 140 above, 0 skipped | dump present, fixture did not self-skip |
+| No-pipeline regression | `--filter "...!~QuranDashboard.Tests.Smoke."` (§5 catalog) | 1086 passed, 0 failed, 0 skipped, 18s — unchanged from T101 baseline |
+
+`SmokeCoverageParityTests` passed inside the 140 — the proof DRIFT-3 was read right: the apply
+route's `SmokeRouteCatalog` entry needed no edit, and the parity gate agrees.
