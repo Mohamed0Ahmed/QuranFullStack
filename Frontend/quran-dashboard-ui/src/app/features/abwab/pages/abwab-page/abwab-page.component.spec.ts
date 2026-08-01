@@ -989,6 +989,83 @@ describe('AbwabPageComponent', () => {
       expect(root.querySelector('[data-testid="abwab-move-picker"]')).toBeNull();
     });
 
+    it('a deep link opens the door-dependent kind only once the snapshot binds its subject', () => {
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      params$.next(convertToParamMap({ door: '1', modal: 'edit' }));
+      fixture.detectChanges();
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-door-modal-name"]')).toHaveProperty(
+        'value',
+        'العلم بالله',
+      );
+    });
+
+    it('a door-independent kind deep-links without any door at all', () => {
+      const root = renderAt({ modal: 'sections' }).nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeTruthy();
+    });
+
+    it.each([
+      ['an archived door', '3'],
+      ['a door that is not in the snapshot', '999'],
+    ])('leaves the key inert for %s — nothing opens and no restore control renders', (_case, doorId) => {
+      const fixture = renderAt({ door: doorId, modal: 'edit' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeNull();
+      expect(
+        (fixture.componentInstance as unknown as { restorableModal: () => unknown }).restorableModal(),
+      ).toBeNull();
+    });
+
+    it('an emission carrying -closed closes the open overlay — the Back path', () => {
+      const fixture = renderAt({ modal: 'sections' });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeTruthy();
+
+      params$.next(convertToParamMap({ modal: 'sections-closed' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeNull();
+    });
+
+    it('the echo of a gesture’s own patch is a no-op, not a second open', () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      click(root, 'abwab-tree-row-1');
+      fixture.detectChanges();
+      click(root, 'abwab-side-panel-op-edit');
+      fixture.detectChanges();
+
+      const nameInput = root.querySelector('[data-testid="abwab-door-modal-name"]') as HTMLInputElement;
+      nameInput.value = 'مسودة';
+      nameInput.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      // The emission that lands the gesture's own patch, then an unrelated one: neither may
+      // re-run the opener, which would reset the field back to the snapshot's name.
+      params$.next(convertToParamMap({ door: '1', modal: 'edit' }));
+      fixture.detectChanges();
+      params$.next(convertToParamMap({ door: '1', modal: 'edit', q: 'بحث' }));
+      fixture.detectChanges();
+
+      expect((root.querySelector('[data-testid="abwab-door-modal-name"]') as HTMLInputElement).value).toBe('مسودة');
+    });
+
+    it('switching to another kind closes the first and opens the second', () => {
+      const fixture = renderAt({ modal: 'sections' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      params$.next(convertToParamMap({ modal: 'create' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeTruthy();
+    });
+
     it('the bulk overlays never write the key — their subject is bulkSet, which is not URL state', () => {
       const fixture = renderAt();
       const root = fixture.nativeElement as HTMLElement;

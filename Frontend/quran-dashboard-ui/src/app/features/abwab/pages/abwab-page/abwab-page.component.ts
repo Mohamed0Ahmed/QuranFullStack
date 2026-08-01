@@ -32,6 +32,7 @@ import {
   AbwabNode,
   AbwabOrderScope,
   AbwabView,
+  isDoorDependentAbwabModalKind,
 } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabToolbarComponent } from '../../components/abwab-toolbar/abwab-toolbar.component';
@@ -217,6 +218,14 @@ export class AbwabPageComponent implements OnInit {
 
   protected readonly selectedDoor = this.overlays.selectedDoor;
 
+  /** The retained state the restore control renders from — null while the key is absent,
+   * open, or pointing at a subject that cannot be restored (the same live guard the restore
+   * effect applies), so an inert key shows no affordance at all. */
+  protected readonly restorableModal = computed<AbwabModalState | null>(() => {
+    const modal = this.modalParam();
+    return modal !== null && modal.closed && this.canOpenModalKind(modal.kind) ? modal : null;
+  });
+
   protected get pageTitle(): string { return ABWAB_LABELS.pageTitle; }
   protected get pageSubtitle(): string { return ABWAB_LABELS.pageSubtitle; }
   protected get addRootLabel(): string { return ABWAB_LABELS.addRootDoorButton; }
@@ -254,6 +263,103 @@ export class AbwabPageComponent implements OnInit {
         untracked(() => this.selection.select(doorId, node.version));
       }
     });
+
+    // Audit item 11's restore ordering, and only the **open** half of reconciliation.
+    // Declared after the `door=` effect so a deep link carrying both keys sees the selection
+    // already bound in the same flush. The three reads below exist to re-run this effect
+    // when the subject settles; the decision itself is `untracked`, because reconciliation
+    // only ever reads the URL into state.
+    effect(() => {
+      const modal = this.modalParam();
+      this.facade.snapshot();
+      this.doorParam();
+      this.selectedDoor();
+      untracked(() => this.reconcileModalOpen(modal !== null && !modal.closed ? modal.kind : null));
+    });
+  }
+
+  /** Both halves act only on the delta between what the page holds open and what the URL
+   * asks for, which is what makes the echo of a gesture's own patch a no-op — re-opening an
+   * already-open door modal would reset the form under the user.
+   *
+   * Closing is driven by the param emission and **not** by the effect: between a gesture's
+   * navigation and the emission that lands it, the URL still says nothing, and an effect
+   * that read that as "close everything" would shut the modal the click just opened. The
+   * emission fires exactly when the URL genuinely changed, which is the only moment a close
+   * can be inferred from it. */
+  private reconcileModalClose(target: AbwabModalKind | null): void {
+    if (this.openedModalKind === null || target === this.openedModalKind) {
+      return;
+    }
+    this.closeOverlayFor(this.openedModalKind);
+    this.openedModalKind = null;
+  }
+
+  private reconcileModalOpen(target: AbwabModalKind | null): void {
+    if (target === null || this.openedModalKind !== null || !this.canOpenModalKind(target)) {
+      return;
+    }
+    this.openOverlayFor(target);
+    this.openedModalKind = target;
+  }
+
+  /** Door-dependent kinds need a subject that is bound **and live**. `byId` holds archived
+   * nodes and the `door=` effect checks presence only, so a crafted `modal=edit` on an
+   * archived door would otherwise open an editor over something the tree does not show.
+   * The fail-closed outcome is the one a dead `door=` already produces: nothing happens and
+   * the key sits inert. */
+  private canOpenModalKind(kind: AbwabModalKind): boolean {
+    if (!isDoorDependentAbwabModalKind(kind)) {
+      return this.facade.snapshot() !== null;
+    }
+    const doorId = this.doorParam();
+    if (doorId === null) {
+      return false;
+    }
+    const node = this.byId().get(doorId);
+    return !!node && !node.isArchived && this.selectedDoor()?.id === doorId;
+  }
+
+  private openOverlayFor(kind: AbwabModalKind): void {
+    switch (kind) {
+      case 'create':
+        this.overlays.openCreateRoot();
+        return;
+      case 'child':
+        this.overlays.openCreateChild();
+        return;
+      case 'edit':
+        this.overlays.openEdit();
+        return;
+      case 'move':
+        this.overlays.openMovePicker();
+        return;
+      case 'sections':
+        this.overlays.openSectionsModal();
+        return;
+      case 'relations':
+        this.overlays.openRelations();
+        return;
+    }
+  }
+
+  private closeOverlayFor(kind: AbwabModalKind): void {
+    switch (kind) {
+      case 'create':
+      case 'child':
+      case 'edit':
+        this.overlays.closeModal();
+        return;
+      case 'move':
+        this.overlays.closeMovePicker();
+        return;
+      case 'sections':
+        this.overlays.closeSectionsModal();
+        return;
+      case 'relations':
+        this.overlays.closeRelationsModal();
+        return;
+    }
   }
 
   ngOnInit(): void {
@@ -267,6 +373,7 @@ export class AbwabPageComponent implements OnInit {
       this.cardParam.set(parsed.card);
       this.searchQueryParam.set(parsed.q);
       this.modalParam.set(parsed.modal);
+      this.reconcileModalClose(parsed.modal !== null && !parsed.modal.closed ? parsed.modal.kind : null);
       this.selection.setArchiveViewActive(parsed.archive);
       // The URL is the single source of truth for the selection, exactly as it already is
       // for view/archive/card/q. `buildAbwabQueryParams` drops `door` whenever the scope
@@ -466,29 +573,29 @@ export class AbwabPageComponent implements OnInit {
   // navigation, and `openedModalKind` makes the echo a no-op when it arrives.
 
   protected onCreateRootRequested(): void {
-    this.overlays.openCreateRoot();
+    this.openOverlayFor('create');
     this.commitModalOpen('create');
   }
 
   protected onSectionsRequested(): void {
-    this.overlays.openSectionsModal();
+    this.openOverlayFor('sections');
     this.commitModalOpen('sections');
   }
 
   protected onAddChildRequested(): void {
-    this.openOnSelectedDoor('child', () => this.overlays.openCreateChild());
+    this.openOnSelectedDoor('child');
   }
 
   protected onEditRequested(): void {
-    this.openOnSelectedDoor('edit', () => this.overlays.openEdit());
+    this.openOnSelectedDoor('edit');
   }
 
   protected onMoveRequested(): void {
-    this.openOnSelectedDoor('move', () => this.overlays.openMovePicker());
+    this.openOnSelectedDoor('move');
   }
 
   protected onRelationsOpenRequested(): void {
-    this.openOnSelectedDoor('relations', () => this.overlays.openRelations());
+    this.openOnSelectedDoor('relations');
   }
 
   /** The tree's `＋` selects the row and then asks for the child modal as two separate
@@ -499,7 +606,7 @@ export class AbwabPageComponent implements OnInit {
     if (!node) {
       return;
     }
-    this.overlays.openCreateChild();
+    this.openOverlayFor('child');
     this.commitModalOpen('child', doorId);
   }
 
@@ -577,12 +684,12 @@ export class AbwabPageComponent implements OnInit {
     this.updateQueryParams(buildAbwabQueryParams({ modal: discard ? null : { kind, closed: true } }), true);
   }
 
-  private openOnSelectedDoor(kind: AbwabModalKind, open: () => void): void {
+  private openOnSelectedDoor(kind: AbwabModalKind): void {
     const door = this.selectedDoor();
     if (!door) {
       return;
     }
-    open();
+    this.openOverlayFor(kind);
     this.commitModalOpen(kind, door.id);
   }
 
