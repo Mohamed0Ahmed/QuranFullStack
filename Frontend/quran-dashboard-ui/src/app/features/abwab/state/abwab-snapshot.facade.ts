@@ -1,4 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { Observable, Subscription, catchError, map, of, shareReplay, tap } from 'rxjs';
 
 import { AbwabApi } from '../data-access/abwab.api';
@@ -19,12 +20,18 @@ import { buildAbwabTreeSnapshot } from './abwab-tree.builder';
  * On failure the previous snapshot is left in place — API_INTEGRATION_GUIDELINES.md:
  * "do not leave pages blank during loading or failure." Only a successful response
  * replaces `rawTree`.
+ *
+ * The `If-None-Match` validator is stored beside the snapshot and the two are written as one unit,
+ * so a validator can never outlive the value it validates. A `304` reuses the failure path's
+ * keep-previous-value semantics without the error: nothing changed, so nothing is replaced and
+ * nothing is reported.
  */
 @Injectable({ providedIn: 'root' })
 export class AbwabSnapshotFacade {
   private readonly api = inject(AbwabApi);
 
   private readonly rawTree = signal<AbwabTreeDto | null>(null);
+  private etagState: string | null = null;
   private readonly loadingState = signal(false);
   private readonly errorState = signal<string | null>(null);
   private pendingRequest: Subscription | null = null;
@@ -52,19 +59,29 @@ export class AbwabSnapshotFacade {
     this.loadingState.set(true);
     this.errorState.set(null);
 
-    const request$ = this.api.getTree().pipe(
+    const request$ = this.api.getTree(this.etagState).pipe(
       tap((response) => {
         this.loadingState.set(false);
-        if (response.isSuccess && response.data) {
-          this.rawTree.set(response.data);
+        const envelope = response.body;
+        if (envelope?.isSuccess && envelope.data) {
+          this.rawTree.set(envelope.data);
+          this.etagState = response.headers.get('ETag');
           this.errorState.set(null);
         } else {
-          this.errorState.set(response.message ?? ABWAB_LABELS.loadErrorFallback);
+          this.errorState.set(envelope?.message ?? ABWAB_LABELS.loadErrorFallback);
         }
       }),
       map(() => this.snapshot()),
-      catchError(() => {
+      catchError((error: unknown) => {
         this.loadingState.set(false);
+
+        // A 304 arrives on the error channel because HttpClient treats only 2xx as ok. It is the
+        // opposite of a failure: the held snapshot and its validator are current, so both stay and no
+        // error is reported. Checked before the generic branch, or every cached revisit shows a banner.
+        if (error instanceof HttpErrorResponse && error.status === HttpStatusCode.NotModified) {
+          return of(this.snapshot());
+        }
+
         this.errorState.set(ABWAB_LABELS.loadErrorFallback);
         return of(this.snapshot());
       }),

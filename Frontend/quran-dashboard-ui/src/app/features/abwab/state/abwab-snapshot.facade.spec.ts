@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
-import { Observable, of, throwError } from 'rxjs';
+import { HttpResponse } from '@angular/common/http';
+import { Observable, map, of, throwError } from 'rxjs';
 
 import { AbwabApi } from '../data-access/abwab.api';
 import { AbwabTreeDto } from '../../../core/api/generated/models/abwab-tree-dto';
@@ -28,10 +29,14 @@ function treeResponse(overrides: Partial<AbwabTreeDto> = {}): ApiResponse<AbwabT
   return { isSuccess: true, message: 'تم', data: { doors: [DOOR], sections: [], version: 'v1', ...overrides } };
 }
 
+// The api observes the whole response so the facade can read the ETag header beside the envelope.
+// The stubs stay envelope-shaped and are wrapped here; a headerless response keeps every assertion
+// below exactly as unconditional as it was.
 function setup(getTree$: Observable<ApiResponse<AbwabTreeDto>>): AbwabSnapshotFacade {
   getTestBed().resetTestingModule();
+  const getTree = () => getTree$.pipe(map((envelope) => new HttpResponse({ body: envelope })));
   TestBed.configureTestingModule({
-    providers: [AbwabSnapshotFacade, { provide: AbwabApi, useValue: { getTree: () => getTree$ } }],
+    providers: [AbwabSnapshotFacade, { provide: AbwabApi, useValue: { getTree } }],
   });
   return TestBed.inject(AbwabSnapshotFacade);
 }

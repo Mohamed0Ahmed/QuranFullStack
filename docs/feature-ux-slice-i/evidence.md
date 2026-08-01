@@ -135,3 +135,58 @@ no probe data remains.
 **T303 (CORS).** `.WithExposedHeaders(HeaderNames.ETag)` added to the `AngularDev` policy.
 `curl` is same-origin-blind, so this is asserted where it can actually fail — T503's browser
 walk records whether the facade stored a non-null validator.
+
+## Phase 4 — The frontend conditional requests
+
+| Gate | Result |
+|---|---|
+| `npx tsc --noEmit` | Clean. |
+| `npm test` (full) | **193 files, 2,343 tests passed, 0 failed** — identical to T101. |
+| `npm run build` | Succeeded, 18.961 s. The same three pre-existing budget warnings; initial bundle 573.91 kB vs T101's 571.29 kB (**+2.62 kB**, the conditional-request plumbing). |
+
+### FINDING — the plan's "facade specs pass unedited" gate rests on a premise the specs do not match
+
+T403's gate and debt row I3 both assume the abwab specs drive the facades through
+`HttpTestingController` (I3 names `flush(null, { status: 304, … })`). They do not: every one of
+them stubs the **api object** with `of(envelope)`. Once `getTree`/`getTemplates`/`getTemplate`
+observe the response — §4.2-11, which the plan locks — no stub of that shape can satisfy them, so
+"specs unedited" was unreachable by construction, not by an implementation choice. Recorded rather
+than absorbed.
+
+What was actually changed, and how it was kept mechanical:
+
+- Five spec files had their **stub construction** wrapped at the provider boundary —
+  `of(envelope)` → `of(new HttpResponse({ body: envelope }))`, done once per `setup()` helper
+  rather than at each of the ~30 stub literals: `abwab-snapshot.facade.spec.ts`,
+  `abwab-templates.facade.spec.ts`, `abwab-write.controller.spec.ts`,
+  `abwab-sections.controller.spec.ts`, `abwab-page.component.spec.ts`.
+- The wrapped responses are **headerless on purpose**. A fake `ETag` would silently start
+  exercising the validator-storage line without asserting it, which is precisely the gap debt row
+  I3 owns; a headerless response keeps every existing test as unconditional as it was.
+- **Zero assertions moved.** `git diff -U0 -- '*.spec.ts' | grep -iE 'expect|toBe|toEqual|toHaveBeenCalled'`
+  returns exactly one line, in `abwab.api.spec.ts`: `resolves.toEqual(response)` →
+  `resolves.toMatchObject({ body: response })`. That file uses `HttpTestingController` and asserts
+  the api's own return value, so the change is the api's new return type stated directly — not a
+  weakened expectation.
+- Totals are unchanged (193 / 2,343): no spec was added, deleted, or split.
+
+Debt row I3's wording is corrected in the same change (T602) to name the harness these specs
+actually use — stubbing the api with `throwError(() => new HttpErrorResponse({ status: 304 }))` —
+because a row naming a harness the specs do not use is not payable.
+
+### Two scope deviations from §2, both deliberate
+
+- **`data-access/conditional-request.ts` is a new file** the plan's scope list does not name. It
+  holds one function: build the `If-None-Match` header only when a validator is held. Both api
+  services need it, and inlining it twice would be the duplication the alternative avoids.
+- **§2 places all three reads in `abwab.api.ts`**; on `dev` the two templates reads live in
+  `abwab-templates.api.ts` (its own file since the templates feature landed). Both files were
+  changed identically.
+
+### One correctness fix the plan did not anticipate
+
+`AbwabTemplatesFacade.clearSelection()` nulls `rawSelected`. Keeping the id-keyed validator across
+that would let a re-select of the same template be answered `304` with nothing left to render —
+the page would sit on «اختر قالبًا» forever. The validator is therefore dropped with the value it
+validates, which is the plan's own one-unit rule (§4.2-12) applied to the one path where the value
+is cleared rather than replaced.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
-import { Observable, of, throwError } from 'rxjs';
+import { HttpResponse } from '@angular/common/http';
+import { Observable, map, of, throwError } from 'rxjs';
 
 import { AbwabTemplatesApi } from '../data-access/abwab-templates.api';
 import { AbwabTemplateDto } from '../../../core/api/generated/models/abwab-template-dto';
@@ -30,6 +31,8 @@ function templateResponse(id: number, name: string): ApiResponse<AbwabTemplateDt
   };
 }
 
+// The two reads observe the whole response so the facade can store the ETag beside the value. The
+// stubs stay envelope-shaped and are wrapped headerless, leaving every assertion below unconditional.
 function setup(getTemplate: (id: number) => Observable<ApiResponse<AbwabTemplateDto>>): AbwabTemplatesFacade {
   getTestBed().resetTestingModule();
   TestBed.configureTestingModule({
@@ -38,8 +41,8 @@ function setup(getTemplate: (id: number) => Observable<ApiResponse<AbwabTemplate
       {
         provide: AbwabTemplatesApi,
         useValue: {
-          getTemplates: () => of({ isSuccess: true, message: 'تم', data: [] }),
-          getTemplate,
+          getTemplates: () => of(new HttpResponse({ body: { isSuccess: true, message: 'تم', data: [] } })),
+          getTemplate: (id: number) => getTemplate(id).pipe(map((envelope) => new HttpResponse({ body: envelope }))),
         },
       },
     ],

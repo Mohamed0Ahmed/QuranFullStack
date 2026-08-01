@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
+import { HttpResponse } from '@angular/common/http';
 import { BehaviorSubject, of } from 'rxjs';
 
 import { AbwabPageComponent } from './abwab-page.component';
@@ -29,6 +30,12 @@ function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string 
 
 function ok<T>(data: T): ApiResponse<T> {
   return { isSuccess: true, message: 'تم', data };
+}
+
+// getTree observes the whole response now, so the facade can read the ETag header beside the
+// envelope. Headerless here: no test below sends or stores a validator.
+function treeResponse(tree: AbwabTreeDto) {
+  return of(new HttpResponse({ body: ok(tree) }));
 }
 
 const TREE: AbwabTreeDto = {
@@ -66,7 +73,7 @@ describe('AbwabPageComponent', () => {
         {
           provide: AbwabApi,
           useValue: {
-            getTree: vi.fn().mockReturnValue(of(ok(TREE))),
+            getTree: vi.fn().mockReturnValue(treeResponse(TREE)),
             archiveDoor,
             restoreDoor,
             reorderDoor,
@@ -325,7 +332,7 @@ describe('AbwabPageComponent', () => {
           provideRouter([]),
           {
             provide: AbwabApi,
-            useValue: { getTree: vi.fn().mockReturnValue(of(ok(TREE))), archiveDoor, bulkArchiveDoors },
+            useValue: { getTree: vi.fn().mockReturnValue(treeResponse(TREE)), archiveDoor, bulkArchiveDoors },
           },
           { provide: ActivatedRoute, useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } } },
         ],
@@ -492,7 +499,7 @@ describe('AbwabPageComponent', () => {
           provideRouter([]),
           {
             provide: AbwabApi,
-            useValue: { getTree: vi.fn().mockReturnValue(of(ok(TREE))), archiveDoor, bulkMoveDoors },
+            useValue: { getTree: vi.fn().mockReturnValue(treeResponse(TREE)), archiveDoor, bulkMoveDoors },
           },
           { provide: ActivatedRoute, useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } } },
         ],
@@ -630,7 +637,7 @@ describe('AbwabPageComponent', () => {
         imports: [AbwabPageComponent],
         providers: [
           provideRouter([]),
-          { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(of(ok(REVEAL_TREE))) } },
+          { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(treeResponse(REVEAL_TREE)) } },
           {
             provide: ActivatedRoute,
             useValue: { queryParamMap: params$, snapshot: { queryParamMap: convertToParamMap({}) } },
@@ -792,7 +799,7 @@ describe('AbwabPageComponent', () => {
           {
             provide: AbwabApi,
             useValue: {
-              getTree: vi.fn().mockReturnValue(of(ok(TREE))),
+              getTree: vi.fn().mockReturnValue(treeResponse(TREE)),
               getDoorRelations: vi.fn().mockReturnValue(of(ok([]))),
             },
           },
@@ -929,7 +936,7 @@ describe('AbwabPageComponent', () => {
           provideRouter([]),
           {
             provide: AbwabApi,
-            useValue: { getTree: vi.fn().mockReturnValue(of(ok(TREE))), createDoor },
+            useValue: { getTree: vi.fn().mockReturnValue(treeResponse(TREE)), createDoor },
           },
           {
             provide: ActivatedRoute,
