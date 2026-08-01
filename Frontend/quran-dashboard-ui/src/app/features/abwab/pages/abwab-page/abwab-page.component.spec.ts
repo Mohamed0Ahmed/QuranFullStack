@@ -1138,6 +1138,27 @@ describe('AbwabPageComponent', () => {
       root.remove();
     });
 
+    it('a reveal onto a dead target still clears the key it closed the modal for', () => {
+      const fixture = renderAt({ door: '1', modal: 'relations' });
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-relations-modal"]')).toBeTruthy();
+
+      // The guard branch navigates nowhere on its own, so if the close did not carry the key
+      // the modal would shut with `modal=relations` stranded in the URL and no emission left
+      // to reconcile it — the overlay would be unreachable from then on.
+      (fixture.componentInstance as unknown as { onRevealRequested: (id: number) => void }).onRevealRequested(3);
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-relations-modal"]')).toBeNull();
+      expect(lastCallExtras()).toMatchObject({ queryParams: { modal: null }, replaceUrl: true });
+
+      // And the page is genuinely reusable afterwards: reopening works.
+      params$.next(convertToParamMap({ door: '1' }));
+      fixture.detectChanges();
+      click(root, 'abwab-side-panel-op-relations');
+      expect(lastCallExtras()).toMatchObject({ queryParams: { door: '1', modal: 'relations' } });
+    });
+
     it('a reveal discards the key in its single patch — the subject it named is being rewritten', () => {
       const fixture = renderAt({ door: '1', modal: 'relations' });
       const root = fixture.nativeElement as HTMLElement;

@@ -518,12 +518,19 @@ export class AbwabPageComponent implements OnInit {
    * visible non-action rather than a silent broken reveal.
    */
   protected onRevealRequested(doorId: number): void {
-    this.overlays.closeRelationsModal();
     const node = this.byId().get(doorId);
     if (!node || node.isArchived) {
+      // This branch navigates nowhere, so closing the modal has to carry the key itself —
+      // otherwise the modal shuts while `modal=relations` stays in the URL with no emission
+      // coming to reconcile it, and the overlay becomes unreachable for the page's lifetime.
+      this.closeUrlBackedModal(['relations'], () => this.overlays.closeRelationsModal(), true);
       this.revealAnnouncement.set(ABWAB_LABELS.revealUnavailable);
       return;
     }
+    this.overlays.closeRelationsModal();
+    // The single patch below already discards the key; clearing the tracked kind here rather
+    // than waiting for the emission keeps this one navigation instead of two.
+    this.openedModalKind = null;
     this.revealAnnouncement.set(null);
     this.revealTargetId.set(doorId);
     this.revealSequence.update((n) => n + 1);

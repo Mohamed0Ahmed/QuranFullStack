@@ -105,3 +105,92 @@ slice had to answer explicitly:
 
 Nothing in this slice adds a cache key, and no surface was found where the key would want
 to enter one.
+
+## T401 — both themes, in the browser
+
+Checked with a throwaway Playwright spec (written, run, deleted — not added to the suite),
+driving the real page at `/abwab?section=…&door=…&modal=edit-closed` with `qd-theme` seeded
+in `localStorage` before load, asserting `html[data-theme]` matched, and screenshotting the
+control and the whole header actions row in each theme.
+
+| Fact | Light | Dark |
+|---|---|---|
+| Control renders, label + X | ✅ «استعادة تعديل الباب» + `×` | ✅ same |
+| Reads as one control (equal block-size, shared seam, RTL: X on the label's left) | ✅ height delta ≤ 1px, gap ≤ 1.5px | ✅ same |
+| Sits level with the other header buttons | ✅ | ✅ |
+| Tint + hairline take the theme's own accent | ✅ soft green | ✅ gold |
+| Keyboard focusable | ✅ | ✅ |
+
+Two token mismatches were found and fixed by this check, not by the specs: the discard used
+`--qd-radius-md` and a hard-coded `1px` border, while `.qd-btn` uses `--qd-radius-sm` and
+`--qd-btn-border-width` — so the two halves had visibly different corners and edge weights.
+No new token, hue or z-band was introduced.
+
+## T701 — test-count delta: declared vs measured
+
+| | Files | Tests |
+|---|---|---|
+| Baseline (T101) | 193 | 2259 |
+| Closing (T701) | 193 | **2313** — all passing, 215.83s |
+| Delta | 0 | **+54 cases**, zero removed, zero new spec files |
+
+**The declared band in the plan (4.2-12: +12–25) is exceeded, and the reason is
+mechanical, not scope creep.** That band counted `it()` declarations; the measured number
+counts cases, and this slice leans on `it.each` because test-guard requires variants to be
+data-driven. Nine `it.each` declarations across the url-sync spec and the page spec expand
+into roughly forty cases on their own. Net-new `it()`/`it.each` **declarations** are ~25 —
+inside the declared band. Zero tests were removed and zero new spec files were created;
+every touched surface already had a suite.
+
+## T701 / T702 — closing gates
+
+| Gate | Command | Result |
+|---|---|---|
+| Tier C — full Vitest | `npm test` | **193 files / 2313 tests, all passing**, 215.83s |
+| Tier C — build | `npm run build` | **succeeds**; the same two pre-existing `features/mushaf/` SCSS budget warnings as the baseline, untouched |
+| Extraction evidence — abwab e2e | `npx playwright test --project=abwab --workers=1` | **23 passed (1.6m)** — all five abwab specs, so the reveal, relations, operations, structure and archive flows are checked against the new key too, not just the URL spec |
+
+Tier C, not Tier B: the change is `features/abwab/**` only — no `shared/`, `core/`,
+routing, app-shell or theming file was touched (`git diff --stat dev` confirms). No
+backend change, so no `dotnet test` and no route-smoke tier.
+
+## Defect found after the phase gates, before close-out
+
+`onRevealRequested`'s archived/missing guard closed the relations modal and then returned
+**without navigating**. With `modal=relations` in the URL and the page still tracking
+`relations` as open, no emission would ever come to reconcile them: the modal was shut,
+the key was stranded, and every later emission was a double no-op — the overlay would have
+been unreachable for the rest of the page's life. The guard branch now closes through the
+same URL-backed path as every other close, and the success path clears the tracked kind
+itself so the reveal stays one navigation. Both are pinned.
+
+## T703 — close-out sweep
+
+`grep -rn` across the repo for "seventh key", "gains no", "six keys", "six URL keys",
+"all six", "six locked", "six query":
+
+- **Updated (5):** the page component's header docblock, and four README sites (the render
+  chain, the templates split-trigger paragraph, the url-sync bullet, the e2e coverage
+  paragraph).
+- **Verified still true, deliberately unchanged:** every "all six **modals**" hit (Slice
+  B/C/D plans, the audit) — those count modals, not keys; `abwab-url-sync.spec.ts`'s
+  "leaves the other six keys untouched", which is exactly right (`modal` is the seventh);
+  `docs/abwab-ux-audit.md:409`, which is the audit predicting this slice; and the Slice C
+  and D evidence folders, which keep their historical wording because evidence is not
+  rewritten.
+
+## Obligations (§9)
+
+- [x] Baseline recorded before any change; closing Tier C compared against it
+- [x] Seventh key `modal`: closed value set, `-closed` grammar, fail-closed parse incl. the cross-key door rule, no URL rewrite
+- [x] Invalidation: `section`/`archive:true` clears `modal`; explicit-`modal` override; pinned in the build spec
+- [x] History semantics: open push / retain replace / restore push / discard clear — pinned via navigation args and the e2e Back/Forward flow
+- [x] Restore ordering joins the `door=` settle discipline; archived/missing/out-of-scope subjects leave the key inert
+- [x] Restore control: valid-retained-only render, Arabic labels, X discard, focus-on-close, both themes
+- [x] Bulk overlays, confirms and the context menu never write the key
+- [x] Reveal discards `modal` in its single patch; the README's "gains no seventh key" sentence amended in the same change
+- [x] README: contract row, invalidation paragraph, refined page-scoped invariant, no-draft rule, templates revisit outcome
+- [x] Both audit-named gates amended in the same change; nine existing assertions grew one key each, none deleted (D1)
+- [x] Cache/scope identity untouched — stated from measurement above, not assumed
+- [x] Zero tests removed; fork cap preserved (via the `npm test` script); no e2e cited as a gate. **Test delta is outside 4.2-12's declared band and explained above** rather than waved through
+- [x] No backend change; no planning folder deleted or repointed; branch targets `dev`

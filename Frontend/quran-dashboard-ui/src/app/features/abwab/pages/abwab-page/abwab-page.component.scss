@@ -140,14 +140,15 @@
   align-items: center;
   justify-content: center;
   padding-inline: var(--qd-space-2);
-  border: 1px solid var(--qd-border-accent);
+  border: var(--qd-btn-border-width) solid var(--qd-border-accent);
   /* The discard follows the label in inline order, so the seam is its inline-start edge —
      dropped rather than drawn twice, and only the outer corners stay rounded. */
   border-inline-start: none;
   border-start-start-radius: 0;
   border-end-start-radius: 0;
-  border-start-end-radius: var(--qd-radius-md);
-  border-end-end-radius: var(--qd-radius-md);
+  /* `.qd-btn`'s own radius, so the two halves share one silhouette. */
+  border-start-end-radius: var(--qd-radius-sm);
+  border-end-end-radius: var(--qd-radius-sm);
   background: var(--qd-selected-bg);
   color: var(--qd-text-muted);
   font-family: inherit;
