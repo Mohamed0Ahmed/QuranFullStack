@@ -10,6 +10,8 @@ import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto'
 import { ABWAB_LABELS } from '../models/abwab.labels';
 import { AbwabMoveDestination } from '../components/abwab-move-picker/abwab-move-picker.component';
 
+type ContextActionCallback = (doorId: number) => void;
+
 /**
  * Owns every overlay's open/closed state and orchestration for `AbwabPageComponent`
  * (door modal, single/bulk archive confirm, move picker, sections modal, row context
@@ -289,6 +291,9 @@ export class AbwabPageOverlaysController {
   readonly deleteRelation = (relationId: number) => this.relationsController.deleteRelation(relationId);
 
   // Row context menu (T511) — right-click/keyboard both funnel through `menuRequested`.
+  // The URL-writing menu actions hand the page the id they acted on through this callback,
+  // the same shape `confirmArchive` already uses, so the page can fold the selection and the
+  // `modal` key into one patch without this controller learning about the Router.
   readonly contextMenuDoorId = signal<number | null>(null);
   readonly contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -304,27 +309,27 @@ export class AbwabPageOverlaysController {
     this.contextMenuDoorId.set(null);
   }
 
-  ctxEdit(): void {
-    this.runContextAction(() => this.openEdit());
+  ctxEdit(onActed?: ContextActionCallback): void {
+    this.runContextAction(() => this.openEdit(), onActed);
   }
 
-  ctxAddChild(): void {
-    this.runContextAction(() => this.openCreateChild());
+  ctxAddChild(onActed?: ContextActionCallback): void {
+    this.runContextAction(() => this.openCreateChild(), onActed);
   }
 
-  ctxMove(): void {
-    this.runContextAction(() => this.openMovePicker());
+  ctxMove(onActed?: ContextActionCallback): void {
+    this.runContextAction(() => this.openMovePicker(), onActed);
   }
 
   ctxArchive(): void {
     this.runContextAction(() => this.requestArchive());
   }
 
-  ctxRelations(): void {
-    this.runContextAction(() => this.openRelations());
+  ctxRelations(onActed?: ContextActionCallback): void {
+    this.runContextAction(() => this.openRelations(), onActed);
   }
 
-  private runContextAction(action: () => void): void {
+  private runContextAction(action: () => void, onActed?: ContextActionCallback): void {
     const id = this.contextMenuDoorId();
     this.closeContextMenu();
     if (id === null) {
@@ -336,5 +341,6 @@ export class AbwabPageOverlaysController {
     }
     this.selection.select(id, node.version);
     action();
+    onActed?.(id);
   }
 }

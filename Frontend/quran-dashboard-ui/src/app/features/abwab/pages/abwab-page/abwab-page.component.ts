@@ -25,7 +25,13 @@ import {
   searchAbwabNodes,
 } from '../../state/abwab-tree.builder';
 import { parseAbwabQueryParams, buildAbwabQueryParams } from '../../state/abwab-url-sync';
-import { ABWAB_ORDER_SCOPE_TO_WIRE, AbwabNode, AbwabOrderScope, AbwabView } from '../../models/abwab.models';
+import {
+  ABWAB_ORDER_SCOPE_TO_WIRE,
+  AbwabModalKind,
+  AbwabNode,
+  AbwabOrderScope,
+  AbwabView,
+} from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabToolbarComponent } from '../../components/abwab-toolbar/abwab-toolbar.component';
 import { AbwabTreeComponent, AbwabTreeMenuRequest } from '../../components/abwab-tree/abwab-tree.component';
@@ -153,6 +159,12 @@ export class AbwabPageComponent implements OnInit {
   private revealTimer: ReturnType<typeof setTimeout> | null = null;
   /** Set when a reveal navigates, cleared by the param emission that lands it. */
   private revealPending = false;
+
+  /** Which overlay this page currently holds open **on the URL's behalf** — the one piece of
+   * state that makes reconciliation a transition rather than a per-emission assertion. It is
+   * null while a bulk gesture owns the move picker or the relations modal, which is what
+   * keeps those session-transient overlays out of the URL's reach (plan-slice-e.md §2). */
+  private openedModalKind: AbwabModalKind | null = null;
 
   /** The target's ancestor chain, walked up `parentId` the way the cards breadcrumb does.
    * Handed to the tree as a **seed**, not a force: forced-open ids cannot be collapsed, and a
@@ -358,9 +370,9 @@ export class AbwabPageComponent implements OnInit {
     if (!node) {
       return;
     }
-    this.updateQueryParams(buildAbwabQueryParams({ door: doorId }));
     this.selection.select(doorId, node.version);
     this.overlays.openRelations();
+    this.commitModalOpen('relations', doorId);
   }
 
   /**
@@ -434,7 +446,91 @@ export class AbwabPageComponent implements OnInit {
     this.overlays.requestContextMenu(request.id);
   }
 
-  private updateQueryParams(changes: Record<string, string | null>): void {
-    void this.router.navigate([], { relativeTo: this.route, queryParams: changes, queryParamsHandling: 'merge' });
+  // Audit item 11 — the restorable overlays. Every gesture below opens its overlay
+  // **synchronously**, exactly as it did before the key existed, and writes `modal=<kind>`
+  // in the same patch as any selection it changes. The URL is a record of what is open, not
+  // the mechanism that opens it: waiting for the emission would make every click wait on a
+  // navigation, and `openedModalKind` makes the echo a no-op when it arrives.
+
+  protected onCreateRootRequested(): void {
+    this.overlays.openCreateRoot();
+    this.commitModalOpen('create');
+  }
+
+  protected onSectionsRequested(): void {
+    this.overlays.openSectionsModal();
+    this.commitModalOpen('sections');
+  }
+
+  protected onAddChildRequested(): void {
+    this.openOnSelectedDoor('child', () => this.overlays.openCreateChild());
+  }
+
+  protected onEditRequested(): void {
+    this.openOnSelectedDoor('edit', () => this.overlays.openEdit());
+  }
+
+  protected onMoveRequested(): void {
+    this.openOnSelectedDoor('move', () => this.overlays.openMovePicker());
+  }
+
+  protected onRelationsOpenRequested(): void {
+    this.openOnSelectedDoor('relations', () => this.overlays.openRelations());
+  }
+
+  /** The tree's `＋` selects the row and then asks for the child modal as two separate
+   * outputs (its own contract since Slice B), so this patch restates `door` rather than
+   * relying on the selection write that just preceded it. */
+  protected onTreeAddChildRequested(doorId: number): void {
+    const node = this.byId().get(doorId);
+    if (!node) {
+      return;
+    }
+    this.overlays.openCreateChild();
+    this.commitModalOpen('child', doorId);
+  }
+
+  protected onCtxEdit(): void {
+    this.overlays.ctxEdit((id) => this.commitModalOpen('edit', id));
+  }
+
+  protected onCtxAddChild(): void {
+    this.overlays.ctxAddChild((id) => this.commitModalOpen('child', id));
+  }
+
+  protected onCtxMove(): void {
+    this.overlays.ctxMove((id) => this.commitModalOpen('move', id));
+  }
+
+  protected onCtxRelations(): void {
+    this.overlays.ctxRelations((id) => this.commitModalOpen('relations', id));
+  }
+
+  private openOnSelectedDoor(kind: AbwabModalKind, open: () => void): void {
+    const door = this.selectedDoor();
+    if (!door) {
+      return;
+    }
+    open();
+    this.commitModalOpen(kind, door.id);
+  }
+
+  private commitModalOpen(kind: AbwabModalKind, doorId?: number): void {
+    this.openedModalKind = kind;
+    this.updateQueryParams(
+      buildAbwabQueryParams({
+        ...(doorId === undefined ? {} : { door: doorId }),
+        modal: { kind, closed: false },
+      }),
+    );
+  }
+
+  private updateQueryParams(changes: Record<string, string | null>, replaceUrl = false): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: changes,
+      queryParamsHandling: 'merge',
+      replaceUrl,
+    });
   }
 }

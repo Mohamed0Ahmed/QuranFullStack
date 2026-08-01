@@ -773,4 +773,133 @@ describe('AbwabPageComponent', () => {
       expect(root.querySelector('[data-testid="abwab-tree-row-2"]')).toBeNull();
     });
   });
+
+  describe('audit item 11 — opening a restorable overlay writes modal=<kind>', () => {
+    const params$ = new BehaviorSubject(convertToParamMap({}));
+    let modalRouter: Router;
+
+    beforeEach(async () => {
+      getTestBed().resetTestingModule();
+      params$.next(convertToParamMap({}));
+      await TestBed.configureTestingModule({
+        imports: [AbwabPageComponent],
+        providers: [
+          provideRouter([]),
+          { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(of(ok(TREE))) } },
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: params$, snapshot: { queryParamMap: convertToParamMap({}) } },
+          },
+        ],
+      }).compileComponents();
+      modalRouter = TestBed.inject(Router);
+      vi.spyOn(modalRouter, 'navigate').mockResolvedValue(true);
+    });
+
+    function renderAt(params: Record<string, string> = {}) {
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      fixture.detectChanges();
+      params$.next(convertToParamMap(params));
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    function lastPatch(): Record<string, string | null> {
+      const calls = (modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+      const extras = calls[calls.length - 1][1] as { queryParams: Record<string, string | null> };
+      return extras.queryParams;
+    }
+
+    function click(root: HTMLElement, testId: string): void {
+      (root.querySelector(`[data-testid="${testId}"]`) as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+    }
+
+    it('the door-independent openers write the kind alone, with no door', () => {
+      const root = renderAt().nativeElement as HTMLElement;
+
+      click(root, 'abwab-page-add-root');
+      expect(lastPatch()).toEqual({ modal: 'create' });
+
+      click(root, 'abwab-page-manage-sections');
+      expect(lastPatch()).toEqual({ modal: 'sections' });
+    });
+
+    it.each([
+      ['abwab-side-panel-op-add-child', 'child'],
+      ['abwab-side-panel-op-edit', 'edit'],
+      ['abwab-side-panel-op-move', 'move'],
+      ['abwab-side-panel-op-relations', 'relations'],
+    ])('the side panel op %s folds door and modal into one patch', (testId, kind) => {
+      const fixture = renderAt({ door: '1' });
+      const root = fixture.nativeElement as HTMLElement;
+      click(root, 'abwab-tree-row-1');
+      fixture.detectChanges();
+
+      click(root, testId);
+
+      expect(lastPatch()).toEqual({ door: '1', modal: kind });
+    });
+
+    it.each([
+      ['abwab-page-ctx-edit', 'edit'],
+      ['abwab-page-ctx-add-child', 'child'],
+      ['abwab-page-ctx-move', 'move'],
+      ['abwab-page-ctx-relations', 'relations'],
+    ])('the context-menu action %s selects and opens in one patch', (testId, kind) => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-more-2"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      click(root, testId);
+
+      expect(lastPatch()).toEqual({ door: '2', modal: kind });
+    });
+
+    it('the tree’s ＋ restates the door beside the child kind', () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-tree-add-child-2');
+
+      expect(lastPatch()).toEqual({ door: '2', modal: 'child' });
+    });
+
+    it('the context-menu archive action stays out of the URL — a confirm is re-initiated, never restored', () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-more-2"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      click(root, 'abwab-page-ctx-archive');
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-page-archive-confirm"]')).toBeTruthy();
+      expect(lastPatch()).toEqual({ door: '2' });
+    });
+
+    it('the bulk overlays never write the key — their subject is bulkSet, which is not URL state', () => {
+      const fixture = renderAt();
+      const root = fixture.nativeElement as HTMLElement;
+      click(root, 'abwab-side-panel-bulk-toggle');
+      fixture.detectChanges();
+      click(root, 'abwab-tree-checkbox-2');
+      fixture.detectChanges();
+      const before = (modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls.length;
+
+      click(root, 'abwab-side-panel-bulk-move');
+      fixture.detectChanges();
+      click(root, 'abwab-side-panel-bulk-relations');
+      fixture.detectChanges();
+
+      expect((modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls).toHaveLength(before);
+      expect(root.querySelector('[data-testid="abwab-move-picker"]')).toBeTruthy();
+    });
+  });
 });

@@ -19,7 +19,7 @@
           type="button"
           class="qd-btn"
           data-testid="abwab-page-manage-sections"
-          (click)="overlays.openSectionsModal()"
+          (click)="onSectionsRequested()"
         >
           {{ manageSectionsLabel }}
         </button>
@@ -33,7 +33,7 @@
             type="button"
             class="qd-btn qd-btn-primary"
             data-testid="abwab-page-add-root"
-            (click)="overlays.openCreateRoot()"
+            (click)="onCreateRootRequested()"
           >
             {{ addRootLabel }}
           </button>
@@ -161,7 +161,7 @@
                   [revealedId]="revealedId()"
                   (selected)="onTreeSelected($event)"
                   (bulkToggled)="onBulkToggled($event)"
-                  (addChildRequested)="overlays.openCreateChild()"
+                  (addChildRequested)="onTreeAddChildRequested($event)"
                   (menuRequested)="onMenuRequested($event)"
                   (orderCommitted)="onOrderCommitted($event)"
                   (relationsRequested)="onRelationsRequested($event)"
@@ -171,7 +171,7 @@
                 type="button"
                 class="abwab-page__add-ghost"
                 data-testid="abwab-page-add-root-ghost"
-                (click)="overlays.openCreateRoot()"
+                (click)="onCreateRootRequested()"
               >
                 {{ addRootGhostLabel }}
               </button>
@@ -185,10 +185,10 @@
             [bulkCount]="selection.bulkCount()"
             [bulkNames]="bulkNames()"
             [archiveViewActive]="archiveParam()"
-            (addChildRequested)="overlays.openCreateChild()"
-            (editRequested)="overlays.openEdit()"
-            (moveRequested)="overlays.openMovePicker()"
-            (relationsRequested)="overlays.openRelations()"
+            (addChildRequested)="onAddChildRequested()"
+            (editRequested)="onEditRequested()"
+            (moveRequested)="onMoveRequested()"
+            (relationsRequested)="onRelationsOpenRequested()"
             (archiveRequested)="overlays.requestArchive()"
             (clearRequested)="onClearSelection()"
             (bulkModeToggled)="onBulkModeToggled($event)"
@@ -313,10 +313,10 @@
     backdropTestId="abwab-page-ctx-backdrop"
     (dismissed)="overlays.closeContextMenu()"
   >
-    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-edit" (click)="overlays.ctxEdit()">{{ editOpLabel }}</button>
-    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-add-child" (click)="overlays.ctxAddChild()">{{ addChildOpLabel }}</button>
-    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-move" (click)="overlays.ctxMove()">{{ moveOpLabel }}</button>
-    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-relations" (click)="overlays.ctxRelations()">{{ relationsOpLabel }}</button>
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-edit" (click)="onCtxEdit()">{{ editOpLabel }}</button>
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-add-child" (click)="onCtxAddChild()">{{ addChildOpLabel }}</button>
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-move" (click)="onCtxMove()">{{ moveOpLabel }}</button>
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-relations" (click)="onCtxRelations()">{{ relationsOpLabel }}</button>
     <button type="button" role="menuitem" class="qd-context-menu__item qd-context-menu__item--danger" data-testid="abwab-page-ctx-archive" (click)="overlays.ctxArchive()">
       {{ archiveLabel }}
     </button>
