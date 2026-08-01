@@ -203,12 +203,8 @@ enterprise greige.
 
 ## Active Spec Kit Feature
 
-- `ux-slice-g` — templates (UX audit items 20-21): reverses the apply axiom to copy the
-  template root's direct children (never the root) into each target, an empty-root `400`
-  refusal, a per-child-name collision `409`, and the workshop tree's right-click / menu-key
-  context-menu parity. Plan and evidence: `docs/feature-ux-slice-g/plan.md`,
-  `docs/feature-ux-slice-g/evidence.md`. No `specs/` workspace — this slice is plan-driven,
-  not Spec Kit.
+None.
+
 - When a feature opens, record it here as: feature slug, its `specs/<feature>/plan.md`, and
   its `docs/feature-XXX-*/` decision record. Clear this section back to "None" when the
   feature closes and its planning artifacts are swept per the lifecycle rule above.

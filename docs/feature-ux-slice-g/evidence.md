@@ -198,3 +198,65 @@ automation-channel hiccup, not an application defect.
   leaves focus outside the menu, same as the other three paths.
 - `docs/TESTING_DEBT.md`: row 7 (`abwab-templates` section) restated to the reversal's surface;
   row 9 widened to name the two new menu paths. New `## ux-slice-g` section added with G1-G4.
+
+## Phase 9 — T901: Tier C
+
+| Check | Command | Result |
+|---|---|---|
+| Backend build | `dotnet build Backend/QuranDashboard.sln` | 0 warnings, 0 errors, 35.4s |
+| No-pipeline regression | `--filter "...!~QuranDashboard.Tests.Smoke."` | 1086 passed, 0 failed, 0 skipped, 20s — **unchanged from T101** |
+| Route-smoke tier | `--filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."` | 140 passed, 0 failed, 0 skipped, 49s |
+| **`Tests.Smoke.Data` — RAN (again, at close)** | subset of the 140, 0 skipped | dump present |
+| Frontend tests | `npm test` | 193 files, 2343 tests passed — **identical to T101**; this slice wrote no spec |
+| Frontend build | `npm run build` | Succeeded, 19.6s; same three pre-existing budget warnings, none new |
+
+Tier B is satisfied by this same run: a completed backend+frontend vertical slice
+(`TESTING_STRATEGY.md` §3 Tier B). No Tier D trigger fires — no `DataPipelines` code, no
+importer, no migration, no canonical resource, no shared persistence reaching pipeline tables.
+No count moved against the T101 baseline; nothing to explain as a finding.
+
+## Phase 9 — T902: browser acceptance pass for item 20
+
+Against the local dev DB, both through the UI and (for the two cases the UI deliberately makes
+unreachable) directly against the live API on `https://localhost:5015`:
+
+| # | Scenario | Result |
+|---|---|---|
+| 1 | Apply «الثمرات» (root + 4 children, one with a grandchild) to two live root doors («الجهاد», «الحمد والثناء») via the copy modal | `201`. Each target gained **4 top-level children** (اهدافه/واجباته/انواعه/مكانته at order `1..4`) — not one wrapper — and اهدافه's own grandchild «هدف فرعي» came through intact at order 1. Door count `13 → 23` (+10 = 5 nodes × 2 targets) |
+| 2 | Apply the same template again to «الجهاد» alone | `409`: `لم يتم النسخ — أسماء موجودة داخل الأبواب المستهدفة: «الجهاد» ← «اهدافه»، «الجهاد» ← «واجباته»، «الجهاد» ← «انواعه»، «الجهاد» ← «مكانته»` — all four pairs named, in template sibling order. Door count stayed **23** — nothing created anywhere |
+| 3 | Apply an empty template («العبرة», `nodeCount = 0`) | Modal: empty-state block (`templateCopyEmptyTemplate`) replaces the preview, confirm button stays disabled even with a target picked. Direct `POST /api/abwab/templates/5/apply` (bypassing the disabled control): `400` `القالب لا يحتوي عناصر لنسخها` — the writer-side refusal, verified as the actual guarantee behind the UI courtesy |
+| 4 | Apply to a target that is **both nested and section-less** («المصطفى صل الله عليه وسلم», id 438, `parentId=338`, `sectionId=null`) | `201`, 4 created doors, every one `"sectionId":null,"parentId":438`, `orderValue` `1..4` — cascade inheritance and depth both correct in one case |
+| 5 | Single-child template (new template, one child) applied to «الحمد والثناء» (already had 4 live children from case 1) | `201`, the one child lands at `orderValue: 5` = `nextOrder + 0` — the offset degenerates to the pre-reversal shape exactly as §6a row 8 predicts |
+| 6 | Edit the live template afterward (renamed node 11, «اهدافه» → «اهدافه المعدلة») | Every already-copied door across all three prior targets still reads **«اهدافه»**, unchanged — detachment confirmed |
+
+All seven `§6a`-anchored scenarios in the plan's T902 checklist are covered by the six rows
+above (case 1 covers two of the checklist's items — two-target apply and sibling-order/subtree
+completeness — in one pass).
+
+**DRIFT-1, discriminating check.** Every template node touched above had empty aliases, so none
+of the responses so far could tell a per-node alias apart from the old single-`rootAliases`
+bug (the root itself never had aliases either, so both behaviors would return `[]`). Set two
+*different* children of «الثمرات» to two *different* aliases (`اهدافه المعدلة` →
+`["علامة الأهداف"]`, `واجباته` → `["علامة الواجبات"]`) and applied to a fresh target
+(«قصص الانبياء», door 537): the resulting doors report **`["علامة الأهداف"]`** and
+**`["علامة الواجبات"]`** respectively — each its own node's aliases, not one shared value.
+DRIFT-1 confirmed fixed, not just built.
+
+## Phase 9 — T903: close-out sweep
+
+Re-ran T104's six-phrase grep across the whole repo. Every hit from T104 is unchanged in
+disposition (still in the amend list, still do-not-touch, or already a recorded finding) except
+one new one, found because this pass came after Phase 8's own edits landed:
+
+| Hit | Disposition |
+|---|---|
+| `docs/feature-abwab-templates/plan.md:171` (§5.2, "a template with two roots makes 'the template root becomes a new child' undefined") | **Covered by an explicit, locked plan decision — not amended.** ux-slice-g's own precondition table and §5.4 "Explicitly NOT touched" list both name §5.2 (`:165-183`) as surviving untouched, reasoned as "the root becomes purely a naming/container row." Unlike the three T104 code-comment findings (which were plain omissions from the original ledger), this line sits inside a section the plan's authors explicitly considered and chose to leave alone — overriding that via a grep sweep would re-litigate a locked decision, which `plan.md` §3 forbids ("no litigation of the reversal"). The one-root invariant this paragraph justifies is still correct; only the axiom-quote inside its own historical reasoning is dated, and it reads as history, not as a claim about current apply behavior |
+
+`Backend/scripts/check-api-contract`: **"API contract up to date."** — clean. `git status --short`
+after the run showed only this evidence file's own in-progress edit — no stray generated-contract
+diff.
+
+Root `CLAUDE.md` "Active Spec Kit Feature" cleared back to `None`.
+
+**No planning folder deleted, swept, evicted, or repointed.** `docs/feature-abwab-templates/`
+was amended in Phase 1 and T104/T903, and is otherwise untouched — still live, per §3.
