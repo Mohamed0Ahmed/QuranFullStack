@@ -1,7 +1,7 @@
 .abwab-template-copy-modal__desc {
   color: var(--qd-text-muted);
   font-size: 0.78rem;
-  margin-block: var(--qd-space-1) var(--qd-space-3);
+  margin-block-start: var(--qd-space-1);
 }
 
 .abwab-template-copy-modal__preview {
@@ -23,77 +23,6 @@
   padding: var(--qd-space-2);
 }
 
-.abwab-template-copy-modal__picker > input {
-  inline-size: 100%;
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-sm);
-  padding: var(--qd-space-2) var(--qd-space-3);
-  background: var(--qd-surface);
-  color: var(--qd-text);
-  font-family: inherit;
-  font-size: 0.8125rem;
-}
-
-.abwab-template-copy-modal__picker > input:focus-visible {
-  outline: 2px solid var(--qd-focus-ring);
-  outline-offset: -1px;
-}
-
-.abwab-template-copy-modal__pick-list {
-  max-block-size: 13rem;
-  overflow-y: auto;
-  margin-block-start: var(--qd-space-2);
-}
-
-.abwab-template-copy-modal__pick-row {
-  display: flex;
-  align-items: center;
-  gap: var(--qd-space-2);
-  padding: var(--qd-space-1) var(--qd-space-2);
-  padding-inline-start: calc(var(--abwab-template-copy-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
-  border-radius: var(--qd-radius-sm);
-  cursor: pointer;
-}
-
-.abwab-template-copy-modal__pick-row:hover {
-  background: var(--qd-surface-hover);
-}
-
-.abwab-template-copy-modal__pick-chevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 1.1rem;
-  block-size: 1.1rem;
-  flex: none;
-  border: none;
-  background: transparent;
-  color: var(--qd-text-muted);
-  cursor: pointer;
-}
-
-.abwab-template-copy-modal__pick-chevron--leaf {
-  visibility: hidden;
-}
-
-.abwab-template-copy-modal__pick-chevron:focus-visible {
-  outline: 2px solid var(--qd-focus-ring);
-  outline-offset: 1px;
-}
-
-.abwab-template-copy-modal__pick-row input[type='checkbox'] {
-  flex: none;
-  accent-color: var(--qd-accent);
-}
-
-.abwab-template-copy-modal__pick-name {
-  flex: 1;
-  font-size: 0.8125rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .abwab-template-copy-modal__selected {
   margin-block-start: var(--qd-space-2);
   font-size: 0.75rem;
@@ -104,5 +33,4 @@
 .abwab-template-copy-modal__foot {
   display: flex;
   gap: var(--qd-space-2);
-  margin-block-start: var(--qd-space-3);
 }

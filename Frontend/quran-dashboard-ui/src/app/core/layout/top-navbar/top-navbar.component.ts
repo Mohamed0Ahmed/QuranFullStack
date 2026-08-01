@@ -11,7 +11,7 @@ import { ScrollLockService } from '../../../shared/ui/modal-scroll-lock/scroll-l
 
 // The navbar goes inert while any modal dialog holds the scroll lock (Slice B2, T904 —
 // UI_STYLE_SYSTEM.md §17 "Chrome-inert rule"). Sticky chrome (T901) would otherwise stay
-// keyboard-reachable under a dialog it renders alongside (nine surfaces today: four abwab
+// keyboard-reachable under a dialog it renders alongside (eleven surfaces today: six abwab
 // modals + five words drawers/dialogs), which is `app.ts:14`'s shell-inert precedent applied
 // at the one level that does not also inert the dialog itself.
 @Component({

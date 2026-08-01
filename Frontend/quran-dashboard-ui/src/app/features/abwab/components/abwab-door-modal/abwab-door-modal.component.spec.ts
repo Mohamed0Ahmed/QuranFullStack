@@ -46,6 +46,20 @@ function setName(fixture: ReturnType<typeof render>, value: string): void {
   fixture.detectChanges();
 }
 
+/** The trap places its initial focus once the app reports stable, so an assertion has to wait for
+ * that and then let the task it schedules run (detail-modal-shell spec precedent). */
+async function settleFocus(fixture: ReturnType<typeof render>): Promise<void> {
+  await fixture.whenStable();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function escape(fixture: ReturnType<typeof render>): void {
+  (fixture.nativeElement as HTMLElement)
+    .querySelector('[data-testid="abwab-door-modal"]')!
+    .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  fixture.detectChanges();
+}
+
 function clickSave(fixture: ReturnType<typeof render>): void {
   ((fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-door-modal-save"]') as HTMLElement).click();
   fixture.detectChanges();
@@ -216,6 +230,67 @@ describe('AbwabDoorModalComponent', () => {
       clickSave(fixture);
 
       expect(captured!.version).toBe(EXISTING_DOOR.version);
+    });
+  });
+
+  describe('dialog semantics', () => {
+    it('opens with focus on the name field, inside the trapped dialog', async () => {
+      const fixture = render();
+      await settleFocus(fixture);
+
+      const root = fixture.nativeElement as HTMLElement;
+      const dialog = root.querySelector('[data-testid="abwab-door-modal"]')!;
+      expect(document.activeElement).toBe(root.querySelector('[data-testid="abwab-door-modal-name"]'));
+      expect(dialog.contains(document.activeElement)).toBe(true);
+    });
+
+    it('closes on Escape when nothing was edited', () => {
+      const fixture = render();
+      const closed: void[] = [];
+      fixture.componentInstance.closed.subscribe(() => closed.push(undefined));
+
+      escape(fixture);
+
+      expect(closed).toHaveLength(1);
+    });
+
+    it('raises the discard guard instead of closing when Escape lands on an edited form', () => {
+      const fixture = render();
+      const closed: void[] = [];
+      fixture.componentInstance.closed.subscribe(() => closed.push(undefined));
+
+      setName(fixture, 'مسودة');
+      escape(fixture);
+
+      expect(closed).toHaveLength(0);
+      expect(
+        (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-door-modal-discard-confirm"]'),
+      ).toBeTruthy();
+    });
+
+    // The error surface is `qd-state`, which reserves a message row and carries the shared
+    // container's padding — rendered unconditionally it is a 105px empty danger box on every
+    // open, which is exactly what shipped once and was caught by a screenshot rather than here.
+    // Asserting the message text alone cannot fail on that bug; asserting absence can.
+    it('renders no error surface at all until a write actually fails', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-door-modal-error"]')).toBeNull();
+      expect(root.querySelector('[data-testid="qd-state-error"]')).toBeNull();
+
+      setName(fixture, 'باب جديد');
+      expect(root.querySelector('[data-testid="abwab-door-modal-error"]')).toBeNull();
+    });
+
+    it('keeps the actions out of the scrolling body so the guard cannot scroll away', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const foot = root.querySelector('.qd-modal__foot')!;
+      const body = root.querySelector('.qd-modal__body')!;
+      expect(foot.querySelector('[data-testid="abwab-door-modal-save"]')).toBeTruthy();
+      expect(body.contains(foot)).toBe(false);
     });
   });
 });

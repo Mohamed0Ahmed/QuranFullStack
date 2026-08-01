@@ -83,8 +83,13 @@ nine), four of them reads.
   a collapsible tree (every door at any depth is already a valid target — see
   Gotchas). `excludedIds` is the moved door(s) plus every descendant, the client half of
   the cycle guard; the server's `409 WouldCycle` stays authoritative.
-- `components/abwab-sections-modal/` — list / add / rename / delete-empty. Takes its
-  three write functions as inputs (bound by the page to
+- `components/abwab-sections-modal/` — list / add / rename / delete-empty, with full
+  dialog semantics and a dirty guard as of Slice C (a typed section name or an altered
+  rename draft raises the door modal's confirm strip; an opened-but-unedited rename is
+  not dirty). **Its drafts live on the component, and the page hosts it as a static
+  sibling, so it must reset them on open** — unlike the door modal, whose drafts sit in
+  a child that `@if (open())` destroys. Skip that reset and «تجاهل التغييرات» hides the
+  draft instead of discarding it. Takes its three write functions as inputs (bound by the page to
   `state/abwab-sections.controller.ts`) rather than injecting a service, so its own spec
   exercises the 409/success outcomes without the facade/controller chain. Rename always
   reads the section's row from the live `sections` input at submit time, never a value
@@ -99,7 +104,19 @@ nine), four of them reads.
   authoring modal, not a parallel vocabulary.
 - `components/abwab-door-modal/` — the door's shell around that form: title, context
   line, the tracking-data box, the dirty guard's confirm strip, and the write dispatch.
-  Composes `.qd-modal`/`.qd-modal-backdrop` + `qdModalScrollLock`.
+  On the shared modal shell like the other five (see "All six modals share one shell"
+  below); the guard strip renders in `__foot`, where it cannot scroll away.
+- `components/abwab-door-picker/` — the one searchable, expandable door picker, composed
+  by the relations and copy modals. Selection is consumer-owned: it renders `pickedIds`
+  and emits `toggled`, and `excludedIds` hides a door **without** hiding its subtree,
+  since a door may relate to its own ancestor. `testIdPrefix` keeps each host's existing
+  testids. Rows compose `.qd-check-row`/`.qd-checkbox`/`.qd-truncate`, so it states no
+  geometry of its own. Two things the picker owns that consumer-owned selection cannot
+  cover: `single` picks the **affordance** (radio, not checkbox — a checkbox promises
+  "pick any number" and anchor-pick mode takes one), and an unmatched search renders the
+  picker's own «لا يوجد باب مطابق» rather than the host's `emptyMessage`, because "your
+  query found nothing" and "there is nothing to pick" are different answers and only one
+  of them is true when doors are one keystroke away.
 - `components/abwab-template-node-modal/` — the template node's shell around the same
   form. Its submit is a **function input** bound by the workshop page to
   `AbwabTemplatesController` (the `abwab-sections-modal` precedent), and it renders no
@@ -241,6 +258,27 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **`abwab-sections-modal` and `abwab-move-picker` carry `qdModalScrollLock` as of T905** — the
   two abwab modals that previously held no lock at all. Every abwab modal now participates
   uniformly in the chrome-inert rule above; do not add a seventh abwab modal without it.
+- **All six modals share one shell, and it is not negotiable per modal (Slice C).** Every one is
+  `.qd-modal.qd-modal--fixed` with `__head`/`__body`/`__foot`, `role="dialog"`,
+  `aria-modal="true"`, an `aria-labelledby` pointing at its own `<h3>`, `qdModalScrollLock`,
+  Escape-to-close, and `cdkTrapFocus cdkTrapFocusAutoCapture`. Consequences worth knowing before
+  changing one:
+  - **No modal states a height, and none nests a scroller.** `__body` is the single scroller;
+    the four inner `max-block-size` caps that existed before Slice C are deleted. Adding one back
+    re-creates the §17 specificity trap the caps were.
+  - **The traps are unconditional**, unlike the words dialogs' `drawerTrapEnabled` pattern. That
+    rule governs *nesting*, and abwab modals never stack — under the entity-detail overlay or
+    each other. A future change that makes them nest must revisit this.
+  - **Auto-capture is corrected where it lands wrong.** The door and template-node modals focus
+    the name field through `abwab-door-fields-form.focusFirstField()`; the relations and copy
+    modals focus the picker search through `AbwabDoorPickerComponent.focusSearch()`. Both are
+    queued as a task so they land *after* the trap's own capture. Sections and the move picker
+    keep plain auto-capture. Note this is verifiable only in a browser — jsdom gives every
+    element a zero-size box, so the CDK's focusable check rejects the target and auto-capture
+    never fires there.
+  - **Shallow modals render with empty space** below their content, because `--fixed` is a fixed
+    `min(92dvh, 44rem)`. That is §17's "zero resize" trade, accepted deliberately; do not "fix"
+    it back to content height.
 - **`.qd-navbar` sits on `--qd-z-mobile-nav` (45), not `--qd-z-sticky` (5) — the rung its own
   dropdown and mobile menu already declare, because sticky positioning makes the navbar's own
   rung a ceiling for everything inside it.** `position: sticky` unconditionally creates a
@@ -341,12 +379,10 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   `qd-state` (empty/error) — `UI_STYLE_SYSTEM.md` §17. Only two error sites carry the single
   `actionLabel` retry §17 permits — the doors page's own snapshot-load failure and the copy
   modal's doors-load failure, both wired to `AbwabSnapshotFacade.load()` — because those are
-  the two transport reads abwab previously offered no recovery from at all. The templates
-  page's «اختر قالبًا» empty site still doubles as a silent per-template loading indicator:
-  `AbwabTemplatesFacade.fetchSelected` sets no loading flag, so a slow per-template fetch and
-  "nothing selected" render identically. A `selectedLoading` signal would fix it but is not
-  free — it would touch the specced `abwab-templates.facade.spec.ts` — so it stays a named gap
-  rather than a silent one.
+  the two transport reads abwab previously offered no recovery from at all. The templates page's
+  «اختر قالبًا» now means only what it says: `AbwabTemplatesFacade.selectedLoading` covers the
+  per-template fetch window (null `selectedTemplate` throughout, since `select()` writes the id
+  first), and the detail region renders `qd-skeleton-rows` there instead.
 - **A skeleton's `rowTemplate` sizes its columns, never its rows.** `qd-skeleton-rows` defaults
   to a 0.75rem bar, so a call-site whose loaded row is taller must say so with a
   `--qd-skeleton-h` override on the host — the doors tree does (1.5rem, giving 32px pitch against
@@ -431,12 +467,17 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   Selecting a door and its own descendant produces two independent copies. This is the
   deliberate opposite of bulk-archive's union count above, where archiving an ancestor already
   claims its descendants; applying a template claims nothing. Do not "fix" one into the other.
-- **The copy picker duplicates `abwab-relations-modal`'s picker rather than sharing it.**
-  That component has **no spec at all** (`docs/TESTING_DEBT.md` row 4), so unifying the two
-  under a no-new-tests posture would mean refactoring untested code to save ~30 lines. The
-  unification trigger is row 4's own: when the relations modal next changes shape and gets its
-  specs, both pickers become one. Recorded so this does not silently become two divergent
-  pickers.
+- **There is one door picker, `abwab-door-picker`, and both modals compose it.** The debt that
+  kept them apart is paid: the relations and copy modals each have a behavior spec, and the
+  duplicated picker became a component. Selection stays **consumer-owned** — the picker renders
+  what `pickedIds` says and emits `toggled`, so the relations modal keeps its single-anchor rule
+  in bulk mode and the copy modal its multi-select, and the picker knows about neither. Existing
+  `data-testid`s survive through `testIdPrefix`, which is what made the extraction provably
+  behavior-preserving (both specs passed it unedited). Do not re-fork it for a third caller;
+  add an input. **Consumer-owned selection is not consumer-owned *affordance*:** the picker
+  still has to render a control that tells the truth about how many doors are choosable, which
+  is what `single` is for. Anchor-pick selection is select-only for the same reason — a radio
+  group offers no click-the-selected-one-to-clear gesture, so the component does not invent one.
 - **The template tree renders a list, not `role="tree"`.** `AbwabTreeComponent` earns that
   role with a full RTL-mirrored keyboard model (`abwab-tree-keyboard.controller.ts`); claiming
   the role without the arrow-key model would promise a navigation contract the workshop does

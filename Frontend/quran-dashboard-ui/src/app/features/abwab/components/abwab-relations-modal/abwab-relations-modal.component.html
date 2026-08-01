@@ -1,178 +1,153 @@
 @if (open()) {
   <div class="qd-modal-backdrop" data-testid="abwab-relations-modal-backdrop" (click)="close()">
     <section
-      class="qd-modal abwab-relations-modal"
+      class="qd-modal qd-modal--fixed abwab-relations-modal"
       role="dialog"
       aria-modal="true"
       dir="rtl"
       [attr.aria-labelledby]="titleId"
       qdModalScrollLock
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
       data-testid="abwab-relations-modal"
       (click)="$event.stopPropagation()"
       (keydown.escape)="close()"
     >
-      <h3 [id]="titleId">
-        {{ titleText() }}
-        @if (!anchorPickMode()) {
-          <span class="abwab-relations-modal__count" data-testid="abwab-relations-modal-count">{{ relations().length }}</span>
-        }
-      </h3>
-      <p class="abwab-relations-modal__desc">{{ descriptionText }}</p>
-
-      @if (errorMessage(); as error) {
-        <qd-state variant="error" [reserve]="true" [message]="error" data-testid="abwab-relations-modal-error" />
-      }
-
-      @if (anchorPickMode()) {
-        <div class="abwab-relations-modal__targets" data-testid="abwab-relations-modal-targets">
-          @for (target of bulkTargets(); track target.id) {
-            <span class="abwab-relations-modal__target">{{ target.name }}</span>
+      <header class="qd-modal__head">
+        <h3 [id]="titleId">
+          {{ titleText() }}
+          @if (!anchorPickMode()) {
+            <span class="qd-chip qd-chip--pill qd-chip--static" data-testid="abwab-relations-modal-count">
+              {{ relations().length }}
+            </span>
           }
-        </div>
-      } @else {
-        @if (groups().length === 0) {
-          <qd-state variant="empty" [message]="emptyText" data-testid="abwab-relations-modal-empty" />
-        } @else {
-          @for (group of groups(); track group.key) {
-            <div class="abwab-relations-modal__group" [attr.data-testid]="'abwab-relations-modal-group-' + group.key">
-              <h4>
-                <span class="abwab-relations-modal__dot" [class]="'abwab-relations-modal__dot--' + groupDotKind(group.key)"></span>
-                {{ groupLabel(group.key) }}
-              </h4>
-              <div class="abwab-relations-modal__chips">
-                @for (relation of group.relations; track relation.id) {
-                  <qd-chip
-                    [removable]="true"
-                    [removeAriaLabel]="deleteAriaLabel"
-                    (remove)="remove(relation.id)"
-                  >
-                    {{ relation.otherDoorName }}
-                  </qd-chip>
-                }
-              </div>
-            </div>
-          }
+        </h3>
+        <p class="abwab-relations-modal__desc">{{ descriptionText }}</p>
+      </header>
+
+      <div class="qd-modal__body">
+        @if (errorMessage(); as error) {
+          <qd-state variant="error" [reserve]="true" [message]="error" data-testid="abwab-relations-modal-error" />
         }
-      }
 
-      <hr class="abwab-relations-modal__divider" />
-
-      <div class="abwab-relations-modal__add-title">{{ addTitle }}</div>
-
-      <div class="abwab-relations-modal__types" role="group">
-        @for (kind of typeOptions; track kind) {
-          <button
-            type="button"
-            class="abwab-relations-modal__type"
-            [class.abwab-relations-modal__type--active]="type() === kind"
-            [attr.aria-pressed]="type() === kind"
-            [attr.data-testid]="'abwab-relations-modal-type-' + kind"
-            (click)="pickType(kind)"
-          >
-            <span class="abwab-relations-modal__dot" [class]="'abwab-relations-modal__dot--' + kind"></span>
-            {{ typeLabel(kind) }}
-          </button>
-        }
-      </div>
-
-      @if (directionRowVisible()) {
-        <div class="abwab-relations-modal__direction" data-testid="abwab-relations-modal-direction">
-          <span>{{ directionLabel }}</span>
-          <div class="abwab-relations-modal__pill">
-            <button
-              type="button"
-              [class.abwab-relations-modal__pill-btn--active]="direction() === 'anchor-more'"
-              [attr.aria-pressed]="direction() === 'anchor-more'"
-              data-testid="abwab-relations-modal-direction-anchor-more"
-              (click)="pickDirection('anchor-more')"
-            >
-              {{ anchorMoreLabel() }}
-            </button>
-            <button
-              type="button"
-              [class.abwab-relations-modal__pill-btn--active]="direction() === 'anchor-less'"
-              [attr.aria-pressed]="direction() === 'anchor-less'"
-              data-testid="abwab-relations-modal-direction-anchor-less"
-              (click)="pickDirection('anchor-less')"
-            >
-              {{ anchorLessLabel() }}
-            </button>
-          </div>
-          <span class="abwab-relations-modal__preview" data-testid="abwab-relations-modal-direction-preview">
-            {{ directionPreview() }}
-          </span>
-        </div>
-      }
-
-      <div class="abwab-relations-modal__picker">
         @if (anchorPickMode()) {
-          <p class="abwab-relations-modal__picker-hint">{{ bulkAnchorHint }}</p>
+          <div class="abwab-relations-modal__targets" data-testid="abwab-relations-modal-targets">
+            @for (target of bulkTargets(); track target.id) {
+              <span class="abwab-relations-modal__target qd-truncate" [title]="target.name">{{ target.name }}</span>
+            }
+          </div>
+        } @else {
+          @if (groups().length === 0) {
+            <qd-state variant="empty" [message]="emptyText" data-testid="abwab-relations-modal-empty" />
+          } @else {
+            @for (group of groups(); track group.key) {
+              <div class="abwab-relations-modal__group" [attr.data-testid]="'abwab-relations-modal-group-' + group.key">
+                <h4>
+                  <span class="abwab-relations-modal__dot" [class]="'abwab-relations-modal__dot--' + groupDotKind(group.key)"></span>
+                  {{ groupLabel(group.key) }}
+                </h4>
+                <div class="abwab-relations-modal__chips">
+                  @for (relation of group.relations; track relation.id) {
+                    <qd-chip
+                      [removable]="true"
+                      [removeAriaLabel]="deleteAriaLabel(relation.otherDoorName)"
+                      (remove)="remove(relation.id)"
+                    >
+                      {{ relation.otherDoorName }}
+                    </qd-chip>
+                  }
+                </div>
+              </div>
+            }
+          }
         }
-        <input
-          type="text"
-          [placeholder]="searchPlaceholder"
-          [value]="searchQuery()"
-          data-testid="abwab-relations-modal-search"
-          (input)="onSearchInput($event)"
-        />
-        <div class="abwab-relations-modal__pick-list qd-scroll-stable">
-          @for (row of pickerRows(); track row.node.id) {
-            <div
-              class="abwab-relations-modal__pick-row"
-              [class.abwab-relations-modal__pick-row--disabled]="row.isLinked"
-              [style.--abwab-relations-depth]="row.depth"
-              [attr.data-testid]="'abwab-relations-modal-pick-' + row.node.id"
-              (click)="togglePicked(row)"
+
+        <hr class="abwab-relations-modal__divider" />
+
+        <div class="abwab-relations-modal__add-title">{{ addTitle }}</div>
+
+        <qd-tabs [ariaLabel]="typeTabsAriaLabel" class="abwab-relations-modal__types">
+          @for (kind of typeOptions; track kind) {
+            <button
+              type="button"
+              qdTab
+              [selected]="type() === kind"
+              [attr.data-testid]="'abwab-relations-modal-type-' + kind"
+              (click)="pickType(kind)"
             >
-              <!-- A leaf keeps the element for alignment only: no tab stop, nothing to announce. -->
+              <span class="abwab-relations-modal__dot" [class]="'abwab-relations-modal__dot--' + kind"></span>
+              {{ typeLabel(kind) }}
+            </button>
+          }
+        </qd-tabs>
+
+        @if (directionRowVisible()) {
+          <div class="abwab-relations-modal__direction" data-testid="abwab-relations-modal-direction">
+            <span>{{ directionLabel }}</span>
+            <div class="abwab-relations-modal__pill">
               <button
                 type="button"
-                class="abwab-relations-modal__pick-chevron"
-                [class.abwab-relations-modal__pick-chevron--leaf]="!row.hasChildren"
-                [attr.tabindex]="row.hasChildren ? null : -1"
-                [attr.aria-hidden]="row.hasChildren ? null : true"
-                [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
-                [attr.aria-label]="row.hasChildren ? expandAriaLabel(row) : null"
-                [attr.data-testid]="'abwab-relations-modal-pick-chevron-' + row.node.id"
-                (click)="toggleExpanded($event, row.node.id)"
+                [class.abwab-relations-modal__pill-btn--active]="direction() === 'anchor-more'"
+                [attr.aria-pressed]="direction() === 'anchor-more'"
+                data-testid="abwab-relations-modal-direction-anchor-more"
+                (click)="pickDirection('anchor-more')"
               >
-                @if (row.hasChildren) {
-                  <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
-                }
+                {{ anchorMoreLabel() }}
               </button>
-              <input
-                type="checkbox"
-                [checked]="isPicked(row.node.id)"
-                [disabled]="row.isLinked"
-                [attr.data-testid]="'abwab-relations-modal-pick-checkbox-' + row.node.id"
-                (click)="$event.preventDefault()"
-              />
-              <span class="abwab-relations-modal__pick-name">{{ row.node.name }}</span>
-              @if (row.isLinked) {
-                <span class="abwab-relations-modal__already">{{ alreadyLinkedLabel }}</span>
-              }
+              <button
+                type="button"
+                [class.abwab-relations-modal__pill-btn--active]="direction() === 'anchor-less'"
+                [attr.aria-pressed]="direction() === 'anchor-less'"
+                data-testid="abwab-relations-modal-direction-anchor-less"
+                (click)="pickDirection('anchor-less')"
+              >
+                {{ anchorLessLabel() }}
+              </button>
             </div>
+            <span class="abwab-relations-modal__preview" data-testid="abwab-relations-modal-direction-preview">
+              {{ directionPreview() }}
+            </span>
+          </div>
+        }
+
+        <div class="abwab-relations-modal__picker">
+          @if (anchorPickMode()) {
+            <p class="abwab-relations-modal__picker-hint">{{ bulkAnchorHint }}</p>
           }
+          <qd-abwab-door-picker
+            [nodes]="liveRoots()"
+            [pickedIds]="pickedIdList()"
+            [excludedIds]="excludedIdList()"
+            [disabledIds]="linkedIdList()"
+            [disabledTag]="alreadyLinkedLabel"
+            [emptyMessage]="pickerEmptyLabel"
+            [single]="anchorPickMode()"
+            [searchPlaceholder]="searchPlaceholder()"
+            testIdPrefix="abwab-relations-modal"
+            (toggled)="togglePicked($event)"
+          />
+          <p class="abwab-relations-modal__selected" data-testid="abwab-relations-modal-selected">
+            {{ pickedIds().size === 0 ? noneSelectedLabel : selectedSummary() }}
+          </p>
         </div>
-        <p class="abwab-relations-modal__selected" data-testid="abwab-relations-modal-selected">
-          {{ pickedIds().size === 0 ? noneSelectedLabel : selectedSummary() }}
-        </p>
       </div>
 
-      <div class="abwab-relations-modal__foot">
-        <button
-          type="button"
-          class="qd-btn qd-btn-primary"
-          [disabled]="addCount() === 0"
-          data-testid="abwab-relations-modal-add"
-          (click)="add()"
-        >
-          {{ addButtonLabel() }}
-        </button>
-        <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-relations-modal-close" (click)="close()">
-          {{ closeLabel }}
-        </button>
-      </div>
+      <footer class="qd-modal__foot">
+        <div class="abwab-relations-modal__foot">
+          <button
+            type="button"
+            class="qd-btn qd-btn-primary"
+            [disabled]="addCount() === 0"
+            data-testid="abwab-relations-modal-add"
+            (click)="add()"
+          >
+            {{ addButtonLabel() }}
+          </button>
+          <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-relations-modal-close" (click)="close()">
+            {{ closeLabel }}
+          </button>
+        </div>
+      </footer>
     </section>
   </div>
 }

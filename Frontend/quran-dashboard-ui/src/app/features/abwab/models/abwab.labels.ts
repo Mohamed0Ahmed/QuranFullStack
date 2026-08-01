@@ -164,7 +164,9 @@ export const ABWAB_LABELS = {
   relationsModalDescription: 'العلاقات المتبادلة تظهر تلقائيًا عند الطرف الآخر. الحذف من هنا يحذفها من الطرفين.',
   relationsEmpty: 'لا توجد علاقات لهذا الباب بعد — أضف أول علاقة من الأسفل.',
   relationsLoadError: 'تعذر تحميل علاقات الباب.',
-  relationDeleteAriaLabel: 'حذف العلاقة',
+  // Every group renders several of these buttons at once, so a static name would leave a screen
+  // reader with N identical «حذف العلاقة» controls and no way to tell them apart.
+  relationDeleteAriaLabel: (doorName: string): string => `حذف العلاقة مع «${doorName}»`,
 
   relationGroupSimilarity: 'تشابه',
   relationGroupOpposition: 'تضاد',
@@ -172,6 +174,7 @@ export const ABWAB_LABELS = {
   relationGroupLessComprehensive: 'أبواب أقل شمولية',
 
   relationAddTitle: 'إضافة علاقة جديدة',
+  relationTypeTabsAriaLabel: 'نوع العلاقة',
   relationTypeSimilarity: 'تشابه',
   relationTypeOpposition: 'تضاد',
   relationTypeComprehensiveness: 'شمولية',
@@ -184,7 +187,13 @@ export const ABWAB_LABELS = {
     `الأبواب اللي هتختارها ${anchorIsMore ? 'أقل شمولية' : 'أكثر شمولية'} من «${doorName}»`,
   relationPickerPlaceholder: 'ابحث واختر بابًا أو أكثر… (تقدر تربط كذا باب مرة واحدة)',
   relationPickerExpandAriaLabel: (doorName: string): string => `عرض الأبواب الفرعية لـ«${doorName}»`,
+  // The shared picker's own "your search matched nothing", distinct from every host's "there is
+  // nothing to pick": doors exist, this query just does not reach them.
+  pickerNoMatches: 'لا يوجد باب مطابق لبحثك.',
   relationPickerCollapseAriaLabel: (doorName: string): string => `إخفاء الأبواب الفرعية لـ«${doorName}»`,
+  // The picker's "there is nothing to pick" for this host — about doors, not about relations, so
+  // it cannot reuse `relationsEmpty` above.
+  relationPickerEmptyDoors: 'لا توجد أبواب أخرى يمكن ربطها.',
   relationAlreadyLinked: 'مرتبط بالفعل بهذا النوع',
   relationNoneSelected: 'لم تختر شيئًا بعد',
   relationSelectedSummary: (names: readonly string[]): string => `${names.length} مختار: ${names.join('، ')}`,
@@ -197,6 +206,9 @@ export const ABWAB_LABELS = {
   relationsBulkAddOp: 'إضافة علاقة',
   relationsBulkTitle: (count: number): string => `إضافة علاقة لـ ${countPhrase(count, DOOR_FORMS)}`,
   relationsBulkAnchorHint: 'اختر الباب الذي ترتبط به الأبواب المحددة',
+  // Door mode's placeholder invites «بابًا أو أكثر»; here exactly one door is choosable, and the
+  // control says so in text as well as in its radio semantics.
+  relationsBulkAnchorPlaceholder: 'ابحث واختر بابًا واحدًا…',
   // The pill must name the side the picker chooses, and in this mode that is the ANCHOR, not the
   // targets. Reusing the door-mode pair here would state the opposite of what the row stores:
   // `anchor-more` makes the picked door the more comprehensive endpoint (plan §5.3).
@@ -228,6 +240,7 @@ export const ABWAB_LABELS = {
   templatesEmptyMessage: 'لا توجد قوالب بعد — أنشئ أول قالب من الأعلى.',
   templateNoneSelectedMessage: 'اختر قالبًا من القائمة أو أنشئ قالبًا جديدًا.',
   templatesLoadingMessage: 'جارٍ تحميل القوالب...',
+  templateLoadingMessage: 'جارٍ تحميل القالب...',
   templatesLoadError: 'تعذر تحميل القوالب. حاول مرة أخرى.',
   templateLoadError: 'تعذر تحميل القالب.',
 
@@ -261,8 +274,6 @@ export const ABWAB_LABELS = {
   // before the copy happens rather than discovered afterwards.
   templateCopyPreviewDetached: 'النسخ مستقلة عن القالب: تعديل القالب لاحقًا أو حذفه لا يغيّر الأبواب المنسوخة.',
   templateCopySearchPlaceholder: 'ابحث واختر بابًا أو أكثر…',
-  templateCopyExpandAriaLabel: (doorName: string): string => `عرض الأبواب الفرعية لـ«${doorName}»`,
-  templateCopyCollapseAriaLabel: (doorName: string): string => `إخفاء الأبواب الفرعية لـ«${doorName}»`,
   templateCopyNoneSelected: 'لم تختر شيئًا بعد',
   templateCopySelectedSummary: (names: readonly string[]): string =>
     `${countPhrase(names.length, TARGET_FORMS)}: ${names.join('، ')}`,

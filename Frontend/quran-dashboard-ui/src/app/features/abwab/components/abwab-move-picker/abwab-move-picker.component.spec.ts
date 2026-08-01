@@ -145,4 +145,51 @@ describe('AbwabMovePickerComponent — M30', () => {
 
     expect(closed).toHaveLength(1);
   });
+
+  describe('dialog semantics', () => {
+    it('names itself as a dialog for assistive technology', () => {
+      const fixture = render({ titleText: 'نقل الباب' });
+      const dialog = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-move-picker"]')!;
+      const titleId = dialog.getAttribute('aria-labelledby');
+
+      expect(dialog.getAttribute('role')).toBe('dialog');
+      expect(dialog.getAttribute('aria-modal')).toBe('true');
+      expect(dialog.querySelector(`#${titleId}`)?.textContent).toContain('نقل الباب');
+    });
+
+    it('closes on Escape — a picker selection is not a draft to guard', () => {
+      const fixture = render();
+      const closed: void[] = [];
+      fixture.componentInstance.closed.subscribe(() => closed.push(undefined));
+
+      (fixture.nativeElement as HTMLElement)
+        .querySelector('[data-testid="abwab-move-picker"]')!
+        .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+      expect(closed).toHaveLength(1);
+    });
+
+    // Where focus actually lands is a browser fact: jsdom gives every element a zero box, so the
+    // CDK's focusable check rejects the target and auto-capture never fires. What this asserts is
+    // the contract that produces it — the trap is attached and set to capture, and the first
+    // tabbable control is a destination rather than something outside the picker.
+    it('traps focus and captures it, with a destination control first in tab order', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+      const dialog = root.querySelector('[data-testid="abwab-move-picker"]')!;
+
+      expect(dialog.hasAttribute('cdkTrapFocus')).toBe(true);
+      expect(dialog.hasAttribute('cdkTrapFocusAutoCapture')).toBe(true);
+      expect(dialog.querySelector('button')).toBe(root.querySelector('[data-testid="abwab-move-picker-section-none"]'));
+    });
+
+    it('keeps the actions out of the scrolling body', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const foot = root.querySelector('.qd-modal__foot')!;
+      expect(foot.querySelector('[data-testid="abwab-move-picker-confirm"]')).toBeTruthy();
+      expect(root.querySelector('.qd-modal__body')!.contains(foot)).toBe(false);
+    });
+  });
 });

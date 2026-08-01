@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, signal, untracked, viewChild } from '@angular/core';
 
 import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
+import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { AbwabAuthoringFields, EMPTY_AUTHORING_FIELDS } from '../../models/abwab-templates.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
@@ -25,12 +26,14 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 @Component({
   selector: 'qd-abwab-door-fields-form',
   standalone: true,
-  imports: [QdChipComponent],
+  imports: [QdChipComponent, QdStateComponent],
   templateUrl: './abwab-door-fields-form.component.html',
   styleUrl: './abwab-door-fields-form.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AbwabDoorFieldsFormComponent {
+  private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
+
   readonly value = input<AbwabAuthoringFields>(EMPTY_AUTHORING_FIELDS);
   readonly errorMessage = input<string | null>(null);
   readonly testIdPrefix = input('abwab-door-modal');
@@ -63,6 +66,12 @@ export class AbwabDoorFieldsFormComponent {
 
   protected removeAliasLabel(alias: string): string {
     return ABWAB_LABELS.removeAliasAriaLabel(alias);
+  }
+
+  /** A shell composing this form owns focus-on-open, but must not reach into the form's DOM to
+   * place it. */
+  focusFirstField(): void {
+    this.nameInput()?.nativeElement.focus();
   }
 
   constructor() {

@@ -1,73 +1,81 @@
 @if (open()) {
   <div class="qd-modal-backdrop" data-testid="abwab-template-node-modal-backdrop" (click)="requestClose()">
     <section
-      class="qd-modal abwab-template-node-modal"
+      class="qd-modal qd-modal--fixed abwab-template-node-modal"
       role="dialog"
       aria-modal="true"
       dir="rtl"
       [attr.aria-labelledby]="titleId"
       qdModalScrollLock
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
       data-testid="abwab-template-node-modal"
       (click)="$event.stopPropagation()"
       (keydown.escape)="requestClose()"
     >
-      <h3 [id]="titleId">{{ modalTitle }}</h3>
-      <p class="abwab-template-node-modal__context" data-testid="abwab-template-node-modal-context">
-        {{ contextText }}
-      </p>
+      <header class="qd-modal__head">
+        <h3 [id]="titleId">{{ modalTitle }}</h3>
+        <p class="abwab-template-node-modal__context" data-testid="abwab-template-node-modal-context">
+          {{ contextText }}
+        </p>
+      </header>
 
-      <qd-abwab-door-fields-form
-        [value]="initialFields"
-        [errorMessage]="errorMessage()"
-        testIdPrefix="abwab-template-node-modal"
-      />
+      <div class="qd-modal__body">
+        <qd-abwab-door-fields-form
+          [value]="initialFields"
+          [errorMessage]="errorMessage()"
+          testIdPrefix="abwab-template-node-modal"
+        />
+      </div>
 
-      @if (confirmingDiscard()) {
-        <div
-          class="abwab-template-node-modal__discard-confirm"
-          role="alertdialog"
-          data-testid="abwab-template-node-modal-discard-confirm"
-        >
-          <p>{{ dirtyCloseConfirmMessage }}</p>
+      <footer class="qd-modal__foot">
+        @if (confirmingDiscard()) {
+          <div
+            class="abwab-template-node-modal__discard-confirm"
+            role="alertdialog"
+            data-testid="abwab-template-node-modal-discard-confirm"
+          >
+            <p>{{ dirtyCloseConfirmMessage }}</p>
+            <div class="abwab-template-node-modal__actions">
+              <button
+                type="button"
+                class="qd-btn"
+                data-testid="abwab-template-node-modal-discard-confirm-yes"
+                (click)="confirmDiscard()"
+              >
+                {{ discardChangesLabel }}
+              </button>
+              <button
+                type="button"
+                class="qd-btn qd-btn-ghost"
+                data-testid="abwab-template-node-modal-discard-confirm-no"
+                (click)="cancelDiscard()"
+              >
+                {{ keepEditingLabel }}
+              </button>
+            </div>
+          </div>
+        } @else {
           <div class="abwab-template-node-modal__actions">
             <button
               type="button"
-              class="qd-btn"
-              data-testid="abwab-template-node-modal-discard-confirm-yes"
-              (click)="confirmDiscard()"
+              class="qd-btn qd-btn-primary"
+              data-testid="abwab-template-node-modal-save"
+              (click)="submit()"
             >
-              {{ discardChangesLabel }}
+              {{ saveLabel }}
             </button>
             <button
               type="button"
               class="qd-btn qd-btn-ghost"
-              data-testid="abwab-template-node-modal-discard-confirm-no"
-              (click)="cancelDiscard()"
+              data-testid="abwab-template-node-modal-cancel"
+              (click)="requestClose()"
             >
-              {{ keepEditingLabel }}
+              {{ cancelLabel }}
             </button>
           </div>
-        </div>
-      } @else {
-        <div class="abwab-template-node-modal__actions">
-          <button
-            type="button"
-            class="qd-btn qd-btn-primary"
-            data-testid="abwab-template-node-modal-save"
-            (click)="submit()"
-          >
-            {{ saveLabel }}
-          </button>
-          <button
-            type="button"
-            class="qd-btn qd-btn-ghost"
-            data-testid="abwab-template-node-modal-cancel"
-            (click)="requestClose()"
-          >
-            {{ cancelLabel }}
-          </button>
-        </div>
-      }
+        }
+      </footer>
     </section>
   </div>
 }

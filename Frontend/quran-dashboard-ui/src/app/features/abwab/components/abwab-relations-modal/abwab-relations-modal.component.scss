@@ -11,32 +11,19 @@
   font-size: 0.78rem;
 }
 
-.abwab-relations-modal__count,
-.abwab-relations-modal__already {
-  color: var(--qd-text-muted);
-  font-size: 0.6875rem;
-}
-
 .abwab-relations-modal__group h4,
 .abwab-relations-modal__picker-hint {
   color: var(--qd-text-muted);
   font-size: 0.75rem;
-  margin-block-end: var(--qd-space-1);
-}
-
-.abwab-relations-modal__count {
-  background: var(--qd-section-bg);
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-pill);
-  padding-inline: var(--qd-space-2);
+  margin-block-end: var(--qd-space-2);
 }
 
 .abwab-relations-modal__desc {
-  margin-block: var(--qd-space-1) var(--qd-space-3);
+  margin-block-start: var(--qd-space-1);
 }
 
 .abwab-relations-modal__group {
-  margin-block-end: var(--qd-space-3);
+  margin-block-end: var(--qd-space-4);
 }
 
 .abwab-relations-modal__group h4 {
@@ -71,19 +58,24 @@
 .abwab-relations-modal__targets {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--qd-space-1);
+  gap: var(--qd-space-2);
 }
 
 .abwab-relations-modal__targets {
   margin-block-end: var(--qd-space-3);
 }
 
+/* The `max-inline-size` is a ceiling, not §17's discouraged fixed name column: these chips sit in
+   a `flex-wrap` row with no `flex: 1` to share, so without a ceiling one long door name takes the
+   whole row and the remaining targets wrap under it one per line. The chip still shrinks freely
+   below the ceiling, which is the flexibility the fixed-column exception would have traded away. */
 .abwab-relations-modal__target {
   font-size: 0.8125rem;
   background: var(--qd-section-bg);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
   padding: var(--qd-space-1) var(--qd-space-2);
+  max-inline-size: 14rem;
 }
 
 .abwab-relations-modal__divider {
@@ -99,9 +91,10 @@
   margin-block-end: var(--qd-space-2);
 }
 
+/* The strip is `qd-tabs`; only its own inset inside the modal lives here. Selected state is
+   §16.1 through the primitive — deliberately not the concept mock's surface+bold. */
 .abwab-relations-modal__types {
-  display: flex;
-  gap: var(--qd-space-1);
+  display: block;
   inline-size: fit-content;
   padding: var(--qd-space-1);
 }
@@ -114,40 +107,9 @@
   border-radius: var(--qd-radius-md);
 }
 
-.abwab-relations-modal__type {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--qd-space-1);
-  border: 1px solid transparent;
-  background: transparent;
-  border-radius: var(--qd-radius-sm);
-  padding: var(--qd-space-1) var(--qd-space-3);
-  font-family: inherit;
-  font-size: 0.8125rem;
-  color: var(--qd-text-muted);
-  cursor: pointer;
-}
-
-.abwab-relations-modal__type--active {
-  background: var(--qd-surface);
-  border-color: var(--qd-border);
-  color: var(--qd-text);
-  font-weight: 600;
-}
-
-.abwab-relations-modal__type:focus-visible,
-.abwab-relations-modal__pill button:focus-visible,
-.abwab-relations-modal__picker input:focus-visible,
-.abwab-relations-modal__pick-chevron:focus-visible,
-.abwab-relations-modal__pick-row input:focus-visible {
+.abwab-relations-modal__pill button:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: -1px;
-}
-
-/* The checkbox and the chevron are the row's two tab stops, so keyboard focus has to read as a
-   row highlight — the row itself is not focusable and gets no ring of its own. */
-.abwab-relations-modal__pick-row:has(:focus-visible) {
-  background: var(--qd-surface-hover);
 }
 
 .abwab-relations-modal__direction {
@@ -188,66 +150,6 @@
   padding: var(--qd-space-2);
 }
 
-.abwab-relations-modal__picker input {
-  inline-size: 100%;
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-sm);
-  padding: var(--qd-space-2) var(--qd-space-3);
-  background: var(--qd-surface);
-  color: var(--qd-text);
-  font-family: inherit;
-  font-size: 0.8125rem;
-}
-
-.abwab-relations-modal__pick-list {
-  max-block-size: 11rem;
-  overflow: auto;
-  margin-block-start: var(--qd-space-2);
-}
-
-.abwab-relations-modal__pick-row {
-  display: flex;
-  align-items: center;
-  gap: var(--qd-space-2);
-  padding: var(--qd-space-1) var(--qd-space-2);
-  padding-inline-start: calc(var(--abwab-relations-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
-  border-radius: var(--qd-radius-sm);
-  cursor: pointer;
-}
-
-.abwab-relations-modal__pick-row:hover {
-  background: var(--qd-surface-hover);
-}
-
-.abwab-relations-modal__pick-row--disabled,
-.abwab-relations-modal__pick-row--disabled:hover {
-  opacity: 0.45;
-  cursor: default;
-  background: transparent;
-}
-
-.abwab-relations-modal__pick-chevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 1rem;
-  block-size: 1rem;
-  flex: none;
-  border: none;
-  background: transparent;
-  color: var(--qd-text-muted);
-  cursor: pointer;
-}
-
-.abwab-relations-modal__pick-chevron--leaf {
-  visibility: hidden;
-}
-
-.abwab-relations-modal__pick-name {
-  flex: 1;
-  font-size: 0.8125rem;
-}
-
 .abwab-relations-modal__selected {
   margin-block-start: var(--qd-space-2);
   min-block-size: 1.25rem;
@@ -256,5 +158,4 @@
 .abwab-relations-modal__foot {
   display: flex;
   gap: var(--qd-space-2);
-  margin-block-start: var(--qd-space-3);
 }

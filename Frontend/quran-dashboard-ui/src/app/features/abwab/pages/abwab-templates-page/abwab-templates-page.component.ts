@@ -139,6 +139,7 @@ export class AbwabTemplatesPageComponent implements OnInit {
   protected get templatesEmptyMessage(): string { return ABWAB_LABELS.templatesEmptyMessage; }
   protected get templateNoneSelectedMessage(): string { return ABWAB_LABELS.templateNoneSelectedMessage; }
   protected get templatesLoadingMessage(): string { return ABWAB_LABELS.templatesLoadingMessage; }
+  protected get templateLoadingMessage(): string { return ABWAB_LABELS.templateLoadingMessage; }
   protected get nodeEditOpLabel(): string { return ABWAB_LABELS.templateNodeEditOp; }
   protected get nodeAddChildOpLabel(): string { return ABWAB_LABELS.templateNodeAddChildOp; }
   protected get nodeDeleteOpLabel(): string { return ABWAB_LABELS.templateNodeDeleteOp; }

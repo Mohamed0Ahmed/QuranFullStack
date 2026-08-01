@@ -1,0 +1,82 @@
+<input
+  #searchInput
+  type="text"
+  [placeholder]="searchPlaceholder()"
+  [attr.aria-label]="searchPlaceholder()"
+  [value]="searchQuery()"
+  [attr.data-testid]="testIdPrefix() + '-search'"
+  (input)="onSearchInput($event)"
+/>
+<div class="abwab-door-picker__list qd-scroll-stable">
+  @for (row of rows(); track row.node.id) {
+    <div
+      class="abwab-door-picker__row qd-check-row"
+      [class.abwab-door-picker__row--disabled]="row.isDisabled"
+      [style.--abwab-door-picker-depth]="row.depth"
+      [attr.data-testid]="testIdPrefix() + '-pick-' + row.node.id"
+      (click)="togglePicked(row)"
+    >
+      <!-- A leaf keeps the element for alignment only: no tab stop, nothing to announce. -->
+      <button
+        type="button"
+        class="abwab-door-picker__chevron"
+        [class.abwab-door-picker__chevron--leaf]="!row.hasChildren"
+        [attr.tabindex]="row.hasChildren ? null : -1"
+        [attr.aria-hidden]="row.hasChildren ? null : true"
+        [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
+        [attr.aria-label]="row.hasChildren ? expandAriaLabel(row) : null"
+        [attr.data-testid]="testIdPrefix() + '-pick-chevron-' + row.node.id"
+        (click)="toggleExpanded($event, row.node.id)"
+      >
+        @if (row.hasChildren) {
+          <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
+        }
+      </button>
+      <!-- Radio under `single`: the control itself has to say "exactly one", not just the hint
+           above it. The row's click handler stays the one writer either way. -->
+      <input
+        class="qd-checkbox"
+        [attr.type]="single() ? 'radio' : 'checkbox'"
+        [attr.name]="single() ? pickerName : null"
+        [checked]="isPicked(row.node.id)"
+        [disabled]="row.isDisabled"
+        [attr.aria-label]="row.node.name"
+        [attr.data-testid]="testIdPrefix() + '-pick-checkbox-' + row.node.id"
+        (click)="$event.preventDefault()"
+        (change)="onRowChange(row)"
+      />
+      <span class="abwab-door-picker__name qd-truncate" [title]="row.node.name">{{ row.node.name }}</span>
+      @if (row.isDisabled && disabledTag()) {
+        <span class="abwab-door-picker__tag">{{ disabledTag() }}</span>
+      }
+    </div>
+  } @empty {
+    <!-- Loading and error are separated from empty for the same reason the doors page separates
+         them: an unresolved fetch is not an answer about how many doors exist. -->
+    @if (status() === 'loading') {
+      <qd-skeleton-rows
+        [count]="6"
+        rowTemplate="1.1rem 0.9375rem 1fr"
+        [loadingLabel]="loadingLabel"
+        [attr.data-testid]="testIdPrefix() + '-loading'"
+      />
+    } @else if (status() === 'error') {
+      <qd-state
+        variant="error"
+        [reserve]="true"
+        [message]="errorMessage()"
+        [actionLabel]="retryLabel"
+        (action)="retry.emit()"
+        [attr.data-testid]="testIdPrefix() + '-doors-error'"
+      />
+    } @else if (searchFoundNothing()) {
+      <qd-state variant="empty" [message]="noMatchesLabel" [attr.data-testid]="testIdPrefix() + '-no-matches'" />
+    } @else {
+      <!-- Fallthrough, not a `status === 'empty'` branch: an empty list with no other stated
+           reason always owes the user an answer, including for a host that never drives status.
+           `-doors-empty`, not `-empty`, for the same reason the error above is `-doors-error`:
+           the prefix is the host's, and the relations modal owns an `-empty` of its own. -->
+      <qd-state variant="empty" [message]="emptyMessage()" [attr.data-testid]="testIdPrefix() + '-doors-empty'" />
+    }
+  }
+</div>

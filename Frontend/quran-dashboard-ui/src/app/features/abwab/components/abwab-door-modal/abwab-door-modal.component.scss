@@ -1,7 +1,6 @@
 .abwab-door-modal__context {
   color: var(--qd-text-muted);
   font-size: 0.8125rem;
-  margin-block-end: var(--qd-space-3);
 }
 
 .abwab-door-modal__meta {
@@ -41,5 +40,8 @@
 .abwab-door-modal__foot {
   display: flex;
   gap: var(--qd-space-2);
+}
+
+.abwab-door-modal__discard-actions {
   margin-block-start: var(--qd-space-3);
 }
