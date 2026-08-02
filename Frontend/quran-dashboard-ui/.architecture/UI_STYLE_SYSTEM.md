@@ -1301,6 +1301,26 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   the CSS only renders it. Keeping the timer with the host is what lets the same host
   key the mark off the navigation that makes the destination exist (see the abwab
   README's reveal note) instead of off the click.
+- **The persistent variant: a search match mark (ux-slice-l).** The same "this row is the
+  one" problem with a different lifetime — it holds for as long as the query does instead of
+  decaying. Same reasoning rules out a tint (see above), so it is also outline-family, but it
+  takes a **different CSS property**: `box-shadow: inset 0 0 0 1px var(--qd-accent)`, while
+  the reveal keeps `outline`. That split is the point. The reveal ring and `:focus-visible`
+  already both claim `outline`, and a third claimant would make which mark shows depend on
+  SCSS declaration order — a silent-reformat hazard. Separate properties compose
+  order-independently: **match + revealed** shows the 2px decaying outline around the static
+  1px inset ring, and **match + focused** shows the focus ring with the match still visible.
+  The 1px/2px pairing keeps the persistent mark quieter than the transient one. It never
+  animates, so reduced motion needs nothing new; the row's `border-radius` is followed by an
+  inset shadow, so it hugs the same shape hover does. **Do not unify the two onto one
+  property** — that reintroduces the race this split removes.
+  Measured in-browser (1024px and 1440px, both themes, rest / hover / selected / focused —
+  16 readings): the mark is `oklch(0.49 0.068 176.3)` in light against fills of transparent,
+  `oklch(0.945 0.015 94.2)` hover and `oklch(0.954 0.01 164.9)` selected — a lightness delta
+  of 0.46–0.46 on the two fills; in dark it is `oklch(0.772 0.098 82)` against
+  `oklch(0.265 0.039 262.7)` hover and `oklch(0.25 0.03 281.2)` selected, delta 0.51–0.52.
+  The shadow was byte-identical in all four states in both themes — no fill and no focus ring
+  overwrites it.
 - Compose, do not re-style — a second consumer takes this class shape, not a new one.
 
 ### Viewport reservation

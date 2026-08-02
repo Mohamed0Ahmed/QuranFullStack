@@ -62,6 +62,26 @@ nine), four of them reads.
   grouping to act on there — leaving only search, which still filters the archive tree
   (so the archive view never grows a root-count badge either — there is no tab strip
   there to carry one).
+  - **One search box, two behaviours, deliberately (ux-slice-l).** In the **tree** a query
+    *marks* matching rows in place (a 1px inset accent ring) and hides nothing; every door
+    stays where the user last saw it, and a zero-match query leaves the full tree with a zero
+    count rather than collapsing into «لا توجد أبواب بعد», which was a lie about the data. In
+    **cards** and the **archive** the same query still *filters* (`pruneAbwabNodesToVisible`)
+    — those are flat browsing surfaces where a filter costs no structure. The door picker's
+    own search also stays a filter. The split is per view, not per query, and lives here
+    rather than in the placeholder, which would otherwise have to be view-dependent.
+  - **The match count sits beside the input**, not in the stats row: it answers the query, so
+    it belongs to the control that asked. It is two elements — a live `aria-hidden` span that
+    updates per keystroke, and an always-mounted visually-hidden `role="status"` region that
+    speaks the settled count **once, 500 ms after typing stops**. A status region bound
+    straight to the count would announce once per typed character. Clearing the query empties
+    the region immediately and announces nothing. Deliberately **not** routed through
+    `qd-abwab-announcer`, whose channel is one-shot reveal/write messages.
+  - **Matched ancestors are seeded open, not forced**, so a branch search opened is
+    collapsible at once and survives clearing the query. The consequence — seeds accumulate,
+    so broadening then narrowing leaves the earlier branches open — is accepted and intended;
+    expansion is the user's state once seeded, and rewinding it per keystroke would fight
+    them.
   - **Item 19's root-count badge** renders `.qd-tabs__count` at the call-site on every
     tab, composing `qd-tabs`'s backing class rather than adding a directive input —
     `qdTab` stays a host-bindings-only directive and cannot project a child span.
@@ -256,7 +276,11 @@ nine), four of them reads.
 - `state/abwab-tree.builder.ts` — pure: DTO → `AbwabTreeSnapshotVm` (live/archive
   partition, gap-tolerant ordering, per-section filtering, name+alias search, and
   `pruneAbwabNodesToVisible` — rebuilds a node list to only the search-visible ids,
-  recursing into children, backing the tree/archive-view search filter).
+  recursing into children, backing the **cards and archive** search filter). One walk feeds
+  two presentations: the tree reads `matchedIds`/`autoExpandedIds` to mark and seed, the
+  filtering views read `visibleIds`. The walk carries a single push/pop ancestor stack rather
+  than allocating a path array per edge; the builder spec's exact-set cases are the fence
+  that keeps its output identical.
 - `state/abwab-selection.store.ts` — single selection + bulk set, rebinds by id after
   every refresh, dropping ids a write made vanish. Bulk mode is unavailable while the
   archive view is active.
@@ -356,9 +380,12 @@ not the target's**
 («كل الأبواب» already shows every door, so narrowing to the target's tab there would be
 gratuitous — and an explicit `door` in the same change survives the scope-invalidation
 clear, which is what makes the cross-section case one navigation instead of two);
-`view: 'tree'` when the cards drill is open, since the item is reveal-in-*tree*; and `q`
-cleared when a search is filtering, because a reveal that leaves its target pruned by
-`pruneAbwabNodesToVisible` breaks the promise the click makes.
+and `view: 'tree'` when the cards drill is open, since the item is reveal-in-*tree*.
+
+`q` is **not** touched. Slice D cleared it because a filtering tree could leave the reveal's
+target pruned; ux-slice-l removed the pruning, so the premise is gone — the target is on
+screen under any query, and discarding the user's search would be a second action they did
+not ask for. A reveal during a search keeps the marks and the count exactly as they were.
 
 Three things about it are load-bearing and easy to undo by accident:
 
@@ -366,10 +393,12 @@ Three things about it are load-bearing and easy to undo by accident:
   that must exist for either to mean anything are rendered by the change detection that
   emission triggers — and in the cross-section, cards and search cases they do not exist
   before it at all.
-- **The ancestor chain is *seeded* into the tree's manual expansion, not forced.**
-  `forceExpandedIds` is unioned with manual toggles and cannot be collapsed, so a reveal
-  routed through it would lock the target's ancestors open for the rest of the session.
-  `expandSeedIds` merges once and hands the chevrons straight back to the user.
+- **The ancestor chain is *seeded* into the tree's manual expansion, not forced.** A forced
+  set is unioned with manual toggles and cannot be collapsed, so a reveal routed through it
+  would lock the target's ancestors open for the rest of the session. `expandSeedIds` merges
+  once and hands the chevrons straight back to the user. Search auto-expansion arrives on the
+  same input now (ux-slice-l); the page unions the two sources and must return the shared
+  `NO_IDS` when both are empty, or the tree's merge effect re-runs on every tick.
 - **The highlight is an outline, never a tint** — `--qd-selected-bg` *is*
   `--qd-accent-tint`, and the reveal always lands on the row it just selected, so a tint
   would be invisible by construction. See `UI_STYLE_SYSTEM.md` §17 "Reveal highlight".

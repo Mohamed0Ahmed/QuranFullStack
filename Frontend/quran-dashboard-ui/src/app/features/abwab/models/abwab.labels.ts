@@ -34,6 +34,16 @@ function countPhrase(count: number, forms: ArabicCountForms): string {
   return `${count} ${count <= 10 ? forms.few : forms.many}`;
 }
 
+/** Zero has its own wording here — «0 نتائج» beside a search box reads as a broken control
+ * rather than an answer. */
+const RESULT_FORMS: ArabicCountForms = {
+  zero: 'لا توجد نتائج',
+  one: 'نتيجة واحدة',
+  two: 'نتيجتان',
+  few: 'نتائج',
+  many: 'نتيجة',
+};
+
 const DOOR_FORMS: ArabicCountForms = {
   zero: 'لا أبواب',
   one: 'باب واحد',
@@ -109,7 +119,12 @@ export const ABWAB_LABELS = {
   // features/abwab/README.md for why «سيتم أرشفة 1 بابًا»'s rule does not reach this pattern.
   statOpenScopeDoors: 'أبواب هذا التبويب',
   searchLabel: 'ابحث في الأبواب',
-  searchPlaceholder: 'ابحث في الأبواب… (يفلتر الشجرة مباشرة)',
+  // The parenthetical went with the tree's filtering (ux-slice-l): it is now false for the tree,
+  // which marks matches in place, and true only for cards/archive. One box, two presentations —
+  // a placeholder cannot say that without becoming view-dependent, so it stops claiming behavior
+  // at all and the split is recorded in the feature README instead.
+  searchPlaceholder: 'ابحث في الأبواب…',
+  searchMatchCount: (count: number): string => countPhrase(count, RESULT_FORMS),
   viewToggleTree: 'شجرة',
   viewToggleCards: 'بطاقات',
   archiveButton: 'الأرشيف',

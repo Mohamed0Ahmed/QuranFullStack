@@ -287,6 +287,10 @@ describe('filterAbwabRootsBySection — M3', () => {
   });
 });
 
+// The walk has two consumers with different appetites (ux-slice-l): the tree reads `matchedIds`
+// to mark rows and `autoExpandedIds` to seed branches open while keeping every row on screen;
+// the cards and archive views read `visibleIds` and still prune to it. The exact set contents
+// pinned below are therefore also the byte-identical fence for the walk's push/pop rewrite.
 describe('searchAbwabNodes — M4', () => {
   it('matches over name and alias and marks strict ancestors for auto-expand, leaving unrelated branches out', () => {
     const snapshot = buildAbwabTreeSnapshot(
@@ -307,6 +311,29 @@ describe('searchAbwabNodes — M4', () => {
     expect(byDeepName.matchedIds).toEqual(new Set([3]));
     expect(byDeepName.visibleIds).toEqual(new Set([1, 2, 3]));
     expect(byDeepName.autoExpandedIds).toEqual(new Set([1, 2]));
+  });
+
+  it('walks a deep chain with siblings without leaking ancestors between branches', () => {
+    // The stack case: a mis-popped ancestor stack shows up as ids from a sibling branch bleeding
+    // into another branch's ancestor set, which only a chain deeper than three levels — with a
+    // sibling subtree walked before the match — can expose.
+    const snapshot = buildAbwabTreeSnapshot(
+      tree([
+        door({ id: 1, name: 'الجذر', orderValue: 1 }),
+        door({ id: 2, name: 'فرع أول', parentId: 1, orderValue: 1 }),
+        door({ id: 3, name: 'حفيد أول', parentId: 2, orderValue: 1 }),
+        door({ id: 4, name: 'فرع ثان', parentId: 1, orderValue: 2 }),
+        door({ id: 5, name: 'حفيد ثان', parentId: 4, orderValue: 1 }),
+        door({ id: 6, name: 'الهدف العميق', parentId: 5, orderValue: 1 }),
+      ]),
+    );
+
+    const result = searchAbwabNodes(snapshot.liveRoots, 'الهدف');
+
+    expect(result.matchedIds).toEqual(new Set([6]));
+    // Strictly the chain 1 → 4 → 5; the first branch (2, 3) contributed nothing.
+    expect(result.visibleIds).toEqual(new Set([1, 4, 5, 6]));
+    expect(result.autoExpandedIds).toEqual(new Set([1, 4, 5]));
   });
 
   it('reports isFiltering=false and empty sets for a blank query', () => {

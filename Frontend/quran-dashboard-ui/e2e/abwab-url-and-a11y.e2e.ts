@@ -164,8 +164,17 @@ test('search matches by alias, not just by name', async ({ page, abwabSandbox })
   const otherDoor = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('unrelated') });
 
   await page.goto(`/abwab?section=${abwabSandbox.sectionId}&q=${encodeURIComponent(aliasValue)}`);
-  await expect(page.getByTestId(`abwab-tree-row-${doorWithAlias.id}`)).toBeVisible();
-  await expect(page.getByTestId(`abwab-tree-row-${otherDoor.id}`)).toHaveCount(0);
+
+  // ux-slice-l: the tree marks rather than filters, so the assertion moved from "the non-match
+  // is gone" to "the non-match is still there, unmarked" — which is a stronger check of the
+  // same thing (a false alias match would now mark the wrong row instead of merely keeping it).
+  const matched = page.getByTestId(`abwab-tree-row-${doorWithAlias.id}`);
+  const unmatched = page.getByTestId(`abwab-tree-row-${otherDoor.id}`);
+  await expect(matched).toBeVisible();
+  await expect(matched).toHaveClass(/abwab-tree__row--match/);
+  await expect(unmatched).toBeVisible();
+  await expect(unmatched).not.toHaveClass(/abwab-tree__row--match/);
+  await expect(page.getByTestId('abwab-toolbar-search-count')).toHaveText('نتيجة واحدة');
 });
 
 test('tree a11y: roles, roving tabindex, RTL-mirrored arrows, Enter, and Shift+F10', async ({ page, abwabSandbox }) => {

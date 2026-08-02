@@ -47,6 +47,18 @@
       data-testid="abwab-toolbar-search"
       (input)="onSearchInput($event)"
     />
+    <!-- Two elements, because the seen value and the spoken value update at different rates.
+         This one is live and per keystroke, and silent to AT. -->
+    @if (searchQuery() !== '') {
+      <span class="abwab-toolbar__search-count" aria-hidden="true" data-testid="abwab-toolbar-search-count">
+        {{ matchCountText() }}
+      </span>
+    }
+    <!-- And this one speaks, once typing settles. Always mounted: a status region has to exist
+         before its content changes to be announced reliably. -->
+    <span class="qd-sr-only" role="status" data-testid="abwab-toolbar-search-count-announce">
+      {{ announcedCountText() }}
+    </span>
   </div>
 
   @if (!hideSectionControls()) {

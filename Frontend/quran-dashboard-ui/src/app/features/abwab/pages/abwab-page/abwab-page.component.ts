@@ -166,7 +166,15 @@ export class AbwabPageComponent implements OnInit {
     return result.isFiltering ? pruneAbwabNodesToVisible(this.visibleRoots(), result.visibleIds) : this.visibleRoots();
   });
 
-  protected readonly forceExpandedIds = computed(() => this.searchResult().autoExpandedIds);
+  /** The tree marks these rows; it never drops the ones it did not match. Cards and archive
+   * read `displayRoots`/`displayArchivedRoots` above and still prune. */
+  protected readonly treeMatchedIds = computed(() => this.searchResult().matchedIds);
+
+  /** The count follows whichever walk actually ran for the view on screen. Both computeds are
+   * lazy, so reading one here does not cost a second walk per keystroke. */
+  protected readonly searchMatchCount = computed(() =>
+    this.archiveParam() ? this.archiveSearchResult().matchedIds.size : this.searchResult().matchedIds.size,
+  );
 
   // Reveal-in-tree (audit item 10). `revealTargetId` is what the reveal is *about*;
   // `revealedId` is what currently carries the mark. They are separate because the mark is
@@ -204,6 +212,26 @@ export class AbwabPageComponent implements OnInit {
       parentId = byId.get(parentId)?.parentId ?? null;
     }
     return chain;
+  });
+
+  /** Two seed sources on one input: the reveal's ancestor chain and the search's. Both are
+   * merged into the tree's manual set, so a branch either opens is collapsible immediately and
+   * survives clearing the query — which is also why search seeds accumulate across keystrokes
+   * (broadening then narrowing leaves the earlier branches open). Intended, not incidental.
+   *
+   * The identity rules matter as much as the union: returning a fresh Set when nothing changed
+   * would re-run the tree's merge effect on every change-detection tick, so an empty union is
+   * the shared `NO_IDS` and a one-sided union is that side's own set, unwrapped. */
+  protected readonly expandSeedIds = computed<ReadonlySet<number>>(() => {
+    const reveal = this.revealExpandSeedIds();
+    const search = this.searchResult().autoExpandedIds;
+    if (reveal.size === 0) {
+      return search.size === 0 ? NO_IDS : search;
+    }
+    if (search.size === 0) {
+      return reveal;
+    }
+    return new Set([...reveal, ...search]);
   });
 
   /** The unfiltered live roots the move picker and the relations modal both browse. */
@@ -452,10 +480,13 @@ export class AbwabPageComponent implements OnInit {
    * Reveal a related door in the tree (audit item 10). Every state the target can be in is
    * folded into **one** query patch, so there is one navigation and no race between them:
    * `door` always; `section` when the target lives elsewhere (an explicit `door` in the same
-   * change overrides the scope-invalidation clear, `abwab-url-sync.ts`); `view: 'tree'` when
-   * the cards drill is open, since the item is reveal-in-*tree*; and `q` cleared when a search
-   * is filtering, because a reveal that leaves its target pruned breaks the promise the click
-   * makes.
+   * change overrides the scope-invalidation clear, `abwab-url-sync.ts`); and `view: 'tree'`
+   * when the cards drill is open, since the item is reveal-in-*tree*.
+   *
+   * `q` is **not** touched (ux-slice-l, reversing slice D). Clearing it existed only because a
+   * filtering tree could leave the target pruned; the tree highlights instead of pruning now,
+   * so the target is on screen either way and throwing the user's query away would be a second,
+   * unasked-for action.
    *
    * The archived/missing guard is defensively unreachable — the relations read hides any
    * relation whose endpoint is archived — and is kept anyway, so an impossible state is a
@@ -495,7 +526,6 @@ export class AbwabPageComponent implements OnInit {
           ? { section: node.sectionId }
           : {}),
         ...(this.viewParam() === 'cards' ? { view: 'tree' as AbwabView } : {}),
-        ...(this.searchQueryParam() !== '' ? { q: '' } : {}),
       }),
     );
   }

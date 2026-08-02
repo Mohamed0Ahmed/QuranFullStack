@@ -8,6 +8,7 @@ import {
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 
@@ -58,10 +59,15 @@ export class QdContextMenuComponent {
         return;
       }
       const next = this.place(anchor, rect.width, rect.height);
-      const current = this.placement();
-      if (current === null || current.left !== next.left || current.top !== next.top) {
-        this.placement.set(next);
-      }
+      // Untracked on purpose: this effect WRITES `placement`, so a tracked read would make it
+      // its own dependency and leave termination resting on the equality guard below rather
+      // than on the dependency graph.
+      untracked(() => {
+        const current = this.placement();
+        if (current === null || current.left !== next.left || current.top !== next.top) {
+          this.placement.set(next);
+        }
+      });
     });
   }
 

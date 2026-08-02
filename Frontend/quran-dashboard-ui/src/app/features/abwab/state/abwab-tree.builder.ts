@@ -153,8 +153,18 @@ function nodeMatchesQuery(node: AbwabNode, query: string): boolean {
   return node.aliases.some((alias) => alias.includes(query));
 }
 
-/** Searches names **and** aliases (plan-slice-b.md §6.2); ancestors of a match stay visible
- * and are marked to auto-expand, matching the mock's "open the path to a match" behavior. */
+/**
+ * Searches names **and** aliases (plan-slice-b.md §6.2); ancestors of a match stay visible and
+ * are marked to auto-expand, matching the mock's "open the path to a match" behavior.
+ *
+ * Two consumers now read different halves of one walk (ux-slice-l): the tree highlights
+ * `matchedIds` and seeds `autoExpandedIds` open while keeping every row on screen, and the
+ * cards/archive views still prune to `visibleIds`. One walk, one query, two presentations.
+ *
+ * The recursion carries ONE live ancestor stack — pushed before the children loop, popped after —
+ * rather than allocating `[...ancestors, node]` per edge. Output is byte-identical; the M4/prune
+ * cases pin exact set contents and pass unmodified, which is what makes that claim checkable.
+ */
 export function searchAbwabNodes(roots: readonly AbwabNode[], query: string): AbwabSearchResult {
   const trimmed = query.trim();
   if (trimmed === '') {
@@ -164,13 +174,16 @@ export function searchAbwabNodes(roots: readonly AbwabNode[], query: string): Ab
   const matchedIds = new Set<number>();
   const visibleIds = new Set<number>();
   const autoExpandedIds = new Set<number>();
+  const ancestors: AbwabNode[] = [];
 
-  function walk(node: AbwabNode, ancestors: readonly AbwabNode[]): boolean {
+  function walk(node: AbwabNode): boolean {
     const isMatch = nodeMatchesQuery(node, trimmed);
     let anyDescendantMatch = false;
+    ancestors.push(node);
     for (const child of node.children) {
-      anyDescendantMatch = walk(child, [...ancestors, node]) || anyDescendantMatch;
+      anyDescendantMatch = walk(child) || anyDescendantMatch;
     }
+    ancestors.pop();
 
     if (isMatch) {
       matchedIds.add(node.id);
@@ -186,7 +199,7 @@ export function searchAbwabNodes(roots: readonly AbwabNode[], query: string): Ab
   }
 
   for (const root of roots) {
-    walk(root, []);
+    walk(root);
   }
 
   return { isFiltering: true, matchedIds, visibleIds, autoExpandedIds };

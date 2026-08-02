@@ -487,24 +487,76 @@ describe('AbwabPageComponent', () => {
     });
   });
 
-  describe('T507 — search wiring filters the tree via the toolbar input', () => {
-    it('hides a non-matching door and auto-expands the matching ancestor', () => {
-      const fixture = render();
+  // Rewritten by ux-slice-l: T507's original decision — search PRUNES the tree — is reversed for
+  // the tree only. Hiding rows destroyed the structure the user was reading, and a zero-match
+  // query collapsed the whole tree into «لا توجد أبواب بعد», which is a lie about the data. The
+  // tree marks matches in place; cards and archive still filter, deliberately, from the same box.
+  describe('T507 — search marks matches in the tree via the toolbar input', () => {
+    function search(fixture: ReturnType<typeof render>, query: string): HTMLElement {
       const root = fixture.nativeElement as HTMLElement;
       const input = root.querySelector<HTMLInputElement>('[data-testid="abwab-toolbar-search"]')!;
-      input.value = 'الرسول';
+      input.value = query;
       input.dispatchEvent(new Event('input'));
+      queryParamMap$.next(convertToParamMap(query === '' ? {} : { q: query }));
+      fixture.detectChanges();
+      return root;
+    }
+
+    it('keeps every row, marks the match, and shows the count', () => {
+      const fixture = render();
+      const root = search(fixture, 'الرسول');
 
       expect(router.navigate).toHaveBeenCalledWith(
         [],
         expect.objectContaining({ queryParams: expect.objectContaining({ q: 'الرسول' }) }),
       );
 
-      queryParamMap$.next(convertToParamMap({ q: 'الرسول' }));
+      const match = root.querySelector('[data-testid="abwab-tree-row-2"]');
+      const nonMatch = root.querySelector('[data-testid="abwab-tree-row-1"]');
+      expect(match).toBeTruthy();
+      // The row that did not match is still there — that is the whole change.
+      expect(nonMatch).toBeTruthy();
+      expect(match!.classList.contains('abwab-tree__row--match')).toBe(true);
+      expect(nonMatch!.classList.contains('abwab-tree__row--match')).toBe(false);
+
+      expect(root.querySelector('[data-testid="abwab-toolbar-search-count"]')?.textContent?.trim()).toBe(
+        ABWAB_LABELS.searchMatchCount(1),
+      );
+    });
+
+    it('a zero-match query leaves the full tree on screen with a zero count, not the empty state', () => {
+      const fixture = render();
+      const root = search(fixture, 'لا يوجد باب بهذا الاسم');
+
+      expect(root.querySelector('[data-testid="abwab-tree-row-1"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-tree-row-2"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-page-empty"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-toolbar-search-count"]')?.textContent?.trim()).toBe(
+        ABWAB_LABELS.searchMatchCount(0),
+      );
+    });
+
+    it('clearing the query drops the marks and the count', () => {
+      const fixture = render();
+      let root = search(fixture, 'الرسول');
+      expect(root.querySelector('[data-testid="abwab-tree-row-2"]')!.classList).toContain('abwab-tree__row--match');
+
+      root = search(fixture, '');
+
+      expect(root.querySelector('[data-testid="abwab-tree-row-2"]')!.classList).not.toContain(
+        'abwab-tree__row--match',
+      );
+      expect(root.querySelector('[data-testid="abwab-toolbar-search-count"]')).toBeNull();
+    });
+
+    it('cards view still prunes under the same query — the split is per view, not per query', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+      queryParamMap$.next(convertToParamMap({ view: 'cards', q: 'الرسول' }));
       fixture.detectChanges();
 
-      expect(root.querySelector('[data-testid="abwab-tree-row-2"]')).toBeTruthy();
-      expect(root.querySelector('[data-testid="abwab-tree-row-1"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-card-2"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-card-1"]')).toBeNull();
     });
   });
 
@@ -890,11 +942,15 @@ describe('AbwabPageComponent', () => {
       expect(lastPatch()).toEqual({ view: 'tree', door: '3', modal: null });
     });
 
-    it('active search: the patch clears q, so the target cannot land pruned', () => {
+    // Slice D cleared `q` here because a filtering tree could leave the reveal's target pruned.
+    // ux-slice-l removed the pruning, so the premise is gone and the user's query survives —
+    // throwing it away would now be a second, unasked-for action (user decision, 2026-08-02).
+    it('active search: the patch carries no q term, so the search survives the reveal', () => {
       const fixture = renderReveal({ section: '1', q: 'جذر' });
       reveal(fixture, 3);
 
-      expect(lastPatch()).toEqual({ q: null, door: '3', modal: null });
+      expect(lastPatch()).toEqual({ door: '3', modal: null });
+      expect(lastPatch()).not.toHaveProperty('q');
     });
 
     it('archived or unknown target: no navigation, and the announcer says why', () => {
