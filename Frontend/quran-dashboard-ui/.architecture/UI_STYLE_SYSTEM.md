@@ -753,8 +753,16 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   yes/no. Supersedes hand-written `role="alertdialog"` blocks: those get the role right and the
   focus handling wrong, and each one drifts from the next. **Do not hand-write these again.**
 - **Inputs / roles:** `open`, `titleText`, `confirmLabel`, `cancelLabel`,
-  `tone?: 'default' | 'danger'`, `busy?`, `confirmDisabled?`; outputs `confirmed`, `cancelled`.
-  Container is `role="alertdialog"` + `aria-modal="true"`, labelled by its own title.
+  `tone?: 'default' | 'danger'`, `busy?`, `confirmDisabled?`, `testIdPrefix?`; outputs
+  `confirmed`, `cancelled`. Container is `role="alertdialog"` + `aria-modal="true"`, labelled
+  by its own title.
+- **`testIdPrefix` renames all four testids** (`{prefix}`, `-backdrop`, `-confirm`, `-cancel`)
+  and defaults to `qd-confirm-dialog`. **Pass it whenever a page can host more than one
+  confirm** — otherwise two dialogs on one page answer the same selector and every assertion
+  against them is ambiguous.
+- **Transient, never URL-addressable — no consumer may write a URL key for a confirm dialog.**
+  A destructive confirm must be re-initiated, never restored from a URL: a link that reopens
+  "are you sure you want to delete this" is a link that can be sent to someone.
 - **Body is projected** (`<ng-content>`), so a consumer composes whatever the decision needs — a
   path, a selector, an inline `qd-state variant="error"`. The dialog owns the framing and the
   dismissal routes; it never owns the content.
@@ -772,9 +780,13 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   shared `modal-scroll-lock`.
 - **Not a modal shell.** Authoring modals (a form plus its dirty guard) keep their own shell —
   that is a different contract. This is for confirmations only.
-- **Known retrofit candidates:** the templates page still hand-rolls two inline
-  `role="alertdialog"` confirms (`abwab-templates-page.component.html`), and the sections modal's
-  delete flow has no confirmation at all. Both belong on this primitive in a later slice.
+- **Retrofit complete.** Every destructive confirmation in the app now composes this primitive:
+  the abwab page's single and bulk archive confirms, the sections modal's delete, and the
+  templates page's template- and node-delete. The only surviving hand-written
+  `role="alertdialog"` blocks are the three **dirty-discard strips** (door, sections, and
+  template-node modals) — those are in-shell footers guarding unsaved work, not interrupting
+  dialogs, and they deliberately stay where the unsaved work is. A new hand-rolled confirm is a
+  defect.
 
 ### `qd-state`
 - **Purpose:** the one empty / loading / error presentation.
@@ -1005,11 +1017,28 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - Compose, do not re-style — a call-site needing a different box size or accent is
   a signal to extend this contract, not fork it.
 
-### `.qd-modal` / `.qd-modal--fixed`
+### `.qd-modal` / `.qd-modal--fixed` / `.qd-modal--wide`
 - **The base is width-only and scroller-less, and stays that way.** `.qd-modal`
   (`_components.scss`) sets surface/border/radius/shadow/padding and
   `width: min(100%, 36rem)` — no block-size, no scroller, no `overflow`. It is
   what the six abwab modals compose today and must keep composing unmodified.
+  **Width variants opt in via `--wide`, never by editing the base** — the same
+  discipline `--fixed` applies to block-size.
+- **`--wide` is the one sanctioned wide step: `width: min(100%, 52rem)`.** The
+  ladder is now 28rem (`qd-confirm-dialog`) / 36rem (base) / 42rem (the
+  `explorer-detail-modal` hold-out) / 44–46rem (`--fixed` block-size,
+  `qd-detail-modal-shell`) / 52rem (`--wide`), and **no further ad-hoc width may
+  be added** — a call-site that wants something else extends this ladder here or
+  composes an existing step. 52rem == 832px fits inside the 992px available at
+  the 1024px minimum desktop with ~80px gutters per side; the rejected
+  literal-double 72rem goes full-bleed below 1184px, and the existing 46rem step
+  is only +160px over the base, which under-delivers for the two-pane content
+  that motivates the variant. **Consumers (exactly three):**
+  `abwab-relations-modal`, `abwab-move-picker`, `abwab-template-copy-modal`.
+  Everything else stays at the base. The modifier is `(0,1,0)`, so a call-site
+  class that sets its own width outranks it — compose `--wide` by *deleting* the
+  local width, never by adding specificity (the same trap the `--fixed` entry
+  names below).
 - **`--fixed` is the opt-in that carries this section's geometry rule** (a fixed
   block-size, never `max-block-size`): `display: flex; flex-direction: column;
   block-size: min(92dvh, 44rem); padding: 0; overflow: hidden`. `dvh`, not `vh`,
@@ -1070,6 +1099,51 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   shallow ones (door, template-node) render with empty space below the fields:
   that is this section's "zero resize" trade, not a defect to fix back to
   content height.
+
+### Header over badge columns (feature-local pattern)
+
+- **Where it applies:** a row list whose trailing numeric badges want naming, and only
+  there. The doors tree (`features/abwab/components/abwab-tree/`) is the one
+  consumer; this is a documented pattern, not a `qd-` class.
+- **The header must sit OUTSIDE the `role="tree"` / `role="list"` element** and be
+  `aria-hidden="true"`. A presentational row inside the ARIA container reads as an
+  unlabelled item to a screen reader. Meaning stays on each badge's own
+  `aria-label` — the visible header is a hint, never the semantic carrier. This is
+  the `qd-tabs` count-meta precedent: visible digits `aria-hidden`, meaning in the
+  label.
+- **Alignment is structural, via a three-level subgrid**, never eyeballed:
+
+  ```
+  .abwab-tree-frame            display: grid   — owns the ONE column template
+  ├── .abwab-tree__header      subgrid, grid-column: 1 / -1, aria-hidden
+  └── .abwab-tree  [role=tree] subgrid, grid-column: 1 / -1
+      └── .abwab-tree__row     subgrid, grid-column: 1 / -1
+  ```
+
+  The frame exists because the header must be outside the ARIA container, so the
+  grid owner has to be an ancestor of both. `display: contents` on the ARIA element
+  is **not** the shortcut it looks like: it has a history of dropping elements from
+  the accessibility tree, and that element carries the role and its `aria-label`.
+- **Four rules the layout depends on**, each of which fails silently if broken:
+  - The flexible name track is `minmax(0, 1fr)`, never a bare `1fr` — `1fr` means
+    `minmax(auto, 1fr)`, whose auto minimum refuses to shrink past min-content, so
+    `.qd-truncate` never engages and the name pushes the badge tracks out.
+  - **No inline padding on any subgrid element.** It is subtracted from the space
+    the tracks occupy. Row insets live on the first and last cells instead
+    (`> *:last-child` covers the trailing one across conditional layouts).
+  - Every row renders every badge cell, empty when it has no value. Auto-placement
+    is positional: one row that skips a cell puts its trailing furniture in the
+    wrong track and breaks alignment for the whole list.
+  - When a column drops responsively, the **cells and the template's tracks drop in
+    the same media query**, or the two drift apart.
+- **The column width is a name-budget decision, not a typographic one.** Every pixel
+  of a fixed badge track is taken from the row's only shrinkable item. Size the
+  column from the widest *badge* a real value produces, then check the labels fit —
+  not the other way round. If full words do not fit, **abbreviate the visible label
+  and leave the `aria-label` alone**; the accessible layer is where the meaning has
+  to survive. Slice J's full words needed 2.5 rem and cost the name 55 px; the
+  abbreviated set needs 1.75 rem and costs 19 px, with identical screen-reader
+  output. Re-measure the truncation entry's budget rule whenever this changes.
 
 ### `qd-context-menu`
 - **Purpose:** the one row/node context-menu shell app-wide (Abwab's doors tree row menu
@@ -1159,11 +1233,21 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   node with a sibling chip (the card title, the templates editor title) had to
   become its own span before it could truncate independently, and the move picker's
   row buttons needed an inner block-level span, since `text-overflow` needs a block
-  box. **No site took the `--qd-name-min-inline-size` floor**: measured at the
-  narrowest viewport the doors page reaches, the tree name still holds ~184 px
-  beside all three badges and the flag, and a 12 rem floor there would overflow the
-  row instead of truncating inside it. The token stays available for a surface that
-  measures differently.
+  box. **No site took the `--qd-name-min-inline-size` floor**, and a 12 rem floor on
+  the tree row would overflow the row instead of truncating inside it. The token
+  stays available for a surface that measures differently.
+- **The doors-tree name budget is a rule, not a figure** (measured 2026-08-02, slice
+  J, in-browser at three viewports in both themes — no theme token participates in
+  geometry, so the two are identical). On a **branch row carrying all three badges**:
+  **325 px at 1024 px, 485 px at 1184 px, 741 px at 1440 px — minus 24 px per depth
+  level** (the indent step is `--qd-space-5`, and the indent is the only depth-varying
+  term). A leaf row gains back what its absent badges cost. This entry previously
+  carried "~184 px at the narrowest viewport the doors page reaches", which is
+  reproducible only on a branch row at depth ≈ 6–7 at 1024 px — a deep-row number
+  stated as a general one. **Any change to the row's leading or trailing furniture
+  re-measures this rule rather than inheriting it**; slice J's badge-column header
+  cost 19 px against a 20 px ceiling set before the work began, and the visible header
+  labels were abbreviated (their `aria-label`s were not) precisely to stay under it.
 - Compose, do not re-style — a surface that seems to need a fixed name column
   should re-read the paragraph above before reaching for `inline-size` instead of
   `.qd-truncate`.

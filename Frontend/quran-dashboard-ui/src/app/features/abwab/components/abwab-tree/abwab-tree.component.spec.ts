@@ -454,6 +454,66 @@ describe('AbwabTreeComponent', () => {
     });
   });
 
+  describe('the badge column header (slice J)', () => {
+    it('renders the three labels outside the tree, hidden from the accessible layer', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+      const header = root.querySelector('[data-testid="abwab-tree-header"]')!;
+
+      expect(header.getAttribute('aria-hidden')).toBe('true');
+      // It must never enter the tree's ARIA subtree — a presentational row inside role="tree"
+      // would be an unlabelled treeitem to a screen reader.
+      expect(root.querySelector('[data-testid="abwab-tree"]')!.contains(header)).toBe(false);
+
+      const labels = Array.from(header.querySelectorAll('.abwab-tree__header-cell')).map((el) =>
+        el.textContent?.trim(),
+      );
+      expect(labels).toEqual([
+        ABWAB_LABELS.rowHeaderDirect,
+        ABWAB_LABELS.rowHeaderTotal,
+        ABWAB_LABELS.rowHeaderDepth,
+      ]);
+    });
+
+    it('drops the same two labels its badges drop below the tablet breakpoint', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+      const cells = Array.from(
+        root.querySelectorAll('[data-testid="abwab-tree-header"] .abwab-tree__header-cell'),
+      );
+
+      expect(cells[0].classList.contains('abwab-tree__count--wide')).toBe(false);
+      expect(cells[1].classList.contains('abwab-tree__count--wide')).toBe(true);
+      expect(cells[2].classList.contains('abwab-tree__count--wide')).toBe(true);
+    });
+
+    // The visible labels were shortened to buy back the name column; the accessible layer is
+    // where the meaning actually lives and it must not have moved with them.
+    it('shortens only the visible labels — every badge keeps its full accessible name', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-count-1"]')?.getAttribute('aria-label')).toBe(
+        ABWAB_LABELS.rowChildCountAriaLabel(1),
+      );
+      expect(
+        root.querySelector('[data-testid="abwab-tree-descendants-1"]')?.getAttribute('aria-label'),
+      ).toBe(ABWAB_LABELS.rowDescendantCountAriaLabel(1));
+      expect(root.querySelector('[data-testid="abwab-tree-depth-1"]')?.getAttribute('aria-label')).toBe(
+        ABWAB_LABELS.rowDepthAriaLabel(1),
+      );
+
+      // Each accessible name still carries the full word the visible label abbreviates.
+      expect(ABWAB_LABELS.rowChildCountAriaLabel(1)).toContain('مباشرة');
+      expect(ABWAB_LABELS.rowDescendantCountAriaLabel(1)).toContain('كل المستويات');
+      expect(ABWAB_LABELS.rowDepthAriaLabel(1)).toContain('أعمق تفرّع');
+    });
+
+    it('shows the depth as a bare numeral now that a column names it', () => {
+      expect(ABWAB_LABELS.rowDepthBadge(3)).toBe('3');
+    });
+  });
+
   describe('audit item 14 — the row’s three count badges', () => {
     it('renders all three on a branch row, reading the builder’s values', () => {
       const fixture = render();
@@ -466,13 +526,22 @@ describe('AbwabTreeComponent', () => {
       );
     });
 
-    it('renders none of them on a leaf row', () => {
+    it('renders none of them on a leaf row, but keeps their cells so the columns hold', () => {
       const fixture = render();
       const root = fixture.nativeElement as HTMLElement;
 
       expect(root.querySelector('[data-testid="abwab-tree-count-3"]')).toBeNull();
       expect(root.querySelector('[data-testid="abwab-tree-descendants-3"]')).toBeNull();
       expect(root.querySelector('[data-testid="abwab-tree-depth-3"]')).toBeNull();
+
+      // Subgrid auto-placement is positional: a leaf that skipped these cells would put its
+      // flags in the first count track and break the header's alignment for every row below it.
+      const leaf = root.querySelector('[data-testid="abwab-tree-row-3"]')!;
+      const cells = leaf.querySelectorAll('.abwab-tree__count-cell');
+      expect(cells).toHaveLength(3);
+      for (const cell of Array.from(cells)) {
+        expect(cell.textContent?.trim()).toBe('');
+      }
     });
 
     // Bare numerals on screen, so the accessible name is the only place the meaning lives —

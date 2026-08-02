@@ -27,10 +27,14 @@ test('sections modal: rename updates the tab, and delete is blocked by a live do
   // copy is what actually renders (abwab.api.ts write controller prefers it over the
   // plan's locked fallback string; features/abwab/README.md "Gotchas" records this).
   await page.getByTestId(`abwab-sections-modal-delete-${abwabSandbox.sectionId}`).click();
-  await expect(page.getByTestId('abwab-sections-modal-error')).toHaveText(
+  await page.getByTestId('abwab-sections-modal-delete-confirm-confirm').click();
+  // The failure renders inside the confirm dialog that dispatched it, not on the modal-level
+  // line, which stays the create/rename surface.
+  await expect(page.getByTestId('abwab-sections-modal-delete-error')).toHaveText(
     'لا يمكن حذف القسم لاحتوائه على أبواب حالية',
   );
 
+  await page.getByTestId('abwab-sections-modal-delete-confirm-cancel').click();
   await page.getByTestId('abwab-sections-modal-close').click();
   await expect(page.getByTestId(`abwab-toolbar-tab-${abwabSandbox.sectionId}`)).toContainText(renamedName);
 });
@@ -52,8 +56,10 @@ test('sections modal: deleting a section holding only archived doors succeeds th
   await expect(page.getByTestId(`abwab-sections-modal-row-${abwabSandbox.sectionId}`)).toBeVisible();
 
   await page.getByTestId(`abwab-sections-modal-delete-${abwabSandbox.sectionId}`).click();
+  await page.getByTestId('abwab-sections-modal-delete-confirm-confirm').click();
 
   await expect(page.getByTestId(`abwab-sections-modal-row-${abwabSandbox.sectionId}`)).toHaveCount(0);
+  await expect(page.getByTestId('abwab-sections-modal-delete-confirm')).toHaveCount(0);
   await expect(page.getByTestId('abwab-sections-modal-error')).toHaveCount(0);
 
   await page.getByTestId('abwab-sections-modal-close').click();

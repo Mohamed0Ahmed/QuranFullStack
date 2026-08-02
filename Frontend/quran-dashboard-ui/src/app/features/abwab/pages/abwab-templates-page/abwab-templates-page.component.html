@@ -145,62 +145,40 @@
               (quickAddRequested)="onQuickAddRequested($event)"
             />
 
-            @if (confirmingTemplateDelete()) {
-              <div
-                class="abwab-templates-page__confirm"
-                role="alertdialog"
-                data-testid="abwab-templates-page-delete-template-confirm"
-              >
-                <p>{{ templateDeleteConfirmMessage }}</p>
-                <div class="abwab-templates-page__confirm-actions">
-                  <button
-                    type="button"
-                    class="qd-btn qd-btn-primary"
-                    data-testid="abwab-templates-page-delete-template-yes"
-                    (click)="confirmTemplateDelete()"
-                  >
-                    {{ deleteConfirmLabel }}
-                  </button>
-                  <button
-                    type="button"
-                    class="qd-btn qd-btn-ghost"
-                    data-testid="abwab-templates-page-delete-template-no"
-                    (click)="cancelTemplateDelete()"
-                  >
-                    {{ cancelLabel }}
-                  </button>
-                </div>
-              </div>
-            }
+            <qd-confirm-dialog
+              testIdPrefix="abwab-templates-page-delete-template-confirm"
+              [open]="confirmingTemplateDelete()"
+              [titleText]="templateDeleteConfirmTitle"
+              [confirmLabel]="deleteConfirmLabel"
+              [cancelLabel]="cancelLabel"
+              tone="danger"
+              [busy]="templateDeleteBusy()"
+              (confirmed)="confirmTemplateDelete()"
+              (cancelled)="cancelTemplateDelete()"
+            >
+              <p>{{ templateDeleteConfirmMessage }}</p>
+              @if (templateDeleteError(); as message) {
+                <qd-state variant="error" [message]="message" data-testid="abwab-templates-page-delete-template-confirm-error" />
+              }
+            </qd-confirm-dialog>
 
             @let deletingName = deletingNodeName();
-            @if (deletingName) {
-              <div
-                class="abwab-templates-page__confirm"
-                role="alertdialog"
-                data-testid="abwab-templates-page-delete-node-confirm"
-              >
-                <p>{{ nodeDeleteConfirmMessage(deletingName) }}</p>
-                <div class="abwab-templates-page__confirm-actions">
-                  <button
-                    type="button"
-                    class="qd-btn qd-btn-primary"
-                    data-testid="abwab-templates-page-delete-node-yes"
-                    (click)="confirmNodeDelete()"
-                  >
-                    {{ deleteConfirmLabel }}
-                  </button>
-                  <button
-                    type="button"
-                    class="qd-btn qd-btn-ghost"
-                    data-testid="abwab-templates-page-delete-node-no"
-                    (click)="cancelNodeDelete()"
-                  >
-                    {{ cancelLabel }}
-                  </button>
-                </div>
-              </div>
-            }
+            <qd-confirm-dialog
+              testIdPrefix="abwab-templates-page-delete-node-confirm"
+              [open]="!!deletingName"
+              [titleText]="templateNodeDeleteConfirmTitle"
+              [confirmLabel]="deleteConfirmLabel"
+              [cancelLabel]="cancelLabel"
+              tone="danger"
+              [busy]="nodeDeleteBusy()"
+              (confirmed)="confirmNodeDelete()"
+              (cancelled)="cancelNodeDelete()"
+            >
+              <p>{{ nodeDeleteConfirmMessage(deletingName ?? '') }}</p>
+              @if (nodeDeleteError(); as message) {
+                <qd-state variant="error" [message]="message" data-testid="abwab-templates-page-delete-node-confirm-error" />
+              }
+            </qd-confirm-dialog>
           }
         </div>
       </div>

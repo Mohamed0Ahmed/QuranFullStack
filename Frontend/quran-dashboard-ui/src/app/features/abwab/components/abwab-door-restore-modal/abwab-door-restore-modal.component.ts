@@ -83,11 +83,17 @@ export class AbwabDoorRestoreModalComponent {
   protected get noSectionsHint(): string { return ABWAB_LABELS.restoreModalNoSectionsHint; }
   protected get childHint(): string { return ABWAB_LABELS.restoreModalChildHint; }
 
+  /** The subject's identity, not the node object. A snapshot rebuild hands this input a NEW object
+   * for the same door, and tracking that object would re-run the reset below and throw away a
+   * section the user had already chosen (the `abwab-move-picker` guard, same failure). */
+  private readonly doorSubjectId = computed(() => this.door()?.id ?? null);
+
   constructor() {
     // A door whose section is still live is prefilled with it; one whose section is gone starts
     // empty, so the choice is made rather than inherited from a section that no longer exists.
     effect(() => {
-      const door = this.door();
+      this.doorSubjectId();
+      const door = untracked(() => this.door());
       untracked(() => {
         this.errorMessage.set(null);
         this.busy.set(false);

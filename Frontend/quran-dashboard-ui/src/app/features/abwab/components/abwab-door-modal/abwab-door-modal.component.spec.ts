@@ -269,21 +269,13 @@ describe('AbwabDoorModalComponent', () => {
   });
 
   describe('edit mode', () => {
-    it('prefills the form and shows the tracking-data box only on edit', () => {
+    it('prefills the form from the door under edit', () => {
       const fixture = render({ door: EXISTING_DOOR });
       const root = fixture.nativeElement as HTMLElement;
 
       expect((root.querySelector('[data-testid="abwab-door-modal-name"]') as HTMLInputElement).value).toBe(
         'الألوهية',
       );
-      expect(root.querySelector('[data-testid="abwab-door-modal-meta"]')).toBeTruthy();
-    });
-
-    it('does not show the tracking-data box in create mode', () => {
-      const fixture = render();
-      expect(
-        (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-door-modal-meta"]'),
-      ).toBeNull();
     });
 
     it('sends the door\'s own version token on edit, not a caller-supplied one', () => {

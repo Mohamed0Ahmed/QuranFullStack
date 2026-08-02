@@ -598,6 +598,16 @@ button.qd-interactive-surface {
   width: min(100%, 36rem);
 }
 
+// The sanctioned wide step (UI_STYLE_SYSTEM.md §17 `.qd-modal` entry). 52rem == 832px
+// fits inside the 992px available at the 1024px minimum desktop with ~80px gutters per
+// side; the existing 46rem step is only +160px over the base and under-delivers for
+// two-pane content. A literal rem on the class, not a token, because every other modal
+// geometry in this file is a literal (28/36/42/44/46rem) and a lone width token would be
+// the odd one out. Width variants opt in here; the base is never edited.
+.qd-modal--wide {
+  width: min(100%, 52rem);
+}
+
 // Opt-in geometry modifier (UI_STYLE_SYSTEM.md §17 `.qd-modal` entry) — never
 // merged into the base above. `.qd-modal.explorer-detail-modal` sets
 // `max-height` but no `height`/`block-size`, so a block-size on the base would

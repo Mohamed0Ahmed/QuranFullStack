@@ -106,7 +106,7 @@ test('bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
   // Two doors is the Arabic dual, so the confirm reads «بابين» and carries no digit — the
   // union count is what is being asserted, in the form a reader actually sees.
   await expect(page.getByTestId('abwab-page-bulk-archive-confirm')).toContainText('سيتم أرشفة بابين');
-  await page.getByTestId('abwab-page-bulk-archive-confirm-yes').click();
+  await page.getByTestId('abwab-page-bulk-archive-confirm-confirm').click();
 
   await expect(page.getByTestId(`abwab-tree-row-${bulkA.id}`)).toHaveCount(0);
   await expect(page.getByTestId(`abwab-tree-row-${bulkB.id}`)).toHaveCount(0);

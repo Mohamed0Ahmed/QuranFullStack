@@ -12,6 +12,10 @@ import { AbwabMoveDestination } from '../components/abwab-move-picker/abwab-move
 
 type ContextActionCallback = (doorId: number) => void;
 
+/** Shared empty chain for `restoreAncestors` while no restore target exists — the same identity
+ * argument as the page's own `NO_IDS`/`NO_ROOTS`. */
+const NO_ANCESTORS: readonly AbwabNode[] = [];
+
 /**
  * Owns every overlay's open/closed state and orchestration for `AbwabPageComponent`
  * (door modal, single/bulk archive confirm, move picker, sections modal, row context
@@ -98,12 +102,32 @@ export class AbwabPageOverlaysController {
     this.modalOpen.set(false);
   }
 
-  // Single-door archive confirm
-  readonly archiveConfirming = signal(false);
+  /** One signal, not two booleans: as backdropped `aria-modal` dialogs with focus traps, two
+   * archive confirms open at once would be two competing traps. As inline cards the overlap was
+   * only cosmetic, which is why this could stay two booleans until the retrofit. */
+  readonly archiveConfirm = signal<'single' | 'bulk' | null>(null);
+  readonly archiveBusy = signal(false);
+  /** The failed write's own message, rendered inside the dialog that dispatched it. Cleared on
+   * every open and every retry so a stale failure never greets a fresh confirm. */
+  readonly archiveError = signal<string | null>(null);
+
+  readonly archiveConfirming = computed(() => this.archiveConfirm() === 'single');
+  readonly bulkArchiveConfirming = computed(() => this.archiveConfirm() === 'bulk');
+
+  /** The row context menu closes when the dialog opens, so its trigger is gone in both outcomes
+   * and the page has to place focus itself. Every other entry point keeps a live trigger. */
+  private readonly archiveFromContextMenu = signal(false);
+  readonly archiveCameFromContextMenu = this.archiveFromContextMenu.asReadonly();
 
   requestArchive(): void {
     if (this.selectedDoor()) {
-      this.archiveConfirming.set(true);
+      this.openArchiveConfirm('single');
+    }
+  }
+
+  requestBulkArchive(): void {
+    if (this.selection.bulkCount() > 0) {
+      this.openArchiveConfirm('bulk');
     }
   }
 
@@ -112,44 +136,72 @@ export class AbwabPageOverlaysController {
     return door ? this.writeController.archiveConfirmMessageFor(door.id) : '';
   }
 
-  confirmArchive(onSuccess: () => void): void {
-    const door = this.selectedDoor();
-    this.archiveConfirming.set(false);
-    if (!door) {
-      return;
-    }
-    this.writeController.archiveDoor(door.id, door.version).subscribe((outcome) => {
-      if (outcome.kind === 'success') {
-        this.selection.clearSelection();
-        onSuccess();
-      }
-    });
-  }
-
-  cancelArchiveConfirm(): void {
-    this.archiveConfirming.set(false);
-  }
-
-  // Bulk archive confirm
-  readonly bulkArchiveConfirming = signal(false);
-
-  requestBulkArchive(): void {
-    if (this.selection.bulkCount() > 0) {
-      this.bulkArchiveConfirming.set(true);
-    }
-  }
-
   bulkArchiveConfirmMessage(): string {
     return this.writeController.bulkArchiveConfirmMessage(Array.from(this.selection.bulkSet().keys()));
   }
 
-  confirmBulkArchive(): void {
-    this.bulkArchiveConfirming.set(false);
-    this.writeController.bulkArchiveDoors().subscribe();
+  /** The dialog now closes in the subscriber, not before dispatch: it stays open with both
+   * buttons disabled until the write resolves, so a failure has somewhere to land. */
+  confirmArchive(onSuccess: () => void): void {
+    const door = this.selectedDoor();
+    if (!door || this.archiveBusy()) {
+      return;
+    }
+    this.beginArchiveWrite();
+    this.writeController.archiveDoor(door.id, door.version).subscribe((outcome) => {
+      this.archiveBusy.set(false);
+      if (outcome.kind !== 'success') {
+        this.archiveError.set(outcome.message);
+        return;
+      }
+      this.archiveConfirm.set(null);
+      this.selection.clearSelection();
+      onSuccess();
+    });
+  }
+
+  confirmBulkArchive(onSuccess: () => void): void {
+    if (this.archiveBusy()) {
+      return;
+    }
+    this.beginArchiveWrite();
+    this.writeController.bulkArchiveDoors().subscribe((outcome) => {
+      this.archiveBusy.set(false);
+      if (outcome.kind !== 'success') {
+        this.archiveError.set(outcome.message);
+        return;
+      }
+      this.archiveConfirm.set(null);
+      onSuccess();
+    });
+  }
+
+  cancelArchiveConfirm(): void {
+    this.closeArchiveConfirm();
   }
 
   cancelBulkArchiveConfirm(): void {
-    this.bulkArchiveConfirming.set(false);
+    this.closeArchiveConfirm();
+  }
+
+  private openArchiveConfirm(kind: 'single' | 'bulk'): void {
+    this.archiveError.set(null);
+    this.archiveBusy.set(false);
+    this.archiveFromContextMenu.set(false);
+    this.archiveConfirm.set(kind);
+  }
+
+  private beginArchiveWrite(): void {
+    this.archiveError.set(null);
+    this.archiveBusy.set(true);
+  }
+
+  private closeArchiveConfirm(): void {
+    if (this.archiveBusy()) {
+      return;
+    }
+    this.archiveConfirm.set(null);
+    this.archiveError.set(null);
   }
 
   // Move picker (single and bulk share it)
@@ -237,11 +289,17 @@ export class AbwabPageOverlaysController {
     return id === null ? null : (this.byId().get(id) ?? null);
   });
 
-  /** Outermost first, the door itself excluded — the same «، » chain the side panel shows. */
+  /** Outermost first, the door itself excluded — the same «، » chain the side panel shows.
+   * Returns the shared empty array while closed (the `NO_IDS`/`NO_ROOTS` reason): a fresh `[]`
+   * per snapshot rebuild marks the OnPush restore modal dirty for as long as no restore runs. */
   readonly restoreAncestors = computed<readonly AbwabNode[]>(() => {
+    const target = this.restoreTarget();
+    if (!target) {
+      return NO_ANCESTORS;
+    }
     const byId = this.byId();
     const chain: AbwabNode[] = [];
-    let current = this.restoreTarget()?.parentId ?? null;
+    let current = target.parentId;
     while (current !== null) {
       const node = byId.get(current);
       if (!node) {
@@ -367,7 +425,10 @@ export class AbwabPageOverlaysController {
   }
 
   ctxArchive(): void {
-    this.runContextAction(() => this.requestArchive());
+    this.runContextAction(() => {
+      this.requestArchive();
+      this.archiveFromContextMenu.set(this.archiveConfirm() === 'single');
+    });
   }
 
   ctxRelations(onActed?: ContextActionCallback): void {

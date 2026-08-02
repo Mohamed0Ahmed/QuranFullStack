@@ -103,16 +103,24 @@ nine), four of them reads.
   always 0 (see the derivation in the Gotchas).
   A branch row carries **three** count badges: direct live children (the design contract's
   own, `abwab-tree-concept.html:107`), total live descendants at any depth, and the deepest
-  live nesting below the door (`ع3` = three levels). The last two are a commissioned
-  extension of the contract, not a missed line. All three are live-only, both derivations are
-  memoized on the node by `abwab-tree.builder.ts`, and each carries its own Arabic
-  `aria-label`, since on screen they are bare numerals — a chain of three and a fan of three
-  both show `3` descendants but `ع3` vs `ع1`, and the label is where that meaning lives.
+  live nesting below the door. The last two are a commissioned extension of the contract, not
+  a missed line. All three are live-only and both derivations are memoized on the node by
+  `abwab-tree.builder.ts`.
+  Since slice J an **`aria-hidden` header row names the three columns** — «مباشر» / «الكل» /
+  «عمق» — sitting outside the `role="tree"` element and sharing the rows' grid tracks through
+  a frame → tree → row subgrid chain (`UI_STYLE_SYSTEM.md` §17, "Header over badge columns").
+  The header is presentational: **each badge's Arabic `aria-label` remains the accessible
+  layer**, and those labels are deliberately fuller than the visible ones, which are
+  abbreviated to keep the fixed badge columns from eating the name. The depth badge is a bare
+  numeral now that a column names it — the «ع» prefix it used to carry existed only because
+  nothing else distinguished it from a fourth count.
   **Row width priority, widest to narrowest: name > order pill > actions > children count >
-  descendants/depth badges > flag.** The name is the only shrinkable item (`.qd-truncate`);
-  everything else is `flex: none`. Below `$qd-bp-tablet-max` the descendants and depth badges
-  are dropped rather than everything being squeezed — the contract's own children count
-  survives at every width.
+  descendants/depth badges > flag.** The name is the only shrinkable item (`.qd-truncate`)
+  and its measured budget is a rule in §17's truncation entry, not a remembered figure —
+  re-measure it whenever the row's leading or trailing furniture changes. Below
+  `$qd-bp-tablet-max` the descendants and depth badges drop **with their header labels, in the
+  same media query as the grid tracks they occupy**, rather than everything being squeezed —
+  the contract's own children count, and «مباشر» above it, survive at every width.
 - `components/abwab-cards/` — the drill-down grid: `cardId` names only the
   drilled-into parent (not a full path array) — the breadcrumb chain is derived by
   walking `parentId` up from it via `byId`, so the URL never needs an array. Fails
@@ -182,7 +190,7 @@ nine), four of them reads.
   template node exists to become a door, and the locked requirement is the *same*
   authoring modal, not a parallel vocabulary.
 - `components/abwab-door-modal/` — the door's shell around that form: title, context
-  line, the tracking-data box, the dirty guard's confirm strip, and the write dispatch.
+  line, the dirty guard's confirm strip, and the write dispatch.
   On the shared modal shell like the other five (see "All six modals share one shell"
   below); the guard strip renders in `__foot`, where it cannot scroll away.
 - `components/abwab-door-picker/` — the one searchable, expandable door picker, composed
@@ -198,9 +206,8 @@ nine), four of them reads.
   of them is true when doors are one keystroke away.
 - `components/abwab-template-node-modal/` — the template node's shell around the same
   form. Its submit is a **function input** bound by the workshop page to
-  `AbwabTemplatesController` (the `abwab-sections-modal` precedent), and it renders no
-  tracking box: a node has no archive status and no audit seed to show, which is why the
-  door modal's box stayed in *its* shell rather than becoming a flag on the form.
+  `AbwabTemplatesController` (the `abwab-sections-modal` precedent): the shared form
+  dispatches nothing itself, so each shell owns the write its own entity needs.
 - `components/abwab-template-tree/` — the workshop's editor tree: the doors tree's
   *language* (chevrons at any depth, an order chip, the root marked `◆` with a bold
   name, hover `＋`/`⋯`, the inline «إضافة عنصر…» row) but not its component. It renders
@@ -448,9 +455,12 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   - **No modal states a height, and none nests a scroller.** `__body` is the single scroller;
     the four inner `max-block-size` caps that existed before Slice C are deleted. Adding one back
     re-creates the §17 specificity trap the caps were.
-  - **The traps are unconditional**, unlike the words dialogs' `drawerTrapEnabled` pattern. That
-    rule governs *nesting*, and abwab modals never stack — under the entity-detail overlay or
-    each other. A future change that makes them nest must revisit this.
+  - **Authoring modals never stack with each other**, so their traps are unconditional. The one
+    permitted nesting is a **confirmation dialog above exactly one authoring modal**, and the
+    host yields while it is open: the sections modal binds `[cdkTrapFocus]="deleteConfirmId() === null"`
+    so its delete confirm's own trap is the only live one (the words dialogs' `drawerTrapEnabled`
+    pattern, applied). Two live traps fight over focus, so a second nesting level — or a
+    confirmation above a confirmation — is still forbidden.
   - **Auto-capture is aimed, not corrected after the fact.** Four modals want a control the trap
     would not pick on its own: the door and template-node modals want the name field, the
     relations and copy modals the picker search. Each of those two targets carries
@@ -586,9 +596,8 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   other; the M27 test is pinned against the real backend copy.
 - **`AbwabDoorDto` carries no audit-seed columns on the wire** (no `createdAt`/
   `createdBy`/`approvedAt`/`approvedBy` — verified against the generated model and
-  `openapi/swagger.json`). The door modal's tracking-data box shows only what is
-  honestly derivable (archive status) or an explicit "not available yet" placeholder
-  for added-by/approved-by; it does not fabricate a date the DTO cannot back.
+  `openapi/swagger.json`). No surface may render an authored-by, approved-by, or
+  created-at value for a door: there is nothing behind it to fabricate one from.
 - **Overlay state is page-scoped; caches are app-scoped.** `AbwabPageOverlaysController` is
   provided by `AbwabPageComponent`, not `providedIn: 'root'` — the same split
   `features/words/state/*-detail.controller.ts` makes ("Not `providedIn: 'root'`: … each

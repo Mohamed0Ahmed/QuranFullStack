@@ -126,16 +126,28 @@ export const ABWAB_LABELS = {
   rowRelationsAriaLabel: (doorName: string, count: number): string =>
     `عرض علاقات «${doorName}» — ${countPhrase(count, RELATION_FORMS)}`,
 
-  // The row's three count badges. Each is a bare numeral on screen, so the accessible name is
-  // the only place its meaning exists; «تحته مباشرة» vs «في كل المستويات» is exactly the
-  // distinction the two counts make, and the depth label has to pin "levels below this door"
-  // rather than the door's own position in the tree.
+  // The row's three count badges. These aria-labels are the accessible layer — the visible
+  // column header is `aria-hidden` and presentational, so meaning still lives here; «تحته
+  // مباشرة» vs «في كل المستويات» is exactly the distinction the two counts make, and the depth
+  // label has to pin "levels below this door" rather than the door's own position in the tree.
   rowChildCountAriaLabel: (count: number): string => `${countPhrase(count, DOOR_FORMS)} تحته مباشرة`,
   rowDescendantCountAriaLabel: (count: number): string =>
     `${countPhrase(count, DOOR_FORMS)} تحته في كل المستويات`,
   rowDepthAriaLabel: (depth: number): string => `أعمق تفرّع تحته: ${countPhrase(depth, LEVEL_FORMS)}`,
-  /** The visible depth badge — a bare numeral would read as a fourth count. */
-  rowDepthBadge: (depth: number): string => `ع${depth}`,
+  /** Bare numeral: the «العمق» column header now does the disambiguating the «ع» prefix used to. */
+  rowDepthBadge: (depth: number): string => `${depth}`,
+
+  // The tree's aria-hidden column header. Right-to-left, these sit over the badges in DOM
+  // order: direct children, then all descendants, then depth.
+  //
+  // Deliberately shorter than the aria-labels above, which are unchanged. The header is
+  // `aria-hidden` and the full meaning already lives in the accessible layer, so these are
+  // hints over a column, not the semantic carrier — and a hint may be abbreviated where a name
+  // may not. The unabbreviated words («مباشرين» / «الجميع» / «العمق») needed a 2.5rem column and
+  // would have taken 55px from the row's name; these need 1.75rem and take 19px.
+  rowHeaderDirect: 'مباشر',
+  rowHeaderTotal: 'الكل',
+  rowHeaderDepth: 'عمق',
 
   activeDoorHeading: 'الباب النشط',
   noSelectionHint: 'اختر بابًا من الشجرة أو البطاقات',
@@ -176,13 +188,6 @@ export const ABWAB_LABELS = {
   doorModalSectionLabel: 'القسم',
   doorModalSectionRequiredError: 'اختر قسمًا للباب الرئيسي',
   doorModalNoSectionsHint: 'لا توجد أقسام حالية — أنشئ قسمًا أولًا',
-  trackingDataHeading: 'بيانات التتبع',
-  trackingAddedByLabel: 'أُضيف بواسطة',
-  trackingAddedByPlaceholder: '— (يُملأ مع تفعيل الحسابات)',
-  trackingApprovedLabel: 'اعتمده',
-  trackingApprovedPlaceholder: '— (لم يُعتمد بعد)',
-  trackingArchiveLabel: 'الأرشفة',
-  trackingArchiveActiveValue: 'نشط',
 
   movePickerTitleSingle: (doorName: string): string => `نقل «${doorName}»`,
   movePickerTitleBulk: (count: number): string => `نقل ${countPhrase(count, DOOR_FORMS)}`,
@@ -196,6 +201,8 @@ export const ABWAB_LABELS = {
   addSectionButton: 'إضافة قسم',
   renameSectionButton: 'إعادة تسمية',
   deleteSectionButton: 'حذف',
+  sectionDeleteConfirmTitle: 'حذف القسم',
+  sectionDeleteConfirmBody: (name: string): string => `سيتم حذف القسم «${name}»`,
   // The order trigger's visible content is a bare numeral (the tree's chip convention), so its
   // accessible name has to say both which section and what the number means.
   sectionOrderAriaLabel: (sectionName: string, order: number): string => `ترتيب «${sectionName}»: ${order}`,
@@ -221,6 +228,7 @@ export const ABWAB_LABELS = {
   bulkVanishedMessage: (count: number, names: string): string =>
     `فشلت العملية كاملة — تعذر العثور على ${countPhrase(count, DOOR_FORMS)}: ${names}`,
   archiveConfirm: (count: number): string => `سيتم أرشفة ${countPhrase(count, DOOR_FORMS)}`,
+  archiveConfirmTitle: 'تأكيد الأرشفة',
 
   loadErrorFallback: 'تعذر تحميل شجرة الأبواب. حاول مرة أخرى.',
   emptyTreeMessage: 'لا توجد أبواب بعد.',
@@ -349,6 +357,10 @@ export const ABWAB_LABELS = {
   templateNodeDeleteConfirm: (nodeName: string): string =>
     `سيتم حذف «${nodeName}» وكل العناصر التي تحته.`,
   templateDeleteConfirm: 'سيتم حذف القالب نهائيًا. الأبواب المنسوخة منه لن تتأثر.',
+  // Deliberately separate constants from the `*Op` button labels above, even where the string
+  // matches: a dialog title and a menu item are different surfaces and must be free to diverge.
+  templateDeleteConfirmTitle: 'حذف القالب',
+  templateNodeDeleteConfirmTitle: 'حذف العنصر',
   deleteConfirmButton: 'حذف',
 
   addTemplateNodeTitle: 'إضافة عنصر للقالب',

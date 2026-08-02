@@ -7,7 +7,7 @@
       dir="rtl"
       [attr.aria-labelledby]="titleId"
       qdModalScrollLock
-      cdkTrapFocus
+      [cdkTrapFocus]="deleteConfirmId() === null"
       cdkTrapFocusAutoCapture
       data-testid="abwab-sections-modal"
       (click)="$event.stopPropagation()"
@@ -77,7 +77,7 @@
                   type="button"
                   class="qd-btn qd-btn-ghost"
                   [attr.data-testid]="'abwab-sections-modal-delete-' + section.id"
-                  (click)="remove(section.id)"
+                  (click)="requestRemove(section.id)"
                 >
                   {{ deleteLabel }}
                 </button>
@@ -134,4 +134,23 @@
       </footer>
     </section>
   </div>
+
+  @if (deleteConfirmTarget(); as target) {
+    <qd-confirm-dialog
+      testIdPrefix="abwab-sections-modal-delete-confirm"
+      [open]="true"
+      [titleText]="deleteConfirmTitle"
+      [confirmLabel]="deleteLabel"
+      [cancelLabel]="cancelLabel"
+      tone="danger"
+      [busy]="deleteBusy()"
+      (confirmed)="confirmRemove()"
+      (cancelled)="cancelRemove()"
+    >
+      <p>{{ deleteConfirmBody(target.name) }}</p>
+      @if (deleteError(); as message) {
+        <qd-state variant="error" [message]="message" data-testid="abwab-sections-modal-delete-error" />
+      }
+    </qd-confirm-dialog>
+  }
 }

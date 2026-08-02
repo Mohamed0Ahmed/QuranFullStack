@@ -167,6 +167,10 @@ export class AbwabTreeComponent {
     return ABWAB_LABELS.rowDepthAriaLabel(depth);
   }
 
+  protected get headerDirectLabel(): string { return ABWAB_LABELS.rowHeaderDirect; }
+  protected get headerTotalLabel(): string { return ABWAB_LABELS.rowHeaderTotal; }
+  protected get headerDepthLabel(): string { return ABWAB_LABELS.rowHeaderDepth; }
+
   protected depthBadge(depth: number): string {
     return ABWAB_LABELS.rowDepthBadge(depth);
   }

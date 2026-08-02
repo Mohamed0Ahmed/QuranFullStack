@@ -31,7 +31,7 @@ test('archiving a door through the UI removes it from the live tree and reports 
   // here, in the singular Arabic form.
   await expect(page.getByTestId('abwab-page-archive-confirm')).toContainText('سيتم أرشفة باب واحد');
 
-  await page.getByTestId('abwab-page-archive-confirm-yes').click();
+  await page.getByTestId('abwab-page-archive-confirm-confirm').click();
 
   await expect(page.getByTestId(`abwab-tree-row-${door.id}`)).toHaveCount(0);
   await expect(page.getByTestId('abwab-announcer')).toHaveText('');

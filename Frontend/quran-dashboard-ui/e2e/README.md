@@ -11,6 +11,12 @@ words), and the placeholder / wildcard-fallback routes — **plus the Abwab door
 `abwab-url-and-a11y.e2e.ts`, `abwab-global-order.e2e.ts`), which are the one deliberate exception
 to the read-only invariant below.
 
+`abwab-slice-j-widths.e2e.ts` is the odd one out: it asserts **measured modal geometry** — the
+`.qd-modal--wide` 52rem step and the widths of the modals that deliberately did not adopt it
+(`UI_STYLE_SYSTEM.md` §17's ladder) — across three viewports and both themes. It lives here
+rather than in a unit spec because a computed width needs a real layout engine. It carries the
+`abwab-` prefix to inherit the serial worker, since it creates a sandbox door.
+
 ## Commands
 
 ```bash
