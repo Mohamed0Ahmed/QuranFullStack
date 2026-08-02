@@ -47,7 +47,19 @@ export class AbwabModalUrlController {
    * applies), so an inert key shows no affordance at all. */
   readonly restorableModal = computed<AbwabModalState | null>(() => {
     const modal = this.modalSignal();
-    return modal !== null && modal.closed && this.canOpen(modal.kind) ? modal : null;
+    if (modal === null || !modal.closed) {
+      return null;
+    }
+    // A carried subject is checked against itself, not against `door=`: the whole point of the
+    // id is that `door=` has moved on (a reveal put the target there). The liveness rule is the
+    // same one `canOpen` applies, and an id naming a dead or archived door leaves the key inert
+    // — no control, no rewrite — exactly as a dead `door=` already does. Unlike the plain
+    // `-closed` forms, this subject is **pinned**: selecting another door does not move it.
+    if (modal.subjectDoorId !== null) {
+      const node = this.facade.snapshot()?.byId.get(modal.subjectDoorId);
+      return !!node && !node.isArchived ? modal : null;
+    }
+    return this.canOpen(modal.kind) ? modal : null;
   });
 
   /**

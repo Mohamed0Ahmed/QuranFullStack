@@ -1470,14 +1470,122 @@ describe('AbwabPageComponent', () => {
       expect(lastCallExtras()).toMatchObject({ queryParams: { door: '1', modal: 'relations' } });
     });
 
-    it('a reveal discards the key in its single patch — the subject it named is being rewritten', () => {
+    // Rewritten by ux-slice-l. The reveal used to DISCARD the key: `door=` was being pointed at
+    // the target, and a plain `relations-closed` follows `door=`, so the restore control would
+    // have reopened the target's relations while the user expected the source's. The key now
+    // carries the diverged subject itself, so the state survives instead of being thrown away.
+    it('a reveal retains relations-<sourceId>-closed in its single patch', () => {
       const fixture = renderAt({ door: '1', modal: 'relations' });
       const root = fixture.nativeElement as HTMLElement;
       expect(root.querySelector('[data-testid="abwab-relations-modal"]')).toBeTruthy();
 
       (fixture.componentInstance as unknown as { onRevealRequested: (id: number) => void }).onRevealRequested(2);
 
-      expect(lastPatch()).toEqual({ door: '2', modal: null });
+      // Still ONE patch, and the id in it is the SOURCE's, not the target's.
+      expect(lastPatch()).toEqual({ door: '2', modal: 'relations-1-closed' });
+    });
+
+    it('the restore control renders for a carried subject, naming the source door', () => {
+      const fixture = renderAt({ door: '2', modal: 'relations-1-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      // «استعادة علاقات «العلم بالله»» — door 1, the source, even though door= is 2. The plain
+      // form would have named the kind only, leaving the user to guess whose relations wait.
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')?.textContent?.trim()).toBe(
+        ABWAB_LABELS.modalRestoreLabel(ABWAB_LABELS.relationsOfDoorKindName('العلم بالله')),
+      );
+      expect(root.querySelector('[data-testid="abwab-page-modal-discard"]')?.getAttribute('aria-label')).toBe(
+        ABWAB_LABELS.modalDiscardAriaLabel(ABWAB_LABELS.relationsOfDoorKindName('العلم بالله')),
+      );
+    });
+
+    it('restoring writes door=<source> and the bare open key in one patch', () => {
+      const fixture = renderAt({ door: '2', modal: 'relations-1-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-page-modal-restore');
+
+      // One push, and the open state carries no id — its subject is `door=` again.
+      expect(lastPatch()).toEqual({ door: '1', modal: 'relations' });
+    });
+
+    it('a carried subject is pinned: selecting another door does not move it', () => {
+      const fixture = renderAt({ door: '2', modal: 'relations-1-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      params$.next(convertToParamMap({ door: '3', modal: 'relations-1-closed' }));
+      fixture.detectChanges();
+
+      // Unlike a plain `-closed`, which follows `door=`, this one still names door 1.
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')?.textContent?.trim()).toBe(
+        ABWAB_LABELS.modalRestoreLabel(ABWAB_LABELS.relationsOfDoorKindName('العلم بالله')),
+      );
+    });
+
+    it('renders no control when the carried door is archived or absent', () => {
+      // Door 3 in this fixture is archived; 99 does not exist. Both leave the key inert —
+      // no control, no rewrite — the same outcome a dead `door=` already produces.
+      for (const deadId of ['3', '99']) {
+        const fixture = renderAt({ door: '1', modal: `relations-${deadId}-closed` });
+        expect(
+          (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-page-modal-restore"]'),
+        ).toBeNull();
+      }
+    });
+
+    // The single-retained-state rule is a DECISION, not an accident of the key being
+    // single-valued — so both orders are pinned here rather than left to archaeology.
+    describe('the retained key holds one state, and the next writer wins', () => {
+      it('opening another modal overwrites a reveal-retained key, control and all', () => {
+        const fixture = renderAt({ door: '2', modal: 'relations-1-closed' });
+        const root = fixture.nativeElement as HTMLElement;
+        expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeTruthy();
+
+        click(root, 'abwab-page-manage-sections');
+        expect(lastPatch()).toMatchObject({ modal: 'sections' });
+
+        params$.next(convertToParamMap({ door: '2', modal: 'sections' }));
+        fixture.detectChanges();
+        expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
+
+        // Closing the new modal retains ITS plain key; the relations state does not come back.
+        params$.next(convertToParamMap({ door: '2', modal: 'sections-closed' }));
+        fixture.detectChanges();
+        expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')?.textContent?.trim()).toBe(
+          ABWAB_LABELS.modalRestoreLabel(ABWAB_LABELS.modalKindNames['sections']),
+        );
+      });
+
+      it('opening relations fresh on another door overwrites the carried key', () => {
+        const fixture = renderAt({ door: '2', modal: 'relations-1-closed' });
+        const root = fixture.nativeElement as HTMLElement;
+
+        click(root, 'abwab-side-panel-op-relations');
+
+        // `door=2` with a bare key — the carried id is gone, and closing this one would retain
+        // a plain `relations-closed` whose subject is door 2.
+        expect(lastPatch()).toMatchObject({ door: '2', modal: 'relations' });
+      });
+    });
+
+    // Back after a reveal was designed but pinned by nothing: the previous history entry is
+    // `modal=relations&door=<source>`, and the reconcile machinery has to reopen the modal on
+    // the source from that emission alone.
+    it('Back after a reveal reopens the modal on the source door', () => {
+      const fixture = renderAt({ door: '1', modal: 'relations' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      (fixture.componentInstance as unknown as { onRevealRequested: (id: number) => void }).onRevealRequested(2);
+      params$.next(convertToParamMap({ door: '2', modal: 'relations-1-closed' }));
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-relations-modal"]')).toBeNull();
+
+      // Back — the emission the browser produces for the previous entry.
+      params$.next(convertToParamMap({ door: '1', modal: 'relations' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-relations-modal"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-relations-modal"]')?.textContent).toContain('العلم بالله');
     });
 
     it('switching section clears the key, and the overlay closes with it', () => {

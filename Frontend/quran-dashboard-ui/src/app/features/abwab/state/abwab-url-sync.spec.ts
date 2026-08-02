@@ -24,7 +24,7 @@ describe('parseAbwabQueryParams — M26', () => {
       door: 9,
       card: 2,
       q: 'رحمة',
-      modal: { kind: 'edit', closed: false },
+      modal: { kind: 'edit', closed: false, subjectDoorId: null },
     });
   });
 
@@ -48,16 +48,16 @@ describe('parseAbwabQueryParams — the modal key', () => {
   it.each(['create', 'sections'] as const)(
     'reads the door-independent kind %s open and retained, with no door in the URL',
     (kind) => {
-      expect(parseAbwabQueryParams(params(`modal=${kind}`)).modal).toEqual({ kind, closed: false });
-      expect(parseAbwabQueryParams(params(`modal=${kind}-closed`)).modal).toEqual({ kind, closed: true });
+      expect(parseAbwabQueryParams(params(`modal=${kind}`)).modal).toEqual({ kind, closed: false, subjectDoorId: null });
+      expect(parseAbwabQueryParams(params(`modal=${kind}-closed`)).modal).toEqual({ kind, closed: true, subjectDoorId: null });
     },
   );
 
   it.each(['child', 'edit', 'move', 'relations'] as const)(
     'reads the door-dependent kind %s open and retained once door parses',
     (kind) => {
-      expect(parseAbwabQueryParams(params(`door=9&modal=${kind}`)).modal).toEqual({ kind, closed: false });
-      expect(parseAbwabQueryParams(params(`door=9&modal=${kind}-closed`)).modal).toEqual({ kind, closed: true });
+      expect(parseAbwabQueryParams(params(`door=9&modal=${kind}`)).modal).toEqual({ kind, closed: false, subjectDoorId: null });
+      expect(parseAbwabQueryParams(params(`door=9&modal=${kind}-closed`)).modal).toEqual({ kind, closed: true, subjectDoorId: null });
     },
   );
 
@@ -84,6 +84,56 @@ describe('parseAbwabQueryParams — the modal key', () => {
     expect(parsed.section).toBe(4);
     expect(parsed.door).toBe(9);
     expect(parsed.modal).toBeNull();
+  });
+
+  // ux-slice-l widened the grammar with one id-carrying form, so the negative table below is
+  // the fence: every malformed variant must land on null, never on a partial parse.
+  describe('the id-carrying retained form, relations-<id>-closed', () => {
+    it('parses the carried subject and does NOT need a door of its own', () => {
+      // The point of the form: `door=` has moved on (a reveal put the target there), and the
+      // key still names the source. So it must parse with no door at all...
+      expect(parseAbwabQueryParams(params('modal=relations-17-closed')).modal).toEqual({
+        kind: 'relations',
+        closed: true,
+        subjectDoorId: 17,
+      });
+      // ...and with a door that disagrees with it.
+      expect(parseAbwabQueryParams(params('door=3&modal=relations-17-closed')).modal).toEqual({
+        kind: 'relations',
+        closed: true,
+        subjectDoorId: 17,
+      });
+    });
+
+    it('round-trips through serialize', () => {
+      const built = buildAbwabQueryParams({
+        modal: { kind: 'relations', closed: true, subjectDoorId: 17 },
+      });
+
+      expect(built).toEqual({ modal: 'relations-17-closed' });
+      expect(parseAbwabQueryParams(params(`modal=${built['modal']}`)).modal).toEqual({
+        kind: 'relations',
+        closed: true,
+        subjectDoorId: 17,
+      });
+    });
+
+    it.each([
+      // An open state's subject is always `door=`; an id there would split the modal's subject
+      // from the selection, which `canOpen` exists to forbid.
+      ['relations-17', 'an id on the open form'],
+      // Only the relations modal has a reveal, so only it can be retained with a diverged subject.
+      ['edit-17-closed', 'an id on another kind'],
+      ['sections-4-closed', 'an id on a door-independent kind'],
+      ['relations-0-closed', 'a non-positive id'],
+      ['relations--3-closed', 'a negative id'],
+      ['relations-x-closed', 'a non-numeric id'],
+      ['relations--closed', 'an empty id'],
+      ['relations-1.5-closed', 'a fractional id'],
+    ])('fails closed on %s (%s)', (value) => {
+      expect(parseAbwabQueryParams(params(`door=9&modal=${value}`)).modal).toBeNull();
+      expect(parseAbwabQueryParams(params(`modal=${value}`)).modal).toBeNull();
+    });
   });
 });
 
@@ -126,8 +176,8 @@ describe('buildAbwabQueryParams', () => {
 
 describe('buildAbwabQueryParams — the modal key', () => {
   it('serializes an open kind bare and a retained one with the -closed suffix', () => {
-    expect(buildAbwabQueryParams({ modal: { kind: 'edit', closed: false } })).toEqual({ modal: 'edit' });
-    expect(buildAbwabQueryParams({ modal: { kind: 'edit', closed: true } })).toEqual({ modal: 'edit-closed' });
+    expect(buildAbwabQueryParams({ modal: { kind: 'edit', closed: false, subjectDoorId: null } })).toEqual({ modal: 'edit' });
+    expect(buildAbwabQueryParams({ modal: { kind: 'edit', closed: true, subjectDoorId: null } })).toEqual({ modal: 'edit-closed' });
   });
 
   it('clears the key when the change value is null', () => {
@@ -135,14 +185,14 @@ describe('buildAbwabQueryParams — the modal key', () => {
   });
 
   it('folds a door write and a modal write into one patch', () => {
-    expect(buildAbwabQueryParams({ door: 5, modal: { kind: 'relations', closed: false } })).toEqual({
+    expect(buildAbwabQueryParams({ door: 5, modal: { kind: 'relations', closed: false, subjectDoorId: null } })).toEqual({
       door: '5',
       modal: 'relations',
     });
   });
 
   it('an explicit modal in the same change as the invalidation wins over the clear', () => {
-    expect(buildAbwabQueryParams({ section: 7, modal: { kind: 'sections', closed: false } })).toEqual({
+    expect(buildAbwabQueryParams({ section: 7, modal: { kind: 'sections', closed: false, subjectDoorId: null } })).toEqual({
       section: '7',
       door: null,
       card: null,
@@ -153,10 +203,10 @@ describe('buildAbwabQueryParams — the modal key', () => {
   it('round-trips every kind through build and back through parse', () => {
     for (const kind of ['create', 'child', 'edit', 'move', 'sections', 'relations'] as const) {
       for (const closed of [false, true]) {
-        const built = buildAbwabQueryParams({ modal: { kind, closed } });
+        const built = buildAbwabQueryParams({ modal: { kind, closed, subjectDoorId: null } });
         const parsed = parseAbwabQueryParams(params(`door=9&modal=${built['modal']}`));
 
-        expect(parsed.modal).toEqual({ kind, closed });
+        expect(parsed.modal).toEqual({ kind, closed, subjectDoorId: null });
       }
     }
   });

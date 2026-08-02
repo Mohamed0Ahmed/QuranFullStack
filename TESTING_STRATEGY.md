@@ -414,9 +414,10 @@ npm test
 npm run build
 
 # Browser E2E — opt-in, chromium only, boots both servers (see e2e/README.md).
-# 48 passed, ~2 m 40 s: two sequential Playwright projects — `default` (2 workers) then
-# `abwab` (1 worker, five specs) — since a Global-scope Abwab reorder resequences every
-# live root and can race a second worker's write (e2e/README.md):
+# 68 passed, ~3 m 40 s (measured 2026-08-02): two sequential Playwright projects —
+# `default` (28 tests, 2 workers) then `abwab` (40 tests across eight specs, 1 worker) —
+# since a Global-scope Abwab reorder resequences every live root and can race a second
+# worker's write (e2e/README.md):
 npm run e2e                                   # headless (both projects, the gate)
 npm run e2e:headed                            # visible browser
 npm run e2e:ui                                # Playwright UI mode

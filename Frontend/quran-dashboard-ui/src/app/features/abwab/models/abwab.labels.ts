@@ -298,6 +298,10 @@ export const ABWAB_LABELS = {
     sections: 'إدارة الأقسام',
     relations: 'علاقات الباب',
   } satisfies Record<AbwabModalKind, string>,
+  // `modalKindNames.relations` stays «علاقات الباب» for the plain retained form, whose subject
+  // is `door=`. This one names the door because a reveal-retained state's subject is pinned and
+  // is NOT the selected door — «استعادة علاقات الباب» would point at the wrong one.
+  relationsOfDoorKindName: (doorName: string): string => `علاقات «${doorName}»`,
   modalRestoreLabel: (kindName: string): string => `استعادة ${kindName}`,
   modalDiscardAriaLabel: (kindName: string): string => `تجاهل ${kindName}`,
 

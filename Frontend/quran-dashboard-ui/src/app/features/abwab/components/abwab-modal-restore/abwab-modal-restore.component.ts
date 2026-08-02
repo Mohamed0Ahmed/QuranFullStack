@@ -21,18 +21,25 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 })
 export class AbwabModalRestoreComponent {
   readonly kind = input.required<AbwabModalKind>();
+  /** The door a retained relations state is pinned to, when it carries one of its own rather
+   * than following `door=` (ux-slice-l's reveal-retain). Naming it is the whole point: after a
+   * reveal, «علاقات الباب» alone leaves the user guessing WHICH door's relations are waiting. */
+  readonly subjectDoorName = input<string | null>(null);
 
   readonly restore = output<void>();
   readonly discard = output<void>();
 
   private readonly restoreButton = viewChild.required<ElementRef<HTMLButtonElement>>('restoreButton');
 
-  protected readonly restoreLabel = computed(() =>
-    ABWAB_LABELS.modalRestoreLabel(ABWAB_LABELS.modalKindNames[this.kind()]),
-  );
-  protected readonly discardAriaLabel = computed(() =>
-    ABWAB_LABELS.modalDiscardAriaLabel(ABWAB_LABELS.modalKindNames[this.kind()]),
-  );
+  private readonly kindName = computed(() => {
+    const doorName = this.subjectDoorName();
+    return this.kind() === 'relations' && doorName !== null
+      ? ABWAB_LABELS.relationsOfDoorKindName(doorName)
+      : ABWAB_LABELS.modalKindNames[this.kind()];
+  });
+
+  protected readonly restoreLabel = computed(() => ABWAB_LABELS.modalRestoreLabel(this.kindName()));
+  protected readonly discardAriaLabel = computed(() => ABWAB_LABELS.modalDiscardAriaLabel(this.kindName()));
 
   /** The page calls this after a retaining close, once this control has rendered. */
   focusRestore(): void {

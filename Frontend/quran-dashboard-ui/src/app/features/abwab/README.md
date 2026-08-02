@@ -337,19 +337,48 @@ nine), four of them reads.
 | `door` | positive int | no selection |
 | `card` | positive int (the drilled-into parent — the breadcrumb chain is derived from it, not stored as an array) | the top card level |
 | `q` | free text | no search |
-| `modal` | one of `create` \| `child` \| `edit` \| `move` \| `sections` \| `relations`, bare while the overlay is open and suffixed `-closed` while it is retained and restorable | no restorable overlay |
+| `modal` | one of `create` \| `child` \| `edit` \| `move` \| `sections` \| `relations`, bare while the overlay is open and suffixed `-closed` while it is retained and restorable; plus the one id-carrying form `relations-<id>-closed` | no restorable overlay |
 
 `modal` is the only key with a cross-key rule: the four door-dependent kinds (`child`,
 `edit`, `move`, `relations`) parse to nothing unless the **same** ParamMap carries a valid
-`door`, because the key names an overlay and never a subject — every restorable overlay's
-subject is derived from `door=` plus the snapshot. `create` and `sections` are
-door-independent. Restoring is stricter still than parsing: a door-dependent kind also
-needs its door to be **live**, since `byId` holds archived nodes and the `door=` effect
-checks presence only. A key that fails any of these is inert — nothing opens, no restore
-control renders, and (per the fail-closed convention below) the URL is not rewritten.
+`door`, because the plain forms name an overlay and never a subject — their subject is
+derived from `door=` plus the snapshot, which is also why a plain `-closed` **follows** a
+later selection. `create` and `sections` are door-independent. Restoring is stricter still
+than parsing: a door-dependent kind also needs its door to be **live**, since `byId` holds
+archived nodes and the `door=` effect checks presence only. A key that fails any of these is
+inert — nothing opens, no restore control renders, and (per the fail-closed convention below)
+the URL is not rewritten.
 
-**`modal` selects an overlay, never a data scope, and it enters no identity anywhere.** It
-is not part of any cache key, restore identity, history identity or ETag: the snapshot read
+**The one exception: `relations-<id>-closed` (ux-slice-l).** A reveal points `door=` at the
+target while the overlay it just closed still belongs to the *source*, so for that one state
+the key carries its subject itself:
+
+| Form | Subject |
+|---|---|
+| `<kind>` | `door=` (open state — always) |
+| `<kind>-closed` | `door=`, and it follows a later selection |
+| `relations-<id>-closed` | door `<id>`, **pinned** — selecting another door does not move it |
+
+Fail-closed rules, all pinned in `abwab-url-sync.spec.ts`'s negative table: the id must be a
+positive integer; an id on the **open** form is invalid (an open overlay's subject is always
+`door=`, and a diverged subject there is exactly what `canOpen` forbids); an id on any other
+kind is invalid (only the relations modal has a reveal). Unlike the plain forms, the
+id-carrying one does **not** require a valid `door=` in the same ParamMap — that is the whole
+point. Restorability is checked against the carried id instead: live and unarchived, or the
+key sits inert exactly as a dead `door=` already does. Restoring writes `door=<id>` plus the
+bare open key in one patch, so the open state never carries an id and every invariant above
+holds again.
+
+**One key, one retained state — decided, not accidental.** The key is single-valued, so
+whatever writes it next wins: opening any modal overwrites a carried key (its restore control
+vanishes for good — closing the new modal retains *that* modal's plain `-closed`, it never
+resurrects the id-carrying one), a second reveal overwrites with the new source, and a section
+switch or archive-on clears it with everything else. Both overwrite orders are pinned in the
+page spec so this stays a decision rather than an artifact.
+
+**`modal` selects an overlay, never a data scope, and it enters no *caching* identity.** It
+is not part of any cache key or ETag — the carried id in `relations-<id>-closed` is a restore
+subject and nothing more, and specifically **not** a cache input: the snapshot read
 is one unparameterized root-scoped tree GET, and the relations read is keyed by **door id and
 the tree validator only** (`state/abwab-relations.controller.ts`). This is the one row of this
 table a future caching design must **not** pick up — adding the key to a scope or cache input
@@ -430,9 +459,13 @@ Opening a restorable overlay is a history **push**; closing it retains it as
 pushes again, so Back returns to the closed state; the restore control's X clears the key
 by replace. Back past an X-clear therefore surfaces an *earlier* retained entry if one
 exists: the restore control reappears, no overlay reopens. The reveal is the one path that
-clears the key by **push** rather than replace — it is a navigation to a different door in
+**rewrites** the key by push rather than replace — it is a navigation to a different door in
 its own right, so Back must undo it, and undoing it restores the relations modal on the
-source door along with `door=`. This mirrors the words overlay's contract
+source door along with `door=` (pinned since ux-slice-l in both the page spec and
+`e2e/abwab-relations.e2e.ts`; before that the designed path had no coverage at all). Since
+ux-slice-l the reveal *retains* rather than discards — see `relations-<id>-closed` above —
+so the source's relations are also one click away from the restore control, and while the
+cache is warm reopening them costs no additional read. This mirrors the words overlay's contract
 (`core/navigation/detail-overlay/detail-overlay-history.service.ts`), which is where the
 shape was proven — abwab does not share that service, and deliberately did not generalise
 it.

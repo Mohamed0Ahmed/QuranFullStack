@@ -23,28 +23,57 @@ function parsePositiveId(raw: string | null): number | null {
 }
 
 /**
- * The seventh key's grammar (plan-slice-e.md §4.2-2/§4.2-3): a kind from the closed set,
- * optionally suffixed `-closed` for the retained-but-restorable state. Door-dependent
- * kinds fail closed when the **same** ParamMap carries no valid `door`, because the key
- * holds no id of its own — a `modal=edit` without a subject would restore nothing.
+ * The seventh key's grammar (plan-slice-e.md §4.2-2/§4.2-3, widened by ux-slice-l):
+ *
+ *     modal = <kind>                    open; subject is door=
+ *     modal = <kind>-closed             retained; subject is door=, so it follows a later selection
+ *     modal = relations-<id>-closed     retained; subject is door <id>, regardless of door=
+ *
+ * The plain forms hold no id of their own, so the door-dependent kinds fail closed when the
+ * **same** ParamMap carries no valid `door` — a `modal=edit` without a subject would restore
+ * nothing. The id-carrying form is the one exception, and only for a retained `relations`:
+ * a reveal points `door=` at the target while the retained overlay still belongs to the
+ * source, so the key has to say which. Everything else about it fails closed:
+ *
+ * - the id must be a positive integer, else the whole key is inert;
+ * - an id on the **open** form is invalid — an open modal's subject is always `door=`, and a
+ *   diverged subject there is exactly what `canOpen` exists to forbid;
+ * - an id on any other kind is invalid — only the relations modal has a reveal.
  */
 function parseModal(raw: string | null, door: number | null): AbwabModalState | null {
   if (raw === null) {
     return null;
   }
   const closed = raw.endsWith(MODAL_CLOSED_SUFFIX);
-  const kind = closed ? raw.slice(0, -MODAL_CLOSED_SUFFIX.length) : raw;
-  if (!isAbwabModalKind(kind)) {
+  const body = closed ? raw.slice(0, -MODAL_CLOSED_SUFFIX.length) : raw;
+
+  const idSeparator = body.lastIndexOf('-');
+  if (idSeparator > 0) {
+    const kind = body.slice(0, idSeparator);
+    const subjectDoorId = parsePositiveId(body.slice(idSeparator + 1));
+    if (!closed || kind !== 'relations' || subjectDoorId === null) {
+      return null;
+    }
+    // The literal, not `kind`: TS does not narrow a `string` to a literal through the guard
+    // above, and widening the field to `string` would let a typo reach the controller.
+    return { kind: 'relations', closed, subjectDoorId };
+  }
+
+  if (!isAbwabModalKind(body)) {
     return null;
   }
-  if (door === null && isDoorDependentAbwabModalKind(kind)) {
+  if (door === null && isDoorDependentAbwabModalKind(body)) {
     return null;
   }
-  return { kind, closed };
+  return { kind: body, closed, subjectDoorId: null };
 }
 
 export function serializeAbwabModal(modal: AbwabModalState): string {
-  return modal.closed ? `${modal.kind}${MODAL_CLOSED_SUFFIX}` : modal.kind;
+  if (!modal.closed) {
+    return modal.kind;
+  }
+  const subject = modal.subjectDoorId === null ? '' : `-${modal.subjectDoorId}`;
+  return `${modal.kind}${subject}${MODAL_CLOSED_SUFFIX}`;
 }
 
 /** Parses the seven locked query keys (plan-slice-b.md §4.4), fail-closed to the defaults. */

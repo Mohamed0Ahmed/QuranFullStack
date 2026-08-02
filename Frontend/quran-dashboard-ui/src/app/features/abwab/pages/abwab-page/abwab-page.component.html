@@ -9,6 +9,7 @@
         @if (modalUrl.restorableModal(); as retained) {
           <qd-abwab-modal-restore
             [kind]="retained.kind"
+            [subjectDoorName]="retainedSubjectDoorName()"
             (restore)="onModalRestoreRequested()"
             (discard)="onModalDiscardRequested()"
           />

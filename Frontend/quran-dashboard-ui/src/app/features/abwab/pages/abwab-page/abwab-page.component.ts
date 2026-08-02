@@ -502,8 +502,10 @@ export class AbwabPageComponent implements OnInit {
       this.revealAnnouncement.set(ABWAB_LABELS.revealUnavailable);
       return;
     }
+    // Read before the overlay closes — closing releases it.
+    const anchorId = this.overlays.relationsAnchorDoorId();
     this.overlays.closeRelationsModal();
-    // The single patch below already discards the key; clearing the tracked kind here rather
+    // The single patch below already rewrites the key; clearing the tracked kind here rather
     // than waiting for the emission keeps this one navigation instead of two.
     this.modalUrl.releaseTracking();
     this.revealAnnouncement.set(null);
@@ -513,11 +515,13 @@ export class AbwabPageComponent implements OnInit {
     this.updateQueryParams(
       buildAbwabQueryParams({
         door: doorId,
-        // The key carries no id of its own — its subject is always `door=`, which this patch
-        // is rewriting. Retaining `relations-closed` across a reveal would leave a restore
-        // control that reopens the **target's** relations while the user is expecting the
-        // source's, so the honest reading of "go to the tree" is to discard it.
-        modal: null,
+        // Retained WITH the source's id (ux-slice-l). A plain `relations-closed` would follow
+        // `door=`, which this patch is pointing at the TARGET — so the restore control would
+        // reopen the target's relations while the user is expecting the source's. That
+        // ambiguity is why the reveal used to discard the key outright. The key now carries
+        // the diverged subject itself, so restore reopens the door the user came from.
+        // A null anchor is unreachable in door mode; emitting no key beats emitting a malformed one.
+        modal: anchorId === null ? null : { kind: 'relations' as const, closed: true, subjectDoorId: anchorId },
         // Only when the active tab genuinely excludes the target. «كل الأبواب» shows every
         // door, section-less ones included, so switching to the target's own tab there would
         // narrow the view for no reason; a *section* tab that isn't the target's does exclude
@@ -654,13 +658,30 @@ export class AbwabPageComponent implements OnInit {
     this.closeUrlBackedModal(['relations'], () => this.overlays.closeRelationsModal());
   }
 
+  /** Null unless the retained state pins a subject of its own — then the control names it.
+   * `restorableModal` has already checked the door is live, so a name is always found here. */
+  protected readonly retainedSubjectDoorName = computed(() => {
+    const subjectDoorId = this.modalUrl.restorableModal()?.subjectDoorId ?? null;
+    return subjectDoorId === null ? null : (this.byId().get(subjectDoorId)?.name ?? null);
+  });
+
   protected onModalRestoreRequested(): void {
     const retained = this.modalUrl.restorableModal();
     if (retained === null) {
       return;
     }
-    // A push, so Back returns to the closed state rather than skipping past it.
-    this.updateQueryParams(buildAbwabQueryParams({ modal: { kind: retained.kind, closed: false } }));
+    // A push, so Back returns to the closed state rather than skipping past it. A carried
+    // subject is restored by writing it back to `door=` in the SAME patch: the open state's
+    // subject is always `door=`, so the id is dropped here and every invariant holds again.
+    // The patch is all this does — the emission drives the existing deep-link machinery, which
+    // selects the door and opens the overlay. Opening it synchronously here would break the
+    // echo-no-op invariant `reconcileOpen` depends on.
+    this.updateQueryParams(
+      buildAbwabQueryParams({
+        ...(retained.subjectDoorId === null ? {} : { door: retained.subjectDoorId }),
+        modal: { kind: retained.kind, closed: false, subjectDoorId: null },
+      }),
+    );
   }
 
   protected onModalDiscardRequested(): void {
@@ -683,7 +704,7 @@ export class AbwabPageComponent implements OnInit {
       return;
     }
     this.modalUrl.releaseTracking();
-    this.updateQueryParams(buildAbwabQueryParams({ modal: discard ? null : { kind, closed: true } }), true);
+    this.updateQueryParams(buildAbwabQueryParams({ modal: discard ? null : { kind, closed: true, subjectDoorId: null } }), true);
     if (!discard) {
       this.focusQueued(() => this.modalRestoreControl()?.focusRestore());
     }
@@ -710,7 +731,7 @@ export class AbwabPageComponent implements OnInit {
     this.updateQueryParams(
       buildAbwabQueryParams({
         ...(doorId === undefined ? {} : { door: doorId }),
-        modal: { kind, closed: false },
+        modal: { kind, closed: false, subjectDoorId: null },
       }),
     );
   }
