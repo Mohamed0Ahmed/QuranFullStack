@@ -159,10 +159,7 @@
      unscaled 16px root — the exact value the approved concept specifies
      (abwab-relations-concept.html:84), reached through the app's own rem scale rather
      than a raw px: it is the same step as --qd-btn-font-size and .qd-input/.qd-select's
-     font-size, not a one-off. abwab-template-copy-modal.component.scss:75-76 sets its
-     neighboring pick-chevron icon (not the checkbox itself, which has no size today) to a
-     local 1.1rem with no basis in either the concept or this scale — Slice C's to
-     reconcile once that call-site composes this token. */
+     font-size, not a one-off. */
   --qd-checkbox-size: 0.9375rem;
 
   /* `.qd-truncate`'s reserved minimum (`_utilities.scss`), for a truncatable entity-name

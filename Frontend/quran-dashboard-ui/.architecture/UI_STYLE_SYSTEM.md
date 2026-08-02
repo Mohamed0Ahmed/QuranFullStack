@@ -1005,11 +1005,28 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - Compose, do not re-style — a call-site needing a different box size or accent is
   a signal to extend this contract, not fork it.
 
-### `.qd-modal` / `.qd-modal--fixed`
+### `.qd-modal` / `.qd-modal--fixed` / `.qd-modal--wide`
 - **The base is width-only and scroller-less, and stays that way.** `.qd-modal`
   (`_components.scss`) sets surface/border/radius/shadow/padding and
   `width: min(100%, 36rem)` — no block-size, no scroller, no `overflow`. It is
   what the six abwab modals compose today and must keep composing unmodified.
+  **Width variants opt in via `--wide`, never by editing the base** — the same
+  discipline `--fixed` applies to block-size.
+- **`--wide` is the one sanctioned wide step: `width: min(100%, 52rem)`.** The
+  ladder is now 28rem (`qd-confirm-dialog`) / 36rem (base) / 42rem (the
+  `explorer-detail-modal` hold-out) / 44–46rem (`--fixed` block-size,
+  `qd-detail-modal-shell`) / 52rem (`--wide`), and **no further ad-hoc width may
+  be added** — a call-site that wants something else extends this ladder here or
+  composes an existing step. 52rem == 832px fits inside the 992px available at
+  the 1024px minimum desktop with ~80px gutters per side; the rejected
+  literal-double 72rem goes full-bleed below 1184px, and the existing 46rem step
+  is only +160px over the base, which under-delivers for the two-pane content
+  that motivates the variant. **Consumers (exactly three):**
+  `abwab-relations-modal`, `abwab-move-picker`, `abwab-template-copy-modal`.
+  Everything else stays at the base. The modifier is `(0,1,0)`, so a call-site
+  class that sets its own width outranks it — compose `--wide` by *deleting* the
+  local width, never by adding specificity (the same trap the `--fixed` entry
+  names below).
 - **`--fixed` is the opt-in that carries this section's geometry rule** (a fixed
   block-size, never `max-block-size`): `display: flex; flex-direction: column;
   block-size: min(92dvh, 44rem); padding: 0; overflow: hidden`. `dvh`, not `vh`,
