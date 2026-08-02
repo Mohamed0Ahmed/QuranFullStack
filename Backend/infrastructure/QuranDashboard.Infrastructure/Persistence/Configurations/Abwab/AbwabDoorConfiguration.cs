@@ -14,6 +14,7 @@ public sealed class AbwabDoorConfiguration : IEntityTypeConfiguration<AbwabDoor>
             .HasColumnName("id");
 
         builder.Property(d => d.SectionId)
+            .IsRequired()
             .HasColumnName("section_id");
 
         builder.Property(d => d.ParentId)

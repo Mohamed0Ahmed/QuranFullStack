@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QuranDashboard.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using QuranDashboard.Infrastructure.Persistence;
 namespace QuranDashboard.Infrastructure.Migrations
 {
     [DbContext(typeof(QuranDashboardDbContext))]
-    partial class QuranDashboardDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260802062011_RequireAbwabDoorSection")]
+    partial class RequireAbwabDoorSection
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

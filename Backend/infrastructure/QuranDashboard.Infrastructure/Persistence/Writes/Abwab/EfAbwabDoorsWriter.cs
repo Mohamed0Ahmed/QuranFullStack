@@ -462,7 +462,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         // would resurface, on its own later restore, in a section its parent has already left.
         if (previousSectionId != door.SectionId)
         {
-            await CascadeSectionToDescendantsAsync(childrenByParent, [id], door.SectionId.Value, now, cancellationToken);
+            await CascadeSectionToDescendantsAsync(childrenByParent, [id], door.SectionId, now, cancellationToken);
         }
 
         // Same rule as OrderValue: restore moves a root back INTO the global sequence, appended last
@@ -510,7 +510,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
                 throw new AbwabSectionParentMismatchException();
             }
 
-            return RequireSection(parent.SectionId);
+            return parent.SectionId;
         }
 
         if (statedSectionId.HasValue)
@@ -523,12 +523,12 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         // was retired while this door sat archived. Sections have no restore route, so that section is not
         // a destination and the caller has to name one — the door is not stranded, and it is not silently
         // put somewhere nobody chose.
-        if (door.SectionId is not { } storedSectionId || await IsSectionArchivedAsync(storedSectionId, cancellationToken))
+        if (await IsSectionArchivedAsync(door.SectionId, cancellationToken))
         {
             throw new AbwabSectionRequiredException();
         }
 
-        return storedSectionId;
+        return door.SectionId;
     }
 
     // A nested door's section IS its parent's; no read re-derives it. A null sectionId means "unspecified"
@@ -565,14 +565,8 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
             }
         }
 
-        return RequireSection(parent.SectionId);
+        return parent.SectionId;
     }
-
-    // Transitional: section_id is still a nullable column until the NOT NULL migration lands, so a parent
-    // authored before doors had to belong anywhere has no section to derive. Fail closed rather than
-    // propagate the null the rest of this writer no longer admits.
-    private static int RequireSection(int? sectionId) =>
-        sectionId ?? throw new AbwabSectionRequiredException();
 
     private async Task EnsureSectionExistsAsync(int sectionId, CancellationToken cancellationToken)
     {
@@ -637,7 +631,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
             throw new AbwabParentNotFoundException();
         }
 
-        return RequireSection(parent.SectionId);
+        return parent.SectionId;
     }
 
     private static void EnsureNotCycle(IReadOnlyDictionary<int, List<int>> childrenByParent, int doorId, int targetParentId)
