@@ -1,10 +1,12 @@
 <div class="qd-context-menu__backdrop" [attr.data-testid]="backdropTestId()" (click)="dismissed.emit()"></div>
 <div
+  #menu
   class="qd-context-menu"
+  [class.qd-context-menu--measuring]="placement() === null"
   role="menu"
   [attr.data-testid]="menuTestId()"
-  [style.left.px]="position().x"
-  [style.top.px]="position().y"
+  [style.left.px]="placement()?.left ?? position().x"
+  [style.top.px]="placement()?.top ?? position().y"
 >
   <ng-content />
 </div>

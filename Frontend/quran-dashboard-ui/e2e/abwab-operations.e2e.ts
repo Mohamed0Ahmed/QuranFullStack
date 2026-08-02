@@ -138,6 +138,58 @@ test('row context menu offers exactly edit / add-child / move / relations / arch
   await expect(menu).toBeHidden();
 });
 
+test('the row context menu extends toward inline-start and never clips at a viewport edge', async ({
+  page,
+  abwabSandbox,
+}) => {
+  // Slice L (L3). The menu positioned from raw anchor coordinates with no bounds check, so under
+  // RTL it grew away from the row and could run off-screen. The contract now lives in
+  // `qd-context-menu` and is measured, which jsdom cannot do — the browser is the only honest
+  // tier for it. Coordinates are compared with a ±2px tolerance, never by screenshot.
+  const door = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('ctx-place') });
+
+  await page.goto(`/abwab?section=${abwabSandbox.sectionId}`);
+  const row = page.getByTestId(`abwab-tree-row-${door.id}`);
+  const menu = page.getByTestId('abwab-page-context-menu');
+  const rowCentre = async () => {
+    const box = (await row.boundingBox())!;
+    return { box, x: Math.round(box.x + box.width / 2), y: Math.round(box.y + box.height / 2) };
+  };
+
+  // Mid-viewport: the RTL menu's RIGHT edge sits at the click point and the box grows leftward.
+  const mid = await rowCentre();
+  await page.mouse.click(mid.x, mid.y, { button: 'right' });
+  await expect(menu).toBeVisible();
+  let menuBox = (await menu.boundingBox())!;
+  expect(Math.abs(menuBox.x + menuBox.width - mid.x)).toBeLessThanOrEqual(2);
+
+  await page.getByTestId('abwab-page-ctx-backdrop').click();
+  await expect(menu).toBeHidden();
+
+  // Narrow enough that the row reaches the inline-start edge: extending leftward from there
+  // would cross it, so the menu flips to grow inline-end and stays wholly on screen.
+  await page.setViewportSize({ width: 900, height: 720 });
+  const near = await rowCentre();
+  await page.mouse.click(Math.round(near.box.x + 4), near.y, { button: 'right' });
+  await expect(menu).toBeVisible();
+  menuBox = (await menu.boundingBox())!;
+  expect(menuBox.x).toBeGreaterThanOrEqual(0);
+  expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(900);
+
+  await page.getByTestId('abwab-page-ctx-backdrop').click();
+  await expect(menu).toBeHidden();
+
+  // Short enough that opening below would cross the bottom edge: the menu opens upward instead.
+  await page.setViewportSize({ width: 1280, height: 420 });
+  const low = await rowCentre();
+  await page.mouse.click(low.x, low.y, { button: 'right' });
+  await expect(menu).toBeVisible();
+  menuBox = (await menu.boundingBox())!;
+  expect(menuBox.y).toBeGreaterThanOrEqual(0);
+  expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(420);
+  expect(menuBox.y).toBeLessThan(low.y);
+});
+
 test('the row hover actions: ⋯ opens the same menu without right-click, ＋ opens the child modal', async ({
   page,
   abwabSandbox,

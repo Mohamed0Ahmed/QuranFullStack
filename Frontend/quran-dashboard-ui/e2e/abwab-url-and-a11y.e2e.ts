@@ -220,5 +220,17 @@ test('tree a11y: roles, roving tabindex, RTL-mirrored arrows, Enter, and Shift+F
 
   // Shift+F10 is the keyboard path to the row context menu.
   await rowA.press('Shift+F10');
-  await expect(page.getByTestId('abwab-page-context-menu')).toBeVisible();
+  const menu = page.getByTestId('abwab-page-context-menu');
+  await expect(menu).toBeVisible();
+
+  // Slice L: the menu extends toward the anchor's inline-start, and the keyboard path anchors at
+  // the focused row's inline-start edge — under RTL, the row's RIGHT edge. jsdom reports
+  // zero-sized rects, so this placement contract can only be asserted in a real layout engine.
+  const menuBox = (await menu.boundingBox())!;
+  const rowBox = (await rowA.boundingBox())!;
+  const viewport = page.viewportSize()!;
+  expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(rowBox.x + rowBox.width + 2);
+  expect(menuBox.x).toBeGreaterThanOrEqual(0);
+  expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(viewport.width);
+  expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(viewport.height);
 });
