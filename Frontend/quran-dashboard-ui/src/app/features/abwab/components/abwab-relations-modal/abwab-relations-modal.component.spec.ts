@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { Observable, Subject, of } from 'rxjs';
 
 import { AbwabRelationsModalComponent, AbwabRelationTarget } from './abwab-relations-modal.component';
 import { AbwabNode, AbwabRelationVm } from '../../models/abwab.models';
@@ -50,17 +50,23 @@ function relation(
 interface RenderOptions {
   readonly relations?: readonly AbwabRelationVm[];
   readonly loadResult?: AbwabRelationsLoadResult;
+  /** Defaults to the fixture list's own length. Pass it only to state a disagreement between the
+   * snapshot's count and what the server returns — that disagreement IS the case under test. */
+  readonly anchorRelationCount?: number;
   readonly anchorPickMode?: boolean;
   readonly bulkTargets?: readonly AbwabRelationTarget[];
   readonly addOutcome?: AbwabWriteOutcome<never>;
   readonly liveRoots?: readonly AbwabNode[];
+  /** Replaces the synchronous `of(...)` so the in-flight window is observable at all. */
+  readonly loadStream?: Observable<AbwabRelationsLoadResult>;
 }
 
 function render(options: RenderOptions = {}) {
   getTestBed().resetTestingModule();
   const loadResult: AbwabRelationsLoadResult =
     options.loadResult ?? { kind: 'success', relations: options.relations ?? [] };
-  const loadRelations = vi.fn().mockReturnValue(of(loadResult));
+  const loadRelations = vi.fn().mockReturnValue(options.loadStream ?? of(loadResult));
+  const refetchRelations = vi.fn().mockReturnValue(of(loadResult));
   const addRelations = vi.fn().mockReturnValue(of(options.addOutcome ?? { kind: 'success', data: [] }));
   const deleteRelation = vi.fn().mockReturnValue(of({ kind: 'success', data: null }));
 
@@ -69,10 +75,15 @@ function render(options: RenderOptions = {}) {
   fixture.componentRef.setInput('open', true);
   fixture.componentRef.setInput('anchorDoorId', 1);
   fixture.componentRef.setInput('anchorDoorName', 'الباب المرساة');
+  fixture.componentRef.setInput(
+    'anchorRelationCount',
+    options.anchorRelationCount ?? (options.relations?.length ?? 0),
+  );
   fixture.componentRef.setInput('anchorPickMode', options.anchorPickMode ?? false);
   fixture.componentRef.setInput('bulkTargets', options.bulkTargets ?? []);
   fixture.componentRef.setInput('liveRoots', options.liveRoots ?? ROOTS);
   fixture.componentRef.setInput('loadRelations', loadRelations);
+  fixture.componentRef.setInput('refetchRelations', refetchRelations);
   fixture.componentRef.setInput('addRelations', addRelations);
   fixture.componentRef.setInput('deleteRelation', deleteRelation);
   fixture.detectChanges();
@@ -94,7 +105,7 @@ function render(options: RenderOptions = {}) {
       (checkbox) => (checkbox as HTMLInputElement).checked,
     );
 
-  return { fixture, root, el, click, search, pickedRows, loadRelations, addRelations, deleteRelation };
+  return { fixture, root, el, click, search, pickedRows, loadRelations, refetchRelations, addRelations, deleteRelation };
 }
 
 describe('AbwabRelationsModalComponent', () => {
@@ -130,6 +141,191 @@ describe('AbwabRelationsModalComponent', () => {
       const { root: emptyRoot, el: emptyEl } = render({ relations: [] });
       expect(emptyRoot.querySelectorAll('[data-testid^="abwab-relations-modal-group-"]')).toHaveLength(0);
       expect(emptyEl('abwab-relations-modal-empty')?.textContent).toContain(ABWAB_LABELS.relationsEmpty);
+    });
+  });
+
+  // The snapshot's own relation count decides whether the modal asks the server at all, so every
+  // cell below is "what is on screen" AND "was a request issued" — the second half is the point.
+  describe('the count-discriminated read', () => {
+    it('answers a zero-count door from the snapshot, without asking the server', () => {
+      const { el, loadRelations } = render({ anchorRelationCount: 0 });
+
+      expect(loadRelations).not.toHaveBeenCalled();
+      expect(el('abwab-relations-modal-empty')?.textContent).toContain(ABWAB_LABELS.relationsEmpty);
+      expect(el('abwab-relations-modal-loading')).toBeNull();
+    });
+
+    it('shows skeleton rows while a count>0 door loads, and neither the empty text nor a 0 chip', () => {
+      const pending = new Subject<AbwabRelationsLoadResult>();
+      const { fixture, el, loadRelations } = render({ anchorRelationCount: 2, loadStream: pending });
+
+      expect(loadRelations).toHaveBeenCalledWith(1);
+      expect(el('abwab-relations-modal-loading')).toBeTruthy();
+      // The two claims the old always-`[]`-then-fetch modal made before it had been told anything.
+      expect(el('abwab-relations-modal-empty')).toBeNull();
+      expect(el('abwab-relations-modal-count')).toBeNull();
+
+      pending.next({ kind: 'success', relations: [relation(10, 2, 'الصبر', 'similarity')] });
+      fixture.detectChanges();
+
+      expect(el('abwab-relations-modal-loading')).toBeNull();
+      expect(el('abwab-relations-modal-group-similarity')?.textContent).toContain('الصبر');
+      expect(el('abwab-relations-modal-count')?.textContent?.trim()).toBe('1');
+    });
+
+    // The count says whether to ask; the answer says what is true. A door whose count is stale by
+    // one still shows what the server actually returned.
+    it('lets the fetched list overrule a count that disagrees with it', () => {
+      const { el } = render({ anchorRelationCount: 3, relations: [] });
+
+      expect(el('abwab-relations-modal-empty')?.textContent).toContain(ABWAB_LABELS.relationsEmpty);
+      expect(el('abwab-relations-modal-count')?.textContent?.trim()).toBe('0');
+    });
+
+    it('re-runs the whole discriminator when the anchor changes under an open modal', () => {
+      const { fixture, el, loadRelations } = render({
+        anchorRelationCount: 1,
+        relations: [relation(10, 2, 'الصبر', 'similarity')],
+      });
+      expect(el('abwab-relations-modal-group-similarity')).toBeTruthy();
+
+      fixture.componentRef.setInput('anchorDoorId', 3);
+      fixture.componentRef.setInput('anchorRelationCount', 0);
+      fixture.detectChanges();
+
+      // The previous anchor's list must not survive as an answer about the new one.
+      expect(el('abwab-relations-modal-group-similarity')).toBeNull();
+      expect(el('abwab-relations-modal-empty')).toBeTruthy();
+      expect(loadRelations).toHaveBeenCalledTimes(1);
+
+      fixture.componentRef.setInput('anchorDoorId', 2);
+      fixture.componentRef.setInput('anchorRelationCount', 1);
+      fixture.detectChanges();
+
+      expect(loadRelations).toHaveBeenCalledTimes(2);
+      expect(loadRelations).toHaveBeenLastCalledWith(2);
+    });
+
+    // The count is snapshot-derived and the snapshot is refetched after every write, so a
+    // count-tracking effect would reset the user's half-built draft under them.
+    it('does not restart the draft when only the count moves', () => {
+      const { fixture, el, click, loadRelations } = render({ anchorRelationCount: 0 });
+
+      click('abwab-relations-modal-pick-2');
+      fixture.componentRef.setInput('anchorRelationCount', 4);
+      fixture.detectChanges();
+
+      expect((el('abwab-relations-modal-pick-checkbox-2') as HTMLInputElement).checked).toBe(true);
+      expect(loadRelations).not.toHaveBeenCalled();
+    });
+
+    // What a cache hit is, from this component's side: an answer already in hand. The skeleton
+    // branch must not flicker through on the way to rendering it.
+    it('paints no skeleton when the read answers without waiting', () => {
+      const { root, el } = render({ anchorRelationCount: 1, relations: [relation(10, 2, 'الصبر', 'similarity')] });
+
+      expect(root.querySelector('[data-testid="qd-skeleton-rows"]')).toBeNull();
+      expect(el('abwab-relations-modal-loading')).toBeNull();
+      expect(el('abwab-relations-modal-group-similarity')).toBeTruthy();
+    });
+
+    // The cached list is the one thing that cannot answer for a door the user just wrote to, and
+    // the snapshot refresh that would evict it has not landed when this runs.
+    it('takes the uncached read after a write, never the cache-aware one', () => {
+      const { fixture, root, click, loadRelations, refetchRelations } = render({
+        anchorRelationCount: 1,
+        relations: [relation(10, 2, 'الصبر', 'similarity')],
+      });
+      expect(loadRelations).toHaveBeenCalledTimes(1);
+
+      click('abwab-relations-modal-pick-3');
+      click('abwab-relations-modal-add');
+
+      expect(refetchRelations).toHaveBeenCalledWith(1);
+      expect(loadRelations).toHaveBeenCalledTimes(1);
+
+      (root.querySelector('[data-testid="qd-chip-remove"]') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(refetchRelations).toHaveBeenCalledTimes(2);
+      expect(loadRelations).toHaveBeenCalledTimes(1);
+    });
+
+    it('reads no count and issues no fetch in anchor-pick mode', () => {
+      const { el, loadRelations } = render({
+        anchorPickMode: true,
+        anchorRelationCount: 5,
+        bulkTargets: [{ id: 2, name: 'الصبر' }],
+      });
+
+      expect(loadRelations).not.toHaveBeenCalled();
+      expect(el('abwab-relations-modal-loading')).toBeNull();
+      expect(el('abwab-relations-modal-empty')).toBeNull();
+      expect(el('abwab-relations-modal-targets')).toBeTruthy();
+    });
+  });
+
+  describe('a failed read is recoverable, a failed write is not sticky', () => {
+    it('offers one retry, goes back to the skeleton, and clears the error once it succeeds', () => {
+      const pending = new Subject<AbwabRelationsLoadResult>();
+      const { fixture, root, el, loadRelations } = render({
+        anchorRelationCount: 1,
+        loadStream: pending,
+      });
+
+      pending.next({ kind: 'error', message: ABWAB_LABELS.relationsLoadError });
+      fixture.detectChanges();
+
+      expect(el('abwab-relations-modal-error')?.textContent).toContain(ABWAB_LABELS.relationsLoadError);
+      expect(el('abwab-relations-modal-loading')).toBeNull();
+      // A failed read has no answer to give, so it must not fall through to «لا توجد علاقات».
+      expect(el('abwab-relations-modal-empty')).toBeNull();
+
+      const retry = root.querySelector('[data-testid="qd-state-action"]') as HTMLButtonElement;
+      expect(retry.textContent?.trim()).toBe(ABWAB_LABELS.retryButton);
+
+      retry.click();
+      fixture.detectChanges();
+
+      expect(loadRelations).toHaveBeenCalledTimes(2);
+      expect(el('abwab-relations-modal-loading')).toBeTruthy();
+      expect(el('abwab-relations-modal-error')).toBeNull();
+
+      pending.next({ kind: 'success', relations: [relation(10, 2, 'الصبر', 'similarity')] });
+      fixture.detectChanges();
+
+      expect(el('abwab-relations-modal-error')).toBeNull();
+      expect(el('abwab-relations-modal-group-similarity')).toBeTruthy();
+    });
+
+    // §17 permits exactly one action, and the add button already is the retry for its own failure.
+    it('gives a write failure its message without a second retry control', () => {
+      const { root, el, click } = render({
+        anchorRelationCount: 0,
+        addOutcome: { kind: 'conflict', message: 'العلاقة موجودة بالفعل' },
+      });
+
+      click('abwab-relations-modal-pick-2');
+      click('abwab-relations-modal-add');
+
+      expect(el('abwab-relations-modal-error')?.textContent).toContain('العلاقة موجودة بالفعل');
+      expect(root.querySelector('[data-testid="qd-state-action"]')).toBeNull();
+      // The list is still valid and still on screen — a write error is not a read failure.
+      expect(el('abwab-relations-modal-empty')).toBeTruthy();
+    });
+
+    it('clears a stuck read error once a later load succeeds', () => {
+      const stream = new Subject<AbwabRelationsLoadResult>();
+      const { fixture, el } = render({ anchorRelationCount: 1, loadStream: stream });
+
+      stream.next({ kind: 'error', message: ABWAB_LABELS.relationsLoadError });
+      fixture.detectChanges();
+      expect(el('abwab-relations-modal-error')).toBeTruthy();
+
+      // Not the retry button: any successful load clears it, including the post-write refresh.
+      stream.next({ kind: 'success', relations: [] });
+      fixture.detectChanges();
+
+      expect(el('abwab-relations-modal-error')).toBeNull();
     });
   });
 

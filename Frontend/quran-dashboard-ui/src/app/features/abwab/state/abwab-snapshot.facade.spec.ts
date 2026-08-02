@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
-import { HttpResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpHeaders, HttpResponse, HttpStatusCode } from '@angular/common/http';
 import { Observable, map, of, throwError } from 'rxjs';
 
 import { AbwabApi } from '../data-access/abwab.api';
@@ -41,6 +41,96 @@ function setup(getTree$: Observable<ApiResponse<AbwabTreeDto>>): AbwabSnapshotFa
   });
   return TestBed.inject(AbwabSnapshotFacade);
 }
+
+/** The half of `setup` that headerless stubs cannot reach: real `HttpResponse`s carrying an ETag,
+ * and the `304` that arrives on the error channel because HttpClient treats only 2xx as ok. */
+type ValidatorStep = ApiResponse<AbwabTreeDto> | { readonly etag: string } | { readonly fails: unknown };
+
+function setupWithValidators(steps: readonly ValidatorStep[]) {
+  getTestBed().resetTestingModule();
+  let call = 0;
+  const sent: (string | null)[] = [];
+  const getTree = (etag: string | null) =>
+    new Observable<HttpResponse<ApiResponse<AbwabTreeDto>>>((subscriber) => {
+      sent.push(etag);
+      const step = steps[Math.min(call, steps.length - 1)];
+      call += 1;
+      // Tagged rather than sniffed: `HttpErrorResponse` implements `Error` without extending it,
+      // so an `instanceof Error` test would silently route a 304 down the success path.
+      if ('fails' in step) {
+        subscriber.error(step.fails);
+        return;
+      }
+      if ('etag' in step) {
+        subscriber.next(
+          new HttpResponse({ body: treeResponse(), headers: new HttpHeaders({ ETag: step.etag }) }),
+        );
+        subscriber.complete();
+        return;
+      }
+      subscriber.next(new HttpResponse({ body: step }));
+      subscriber.complete();
+    });
+
+  TestBed.configureTestingModule({
+    providers: [AbwabSnapshotFacade, { provide: AbwabApi, useValue: { getTree } }],
+  });
+  return { facade: TestBed.inject(AbwabSnapshotFacade), sent };
+}
+
+// TESTING_DEBT I3, snapshot-facade half. The validator is no longer only an `If-None-Match` header
+// the facade sends itself: it is the identity the relations cache keys on, so "what it holds and
+// when" is now observable behavior.
+describe('AbwabSnapshotFacade — the ETag validator it holds', () => {
+  it('stores the response ETag and sends it back on the next read', () => {
+    const { facade, sent } = setupWithValidators([{ etag: 'W/"gen-7"' }]);
+
+    facade.load();
+    expect(facade.snapshotValidator()).toBe('W/"gen-7"');
+    expect(sent).toEqual([null]);
+
+    facade.refresh();
+    expect(sent).toEqual([null, 'W/"gen-7"']);
+  });
+
+  it('keeps value and validator on a 304, reports no error, and ends loading', () => {
+    const { facade } = setupWithValidators([
+      { etag: 'W/"gen-7"' },
+      { fails: new HttpErrorResponse({ status: HttpStatusCode.NotModified }) },
+    ]);
+
+    facade.load();
+    const loaded = facade.snapshot();
+
+    facade.refresh();
+
+    expect(facade.snapshot()).toEqual(loaded);
+    expect(facade.snapshotValidator()).toBe('W/"gen-7"');
+    expect(facade.errorMessage()).toBeNull();
+    expect(facade.isLoading()).toBe(false);
+  });
+
+  // A validator that outlived a failed refresh is still the one that matches the value on screen,
+  // and the two are only ever replaced together.
+  it('keeps the validator when a refresh fails outright', () => {
+    const { facade } = setupWithValidators([{ etag: 'W/"gen-7"' }, { fails: new Error('network down') }]);
+
+    facade.load();
+    facade.refresh();
+
+    expect(facade.snapshotValidator()).toBe('W/"gen-7"');
+    expect(facade.errorMessage()).toBe(ABWAB_LABELS.loadErrorFallback);
+    expect(facade.snapshot()).not.toBeNull();
+  });
+
+  it('holds no validator from a response that carried none', () => {
+    const { facade } = setupWithValidators([treeResponse()]);
+
+    facade.load();
+
+    expect(facade.snapshotValidator()).toBeNull();
+  });
+});
 
 describe('AbwabSnapshotFacade', () => {
   it('load() builds the tree view model from a successful response', () => {

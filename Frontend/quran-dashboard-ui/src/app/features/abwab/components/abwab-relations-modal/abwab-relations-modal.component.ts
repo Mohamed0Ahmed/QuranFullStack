@@ -7,6 +7,7 @@ import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabRelationsLoadResult } from '../../state/abwab-relations.controller';
@@ -73,6 +74,7 @@ let nextModalId = 0;
     AbwabDoorPickerComponent,
     ModalScrollLockDirective,
     QdChipComponent,
+    QdSkeletonRowsComponent,
     QdStateComponent,
     QdTabDirective,
     QdTabsComponent,
@@ -85,10 +87,15 @@ export class AbwabRelationsModalComponent {
   readonly open = input(false);
   readonly anchorDoorId = input<number | null>(null);
   readonly anchorDoorName = input('');
+  /** The snapshot's own live-relation count for the anchor. It decides whether the modal asks the
+   * server at all — see the open effect. */
+  readonly anchorRelationCount = input(0);
   readonly anchorPickMode = input(false);
   readonly bulkTargets = input<readonly AbwabRelationTarget[]>([]);
   readonly liveRoots = input<readonly AbwabNode[]>([]);
   readonly loadRelations = input.required<(doorId: number) => Observable<AbwabRelationsLoadResult>>();
+  /** The same read, minus any cached answer: what the modal owes a user who just wrote. */
+  readonly refetchRelations = input.required<(doorId: number) => Observable<AbwabRelationsLoadResult>>();
   readonly addRelations = input.required<
     (
       anchorDoorId: number,
@@ -107,6 +114,10 @@ export class AbwabRelationsModalComponent {
   private readonly picker = viewChild(AbwabDoorPickerComponent);
 
   protected readonly relations = signal<readonly AbwabRelationVm[]>([]);
+  /** `'error'` is the READ's failure only, which is why it is a status and not a flag on the
+   * message below: a write error leaves the list on screen valid and retryable through the
+   * add/remove controls themselves, so it must not hide the groups or offer a second retry. */
+  protected readonly status = signal<'loading' | 'ready' | 'error'>('ready');
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly type = signal<AbwabRelationKind>('similarity');
   protected readonly direction = signal<AbwabRelationDirectionKind>('anchor-more');
@@ -118,6 +129,8 @@ export class AbwabRelationsModalComponent {
   protected get addTitle(): string { return ABWAB_LABELS.relationAddTitle; }
   protected get descriptionText(): string { return ABWAB_LABELS.relationsModalDescription; }
   protected get emptyText(): string { return ABWAB_LABELS.relationsEmpty; }
+  protected get loadingLabel(): string { return ABWAB_LABELS.relationsLoading; }
+  protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
   protected get directionLabel(): string { return ABWAB_LABELS.relationDirectionLabel; }
   protected get typeTabsAriaLabel(): string { return ABWAB_LABELS.relationTypeTabsAriaLabel; }
   protected get alreadyLinkedLabel(): string { return ABWAB_LABELS.relationAlreadyLinked; }
@@ -137,6 +150,12 @@ export class AbwabRelationsModalComponent {
    * picker's radio affordance should not be the only place that says so. */
   protected readonly searchPlaceholder = computed(() =>
     this.anchorPickMode() ? ABWAB_LABELS.relationsBulkAnchorPlaceholder : ABWAB_LABELS.relationPickerPlaceholder,
+  );
+
+  /** Excluded rows are context, and the tag names WHICH context: the open door in door mode, a
+   * fixed bulk target in anchor-pick mode. */
+  protected readonly excludedTagLabel = computed(() =>
+    this.anchorPickMode() ? ABWAB_LABELS.pickerExcludedTargetTag : ABWAB_LABELS.pickerExcludedAnchorTag,
   );
 
   /** The pill names whichever side the picker chooses, and the two modes choose opposite sides:
@@ -240,8 +259,14 @@ export class AbwabRelationsModalComponent {
         this.resetDraft();
         this.relations.set([]);
         this.errorMessage.set(null);
-        if (!this.anchorPickMode() && anchorId !== null) {
-          this.reload(anchorId);
+        this.status.set('ready');
+        // Every read below is untracked on purpose: the count is snapshot-derived, so tracking it
+        // would re-run this whole reset — draft picks included — the moment a write refreshes the
+        // tree. The anchor id and `open` are the only legitimate triggers.
+        if (!this.anchorPickMode() && anchorId !== null && this.anchorRelationCount() > 0) {
+          // A zero-count door is answered from the snapshot: the request is skipped, not issued and
+          // then hidden behind an empty state that is only true once it returns.
+          this.loadWithSkeleton(anchorId);
         }
         // Both modes open on a list, so the trap's capture would stop at the first chip or tab
         // were the picker's search not marked `cdkFocusInitial`. With that mark the trap lands
@@ -304,7 +329,7 @@ export class AbwabRelationsModalComponent {
         this.closed.emit();
         return;
       }
-      this.reload(anchorId);
+      this.refetchAfterWrite(anchorId);
     });
   }
 
@@ -317,7 +342,7 @@ export class AbwabRelationsModalComponent {
       }
       this.errorMessage.set(null);
       if (anchorId !== null) {
-        this.reload(anchorId);
+        this.refetchAfterWrite(anchorId);
       }
     });
   }
@@ -326,12 +351,37 @@ export class AbwabRelationsModalComponent {
     this.closed.emit();
   }
 
-  private reload(anchorId: number): void {
-    this.loadRelations()(anchorId).subscribe((result) => {
+  protected retryLoad(): void {
+    const anchorId = this.anchorDoorId();
+    if (anchorId === null) {
+      return;
+    }
+    this.errorMessage.set(null);
+    this.loadWithSkeleton(anchorId);
+  }
+
+  /** The open path and the retry blank the list while they wait; a post-write refresh does not —
+   * what is on screen there is still the truth until the refetch lands. */
+  private loadWithSkeleton(anchorId: number): void {
+    this.status.set('loading');
+    this.consume(this.loadRelations()(anchorId));
+  }
+
+  private refetchAfterWrite(anchorId: number): void {
+    this.consume(this.refetchRelations()(anchorId));
+  }
+
+  private consume(load$: Observable<AbwabRelationsLoadResult>): void {
+    load$.subscribe((result) => {
       if (result.kind === 'success') {
         this.relations.set(result.relations);
+        // Clearing here is what un-sticks an error the user has already recovered from: before
+        // this, one failed load kept its message on screen for the life of the open modal.
+        this.errorMessage.set(null);
+        this.status.set('ready');
       } else {
         this.errorMessage.set(result.message);
+        this.status.set('error');
       }
     });
   }

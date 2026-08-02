@@ -122,9 +122,19 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
 - **Both readers here ARE cached**, behind `Infrastructure/Caching/Abwab/`. The former "no caching"
   rule stood only while there was no invalidation story; there is one now, and it is what makes
   caching admin-authored data safe. See the section below.
-- **The relations read is the exception and stays uncached and unconditional.** The client fetches it
-  per modal-open with no held prior value, so a `304` would have nothing to render against and a
-  per-door validator would be a third cache resource for zero saved bytes.
+- **The relations read stays uncached and unconditional on this side.** Nothing here holds a prior
+  value or answers `304`; a per-door validator would be a third cache resource for what the client
+  now avoids asking for at all. What changed is only the caller: the frontend keeps its own
+  per-door list cache keyed on the **tree ETag** this server issues
+  (`state/abwab-relations.controller.ts`), and skips the request entirely for a door whose snapshot
+  `RelationCount` is `0`. So the number of requests this route sees is no longer one per modal
+  open — but every request it does see is still answered from the database, in full.
+  - **Rename pin — binding on any future finer-grained invalidation, here or client-side.** Relation
+    lists must be evicted when a door is **renamed**, not only when a relation is added or removed:
+    a list embeds the partner's name and its ordering, and a rename changes both while moving no
+    count anywhere. Today the tree generation is bumped by every door write, so the client's
+    clear-everything-on-validator-change rule covers it for free — the requirement only becomes
+    visible the day someone narrows either side to "relation writes only".
 
 ## Caching and invalidation
 

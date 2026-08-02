@@ -243,6 +243,7 @@ export const ABWAB_LABELS = {
   relationsModalTitle: (doorName: string): string => `علاقات «${doorName}»`,
   relationsModalDescription: 'العلاقات المتبادلة تظهر تلقائيًا عند الطرف الآخر. الحذف من هنا يحذفها من الطرفين.',
   relationsEmpty: 'لا توجد علاقات لهذا الباب بعد — أضف أول علاقة من الأسفل.',
+  relationsLoading: 'يتم تحميل العلاقات…',
   relationsLoadError: 'تعذر تحميل علاقات الباب.',
   // Every group renders several of these buttons at once, so a static name would leave a screen
   // reader with N identical «حذف العلاقة» controls and no way to tell them apart.
@@ -290,6 +291,10 @@ export const ABWAB_LABELS = {
   // The shared picker's own "your search matched nothing", distinct from every host's "there is
   // nothing to pick": doors exist, this query just does not reach them.
   pickerNoMatches: 'لا يوجد باب مطابق لبحثك.',
+  // The excluded row's tag names WHY it cannot be picked, per host mode. Muted text + missing
+  // control + this tag carry the meaning together — never color alone.
+  pickerExcludedAnchorTag: 'الباب المفتوح',
+  pickerExcludedTargetTag: 'هدف محدد',
   relationPickerCollapseAriaLabel: (doorName: string): string => `إخفاء الأبواب الفرعية لـ«${doorName}»`,
   // The picker's "there is nothing to pick" for this host — about doors, not about relations, so
   // it cannot reuse `relationsEmpty` above.

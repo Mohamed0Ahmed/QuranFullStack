@@ -268,10 +268,28 @@ nine), four of them reads.
   `sections` live from the facade snapshot (never cached) and forwards
   create/rename/delete to the shared write controller above.
 - `state/abwab-relations.controller.ts` — the relations-facing surface, built the same
-  way: it owns only what is relation-specific (the per-door fetch and the wire↔domain
-  mapping of both enums) and forwards both writes to the shared write controller, so the
-  409 policy and the refresh-after-write invariant stay in one place for all three
-  aggregates.
+  way: it owns only what is relation-specific (the per-door fetch, **its cache**, and the
+  wire↔domain mapping of both enums) and forwards both writes to the shared write
+  controller, so the 409 policy and the refresh-after-write invariant stay in one place for
+  all three aggregates. **The cache is a `doorId → list` map whose identity is the snapshot
+  ETag** the facade exposes as `snapshotValidator` — `bootId + tree generation`, the server's
+  own answer to "which tree is this", moved by every write that can alter any relation list.
+  When it moves, **every** entry is dropped; a null validator (no snapshot identity held)
+  serves nothing from the map. A `304` and a failed refresh both keep it, because both keep
+  the snapshot and its validator as one unit. `loadFor` is the cache-aware read; `refetchFor`
+  is the forced one the modal uses after a write, because the write's own snapshot refetch is
+  fire-and-forget and has usually not landed when the modal reloads.
+  - **Rename pin — binding on any future finer-grained invalidation.** A narrower rule must
+    still evict on **door rename**: a cached list embeds the partner's name and its ordering,
+    and a rename changes both while no count moves anywhere to signal it. Today's
+    clear-everything-on-validator-change covers this for free, so the guard spec in
+    `abwab-relations.controller.spec.ts` is labeled a regression guard rather than proof — this
+    sentence is what binds the requirement, and `Persistence/Reads/Abwab/README.md` carries it
+    on the server side.
+  - **Why not `AbwabTreeDto.version`:** it is diagnostics-only (below) and is *factually blind*
+    to relation writes — `GetSnapshotVersionAsync` reads sections/doors/aliases only, so an add
+    or a delete moves the ETag and leaves `version` untouched. A version-keyed cache would serve
+    stale lists on exactly the writes that matter most.
 - `state/abwab-templates.facade.ts` — the template list and the selected template's tree,
   on the snapshot facade's contract (`refresh` always refetches; a failure leaves the
   previous value in place). Root-scoped: it is a cache.
@@ -308,13 +326,13 @@ control renders, and (per the fail-closed convention below) the URL is not rewri
 
 **`modal` selects an overlay, never a data scope, and it enters no identity anywhere.** It
 is not part of any cache key, restore identity, history identity or ETag: the snapshot read
-is one unparameterized root-scoped tree GET, and the relations read is keyed by door id and
-uncached (`state/abwab-relations.controller.ts`), so a restored relations modal re-fetches
-honestly. This is the one row of this table a future caching design must **not** pick up —
-adding the key to a scope or cache input would be a contract change, not an optimisation.
-The caching that since landed honors this: the tree validator is a server-side generation
-counter keyed on nothing from the URL, the snapshot read is still one unparameterized tree
-GET, and the relations read is still uncached and unconditional.
+is one unparameterized root-scoped tree GET, and the relations read is keyed by **door id and
+the tree validator only** (`state/abwab-relations.controller.ts`). This is the one row of this
+table a future caching design must **not** pick up — adding the key to a scope or cache input
+would be a contract change, not an optimisation. Both caching layers that have since landed
+honor it: the tree validator is a server-side generation counter keyed on nothing from the
+URL, the snapshot read is still one unparameterized tree GET, and the relations cache is
+keyed on that same server validator — never on `modal`, and never on which overlay asked.
 
 **Restoring reopens the overlay, not a draft.** The key encodes *which* overlay is
 restorable and nothing else; a reopened door modal is pristine from the snapshot, the same
@@ -616,17 +634,28 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **Loading/empty/error surfaces are composed, not hand-rolled.** Every text-only loading,
   empty, and error site across `abwab-page`, `abwab-templates-page`, the template copy modal,
   and the relations modal now composes `qd-skeleton-rows`/`qd-panel-skeleton` (loading) or
-  `qd-state` (empty/error) — `UI_STYLE_SYSTEM.md` §17. Only two error sites carry the single
+  `qd-state` (empty/error) — `UI_STYLE_SYSTEM.md` §17. **The relations modal's own read is one of
+  them**: it holds a `'loading' | 'ready' | 'error'` status, renders `qd-skeleton-rows` while a
+  fetch is out, and reaches the empty state or the count chip only once the list has actually
+  answered. Which read runs at all is decided by the anchor's snapshot `relationCount` — a
+  zero-count door issues **no request**, and the count is read untracked so a post-write snapshot
+  refresh cannot reset the open draft. The fetched list overrules a disagreeing count; the count
+  only chooses between asking and not asking. Only three error sites carry the single
   `actionLabel` retry §17 permits — the doors page's own snapshot-load failure and the copy
-  modal's doors-load failure, both wired to `AbwabSnapshotFacade.load()` — because those are
-  the two transport reads abwab previously offered no recovery from at all. The templates page's
+  modal's doors-load failure, both wired to `AbwabSnapshotFacade.load()`, plus the relations
+  modal's own load failure — because those are the transport reads abwab otherwise offers no
+  recovery from at all. The relations modal's **write** errors deliberately carry no retry: the
+  add and remove controls are themselves that retry, and §17 allows one action per error. Any
+  successful load clears the message, so a recovered failure no longer sticks for the life of the
+  open modal. The templates page's
   «اختر قالبًا» now means only what it says: `AbwabTemplatesFacade.selectedLoading` covers the
   per-template fetch window (null `selectedTemplate` throughout, since `select()` writes the id
   first), and the detail region renders `qd-skeleton-rows` there instead.
 - **A skeleton's `rowTemplate` sizes its columns, never its rows.** `qd-skeleton-rows` defaults
   to a 0.75rem bar, so a call-site whose loaded row is taller must say so with a
   `--qd-skeleton-h` override on the host — the doors tree does (1.5rem, giving 32px pitch against
-  the gapless tree's measured 32px row), and the templates list does (3.75rem). The primitive's
+  the gapless tree's measured 32px row), the templates list does (3.75rem), and the relations
+  modal's group skeleton does (1.25rem, standing in for a heading over a chip line). The primitive's
   own inter-row `gap` is **not** parameterized, so *n* skeleton rows always land one gap short of
   *n* gapless loaded rows; that residual is the primitive's, not the call-site's, and closing it
   means changing `shared/ui/skeleton/`.

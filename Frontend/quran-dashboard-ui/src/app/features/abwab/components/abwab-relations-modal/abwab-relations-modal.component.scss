@@ -26,6 +26,15 @@
   margin-block-end: var(--qd-space-4);
 }
 
+/* A loaded "row" here is a group heading over a wrapped chip line, well above the primitive's
+   0.75rem default — the documented `--qd-skeleton-h` override (README, `_components.scss`) is what
+   keeps the waiting block the size of the thing it stands in for. */
+.abwab-relations-modal__loading {
+  display: block;
+  --qd-skeleton-h: 1.25rem;
+  margin-block-end: var(--qd-space-4);
+}
+
 .abwab-relations-modal__group h4 {
   display: flex;
   align-items: center;
