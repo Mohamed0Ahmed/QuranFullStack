@@ -10,6 +10,7 @@ public abstract record CreateDoorOutcome
     public sealed record InvalidName : CreateDoorOutcome;
     public sealed record ParentNotFound : CreateDoorOutcome;
     public sealed record SectionNotFound : CreateDoorOutcome;
+    public sealed record SectionRequired : CreateDoorOutcome;
     public sealed record SectionParentMismatch : CreateDoorOutcome;
     public sealed record DuplicateName : CreateDoorOutcome;
 }

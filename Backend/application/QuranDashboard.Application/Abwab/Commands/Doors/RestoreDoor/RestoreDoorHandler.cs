@@ -15,17 +15,32 @@ public sealed class RestoreDoorHandler(
 
         try
         {
-            var restored = await writer.RestoreAsync(command.Id, command.Version, cancellationToken);
-            if (restored is null)
+            var door = await writer.RestoreAsync(command.Id, command.SectionId, command.Version, cancellationToken);
+            if (door is null)
             {
                 logger.LogWarning("Not found {feature} {operation} {doorId}", FeatureName, OperationName, command.Id);
                 return new RestoreDoorOutcome.NotFound();
             }
 
             logger.LogInformation(
-                "Completed {feature} {operation} {doorId} {detachedFromArchivedSection}",
-                FeatureName, OperationName, command.Id, restored.DetachedFromArchivedSection);
-            return new RestoreDoorOutcome.Success(restored.Door, restored.DetachedFromArchivedSection);
+                "Completed {feature} {operation} {doorId} {sectionId}",
+                FeatureName, OperationName, command.Id, door.SectionId);
+            return new RestoreDoorOutcome.Success(door);
+        }
+        catch (AbwabSectionRequiredException)
+        {
+            logger.LogWarning("Rejected {feature} {operation} {reason} {doorId}", FeatureName, OperationName, "sectionRequired", command.Id);
+            return new RestoreDoorOutcome.SectionRequired();
+        }
+        catch (AbwabSectionNotFoundException)
+        {
+            logger.LogWarning("Rejected {feature} {operation} {reason} {doorId}", FeatureName, OperationName, "sectionNotFound", command.Id);
+            return new RestoreDoorOutcome.SectionNotFound();
+        }
+        catch (AbwabSectionParentMismatchException)
+        {
+            logger.LogWarning("Rejected {feature} {operation} {reason} {doorId}", FeatureName, OperationName, "sectionParentMismatch", command.Id);
+            return new RestoreDoorOutcome.SectionParentMismatch();
         }
         catch (AbwabParentStillArchivedException)
         {

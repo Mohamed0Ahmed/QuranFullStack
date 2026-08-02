@@ -14,6 +14,8 @@ incidentally.
 
 - `EfAbwabSectionsWriter` — create / rename / reorder / delete-empty. Implements `IAbwabSectionsWriter`.
 - `EfAbwabDoorsWriter` — create / edit / move / reorder / bulk-move / bulk-archive / archive / restore.
+  `InvalidatingAbwabDoorsWriter` (`../../../Caching/Abwab/`) decorates it one-for-one, so a signature
+  change here — `RestoreAsync` gaining its destination `sectionId`, for instance — is a change there too.
   Implements `IAbwabDoorsWriter`.
 - `EfAbwabRelationsWriter` — add N relations in one call / soft-delete one. Implements
   `IAbwabRelationsWriter`.
@@ -104,19 +106,36 @@ incidentally.
   of the claim. `RestoreAsync` therefore matches descendants on the archive's own `deleted_at` timestamp,
   captured before the door's is cleared. **Do not widen this back to "all archived descendants"** — that
   resurrects rows the user archived deliberately.
-- **Restore detaches a door whose section was archived meanwhile.** A section can only be archived once it
-  holds no live doors, and sections have no restore route in this slice, so refusing would strand the door
-  permanently. It is moved to "outside every section" (`section_id = null`) — a first-class state, plan
-  §R8 — along with everything restored with it, because a nested door always inherits its parent's section.
-  The detach is **reported, not silent**: `RestoreAsync` returns `AbwabRestoredDoorDto`, whose
-  `DetachedFromArchivedSection` is the caller's only signal. A null `section_id` on its own is ambiguous —
-  a door that never belonged to a section looks identical — and the caller does not hold the prior state.
+- **Every door row carries a section, and restore is the only write that may change one without a move.**
+  `RestoreAsync` takes a destination `sectionId`, and resolves it in two quite different ways:
+  - **A root** keeps its stored section when the caller states nothing and that section is still live. If
+    the section was retired meanwhile — legal, since a section is archivable once it holds no LIVE doors,
+    and sections have no restore route — the stored value is not a destination and the caller is refused
+    (`AbwabSectionRequiredException` → `400`). A stated live section always wins, which is what makes such
+    a door restorable at all. Do NOT reintroduce the old detach-to-`section_id = null` behavior: nothing
+    is "outside every section" any more, and the column forbids it.
+  - **A child** derives from its live parent's **CURRENT** section, read fresh — never the value stored on
+    the archived row. If an ancestor was re-sectioned while this door sat archived under a separate,
+    earlier archive, the stored value points at the section the parent has left: present, wrong, and
+    invisible to a `NOT NULL` column. A stated section that disagrees with the parent is refused exactly
+    as on create (`AbwabSectionParentMismatchException` → `400`).
+  - A root restore that lands in a different section is a re-section like any other and runs through
+    `CascadeSectionToDescendantsAsync` — **not** a loop bounded by what the restore itself gave back. The
+    restore loop only claims rows carrying this archive's own timestamp; the cascade must also reach the
+    rows it does not restore, or a separately-archived descendant keeps the old section and resurfaces
+    wrong on its own later restore. `AbwabDoorWriteBehaviorTests` pins both halves.
 - **A nested door's section is its parent's, and every write that can change a section must maintain that.**
   Reads group and count by `SectionId` at any depth (`../../Reads/Abwab/README.md`) and nothing re-derives
   it, so this is an invariant the write side owes, not a convention:
   - `CreateAsync` **derives** the section from the parent. A null `sectionId` means *unspecified* — `int?`
     cannot tell an omitted field from an explicit null — and a stated one that disagrees with the parent
     is refused (`AbwabSectionParentMismatchException` → `400`), not silently overwritten.
+  - **At root scope there is no parent to derive from, so an unstated section has no answer and is
+    refused** (`AbwabSectionRequiredException` → `400`). This covers create, `MoveAsync`, and
+    `BulkMoveAsync` alike — `ResolveCreateSectionAsync` and `ResolveTargetSectionAsync` both return a
+    non-nullable `int`, so no write path can reach `SaveChanges` with a section-less door. Check ORDER
+    differs on purpose and is load-bearing: `MoveAsync` loads the door first (unknown id stays a `404`),
+    while `BulkMoveAsync` resolves the target first (request-shape validation before entity checks).
   - `MoveAsync` and `BulkMoveAsync` **cascade** a section change to the moved door's whole subtree,
     `CascadeSectionToDescendantsAsync`. **Archived descendants included** — they keep their `parent_id`
     through soft-delete, and one left behind would later restore into a section its parent has left.

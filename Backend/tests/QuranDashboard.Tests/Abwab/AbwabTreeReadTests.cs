@@ -37,8 +37,9 @@ public sealed class AbwabTreeReadTests(AbwabSchemaFixture fixture)
         await using var scope = fixture.Services.CreateAsyncScope();
         var doors = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var reader = scope.ServiceProvider.GetRequiredService<IAbwabTreeReader>();
+        var section = await NewSectionAsync(scope, "قراءة: قسم الباب المؤرشف");
 
-        var archived = await doors.CreateAsync(null, null, "قراءة: باب يُؤرشف", null, null, [], CancellationToken.None);
+        var archived = await doors.CreateAsync(section, null, "قراءة: باب يُؤرشف", null, null, [], CancellationToken.None);
         await doors.DeleteAsync(archived.Id, archived.Version, CancellationToken.None);
 
         var tree = await reader.GetTreeAsync(CancellationToken.None);
@@ -109,10 +110,11 @@ public sealed class AbwabTreeReadTests(AbwabSchemaFixture fixture)
         var doors = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var reader = scope.ServiceProvider.GetRequiredService<IAbwabTreeReader>();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        var section = await NewSectionAsync(scope, "قراءة: قسم الترتيب ذي الفجوة");
 
-        var first = await doors.CreateAsync(null, null, "قراءة: ترتيب أول", null, null, [], CancellationToken.None);
-        var second = await doors.CreateAsync(null, null, "قراءة: ترتيب ثانٍ", null, null, [], CancellationToken.None);
-        var third = await doors.CreateAsync(null, null, "قراءة: ترتيب ثالث", null, null, [], CancellationToken.None);
+        var first = await doors.CreateAsync(section, null, "قراءة: ترتيب أول", null, null, [], CancellationToken.None);
+        var second = await doors.CreateAsync(section, null, "قراءة: ترتيب ثانٍ", null, null, [], CancellationToken.None);
+        var third = await doors.CreateAsync(section, null, "قراءة: ترتيب ثالث", null, null, [], CancellationToken.None);
 
         // Reads tolerate gaps (§4) — bypass the writer's own 1..N resequencing to prove the reader
         // orders by the raw value rather than assuming contiguity.
@@ -141,7 +143,9 @@ public sealed class AbwabTreeReadTests(AbwabSchemaFixture fixture)
         var doors = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var reader = scope.ServiceProvider.GetRequiredService<IAbwabTreeReader>();
 
-        var door = await doors.CreateAsync(null, null, "قراءة: باب لتتبع الإصدار", null, null, [], CancellationToken.None);
+        var section = await NewSectionAsync(scope, "قراءة: قسم تتبع الإصدار");
+
+        var door = await doors.CreateAsync(section, null, "قراءة: باب لتتبع الإصدار", null, null, [], CancellationToken.None);
         var versionBeforeDelete = (await reader.GetTreeAsync(CancellationToken.None)).Version;
 
         await doors.DeleteAsync(door.Id, door.Version, CancellationToken.None);
@@ -150,5 +154,13 @@ public sealed class AbwabTreeReadTests(AbwabSchemaFixture fixture)
         versionBeforeDelete.Should().NotBeNull();
         versionAfterDelete.Should().NotBeNull();
         versionAfterDelete.Should().BeAfter(versionBeforeDelete!.Value);
+    }
+
+    // Every root-scope write names a section now, so a reader test that only needed "a door" brings its
+    // own — which also keeps its rows out of every other test's scope on this shared fixture.
+    private static async Task<int> NewSectionAsync(AsyncServiceScope scope, string name)
+    {
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+        return (await sections.CreateAsync(name, CancellationToken.None)).Id;
     }
 }

@@ -403,7 +403,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         return true;
     }
 
-    public async Task<AbwabRestoredDoorDto?> RestoreAsync(int id, uint expectedVersion, CancellationToken cancellationToken)
+    public async Task<AbwabDoorDto?> RestoreAsync(int id, int? sectionId, uint expectedVersion, CancellationToken cancellationToken)
     {
         var door = await db.AbwabDoors.FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
         if (door is null)
@@ -411,9 +411,10 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
             return null;
         }
 
+        AbwabDoor? parent = null;
         if (door.ParentId.HasValue)
         {
-            var parent = await db.AbwabDoors.FirstOrDefaultAsync(d => d.Id == door.ParentId.Value, cancellationToken);
+            parent = await db.AbwabDoors.FirstOrDefaultAsync(d => d.Id == door.ParentId.Value, cancellationToken);
             if (parent is { DeletedAtUtc: not null })
             {
                 throw new AbwabParentStillArchivedException();
@@ -433,19 +434,14 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         door.DeletedAtUtc = null;
         door.UpdatedAtUtc = now;
 
-        // A section can only be archived once it holds no LIVE doors, so an archived section here means it
-        // was retired while this door sat archived. Sections have no restore route in this slice, so a 409
-        // would strand the door permanently; it is detached to "outside every section" instead — a
-        // first-class state (plan §R8, what makes «كل الأبواب» a real superset), not an invented home.
-        var sectionWasArchived = await IsSectionArchivedAsync(door.SectionId, cancellationToken);
-        if (sectionWasArchived)
-        {
-            door.SectionId = null;
-        }
+        var previousSectionId = door.SectionId;
+        door.SectionId = await ResolveRestoreSectionAsync(door, parent, sectionId, cancellationToken);
+
+        var childrenByParent = await LoadChildrenByParentAsync(cancellationToken);
 
         if (archivedAt.HasValue)
         {
-            var descendantIds = CollectDescendantIds(await LoadChildrenByParentAsync(cancellationToken), id);
+            var descendantIds = CollectDescendantIds(childrenByParent, id);
             var sweptInDescendants = descendantIds.Count == 0
                 ? []
                 : await db.AbwabDoors
@@ -456,19 +452,22 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
             {
                 descendant.DeletedAtUtc = null;
                 descendant.UpdatedAtUtc = now;
-
-                // A nested door always inherits its parent's section (ResolveTargetSectionAsync), so a
-                // detached subtree has to be detached whole or that invariant breaks on the read side.
-                if (sectionWasArchived)
-                {
-                    descendant.SectionId = null;
-                }
             }
         }
 
+        // Restore doubles as a re-section, and a re-section carries the whole subtree like any other. It
+        // deliberately runs through the same helper move uses, which reaches ARCHIVED descendants too:
+        // the restore loop above only gives back what this door's own archive took, so a descendant an
+        // earlier operation archived separately is not restored here — and left on the old section it
+        // would resurface, on its own later restore, in a section its parent has already left.
+        if (previousSectionId != door.SectionId)
+        {
+            await CascadeSectionToDescendantsAsync(childrenByParent, [id], door.SectionId.Value, now, cancellationToken);
+        }
+
         // Same rule as OrderValue: restore moves a root back INTO the global sequence, appended last
-        // (§5.2 — derived, not guessed). ParentId is the only thing that matters here; the section
-        // detach above changes SectionId, never root membership.
+        // (§5.2 — derived, not guessed). ParentId is the only thing that matters here; the re-section
+        // above changes SectionId, never root membership.
         if (door.ParentId is null)
         {
             await MaintainGlobalOrderAsync(new HashSet<int>(), [door], cancellationToken);
@@ -476,8 +475,8 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
 
         // Restore is the only write that moves a row back INTO a scope. That scope was renumbered 1..N-1
         // when the door left it, so it needs renumbering again with the door back in — the same 1..N rule
-        // every other write follows. Read against the door's FINAL scope, which the detach above may have
-        // just changed.
+        // every other write follows. Read against the door's FINAL scope, which the re-section above may
+        // have just changed.
         var scopeSiblings = await db.AbwabDoors
             .Where(d => d.SectionId == door.SectionId && d.ParentId == door.ParentId
                         && d.DeletedAtUtc == null && d.Id != id)
@@ -491,20 +490,64 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         // real 23505 risk here, not a structurally-impossible one.
         await SaveTranslatingWriteExceptionsAsync(door.Name, cancellationToken);
 
-        return new AbwabRestoredDoorDto(await ToDtoAsync(door, cancellationToken), sectionWasArchived);
+        return await ToDtoAsync(door, cancellationToken);
+    }
+
+    // Restore is the one write that meets a row whose stored section may no longer be a destination, and
+    // the one write allowed to re-section a door without moving it.
+    private async Task<int> ResolveRestoreSectionAsync(
+        AbwabDoor door, AbwabDoor? parent, int? statedSectionId, CancellationToken cancellationToken)
+    {
+        // A child's section is its parent's, read FRESH — never the value stored on the archived row. If an
+        // ancestor was re-sectioned while this door sat archived under a separate, earlier archive, the
+        // stored value points at the section the parent has left: present, wrong, and invisible to a NOT
+        // NULL column. Same derivation as child create, so a stated section that disagrees is refused there
+        // and here alike.
+        if (parent is not null)
+        {
+            if (statedSectionId.HasValue && statedSectionId != parent.SectionId)
+            {
+                throw new AbwabSectionParentMismatchException();
+            }
+
+            return RequireSection(parent.SectionId);
+        }
+
+        if (statedSectionId.HasValue)
+        {
+            await EnsureSectionExistsAsync(statedSectionId.Value, cancellationToken);
+            return statedSectionId.Value;
+        }
+
+        // A section can only be archived once it holds no LIVE doors, so an archived section here means it
+        // was retired while this door sat archived. Sections have no restore route, so that section is not
+        // a destination and the caller has to name one — the door is not stranded, and it is not silently
+        // put somewhere nobody chose.
+        if (door.SectionId is not { } storedSectionId || await IsSectionArchivedAsync(storedSectionId, cancellationToken))
+        {
+            throw new AbwabSectionRequiredException();
+        }
+
+        return storedSectionId;
     }
 
     // A nested door's section IS its parent's; no read re-derives it. A null sectionId means "unspecified"
     // — `int?` cannot tell an omitted field from an explicit null — so it derives from the parent. A stated
     // one that disagrees is a caller bug and is refused, not silently overwritten. Deliberately unlike
     // MoveAsync, which ignores a disagreeing targetSectionId (plan §4, §13.5): move's pair describes a
-    // destination where the plan locks parent-wins, create's body is an authored record.
-    private async Task<int?> ResolveCreateSectionAsync(int? parentId, int? sectionId, CancellationToken cancellationToken)
+    // destination where the plan locks parent-wins, create's body is an authored record. At root scope
+    // there is no parent to derive from, so "unspecified" has no answer and is refused.
+    private async Task<int> ResolveCreateSectionAsync(int? parentId, int? sectionId, CancellationToken cancellationToken)
     {
         if (!parentId.HasValue)
         {
-            await EnsureSectionExistsAsync(sectionId, cancellationToken);
-            return sectionId;
+            if (!sectionId.HasValue)
+            {
+                throw new AbwabSectionRequiredException();
+            }
+
+            await EnsureSectionExistsAsync(sectionId.Value, cancellationToken);
+            return sectionId.Value;
         }
 
         var parent = await db.AbwabDoors.FirstOrDefaultAsync(d => d.Id == parentId.Value && d.DeletedAtUtc == null, cancellationToken);
@@ -515,20 +558,25 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
 
         if (sectionId.HasValue)
         {
-            await EnsureSectionExistsAsync(sectionId, cancellationToken);
+            await EnsureSectionExistsAsync(sectionId.Value, cancellationToken);
             if (sectionId != parent.SectionId)
             {
                 throw new AbwabSectionParentMismatchException();
             }
         }
 
-        return parent.SectionId;
+        return RequireSection(parent.SectionId);
     }
 
-    private async Task EnsureSectionExistsAsync(int? sectionId, CancellationToken cancellationToken)
+    // Transitional: section_id is still a nullable column until the NOT NULL migration lands, so a parent
+    // authored before doors had to belong anywhere has no section to derive. Fail closed rather than
+    // propagate the null the rest of this writer no longer admits.
+    private static int RequireSection(int? sectionId) =>
+        sectionId ?? throw new AbwabSectionRequiredException();
+
+    private async Task EnsureSectionExistsAsync(int sectionId, CancellationToken cancellationToken)
     {
-        if (sectionId.HasValue
-            && !await db.AbwabSections.AnyAsync(s => s.Id == sectionId.Value && s.DeletedAtUtc == null, cancellationToken))
+        if (!await db.AbwabSections.AnyAsync(s => s.Id == sectionId && s.DeletedAtUtc == null, cancellationToken))
         {
             throw new AbwabSectionNotFoundException();
         }
@@ -540,7 +588,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
     private async Task CascadeSectionToDescendantsAsync(
         IReadOnlyDictionary<int, List<int>> childrenByParent,
         IEnumerable<int> movedIds,
-        int? sectionId,
+        int sectionId,
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
@@ -564,18 +612,23 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         }
     }
 
-    private async Task<bool> IsSectionArchivedAsync(int? sectionId, CancellationToken cancellationToken) =>
-        sectionId.HasValue
-        && await db.AbwabSections.AnyAsync(s => s.Id == sectionId.Value && s.DeletedAtUtc != null, cancellationToken);
+    private async Task<bool> IsSectionArchivedAsync(int sectionId, CancellationToken cancellationToken) =>
+        await db.AbwabSections.AnyAsync(s => s.Id == sectionId && s.DeletedAtUtc != null, cancellationToken);
 
     // targetSectionId is only honored when targetParentId is null — nesting under a parent always
-    // inherits that parent's own section, so the two inputs can never disagree.
-    private async Task<int?> ResolveTargetSectionAsync(int? targetSectionId, int? targetParentId, CancellationToken cancellationToken)
+    // inherits that parent's own section, so the two inputs can never disagree. A move to root scope
+    // therefore has to name its destination section: there is nothing left to inherit from.
+    private async Task<int> ResolveTargetSectionAsync(int? targetSectionId, int? targetParentId, CancellationToken cancellationToken)
     {
         if (!targetParentId.HasValue)
         {
-            await EnsureSectionExistsAsync(targetSectionId, cancellationToken);
-            return targetSectionId;
+            if (!targetSectionId.HasValue)
+            {
+                throw new AbwabSectionRequiredException();
+            }
+
+            await EnsureSectionExistsAsync(targetSectionId.Value, cancellationToken);
+            return targetSectionId.Value;
         }
 
         var parent = await db.AbwabDoors.FirstOrDefaultAsync(d => d.Id == targetParentId.Value && d.DeletedAtUtc == null, cancellationToken);
@@ -584,7 +637,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
             throw new AbwabParentNotFoundException();
         }
 
-        return parent.SectionId;
+        return RequireSection(parent.SectionId);
     }
 
     private static void EnsureNotCycle(IReadOnlyDictionary<int, List<int>> childrenByParent, int doorId, int targetParentId)

@@ -10,6 +10,7 @@ public abstract record MoveDoorOutcome
     public sealed record NotFound : MoveDoorOutcome;
     public sealed record ParentNotFound : MoveDoorOutcome;
     public sealed record SectionNotFound : MoveDoorOutcome;
+    public sealed record SectionRequired : MoveDoorOutcome;
     public sealed record WouldCycle : MoveDoorOutcome;
     public sealed record StaleVersion : MoveDoorOutcome;
     public sealed record DuplicateName : MoveDoorOutcome;
