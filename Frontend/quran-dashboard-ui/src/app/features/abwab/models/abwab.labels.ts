@@ -176,13 +176,6 @@ export const ABWAB_LABELS = {
   doorModalSectionLabel: 'القسم',
   doorModalSectionRequiredError: 'اختر قسمًا للباب الرئيسي',
   doorModalNoSectionsHint: 'لا توجد أقسام حالية — أنشئ قسمًا أولًا',
-  trackingDataHeading: 'بيانات التتبع',
-  trackingAddedByLabel: 'أُضيف بواسطة',
-  trackingAddedByPlaceholder: '— (يُملأ مع تفعيل الحسابات)',
-  trackingApprovedLabel: 'اعتمده',
-  trackingApprovedPlaceholder: '— (لم يُعتمد بعد)',
-  trackingArchiveLabel: 'الأرشفة',
-  trackingArchiveActiveValue: 'نشط',
 
   movePickerTitleSingle: (doorName: string): string => `نقل «${doorName}»`,
   movePickerTitleBulk: (count: number): string => `نقل ${countPhrase(count, DOOR_FORMS)}`,

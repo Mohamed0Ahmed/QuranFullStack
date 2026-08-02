@@ -15,7 +15,7 @@ let nextModalId = 0;
  * Add/edit door modal (plan-slice-b.md T414). Composes `.qd-modal`/`.qd-modal-backdrop`
  * and `qdModalScrollLock` rather than hand-rolling a dialog, and renders the four authoring
  * fields through the shared `qd-abwab-door-fields-form` — this shell keeps the framing, the
- * tracking box, the dirty guard's confirm strip, and the write dispatch.
+ * dirty guard's confirm strip, and the write dispatch.
  *
  * Create-under-a-parent nulls `sectionId` here (M10) even though `AbwabApi.createDoor` already
  * strips the key at the wire level (T405/M33) — defense in depth at the layer that decides
@@ -25,13 +25,6 @@ let nextModalId = 0;
  * The section `<select>` lives here for the same reason. It appears in exactly one case — a root
  * create from «كل الأبواب», where there is no parent to derive from and no active tab to read — and
  * the backend refuses that write without a section, so blocking it here turns a 400 into a choice.
- *
- * Tracking-data box: `AbwabDoorDto` carries no audit-seed columns on the wire (verified
- * against the generated model + `openapi/swagger.json` — no `createdAt`/`createdBy`/
- * `approvedAt`/`approvedBy`). Rather than inventing a date the mock hardcodes, this box
- * shows only what is honestly derivable: the mock's own "not available yet" placeholder
- * copy for added-by/approved-by (plan.md §3 — no audit system in this slice), and the
- * archive status (always "نشط" — edit is only reachable for live doors, §4.5).
  */
 @Component({
   selector: 'qd-abwab-door-modal',
@@ -110,13 +103,6 @@ export class AbwabDoorModalComponent {
   protected get dirtyCloseConfirmMessage(): string { return ABWAB_LABELS.dirtyCloseConfirm; }
   protected get discardChangesLabel(): string { return ABWAB_LABELS.discardChangesButton; }
   protected get keepEditingLabel(): string { return ABWAB_LABELS.keepEditingButton; }
-  protected get trackingHeading(): string { return ABWAB_LABELS.trackingDataHeading; }
-  protected get trackingAddedByLabel(): string { return ABWAB_LABELS.trackingAddedByLabel; }
-  protected get trackingAddedByPlaceholder(): string { return ABWAB_LABELS.trackingAddedByPlaceholder; }
-  protected get trackingApprovedLabel(): string { return ABWAB_LABELS.trackingApprovedLabel; }
-  protected get trackingApprovedPlaceholder(): string { return ABWAB_LABELS.trackingApprovedPlaceholder; }
-  protected get trackingArchiveLabel(): string { return ABWAB_LABELS.trackingArchiveLabel; }
-  protected get trackingArchiveActiveValue(): string { return ABWAB_LABELS.trackingArchiveActiveValue; }
   protected get sectionLabel(): string { return ABWAB_LABELS.doorModalSectionLabel; }
   protected get sectionRequiredError(): string { return ABWAB_LABELS.doorModalSectionRequiredError; }
   protected get noSectionsHint(): string { return ABWAB_LABELS.doorModalNoSectionsHint; }

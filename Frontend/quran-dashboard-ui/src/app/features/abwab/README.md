@@ -182,7 +182,7 @@ nine), four of them reads.
   template node exists to become a door, and the locked requirement is the *same*
   authoring modal, not a parallel vocabulary.
 - `components/abwab-door-modal/` — the door's shell around that form: title, context
-  line, the tracking-data box, the dirty guard's confirm strip, and the write dispatch.
+  line, the dirty guard's confirm strip, and the write dispatch.
   On the shared modal shell like the other five (see "All six modals share one shell"
   below); the guard strip renders in `__foot`, where it cannot scroll away.
 - `components/abwab-door-picker/` — the one searchable, expandable door picker, composed
@@ -198,9 +198,8 @@ nine), four of them reads.
   of them is true when doors are one keystroke away.
 - `components/abwab-template-node-modal/` — the template node's shell around the same
   form. Its submit is a **function input** bound by the workshop page to
-  `AbwabTemplatesController` (the `abwab-sections-modal` precedent), and it renders no
-  tracking box: a node has no archive status and no audit seed to show, which is why the
-  door modal's box stayed in *its* shell rather than becoming a flag on the form.
+  `AbwabTemplatesController` (the `abwab-sections-modal` precedent): the shared form
+  dispatches nothing itself, so each shell owns the write its own entity needs.
 - `components/abwab-template-tree/` — the workshop's editor tree: the doors tree's
   *language* (chevrons at any depth, an order chip, the root marked `◆` with a bold
   name, hover `＋`/`⋯`, the inline «إضافة عنصر…» row) but not its component. It renders
@@ -586,9 +585,8 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   other; the M27 test is pinned against the real backend copy.
 - **`AbwabDoorDto` carries no audit-seed columns on the wire** (no `createdAt`/
   `createdBy`/`approvedAt`/`approvedBy` — verified against the generated model and
-  `openapi/swagger.json`). The door modal's tracking-data box shows only what is
-  honestly derivable (archive status) or an explicit "not available yet" placeholder
-  for added-by/approved-by; it does not fabricate a date the DTO cannot back.
+  `openapi/swagger.json`). No surface may render an authored-by, approved-by, or
+  created-at value for a door: there is nothing behind it to fabricate one from.
 - **Overlay state is page-scoped; caches are app-scoped.** `AbwabPageOverlaysController` is
   provided by `AbwabPageComponent`, not `providedIn: 'root'` — the same split
   `features/words/state/*-detail.controller.ts` makes ("Not `providedIn: 'root'`: … each

@@ -16,9 +16,6 @@ let nextModalId = 0;
  * Presentational in the `abwab-sections-modal` sense: the submit arrives as a function input,
  * bound by the workshop page to `AbwabTemplatesController`, so this component never reaches for
  * a controller itself.
- *
- * No tracking-data box: a template node has no archive status and no audit seed to show, which
- * is why the door modal's box stays in *its* shell rather than becoming a flag on the form.
  */
 @Component({
   selector: 'qd-abwab-template-node-modal',
