@@ -11,7 +11,7 @@ const DOOR: AbwabDoorDto = {
   representativeAyahText: null,
   aliases: [],
   parentId: null,
-  sectionId: null,
+  sectionId: 1,
   orderValue: 1,
   globalOrderValue: 1,
   version: 1,

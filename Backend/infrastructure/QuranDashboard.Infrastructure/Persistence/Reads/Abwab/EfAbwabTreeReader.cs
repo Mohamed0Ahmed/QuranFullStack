@@ -35,9 +35,17 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
             .GroupBy(d => d.ParentId!.Value)
             .ToDictionary(g => g.Key, g => g.Count());
         var liveSectionCounts = doors
-            .Where(d => d.DeletedAtUtc == null && d.SectionId.HasValue)
-            .GroupBy(d => d.SectionId!.Value)
+            .Where(d => d.DeletedAtUtc == null)
+            .GroupBy(d => d.SectionId)
             .ToDictionary(g => g.Key, g => g.Count());
+
+        // The sections list above holds only live ones, so it cannot answer "is this door's section
+        // retired" for an archived door — the one door restore has to ask about.
+        var retiredSectionIds = await db.AbwabSections.AsNoTracking()
+            .Where(s => s.DeletedAtUtc != null)
+            .Select(s => s.Id)
+            .ToListAsync(cancellationToken);
+        var retiredSections = retiredSectionIds.ToHashSet();
 
         var relationCounts = await GetLiveRelationCountsAsync(cancellationToken);
 
@@ -48,7 +56,7 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
 
         var doorDtos = doors
             .Select(d => new AbwabTreeDoorDto(
-                d.Id, d.SectionId, d.ParentId, d.Name, d.Description, d.RepresentativeAyahText,
+                d.Id, d.SectionId, retiredSections.Contains(d.SectionId), d.ParentId, d.Name, d.Description, d.RepresentativeAyahText,
                 d.OrderValue, d.GlobalOrderValue, d.Version, d.DeletedAtUtc != null, liveChildCounts.GetValueOrDefault(d.Id),
                 relationCounts.GetValueOrDefault(d.Id),
                 aliasesByDoor.GetValueOrDefault(d.Id, [])))

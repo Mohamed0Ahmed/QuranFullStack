@@ -19,10 +19,13 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   (see feature plan §9/§10); it must not reach production before a write policy attaches. Optimistic
   concurrency is `uint xmin`, surfaced as `409` in the shared envelope. Creating a door under a parent
   derives its section from that parent; a stated section that disagrees is a `400`, not a silent
-  overwrite. Restore is the one write whose
-  `200` body is not the entity alone: it returns `AbwabRestoredDoorDto { door, detachedFromArchivedSection }`,
-  because a door restored out of a section archived meanwhile comes back with `sectionId: null` and no
-  caller can tell that from a door that never had a section. The relation routes are the one write
+  overwrite — on create and on restore alike. Creating or moving a door at **root** scope must name its
+  section: there is no parent to derive one from, so an omitted section is a `400`
+  («يجب تحديد قسم للباب الرئيسي»). Restore takes an optional destination — the body is
+  `{ sectionId?, version }` — and returns the plain `AbwabDoorDto` like every other door write. Omitting
+  `sectionId` means "back where it came from"; a root whose section was retired meanwhile has no such
+  place and is a `400` («قسم الباب الأصلي محذوف، حدد قسمًا للاسترجاع»), while a stated section that no
+  longer exists is a `404`. The relation routes are the one write
   family that carries **no version token**: they touch no door row, so no `xmin` moves and the only
   `409` they can produce is the duplicate pair (same two doors + same type, either direction) —
   mapped by `AbwabDoorRelationsController`, which owns its own status mapping exactly as the other

@@ -132,6 +132,8 @@ public static class ApiMessages
     public const string AbwabDoorParentNotFound = "الباب الأب غير موجود";
     public const string AbwabDoorSectionNotFound = "القسم غير موجود";
     public const string AbwabDoorSectionParentMismatch = "الباب الفرعي يتبع قسم الباب الأب، والقسم المحدد يخالفه";
+    public const string AbwabDoorSectionRequired = "يجب تحديد قسم للباب الرئيسي";
+    public const string AbwabDoorRestoreSectionRequired = "قسم الباب الأصلي محذوف، حدد قسمًا للاسترجاع";
     public const string AbwabDoorDuplicateName = "يوجد باب آخر بنفس الاسم في هذا الموضع";
     public const string AbwabDoorStaleVersion = "تم تعديل الباب من مستخدم آخر، يرجى التحديث والمحاولة مرة أخرى";
     public const string AbwabDoorWouldCycle = "لا يمكن نقل الباب إلى داخل فرعه الخاص";

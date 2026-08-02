@@ -123,11 +123,11 @@ internal sealed class InvalidatingAbwabDoorsWriter(
         }
     }
 
-    public async Task<AbwabRestoredDoorDto?> RestoreAsync(int id, uint expectedVersion, CancellationToken cancellationToken)
+    public async Task<AbwabDoorDto?> RestoreAsync(int id, int? sectionId, uint expectedVersion, CancellationToken cancellationToken)
     {
         try
         {
-            return await _inner.RestoreAsync(id, expectedVersion, cancellationToken);
+            return await _inner.RestoreAsync(id, sectionId, expectedVersion, cancellationToken);
         }
         finally
         {

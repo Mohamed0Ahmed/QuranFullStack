@@ -16,8 +16,9 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم الدورة");
 
-        var parent = await writer.CreateAsync(null, null, "سلوك: أب للدورة", null, null, [], CancellationToken.None);
+        var parent = await writer.CreateAsync(section, null, "سلوك: أب للدورة", null, null, [], CancellationToken.None);
         var child = await writer.CreateAsync(null, parent.Id, "سلوك: ابن للدورة", null, null, [], CancellationToken.None);
 
         var act = async () => await writer.MoveAsync(parent.Id, null, child.Id, parent.Version, CancellationToken.None);
@@ -30,8 +31,9 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم النقل الذاتي");
 
-        var door = await writer.CreateAsync(null, null, "سلوك: باب لنقل ذاتي", null, null, [], CancellationToken.None);
+        var door = await writer.CreateAsync(section, null, "سلوك: باب لنقل ذاتي", null, null, [], CancellationToken.None);
 
         var act = async () => await writer.MoveAsync(door.Id, null, door.Id, door.Version, CancellationToken.None);
 
@@ -43,9 +45,10 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم الاسم المكرر");
 
-        await writer.CreateAsync(null, null, "سلوك: اسم مكرر للكتابة المباشرة", null, null, [], CancellationToken.None);
-        var act = async () => await writer.CreateAsync(null, null, "سلوك: اسم مكرر للكتابة المباشرة", null, null, [], CancellationToken.None);
+        await writer.CreateAsync(section, null, "سلوك: اسم مكرر للكتابة المباشرة", null, null, [], CancellationToken.None);
+        var act = async () => await writer.CreateAsync(section, null, "سلوك: اسم مكرر للكتابة المباشرة", null, null, [], CancellationToken.None);
 
         await act.Should().ThrowAsync<AbwabDuplicateNameException>();
     }
@@ -55,8 +58,9 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم التعديل القديم");
 
-        var door = await writer.CreateAsync(null, null, "سلوك: باب لتعديل قديم", null, null, [], CancellationToken.None);
+        var door = await writer.CreateAsync(section, null, "سلوك: باب لتعديل قديم", null, null, [], CancellationToken.None);
         await writer.EditAsync(door.Id, "سلوك: تعديل أول", null, null, [], door.Version, CancellationToken.None);
 
         var act = async () => await writer.EditAsync(door.Id, "سلوك: تعديل ثانٍ", null, null, [], door.Version, CancellationToken.None);
@@ -69,8 +73,9 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم الأرشفة المباشرة");
 
-        var parent = await writer.CreateAsync(null, null, "سلوك: أب للأرشفة المباشرة", null, null, [], CancellationToken.None);
+        var parent = await writer.CreateAsync(section, null, "سلوك: أب للأرشفة المباشرة", null, null, [], CancellationToken.None);
         var child = await writer.CreateAsync(null, parent.Id, "سلوك: ابن للأرشفة المباشرة", null, null, [], CancellationToken.None);
 
         var deleted = await writer.DeleteAsync(parent.Id, parent.Version, CancellationToken.None);
@@ -87,12 +92,13 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم الأب المؤرشف");
 
-        var parent = await writer.CreateAsync(null, null, "سلوك: أب يبقى مؤرشفًا مباشرة", null, null, [], CancellationToken.None);
+        var parent = await writer.CreateAsync(section, null, "سلوك: أب يبقى مؤرشفًا مباشرة", null, null, [], CancellationToken.None);
         var child = await writer.CreateAsync(null, parent.Id, "سلوك: ابن يحاول استعادة منفردة", null, null, [], CancellationToken.None);
         await writer.DeleteAsync(parent.Id, parent.Version, CancellationToken.None);
 
-        var act = async () => await writer.RestoreAsync(child.Id, child.Version, CancellationToken.None);
+        var act = async () => await writer.RestoreAsync(child.Id, null, child.Version, CancellationToken.None);
 
         await act.Should().ThrowAsync<AbwabParentStillArchivedException>();
     }
@@ -200,14 +206,15 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم الانتقال إلى الجذر");
 
-        var parent = await writer.CreateAsync(null, null, "سلوك: أب لابن ينتقل إلى الجذر", null, null, [], CancellationToken.None);
+        var parent = await writer.CreateAsync(section, null, "سلوك: أب لابن ينتقل إلى الجذر", null, null, [], CancellationToken.None);
         var child = await writer.CreateAsync(null, parent.Id, "سلوك: ابن ينتقل إلى الجذر عالميًا", null, null, [], CancellationToken.None);
 
         var liveRootCountBeforeMove = await dbContext.AbwabDoors
             .CountAsync(d => d.ParentId == null && d.DeletedAtUtc == null);
 
-        var moved = await writer.MoveAsync(child.Id, null, null, child.Version, CancellationToken.None);
+        var moved = await writer.MoveAsync(child.Id, section, null, child.Version, CancellationToken.None);
 
         moved!.GlobalOrderValue.Should().Be(liveRootCountBeforeMove + 1);
     }
@@ -264,33 +271,81 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم الاستعادة آخر التسلسل");
 
-        var door = await writer.CreateAsync(null, null, "سلوك: جذر يُستعاد آخر التسلسل العام", null, null, [], CancellationToken.None);
+        var door = await writer.CreateAsync(section, null, "سلوك: جذر يُستعاد آخر التسلسل العام", null, null, [], CancellationToken.None);
         await writer.DeleteAsync(door.Id, door.Version, CancellationToken.None);
         var archived = await ReloadAsync(scope, door.Id);
 
         var liveRootCountBeforeRestore = await dbContext.AbwabDoors
             .CountAsync(d => d.ParentId == null && d.DeletedAtUtc == null);
 
-        var restored = await writer.RestoreAsync(door.Id, archived.Version, CancellationToken.None);
+        var restored = await writer.RestoreAsync(door.Id, null, archived.Version, CancellationToken.None);
 
-        restored!.Door.GlobalOrderValue.Should().Be(liveRootCountBeforeRestore + 1);
+        restored!.GlobalOrderValue.Should().Be(liveRootCountBeforeRestore + 1);
     }
 
-    // A section-less root (SectionId null) is an ordinary root for the global sequence's purposes —
-    // its per-scope home is (NULL, NULL), but it shares the one global sequence with every other root.
+    // M1: at root scope there is no parent to derive a section from, so an unstated one has no answer.
     [Fact]
-    public async Task CreateAsync_SectionLessRoot_ParticipatesInGlobalSequenceWithSectionedRoots()
+    public async Task CreateAsync_AtRootWithoutSection_ThrowsSectionRequiredException()
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
-        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
-        var section = await sections.CreateAsync("سلوك: قسم لجذر يليه جذر بلا قسم", CancellationToken.None);
-        var sectioned = await writer.CreateAsync(section.Id, null, "سلوك: جذر داخل قسم للتسلسل العام", null, null, [], CancellationToken.None);
-        var sectionLess = await writer.CreateAsync(null, null, "سلوك: جذر بلا قسم للتسلسل العام", null, null, [], CancellationToken.None);
+        var act = async () => await writer.CreateAsync(null, null, "سلوك: جذر بلا قسم مرفوض", null, null, [], CancellationToken.None);
 
-        sectionLess.GlobalOrderValue.Should().Be(sectioned.GlobalOrderValue + 1);
+        await act.Should().ThrowAsync<AbwabSectionRequiredException>();
+    }
+
+    // Roots in DIFFERENT sections still share the one global sequence: the per-scope home is
+    // (section, parent), the global order spans every root regardless of section.
+    [Fact]
+    public async Task CreateAsync_RootsInDifferentSections_ShareOneGlobalSequence()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+
+        var first = await NewSectionAsync(scope, "سلوك: قسم أول للتسلسل العام المشترك");
+        var second = await NewSectionAsync(scope, "سلوك: قسم ثانٍ للتسلسل العام المشترك");
+        var inFirst = await writer.CreateAsync(first, null, "سلوك: جذر القسم الأول للتسلسل العام", null, null, [], CancellationToken.None);
+        var inSecond = await writer.CreateAsync(second, null, "سلوك: جذر القسم الثاني للتسلسل العام", null, null, [], CancellationToken.None);
+
+        inSecond.GlobalOrderValue.Should().Be(inFirst.GlobalOrderValue + 1);
+    }
+
+    // M3: the move counterpart. Nesting under a parent inherits that parent's section, so root scope is
+    // the one destination that has to be named.
+    [Fact]
+    public async Task MoveAsync_ToRootWithoutSection_ThrowsSectionRequiredException()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم نقل بلا وجهة");
+
+        var door = await writer.CreateAsync(section, null, "سلوك: باب يُنقل بلا قسم وجهة", null, null, [], CancellationToken.None);
+
+        var act = async () => await writer.MoveAsync(door.Id, null, null, door.Version, CancellationToken.None);
+
+        await act.Should().ThrowAsync<AbwabSectionRequiredException>();
+    }
+
+    // M5: the bulk path resolves the target BEFORE it loads the doors, so the rejection is about the
+    // request's shape and fires regardless of what the batch names.
+    [Fact]
+    public async Task BulkMoveAsync_ToRootWithoutSection_ThrowsSectionRequiredException()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم نقل جماعي بلا وجهة");
+
+        var first = await writer.CreateAsync(section, null, "سلوك: أول باب لنقل جماعي بلا قسم", null, null, [], CancellationToken.None);
+        var second = await writer.CreateAsync(section, null, "سلوك: ثاني باب لنقل جماعي بلا قسم", null, null, [], CancellationToken.None);
+
+        var act = async () => await writer.BulkMoveAsync(
+            [new AbwabBulkDoorRef(first.Id, first.Version), new AbwabBulkDoorRef(second.Id, second.Version)],
+            null, null, CancellationToken.None);
+
+        await act.Should().ThrowAsync<AbwabSectionRequiredException>();
     }
 
     // Discriminating case for BulkMoveAsync: when a moved door's OLD scope IS the destination scope,
@@ -367,7 +422,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
         await writer.DeleteAsync(second.Id, second.Version, CancellationToken.None);
 
         var archived = await ReloadAsync(scope, second.Id);
-        await writer.RestoreAsync(second.Id, archived.Version, CancellationToken.None);
+        await writer.RestoreAsync(second.Id, null, archived.Version, CancellationToken.None);
 
         (await OrderValuesOfSectionRootAsync(scope, section.Id))
             .Should().BeEquivalentTo([1, 2, 3], options => options.WithStrictOrdering());
@@ -380,8 +435,9 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم الاستعادة الانتقائية");
 
-        var parent = await writer.CreateAsync(null, null, "سلوك: أب لاستعادة انتقائية", null, null, [], CancellationToken.None);
+        var parent = await writer.CreateAsync(section, null, "سلوك: أب لاستعادة انتقائية", null, null, [], CancellationToken.None);
         var archivedEarlier = await writer.CreateAsync(null, parent.Id, "سلوك: ابن مؤرشف مسبقًا", null, null, [], CancellationToken.None);
         var sweptIn = await writer.CreateAsync(null, parent.Id, "سلوك: ابن يُؤرشف مع أبيه", null, null, [], CancellationToken.None);
 
@@ -389,7 +445,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
         await writer.DeleteAsync(parent.Id, parent.Version, CancellationToken.None);
 
         var archivedParent = await ReloadAsync(scope, parent.Id);
-        await writer.RestoreAsync(parent.Id, archivedParent.Version, CancellationToken.None);
+        await writer.RestoreAsync(parent.Id, null, archivedParent.Version, CancellationToken.None);
 
         (await ReloadAsync(scope, sweptIn.Id)).DeletedAtUtc
             .Should().BeNull("it was archived by this same operation, so restore gives it back");
@@ -397,37 +453,59 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
             .Should().NotBeNull("the user archived it deliberately before the parent's archive ever claimed it");
     }
 
-    // A section is only archivable once it holds no live doors, and sections have no restore route in this
-    // slice — refusing the restore would strand the door forever, so it lands outside every section.
+    // M7: a section is only archivable once it holds no live doors, and sections have no restore route —
+    // so the stored section is not a destination and the caller has to name one. Refusing beats putting
+    // the door somewhere nobody chose.
     [Fact]
-    public async Task RestoreAsync_WhenSectionWasArchivedMeanwhile_DetachesRestoredSubtree()
+    public async Task RestoreAsync_RootWhoseSectionRetired_WithoutDestination_Throws()
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
         var section = await sections.CreateAsync("سلوك: قسم يُؤرشف بعد أبوابه", CancellationToken.None);
-        var parent = await writer.CreateAsync(section.Id, null, "سلوك: أب في قسم مؤرشف", null, null, [], CancellationToken.None);
-        var child = await writer.CreateAsync(section.Id, parent.Id, "سلوك: ابن في قسم مؤرشف", null, null, [], CancellationToken.None);
+        var door = await writer.CreateAsync(section.Id, null, "سلوك: باب في قسم مؤرشف بلا وجهة", null, null, [], CancellationToken.None);
 
-        await writer.DeleteAsync(parent.Id, parent.Version, CancellationToken.None);
+        await writer.DeleteAsync(door.Id, door.Version, CancellationToken.None);
         (await sections.DeleteAsync(section.Id, CancellationToken.None))
             .Should().Be(AbwabSectionDeleteResult.Deleted);
 
-        var archivedParent = await ReloadAsync(scope, parent.Id);
-        var restored = await writer.RestoreAsync(parent.Id, archivedParent.Version, CancellationToken.None);
+        var archived = await ReloadAsync(scope, door.Id);
+        var act = async () => await writer.RestoreAsync(door.Id, null, archived.Version, CancellationToken.None);
 
-        restored!.Door.SectionId.Should().BeNull();
-        restored.DetachedFromArchivedSection
-            .Should().BeTrue("a null SectionId alone cannot be told apart from a door that never had one");
-        (await ReloadAsync(scope, child.Id)).SectionId
-            .Should().BeNull("a nested door inherits its parent's section, so the subtree detaches whole");
+        await act.Should().ThrowAsync<AbwabSectionRequiredException>();
     }
 
-    // The negative half of the indicator: a door restored into a section that is still live keeps that
-    // section and reports no detach. Without this, a writer that always reported false would still pass.
+    // M7: the same door restored WITH a destination lands in it, and takes its restored subtree along —
+    // a nested door's section is its parent's, so half a re-section would break that on the read side.
     [Fact]
-    public async Task RestoreAsync_WhenSectionIsStillLive_KeepsTheSectionAndReportsNoDetach()
+    public async Task RestoreAsync_WithDestination_ResectionsTheRestoredSubtree()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+
+        var retired = await sections.CreateAsync("سلوك: قسم يُتقاعد تحت شجرة", CancellationToken.None);
+        var destination = await sections.CreateAsync("سلوك: قسم وجهة الاسترجاع", CancellationToken.None);
+        var parent = await writer.CreateAsync(retired.Id, null, "سلوك: أب يُستعاد إلى قسم آخر", null, null, [], CancellationToken.None);
+        var child = await writer.CreateAsync(null, parent.Id, "سلوك: ابن يتبع أباه إلى القسم الجديد", null, null, [], CancellationToken.None);
+
+        await writer.DeleteAsync(parent.Id, parent.Version, CancellationToken.None);
+        (await sections.DeleteAsync(retired.Id, CancellationToken.None))
+            .Should().Be(AbwabSectionDeleteResult.Deleted);
+
+        var archivedParent = await ReloadAsync(scope, parent.Id);
+        var restored = await writer.RestoreAsync(parent.Id, destination.Id, archivedParent.Version, CancellationToken.None);
+
+        restored!.SectionId.Should().Be(destination.Id);
+        (await ReloadAsync(scope, child.Id)).SectionId
+            .Should().Be(destination.Id, "a nested door inherits its parent's section, so the subtree is re-sectioned whole");
+    }
+
+    // M7's negative half: a door whose section is still live goes back where it came from when the
+    // caller states nothing. Without this, a writer that always demanded a destination would still pass.
+    [Fact]
+    public async Task RestoreAsync_RootKeepsStoredLiveSection_WhenBodyNull()
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
@@ -439,10 +517,174 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
         await writer.DeleteAsync(door.Id, door.Version, CancellationToken.None);
 
         var archived = await ReloadAsync(scope, door.Id);
-        var restored = await writer.RestoreAsync(door.Id, archived.Version, CancellationToken.None);
+        var restored = await writer.RestoreAsync(door.Id, null, archived.Version, CancellationToken.None);
 
-        restored!.Door.SectionId.Should().Be(section.Id);
-        restored.DetachedFromArchivedSection.Should().BeFalse();
+        restored!.SectionId.Should().Be(section.Id);
+    }
+
+    // M8: a child derives from its live parent, exactly as child create does.
+    [Fact]
+    public async Task RestoreAsync_Child_DerivesLiveParentsSection_WhenBodyNull()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم اشتقاق الابن عند الاستعادة");
+
+        var parent = await writer.CreateAsync(section, null, "سلوك: أب حي لابن يُستعاد", null, null, [], CancellationToken.None);
+        var child = await writer.CreateAsync(null, parent.Id, "سلوك: ابن يشتق قسم أبيه عند الاستعادة", null, null, [], CancellationToken.None);
+
+        await writer.DeleteAsync(child.Id, child.Version, CancellationToken.None);
+
+        var archived = await ReloadAsync(scope, child.Id);
+        var restored = await writer.RestoreAsync(child.Id, null, archived.Version, CancellationToken.None);
+
+        restored!.SectionId.Should().Be(section);
+    }
+
+    // M8: and a stated section that disagrees with the parent is a caller bug, refused the same way
+    // child create refuses it — not silently overwritten.
+    [Fact]
+    public async Task RestoreAsync_Child_WithConflictingSection_Throws()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+
+        var parentSection = await NewSectionAsync(scope, "سلوك: قسم الأب لتعارض الاستعادة");
+        var otherSection = await NewSectionAsync(scope, "سلوك: قسم مخالف لتعارض الاستعادة");
+        var parent = await writer.CreateAsync(parentSection, null, "سلوك: أب في قسم لتعارض الاستعادة", null, null, [], CancellationToken.None);
+        var child = await writer.CreateAsync(null, parent.Id, "سلوك: ابن يُستعاد بقسم مخالف", null, null, [], CancellationToken.None);
+
+        await writer.DeleteAsync(child.Id, child.Version, CancellationToken.None);
+
+        var archived = await ReloadAsync(scope, child.Id);
+        var act = async () => await writer.RestoreAsync(child.Id, otherSection, archived.Version, CancellationToken.None);
+
+        await act.Should().ThrowAsync<AbwabSectionParentMismatchException>();
+    }
+
+    // M-b: the restore loop only gives back what THIS archive took, so a descendant an earlier operation
+    // archived separately is not restored here. The re-section must still reach it — a live-only or
+    // restored-only cascade satisfies every assertion that ignores this row, and then resurfaces it, on
+    // its own later restore, in a section its parent has already left.
+    [Fact]
+    public async Task RestoreAsync_RootIntoDifferentSection_ResectionsSeparatelyArchivedDescendants()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+
+        var origin = await NewSectionAsync(scope, "سلوك: قسم أصل لتتالي الاسترجاع");
+        var destination = await NewSectionAsync(scope, "سلوك: قسم وجهة لتتالي الاسترجاع");
+        var root = await writer.CreateAsync(origin, null, "سلوك: جذر يُستعاد إلى قسم مختلف", null, null, [], CancellationToken.None);
+        var descendant = await writer.CreateAsync(null, root.Id, "سلوك: سليل مؤرشف بعملية منفصلة", null, null, [], CancellationToken.None);
+
+        // Two separate archives: the descendant's own, then the root's — which cannot claim an already
+        // archived row, so restoring the root leaves the descendant archived.
+        await writer.DeleteAsync(descendant.Id, descendant.Version, CancellationToken.None);
+        await writer.DeleteAsync(root.Id, root.Version, CancellationToken.None);
+
+        var archivedRoot = await ReloadAsync(scope, root.Id);
+        await writer.RestoreAsync(root.Id, destination, archivedRoot.Version, CancellationToken.None);
+
+        var stillArchived = await ReloadAsync(scope, descendant.Id);
+        stillArchived.DeletedAtUtc.Should().NotBeNull("this restore never claimed it");
+        stillArchived.SectionId.Should().Be(destination, "the re-section reaches the rows the restore did not");
+    }
+
+    // M-a: the same scenario carried one step further. The descendant's own restore must derive from its
+    // parent's CURRENT section rather than the value stored on its archived row.
+    //
+    // The stale value is written straight onto the row, bypassing the writer, and that is what makes this
+    // a test of the RULE rather than a walk through the scenario. M-b's cascade is what keeps stored
+    // sections from going stale, so after it runs the stored value and the parent's agree — and an
+    // assertion made at that point would hold whichever of the two the writer read. Putting the row back
+    // into the state the cascade prevents is what separates them: a writer that returned `door.SectionId`
+    // would answer `origin` here and fail, and a NOT NULL column would see nothing wrong, because the
+    // wrong value is present.
+    [Fact]
+    public async Task RestoreAsync_ChildRestoredAfterAncestorResection_DerivesParentsCurrentSection()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var origin = await NewSectionAsync(scope, "سلوك: قسم أصل لاشتقاق بعد إعادة التقسيم");
+        var destination = await NewSectionAsync(scope, "سلوك: قسم وجهة لاشتقاق بعد إعادة التقسيم");
+        var root = await writer.CreateAsync(origin, null, "سلوك: جذر يُعاد تقسيمه قبل ابنه", null, null, [], CancellationToken.None);
+        var descendant = await writer.CreateAsync(null, root.Id, "سلوك: سليل يُستعاد بعد أبيه", null, null, [], CancellationToken.None);
+
+        await writer.DeleteAsync(descendant.Id, descendant.Version, CancellationToken.None);
+        await writer.DeleteAsync(root.Id, root.Version, CancellationToken.None);
+
+        var archivedRoot = await ReloadAsync(scope, root.Id);
+        await writer.RestoreAsync(root.Id, destination, archivedRoot.Version, CancellationToken.None);
+
+        var archivedDescendant = await ReloadAsync(scope, descendant.Id);
+        archivedDescendant.SectionId
+            .Should().Be(destination, "M-b's cascade reached it, which is why the stale value has to be re-created here");
+        archivedDescendant.SectionId = origin;
+        await dbContext.SaveChangesAsync();
+
+        var restored = await writer.RestoreAsync(
+            descendant.Id, null, (await ReloadAsync(scope, descendant.Id)).Version, CancellationToken.None);
+
+        restored!.SectionId.Should().Be(destination, "the live parent's CURRENT section wins over the stored one");
+    }
+
+    // Restore of a door that was never archived is a no-op, and a stated section does not change that:
+    // the door left no scope, so there is nothing to give back and nothing to re-section. Without the
+    // archived-only gate this call is a second re-sectioning path beside MoveAsync — one that appends the
+    // door to the stated section without compacting the one it left, leaving a hole in that scope's 1..N.
+    [Fact]
+    public async Task RestoreAsync_LiveRoot_WithStatedSection_ChangesNeitherSectionNorEitherScopesOrder()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+
+        var origin = await NewSectionAsync(scope, "سلوك: قسم أصل لباب حي لا يُعاد تقسيمه");
+        var destination = await NewSectionAsync(scope, "سلوك: قسم وجهة مرفوضة لباب حي");
+        var first = await writer.CreateAsync(origin, null, "سلوك: جذر حي أول", null, null, [], CancellationToken.None);
+        var middle = await writer.CreateAsync(origin, null, "سلوك: جذر حي أوسط يُطلب استرجاعه", null, null, [], CancellationToken.None);
+        var last = await writer.CreateAsync(origin, null, "سلوك: جذر حي أخير", null, null, [], CancellationToken.None);
+        await writer.CreateAsync(destination, null, "سلوك: جذر مقيم في قسم الوجهة", null, null, [], CancellationToken.None);
+
+        var restored = await writer.RestoreAsync(
+            middle.Id, destination, (await ReloadAsync(scope, middle.Id)).Version, CancellationToken.None);
+
+        restored!.SectionId.Should().Be(origin, "restore may only re-section a door coming back from the archive");
+        (await OrderValuesOfSectionRootAsync(scope, origin))
+            .Should().BeEquivalentTo([1, 2, 3], options => options.WithStrictOrdering(),
+                "the door never left, so its scope keeps its 1..N with no hole");
+        (await OrderValuesOfSectionRootAsync(scope, destination))
+            .Should().BeEquivalentTo([1], options => options.WithStrictOrdering(),
+                "and the stated section gains nothing");
+        (await ReloadAsync(scope, first.Id)).OrderValue.Should().Be(1);
+        (await ReloadAsync(scope, middle.Id)).OrderValue.Should().Be(2);
+        (await ReloadAsync(scope, last.Id)).OrderValue.Should().Be(3);
+    }
+
+    // The same gate closes a defect that predates the destination contract: MaintainGlobalOrderAsync
+    // appends its `arrivals` to a live-roots query that ALREADY returns a live root, so the door was
+    // sequenced twice and kept the second, larger value — leaving a hole where it used to sit.
+    [Fact]
+    public async Task RestoreAsync_LiveRoot_LeavesTheGlobalSequenceIntact()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var section = await NewSectionAsync(scope, "سلوك: قسم التسلسل العام لباب حي");
+        var door = await writer.CreateAsync(section, null, "سلوك: جذر حي يحفظ موضعه العام", null, null, [], CancellationToken.None);
+        await writer.CreateAsync(section, null, "سلوك: جذر حي يليه في التسلسل العام", null, null, [], CancellationToken.None);
+        var beforeRestore = await ReloadAsync(scope, door.Id);
+        var globalOrderBefore = beforeRestore.GlobalOrderValue;
+
+        await writer.RestoreAsync(door.Id, null, beforeRestore.Version, CancellationToken.None);
+
+        (await ReloadAsync(scope, door.Id)).GlobalOrderValue
+            .Should().Be(globalOrderBefore, "a live root is already in the global sequence and is not re-appended");
+        (await dbContext.AbwabDoors
+                .CountAsync(d => d.ParentId == null && d.DeletedAtUtc == null && d.GlobalOrderValue == globalOrderBefore))
+            .Should().Be(1, "and no other root was shifted onto its slot");
     }
 
     // Reads group and count by SectionId at any depth (`Reads/Abwab/README.md`) and nothing re-derives a
@@ -493,9 +735,8 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
             .Should().Be(destination.Id, "the bulk path owes the same subtree guarantee as the single move");
     }
 
-    // `int?` cannot tell an omitted sectionId from an explicit null, so null has to mean "unspecified" and
-    // derive — otherwise creating a child under a sectioned parent writes null and breaks the invariant
-    // just as loudly as a disagreeing value would.
+    // `int?` cannot tell an omitted sectionId from an explicit null, so under a parent null has to mean
+    // "unspecified" and derive — the one place the root-scope rejection deliberately does not reach.
     [Fact]
     public async Task CreateAsync_UnderAParent_DerivesTheSectionWhenNoneIsStated()
     {
@@ -533,9 +774,10 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم الأرشفة الجماعية القديمة");
 
-        var first = await writer.CreateAsync(null, null, "سلوك: أول باب للأرشفة الجماعية", null, null, [], CancellationToken.None);
-        var second = await writer.CreateAsync(null, null, "سلوك: ثاني باب للأرشفة الجماعية", null, null, [], CancellationToken.None);
+        var first = await writer.CreateAsync(section, null, "سلوك: أول باب للأرشفة الجماعية", null, null, [], CancellationToken.None);
+        var second = await writer.CreateAsync(section, null, "سلوك: ثاني باب للأرشفة الجماعية", null, null, [], CancellationToken.None);
 
         var act = async () => await writer.BulkArchiveAsync(
             [new AbwabBulkDoorRef(first.Id, first.Version), new AbwabBulkDoorRef(second.Id, 999_999)],
@@ -563,8 +805,9 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم الدفعة التي تحوي أبًا وابنه");
 
-        var parent = await writer.CreateAsync(null, null, "سلوك: أب ضمن دفعة تحوي ابنه", null, null, [], CancellationToken.None);
+        var parent = await writer.CreateAsync(section, null, "سلوك: أب ضمن دفعة تحوي ابنه", null, null, [], CancellationToken.None);
         var child = await writer.CreateAsync(null, parent.Id, "سلوك: ابن ضمن دفعة تحوي أباه", null, null, [], CancellationToken.None);
 
         var archivedIds = await writer.BulkArchiveAsync(
@@ -584,9 +827,10 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم الأسماء البديلة");
 
         var door = await writer.CreateAsync(
-            null, null, "سلوك: باب لدلالة الأسماء البديلة", null, null, ["مُبقى", "مُسقط"], CancellationToken.None);
+            section, null, "سلوك: باب لدلالة الأسماء البديلة", null, null, ["مُبقى", "مُسقط"], CancellationToken.None);
 
         var edited = await writer.EditAsync(
             door.Id, door.Name, null, null, ["مُبقى", "مُضاف"], door.Version, CancellationToken.None);
@@ -601,6 +845,14 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
         allRows.Single(a => a.Value == "مُسقط").DeletedAtUtc.Should().NotBeNull("the dropped alias is soft-deleted");
         allRows.Single(a => a.Value == "مُبقى").DeletedAtUtc.Should().BeNull("an unchanged alias is left alone");
         allRows.Single(a => a.Value == "مُضاف").DeletedAtUtc.Should().BeNull();
+    }
+
+    // Every root-scope write names a section now, so each test that used to create at (NULL, NULL) brings
+    // its own — which also scopes its siblings away from every other test's rows on this shared fixture.
+    private static async Task<int> NewSectionAsync(AsyncServiceScope scope, string name)
+    {
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+        return (await sections.CreateAsync(name, CancellationToken.None)).Id;
     }
 
     private static async Task<AbwabDoor> ReloadAsync(AsyncServiceScope scope, int doorId)

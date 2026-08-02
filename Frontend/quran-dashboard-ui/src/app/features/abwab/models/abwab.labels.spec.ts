@@ -11,8 +11,26 @@ describe('ABWAB_LABELS — the locked strings', () => {
     expect(ABWAB_LABELS.restoreParentFirstHint).toBe('استرجع الأب أولًا');
   });
 
-  it('restore-detach announcement (§2.3)', () => {
-    expect(ABWAB_LABELS.restoreDetachedAnnouncement).toBe('استُرجع الباب خارج قسمه المحذوف');
+  // No detach to announce any more: a door whose section was retired is restored INTO a section the
+  // user picks, so the announcement says the one thing that happened.
+  it('restore announcement (§2.3)', () => {
+    expect(ABWAB_LABELS.restoreAnnouncement).toBe('استُرجع الباب');
+  });
+
+  it('restore modal asks for a replacement section when the original is gone (§5)', () => {
+    expect(ABWAB_LABELS.restoreModalRetiredHint).toBe('القسم الأصلي محذوف — اختر قسمًا بديلًا');
+    expect(ABWAB_LABELS.restoreModalNoSectionsHint).toBe('لا توجد أقسام حالية — أنشئ قسمًا أولًا');
+  });
+
+  it('root create names the section it needs (§5)', () => {
+    expect(ABWAB_LABELS.doorModalSectionRequiredError).toBe('اختر قسمًا للباب الرئيسي');
+  });
+
+  // The same dead end reads the same on both surfaces: nothing to pick, so say what to do instead of
+  // demanding a choice that cannot be made.
+  it('root create and restore say the same thing when no live section exists', () => {
+    expect(ABWAB_LABELS.doorModalNoSectionsHint).toBe('لا توجد أقسام حالية — أنشئ قسمًا أولًا');
+    expect(ABWAB_LABELS.doorModalNoSectionsHint).toBe(ABWAB_LABELS.restoreModalNoSectionsHint);
   });
 
   it('bulk all-or-nothing conflict message names the failing doors (§2.6)', () => {

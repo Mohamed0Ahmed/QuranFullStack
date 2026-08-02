@@ -39,6 +39,11 @@ public sealed class BulkMoveDoorsHandler(
             logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "parentNotFound");
             return new BulkMoveDoorsOutcome.ParentNotFound();
         }
+        catch (AbwabSectionRequiredException)
+        {
+            logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "sectionRequired");
+            return new BulkMoveDoorsOutcome.SectionRequired();
+        }
         catch (AbwabSectionNotFoundException)
         {
             logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "sectionNotFound");

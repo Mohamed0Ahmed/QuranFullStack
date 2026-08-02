@@ -8,7 +8,6 @@ import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AbwabTreeDto } from '../../../core/api/generated/models/abwab-tree-dto';
 import { AbwabSectionDto } from '../../../core/api/generated/models/abwab-section-dto';
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
-import { AbwabRestoredDoorDto } from '../../../core/api/generated/models/abwab-restored-door-dto';
 import { CreateSectionCommand } from '../../../core/api/generated/models/create-section-command';
 import { RenameSectionBody } from '../../../core/api/generated/models/rename-section-body';
 import { ReorderSectionBody } from '../../../core/api/generated/models/reorder-section-body';
@@ -31,6 +30,12 @@ import { AddDoorRelationsBody } from '../../../core/api/generated/models/add-doo
  * parent is given.
  */
 type CreateDoorWireBody = Omit<CreateDoorCommand, 'sectionId'> & { sectionId?: number | null };
+
+/**
+ * Same reason as `CreateDoorWireBody`: omitting `sectionId` means "back where it came from", which is
+ * the ordinary restore. Only a door being re-sectioned on the way back states one.
+ */
+type RestoreDoorWireBody = Omit<RestoreDoorBody, 'sectionId'> & { sectionId?: number };
 
 function buildCreateDoorBody(command: CreateDoorCommand): CreateDoorWireBody {
   const { sectionId, ...rest } = command;
@@ -98,8 +103,8 @@ export class AbwabApi {
     return this.http.delete<ApiResponse<unknown> | null>(`${this.base}/doors/${id}`, { body });
   }
 
-  restoreDoor(id: number, body: RestoreDoorBody): Observable<ApiResponse<AbwabRestoredDoorDto>> {
-    return this.http.post<ApiResponse<AbwabRestoredDoorDto>>(`${this.base}/doors/${id}/restore`, body);
+  restoreDoor(id: number, body: RestoreDoorWireBody): Observable<ApiResponse<AbwabDoorDto>> {
+    return this.http.post<ApiResponse<AbwabDoorDto>>(`${this.base}/doors/${id}/restore`, body);
   }
 
   getDoorRelations(doorId: number): Observable<ApiResponse<AbwabDoorRelationDto[]>> {

@@ -63,10 +63,18 @@ public interface IAbwabDoorsWriter
     Task<bool> DeleteAsync(int id, uint expectedVersion, CancellationToken cancellationToken);
 
     // Null = door missing. Throws AbwabStaleVersionException, AbwabParentStillArchivedException,
-    // AbwabDuplicateNameException. Restores the door plus exactly the descendants its OWN archive swept
-    // in (matched on the archive's timestamp) — never one archived by an earlier, separate operation.
-    // Renumbers the scope it lands back in to 1..N, and detaches the door (and everything restored with
-    // it) to "outside every section" when its section was archived meanwhile. DetachedFromArchivedSection
-    // reports that detach, and covers the whole restored subtree, not just the named door.
-    Task<AbwabRestoredDoorDto?> RestoreAsync(int id, uint expectedVersion, CancellationToken cancellationToken);
+    // AbwabDuplicateNameException, AbwabSectionRequiredException, AbwabSectionNotFoundException,
+    // AbwabSectionParentMismatchException. Restores the door plus exactly the descendants its OWN archive
+    // swept in (matched on the archive's timestamp) — never one archived by an earlier, separate
+    // operation — and renumbers the scope it lands back in to 1..N.
+    //
+    // sectionId is the restore destination, and restore is the only write that may re-section a door
+    // without moving it: a root whose section was retired meanwhile has no destination left and must be
+    // given one. A child ignores it beyond agreement-checking — it derives from its live parent's CURRENT
+    // section — and a re-section carries the whole subtree, archived descendants included.
+    //
+    // A door that is NOT archived is left alone: it never left a scope, so there is nothing to give back
+    // and sectionId is ignored rather than honored. Re-sectioning a live door is MoveAsync's job, and
+    // restore must not become a second route to it.
+    Task<AbwabDoorDto?> RestoreAsync(int id, int? sectionId, uint expectedVersion, CancellationToken cancellationToken);
 }

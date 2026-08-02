@@ -81,7 +81,7 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("representative_ayah_text");
 
-                    b.Property<int?>("SectionId")
+                    b.Property<int>("SectionId")
                         .HasColumnType("integer")
                         .HasColumnName("section_id");
 
@@ -2685,7 +2685,8 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.HasOne("QuranDashboard.Domain.Abwab.AbwabSection", null)
                         .WithMany()
                         .HasForeignKey("SectionId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoorAlias", b =>

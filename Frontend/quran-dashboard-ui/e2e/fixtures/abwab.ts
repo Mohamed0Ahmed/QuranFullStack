@@ -73,7 +73,7 @@ interface AbwabTreeDoorRow {
   readonly id: number;
   readonly version: number;
   readonly isArchived: boolean;
-  readonly sectionId: number | null;
+  readonly sectionId: number;
 }
 
 async function fetchTreeDoors(request: APIRequestContext): Promise<Map<number, AbwabTreeDoorRow>> {
@@ -121,7 +121,7 @@ async function archiveEverythingIn(
   doorIds: ReadonlySet<number>,
 ): Promise<void> {
   const isSandboxDoor = (door: AbwabTreeDoorRow): boolean =>
-    !door.isArchived && ((door.sectionId !== null && sectionIds.has(door.sectionId)) || doorIds.has(door.id));
+    !door.isArchived && (sectionIds.has(door.sectionId) || doorIds.has(door.id));
 
   // Bounded rather than `while (true)`: a door that refuses to archive must end the loop,
   // not spin it. The bound is generous against any single test's door count.

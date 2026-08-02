@@ -181,8 +181,10 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         await fixture.ResetAbwabAsync();
         using var client = fixture.CreateClient();
 
+        var sectionId = await DefaultSectionIdAsync(client);
+
         using var response = await client.PostAsJsonAsync("/api/abwab/doors",
-            new { name = "باب الإيمان", aliases = new[] { "إيمان", "عقيدة" } });
+            new { sectionId, name = "باب الإيمان", aliases = new[] { "إيمان", "عقيدة" } });
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
@@ -263,6 +265,21 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
             response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorSectionParentMismatch);
     }
 
+    // Posted raw rather than through CreateDoorAsync: that helper backfills a section at root scope, which
+    // is exactly what this asserts the API refuses to do for the caller.
+    [Fact]
+    public async Task CreateDoor_RootWithoutSection_ReturnsBadRequest()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors",
+            new { sectionId = (int?)null, parentId = (int?)null, name = "جذر بلا قسم", aliases = Array.Empty<string>() });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorSectionRequired);
+    }
+
     // The other half of the create rule: an omitted section under a parent derives, it does not write null.
     [Fact]
     public async Task CreateDoor_UnderAParentWithNoSectionStated_InheritsTheParentsSection()
@@ -289,7 +306,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
 
         await CreateDoorAsync(client, "باب مكرر");
 
-        using var response = await client.PostAsJsonAsync("/api/abwab/doors", new { name = "باب مكرر" });
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors",
+            new { sectionId = await DefaultSectionIdAsync(client), name = "باب مكرر" });
 
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorDuplicateName);
     }
@@ -411,6 +429,21 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     }
 
     [Fact]
+    public async Task MoveDoor_ToRootWithoutSection_ReturnsBadRequest()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, version) = await CreateDoorAsync(client, "باب يُنقل إلى الجذر بلا قسم");
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{id}/move",
+            new { targetSectionId = (int?)null, targetParentId = (int?)null, version });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorSectionRequired);
+    }
+
+    [Fact]
     public async Task MoveDoor_WithUnknownId_ReturnsNotFound()
     {
         await fixture.ResetAbwabAsync();
@@ -466,7 +499,7 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
             new { position = 1, scope = AbwabReorderScope.Section, version = secondVersion });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var orderValues = await GetDoorOrderValuesAsync(null, null);
+        var orderValues = await GetDoorOrderValuesAsync(await DefaultSectionIdAsync(client), null);
         orderValues[secondId].Should().Be(1);
         orderValues[firstId].Should().Be(2);
         orderValues.Values.Order().Should().BeEquivalentTo([1, 2, 3], options => options.WithStrictOrdering());
@@ -706,7 +739,27 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorStaleVersion);
 
         var firstAfter = await GetDoorAsync(firstId);
-        firstAfter.SectionId.Should().BeNull("the whole batch must fail — the valid-version door must not have moved either");
+        firstAfter.SectionId.Should().Be(
+            await DefaultSectionIdAsync(client), "the whole batch must fail — the valid-version door must not have moved either");
+    }
+
+    [Fact]
+    public async Task BulkMoveDoors_ToRootWithoutSection_ReturnsBadRequest()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (id, version) = await CreateDoorAsync(client, "باب لنقل جماعي إلى الجذر بلا قسم");
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/doors/bulk-move", new
+        {
+            doors = new object[] { new { doorId = id, version } },
+            targetSectionId = (int?)null,
+            targetParentId = (int?)null,
+        });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorSectionRequired);
     }
 
     [Fact]
@@ -715,10 +768,14 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         await fixture.ResetAbwabAsync();
         using var client = fixture.CreateClient();
 
+        // A real destination section: the bulk path resolves the target before it loads the doors, so a
+        // null one would be refused for the wrong reason and this would stop testing the unknown id.
+        var (targetSectionId, _) = await CreateSectionAsync(client, "قسم وجهة لباب غير موجود");
+
         using var response = await client.PostAsJsonAsync("/api/abwab/doors/bulk-move", new
         {
             doors = new object[] { new { doorId = 999999, version = 0u } },
-            targetSectionId = (int?)null,
+            targetSectionId,
             targetParentId = (int?)null,
         });
 
@@ -750,7 +807,7 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabDoorDuplicateName);
 
         // All-or-nothing: the door that would NOT have collided must not have moved either.
-        (await GetDoorAsync(secondId)).SectionId.Should().BeNull();
+        (await GetDoorAsync(secondId)).SectionId.Should().Be(await DefaultSectionIdAsync(client));
     }
 
     [Fact]
@@ -940,20 +997,20 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{secondId}/restore", new { version = archivedVersion });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var orderValues = await GetDoorOrderValuesAsync(null, null);
+        var orderValues = await GetDoorOrderValuesAsync(await DefaultSectionIdAsync(client), null);
         orderValues.Values.Order().Should().BeEquivalentTo([1, 2, 3], options => options.WithStrictOrdering());
     }
 
-    // The detach is a silent mutation unless the response says so: SectionId comes back null either way,
-    // and no caller can tell "was never in a section" from "its section was retired meanwhile".
+    // A retired section is not a destination, and sections have no restore route — so restoring into it is
+    // refused and the caller is asked where the door should go, rather than the door landing nowhere.
     [Fact]
-    public async Task RestoreDoor_WhenSectionWasArchivedMeanwhile_ReportsTheDetachInThePayload()
+    public async Task RestoreDoor_RootWhoseSectionRetired_WithoutDestination_ReturnsBadRequest()
     {
         await fixture.ResetAbwabAsync();
         using var client = fixture.CreateClient();
 
         var (sectionId, _) = await CreateSectionAsync(client, "قسم يُؤرشف بعد بابه");
-        var (doorId, doorVersion) = await CreateDoorAsync(client, "باب يعود بلا قسم", sectionId: sectionId);
+        var (doorId, doorVersion) = await CreateDoorAsync(client, "باب في قسم متقاعد", sectionId: sectionId);
         using var archiveResponse = await SendWithBodyAsync(
             client, HttpMethod.Delete, $"/api/abwab/doors/{doorId}", new { version = doorVersion });
         archiveResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -961,16 +1018,42 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         sectionDeleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var archivedVersion = (await GetDoorAsync(doorId)).Version;
 
-        using var response = await client.PostAsJsonAsync($"/api/abwab/doors/{doorId}/restore", new { version = archivedVersion });
+        using var response = await client.PostAsJsonAsync(
+            $"/api/abwab/doors/{doorId}/restore", new { sectionId = (int?)null, version = archivedVersion });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorRestoreSectionRequired);
+    }
+
+    // The same door, given a destination: restore is the one write that re-sections without moving.
+    [Fact]
+    public async Task RestoreDoor_WithDestinationSection_RestoresIntoIt()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (retiredSectionId, _) = await CreateSectionAsync(client, "قسم يُتقاعد قبل الاسترجاع");
+        var (destinationSectionId, _) = await CreateSectionAsync(client, "قسم وجهة الاسترجاع");
+        var (doorId, doorVersion) = await CreateDoorAsync(client, "باب يُسترجع إلى قسم آخر", sectionId: retiredSectionId);
+        using var archiveResponse = await SendWithBodyAsync(
+            client, HttpMethod.Delete, $"/api/abwab/doors/{doorId}", new { version = doorVersion });
+        archiveResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        using var sectionDeleteResponse = await client.DeleteAsync($"/api/abwab/sections/{retiredSectionId}");
+        sectionDeleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var archivedVersion = (await GetDoorAsync(doorId)).Version;
+
+        using var response = await client.PostAsJsonAsync(
+            $"/api/abwab/doors/{doorId}/restore", new { sectionId = destinationSectionId, version = archivedVersion });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var data = await ApiEnvelope.ReadDataAsync(response);
-        data.GetProperty("detachedFromArchivedSection").GetBoolean().Should().BeTrue();
-        data.GetProperty("door").GetProperty("sectionId").ValueKind.Should().Be(JsonValueKind.Null);
+        data.GetProperty("sectionId").GetInt32().Should().Be(destinationSectionId);
     }
 
+    // The unstated case, which is the ordinary one: a live section is still a destination, so the door goes
+    // back where it came from. Without this, a writer that always demanded a destination would still pass.
     [Fact]
-    public async Task RestoreDoor_IntoALiveSection_ReportsNoDetachAndKeepsTheSection()
+    public async Task RestoreDoor_IntoALiveSection_KeepsTheSection()
     {
         await fixture.ResetAbwabAsync();
         using var client = fixture.CreateClient();
@@ -986,8 +1069,32 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var data = await ApiEnvelope.ReadDataAsync(response);
-        data.GetProperty("detachedFromArchivedSection").GetBoolean().Should().BeFalse();
-        data.GetProperty("door").GetProperty("sectionId").GetInt32().Should().Be(sectionId);
+        data.GetProperty("sectionId").GetInt32().Should().Be(sectionId);
+    }
+
+    // A child's section is its parent's, on restore exactly as on create — a stated one that disagrees is a
+    // caller bug, refused rather than silently overwritten.
+    [Fact]
+    public async Task RestoreDoor_Child_WithConflictingSection_ReturnsBadRequest()
+    {
+        await fixture.ResetAbwabAsync();
+        using var client = fixture.CreateClient();
+
+        var (parentSectionId, _) = await CreateSectionAsync(client, "قسم الأب للاسترجاع المتعارض");
+        var (otherSectionId, _) = await CreateSectionAsync(client, "قسم مخالف للاسترجاع المتعارض");
+        var (parentId, _) = await CreateDoorAsync(client, "أب حي لاسترجاع متعارض", sectionId: parentSectionId);
+        var (childId, childVersion) = await CreateDoorAsync(client, "ابن يُسترجع بقسم مخالف", parentId: parentId);
+
+        using var archiveResponse = await SendWithBodyAsync(
+            client, HttpMethod.Delete, $"/api/abwab/doors/{childId}", new { version = childVersion });
+        archiveResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var archivedVersion = (await GetDoorAsync(childId)).Version;
+
+        using var response = await client.PostAsJsonAsync(
+            $"/api/abwab/doors/{childId}/restore", new { sectionId = otherSectionId, version = archivedVersion });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            response, HttpStatusCode.BadRequest, ApiMessages.AbwabDoorSectionParentMismatch);
     }
 
     [Fact]
@@ -1068,9 +1175,36 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         return (data.GetProperty("id").GetInt32(), data.GetProperty("version").GetUInt32());
     }
 
+    // Every root door names a section now, so a test that does not care which one gets this. ONE per test,
+    // not one per door: a per-door section would scatter siblings across scopes and quietly break every
+    // ordering and per-section-count assertion here. ResetAbwabAsync truncates between tests, so the first
+    // root create of each test makes it and the rest find it.
+    private const string DefaultSectionName = "قسم الاختبار الافتراضي";
+
+    private static async Task<int> DefaultSectionIdAsync(HttpClient client)
+    {
+        using var response = await client.PostAsJsonAsync("/api/abwab/sections", new { name = DefaultSectionName });
+        if (response.StatusCode == HttpStatusCode.Created)
+        {
+            return (await ApiEnvelope.ReadDataAsync(response)).GetProperty("id").GetInt32();
+        }
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict, "the only expected reason to fail is that this test already made it");
+
+        using var treeResponse = await client.GetAsync("/api/abwab/tree");
+        var tree = await ApiEnvelope.ReadDataAsync(treeResponse);
+        return tree.GetProperty("sections").EnumerateArray()
+            .Single(section => section.GetProperty("name").GetString() == DefaultSectionName)
+            .GetProperty("id").GetInt32();
+    }
+
     private static async Task<(int Id, uint Version)> CreateDoorAsync(
         HttpClient client, string name, int? sectionId = null, int? parentId = null, string[]? aliases = null)
     {
+        // Only at root scope: a child derives its parent's section, and stating one here would turn every
+        // nested create in this suite into an agreement check it was never written to make.
+        sectionId ??= parentId is null ? await DefaultSectionIdAsync(client) : null;
+
         using var response = await client.PostAsJsonAsync("/api/abwab/doors",
             new { sectionId, parentId, name, aliases = aliases ?? [] });
         var data = await ApiEnvelope.ReadDataAsync(response);

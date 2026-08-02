@@ -91,7 +91,8 @@ public sealed class SmokeApiFixture : IAsyncLifetime
         await using var scope = QueryProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await db.Database.ExecuteSqlRawAsync(
-            "TRUNCATE abwab_door_aliases, abwab_doors, abwab_sections RESTART IDENTITY CASCADE;");
+            "TRUNCATE abwab_sections, abwab_doors, abwab_door_aliases, abwab_door_relations, "
+            + "abwab_templates, abwab_template_nodes RESTART IDENTITY CASCADE;");
     }
 
     private void EvictRoleCache(string logtoSub)

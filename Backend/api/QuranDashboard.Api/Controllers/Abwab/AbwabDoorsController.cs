@@ -38,6 +38,8 @@ public sealed class AbwabDoorsController(
                 NotFound(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorParentNotFound)),
             CreateDoorOutcome.SectionNotFound =>
                 NotFound(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorSectionNotFound)),
+            CreateDoorOutcome.SectionRequired =>
+                BadRequest(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorSectionRequired)),
             CreateDoorOutcome.SectionParentMismatch =>
                 BadRequest(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorSectionParentMismatch)),
             CreateDoorOutcome.DuplicateName =>
@@ -87,6 +89,8 @@ public sealed class AbwabDoorsController(
                 NotFound(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorParentNotFound)),
             MoveDoorOutcome.SectionNotFound =>
                 NotFound(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorSectionNotFound)),
+            MoveDoorOutcome.SectionRequired =>
+                BadRequest(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorSectionRequired)),
             MoveDoorOutcome.WouldCycle =>
                 Conflict(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorWouldCycle)),
             MoveDoorOutcome.StaleVersion =>
@@ -143,6 +147,8 @@ public sealed class AbwabDoorsController(
                 NotFound(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabDoorParentNotFound)),
             BulkMoveDoorsOutcome.SectionNotFound =>
                 NotFound(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabDoorSectionNotFound)),
+            BulkMoveDoorsOutcome.SectionRequired =>
+                BadRequest(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabDoorSectionRequired)),
             BulkMoveDoorsOutcome.WouldCycle =>
                 Conflict(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabDoorWouldCycle)),
             BulkMoveDoorsOutcome.StaleVersion =>
@@ -191,25 +197,30 @@ public sealed class AbwabDoorsController(
     }
 
     [HttpPost("{id:int}/restore")]
-    public async Task<ActionResult<ApiResponse<AbwabRestoredDoorDto>>> Restore(
+    public async Task<ActionResult<ApiResponse<AbwabDoorDto>>> Restore(
         int id, [FromBody] RestoreDoorBody body, CancellationToken cancellationToken)
     {
-        var outcome = await restoreHandler.HandleAsync(new RestoreDoorCommand(id, body.Version), cancellationToken);
+        var outcome = await restoreHandler.HandleAsync(
+            new RestoreDoorCommand(id, body.SectionId, body.Version), cancellationToken);
 
         return outcome switch
         {
             RestoreDoorOutcome.Success success =>
-                Ok(ApiResponse<AbwabRestoredDoorDto>.Ok(
-                    new AbwabRestoredDoorDto(success.Door, success.DetachedFromArchivedSection),
-                    ApiMessages.AbwabDoorRestored)),
+                Ok(ApiResponse<AbwabDoorDto>.Ok(success.Door, ApiMessages.AbwabDoorRestored)),
             RestoreDoorOutcome.NotFound =>
-                NotFound(ApiResponse<AbwabRestoredDoorDto>.Fail(ApiMessages.AbwabDoorNotFound)),
+                NotFound(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorNotFound)),
+            RestoreDoorOutcome.SectionNotFound =>
+                NotFound(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorSectionNotFound)),
+            RestoreDoorOutcome.SectionRequired =>
+                BadRequest(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorRestoreSectionRequired)),
+            RestoreDoorOutcome.SectionParentMismatch =>
+                BadRequest(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorSectionParentMismatch)),
             RestoreDoorOutcome.StaleVersion =>
-                Conflict(ApiResponse<AbwabRestoredDoorDto>.Fail(ApiMessages.AbwabDoorStaleVersion)),
+                Conflict(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorStaleVersion)),
             RestoreDoorOutcome.ParentStillArchived =>
-                Conflict(ApiResponse<AbwabRestoredDoorDto>.Fail(ApiMessages.AbwabDoorParentStillArchived)),
+                Conflict(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorParentStillArchived)),
             RestoreDoorOutcome.DuplicateName =>
-                Conflict(ApiResponse<AbwabRestoredDoorDto>.Fail(ApiMessages.AbwabDoorDuplicateName)),
+                Conflict(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorDuplicateName)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(RestoreDoorOutcome)} variant."),
         };
     }

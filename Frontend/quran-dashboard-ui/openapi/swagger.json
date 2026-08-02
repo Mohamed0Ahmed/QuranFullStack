@@ -669,17 +669,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/AbwabRestoredDoorDtoApiResponse"
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AbwabRestoredDoorDtoApiResponse"
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AbwabRestoredDoorDtoApiResponse"
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
                 }
               }
             }
@@ -4523,8 +4523,7 @@
           },
           "sectionId": {
             "type": "integer",
-            "format": "int32",
-            "nullable": true
+            "format": "int32"
           },
           "parentId": {
             "type": "integer",
@@ -4727,60 +4726,6 @@
         ],
         "type": "integer",
         "format": "int32"
-      },
-      "AbwabRestoredDoorDto": {
-        "required": [
-          "detachedFromArchivedSection",
-          "door"
-        ],
-        "type": "object",
-        "properties": {
-          "door": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AbwabDoorDto"
-              }
-            ]
-          },
-          "detachedFromArchivedSection": {
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false
-      },
-      "AbwabRestoredDoorDtoApiResponse": {
-        "required": [
-          "data",
-          "errors",
-          "isSuccess",
-          "message"
-        ],
-        "type": "object",
-        "properties": {
-          "isSuccess": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "string",
-            "nullable": true
-          },
-          "data": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AbwabRestoredDoorDto"
-              }
-            ],
-            "nullable": true
-          },
-          "errors": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
       },
       "AbwabSectionDto": {
         "required": [
@@ -5049,6 +4994,7 @@
           "relationCount",
           "representativeAyahText",
           "sectionId",
+          "sectionRetired",
           "version"
         ],
         "type": "object",
@@ -5059,8 +5005,10 @@
           },
           "sectionId": {
             "type": "integer",
-            "format": "int32",
-            "nullable": true
+            "format": "int32"
+          },
+          "sectionRetired": {
+            "type": "boolean"
           },
           "parentId": {
             "type": "integer",
@@ -7450,10 +7398,16 @@
       },
       "RestoreDoorBody": {
         "required": [
+          "sectionId",
           "version"
         ],
         "type": "object",
         "properties": {
+          "sectionId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
           "version": {
             "type": "integer",
             "format": "int32"

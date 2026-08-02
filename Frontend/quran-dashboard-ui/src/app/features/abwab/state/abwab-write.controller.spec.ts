@@ -28,7 +28,8 @@ function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string 
     orderValue: overrides.id,
     parentId: null,
     representativeAyahText: null,
-    sectionId: null,
+    sectionId: 1,
+    sectionRetired: false,
     version: 1,
     ...overrides,
   };
@@ -45,7 +46,7 @@ const EDITED_DOOR: AbwabDoorDto = {
   representativeAyahText: null,
   aliases: [],
   parentId: null,
-  sectionId: null,
+  sectionId: 1,
   orderValue: 1,
   globalOrderValue: 1,
   version: 2,
@@ -178,7 +179,7 @@ describe('AbwabWriteController', () => {
           representativeAyahText: null,
           aliases: null,
           parentId: null,
-          sectionId: null,
+          sectionId: 1,
         })
         .subscribe();
 
@@ -380,25 +381,33 @@ describe('AbwabWriteController', () => {
     });
   });
 
-  describe('M19 — restore maps detachedFromArchivedSection to its announcement', () => {
-    it('announces the detach message when the flag is true', () => {
+  describe('M19 — restore announces itself and passes its destination through', () => {
+    it('announces the restore', () => {
       const { controller } = setup({
         getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
-        restoreDoor: () => of(ok({ door: EDITED_DOOR, detachedFromArchivedSection: true })),
+        restoreDoor: () => of(ok(EDITED_DOOR)),
       } as unknown as FakeApi);
 
-      controller.restoreDoor(1, 1).subscribe();
-      expect(controller.announcement()).toBe(ABWAB_LABELS.restoreDetachedAnnouncement);
+      controller.restoreDoor(1, { version: 1 }).subscribe();
+      expect(controller.announcement()).toBe(ABWAB_LABELS.restoreAnnouncement);
     });
 
-    it('does not announce a detach message when the flag is false', () => {
+    // The destination is passed through untouched: an omitted key means "back where it came from",
+    // and turning that into an explicit null would ask the backend for a section-less door.
+    it('passes a stated destination section through, and omits the key when there is none', () => {
+      const bodies: unknown[] = [];
       const { controller } = setup({
         getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
-        restoreDoor: () => of(ok({ door: EDITED_DOOR, detachedFromArchivedSection: false })),
+        restoreDoor: ((_id: number, body: unknown) => {
+          bodies.push(body);
+          return of(ok(EDITED_DOOR));
+        }) as unknown as () => Observable<ApiResponse<unknown>>,
       } as unknown as FakeApi);
 
-      controller.restoreDoor(1, 1).subscribe();
-      expect(controller.announcement()).toBeNull();
+      controller.restoreDoor(1, { sectionId: 7, version: 1 }).subscribe();
+      controller.restoreDoor(1, { version: 1 }).subscribe();
+
+      expect(bodies).toEqual([{ sectionId: 7, version: 1 }, { version: 1 }]);
     });
   });
 

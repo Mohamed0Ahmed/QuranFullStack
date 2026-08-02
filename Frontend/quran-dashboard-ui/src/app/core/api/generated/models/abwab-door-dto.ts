@@ -10,6 +10,6 @@ export interface AbwabDoorDto {
   orderValue: number;
   parentId: number | null;
   representativeAyahText: string | null;
-  sectionId: number | null;
+  sectionId: number;
   version: number;
 }

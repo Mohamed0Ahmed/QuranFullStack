@@ -448,8 +448,8 @@ which is what used to leave live sandbox doors and undeleted sandbox sections be
 best-effort, so a flow that already broke does not get a second, masking failure from it.
 **The residue that remains is archived doors, and it is permanent, not "self-cleaning":** there is
 no hard delete and no section restore in this feature, so every run leaves its sandbox doors
-**archived** in the local dev DB forever, and restoring one later reports
-`detachedFromArchivedSection: true` since its section is gone. What must **not** remain after a run
+**archived** in the local dev DB forever, and restoring one later is refused until the user names a
+live destination section, since the one it belonged to is gone. What must **not** remain after a run
 is any live `e2e-sandbox-*` door or any `e2e-sandbox-*` section — either one is a teardown bug, not
 accepted residue, and `GET /api/abwab/tree` is how you check. This is tolerable on a local,
 disposable dev database with loose, id-scoped assertions.

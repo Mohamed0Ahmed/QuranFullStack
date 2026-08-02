@@ -39,6 +39,11 @@ public sealed class CreateDoorHandler(
             logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "parentNotFound");
             return new CreateDoorOutcome.ParentNotFound();
         }
+        catch (AbwabSectionRequiredException)
+        {
+            logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "sectionRequired");
+            return new CreateDoorOutcome.SectionRequired();
+        }
         catch (AbwabSectionNotFoundException)
         {
             logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "sectionNotFound");

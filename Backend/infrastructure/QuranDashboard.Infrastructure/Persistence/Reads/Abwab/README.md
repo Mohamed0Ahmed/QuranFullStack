@@ -37,6 +37,18 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
   door — live or archived — appears, with `IsArchived` set from `DeletedAtUtc != null`.
   **Do not silently start filtering archived doors out** — restore and the archive view both depend on
   them being visible here.
+- **`AbwabTreeDoorDto.SectionRetired` says the door's section has been archived.** The archive view
+  needs to know, per archived door, whether restoring it will demand a destination — a section is
+  archivable only while it holds no LIVE doors, and sections have no restore route, so such a door
+  has nowhere to go back to and the writer refuses it without one
+  (`../../Writes/Abwab/README.md`). **It can only be `true` for an ARCHIVED door**, for that same
+  reason: a live door can never point at a retired section.
+  Computed by fetching the retired-section id set (`AbwabSections.Where(s => s.DeletedAtUtc != null)`)
+  and flagging in the projection — a second small query, because the `Sections` list this reader
+  returns holds only LIVE sections and therefore cannot answer the question.
+  **Stated, not inferred.** Do not replace it with a client-side "its `SectionId` is absent from the
+  snapshot's `Sections`" check: explicit beats inference at a contract boundary, and that inference
+  breaks the day sections gain an archived-but-listed representation.
 - **`DirectChildCount` and `AbwabTreeSectionDto.DoorsInScopeCount` count LIVE rows only** (own
   documented judgment call, not stated verbatim in the feature plan): they are the "how many doors are
   here right now" badge, not inflated by an archived subtree the main view no longer shows. An archived
@@ -47,8 +59,10 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
   `EfAbwabDoorsWriter.ResolveCreateSectionAsync` derives a child's section from its parent (and refuses a
   disagreeing one), and `CascadeSectionToDescendantsAsync` carries a section change down the whole subtree
   on both move paths, archived rows included (`../../Writes/Abwab/README.md`). Restoring a door whose
-  section was archived meanwhile detaches the whole restored subtree to `SectionId = null` for the same
-  reason — a live door can never point at a section this reader filters out.
+  section was retired meanwhile demands a live destination rather than detaching it, and re-sections the
+  subtree the same way. **A live door can never point at a section this reader filters out** — which is
+  now guaranteed twice over: a section is only archivable while it holds no live doors, and `section_id`
+  is `NOT NULL`, so there is no third "outside every section" state to account for.
 - **Aliases are live-only**, matching the write side's own DTO projection (`EfAbwabDoorsWriter.ToDtoAsync`)
   — a soft-deleted alias is gone from every read, not just the write response.
   **Snapshot `Version`** is `max(updated_at, deleted_at)` across `abwab_sections`, `abwab_doors`, and

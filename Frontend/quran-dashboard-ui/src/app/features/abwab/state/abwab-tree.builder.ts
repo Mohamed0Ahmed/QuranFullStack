@@ -60,6 +60,7 @@ export function buildAbwabTreeSnapshot(dto: AbwabTreeDto): AbwabTreeSnapshotVm {
       representativeAyahText: doorDto.representativeAyahText,
       aliases: doorDto.aliases,
       sectionId: doorDto.sectionId,
+      sectionRetired: doorDto.sectionRetired,
       parentId: doorDto.parentId,
       orderValue: doorDto.orderValue,
       globalOrderValue: doorDto.globalOrderValue,
@@ -93,14 +94,12 @@ export function buildAbwabTreeSnapshot(dto: AbwabTreeDto): AbwabTreeSnapshotVm {
     .sort(byOrderThenId)
     .map((d) => build(d, 0, true));
 
-  // Item 19: root doors per section, built alongside liveRoots in the same pass. A root with
-  // sectionId === null (outside every section) contributes to no entry — that is why Σ over
-  // this map is not liveRoots.length, and «كل الأبواب» must read the latter, not the sum.
+  // Item 19: root doors per section, built alongside liveRoots in the same pass. Every root belongs
+  // to a section now, so Σ over this map does equal liveRoots.length — «كل الأبواب» still reads the
+  // latter, because one number the backend already computed beats a sum assembled here.
   const rootCountBySectionId = new Map<number, number>();
   for (const root of liveRoots) {
-    if (root.sectionId !== null) {
-      rootCountBySectionId.set(root.sectionId, (rootCountBySectionId.get(root.sectionId) ?? 0) + 1);
-    }
+    rootCountBySectionId.set(root.sectionId, (rootCountBySectionId.get(root.sectionId) ?? 0) + 1);
   }
 
   return {
@@ -113,12 +112,12 @@ export function buildAbwabTreeSnapshot(dto: AbwabTreeDto): AbwabTreeSnapshotVm {
   };
 }
 
-/** «كل الأبواب» (`sectionId === null`) is every root, already in `liveRoots`' own global order
- * (T402) — left as-is. A specific section re-sorts by its own `orderValue` (§5's other order
- * space): `liveRoots` is globally ordered now, and that order has nothing to do with any one
- * section's `1..N`, so keeping it would show a section's roots out of their own sequence. A
- * nested door's section always matches its parent's (plan.md §13.5), so filtering at the root
- * is enough. `.filter()` on a `readonly AbwabNode[]` returns a fresh mutable array — sorting
+/** «كل الأبواب» is every root, already in `liveRoots`' own global order (T402) — left as-is. The
+ * `null` here is the ACTIVE TAB meaning "no section selected", not a door's section: a door always
+ * has one. A specific section re-sorts by its own `orderValue` (§5's other order space):
+ * `liveRoots` is globally ordered now, and that order has nothing to do with any one section's
+ * `1..N`, so keeping it would show a section's roots out of their own sequence. A nested door's
+ * section always matches its parent's (plan.md §13.5), so filtering at the root is enough. `.filter()` on a `readonly AbwabNode[]` returns a fresh mutable array — sorting
  * that copy, not the shared snapshot array, is what makes `.sort()` legal without widening the
  * return type (which would drop the guard against an in-place sort of `liveRoots` itself). */
 export function filterAbwabRootsBySection(
@@ -195,10 +194,11 @@ export function searchAbwabNodes(roots: readonly AbwabNode[], query: string): Ab
 
 /**
  * Total live (non-archived) doors — item 17's «كل الأبواب» stat. **Live-only, deliberately**:
- * matches every other count in this feature and is NOT Σ `AbwabTreeSectionDto.doorsInScopeCount`
- * over `sections`, because `AbwabNode.sectionId` is nullable (a live door can belong to no
- * section) — the two stats are not reconcilable by arithmetic and must never be asserted to sum
- * (plan §5.7).
+ * matches every other count in this feature. It is still NOT Σ `AbwabTreeSectionDto.doorsInScopeCount`
+ * over `sections`, though the reason changed: every door belongs to a section now, so the two DO
+ * reconcile — summing sections would simply recompute client-side what the backend already answered,
+ * and fork from its definition of "in scope at any depth" the moment the two drift. Do not assert the
+ * two sum: redundant, not impossible (feature README, stats-bar).
  */
 export function countLiveAbwabDoors(byId: ReadonlyMap<number, AbwabNode>): number {
   let count = 0;

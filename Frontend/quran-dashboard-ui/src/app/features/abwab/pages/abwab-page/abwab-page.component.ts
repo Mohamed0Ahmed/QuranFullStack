@@ -46,6 +46,7 @@ import {
   AbwabMoveDestination,
   AbwabMovePickerComponent,
 } from '../../components/abwab-move-picker/abwab-move-picker.component';
+import { AbwabDoorRestoreModalComponent } from '../../components/abwab-door-restore-modal/abwab-door-restore-modal.component';
 import { AbwabSectionsModalComponent } from '../../components/abwab-sections-modal/abwab-sections-modal.component';
 import { AbwabModalRestoreComponent } from '../../components/abwab-modal-restore/abwab-modal-restore.component';
 import { AbwabRelationsModalComponent } from '../../components/abwab-relations-modal/abwab-relations-modal.component';
@@ -92,6 +93,7 @@ const REVEAL_HOLD_MS = 3000;
     AbwabAnnouncerComponent,
     AbwabDoorModalComponent,
     AbwabMovePickerComponent,
+    AbwabDoorRestoreModalComponent,
     AbwabSectionsModalComponent,
     AbwabRelationsModalComponent,
     AbwabModalRestoreComponent,
@@ -384,12 +386,10 @@ export class AbwabPageComponent implements OnInit {
       .subscribe();
   }
 
+  // Opens the modal rather than writing: the destination a retired section leaves open is the
+  // user's to answer, and the backend refuses the write without it.
   protected onRestoreRequested(id: number): void {
-    const node = this.byId().get(id);
-    if (!node) {
-      return;
-    }
-    this.writeController.restoreDoor(id, node.version).subscribe();
+    this.overlays.openRestoreModal(id);
   }
 
   /** Select-then-act (README "The URL is the single source of truth for the selection"), in the

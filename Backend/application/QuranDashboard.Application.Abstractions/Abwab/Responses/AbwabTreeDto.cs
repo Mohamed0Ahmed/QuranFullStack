@@ -21,9 +21,16 @@ public sealed record AbwabTreeSectionDto(
 // Archived doors are included (never omitted) and flagged via IsArchived, per §4's "archived included,
 // flagged" read-model decision — restore needs them visible. DirectChildCount mirrors the same
 // live-only convention as DoorsInScopeCount, for the same reason.
+//
+// SectionRetired says the door's section has been archived, which restore needs: such a door has no
+// destination left and must be given one. It is stated rather than inferred from "SectionId is absent
+// from Sections" — explicit beats inference at a contract boundary, and that inference breaks the day
+// sections gain an archived-but-listed representation. It can only be true for an ARCHIVED door: a
+// section is archivable only while it holds no live doors.
 public sealed record AbwabTreeDoorDto(
     int Id,
-    int? SectionId,
+    int SectionId,
+    bool SectionRetired,
     int? ParentId,
     string Name,
     string? Description,

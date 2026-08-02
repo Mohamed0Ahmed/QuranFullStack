@@ -4,9 +4,11 @@ public sealed class AbwabDoor
 {
     public int Id { get; set; }
 
-    // Nullable: a door may sit outside every section, which is what makes «كل الأبواب» a real
-    // superset rather than a synonym for "all sections" (plan §R8).
-    public int? SectionId { get; set; }
+    // Every door belongs to a section, including a root one — «كل الأبواب» is the view across all
+    // sections, not a home for doors that have none. Root scope is about having no PARENT (D6), which is
+    // ParentId's business and independent of this. NOT NULL in the database too: the write side refuses a
+    // section-less door, and the column refuses one the write side ever lets through.
+    public int SectionId { get; set; }
     public int? ParentId { get; set; }
 
     public string Name { get; set; } = string.Empty;

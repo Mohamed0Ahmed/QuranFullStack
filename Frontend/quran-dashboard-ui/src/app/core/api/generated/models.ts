@@ -10,8 +10,6 @@ export type { AbwabDoorRelationDtoIReadOnlyListApiResponse } from './models/abwa
 export type { AbwabRelationDirection } from './models/abwab-relation-direction';
 export type { AbwabRelationType } from './models/abwab-relation-type';
 export type { AbwabReorderScope } from './models/abwab-reorder-scope';
-export type { AbwabRestoredDoorDto } from './models/abwab-restored-door-dto';
-export type { AbwabRestoredDoorDtoApiResponse } from './models/abwab-restored-door-dto-api-response';
 export type { AbwabSectionDto } from './models/abwab-section-dto';
 export type { AbwabSectionDtoApiResponse } from './models/abwab-section-dto-api-response';
 export type { AbwabTemplateDto } from './models/abwab-template-dto';

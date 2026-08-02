@@ -13,6 +13,14 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
         ORDER BY column_name
         """;
 
+    private const string ColumnNullabilitySql = """
+        SELECT is_nullable
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = @tableName
+          AND column_name = @columnName
+        """;
+
     private const string IndexShapeSql = """
         SELECT
             ic.relname AS index_name,
@@ -170,8 +178,10 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var sectionId = await NewSectionIdAsync(dbContext, "root-collision-section", now);
         dbContext.AbwabDoors.Add(new AbwabDoor
         {
+            SectionId = sectionId,
             Name = "root-collision-door",
             OrderValue = 1,
             CreatedAtUtc = now,
@@ -181,6 +191,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
 
         dbContext.AbwabDoors.Add(new AbwabDoor
         {
+            SectionId = sectionId,
             Name = "root-collision-door",
             OrderValue = 2,
             CreatedAtUtc = now,
@@ -198,8 +209,10 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var sectionId = await NewSectionIdAsync(dbContext, "soft-delete-filtered-door-section", now);
         var archived = new AbwabDoor
         {
+            SectionId = sectionId,
             Name = "soft-delete-filtered-door",
             OrderValue = 1,
             CreatedAtUtc = now,
@@ -214,6 +227,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
 
         dbContext.AbwabDoors.Add(new AbwabDoor
         {
+            SectionId = sectionId,
             Name = "soft-delete-filtered-door",
             OrderValue = 1,
             CreatedAtUtc = now,
@@ -296,6 +310,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var door = new AbwabDoor
         {
+            SectionId = await NewSectionIdAsync(writerContext, "concurrency-section", now),
             Name = "concurrency-door",
             OrderValue = 1,
             CreatedAtUtc = now,
@@ -349,6 +364,55 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
 
         var act = async () => await staleContext.SaveChangesAsync();
         await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
+    }
+
+    // The DB tier of "every door belongs to a section". The write side refuses a section-less door
+    // already; this is the constraint that holds when something bypasses the writer entirely.
+    [Fact]
+    public async Task Doors_section_id_is_not_null()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var connection = await OpenConnectionAsync(scope.ServiceProvider);
+
+        await using var command = new NpgsqlCommand(ColumnNullabilitySql, connection);
+        command.Parameters.AddWithValue("tableName", "abwab_doors");
+        command.Parameters.AddWithValue("columnName", "section_id");
+
+        (await command.ExecuteScalarAsync()).Should().Be("NO");
+    }
+
+    // Asserted through raw SQL, not the DbContext: an EF insert cannot even express a null section now,
+    // so only a statement that bypasses the model proves the column itself is what refuses it.
+    [Fact]
+    public async Task Doors_insert_with_null_section_is_rejected_by_postgres()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var connection = await OpenConnectionAsync(scope.ServiceProvider);
+
+        await using var command = new NpgsqlCommand(
+            """
+            INSERT INTO abwab_doors (section_id, parent_id, name, order_value, created_at, updated_at)
+            VALUES (NULL, NULL, 'raw-null-section-door', 1, now(), now())
+            """,
+            connection);
+
+        var act = async () => await command.ExecuteNonQueryAsync();
+
+        var exception = await act.Should().ThrowAsync<PostgresException>();
+        exception.Which.SqlState.Should().Be("23502", "a not-null violation, not an FK or a check");
+        // Pinned to the column, not just the SQLSTATE: every other NOT NULL column on this row would
+        // raise the same code, so without this the test could pass while section_id stayed nullable.
+        exception.Which.ColumnName.Should().Be("section_id");
+    }
+
+    // Every door row needs a section now, so a test that inserts one directly brings its own rather than
+    // depending on whatever else this shared, non-truncated fixture happens to hold.
+    private static async Task<int> NewSectionIdAsync(QuranDashboardDbContext dbContext, string name, DateTimeOffset now)
+    {
+        var section = new AbwabSection { Name = name, OrderValue = 1, CreatedAtUtc = now, UpdatedAtUtc = now };
+        dbContext.AbwabSections.Add(section);
+        await dbContext.SaveChangesAsync();
+        return section.Id;
     }
 
     private static async Task<NpgsqlConnection> OpenConnectionAsync(IServiceProvider serviceProvider)

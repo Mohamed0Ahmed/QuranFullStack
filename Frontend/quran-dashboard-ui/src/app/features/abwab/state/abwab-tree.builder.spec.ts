@@ -22,7 +22,8 @@ function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string 
     orderValue: overrides.id,
     parentId: null,
     representativeAyahText: null,
-    sectionId: null,
+    sectionId: 1,
+    sectionRetired: false,
     version: 1,
     ...overrides,
   };
@@ -227,39 +228,43 @@ describe('buildAbwabTreeSnapshot', () => {
       expect(snapshot.rootCountBySectionId.has(9)).toBe(false);
     });
 
-    // §4.2-12's non-identity: a live root with sectionId === null contributes to no entry, so
-    // the map's sum can be strictly less than liveRoots.length — «كل الأبواب» must read the
-    // latter, never Σ over this map.
-    it('sums to less than liveRoots.length when a root sits outside every section', () => {
+    // Every root belongs to a section now, so Σ over the map DOES equal liveRoots.length — the
+    // non-identity this used to assert is gone with the section-less state. «كل الأبواب» still
+    // reads liveRoots.length: one number beats a sum reassembled here, and the two agreeing is a
+    // fact worth pinning rather than a reason to derive one from the other.
+    it('sums to liveRoots.length now that every root belongs to a section', () => {
       const snapshot = buildAbwabTreeSnapshot(
         tree([
-          door({ id: 1, name: 'in-section', sectionId: 5 }),
-          door({ id: 2, name: 'outside-every-section', sectionId: null }),
+          door({ id: 1, name: 'in-five', sectionId: 5 }),
+          door({ id: 2, name: 'in-nine', sectionId: 9 }),
+          door({ id: 3, name: 'also-in-five', sectionId: 5 }),
         ]),
       );
 
-      expect(snapshot.liveRoots).toHaveLength(2);
+      expect(snapshot.liveRoots).toHaveLength(3);
       const total = Array.from(snapshot.rootCountBySectionId.values()).reduce((sum, n) => sum + n, 0);
-      expect(total).toBe(1);
-      expect(total).toBeLessThan(snapshot.liveRoots.length);
+      expect(total).toBe(snapshot.liveRoots.length);
+      expect(snapshot.rootCountBySectionId.get(5)).toBe(2);
     });
   });
 });
 
 describe('filterAbwabRootsBySection — M3', () => {
-  it('keeps section-less doors in «كل الأبواب» (null) and excludes them from a specific section tab', () => {
+  // The `null` argument is the ACTIVE TAB meaning «كل الأبواب», not a door's section — doors always
+  // have one. It is every door across every section, which is what makes the tab a real superset.
+  it('returns every root for «كل الأبواب» (null) and only its own for a specific section tab', () => {
     const snapshot = buildAbwabTreeSnapshot(
       tree([
-        door({ id: 1, name: 'sectionless', sectionId: null, orderValue: 1, globalOrderValue: 1 }),
-        door({ id: 2, name: 'sectioned', sectionId: 5, orderValue: 2, globalOrderValue: 2 }),
+        door({ id: 1, name: 'in-one', sectionId: 1, orderValue: 1, globalOrderValue: 1 }),
+        door({ id: 2, name: 'in-five', sectionId: 5, orderValue: 2, globalOrderValue: 2 }),
       ]),
     );
 
     const allDoors = filterAbwabRootsBySection(snapshot.liveRoots, null);
-    expect(allDoors.map((n) => n.name)).toEqual(['sectionless', 'sectioned']);
+    expect(allDoors.map((n) => n.name)).toEqual(['in-one', 'in-five']);
 
     const sectionFive = filterAbwabRootsBySection(snapshot.liveRoots, 5);
-    expect(sectionFive.map((n) => n.name)).toEqual(['sectioned']);
+    expect(sectionFive.map((n) => n.name)).toEqual(['in-five']);
   });
 
   it('T402 — re-sorts a specific section’s roots by their own orderValue, undoing the superset’s global order', () => {
@@ -314,23 +319,27 @@ describe('searchAbwabNodes — M4', () => {
 });
 
 describe('countLiveAbwabDoors / countAbwabDoorsInOpenScope — item 17 stats bar (Slice B2, T1002)', () => {
-  it('counts live doors only (excluding section-less doors are still counted, archived are not), and reads the open scope from doorsInScopeCount without asserting the two sum', () => {
+  it('counts live doors only (archived are not), and reads the open scope from doorsInScopeCount rather than recomputing it', () => {
     const snapshot = buildAbwabTreeSnapshot({
       doors: [
-        door({ id: 1, name: 'in-section', sectionId: 9, orderValue: 1 }),
-        door({ id: 2, name: 'section-less', sectionId: null, orderValue: 2 }),
-        door({ id: 3, name: 'archived-in-section', sectionId: 9, isArchived: true, orderValue: 3 }),
+        door({ id: 1, name: 'in-nine', sectionId: 9, orderValue: 1 }),
+        door({ id: 2, name: 'in-four', sectionId: 4, orderValue: 2 }),
+        door({ id: 3, name: 'archived-in-nine', sectionId: 9, isArchived: true, orderValue: 3 }),
       ],
-      sections: [{ id: 9, name: 'قسم', orderValue: 1, version: 1, doorsInScopeCount: 1 }],
+      sections: [
+        { id: 9, name: 'قسم', orderValue: 1, version: 1, doorsInScopeCount: 1 },
+        { id: 4, name: 'قسم آخر', orderValue: 2, version: 1, doorsInScopeCount: 1 },
+      ],
       version: 'v1',
     });
 
     const total = countLiveAbwabDoors(snapshot.byId);
     expect(total).toBe(2);
 
-    // The section's own doorsInScopeCount (1) is intentionally LESS than the total (2) —
-    // sectionId is nullable, so a live door (id 2) sits outside every section's count. The two
-    // numbers deliberately do not sum to anything meaningful; this only checks each in isolation.
+    // Each section's own doorsInScopeCount is read as given, never derived here: it is the
+    // backend's live-only count at any depth, and recomputing it client-side would fork from that
+    // definition the moment the two drift. That the per-section counts now happen to reconcile
+    // with the total is a consequence of every door having a section, not a reason to sum them.
     expect(countAbwabDoorsInOpenScope(snapshot.sections, 9, total)).toBe(1);
     expect(countAbwabDoorsInOpenScope(snapshot.sections, 42, total)).toBe(0);
 

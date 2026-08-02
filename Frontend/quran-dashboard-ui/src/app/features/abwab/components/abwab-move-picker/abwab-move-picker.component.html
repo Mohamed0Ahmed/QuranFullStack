@@ -21,14 +21,6 @@
       <div class="qd-modal__body">
         @if (stage() === 'section') {
           <div class="abwab-move-picker__list">
-            <button
-              type="button"
-              class="abwab-move-picker__row"
-              data-testid="abwab-move-picker-section-none"
-              (click)="pickSection(null)"
-            >
-              {{ noSectionLabel }}
-            </button>
             @for (section of sections(); track section.id) {
               <button
                 type="button"
@@ -42,6 +34,14 @@
           </div>
         } @else {
           <div class="abwab-move-picker__list">
+            <button
+              type="button"
+              class="qd-btn qd-btn-ghost abwab-move-picker__back"
+              data-testid="abwab-move-picker-change-section"
+              (click)="backToSections()"
+            >
+              {{ changeSectionLabel }}
+            </button>
             <button
               type="button"
               class="abwab-move-picker__row"

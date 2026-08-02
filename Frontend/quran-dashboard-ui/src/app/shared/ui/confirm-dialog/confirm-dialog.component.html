@@ -1,0 +1,50 @@
+@if (open()) {
+  <div class="qd-modal-backdrop" data-testid="qd-confirm-dialog-backdrop" (click)="cancel()">
+    <section
+      class="qd-modal qd-confirm-dialog"
+      role="alertdialog"
+      aria-modal="true"
+      dir="rtl"
+      [attr.aria-labelledby]="titleId"
+      qdModalScrollLock
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
+      data-testid="qd-confirm-dialog"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="cancel()"
+    >
+      <header class="qd-modal__head">
+        <h3 [id]="titleId">{{ titleText() }}</h3>
+      </header>
+
+      <div class="qd-modal__body">
+        <ng-content />
+      </div>
+
+      <footer class="qd-modal__foot qd-confirm-dialog__foot">
+        <button
+          type="button"
+          class="qd-btn"
+          [class.qd-btn-primary]="tone() === 'default'"
+          [class.qd-confirm-dialog__confirm--danger]="tone() === 'danger'"
+          [disabled]="busy() || confirmDisabled()"
+          [attr.aria-busy]="busy() ? 'true' : null"
+          data-testid="qd-confirm-dialog-confirm"
+          (click)="confirm()"
+        >
+          {{ confirmLabel() }}
+        </button>
+        <button
+          #cancelButton
+          type="button"
+          class="qd-btn qd-btn-ghost"
+          [disabled]="busy()"
+          data-testid="qd-confirm-dialog-cancel"
+          (click)="cancel()"
+        >
+          {{ cancelLabel() }}
+        </button>
+      </footer>
+    </section>
+  </div>
+}

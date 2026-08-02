@@ -748,6 +748,34 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   `.qd-chip.qd-is-selected`, `.qd-chip__count`, `.qd-chip__remove`,
   `.qd-chip__label`, `.qd-chip__label--clickable`. Compose, do not re-style.
 
+### `qd-confirm-dialog`
+- **Purpose:** the one confirmation dialog — a decision that interrupts and needs an explicit
+  yes/no. Supersedes hand-written `role="alertdialog"` blocks: those get the role right and the
+  focus handling wrong, and each one drifts from the next. **Do not hand-write these again.**
+- **Inputs / roles:** `open`, `titleText`, `confirmLabel`, `cancelLabel`,
+  `tone?: 'default' | 'danger'`, `busy?`, `confirmDisabled?`; outputs `confirmed`, `cancelled`.
+  Container is `role="alertdialog"` + `aria-modal="true"`, labelled by its own title.
+- **Body is projected** (`<ng-content>`), so a consumer composes whatever the decision needs — a
+  path, a selector, an inline `qd-state variant="error"`. The dialog owns the framing and the
+  dismissal routes; it never owns the content.
+- **Behavior:** focus trapped (`cdkTrapFocus` + auto-capture); **initial focus on CANCEL** — the
+  dialog interrupts, so a reflexive Enter must produce the safe answer. `Escape` and a backdrop
+  click both emit `cancelled`. `busy` disables BOTH buttons (a decision in flight is not
+  cancellable into an inconsistent state either), carries the house busy affordance
+  (`aria-busy="true"` on the confirm button, the same signal the skeletons and `qd-state` use),
+  blocks a second `confirmed` emission, and suppresses `Escape` and backdrop dismissal for the
+  same reason it disables cancel; `confirmDisabled` disables confirm alone, for a decision that
+  is not yet complete.
+- **Visuals / RTL:** `tone: 'danger'` maps confirm to `--qd-danger` per §16.1 — scoped to this
+  component rather than a global `.qd-btn-danger`, since a new global button variant is a
+  design-system decision, not this dialog's. Logical properties only; scroll locked through the
+  shared `modal-scroll-lock`.
+- **Not a modal shell.** Authoring modals (a form plus its dirty guard) keep their own shell —
+  that is a different contract. This is for confirmations only.
+- **Known retrofit candidates:** the templates page still hand-rolls two inline
+  `role="alertdialog"` confirms (`abwab-templates-page.component.html`), and the sections modal's
+  delete flow has no confirmation at all. Both belong on this primitive in a later slice.
+
 ### `qd-state`
 - **Purpose:** the one empty / loading / error presentation.
 - **Inputs / roles:** `variant: 'empty' | 'loading' | 'error'`, `message`, optional

@@ -52,7 +52,8 @@ test('single move: into a destination, then back out as a main door', async ({ p
   await page.getByTestId(`abwab-tree-row-${moved.id}`).click();
   await page.getByTestId('abwab-side-panel-op-move').click();
   await expect(page.getByTestId('abwab-move-picker')).toBeVisible();
-  await page.getByTestId(`abwab-move-picker-section-${abwabSandbox.sectionId}`).click();
+  // Stage one is answered by the door's own section, so the picker opens on the destination list.
+  await expect(page.getByTestId(`abwab-move-picker-section-${abwabSandbox.sectionId}`)).toBeHidden();
   await page.getByTestId(`abwab-move-picker-dest-${destination.id}`).click();
   await page.getByTestId('abwab-move-picker-confirm').click();
   await expect(page.getByTestId('abwab-move-picker')).toBeHidden();
@@ -63,7 +64,6 @@ test('single move: into a destination, then back out as a main door', async ({ p
   // Move it back out to the top level ("كباب رئيسي") — still scoped to the same section.
   await page.getByTestId(`abwab-tree-row-${moved.id}`).click();
   await page.getByTestId('abwab-side-panel-op-move').click();
-  await page.getByTestId(`abwab-move-picker-section-${abwabSandbox.sectionId}`).click();
   await page.getByTestId('abwab-move-picker-dest-asmain').click();
   await page.getByTestId('abwab-move-picker-confirm').click();
   await expect(page.getByTestId('abwab-move-picker')).toBeHidden();
@@ -89,7 +89,8 @@ test('bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
 
   await page.getByTestId('abwab-side-panel-bulk-move').click();
   await expect(page.getByTestId('abwab-move-picker')).toBeVisible();
-  await page.getByTestId(`abwab-move-picker-section-${abwabSandbox.sectionId}`).click();
+  // Both selected doors share the sandbox section, so stage one is answered and skipped.
+  await expect(page.getByTestId(`abwab-move-picker-section-${abwabSandbox.sectionId}`)).toBeHidden();
   await page.getByTestId(`abwab-move-picker-dest-${target.id}`).click();
   await page.getByTestId('abwab-move-picker-confirm').click();
   await expect(page.getByTestId('abwab-move-picker')).toBeHidden();

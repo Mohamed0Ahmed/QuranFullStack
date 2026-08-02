@@ -32,6 +32,11 @@ public sealed class MoveDoorHandler(
             logger.LogWarning("Rejected {feature} {operation} {reason} {doorId}", FeatureName, OperationName, "parentNotFound", command.Id);
             return new MoveDoorOutcome.ParentNotFound();
         }
+        catch (AbwabSectionRequiredException)
+        {
+            logger.LogWarning("Rejected {feature} {operation} {reason} {doorId}", FeatureName, OperationName, "sectionRequired", command.Id);
+            return new MoveDoorOutcome.SectionRequired();
+        }
         catch (AbwabSectionNotFoundException)
         {
             logger.LogWarning("Rejected {feature} {operation} {reason} {doorId}", FeatureName, OperationName, "sectionNotFound", command.Id);

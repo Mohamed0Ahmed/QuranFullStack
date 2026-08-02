@@ -37,6 +37,24 @@ function render(overrides: Record<string, unknown> = {}, controllerStub: Partial
   return fixture;
 }
 
+const SECTIONS = [
+  { id: 7, name: 'اللغة العربية', orderValue: 1, version: 1, doorsInScopeCount: 0 },
+  { id: 4, name: 'العقيدة', orderValue: 2, version: 1, doorsInScopeCount: 0 },
+];
+
+function fieldOf(fixture: ReturnType<typeof render>): Element | null {
+  return (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-door-modal-section-field"]');
+}
+
+function pickSection(fixture: ReturnType<typeof render>, sectionId: number): void {
+  const select = (fixture.nativeElement as HTMLElement).querySelector(
+    '[data-testid="abwab-door-modal-section-select"]',
+  ) as HTMLSelectElement;
+  select.value = String(sectionId);
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+  fixture.detectChanges();
+}
+
 function setName(fixture: ReturnType<typeof render>, value: string): void {
   const input = (fixture.nativeElement as HTMLElement).querySelector(
     '[data-testid="abwab-door-modal-name"]',
@@ -98,17 +116,66 @@ describe('AbwabDoorModalComponent', () => {
       expect(captured!.sectionId).toBe(4);
     });
 
-    it('sends null under «كل الأبواب» (no active section)', () => {
+    // «كل الأبواب» is the one root create with nowhere to put the door, and the backend refuses it.
+    // The shell asks instead of letting the write fail.
+    it('blocks a root create under «كل الأبواب» until a section is chosen, then sends it', () => {
       let captured: CreateDoorCommand | null = null;
       const fixture = render(
-        { parentId: null, activeSectionId: null },
+        { parentId: null, activeSectionId: null, sections: SECTIONS },
         { createDoor: (command: CreateDoorCommand) => { captured = command; return of({ kind: 'success', data: EXISTING_DOOR }); } },
       );
 
       setName(fixture, 'باب جديد');
       clickSave(fixture);
 
-      expect(captured!.sectionId).toBeNull();
+      expect(captured).toBeNull();
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-door-modal-section-error"]')?.textContent?.trim())
+        .toBe(ABWAB_LABELS.doorModalSectionRequiredError);
+      expect(root.querySelector('[data-testid="abwab-door-modal-section-select"]')?.getAttribute('aria-invalid'))
+        .toBe('true');
+
+      pickSection(fixture, 7);
+      clickSave(fixture);
+
+      expect(captured!.sectionId).toBe(7);
+      expect(captured!.parentId).toBeNull();
+    });
+
+    // No section exists to choose, so an empty <select> plus a post-submit error would be a dead end
+    // the user cannot act on. Same handling as the restore modal's equivalent state.
+    it('replaces the selector with a hint when no live section exists, and still blocks the create', () => {
+      let captured: CreateDoorCommand | null = null;
+      const fixture = render(
+        { parentId: null, activeSectionId: null, sections: [] },
+        { createDoor: (command: CreateDoorCommand) => { captured = command; return of({ kind: 'success', data: EXISTING_DOOR }); } },
+      );
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-door-modal-section-select"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-door-modal-no-sections"]')?.textContent?.trim())
+        .toBe(ABWAB_LABELS.doorModalNoSectionsHint);
+
+      setName(fixture, 'باب بلا قسم متاح');
+      clickSave(fixture);
+
+      expect(captured).toBeNull();
+    });
+
+    // The selector answers a question the other two cases have already answered — showing it there
+    // would invite a contradiction the backend then has to refuse.
+    it('shows the section selector only for a root create under «كل الأبواب»', () => {
+      const onAllDoors = render({ parentId: null, activeSectionId: null, sections: SECTIONS }, {});
+      expect(fieldOf(onAllDoors)).toBeTruthy();
+
+      const onSectionTab = render({ parentId: null, activeSectionId: 4, sections: SECTIONS }, {});
+      expect(fieldOf(onSectionTab)).toBeNull();
+
+      const underParent = render({ parentId: 9, activeSectionId: null, sections: SECTIONS }, {});
+      expect(fieldOf(underParent)).toBeNull();
+
+      const editing = render({ door: EXISTING_DOOR, activeSectionId: null, sections: SECTIONS }, {});
+      expect(fieldOf(editing)).toBeNull();
     });
   });
 
@@ -152,7 +219,7 @@ describe('AbwabDoorModalComponent', () => {
 
     it('renders the backend failure message inline rather than closing', () => {
       const fixture = render(
-        { parentId: null, activeSectionId: null },
+        { parentId: null, activeSectionId: 4 },
         { createDoor: () => of({ kind: 'invalid', message: 'اسم الباب مكرر في هذا النطاق' }) },
       );
       const closed: void[] = [];

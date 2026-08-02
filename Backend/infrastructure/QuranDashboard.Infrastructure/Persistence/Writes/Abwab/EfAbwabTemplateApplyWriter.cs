@@ -19,7 +19,7 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab;
 /// </remarks>
 internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : IAbwabTemplateApplyWriter
 {
-    private sealed record CopiedNode(AbwabDoor Door, AbwabTemplateNode Node, int? SectionId);
+    private sealed record CopiedNode(AbwabDoor Door, AbwabTemplateNode Node, int SectionId);
 
     public async Task<IReadOnlyList<AbwabDoorDto>> ApplyAsync(
         int templateId,
@@ -186,7 +186,7 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
     }
 
     private static AbwabDoor NewDoor(
-        AbwabTemplateNode node, int? sectionId, int parentId, int orderValue, DateTimeOffset now) =>
+        AbwabTemplateNode node, int sectionId, int parentId, int orderValue, DateTimeOffset now) =>
         new()
         {
             // Every copied node at every depth inherits the TARGET's section — the invariant every
