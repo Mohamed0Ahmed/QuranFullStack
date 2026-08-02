@@ -429,10 +429,11 @@ in `src/app/core/` and `src/app/shared/`, with app-shell specs at `src/app/*.spe
 The E2E suite boots the Angular dev server **and** the backend `https` launch profile
 (`ASPNETCORE_ENVIRONMENT=Development`), so it reads the real local `quran_dashboard` database.
 Every flow is read-only and every count assertion is loose, **with one named, deliberate
-exception**: the five Abwab specs (`abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`,
+exception**: the eight Abwab specs (`abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`,
 `abwab-archive.e2e.ts`, `abwab-url-and-a11y.e2e.ts` added in Slice B2,
 `docs/feature-abwab-doors/plan-slice-b2.md`, plus `abwab-global-order.e2e.ts` added by
-`abwab-global-order`) write against the local dev DB through a per-test sandbox section created
+`abwab-global-order`, `abwab-tree-row-budget.e2e.ts`, `abwab-slice-j-widths.e2e.ts`, and
+`abwab-relations.e2e.ts` added by slice K) write against the local dev DB through a per-test sandbox section created
 over the API (`e2e/fixtures/abwab.ts`), not the seeded/canonical data.
 **This knowingly overrides the precondition above** — it does not move the suite onto an
 isolated database first, because no such database exists yet for this suite. The sandbox is the
@@ -453,7 +454,7 @@ live destination section, since the one it belonged to is gone. What must **not*
 is any live `e2e-sandbox-*` door or any `e2e-sandbox-*` section — either one is a teardown bug, not
 accepted residue, and `GET /api/abwab/tree` is how you check. This is tolerable on a local,
 disposable dev database with loose, id-scoped assertions.
-**The five Abwab specs run in their own single-worker Playwright project, not the default
+**The eight Abwab specs run in their own single-worker Playwright project, not the default
 2-worker one.** A `Global`-scope reorder (`abwab-global-order.e2e.ts`) resequences the whole
 live-root set across the database, not just the acting test's own sandbox, so two Abwab specs in
 different workers can race the same rows — measured directly: at 2 workers this produced a

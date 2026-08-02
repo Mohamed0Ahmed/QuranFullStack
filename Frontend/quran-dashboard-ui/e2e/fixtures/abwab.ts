@@ -35,6 +35,13 @@ export interface AbwabSandbox {
    * drive the modal. Archive-through-the-UI has its own flow in `abwab-archive.e2e.ts`.
    */
   archiveDoor(doorId: number): Promise<void>;
+  /** Same reasoning as `archiveDoor`: a relation that exists *before* the flow starts is a
+   * precondition. Adding one through the modal is `abwab-relations.e2e.ts`'s own first step. */
+  addRelation(anchorDoorId: number, targetDoorIds: readonly number[]): Promise<readonly number[]>;
+  deleteRelation(relationId: number): Promise<void>;
+  /** Renames a door behind the app's back, re-reading its version first for the same reason
+   * `archiveDoor` does. Used to make the client's cache face a name it cannot know about. */
+  renameDoor(doorId: number, name: string): Promise<void>;
 }
 
 async function createSectionViaApi(request: APIRequestContext, name: string): Promise<number> {
@@ -93,6 +100,38 @@ async function archiveDoorViaApi(request: APIRequestContext, doorId: number): Pr
   }
   const res = await request.delete(`${API_BASE}/api/abwab/doors/${doorId}`, { data: { version: door.version } });
   expect(res.ok(), `abwab sandbox: door archive failed (${res.status()})`).toBeTruthy();
+}
+
+async function addRelationViaApi(
+  request: APIRequestContext,
+  anchorDoorId: number,
+  targetDoorIds: readonly number[],
+): Promise<readonly number[]> {
+  // Type 1 = تشابه, the one type that carries no direction — the backend refuses a direction sent
+  // with it, so this is the shape with the fewest ways to be wrong as a precondition.
+  const res = await request.post(`${API_BASE}/api/abwab/doors/${anchorDoorId}/relations`, {
+    data: { type: 1, direction: null, targetDoorIds: [...targetDoorIds] },
+  });
+  expect(res.ok(), `abwab sandbox: relation add failed (${res.status()})`).toBeTruthy();
+  const json = await res.json();
+  return ((json['data'] ?? []) as Array<{ id: number }>).map((relation) => relation.id);
+}
+
+async function deleteRelationViaApi(request: APIRequestContext, relationId: number): Promise<void> {
+  const res = await request.delete(`${API_BASE}/api/abwab/relations/${relationId}`);
+  expect(res.ok(), `abwab sandbox: relation delete failed (${res.status()})`).toBeTruthy();
+}
+
+async function renameDoorViaApi(request: APIRequestContext, doorId: number, name: string): Promise<void> {
+  const doorsById = await fetchTreeDoors(request);
+  const door = doorsById.get(doorId);
+  if (!door) {
+    throw new Error(`abwab sandbox: cannot rename unknown door ${doorId}`);
+  }
+  const res = await request.put(`${API_BASE}/api/abwab/doors/${doorId}`, {
+    data: { name, description: null, representativeAyahText: null, aliases: [], version: door.version },
+  });
+  expect(res.ok(), `abwab sandbox: door rename failed (${res.status()})`).toBeTruthy();
 }
 
 /**
@@ -189,6 +228,9 @@ export const test = base.extend<{ abwabSandbox: AbwabSandbox }>({
         return door;
       },
       archiveDoor: (doorId) => archiveDoorViaApi(request, doorId),
+      addRelation: (anchorDoorId, targetDoorIds) => addRelationViaApi(request, anchorDoorId, targetDoorIds),
+      deleteRelation: (relationId) => deleteRelationViaApi(request, relationId),
+      renameDoor: (doorId, name) => renameDoorViaApi(request, doorId, name),
     };
 
     await use(sandbox);

@@ -28,11 +28,11 @@ this feature's evidence claims behavioral coverage.
 | 1 | Backend write behavior — canonical pair ordering (`door_a_id < door_b_id` for all three types), `broader_door_id` direction storage, all-or-nothing multi-target add, self/unknown/archived refusals, soft delete with no revive | `Persistence/Writes/Abwab/EfAbwabRelationsWriter.cs` | The next change to the relations writer, **or** adding a fourth relation type — both have to re-derive these rules anyway |
 | 2 | Backend read behavior — the dormancy join (relation visible iff its own `deleted_at` is null **and** both endpoints are live) and `RelationCount`'s live-endpoint-only counting. Also the negative side: no door **or section** write path may touch `abwab_door_relations`, so move / reorder / rename / section create-rename-delete must leave every row and count alone | `Persistence/Reads/Abwab/EfAbwabRelationsReader.cs`, `EfAbwabTreeReader.GetLiveRelationCountsAsync`, `Persistence/Writes/Abwab/` | The next change to the archive / restore / bulk-archive paths **or to either section/door writer** — dormancy rides entirely on the former, and the "structure never touches relations" invariant is enforced by nothing but the absence of code in the latter |
 | 3 | Relations smoke — the `200` / `201` / `204` / `400` / `404` / `409` status and envelope contract of the three routes, including the archived-anchor read that must answer `200 []` rather than `404` (all three routes are catalogued `ParityOnly`, i.e. listed but not dispatched) | `Tests/Smoke/`, `SmokeRouteCatalog.cs` | When write protection lands and `/api/abwab` stops being `Open`: the auth cases force a dispatched test per route regardless |
-| 5 | One e2e flow — add a relation, see the chip on both doors, archive one endpoint, watch the chip and the tree flag vanish, restore, watch them return | `Frontend/quran-dashboard-ui/e2e/` | The next time relations change shape. Slice C's unit specs and its manual reproduction (`docs/feature-ux-slice-c/evidence.md`) both stop at the seam; this is the only check that would catch dormancy end to end, and it is the §6.3 cell most likely to break silently |
 
 Rows 1 and 2 are the ones with no cover **anywhere** — not a spec, not a smoke case, not an e2e
-flow. Row 5 is the single cheapest thing that would cover the most: it crosses the read, the
-write, the count, and the flag in one pass.
+flow. The e2e row that used to sit here is gone: `e2e/abwab-relations.e2e.ts` (slice K) now crosses
+the read, the write, the count, and the row flag in one pass. It does not touch these three, which
+are about the writer's own rules and the routes' status contract, not about what a browser sees.
 
 ## abwab-templates (branches `abwab-templates-a` / `abwab-templates-b`, 2026-07-29)
 
