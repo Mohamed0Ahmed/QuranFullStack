@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+API_PROJECT="${BACKEND_ROOT}/api/QuranDashboard.Api"
+
+# A literal allowlist, never a wildcard or a catalog query: CASCADE is safe here only because every
+# foreign key pointing into an abwab table originates from another table in this same list, so the
+# cascade closure cannot reach quran_*, users, or roles. Adding a seventh abwab table means editing
+# this line deliberately — which is the point.
+ABWAB_TABLES=(
+  abwab_sections
+  abwab_doors
+  abwab_door_aliases
+  abwab_door_relations
+  abwab_templates
+  abwab_template_nodes
+)
+
+# The canonical Quran data this script must never touch. Checked after the wipe as a tripwire: it
+# does not prevent damage, it refuses to let damage pass silently.
+TRIPWIRE_TABLE="quran_surahs"
+TRIPWIRE_COUNT=114
+
+usage() {
+  echo "Usage: ./scripts/wipe-abwab --yes" >&2
+}
+
+fail() {
+  echo "ERROR: $*" >&2
+  exit 1
+}
+
+CONFIRMED=false
+for arg in "$@"; do
+  case "${arg}" in
+    --yes) CONFIRMED=true ;;
+    *)
+      echo "ERROR: unknown argument '${arg}'." >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+# shellcheck source=_preflight-sandbox.sh
+source "${SCRIPT_DIR}/_preflight-sandbox.sh"
+preflight_check_stale_sandbox_assets "${BACKEND_ROOT}"
+
+resolve_connection_string() {
+  if [[ -n "${ConnectionStrings__QuranDashboardDb:-}" ]]; then
+    printf '%s' "${ConnectionStrings__QuranDashboardDb}"
+    return
+  fi
+
+  local secrets
+  secrets="$(dotnet user-secrets list --project "${API_PROJECT}")" \
+    || fail "could not read user secrets from ${API_PROJECT}. Set ConnectionStrings__QuranDashboardDb instead."
+  sed -n 's/^ConnectionStrings:QuranDashboardDb = //p' <<<"${secrets}"
+}
+
+# Npgsql keyword strings are case-insensitive and tolerate spaces around the key, so both are
+# normalized before comparing. Read into an array rather than iterating a split string: a password
+# containing a glob character would otherwise be pathname-expanded.
+connection_value() {
+  local wanted="$1" conn="$2"
+  local -a pairs
+  local pair name
+  IFS=';' read -r -a pairs <<<"${conn}"
+  for pair in "${pairs[@]}"; do
+    [[ "${pair}" == *=* ]] || continue
+    name="$(tr -d '[:space:]' <<<"${pair%%=*}" | tr '[:upper:]' '[:lower:]')"
+    if [[ "${name}" == "${wanted}" ]]; then
+      printf '%s' "${pair#*=}"
+      return
+    fi
+  done
+}
+
+CONNECTION_STRING="$(resolve_connection_string)"
+[[ -n "${CONNECTION_STRING}" ]] || fail "no connection string found. Set ConnectionStrings__QuranDashboardDb or the ConnectionStrings:QuranDashboardDb user secret."
+
+PGHOST="$(connection_value host "${CONNECTION_STRING}")"
+[[ -n "${PGHOST}" ]] || PGHOST="$(connection_value server "${CONNECTION_STRING}")"
+PGPORT="$(connection_value port "${CONNECTION_STRING}")"
+PGDATABASE="$(connection_value database "${CONNECTION_STRING}")"
+PGUSER="$(connection_value username "${CONNECTION_STRING}")"
+[[ -n "${PGUSER}" ]] || PGUSER="$(connection_value userid "${CONNECTION_STRING}")"
+PGPASSWORD="$(connection_value password "${CONNECTION_STRING}")"
+export PGHOST PGPORT="${PGPORT:-5432}" PGDATABASE PGUSER PGPASSWORD
+
+[[ -n "${PGHOST}" && -n "${PGDATABASE}" ]] || fail "connection string is missing a host or a database name."
+
+# Deliberately stricter than create-smoke-dump's equivalent guard: there is no --allow-remote escape,
+# because a deployed database must not be wipeable by any flag this script accepts. Curation data is
+# authored, not derived — nothing restores it.
+case "${PGHOST}" in
+  localhost | 127.0.0.1) ;;
+  *) fail "refusing to wipe non-local host '${PGHOST}'. This script has no remote override." ;;
+esac
+
+if [[ "${CONFIRMED}" != true ]]; then
+  echo "WARNING: this permanently empties every abwab table. Authored curation data is not recoverable." >&2
+  printf '  table:    %s\n' "${ABWAB_TABLES[@]}" >&2
+  echo "  target:   ${PGUSER}@${PGHOST}:${PGPORT}/${PGDATABASE}" >&2
+  usage
+  exit 1
+fi
+
+pg_query() {
+  psql --no-psqlrc --quiet --no-align --tuples-only -v ON_ERROR_STOP=1 --command "$1"
+}
+
+echo "WARNING: emptying the following tables in ${PGDATABASE} on ${PGHOST}:${PGPORT}" >&2
+printf '  %s\n' "${ABWAB_TABLES[@]}" >&2
+
+printf -v TABLE_LIST '%s, ' "${ABWAB_TABLES[@]}"
+pg_query "TRUNCATE ${TABLE_LIST%, } RESTART IDENTITY CASCADE;" \
+  || fail "TRUNCATE failed against ${PGDATABASE}. Nothing is guaranteed about the current state — inspect before retrying."
+
+tripwire_actual="$(pg_query "SELECT count(*) FROM public.${TRIPWIRE_TABLE};")" \
+  || fail "TRIPWIRE UNREADABLE: could not count public.${TRIPWIRE_TABLE} after the wipe. Verify the canonical Quran data by hand."
+
+if [[ "${tripwire_actual}" != "${TRIPWIRE_COUNT}" ]]; then
+  fail "TRIPWIRE FIRED: public.${TRIPWIRE_TABLE} holds ${tripwire_actual} rows, expected ${TRIPWIRE_COUNT}. The cascade reached canonical Quran data — restore from the canonical source before doing anything else."
+fi
+
+echo "Emptied ${#ABWAB_TABLES[@]} abwab tables in ${PGDATABASE}."
+echo "  tripwire: public.${TRIPWIRE_TABLE} = ${tripwire_actual} rows (expected ${TRIPWIRE_COUNT})"
