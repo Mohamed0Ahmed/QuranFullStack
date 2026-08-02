@@ -5,6 +5,7 @@ import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-loc
 import { AbwabDoorFieldsFormComponent } from '../abwab-door-fields-form/abwab-door-fields-form.component';
 import { AbwabWriteController, AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
+import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
 import { AbwabAuthoringFields, EMPTY_AUTHORING_FIELDS } from '../../models/abwab-templates.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
@@ -19,7 +20,11 @@ let nextModalId = 0;
  * Create-under-a-parent nulls `sectionId` here (M10) even though `AbwabApi.createDoor` already
  * strips the key at the wire level (T405/M33) — defense in depth at the layer that decides
  * *whether* a section applies, not just how it is serialized. It stays in this shell: the shared
- * form has no concept of a section.
+ * form has no concept of a section, and must not acquire one.
+ *
+ * The section `<select>` lives here for the same reason. It appears in exactly one case — a root
+ * create from «كل الأبواب», where there is no parent to derive from and no active tab to read — and
+ * the backend refuses that write without a section, so blocking it here turns a 400 into a choice.
  *
  * Tracking-data box: `AbwabDoorDto` carries no audit-seed columns on the wire (verified
  * against the generated model + `openapi/swagger.json` — no `createdAt`/`createdBy`/
@@ -44,6 +49,7 @@ export class AbwabDoorModalComponent {
   readonly parentId = input<number | null>(null);
   readonly parentName = input<string | null>(null);
   readonly activeSectionId = input<number | null>(null);
+  readonly sections = input<readonly AbwabTreeSectionDto[]>([]);
 
   readonly closed = output<void>();
   readonly saved = output<AbwabDoorDto>();
@@ -54,6 +60,16 @@ export class AbwabDoorModalComponent {
 
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly confirmingDiscard = signal(false);
+  protected readonly chosenSectionId = signal<number | null>(null);
+  protected readonly sectionMissing = signal(false);
+
+  protected readonly sectionId = `abwab-door-modal-section-${nextModalId}`;
+
+  /** Only «كل الأبواب» leaves a root create with nowhere to put the door: a section tab supplies one
+   * and a child derives its parent's. */
+  protected readonly needsSection = computed(
+    () => !this.isEdit && this.parentId() === null && this.activeSectionId() === null,
+  );
 
   protected readonly initialFields = computed<AbwabAuthoringFields>(() => {
     const door = this.door();
@@ -93,6 +109,13 @@ export class AbwabDoorModalComponent {
   protected get trackingApprovedPlaceholder(): string { return ABWAB_LABELS.trackingApprovedPlaceholder; }
   protected get trackingArchiveLabel(): string { return ABWAB_LABELS.trackingArchiveLabel; }
   protected get trackingArchiveActiveValue(): string { return ABWAB_LABELS.trackingArchiveActiveValue; }
+  protected get sectionLabel(): string { return ABWAB_LABELS.doorModalSectionLabel; }
+  protected get sectionRequiredError(): string { return ABWAB_LABELS.doorModalSectionRequiredError; }
+
+  protected onSectionChange(value: string): void {
+    this.chosenSectionId.set(value === '' ? null : Number(value));
+    this.sectionMissing.set(false);
+  }
 
   constructor() {
     // The form resets itself from `initialFields`; this clears only what the shell owns. Reopening
@@ -103,6 +126,8 @@ export class AbwabDoorModalComponent {
       }
       this.errorMessage.set(null);
       this.confirmingDiscard.set(false);
+      this.chosenSectionId.set(null);
+      this.sectionMissing.set(false);
       // The trap now captures straight onto this field (`cdkFocusInitial` in the fields form), so
       // this call normally re-focuses what is already focused and fires no second focus event.
       // It stays as the jsdom path — auto-capture cannot fire there — and as the guard for a
@@ -154,6 +179,12 @@ export class AbwabDoorModalComponent {
     }
 
     const parentId = this.parentId();
+    const sectionId = this.needsSection() ? this.chosenSectionId() : this.activeSectionId();
+    if (this.needsSection() && sectionId === null) {
+      this.sectionMissing.set(true);
+      return;
+    }
+
     this.writeController
       .createDoor({
         name,
@@ -161,7 +192,7 @@ export class AbwabDoorModalComponent {
         representativeAyahText,
         aliases,
         parentId,
-        sectionId: parentId != null ? null : this.activeSectionId(),
+        sectionId: parentId != null ? null : sectionId,
       })
       .subscribe((outcome) => this.handleOutcome(outcome));
   }

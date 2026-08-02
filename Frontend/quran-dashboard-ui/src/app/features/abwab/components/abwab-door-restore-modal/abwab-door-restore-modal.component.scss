@@ -1,0 +1,39 @@
+.abwab-door-restore-modal__name {
+  font-weight: 700;
+  color: var(--qd-text);
+}
+
+.abwab-door-restore-modal__path {
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+  margin-block-start: var(--qd-space-1);
+}
+
+.abwab-door-restore-modal__field {
+  margin-block-start: var(--qd-space-3);
+}
+
+.abwab-door-restore-modal__field label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+  margin-block-end: var(--qd-space-1);
+  font-weight: 700;
+}
+
+.abwab-door-restore-modal__field select {
+  inline-size: 100%;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.abwab-door-restore-modal__hint {
+  margin-block-start: var(--qd-space-2);
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+}

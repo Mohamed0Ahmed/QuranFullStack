@@ -21,6 +21,30 @@
       <div class="qd-modal__body">
         <qd-abwab-door-fields-form [value]="initialFields()" [errorMessage]="errorMessage()" />
 
+        @if (needsSection()) {
+          <div class="abwab-door-modal__section" data-testid="abwab-door-modal-section-field">
+            <label [attr.for]="sectionId">{{ sectionLabel }}</label>
+            <select
+              class="qd-input"
+              [id]="sectionId"
+              [attr.aria-invalid]="sectionMissing() ? 'true' : null"
+              [attr.aria-describedby]="sectionMissing() ? sectionId + '-error' : null"
+              data-testid="abwab-door-modal-section-select"
+              (change)="onSectionChange($any($event.target).value)"
+            >
+              <option value=""></option>
+              @for (section of sections(); track section.id) {
+                <option [value]="section.id" [selected]="section.id === chosenSectionId()">{{ section.name }}</option>
+              }
+            </select>
+            @if (sectionMissing()) {
+              <p class="abwab-door-modal__section-error" [id]="sectionId + '-error'" data-testid="abwab-door-modal-section-error">
+                {{ sectionRequiredError }}
+              </p>
+            }
+          </div>
+        }
+
         @if (isEdit) {
           <div class="abwab-door-modal__meta" data-testid="abwab-door-modal-meta">
             <h5>{{ trackingHeading }}</h5>

@@ -22,7 +22,8 @@ function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string 
     orderValue: overrides.id,
     parentId: null,
     representativeAyahText: null,
-    sectionId: null,
+    sectionId: 1,
+    sectionRetired: false,
     version: 1,
     ...overrides,
   };
@@ -62,7 +63,7 @@ describe('AbwabPageComponent', () => {
     getTestBed().resetTestingModule();
     queryParamMap$.next(convertToParamMap({}));
     archiveDoor = vi.fn().mockReturnValue(of(ok(null)));
-    restoreDoor = vi.fn().mockReturnValue(of(ok({ door: TREE.doors[0], detachedFromArchivedSection: false })));
+    restoreDoor = vi.fn().mockReturnValue(of(ok(TREE.doors[0])));
     reorderDoor = vi.fn().mockReturnValue(of(ok(TREE.doors[0])));
     moveDoor = vi.fn().mockReturnValue(of(ok(TREE.doors[0])));
 
@@ -231,14 +232,38 @@ describe('AbwabPageComponent', () => {
   });
 
   describe('T509 — restore wiring', () => {
-    it('dispatches restoreDoor with the archived door’s current version', () => {
+    // The button opens the modal rather than writing: a root whose section was retired meanwhile
+    // needs a destination, and the backend refuses the write without one.
+    it('opens the restore modal, which dispatches restoreDoor with the archived door’s current version', () => {
       queryParamMap$.next(convertToParamMap({ archive: '1' }));
       const fixture = render();
       const root = fixture.nativeElement as HTMLElement;
 
       (root.querySelector('[data-testid="abwab-archive-restore-3"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      expect(restoreDoor).not.toHaveBeenCalled();
+      expect(root.querySelector('[data-testid="abwab-door-restore-modal-name"]')?.textContent).toContain('باب مؤرشف');
+
+      (root.querySelector('[data-testid="qd-confirm-dialog-confirm"]') as HTMLElement).click();
+      fixture.detectChanges();
 
       expect(restoreDoor).toHaveBeenCalledWith(3, { version: 1 });
+      expect(root.querySelector('[data-testid="abwab-door-restore-modal-name"]')).toBeNull();
+    });
+
+    it('closes the restore modal on cancel without writing', () => {
+      queryParamMap$.next(convertToParamMap({ archive: '1' }));
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-archive-restore-3"]') as HTMLElement).click();
+      fixture.detectChanges();
+      (root.querySelector('[data-testid="qd-confirm-dialog-cancel"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      expect(restoreDoor).not.toHaveBeenCalled();
+      expect(root.querySelector('[data-testid="abwab-door-restore-modal-name"]')).toBeNull();
     });
   });
 
@@ -524,8 +549,7 @@ describe('AbwabPageComponent', () => {
       expect(root.querySelector('[data-testid="abwab-move-picker"]')?.textContent).toContain(
         ABWAB_LABELS.movePickerTitleBulk(2),
       );
-      (root.querySelector('[data-testid="abwab-move-picker-section-none"]') as HTMLElement).click();
-      fixture.detectChanges();
+      // Both selected doors live in section 1, so stage one is answered and skipped.
       (root.querySelector('[data-testid="abwab-move-picker-dest-asmain"]') as HTMLElement).click();
       (root.querySelector('[data-testid="abwab-move-picker-confirm"]') as HTMLElement).click();
 
@@ -535,7 +559,7 @@ describe('AbwabPageComponent', () => {
           { doorId: 2, version: 1 },
         ],
         targetParentId: null,
-        targetSectionId: null,
+        targetSectionId: 1,
       });
     });
   });
@@ -553,12 +577,11 @@ describe('AbwabPageComponent', () => {
       fixture.detectChanges();
 
       expect(root.querySelector('[data-testid="abwab-move-picker"]')).toBeTruthy();
-      (root.querySelector('[data-testid="abwab-move-picker-section-none"]') as HTMLElement).click();
-      fixture.detectChanges();
+      // A single move already knows its section, so stage one is skipped.
       (root.querySelector('[data-testid="abwab-move-picker-dest-asmain"]') as HTMLElement).click();
       (root.querySelector('[data-testid="abwab-move-picker-confirm"]') as HTMLElement).click();
 
-      expect(moveDoor).toHaveBeenCalledWith(1, { targetParentId: null, targetSectionId: null, version: 1 });
+      expect(moveDoor).toHaveBeenCalledWith(1, { targetParentId: null, targetSectionId: 1, version: 1 });
     });
   });
 
@@ -607,9 +630,9 @@ describe('AbwabPageComponent', () => {
       expect(root.querySelector('[data-testid="abwab-door-modal-name"]')).toHaveProperty('value', 'الرسول');
     });
   });
-  // Its own TestBed: the reveal's five states need a nested door, a second section and a
-  // section-less door, and bolting those onto the shared TREE would rewrite the tab-label and
-  // stat expectations every other test in this file makes.
+  // Its own TestBed: the reveal's states need a nested door and a second section, and bolting
+  // those onto the shared TREE would rewrite the tab-label and stat expectations every other test
+  // in this file makes.
   describe('audit item 10 — reveal-in-tree from the relations modal', () => {
     const REVEAL_TREE: AbwabTreeDto = {
       doors: [
@@ -617,7 +640,6 @@ describe('AbwabPageComponent', () => {
         door({ id: 2, name: 'ابن', sectionId: 1, parentId: 1, orderValue: 1 }),
         door({ id: 3, name: 'حفيد', sectionId: 1, parentId: 2, orderValue: 1 }),
         door({ id: 4, name: 'باب قسم آخر', sectionId: 2, orderValue: 1 }),
-        door({ id: 5, name: 'باب بلا قسم', orderValue: 2 }),
         door({ id: 6, name: 'باب مؤرشف', sectionId: 1, isArchived: true, orderValue: 3 }),
       ],
       sections: [
@@ -687,13 +709,6 @@ describe('AbwabPageComponent', () => {
       // The explicit `door` has to survive the scope-invalidation clear `section` triggers —
       // that override is why this is one navigation instead of two.
       expect(lastPatch()).toEqual({ section: '2', door: '4', card: null, modal: null });
-    });
-
-    it('section-less target while a section tab is open: clears section rather than keeping it', () => {
-      const fixture = renderReveal({ section: '1' });
-      reveal(fixture, 5);
-
-      expect(lastPatch()).toEqual({ section: null, door: '5', card: null, modal: null });
     });
 
     it('cards view: the patch switches back to the tree, because the item is reveal-in-tree', () => {
@@ -956,6 +971,11 @@ describe('AbwabPageComponent', () => {
       const nameInput = root.querySelector('[data-testid="abwab-door-modal-name"]') as HTMLInputElement;
       nameInput.value = 'باب جديد';
       nameInput.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      // «كل الأبواب» has no tab to derive a section from, so the shell asks for one before it writes.
+      const sectionSelect = root.querySelector('[data-testid="abwab-door-modal-section-select"]') as HTMLSelectElement;
+      sectionSelect.value = '1';
+      sectionSelect.dispatchEvent(new Event('change', { bubbles: true }));
       fixture.detectChanges();
       (root.querySelector('[data-testid="abwab-door-modal-save"]') as HTMLElement).click();
       fixture.detectChanges();

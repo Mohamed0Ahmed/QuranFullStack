@@ -151,7 +151,10 @@ export interface AbwabNode {
   readonly description: string | null;
   readonly representativeAyahText: string | null;
   readonly aliases: readonly string[];
-  readonly sectionId: number | null;
+  readonly sectionId: number;
+  /** Its section has been archived — true only for an archived door, since a section is only
+   * archivable while it holds no live ones. Restoring such a door needs a destination chosen. */
+  readonly sectionRetired: boolean;
   readonly parentId: number | null;
   readonly orderValue: number;
   /** Live root doors only — `null` at any depth > 0 and for every archived door

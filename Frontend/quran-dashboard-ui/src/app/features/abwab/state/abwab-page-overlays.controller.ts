@@ -171,6 +171,13 @@ export class AbwabPageOverlaysController {
     return result;
   });
 
+  readonly moveSectionIds = computed<readonly number[]>(() => {
+    const byId = this.byId();
+    return this.moveDoorIds()
+      .map((id) => byId.get(id)?.sectionId)
+      .filter((sectionId): sectionId is number => sectionId !== undefined);
+  });
+
   readonly moveTitleText = computed(() => {
     const ids = this.moveDoorIds();
     if (ids.length === 1) {
@@ -219,6 +226,42 @@ export class AbwabPageOverlaysController {
       return;
     }
     this.writeController.bulkMoveDoors(destination.targetParentId, destination.targetSectionId).subscribe();
+  }
+
+  // Door restore modal — opened instead of writing straight through, because a root whose section
+  // was retired meanwhile cannot be restored without being told where to go.
+  private readonly restoreDoorId = signal<number | null>(null);
+
+  readonly restoreTarget = computed(() => {
+    const id = this.restoreDoorId();
+    return id === null ? null : (this.byId().get(id) ?? null);
+  });
+
+  /** Outermost first, the door itself excluded — the same «، » chain the side panel shows. */
+  readonly restoreAncestors = computed<readonly AbwabNode[]>(() => {
+    const byId = this.byId();
+    const chain: AbwabNode[] = [];
+    let current = this.restoreTarget()?.parentId ?? null;
+    while (current !== null) {
+      const node = byId.get(current);
+      if (!node) {
+        break;
+      }
+      chain.unshift(node);
+      current = node.parentId;
+    }
+    return chain;
+  });
+
+  openRestoreModal(id: number): void {
+    if (!this.byId().has(id)) {
+      return;
+    }
+    this.restoreDoorId.set(id);
+  }
+
+  closeRestoreModal(): void {
+    this.restoreDoorId.set(null);
   }
 
   // Sections modal

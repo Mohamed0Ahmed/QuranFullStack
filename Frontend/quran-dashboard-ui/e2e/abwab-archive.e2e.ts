@@ -58,6 +58,7 @@ test('an archived door renders in the archive view, and restoring returns it to 
   await expect(page.getByTestId(`abwab-archive-restore-${door.id}`)).toBeEnabled();
 
   await page.getByTestId(`abwab-archive-restore-${door.id}`).click();
+  await page.getByTestId('qd-confirm-dialog-confirm').click();
   await expect(archiveRow).toHaveCount(0);
 
   await page.getByTestId('abwab-page-archive-toggle').click();
@@ -93,11 +94,13 @@ test('a child archived under an archived parent shows a disabled restore until t
   // Restore the parent — the separately archived child stays archived (§13.1) but its
   // restore control flips to enabled the moment its parent is live again (M21/M22).
   await page.getByTestId(`abwab-archive-restore-${parent.id}`).click();
+  await page.getByTestId('qd-confirm-dialog-confirm').click();
   await expect(page.getByTestId(`abwab-archive-row-${parent.id}`)).toHaveCount(0);
   await expect(page.getByTestId(`abwab-archive-restore-${child.id}`)).toBeEnabled();
   await expect(page.getByTestId(`abwab-archive-restore-hint-${child.id}`)).toHaveCount(0);
 
   await page.getByTestId(`abwab-archive-restore-${child.id}`).click();
+  await page.getByTestId('qd-confirm-dialog-confirm').click();
   await expect(page.getByTestId(`abwab-archive-row-${child.id}`)).toHaveCount(0);
 
   await page.getByTestId('abwab-page-archive-toggle').click();
@@ -105,15 +108,22 @@ test('a child archived under an archived parent shows a disabled restore until t
   await expect(page.getByTestId(`abwab-tree-row-${child.id}`)).toBeVisible();
 });
 
-test('restoring a door whose section was deleted meanwhile announces the detach', async ({
+test('restoring a door whose section was deleted meanwhile demands a destination', async ({
   page,
   abwabSandbox,
   request,
 }) => {
-  const door = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('detach') });
+  const door = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('stranded') });
   await abwabSandbox.archiveDoor(door.id);
 
-  // The section is now empty of live doors, so this delete is legal — and it is the one
+  // A replacement section, created BEFORE the original is retired — the restore has nowhere to
+  // go otherwise, and the modal would only be able to say so.
+  const replacementName = abwabSandbox.uniqueName('replacement-section');
+  const replacementRes = await request.post(`${API_BASE}/api/abwab/sections`, { data: { name: replacementName } });
+  expect(replacementRes.ok(), `replacement section create failed (${replacementRes.status()})`).toBeTruthy();
+  const replacementId = (await replacementRes.json())['data']['id'] as number;
+
+  // The original section is now empty of live doors, so this delete is legal — and it is the one
   // step the shared fixture does not do on the test's behalf (R20: this flow deliberately
   // removes its own section mid-test, so the fixture's teardown has nothing left to
   // delete and must tolerate the 404 rather than failing).
@@ -121,6 +131,21 @@ test('restoring a door whose section was deleted meanwhile announces the detach'
   expect(deleteRes.ok(), `section delete should succeed once empty of live doors (${deleteRes.status()})`).toBeTruthy();
 
   await page.goto(`/abwab?archive=1`);
+  // The archive view is tabless, so a retired section changes nothing about where the door is
+  // listed — only what its restore has to ask for.
+  await expect(page.getByTestId(`abwab-archive-row-${door.id}`)).toBeVisible();
+
   await page.getByTestId(`abwab-archive-restore-${door.id}`).click();
-  await expect(page.getByTestId('abwab-announcer')).toHaveText('استُرجع الباب خارج قسمه المحذوف');
+  await expect(page.getByTestId('abwab-door-restore-modal-retired-hint')).toBeVisible();
+  await expect(page.getByTestId('qd-confirm-dialog-confirm')).toBeDisabled();
+
+  await page.getByTestId('abwab-door-restore-modal-section-select').selectOption(String(replacementId));
+  await page.getByTestId('qd-confirm-dialog-confirm').click();
+
+  await expect(page.getByTestId('qd-confirm-dialog')).toBeHidden();
+  await expect(page.getByTestId('abwab-announcer')).toHaveText('استُرجع الباب');
+
+  // It landed in the replacement section, not merely somewhere: the door is in that tab's tree.
+  await page.goto(`/abwab?section=${replacementId}`);
+  await expect(page.getByTestId(`abwab-tree-row-${door.id}`)).toBeVisible();
 });

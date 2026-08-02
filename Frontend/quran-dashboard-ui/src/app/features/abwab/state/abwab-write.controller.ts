@@ -18,7 +18,6 @@ import { ReorderDoorBody } from '../../../core/api/generated/models/reorder-door
 import { AbwabBulkDoorRef } from '../../../core/api/generated/models/abwab-bulk-door-ref';
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
 import { AbwabSectionDto } from '../../../core/api/generated/models/abwab-section-dto';
-import { AbwabRestoredDoorDto } from '../../../core/api/generated/models/abwab-restored-door-dto';
 import { AbwabDoorRelationDto } from '../../../core/api/generated/models/abwab-door-relation-dto';
 import { AddDoorRelationsBody } from '../../../core/api/generated/models/add-door-relations-body';
 
@@ -154,12 +153,15 @@ export class AbwabWriteController {
     return this.dispatch(this.api.archiveDoor(id, { version }), id);
   }
 
-  restoreDoor(id: number, version: number): Observable<AbwabWriteOutcome<AbwabRestoredDoorDto>> {
-    return this.api.restoreDoor(id, { version }).pipe(
-      map((response) => this.handleSuccess(response, (data) => {
-        this.announcementState.set(data.detachedFromArchivedSection ? ABWAB_LABELS.restoreDetachedAnnouncement : null);
+  // sectionId is the restore destination and is omitted for the ordinary "back where it came from"
+  // case; a root whose section was retired meanwhile has no such place and the backend 400s without
+  // one, which is what the restore modal asks for.
+  restoreDoor(id: number, options: { sectionId?: number; version: number }): Observable<AbwabWriteOutcome<AbwabDoorDto>> {
+    return this.api.restoreDoor(id, options).pipe(
+      map((response) => this.handleSuccess(response, () => {
+        this.announcementState.set(ABWAB_LABELS.restoreAnnouncement);
       })),
-      catchError((err: unknown) => of(this.handleFailure<AbwabRestoredDoorDto>(err, id))),
+      catchError((err: unknown) => of(this.handleFailure<AbwabDoorDto>(err, id))),
     );
   }
 

@@ -10,7 +10,8 @@ function node(overrides: Partial<AbwabNode> & { id: number; name: string }): Abw
     description: null,
     representativeAyahText: null,
     aliases: [],
-    sectionId: null,
+    sectionId: 1,
+    sectionRetired: false,
     parentId: null,
     orderValue: overrides.id,
     globalOrderValue: overrides.id,
@@ -28,13 +29,14 @@ function node(overrides: Partial<AbwabNode> & { id: number; name: string }): Abw
 
 const SECTIONS: AbwabTreeSectionDto[] = [
   { id: 1, name: 'اللغة العربية', orderValue: 1, version: 1, doorsInScopeCount: 2 },
+  { id: 2, name: 'العقيدة', orderValue: 2, version: 1, doorsInScopeCount: 1 },
 ];
 
-// section 1: root(1) -> child(2); section-less: root(3)
+// section 1: root(1) -> child(2); section 2: root(3)
 const CHILD = node({ id: 2, name: 'الفرع', parentId: 1, sectionId: 1, depth: 1 });
 const ROOT = node({ id: 1, name: 'الأصل', sectionId: 1, children: [CHILD] });
-const FREE_ROOT = node({ id: 3, name: 'بلا قسم', sectionId: null });
-const LIVE_ROOTS = [ROOT, FREE_ROOT];
+const OTHER_SECTION_ROOT = node({ id: 3, name: 'باب في قسم آخر', sectionId: 2 });
+const LIVE_ROOTS = [ROOT, OTHER_SECTION_ROOT];
 
 function render(overrides: Record<string, unknown> = {}) {
   getTestBed().resetTestingModule();
@@ -52,12 +54,15 @@ function render(overrides: Record<string, unknown> = {}) {
 }
 
 describe('AbwabMovePickerComponent — M30', () => {
-  it('stage one lists every real section plus «بلا قسم»', () => {
+  // No «بلا قسم» row: every door belongs to a section, so "no section" is not a destination and
+  // offering it would only produce a 400.
+  it('stage one lists the real sections and nothing else', () => {
     const root = render().nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="abwab-move-picker-section-1"]')?.textContent).toContain(
       'اللغة العربية',
     );
-    expect(root.querySelector('[data-testid="abwab-move-picker-section-none"]')?.textContent).toContain('بلا قسم');
+    expect(root.querySelector('[data-testid="abwab-move-picker-section-2"]')?.textContent).toContain('العقيدة');
+    expect(root.querySelector('[data-testid="abwab-move-picker-section-none"]')).toBeNull();
   });
 
   it('stage two, after picking a section, offers «كباب رئيسي» plus that section’s doors, indented by depth', () => {
@@ -108,17 +113,54 @@ describe('AbwabMovePickerComponent — M30', () => {
     expect(confirmed).toEqual([{ targetParentId: 1, targetSectionId: 1 }]);
   });
 
-  it('«بلا قسم» stage one maps to a null section scope', () => {
-    const fixture = render();
-    const confirmed: unknown[] = [];
-    fixture.componentInstance.confirmed.subscribe((v) => confirmed.push(v));
+  describe('stage-one auto-selection', () => {
+    // A single move already knows the answer — the door's own section — so asking would be a step
+    // that only ever has one right response.
+    it('skips stage one for a single door, landing on its own section', () => {
+      const fixture = render({ movedSectionIds: [1], excludedIds: new Set([1, 2]) });
+      const root = fixture.nativeElement as HTMLElement;
 
-    (fixture.nativeElement.querySelector('[data-testid="abwab-move-picker-section-none"]') as HTMLElement).click();
-    fixture.detectChanges();
-    (fixture.nativeElement.querySelector('[data-testid="abwab-move-picker-dest-asmain"]') as HTMLElement).click();
-    (fixture.nativeElement.querySelector('[data-testid="abwab-move-picker-confirm"]') as HTMLElement).click();
+      expect(root.querySelector('[data-testid="abwab-move-picker-section-1"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-move-picker-dest-asmain"]')).toBeTruthy();
+    });
 
-    expect(confirmed).toEqual([{ targetParentId: null, targetSectionId: null }]);
+    it('skips stage one for a bulk selection that shares one section', () => {
+      const fixture = render({ movedSectionIds: [1, 1, 1] });
+
+      expect(
+        (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-move-picker-dest-asmain"]'),
+      ).toBeTruthy();
+    });
+
+    // A selection spanning sections has no shared answer, so it is asked rather than guessed at.
+    it('asks stage one for a bulk selection spanning sections', () => {
+      const fixture = render({ movedSectionIds: [1, 2] });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-move-picker-section-1"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-move-picker-dest-asmain"]')).toBeNull();
+    });
+
+    // Auto-selection is a starting point, not a commitment.
+    it('lets an auto-selected section be changed', () => {
+      const fixture = render({ movedSectionIds: [1] });
+      (fixture.nativeElement.querySelector('[data-testid="abwab-move-picker-change-section"]') as HTMLElement).click();
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-move-picker-section-2"]')).toBeTruthy();
+    });
+
+    it('confirms the auto-selected section without a stage-one click', () => {
+      const fixture = render({ movedSectionIds: [2] });
+      const confirmed: unknown[] = [];
+      fixture.componentInstance.confirmed.subscribe((v) => confirmed.push(v));
+
+      (fixture.nativeElement.querySelector('[data-testid="abwab-move-picker-dest-asmain"]') as HTMLElement).click();
+      (fixture.nativeElement.querySelector('[data-testid="abwab-move-picker-confirm"]') as HTMLElement).click();
+
+      expect(confirmed).toEqual([{ targetParentId: null, targetSectionId: 2 }]);
+    });
   });
 
   it('T402 — the destination order follows liveRoots’ given order (the superset’s global order), not a per-section re-sort by orderValue', () => {
@@ -182,7 +224,7 @@ describe('AbwabMovePickerComponent — M30', () => {
 
       expect(dialog.hasAttribute('cdkTrapFocus')).toBe(true);
       expect(dialog.hasAttribute('cdkTrapFocusAutoCapture')).toBe(true);
-      expect(dialog.querySelector('button')).toBe(root.querySelector('[data-testid="abwab-move-picker-section-none"]'));
+      expect(dialog.querySelector('button')).toBe(root.querySelector('[data-testid="abwab-move-picker-section-1"]'));
     });
 
     it('keeps the actions out of the scrolling body', () => {

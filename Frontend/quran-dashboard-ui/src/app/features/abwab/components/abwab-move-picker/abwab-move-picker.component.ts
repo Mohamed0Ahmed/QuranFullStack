@@ -8,7 +8,8 @@ import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-loc
 
 export interface AbwabMoveDestination {
   readonly targetParentId: number | null;
-  readonly targetSectionId: number | null;
+  /** Never null: a door always lands in a section, and the backend refuses a root move without one. */
+  readonly targetSectionId: number;
 }
 
 interface AbwabMovePickerRow {
@@ -17,9 +18,14 @@ interface AbwabMovePickerRow {
 }
 
 /**
- * Two-stage move destination picker (plan-slice-b.md T505): stage one picks a section
- * (including «بلا قسم»), stage two picks a destination door inside it or «كباب رئيسي»
- * scoped to that section. Shared by single and bulk move (the caller decides which
+ * Two-stage move destination picker (plan-slice-b.md T505): stage one picks a section, stage two
+ * picks a destination door inside it or «كباب رئيسي» scoped to that section. There is no
+ * «بلا قسم» — every door belongs to a section, so "no section" is not a destination.
+ *
+ * Stage one auto-selects when the answer is already known: the door's own section for a single
+ * move, the shared one for a bulk move where every selected door agrees. A bulk selection spanning
+ * sections has no such answer and is asked. The auto-selection is a starting point, not a
+ * commitment — stage two can always go back. Shared by single and bulk move (the caller decides which
  * write to dispatch on `confirmed`). The destination list renders flat, indented by
  * depth, rather than a collapsible tree — every door at any depth is already a valid
  * "nest anywhere" target, so there is nothing a collapse/expand toggle would add here
@@ -50,6 +56,8 @@ export class AbwabMovePickerComponent {
   readonly sections = input<readonly AbwabTreeSectionDto[]>([]);
   readonly liveRoots = input<readonly AbwabNode[]>([]);
   readonly excludedIds = input<ReadonlySet<number>>(new Set());
+  /** The current sections of the doors being moved — one entry per door, duplicates included. */
+  readonly movedSectionIds = input<readonly number[]>([]);
   readonly titleText = input('');
 
   readonly closed = output<void>();
@@ -63,7 +71,7 @@ export class AbwabMovePickerComponent {
   protected readonly pickedParentId = signal<number | null>(null);
 
   protected get descriptionText(): string { return ABWAB_LABELS.movePickerDescription; }
-  protected get noSectionLabel(): string { return ABWAB_LABELS.noSectionOption; }
+  protected get changeSectionLabel(): string { return ABWAB_LABELS.movePickerChangeSection; }
   protected get asMainDoorLabel(): string { return ABWAB_LABELS.asMainDoorOption; }
   protected get confirmLabel(): string { return ABWAB_LABELS.moveConfirm; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
@@ -95,20 +103,32 @@ export class AbwabMovePickerComponent {
   });
 
   constructor() {
-    // Reset to stage one whenever the picker (re)opens for a new selection.
+    // Reset whenever the picker (re)opens for a new selection, then skip stage one when the
+    // selection already answers it — one door, or several that agree.
     effect(() => {
-      if (this.open()) {
-        untracked(() => {
-          this.stage.set('section');
-          this.sectionPicked.set(false);
-          this.pickedSectionId.set(null);
-          this.pickedParentId.set(null);
-        });
+      if (!this.open()) {
+        return;
       }
+      const movedSectionIds = this.movedSectionIds();
+      untracked(() => {
+        this.stage.set('section');
+        this.sectionPicked.set(false);
+        this.pickedSectionId.set(null);
+        this.pickedParentId.set(null);
+
+        const distinct = new Set(movedSectionIds);
+        if (distinct.size === 1) {
+          this.pickSection([...distinct][0]);
+        }
+      });
     });
   }
 
-  protected pickSection(sectionId: number | null): void {
+  protected backToSections(): void {
+    this.stage.set('section');
+  }
+
+  protected pickSection(sectionId: number): void {
     this.pickedSectionId.set(sectionId);
     this.sectionPicked.set(true);
     this.pickedParentId.set(null);
@@ -123,8 +143,13 @@ export class AbwabMovePickerComponent {
     this.pickedParentId.set(id);
   }
 
+  // Stage two is only reachable once a section is picked, so the section is never null here.
   protected confirm(): void {
-    this.confirmed.emit({ targetParentId: this.pickedParentId(), targetSectionId: this.pickedSectionId() });
+    const targetSectionId = this.pickedSectionId();
+    if (targetSectionId === null) {
+      return;
+    }
+    this.confirmed.emit({ targetParentId: this.pickedParentId(), targetSectionId });
   }
 
   protected cancel(): void {

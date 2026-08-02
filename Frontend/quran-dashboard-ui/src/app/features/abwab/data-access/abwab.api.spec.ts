@@ -8,7 +8,6 @@ import { AbwabApi } from './abwab.api';
 import { AbwabTreeDto } from '../../../core/api/generated/models/abwab-tree-dto';
 import { AbwabSectionDto } from '../../../core/api/generated/models/abwab-section-dto';
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
-import { AbwabRestoredDoorDto } from '../../../core/api/generated/models/abwab-restored-door-dto';
 
 const BASE = `${environment.apiBaseUrl}/api/abwab`;
 
@@ -227,14 +226,30 @@ describe('AbwabApi', () => {
     expect(await promise).toBeNull();
   });
 
-  it('restoreDoor sends POST /api/abwab/doors/{id}/restore', async () => {
+  it('restoreDoor sends POST /api/abwab/doors/{id}/restore and returns the door itself', async () => {
     const promise = firstValueFrom(api.restoreDoor(1, { version: 2 }));
     const req = httpMock.expectOne(`${BASE}/doors/1/restore`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ version: 2 });
 
-    const response = ok<AbwabRestoredDoorDto>({ door: SAMPLE_DOOR, detachedFromArchivedSection: false });
+    const response = ok<AbwabDoorDto>(SAMPLE_DOOR);
     req.flush(response);
     await expect(promise).resolves.toEqual(response);
+  });
+
+  // The key must be genuinely ABSENT, not null: the backend reads an absent sectionId as "back
+  // where it came from" and a null one as a section-less door, which it refuses.
+  it('restoreDoor carries a destination section only when one is stated', async () => {
+    const withDestination = firstValueFrom(api.restoreDoor(1, { sectionId: 4, version: 2 }));
+    const req = httpMock.expectOne(`${BASE}/doors/1/restore`);
+    expect(req.request.body).toEqual({ sectionId: 4, version: 2 });
+    req.flush(ok<AbwabDoorDto>(SAMPLE_DOOR));
+    await withDestination;
+
+    const without = firstValueFrom(api.restoreDoor(1, { version: 2 }));
+    const plainReq = httpMock.expectOne(`${BASE}/doors/1/restore`);
+    expect('sectionId' in plainReq.request.body).toBe(false);
+    plainReq.flush(ok<AbwabDoorDto>(SAMPLE_DOOR));
+    await without;
   });
 });

@@ -52,3 +52,10 @@
   display: flex;
   gap: var(--qd-space-2);
 }
+
+/* Sits above the destination list rather than in the footer: it navigates the picker's own stages,
+   which is not the same kind of action as confirm/cancel. */
+.abwab-move-picker__back {
+  align-self: flex-start;
+  margin-block-end: var(--qd-space-2);
+}

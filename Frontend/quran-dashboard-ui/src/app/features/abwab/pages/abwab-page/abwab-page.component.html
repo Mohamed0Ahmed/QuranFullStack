@@ -280,6 +280,7 @@
   [parentId]="overlays.modalParentId()"
   [parentName]="overlays.modalParentName()"
   [activeSectionId]="activeSectionId()"
+  [sections]="sections()"
   (saved)="onDoorModalSaved()"
   (closed)="onDoorModalClosed()"
 />
@@ -289,9 +290,18 @@
   [sections]="sections()"
   [liveRoots]="pickerLiveRoots()"
   [excludedIds]="overlays.moveExcludedIds()"
+  [movedSectionIds]="overlays.moveSectionIds()"
   [titleText]="overlays.moveTitleText()"
   (closed)="onMovePickerClosed()"
   (confirmed)="onMoveConfirmed($event)"
+/>
+
+<qd-abwab-door-restore-modal
+  [door]="overlays.restoreTarget()"
+  [ancestors]="overlays.restoreAncestors()"
+  [sections]="sections()"
+  (closed)="overlays.closeRestoreModal()"
+  (restored)="overlays.closeRestoreModal()"
 />
 
 <qd-abwab-relations-modal

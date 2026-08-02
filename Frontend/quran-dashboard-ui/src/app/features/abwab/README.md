@@ -135,11 +135,22 @@ nine), four of them reads.
   This panel is the second of the contract's three add-child paths; the tree row's own
   `＋` and the row menu are the other two.
 - `components/abwab-move-picker/` — the two-stage destination picker shared by single
-  and bulk move: stage one picks a section (including «بلا قسم»), stage two picks a
-  destination door in it or «كباب رئيسي». Renders flat, indented by depth, rather than
+  and bulk move: stage one picks a section, stage two picks a destination door in it or
+  «كباب رئيسي». There is no «بلا قسم» — every door belongs to a section, so "no section" is
+  not a destination. Stage one auto-selects when the selection already answers it (the door's
+  own section for a single move, the shared one when a bulk selection agrees) and is asked only
+  when a bulk selection spans sections; the auto-selection is changeable from stage two. Renders flat, indented by depth, rather than
   a collapsible tree (every door at any depth is already a valid target — see
   Gotchas). `excludedIds` is the moved door(s) plus every descendant, the client half of
   the cycle guard; the server's `409 WouldCycle` stays authoritative.
+- `components/abwab-door-restore-modal/` — confirms restoring an ARCHIVED DOOR, on
+  `qd-confirm-dialog`. Not `abwab-modal-restore`, which reopens a minimized overlay. For a root
+  whose section was retired meanwhile (`AbwabNode.sectionRetired`) it demands a live destination:
+  sections have no restore route, so the old one cannot be reinstated, and the backend refuses
+  the write without one — the archive view's button would otherwise produce an unresolvable 400.
+  A child has no question to answer; it returns under its live parent, in that parent's current
+  section. Success announces «استُرجع الباب» through the existing aria-live announcer; a failure
+  keeps the modal open with the message inline.
 - `components/abwab-sections-modal/` — list / add / rename / reorder / delete-empty, with full
   dialog semantics and a dirty guard as of Slice C (a typed section name or an altered
   rename draft raises the door modal's confirm strip; an opened-but-unedited rename is
@@ -271,7 +282,7 @@ nine), four of them reads.
 
 | Key | Values | Absent means |
 |---|---|---|
-| `section` | positive int | «كل الأبواب» — every door, including section-less ones |
+| `section` | positive int | «كل الأبواب» — every door |
 | `view` | `tree` \| `cards` | `tree` |
 | `archive` | `1` | the live view |
 | `door` | positive int | no selection |
@@ -424,7 +435,12 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **`abwab-sections-modal` and `abwab-move-picker` carry `qdModalScrollLock` as of T905** — the
   two abwab modals that previously held no lock at all. Every abwab modal now participates
   uniformly in the chrome-inert rule above; do not add a seventh abwab modal without it.
-- **All six modals share one shell, and it is not negotiable per modal (Slice C).** Every one is
+- **All six AUTHORING modals share one shell, and it is not negotiable per modal (Slice C).**
+  Scoped deliberately: `abwab-door-restore-modal` is a CONFIRMATION, not an authoring modal, and
+  composes the shared `qd-confirm-dialog` primitive (`shared/ui/confirm-dialog/`,
+  UI_STYLE_SYSTEM §17) instead — a form plus its dirty guard is a different contract from a
+  yes/no decision. Do not migrate confirmations onto this shell, or authoring modals off it.
+  Every authoring one is
   `.qd-modal.qd-modal--fixed` with `__head`/`__body`/`__foot`, `role="dialog"`,
   `aria-modal="true"`, an `aria-labelledby` pointing at its own `<h3>`, `qdModalScrollLock`,
   Escape-to-close, and `cdkTrapFocus cdkTrapFocusAutoCapture`. Consequences worth knowing before
@@ -611,11 +627,13 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   the second is **doors in the currently open tab**, reading the backend-computed
   `AbwabTreeSectionDto.doorsInScopeCount` for a specific section tab, or falling back to the same
   live-only total on «كل الأبواب» itself (`countAbwabDoorsInOpenScope`). **The two numbers are
-  live-only by definition — the same choice every other count in this feature makes — and are
-  deliberately not reconcilable by arithmetic**: `AbwabNode.sectionId` is `number | null`, so a
-  live door can belong to no section, meaning Σ `doorsInScopeCount` over every section can sit
-  below the total. Do not "fix" this by summing sections instead of counting live doors, and do
-  not add a test asserting the two sum. Both stats stay mounted through loading/error/loaded and
+  live-only by definition — the same choice every other count in this feature makes.** They now
+  DO reconcile (`AbwabNode.sectionId` is a plain `number`, so Σ `doorsInScopeCount` over every
+  section equals the total), but the stance is unchanged for a different reason: summing sections
+  to get the total would recompute client-side what the backend already answered, and fork from
+  its definition of "in scope at any depth" the moment the two drift. Do not "fix" this by
+  summing sections instead of counting live doors, and do not add a test asserting the two sum —
+  it would be redundant, not impossible. Both stats stay mounted through loading/error/loaded and
   through every tab switch (never conditionally unmounted), matching every other §17 composition
   in this feature — an unmounting stat would move the toolbar under it exactly the way the old
   per-branch loaders used to (§4.6-adjacent). Neither label goes through `countPhrase`: the shared
@@ -721,7 +739,11 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   stays unclaimed.
 - **The M10/M33 `sectionId` defense-in-depth stays in the door modal's shell**, not in the
   extracted `abwab-door-fields-form`. The form has no concept of a section and must not
-  acquire one; the shell is the layer that decides *whether* a section applies.
+  acquire one; the shell is the layer that decides *whether* a section applies. The shell now
+  also owns a real section `<select>`, shown in exactly one case — a root create from
+  «كل الأبواب», where there is no parent to derive from and no active tab to read. The backend
+  refuses that write without a section, so the selector turns a 400 into a choice. It stays in
+  the shell for the same reason the null-ing does; the form is still untouched.
 - **A `204 No Content` arrives as a `null` envelope, not `{isSuccess, data}`.** Single-door
   archive (`DELETE api/abwab/doors/{id}`), a successful section delete
   (`DELETE api/abwab/sections/{id}`), a relation delete

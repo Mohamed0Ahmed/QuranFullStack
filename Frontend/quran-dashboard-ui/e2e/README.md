@@ -88,10 +88,10 @@ project and the worker count yourself: `npx playwright test --project=abwab --wo
   a global count — each one only ever asserts on the ids its own sandbox produced (R18).
   **The residue that remains is archived doors, and it is permanent, not "self-cleaning":**
   there is no hard delete and no section restore, so every run leaves its sandbox doors
-  **archived** in the local dev DB forever, and any future restore of one reports
-  `detachedFromArchivedSection: true` since its section is gone. What must **not** remain after
-  a run is any live `e2e-sandbox-*` door or any `e2e-sandbox-*` section — either one is a
-  teardown bug, not accepted residue. This is accepted on a local dev DB with loose, id-scoped
+  **archived** in the local dev DB forever, and any future restore of one is refused until the
+  user names a live destination section, since the one it belonged to is gone. What must **not**
+  remain after a run is any live `e2e-sandbox-*` door or any `e2e-sandbox-*` section — either one
+  is a teardown bug, not accepted residue. This is accepted on a local dev DB with loose, id-scoped
   assertions; it would need to be revisited (per the same `TESTING_STRATEGY.md` §6 note) before
   this suite runs anywhere but a disposable local database.
 - Both servers boot with `reuseExistingServer`, and the backend readiness gate is

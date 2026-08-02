@@ -16,6 +16,7 @@ function node(id: number, name: string, children: readonly AbwabNode[] = []): Ab
     representativeAyahText: null,
     aliases: [],
     sectionId: 1,
+    sectionRetired: false,
     parentId: null,
     orderValue: id,
     globalOrderValue: id,
