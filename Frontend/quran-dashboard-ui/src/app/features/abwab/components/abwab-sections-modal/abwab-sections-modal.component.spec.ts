@@ -9,6 +9,7 @@ import { AbwabSectionsModalComponent } from './abwab-sections-modal.component';
 import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
 import { AbwabSectionDto } from '../../../../core/api/generated/models/abwab-section-dto';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
+import { ScrollLockService } from '../../../../shared/ui/modal-scroll-lock/scroll-lock.service';
 
 const SECTIONS: AbwabTreeSectionDto[] = [
   { id: 1, name: 'اللغة العربية', orderValue: 1, version: 3, doorsInScopeCount: 2 },
@@ -450,6 +451,21 @@ describe('AbwabSectionsModalComponent', () => {
       fixture.detectChanges();
 
       expect(trapOf(fixture).enabled).toBe(true);
+    });
+
+    // Two `qdModalScrollLock` holders are alive while the confirm is nested. The service is
+    // reference-counted for exactly this, but abwab is the first feature to actually nest, so
+    // this pins that closing the inner dialog does not unlock the page under the outer modal.
+    it('keeps page scroll locked when the nested delete confirm closes', () => {
+      const { fixture } = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-sections-modal-delete-1');
+      fixture.detectChanges();
+      click(root, 'abwab-sections-modal-delete-confirm-cancel');
+      fixture.detectChanges();
+
+      expect(TestBed.inject(ScrollLockService).isLocked()).toBe(true);
     });
 
     it('keeps the close control and the guard out of the scrolling body', () => {

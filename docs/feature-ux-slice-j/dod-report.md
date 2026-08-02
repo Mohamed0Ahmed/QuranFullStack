@@ -37,9 +37,16 @@ no migration, no route-smoke gate.
 | Tier A — door modal specs (phase 1) | 17/17 |
 | Tier B — full suite after phase 2 | 195 files, 2376 tests |
 | Tier B — full suite after phase 3 | 195 files, 2402 tests (+26 new cases) |
-| Tier C — full `npm test` | 195 files, 2402 tests |
+| Tier C — full `npm test` | 195 files, **2403** tests |
 | Tier C — `npm run build` | succeeds (pre-existing warnings only) |
+| E2E — the new width spec | 6/6 |
 | E2E — `--project=abwab --workers=1` | 31/31, including the three rewritten specs |
+
+The E2E line is the **`abwab` project only**, not the whole suite — `npm run e2e` is two
+sequential runs and the `default` project was not executed. That matters slightly more than
+usual here because `_components.scss` is global and the `default` project's surfaces compose it;
+the one non-abwab surface at risk (a words detail modal) is covered by a case in the new width
+spec, but a full `default` run would be stronger evidence. E2E is not a required tier either way.
 
 The fork cap (`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`) is baked into `npm test` and was
 preserved — every run above went through `npm test`, never a bare `ng test`.
@@ -66,10 +73,12 @@ numbers and a number is a better gate than an opinion. All 8 cases pass:
   production render with a non-transparent background — the danger role reached the button
   rather than falling back to the primary style.
 
-**Not verified:** the detail shell's 46rem was not measured (no direct route to it in the abwab
-e2e sandbox). Its immunity rests on the same `(0,2,0)`-beats-`(0,1,0)` specificity argument the
-confirm dialog and the 42rem hold-out both confirmed empirically, so the mechanism is verified
-even though that one consumer is not.
+**Not measured:** the detail shell's 46rem. It lives behind
+`features/words/entity-detail-overlay/`, which the abwab e2e sandbox has no route into. Its
+immunity is doubly established without a measurement: `.detail-modal-shell` is declared in a
+component stylesheet, so Angular's emulated encapsulation makes it `(0,2,0)` against the global
+`(0,1,0)` modifier — and more decisively, its template never receives the `--wide` class at all.
+The same specificity mechanism was confirmed empirically by the two modals that *were* measured.
 
 ## Divergence from the plan, and why
 
@@ -95,10 +104,14 @@ the message.
 
 ## Acceptance criteria
 
-Met: 1, 2, 3, 4, 5 (as reinterpreted above, and stated there), 5a, 5b, 6, 7, 8, 9, 11, 12, 13,
+Met: 1, 2, 4, 5 (as reinterpreted above, and stated there), 5a, 5b, 6, 7, 8, 9, 11, 12, 13,
 14 — 14 covering §17 (three entries plus the retrofit-list replacement), `styles/README.md`,
 the `_tokens.scss` pointer, the abwab README (four paragraphs: the shell inventory, the
 template-node justification, the stacking rule, the no-audit-columns gotcha), and TESTING_DEBT.
+
+Partially met: **3** — it names three modals as browser-verified. Two were measured (confirm
+dialog 448px, words detail modal 672px); the detail shell's 46rem was reasoned, not measured,
+for the reason above.
 
 Not met, blocked with Phase 4: **10, 10a** (badge header) — and the fifth abwab README
 paragraph (the badge paragraph, ~L104-115), which describes the header and was left alone.
@@ -107,6 +120,35 @@ Criterion 6 re-verified after the migration: `grep -rn 'role="alertdialog"' src/
 --include='*.html'` returns the primitive plus exactly the three dirty-discard strips (door,
 sections, template-node modals). The `features/words` and `features/mushaf` trees are clean,
 which is what licenses §17's now-unqualified "retrofit complete" sentence.
+
+## Required self-checks (CLAUDE.md)
+
+**Clean-code guard.** The one finding worth recording: four near-parallel `busy`/`error` signal
+pairs now exist (overlays controller, sections modal, templates page ×2). Deliberately not
+abstracted, per the pack's Rule of 3 and the Metz corollary — they share a *shape*, not a piece
+of knowledge. Each belongs to a different dialog in a different component, and the three differ
+in substance (the archive pair is shared by two dialogs and carries a context-menu origin flag;
+the sections pair keys on a section id; the templates pairs are plain). A shared abstraction
+would need per-caller branches on day one, which is the definition of the wrong one. The plan
+reached the same conclusion independently ("No wrapper components — each site inlines").
+
+Also checked: no orphaned imports or labels after the deletions (`trackingDataHeading` and its
+six siblings have zero remaining references); comments added are WHY-only.
+
+**Test-code self-check.** Two changes came out of it:
+
+- The width spec originally ran 3 viewports × 2 themes. No theme token participates in modal
+  geometry, so the three dark cases asserted nothing the light ones did. Collapsed to 3, and the
+  theme variant moved to the danger-tone case, where it is the thing under test.
+- Added a nested-scroll-lock case to the sections modal. `ScrollLockService` is reference-counted
+  and already correct, but abwab is the first feature to actually nest two `qdModalScrollLock`
+  holders, so "closing the inner dialog does not unlock the page under the outer modal" is now
+  pinned rather than inherited.
+
+One earlier spec was rewritten rather than repaired: the sections modal's focus-trap case
+asserted `dialog.hasAttribute('cdkTrapFocus')`, which a property binding necessarily removes. It
+now asserts the directive's `enabled` state through both halves of the gate — behavior instead of
+attribute presence.
 
 ## Behavior changes a reviewer should look for
 
