@@ -5,8 +5,10 @@
 - **Planning basis:** the read-only inspection performed 2026-08-02 in-session; every
   file:line below was re-verified against the working tree on that date.
 - **Authoritative decisions:** D1–D10 as locked by the user (restated inline where each
-  phase implements them). Where this plan had to interpret an ambiguity, the
-  interpretation is marked **[interpretation]** and must be re-confirmed at review.
+  phase implements them). Planning-time ambiguities are resolved and folded in: the
+  bulk-move auto-select rule was approved as written, and the restore section semantics
+  were corrected (child derives from the live parent; root re-section cascades to
+  archived descendants) — both 2026-08-02.
 
 ## 0. Non-goals (locked)
 
@@ -109,16 +111,24 @@ New exception `AbwabSectionRequiredException` in
        stored section is retired (`IsSectionArchivedAsync`, `:567`) → **throw
        `AbwabSectionRequiredException`** (400, restore-flavored message §5).
   3. **Child restore** (`door.ParentId != null`, parent live per existing rule):
-     - `sectionId` null → keep stored value (the cascade invariant keeps archived
-       descendants' sections synced with the parent — `CascadeSectionToDescendantsAsync`
-       comment `:537-539` — so stored == parent's).
-     - `sectionId` stated and ≠ parent's section → **throw
-       `AbwabSectionParentMismatchException`** (400, existing message). Stated and
-       equal → accepted.
+     - `sectionId` null → **derive from the live parent** (fresh read of
+       `parent.SectionId`), same semantics as child create. The stored value is
+       **never trusted**: a root restored into a different section while this
+       descendant sat archived from a separate, earlier archive operation leaves the
+       stored value pointing at the old section — present but wrong, invisible to
+       NOT NULL.
+     - `sectionId` stated and equal to the parent's current section → accepted;
+       stated and ≠ parent's → **throw `AbwabSectionParentMismatchException`** (400,
+       existing message).
   4. The detach block (`:440-443`) and descendant-detach block (`:462-464`) are
      **deleted**. When a root restore resolves to a section different from the stored
-     one, the resolved section is **cascaded to the restored descendants** (same loop
-     that used to null them), preserving the "detached/re-sectioned whole" invariant.
+     one, the re-section runs through **`CascadeSectionToDescendantsAsync`
+     (`:540-565`)** — the same helper move uses, which deliberately includes ARCHIVED
+     descendants — **not** a restore-bounded loop. The restore loop's archive-timestamp
+     fingerprint (`:452`, `d.DeletedAtUtc == archivedAt.Value`) restores only the rows
+     this archive claimed; the section cascade must also reach the rows it does NOT
+     restore, or a separately-archived descendant keeps the old section and resurfaces
+     wrong on its own later restore.
   5. Return `AbwabDoorDto` directly; `AbwabRestoredDoorDto` and the
      `DetachedFromArchivedSection` chain die (writer `:494`, `RestoreDoorOutcome.Success`
      shape, controller mapping, `Controllers/README.md` paragraph, frontend
@@ -199,8 +209,7 @@ New `Backend/scripts/wipe-abwab` (bash, `set -euo pipefail`, sources
   its a11y first-tabbable pin (`spec:178`) are **removed**. Auto-select: single move →
   the moved door's current section; bulk move → the common section when every selected
   door shares one, otherwise no auto-selection and an explicit pick is required
-  **[interpretation — D7 says "the door's current section"; bulk selections can span
-  sections, so "common-or-explicit" is this plan's reading]**. Auto-selection is
+  (common-section-or-explicit-pick — approved 2026-08-02). Auto-selection is
   changeable; stage two only unlocks after a section is (auto- or hand-)picked, as
   today (`ts:72-74`). `confirmed` emits `targetSectionId: number` (never null).
 - Door modal (D8): the **shell** (`abwab-door-modal.component.ts`) gains a required
@@ -261,6 +270,15 @@ New `Backend/scripts/wipe-abwab` (bash, `set -euo pipefail`, sources
   `AbwabDoorDto` outcome; the `detachedFromArchivedSection` branch (`:157-164`) is
   deleted.
 
+**Archive-view placement of a retired-section archived door (decided, consumed by task
+5.9):** the archive view is **tabless** — section controls are hidden in archive mode
+(`abwab-toolbar.component.html:2`, `:52`, gated on `hideSectionControls`; rationale at
+`abwab-toolbar.component.ts:32-35`: "The archive view has no live section grouping").
+An archived door whose section is retired therefore appears in the same flat archive
+list as every other archived door; `sectionRetired` drives ONLY the restore modal's
+required-destination state, never list membership. Task 5.9's e2e asserts the door is
+present in that flat list before opening the restore modal.
+
 ## 3. Interaction matrix (standing rule — each cell is a required assertion)
 
 Legend: cells name the expected outcome; **bold** cells are behavior this feature
@@ -275,11 +293,20 @@ there.
 | M4 move single → under parent | 200, inherits parent's section; stated value ignored (existing asymmetry, unchanged) | ignored (unchanged) | n/a | 200 inherits | 404 | 404 target parent | 200 (parent's section) |
 | **M5 bulk-move → root** | 200 all, all in stated section | n/a | 404 | **400 before door checks** (resolve-first order, §2.2) | all-or-nothing 409/404 unchanged | n/a | **400** |
 | M6 archive (single + bulk) | 204/200, `SectionId` untouched on every archived row | n/a | n/a | n/a | idempotence rules unchanged | subtree sweep unchanged | n/a |
-| **M7 restore root** | 200, stored section kept when body null | body stated → that section wins (re-section) + cascades to restored descendants | **400 `AbwabDoorRestoreSectionRequired` when body null; 200 into stated live section otherwise** | body null + stored live → 200 keep | — | n/a | **400 when destination required** |
-| **M8 restore child** | 200, keeps stored (= parent's) section; body null | **400 mismatch when body states a section ≠ parent's** | n/a (parent live ⇒ section live) | 200 | — | 409 parent-first (existing, unchanged) | n/a |
+| **M7 restore root** | 200, stored section kept when body null | body stated → that section wins (re-section) + **cascades via `CascadeSectionToDescendantsAsync` to ALL descendants, archived included (M-b)** | **400 `AbwabDoorRestoreSectionRequired` when body null; 200 into stated live section otherwise** | body null + stored live → 200 keep | — | n/a | **400 when destination required** |
+| **M8 restore child** | 200, **derives the live parent's CURRENT section when body null — stored value never trusted (M-a)** | **400 mismatch when body states a section ≠ parent's current; equal → accepted** | n/a (parent live ⇒ section live) | 200 derives | — | 409 parent-first (existing, unchanged) | n/a |
 | **M9 template apply** | 201-batch, every copied node at every depth carries the target's (now non-null) section | n/a | n/a (target is a live door ⇒ live section) | n/a (no section input exists) | 400 target-archived (existing) | n/a | n/a |
 | M10 section delete | 409 + «لا يمكن حذف القسم لاحتوائه على أبواب حالية» when live doors exist; 204 soft-delete otherwise — **byte-identical to today (D4)** | n/a | n/a | n/a | archived-only doors do NOT block (unchanged) | n/a | n/a |
 | **M11 tree snapshot** | every live door has `sectionId: number`; `sectionRetired: false` | n/a | archived door whose section retired → `sectionRetired: true` | n/a | archived doors included + flagged (unchanged) | n/a | empty sections/doors arrays (unchanged) |
+
+**Required cross-operation assertions (the defect the 2026-08-02 correction closed —
+both mandatory):**
+- **M-a:** archive a descendant in its own operation → archive the root → restore the
+  root into a DIFFERENT section → restore the descendant with body-null section → the
+  descendant lands in its parent's **current** section, not the stored one.
+- **M-b:** in the same scenario, immediately after the root's re-section and BEFORE the
+  descendant is restored, the still-archived descendant's row already carries the new
+  section (the cascade covered rows the restore did not claim).
 
 DB tier (defense in depth, D1): raw `INSERT` with `section_id = NULL` →
 `PostgresException 23502` (asserted in schema tests, §4 phase 3).
@@ -332,7 +359,7 @@ The DB column is still nullable (phase 3); existing local rows are untouched.
 | 2.6 | Restore contract: `RestoreDoorBody(int? SectionId, uint Version)`; command; interface `IAbwabDoorsWriter.cs:71`; decorator `InvalidatingAbwabDoorsWriter` | `.../Commands/Doors/RestoreDoor/*.cs`, `IAbwabDoorsWriter.cs`, `Caching/Abwab/InvalidatingAbwabDoorsWriter.cs` |
 | 2.7 | Outcomes + controller mappings (§2.2): `SectionRequired` on create/move/bulk-move/restore; restore `SectionNotFound` → 404, `SectionParentMismatch` → 400 | `CreateDoor/MoveDoor/BulkMoveDoors/RestoreDoor` handlers + outcomes; `AbwabDoorsController.cs` |
 | 2.8 | Widen the smoke abwab reset from 3 to all six tables (test infra, aligns with D9's canonical set) | `SmokeApiFixture.cs:93-94` |
-| 2.9 | Behavior-test rewrite per §8 strategy + new matrix tests: M1/M3/M5 rejection cases, M7 (`RestoreAsync_RootWhoseSectionRetired_WithoutDestination_Throws`, `RestoreAsync_WithDestination_ResectionsTheRestoredSubtree`, `RestoreAsync_RootKeepsStoredLiveSection_WhenBodyNull`), M8 (`RestoreAsync_Child_WithConflictingSection_Throws`, keep-inherit case) — replacing `:403`/`:430`; rewrite `:283` (section-less root test becomes "rejects null, sectioned roots share the global sequence"), `:198` (move-to-root now with section), `:500` unchanged in spirit (derive still works) | `Backend/tests/QuranDashboard.Tests/Abwab/AbwabDoorWriteBehaviorTests.cs` |
+| 2.9 | Behavior-test rewrite per §8 strategy + new matrix tests: M1/M3/M5 rejection cases, M7 (`RestoreAsync_RootWhoseSectionRetired_WithoutDestination_Throws`, `RestoreAsync_WithDestination_ResectionsTheRestoredSubtree`, `RestoreAsync_RootKeepsStoredLiveSection_WhenBodyNull`), M8 (`RestoreAsync_Child_WithConflictingSection_Throws`, `RestoreAsync_Child_DerivesLiveParentsSection_WhenBodyNull`), and the two mandatory cross-operation assertions: `RestoreAsync_RootIntoDifferentSection_ResectionsSeparatelyArchivedDescendants` (M-b) and `RestoreAsync_ChildRestoredAfterAncestorResection_DerivesParentsCurrentSection` (M-a) — replacing `:403`/`:430`; rewrite `:283` (section-less root test becomes "rejects null, sectioned roots share the global sequence"), `:198` (move-to-root now with section), `:500` unchanged in spirit (derive still works) | `Backend/tests/QuranDashboard.Tests/Abwab/AbwabDoorWriteBehaviorTests.cs` |
 | 2.10 | Smoke-test rewrite per §8 + new HTTP cases: `CreateDoor_RootWithoutSection_ReturnsBadRequest`, `MoveDoor_ToRootWithoutSection_ReturnsBadRequest`, `BulkMoveDoors_ToRootWithoutSection_ReturnsBadRequest`, `RestoreDoor_RootWhoseSectionRetired_WithoutDestination_ReturnsBadRequest`, `RestoreDoor_WithDestinationSection_RestoresIntoIt`, `RestoreDoor_Child_WithConflictingSection_ReturnsBadRequest`; rewrite `:950`/`:973` (detach pair → destination pair); envelope assertions on the new 400s (Arabic message, `errors: []`) | `Backend/tests/QuranDashboard.Tests/Smoke/SmokeAbwabWriteTests.cs` |
 | 2.11 | Tree-read tests: 5 `CreateAsync(null, null, …)` sites get a real section (§8) | `Backend/tests/QuranDashboard.Tests/Abwab/AbwabTreeReadTests.cs` |
 | 2.12 | Writes/Reads/Controllers README updates for the semantics that changed in THIS phase (§6 rows 1–3) | three READMEs |
@@ -527,9 +554,14 @@ Removed: `noSectionOption` (`:188`), `restoreDetachedAnnouncement` (`:204`).
 - **Smoke suite (~42 omitting call sites + 11 explicit):** change the private helper
   `CreateDoorAsync` (`SmokeAbwabWriteTests.cs:1071`) so that when `sectionId is null`
   **and** `parentId is null` it first creates a fresh uniquely-named section via
-  `POST api/abwab/sections` and uses its id. All 42 omitting call sites then compile and
-  pass unmodified; child-create sites keep inheriting. Only sites *asserting* null
-  section are rewritten by hand: `:709`, `:753` (assert the concrete origin section id
+  `POST api/abwab/sections` and uses its id. All 42 omitting call sites then compile
+  unmodified — but **"compiles" is not "passes": do not assume it.** Every root create
+  now brings an extra section row into existence, so after the helper change the whole
+  `SmokeAbwabWriteTests` family is run and any test that asserted **section counts,
+  section lists, or tree shape** (e.g. snapshot `sections` array length, per-section
+  root counts, order-scope expectations) is identified and reported by name in the
+  phase-2 evidence, then fixed individually. Child-create sites keep inheriting. Sites
+  *asserting* null section are rewritten by hand: `:709`, `:753` (assert the concrete origin section id
   instead of `BeNull`), the `:947` comment case, the `:950/:973` pair (→ destination
   pair, task 2.10), and the two bulk probes that send a null target while testing
   something else (`:713` unknown-door → create a section and pass it, expectation stays
@@ -604,9 +636,11 @@ obligations — offsets, aliases, all-or-nothing, 409 collisions — remain unpa
    PostgresException 23502 (schema tests green).
 5. The migration file contains exactly one AlterColumn, no default, no data SQL.
 6. Restore: root+retired+no-body-section → 400 with the restore message; root with
-   stated live section → 200 and the whole restored subtree sits in it; child with
-   conflicting stated section → 400 mismatch. `AbwabRestoredDoorDto` no longer exists
-   in the solution.
+   stated live section → 200 and the re-section reaches ALL descendants — archived
+   included — via `CascadeSectionToDescendantsAsync`; **child restore derives its
+   section from the live parent's CURRENT section (the stored value is never
+   trusted)**; child with conflicting stated section → 400 mismatch; M-a and M-b
+   green. `AbwabRestoredDoorDto` no longer exists in the solution.
 7. Section delete behavior byte-identical to today: 409 + «لا يمكن حذف القسم لاحتوائه
    على أبواب حالية» on live doors; 204 soft-delete otherwise;
    `e2e/abwab-structure.e2e.ts` untouched and green.
