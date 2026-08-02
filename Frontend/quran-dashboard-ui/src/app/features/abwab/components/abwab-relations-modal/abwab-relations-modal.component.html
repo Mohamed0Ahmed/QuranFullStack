@@ -72,7 +72,7 @@
                       [removeAriaLabel]="deleteAriaLabel(relation.otherDoorName)"
                       [labelClickable]="true"
                       [labelAriaLabel]="revealAriaLabel(relation.otherDoorName)"
-                      (remove)="remove(relation.id)"
+                      (remove)="remove(relation)"
                       (labelClick)="requestReveal(relation.otherDoorId)"
                     >
                       {{ relation.otherDoorName }}
@@ -173,4 +173,24 @@
       </footer>
     </section>
   </div>
+
+  @if (pendingDelete(); as relation) {
+    <qd-confirm-dialog
+      testIdPrefix="abwab-relations-delete-confirm"
+      [open]="true"
+      [titleText]="deleteConfirmTitle"
+      [confirmLabel]="deleteConfirmLabel"
+      [cancelLabel]="cancelLabel"
+      tone="danger"
+      [busy]="deleteBusy()"
+      (confirmed)="confirmRemove()"
+      (cancelled)="cancelRemove()"
+    >
+      <p>{{ deleteConfirmBody(relation) }}</p>
+      <p>{{ deleteConfirmSides }}</p>
+      @if (deleteError(); as message) {
+        <qd-state variant="error" [message]="message" data-testid="abwab-relations-delete-confirm-error" />
+      }
+    </qd-confirm-dialog>
+  }
 }

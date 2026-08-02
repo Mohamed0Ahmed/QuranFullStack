@@ -781,8 +781,11 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Not a modal shell.** Authoring modals (a form plus its dirty guard) keep their own shell —
   that is a different contract. This is for confirmations only.
 - **Retrofit complete.** Every destructive confirmation in the app now composes this primitive:
-  the abwab page's single and bulk archive confirms, the sections modal's delete, and the
-  templates page's template- and node-delete. The only surviving hand-written
+  the abwab page's single and bulk archive confirms, the sections modal's delete, the relations
+  modal's relation-delete, and the templates page's template- and node-delete. The relations one
+  is the primitive's first **new** consumer rather than a retrofit — no hand-written confirm
+  existed there; the chip deleted on click — and it nests above an open modal, the sections
+  modal's precedent, which needs no focus-trap gating on the host. The only surviving hand-written
   `role="alertdialog"` blocks are the three **dirty-discard strips** (door, sections, and
   template-node modals) — those are in-shell footers guarding unsaved work, not interrupting
   dialogs, and they deliberately stay where the unsaved work is. A new hand-rolled confirm is a

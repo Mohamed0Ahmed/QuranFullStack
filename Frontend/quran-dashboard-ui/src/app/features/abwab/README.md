@@ -645,7 +645,13 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   modal's doors-load failure, both wired to `AbwabSnapshotFacade.load()`, plus the relations
   modal's own load failure — because those are the transport reads abwab otherwise offers no
   recovery from at all. The relations modal's **write** errors deliberately carry no retry: the
-  add and remove controls are themselves that retry, and §17 allows one action per error. Any
+  add and remove controls are themselves that retry, and §17 allows one action per error. A
+  **relation delete confirms first** (`qd-confirm-dialog`, `tone: 'danger'`, nested above the open
+  modal): the body names **both** doors and the relation's display group, and states that the
+  delete removes the relation from both ends — «تُحذف من الطرفين» is empty wording without the two
+  names. That dialog owns its own write error, so a failed delete lands beside the decision that
+  caused it instead of on the modal's shared line, and it stays open, busy, until the write
+  resolves — which is also what closes the double-dispatch hole the bare chip had. Any
   successful load clears the message, so a recovered failure no longer sticks for the life of the
   open modal. The templates page's
   «اختر قالبًا» now means only what it says: `AbwabTemplatesFacade.selectedLoading` covers the

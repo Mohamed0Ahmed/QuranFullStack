@@ -6,6 +6,7 @@ import { AbwabDoorPickerComponent } from '../abwab-door-picker/abwab-door-picker
 import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
+import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
@@ -18,6 +19,7 @@ import {
   AbwabRelationGroupVm,
   AbwabRelationKind,
   AbwabRelationVm,
+  abwabRelationGroupKey,
   groupAbwabRelations,
 } from '../../models/abwab.models';
 import { AbwabDoorRelationDto } from '../../../../core/api/generated/models/abwab-door-relation-dto';
@@ -72,6 +74,7 @@ let nextModalId = 0;
   imports: [
     A11yModule,
     AbwabDoorPickerComponent,
+    ConfirmDialogComponent,
     ModalScrollLockDirective,
     QdChipComponent,
     QdSkeletonRowsComponent,
@@ -123,6 +126,14 @@ export class AbwabRelationsModalComponent {
   protected readonly direction = signal<AbwabRelationDirectionKind>('anchor-more');
   protected readonly pickedIds = signal<ReadonlySet<number>>(new Set());
 
+  /** The relation awaiting delete confirmation, or `null`. Its dialog nests above this modal — the
+   * `abwab-sections-modal` precedent, which needed no host trap gating. The whole VM is held, not
+   * the id: the body names the partner door and the group, and a refetch could be rewriting the
+   * list the dialog would otherwise re-derive them from. */
+  protected readonly pendingDelete = signal<AbwabRelationVm | null>(null);
+  protected readonly deleteBusy = signal(false);
+  protected readonly deleteError = signal<string | null>(null);
+
   protected readonly typeOptions = TYPE_ORDER;
   protected readonly titleId = `abwab-relations-modal-title-${nextModalId++}`;
 
@@ -138,6 +149,18 @@ export class AbwabRelationsModalComponent {
   protected get noneSelectedLabel(): string { return ABWAB_LABELS.relationNoneSelected; }
   protected get bulkAnchorHint(): string { return ABWAB_LABELS.relationsBulkAnchorHint; }
   protected get closeLabel(): string { return ABWAB_LABELS.relationsCloseButton; }
+  protected get deleteConfirmTitle(): string { return ABWAB_LABELS.relationDeleteConfirmTitle; }
+  protected get deleteConfirmLabel(): string { return ABWAB_LABELS.deleteConfirmButton; }
+  protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
+  protected get deleteConfirmSides(): string { return ABWAB_LABELS.relationDeleteConfirmSides; }
+
+  protected deleteConfirmBody(relation: AbwabRelationVm): string {
+    return ABWAB_LABELS.relationDeleteConfirmBody(
+      this.anchorDoorName(),
+      relation.otherDoorName,
+      abwabRelationGroupKey(relation),
+    );
+  }
 
   protected deleteAriaLabel(doorName: string): string { return ABWAB_LABELS.relationDeleteAriaLabel(doorName); }
   protected revealAriaLabel(doorName: string): string { return ABWAB_LABELS.relationRevealAriaLabel(doorName); }
@@ -260,6 +283,11 @@ export class AbwabRelationsModalComponent {
         this.relations.set([]);
         this.errorMessage.set(null);
         this.status.set('ready');
+        // The instance outlives a close (only the template is torn down), so a confirm still
+        // pending when the modal closed would render again over the next door's list.
+        this.pendingDelete.set(null);
+        this.deleteBusy.set(false);
+        this.deleteError.set(null);
         // Every read below is untracked on purpose: the count is snapshot-derived, so tracking it
         // would re-run this whole reset — draft picks included — the moment a write refreshes the
         // tree. The anchor id and `open` are the only legitimate triggers.
@@ -333,13 +361,39 @@ export class AbwabRelationsModalComponent {
     });
   }
 
-  protected remove(relationId: number): void {
+  /** Opens the confirm; it never dispatches. A relation delete is two-sided and irreversible from
+   * here, so it earns the same danger dialog every other destructive control in the feature uses. */
+  protected remove(relation: AbwabRelationVm): void {
+    this.pendingDelete.set(relation);
+    this.deleteError.set(null);
+  }
+
+  protected cancelRemove(): void {
+    if (this.deleteBusy()) {
+      return;
+    }
+    this.pendingDelete.set(null);
+    this.deleteError.set(null);
+  }
+
+  /** The dialog stays open until the write resolves, so a failure lands beside the decision that
+   * caused it rather than on the modal's shared line, which belongs to the read and the add. The
+   * busy guard plus the dialog's own backdrop close the double-dispatch hole the bare chip had. */
+  protected confirmRemove(): void {
+    const relation = this.pendingDelete();
+    if (relation === null || this.deleteBusy()) {
+      return;
+    }
     const anchorId = this.anchorDoorId();
-    this.deleteRelation()(relationId).subscribe((outcome) => {
+    this.deleteBusy.set(true);
+    this.deleteError.set(null);
+    this.deleteRelation()(relation.id).subscribe((outcome) => {
+      this.deleteBusy.set(false);
       if (outcome.kind !== 'success') {
-        this.errorMessage.set(outcome.message);
+        this.deleteError.set(outcome.message);
         return;
       }
+      this.pendingDelete.set(null);
       this.errorMessage.set(null);
       if (anchorId !== null) {
         this.refetchAfterWrite(anchorId);

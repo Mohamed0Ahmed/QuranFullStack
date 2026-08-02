@@ -1,4 +1,4 @@
-import type { AbwabModalKind } from './abwab.models';
+import type { AbwabModalKind, AbwabRelationGroupKey } from './abwab.models';
 
 // Every Arabic string the Abwab feature shows lives here (root CLAUDE.md: Arabic strings
 // live only in this file). Consumers read these through TDZ-safe getters — never
@@ -251,6 +251,23 @@ export const ABWAB_LABELS = {
   // The chip now carries two controls, so neither can rely on the chip's text to say what it
   // does — «إظهار في الشجرة» and «حذف العلاقة» have to be distinguishable by name alone.
   relationRevealAriaLabel: (doorName: string): string => `إظهار «${doorName}» في الشجرة`,
+  relationDeleteConfirmTitle: 'حذف العلاقة',
+  // Both doors are named because «تُحذف من الطرفين» is empty wording otherwise — the user has to
+  // see which two. The group label carries the direction for الشمولية, so there is no separate
+  // direction sentence.
+  relationDeleteConfirmBody: (anchorName: string, otherName: string, group: AbwabRelationGroupKey): string => {
+    switch (group) {
+      case 'similarity':
+        return `سيتم حذف علاقة التشابه بين «${anchorName}» و«${otherName}».`;
+      case 'opposition':
+        return `سيتم حذف علاقة التضاد بين «${anchorName}» و«${otherName}».`;
+      case 'more-comprehensive':
+        return `سيتم حذف علاقة الشمولية: «${otherName}» أكثر شمولية من «${anchorName}».`;
+      case 'less-comprehensive':
+        return `سيتم حذف علاقة الشمولية: «${otherName}» أقل شمولية من «${anchorName}».`;
+    }
+  },
+  relationDeleteConfirmSides: 'ستُحذف العلاقة من الطرفين معًا.',
   // The reveal's guard: defensively unreachable (the read hides relations whose endpoint is
   // archived), so this says what did not happen rather than blaming the user.
   revealUnavailable: 'تعذر إظهار الباب — لم يعد موجودًا في الشجرة',

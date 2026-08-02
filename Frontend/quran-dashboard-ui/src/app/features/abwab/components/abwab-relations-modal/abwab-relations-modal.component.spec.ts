@@ -59,6 +59,10 @@ interface RenderOptions {
   readonly liveRoots?: readonly AbwabNode[];
   /** Replaces the synchronous `of(...)` so the in-flight window is observable at all. */
   readonly loadStream?: Observable<AbwabRelationsLoadResult>;
+  readonly deleteOutcome?: AbwabWriteOutcome<never>;
+  /** Same purpose as `loadStream`, for the delete: the confirm's busy window only exists while
+   * the write is unresolved. */
+  readonly deleteStream?: Observable<AbwabWriteOutcome<unknown>>;
 }
 
 function render(options: RenderOptions = {}) {
@@ -68,7 +72,9 @@ function render(options: RenderOptions = {}) {
   const loadRelations = vi.fn().mockReturnValue(options.loadStream ?? of(loadResult));
   const refetchRelations = vi.fn().mockReturnValue(of(loadResult));
   const addRelations = vi.fn().mockReturnValue(of(options.addOutcome ?? { kind: 'success', data: [] }));
-  const deleteRelation = vi.fn().mockReturnValue(of({ kind: 'success', data: null }));
+  const deleteRelation = vi
+    .fn()
+    .mockReturnValue(options.deleteStream ?? of(options.deleteOutcome ?? { kind: 'success', data: null }));
 
   TestBed.configureTestingModule({ imports: [AbwabRelationsModalComponent] });
   const fixture = TestBed.createComponent(AbwabRelationsModalComponent);
@@ -244,8 +250,11 @@ describe('AbwabRelationsModalComponent', () => {
       expect(refetchRelations).toHaveBeenCalledWith(1);
       expect(loadRelations).toHaveBeenCalledTimes(1);
 
+      // Two gestures since slice L — the chip opens the confirm and the confirm dispatches — but
+      // the contract under test is unchanged: the delete's refresh takes the uncached read.
       (root.querySelector('[data-testid="qd-chip-remove"]') as HTMLElement).click();
       fixture.detectChanges();
+      click('abwab-relations-delete-confirm-confirm');
       expect(refetchRelations).toHaveBeenCalledTimes(2);
       expect(loadRelations).toHaveBeenCalledTimes(1);
     });
@@ -595,8 +604,11 @@ describe('AbwabRelationsModalComponent', () => {
       expect(revealed).toEqual([42]);
     });
 
+    // Slice L (L2) rewrote the second half of this case: the remove control no longer deletes, it
+    // opens a confirm. What is still worth pinning here is that the two chip controls stay
+    // independent — the delete-confirm behaviour itself is the describe below.
     it('keeps remove independent: removing does not reveal, revealing does not remove', () => {
-      const { fixture, root, deleteRelation } = render({
+      const { fixture, root, el, deleteRelation } = render({
         relations: [relation(10, 42, 'الصبر', 'similarity')],
       });
       const revealed: number[] = [];
@@ -605,12 +617,119 @@ describe('AbwabRelationsModalComponent', () => {
       (root.querySelector('[data-testid="qd-chip-label"]') as HTMLElement).click();
       fixture.detectChanges();
       expect(revealed).toEqual([42]);
+      expect(el('abwab-relations-delete-confirm')).toBeNull();
       expect(deleteRelation).not.toHaveBeenCalled();
 
       (root.querySelector('[data-testid="qd-chip-remove"]') as HTMLElement).click();
       fixture.detectChanges();
-      expect(deleteRelation).toHaveBeenCalledWith(10);
+      expect(el('abwab-relations-delete-confirm')).not.toBeNull();
       expect(revealed).toEqual([42]);
+    });
+  });
+
+  // Slice L (L2). This block replaces the old "remove deletes immediately" pin: a relation delete
+  // is two-sided and irreversible from this modal, so it now goes through `qd-confirm-dialog`.
+  describe('the delete confirm', () => {
+    const removeChip = (root: HTMLElement, fixture: { detectChanges: () => void }) => {
+      (root.querySelector('[data-testid="qd-chip-remove"]') as HTMLElement).click();
+      fixture.detectChanges();
+    };
+
+    it('opens the confirm instead of dispatching, and dispatches only once confirmed', () => {
+      const { fixture, root, el, click, deleteRelation } = render({
+        relations: [relation(10, 42, 'الصبر', 'similarity')],
+      });
+
+      removeChip(root, fixture);
+      expect(deleteRelation).not.toHaveBeenCalled();
+      expect(el('abwab-relations-delete-confirm')).not.toBeNull();
+
+      click('abwab-relations-delete-confirm-confirm');
+      expect(deleteRelation).toHaveBeenCalledWith(10);
+      expect(el('abwab-relations-delete-confirm')).toBeNull();
+    });
+
+    it('names both doors and the group in the body, and states the two-sided consequence', () => {
+      const { fixture, root, el } = render({
+        // anchor-more on the anchor puts the OTHER door in the «أقل شمولية» group, so the body
+        // must read "الصبر is LESS comprehensive than الباب المرساة".
+        relations: [relation(10, 42, 'الصبر', 'comprehensiveness', 'anchor-more')],
+      });
+
+      removeChip(root, fixture);
+
+      const body = el('abwab-relations-delete-confirm')?.textContent ?? '';
+      expect(body).toContain(
+        ABWAB_LABELS.relationDeleteConfirmBody('الباب المرساة', 'الصبر', 'less-comprehensive'),
+      );
+      expect(body).toContain(ABWAB_LABELS.relationDeleteConfirmSides);
+    });
+
+    it('cancels without dispatching and leaves the list untouched', () => {
+      const { fixture, root, el, click, deleteRelation } = render({
+        relations: [relation(10, 42, 'الصبر', 'similarity')],
+      });
+
+      removeChip(root, fixture);
+      click('abwab-relations-delete-confirm-cancel');
+
+      expect(deleteRelation).not.toHaveBeenCalled();
+      expect(el('abwab-relations-delete-confirm')).toBeNull();
+      expect(root.querySelectorAll('[data-testid="qd-chip-remove"]').length).toBe(1);
+    });
+
+    it('holds the dialog open while the write is out and refuses a second confirm', () => {
+      const pending = new Subject<AbwabWriteOutcome<unknown>>();
+      const { fixture, root, el, click, deleteRelation } = render({
+        relations: [relation(10, 42, 'الصبر', 'similarity')],
+        deleteStream: pending,
+      });
+
+      removeChip(root, fixture);
+      click('abwab-relations-delete-confirm-confirm');
+
+      expect(el('abwab-relations-delete-confirm')).not.toBeNull();
+      const confirmButton = el('abwab-relations-delete-confirm-confirm') as HTMLButtonElement;
+      expect(confirmButton.disabled).toBe(true);
+      expect((el('abwab-relations-delete-confirm-cancel') as HTMLButtonElement).disabled).toBe(true);
+      expect(confirmButton.getAttribute('aria-busy')).toBe('true');
+
+      // The guard, not just the disabled attribute: a programmatic second confirm must be inert.
+      click('abwab-relations-delete-confirm-confirm');
+      expect(deleteRelation).toHaveBeenCalledTimes(1);
+
+      pending.next({ kind: 'success', data: null });
+      fixture.detectChanges();
+      expect(el('abwab-relations-delete-confirm')).toBeNull();
+    });
+
+    it('renders a failed write inside the dialog and keeps it open', () => {
+      const { fixture, root, el, click, refetchRelations } = render({
+        relations: [relation(10, 42, 'الصبر', 'similarity')],
+        deleteOutcome: { kind: 'error', message: 'تعذر حذف العلاقة.' },
+      });
+
+      removeChip(root, fixture);
+      click('abwab-relations-delete-confirm-confirm');
+
+      expect(el('abwab-relations-delete-confirm')).not.toBeNull();
+      expect(el('abwab-relations-delete-confirm-error')?.textContent).toContain('تعذر حذف العلاقة.');
+      // The modal's shared line belongs to the read and the add; a delete failure must not land
+      // there, where its retry would offer to re-run the load.
+      expect(el('abwab-relations-modal-error')).toBeNull();
+      expect(refetchRelations).not.toHaveBeenCalled();
+      expect((el('abwab-relations-delete-confirm-confirm') as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    it('refetches the list after a successful delete', () => {
+      const { fixture, root, click, refetchRelations } = render({
+        relations: [relation(10, 42, 'الصبر', 'similarity')],
+      });
+
+      removeChip(root, fixture);
+      click('abwab-relations-delete-confirm-confirm');
+
+      expect(refetchRelations).toHaveBeenCalledWith(1);
     });
   });
 });
