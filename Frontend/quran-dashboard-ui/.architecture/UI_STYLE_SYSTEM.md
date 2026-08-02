@@ -753,8 +753,16 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   yes/no. Supersedes hand-written `role="alertdialog"` blocks: those get the role right and the
   focus handling wrong, and each one drifts from the next. **Do not hand-write these again.**
 - **Inputs / roles:** `open`, `titleText`, `confirmLabel`, `cancelLabel`,
-  `tone?: 'default' | 'danger'`, `busy?`, `confirmDisabled?`; outputs `confirmed`, `cancelled`.
-  Container is `role="alertdialog"` + `aria-modal="true"`, labelled by its own title.
+  `tone?: 'default' | 'danger'`, `busy?`, `confirmDisabled?`, `testIdPrefix?`; outputs
+  `confirmed`, `cancelled`. Container is `role="alertdialog"` + `aria-modal="true"`, labelled
+  by its own title.
+- **`testIdPrefix` renames all four testids** (`{prefix}`, `-backdrop`, `-confirm`, `-cancel`)
+  and defaults to `qd-confirm-dialog`. **Pass it whenever a page can host more than one
+  confirm** — otherwise two dialogs on one page answer the same selector and every assertion
+  against them is ambiguous.
+- **Transient, never URL-addressable — no consumer may write a URL key for a confirm dialog.**
+  A destructive confirm must be re-initiated, never restored from a URL: a link that reopens
+  "are you sure you want to delete this" is a link that can be sent to someone.
 - **Body is projected** (`<ng-content>`), so a consumer composes whatever the decision needs — a
   path, a selector, an inline `qd-state variant="error"`. The dialog owns the framing and the
   dismissal routes; it never owns the content.

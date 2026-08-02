@@ -1,5 +1,5 @@
 @if (open()) {
-  <div class="qd-modal-backdrop" data-testid="qd-confirm-dialog-backdrop" (click)="cancel()">
+  <div class="qd-modal-backdrop" [attr.data-testid]="testIdPrefix() + '-backdrop'" (click)="cancel()">
     <section
       class="qd-modal qd-confirm-dialog"
       role="alertdialog"
@@ -9,7 +9,7 @@
       qdModalScrollLock
       cdkTrapFocus
       cdkTrapFocusAutoCapture
-      data-testid="qd-confirm-dialog"
+      [attr.data-testid]="testIdPrefix()"
       (click)="$event.stopPropagation()"
       (keydown.escape)="cancel()"
     >
@@ -29,7 +29,7 @@
           [class.qd-confirm-dialog__confirm--danger]="tone() === 'danger'"
           [disabled]="busy() || confirmDisabled()"
           [attr.aria-busy]="busy() ? 'true' : null"
-          data-testid="qd-confirm-dialog-confirm"
+          [attr.data-testid]="testIdPrefix() + '-confirm'"
           (click)="confirm()"
         >
           {{ confirmLabel() }}
@@ -39,7 +39,7 @@
           type="button"
           class="qd-btn qd-btn-ghost"
           [disabled]="busy()"
-          data-testid="qd-confirm-dialog-cancel"
+          [attr.data-testid]="testIdPrefix() + '-cancel'"
           (click)="cancel()"
         >
           {{ cancelLabel() }}

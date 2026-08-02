@@ -35,6 +35,8 @@ export class ConfirmDialogComponent {
   /** Disables both buttons while the decision is in flight, so a double confirm cannot fire twice. */
   readonly busy = input(false);
   readonly confirmDisabled = input(false);
+  /** Pass whenever a page can host more than one confirm, so each dialog's testids are distinct. */
+  readonly testIdPrefix = input('qd-confirm-dialog');
 
   readonly confirmed = output<void>();
   readonly cancelled = output<void>();

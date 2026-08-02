@@ -147,4 +147,38 @@ describe('ConfirmDialogComponent', () => {
     expect(confirmButton().classList).toContain('qd-confirm-dialog__confirm--danger');
     expect(confirmButton().classList).not.toContain('qd-btn-primary');
   });
+
+  describe('testIdPrefix', () => {
+    const SUFFIXES = ['', '-backdrop', '-confirm', '-cancel'] as const;
+
+    it.each(SUFFIXES)('falls back to the default prefix for "%s" when the input is omitted', (suffix) => {
+      expect(query(`qd-confirm-dialog${suffix}`)).toBeTruthy();
+    });
+
+    it.each(SUFFIXES)('renames "%s" onto a custom prefix', async (suffix) => {
+      await TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({ imports: [PrefixedHostComponent] }).compileComponents();
+      const prefixed = TestBed.createComponent(PrefixedHostComponent);
+      prefixed.detectChanges();
+      const root = prefixed.nativeElement as HTMLElement;
+
+      expect(root.querySelector(`[data-testid="SYNTH_PREFIX${suffix}"]`)).toBeTruthy();
+      expect(root.querySelector(`[data-testid="qd-confirm-dialog${suffix}"]`)).toBeNull();
+    });
+  });
 });
+
+@Component({
+  standalone: true,
+  imports: [ConfirmDialogComponent],
+  template: `
+    <qd-confirm-dialog
+      [open]="true"
+      testIdPrefix="SYNTH_PREFIX"
+      titleText="SYNTH_TITLE"
+      confirmLabel="SYNTH_CONFIRM"
+      cancelLabel="SYNTH_CANCEL"
+    />
+  `,
+})
+class PrefixedHostComponent {}
