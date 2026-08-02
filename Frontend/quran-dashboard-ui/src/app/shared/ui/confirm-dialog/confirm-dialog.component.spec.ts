@@ -1,0 +1,139 @@
+import { Component, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { ConfirmDialogComponent } from './confirm-dialog.component';
+
+@Component({
+  standalone: true,
+  imports: [ConfirmDialogComponent],
+  template: `
+    <qd-confirm-dialog
+      [open]="open()"
+      titleText="SYNTH_TITLE"
+      confirmLabel="SYNTH_CONFIRM"
+      cancelLabel="SYNTH_CANCEL"
+      [tone]="tone()"
+      [busy]="busy()"
+      [confirmDisabled]="confirmDisabled()"
+      (confirmed)="events.push('confirmed')"
+      (cancelled)="events.push('cancelled')"
+    >
+      <p data-testid="projected-body">SYNTH_BODY</p>
+    </qd-confirm-dialog>
+  `,
+})
+class HostComponent {
+  readonly open = signal(true);
+  readonly tone = signal<'default' | 'danger'>('default');
+  readonly busy = signal(false);
+  readonly confirmDisabled = signal(false);
+  readonly events: string[] = [];
+}
+
+describe('ConfirmDialogComponent', () => {
+  let fixture: ReturnType<typeof TestBed.createComponent<HostComponent>>;
+  let host: HostComponent;
+
+  const query = <T extends HTMLElement>(testId: string): T | null =>
+    fixture.nativeElement.querySelector(`[data-testid="${testId}"]`);
+
+  const dialog = () => query('qd-confirm-dialog')!;
+  const confirmButton = () => query<HTMLButtonElement>('qd-confirm-dialog-confirm')!;
+  const cancelButton = () => query<HTMLButtonElement>('qd-confirm-dialog-cancel')!;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
+    fixture = TestBed.createComponent(HostComponent);
+    host = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('renders nothing until it is opened', () => {
+    host.open.set(false);
+    fixture.detectChanges();
+
+    expect(query('qd-confirm-dialog')).toBeNull();
+  });
+
+  it('renders the labels and the projected body', () => {
+    expect(dialog().textContent).toContain('SYNTH_TITLE');
+    expect(confirmButton().textContent?.trim()).toBe('SYNTH_CONFIRM');
+    expect(cancelButton().textContent?.trim()).toBe('SYNTH_CANCEL');
+    expect(query('projected-body')?.textContent).toBe('SYNTH_BODY');
+  });
+
+  // The roles are the whole reason this primitive exists — a hand-rolled confirm that gets them
+  // wrong looks identical on screen.
+  it('is an alertdialog labelled by its own title', () => {
+    expect(dialog().getAttribute('role')).toBe('alertdialog');
+    expect(dialog().getAttribute('aria-modal')).toBe('true');
+
+    const labelledBy = dialog().getAttribute('aria-labelledby');
+    expect(labelledBy).toBeTruthy();
+    expect(fixture.nativeElement.querySelector(`#${labelledBy}`)?.textContent).toContain('SYNTH_TITLE');
+  });
+
+  // Cancel, not confirm: the dialog interrupts, so a reflexive Enter must produce the safe answer.
+  it('puts initial focus on cancel', async () => {
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(document.activeElement).toBe(cancelButton());
+  });
+
+  it('emits confirmed and cancelled from their own buttons', () => {
+    confirmButton().click();
+    cancelButton().click();
+
+    expect(host.events).toEqual(['confirmed', 'cancelled']);
+  });
+
+  it('cancels on Escape and on a backdrop click', () => {
+    dialog().dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    query('qd-confirm-dialog-backdrop')!.click();
+
+    expect(host.events).toEqual(['cancelled', 'cancelled']);
+  });
+
+  it('does not cancel when the click started inside the dialog', () => {
+    dialog().click();
+
+    expect(host.events).toEqual([]);
+  });
+
+  // Both buttons, not just confirm: a decision in flight should not be cancellable into an
+  // inconsistent state either, and a second confirm must not fire the write twice.
+  it('disables both buttons while busy, and emits nothing', () => {
+    host.busy.set(true);
+    fixture.detectChanges();
+
+    expect(confirmButton().disabled).toBe(true);
+    expect(cancelButton().disabled).toBe(true);
+
+    confirmButton().click();
+    cancelButton().click();
+    expect(host.events).toEqual([]);
+  });
+
+  it('disables confirm alone when the decision is incomplete', () => {
+    host.confirmDisabled.set(true);
+    fixture.detectChanges();
+
+    expect(confirmButton().disabled).toBe(true);
+    expect(cancelButton().disabled).toBe(false);
+
+    confirmButton().click();
+    expect(host.events).toEqual([]);
+  });
+
+  it('marks the confirm button destructive only for the danger tone', () => {
+    expect(confirmButton().classList).toContain('qd-btn-primary');
+    expect(confirmButton().classList).not.toContain('qd-confirm-dialog__confirm--danger');
+
+    host.tone.set('danger');
+    fixture.detectChanges();
+
+    expect(confirmButton().classList).toContain('qd-confirm-dialog__confirm--danger');
+    expect(confirmButton().classList).not.toContain('qd-btn-primary');
+  });
+});
