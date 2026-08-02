@@ -434,13 +434,20 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         door.DeletedAtUtc = null;
         door.UpdatedAtUtc = now;
 
-        var previousSectionId = door.SectionId;
-        door.SectionId = await ResolveRestoreSectionAsync(door, parent, sectionId, cancellationToken);
-
-        var childrenByParent = await LoadChildrenByParentAsync(cancellationToken);
-
+        // Everything below gives a row back to a scope it LEFT, and a door that was never archived left
+        // none — it is already where it belongs. So restore does nothing to it: no destination is
+        // resolved, no subtree is re-sectioned, no sequence is renumbered. Restore is not a second
+        // re-sectioning path standing beside MoveAsync under another name; the only door it may
+        // re-section is one coming back from the archive, where its stored section may no longer be a
+        // destination at all. This also keeps MaintainGlobalOrderAsync from appending a root that the
+        // live-roots query it runs has already returned.
         if (archivedAt.HasValue)
         {
+            var previousSectionId = door.SectionId;
+            door.SectionId = await ResolveRestoreSectionAsync(door, parent, sectionId, cancellationToken);
+
+            var childrenByParent = await LoadChildrenByParentAsync(cancellationToken);
+
             var descendantIds = CollectDescendantIds(childrenByParent, id);
             var sweptInDescendants = descendantIds.Count == 0
                 ? []
@@ -453,36 +460,36 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
                 descendant.DeletedAtUtc = null;
                 descendant.UpdatedAtUtc = now;
             }
-        }
 
-        // Restore doubles as a re-section, and a re-section carries the whole subtree like any other. It
-        // deliberately runs through the same helper move uses, which reaches ARCHIVED descendants too:
-        // the restore loop above only gives back what this door's own archive took, so a descendant an
-        // earlier operation archived separately is not restored here — and left on the old section it
-        // would resurface, on its own later restore, in a section its parent has already left.
-        if (previousSectionId != door.SectionId)
-        {
-            await CascadeSectionToDescendantsAsync(childrenByParent, [id], door.SectionId, now, cancellationToken);
-        }
+            // Restore doubles as a re-section, and a re-section carries the whole subtree like any other.
+            // It deliberately runs through the same helper move uses, which reaches ARCHIVED descendants
+            // too: the restore loop above only gives back what this door's own archive took, so a
+            // descendant an earlier operation archived separately is not restored here — and left on the
+            // old section it would resurface, on its own later restore, in a section its parent has left.
+            if (previousSectionId != door.SectionId)
+            {
+                await CascadeSectionToDescendantsAsync(childrenByParent, [id], door.SectionId, now, cancellationToken);
+            }
 
-        // Same rule as OrderValue: restore moves a root back INTO the global sequence, appended last
-        // (§5.2 — derived, not guessed). ParentId is the only thing that matters here; the re-section
-        // above changes SectionId, never root membership.
-        if (door.ParentId is null)
-        {
-            await MaintainGlobalOrderAsync(new HashSet<int>(), [door], cancellationToken);
-        }
+            // Same rule as OrderValue: restore moves a root back INTO the global sequence, appended last
+            // (§5.2 — derived, not guessed). ParentId is the only thing that matters here; the re-section
+            // above changes SectionId, never root membership.
+            if (door.ParentId is null)
+            {
+                await MaintainGlobalOrderAsync(new HashSet<int>(), [door], cancellationToken);
+            }
 
-        // Restore is the only write that moves a row back INTO a scope. That scope was renumbered 1..N-1
-        // when the door left it, so it needs renumbering again with the door back in — the same 1..N rule
-        // every other write follows. Read against the door's FINAL scope, which the re-section above may
-        // have just changed.
-        var scopeSiblings = await db.AbwabDoors
-            .Where(d => d.SectionId == door.SectionId && d.ParentId == door.ParentId
-                        && d.DeletedAtUtc == null && d.Id != id)
-            .OrderBy(d => d.OrderValue)
-            .ToListAsync(cancellationToken);
-        Resequence(scopeSiblings.Append(door));
+            // Restore is the only write that moves a row back INTO a scope. That scope was renumbered
+            // 1..N-1 when the door left it, so it needs renumbering again with the door back in — the same
+            // 1..N rule every other write follows. Read against the door's FINAL scope, which the
+            // re-section above may have just changed.
+            var scopeSiblings = await db.AbwabDoors
+                .Where(d => d.SectionId == door.SectionId && d.ParentId == door.ParentId
+                            && d.DeletedAtUtc == null && d.Id != id)
+                .OrderBy(d => d.OrderValue)
+                .ToListAsync(cancellationToken);
+            Resequence(scopeSiblings.Append(door));
+        }
 
         // Not SaveTranslatingConcurrencyAsync: restore moves rows back INTO the unique index's live
         // scope (unlike archive/reorder, which only ever move rows out of it), so a live sibling

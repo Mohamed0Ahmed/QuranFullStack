@@ -72,5 +72,9 @@ public interface IAbwabDoorsWriter
     // without moving it: a root whose section was retired meanwhile has no destination left and must be
     // given one. A child ignores it beyond agreement-checking — it derives from its live parent's CURRENT
     // section — and a re-section carries the whole subtree, archived descendants included.
+    //
+    // A door that is NOT archived is left alone: it never left a scope, so there is nothing to give back
+    // and sectionId is ignored rather than honored. Re-sectioning a live door is MoveAsync's job, and
+    // restore must not become a second route to it.
     Task<AbwabDoorDto?> RestoreAsync(int id, int? sectionId, uint expectedVersion, CancellationToken cancellationToken);
 }

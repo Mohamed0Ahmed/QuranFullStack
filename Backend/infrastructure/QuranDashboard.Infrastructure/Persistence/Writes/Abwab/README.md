@@ -124,6 +124,13 @@ incidentally.
     restore loop only claims rows carrying this archive's own timestamp; the cascade must also reach the
     rows it does not restore, or a separately-archived descendant keeps the old section and resurfaces
     wrong on its own later restore. `AbwabDoorWriteBehaviorTests` pins both halves.
+  - **All of it is gated on the door actually having been archived.** Restore of a door that is already
+    live resolves no destination, re-sections nothing, renumbers nothing, and touches neither the
+    per-scope nor the global sequence — a `sectionId` in the body is ignored, not honored. It never left
+    a scope, so there is nothing to give back. **Do not relax this gate:** re-sectioning a live door is
+    `MoveAsync`'s job, and a second route to it would owe `MoveAsync`'s whole contract (compacting the
+    scope it leaves, the root-membership rules for the global sequence) while looking like it owed
+    none. Pinned by `RestoreAsync_LiveRoot_*` in `AbwabDoorWriteBehaviorTests`.
 - **A nested door's section is its parent's, and every write that can change a section must maintain that.**
   Reads group and count by `SectionId` at any depth (`../../Reads/Abwab/README.md`) and nothing re-derives
   it, so this is an invariant the write side owes, not a convention:

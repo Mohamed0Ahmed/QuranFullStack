@@ -591,13 +591,21 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     }
 
     // M-a: the same scenario carried one step further. The descendant's own restore must derive from its
-    // parent's CURRENT section — trusting the value stored on the archived row is exactly the defect the
-    // cascade above closes, and a NOT NULL column cannot see it, since the stored value is present.
+    // parent's CURRENT section rather than the value stored on its archived row.
+    //
+    // The stale value is written straight onto the row, bypassing the writer, and that is what makes this
+    // a test of the RULE rather than a walk through the scenario. M-b's cascade is what keeps stored
+    // sections from going stale, so after it runs the stored value and the parent's agree — and an
+    // assertion made at that point would hold whichever of the two the writer read. Putting the row back
+    // into the state the cascade prevents is what separates them: a writer that returned `door.SectionId`
+    // would answer `origin` here and fail, and a NOT NULL column would see nothing wrong, because the
+    // wrong value is present.
     [Fact]
     public async Task RestoreAsync_ChildRestoredAfterAncestorResection_DerivesParentsCurrentSection()
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var origin = await NewSectionAsync(scope, "سلوك: قسم أصل لاشتقاق بعد إعادة التقسيم");
         var destination = await NewSectionAsync(scope, "سلوك: قسم وجهة لاشتقاق بعد إعادة التقسيم");
@@ -611,9 +619,72 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
         await writer.RestoreAsync(root.Id, destination, archivedRoot.Version, CancellationToken.None);
 
         var archivedDescendant = await ReloadAsync(scope, descendant.Id);
-        var restored = await writer.RestoreAsync(descendant.Id, null, archivedDescendant.Version, CancellationToken.None);
+        archivedDescendant.SectionId
+            .Should().Be(destination, "M-b's cascade reached it, which is why the stale value has to be re-created here");
+        archivedDescendant.SectionId = origin;
+        await dbContext.SaveChangesAsync();
 
-        restored!.SectionId.Should().Be(destination);
+        var restored = await writer.RestoreAsync(
+            descendant.Id, null, (await ReloadAsync(scope, descendant.Id)).Version, CancellationToken.None);
+
+        restored!.SectionId.Should().Be(destination, "the live parent's CURRENT section wins over the stored one");
+    }
+
+    // Restore of a door that was never archived is a no-op, and a stated section does not change that:
+    // the door left no scope, so there is nothing to give back and nothing to re-section. Without the
+    // archived-only gate this call is a second re-sectioning path beside MoveAsync — one that appends the
+    // door to the stated section without compacting the one it left, leaving a hole in that scope's 1..N.
+    [Fact]
+    public async Task RestoreAsync_LiveRoot_WithStatedSection_ChangesNeitherSectionNorEitherScopesOrder()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+
+        var origin = await NewSectionAsync(scope, "سلوك: قسم أصل لباب حي لا يُعاد تقسيمه");
+        var destination = await NewSectionAsync(scope, "سلوك: قسم وجهة مرفوضة لباب حي");
+        var first = await writer.CreateAsync(origin, null, "سلوك: جذر حي أول", null, null, [], CancellationToken.None);
+        var middle = await writer.CreateAsync(origin, null, "سلوك: جذر حي أوسط يُطلب استرجاعه", null, null, [], CancellationToken.None);
+        var last = await writer.CreateAsync(origin, null, "سلوك: جذر حي أخير", null, null, [], CancellationToken.None);
+        await writer.CreateAsync(destination, null, "سلوك: جذر مقيم في قسم الوجهة", null, null, [], CancellationToken.None);
+
+        var restored = await writer.RestoreAsync(
+            middle.Id, destination, (await ReloadAsync(scope, middle.Id)).Version, CancellationToken.None);
+
+        restored!.SectionId.Should().Be(origin, "restore may only re-section a door coming back from the archive");
+        (await OrderValuesOfSectionRootAsync(scope, origin))
+            .Should().BeEquivalentTo([1, 2, 3], options => options.WithStrictOrdering(),
+                "the door never left, so its scope keeps its 1..N with no hole");
+        (await OrderValuesOfSectionRootAsync(scope, destination))
+            .Should().BeEquivalentTo([1], options => options.WithStrictOrdering(),
+                "and the stated section gains nothing");
+        (await ReloadAsync(scope, first.Id)).OrderValue.Should().Be(1);
+        (await ReloadAsync(scope, middle.Id)).OrderValue.Should().Be(2);
+        (await ReloadAsync(scope, last.Id)).OrderValue.Should().Be(3);
+    }
+
+    // The same gate closes a defect that predates the destination contract: MaintainGlobalOrderAsync
+    // appends its `arrivals` to a live-roots query that ALREADY returns a live root, so the door was
+    // sequenced twice and kept the second, larger value — leaving a hole where it used to sit.
+    [Fact]
+    public async Task RestoreAsync_LiveRoot_LeavesTheGlobalSequenceIntact()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+
+        var section = await NewSectionAsync(scope, "سلوك: قسم التسلسل العام لباب حي");
+        var door = await writer.CreateAsync(section, null, "سلوك: جذر حي يحفظ موضعه العام", null, null, [], CancellationToken.None);
+        await writer.CreateAsync(section, null, "سلوك: جذر حي يليه في التسلسل العام", null, null, [], CancellationToken.None);
+        var beforeRestore = await ReloadAsync(scope, door.Id);
+        var globalOrderBefore = beforeRestore.GlobalOrderValue;
+
+        await writer.RestoreAsync(door.Id, null, beforeRestore.Version, CancellationToken.None);
+
+        (await ReloadAsync(scope, door.Id)).GlobalOrderValue
+            .Should().Be(globalOrderBefore, "a live root is already in the global sequence and is not re-appended");
+        (await dbContext.AbwabDoors
+                .CountAsync(d => d.ParentId == null && d.DeletedAtUtc == null && d.GlobalOrderValue == globalOrderBefore))
+            .Should().Be(1, "and no other root was shifted onto its slot");
     }
 
     // Reads group and count by SectionId at any depth (`Reads/Abwab/README.md`) and nothing re-derives a
