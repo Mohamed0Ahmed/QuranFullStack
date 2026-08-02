@@ -1,4 +1,4 @@
-import type { AbwabModalKind } from './abwab.models';
+import type { AbwabModalKind, AbwabRelationGroupKey } from './abwab.models';
 
 // Every Arabic string the Abwab feature shows lives here (root CLAUDE.md: Arabic strings
 // live only in this file). Consumers read these through TDZ-safe getters — never
@@ -33,6 +33,16 @@ function countPhrase(count: number, forms: ArabicCountForms): string {
   }
   return `${count} ${count <= 10 ? forms.few : forms.many}`;
 }
+
+/** Zero has its own wording here — «0 نتائج» beside a search box reads as a broken control
+ * rather than an answer. */
+const RESULT_FORMS: ArabicCountForms = {
+  zero: 'لا توجد نتائج',
+  one: 'نتيجة واحدة',
+  two: 'نتيجتان',
+  few: 'نتائج',
+  many: 'نتيجة',
+};
 
 const DOOR_FORMS: ArabicCountForms = {
   zero: 'لا أبواب',
@@ -109,7 +119,12 @@ export const ABWAB_LABELS = {
   // features/abwab/README.md for why «سيتم أرشفة 1 بابًا»'s rule does not reach this pattern.
   statOpenScopeDoors: 'أبواب هذا التبويب',
   searchLabel: 'ابحث في الأبواب',
-  searchPlaceholder: 'ابحث في الأبواب… (يفلتر الشجرة مباشرة)',
+  // The parenthetical went with the tree's filtering (ux-slice-l): it is now false for the tree,
+  // which marks matches in place, and true only for cards/archive. One box, two presentations —
+  // a placeholder cannot say that without becoming view-dependent, so it stops claiming behavior
+  // at all and the split is recorded in the feature README instead.
+  searchPlaceholder: 'ابحث في الأبواب…',
+  searchMatchCount: (count: number): string => countPhrase(count, RESULT_FORMS),
   viewToggleTree: 'شجرة',
   viewToggleCards: 'بطاقات',
   archiveButton: 'الأرشيف',
@@ -251,6 +266,23 @@ export const ABWAB_LABELS = {
   // The chip now carries two controls, so neither can rely on the chip's text to say what it
   // does — «إظهار في الشجرة» and «حذف العلاقة» have to be distinguishable by name alone.
   relationRevealAriaLabel: (doorName: string): string => `إظهار «${doorName}» في الشجرة`,
+  relationDeleteConfirmTitle: 'حذف العلاقة',
+  // Both doors are named because «تُحذف من الطرفين» is empty wording otherwise — the user has to
+  // see which two. The group label carries the direction for الشمولية, so there is no separate
+  // direction sentence.
+  relationDeleteConfirmBody: (anchorName: string, otherName: string, group: AbwabRelationGroupKey): string => {
+    switch (group) {
+      case 'similarity':
+        return `سيتم حذف علاقة التشابه بين «${anchorName}» و«${otherName}».`;
+      case 'opposition':
+        return `سيتم حذف علاقة التضاد بين «${anchorName}» و«${otherName}».`;
+      case 'more-comprehensive':
+        return `سيتم حذف علاقة الشمولية: «${otherName}» أكثر شمولية من «${anchorName}».`;
+      case 'less-comprehensive':
+        return `سيتم حذف علاقة الشمولية: «${otherName}» أقل شمولية من «${anchorName}».`;
+    }
+  },
+  relationDeleteConfirmSides: 'ستُحذف العلاقة من الطرفين معًا.',
   // The reveal's guard: defensively unreachable (the read hides relations whose endpoint is
   // archived), so this says what did not happen rather than blaming the user.
   revealUnavailable: 'تعذر إظهار الباب — لم يعد موجودًا في الشجرة',
@@ -266,6 +298,10 @@ export const ABWAB_LABELS = {
     sections: 'إدارة الأقسام',
     relations: 'علاقات الباب',
   } satisfies Record<AbwabModalKind, string>,
+  // `modalKindNames.relations` stays «علاقات الباب» for the plain retained form, whose subject
+  // is `door=`. This one names the door because a reveal-retained state's subject is pinned and
+  // is NOT the selected door — «استعادة علاقات الباب» would point at the wrong one.
+  relationsOfDoorKindName: (doorName: string): string => `علاقات «${doorName}»`,
   modalRestoreLabel: (kindName: string): string => `استعادة ${kindName}`,
   modalDiscardAriaLabel: (kindName: string): string => `تجاهل ${kindName}`,
 

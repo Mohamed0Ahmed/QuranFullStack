@@ -71,6 +71,22 @@ describe('ABWAB_LABELS — Arabic number agreement on counted doors', () => {
   });
 });
 
+// ux-slice-l's search count — RESULT_FORMS, a counted noun of its own. Zero has a distinct
+// wording here (unlike the tab badge below): «0 نتائج» beside a search box reads as a broken
+// control rather than an answer.
+describe('ABWAB_LABELS — Arabic number agreement on the search match count', () => {
+  it.each([
+    [0, 'لا توجد نتائج'],
+    [1, 'نتيجة واحدة'],
+    [2, 'نتيجتان'],
+    [3, '3 نتائج'],
+    [10, '10 نتائج'],
+    [11, '11 نتيجة'],
+  ])('count %i reads correctly', (count, expected) => {
+    expect(ABWAB_LABELS.searchMatchCount(count)).toBe(expected);
+  });
+});
+
 // Item 19's badge — ROOT_DOOR_FORMS, distinct from DOOR_FORMS (item 17) because the adjective
 // «رئيسي» carries its own agreement per count form (§4.2-13). No zero form is pinned: the
 // badge's zero-state is a visual dim, not a distinct accessible phrase.

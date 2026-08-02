@@ -62,6 +62,26 @@ nine), four of them reads.
   grouping to act on there — leaving only search, which still filters the archive tree
   (so the archive view never grows a root-count badge either — there is no tab strip
   there to carry one).
+  - **One search box, two behaviours, deliberately (ux-slice-l).** In the **tree** a query
+    *marks* matching rows in place (a 1px inset accent ring) and hides nothing; every door
+    stays where the user last saw it, and a zero-match query leaves the full tree with a zero
+    count rather than collapsing into «لا توجد أبواب بعد», which was a lie about the data. In
+    **cards** and the **archive** the same query still *filters* (`pruneAbwabNodesToVisible`)
+    — those are flat browsing surfaces where a filter costs no structure. The door picker's
+    own search also stays a filter. The split is per view, not per query, and lives here
+    rather than in the placeholder, which would otherwise have to be view-dependent.
+  - **The match count sits beside the input**, not in the stats row: it answers the query, so
+    it belongs to the control that asked. It is two elements — a live `aria-hidden` span that
+    updates per keystroke, and an always-mounted visually-hidden `role="status"` region that
+    speaks the settled count **once, 500 ms after typing stops**. A status region bound
+    straight to the count would announce once per typed character. Clearing the query empties
+    the region immediately and announces nothing. Deliberately **not** routed through
+    `qd-abwab-announcer`, whose channel is one-shot reveal/write messages.
+  - **Matched ancestors are seeded open, not forced**, so a branch search opened is
+    collapsible at once and survives clearing the query. The consequence — seeds accumulate,
+    so broadening then narrowing leaves the earlier branches open — is accepted and intended;
+    expansion is the user's state once seeded, and rewinding it per keystroke would fight
+    them.
   - **Item 19's root-count badge** renders `.qd-tabs__count` at the call-site on every
     tab, composing `qd-tabs`'s backing class rather than adding a directive input —
     `qdTab` stays a host-bindings-only directive and cannot project a child span.
@@ -256,7 +276,11 @@ nine), four of them reads.
 - `state/abwab-tree.builder.ts` — pure: DTO → `AbwabTreeSnapshotVm` (live/archive
   partition, gap-tolerant ordering, per-section filtering, name+alias search, and
   `pruneAbwabNodesToVisible` — rebuilds a node list to only the search-visible ids,
-  recursing into children, backing the tree/archive-view search filter).
+  recursing into children, backing the **cards and archive** search filter). One walk feeds
+  two presentations: the tree reads `matchedIds`/`autoExpandedIds` to mark and seed, the
+  filtering views read `visibleIds`. The walk carries a single push/pop ancestor stack rather
+  than allocating a path array per edge; the builder spec's exact-set cases are the fence
+  that keeps its output identical.
 - `state/abwab-selection.store.ts` — single selection + bulk set, rebinds by id after
   every refresh, dropping ids a write made vanish. Bulk mode is unavailable while the
   archive view is active.
@@ -313,19 +337,48 @@ nine), four of them reads.
 | `door` | positive int | no selection |
 | `card` | positive int (the drilled-into parent — the breadcrumb chain is derived from it, not stored as an array) | the top card level |
 | `q` | free text | no search |
-| `modal` | one of `create` \| `child` \| `edit` \| `move` \| `sections` \| `relations`, bare while the overlay is open and suffixed `-closed` while it is retained and restorable | no restorable overlay |
+| `modal` | one of `create` \| `child` \| `edit` \| `move` \| `sections` \| `relations`, bare while the overlay is open and suffixed `-closed` while it is retained and restorable; plus the one id-carrying form `relations-<id>-closed` | no restorable overlay |
 
 `modal` is the only key with a cross-key rule: the four door-dependent kinds (`child`,
 `edit`, `move`, `relations`) parse to nothing unless the **same** ParamMap carries a valid
-`door`, because the key names an overlay and never a subject — every restorable overlay's
-subject is derived from `door=` plus the snapshot. `create` and `sections` are
-door-independent. Restoring is stricter still than parsing: a door-dependent kind also
-needs its door to be **live**, since `byId` holds archived nodes and the `door=` effect
-checks presence only. A key that fails any of these is inert — nothing opens, no restore
-control renders, and (per the fail-closed convention below) the URL is not rewritten.
+`door`, because the plain forms name an overlay and never a subject — their subject is
+derived from `door=` plus the snapshot, which is also why a plain `-closed` **follows** a
+later selection. `create` and `sections` are door-independent. Restoring is stricter still
+than parsing: a door-dependent kind also needs its door to be **live**, since `byId` holds
+archived nodes and the `door=` effect checks presence only. A key that fails any of these is
+inert — nothing opens, no restore control renders, and (per the fail-closed convention below)
+the URL is not rewritten.
 
-**`modal` selects an overlay, never a data scope, and it enters no identity anywhere.** It
-is not part of any cache key, restore identity, history identity or ETag: the snapshot read
+**The one exception: `relations-<id>-closed` (ux-slice-l).** A reveal points `door=` at the
+target while the overlay it just closed still belongs to the *source*, so for that one state
+the key carries its subject itself:
+
+| Form | Subject |
+|---|---|
+| `<kind>` | `door=` (open state — always) |
+| `<kind>-closed` | `door=`, and it follows a later selection |
+| `relations-<id>-closed` | door `<id>`, **pinned** — selecting another door does not move it |
+
+Fail-closed rules, all pinned in `abwab-url-sync.spec.ts`'s negative table: the id must be a
+positive integer; an id on the **open** form is invalid (an open overlay's subject is always
+`door=`, and a diverged subject there is exactly what `canOpen` forbids); an id on any other
+kind is invalid (only the relations modal has a reveal). Unlike the plain forms, the
+id-carrying one does **not** require a valid `door=` in the same ParamMap — that is the whole
+point. Restorability is checked against the carried id instead: live and unarchived, or the
+key sits inert exactly as a dead `door=` already does. Restoring writes `door=<id>` plus the
+bare open key in one patch, so the open state never carries an id and every invariant above
+holds again.
+
+**One key, one retained state — decided, not accidental.** The key is single-valued, so
+whatever writes it next wins: opening any modal overwrites a carried key (its restore control
+vanishes for good — closing the new modal retains *that* modal's plain `-closed`, it never
+resurrects the id-carrying one), a second reveal overwrites with the new source, and a section
+switch or archive-on clears it with everything else. Both overwrite orders are pinned in the
+page spec so this stays a decision rather than an artifact.
+
+**`modal` selects an overlay, never a data scope, and it enters no *caching* identity.** It
+is not part of any cache key or ETag — the carried id in `relations-<id>-closed` is a restore
+subject and nothing more, and specifically **not** a cache input: the snapshot read
 is one unparameterized root-scoped tree GET, and the relations read is keyed by **door id and
 the tree validator only** (`state/abwab-relations.controller.ts`). This is the one row of this
 table a future caching design must **not** pick up — adding the key to a scope or cache input
@@ -356,9 +409,12 @@ not the target's**
 («كل الأبواب» already shows every door, so narrowing to the target's tab there would be
 gratuitous — and an explicit `door` in the same change survives the scope-invalidation
 clear, which is what makes the cross-section case one navigation instead of two);
-`view: 'tree'` when the cards drill is open, since the item is reveal-in-*tree*; and `q`
-cleared when a search is filtering, because a reveal that leaves its target pruned by
-`pruneAbwabNodesToVisible` breaks the promise the click makes.
+and `view: 'tree'` when the cards drill is open, since the item is reveal-in-*tree*.
+
+`q` is **not** touched. Slice D cleared it because a filtering tree could leave the reveal's
+target pruned; ux-slice-l removed the pruning, so the premise is gone — the target is on
+screen under any query, and discarding the user's search would be a second action they did
+not ask for. A reveal during a search keeps the marks and the count exactly as they were.
 
 Three things about it are load-bearing and easy to undo by accident:
 
@@ -366,10 +422,12 @@ Three things about it are load-bearing and easy to undo by accident:
   that must exist for either to mean anything are rendered by the change detection that
   emission triggers — and in the cross-section, cards and search cases they do not exist
   before it at all.
-- **The ancestor chain is *seeded* into the tree's manual expansion, not forced.**
-  `forceExpandedIds` is unioned with manual toggles and cannot be collapsed, so a reveal
-  routed through it would lock the target's ancestors open for the rest of the session.
-  `expandSeedIds` merges once and hands the chevrons straight back to the user.
+- **The ancestor chain is *seeded* into the tree's manual expansion, not forced.** A forced
+  set is unioned with manual toggles and cannot be collapsed, so a reveal routed through it
+  would lock the target's ancestors open for the rest of the session. `expandSeedIds` merges
+  once and hands the chevrons straight back to the user. Search auto-expansion arrives on the
+  same input now (ux-slice-l); the page unions the two sources and must return the shared
+  `NO_IDS` when both are empty, or the tree's merge effect re-runs on every tick.
 - **The highlight is an outline, never a tint** — `--qd-selected-bg` *is*
   `--qd-accent-tint`, and the reveal always lands on the row it just selected, so a tint
   would be invisible by construction. See `UI_STYLE_SYSTEM.md` §17 "Reveal highlight".
@@ -401,9 +459,13 @@ Opening a restorable overlay is a history **push**; closing it retains it as
 pushes again, so Back returns to the closed state; the restore control's X clears the key
 by replace. Back past an X-clear therefore surfaces an *earlier* retained entry if one
 exists: the restore control reappears, no overlay reopens. The reveal is the one path that
-clears the key by **push** rather than replace — it is a navigation to a different door in
+**rewrites** the key by push rather than replace — it is a navigation to a different door in
 its own right, so Back must undo it, and undoing it restores the relations modal on the
-source door along with `door=`. This mirrors the words overlay's contract
+source door along with `door=` (pinned since ux-slice-l in both the page spec and
+`e2e/abwab-relations.e2e.ts`; before that the designed path had no coverage at all). Since
+ux-slice-l the reveal *retains* rather than discards — see `relations-<id>-closed` above —
+so the source's relations are also one click away from the restore control, and while the
+cache is warm reopening them costs no additional read. This mirrors the words overlay's contract
 (`core/navigation/detail-overlay/detail-overlay-history.service.ts`), which is where the
 shape was proven — abwab does not share that service, and deliberately did not generalise
 it.
@@ -645,7 +707,13 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   modal's doors-load failure, both wired to `AbwabSnapshotFacade.load()`, plus the relations
   modal's own load failure — because those are the transport reads abwab otherwise offers no
   recovery from at all. The relations modal's **write** errors deliberately carry no retry: the
-  add and remove controls are themselves that retry, and §17 allows one action per error. Any
+  add and remove controls are themselves that retry, and §17 allows one action per error. A
+  **relation delete confirms first** (`qd-confirm-dialog`, `tone: 'danger'`, nested above the open
+  modal): the body names **both** doors and the relation's display group, and states that the
+  delete removes the relation from both ends — «تُحذف من الطرفين» is empty wording without the two
+  names. That dialog owns its own write error, so a failed delete lands beside the decision that
+  caused it instead of on the modal's shared line, and it stays open, busy, until the write
+  resolves — which is also what closes the double-dispatch hole the bare chip had. Any
   successful load clears the message, so a recovered failure no longer sticks for the life of the
   open modal. The templates page's
   «اختر قالبًا» now means only what it says: `AbwabTemplatesFacade.selectedLoading` covers the

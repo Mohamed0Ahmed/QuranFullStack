@@ -1,10 +1,13 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
 import { AbwabView } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+
+/** Long enough that a typed word announces once, short enough to feel like a response. */
+const ANNOUNCE_SETTLE_MS = 500;
 
 /**
  * Section tabs + the tree/cards view toggle + search (plan-slice-b.md T415/T502/T507):
@@ -24,6 +27,9 @@ export class AbwabToolbarComponent {
   readonly activeSectionId = input<number | null>(null);
   readonly view = input<AbwabView>('tree');
   readonly searchQuery = input('');
+  /** How many doors the current query matched — in the tree these are the marked rows, in
+   * cards/archive the ones the filter kept, so the number is honest in every view. */
+  readonly searchMatchCount = input(0);
   /** Item 19 — root doors per section (state/abwab-tree.builder.ts), and the total for «كل
    * الأبواب». Not derivable from `sections` here: `doorsInScopeCount` on the DTO answers a
    * different question (all depths, item 17's shipped stat) — see abwab.labels.ts. */
@@ -44,6 +50,45 @@ export class AbwabToolbarComponent {
   protected get searchPlaceholder(): string { return ABWAB_LABELS.searchPlaceholder; }
   protected get treeViewLabel(): string { return ABWAB_LABELS.viewToggleTree; }
   protected get cardsViewLabel(): string { return ABWAB_LABELS.viewToggleCards; }
+
+  protected readonly matchCountText = computed(() => ABWAB_LABELS.searchMatchCount(this.searchMatchCount()));
+
+  /** What the status region currently holds. Empty except in the settled window below. */
+  protected readonly announcedCountText = signal('');
+
+  private announceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor() {
+    // A `role="status"` bound straight to the count would speak once per typed character. The
+    // visible number stays live; the announcement waits for the typing to stop. Debouncing the
+    // announcement only — the URL write stays per keystroke, which is a separate open decision.
+    effect(() => {
+      const query = this.searchQuery();
+      const count = this.searchMatchCount();
+      untracked(() => {
+        this.clearAnnounceTimer();
+        if (query === '') {
+          // Clearing announces nothing, and emptying now stops a stale count being re-read later.
+          this.announcedCountText.set('');
+          return;
+        }
+        this.announceTimer = setTimeout(() => {
+          this.announcedCountText.set(ABWAB_LABELS.searchMatchCount(count));
+          this.announceTimer = null;
+        }, ANNOUNCE_SETTLE_MS);
+      });
+    });
+
+    // Or a navigation away mid-typing announces into a destroyed view.
+    inject(DestroyRef).onDestroy(() => this.clearAnnounceTimer());
+  }
+
+  private clearAnnounceTimer(): void {
+    if (this.announceTimer !== null) {
+      clearTimeout(this.announceTimer);
+      this.announceTimer = null;
+    }
+  }
 
   protected rootCountFor(sectionId: number): number {
     return this.rootCountBySectionId().get(sectionId) ?? 0;

@@ -17,6 +17,12 @@ export type AbwabModalKind = 'create' | 'child' | 'edit' | 'move' | 'sections' |
 export interface AbwabModalState {
   readonly kind: AbwabModalKind;
   readonly closed: boolean;
+  /** The subject this retained state belongs to, when it is NOT `door=`. Null on every open
+   * state and on every plain `-closed` one — those follow `door=`, so a later selection moves
+   * what restore would reopen. Only a retained `relations` may carry an id, and only because
+   * a reveal deliberately points `door=` somewhere else: the id pins the subject so the
+   * restore control still reopens the door the user came from. */
+  readonly subjectDoorId: number | null;
 }
 
 /** Which order space a reorder acts on (plan.md §4 — two independent spaces, zero coupling).

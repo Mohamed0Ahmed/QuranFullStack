@@ -10,9 +10,13 @@ words), and the placeholder / wildcard-fallback routes — **plus the Abwab door
 (`abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`, `abwab-archive.e2e.ts`,
 `abwab-url-and-a11y.e2e.ts`, `abwab-global-order.e2e.ts`, `abwab-relations.e2e.ts`), which are the
 one deliberate exception to the read-only invariant below. `abwab-relations.e2e.ts` covers the
-mutual relation seen from both doors, dormancy through an archived endpoint and back, and the
-client-side list cache — the last asserted by counting relation GETs on a passive `request`
-listener, never by network idle.
+mutual relation seen from both doors, dormancy through an archived endpoint and back, the
+client-side list cache, and the reveal's retained `relations-<id>-closed` key (restore naming and
+reopening the source, Back after a reveal, and the reload case) — the cache claims asserted by
+counting relation GETs on a passive `request` listener, never by network idle.
+`abwab-operations.e2e.ts` also owns the `qd-context-menu` placement contract, which needs a real
+layout engine: jsdom reports zero-sized rects, so inline-start extension and both flips are
+browser-only truths.
 
 `abwab-tree-row-budget.e2e.ts` is the eighth and, like the one below it, measures rather than
 drives: it pins the tree row's height budget, which needs a real layout engine.
@@ -71,13 +75,13 @@ project and the worker count yourself: `npx playwright test --project=abwab --wo
   `409`s are always surfaced, never swallowed or auto-retried (`features/abwab/README.md`).
   Measured directly: at the default 2 workers, `abwab-global-order.e2e.ts` failed on a
   wrong-position assertion (not even a `409` — a silently different result) after another worker's
-  teardown resequenced the global order mid-test; at 1 worker, all 20 Abwab tests pass repeatably.
+  teardown resequenced the global order mid-test; at 1 worker, all 40 Abwab tests pass repeatably.
   `playwright.config.ts` therefore splits `projects` into `default` (`testIgnore` on
   `abwab-*.e2e.ts`, 2 workers) and `abwab` (`testMatch` on `abwab-*.e2e.ts`, 1 worker), and
   `npm run e2e` runs both in sequence. This costs real wall-clock time (the full gate went from
-  47 tests/~1.6 m to 48 tests/~2.7 m — one new flow plus a serialized phase that used to overlap
-  with everything else) in exchange for not shipping a suite that can pass or fail depending on
-  scheduling luck.
+  47 tests/~1.6 m to a serialized run) in exchange for not shipping a suite that can pass or
+  fail depending on scheduling luck. **Measured 2026-08-02:** 68 passed — `default` 28 in
+  ~59 s, `abwab` 40 in ~2.6 m.
 - **A `Global` reorder's residue reaches outside the sandbox, and that is accepted.** Every root
   in the local dev database gets renumbered by `global_order_value`, sandbox or not — resequencing
   is order-preserving for untouched rows, and teardown removes the sandbox's own roots again

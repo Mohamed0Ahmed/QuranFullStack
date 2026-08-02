@@ -120,7 +120,7 @@ export class AbwabTemplateTreeComponent {
 
   /** Bubbles from whichever of the row's own controls (chevron / ＋ / ⋯) has focus — there is no
    * roving-tabindex model here, so the row itself is what catches the key. Anchored at the row's
-   * own bounding rect, falling back to (0, 0) only if the row is missing — a menu pinned at the
+   * inline-start edge, falling back to (0, 0) only if the row is missing — a menu pinned at the
    * viewport origin is not a usable keyboard path (the doors tree's own reason, carried over). */
   protected onRowKeydown(event: KeyboardEvent, nodeId: number): void {
     if (event.key !== 'ContextMenu' && !(event.key === 'F10' && event.shiftKey)) {
@@ -128,13 +128,21 @@ export class AbwabTemplateTreeComponent {
     }
     event.preventDefault();
     const rect = this.rowElement(nodeId)?.getBoundingClientRect();
-    this.menuRequested.emit({ nodeId, x: rect?.left ?? 0, y: rect?.bottom ?? 0 });
+    const anchorX = this.resolveDirection() === 'rtl' ? rect?.right : rect?.left;
+    this.menuRequested.emit({ nodeId, x: anchorX ?? 0, y: rect?.bottom ?? 0 });
   }
 
   private rowElement(nodeId: number): HTMLElement | null {
     return this.elementRef.nativeElement.querySelector<HTMLElement>(
       `[data-testid="abwab-template-tree-row-${nodeId}"]`,
     );
+  }
+
+  /** Mirrored from the doors tree: the keyboard anchor is the row's inline-start edge, which
+   * `qd-context-menu` now extends from, and that edge is dir-dependent. */
+  private resolveDirection(): 'ltr' | 'rtl' {
+    const dirHost = this.elementRef.nativeElement.closest('[dir]');
+    return dirHost?.getAttribute('dir') === 'rtl' ? 'rtl' : 'ltr';
   }
 
   /** The root has no siblings, so its chip is the `◆` marker and is not an order editor. */

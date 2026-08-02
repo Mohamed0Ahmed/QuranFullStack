@@ -12,6 +12,19 @@
 .abwab-toolbar__search {
   flex: 1;
   min-inline-size: 12rem;
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+/* Beside the input, not in the stats row: it answers the query, so it belongs to the control
+   that asked. Muted and one step down the ramp — a running count should not compete with the
+   text being typed. */
+.abwab-toolbar__search-count {
+  flex: none;
+  color: var(--qd-text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
 }
 
 .abwab-toolbar__search input {

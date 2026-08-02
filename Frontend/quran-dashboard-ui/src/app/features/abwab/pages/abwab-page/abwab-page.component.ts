@@ -166,7 +166,15 @@ export class AbwabPageComponent implements OnInit {
     return result.isFiltering ? pruneAbwabNodesToVisible(this.visibleRoots(), result.visibleIds) : this.visibleRoots();
   });
 
-  protected readonly forceExpandedIds = computed(() => this.searchResult().autoExpandedIds);
+  /** The tree marks these rows; it never drops the ones it did not match. Cards and archive
+   * read `displayRoots`/`displayArchivedRoots` above and still prune. */
+  protected readonly treeMatchedIds = computed(() => this.searchResult().matchedIds);
+
+  /** The count follows whichever walk actually ran for the view on screen. Both computeds are
+   * lazy, so reading one here does not cost a second walk per keystroke. */
+  protected readonly searchMatchCount = computed(() =>
+    this.archiveParam() ? this.archiveSearchResult().matchedIds.size : this.searchResult().matchedIds.size,
+  );
 
   // Reveal-in-tree (audit item 10). `revealTargetId` is what the reveal is *about*;
   // `revealedId` is what currently carries the mark. They are separate because the mark is
@@ -204,6 +212,26 @@ export class AbwabPageComponent implements OnInit {
       parentId = byId.get(parentId)?.parentId ?? null;
     }
     return chain;
+  });
+
+  /** Two seed sources on one input: the reveal's ancestor chain and the search's. Both are
+   * merged into the tree's manual set, so a branch either opens is collapsible immediately and
+   * survives clearing the query — which is also why search seeds accumulate across keystrokes
+   * (broadening then narrowing leaves the earlier branches open). Intended, not incidental.
+   *
+   * The identity rules matter as much as the union: returning a fresh Set when nothing changed
+   * would re-run the tree's merge effect on every change-detection tick, so an empty union is
+   * the shared `NO_IDS` and a one-sided union is that side's own set, unwrapped. */
+  protected readonly expandSeedIds = computed<ReadonlySet<number>>(() => {
+    const reveal = this.revealExpandSeedIds();
+    const search = this.searchResult().autoExpandedIds;
+    if (reveal.size === 0) {
+      return search.size === 0 ? NO_IDS : search;
+    }
+    if (search.size === 0) {
+      return reveal;
+    }
+    return new Set([...reveal, ...search]);
   });
 
   /** The unfiltered live roots the move picker and the relations modal both browse. */
@@ -452,10 +480,13 @@ export class AbwabPageComponent implements OnInit {
    * Reveal a related door in the tree (audit item 10). Every state the target can be in is
    * folded into **one** query patch, so there is one navigation and no race between them:
    * `door` always; `section` when the target lives elsewhere (an explicit `door` in the same
-   * change overrides the scope-invalidation clear, `abwab-url-sync.ts`); `view: 'tree'` when
-   * the cards drill is open, since the item is reveal-in-*tree*; and `q` cleared when a search
-   * is filtering, because a reveal that leaves its target pruned breaks the promise the click
-   * makes.
+   * change overrides the scope-invalidation clear, `abwab-url-sync.ts`); and `view: 'tree'`
+   * when the cards drill is open, since the item is reveal-in-*tree*.
+   *
+   * `q` is **not** touched (ux-slice-l, reversing slice D). Clearing it existed only because a
+   * filtering tree could leave the target pruned; the tree highlights instead of pruning now,
+   * so the target is on screen either way and throwing the user's query away would be a second,
+   * unasked-for action.
    *
    * The archived/missing guard is defensively unreachable — the relations read hides any
    * relation whose endpoint is archived — and is kept anyway, so an impossible state is a
@@ -471,8 +502,10 @@ export class AbwabPageComponent implements OnInit {
       this.revealAnnouncement.set(ABWAB_LABELS.revealUnavailable);
       return;
     }
+    // Read before the overlay closes — closing releases it.
+    const anchorId = this.overlays.relationsAnchorDoorId();
     this.overlays.closeRelationsModal();
-    // The single patch below already discards the key; clearing the tracked kind here rather
+    // The single patch below already rewrites the key; clearing the tracked kind here rather
     // than waiting for the emission keeps this one navigation instead of two.
     this.modalUrl.releaseTracking();
     this.revealAnnouncement.set(null);
@@ -482,11 +515,13 @@ export class AbwabPageComponent implements OnInit {
     this.updateQueryParams(
       buildAbwabQueryParams({
         door: doorId,
-        // The key carries no id of its own — its subject is always `door=`, which this patch
-        // is rewriting. Retaining `relations-closed` across a reveal would leave a restore
-        // control that reopens the **target's** relations while the user is expecting the
-        // source's, so the honest reading of "go to the tree" is to discard it.
-        modal: null,
+        // Retained WITH the source's id (ux-slice-l). A plain `relations-closed` would follow
+        // `door=`, which this patch is pointing at the TARGET — so the restore control would
+        // reopen the target's relations while the user is expecting the source's. That
+        // ambiguity is why the reveal used to discard the key outright. The key now carries
+        // the diverged subject itself, so restore reopens the door the user came from.
+        // A null anchor is unreachable in door mode; emitting no key beats emitting a malformed one.
+        modal: anchorId === null ? null : { kind: 'relations' as const, closed: true, subjectDoorId: anchorId },
         // Only when the active tab genuinely excludes the target. «كل الأبواب» shows every
         // door, section-less ones included, so switching to the target's own tab there would
         // narrow the view for no reason; a *section* tab that isn't the target's does exclude
@@ -495,7 +530,6 @@ export class AbwabPageComponent implements OnInit {
           ? { section: node.sectionId }
           : {}),
         ...(this.viewParam() === 'cards' ? { view: 'tree' as AbwabView } : {}),
-        ...(this.searchQueryParam() !== '' ? { q: '' } : {}),
       }),
     );
   }
@@ -624,13 +658,30 @@ export class AbwabPageComponent implements OnInit {
     this.closeUrlBackedModal(['relations'], () => this.overlays.closeRelationsModal());
   }
 
+  /** Null unless the retained state pins a subject of its own — then the control names it.
+   * `restorableModal` has already checked the door is live, so a name is always found here. */
+  protected readonly retainedSubjectDoorName = computed(() => {
+    const subjectDoorId = this.modalUrl.restorableModal()?.subjectDoorId ?? null;
+    return subjectDoorId === null ? null : (this.byId().get(subjectDoorId)?.name ?? null);
+  });
+
   protected onModalRestoreRequested(): void {
     const retained = this.modalUrl.restorableModal();
     if (retained === null) {
       return;
     }
-    // A push, so Back returns to the closed state rather than skipping past it.
-    this.updateQueryParams(buildAbwabQueryParams({ modal: { kind: retained.kind, closed: false } }));
+    // A push, so Back returns to the closed state rather than skipping past it. A carried
+    // subject is restored by writing it back to `door=` in the SAME patch: the open state's
+    // subject is always `door=`, so the id is dropped here and every invariant holds again.
+    // The patch is all this does — the emission drives the existing deep-link machinery, which
+    // selects the door and opens the overlay. Opening it synchronously here would break the
+    // echo-no-op invariant `reconcileOpen` depends on.
+    this.updateQueryParams(
+      buildAbwabQueryParams({
+        ...(retained.subjectDoorId === null ? {} : { door: retained.subjectDoorId }),
+        modal: { kind: retained.kind, closed: false, subjectDoorId: null },
+      }),
+    );
   }
 
   protected onModalDiscardRequested(): void {
@@ -653,7 +704,7 @@ export class AbwabPageComponent implements OnInit {
       return;
     }
     this.modalUrl.releaseTracking();
-    this.updateQueryParams(buildAbwabQueryParams({ modal: discard ? null : { kind, closed: true } }), true);
+    this.updateQueryParams(buildAbwabQueryParams({ modal: discard ? null : { kind, closed: true, subjectDoorId: null } }), true);
     if (!discard) {
       this.focusQueued(() => this.modalRestoreControl()?.focusRestore());
     }
@@ -680,7 +731,7 @@ export class AbwabPageComponent implements OnInit {
     this.updateQueryParams(
       buildAbwabQueryParams({
         ...(doorId === undefined ? {} : { door: doorId }),
-        modal: { kind, closed: false },
+        modal: { kind, closed: false, subjectDoorId: null },
       }),
     );
   }

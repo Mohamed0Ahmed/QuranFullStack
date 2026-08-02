@@ -59,13 +59,15 @@ export class AbwabTreeComponent {
   readonly selectedId = input<number | null>(null);
   readonly bulkMode = input(false);
   readonly bulkSelectedIds = input<ReadonlySet<number>>(new Set());
-  /** Ids a caller (e.g. search auto-expand, T507) forces open, unioned with manual toggles. */
-  readonly forceExpandedIds = input<ReadonlySet<number>>(new Set());
-  /** Ids to open **once**, merged into the manual set rather than unioned like
-   * `forceExpandedIds` — a forced-open id cannot be collapsed, and a reveal that permanently
-   * locked its target's ancestor chain open would be a worse bug than the one it fixes.
-   * Seeding hands those ancestors back to the user's own chevrons immediately. */
+  /** Ids to open **once**, merged into the manual set rather than unioned — a forced-open id
+   * cannot be collapsed, and a branch that stayed locked open because a search or a reveal put
+   * it there would be a worse bug than the one it fixes. Seeding hands those branches back to
+   * the user's own chevrons immediately. Search auto-expansion arrives here too (ux-slice-l);
+   * the `forceExpandedIds` input it used to arrive on is gone. */
   readonly expandSeedIds = input<ReadonlySet<number>>(new Set());
+  /** Rows the current search matched. The tree marks them in place and hides nothing — the
+   * cards and archive views are the ones that still filter. */
+  readonly matchedIds = input<ReadonlySet<number>>(new Set());
   /** The row currently carrying the reveal mark; the page clears it on its own timer. */
   readonly revealedId = input<number | null>(null);
 
@@ -96,9 +98,7 @@ export class AbwabTreeComponent {
     });
   }
 
-  private readonly effectiveExpandedIds = computed(
-    () => new Set([...this.manuallyExpandedIds(), ...this.forceExpandedIds()]),
-  );
+  private readonly effectiveExpandedIds = this.manuallyExpandedIds.asReadonly();
 
   protected readonly nodesById = computed(() => {
     const map = new Map<number, AbwabNode>();
@@ -323,9 +323,13 @@ export class AbwabTreeComponent {
       case 'openMenu': {
         event.preventDefault();
         // Anchor to the focused row rather than the viewport origin — a keyboard user has no
-        // pointer position, and a menu pinned at (0,0) is not a usable keyboard path.
+        // pointer position, and a menu pinned at (0,0) is not a usable keyboard path. The x is
+        // the row's INLINE-START edge because that is the edge the menu now extends from
+        // (`qd-context-menu`'s placement contract); anchoring at `left` under RTL would push the
+        // menu off the row entirely.
         const rect = this.rowElement(intent.id)?.getBoundingClientRect();
-        this.openMenuFor(intent.id, rect?.left ?? 0, rect?.bottom ?? 0);
+        const anchorX = this.resolveDirection() === 'rtl' ? rect?.right : rect?.left;
+        this.openMenuFor(intent.id, anchorX ?? 0, rect?.bottom ?? 0);
         break;
       }
       case 'none':

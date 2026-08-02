@@ -781,8 +781,11 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Not a modal shell.** Authoring modals (a form plus its dirty guard) keep their own shell —
   that is a different contract. This is for confirmations only.
 - **Retrofit complete.** Every destructive confirmation in the app now composes this primitive:
-  the abwab page's single and bulk archive confirms, the sections modal's delete, and the
-  templates page's template- and node-delete. The only surviving hand-written
+  the abwab page's single and bulk archive confirms, the sections modal's delete, the relations
+  modal's relation-delete, and the templates page's template- and node-delete. The relations one
+  is the primitive's first **new** consumer rather than a retrofit — no hand-written confirm
+  existed there; the chip deleted on click — and it nests above an open modal, the sections
+  modal's precedent, which needs no focus-trap gating on the host. The only surviving hand-written
   `role="alertdialog"` blocks are the three **dirty-discard strips** (door, sections, and
   template-node modals) — those are in-shell footers guarding unsaved work, not interrupting
   dialogs, and they deliberately stay where the unsaved work is. A new hand-rolled confirm is a
@@ -1173,11 +1176,27 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   path) puts focus inside it — an element-bound handler would never receive the key.
   **This is the one place this primitive is not literally behavior-preserving:** neither
   prior copy dismissed on `Escape`. Deliberate, additive a11y gain, not a bug.
-- **Three gaps this primitive deliberately did not fix** — named so a future reader does
-  not assume a shared, contracted primitive already covers them:
-  1. **No viewport clamping.** Both prior copies positioned from raw pointer coordinates
-     with no bounds check; the faithful extraction preserves that, so a menu opened near
-     the inline-start edge under RTL can still overflow the viewport.
+- **Placement contract (slice L).** The menu extends toward the **inline-start** of the
+  anchor point: under RTL its right edge sits at `x` and the box grows leftward; under LTR
+  the mirror (left edge at `x`), which is the behaviour that originally shipped. Direction
+  is resolved from `closest('[dir]')`, never hardcoded. It **flips** on collision — inline
+  when the preferred side would cross the inline-start viewport edge, block when opening
+  below would cross the bottom — and is clamped into `[8px, viewport − 8px]` afterwards; a
+  menu larger than the viewport keeps its start edge on screen, since those are the items
+  reached first. Because all three decisions need the box's own size, the menu renders
+  `visibility: hidden` for one frame, measures itself in `afterRenderEffect`, then places
+  and shows — no flash on the wrong side. jsdom reports zero-sized rects and is skipped
+  (the menu keeps the raw anchor there and stays measurable by the specs), so **the browser
+  is the verification tier**: `e2e/abwab-operations.e2e.ts` asserts the inline-start
+  extension, the inline flip at 900px, and the block flip at 420px height. Both trees'
+  keyboard paths anchor at the focused row's inline-start edge to match.
+  Recorded browser walk (1024px and 1440px, both themes, 12 points): mid-viewport right-edge
+  delta 0.0px; inline-start-edge and bottom-edge opens never clipped; the bottom open flipped
+  upward in every case. `menuTestId`/`backdropTestId` and the projected-item contract are
+  unchanged.
+- **Two gaps this primitive deliberately did not fix** — named so a future reader does
+  not assume a shared, contracted primitive already covers them (gap 1, no viewport
+  clamping, was **closed by slice L**; see the placement contract above):
   2. **No focus management into the menu.** Neither prior copy moved focus into it on
      open; adding that changes keyboard behavior on a shipped surface and belongs to
      Slice G's row-menu keyboard-path work, not this extraction.
@@ -1282,6 +1301,26 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   the CSS only renders it. Keeping the timer with the host is what lets the same host
   key the mark off the navigation that makes the destination exist (see the abwab
   README's reveal note) instead of off the click.
+- **The persistent variant: a search match mark (ux-slice-l).** The same "this row is the
+  one" problem with a different lifetime — it holds for as long as the query does instead of
+  decaying. Same reasoning rules out a tint (see above), so it is also outline-family, but it
+  takes a **different CSS property**: `box-shadow: inset 0 0 0 1px var(--qd-accent)`, while
+  the reveal keeps `outline`. That split is the point. The reveal ring and `:focus-visible`
+  already both claim `outline`, and a third claimant would make which mark shows depend on
+  SCSS declaration order — a silent-reformat hazard. Separate properties compose
+  order-independently: **match + revealed** shows the 2px decaying outline around the static
+  1px inset ring, and **match + focused** shows the focus ring with the match still visible.
+  The 1px/2px pairing keeps the persistent mark quieter than the transient one. It never
+  animates, so reduced motion needs nothing new; the row's `border-radius` is followed by an
+  inset shadow, so it hugs the same shape hover does. **Do not unify the two onto one
+  property** — that reintroduces the race this split removes.
+  Measured in-browser (1024px and 1440px, both themes, rest / hover / selected / focused —
+  16 readings): the mark is `oklch(0.49 0.068 176.3)` in light against fills of transparent,
+  `oklch(0.945 0.015 94.2)` hover and `oklch(0.954 0.01 164.9)` selected — a lightness delta
+  of 0.46–0.46 on the two fills; in dark it is `oklch(0.772 0.098 82)` against
+  `oklch(0.265 0.039 262.7)` hover and `oklch(0.25 0.03 281.2)` selected, delta 0.51–0.52.
+  The shadow was byte-identical in all four states in both themes — no fill and no focus ring
+  overwrites it.
 - Compose, do not re-style — a second consumer takes this class shape, not a new one.
 
 ### Viewport reservation

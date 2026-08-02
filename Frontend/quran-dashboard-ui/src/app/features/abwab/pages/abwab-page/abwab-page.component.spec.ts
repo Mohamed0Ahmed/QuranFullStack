@@ -487,24 +487,76 @@ describe('AbwabPageComponent', () => {
     });
   });
 
-  describe('T507 — search wiring filters the tree via the toolbar input', () => {
-    it('hides a non-matching door and auto-expands the matching ancestor', () => {
-      const fixture = render();
+  // Rewritten by ux-slice-l: T507's original decision — search PRUNES the tree — is reversed for
+  // the tree only. Hiding rows destroyed the structure the user was reading, and a zero-match
+  // query collapsed the whole tree into «لا توجد أبواب بعد», which is a lie about the data. The
+  // tree marks matches in place; cards and archive still filter, deliberately, from the same box.
+  describe('T507 — search marks matches in the tree via the toolbar input', () => {
+    function search(fixture: ReturnType<typeof render>, query: string): HTMLElement {
       const root = fixture.nativeElement as HTMLElement;
       const input = root.querySelector<HTMLInputElement>('[data-testid="abwab-toolbar-search"]')!;
-      input.value = 'الرسول';
+      input.value = query;
       input.dispatchEvent(new Event('input'));
+      queryParamMap$.next(convertToParamMap(query === '' ? {} : { q: query }));
+      fixture.detectChanges();
+      return root;
+    }
+
+    it('keeps every row, marks the match, and shows the count', () => {
+      const fixture = render();
+      const root = search(fixture, 'الرسول');
 
       expect(router.navigate).toHaveBeenCalledWith(
         [],
         expect.objectContaining({ queryParams: expect.objectContaining({ q: 'الرسول' }) }),
       );
 
-      queryParamMap$.next(convertToParamMap({ q: 'الرسول' }));
+      const match = root.querySelector('[data-testid="abwab-tree-row-2"]');
+      const nonMatch = root.querySelector('[data-testid="abwab-tree-row-1"]');
+      expect(match).toBeTruthy();
+      // The row that did not match is still there — that is the whole change.
+      expect(nonMatch).toBeTruthy();
+      expect(match!.classList.contains('abwab-tree__row--match')).toBe(true);
+      expect(nonMatch!.classList.contains('abwab-tree__row--match')).toBe(false);
+
+      expect(root.querySelector('[data-testid="abwab-toolbar-search-count"]')?.textContent?.trim()).toBe(
+        ABWAB_LABELS.searchMatchCount(1),
+      );
+    });
+
+    it('a zero-match query leaves the full tree on screen with a zero count, not the empty state', () => {
+      const fixture = render();
+      const root = search(fixture, 'لا يوجد باب بهذا الاسم');
+
+      expect(root.querySelector('[data-testid="abwab-tree-row-1"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-tree-row-2"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-page-empty"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-toolbar-search-count"]')?.textContent?.trim()).toBe(
+        ABWAB_LABELS.searchMatchCount(0),
+      );
+    });
+
+    it('clearing the query drops the marks and the count', () => {
+      const fixture = render();
+      let root = search(fixture, 'الرسول');
+      expect(root.querySelector('[data-testid="abwab-tree-row-2"]')!.classList).toContain('abwab-tree__row--match');
+
+      root = search(fixture, '');
+
+      expect(root.querySelector('[data-testid="abwab-tree-row-2"]')!.classList).not.toContain(
+        'abwab-tree__row--match',
+      );
+      expect(root.querySelector('[data-testid="abwab-toolbar-search-count"]')).toBeNull();
+    });
+
+    it('cards view still prunes under the same query — the split is per view, not per query', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+      queryParamMap$.next(convertToParamMap({ view: 'cards', q: 'الرسول' }));
       fixture.detectChanges();
 
-      expect(root.querySelector('[data-testid="abwab-tree-row-2"]')).toBeTruthy();
-      expect(root.querySelector('[data-testid="abwab-tree-row-1"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-card-2"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-card-1"]')).toBeNull();
     });
   });
 
@@ -860,6 +912,39 @@ describe('AbwabPageComponent', () => {
       return extras.queryParams;
     }
 
+    // ux-slice-l's other half, tested here because this describe owns the only nested fixture
+    // (1 → 2 → 3): search auto-expansion is a SEED, not a force, so the branch it opens must
+    // survive clearing the query and must still be collapsible. That chain — search →
+    // `expandSeedIds` union → the tree's merge effect — is what this slice rewired when it
+    // deleted `forceExpandedIds`, and it is invisible in the flat fixture the other describes use.
+    describe('search seeds the match’s ancestors open (ux-slice-l)', () => {
+      const rowsPresent = (fixture: { nativeElement: unknown }, ids: readonly number[]) =>
+        ids.map((id) => !!(fixture.nativeElement as HTMLElement).querySelector(`[data-testid="abwab-tree-row-${id}"]`));
+
+      it('opens the chain to a deep match, keeps it open after the query clears, and leaves it collapsible', () => {
+        // Collapsed to start: only the root is on screen.
+        const fixture = renderReveal({ section: '1' });
+        expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, false, false]);
+
+        // «حفيد» is the grandchild — its ancestors 1 and 2 are seeded open.
+        params$.next(convertToParamMap({ section: '1', q: 'حفيد' }));
+        fixture.detectChanges();
+        expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, true, true]);
+
+        // Clearing the query is not an un-expand: the seed became the user's own state.
+        params$.next(convertToParamMap({ section: '1' }));
+        fixture.detectChanges();
+        expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, true, true]);
+
+        // And it is a seed, not a force — the chevron still collapses it. A forced id could not.
+        (
+          (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-tree-chevron-1"]') as HTMLElement
+        ).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        fixture.detectChanges();
+        expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, false, false]);
+      });
+    });
+
     it('same scope: patches door only', () => {
       const fixture = renderReveal({ section: '1' });
       reveal(fixture, 3);
@@ -890,11 +975,15 @@ describe('AbwabPageComponent', () => {
       expect(lastPatch()).toEqual({ view: 'tree', door: '3', modal: null });
     });
 
-    it('active search: the patch clears q, so the target cannot land pruned', () => {
+    // Slice D cleared `q` here because a filtering tree could leave the reveal's target pruned.
+    // ux-slice-l removed the pruning, so the premise is gone and the user's query survives —
+    // throwing it away would now be a second, unasked-for action (user decision, 2026-08-02).
+    it('active search: the patch carries no q term, so the search survives the reveal', () => {
       const fixture = renderReveal({ section: '1', q: 'جذر' });
       reveal(fixture, 3);
 
-      expect(lastPatch()).toEqual({ q: null, door: '3', modal: null });
+      expect(lastPatch()).toEqual({ door: '3', modal: null });
+      expect(lastPatch()).not.toHaveProperty('q');
     });
 
     it('archived or unknown target: no navigation, and the announcer says why', () => {
@@ -1414,14 +1503,122 @@ describe('AbwabPageComponent', () => {
       expect(lastCallExtras()).toMatchObject({ queryParams: { door: '1', modal: 'relations' } });
     });
 
-    it('a reveal discards the key in its single patch — the subject it named is being rewritten', () => {
+    // Rewritten by ux-slice-l. The reveal used to DISCARD the key: `door=` was being pointed at
+    // the target, and a plain `relations-closed` follows `door=`, so the restore control would
+    // have reopened the target's relations while the user expected the source's. The key now
+    // carries the diverged subject itself, so the state survives instead of being thrown away.
+    it('a reveal retains relations-<sourceId>-closed in its single patch', () => {
       const fixture = renderAt({ door: '1', modal: 'relations' });
       const root = fixture.nativeElement as HTMLElement;
       expect(root.querySelector('[data-testid="abwab-relations-modal"]')).toBeTruthy();
 
       (fixture.componentInstance as unknown as { onRevealRequested: (id: number) => void }).onRevealRequested(2);
 
-      expect(lastPatch()).toEqual({ door: '2', modal: null });
+      // Still ONE patch, and the id in it is the SOURCE's, not the target's.
+      expect(lastPatch()).toEqual({ door: '2', modal: 'relations-1-closed' });
+    });
+
+    it('the restore control renders for a carried subject, naming the source door', () => {
+      const fixture = renderAt({ door: '2', modal: 'relations-1-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      // «استعادة علاقات «العلم بالله»» — door 1, the source, even though door= is 2. The plain
+      // form would have named the kind only, leaving the user to guess whose relations wait.
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')?.textContent?.trim()).toBe(
+        ABWAB_LABELS.modalRestoreLabel(ABWAB_LABELS.relationsOfDoorKindName('العلم بالله')),
+      );
+      expect(root.querySelector('[data-testid="abwab-page-modal-discard"]')?.getAttribute('aria-label')).toBe(
+        ABWAB_LABELS.modalDiscardAriaLabel(ABWAB_LABELS.relationsOfDoorKindName('العلم بالله')),
+      );
+    });
+
+    it('restoring writes door=<source> and the bare open key in one patch', () => {
+      const fixture = renderAt({ door: '2', modal: 'relations-1-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-page-modal-restore');
+
+      // One push, and the open state carries no id — its subject is `door=` again.
+      expect(lastPatch()).toEqual({ door: '1', modal: 'relations' });
+    });
+
+    it('a carried subject is pinned: selecting another door does not move it', () => {
+      const fixture = renderAt({ door: '2', modal: 'relations-1-closed' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      params$.next(convertToParamMap({ door: '3', modal: 'relations-1-closed' }));
+      fixture.detectChanges();
+
+      // Unlike a plain `-closed`, which follows `door=`, this one still names door 1.
+      expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')?.textContent?.trim()).toBe(
+        ABWAB_LABELS.modalRestoreLabel(ABWAB_LABELS.relationsOfDoorKindName('العلم بالله')),
+      );
+    });
+
+    it('renders no control when the carried door is archived or absent', () => {
+      // Door 3 in this fixture is archived; 99 does not exist. Both leave the key inert —
+      // no control, no rewrite — the same outcome a dead `door=` already produces.
+      for (const deadId of ['3', '99']) {
+        const fixture = renderAt({ door: '1', modal: `relations-${deadId}-closed` });
+        expect(
+          (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-page-modal-restore"]'),
+        ).toBeNull();
+      }
+    });
+
+    // The single-retained-state rule is a DECISION, not an accident of the key being
+    // single-valued — so both orders are pinned here rather than left to archaeology.
+    describe('the retained key holds one state, and the next writer wins', () => {
+      it('opening another modal overwrites a reveal-retained key, control and all', () => {
+        const fixture = renderAt({ door: '2', modal: 'relations-1-closed' });
+        const root = fixture.nativeElement as HTMLElement;
+        expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeTruthy();
+
+        click(root, 'abwab-page-manage-sections');
+        expect(lastPatch()).toMatchObject({ modal: 'sections' });
+
+        params$.next(convertToParamMap({ door: '2', modal: 'sections' }));
+        fixture.detectChanges();
+        expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')).toBeNull();
+
+        // Closing the new modal retains ITS plain key; the relations state does not come back.
+        params$.next(convertToParamMap({ door: '2', modal: 'sections-closed' }));
+        fixture.detectChanges();
+        expect(root.querySelector('[data-testid="abwab-page-modal-restore"]')?.textContent?.trim()).toBe(
+          ABWAB_LABELS.modalRestoreLabel(ABWAB_LABELS.modalKindNames['sections']),
+        );
+      });
+
+      it('opening relations fresh on another door overwrites the carried key', () => {
+        const fixture = renderAt({ door: '2', modal: 'relations-1-closed' });
+        const root = fixture.nativeElement as HTMLElement;
+
+        click(root, 'abwab-side-panel-op-relations');
+
+        // `door=2` with a bare key — the carried id is gone, and closing this one would retain
+        // a plain `relations-closed` whose subject is door 2.
+        expect(lastPatch()).toMatchObject({ door: '2', modal: 'relations' });
+      });
+    });
+
+    // Back after a reveal was designed but pinned by nothing: the previous history entry is
+    // `modal=relations&door=<source>`, and the reconcile machinery has to reopen the modal on
+    // the source from that emission alone.
+    it('Back after a reveal reopens the modal on the source door', () => {
+      const fixture = renderAt({ door: '1', modal: 'relations' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      (fixture.componentInstance as unknown as { onRevealRequested: (id: number) => void }).onRevealRequested(2);
+      params$.next(convertToParamMap({ door: '2', modal: 'relations-1-closed' }));
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-relations-modal"]')).toBeNull();
+
+      // Back — the emission the browser produces for the previous entry.
+      params$.next(convertToParamMap({ door: '1', modal: 'relations' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-relations-modal"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-relations-modal"]')?.textContent).toContain('العلم بالله');
     });
 
     it('switching section clears the key, and the overlay closes with it', () => {

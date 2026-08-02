@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { AbwabToolbarComponent } from './abwab-toolbar.component';
 import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
+import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 const SECTIONS: AbwabTreeSectionDto[] = [
   { id: 1, name: 'اللغة العربية', orderValue: 1, version: 1, doorsInScopeCount: 5 },
@@ -136,6 +137,77 @@ describe('AbwabToolbarComponent', () => {
       const sectionTab = root.querySelector('[data-testid="abwab-toolbar-tab-1"]');
       expect(sectionTab?.getAttribute('aria-label')).toContain('اللغة العربية');
       expect(sectionTab?.getAttribute('aria-label')).toContain('3');
+    });
+  });
+
+  // ux-slice-l. The seen count and the spoken count are two elements on purpose: a live
+  // `role="status"` bound to the count would speak once per typed character.
+  describe('the search match count', () => {
+    const visibleCount = (fixture: ReturnType<typeof render>) =>
+      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-toolbar-search-count"]');
+    const announceRegion = (fixture: ReturnType<typeof render>) =>
+      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-toolbar-search-count-announce"]')!;
+
+    it('shows the visible count only while a query is present, and hides it from AT', () => {
+      const withQuery = render({ searchQuery: 'صبر', searchMatchCount: 3 });
+      expect(visibleCount(withQuery)?.textContent?.trim()).toBe(ABWAB_LABELS.searchMatchCount(3));
+      expect(visibleCount(withQuery)?.getAttribute('aria-hidden')).toBe('true');
+
+      expect(visibleCount(render({ searchQuery: '', searchMatchCount: 0 }))).toBeNull();
+    });
+
+    it('mounts the status region even with no query, so a later change is announced at all', () => {
+      const fixture = render({ searchQuery: '', searchMatchCount: 0 });
+
+      expect(announceRegion(fixture).getAttribute('role')).toBe('status');
+      expect(announceRegion(fixture).textContent?.trim()).toBe('');
+    });
+
+    describe('the announcement settles before it speaks', () => {
+      beforeEach(() => vi.useFakeTimers());
+      afterEach(() => vi.useRealTimers());
+
+      const type = (fixture: ReturnType<typeof render>, query: string, count: number) => {
+        fixture.componentRef.setInput('searchQuery', query);
+        fixture.componentRef.setInput('searchMatchCount', count);
+        fixture.detectChanges();
+      };
+
+      it('stays silent through rapid input and speaks the settled count once typing stops', () => {
+        const fixture = render({ searchQuery: '', searchMatchCount: 0 });
+
+        type(fixture, 'ص', 9);
+        vi.advanceTimersByTime(200);
+        type(fixture, 'صب', 4);
+        vi.advanceTimersByTime(200);
+        type(fixture, 'صبر', 2);
+
+        // Two keystrokes went by inside one 500ms window and neither reached the region.
+        vi.advanceTimersByTime(499);
+        fixture.detectChanges();
+        expect(announceRegion(fixture).textContent?.trim()).toBe('');
+
+        vi.advanceTimersByTime(1);
+        fixture.detectChanges();
+        expect(announceRegion(fixture).textContent?.trim()).toBe(ABWAB_LABELS.searchMatchCount(2));
+      });
+
+      it('empties immediately on clear and announces nothing', () => {
+        const fixture = render({ searchQuery: '', searchMatchCount: 0 });
+        type(fixture, 'صبر', 2);
+        vi.advanceTimersByTime(500);
+        fixture.detectChanges();
+        expect(announceRegion(fixture).textContent?.trim()).toBe(ABWAB_LABELS.searchMatchCount(2));
+
+        type(fixture, '', 0);
+        fixture.detectChanges();
+        // Emptied now, not after a settle — a stale count must not be re-read later.
+        expect(announceRegion(fixture).textContent?.trim()).toBe('');
+
+        vi.advanceTimersByTime(1000);
+        fixture.detectChanges();
+        expect(announceRegion(fixture).textContent?.trim()).toBe('');
+      });
     });
   });
 });

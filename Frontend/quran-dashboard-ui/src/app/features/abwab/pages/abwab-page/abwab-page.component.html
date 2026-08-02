@@ -9,6 +9,7 @@
         @if (modalUrl.restorableModal(); as retained) {
           <qd-abwab-modal-restore
             [kind]="retained.kind"
+            [subjectDoorName]="retainedSubjectDoorName()"
             (restore)="onModalRestoreRequested()"
             (discard)="onModalDiscardRequested()"
           />
@@ -81,6 +82,7 @@
       [activeSectionId]="activeSectionId()"
       [view]="viewParam()"
       [searchQuery]="searchQueryParam()"
+      [searchMatchCount]="searchMatchCount()"
       [hideSectionControls]="archiveParam()"
       [rootCountBySectionId]="rootCountBySectionId()"
       [totalRootCount]="totalRootCount()"
@@ -156,18 +158,18 @@
             </div>
           } @else {
             <div class="qd-card abwab-page__tree-card">
-              @if (displayRoots().length === 0) {
+              @if (visibleRoots().length === 0) {
                 <qd-state variant="empty" [message]="emptyLabel" data-testid="abwab-page-empty" />
               } @else {
                 <qd-abwab-tree
-                  [roots]="displayRoots()"
+                  [roots]="visibleRoots()"
                   [ariaLabel]="treeAriaLabel"
                   [orderScope]="orderScope()"
                   [selectedId]="selection.selectedDoorId()"
                   [bulkMode]="selection.bulkMode()"
                   [bulkSelectedIds]="bulkSelectedIds()"
-                  [forceExpandedIds]="forceExpandedIds()"
-                  [expandSeedIds]="revealExpandSeedIds()"
+                  [matchedIds]="treeMatchedIds()"
+                  [expandSeedIds]="expandSeedIds()"
                   [revealedId]="revealedId()"
                   (selected)="onTreeSelected($event)"
                   (bulkToggled)="onBulkToggled($event)"

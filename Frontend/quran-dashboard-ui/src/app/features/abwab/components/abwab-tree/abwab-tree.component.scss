@@ -139,6 +139,18 @@
   }
 }
 
+/* Persistent match mark (ux-slice-l). Outline-family, never a tint, for the reason directly
+   above: `--qd-selected-bg` IS `--qd-accent-tint`, so a tint is zero-delta on a matched row
+   that is also selected, and `_tokens.scss:94` records a tint too close to hover reading as a
+   flash. Inset `box-shadow` rather than `outline` ON PURPOSE: the reveal ring and the focus
+   ring both own `outline`, and a third claim on that one channel would make which mark shows
+   depend on SCSS declaration order — a silent-reformat hazard. Separate properties compose
+   instead of competing, so match+revealed shows both signals at once and match+focused keeps
+   the match visible under the focus ring. Never animated, so reduced motion needs nothing. */
+.abwab-tree__row--match {
+  box-shadow: inset 0 0 0 1px var(--qd-accent);
+}
+
 /* Focus still wins over the reveal — a keyboard user must always see where focus is. */
 .abwab-tree__row:focus-visible {
   outline: 2px solid var(--qd-focus-ring);

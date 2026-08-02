@@ -575,4 +575,49 @@ describe('AbwabTreeComponent', () => {
     });
   });
 
+  describe('the search match mark (ux-slice-l)', () => {
+    const row = (fixture: ReturnType<typeof render>, id: number) =>
+      (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="abwab-tree-row-${id}"]`)!;
+
+    it('marks a matched row and leaves a non-matching one on screen, unmarked', () => {
+      const fixture = render({ matchedIds: new Set([3]) });
+
+      expect(row(fixture, 3).classList).toContain('abwab-tree__row--match');
+      // Not "absent" — the tree stopped hiding non-matches; that is the point of the mark.
+      expect(row(fixture, 1)).toBeTruthy();
+      expect(row(fixture, 1).classList).not.toContain('abwab-tree__row--match');
+    });
+
+    it('a revealed match carries both marks, and the two live on different CSS properties', () => {
+      const fixture = render({ matchedIds: new Set([3]), revealedId: 3 });
+
+      expect(row(fixture, 3).classList).toContain('abwab-tree__row--match');
+      expect(row(fixture, 3).classList).toContain('abwab-tree__row--revealed');
+
+      // The composition rule, asserted at its source rather than by eye: the match mark claims
+      // `box-shadow` and the reveal ring claims `outline`, so which one shows can never come
+      // down to SCSS declaration order. If someone "unifies" them onto one property, this fails.
+      const styles = Array.from(document.styleSheets)
+        .flatMap((sheet) => {
+          try {
+            return Array.from(sheet.cssRules);
+          } catch {
+            return [];
+          }
+        })
+        .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule);
+      const matchRule = styles.find((rule) => rule.selectorText?.includes('abwab-tree__row--match'));
+      const revealRule = styles.find(
+        (rule) => rule.selectorText?.includes('abwab-tree__row--revealed') && rule.style.outline !== '',
+      );
+
+      // Found-ness asserted first: without this the property checks below pass vacuously on
+      // `undefined` if the stylesheet ever stops being reachable from the spec.
+      expect(matchRule).toBeDefined();
+      expect(revealRule).toBeDefined();
+      expect(matchRule!.style.boxShadow).not.toBe('');
+      expect(matchRule!.style.outline).toBe('');
+      expect(revealRule!.style.boxShadow).toBe('');
+    });
+  });
 });

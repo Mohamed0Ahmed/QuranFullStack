@@ -120,3 +120,75 @@ test('a door is asked about once, a zero-relation door is never asked about, and
   await expect(page.getByTestId('abwab-relations-modal-group-similarity')).toContainText(renamed);
   expect(relationReads()).toBe(2);
 });
+
+// ux-slice-l (L4). A reveal points `door=` at the target while the overlay it just closed still
+// belongs to the SOURCE, so the retained key carries the source's id. Two browser truths here:
+// the restore control names the right door and reopens it, and doing so costs no extra read
+// while the cache is warm.
+test('a reveal retains the source’s relations: restore reopens them from cache, and Back does too', async ({
+  page,
+  abwabSandbox,
+}) => {
+  const relationReads = countRelationReads(page);
+  const source = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('reveal-source') });
+  const target = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('reveal-target') });
+  await abwabSandbox.addRelation(source.id, [target.id]);
+
+  await page.goto(`/abwab?section=${abwabSandbox.sectionId}`);
+  await openRelationsFor(page, source.id);
+  await expect(page.getByTestId('abwab-relations-modal-group-similarity')).toContainText(target.name);
+  expect(relationReads()).toBe(1);
+
+  // Reveal the partner: the chip's LABEL is the reveal control (its remove X is the delete).
+  await page.getByTestId('abwab-relations-modal-group-similarity').getByTestId('qd-chip-label').click();
+  await expect(page.getByTestId('abwab-relations-modal')).toBeHidden();
+  await expect(page).toHaveURL(new RegExp(`modal=relations-${source.id}-closed`));
+  await expect(page).toHaveURL(new RegExp(`door=${target.id}`));
+
+  // The control names the SOURCE, which is the ambiguity the carried id exists to remove.
+  const restore = page.getByTestId('abwab-page-modal-restore');
+  await expect(restore).toBeVisible();
+  await expect(restore).toHaveText(`استعادة علاقات «${source.name}»`);
+
+  await restore.click();
+  await expect(page.getByTestId('abwab-relations-modal')).toBeVisible();
+  await expect(page.getByTestId('abwab-relations-modal')).toContainText(source.name);
+  // Same session, and a reveal changes neither the door id nor the tree validator the list is
+  // cached against — so restoring re-renders the source's list without asking again.
+  expect(relationReads()).toBe(1);
+
+  // Back after a reveal: the previous entry is `modal=relations&door=<source>`, and the
+  // reconcile machinery reopens the modal on the source from that emission alone.
+  await page.getByTestId('abwab-relations-modal-close').click();
+  await openRelationsFor(page, source.id);
+  await page.getByTestId('abwab-relations-modal-group-similarity').getByTestId('qd-chip-label').click();
+  await expect(page.getByTestId('abwab-relations-modal')).toBeHidden();
+  await page.goBack();
+  await expect(page.getByTestId('abwab-relations-modal')).toBeVisible();
+  await expect(page.getByTestId('abwab-relations-modal')).toContainText(source.name);
+});
+
+test('the retained key survives a reload, and restoring then pays exactly one read', async ({
+  page,
+  abwabSandbox,
+}) => {
+  const source = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('reload-source') });
+  const target = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('reload-target') });
+  await abwabSandbox.addRelation(source.id, [target.id]);
+
+  // Straight to the retained URL — the reload case, where the cache is a fresh root-scoped
+  // service holding nothing. The counter starts AFTER the load so it measures only the restore.
+  await page.goto(
+    `/abwab?section=${abwabSandbox.sectionId}&door=${target.id}&modal=relations-${source.id}-closed`,
+  );
+  const restore = page.getByTestId('abwab-page-modal-restore');
+  await expect(restore).toHaveText(`استعادة علاقات «${source.name}»`);
+
+  const relationReads = countRelationReads(page);
+  await restore.click();
+  await expect(page.getByTestId('abwab-relations-modal')).toBeVisible();
+  await expect(page.getByTestId('abwab-relations-modal-group-similarity')).toContainText(target.name);
+  // Empty cache, so exactly one — this is the honest counterpart to the zero above, not a
+  // weaker version of it.
+  expect(relationReads()).toBe(1);
+});
