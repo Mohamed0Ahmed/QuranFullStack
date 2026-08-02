@@ -208,7 +208,9 @@ export const ABWAB_LABELS = {
   movePickerTitleBulk: (count: number): string => `نقل ${countPhrase(count, DOOR_FORMS)}`,
   movePickerDescription: 'اختر الوجهة — باب يجعله فرعًا له، أو «كباب رئيسي».',
   asMainDoorOption: 'كباب رئيسي (أعلى الشجرة)',
-  movePickerChangeSection: 'تغيير القسم',
+  movePickerSectionStripLabel: 'الأقسام',
+  movePickerSearchPlaceholder: 'ابحث عن باب في هذا القسم…',
+  movePickerPickSectionHint: 'اختر قسمًا لعرض أبوابه',
   moveConfirm: 'نقل',
 
   sectionsModalTitle: 'إدارة الأقسام',

@@ -4,6 +4,46 @@
   margin-block-end: var(--qd-space-3);
 }
 
+/* The strip is five equal tracks across the `--wide` modal: 832px − 2px border − 48px of
+   `.qd-modal__head` padding = 782px, minus four `--qd-space-2` gaps = 750px, so a cell measures
+   exactly 150px at both 1024px and 1440px (the modal is 52rem at each). Fifteen sections — the
+   product ceiling — is therefore exactly three rows, and the strip needs no scroller: it lives in
+   `__head`, which is `flex-shrink: 0`, so `.qd-modal__body` stays the modal's only scroller. */
+.abwab-move-picker__strip {
+  margin-block-start: var(--qd-space-1);
+}
+
+/* Feature-local class beside `.qd-tabs__tab` (the `lemma-details-panel__tab` shape), so the active
+   cue extends the primitive instead of re-styling it. Weight, not colour alone: the tint and accent
+   border come from `.qd-is-selected`, and bold is this component's own existing "picked" cue on
+   `.abwab-move-picker__row--picked`. */
+.abwab-move-picker__section {
+  min-inline-size: 0;
+}
+
+.abwab-move-picker__section.qd-is-selected {
+  font-weight: 700;
+}
+
+/* Same shape as `abwab-door-picker`'s own search box — the two lists look alike because they are
+   the same kind of thing, not because either imports the other. */
+.abwab-move-picker__search {
+  inline-size: 100%;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  margin-block-end: var(--qd-space-2);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+}
+
+.abwab-move-picker__search:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -1px;
+}
+
 .abwab-move-picker__list {
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
@@ -13,36 +53,80 @@
   flex-direction: column;
 }
 
+/* The row is a wrapper, not the control: a chevron button cannot nest inside a row button, so the
+   row holds two siblings — the chevron and the pick — and keeps only the indent and the states. */
 .abwab-move-picker__row {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-1);
   inline-size: 100%;
-  text-align: start;
-  border: none;
-  background: transparent;
   border-radius: var(--qd-radius-sm);
-  padding: var(--qd-space-2) var(--qd-space-3);
-  padding-inline-start: calc(var(--abwab-move-picker-depth, 0) * var(--qd-space-5) + var(--qd-space-3));
-  font-family: inherit;
-  font-size: 0.8125rem;
-  color: var(--qd-text);
-  cursor: pointer;
+  padding-inline-start: calc(var(--abwab-move-picker-depth, 0) * var(--qd-space-5));
 }
 
 .abwab-move-picker__row:hover {
   background: var(--qd-surface-hover);
 }
 
-.abwab-move-picker__row:focus-visible {
+/* The chevron and the pick are the row's two tab stops, so keyboard focus has to read as a row
+   highlight — the row itself is not focusable and gets no ring of its own. */
+.abwab-move-picker__row:has(:focus-visible) {
+  background: var(--qd-surface-hover);
+}
+
+.abwab-move-picker__chevron {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1.1rem;
+  border: none;
+  background: transparent;
+  border-radius: var(--qd-radius-sm);
+  color: var(--qd-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Kept in the layout, dropped from interaction: the element reserves the chevron column so leaf
+   and branch names stay on one vertical line. */
+.abwab-move-picker__chevron--leaf {
+  cursor: default;
+  pointer-events: none;
+}
+
+.abwab-move-picker__chevron:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -1px;
+}
+
+.abwab-move-picker__pick {
+  flex: 1;
+  min-inline-size: 0;
+  text-align: start;
+  border: none;
+  background: transparent;
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.abwab-move-picker__pick:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: -2px;
 }
 
-/* `text-overflow` needs a block box, and a span inside the row button is inline. */
+/* `text-overflow` needs a block box, and a span inside the pick button is inline. */
 .abwab-move-picker__name {
   display: block;
 }
 
-.abwab-move-picker__row--picked {
+.abwab-move-picker__row--picked,
+.abwab-move-picker__row--picked:hover {
   background: var(--qd-selected-bg);
   color: var(--qd-accent-text);
   font-weight: 700;
@@ -51,11 +135,4 @@
 .abwab-move-picker__foot {
   display: flex;
   gap: var(--qd-space-2);
-}
-
-/* Sits above the destination list rather than in the footer: it navigates the picker's own stages,
-   which is not the same kind of action as confirm/cancel. */
-.abwab-move-picker__back {
-  align-self: flex-start;
-  margin-block-end: var(--qd-space-2);
 }

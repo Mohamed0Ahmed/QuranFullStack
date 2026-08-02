@@ -162,14 +162,49 @@ nine), four of them reads.
   the one reorder affordance; a second control doing the same thing would be redundant.
   This panel is the second of the contract's three add-child paths; the tree row's own
   `＋` and the row menu are the other two.
-- `components/abwab-move-picker/` — the two-stage destination picker shared by single
-  and bulk move: stage one picks a section, stage two picks a destination door in it or
-  «كباب رئيسي». There is no «بلا قسم» — every door belongs to a section, so "no section" is
-  not a destination. Stage one auto-selects when the selection already answers it (the door's
-  own section for a single move, the shared one when a bulk selection agrees) and is asked only
-  when a bulk selection spans sections; the auto-selection is changeable from stage two. Renders flat, indented by depth, rather than
-  a collapsible tree (every door at any depth is already a valid target — see
-  Gotchas). `excludedIds` is the moved door(s) plus every descendant, the client half of
+- `components/abwab-move-picker/` — the one-screen destination picker shared by single
+  and bulk move. A **persistent section strip** sits in the modal's `__head`, showing every
+  section at once; picking one swaps the destination list below it in place — «كباب رئيسي»
+  plus that section's doors — with no navigation step. The two-stage flow it replaced
+  (ux-slice-m) hid the sections behind a «تغيير القسم» control, so the one thing a mover
+  needs to see, which section they are aiming at, was the one thing the modal never showed.
+  «كباب رئيسي» stays in the doors area: it is a destination, not a section. There is no «بلا
+  قسم» — every door belongs to a section, so "no section" is not a destination.
+  The strip is `qd-tabs` at `layout="grid"` (§17), so it is a real tablist: `role="tab"` cells
+  over a `role="tabpanel"` destination list, roving tabindex, RTL-aware Arrow/Home/End, and
+  five 150 px columns that wrap — the ~15-section ceiling is three rows, which is why it needs
+  no scroller. The active cell is marked by the primitive's tint/accent border **plus** bold,
+  never colour alone. Names truncate with `.qd-truncate` + a mandatory `[title]`.
+  The strip auto-selects when the selection already answers which section it is (the door's own
+  for a single move, the shared one when a bulk selection agrees). **A bulk selection spanning
+  sections has no such answer**: the strip opens with no cell marked, the destination list is
+  replaced by a prompt, and `confirm` is disabled — with no section there is no
+  `targetSectionId` to send, and a button that looks live and does nothing is worse than a
+  disabled one. Switching sections drops any destination already picked, since a parent from
+  the section just left is not a destination in the one arrived at — and drops expansion with it,
+  so the new section opens collapsed like any other.
+  **The destination list opens COLLAPSED**: the active section's root doors and nothing else,
+  branches opened by hand. Not even the moved door's own parent chain is pre-opened — a move is a
+  choice of a new home, and seeding the old one puts the answer the user is moving away from at the
+  top of the list. Branch rows carry a chevron mirroring `abwab-door-picker`'s contract (focusable,
+  `aria-expanded`, Arabic expand/collapse `aria-label`); leaves keep the element for alignment only,
+  with no tab stop and nothing to announce. A branch whose every child is excluded by the cycle
+  guard reads as a leaf — a chevron opening onto nothing is a worse answer than no chevron. The row
+  is a wrapper holding two sibling buttons (chevron, pick), because a chevron button cannot nest
+  inside a row button. Depth is still a flat indent, not nesting: every door at any depth is a valid
+  target (see Gotchas).
+  **Search** filters the active section's tree and forces every matching path open, so a deep match
+  is never filtered in and then hidden by the collapse it was meant to see past. That expansion is
+  *derived, never written into the expanded set* — which is what makes clearing the query safe in
+  both directions: it neither leaves the tree open behind the user nor collapses branches they
+  opened by hand. The query **survives a section change** (unlike expansion): it is a filter over
+  whichever section is active, so hopping the strip with a query typed is how a user finds a door
+  whose section they have forgotten. A query matching nothing says so and still offers «كباب رئيسي»,
+  which is pinned outside the filtered tree. This mirrors `abwab-door-picker`'s search contract
+  (relations / template-copy) without importing it — see Gotchas on why the two stay separate.
+  If the cycle guard excludes every root a section has, the panel is still not empty: «كباب رئيسي»
+  is pinned above the tree and no exclusion can remove it.
+  `excludedIds` is the moved door(s) plus every descendant, the client half of
   the cycle guard; the server's `409 WouldCycle` stays authoritative.
 - `components/abwab-door-restore-modal/` — confirms restoring an ARCHIVED DOOR, on
   `qd-confirm-dialog`. Not `abwab-modal-restore`, which reopens a minimized overlay. For a root
@@ -551,7 +586,10 @@ in scope, which is exactly what §6.2's M22 cell forbids.
     target renders. Do not "simplify" this by dropping `cdkTrapFocusAutoCapture` — the CDK stores
     the previously focused element *only* inside auto-capture, so dropping it silently stops focus
     returning to the trigger on close. Sections and the move picker want the trap's default first
-    tabbable and mark nothing. Where focus lands is verifiable only in a browser: jsdom gives every
+    tabbable and mark nothing. For the move picker that default is not "the first control in the
+    DOM": its section strip is a roving-tabindex tablist, so every cell but the active one is
+    `tabindex="-1"` and the trap lands on the section the move starts from — which is the
+    behaviour wanted, reached without a `cdkFocusInitial`. Where focus lands is verifiable only in a browser: jsdom gives every
     element a zero-size box, so the CDK's focusable check rejects every target, auto-capture never
     moves focus there, and its "not focusable" warning is filtered in `src/test-setup.ts` as the
     pure noise it is.
@@ -652,11 +690,32 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   indistinguishable in the snapshot. The UI promises nothing about which descendants
   come back — no preview, no count. Do not "fix" this by guessing a count
   (`plan-slice-b.md` §6.4, R12).
-- **The move picker's destination list renders flat, not as a collapsible tree.**
-  `plan.md` §4 describes "an expandable door tree"; every door at any depth is already
-  a valid "nest anywhere" destination, so a per-node collapse/expand toggle would add
-  UI complexity without adding a reachable destination. Recorded as a deliberate
-  simplification, not a silent deviation.
+- **The move picker's destination list collapses; it does not nest.** Two separate
+  decisions that read as one, and the second reversed the first's earlier reading:
+  - *Flat, not nested* — still true. Rows are indented by depth rather than rendered
+    as a nested tree, because every door at any depth is already a valid "nest
+    anywhere" destination: depth is presentation here, not structure.
+  - *Collapsed, not pre-expanded* — **reversed (ux-slice-m)**. This entry used to argue
+    that a collapse/expand toggle "would add UI complexity without adding a reachable
+    destination", and rendered every door in the section at once. What that misses is
+    the cost on the other side: a section of any size arrives as a wall of rows to
+    scroll past, every one of them a destination the user did not ask to see. The list
+    now opens on the section's root doors and the user expands what they want, which is
+    also what `plan.md` §4's "an expandable door tree" asked for in the first place.
+    The toggle is `abwab-door-picker`'s chevron contract, mirrored — not imported.
+- **The move picker and `abwab-door-picker` look alike and are still separate — on purpose.**
+  Since ux-slice-m the move picker has a search, a chevron, truncated names, and a
+  collapsed-by-default tree, which is most of what the door picker offers, and the
+  question "why not share one component?" is a fair one to keep asking. What differs
+  is the part a shared component would have to fork anyway: the door picker's row is a
+  **checkbox/radio pick from a set**, the move picker's is a **single destination**
+  with a pinned non-door option («كباب رئيسي») above it and a whole-subtree cycle
+  exclusion inside it; the move picker also has no loading/error status to render,
+  because its tree arrives with the page snapshot rather than from a fetch of its own.
+  Merging them means a component with two selection models, an optional pinned row, an
+  optional status tier, and a `variant` input to switch between them — the shape that
+  reads as reuse and behaves as two components in a trench coat. Revisit this if a
+  **third** consumer appears: two similar lists are a coincidence, three are a pattern.
 - **Bulk is all-or-nothing.** One stale token fails the whole bulk operation with a
   single `409`. The backend's bulk-conflict response carries no per-door
   identification (verified against `AbwabDoorsController.cs` /

@@ -52,8 +52,12 @@ test('single move: into a destination, then back out as a main door', async ({ p
   await page.getByTestId(`abwab-tree-row-${moved.id}`).click();
   await page.getByTestId('abwab-side-panel-op-move').click();
   await expect(page.getByTestId('abwab-move-picker')).toBeVisible();
-  // Stage one is answered by the door's own section, so the picker opens on the destination list.
-  await expect(page.getByTestId(`abwab-move-picker-section-${abwabSandbox.sectionId}`)).toBeHidden();
+  // The strip is persistent, so the sandbox section is on screen throughout — and marked active,
+  // because the door's own section is the one the move starts from.
+  await expect(page.getByTestId(`abwab-move-picker-section-${abwabSandbox.sectionId}`)).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
   await page.getByTestId(`abwab-move-picker-dest-${destination.id}`).click();
   await page.getByTestId('abwab-move-picker-confirm').click();
   await expect(page.getByTestId('abwab-move-picker')).toBeHidden();
@@ -89,8 +93,11 @@ test('bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
 
   await page.getByTestId('abwab-side-panel-bulk-move').click();
   await expect(page.getByTestId('abwab-move-picker')).toBeVisible();
-  // Both selected doors share the sandbox section, so stage one is answered and skipped.
-  await expect(page.getByTestId(`abwab-move-picker-section-${abwabSandbox.sectionId}`)).toBeHidden();
+  // Both selected doors share the sandbox section, so the strip opens with that cell marked.
+  await expect(page.getByTestId(`abwab-move-picker-section-${abwabSandbox.sectionId}`)).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
   await page.getByTestId(`abwab-move-picker-dest-${target.id}`).click();
   await page.getByTestId('abwab-move-picker-confirm').click();
   await expect(page.getByTestId('abwab-move-picker')).toBeHidden();

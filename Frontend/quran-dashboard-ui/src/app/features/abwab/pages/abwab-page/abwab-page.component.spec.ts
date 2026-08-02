@@ -773,7 +773,7 @@ describe('AbwabPageComponent', () => {
       expect(root.querySelector('[data-testid="abwab-move-picker"]')?.textContent).toContain(
         ABWAB_LABELS.movePickerTitleBulk(2),
       );
-      // Both selected doors live in section 1, so stage one is answered and skipped.
+      // Both selected doors live in section 1, so the strip opens with that section active.
       (root.querySelector('[data-testid="abwab-move-picker-dest-asmain"]') as HTMLElement).click();
       (root.querySelector('[data-testid="abwab-move-picker-confirm"]') as HTMLElement).click();
 
@@ -801,7 +801,7 @@ describe('AbwabPageComponent', () => {
       fixture.detectChanges();
 
       expect(root.querySelector('[data-testid="abwab-move-picker"]')).toBeTruthy();
-      // A single move already knows its section, so stage one is skipped.
+      // A single move already knows its section, so the strip opens with it active.
       (root.querySelector('[data-testid="abwab-move-picker-dest-asmain"]') as HTMLElement).click();
       (root.querySelector('[data-testid="abwab-move-picker-confirm"]') as HTMLElement).click();
 
