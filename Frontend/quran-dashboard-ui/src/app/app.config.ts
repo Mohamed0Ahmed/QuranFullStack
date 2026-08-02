@@ -3,7 +3,7 @@ import {
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
 } from '@angular/core';
-import { provideRouter, TitleStrategy } from '@angular/router';
+import { provideRouter, TitleStrategy, withPreloading } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import {
   authInterceptor,
@@ -15,6 +15,7 @@ import { buildAngularAuthConfig } from '@logto/angular';
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { AppTitleStrategy } from './core/navigation/app-title.strategy';
+import { IdlePreloadStrategy } from './core/navigation/idle-preload.strategy';
 import { devLatencyInterceptor } from './core/data-access/dev-latency.interceptor';
 import { secureUrlInterceptor } from './core/data-access/secure-url.interceptor';
 
@@ -37,7 +38,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes),
+    provideRouter(routes, withPreloading(IdlePreloadStrategy)),
     provideHttpClient(
       withFetch(),
       withInterceptors([secureUrlInterceptor, authInterceptor(), devLatencyInterceptor]),

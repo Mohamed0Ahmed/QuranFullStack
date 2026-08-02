@@ -156,6 +156,11 @@ appear **only** as:
    label/body (6.74:1 on the tint, AA). It is the one non-selection tinted-green panel,
    scoped to the Words explainer hero (`.qd-explainer-benefit`). Not a solid fill; do not
    reuse it elsewhere without amending this list.
+9. The router navigation progress bar (`qd-nav-progress`, §17): a 2px `--qd-accent`
+   hairline fixed to the top of the viewport while a lazy route's chunk is still
+   downloading (200ms show-delay, so warm navigations never flash it). A loading
+   affordance in the shell chrome — it reuses the green-thread thickness but marks
+   "arriving", never "current", and never competes with in-content green.
 
 Everything else — chip fills, badge fills, count fills, range badges, selected-row
 fills, resting borders — stays banned as solid green: use a tint,

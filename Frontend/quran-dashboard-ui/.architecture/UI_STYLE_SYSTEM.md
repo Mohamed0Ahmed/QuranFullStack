@@ -674,6 +674,11 @@ Green (`--qd-accent` / `--qd-accent-soft`) may appear **only** as:
    label/body (6.74:1 on the tint, AA). It is the one non-selection tinted-green panel,
    scoped to the Words explainer hero (`.qd-explainer-benefit`). Not a solid fill; do not
    reuse it elsewhere without amending this list.
+9. The router navigation progress bar (`qd-nav-progress`, §17): a 2px `--qd-accent`
+   hairline fixed to the top of the viewport while a lazy route's chunk is still
+   downloading (200ms show-delay, so warm navigations never flash it). A loading
+   affordance in the shell chrome — it reuses the green-thread thickness but marks
+   "arriving", never "current", and never competes with in-content green.
 
 Everything else — chip fills, badge fills, count fills, range badges, selected-row
 fills, resting borders — stays **banned as solid green**: use a tint,
@@ -683,7 +688,8 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 ## 17. Component contracts ("never hand-write these again")
 
 > **Status: implemented.** This section is the **live contract** for the shared
-> primitives below. `qd-tabs`, `qd-chip`, `qd-state`, and the skeleton primitives
+> primitives below. `qd-tabs`, `qd-chip`, `qd-state`, `qd-nav-progress`, and the
+> skeleton primitives
 > (`qd-skeleton-rows`, `qd-panel-skeleton`) are shipped Angular components;
 > `.qd-explorer-table` and `.qd-detail-list` are shipped CSS class-family collapses.
 > The chip/tab call-site unification, the solid-accent-fill ban, the
@@ -1543,3 +1549,37 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   existing tree snapshot with no new backend read — see `features/abwab/README.md`
   for the two numbers, the nullable-`sectionId` caveat, and why the stats stay
   mounted through every tab switch.
+
+### `qd-nav-progress` (router navigation progress bar)
+- **Purpose:** the app-shell-level "the click was heard" affordance for lazy-route
+  navigations. Every route is lazy and every skeleton lives inside the route's own
+  chunk, so on a cold first visit nothing can paint while the chunk downloads — the
+  bar is the one element that renders during that gap because it lives in the shell
+  (`core/layout/nav-progress/`, rendered by `app-shell.component.html` above the
+  navbar), outside every `<router-outlet>`.
+- **Form:** a 2px `--qd-accent` hairline fixed to the viewport's top edge, growing
+  from the inline start — from the right in RTL — via an `inline-size` keyframe to
+  86%, where it holds: it never fakes completion; the done state owns the snap to
+  100% and the `--qd-t-base` fade. `pointer-events: none`, `aria-hidden`, z-rung
+  `--qd-z-nav-progress` (top of the layer scale — a non-interactive hairline may
+  paint above modals, because a navigation can be triggered from inside one).
+- **Show-delay (200ms):** `NavigationStart` arms a timer; nothing renders until it
+  fires. Warm (chunk-cached) navigations settle in well under 100ms, so they show
+  nothing at all — no flash on instant navigations.
+- **The settle rule is an inversion — never a terminal-event whitelist.** The
+  component whitelists the known *in-flight* lifecycle events (`RouteConfigLoad*`,
+  `RoutesRecognized`, `GuardsCheck*`, `Activation*`/`ChildActivation*`,
+  `Resolve*`); any other router event — End/Cancel/Error/**Skipped** today, or any
+  event class a future Angular adds — settles the bar. Unknown events fail closed
+  (the bar clears early) instead of sticking forever. Do not "fix" this into a
+  whitelist of terminal events.
+- **A11y:** a single permanent sr-only `role="status"` polite region announces
+  «جارٍ تحميل الصفحة…» only once the bar actually becomes visible — warm
+  navigations announce nothing, so the shell never queues chatter against
+  page-owned polite regions (e.g. abwab's announcer). No focus is moved. Under
+  `prefers-reduced-motion` the bar is a static full-inline-size hairline: no growth
+  animation, no fade.
+- **Handoff contract:** the bar covers "code is downloading"; the routed
+  component's own skeleton covers "data is loading". The bar's fade may overlap the
+  skeleton's appearance by at most the fade duration; neither replaces the other,
+  and in-component skeletons must never be removed in its favor.

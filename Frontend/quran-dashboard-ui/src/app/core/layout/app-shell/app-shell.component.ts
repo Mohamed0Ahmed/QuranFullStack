@@ -7,11 +7,12 @@ import { filter, map, startWith } from 'rxjs';
 import { isPageScrollShellLayout } from '../shell-layout.model';
 import { TopNavbarComponent } from '../top-navbar/top-navbar.component';
 import { FooterComponent } from '../footer/footer.component';
+import { NavProgressComponent } from '../nav-progress/nav-progress.component';
 
 @Component({
   selector: 'qd-app-shell',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, TopNavbarComponent, FooterComponent],
+  imports: [CommonModule, RouterOutlet, TopNavbarComponent, FooterComponent, NavProgressComponent],
   templateUrl: './app-shell.component.html',
 })
 export class AppShellComponent {

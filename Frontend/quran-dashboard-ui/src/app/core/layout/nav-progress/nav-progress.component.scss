@@ -1,0 +1,43 @@
+:host {
+  display: contents;
+}
+
+.qd-nav-progress {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  block-size: 2px;
+  inline-size: 0;
+  z-index: var(--qd-z-nav-progress);
+  pointer-events: none;
+  background-color: var(--qd-accent);
+  /* Grows to 86% and holds — never fakes completion while the chunk is still in flight;
+     the done state owns the snap to 100%. */
+  animation: qd-nav-progress-grow 1.6s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
+.qd-nav-progress--done {
+  animation: none;
+  inline-size: 100%;
+  opacity: 0;
+  transition: opacity var(--qd-t-base) 80ms;
+}
+
+@keyframes qd-nav-progress-grow {
+  from {
+    inline-size: 0;
+  }
+
+  to {
+    inline-size: 86%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qd-nav-progress,
+  .qd-nav-progress--done {
+    animation: none;
+    inline-size: 100%;
+    transition: none;
+  }
+}

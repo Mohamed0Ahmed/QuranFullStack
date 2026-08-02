@@ -41,7 +41,12 @@ per-feature.
     `errorMessage`); `load()` is fired post-callback (fresh each call) and never crashes
     the flow; `ensureLoaded()` is the awaitable, load-once path (single cached
     `GET /api/access/me`) the `roleGuard` uses.
-- `layout/` — `app-shell`, `top-navbar`, `footer`, `shell-layout.model.ts`.
+- `layout/` — `app-shell`, `top-navbar`, `footer`, `shell-layout.model.ts`, and
+  `nav-progress/` — the router navigation progress bar (`qd-nav-progress`): the 2px
+  accent hairline the shell shows while a lazy route's chunk downloads (200ms
+  show-delay; settle rule is an inversion over the known in-flight router events so
+  unknown/future event classes clear it, never stick it). Contract:
+  `.architecture/UI_STYLE_SYSTEM.md` §17.
 - `navigation/` — `route-paths.ts` (canonical route constants — incl. `DASHBOARD_ROUTE_PATH`
   and `CALLBACK_PATH` for the Feature-033 landing route — plus `navLabel(key)` for a
   nav item's Arabic label) + `app-title.strategy.ts` (the `TitleStrategy`
@@ -59,7 +64,11 @@ per-feature.
   `ReferenceError`; recorded here so nobody "simplifies" the children back in. The top-navbar
   dropdown ("الكلمات والجذور", "الأبواب") is `@if (item.children)`, data-driven, not a
   per-key template branch; «الأرشيف» (`/abwab` + `{archive:'1'}`) is the app's first
-  query-param nav entry.
+  query-param nav entry. Also here: `idle-preload.strategy.ts` — the `withPreloading`
+  strategy registered in `app.config.ts`; preloads every lazy route chunk, each after
+  an idle callback (timeout-bounded, `setTimeout` fallback), so first clicks find
+  chunks cached without preloading ever competing with bootstrap or the landing
+  page's own work.
 - `navigation/detail-overlay/` — the app-wide floating detail-overlay navigation layer
   (Feature 029, Change B): `detail-overlay.models.ts` (versioned `v1~…` frame union — the
   URL contract, deliberately decoupled from Words models), `detail-overlay-url-codec.ts`

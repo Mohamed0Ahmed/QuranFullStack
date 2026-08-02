@@ -186,7 +186,7 @@
      (`shared/ui/context-menu/`), which consumes --qd-z-menu-backdrop/--qd-z-menu from
      birth — zero bare z-index literals remain outside this file.
      Ascending: sticky < popover < floating < mobile-nav < menu-backdrop < menu ==
-     modal-backdrop < modal. --qd-z-mobile-nav sits below --qd-z-modal-backdrop
+     modal-backdrop < modal < nav-progress. --qd-z-mobile-nav sits below --qd-z-modal-backdrop
      deliberately — the navbar's dropdown/mobile menu used to paint at 100/200, above
      every modal backdrop (50); that was a latent defect (nothing made the shell inert
      under an open abwab modal), fixed here by lowering the rung rather than the modal.
@@ -215,6 +215,11 @@
   --qd-z-menu: 50;              /* qd-context-menu */
   --qd-z-modal-backdrop: 50;    /* .qd-modal-backdrop */
   --qd-z-modal: 51;             /* reserved for a future direct modal-box consumer */
+  --qd-z-nav-progress: 60;      /* qd-nav-progress — a 2px pointer-events-none hairline that must
+                                   stay visible above everything, including an open modal (a
+                                   navigation can be triggered from inside one); painting above
+                                   the whole scale is safe because nothing can ever interact
+                                   with it */
 }
 
 /* The bar tightens its own leading margin on phones; the token carries that so the reserved slot
