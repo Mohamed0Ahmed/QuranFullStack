@@ -18,6 +18,7 @@ interface AbwabDoorPickerRow {
   readonly hasChildren: boolean;
   readonly isExpanded: boolean;
   readonly isDisabled: boolean;
+  readonly isExcluded: boolean;
 }
 
 function subtreeMatches(node: AbwabNode, query: string): boolean {
@@ -26,7 +27,7 @@ function subtreeMatches(node: AbwabNode, query: string): boolean {
 
 /**
  * The one searchable, expandable door picker behind «إضافة علاقة» and «نسخ إلى أبواب…»
- * (`docs/TESTING_DEBT.md` row 4's unification trigger, paid by Slice C).
+ * (the door-picker unification debt, paid by Slice C).
  *
  * Selection is consumer-owned, like `qd-tabs`: the picker renders what `pickedIds` says and
  * emits `toggled`, so the two hosts keep their opposite selection rules — the relations modal
@@ -35,9 +36,13 @@ function subtreeMatches(node: AbwabNode, query: string): boolean {
  * *affordance* to render. It changes no selection logic, only checkbox vs radio, because a
  * checkbox promises "pick any number" and anchor-pick mode accepts exactly one.
  *
- * `excludedIds` hides a door but never its subtree: a door may relate to its own ancestor or
- * descendant, so hiding the anchor's children would remove a case the backend allows. Children
- * keep the excluded node's depth so the list has no orphaned indent.
+ * `excludedIds` disables a door but never hides its subtree: a door may relate to its own
+ * ancestor or descendant, so removing the anchor's children would remove a case the backend
+ * allows. The excluded door renders as a non-selectable row at its true depth — no pick
+ * control, `excludedTag` naming why — with its children indented one level below it and its
+ * chevron fully functional. Excluded rows are expanded BY DEFAULT (their subtree must be
+ * visible the moment a host opens — pinned product requirement), so their collapse state is
+ * tracked inversely and no open-time seeding is needed.
  */
 @Component({
   selector: 'qd-abwab-door-picker',
@@ -53,6 +58,8 @@ export class AbwabDoorPickerComponent {
   readonly excludedIds = input<readonly number[]>([]);
   readonly disabledIds = input<readonly number[]>([]);
   readonly disabledTag = input('');
+  /** Names WHY an excluded row cannot be picked («الباب المفتوح», «هدف محدد»). Empty ⇒ no tag. */
+  readonly excludedTag = input('');
   /** Affordance only — see the class doc. The host still owns what a pick does. */
   readonly single = input(false);
   readonly status = input<AbwabDoorPickerStatus>('ready');
@@ -71,6 +78,9 @@ export class AbwabDoorPickerComponent {
 
   protected readonly searchQuery = signal('');
   private readonly expandedIds = signal<ReadonlySet<number>>(new Set());
+  /** Inverse tracking for excluded rows only — membership means COLLAPSED, because their
+   * default is expanded (see the class doc). */
+  private readonly collapsedExcludedIds = signal<ReadonlySet<number>>(new Set());
 
   protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
   protected get loadingLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
@@ -92,6 +102,7 @@ export class AbwabDoorPickerComponent {
     const excluded = new Set(this.excludedIds());
     const disabled = new Set(this.disabledIds());
     const expanded = this.expandedIds();
+    const collapsedExcluded = this.collapsedExcludedIds();
     const rows: AbwabDoorPickerRow[] = [];
 
     const walk = (node: AbwabNode, depth: number): void => {
@@ -99,15 +110,14 @@ export class AbwabDoorPickerComponent {
         return;
       }
       const hasChildren = node.children.length > 0;
+      const isExcluded = excluded.has(node.id);
       // A search forces every matching path open, so a deep match is never hidden behind a
       // collapsed ancestor the user never touched.
-      const isExpanded = expanded.has(node.id) || (query !== '' && hasChildren);
-      const isExcluded = excluded.has(node.id);
-      if (!isExcluded) {
-        rows.push({ node, depth, hasChildren, isExpanded, isDisabled: disabled.has(node.id) });
-      }
-      if (isExcluded || isExpanded) {
-        node.children.forEach((child) => walk(child, isExcluded ? depth : depth + 1));
+      const defaultExpanded = isExcluded ? !collapsedExcluded.has(node.id) : expanded.has(node.id);
+      const isExpanded = defaultExpanded || (query !== '' && hasChildren);
+      rows.push({ node, depth, hasChildren, isExpanded, isDisabled: disabled.has(node.id), isExcluded });
+      if (isExpanded) {
+        node.children.forEach((child) => walk(child, depth + 1));
       }
     };
 
@@ -135,17 +145,25 @@ export class AbwabDoorPickerComponent {
     this.searchQuery.set((event.target as HTMLInputElement).value);
   }
 
-  protected toggleExpanded(event: Event, doorId: number): void {
+  protected toggleExpanded(event: Event, row: AbwabDoorPickerRow): void {
     event.stopPropagation();
+    if (row.isExcluded) {
+      const next = new Set(this.collapsedExcludedIds());
+      if (!next.delete(row.node.id)) {
+        next.add(row.node.id);
+      }
+      this.collapsedExcludedIds.set(next);
+      return;
+    }
     const next = new Set(this.expandedIds());
-    if (!next.delete(doorId)) {
-      next.add(doorId);
+    if (!next.delete(row.node.id)) {
+      next.add(row.node.id);
     }
     this.expandedIds.set(next);
   }
 
   protected togglePicked(row: AbwabDoorPickerRow): void {
-    if (row.isDisabled) {
+    if (row.isDisabled || row.isExcluded) {
       return;
     }
     this.toggled.emit(row.node.id);
@@ -164,9 +182,10 @@ export class AbwabDoorPickerComponent {
 
   /** Closing a modal destroys this instance, so a reopen starts clean on its own. The host still
    * needs this for the path where it stays open and switches subject — a new anchor door must not
-   * inherit the previous one's search query and expanded branches. */
+   * inherit the previous one's search query, expanded branches, or collapsed excluded rows. */
   reset(): void {
     this.searchQuery.set('');
     this.expandedIds.set(new Set());
+    this.collapsedExcludedIds.set(new Set());
   }
 }

@@ -139,6 +139,12 @@ export class AbwabRelationsModalComponent {
     this.anchorPickMode() ? ABWAB_LABELS.relationsBulkAnchorPlaceholder : ABWAB_LABELS.relationPickerPlaceholder,
   );
 
+  /** Excluded rows are context, and the tag names WHICH context: the open door in door mode, a
+   * fixed bulk target in anchor-pick mode. */
+  protected readonly excludedTagLabel = computed(() =>
+    this.anchorPickMode() ? ABWAB_LABELS.pickerExcludedTargetTag : ABWAB_LABELS.pickerExcludedAnchorTag,
+  );
+
   /** The pill names whichever side the picker chooses, and the two modes choose opposite sides:
    * door mode picks the targets, anchor-pick mode picks the anchor. One pair of strings would
    * therefore be right in one mode and inverted in the other. */

@@ -16,8 +16,10 @@
     <div
       class="abwab-door-picker__row qd-check-row"
       [class.abwab-door-picker__row--disabled]="row.isDisabled"
+      [class.abwab-door-picker__row--excluded]="row.isExcluded"
       [style.--abwab-door-picker-depth]="row.depth"
-      [attr.data-testid]="testIdPrefix() + '-pick-' + row.node.id"
+      [attr.aria-disabled]="row.isExcluded ? true : null"
+      [attr.data-testid]="testIdPrefix() + (row.isExcluded ? '-excluded-' : '-pick-') + row.node.id"
       (click)="togglePicked(row)"
     >
       <!-- A leaf keeps the element for alignment only: no tab stop, nothing to announce. -->
@@ -30,27 +32,35 @@
         [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
         [attr.aria-label]="row.hasChildren ? expandAriaLabel(row) : null"
         [attr.data-testid]="testIdPrefix() + '-pick-chevron-' + row.node.id"
-        (click)="toggleExpanded($event, row.node.id)"
+        (click)="toggleExpanded($event, row)"
       >
         @if (row.hasChildren) {
           <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
         }
       </button>
-      <!-- Radio under `single`: the control itself has to say "exactly one", not just the hint
-           above it. The row's click handler stays the one writer either way. -->
-      <input
-        class="qd-checkbox"
-        [attr.type]="single() ? 'radio' : 'checkbox'"
-        [attr.name]="single() ? pickerName : null"
-        [checked]="isPicked(row.node.id)"
-        [disabled]="row.isDisabled"
-        [attr.aria-label]="row.node.name"
-        [attr.data-testid]="testIdPrefix() + '-pick-checkbox-' + row.node.id"
-        (click)="$event.preventDefault()"
-        (change)="onRowChange(row)"
-      />
+      @if (row.isExcluded) {
+        <!-- No pick control at all — an excluded door is context, not a choice. The gap keeps
+             the name column aligned with the selectable rows below it. -->
+        <span class="abwab-door-picker__control-gap" aria-hidden="true"></span>
+      } @else {
+        <!-- Radio under `single`: the control itself has to say "exactly one", not just the hint
+             above it. The row's click handler stays the one writer either way. -->
+        <input
+          class="qd-checkbox"
+          [attr.type]="single() ? 'radio' : 'checkbox'"
+          [attr.name]="single() ? pickerName : null"
+          [checked]="isPicked(row.node.id)"
+          [disabled]="row.isDisabled"
+          [attr.aria-label]="row.node.name"
+          [attr.data-testid]="testIdPrefix() + '-pick-checkbox-' + row.node.id"
+          (click)="$event.preventDefault()"
+          (change)="onRowChange(row)"
+        />
+      }
       <span class="abwab-door-picker__name qd-truncate" [title]="row.node.name">{{ row.node.name }}</span>
-      @if (row.isDisabled && disabledTag()) {
+      @if (row.isExcluded && excludedTag()) {
+        <span class="abwab-door-picker__tag">{{ excludedTag() }}</span>
+      } @else if (row.isDisabled && disabledTag()) {
         <span class="abwab-door-picker__tag">{{ disabledTag() }}</span>
       }
     </div>
