@@ -115,6 +115,17 @@ describe('ConfirmDialogComponent', () => {
     expect(host.events).toEqual([]);
   });
 
+  // Disabled alone reads as "not available"; aria-busy is what says "working on it" — the same signal
+  // qd-state and the skeletons use, so a consumer does not invent a second vocabulary for waiting.
+  it('carries the house busy affordance on confirm, and only while busy', () => {
+    expect(confirmButton().getAttribute('aria-busy')).toBeNull();
+
+    host.busy.set(true);
+    fixture.detectChanges();
+
+    expect(confirmButton().getAttribute('aria-busy')).toBe('true');
+  });
+
   it('disables confirm alone when the decision is incomplete', () => {
     host.confirmDisabled.set(true);
     fixture.detectChanges();

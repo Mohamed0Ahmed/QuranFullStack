@@ -194,10 +194,11 @@ export function searchAbwabNodes(roots: readonly AbwabNode[], query: string): Ab
 
 /**
  * Total live (non-archived) doors — item 17's «كل الأبواب» stat. **Live-only, deliberately**:
- * matches every other count in this feature and is NOT Σ `AbwabTreeSectionDto.doorsInScopeCount`
- * over `sections`, because `AbwabNode.sectionId` is nullable (a live door can belong to no
- * section) — the two stats are not reconcilable by arithmetic and must never be asserted to sum
- * (plan §5.7).
+ * matches every other count in this feature. It is still NOT Σ `AbwabTreeSectionDto.doorsInScopeCount`
+ * over `sections`, though the reason changed: every door belongs to a section now, so the two DO
+ * reconcile — summing sections would simply recompute client-side what the backend already answered,
+ * and fork from its definition of "in scope at any depth" the moment the two drift. Do not assert the
+ * two sum: redundant, not impossible (feature README, stats-bar).
  */
 export function countLiveAbwabDoors(byId: ReadonlyMap<number, AbwabNode>): number {
   let count = 0;

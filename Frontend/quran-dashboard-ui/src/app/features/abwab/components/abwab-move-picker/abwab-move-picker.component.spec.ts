@@ -161,6 +161,23 @@ describe('AbwabMovePickerComponent — M30', () => {
 
       expect(confirmed).toEqual([{ targetParentId: null, targetSectionId: 2 }]);
     });
+
+    // `movedSectionIds` is a fresh array on every snapshot rebuild, so a refresh landing while the
+    // picker is open must not read as "a new selection" and reset a stage-two pick already made.
+    it('survives a new movedSectionIds identity while open, keeping the pick already made', () => {
+      const fixture = render({ movedSectionIds: [1] });
+      (fixture.nativeElement.querySelector('[data-testid="abwab-move-picker-dest-asmain"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      fixture.componentRef.setInput('movedSectionIds', [1]);
+      fixture.detectChanges();
+
+      const confirmed: unknown[] = [];
+      fixture.componentInstance.confirmed.subscribe((v) => confirmed.push(v));
+      (fixture.nativeElement.querySelector('[data-testid="abwab-move-picker-confirm"]') as HTMLElement).click();
+
+      expect(confirmed).toEqual([{ targetParentId: null, targetSectionId: 1 }]);
+    });
   });
 
   it('T402 — the destination order follows liveRoots’ given order (the superset’s global order), not a per-section re-sort by orderValue', () => {

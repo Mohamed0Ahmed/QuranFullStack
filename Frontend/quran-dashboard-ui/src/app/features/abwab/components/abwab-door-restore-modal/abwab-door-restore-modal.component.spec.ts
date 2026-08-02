@@ -147,6 +147,26 @@ describe('AbwabDoorRestoreModalComponent', () => {
       expect(confirmButton(fixture).disabled).toBe(false);
     });
 
+    // Required is not the same as wrong. The field is announced as required from the start, but it only
+    // becomes an error once the user has been at the control and left it empty — the same rule the door
+    // modal's shell follows, so the two selectors do not disagree about what "invalid" means.
+    it('announces the destination as required, and as invalid only after the user has been at it', () => {
+      const fixture = render(node());
+
+      expect(select(fixture)!.getAttribute('aria-required')).toBe('true');
+      expect(select(fixture)!.getAttribute('aria-invalid')).toBeNull();
+
+      pick(fixture, 1);
+      expect(select(fixture)!.getAttribute('aria-invalid')).toBeNull();
+
+      const el = select(fixture)!;
+      el.value = '';
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      fixture.detectChanges();
+
+      expect(select(fixture)!.getAttribute('aria-invalid')).toBe('true');
+    });
+
     it('writes nothing while the destination is missing', () => {
       const calls: unknown[] = [];
       const fixture = render(node(), {}, {

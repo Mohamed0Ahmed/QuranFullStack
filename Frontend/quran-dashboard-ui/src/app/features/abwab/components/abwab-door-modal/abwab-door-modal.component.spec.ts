@@ -142,6 +142,26 @@ describe('AbwabDoorModalComponent', () => {
       expect(captured!.parentId).toBeNull();
     });
 
+    // No section exists to choose, so an empty <select> plus a post-submit error would be a dead end
+    // the user cannot act on. Same handling as the restore modal's equivalent state.
+    it('replaces the selector with a hint when no live section exists, and still blocks the create', () => {
+      let captured: CreateDoorCommand | null = null;
+      const fixture = render(
+        { parentId: null, activeSectionId: null, sections: [] },
+        { createDoor: (command: CreateDoorCommand) => { captured = command; return of({ kind: 'success', data: EXISTING_DOOR }); } },
+      );
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('[data-testid="abwab-door-modal-section-select"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-door-modal-no-sections"]')?.textContent?.trim())
+        .toBe(ABWAB_LABELS.doorModalNoSectionsHint);
+
+      setName(fixture, 'باب بلا قسم متاح');
+      clickSave(fixture);
+
+      expect(captured).toBeNull();
+    });
+
     // The selector answers a question the other two cases have already answered — showing it there
     // would invite a contradiction the backend then has to refuse.
     it('shows the section selector only for a root create under «كل الأبواب»', () => {

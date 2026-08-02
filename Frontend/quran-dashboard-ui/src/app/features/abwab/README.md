@@ -743,7 +743,10 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   also owns a real section `<select>`, shown in exactly one case — a root create from
   «كل الأبواب», where there is no parent to derive from and no active tab to read. The backend
   refuses that write without a section, so the selector turns a 400 into a choice. It stays in
-  the shell for the same reason the null-ing does; the form is still untouched.
+  the shell for the same reason the null-ing does; the form is still untouched. **With no live
+  section to choose the selector is replaced by a hint** (`doorModalNoSectionsHint`, the same copy
+  the restore modal uses) and the create stays blocked — an empty control answered by an error
+  after submit is a dead end, and both surfaces owe the same answer to the same state.
 - **A `204 No Content` arrives as a `null` envelope, not `{isSuccess, data}`.** Single-door
   archive (`DELETE api/abwab/doors/{id}`), a successful section delete
   (`DELETE api/abwab/sections/{id}`), a relation delete

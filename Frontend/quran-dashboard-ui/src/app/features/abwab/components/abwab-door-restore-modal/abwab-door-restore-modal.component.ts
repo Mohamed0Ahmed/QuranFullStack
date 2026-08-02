@@ -41,6 +41,8 @@ export class AbwabDoorRestoreModalComponent {
   protected readonly chosenSectionId = signal<number | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly busy = signal(false);
+  /** A required-but-untouched field is not an error yet — same rule the door modal's shell follows. */
+  protected readonly sectionTouched = signal(false);
 
   protected readonly selectId = 'abwab-door-restore-modal-section';
 
@@ -65,6 +67,10 @@ export class AbwabDoorRestoreModalComponent {
     () => this.destinationRequired() && this.chosenSectionId() === null,
   );
 
+  /** Only after the user has actually been at the control: announcing an error on a field nobody has
+   * touched is noise, and the hint below already says what is wanted. */
+  protected readonly sectionInvalid = computed(() => this.sectionTouched() && this.confirmDisabled());
+
   protected readonly pathText = computed(() =>
     this.ancestors().map((ancestor) => ancestor.name).join('، '),
   );
@@ -85,6 +91,7 @@ export class AbwabDoorRestoreModalComponent {
       untracked(() => {
         this.errorMessage.set(null);
         this.busy.set(false);
+        this.sectionTouched.set(false);
         this.chosenSectionId.set(
           door !== null && door.parentId === null && !door.sectionRetired ? door.sectionId : null,
         );
@@ -93,6 +100,7 @@ export class AbwabDoorRestoreModalComponent {
   }
 
   protected onSectionChange(value: string): void {
+    this.sectionTouched.set(true);
     this.chosenSectionId.set(value === '' ? null : Number(value));
   }
 

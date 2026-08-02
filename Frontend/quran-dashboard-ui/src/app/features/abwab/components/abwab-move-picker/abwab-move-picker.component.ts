@@ -105,12 +105,17 @@ export class AbwabMovePickerComponent {
   constructor() {
     // Reset whenever the picker (re)opens for a new selection, then skip stage one when the
     // selection already answers it — one door, or several that agree.
+    //
+    // `open()` is the ONLY tracked dependency. `movedSectionIds` is a fresh array on every snapshot
+    // rebuild, so tracking it would let a refresh landing mid-pick re-run this reset and throw away a
+    // stage-two choice the user had already made. The caller sets the moved ids before it opens the
+    // picker, so reading them untracked here still reads the right ones.
     effect(() => {
       if (!this.open()) {
         return;
       }
-      const movedSectionIds = this.movedSectionIds();
       untracked(() => {
+        const movedSectionIds = this.movedSectionIds();
         this.stage.set('section');
         this.sectionPicked.set(false);
         this.pickedSectionId.set(null);

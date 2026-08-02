@@ -761,8 +761,11 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Behavior:** focus trapped (`cdkTrapFocus` + auto-capture); **initial focus on CANCEL** — the
   dialog interrupts, so a reflexive Enter must produce the safe answer. `Escape` and a backdrop
   click both emit `cancelled`. `busy` disables BOTH buttons (a decision in flight is not
-  cancellable into an inconsistent state either) and blocks a second `confirmed` emission;
-  `confirmDisabled` disables confirm alone, for a decision that is not yet complete.
+  cancellable into an inconsistent state either), carries the house busy affordance
+  (`aria-busy="true"` on the confirm button, the same signal the skeletons and `qd-state` use),
+  blocks a second `confirmed` emission, and suppresses `Escape` and backdrop dismissal for the
+  same reason it disables cancel; `confirmDisabled` disables confirm alone, for a decision that
+  is not yet complete.
 - **Visuals / RTL:** `tone: 'danger'` maps confirm to `--qd-danger` per §16.1 — scoped to this
   component rather than a global `.qd-btn-danger`, since a new global button variant is a
   design-system decision, not this dialog's. Logical properties only; scroll locked through the

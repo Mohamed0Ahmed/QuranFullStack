@@ -175,6 +175,7 @@ export const ABWAB_LABELS = {
   nameRequiredError: 'اسم الباب مطلوب',
   doorModalSectionLabel: 'القسم',
   doorModalSectionRequiredError: 'اختر قسمًا للباب الرئيسي',
+  doorModalNoSectionsHint: 'لا توجد أقسام حالية — أنشئ قسمًا أولًا',
   trackingDataHeading: 'بيانات التتبع',
   trackingAddedByLabel: 'أُضيف بواسطة',
   trackingAddedByPlaceholder: '— (يُملأ مع تفعيل الحسابات)',

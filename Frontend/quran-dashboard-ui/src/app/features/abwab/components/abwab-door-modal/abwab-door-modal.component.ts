@@ -56,19 +56,27 @@ export class AbwabDoorModalComponent {
 
   private readonly fieldsForm = viewChild(AbwabDoorFieldsFormComponent);
 
-  protected readonly titleId = `abwab-door-modal-title-${nextModalId++}`;
+  private readonly modalId = nextModalId++;
+
+  protected readonly titleId = `abwab-door-modal-title-${this.modalId}`;
 
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly confirmingDiscard = signal(false);
   protected readonly chosenSectionId = signal<number | null>(null);
   protected readonly sectionMissing = signal(false);
 
-  protected readonly sectionId = `abwab-door-modal-section-${nextModalId}`;
+  protected readonly sectionId = `abwab-door-modal-section-${this.modalId}`;
 
   /** Only «كل الأبواب» leaves a root create with nowhere to put the door: a section tab supplies one
    * and a child derives its parent's. */
   protected readonly needsSection = computed(
     () => !this.isEdit && this.parentId() === null && this.activeSectionId() === null,
+  );
+
+  /** Nothing to pick and no way forward — say so, the way the restore modal does, rather than showing
+   * an empty control and answering a save with an error the user cannot act on. */
+  protected readonly noSectionsAvailable = computed(
+    () => this.needsSection() && this.sections().length === 0,
   );
 
   protected readonly initialFields = computed<AbwabAuthoringFields>(() => {
@@ -111,6 +119,7 @@ export class AbwabDoorModalComponent {
   protected get trackingArchiveActiveValue(): string { return ABWAB_LABELS.trackingArchiveActiveValue; }
   protected get sectionLabel(): string { return ABWAB_LABELS.doorModalSectionLabel; }
   protected get sectionRequiredError(): string { return ABWAB_LABELS.doorModalSectionRequiredError; }
+  protected get noSectionsHint(): string { return ABWAB_LABELS.doorModalNoSectionsHint; }
 
   protected onSectionChange(value: string): void {
     this.chosenSectionId.set(value === '' ? null : Number(value));

@@ -28,6 +28,7 @@
           [class.qd-btn-primary]="tone() === 'default'"
           [class.qd-confirm-dialog__confirm--danger]="tone() === 'danger'"
           [disabled]="busy() || confirmDisabled()"
+          [attr.aria-busy]="busy() ? 'true' : null"
           data-testid="qd-confirm-dialog-confirm"
           (click)="confirm()"
         >

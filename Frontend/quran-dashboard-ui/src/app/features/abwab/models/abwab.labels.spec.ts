@@ -26,6 +26,13 @@ describe('ABWAB_LABELS — the locked strings', () => {
     expect(ABWAB_LABELS.doorModalSectionRequiredError).toBe('اختر قسمًا للباب الرئيسي');
   });
 
+  // The same dead end reads the same on both surfaces: nothing to pick, so say what to do instead of
+  // demanding a choice that cannot be made.
+  it('root create and restore say the same thing when no live section exists', () => {
+    expect(ABWAB_LABELS.doorModalNoSectionsHint).toBe('لا توجد أقسام حالية — أنشئ قسمًا أولًا');
+    expect(ABWAB_LABELS.doorModalNoSectionsHint).toBe(ABWAB_LABELS.restoreModalNoSectionsHint);
+  });
+
   it('bulk all-or-nothing conflict message names the failing doors (§2.6)', () => {
     expect(ABWAB_LABELS.bulkConflictMessage('الألوهية، الربوبية')).toBe(
       'فشلت العملية كاملة — حدث تعارض على: الألوهية، الربوبية',

@@ -30,7 +30,8 @@
             <select
               class="qd-input"
               [id]="selectId"
-              [attr.aria-invalid]="confirmDisabled() ? 'true' : null"
+              [attr.aria-required]="destinationRequired() ? 'true' : null"
+              [attr.aria-invalid]="sectionInvalid() ? 'true' : null"
               data-testid="abwab-door-restore-modal-section-select"
               (change)="onSectionChange($any($event.target).value)"
             >
