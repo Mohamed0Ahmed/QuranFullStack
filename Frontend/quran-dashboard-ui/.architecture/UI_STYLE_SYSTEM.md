@@ -697,15 +697,51 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 
 ### `qd-tabs`
 - **Purpose:** the one tab-strip implementation app-wide (explorer view-mode tabs,
-  mushaf ayah-section tabs, inline list tabs).
-- **Inputs / roles:** `ariaLabel`, `orientation?='horizontal'`; container is
-  `role="tablist"`; each item is `role="tab"` with `aria-selected`, roving
-  tabindex, Arrow/Home/End keyboard nav (RTL-aware).
+  mushaf ayah-section tabs, inline list tabs, and — at `layout='grid'` — a modal's
+  section strip).
+- **Inputs / roles:** `ariaLabel`, `orientation?='horizontal'`, `layout?='inline'`;
+  container is `role="tablist"`; each item is `role="tab"` with `aria-selected`,
+  roving tabindex, Arrow/Home/End keyboard nav (RTL-aware).
 - **Selected / hover / disabled:** selected per §16.1 (tint background +
   accent-text label + hairline/indicator edge); hover = `--qd-surface-hover`;
   disabled is non-interactive and drops out of the roving tab order.
-- **Backing classes:** `.qd-tabs`, `.qd-tabs__tab`, `.qd-tabs__tab.qd-is-selected`,
-  `.qd-tabs__count`. Compose, do not re-style.
+- **Backing classes:** `.qd-tabs`, `.qd-tabs--vertical`, `.qd-tabs--grid`,
+  `.qd-tabs__tab`, `.qd-tabs__tab.qd-is-selected`, `.qd-tabs__count`. Compose, do
+  not re-style.
+- **`layout='grid'` — the wrapping fixed-column strip (`.qd-tabs--grid`, added by
+  ux-slice-m).** For a tablist that must show **every** option at once rather than
+  one scrolling row: `display: grid; grid-template-columns: repeat(var(--qd-tabs-grid-columns, 5), minmax(0, 1fr)); gap: var(--qd-space-2)`.
+  A horizontally scrolling row was the rejected alternative — it is hostile in RTL
+  and unreachable by keyboard without a scroll-into-view crutch, whereas a grid
+  simply wraps. Three properties are load-bearing:
+  - **`minmax(0, …)`, never a bare `1fr`.** A grid item's `min-width: auto` lets a
+    long label push its track past the column width instead of ellipsizing inside
+    it, so a name that should truncate silently widens the strip instead. The same
+    class of failure as the specificity traps below: nothing looks broken until the
+    data gets long.
+  - **The tracks exist whether or not they are filled**, which is what makes the
+    cells *equal-width* rather than *proportional* — two tabs render as two
+    full-width cells beside three empty tracks, not two stretched halves. A call-site
+    wanting the stretched behaviour wants `--inline`, not this.
+  - **Keyboard nav still follows `orientation`, not `layout`.** A grid strip keeps
+    the horizontal Arrow/Home/End model, moving linearly through DOM order across
+    the wrap. A row-aware Up/Down model (±one row) is deliberately **not** built:
+    it would be a second keyboard contract for one consumer, and linear traversal
+    already reaches every cell.
+  - **Consumer (exactly one):** `abwab-move-picker`'s section strip. Its cells
+    measure **150 px** — the `--wide` modal's 832 px, minus 2 px of border and the
+    48 px of `.qd-modal__head` padding, minus four `--qd-space-2` gaps, over five
+    tracks — so the ~15-section product ceiling is exactly three rows. The strip
+    sits in `__head` (`flex-shrink: 0`), so it needs **no `max-block-size` and no
+    scroller of its own**, and `.qd-modal__body` stays the modal's only scroller per
+    the `.qd-modal` entry below. A call-site needing a different column count sets
+    `--qd-tabs-grid-columns` and records its own arithmetic the same way.
+- **Extending the tab's visual state:** a call-site adding a cue the primitive does
+  not carry puts it on a **feature-local class beside** `.qd-tabs__tab`
+  (`lemma-details-panel__tab`, `abwab-move-picker__section`), never by re-styling
+  `.qd-tabs__tab` from the consumer's own stylesheet. The move picker's active cell
+  adds `font-weight: 700` that way, because §17's tint-plus-accent-border selected
+  state is a colour cue and an active state must not rest on colour alone.
 - **Count meta (`.qd-tabs__count`):** rendered by the call-site's template, not by `qdTab` —
   the directive is host-bindings-only and cannot project a child element. Latin digits,
   `tabular-nums`; **always** rendered, dimmed at zero via `.qd-tabs__count--empty` (opacity

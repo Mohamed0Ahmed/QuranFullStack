@@ -165,6 +165,18 @@ button.qd-interactive-surface {
   align-items: stretch;
 }
 
+// Wrapping fixed-column strip (UI_STYLE_SYSTEM.md §17 `qd-tabs`). Declared after the base so
+// its `display` wins at equal specificity, the same way `--vertical` above relies on order.
+// `minmax(0, …)`, not a bare `1fr`: a grid item's `min-width: auto` would otherwise let a long
+// label push its track past the column width instead of ellipsizing inside it. The tracks exist
+// whether or not they are filled, so a two-tab strip renders two full-width cells beside three
+// empty ones rather than two stretched halves.
+.qd-tabs--grid {
+  display: grid;
+  grid-template-columns: repeat(var(--qd-tabs-grid-columns, 5), minmax(0, 1fr));
+  gap: var(--qd-space-2);
+}
+
 .qd-tabs__tab {
   display: inline-flex;
   align-items: center;

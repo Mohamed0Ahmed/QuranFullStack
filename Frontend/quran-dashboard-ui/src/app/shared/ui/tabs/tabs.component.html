@@ -1,6 +1,7 @@
 <div
   class="qd-tabs"
   [class.qd-tabs--vertical]="orientation() === 'vertical'"
+  [class.qd-tabs--grid]="layout() === 'grid'"
   role="tablist"
   [attr.aria-label]="ariaLabel()"
   [attr.aria-orientation]="orientation()"
