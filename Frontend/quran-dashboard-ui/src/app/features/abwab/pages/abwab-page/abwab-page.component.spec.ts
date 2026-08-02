@@ -912,6 +912,39 @@ describe('AbwabPageComponent', () => {
       return extras.queryParams;
     }
 
+    // ux-slice-l's other half, tested here because this describe owns the only nested fixture
+    // (1 → 2 → 3): search auto-expansion is a SEED, not a force, so the branch it opens must
+    // survive clearing the query and must still be collapsible. That chain — search →
+    // `expandSeedIds` union → the tree's merge effect — is what this slice rewired when it
+    // deleted `forceExpandedIds`, and it is invisible in the flat fixture the other describes use.
+    describe('search seeds the match’s ancestors open (ux-slice-l)', () => {
+      const rowsPresent = (fixture: { nativeElement: unknown }, ids: readonly number[]) =>
+        ids.map((id) => !!(fixture.nativeElement as HTMLElement).querySelector(`[data-testid="abwab-tree-row-${id}"]`));
+
+      it('opens the chain to a deep match, keeps it open after the query clears, and leaves it collapsible', () => {
+        // Collapsed to start: only the root is on screen.
+        const fixture = renderReveal({ section: '1' });
+        expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, false, false]);
+
+        // «حفيد» is the grandchild — its ancestors 1 and 2 are seeded open.
+        params$.next(convertToParamMap({ section: '1', q: 'حفيد' }));
+        fixture.detectChanges();
+        expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, true, true]);
+
+        // Clearing the query is not an un-expand: the seed became the user's own state.
+        params$.next(convertToParamMap({ section: '1' }));
+        fixture.detectChanges();
+        expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, true, true]);
+
+        // And it is a seed, not a force — the chevron still collapses it. A forced id could not.
+        (
+          (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-tree-chevron-1"]') as HTMLElement
+        ).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        fixture.detectChanges();
+        expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, false, false]);
+      });
+    });
+
     it('same scope: patches door only', () => {
       const fixture = renderReveal({ section: '1' });
       reveal(fixture, 3);
