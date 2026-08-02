@@ -616,17 +616,28 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **Loading/empty/error surfaces are composed, not hand-rolled.** Every text-only loading,
   empty, and error site across `abwab-page`, `abwab-templates-page`, the template copy modal,
   and the relations modal now composes `qd-skeleton-rows`/`qd-panel-skeleton` (loading) or
-  `qd-state` (empty/error) — `UI_STYLE_SYSTEM.md` §17. Only two error sites carry the single
+  `qd-state` (empty/error) — `UI_STYLE_SYSTEM.md` §17. **The relations modal's own read is one of
+  them**: it holds a `'loading' | 'ready' | 'error'` status, renders `qd-skeleton-rows` while a
+  fetch is out, and reaches the empty state or the count chip only once the list has actually
+  answered. Which read runs at all is decided by the anchor's snapshot `relationCount` — a
+  zero-count door issues **no request**, and the count is read untracked so a post-write snapshot
+  refresh cannot reset the open draft. The fetched list overrules a disagreeing count; the count
+  only chooses between asking and not asking. Only three error sites carry the single
   `actionLabel` retry §17 permits — the doors page's own snapshot-load failure and the copy
-  modal's doors-load failure, both wired to `AbwabSnapshotFacade.load()` — because those are
-  the two transport reads abwab previously offered no recovery from at all. The templates page's
+  modal's doors-load failure, both wired to `AbwabSnapshotFacade.load()`, plus the relations
+  modal's own load failure — because those are the transport reads abwab otherwise offers no
+  recovery from at all. The relations modal's **write** errors deliberately carry no retry: the
+  add and remove controls are themselves that retry, and §17 allows one action per error. Any
+  successful load clears the message, so a recovered failure no longer sticks for the life of the
+  open modal. The templates page's
   «اختر قالبًا» now means only what it says: `AbwabTemplatesFacade.selectedLoading` covers the
   per-template fetch window (null `selectedTemplate` throughout, since `select()` writes the id
   first), and the detail region renders `qd-skeleton-rows` there instead.
 - **A skeleton's `rowTemplate` sizes its columns, never its rows.** `qd-skeleton-rows` defaults
   to a 0.75rem bar, so a call-site whose loaded row is taller must say so with a
   `--qd-skeleton-h` override on the host — the doors tree does (1.5rem, giving 32px pitch against
-  the gapless tree's measured 32px row), and the templates list does (3.75rem). The primitive's
+  the gapless tree's measured 32px row), the templates list does (3.75rem), and the relations
+  modal's group skeleton does (1.25rem, standing in for a heading over a chip line). The primitive's
   own inter-row `gap` is **not** parameterized, so *n* skeleton rows always land one gap short of
   *n* gapless loaded rows; that residual is the primitive's, not the call-site's, and closing it
   means changing `shared/ui/skeleton/`.

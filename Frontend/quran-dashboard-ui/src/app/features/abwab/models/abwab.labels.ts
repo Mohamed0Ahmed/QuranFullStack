@@ -243,6 +243,7 @@ export const ABWAB_LABELS = {
   relationsModalTitle: (doorName: string): string => `علاقات «${doorName}»`,
   relationsModalDescription: 'العلاقات المتبادلة تظهر تلقائيًا عند الطرف الآخر. الحذف من هنا يحذفها من الطرفين.',
   relationsEmpty: 'لا توجد علاقات لهذا الباب بعد — أضف أول علاقة من الأسفل.',
+  relationsLoading: 'يتم تحميل العلاقات…',
   relationsLoadError: 'تعذر تحميل علاقات الباب.',
   // Every group renders several of these buttons at once, so a static name would leave a screen
   // reader with N identical «حذف العلاقة» controls and no way to tell them apart.

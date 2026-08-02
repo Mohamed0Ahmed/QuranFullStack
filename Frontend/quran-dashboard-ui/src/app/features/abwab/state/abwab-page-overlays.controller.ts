@@ -353,6 +353,14 @@ export class AbwabPageOverlaysController {
     return id === null ? '' : (this.byId().get(id)?.name ?? '');
   });
 
+  /** Derived from the snapshot on every read rather than captured at open: the modal decides
+   * whether to fetch at all from this number, and a value frozen at open would keep saying
+   * «لا توجد علاقات» after the first add refreshed the tree underneath it. */
+  readonly relationsAnchorCount = computed(() => {
+    const id = this.relationsAnchorId();
+    return id === null ? 0 : (this.byId().get(id)?.relationCount ?? 0);
+  });
+
   readonly relationsBulkTargets = computed(() => {
     const byId = this.byId();
     return Array.from(this.selection.bulkSet().keys(), (id) => ({
