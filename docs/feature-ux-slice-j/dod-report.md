@@ -11,7 +11,7 @@ no migration, no route-smoke gate.
 | 2 | J1 — `.qd-modal--wide` at 52rem | landed (`aece3223`) |
 | 3a | J6 — `testIdPrefix` on the primitive | landed (`a34a37f9`) |
 | 3b | J6 — five confirm migrations + ride-alongs A3-a/A2-a | landed (`15dc38ed`) |
-| 4 | J8 — badge header row | **BLOCKED**, see `phase-4-blocked.md` (`eb8a1174`) |
+| 4 | J8 — badge header row (subgrid) | landed |
 
 ## §14 DoD fields
 
@@ -37,10 +37,10 @@ no migration, no route-smoke gate.
 | Tier A — door modal specs (phase 1) | 17/17 |
 | Tier B — full suite after phase 2 | 195 files, 2376 tests |
 | Tier B — full suite after phase 3 | 195 files, 2402 tests (+26 new cases) |
-| Tier C — full `npm test` | 195 files, **2403** tests |
+| Tier C — full `npm test` | 195 files, **2410** tests |
 | Tier C — `npm run build` | succeeds (pre-existing warnings only) |
-| E2E — the new width spec | 6/6 |
-| E2E — `--project=abwab --workers=1` | 31/31, including the three rewritten specs |
+| E2E — `--project=abwab --workers=1` after phase 3 | 31/31, including the three rewritten specs |
+| E2E — `--project=abwab --workers=1` after phase 4 | **35/35** |
 
 The E2E line is the **`abwab` project only**, not the whole suite — `npm run e2e` is two
 sequential runs and the `default` project was not executed. That matters slightly more than
@@ -57,7 +57,7 @@ E2E is reported as **supplementary**, not as a Tier C substitute, per `TESTING_S
 
 The plan wrote tasks 2.5 and 3.13 as manual browser passes. They were instead written as
 assertions in `e2e/abwab-slice-j-widths.e2e.ts` and run, because the §17 ladder is a set of
-numbers and a number is a better gate than an opinion. All 8 cases pass:
+numbers and a number is a better gate than an opinion. All 6 cases pass:
 
 - `--wide` measures exactly **832px** at 1024 / 1184 / 1440px, in **both light and dark**, with
   `direction: rtl` confirmed on the element.
@@ -109,12 +109,12 @@ Met: 1, 2, 4, 5 (as reinterpreted above, and stated there), 5a, 5b, 6, 7, 8, 9, 
 the `_tokens.scss` pointer, the abwab README (four paragraphs: the shell inventory, the
 template-node justification, the stacking rule, the no-audit-columns gotcha), and TESTING_DEBT.
 
+Also met after the phase-4 amendment: **10, 10a, 10b, 10c, 10d** — including the fifth abwab
+README paragraph (the badge paragraph), now rewritten.
+
 Partially met: **3** — it names three modals as browser-verified. Two were measured (confirm
 dialog 448px, words detail modal 672px); the detail shell's 46rem was reasoned, not measured,
 for the reason above.
-
-Not met, blocked with Phase 4: **10, 10a** (badge header) — and the fifth abwab README
-paragraph (the badge paragraph, ~L104-115), which describes the header and was left alone.
 
 Criterion 6 re-verified after the migration: `grep -rn 'role="alertdialog"' src/app
 --include='*.html'` returns the primitive plus exactly the three dirty-discard strips (door,
@@ -149,6 +149,47 @@ One earlier spec was rewritten rather than repaired: the sections modal's focus-
 asserted `dialog.hasAttribute('cdkTrapFocus')`, which a property binding necessarily removes. It
 now asserts the directive's `enabled` state through both halves of the gate — behavior instead of
 attribute presence.
+
+## Phase 4 — what the subgrid conversion cost, measured
+
+The plan's original §2.3 was impossible (a sibling header cannot find the badge columns of a
+depth-padded flex row with intrinsic-width trailing clusters). It was rewritten to a
+frame → tree → row subgrid chain, validated by a standalone spike, and gated on a measured name
+budget rather than a visual check. `phase-4-blocked.md` is **superseded and deleted** — its
+findings are now §2.3's rationale; `eb8a1174` is the archive.
+
+**The gate.** Fixed badge tracks take width from the row's only shrinkable item. Measured before
+any edit, and again after:
+
+| viewport | name width before (depth 0…5) | after | delta |
+|---|---|---|---|
+| 1024 | 344 / 320 / 296 / 272 / 248 / 224 px | 325 / 301 / 277 / 253 / 229 / 205 px | −19 px |
+| 1184 | 504 / 480 / 456 / 432 / 408 / 384 px | 485 / 461 / 437 / 413 / 389 / 365 px | −19 px |
+| 1440 | 760 / 736 / 712 / 688 / 664 / 640 px | 741 / 717 / 693 / 669 / 645 / 621 px | −19 px |
+
+Inside the 20 px ceiling set before the work began. The **indent step is 24 px before and after**,
+and chevron, order pill and name still indent together — stop condition 1 measured, not judged.
+
+**Why the labels are abbreviated.** The full words («مباشرين» / «الجميع» / «العمق») measure
+33 / 27 / 24 px against badges of 20–25 px, forcing a 2.5 rem column and a **−55 px** name loss —
+rejected. «مباشر» / «الكل» / «عمق» measure 21 / 18 / 19 px, fit a 1.75 rem column, and cost 19 px.
+Because the header is `aria-hidden` and every badge keeps its **unchanged** full `aria-label`,
+screen-reader output is byte-identical to before the slice; only the visible hint got shorter.
+Pinned by a spec case that asserts all three `aria-label`s against their label functions.
+
+The one font step the budget allowed was **not spent**: the labels fit at the row's own
+0.6875 rem (11 px), and shrinking chrome that did not need shrinking would have cost DESIGN.md's
+calm register for nothing.
+
+**Alignment is measured, not eyeballed.** Header label centres and badge centres at 1024 px:
+575 / 527 / 479 px for the header, and identically 575 / 527 / 479 px on both a root row and a
+depth-1 row.
+
+**A stale contract corrected on the way through.** §17's truncation entry claimed the tree name
+"holds ~184 px beside all three badges" at the narrowest viewport. That is reproducible only on a
+branch row at depth ≈ 6–7 at 1024 px — a deep-row figure stated as a general one. It now states
+the rule (325 px at 1024 px on a root branch row, −24 px per depth level) and requires
+re-measurement whenever the row's furniture changes.
 
 ## Behavior changes a reviewer should look for
 

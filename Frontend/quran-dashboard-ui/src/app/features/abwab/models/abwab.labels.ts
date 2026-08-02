@@ -126,16 +126,28 @@ export const ABWAB_LABELS = {
   rowRelationsAriaLabel: (doorName: string, count: number): string =>
     `عرض علاقات «${doorName}» — ${countPhrase(count, RELATION_FORMS)}`,
 
-  // The row's three count badges. Each is a bare numeral on screen, so the accessible name is
-  // the only place its meaning exists; «تحته مباشرة» vs «في كل المستويات» is exactly the
-  // distinction the two counts make, and the depth label has to pin "levels below this door"
-  // rather than the door's own position in the tree.
+  // The row's three count badges. These aria-labels are the accessible layer — the visible
+  // column header is `aria-hidden` and presentational, so meaning still lives here; «تحته
+  // مباشرة» vs «في كل المستويات» is exactly the distinction the two counts make, and the depth
+  // label has to pin "levels below this door" rather than the door's own position in the tree.
   rowChildCountAriaLabel: (count: number): string => `${countPhrase(count, DOOR_FORMS)} تحته مباشرة`,
   rowDescendantCountAriaLabel: (count: number): string =>
     `${countPhrase(count, DOOR_FORMS)} تحته في كل المستويات`,
   rowDepthAriaLabel: (depth: number): string => `أعمق تفرّع تحته: ${countPhrase(depth, LEVEL_FORMS)}`,
-  /** The visible depth badge — a bare numeral would read as a fourth count. */
-  rowDepthBadge: (depth: number): string => `ع${depth}`,
+  /** Bare numeral: the «العمق» column header now does the disambiguating the «ع» prefix used to. */
+  rowDepthBadge: (depth: number): string => `${depth}`,
+
+  // The tree's aria-hidden column header. Right-to-left, these sit over the badges in DOM
+  // order: direct children, then all descendants, then depth.
+  //
+  // Deliberately shorter than the aria-labels above, which are unchanged. The header is
+  // `aria-hidden` and the full meaning already lives in the accessible layer, so these are
+  // hints over a column, not the semantic carrier — and a hint may be abbreviated where a name
+  // may not. The unabbreviated words («مباشرين» / «الجميع» / «العمق») needed a 2.5rem column and
+  // would have taken 55px from the row's name; these need 1.75rem and take 19px.
+  rowHeaderDirect: 'مباشر',
+  rowHeaderTotal: 'الكل',
+  rowHeaderDepth: 'عمق',
 
   activeDoorHeading: 'الباب النشط',
   noSelectionHint: 'اختر بابًا من الشجرة أو البطاقات',

@@ -1481,6 +1481,62 @@ describe('AbwabPageComponent', () => {
     });
   });
 
+  describe('the tree badge header follows the tree, not the page (slice J)', () => {
+    // The page owns the loading and empty branches and mounts <qd-abwab-tree> only in the
+    // populated one, so the header cannot appear over a skeleton or an empty state.
+    it('is absent while the tree skeleton is showing', () => {
+      const pending = new Subject<HttpResponse<ApiResponse<AbwabTreeDto>>>();
+      getTestBed().resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [AbwabPageComponent],
+        providers: [
+          provideRouter([]),
+          { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(pending) } },
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } },
+          },
+        ],
+      });
+      vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('.abwab-page__tree-skeleton')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-tree-header"]')).toBeNull();
+    });
+
+    it('is absent in the empty state', () => {
+      const empty: AbwabTreeDto = { doors: [], sections: TREE.sections, version: 'v1' };
+      getTestBed().resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [AbwabPageComponent],
+        providers: [
+          provideRouter([]),
+          { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(treeResponse(empty)) } },
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } },
+          },
+        ],
+      });
+      vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-page-empty"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-tree-header"]')).toBeNull();
+    });
+
+    it('is present once rows render', () => {
+      const root = render().nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-header"]')).toBeTruthy();
+    });
+  });
+
   it('restoreAncestors keeps one identity while no restore is open', () => {
     const fixture = render();
     const overlays = fixture.debugElement.injector.get(AbwabPageOverlaysController);

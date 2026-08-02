@@ -1,4 +1,20 @@
-<div class="abwab-tree" role="tree" [attr.aria-label]="ariaLabel()" data-testid="abwab-tree">
+<div class="abwab-tree-frame" [class.abwab-tree-frame--bulk]="bulkMode()">
+  <!-- Presentational only: the per-badge aria-labels remain the accessible layer, so this must
+       stay outside the role="tree" element rather than becoming a row inside it. -->
+  <div class="abwab-tree__header" aria-hidden="true" data-testid="abwab-tree-header">
+    @if (bulkMode()) {
+      <span></span>
+    }
+    <span></span>
+    <span class="abwab-tree__header-cell">{{ headerDirectLabel }}</span>
+    <span class="abwab-tree__header-cell abwab-tree__count--wide">{{ headerTotalLabel }}</span>
+    <span class="abwab-tree__header-cell abwab-tree__count--wide">{{ headerDepthLabel }}</span>
+    <span></span>
+    @if (!bulkMode()) {
+      <span></span>
+    }
+  </div>
+  <div class="abwab-tree" role="tree" [attr.aria-label]="ariaLabel()" data-testid="abwab-tree">
   @for (row of visibleRows(); track row.id) {
     @let node = nodesById().get(row.id);
     @if (node) {
@@ -17,6 +33,7 @@
         (contextmenu)="onRowContextMenu($event, node.id)"
         (keydown)="onKeydown($event)"
       >
+        <span class="abwab-tree__lead">
         @if (bulkMode()) {
           <input
             type="checkbox"
@@ -61,26 +78,38 @@
         }
 
         <span class="abwab-tree__name qd-truncate" [title]="node.name">{{ node.name }}</span>
-        @if (row.hasChildren) {
-          <span
-            class="abwab-tree__count qd-chip__count"
-            [attr.aria-label]="childCountAriaLabel(node.liveChildCount)"
-            [attr.data-testid]="'abwab-tree-count-' + node.id"
-            >{{ node.liveChildCount }}</span
-          >
-          <span
-            class="abwab-tree__count abwab-tree__count--wide qd-chip__count"
-            [attr.aria-label]="descendantCountAriaLabel(node.liveDescendantCount)"
-            [attr.data-testid]="'abwab-tree-descendants-' + node.id"
-            >{{ node.liveDescendantCount }}</span
-          >
-          <span
-            class="abwab-tree__count abwab-tree__count--wide qd-chip__count"
-            [attr.aria-label]="depthAriaLabel(node.maxRelativeDepth)"
-            [attr.data-testid]="'abwab-tree-depth-' + node.id"
-            >{{ depthBadge(node.maxRelativeDepth) }}</span
-          >
-        }
+        </span>
+
+        <span class="abwab-tree__count-cell">
+          @if (row.hasChildren) {
+            <span
+              class="abwab-tree__count qd-chip__count"
+              [attr.aria-label]="childCountAriaLabel(node.liveChildCount)"
+              [attr.data-testid]="'abwab-tree-count-' + node.id"
+              >{{ node.liveChildCount }}</span
+            >
+          }
+        </span>
+        <span class="abwab-tree__count-cell abwab-tree__count--wide">
+          @if (row.hasChildren) {
+            <span
+              class="abwab-tree__count abwab-tree__count--wide qd-chip__count"
+              [attr.aria-label]="descendantCountAriaLabel(node.liveDescendantCount)"
+              [attr.data-testid]="'abwab-tree-descendants-' + node.id"
+              >{{ node.liveDescendantCount }}</span
+            >
+          }
+        </span>
+        <span class="abwab-tree__count-cell abwab-tree__count--wide">
+          @if (row.hasChildren) {
+            <span
+              class="abwab-tree__count abwab-tree__count--wide qd-chip__count"
+              [attr.aria-label]="depthAriaLabel(node.maxRelativeDepth)"
+              [attr.data-testid]="'abwab-tree-depth-' + node.id"
+              >{{ depthBadge(node.maxRelativeDepth) }}</span
+            >
+          }
+        </span>
         <span class="abwab-tree__flags">
           <button
             type="button"
@@ -122,4 +151,5 @@
       </div>
     }
   }
+</div>
 </div>

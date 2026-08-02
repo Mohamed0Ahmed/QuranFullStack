@@ -215,64 +215,114 @@ confirmation, J3's the hand-rolled markup; templates-page *workshop* test covera
   `abwab-door-restore-modal.component.spec.ts` new case — replacing the `door` input with a
   **new object of the same id** does not wipe a chosen section; replacing with a different
   id does reset.
+### 2.3 J8 — badge header row (AMENDED 2026-08-02, supersedes the original §2.3)
 
-### 2.3 J8 — badge header row
+**Why this section was rewritten.** The original design made the header a sibling `<div>`
+reusing "the same grid template" as the rows. Implementation found that impossible, stopped at
+this section's own stop condition, and the findings are folded in below (they previously lived
+in `docs/feature-ux-slice-j/phase-4-blocked.md`, which this section supersedes — delete that
+file in the phase-4 commit; `eb8a1174` is its archive). The user then chose the subgrid
+conversion. What follows is the amended design, validated by a standalone spike before being
+written here.
 
-- **Structure (the restructure, named):** the three badges wrap in a fixed-grid group
-  `.abwab-tree__counts` — `display: grid; grid-template-columns: repeat(3, var width)` with
-  one local width (a literal rem in the component SCSS, sized to the widest of the three
-  header words at the row font; expected ≈3.5rem — measured at implementation, single
-  source via one SCSS variable used by rows AND header). The group renders on **every** row
-  (leaf rows render it empty), so columns exist row-over-row. `.abwab-tree__count` gains a
-  fixed `inline-size: 100%` within its cell + `justify-self: center`. **The global
-  `.qd-chip__count` is not touched** — it has 3 other consumers (`chip.component.html:21`,
-  `word-type-filter.component.html:30, 58`).
-- **Header row:** a sibling `<div class="abwab-tree__header" aria-hidden="true">` rendered
-  by `abwab-tree.component.html` **before** the `role="tree"` element (component template
-  gets two root nodes; the header never enters the tree's ARIA subtree). It reuses the same
-  grid template, right-aligned against the row's badge-group position (RTL: labels read
-  «مباشرين، الجميع، العمق» right-to-left, matching the DOM order children→descendants→depth).
-  Gated on the tree having at least one branch row? No — rendered whenever the tree renders
-  rows; with zero branch rows every group is empty and the header still labels the columns.
-  **Alignment is structural (shared grid), not approximate. Stop condition:** if
-  implementation cannot make header cells and row cells share one grid template (e.g. the
-  actions/flag cluster forces divergent row layouts), STOP and report — do not ship
-  eyeballed alignment.
-- **Labels (net-new):** `rowHeaderDirect: 'مباشرين'`, `rowHeaderTotal: 'الجميع'`,
-  `rowHeaderDepth: 'العمق'` in `abwab.labels.ts`, read via TDZ getters.
-- **«ع» removal:** `rowDepthBadge` body becomes `` `${depth}` `` (function and name stay —
-  spec `:458` asserts via the function and stays green); its comment (`:137` "a bare
-  numeral would read as a fourth count") is rewritten: the header now disambiguates.
-- **Accessible layer unchanged:** the header is presentational (`aria-hidden="true"`); the
-  per-badge Arabic `aria-label`s (`abwab.labels.ts:129-136`) remain the meaning carrier —
-  the `qd-tabs` count-meta precedent (visible digits `aria-hidden`, meaning in the label).
-  The README comment "the accessible name is the only place its meaning exists"
-  (README badge paragraph, ~L104-115) is corrected to "the accessible layer; the visible
-  header is presentational."
-- **Responsive:** the existing `≤ $qd-bp-tablet-max` rule hides the two `--wide` badges
-  (`abwab-tree.component.scss:131-135`). The header's «الجميع» and «العمق» cells take the
-  same `--wide` class and drop in the **same** media query; «مباشرين» survives at every
-  width — matching the pin at `abwab-tree.component.spec.ts:499-505`, which is untouched.
-  The grid template collapses to one column in the same query.
-- **Tree-only by structure:** cards show one plain number (`abwab-cards.component.html:52-54`),
-  the archive view none (deliberate, README) — neither gets a header.
-- **Loading and empty states — decided: the header renders only once real rows exist.**
-  The page owns the skeleton and empty branches (`abwab-page.component.html` tree card:
-  `qd-skeleton-rows` in the loading branch, `qd-state variant="empty"` in the empty
-  branch); `<qd-abwab-tree>` — and therefore the header inside it — mounts only in the
-  populated branch. So: no header over skeleton rows, no header over the empty state; the
-  header appears in the same single repaint that swaps the skeleton for the tree. The
-  slice-B1 skeleton matches row *pitch*, not total block height, so the one-header-row
-  delta at swap introduces no new doctrine violation — recorded here as accepted, not
-  discovered later. Assertions (task 4.5): header absent while the page shows the tree
-  skeleton; header absent in the empty state; header present once rows render.
-- **§17:** new entry for the header-over-badge-columns pattern (placement outside
-  `role="tree"`, aria-hidden doctrine, the 2-of-3 drop). The `.qd-detail-list__header`
-  documentation gap (10 consumers, `_explorer-detail-lists.scss:13-28`, entry `:865-875`
-  silent) is a **different entry in a different section of the file** — not genuinely one
-  edit; it is logged in TESTING_DEBT-adjacent terms instead: one line added to the §17
-  `.qd-detail-list` entry's own TODO is out of scope, so the plan records it here as a
-  known doc gap and leaves it.
+**What the original design got wrong, and what it got right.** The row is `display: flex` with
+`padding-inline-start: calc(depth * --qd-space-5 + --qd-space-2)`, and
+`.abwab-tree__flags` / `.abwab-tree__actions` are `flex: none` with intrinsic, undeclared
+widths. So a sibling header cannot compute the badges' offset from the row's inline-end.
+
+But **the badges already align row-to-row today**, and the original plan never noticed: depth
+padding is `padding-inline-start` only, so it shifts the leading content and shrinks the flexible
+name — the trailing `flex: none` items sit at a constant offset from each row's inline-end
+regardless of depth. **The subgrid conversion therefore does not fix a row-to-row misalignment;
+there is none. It exists so the HEADER can reach tracks the rows already share.** That is the
+whole justification, and it is why "just render a header and eyeball it" was rejected: the
+header, not the rows, is the element that cannot find the column.
+
+**The structure (three levels).**
+
+```
+.abwab-tree-frame            display: grid  — owns the ONE column template
+├── .abwab-tree__header      subgrid, grid-column: 1 / -1, aria-hidden="true"
+└── .abwab-tree  [role=tree] subgrid, grid-column: 1 / -1
+    └── .abwab-tree__row     subgrid, grid-column: 1 / -1   (one per row)
+```
+
+A new frame element is required, not incidental: the header must stay **outside**
+`role="tree"` (locked), so the grid owner has to be an ancestor of both. `.abwab-tree` becomes a
+nested subgrid — a grid item that both spans the frame's columns and re-exposes them to its own
+children. `display: contents` on the `role="tree"` element was rejected: it has a history of
+dropping elements from the accessibility tree, and that element carries the tree role and its
+`aria-label`.
+
+`data-testid="abwab-tree"` **stays on the `role="tree"` element**. Phase 3's focus helper queries
+`[data-testid="abwab-tree"] [tabindex="0"]`, and three page spec cases plus the e2e a11y spec
+depend on it. The frame gets no testid.
+
+**The column template** (non-bulk): `minmax(0, 1fr) repeat(3, var(--abwab-tree-count-col)) auto auto`
+— lead, three counts, flags, actions.
+
+- **`minmax(0, 1fr)`, never bare `1fr`.** `1fr` means `minmax(auto, 1fr)`, whose `auto` minimum
+  refuses to shrink below min-content — `.qd-truncate` would never engage and the name would push
+  the badge tracks out of the row. `min-inline-size: 0` on the lead cell is also needed, for the
+  flex box inside it. Both, not either.
+- **Bulk mode** prepends a checkbox track and drops the actions track. Expressed as a modifier
+  class on the frame, not by making tracks conditional.
+- **`--abwab-tree-count-col` is a declared width, not `auto`.** `auto` would make the column —
+  and therefore the name budget — data-dependent, and a budget that moves when a count reaches
+  three digits is not the contract §17 is being asked to record. Declared, with its derivation in
+  a comment (the measured text width of «مباشرين» at the header's font size plus the chip's own
+  padding), the same way the deleted T403 slot derived its `min-block-size` from constituent
+  parts. **This is house style, not the magic number the stop conditions forbid** — that clause is
+  about silently absorbing a regression, which §6 now gates on measurement.
+
+**The depth indent moves off the row and onto the lead cell — this is the delicate part.**
+
+- The row keeps `padding-block` and loses **all inline padding**. Inline padding on a subgrid is
+  subtracted from the space its tracks occupy; even though every sibling would shrink identically,
+  the design does not need to rely on that spec corner.
+- `.abwab-tree__lead` is a new flex cell wrapping **exactly what indents today** — chevron, order
+  pill / order input, name — and carries
+  `padding-inline-start: calc(var(--abwab-tree-depth, 0) * var(--qd-space-5) + var(--qd-space-2))`,
+  which is the row's current value unchanged. **The visual indent step is therefore identical, and
+  so is the set of things that indent.** A design that indented only the chevron would have left
+  the name and order pill un-indented — a different-looking tree, and the reason that variant was
+  rejected.
+- The trailing inset becomes `.abwab-tree__row > *:last-child { padding-inline-end: var(--qd-space-2); }`,
+  which covers both the bulk (flags last) and non-bulk (actions last) cases in one rule.
+- The row box still spans `1 / -1`, so hover / selected / reveal-outline stay full-bleed exactly
+  as today.
+
+**Leaf rows render the three count cells empty.** With subgrid the tracks exist regardless, but
+auto-placement is positional: a leaf that rendered no count cells would place its flags in the
+first count track. The `@if (row.hasChildren)` therefore moves *inside* each cell, not around the
+group. (The original §2.3 reached the same conclusion for a different reason.)
+
+**Header cells:** an empty lead cell, the three labels, and empty flags/actions cells, so the
+header occupies the same tracks. `aria-hidden="true"`; it must never enter the `role="tree"`
+element.
+
+**Tablet drop (≤ `$qd-bp-tablet-max`).** The two `--wide` count cells already `display: none`,
+which removes them from auto-placement; the frame's template drops the two matching tracks in the
+same media query, so rendered cells and tracks stay in step (non-bulk: 6 tracks → 4). «مباشرين»
+survives at every width, matching the untouched pin at `abwab-tree.component.spec.ts:499-505`.
+
+**Spike evidence (run before this amendment was written).** A standalone frame → subgrid →
+subgrid document at 1024px: header cell `x` = row 0 badge `x` = row 1 badge `x` = 226.90625 exactly;
+row box width = frame width (full-bleed preserved); the long name truncated to 220px while the
+short row's lead stayed natural. Tracks propagate two levels down and the padding scheme holds.
+
+**Unchanged from the original §2.3 (all still locked):** labels `rowHeaderDirect` «مباشرين» /
+`rowHeaderTotal` «الجميع» / `rowHeaderDepth` «العمق» via TDZ getters; `rowDepthBadge` body →
+`` `${depth}` `` with its comment rewritten (the header now disambiguates — this is why «ع»
+removal rides with the header and not before it); per-badge Arabic `aria-label`s remain the
+accessible layer; the global `.qd-chip__count` is not touched; tree-only (no cards, no archive
+view); RTL via logical properties only. **Loading and empty states:** the page mounts
+`<qd-abwab-tree>` only in its populated branch, so no header renders over the skeleton or the
+empty state — unchanged, and still asserted in `abwab-page.component.spec.ts`.
+
+**§17:** a new entry for the header-over-badge-columns pattern (the frame/subgrid/subgrid chain,
+placement outside `role="tree"`, the aria-hidden doctrine, the 2-of-3 drop) plus the truncation
+entry updated with measured numbers per §6.
 
 ### 2.4 J9 — tracking-panel deletion
 
@@ -378,9 +428,28 @@ New (`models/abwab.labels.ts`, TDZ-getter consumption):
 | `sectionDeleteConfirmBody` | `(name) => \`سيتم حذف القسم «${name}»\`` | sections-delete dialog body |
 | `templateDeleteConfirmTitle` | `حذف القالب` | template-delete dialog title |
 | `templateNodeDeleteConfirmTitle` | `حذف العنصر` | node-delete dialog title (same string as `templateNodeDeleteOp:348` but a separate constant — titles must not be coupled to button labels) |
-| `rowHeaderDirect` | `مباشرين` | badge header, column 1 |
-| `rowHeaderTotal` | `الجميع` | badge header, column 2 |
-| `rowHeaderDepth` | `العمق` | badge header, column 3 |
+| `rowHeaderDirect` | `مباشر` | badge header, column 1 |
+| `rowHeaderTotal` | `الكل` | badge header, column 2 |
+| `rowHeaderDepth` | `عمق` | badge header, column 3 |
+
+**The visible header labels are deliberately shorter than the accessible names, and the two are
+documented side by side so the difference reads as a decision rather than a slip.** The header is
+`aria-hidden`; the badges' own `aria-label`s are the semantic carrier and are **unchanged by this
+slice**. A hint over a column may be abbreviated where an accessible name may not.
+
+| column | visible label (aria-hidden) | accessible name on the badge (unchanged) |
+|---|---|---|
+| direct children | `مباشر` | `rowChildCountAriaLabel` → `${countPhrase(n)} تحته مباشرة` |
+| all descendants | `الكل` | `rowDescendantCountAriaLabel` → `${countPhrase(n)} تحته في كل المستويات` |
+| depth | `عمق` | `rowDepthAriaLabel` → `أعمق تفرّع تحته: ${countPhrase(n, LEVEL)}` |
+
+Why these three are accurate at this length: «مباشر» is the adjective the original «مباشرين»
+inflects, and it is the label the tablet drop keeps; «الكل» is the totality the descendants count
+measures, against «مباشر»'s subset; «عمق» is «العمق» without the article, which a column header
+does not need. Measured at the row's own `0.6875rem`: 21px / 18px / 19px, all inside the 28px
+column — so **the header needed no type size of its own**, and the one font step the budget
+allowed was not spent. Cramped chrome would have violated DESIGN.md's calm register for a
+saving that was not required.
 
 Reused unchanged: bodies `archiveConfirm(count)` (`:223`), `templateDeleteConfirm` (`:351`),
 `templateNodeDeleteConfirm(name)` (`:349`); confirm buttons `archiveOp` «أرشفة» (`:148`),
@@ -425,21 +494,48 @@ Removed: `trackingDataHeading` «بيانات التتبع», `trackingAddedByLa
 **Risks:** the sections-delete confirm adds a click to a flow two e2e tests and two unit
 specs script — all four are rewritten in-phase, but any OTHER incidental section-delete in
 future tests must now confirm (localized risk); dual focus traps if the conditional-trap
-gating regresses (spec-guarded in 3.5's cases); the phase-4 grid restructure touches the
-row layout that the truncation contract's measured budget cites (`UI_STYLE_SYSTEM.md`
-truncation entry: the name held ~184px beside all three badges) — the fixed group must not
-shrink the name below usable width at 1024px (visual check in 4.5's pass); no CI — every
-gate is a local run recorded in the PR.
+gating regresses (spec-guarded in 3.5's cases); **the phase-4 subgrid conversion rewrites the
+row layout the truncation contract cites**, which is now gated by measurement rather than by a
+visual check (below); no CI — every gate is a local run recorded in the PR.
+
+**The name budget is measured on both sides of phase 4, and phase 4 is gated on it.**
+`UI_STYLE_SYSTEM.md`'s truncation entry carried a reasoned "~184 px … at the narrowest viewport
+the doors page reaches". Measured before any phase-4 edit, at 1024 / 1184 / 1440 px in both
+themes (identical in both — no theme token participates in geometry):
+
+| viewport | branch-row name width by depth 0…5 | leaf (depth 6, no badges) | indent step |
+|---|---|---|---|
+| 1024 | 344 / 320 / 296 / 272 / 248 / 224 px | 289 px | 24 px |
+| 1184 | 504 / 480 / 456 / 432 / 408 / 384 px | 449 px | 24 px |
+| 1440 | 760 / 736 / 712 / 688 / 664 / 640 px | 705 px | 24 px |
+
+**The documented "~184 px" is not reproducible as an unqualified figure and the entry is stale.**
+The budget falls exactly one indent step (24 px = `--qd-space-5`) per depth level, so 184 px
+corresponds to a branch row at depth ≈ 6–7 at 1024 px — the entry states a deep-row number as if
+it were the general one. The replacement entry states the rule (`344 px at 1024 px on a root
+branch row, −24 px per depth level`) rather than a single figure.
 
 **Rollback:** phases are independent commits in dependency-free areas; revert
 individually. Phase 3's two commits revert together (primitive input is consumed by (b)).
 
-**Stop conditions:** (1) phase-4 alignment cannot be made structural (shared grid) — STOP,
-report, do not ship approximate alignment; (2) the conditional-trap gating in 3.5 produces
-focus escape or double-trap fighting in the spec — STOP and report before shipping a
-stacked confirm; (3) any adopter of `--wide` turns out to carry its own width rule that
-defeats the modifier — report, do not add specificity hacks; (4) danger-tone contrast
-visibly fails in either theme — STOP, token change is out of scope.
+**Stop conditions (phase 4 restated after the amendment):**
+1. **The subgrid cannot carry the depth indent without changing the visual indent step** — STOP.
+   Measured, not judged: the indent step is 24 px at every viewport before the change and must
+   remain 24 px after, and the set of elements that indent (chevron, order, name) must be
+   unchanged.
+2. **The name budget shrinks at any viewport** (the table above, re-run after) — STOP before
+   committing. Report the before/after table and what would have to give: the count column
+   width, the indent step, or the header itself. Do not absorb the regression silently and do
+   not compensate with a magic number.
+3. **Any spec pinned in phases 1–3 turns red** — STOP. A phase-1–3 assertion may not be adjusted
+   to accommodate phase 4.
+4. Header cells and row cells still fail to share tracks after the conversion — STOP; do not
+   ship approximate alignment. (The spike in §2.3 makes this unlikely, not impossible.)
+
+**Stop conditions (phases 1–3, all cleared):** the conditional-trap gating in 3.5 producing focus
+escape or double-trap — cleared, spec-guarded; a `--wide` adopter carrying its own width rule —
+cleared, all three verified free of one; danger-tone contrast failing in either theme — cleared,
+measured in both.
 
 ## 7. Acceptance criteria (each independently checkable)
 
@@ -469,11 +565,17 @@ visibly fails in either theme — STOP, token change is out of scope.
 9. A3-a: `restoreAncestors()` identity is stable across rebuilds while closed (spec green).
    A2-a: same-id node replacement preserves the chosen section (spec green).
 10. Tree shows one aria-hidden header row outside `role="tree"` with «مباشرين» / «الجميع» /
-    «العمق», numbers grid-aligned under their words on every branch row; depth badge shows
-    a bare numeral; ≤1023px drops «الجميع»/«العمق» (labels AND badges) and keeps «مباشرين»;
-    spec `:499-505` untouched and green.
+    «العمق»; depth badge shows a bare numeral; ≤1023px drops «الجميع»/«العمق» (labels AND
+    badges) and keeps «مباشرين»; spec `:499-505` untouched and green.
 10a. The header renders only with real rows: absent alongside the tree skeleton, absent
     in the empty state (three spec cases green).
+10b. **Alignment is measured, not eyeballed:** each header label's inline-start coordinate equals
+    the corresponding badge's on every branch row, within 1 px, at 1024 / 1184 / 1440 px.
+10c. **The indent step is unchanged at 24 px** at every viewport, and chevron, order pill and
+    name all still indent together (stop condition 1, measured).
+10d. **The name budget did not shrink** at any viewport or depth (stop condition 2, measured
+    before and after), and §17's truncation entry states the measured rule in place of the
+    stale "~184 px".
 11. Per-badge Arabic `aria-label`s unchanged; screen-reader output identical to before J8.
 12. Rewritten e2e specs pass in an actual `npm run e2e` run (reported as supplementary).
 13. Full `npm test` + `npm run build` green (Tier B at phases 2–3, Tier C pre-PR).

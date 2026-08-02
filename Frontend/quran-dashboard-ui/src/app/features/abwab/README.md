@@ -103,16 +103,24 @@ nine), four of them reads.
   always 0 (see the derivation in the Gotchas).
   A branch row carries **three** count badges: direct live children (the design contract's
   own, `abwab-tree-concept.html:107`), total live descendants at any depth, and the deepest
-  live nesting below the door (`ع3` = three levels). The last two are a commissioned
-  extension of the contract, not a missed line. All three are live-only, both derivations are
-  memoized on the node by `abwab-tree.builder.ts`, and each carries its own Arabic
-  `aria-label`, since on screen they are bare numerals — a chain of three and a fan of three
-  both show `3` descendants but `ع3` vs `ع1`, and the label is where that meaning lives.
+  live nesting below the door. The last two are a commissioned extension of the contract, not
+  a missed line. All three are live-only and both derivations are memoized on the node by
+  `abwab-tree.builder.ts`.
+  Since slice J an **`aria-hidden` header row names the three columns** — «مباشر» / «الكل» /
+  «عمق» — sitting outside the `role="tree"` element and sharing the rows' grid tracks through
+  a frame → tree → row subgrid chain (`UI_STYLE_SYSTEM.md` §17, "Header over badge columns").
+  The header is presentational: **each badge's Arabic `aria-label` remains the accessible
+  layer**, and those labels are deliberately fuller than the visible ones, which are
+  abbreviated to keep the fixed badge columns from eating the name. The depth badge is a bare
+  numeral now that a column names it — the «ع» prefix it used to carry existed only because
+  nothing else distinguished it from a fourth count.
   **Row width priority, widest to narrowest: name > order pill > actions > children count >
-  descendants/depth badges > flag.** The name is the only shrinkable item (`.qd-truncate`);
-  everything else is `flex: none`. Below `$qd-bp-tablet-max` the descendants and depth badges
-  are dropped rather than everything being squeezed — the contract's own children count
-  survives at every width.
+  descendants/depth badges > flag.** The name is the only shrinkable item (`.qd-truncate`)
+  and its measured budget is a rule in §17's truncation entry, not a remembered figure —
+  re-measure it whenever the row's leading or trailing furniture changes. Below
+  `$qd-bp-tablet-max` the descendants and depth badges drop **with their header labels, in the
+  same media query as the grid tracks they occupy**, rather than everything being squeezed —
+  the contract's own children count, and «مباشر» above it, survive at every width.
 - `components/abwab-cards/` — the drill-down grid: `cardId` names only the
   drilled-into parent (not a full path array) — the breadcrumb chain is derived by
   walking `parentId` up from it via `byId`, so the URL never needs an array. Fails

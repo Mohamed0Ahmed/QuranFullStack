@@ -1,19 +1,102 @@
 @use '../../../../../styles/breakpoints' as bp;
 
+/* One column template, owned by the frame and re-exposed down two levels of subgrid so the
+   aria-hidden header can sit OUTSIDE `role="tree"` and still share the rows' badge tracks
+   (UI_STYLE_SYSTEM.md §17, "header over badge columns"). The rows already agreed on those
+   positions before this — depth padding only ever shifted the leading content, so the
+   `flex: none` trailing items sat at a constant offset from each row's inline-end. Subgrid is
+   here for the header's benefit, not to fix a row-to-row misalignment.
+
+   `display: contents` on the `role="tree"` element would have removed the wrapper instead, but
+   that element carries the tree role and its aria-label, and `display: contents` has a history
+   of dropping such elements from the accessibility tree. */
+.abwab-tree-frame {
+  display: grid;
+  /* `minmax(0, 1fr)`, never a bare `1fr`: `1fr` means `minmax(auto, 1fr)`, whose auto minimum
+     refuses to shrink past min-content — `.qd-truncate` would never engage and a long name
+     would push the badge tracks out of the row. */
+  grid-template-columns: minmax(0, 1fr) repeat(3, var(--abwab-tree-count-col)) auto auto;
+  column-gap: var(--qd-space-2);
+}
+
+/* Bulk mode trades the row actions for a leading checkbox. Two declared templates rather than
+   conditional tracks, so the rendered cells and the tracks can never drift apart. */
+.abwab-tree-frame--bulk {
+  grid-template-columns: auto minmax(0, 1fr) repeat(3, var(--abwab-tree-count-col)) auto;
+}
+
+/* 1.75rem == 28px, derived from two measured constraints rather than eyeballed:
+   the widest header label («مباشر», 21px at the row's own 0.6875rem) and the widest badge a
+   real count produces (a three-digit chip, ~25px). Both clear 28px, so the header needs no
+   type of its own — it reads at the same size as the row, which is what DESIGN.md's calm
+   register asks for.
+
+   The column is also a name-budget decision, and that is the binding one: every pixel here is
+   taken from `.abwab-tree__name`, the row's only shrinkable item. Three fixed 28px tracks cost
+   the name 19px against the natural badge widths they replace (measured: 3 × 28 − 65.2). The
+   original full words («مباشرين» et al.) needed 2.5rem and cost 55px — which is why the visible
+   labels are abbreviated and the aria-labels, which carry the actual meaning, are not. */
+.abwab-tree-frame {
+  --abwab-tree-count-col: 1.75rem;
+}
+
 .abwab-tree {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
 }
 
 .abwab-tree__row {
-  display: flex;
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
   align-items: center;
-  gap: var(--qd-space-2);
-  padding: var(--qd-space-1) var(--qd-space-2);
-  padding-inline-start: calc(var(--abwab-tree-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
+  /* Block padding only. Inline padding on a subgrid is taken out of the space its tracks
+     occupy, so the row's insets live on its first and last cells instead — see
+     `.abwab-tree__lead` (which also carries the depth indent) and the `:last-child` rule. */
+  padding-block: var(--qd-space-1);
   border-radius: var(--qd-radius-sm);
   cursor: pointer;
   color: var(--qd-text);
+}
+
+/* Exactly what indented before the subgrid conversion — chevron, order pill, name — so the
+   visual indent step and the set of things that indent are both unchanged. Indenting only the
+   chevron would have left the order pill and name flush, which is a different-looking tree. */
+.abwab-tree__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  min-inline-size: 0;
+  padding-inline-start: calc(var(--abwab-tree-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
+}
+
+/* Covers the trailing inset in both templates: actions are last when not bulk, flags when bulk. */
+.abwab-tree__row > *:last-child,
+.abwab-tree__header > *:last-child {
+  padding-inline-end: var(--qd-space-2);
+}
+
+/* Rendered on every row, empty on leaves: subgrid auto-placement is positional, so a leaf that
+   skipped these would put its flags in the first count track. */
+.abwab-tree__count-cell {
+  display: flex;
+  justify-content: center;
+  min-inline-size: 0;
+}
+
+.abwab-tree__header {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  padding-block: var(--qd-space-1);
+}
+
+.abwab-tree__header-cell {
+  text-align: center;
+  font-size: 0.6875rem;
+  color: var(--qd-text-muted);
+  white-space: nowrap;
 }
 
 .abwab-tree__row:hover {
@@ -113,6 +196,7 @@
 
 .abwab-tree__name {
   flex: 1;
+  min-inline-size: 0;
 }
 
 /* `.qd-chip__count` supplies the pill, the recessed fill and the tabular numerals; only the
@@ -129,8 +213,18 @@
    survives at every width. §17's detail-shell "Header priority" is the reasoning precedent:
    drop whole items rather than shrink every item toward illegibility. */
 @media (max-width: bp.$qd-bp-tablet-max) {
+  /* `display: none` removes these cells from auto-placement, so the frame drops the two
+     matching tracks in the same query — rendered cells and tracks must stay in step. */
   .abwab-tree__count--wide {
     display: none;
+  }
+
+  .abwab-tree-frame {
+    grid-template-columns: minmax(0, 1fr) var(--abwab-tree-count-col) auto auto;
+  }
+
+  .abwab-tree-frame--bulk {
+    grid-template-columns: auto minmax(0, 1fr) var(--abwab-tree-count-col) auto;
   }
 }
 
