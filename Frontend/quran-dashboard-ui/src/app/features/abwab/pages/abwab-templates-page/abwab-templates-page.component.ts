@@ -25,6 +25,7 @@ import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/conte
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 
 /** What the node modal is currently authoring. `parentNodeId` is the new node's parent when
  * adding; `nodeId` is the edited node when editing. */
@@ -53,6 +54,7 @@ type AbwabNodeModalState =
     QdSkeletonRowsComponent,
     ExplorerPanelSkeletonComponent,
     QdStateComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './abwab-templates-page.component.html',
   styleUrl: './abwab-templates-page.component.scss',
@@ -72,6 +74,10 @@ export class AbwabTemplatesPageComponent implements OnInit {
   protected readonly contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
   protected readonly deletingNodeId = signal<number | null>(null);
   protected readonly confirmingTemplateDelete = signal(false);
+  protected readonly templateDeleteBusy = signal(false);
+  protected readonly templateDeleteError = signal<string | null>(null);
+  protected readonly nodeDeleteBusy = signal(false);
+  protected readonly nodeDeleteError = signal<string | null>(null);
   protected readonly copyModalOpen = signal(false);
 
   /** The picker's only source. It is fetched when the modal opens rather than on page entry:
@@ -133,6 +139,8 @@ export class AbwabTemplatesPageComponent implements OnInit {
   protected get newTemplateNamePlaceholder(): string { return ABWAB_LABELS.newTemplateNamePlaceholder; }
   protected get editTemplateLabel(): string { return ABWAB_LABELS.editTemplateButton; }
   protected get deleteTemplateLabel(): string { return ABWAB_LABELS.deleteTemplateButton; }
+  protected get templateDeleteConfirmTitle(): string { return ABWAB_LABELS.templateDeleteConfirmTitle; }
+  protected get templateNodeDeleteConfirmTitle(): string { return ABWAB_LABELS.templateNodeDeleteConfirmTitle; }
   protected get copyToDoorsLabel(): string { return ABWAB_LABELS.copyToDoorsButton; }
   protected get templatesListAriaLabel(): string { return ABWAB_LABELS.templatesListAriaLabel; }
   protected get templateTreeAriaLabel(): string { return ABWAB_LABELS.templateTreeAriaLabel; }
@@ -265,37 +273,60 @@ export class AbwabTemplatesPageComponent implements OnInit {
     const nodeId = this.contextMenuNodeId();
     this.closeContextMenu();
     if (nodeId !== null) {
+      this.nodeDeleteError.set(null);
+      this.nodeDeleteBusy.set(false);
       this.deletingNodeId.set(nodeId);
     }
   }
 
+  /** Closes in the subscriber, not before dispatch: the dialog is where a failed delete reports. */
   protected confirmNodeDelete(): void {
     const nodeId = this.deletingNodeId();
-    this.deletingNodeId.set(null);
-    if (nodeId !== null) {
-      this.controller.deleteNode(nodeId).subscribe();
+    if (nodeId === null || this.nodeDeleteBusy()) {
+      return;
     }
+    this.nodeDeleteBusy.set(true);
+    this.nodeDeleteError.set(null);
+    this.controller.deleteNode(nodeId).subscribe((outcome) => {
+      this.nodeDeleteBusy.set(false);
+      if (outcome.kind === 'success') {
+        this.deletingNodeId.set(null);
+        return;
+      }
+      this.nodeDeleteError.set(outcome.message);
+    });
   }
 
   protected cancelNodeDelete(): void {
+    if (this.nodeDeleteBusy()) {
+      return;
+    }
     this.deletingNodeId.set(null);
+    this.nodeDeleteError.set(null);
   }
 
   protected requestTemplateDelete(): void {
     this.closeContextMenu();
+    this.templateDeleteError.set(null);
+    this.templateDeleteBusy.set(false);
     this.confirmingTemplateDelete.set(true);
   }
 
   protected confirmTemplateDelete(): void {
     const template = this.facade.selectedTemplate();
-    this.confirmingTemplateDelete.set(false);
-    if (template === null) {
+    if (template === null || this.templateDeleteBusy()) {
       return;
     }
+    this.templateDeleteBusy.set(true);
+    this.templateDeleteError.set(null);
     this.controller.deleteTemplate(template.id).subscribe((outcome) => {
-      if (outcome.kind === 'success') {
-        this.facade.clearSelection();
+      this.templateDeleteBusy.set(false);
+      if (outcome.kind !== 'success') {
+        this.templateDeleteError.set(outcome.message);
+        return;
       }
+      this.confirmingTemplateDelete.set(false);
+      this.facade.clearSelection();
     });
   }
 

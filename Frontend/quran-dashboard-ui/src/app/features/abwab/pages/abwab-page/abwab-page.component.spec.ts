@@ -1,8 +1,10 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import { HttpResponse } from '@angular/common/http';
-import { BehaviorSubject, of } from 'rxjs';
+import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
+import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
+
+import { AbwabPageOverlaysController } from '../../state/abwab-page-overlays.controller';
 
 import { AbwabPageComponent } from './abwab-page.component';
 import { AbwabApi } from '../../data-access/abwab.api';
@@ -93,6 +95,30 @@ describe('AbwabPageComponent', () => {
     const fixture = TestBed.createComponent(AbwabPageComponent);
     fixture.detectChanges();
     return fixture;
+  }
+
+  function click(root: HTMLElement, testId: string): void {
+    (root.querySelector(`[data-testid="${testId}"]`) as HTMLElement).click();
+  }
+
+  function button(root: HTMLElement, testId: string): HTMLButtonElement {
+    return root.querySelector(`[data-testid="${testId}"]`) as HTMLButtonElement;
+  }
+
+  function selectRow(fixture: ReturnType<typeof render>, id: number): void {
+    ((fixture.nativeElement as HTMLElement).querySelector(`[data-testid="abwab-tree-row-${id}"]`) as HTMLElement)
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    fixture.detectChanges();
+  }
+
+  /** Focus moves are queued through `setTimeout(…, 0)` (the page's `focusQueued`) so they land
+   * after the render that removed the old target. */
+  function flushFocus(): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  function navigateCallCount(): number {
+    return (router.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls.length;
   }
 
   it('composes the toolbar, tree, side panel and announcer', () => {
@@ -190,11 +216,157 @@ describe('AbwabPageComponent', () => {
     fixture.detectChanges();
 
     expect(root.querySelector('[data-testid="abwab-page-archive-confirm"]')).toBeTruthy();
-    (root.querySelector('[data-testid="abwab-page-archive-confirm-yes"]') as HTMLElement).click();
+    (root.querySelector('[data-testid="abwab-page-archive-confirm-confirm"]') as HTMLElement).click();
     fixture.detectChanges();
 
     expect(archiveDoor).toHaveBeenCalledWith(1, { version: 1 });
     expect(root.querySelector('[data-testid="abwab-side-panel-active-door"]')).toBeNull();
+  });
+
+  describe('the archive confirm holds itself open across the write', () => {
+    /** Opens the single-archive confirm from the side-panel op, with `archiveDoor` left pending. */
+    function openPendingArchive() {
+      const pending = new Subject<ApiResponse<null>>();
+      archiveDoor.mockReturnValue(pending);
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      selectRow(fixture, 1);
+      click(root, 'abwab-side-panel-op-archive');
+      fixture.detectChanges();
+      return { fixture, root, pending };
+    }
+
+    it('disables both buttons while the write is in flight, then closes on success', () => {
+      const { fixture, root, pending } = openPendingArchive();
+
+      click(root, 'abwab-page-archive-confirm-confirm');
+      fixture.detectChanges();
+
+      expect(button(root, 'abwab-page-archive-confirm-confirm').disabled).toBe(true);
+      expect(button(root, 'abwab-page-archive-confirm-cancel').disabled).toBe(true);
+      expect(root.querySelector('[data-testid="abwab-page-archive-confirm"]')).toBeTruthy();
+
+      pending.next(ok(null));
+      pending.complete();
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-page-archive-confirm"]')).toBeNull();
+    });
+
+    it('a failed write keeps the dialog open and owns the error alone', () => {
+      const backendMessage = 'تعذر أرشفة الباب';
+      archiveDoor.mockReturnValue(throwError(() => new HttpErrorResponse({
+        status: 409,
+        error: { isSuccess: false, message: backendMessage, data: null },
+      })));
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      selectRow(fixture, 1);
+      click(root, 'abwab-side-panel-op-archive');
+      fixture.detectChanges();
+      click(root, 'abwab-page-archive-confirm-confirm');
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-page-archive-confirm"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-page-archive-confirm-error"]')?.textContent).toContain(
+        backendMessage,
+      );
+
+      // Exactly one visible *error* element, and it is the in-dialog one. The announcer is a
+      // role="status" live region, not an error surface, and it deliberately still carries the
+      // message: alertdialog content changes are not announced, so suppressing it would leave a
+      // screen-reader user with silence on failure.
+      expect(root.querySelectorAll('qd-state[variant="error"]')).toHaveLength(1);
+      expect(root.querySelector('qd-abwab-announcer')?.textContent).toContain(backendMessage);
+    });
+  });
+
+  describe('focus never drops to <body> when an archive confirm closes', () => {
+    it('cancel from the row context menu returns focus to the targeted row', async () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-tree-more-2');
+      fixture.detectChanges();
+      click(root, 'abwab-page-ctx-archive');
+      fixture.detectChanges();
+
+      click(root, 'abwab-page-archive-confirm-cancel');
+      fixture.detectChanges();
+      await flushFocus();
+
+      // The ctx menu that opened the dialog is gone in both outcomes, so auto-restore has no
+      // target and the page places focus on the tree's roving item itself.
+      expect(document.activeElement).toBe(root.querySelector('[data-testid="abwab-tree-row-2"]'));
+    });
+
+    it('success moves focus to the roving item once the archived row disappears', async () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-tree-more-2');
+      fixture.detectChanges();
+      click(root, 'abwab-page-ctx-archive');
+      fixture.detectChanges();
+      click(root, 'abwab-page-archive-confirm-confirm');
+      fixture.detectChanges();
+      await flushFocus();
+
+      expect(document.activeElement).not.toBe(document.body);
+      expect(root.querySelector('[data-testid="abwab-tree"]')?.contains(document.activeElement)).toBe(true);
+    });
+
+    it('cancel from the side-panel op leaves the still-enabled trigger to the primitive', async () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      selectRow(fixture, 1);
+      click(root, 'abwab-side-panel-op-archive');
+      fixture.detectChanges();
+      click(root, 'abwab-page-archive-confirm-cancel');
+      fixture.detectChanges();
+      await flushFocus();
+
+      // Selection survives cancel, so the op button is still there and still enabled, and the
+      // page must NOT steal focus away from cdkTrapFocusAutoCapture's restore target. Asserting
+      // where focus landed is not available here — auto-capture does not run in jsdom — so this
+      // pins the page's own half of the contract: it did not redirect focus into the tree.
+      expect(button(root, 'abwab-side-panel-op-archive').disabled).toBe(false);
+      expect(root.querySelector('[data-testid="abwab-tree"]')?.contains(document.activeElement)).toBe(false);
+    });
+  });
+
+  it('the two archive confirms cannot be open at once', () => {
+    const fixture = render();
+    const root = fixture.nativeElement as HTMLElement;
+
+    click(root, 'abwab-side-panel-bulk-toggle');
+    fixture.detectChanges();
+    click(root, 'abwab-tree-checkbox-1');
+    fixture.detectChanges();
+    click(root, 'abwab-side-panel-bulk-archive');
+    fixture.detectChanges();
+
+    expect(root.querySelector('[data-testid="abwab-page-bulk-archive-confirm"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="abwab-page-archive-confirm"]')).toBeNull();
+  });
+
+  it('opening and cancelling the sections-delete confirm leaves the URL alone', () => {
+    const fixture = render();
+    const root = fixture.nativeElement as HTMLElement;
+
+    click(root, 'abwab-page-manage-sections');
+    fixture.detectChanges();
+    const patchesBefore = navigateCallCount();
+
+    click(root, 'abwab-sections-modal-delete-1');
+    fixture.detectChanges();
+    click(root, 'abwab-sections-modal-delete-confirm-cancel');
+    fixture.detectChanges();
+
+    expect(navigateCallCount()).toBe(patchesBefore);
   });
 
   describe('T502 — the view toggle switches the main column to cards', () => {
@@ -380,7 +552,7 @@ describe('AbwabPageComponent', () => {
       expect(root.querySelector('[data-testid="abwab-page-bulk-archive-confirm"]')?.textContent).toContain(
         ABWAB_LABELS.archiveConfirm(2),
       );
-      (root.querySelector('[data-testid="abwab-page-bulk-archive-confirm-yes"]') as HTMLElement).click();
+      (root.querySelector('[data-testid="abwab-page-bulk-archive-confirm-confirm"]') as HTMLElement).click();
 
       expect(bulkArchiveDoors).toHaveBeenCalledWith({
         doors: [
@@ -1307,5 +1479,18 @@ describe('AbwabPageComponent', () => {
       expect((modalRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls).toHaveLength(before);
       expect(root.querySelector('[data-testid="abwab-move-picker"]')).toBeTruthy();
     });
+  });
+
+  it('restoreAncestors keeps one identity while no restore is open', () => {
+    const fixture = render();
+    const overlays = fixture.debugElement.injector.get(AbwabPageOverlaysController);
+
+    const first = overlays.restoreAncestors();
+    // A rebuild hands the tree a whole new node graph; a fresh `[]` here would mark the OnPush
+    // restore modal dirty on every one of them.
+    queryParamMap$.next(convertToParamMap({ q: 'الرسول' }));
+    fixture.detectChanges();
+
+    expect(overlays.restoreAncestors()).toBe(first);
   });
 });

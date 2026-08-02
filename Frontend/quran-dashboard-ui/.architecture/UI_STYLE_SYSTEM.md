@@ -780,9 +780,13 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   shared `modal-scroll-lock`.
 - **Not a modal shell.** Authoring modals (a form plus its dirty guard) keep their own shell —
   that is a different contract. This is for confirmations only.
-- **Known retrofit candidates:** the templates page still hand-rolls two inline
-  `role="alertdialog"` confirms (`abwab-templates-page.component.html`), and the sections modal's
-  delete flow has no confirmation at all. Both belong on this primitive in a later slice.
+- **Retrofit complete.** Every destructive confirmation in the app now composes this primitive:
+  the abwab page's single and bulk archive confirms, the sections modal's delete, and the
+  templates page's template- and node-delete. The only surviving hand-written
+  `role="alertdialog"` blocks are the three **dirty-discard strips** (door, sections, and
+  template-node modals) — those are in-shell footers guarding unsaved work, not interrupting
+  dialogs, and they deliberately stay where the unsaved work is. A new hand-rolled confirm is a
+  defect.
 
 ### `qd-state`
 - **Purpose:** the one empty / loading / error presentation.

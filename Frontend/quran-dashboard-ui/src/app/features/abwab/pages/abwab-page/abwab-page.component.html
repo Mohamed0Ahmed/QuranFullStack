@@ -207,67 +207,6 @@
             (bulkArchiveRequested)="overlays.requestBulkArchive()"
             (bulkClearRequested)="onBulkClearRequested()"
           />
-          <!-- T403: reserves the archive-confirm card's height so mounting/unmounting either
-               card cannot grow the sticky aside and shift whatever sits below it (N3 doctrine).
-               This is a card, not a text state, so it reserves via min-block-size on this slot
-               rather than via qd-state's own `reserve` — see the SCSS comment for the measured
-               derivation. -->
-          <div class="abwab-page__archive-confirm-slot">
-            @if (overlays.archiveConfirming()) {
-              <div
-                class="qd-card abwab-page__archive-confirm"
-                role="alertdialog"
-                data-testid="abwab-page-archive-confirm"
-              >
-                <p>{{ overlays.archiveConfirmMessage() }}</p>
-                <div class="abwab-page__archive-actions">
-                  <button
-                    type="button"
-                    class="qd-btn qd-btn-primary"
-                    data-testid="abwab-page-archive-confirm-yes"
-                    (click)="confirmArchiveAndClearUrl()"
-                  >
-                    {{ archiveLabel }}
-                  </button>
-                  <button
-                    type="button"
-                    class="qd-btn qd-btn-ghost"
-                    data-testid="abwab-page-archive-confirm-no"
-                    (click)="overlays.cancelArchiveConfirm()"
-                  >
-                    {{ cancelLabel }}
-                  </button>
-                </div>
-              </div>
-            }
-            @if (overlays.bulkArchiveConfirming()) {
-              <div
-                class="qd-card abwab-page__archive-confirm"
-                role="alertdialog"
-                data-testid="abwab-page-bulk-archive-confirm"
-              >
-                <p>{{ overlays.bulkArchiveConfirmMessage() }}</p>
-                <div class="abwab-page__archive-actions">
-                  <button
-                    type="button"
-                    class="qd-btn qd-btn-primary"
-                    data-testid="abwab-page-bulk-archive-confirm-yes"
-                    (click)="overlays.confirmBulkArchive()"
-                  >
-                    {{ archiveLabel }}
-                  </button>
-                  <button
-                    type="button"
-                    class="qd-btn qd-btn-ghost"
-                    data-testid="abwab-page-bulk-archive-confirm-no"
-                    (click)="overlays.cancelBulkArchiveConfirm()"
-                  >
-                    {{ cancelLabel }}
-                  </button>
-                </div>
-              </div>
-            }
-          </div>
         </aside>
       </div>
     }
@@ -327,6 +266,40 @@
   [reorderSection]="overlays.reorderSection"
   (closed)="onSectionsModalClosed()"
 />
+
+<qd-confirm-dialog
+  testIdPrefix="abwab-page-archive-confirm"
+  [open]="overlays.archiveConfirming()"
+  [titleText]="archiveConfirmTitle"
+  [confirmLabel]="archiveLabel"
+  [cancelLabel]="cancelLabel"
+  tone="danger"
+  [busy]="overlays.archiveBusy()"
+  (confirmed)="confirmArchiveAndClearUrl()"
+  (cancelled)="onArchiveConfirmCancelled()"
+>
+  <p>{{ overlays.archiveConfirmMessage() }}</p>
+  @if (overlays.archiveError(); as message) {
+    <qd-state variant="error" [message]="message" data-testid="abwab-page-archive-confirm-error" />
+  }
+</qd-confirm-dialog>
+
+<qd-confirm-dialog
+  testIdPrefix="abwab-page-bulk-archive-confirm"
+  [open]="overlays.bulkArchiveConfirming()"
+  [titleText]="archiveConfirmTitle"
+  [confirmLabel]="archiveLabel"
+  [cancelLabel]="cancelLabel"
+  tone="danger"
+  [busy]="overlays.archiveBusy()"
+  (confirmed)="onBulkArchiveConfirmed()"
+  (cancelled)="onBulkArchiveConfirmCancelled()"
+>
+  <p>{{ overlays.bulkArchiveConfirmMessage() }}</p>
+  @if (overlays.archiveError(); as message) {
+    <qd-state variant="error" [message]="message" data-testid="abwab-page-bulk-archive-confirm-error" />
+  }
+</qd-confirm-dialog>
 
 @if (overlays.contextMenuDoorId() !== null) {
   <qd-context-menu

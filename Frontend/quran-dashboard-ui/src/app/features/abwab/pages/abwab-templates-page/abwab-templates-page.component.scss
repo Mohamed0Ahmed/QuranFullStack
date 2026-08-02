@@ -154,20 +154,6 @@
   gap: var(--qd-space-2);
 }
 
-.abwab-templates-page__confirm {
-  border: 1px solid var(--qd-border-accent);
-  background: var(--qd-selected-bg);
-  border-radius: var(--qd-radius-md);
-  padding: var(--qd-space-3);
-  margin-block-start: var(--qd-space-3);
-}
-
-.abwab-templates-page__confirm-actions {
-  display: flex;
-  gap: var(--qd-space-2);
-  margin-block-start: var(--qd-space-3);
-}
-
 // This page's delete item has always read red at rest, unlike the doors page's hover-only
 // danger idiom the shared `.qd-context-menu__item--danger` modifier carries (verified: the
 // two pages' pre-extraction rules were not byte-identical here). Kept as a page-scoped

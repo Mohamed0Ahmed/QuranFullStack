@@ -55,6 +55,7 @@ import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/conte
 import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 
 /** Shared empty set, so `revealExpandSeedIds` keeps one identity while no reveal is running —
  * a fresh `new Set()` per evaluation would re-run the tree's expand effect on every tick. */
@@ -101,6 +102,7 @@ const REVEAL_HOLD_MS = 3000;
     ExplorerResultCountComponent,
     QdSkeletonRowsComponent,
     QdStateComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './abwab-page.component.html',
   styleUrl: './abwab-page.component.scss',
@@ -238,6 +240,7 @@ export class AbwabPageComponent implements OnInit {
   protected get loadingLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
   protected get archiveLabel(): string { return ABWAB_LABELS.archiveOp; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
+  protected get archiveConfirmTitle(): string { return ABWAB_LABELS.archiveConfirmTitle; }
   protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
   protected get editOpLabel(): string { return ABWAB_LABELS.editOp; }
   protected get addChildOpLabel(): string { return ABWAB_LABELS.addChildOp; }
@@ -369,7 +372,46 @@ export class AbwabPageComponent implements OnInit {
   }
 
   protected confirmArchiveAndClearUrl(): void {
-    this.overlays.confirmArchive(() => this.updateQueryParams(buildAbwabQueryParams({ door: null })));
+    this.overlays.confirmArchive(() => {
+      this.updateQueryParams(buildAbwabQueryParams({ door: null }));
+      // Success clears the selection, so the op button that opened this is now disabled and the
+      // ctx-menu row is gone — `cdkTrapFocusAutoCapture` would hand focus to a dead target.
+      this.focusTreeRovingItem();
+    });
+  }
+
+  protected onBulkArchiveConfirmed(): void {
+    this.overlays.confirmBulkArchive(() => this.focusTreeRovingItem());
+  }
+
+  /** Cancel leaves the trigger alive and focusable (the side-panel op button, the bulk bar), so
+   * the primitive's own auto-restore is correct and this only covers the ctx-menu entry point,
+   * whose menu closed when the dialog opened. */
+  protected onArchiveConfirmCancelled(): void {
+    const cameFromContextMenu = this.overlays.archiveCameFromContextMenu();
+    this.overlays.cancelArchiveConfirm();
+    if (cameFromContextMenu) {
+      this.focusTreeRovingItem();
+    }
+  }
+
+  protected onBulkArchiveConfirmCancelled(): void {
+    this.overlays.cancelBulkArchiveConfirm();
+  }
+
+  /** The tree's roving-focus item is the one row carrying `tabindex="0"`. Falls back to the
+   * header control rather than letting focus drop to `<body>` when the tree unmounted entirely
+   * (archiving the last door swaps the page to its empty state). */
+  private focusTreeRovingItem(): void {
+    this.focusQueued(() => {
+      const root = this.elementRef.nativeElement;
+      const roving = root.querySelector<HTMLElement>('[data-testid="abwab-tree"] [tabindex="0"]');
+      if (roving) {
+        roving.focus();
+        return;
+      }
+      this.headerFallbackFocus()?.nativeElement.focus();
+    });
   }
 
   protected onOrderCommitted(event: { id: number; position: number; scope: AbwabOrderScope }): void {

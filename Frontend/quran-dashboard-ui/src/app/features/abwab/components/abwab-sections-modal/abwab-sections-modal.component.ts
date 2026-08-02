@@ -22,6 +22,7 @@ import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 
 let nextModalId = 0;
 
@@ -41,7 +42,7 @@ let nextModalId = 0;
 @Component({
   selector: 'qd-abwab-sections-modal',
   standalone: true,
-  imports: [A11yModule, QdStateComponent, ModalScrollLockDirective],
+  imports: [A11yModule, QdStateComponent, ModalScrollLockDirective, ConfirmDialogComponent],
   templateUrl: './abwab-sections-modal.component.html',
   styleUrl: './abwab-sections-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -72,6 +73,15 @@ export class AbwabSectionsModalComponent {
   // drafts, and only a rename/typed-name counts as unsaved work — see isDirty below.
   protected readonly editingOrderId = signal<number | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
+
+  /** The section awaiting delete confirmation, or `null`. Its dialog nests above this modal —
+   * the one nesting the abwab README's trap rule allows — so `cdkTrapFocus` below yields to it. */
+  protected readonly deleteConfirmId = signal<number | null>(null);
+  protected readonly deleteBusy = signal(false);
+  protected readonly deleteError = signal<string | null>(null);
+  protected readonly deleteConfirmTarget = computed(
+    () => this.sections().find((section) => section.id === this.deleteConfirmId()) ?? null,
+  );
   protected readonly confirmingDiscard = signal(false);
 
   // Unique at any moment: only one row's editing branch renders the input at a time.
@@ -104,6 +114,8 @@ export class AbwabSectionsModalComponent {
   protected get addLabel(): string { return ABWAB_LABELS.addSectionButton; }
   protected get renameLabel(): string { return ABWAB_LABELS.renameSectionButton; }
   protected get deleteLabel(): string { return ABWAB_LABELS.deleteSectionButton; }
+  protected get deleteConfirmTitle(): string { return ABWAB_LABELS.sectionDeleteConfirmTitle; }
+  protected deleteConfirmBody(name: string): string { return ABWAB_LABELS.sectionDeleteConfirmBody(name); }
   protected get saveLabel(): string { return ABWAB_LABELS.saveButton; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
   protected get closeLabel(): string { return ABWAB_LABELS.cancelButton; }
@@ -204,9 +216,38 @@ export class AbwabSectionsModalComponent {
     });
   }
 
-  protected remove(id: number): void {
+  protected requestRemove(id: number): void {
+    this.deleteConfirmId.set(id);
+    this.deleteError.set(null);
+    this.deleteBusy.set(false);
+  }
+
+  protected cancelRemove(): void {
+    if (this.deleteBusy()) {
+      return;
+    }
+    this.deleteConfirmId.set(null);
+    this.deleteError.set(null);
+  }
+
+  /** The dialog stays open until the write resolves, so the 409 «لا يمكن حذف القسم…» lands beside
+   * the decision that caused it rather than on the modal-level line, which belongs to
+   * create/rename. */
+  protected confirmRemove(): void {
+    const id = this.deleteConfirmId();
+    if (id === null || this.deleteBusy()) {
+      return;
+    }
+    this.deleteBusy.set(true);
+    this.deleteError.set(null);
     this.deleteSection()(id).subscribe((outcome) => {
-      this.errorMessage.set(outcome.kind === 'success' ? null : outcome.message);
+      this.deleteBusy.set(false);
+      if (outcome.kind === 'success') {
+        this.deleteConfirmId.set(null);
+        this.errorMessage.set(null);
+        return;
+      }
+      this.deleteError.set(outcome.message);
     });
   }
 

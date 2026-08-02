@@ -89,4 +89,25 @@ describe('ABWAB_LABELS — root-door count agreement on the tab badge (§4.2-13)
   it('«كل الأبواب» names itself rather than a section', () => {
     expect(ABWAB_LABELS.allDoorsTabRootCountAriaLabel(8)).toBe('كل الأبواب: 8 أبواب رئيسية');
   });
+
+  describe('the migrated confirm dialogs', () => {
+    it('the section-delete confirm names the section it would remove', () => {
+      expect(ABWAB_LABELS.sectionDeleteConfirmBody('اللغة العربية')).toBe('سيتم حذف القسم «اللغة العربية»');
+    });
+
+    it.each([
+      ['archiveConfirmTitle', ABWAB_LABELS.archiveConfirmTitle, 'تأكيد الأرشفة'],
+      ['sectionDeleteConfirmTitle', ABWAB_LABELS.sectionDeleteConfirmTitle, 'حذف القسم'],
+      ['templateDeleteConfirmTitle', ABWAB_LABELS.templateDeleteConfirmTitle, 'حذف القالب'],
+      ['templateNodeDeleteConfirmTitle', ABWAB_LABELS.templateNodeDeleteConfirmTitle, 'حذف العنصر'],
+    ])('%s titles its dialog', (_key, actual, expected) => {
+      expect(actual).toBe(expected);
+    });
+
+    // Same string today, separate constants on purpose: a dialog title and a menu item are
+    // different surfaces and must be free to diverge without one silently changing the other.
+    it('the node-delete title is not an alias of the menu item', () => {
+      expect(ABWAB_LABELS.templateNodeDeleteConfirmTitle).toBe(ABWAB_LABELS.templateNodeDeleteOp);
+    });
+  });
 });

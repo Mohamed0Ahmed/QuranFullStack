@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { DebugElement } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 
 import { AbwabSectionsModalComponent } from './abwab-sections-modal.component';
@@ -17,6 +20,16 @@ function success(data: AbwabSectionDto | null = null): AbwabWriteOutcome<AbwabSe
 
 function conflict(message: string): AbwabWriteOutcome<never> {
   return { kind: 'conflict', message };
+}
+
+function click(root: HTMLElement, testId: string): void {
+  (root.querySelector(`[data-testid="${testId}"]`) as HTMLElement).click();
+}
+
+/** The modal's own trap, not the nested confirm's — `query` returns the first match in DOM
+ * order and the confirm dialog renders after the modal section. */
+function trapOf(fixture: { debugElement: DebugElement }): CdkTrapFocus {
+  return fixture.debugElement.query(By.directive(CdkTrapFocus)).injector.get(CdkTrapFocus);
 }
 
 function render(handlers: {
@@ -190,35 +203,58 @@ describe('AbwabSectionsModalComponent', () => {
   });
 
   describe('M27 — delete answers a 409 and keeps the modal open', () => {
-    it('shows the backend conflict message inline and never closes the modal', () => {
+    it('shows the backend conflict message in the confirm dialog and never closes the modal', () => {
       const backendMessage = 'لا يمكن حذف القسم لاحتوائه على أبواب حالية';
       const { fixture } = render({ deleteSection: vi.fn().mockReturnValue(of(conflict(backendMessage))) });
       const closed: void[] = [];
       fixture.componentInstance.closed.subscribe(() => closed.push(undefined));
       const root = fixture.nativeElement as HTMLElement;
 
-      (root.querySelector('[data-testid="abwab-sections-modal-delete-1"]') as HTMLElement).click();
+      click(root, 'abwab-sections-modal-delete-1');
+      fixture.detectChanges();
+      click(root, 'abwab-sections-modal-delete-confirm-confirm');
       fixture.detectChanges();
 
-      expect(root.querySelector('[data-testid="abwab-sections-modal-error"]')?.textContent).toContain(
+      // The failure belongs to the decision that caused it, not to the modal-level line, which
+      // stays the create/rename surface.
+      expect(root.querySelector('[data-testid="abwab-sections-modal-delete-error"]')?.textContent).toContain(
         backendMessage,
       );
+      expect(root.querySelector('[data-testid="abwab-sections-modal-error"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-sections-modal-delete-confirm"]')).toBeTruthy();
       expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeTruthy();
       expect(closed).toHaveLength(0);
     });
   });
 
   describe('M28 — a section holding only archived doors deletes cleanly', () => {
-    it('dispatches the delete without an inline error', () => {
+    it('dispatches the delete once confirmed and closes the confirm dialog', () => {
       const deleteSection = vi.fn().mockReturnValue(of(success()));
       const { fixture } = render({ deleteSection });
       const root = fixture.nativeElement as HTMLElement;
 
-      (root.querySelector('[data-testid="abwab-sections-modal-delete-1"]') as HTMLElement).click();
+      click(root, 'abwab-sections-modal-delete-1');
+      fixture.detectChanges();
+      click(root, 'abwab-sections-modal-delete-confirm-confirm');
       fixture.detectChanges();
 
       expect(deleteSection).toHaveBeenCalledWith(1);
+      expect(root.querySelector('[data-testid="abwab-sections-modal-delete-confirm"]')).toBeNull();
       expect(root.querySelector('[data-testid="abwab-sections-modal-error"]')).toBeNull();
+    });
+
+    it('asks before deleting — the row button alone dispatches nothing', () => {
+      const deleteSection = vi.fn().mockReturnValue(of(success()));
+      const { fixture } = render({ deleteSection });
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-sections-modal-delete-1');
+      fixture.detectChanges();
+
+      expect(deleteSection).not.toHaveBeenCalled();
+      expect(root.querySelector('[data-testid="abwab-sections-modal-delete-confirm"]')?.textContent).toContain(
+        SECTIONS[0].name,
+      );
     });
   });
 
@@ -393,11 +429,27 @@ describe('AbwabSectionsModalComponent', () => {
       const root = fixture.nativeElement as HTMLElement;
       const dialog = root.querySelector('[data-testid="abwab-sections-modal"]')!;
 
-      expect(dialog.hasAttribute('cdkTrapFocus')).toBe(true);
+      expect(trapOf(fixture).enabled).toBe(true);
       expect(dialog.hasAttribute('cdkTrapFocusAutoCapture')).toBe(true);
       // The order trigger is a real <button> (§4.2-16) and renders before rename/delete in DOM
       // order, so it — not rename — is now the row's first focusable control.
       expect(dialog.querySelector('button')).toBe(root.querySelector('[data-testid="abwab-sections-modal-order-1"]'));
+    });
+
+    it('yields its trap to the delete confirm while that dialog is open, and takes it back on cancel', () => {
+      const { fixture } = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      click(root, 'abwab-sections-modal-delete-1');
+      fixture.detectChanges();
+
+      // Two live traps would fight over focus; the nested confirm owns it while it is open.
+      expect(trapOf(fixture).enabled).toBe(false);
+
+      click(root, 'abwab-sections-modal-delete-confirm-cancel');
+      fixture.detectChanges();
+
+      expect(trapOf(fixture).enabled).toBe(true);
     });
 
     it('keeps the close control and the guard out of the scrolling body', () => {

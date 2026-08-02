@@ -447,9 +447,12 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   - **No modal states a height, and none nests a scroller.** `__body` is the single scroller;
     the four inner `max-block-size` caps that existed before Slice C are deleted. Adding one back
     re-creates the §17 specificity trap the caps were.
-  - **The traps are unconditional**, unlike the words dialogs' `drawerTrapEnabled` pattern. That
-    rule governs *nesting*, and abwab modals never stack — under the entity-detail overlay or
-    each other. A future change that makes them nest must revisit this.
+  - **Authoring modals never stack with each other**, so their traps are unconditional. The one
+    permitted nesting is a **confirmation dialog above exactly one authoring modal**, and the
+    host yields while it is open: the sections modal binds `[cdkTrapFocus]="deleteConfirmId() === null"`
+    so its delete confirm's own trap is the only live one (the words dialogs' `drawerTrapEnabled`
+    pattern, applied). Two live traps fight over focus, so a second nesting level — or a
+    confirmation above a confirmation — is still forbidden.
   - **Auto-capture is aimed, not corrected after the fact.** Four modals want a control the trap
     would not pick on its own: the door and template-node modals want the name field, the
     relations and copy modals the picker search. Each of those two targets carries

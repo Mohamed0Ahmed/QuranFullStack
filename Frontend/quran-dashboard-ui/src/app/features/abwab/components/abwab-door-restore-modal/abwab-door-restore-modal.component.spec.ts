@@ -254,4 +254,35 @@ describe('AbwabDoorRestoreModalComponent', () => {
     expect(closed).toHaveLength(1);
     expect(calls).toEqual([]);
   });
+
+  describe('the reset effect keys on the door id, not the node object', () => {
+    // A snapshot rebuild replaces every node object; a mid-restore refresh must not silently
+    // discard a section the user picked.
+    it('keeps the chosen section when the same door arrives as a new object', () => {
+      const fixture = render(nodesFrom([doorDto({ id: 3, name: 'باب مؤرشف', sectionRetired: true })]).get(3)!);
+      pick(fixture, 2);
+      expect(select(fixture)!.value).toBe('2');
+
+      fixture.componentRef.setInput(
+        'door',
+        nodesFrom([doorDto({ id: 3, name: 'باب مؤرشف', sectionRetired: true })]).get(3)!,
+      );
+      fixture.detectChanges();
+
+      expect(select(fixture)!.value).toBe('2');
+    });
+
+    it('still resets when a different door takes its place', () => {
+      const fixture = render(nodesFrom([doorDto({ id: 3, name: 'باب مؤرشف', sectionRetired: true })]).get(3)!);
+      pick(fixture, 2);
+
+      fixture.componentRef.setInput(
+        'door',
+        nodesFrom([doorDto({ id: 4, name: 'باب آخر', sectionRetired: true })]).get(4)!,
+      );
+      fixture.detectChanges();
+
+      expect(select(fixture)!.value).toBe('');
+    });
+  });
 });

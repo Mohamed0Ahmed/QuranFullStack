@@ -189,6 +189,8 @@ export const ABWAB_LABELS = {
   addSectionButton: 'إضافة قسم',
   renameSectionButton: 'إعادة تسمية',
   deleteSectionButton: 'حذف',
+  sectionDeleteConfirmTitle: 'حذف القسم',
+  sectionDeleteConfirmBody: (name: string): string => `سيتم حذف القسم «${name}»`,
   // The order trigger's visible content is a bare numeral (the tree's chip convention), so its
   // accessible name has to say both which section and what the number means.
   sectionOrderAriaLabel: (sectionName: string, order: number): string => `ترتيب «${sectionName}»: ${order}`,
@@ -214,6 +216,7 @@ export const ABWAB_LABELS = {
   bulkVanishedMessage: (count: number, names: string): string =>
     `فشلت العملية كاملة — تعذر العثور على ${countPhrase(count, DOOR_FORMS)}: ${names}`,
   archiveConfirm: (count: number): string => `سيتم أرشفة ${countPhrase(count, DOOR_FORMS)}`,
+  archiveConfirmTitle: 'تأكيد الأرشفة',
 
   loadErrorFallback: 'تعذر تحميل شجرة الأبواب. حاول مرة أخرى.',
   emptyTreeMessage: 'لا توجد أبواب بعد.',
@@ -342,6 +345,10 @@ export const ABWAB_LABELS = {
   templateNodeDeleteConfirm: (nodeName: string): string =>
     `سيتم حذف «${nodeName}» وكل العناصر التي تحته.`,
   templateDeleteConfirm: 'سيتم حذف القالب نهائيًا. الأبواب المنسوخة منه لن تتأثر.',
+  // Deliberately separate constants from the `*Op` button labels above, even where the string
+  // matches: a dialog title and a menu item are different surfaces and must be free to diverge.
+  templateDeleteConfirmTitle: 'حذف القالب',
+  templateNodeDeleteConfirmTitle: 'حذف العنصر',
   deleteConfirmButton: 'حذف',
 
   addTemplateNodeTitle: 'إضافة عنصر للقالب',
