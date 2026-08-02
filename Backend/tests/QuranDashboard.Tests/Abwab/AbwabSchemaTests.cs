@@ -400,6 +400,9 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
 
         var exception = await act.Should().ThrowAsync<PostgresException>();
         exception.Which.SqlState.Should().Be("23502", "a not-null violation, not an FK or a check");
+        // Pinned to the column, not just the SQLSTATE: every other NOT NULL column on this row would
+        // raise the same code, so without this the test could pass while section_id stayed nullable.
+        exception.Which.ColumnName.Should().Be("section_id");
     }
 
     // Every door row needs a section now, so a test that inserts one directly brings its own rather than
