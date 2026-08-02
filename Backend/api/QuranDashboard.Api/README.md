@@ -1,5 +1,11 @@
 # Quran Dashboard API
 
+**Adding or changing an endpoint requires adding or updating its `SmokeRouteCatalog` entry in
+the same change** (`../../tests/QuranDashboard.Tests/Smoke/SmokeRouteCatalog.cs`). The catalog
+is bidirectionally locked to the live `EndpointDataSource`, so an uncatalogued route — or a
+catalog entry whose route no longer exists — fails `SmokeCoverageParityTests` by route name.
+See `TESTING_STRATEGY.md` §3 Tier A/C and §10.
+
 ## Connection String Setup
 
 The database password is **not** committed to source control. Set it via .NET User Secrets or an environment variable.

@@ -215,5 +215,6 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
 
 - Handlers: `application/QuranDashboard.Application/Quran/Words/**`.
 - Frontend consumers: `Frontend/quran-dashboard-ui/src/app/features/words/README.md`.
-- Specs: `specs/015-roots-explorer/`, `016-lemmas-stems-explorer/`, `019-word-types-explorer/`,
-  `014-words-hub-unique-words/`. (Prior feature-015/016/017 evidence reports were purged.)
+- Contracts: this README + the handlers are the truth; the thin index is
+  `docs/contracts/words-explorers.md`. The planning artifacts of the features that built
+  the explorers were swept per the planning-artifact lifecycle rule and live in git history.

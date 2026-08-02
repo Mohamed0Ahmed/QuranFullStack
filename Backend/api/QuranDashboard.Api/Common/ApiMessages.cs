@@ -1,3 +1,5 @@
+using QuranDashboard.Application.Abstractions.Abwab;
+
 namespace QuranDashboard.Api.Common;
 
 public static class ApiMessages
@@ -106,4 +108,91 @@ public static class ApiMessages
     public const string WordTypesGroupedNotFound = "التجميع المحدد غير موجود";
 
     public const string CurrentUserLoaded = "تم تحميل بيانات المستخدم الحالي";
+
+    public const string AbwabSectionCreated = "تم إنشاء القسم";
+    public const string AbwabSectionRenamed = "تم تعديل اسم القسم";
+    public const string AbwabSectionInvalidName = "اسم القسم غير صالح";
+    public const string AbwabSectionNotFound = "القسم غير موجود";
+    public const string AbwabSectionDuplicateName = "يوجد قسم آخر بنفس الاسم";
+    public const string AbwabSectionHasLiveDoors = "لا يمكن حذف القسم لاحتوائه على أبواب حالية";
+    public const string AbwabSectionStaleVersion = "تم تعديل القسم من مستخدم آخر، يرجى التحديث والمحاولة مرة أخرى";
+    public const string AbwabSectionReordered = "تم تعديل ترتيب القسم";
+    public const string AbwabSectionInvalidPosition = "الترتيب المطلوب خارج نطاق الأقسام";
+
+    public const string AbwabDoorCreated = "تم إنشاء الباب";
+    public const string AbwabDoorEdited = "تم تعديل الباب";
+    public const string AbwabDoorMoved = "تم نقل الباب";
+    public const string AbwabDoorReordered = "تم إعادة ترتيب الباب";
+    public const string AbwabDoorsBulkMoved = "تم نقل الأبواب المحددة";
+    public const string AbwabDoorsBulkArchived = "تم أرشفة الأبواب المحددة";
+    public const string AbwabDoorRestored = "تم استعادة الباب";
+    public const string AbwabDoorInvalidName = "اسم الباب غير صالح";
+    public const string AbwabDoorsBulkInvalidRequest = "يجب تحديد باب واحد على الأقل";
+    public const string AbwabDoorNotFound = "الباب غير موجود";
+    public const string AbwabDoorParentNotFound = "الباب الأب غير موجود";
+    public const string AbwabDoorSectionNotFound = "القسم غير موجود";
+    public const string AbwabDoorSectionParentMismatch = "الباب الفرعي يتبع قسم الباب الأب، والقسم المحدد يخالفه";
+    public const string AbwabDoorSectionRequired = "يجب تحديد قسم للباب الرئيسي";
+    public const string AbwabDoorRestoreSectionRequired = "قسم الباب الأصلي محذوف، حدد قسمًا للاسترجاع";
+    public const string AbwabDoorDuplicateName = "يوجد باب آخر بنفس الاسم في هذا الموضع";
+    public const string AbwabDoorStaleVersion = "تم تعديل الباب من مستخدم آخر، يرجى التحديث والمحاولة مرة أخرى";
+    public const string AbwabDoorWouldCycle = "لا يمكن نقل الباب إلى داخل فرعه الخاص";
+    public const string AbwabDoorInvalidPosition = "الترتيب المطلوب خارج نطاق الأبواب المجاورة";
+    public const string AbwabDoorParentStillArchived = "لا يمكن استعادة الباب لأن الباب الأب ما زال مؤرشفًا";
+    public const string AbwabDoorInvalidScope = "نطاق الترتيب غير صالح";
+    public const string AbwabDoorScopeNotApplicable = "الترتيب العام غير متاح للأبواب الفرعية";
+
+    public const string AbwabTreeLoaded = "تم تحميل شجرة الأبواب";
+
+    public const string AbwabDoorRelationsLoaded = "تم تحميل علاقات الباب";
+    public const string AbwabDoorRelationsCreated = "تم إنشاء العلاقات";
+    public const string AbwabDoorRelationsInvalidRequest = "يجب اختيار باب واحد على الأقل";
+    public const string AbwabDoorRelationInvalidType = "نوع العلاقة غير صالح";
+    public const string AbwabDoorRelationInvalidDirection = "اتجاه الشمولية غير صالح";
+    public const string AbwabDoorRelationSelf = "لا يمكن ربط الباب بنفسه";
+    public const string AbwabDoorRelationArchivedDoor = "لا يمكن إنشاء علاقة مع باب مؤرشف";
+    public const string AbwabDoorRelationDuplicate = "توجد علاقة من هذا النوع بالفعل مع هذا الباب";
+    public const string AbwabDoorRelationNotFound = "العلاقة غير موجودة";
+
+    // The pre-check names the colliding doors; the 23505 race backstop cannot, since Postgres does not
+    // report which row lost. Both paths answer 409, and only the naming differs.
+    private const string AbwabDoorRelationDuplicatePrefix = "توجد علاقة من هذا النوع بالفعل مع";
+
+    public static string AbwabDoorRelationDuplicateWith(IReadOnlyList<string> doorNames) =>
+        doorNames.Count == 0
+            ? AbwabDoorRelationDuplicate
+            : $"{AbwabDoorRelationDuplicatePrefix}: {string.Join("، ", doorNames)}";
+
+    public const string AbwabTemplatesLoaded = "تم تحميل القوالب";
+    public const string AbwabTemplateLoaded = "تم تحميل القالب";
+    public const string AbwabTemplateNotFound = "القالب غير موجود";
+    public const string AbwabTemplateCreated = "تم إنشاء القالب";
+    public const string AbwabTemplateInvalidName = "اسم القالب غير صالح";
+    public const string AbwabTemplateNodeCreated = "تم إضافة العنصر";
+    public const string AbwabTemplateNodeEdited = "تم تعديل العنصر";
+    public const string AbwabTemplateNodeReordered = "تم إعادة ترتيب العنصر";
+    public const string AbwabTemplateNodeInvalidName = "اسم العنصر غير صالح";
+    public const string AbwabTemplateNodeMissingParent = "يجب تحديد العنصر الأب";
+    public const string AbwabTemplateNodeNotFound = "العنصر غير موجود";
+    public const string AbwabTemplateNodeParentNotFound = "العنصر الأب غير موجود في هذا القالب";
+    public const string AbwabTemplateNodeDuplicateName = "يوجد عنصر آخر بنفس الاسم تحت العنصر الأب";
+    public const string AbwabTemplateNodeInvalidPosition = "الترتيب المطلوب خارج نطاق العناصر المجاورة";
+    public const string AbwabTemplateRootNotReorderable = "جذر القالب ليس له عناصر مجاورة لإعادة ترتيبها";
+    public const string AbwabTemplateRootNotDeletable = "لا يمكن حذف جذر القالب، احذف القالب نفسه";
+
+    public const string AbwabTemplateApplied = "تم نسخ القالب";
+    public const string AbwabTemplateApplyNoTargets = "يجب اختيار باب مستهدف واحد على الأقل";
+    public const string AbwabTemplateApplyTargetArchived = "لا يمكن النسخ داخل باب مؤرشف";
+    public const string AbwabTemplateApplyEmpty = "القالب لا يحتوي عناصر لنسخها";
+    public const string AbwabTemplateApplyCollision = "يوجد باب بنفس اسم أحد عناصر القالب داخل الباب المستهدف";
+
+    // The whole copy fails on any collision (all-or-nothing), so the message names every
+    // (target, child) pair that blocked it. The 23505 race backstop names none, and falls back to
+    // the sentence above.
+    private const string AbwabTemplateApplyCollisionPrefix = "لم يتم النسخ — أسماء موجودة داخل الأبواب المستهدفة";
+
+    public static string AbwabTemplateApplyCollisionWith(IReadOnlyList<AbwabTemplateApplyCollisionPair> collisions) =>
+        collisions.Count == 0
+            ? AbwabTemplateApplyCollision
+            : $"{AbwabTemplateApplyCollisionPrefix}: {string.Join("، ", collisions.Select(c => $"«{c.TargetName}» ← «{c.ChildName}»"))}";
 }

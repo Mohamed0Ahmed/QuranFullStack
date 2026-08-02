@@ -17,7 +17,7 @@ public sealed class MorphologyAssembler
     //
     // ('ACC', '>an~') -> 'أَنّ': the 10 affected segments are the accusative particle أَنَّ (fatha) in
     // أَنَّمَا/أَلَّا compounds; Buckwalter '>an~' is shared with إِنَّ (kasra), but the ACC form here is
-    // always أَنَّ. See docs/feature-017-lexical-explorers-polish/segment-dimension-ids-implementation-plan.md.
+    // always أَنَّ.
     private static readonly IReadOnlyDictionary<(string Pos, string Buckwalter), string> CuratedLemmaDisambiguation =
         new Dictionary<(string Pos, string Buckwalter), string>
         {

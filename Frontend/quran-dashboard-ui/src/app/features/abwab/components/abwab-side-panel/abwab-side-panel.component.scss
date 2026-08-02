@@ -1,0 +1,125 @@
+.abwab-side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+}
+
+.abwab-side-panel__box h4 {
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+  font-weight: 700;
+  margin-block-end: var(--qd-space-2);
+}
+
+.abwab-side-panel__active-door {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.abwab-side-panel__active-name {
+  flex: 1;
+}
+
+.abwab-side-panel__clear {
+  margin-inline-start: auto;
+  font-size: 0.6875rem;
+  color: var(--qd-text-muted);
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.abwab-side-panel__clear:hover {
+  color: var(--qd-danger);
+}
+
+.abwab-side-panel__empty {
+  color: var(--qd-text-muted);
+  font-size: 0.8125rem;
+}
+
+.abwab-side-panel__ops {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-1);
+}
+
+.abwab-side-panel__op {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: var(--qd-space-2) var(--qd-space-2);
+  border-radius: var(--qd-radius-sm);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--qd-text);
+  cursor: pointer;
+  text-align: start;
+}
+
+.abwab-side-panel__op:hover:not(:disabled) {
+  background: var(--qd-surface-hover);
+}
+
+.abwab-side-panel__op:disabled {
+  color: var(--qd-border-strong);
+  cursor: default;
+}
+
+.abwab-side-panel__op--danger:hover:not(:disabled) {
+  background: var(--qd-danger-tint);
+  color: var(--qd-danger);
+}
+
+.abwab-side-panel__op:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -2px;
+}
+
+.abwab-side-panel__sep {
+  border: none;
+  border-block-start: 1px solid var(--qd-border);
+  margin: var(--qd-space-1) 0;
+}
+
+/* The first allowed-green fix (T503, UI_STYLE_SYSTEM.md §16.3): the mock's `.on` state
+   is a solid `--qd-primary` fill (contract `:76`) — tint + accent-text + hairline instead. */
+.abwab-side-panel__op--on {
+  background: var(--qd-selected-bg);
+  color: var(--qd-accent-text);
+  border: 1px solid var(--qd-border-accent);
+  font-weight: 700;
+}
+
+.abwab-side-panel__op--on:hover:not(:disabled) {
+  background: var(--qd-selected-bg);
+}
+
+.abwab-side-panel__bulk-bar {
+  border: 1px solid var(--qd-border-accent);
+  background: var(--qd-selected-bg);
+}
+
+.abwab-side-panel__bulk-count {
+  font-weight: 700;
+  color: var(--qd-accent-text);
+}
+
+.abwab-side-panel__bulk-names {
+  color: var(--qd-text-muted);
+  font-size: 0.71875rem;
+  margin: var(--qd-space-2) 0 var(--qd-space-3);
+  max-block-size: 4.375rem;
+  overflow: auto;
+}
+
+.abwab-side-panel__bulk-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-1);
+}

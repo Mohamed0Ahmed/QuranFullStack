@@ -1,0 +1,248 @@
+<div class="qd-page abwab-templates-page" data-testid="abwab-templates-page">
+  <div class="qd-container qd-page-frame">
+    <header class="qd-page-header abwab-templates-page__header">
+      <div>
+        <h1 class="qd-page-title">{{ pageTitle }}</h1>
+        <p class="qd-text-muted">{{ pageSubtitle }}</p>
+      </div>
+      <a class="qd-btn" [routerLink]="doorsRoutePath" data-testid="abwab-templates-page-back">{{ backToDoorsLabel }}</a>
+    </header>
+
+    <qd-abwab-announcer [message]="controller.announcement()" />
+
+    @if (facade.isLoading() && facade.templates().length === 0) {
+      <!-- The list and the editor panel both stay mounted so the layout does not collapse to a
+           single line during a cold load — same reasoning as the doors page's tree skeleton. -->
+      <div class="abwab-templates-page__layout">
+        <aside class="abwab-templates-page__list" [attr.aria-label]="templatesListAriaLabel">
+          <qd-skeleton-rows
+            class="abwab-templates-page__list-skeleton"
+            [count]="5"
+            rowTemplate="1fr"
+            [loadingLabel]="templatesLoadingMessage"
+          />
+        </aside>
+        <div class="qd-card abwab-templates-page__editor abwab-templates-page__editor--loading">
+          <qd-panel-skeleton shape="panel" />
+        </div>
+      </div>
+    } @else if (facade.errorMessage() && facade.templates().length === 0) {
+      <qd-state variant="error" [reserve]="true" [message]="facade.errorMessage() ?? ''" />
+    } @else {
+      <div class="abwab-templates-page__layout">
+        <aside class="abwab-templates-page__list" [attr.aria-label]="templatesListAriaLabel">
+          @for (template of facade.templates(); track template.id) {
+            <button
+              type="button"
+              class="abwab-templates-page__item"
+              [class.abwab-templates-page__item--active]="facade.selectedTemplateId() === template.id"
+              [attr.aria-pressed]="facade.selectedTemplateId() === template.id"
+              [attr.data-testid]="'abwab-templates-page-item-' + template.id"
+              (click)="selectTemplate(template.id)"
+            >
+              <span class="abwab-templates-page__item-name qd-truncate" [title]="template.name">{{ template.name }}</span>
+              <span class="abwab-templates-page__item-count">{{ elementCountLabel(template.nodeCount) }}</span>
+            </button>
+          }
+
+          @if (namingTemplate()) {
+            <form class="abwab-templates-page__new" (submit)="createTemplate($event)">
+              <label class="qd-sr-only" for="abwab-templates-page-new-name">{{ newTemplateNameLabel }}</label>
+              <input
+                id="abwab-templates-page-new-name"
+                type="text"
+                [placeholder]="newTemplateNamePlaceholder"
+                [value]="newTemplateName()"
+                data-testid="abwab-templates-page-new-name"
+                (input)="onNewTemplateNameInput($event)"
+                (keydown.escape)="cancelNamingTemplate()"
+              />
+            </form>
+          } @else {
+            <button
+              type="button"
+              class="abwab-templates-page__add"
+              data-testid="abwab-templates-page-add"
+              (click)="startNamingTemplate()"
+            >
+              {{ newTemplateLabel }}
+            </button>
+          }
+
+          @if (facade.isEmpty() && !namingTemplate()) {
+            <qd-state variant="empty" [message]="templatesEmptyMessage" data-testid="abwab-templates-page-empty" />
+          }
+        </aside>
+
+        <div class="qd-card abwab-templates-page__editor">
+          @if (facade.selectedErrorMessage(); as selectedError) {
+            <qd-state
+              variant="error"
+              [reserve]="true"
+              [message]="selectedError"
+              data-testid="abwab-templates-page-template-error"
+            />
+          }
+
+          @let template = facade.selectedTemplate();
+          @if (facade.selectedLoading()) {
+            <!-- The selected template is null for the whole in-flight window, so without this the
+                 empty state below would answer «اختر قالبًا» to a user who just chose one. -->
+            <qd-skeleton-rows
+              [count]="5"
+              rowTemplate="1fr"
+              [loadingLabel]="templateLoadingMessage"
+              data-testid="abwab-templates-page-selected-loading"
+            />
+          } @else if (!template) {
+            <!-- A failed load already says why nothing is here; stacking «اختر قالبًا» under the
+                 error would read as a second, contradictory status. -->
+            @if (!facade.selectedErrorMessage()) {
+              <qd-state variant="empty" [message]="templateNoneSelectedMessage" data-testid="abwab-templates-page-none-selected" />
+            }
+          } @else {
+            <div class="abwab-templates-page__editor-head">
+              <h2 class="abwab-templates-page__editor-title" data-testid="abwab-templates-page-template-name">
+                <span class="abwab-templates-page__editor-name qd-truncate" [title]="template.name">{{ template.name }}</span>
+                <span class="abwab-templates-page__count" data-testid="abwab-templates-page-template-count">
+                  {{ elementCountLabel(template.nodeCount) }}
+                </span>
+              </h2>
+              <div class="abwab-templates-page__editor-actions">
+                <button
+                  type="button"
+                  class="qd-btn qd-btn-primary"
+                  data-testid="abwab-templates-page-copy"
+                  (click)="openCopyModal()"
+                >
+                  {{ copyToDoorsLabel }}
+                </button>
+                <button
+                  type="button"
+                  class="qd-btn"
+                  data-testid="abwab-templates-page-edit-template"
+                  (click)="editRoot()"
+                >
+                  {{ editTemplateLabel }}
+                </button>
+                <button
+                  type="button"
+                  class="qd-btn"
+                  data-testid="abwab-templates-page-delete-template"
+                  (click)="requestTemplateDelete()"
+                >
+                  {{ deleteTemplateLabel }}
+                </button>
+              </div>
+            </div>
+
+            <qd-abwab-template-tree
+              [root]="template.root"
+              [ariaLabel]="templateTreeAriaLabel"
+              (addChildRequested)="onAddChildRequested($event)"
+              (menuRequested)="onMenuRequested($event)"
+              (orderCommitted)="onOrderCommitted($event)"
+              (quickAddRequested)="onQuickAddRequested($event)"
+            />
+
+            <qd-confirm-dialog
+              testIdPrefix="abwab-templates-page-delete-template-confirm"
+              [open]="confirmingTemplateDelete()"
+              [titleText]="templateDeleteConfirmTitle"
+              [confirmLabel]="deleteConfirmLabel"
+              [cancelLabel]="cancelLabel"
+              tone="danger"
+              [busy]="templateDeleteBusy()"
+              (confirmed)="confirmTemplateDelete()"
+              (cancelled)="cancelTemplateDelete()"
+            >
+              <p>{{ templateDeleteConfirmMessage }}</p>
+              @if (templateDeleteError(); as message) {
+                <qd-state variant="error" [message]="message" data-testid="abwab-templates-page-delete-template-confirm-error" />
+              }
+            </qd-confirm-dialog>
+
+            @let deletingName = deletingNodeName();
+            <qd-confirm-dialog
+              testIdPrefix="abwab-templates-page-delete-node-confirm"
+              [open]="!!deletingName"
+              [titleText]="templateNodeDeleteConfirmTitle"
+              [confirmLabel]="deleteConfirmLabel"
+              [cancelLabel]="cancelLabel"
+              tone="danger"
+              [busy]="nodeDeleteBusy()"
+              (confirmed)="confirmNodeDelete()"
+              (cancelled)="cancelNodeDelete()"
+            >
+              <p>{{ nodeDeleteConfirmMessage(deletingName ?? '') }}</p>
+              @if (nodeDeleteError(); as message) {
+                <qd-state variant="error" [message]="message" data-testid="abwab-templates-page-delete-node-confirm-error" />
+              }
+            </qd-confirm-dialog>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<qd-abwab-template-node-modal
+  [open]="nodeModalOpen()"
+  [fields]="nodeModalFields()"
+  [isEdit]="nodeModalIsEdit()"
+  [isRoot]="nodeModalIsRoot()"
+  [contextName]="nodeModalContextName()"
+  [submitNode]="submitNode"
+  (closed)="closeNodeModal()"
+/>
+
+<qd-abwab-template-copy-modal
+  [open]="copyModalOpen()"
+  [templateName]="facade.selectedTemplate()?.name ?? ''"
+  [templateNodeCount]="facade.selectedTemplate()?.nodeCount ?? 0"
+  [liveRoots]="liveRoots()"
+  [doorsLoading]="doorsLoading()"
+  [doorsError]="doorsError()"
+  [applyTemplate]="applyTemplate"
+  (closed)="closeCopyModal()"
+  (retryDoors)="retryDoorsLoad()"
+/>
+
+@if (contextMenuNodeId() !== null) {
+  <qd-context-menu
+    [position]="contextMenuPosition()"
+    menuTestId="abwab-templates-page-context-menu"
+    backdropTestId="abwab-templates-page-ctx-backdrop"
+    (dismissed)="closeContextMenu()"
+  >
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-templates-page-ctx-edit" (click)="ctxEdit()">
+      {{ nodeEditOpLabel }}
+    </button>
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-templates-page-ctx-add-child" (click)="ctxAddChild()">
+      {{ nodeAddChildOpLabel }}
+    </button>
+    <!-- The root has no node delete: deleting the template is the way (the API refuses the root
+         with a 400), so the menu offers that instead of a control that can only fail. -->
+    @if (contextMenuIsRoot()) {
+      <button
+        type="button"
+        role="menuitem"
+        class="qd-context-menu__item qd-context-menu__item--danger"
+        data-testid="abwab-templates-page-ctx-delete-template"
+        (click)="requestTemplateDelete()"
+      >
+        {{ deleteTemplateLabel }}
+      </button>
+    } @else {
+      <button
+        type="button"
+        role="menuitem"
+        class="qd-context-menu__item qd-context-menu__item--danger"
+        data-testid="abwab-templates-page-ctx-delete-node"
+        (click)="requestNodeDelete()"
+      >
+        {{ nodeDeleteOpLabel }}
+      </button>
+    }
+  </qd-context-menu>
+}

@@ -13,7 +13,7 @@ These rules exist because coding agents over-generate tests. The common failure 
 
 - **Project rules win.** When this skill conflicts with the project's own rules (`CLAUDE.md`, `AGENTS.md`, `CODING_PRINCIPLES.md`, the Backend/Frontend architecture docs, or a spec/contract), follow the project. In particular, Quranic data safety always applies to tests.
 - **`engineering-review` remains the primary holistic post-implementation review skill** — it owns production code, architecture, Spec Kit compliance, Quranic data safety, API contracts, frontend structure, UI/product checks, and the final verdict. It delegates the *test-code* portion of a review to this skill.
-- **`test-guard` owns only test-code quality** — *how* tests are written. It does not review production code and does not decide whether builds/tests were run.
+- **`test-guard` owns only test-code quality** — *how* tests are written. It does not review production code and does not run tests. Whether the *right* tests were run — the required verification tier for the changed scope — is judged against the workspace `TESTING_STRATEGY.md` (see "Verification tiers and evidence sufficiency" below).
 
 ## When this skill activates
 
@@ -109,6 +109,40 @@ Not all violations are equal. Use judgment:
 - **Sacred:** Rule 6 — never delete, always allow
 - **Worth noting:** Rule 9 — test architecture; flag it, but don't block small changes on it
 
+## Verification tiers and evidence sufficiency
+
+This skill judges *how* tests are written. When the request also puts test **evidence**
+in front of you (a phase hand-off, a pre-PR package, a review report), judge sufficiency
+against the workspace policy — do not invent your own bar:
+
+1. Read `TESTING_STRATEGY.md` (workspace root) — the single source of truth for test
+   selection and execution tiers (§1).
+2. Derive the required tier from the changed paths and risk: Tier A focused
+   per-phase; Tier B no-pipeline milestone regression; Tier C ordinary pre-PR;
+   Tier D pipeline-triggered slow suites; Tier E release/canonical acceptance (§3).
+   The change-to-tier matrix is §4.
+3. Compare executed vs required and say sufficient / insufficient / stale. Evidence
+   produced before the last code change is stale (§2).
+4. Treat a required canonical test that skipped for missing `resources/import-sources/`
+   as missing evidence, never as a pass (§9).
+
+Three tree-specific facts that change the verdict (section numbers refer to
+`TESTING_STRATEGY.md`):
+
+- **No CI exists** (§8). "CI is green" is not available as evidence here.
+- **The route-parity/smoke gate is active** (`QuranDashboard.Tests.Smoke`, §3 Tier A/C, §5).
+  When the test changes under review touch API routes, request/response contracts, auth,
+  middleware, or binding, ask for a
+  `--filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."` run and for evidence that
+  says whether the `Tests.Smoke.Data` tier ran or skipped. A new or changed route also
+  needs its `SmokeRouteCatalog` entry in the same change (§10).
+- **The browser E2E layer is opt-in, never a required tier** (§3 Tier E, §6). An E2E run
+  may be offered as supplementary evidence and must say so; it does not substitute for the
+  smoke tier or for any required tier.
+
+Selecting the tier is not this skill's call to override — `engineering-review` owns the
+final verification verdict. Report the mismatch; don't block on it alone.
+
 ## References
 
 - [references/dotnet.md](references/dotnet.md) — .NET/C# patterns: xUnit `[Theory]`, `WebApplicationFactory`, EF Core + PostgreSQL via Testcontainers, `ApiResponse` envelope, real entities/DTOs, Quranic data safety
@@ -120,6 +154,8 @@ Not all violations are equal. Use judgment:
 
 - It does not run tests. Use the project's test runner for that.
 - It does not enforce code style — that's the linter's job.
-- It does not decide *what* to test — only *how* to test it.
+- It does not decide *what* to test — only *how* to test it, plus (per
+  `TESTING_STRATEGY.md`) whether the executed tier of tests was sufficient
+  evidence for the changed scope.
 - It does not review production code — that is `engineering-review`'s job.
 - It does not flag pre-existing violations in files you're not touching, unless asked to audit.

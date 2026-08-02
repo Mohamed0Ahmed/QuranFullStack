@@ -13,6 +13,20 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   them. See `UI_STYLE_SYSTEM.md` §17.
 - `ui/chip/` — `qd-chip`, the one selectable/informational chip (button or anchor, optional
   trailing count). See `UI_STYLE_SYSTEM.md` §17.
+- `ui/context-menu/` — `qd-context-menu`, the one row/node context-menu shell (Slice A, both
+  Abwab pages' row menus). Owns a `position: fixed; inset: 0` backdrop and a positioned
+  `role="menu"` box (`[x, y]` via a `position` input), both keyed off the shared `--qd-z-*`
+  layer scale, plus a document-level `keydown.escape` dismissal (`dismissed` output) — added
+  because none of the four paths that open the menu puts focus inside it, so an
+  element-bound handler could never fire. `menuTestId` / `backdropTestId` inputs keep each
+  page's test ids byte-identical through the extraction. Items are projected content
+  (`<ng-content>`): the primitive knows nothing about doors or template nodes, and the item
+  hover/focus/danger styling lives in the global `.qd-context-menu__item` classes
+  (`_components.scss`), not this component's own stylesheet, since content the *consumer*
+  projects sits outside the primitive's emulated-encapsulation boundary. Deliberately does
+  **not** clamp to the viewport (positions from the caller's raw pointer coords, matching
+  both prior copies) and does **not** manage focus into the menu — see
+  `UI_STYLE_SYSTEM.md` §17 for both gaps. See `UI_STYLE_SYSTEM.md` §17.
 - `ui/ayah-card/` — `qdAyahCard` (attribute component, host class `qd-ayah-card`), the one
   presentation-only flat frame for ayah-shaped list items (recessed warm card background
   `--qd-ayah-card-bg`, hairline border, control radius, compact padding/gap; no shadow, no
@@ -22,7 +36,9 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   renderer, and navigation. Consumers: Words `ayah-matches-list`, Mushaf `similar-ayahs-card`
   items and `mutashabihat-groups-card` occurrences. See `UI_STYLE_SYSTEM.md` §17.
 - `ui/state/` — `qd-state`, the one empty/loading/error presentation; backed by the existing
-  `.qd-empty-state`/`.qd-loading-state`/`.qd-error-state` classes. See `UI_STYLE_SYSTEM.md` §17.
+  `.qd-empty-state`/`.qd-loading-state`/`.qd-error-state` classes. Carries an additive `reserve`
+  input (default off) for the §N3 no-layout-shift box; no current call-site turns it on. See
+  `UI_STYLE_SYSTEM.md` §17.
 - `ui/skeleton/` — `qd-skeleton-rows`, renders N skeleton rows into a caller-supplied
   `grid-template-columns` string so loading rows match loaded rows exactly; plus the pure
   `splitGridTemplateColumns` helper it's built on.
@@ -31,6 +47,18 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   (`'lines' | 'rows' | 'panel'`; default `'lines'` reproduces the original six-line panel
   skeleton). The `qd-explorer-panel-skeleton` selector is kept as a thin alias on the same
   component for existing call-sites.
+- `ui/result-count/` — `qd-result-count` (class `ExplorerResultCountComponent`), the one-line
+  "label: N" stat that holds its line across loading/error/loaded rather than resizing the
+  toolbar around it (Feature 026, US4; Slice B2, T1001 promoted it here from `features/words/`
+  once abwab became a second consumer — `FRONTEND_STRUCTURE.md`'s "genuinely reused across
+  features" bar). `qd-explorer-result-count` is kept as a thin alias selector on the same
+  component so the four words explorer call-sites (Unique Words, Roots, Lemmas, Stems) and their
+  spec kept working untouched through the move — the same dual-selector mechanism as
+  `ui/explorer-panel-skeleton/`. Its own labels (`result-count.labels.ts`) are read through a
+  TDZ-safe **getter**, not a `readonly` field — a `readonly` field resolves to `undefined` in the
+  bundled test build (temporal dead zone), the same rule `features/words/README.md` and
+  `features/abwab/README.md` state for their own `*.labels.ts` files. See
+  `UI_STYLE_SYSTEM.md` §17 "`qd-result-count`".
 - `ui/detail-modal-shell/` — `qd-detail-modal-shell`, the presentation-only accessible
   dialog shell of the global detail overlay (Feature 029): RTL `role="dialog"` +
   `aria-modal`, labelled heading, CDK focus trap with auto-capture, Escape/backdrop
@@ -49,7 +77,17 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 - `ui/modal-scroll-lock/` — `qdModalScrollLock` directive + `ScrollLockService`, the
   **reference-counted** body scroll lock (Feature 029): overlapping layers (responsive
   drawer + global overlay) each acquire/release; the body unlocks only when the last
-  holder releases. Never lock `document.body` directly.
+  holder releases. Never lock `document.body` directly. `ScrollLockService.isLocked` (Slice
+  B2, T904) is a public signal derived from the same lock count — `.qd-navbar`
+  (`core/layout/top-navbar/`) reads it to go `[inert]`/`[aria-hidden]` while any modal dialog
+  holds the lock, so this is the one piece of state the chrome-inert rule reads; do not add a
+  second "any modal open" service (`.architecture/UI_STYLE_SYSTEM.md` §17 "Chrome-inert
+  rule"). Nine surfaces hold the lock as of this phase: six abwab modals
+  (`abwab-door-modal`, `abwab-relations-modal`, `abwab-template-copy-modal`,
+  `abwab-template-node-modal`, plus `abwab-sections-modal`/`abwab-move-picker` added at
+  T905) and five words detail surfaces/dialogs (`root-details-panel`,
+  `lemma-details-panel`, `stem-details-panel`, `word-type-details-panel`,
+  `word-drilldown-modal`).
 - `ui/pagination/` — reusable pagination component, windowing helpers, labels, and tests.
 - `ui/placeholder-page/` — generic placeholder page that reads its title from route data.
 - `ui/safe-html/` — HTML sanitizing pipe for trusted API-backed markup display.

@@ -8,7 +8,8 @@ const loadPlaceholderPage = () =>
   );
 
 const placeholderRoutes: Routes = NAV_ITEMS.filter(
-  (item) => item.key !== 'dashboard' && item.key !== 'mushaf' && item.key !== 'words',
+  (item) =>
+    item.key !== 'dashboard' && item.key !== 'mushaf' && item.key !== 'words' && item.key !== 'abwab',
 ).map(
   (item) => ({
     path: item.route.replace(/^\//, ''),
@@ -53,6 +54,13 @@ export const routes: Routes = [
           import('./features/words/words.routes').then((m) => m.WORDS_ROUTES),
       },
     ],
+  },
+  {
+    // Root-level, like the placeholder it replaces (`nav-items.ts`'s `abwab` entry routes
+    // to `/abwab`, not `/dashboard/abwab`). Must sit before `...placeholderRoutes` and the
+    // `**` wildcard.
+    path: 'abwab',
+    loadChildren: () => import('./features/abwab/abwab.routes').then((m) => m.ABWAB_ROUTES),
   },
   {
     // Must sit before the `**` wildcard, which would otherwise swallow this OIDC landing route.

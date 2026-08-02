@@ -1,0 +1,58 @@
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+
+import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
+import { ABWAB_LABELS } from '../../models/abwab.labels';
+
+/**
+ * Active-door display + single-door operations + bulk mode (plan-slice-b.md T415/T503).
+ * «العلاقات» joined the operations list once relations existed to open (abwab-relations
+ * plan §7 T604); **protection still has no entry** (plan.md §5.1, contract `:250-251`).
+ * Reorder has no button here — the tree's own inline number editor (T413/T506) is the one
+ * reorder affordance; a second control doing the same thing would be redundant, not additive.
+ */
+@Component({
+  selector: 'qd-abwab-side-panel',
+  standalone: true,
+  templateUrl: './abwab-side-panel.component.html',
+  styleUrl: './abwab-side-panel.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class AbwabSidePanelComponent {
+  readonly selectedDoor = input<AbwabDoorDto | null>(null);
+  readonly bulkMode = input(false);
+  readonly bulkCount = input(0);
+  readonly bulkNames = input<readonly string[]>([]);
+  readonly archiveViewActive = input(false);
+
+  readonly addChildRequested = output<void>();
+  readonly editRequested = output<void>();
+  readonly moveRequested = output<void>();
+  readonly relationsRequested = output<void>();
+  readonly archiveRequested = output<void>();
+  readonly clearRequested = output<void>();
+  readonly bulkModeToggled = output<boolean>();
+  readonly bulkMoveRequested = output<void>();
+  readonly bulkRelationsRequested = output<void>();
+  readonly bulkArchiveRequested = output<void>();
+  readonly bulkClearRequested = output<void>();
+
+  protected get activeDoorHeading(): string { return ABWAB_LABELS.activeDoorHeading; }
+  protected get noSelectionHint(): string { return ABWAB_LABELS.noSelectionHint; }
+  protected get clearLabel(): string { return ABWAB_LABELS.clearSelection; }
+  protected get operationsHeading(): string { return ABWAB_LABELS.operationsHeading; }
+  protected get bulkToggleLabel(): string { return ABWAB_LABELS.bulkToggleLabel; }
+  protected get addChildLabel(): string { return ABWAB_LABELS.addChildOp; }
+  protected get editLabel(): string { return ABWAB_LABELS.editOp; }
+  protected get moveLabel(): string { return ABWAB_LABELS.moveOp; }
+  protected get relationsLabel(): string { return ABWAB_LABELS.relationsOp; }
+  protected get archiveLabel(): string { return ABWAB_LABELS.archiveOp; }
+  protected get bulkCountSuffix(): string { return ABWAB_LABELS.bulkCountSuffix; }
+  protected get bulkMoveAllLabel(): string { return ABWAB_LABELS.bulkMoveAll; }
+  protected get bulkRelationsLabel(): string { return ABWAB_LABELS.relationsBulkAddOp; }
+  protected get bulkArchiveAllLabel(): string { return ABWAB_LABELS.bulkArchiveAll; }
+  protected get bulkClearLabel(): string { return ABWAB_LABELS.bulkClear; }
+
+  protected toggleBulkMode(): void {
+    this.bulkModeToggled.emit(!this.bulkMode());
+  }
+}

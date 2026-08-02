@@ -1,0 +1,123 @@
+.abwab-cards__crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  flex-wrap: wrap;
+  margin-block-end: var(--qd-space-3);
+  font-size: 0.8125rem;
+  color: var(--qd-text-muted);
+}
+
+.abwab-cards__crumb {
+  border: none;
+  background: transparent;
+  padding: var(--qd-space-1) var(--qd-space-2);
+  border-radius: var(--qd-radius-sm);
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.abwab-cards__crumb:hover {
+  background: var(--qd-surface-hover);
+  color: var(--qd-accent-text);
+}
+
+.abwab-cards__crumb:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -1px;
+}
+
+.abwab-cards__crumb--current {
+  color: var(--qd-accent-text);
+  font-weight: 700;
+}
+
+.abwab-cards__crumb {
+  display: block;
+  max-inline-size: 14rem;
+}
+
+.abwab-cards__crumb-sep {
+  color: var(--qd-border-strong);
+}
+
+.abwab-cards__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: var(--qd-space-3);
+}
+
+.abwab-cards__card {
+  position: relative;
+  background: var(--qd-surface);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  padding: var(--qd-space-3);
+  cursor: pointer;
+}
+
+/* Hover matches the shared `.qd-interactive-surface` convention (neutral border, not
+   accent) — the accent border is reserved for the selected/checked state below. */
+.abwab-cards__card:hover {
+  border-color: var(--qd-border-strong);
+}
+
+.abwab-cards__card:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -1px;
+}
+
+.abwab-cards__card--leaf {
+  cursor: default;
+}
+
+.abwab-cards__card--leaf:hover {
+  border-color: var(--qd-border);
+}
+
+.abwab-cards__card--selected,
+.abwab-cards__card--checked {
+  outline: 2px solid var(--qd-border-accent);
+  outline-offset: -2px;
+}
+
+.abwab-cards__card--checked {
+  background: var(--qd-selected-bg);
+}
+
+/* Placement only — `.qd-checkbox` owns the size and the accent, and re-stating either here
+   would out-specificity the shared class for no visible reason (§17's named trap). */
+.abwab-cards__checkbox {
+  position: absolute;
+  inset-block-start: var(--qd-space-3);
+  inset-inline-start: var(--qd-space-3);
+}
+
+.abwab-cards__title {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  font-weight: 700;
+}
+
+.abwab-cards__name {
+  flex: 1;
+}
+
+.abwab-cards__order {
+  font-size: 0.6875rem;
+  color: var(--qd-text-muted);
+  background: var(--qd-section-bg);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  padding-inline: 0.3rem;
+}
+
+.abwab-cards__meta {
+  color: var(--qd-text-muted);
+  font-size: 0.75rem;
+  margin-block-start: var(--qd-space-2);
+  min-block-size: 1em;
+}

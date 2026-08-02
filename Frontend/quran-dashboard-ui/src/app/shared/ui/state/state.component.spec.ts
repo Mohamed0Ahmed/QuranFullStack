@@ -14,11 +14,17 @@ describe('QdStateComponent', () => {
 
   afterEach(() => getTestBed().resetTestingModule());
 
-  function render(variant: QdStateVariant, message: string, actionLabel: string | null = null) {
+  function render(
+    variant: QdStateVariant,
+    message: string,
+    actionLabel: string | null = null,
+    reserve = false,
+  ) {
     const fixture = TestBed.createComponent(QdStateComponent);
     fixture.componentRef.setInput('variant', variant);
     fixture.componentRef.setInput('message', message);
     fixture.componentRef.setInput('actionLabel', actionLabel);
+    fixture.componentRef.setInput('reserve', reserve);
     fixture.detectChanges();
     return fixture;
   }
@@ -90,5 +96,32 @@ describe('QdStateComponent', () => {
     const root = fixture.nativeElement as HTMLElement;
 
     expect(root.querySelectorAll('.qd-empty-state, .qd-loading-state, .qd-error-state')).toHaveLength(1);
+  });
+
+  it('leaves `reserve` off by default, so the seven existing call-sites stay untouched', () => {
+    const fixture = render('empty', 'لا توجد نتائج');
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('.qd-state--reserve')).toBeNull();
+  });
+
+  it('keeps the box mounted with `reserve` on even when the message is still empty', () => {
+    const fixture = render('empty', '', null, true);
+    const root = fixture.nativeElement as HTMLElement;
+
+    const box = root.querySelector('[data-testid="qd-state-empty"]');
+    expect(box).toBeTruthy();
+    expect(box?.classList.contains('qd-state--reserve')).toBe(true);
+    expect(box?.querySelector('.qd-state__message')?.textContent).toBe('');
+  });
+
+  it('fades the message in under `reserve` only once it is non-empty', () => {
+    const empty = render('empty', '', null, true);
+    const emptyMessage = (empty.nativeElement as HTMLElement).querySelector('.qd-state__message');
+    expect(emptyMessage?.classList.contains('qd-state__message--visible')).toBe(false);
+
+    const filled = render('empty', 'لا توجد نتائج', null, true);
+    const filledMessage = (filled.nativeElement as HTMLElement).querySelector('.qd-state__message');
+    expect(filledMessage?.classList.contains('qd-state__message--visible')).toBe(true);
   });
 });

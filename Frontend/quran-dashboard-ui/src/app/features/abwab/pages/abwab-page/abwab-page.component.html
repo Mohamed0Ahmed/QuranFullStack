@@ -1,0 +1,323 @@
+<div class="qd-page abwab-page" data-testid="abwab-page">
+  <div class="qd-container qd-page-frame abwab-page__frame">
+    <header class="qd-page-header abwab-page__header">
+      <div>
+        <h1 class="qd-page-title">{{ pageTitle }}</h1>
+        <p class="qd-text-muted">{{ pageSubtitle }}</p>
+      </div>
+      <div class="abwab-page__header-actions">
+        @if (modalUrl.restorableModal(); as retained) {
+          <qd-abwab-modal-restore
+            [kind]="retained.kind"
+            [subjectDoorName]="retainedSubjectDoorName()"
+            (restore)="onModalRestoreRequested()"
+            (discard)="onModalDiscardRequested()"
+          />
+        }
+        <button
+          #headerFallbackFocus
+          type="button"
+          class="qd-btn"
+          [class.abwab-page__header-btn--active]="archiveParam()"
+          data-testid="abwab-page-archive-toggle"
+          (click)="onArchiveToggle()"
+        >
+          {{ archiveButtonLabel }}
+        </button>
+        <button
+          type="button"
+          class="qd-btn"
+          data-testid="abwab-page-manage-sections"
+          (click)="onSectionsRequested()"
+        >
+          {{ manageSectionsLabel }}
+        </button>
+        @if (!archiveParam()) {
+          <!-- Hidden in the archive view like the add-root button: a template applies to live
+               doors only, so the entry would lead nowhere usable there. -->
+          <a class="qd-btn" [routerLink]="templatesRoutePath" data-testid="abwab-page-templates">
+            {{ templatesLabel }}
+          </a>
+          <button
+            type="button"
+            class="qd-btn qd-btn-primary"
+            data-testid="abwab-page-add-root"
+            (click)="onCreateRootRequested()"
+          >
+            {{ addRootLabel }}
+          </button>
+        }
+      </div>
+    </header>
+
+    <qd-abwab-announcer [message]="revealAnnouncement() ?? writeController.announcement()" />
+
+    <!-- Item 17's stats bar (Slice B2, T1003): a quiet inline stat line, never a card
+         (PRODUCT.md's anti-reference list names "identical gradient stat cards" — §5.7). Both
+         instances stay mounted through loading/error/loaded alike, same reasoning as the toolbar
+         below, so switching tabs or a transient load never moves the toolbar under it. -->
+    <div class="abwab-page__stats">
+      <qd-result-count
+        data-testid="abwab-page-stat-total"
+        [count]="totalLiveDoorsCount()"
+        [labelPrefix]="statAllDoorsLabel"
+        [loading]="facade.isLoading() && !facade.snapshot()"
+        [hasError]="!!facade.errorMessage() && !facade.snapshot()"
+      />
+      <qd-result-count
+        data-testid="abwab-page-stat-open-scope"
+        [count]="openScopeDoorsCount()"
+        [labelPrefix]="statOpenScopeLabel"
+        [loading]="facade.isLoading() && !facade.snapshot()"
+        [hasError]="!!facade.errorMessage() && !facade.snapshot()"
+      />
+    </div>
+
+    <!-- The toolbar is mounted once for loading, error and loaded alike (T402): the old chain
+         swapped the entire toolbar + tree subtree for a one-line loader or error, collapsing the
+         frame to a single line — §5.2/§4.7. Hoisting it here means only the content below it
+         ever changes shape. -->
+    <qd-abwab-toolbar
+      [sections]="sections()"
+      [activeSectionId]="activeSectionId()"
+      [view]="viewParam()"
+      [searchQuery]="searchQueryParam()"
+      [searchMatchCount]="searchMatchCount()"
+      [hideSectionControls]="archiveParam()"
+      [rootCountBySectionId]="rootCountBySectionId()"
+      [totalRootCount]="totalRootCount()"
+      (sectionChanged)="onSectionChanged($event)"
+      (viewChanged)="onViewChanged($event)"
+      (searchQueryChanged)="onSearchQueryChanged($event)"
+    />
+
+    @if (facade.isLoading() && !facade.snapshot()) {
+      <div class="abwab-page__layout">
+        <div class="abwab-page__main">
+          <div class="qd-card abwab-page__tree-card">
+            <qd-skeleton-rows
+              class="abwab-page__tree-skeleton"
+              [count]="6"
+              rowTemplate="1.25rem 1fr auto"
+              [loadingLabel]="loadingLabel"
+            />
+          </div>
+        </div>
+      </div>
+    } @else if (facade.errorMessage() && !facade.snapshot()) {
+      <!-- The error is a reserved slot inside the frame (T402), not a replacement of it: the
+           card that would otherwise hold the tree/cards/archive view holds the error instead, so
+           the toolbar above never disappears and the layout keeps its shape. This branch is only
+           reachable before any load has ever succeeded — AbwabSnapshotFacade's `rawTree` is
+           written only on success, never cleared on failure, so a refresh failure with data
+           already loaded leaves `snapshot()` non-null and falls through to the loaded branch
+           below instead, per the facade's own "leave the previous value in place" contract. -->
+      <div class="abwab-page__layout">
+        <div class="abwab-page__main">
+          <div class="qd-card abwab-page__tree-card">
+            <qd-state
+              variant="error"
+              [reserve]="true"
+              [message]="facade.errorMessage() ?? ''"
+              [actionLabel]="retryLabel"
+              (action)="facade.load()"
+            />
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="abwab-page__layout">
+        <div class="abwab-page__main">
+          @if (archiveParam()) {
+            <div class="qd-card abwab-page__tree-card">
+              @if (displayArchivedRoots().length === 0) {
+                <qd-state variant="empty" [message]="archiveEmptyLabel" data-testid="abwab-page-archive-empty" />
+              } @else {
+                <qd-abwab-archive-view
+                  [roots]="displayArchivedRoots()"
+                  [ariaLabel]="archiveTreeAriaLabel"
+                  (restoreRequested)="onRestoreRequested($event)"
+                />
+              }
+            </div>
+          } @else if (viewParam() === 'cards') {
+            <div class="qd-card abwab-page__tree-card">
+              <qd-abwab-cards
+                [roots]="displayRoots()"
+                [byId]="byId()"
+                [cardId]="cardParam()"
+                [orderScope]="orderScope()"
+                [selectedId]="selection.selectedDoorId()"
+                [bulkMode]="selection.bulkMode()"
+                [bulkSelectedIds]="bulkSelectedIds()"
+                (selected)="onTreeSelected($event)"
+                (bulkToggled)="onBulkToggled($event)"
+                (drilled)="onCardDrilled($event)"
+                (crumbSelected)="onCardCrumbSelected($event)"
+              />
+            </div>
+          } @else {
+            <div class="qd-card abwab-page__tree-card">
+              @if (visibleRoots().length === 0) {
+                <qd-state variant="empty" [message]="emptyLabel" data-testid="abwab-page-empty" />
+              } @else {
+                <qd-abwab-tree
+                  [roots]="visibleRoots()"
+                  [ariaLabel]="treeAriaLabel"
+                  [orderScope]="orderScope()"
+                  [selectedId]="selection.selectedDoorId()"
+                  [bulkMode]="selection.bulkMode()"
+                  [bulkSelectedIds]="bulkSelectedIds()"
+                  [matchedIds]="treeMatchedIds()"
+                  [expandSeedIds]="expandSeedIds()"
+                  [revealedId]="revealedId()"
+                  (selected)="onTreeSelected($event)"
+                  (bulkToggled)="onBulkToggled($event)"
+                  (addChildRequested)="onTreeAddChildRequested($event)"
+                  (menuRequested)="onMenuRequested($event)"
+                  (orderCommitted)="onOrderCommitted($event)"
+                  (relationsRequested)="onRelationsRequested($event)"
+                />
+              }
+              <button
+                type="button"
+                class="abwab-page__add-ghost"
+                data-testid="abwab-page-add-root-ghost"
+                (click)="onCreateRootRequested()"
+              >
+                {{ addRootGhostLabel }}
+              </button>
+            </div>
+          }
+        </div>
+        <aside class="abwab-page__side">
+          <qd-abwab-side-panel
+            [selectedDoor]="selectedDoor()"
+            [bulkMode]="selection.bulkMode()"
+            [bulkCount]="selection.bulkCount()"
+            [bulkNames]="bulkNames()"
+            [archiveViewActive]="archiveParam()"
+            (addChildRequested)="onAddChildRequested()"
+            (editRequested)="onEditRequested()"
+            (moveRequested)="onMoveRequested()"
+            (relationsRequested)="onRelationsOpenRequested()"
+            (archiveRequested)="overlays.requestArchive()"
+            (clearRequested)="onClearSelection()"
+            (bulkModeToggled)="onBulkModeToggled($event)"
+            (bulkMoveRequested)="overlays.openBulkMovePicker()"
+            (bulkRelationsRequested)="overlays.openBulkRelations()"
+            (bulkArchiveRequested)="overlays.requestBulkArchive()"
+            (bulkClearRequested)="onBulkClearRequested()"
+          />
+        </aside>
+      </div>
+    }
+  </div>
+</div>
+
+<qd-abwab-door-modal
+  [open]="overlays.modalOpen()"
+  [door]="overlays.modalDoor()"
+  [parentId]="overlays.modalParentId()"
+  [parentName]="overlays.modalParentName()"
+  [activeSectionId]="activeSectionId()"
+  [sections]="sections()"
+  (saved)="onDoorModalSaved()"
+  (closed)="onDoorModalClosed()"
+/>
+
+<qd-abwab-move-picker
+  [open]="overlays.movePickerOpen()"
+  [sections]="sections()"
+  [liveRoots]="pickerLiveRoots()"
+  [excludedIds]="overlays.moveExcludedIds()"
+  [movedSectionIds]="overlays.moveSectionIds()"
+  [titleText]="overlays.moveTitleText()"
+  (closed)="onMovePickerClosed()"
+  (confirmed)="onMoveConfirmed($event)"
+/>
+
+<qd-abwab-door-restore-modal
+  [door]="overlays.restoreTarget()"
+  [ancestors]="overlays.restoreAncestors()"
+  [sections]="sections()"
+  (closed)="overlays.closeRestoreModal()"
+  (restored)="overlays.closeRestoreModal()"
+/>
+
+<qd-abwab-relations-modal
+  [open]="overlays.relationsModalOpen()"
+  [anchorDoorId]="overlays.relationsAnchorDoorId()"
+  [anchorDoorName]="overlays.relationsAnchorName()"
+  [anchorRelationCount]="overlays.relationsAnchorCount()"
+  [anchorPickMode]="overlays.relationsAnchorPickMode()"
+  [bulkTargets]="overlays.relationsBulkTargets()"
+  [liveRoots]="pickerLiveRoots()"
+  [loadRelations]="overlays.loadRelations"
+  [refetchRelations]="overlays.refetchRelations"
+  [addRelations]="overlays.addRelations"
+  [deleteRelation]="overlays.deleteRelation"
+  (closed)="onRelationsModalClosed()"
+  (revealRequested)="onRevealRequested($event)"
+/>
+
+<qd-abwab-sections-modal
+  [open]="overlays.sectionsModalOpen()"
+  [sections]="sections()"
+  [createSection]="overlays.createSection"
+  [renameSection]="overlays.renameSection"
+  [deleteSection]="overlays.deleteSection"
+  [reorderSection]="overlays.reorderSection"
+  (closed)="onSectionsModalClosed()"
+/>
+
+<qd-confirm-dialog
+  testIdPrefix="abwab-page-archive-confirm"
+  [open]="overlays.archiveConfirming()"
+  [titleText]="archiveConfirmTitle"
+  [confirmLabel]="archiveLabel"
+  [cancelLabel]="cancelLabel"
+  tone="danger"
+  [busy]="overlays.archiveBusy()"
+  (confirmed)="confirmArchiveAndClearUrl()"
+  (cancelled)="onArchiveConfirmCancelled()"
+>
+  <p>{{ overlays.archiveConfirmMessage() }}</p>
+  @if (overlays.archiveError(); as message) {
+    <qd-state variant="error" [message]="message" data-testid="abwab-page-archive-confirm-error" />
+  }
+</qd-confirm-dialog>
+
+<qd-confirm-dialog
+  testIdPrefix="abwab-page-bulk-archive-confirm"
+  [open]="overlays.bulkArchiveConfirming()"
+  [titleText]="archiveConfirmTitle"
+  [confirmLabel]="archiveLabel"
+  [cancelLabel]="cancelLabel"
+  tone="danger"
+  [busy]="overlays.archiveBusy()"
+  (confirmed)="onBulkArchiveConfirmed()"
+  (cancelled)="onBulkArchiveConfirmCancelled()"
+>
+  <p>{{ overlays.bulkArchiveConfirmMessage() }}</p>
+  @if (overlays.archiveError(); as message) {
+    <qd-state variant="error" [message]="message" data-testid="abwab-page-bulk-archive-confirm-error" />
+  }
+</qd-confirm-dialog>
+
+@if (overlays.contextMenuDoorId() !== null) {
+  <qd-context-menu
+    [position]="overlays.contextMenuPosition()"
+    menuTestId="abwab-page-context-menu"
+    backdropTestId="abwab-page-ctx-backdrop"
+    (dismissed)="overlays.closeContextMenu()"
+  >
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-edit" (click)="onCtxEdit()">{{ editOpLabel }}</button>
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-add-child" (click)="onCtxAddChild()">{{ addChildOpLabel }}</button>
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-move" (click)="onCtxMove()">{{ moveOpLabel }}</button>
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-relations" (click)="onCtxRelations()">{{ relationsOpLabel }}</button>
+    <button type="button" role="menuitem" class="qd-context-menu__item qd-context-menu__item--danger" data-testid="abwab-page-ctx-archive" (click)="overlays.ctxArchive()">
+      {{ archiveLabel }}
+    </button>
+  </qd-context-menu>
+}

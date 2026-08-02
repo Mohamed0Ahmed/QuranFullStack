@@ -1,0 +1,57 @@
+<qd-confirm-dialog
+  [open]="open()"
+  [titleText]="title"
+  [confirmLabel]="confirmLabel"
+  [cancelLabel]="cancelLabel"
+  [busy]="busy()"
+  [confirmDisabled]="confirmDisabled()"
+  (confirmed)="confirm()"
+  (cancelled)="cancel()"
+>
+  @if (door(); as node) {
+    <div class="abwab-door-restore-modal">
+      @if (errorMessage(); as error) {
+        <qd-state variant="error" [message]="error" data-testid="abwab-door-restore-modal-error" />
+      }
+
+      <p class="abwab-door-restore-modal__name" data-testid="abwab-door-restore-modal-name">{{ node.name }}</p>
+      @if (pathText(); as path) {
+        <p class="abwab-door-restore-modal__path" data-testid="abwab-door-restore-modal-path">{{ path }}</p>
+      }
+
+      @if (needsDestination()) {
+        @if (noSectionsAvailable()) {
+          <p class="abwab-door-restore-modal__hint" data-testid="abwab-door-restore-modal-no-sections">
+            {{ noSectionsHint }}
+          </p>
+        } @else {
+          <div class="abwab-door-restore-modal__field">
+            <label [attr.for]="selectId">{{ sectionLabel }}</label>
+            <select
+              class="qd-input"
+              [id]="selectId"
+              [attr.aria-required]="destinationRequired() ? 'true' : null"
+              [attr.aria-invalid]="sectionInvalid() ? 'true' : null"
+              data-testid="abwab-door-restore-modal-section-select"
+              (change)="onSectionChange($any($event.target).value)"
+            >
+              <option value=""></option>
+              @for (section of sections(); track section.id) {
+                <option [value]="section.id" [selected]="section.id === chosenSectionId()">{{ section.name }}</option>
+              }
+            </select>
+            @if (destinationRequired()) {
+              <p class="abwab-door-restore-modal__hint" data-testid="abwab-door-restore-modal-retired-hint">
+                {{ retiredHint }}
+              </p>
+            }
+          </div>
+        }
+      } @else {
+        <p class="abwab-door-restore-modal__hint" data-testid="abwab-door-restore-modal-child-hint">
+          {{ childHint }}
+        </p>
+      }
+    </div>
+  }
+</qd-confirm-dialog>

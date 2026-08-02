@@ -19,6 +19,26 @@ feature-report indexes.
 | `feature-008-quran-translations-foundation/` | Generated Quran translation import acceptance reports (Markdown + JSON), including source coverage, validation, exclusions, and provenance warnings. |
 | `feature-009-quran-navigation-metadata-foundation/` | Generated Quran navigation metadata import acceptance reports (Markdown + JSON) for juz, hizb, rub, sajda, and ayah coverage validation. |
 
+## Lifecycle — `feature-XXX-*/` folders die with their feature
+
+Per the planning-artifact lifecycle rule in `CLAUDE.md` §Workspace Path Conventions, a
+feature's `Backend/report/feature-XXX-*/` folder is deleted when the feature closes; only
+the two most recently closed features plus every open one are kept, and **evidence is
+judged per file** — a folder can lose its completion report and keep its import report.
+
+`architecture/`, `database/`, and `database-inventory/` are non-feature folders and are
+never swept.
+
+The two `feature-008` / `feature-009` folders above are **permanently exempt** on two
+independent grounds:
+
+- `tools/QuranDashboard.DataImporter/Import/DefaultPaths/DataImporterDefaults.cs`
+  hardcodes both directories as the importers' default output targets — deleting them
+  breaks `import-translations` and `import-navigation-metadata`.
+- Their reports are the only surviving record of source verification, per-source hashes,
+  exclusions, and provenance warnings for those imports. `database-inventory/` supersedes
+  **counts** only; it never supersedes source-verification, exclusion, or provenance facts.
+
 ## Filename conventions (for any future evidence report)
 
 - Human-authored reports: three-digit chronological prefix + kebab-case name

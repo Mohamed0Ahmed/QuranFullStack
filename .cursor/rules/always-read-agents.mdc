@@ -135,14 +135,23 @@ split only unrelated concerns. Push the monorepo branch once after verification.
 
 Before delivery, run the relevant verification commands when possible.
 
+Before selecting or running tests, read:
+
+- `TESTING_STRATEGY.md` (workspace root)
+
+Use the tier required by the changed scope. Do not run full or slow data-pipeline suites
+after every phase unless the strategy's Tier D triggers require it. There is no CI
+(§8) — every tier is a local gate, and "CI is green" is never available as evidence.
+
 ### Backend tests
 
 Run from `Backend/`:
 
 - Build: `dotnet build QuranDashboard.sln`
-- All tests: `dotnet test QuranDashboard.sln`
-- A subset: `dotnet test QuranDashboard.sln --filter "FullyQualifiedName~<ClassOrNamespace>"`
-- For import work, run the relevant import test filter if available.
+- Focused subset (normal per-phase tier): `dotnet test QuranDashboard.sln --filter "FullyQualifiedName~<ClassOrNamespace>"`
+- Full suite (`dotnet test QuranDashboard.sln`): only when `TESTING_STRATEGY.md` requires it (pipeline-triggered PRs, release).
+- For import/pipeline work, run the affected pipeline family filters from `TESTING_STRATEGY.md` §5 — they are dot-bounded, so keep the leading and trailing dots.
+- No route-parity/smoke gate exists in this tree. For route, contract, auth, middleware, or binding changes, run the `Tests.Api.*` families and say that none ran; the smoke tier is planned only (§13).
 
 ### Frontend tests
 

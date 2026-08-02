@@ -5,15 +5,1452 @@
     "version": "v1"
   },
   "paths": {
+    "/api/abwab/doors/{doorId}/relations": {
+      "get": {
+        "tags": [
+          "AbwabDoorRelations"
+        ],
+        "parameters": [
+          {
+            "name": "doorId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorRelationDtoIReadOnlyListApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorRelationDtoIReadOnlyListApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorRelationDtoIReadOnlyListApiResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AbwabDoorRelations"
+        ],
+        "parameters": [
+          {
+            "name": "doorId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AddDoorRelationsBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AddDoorRelationsBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AddDoorRelationsBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorRelationDtoIReadOnlyListApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorRelationDtoIReadOnlyListApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorRelationDtoIReadOnlyListApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/relations/{relationId}": {
+      "delete": {
+        "tags": [
+          "AbwabDoorRelations"
+        ],
+        "parameters": [
+          {
+            "name": "relationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/doors": {
+      "post": {
+        "tags": [
+          "AbwabDoors"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateDoorCommand"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateDoorCommand"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateDoorCommand"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/doors/{id}": {
+      "put": {
+        "tags": [
+          "AbwabDoors"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EditDoorBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EditDoorBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EditDoorBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AbwabDoors"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DeleteDoorBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DeleteDoorBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DeleteDoorBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/doors/{id}/move": {
+      "post": {
+        "tags": [
+          "AbwabDoors"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/MoveDoorBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/MoveDoorBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/MoveDoorBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/doors/{id}/order": {
+      "post": {
+        "tags": [
+          "AbwabDoors"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ReorderDoorBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ReorderDoorBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ReorderDoorBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/doors/bulk-move": {
+      "post": {
+        "tags": [
+          "AbwabDoors"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/BulkMoveDoorsCommand"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/BulkMoveDoorsCommand"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/BulkMoveDoorsCommand"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoIReadOnlyListApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoIReadOnlyListApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoIReadOnlyListApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/doors/bulk-archive": {
+      "post": {
+        "tags": [
+          "AbwabDoors"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/BulkArchiveDoorsCommand"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/BulkArchiveDoorsCommand"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/BulkArchiveDoorsCommand"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/Int32IReadOnlyListApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Int32IReadOnlyListApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Int32IReadOnlyListApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/doors/{id}/restore": {
+      "post": {
+        "tags": [
+          "AbwabDoors"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RestoreDoorBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RestoreDoorBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RestoreDoorBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/sections": {
+      "post": {
+        "tags": [
+          "AbwabSections"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateSectionCommand"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateSectionCommand"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateSectionCommand"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabSectionDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabSectionDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabSectionDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/sections/{id}": {
+      "put": {
+        "tags": [
+          "AbwabSections"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RenameSectionBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RenameSectionBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RenameSectionBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabSectionDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabSectionDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabSectionDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AbwabSections"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/sections/{id}/order": {
+      "post": {
+        "tags": [
+          "AbwabSections"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ReorderSectionBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ReorderSectionBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ReorderSectionBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabSectionDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabSectionDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabSectionDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/templates/{templateId}/nodes": {
+      "post": {
+        "tags": [
+          "AbwabTemplateNodes"
+        ],
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AddTemplateNodeBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AddTemplateNodeBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/AddTemplateNodeBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateNodeDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateNodeDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateNodeDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/template-nodes/{nodeId}": {
+      "put": {
+        "tags": [
+          "AbwabTemplateNodes"
+        ],
+        "parameters": [
+          {
+            "name": "nodeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EditTemplateNodeBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EditTemplateNodeBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/EditTemplateNodeBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateNodeDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateNodeDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateNodeDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AbwabTemplateNodes"
+        ],
+        "parameters": [
+          {
+            "name": "nodeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/template-nodes/{nodeId}/order": {
+      "post": {
+        "tags": [
+          "AbwabTemplateNodes"
+        ],
+        "parameters": [
+          {
+            "name": "nodeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ReorderTemplateNodeBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ReorderTemplateNodeBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ReorderTemplateNodeBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateNodeDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateNodeDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateNodeDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/templates": {
+      "get": {
+        "tags": [
+          "AbwabTemplates"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateSummaryDtoIReadOnlyListApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateSummaryDtoIReadOnlyListApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateSummaryDtoIReadOnlyListApiResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AbwabTemplates"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateTemplateBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateTemplateBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateTemplateBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/templates/{templateId}": {
+      "get": {
+        "tags": [
+          "AbwabTemplates"
+        ],
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTemplateDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AbwabTemplates"
+        ],
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/templates/{templateId}/apply": {
+      "post": {
+        "tags": [
+          "AbwabTemplates"
+        ],
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ApplyTemplateBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ApplyTemplateBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ApplyTemplateBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoIReadOnlyListApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoIReadOnlyListApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabDoorDtoIReadOnlyListApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/tree": {
+      "get": {
+        "tags": [
+          "AbwabTree"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTreeDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTreeDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbwabTreeDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/access/me": {
       "get": {
         "tags": [
           "Access"
         ],
-        "summary": "يُرجع بيانات المستخدم الحالي بعد التحقق من هويته، ويُنشئ سجلّه محليًا عند أول دخول (البريد\nمُتحقَّق منه من مزوّد الهوية). المستخدم الجديد يبدأ بحالة \"قيد المراجعة\" وبدون دور، ما لم يكن بريده\nهو بريد المالك المُهيّأ فيُنشأ بدور \"المالك\" وحالة \"نشط\".",
         "responses": {
           "200": {
-            "description": "تم تحميل بيانات المستخدم الحالي.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -31,9 +1468,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "لم يُقدَّم رمز وصول صالح."
           }
         }
       }
@@ -43,10 +1477,9 @@
         "tags": [
           "Dashboard"
         ],
-        "summary": "يُرجع معلومات التطبيق: الاسم والإصدار وبيئة التشغيل.",
         "responses": {
           "200": {
-            "description": "تم تحميل معلومات التطبيق بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -73,10 +1506,9 @@
         "tags": [
           "Health"
         ],
-        "summary": "يُرجع الحالة الصحية للتطبيق واعتمادياته (قاعدة البيانات) مع حالة كل فحص على حدة.",
         "responses": {
           "200": {
-            "description": "تم تنفيذ فحوصات الحالة؛ الحالة الكلية ضمن البيانات (healthy أو degraded أو unhealthy).",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -103,12 +1535,10 @@
         "tags": [
           "Lemmas"
         ],
-        "summary": "يُرجع صفحة واحدة من الصيغ المعجمية مع بحث عربي مُطبّع (contains) وخيارات\nترتيب وتصفّح، وكل الأعداد لكل صيغة ومعرّف الجذر المملوك.",
         "parameters": [
           {
             "name": "search",
             "in": "query",
-            "description": "نص البحث العربي المُطبّع (contains، اختياري).",
             "schema": {
               "type": "string"
             }
@@ -116,7 +1546,6 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "مفتاح الترتيب (اختياري، الافتراضي `mushaf-order`). الصيغة:\n`عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` و`simple` و`tashkeel` و`stems` (تنازلية طبيعيًا).\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -124,7 +1553,6 @@
           {
             "name": "page",
             "in": "query",
-            "description": "رقم الصفحة (الافتراضي 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -133,7 +1561,6 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 1000).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -142,7 +1569,6 @@
           {
             "name": "occMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -151,7 +1577,6 @@
           {
             "name": "occMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -160,7 +1585,6 @@
           {
             "name": "ayahsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -169,7 +1593,6 @@
           {
             "name": "ayahsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -178,7 +1601,6 @@
           {
             "name": "surahsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -187,7 +1609,6 @@
           {
             "name": "surahsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -196,7 +1617,6 @@
           {
             "name": "simpleWordsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد الكلمات بدون تشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -205,7 +1625,6 @@
           {
             "name": "simpleWordsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد الكلمات بدون تشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -214,7 +1633,6 @@
           {
             "name": "tashkeelWordsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد الكلمات بالتشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -223,7 +1641,6 @@
           {
             "name": "tashkeelWordsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد الكلمات بالتشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -232,7 +1649,6 @@
           {
             "name": "stemsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد الأصول الصرفية (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -241,7 +1657,6 @@
           {
             "name": "stemsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد الأصول الصرفية (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -250,7 +1665,6 @@
           {
             "name": "rootId",
             "in": "query",
-            "description": "مرشّح الجذر المملوك (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -259,7 +1673,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل صفحة الصيغ المعجمية بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -277,9 +1691,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "مفتاح ترتيب أو مرشّح أو تقسيم صفحات غير صالح."
           }
         }
       }
@@ -289,7 +1700,6 @@
         "tags": [
           "Lemmas"
         ],
-        "summary": "يُرجع ملخّص الصيغة المعجمية المحددة (أعدادها وتوزيع الأنواع الكامل).\nيُستخدم لاستعادة حالة لوحة التفاصيل من رابط المشاركة.",
         "parameters": [
           {
             "name": "id",
@@ -330,7 +1740,6 @@
         "tags": [
           "Lemmas"
         ],
-        "summary": "يُرجع صفحة من الكلمات المرتبطة بالصّيغة المعجمية المحددة بحسب نوعها\n(بسيطة أو بالتشكيل)، مع عدد مرات الظهور في سياق هذه الصيغة.",
         "parameters": [
           {
             "name": "id",
@@ -395,7 +1804,6 @@
         "tags": [
           "Lemmas"
         ],
-        "summary": "يُرجع صفحة من الآيات التي وردت فيها الصيغة المعجمية المحددة، مع معرّفات\nالكلمات المطابقة للتمييز البصري.",
         "parameters": [
           {
             "name": "id",
@@ -459,7 +1867,6 @@
         "tags": [
           "Lemmas"
         ],
-        "summary": "يُرجع السور التي وردت فيها الصيغة المعجمية المحددة مع عدد مرات الظهور\nفي كل سورة.",
         "parameters": [
           {
             "name": "id",
@@ -500,7 +1907,6 @@
         "tags": [
           "Lemmas"
         ],
-        "summary": "يُرجع السور التي لم ترد فيها الصيغة المعجمية المحددة.",
         "parameters": [
           {
             "name": "id",
@@ -541,7 +1947,6 @@
         "tags": [
           "Lemmas"
         ],
-        "summary": "يُرجع الأصول الصرفية التي وردت فيها الصيغة المعجمية المحددة مع عدد\nمرات الظهور في سياق كل أصل.",
         "parameters": [
           {
             "name": "id",
@@ -582,12 +1987,10 @@
         "tags": [
           "MushafAyahMutashabihat"
         ],
-        "summary": "يُرجع المتشابهات اللفظية للآية المحددة مجمّعة حسب المجموعة، مع\nحدوثات الآية المحددة وكل حدوثات المجموعة مرتبة بترتيب المصحف.",
         "parameters": [
           {
             "name": "verseKey",
             "in": "path",
-            "description": "مفتاح الآية بصيغة `surah:ayah` (مثل `2:25`).",
             "required": true,
             "schema": {
               "type": "string"
@@ -596,7 +1999,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل المتشابهات اللفظية بنجاح، بما في ذلك القائمة الفارغة.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -614,12 +2017,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "مفتاح آية غير صالح."
-          },
-          "404": {
-            "description": "الآية غير موجودة."
           }
         }
       }
@@ -629,12 +2026,10 @@
         "tags": [
           "MushafAyahSimilarities"
         ],
-        "summary": "يُرجع قائمة مسطّحة بالآيات القريبة في المعنى للآية المحددة، مع دمج\nالروابط الصادرة والواردة وإزالة التكرار ثنائي الاتجاه.",
         "parameters": [
           {
             "name": "verseKey",
             "in": "path",
-            "description": "مفتاح الآية بصيغة `surah:ayah` (مثل `2:25`).",
             "required": true,
             "schema": {
               "type": "string"
@@ -643,7 +2038,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل الآيات القريبة في المعنى بنجاح، بما في ذلك القائمة الفارغة.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -661,12 +2056,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "مفتاح آية غير صالح."
-          },
-          "404": {
-            "description": "الآية غير موجودة."
           }
         }
       }
@@ -676,12 +2065,10 @@
         "tags": [
           "MushafAyahStudy"
         ],
-        "summary": "يُرجع سياق دراسة آية واحدة: بيانات الآية الأساسية مع مصدر التفسير\nوالترجمة والإعراب الكامل المحدّد (أو الافتراضي من الإعدادات) محمّلة معاً.",
         "parameters": [
           {
             "name": "verseKey",
             "in": "path",
-            "description": "مفتاح الآية بصيغة `surah:ayah` (مثل `2:25`).",
             "required": true,
             "schema": {
               "type": "string"
@@ -690,7 +2077,6 @@
           {
             "name": "tafsirSource",
             "in": "query",
-            "description": "مفتاح مصدر التفسير (اختياري؛ الافتراضي من `MushafReader:DefaultTafsirSourceKey`).",
             "schema": {
               "type": "string"
             }
@@ -698,7 +2084,6 @@
           {
             "name": "translationSource",
             "in": "query",
-            "description": "مفتاح مصدر الترجمة (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -706,7 +2091,6 @@
           {
             "name": "fullI3rabSource",
             "in": "query",
-            "description": "مفتاح مصدر الإعراب الكامل (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -714,7 +2098,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل دراسة الآية بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -732,12 +2116,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "مفتاح آية غير صالح."
-          },
-          "404": {
-            "description": "الآية غير موجودة."
           }
         }
       }
@@ -747,12 +2125,10 @@
         "tags": [
           "MushafPages"
         ],
-        "summary": "يُرجع صفحة مصحف واحدة مرقّمة (1–604): الأسطر والكلمات بترتيب المصحف،\nسياق السور والجزء والحزب والربع، وعلامات السجدة/التقسيم بقاعدة السطر الأول.",
         "parameters": [
           {
             "name": "pageNumber",
             "in": "path",
-            "description": "رقم الصفحة (1–604).",
             "required": true,
             "schema": {
               "type": "string"
@@ -761,7 +2137,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل الصفحة بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -779,12 +2155,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "رقم صفحة غير صالح."
-          },
-          "404": {
-            "description": "الصفحة غير موجودة في قاعدة البيانات."
           }
         }
       }
@@ -794,10 +2164,9 @@
         "tags": [
           "MushafStudySourceCatalog"
         ],
-        "summary": "يُرجع فهرس مصادر الدراسة المتاحة لقارئ المصحف (التفاسير والترجمات وما شابه) بترتيب العرض.",
         "responses": {
           "200": {
-            "description": "تم تحميل فهرس مصادر الدراسة بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -824,10 +2193,9 @@
         "tags": [
           "MushafSurahCatalog"
         ],
-        "summary": "يُرجع فهرس سور المصحف (114 سورة) بأسمائها وأرقامها وصفحات بدايتها للتنقل.",
         "responses": {
           "200": {
-            "description": "تم تحميل فهرس السور بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -854,12 +2222,10 @@
         "tags": [
           "MushafWordAnalysis"
         ],
-        "summary": "يُرجع تحليل كلمة قابلة للقراءة (ليست علامة نهاية آية): تكرارها،\nصرفها الرئيسي، ومقاطعها المرتبة مع فتحات لون ثابتة وإعراب مبسّط.",
         "parameters": [
           {
             "name": "wordLocation",
             "in": "path",
-            "description": "موقع الكلمة بصيغة `surah:ayah:word` (مثل `2:25:3`).",
             "required": true,
             "schema": {
               "type": "string"
@@ -868,7 +2234,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل تحليل الكلمة بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -886,12 +2252,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "موقع غير صالح أو كلمة غير قابلة للتحليل (علامة آية)."
-          },
-          "404": {
-            "description": "الكلمة غير موجودة أو بيانات التحليل ناقصة."
           }
         }
       }
@@ -901,12 +2261,10 @@
         "tags": [
           "Roots"
         ],
-        "summary": "يُرجع صفحة واحدة من الجذور مع بحث عربي مُطبّع (contains) وخيارات ترتيب\nوتصفّح، وكل الأعداد الثمانية لكل جذر.",
         "parameters": [
           {
             "name": "search",
             "in": "query",
-            "description": "نص البحث العربي المُطبّع (contains، اختياري).",
             "schema": {
               "type": "string"
             }
@@ -914,7 +2272,6 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "مفتاح الترتيب (اختياري، الافتراضي `mushaf-order`). الصيغة:\n`عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` و`simple` و`tashkeel` و`lemmas` و`stems` (تنازلية طبيعيًا).\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -922,7 +2279,6 @@
           {
             "name": "page",
             "in": "query",
-            "description": "رقم الصفحة (الافتراضي 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -931,7 +2287,6 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 1000).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -940,7 +2295,6 @@
           {
             "name": "occMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -949,7 +2303,6 @@
           {
             "name": "occMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -958,7 +2311,6 @@
           {
             "name": "ayahsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -967,7 +2319,6 @@
           {
             "name": "ayahsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -976,7 +2327,6 @@
           {
             "name": "surahsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -985,7 +2335,6 @@
           {
             "name": "surahsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -994,7 +2343,6 @@
           {
             "name": "simpleWordsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد الكلمات بدون تشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1003,7 +2351,6 @@
           {
             "name": "simpleWordsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد الكلمات بدون تشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1012,7 +2359,6 @@
           {
             "name": "tashkeelWordsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد الكلمات بالتشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1021,7 +2367,6 @@
           {
             "name": "tashkeelWordsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد الكلمات بالتشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1030,7 +2375,6 @@
           {
             "name": "lemmasMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد الصيغ المعجمية (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1039,7 +2383,6 @@
           {
             "name": "lemmasMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد الصيغ المعجمية (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1048,7 +2391,6 @@
           {
             "name": "stemsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد الأصول الصرفية (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1057,7 +2399,6 @@
           {
             "name": "stemsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد الأصول الصرفية (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1066,7 +2407,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل صفحة الجذور بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -1084,9 +2425,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "مفتاح ترتيب أو مرشّح أو تقسيم صفحات غير صالح."
           }
         }
       }
@@ -1096,7 +2434,6 @@
         "tags": [
           "Roots"
         ],
-        "summary": "يُرجع ملخّص الجذر المحدد (أعداده الثمانية). يُستخدم لاستعادة حالة لوحة\nالتفاصيل من رابط مشاركة.",
         "parameters": [
           {
             "name": "id",
@@ -1137,7 +2474,6 @@
         "tags": [
           "Roots"
         ],
-        "summary": "يُرجع صفحة من الآيات التي ورد فيها الجذر المحدد، مع معرّفات الكلمات\nالمطابقة للتمييز البصري.",
         "parameters": [
           {
             "name": "id",
@@ -1194,7 +2530,6 @@
         "tags": [
           "Roots"
         ],
-        "summary": "يُرجع صفحة من الكلمات المميّزة (بدون تشكيل أو بالتشكيل) التي ورد فيها\nالجذر المحدد، مع عدد مرات الظهور في سياق هذا الجذر.",
         "parameters": [
           {
             "name": "id",
@@ -1259,7 +2594,6 @@
         "tags": [
           "Roots"
         ],
-        "summary": "يُرجع السور التي ورد فيها الجذر المحدد مع عدد مرات الظهور في كل سورة.",
         "parameters": [
           {
             "name": "id",
@@ -1300,7 +2634,6 @@
         "tags": [
           "Roots"
         ],
-        "summary": "يُرجع السور التي لم يرد فيها الجذر المحدد.",
         "parameters": [
           {
             "name": "id",
@@ -1341,7 +2674,6 @@
         "tags": [
           "Roots"
         ],
-        "summary": "يُرجع الصيغ المعجمية للجذر المحدد (تعايش عبر المورفولوجيا).",
         "parameters": [
           {
             "name": "id",
@@ -1382,7 +2714,6 @@
         "tags": [
           "Roots"
         ],
-        "summary": "يُرجع الأصول الصرفية للجذر المحدد (تعايش عبر المورفولوجيا).",
         "parameters": [
           {
             "name": "id",
@@ -1423,12 +2754,10 @@
         "tags": [
           "Stems"
         ],
-        "summary": "يُرجع صفحة واحدة من الأصول الصرفية مع بحث عربي مُطبّع (contains) وخيارات\nترتيب وتصفّح، وكل الأعداد والعلاقة المعجمية/الجذرية الغالبة لكل أصل.",
         "parameters": [
           {
             "name": "search",
             "in": "query",
-            "description": "نص البحث العربي المُطبّع (contains، اختياري).",
             "schema": {
               "type": "string"
             }
@@ -1436,7 +2765,6 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "مفتاح الترتيب (اختياري، الافتراضي `mushaf-order`). الصيغة:\n`عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` و`simple` و`tashkeel` (تنازلية طبيعيًا).\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -1444,7 +2772,6 @@
           {
             "name": "page",
             "in": "query",
-            "description": "رقم الصفحة (الافتراضي 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1453,7 +2780,6 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 1000).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1462,7 +2788,6 @@
           {
             "name": "occMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1471,7 +2796,6 @@
           {
             "name": "occMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1480,7 +2804,6 @@
           {
             "name": "ayahsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1489,7 +2812,6 @@
           {
             "name": "ayahsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1498,7 +2820,6 @@
           {
             "name": "surahsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1507,7 +2828,6 @@
           {
             "name": "surahsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1516,7 +2836,6 @@
           {
             "name": "simpleWordsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد الكلمات بدون تشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1525,7 +2844,6 @@
           {
             "name": "simpleWordsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد الكلمات بدون تشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1534,7 +2852,6 @@
           {
             "name": "tashkeelWordsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد الكلمات بالتشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1543,7 +2860,6 @@
           {
             "name": "tashkeelWordsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد الكلمات بالتشكيل (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1552,7 +2868,6 @@
           {
             "name": "rootId",
             "in": "query",
-            "description": "مرشّح الجذر الغالب (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1561,7 +2876,6 @@
           {
             "name": "lemmaId",
             "in": "query",
-            "description": "مرشّح الصيغة المعجمية الغالبة (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1570,7 +2884,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل صفحة الأصول الصرفية بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -1588,9 +2902,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "مفتاح ترتيب أو مرشّح أو تقسيم صفحات غير صالح."
           }
         }
       }
@@ -1600,7 +2911,6 @@
         "tags": [
           "Stems"
         ],
-        "summary": "يُرجع ملخّص الأصل الصرفي المحدد (أعداده والعلاقة الغالبة وتوزيع الأنواع).",
         "parameters": [
           {
             "name": "id",
@@ -1641,7 +2951,6 @@
         "tags": [
           "Stems"
         ],
-        "summary": "يُرجع صفحة من الكلمات المرتبطة بالأصل الصرفي المحدد بحسب نوعها (بسيطة\nأو بالتشكيل)، مع عدد مرات الظهور في سياق هذا الأصل.",
         "parameters": [
           {
             "name": "id",
@@ -1706,7 +3015,6 @@
         "tags": [
           "Stems"
         ],
-        "summary": "يُرجع صفحة من الآيات التي ورد فيها الأصل الصرفي المحدد، مع وسم التطابق\nعلى مستوى الكلمات.",
         "parameters": [
           {
             "name": "id",
@@ -1770,7 +3078,6 @@
         "tags": [
           "Stems"
         ],
-        "summary": "يُرجع السور التي ورد فيها الأصل الصرفي المحدد مع عدد مرات الظهور في\nكل سورة.",
         "parameters": [
           {
             "name": "id",
@@ -1811,7 +3118,6 @@
         "tags": [
           "Stems"
         ],
-        "summary": "يُرجع السور التي لم ترد فيها الأصل الصرفي المحدد.",
         "parameters": [
           {
             "name": "id",
@@ -1852,7 +3158,6 @@
         "tags": [
           "Stems"
         ],
-        "summary": "يُرجع الصيغ المعجمية التي ورد فيها الأصل الصرفي المحدد مع عدد مرات\nالظهور في سياق كل صيغة.",
         "parameters": [
           {
             "name": "id",
@@ -1893,12 +3198,10 @@
         "tags": [
           "UniqueWords"
         ],
-        "summary": "يُرجع صفحة واحدة من الكلمات الفريدة للنوع المحدد (`tashkeel` أو\n`simple`) مع بحث عربي مُطبّع (contains) وخيارات ترتيب وتصفّح.",
         "parameters": [
           {
             "name": "kind",
             "in": "path",
-            "description": "نوع الهوية: `tashkeel` أو `simple`.",
             "required": true,
             "schema": {
               "type": "string"
@@ -1907,7 +3210,6 @@
           {
             "name": "search",
             "in": "query",
-            "description": "نص البحث العربي المُطبّع (contains، اختياري).",
             "schema": {
               "type": "string"
             }
@@ -1915,7 +3217,6 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "مفتاح الترتيب (اختياري، الافتراضي `mushaf-order`). الصيغة:\n`عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` (تنازلية طبيعيًا).\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -1923,7 +3224,6 @@
           {
             "name": "page",
             "in": "query",
-            "description": "رقم الصفحة (الافتراضي 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1932,7 +3232,6 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 1000).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1941,7 +3240,6 @@
           {
             "name": "occMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1950,7 +3248,6 @@
           {
             "name": "occMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد المواضع (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1959,7 +3256,6 @@
           {
             "name": "ayahsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1968,7 +3264,6 @@
           {
             "name": "ayahsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد الآيات (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1977,7 +3272,6 @@
           {
             "name": "surahsMin",
             "in": "query",
-            "description": "الحد الأدنى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1986,7 +3280,6 @@
           {
             "name": "surahsMax",
             "in": "query",
-            "description": "الحد الأعلى لعدد السور (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -1995,7 +3288,6 @@
           {
             "name": "primaryType",
             "in": "query",
-            "description": "مرشّح نوع الكلمة الأساسي برمز POS (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2003,7 +3295,6 @@
           {
             "name": "rootId",
             "in": "query",
-            "description": "مرشّح الجذر الأساسي (اختياري).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2012,7 +3303,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل صفحة الكلمات الفريدة بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -2030,9 +3321,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "نوع أو مفتاح ترتيب أو مرشّح أو تقسيم صفحات غير صالح."
           }
         }
       }
@@ -2042,7 +3330,6 @@
         "tags": [
           "UniqueWords"
         ],
-        "summary": "يُرجع ملخّص الكلمة الفريدة المحددة. يُستخدم لاستعادة حالة النافذة\nالمنبثقة من رابط مشاركة قبل قراءة التفصيل أو معها.",
         "parameters": [
           {
             "name": "kind",
@@ -2091,7 +3378,6 @@
         "tags": [
           "UniqueWords"
         ],
-        "summary": "يُرجع السور التي وردت فيها الكلمة الفريدة المحددة.",
         "parameters": [
           {
             "name": "kind",
@@ -2140,7 +3426,6 @@
         "tags": [
           "UniqueWords"
         ],
-        "summary": "يُرجع السور التي لم ترد فيها الكلمة الفريدة المحددة.",
         "parameters": [
           {
             "name": "kind",
@@ -2189,7 +3474,6 @@
         "tags": [
           "UniqueWords"
         ],
-        "summary": "يُرجع صفحة من الآيات التي وردت فيها الكلمة الفريدة المحددة.",
         "parameters": [
           {
             "name": "kind",
@@ -2254,12 +3538,10 @@
         "tags": [
           "WordTypeGroupedDetails"
         ],
-        "summary": "يُرجع ملخّص مجموعة (جذر أو أصل أو صيغة) ضمن نطاق نوع الكلمات المحدّد بالنص والعدّادات.",
         "parameters": [
           {
             "name": "kind",
             "in": "path",
-            "description": "نوع المجموعة بصيغة الجمع في المسار: roots أو stems أو lemmas.",
             "required": true,
             "schema": {
               "type": "string"
@@ -2268,7 +3550,6 @@
           {
             "name": "dimensionId",
             "in": "path",
-            "description": "معرّف البُعد (الجذر/الأصل/الصيغة).",
             "required": true,
             "schema": {
               "type": "integer",
@@ -2278,7 +3559,6 @@
           {
             "name": "type",
             "in": "query",
-            "description": "رمز النوع الرئيسي (مطلوب لتحديد النطاق).",
             "schema": {
               "type": "string"
             }
@@ -2286,7 +3566,6 @@
           {
             "name": "childCode",
             "in": "query",
-            "description": "رمز النوع الفرعي إن وجد.",
             "schema": {
               "type": "string"
             }
@@ -2294,7 +3573,6 @@
           {
             "name": "case",
             "in": "query",
-            "description": "مرشّح الحالة الإعرابية (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2302,7 +3580,6 @@
           {
             "name": "tense",
             "in": "query",
-            "description": "مرشّح الزمن (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2310,7 +3587,6 @@
           {
             "name": "voice",
             "in": "query",
-            "description": "مرشّح البناء للمعلوم/المجهول (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2318,7 +3594,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل ملخّص المجموعة بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -2336,12 +3612,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "نوع مجموعة أو معرّف أو مرشّح غير صالح."
-          },
-          "404": {
-            "description": "المجموعة غير موجودة ضمن النطاق المحدّد."
           }
         }
       }
@@ -2351,12 +3621,10 @@
         "tags": [
           "WordTypeGroupedDetails"
         ],
-        "summary": "يُرجع كلمات المجموعة ضمن النطاق، مقسّمة إلى صفحات بترتيب الورود الثابت دون فرز.",
         "parameters": [
           {
             "name": "kind",
             "in": "path",
-            "description": "نوع المجموعة بصيغة الجمع في المسار: roots أو stems أو lemmas.",
             "required": true,
             "schema": {
               "type": "string"
@@ -2365,7 +3633,6 @@
           {
             "name": "dimensionId",
             "in": "path",
-            "description": "معرّف البُعد (الجذر/الأصل/الصيغة).",
             "required": true,
             "schema": {
               "type": "integer",
@@ -2375,7 +3642,6 @@
           {
             "name": "type",
             "in": "query",
-            "description": "رمز النوع الرئيسي (مطلوب لتحديد النطاق).",
             "schema": {
               "type": "string"
             }
@@ -2383,7 +3649,6 @@
           {
             "name": "childCode",
             "in": "query",
-            "description": "رمز النوع الفرعي إن وجد.",
             "schema": {
               "type": "string"
             }
@@ -2391,7 +3656,6 @@
           {
             "name": "case",
             "in": "query",
-            "description": "مرشّح الحالة الإعرابية (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2399,7 +3663,6 @@
           {
             "name": "tense",
             "in": "query",
-            "description": "مرشّح الزمن (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2407,7 +3670,6 @@
           {
             "name": "voice",
             "in": "query",
-            "description": "مرشّح البناء للمعلوم/المجهول (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2415,7 +3677,6 @@
           {
             "name": "page",
             "in": "query",
-            "description": "رقم الصفحة (الافتراضي 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2424,7 +3685,6 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 100).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2433,7 +3693,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل كلمات المجموعة بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -2451,12 +3711,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "نوع مجموعة أو معرّف أو مرشّح أو تقسيم صفحات غير صالح."
-          },
-          "404": {
-            "description": "المجموعة غير موجودة ضمن النطاق المحدّد."
           }
         }
       }
@@ -2466,12 +3720,10 @@
         "tags": [
           "WordTypeGroupedDetails"
         ],
-        "summary": "يُرجع آيات ورود المجموعة ضمن النطاق، مقسّمة إلى صفحات بترتيب المصحف مع مواضع التطابق.",
         "parameters": [
           {
             "name": "kind",
             "in": "path",
-            "description": "نوع المجموعة بصيغة الجمع في المسار: roots أو stems أو lemmas.",
             "required": true,
             "schema": {
               "type": "string"
@@ -2480,7 +3732,6 @@
           {
             "name": "dimensionId",
             "in": "path",
-            "description": "معرّف البُعد (الجذر/الأصل/الصيغة).",
             "required": true,
             "schema": {
               "type": "integer",
@@ -2490,7 +3741,6 @@
           {
             "name": "type",
             "in": "query",
-            "description": "رمز النوع الرئيسي (مطلوب لتحديد النطاق).",
             "schema": {
               "type": "string"
             }
@@ -2498,7 +3748,6 @@
           {
             "name": "childCode",
             "in": "query",
-            "description": "رمز النوع الفرعي إن وجد.",
             "schema": {
               "type": "string"
             }
@@ -2506,7 +3755,6 @@
           {
             "name": "case",
             "in": "query",
-            "description": "مرشّح الحالة الإعرابية (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2514,7 +3762,6 @@
           {
             "name": "tense",
             "in": "query",
-            "description": "مرشّح الزمن (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2522,7 +3769,6 @@
           {
             "name": "voice",
             "in": "query",
-            "description": "مرشّح البناء للمعلوم/المجهول (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2530,7 +3776,6 @@
           {
             "name": "page",
             "in": "query",
-            "description": "رقم الصفحة (الافتراضي 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2539,7 +3784,6 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 100).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2548,7 +3792,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل آيات المجموعة بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -2566,12 +3810,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "نوع مجموعة أو معرّف أو مرشّح أو تقسيم صفحات غير صالح."
-          },
-          "404": {
-            "description": "المجموعة غير موجودة ضمن النطاق المحدّد."
           }
         }
       }
@@ -2581,12 +3819,10 @@
         "tags": [
           "WordTypeGroupedDetails"
         ],
-        "summary": "يُرجع سور ورود المجموعة ضمن النطاق: قائمتا السور الواردة والمفقودة دون تقسيم صفحات.",
         "parameters": [
           {
             "name": "kind",
             "in": "path",
-            "description": "نوع المجموعة بصيغة الجمع في المسار: roots أو stems أو lemmas.",
             "required": true,
             "schema": {
               "type": "string"
@@ -2595,7 +3831,6 @@
           {
             "name": "dimensionId",
             "in": "path",
-            "description": "معرّف البُعد (الجذر/الأصل/الصيغة).",
             "required": true,
             "schema": {
               "type": "integer",
@@ -2605,7 +3840,6 @@
           {
             "name": "type",
             "in": "query",
-            "description": "رمز النوع الرئيسي (مطلوب لتحديد النطاق).",
             "schema": {
               "type": "string"
             }
@@ -2613,7 +3847,6 @@
           {
             "name": "childCode",
             "in": "query",
-            "description": "رمز النوع الفرعي إن وجد.",
             "schema": {
               "type": "string"
             }
@@ -2621,7 +3854,6 @@
           {
             "name": "case",
             "in": "query",
-            "description": "مرشّح الحالة الإعرابية (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2629,7 +3861,6 @@
           {
             "name": "tense",
             "in": "query",
-            "description": "مرشّح الزمن (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2637,7 +3868,6 @@
           {
             "name": "voice",
             "in": "query",
-            "description": "مرشّح البناء للمعلوم/المجهول (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2645,7 +3875,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل سور المجموعة بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -2663,12 +3893,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "نوع مجموعة أو معرّف أو مرشّح غير صالح."
-          },
-          "404": {
-            "description": "المجموعة غير موجودة ضمن النطاق المحدّد."
           }
         }
       }
@@ -2678,10 +3902,9 @@
         "tags": [
           "WordTypes"
         ],
-        "summary": "يُرجع شجرة أنواع الكلمات: الأنواع الرئيسية (اسم/فعل/حرف) وفروعها مع عدّاداتها.",
         "responses": {
           "200": {
-            "description": "تم تحميل شجرة الأنواع بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -2708,12 +3931,10 @@
         "tags": [
           "WordTypes"
         ],
-        "summary": "يُرجع صفوف الكلمات ضمن نطاق نوع محدّد، مقسّمة إلى صفحات مع دعم الفرز ومرشّحات الحالة والزمن والبناء.",
         "parameters": [
           {
             "name": "type",
             "in": "query",
-            "description": "رمز النوع الرئيسي (مطلوب لتحديد النطاق).",
             "schema": {
               "type": "string"
             }
@@ -2721,7 +3942,6 @@
           {
             "name": "childCode",
             "in": "query",
-            "description": "رمز النوع الفرعي إن وجد.",
             "schema": {
               "type": "string"
             }
@@ -2729,7 +3949,6 @@
           {
             "name": "case",
             "in": "query",
-            "description": "مرشّح الحالة الإعرابية (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2737,7 +3956,6 @@
           {
             "name": "tense",
             "in": "query",
-            "description": "مرشّح الزمن (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2745,7 +3963,6 @@
           {
             "name": "voice",
             "in": "query",
-            "description": "مرشّح البناء للمعلوم/المجهول (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2753,7 +3970,6 @@
           {
             "name": "search",
             "in": "query",
-            "description": "نص البحث في هوية الكلمة (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2761,7 +3977,6 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "مفتاح الفرز (اختياري، الافتراضي `occurrences` تنازليًا — بخلاف بقية المستكشفات).\nالصيغة: `عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` (تنازلية طبيعيًا). تنطبق المفاتيح ذاتها على عرض الكلمات وعلى عروض\nالجذور/الأصول/الصيغ المجمّعة.\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -2769,7 +3984,6 @@
           {
             "name": "page",
             "in": "query",
-            "description": "رقم الصفحة (الافتراضي 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2778,7 +3992,6 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 1000).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2787,7 +4000,6 @@
           {
             "name": "hasRoot",
             "in": "query",
-            "description": "مرشّح وجود الجذر ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -2795,7 +4007,6 @@
           {
             "name": "hasStem",
             "in": "query",
-            "description": "مرشّح وجود الأصل الصرفي ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -2803,7 +4014,6 @@
           {
             "name": "hasLemma",
             "in": "query",
-            "description": "مرشّح وجود الصيغة المعجمية ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -2811,7 +4021,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل صفوف الكلمات بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -2829,9 +4039,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "مرشّح أو فرز أو تقسيم صفحات غير صالح."
           }
         }
       }
@@ -2841,12 +4048,10 @@
         "tags": [
           "WordTypes"
         ],
-        "summary": "يُرجع صفوف عرض الجدول ضمن نطاق نوع محدّد بحسب تبويب العرض (كلمات/جذور/أصول/صيغ)، مقسّمة إلى صفحات ومجمّعة ومعدودة على الخادم.",
         "parameters": [
           {
             "name": "tableView",
             "in": "query",
-            "description": "تبويب العرض: words أو roots أو stems أو lemmas (الافتراضي words).",
             "schema": {
               "type": "string"
             }
@@ -2854,7 +4059,6 @@
           {
             "name": "type",
             "in": "query",
-            "description": "رمز النوع الرئيسي (مطلوب لتحديد النطاق).",
             "schema": {
               "type": "string"
             }
@@ -2862,7 +4066,6 @@
           {
             "name": "childCode",
             "in": "query",
-            "description": "رمز النوع الفرعي إن وجد.",
             "schema": {
               "type": "string"
             }
@@ -2870,7 +4073,6 @@
           {
             "name": "case",
             "in": "query",
-            "description": "مرشّح الحالة الإعرابية (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2878,7 +4080,6 @@
           {
             "name": "tense",
             "in": "query",
-            "description": "مرشّح الزمن (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2886,7 +4087,6 @@
           {
             "name": "voice",
             "in": "query",
-            "description": "مرشّح البناء للمعلوم/المجهول (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2894,7 +4094,6 @@
           {
             "name": "search",
             "in": "query",
-            "description": "نص البحث في هوية الكلمة (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -2902,7 +4101,6 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "مفتاح الفرز (اختياري، الافتراضي `occurrences` تنازليًا — بخلاف بقية المستكشفات).\nالصيغة: `عمود` أو `عمود-asc` أو `عمود-desc`.\nالأعمدة المتاحة: `alpha` (تصاعدي طبيعيًا)، و`occurrences` و`ayahs`\nو`surahs` (تنازلية طبيعيًا). تنطبق المفاتيح ذاتها على عرض الكلمات وعلى عروض\nالجذور/الأصول/الصيغ المجمّعة.\nالمفتاح المجرّد يعني الاتجاه الطبيعي للعمود، لذا `occurrences` ≡\n`occurrences-desc` و`alpha` ≡ `alpha-asc`.\nو`mushaf-order` هو ترتيب المصحف التصاعدي فقط ولا يقبل لاحقة اتجاه.\nأي مفتاح آخر يُرجع 400.",
             "schema": {
               "type": "string"
             }
@@ -2910,7 +4108,6 @@
           {
             "name": "page",
             "in": "query",
-            "description": "رقم الصفحة (الافتراضي 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2919,7 +4116,6 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 1000).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -2928,7 +4124,6 @@
           {
             "name": "hasRoot",
             "in": "query",
-            "description": "مرشّح وجود الجذر ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -2936,7 +4131,6 @@
           {
             "name": "hasStem",
             "in": "query",
-            "description": "مرشّح وجود الأصل الصرفي ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -2944,7 +4138,6 @@
           {
             "name": "hasLemma",
             "in": "query",
-            "description": "مرشّح وجود الصيغة المعجمية ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -2952,7 +4145,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل صفوف الجدول بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -2970,9 +4163,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "تبويب عرض أو مرشّح أو فرز أو تقسيم صفحات غير صالح."
           }
         }
       }
@@ -2982,12 +4172,10 @@
         "tags": [
           "WordTypes"
         ],
-        "summary": "يُرجع الإحصاء الرباعي لنطاق النوع النشط: عدد الكلمات والجذور والأصول والصيغ ضمن النطاق ذاته الذي يعرضه الجدول.",
         "parameters": [
           {
             "name": "type",
             "in": "query",
-            "description": "رمز النوع الرئيسي (مطلوب لتحديد النطاق).",
             "schema": {
               "type": "string"
             }
@@ -2995,7 +4183,6 @@
           {
             "name": "childCode",
             "in": "query",
-            "description": "رمز النوع الفرعي إن وجد.",
             "schema": {
               "type": "string"
             }
@@ -3003,7 +4190,6 @@
           {
             "name": "case",
             "in": "query",
-            "description": "مرشّح الحالة الإعرابية (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -3011,7 +4197,6 @@
           {
             "name": "tense",
             "in": "query",
-            "description": "مرشّح الزمن (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -3019,7 +4204,6 @@
           {
             "name": "voice",
             "in": "query",
-            "description": "مرشّح البناء للمعلوم/المجهول (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -3027,7 +4211,6 @@
           {
             "name": "search",
             "in": "query",
-            "description": "نص البحث في هوية الكلمة (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -3035,7 +4218,6 @@
           {
             "name": "hasRoot",
             "in": "query",
-            "description": "مرشّح وجود الجذر ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -3043,7 +4225,6 @@
           {
             "name": "hasStem",
             "in": "query",
-            "description": "مرشّح وجود الأصل الصرفي ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -3051,7 +4232,6 @@
           {
             "name": "hasLemma",
             "in": "query",
-            "description": "مرشّح وجود الصيغة المعجمية ثلاثي الحالة (اختياري).",
             "schema": {
               "type": "boolean"
             }
@@ -3059,7 +4239,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل إحصاء النطاق بنجاح (نطاق بلا نتائج يُرجع أصفارًا).",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -3077,9 +4257,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "مرشّح غير صالح."
           }
         }
       }
@@ -3089,12 +4266,10 @@
         "tags": [
           "WordTypes"
         ],
-        "summary": "يُرجع ملخّص كلمة واحدة ضمن نطاق النوع؛ هوية الكلمة هي معرّف الكلمة المشكولة مع رمز السياق.",
         "parameters": [
           {
             "name": "tashkeelWordId",
             "in": "path",
-            "description": "معرّف الكلمة المشكولة.",
             "required": true,
             "schema": {
               "type": "integer",
@@ -3104,7 +4279,6 @@
           {
             "name": "contextCode",
             "in": "query",
-            "description": "رمز السياق الصرفي (جزء من الهوية).",
             "schema": {
               "type": "string"
             }
@@ -3112,7 +4286,6 @@
           {
             "name": "case",
             "in": "query",
-            "description": "مرشّح الحالة الإعرابية (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -3120,7 +4293,6 @@
           {
             "name": "tense",
             "in": "query",
-            "description": "مرشّح الزمن (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -3128,7 +4300,6 @@
           {
             "name": "voice",
             "in": "query",
-            "description": "مرشّح البناء للمعلوم/المجهول (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -3136,7 +4307,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل ملخّص الكلمة بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -3154,12 +4325,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "هوية كلمة غير صالحة."
-          },
-          "404": {
-            "description": "الكلمة غير موجودة ضمن النطاق المحدّد."
           }
         }
       }
@@ -3169,12 +4334,10 @@
         "tags": [
           "WordTypes"
         ],
-        "summary": "يُرجع آيات ورود الكلمة ضمن نطاق النوع، مقسّمة إلى صفحات بترتيب المصحف مع مواضع التطابق.",
         "parameters": [
           {
             "name": "tashkeelWordId",
             "in": "path",
-            "description": "معرّف الكلمة المشكولة.",
             "required": true,
             "schema": {
               "type": "integer",
@@ -3184,7 +4347,6 @@
           {
             "name": "contextCode",
             "in": "query",
-            "description": "رمز السياق الصرفي (جزء من الهوية).",
             "schema": {
               "type": "string"
             }
@@ -3192,7 +4354,6 @@
           {
             "name": "case",
             "in": "query",
-            "description": "مرشّح الحالة الإعرابية (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -3200,7 +4361,6 @@
           {
             "name": "tense",
             "in": "query",
-            "description": "مرشّح الزمن (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -3208,7 +4368,6 @@
           {
             "name": "voice",
             "in": "query",
-            "description": "مرشّح البناء للمعلوم/المجهول (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -3216,7 +4375,6 @@
           {
             "name": "page",
             "in": "query",
-            "description": "رقم الصفحة (الافتراضي 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -3225,7 +4383,6 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "حجم الصفحة (الافتراضي 100).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -3234,7 +4391,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل آيات الكلمة بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -3252,12 +4409,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "هوية كلمة أو تقسيم صفحات غير صالح."
-          },
-          "404": {
-            "description": "الكلمة غير موجودة ضمن النطاق المحدّد."
           }
         }
       }
@@ -3267,12 +4418,10 @@
         "tags": [
           "WordTypes"
         ],
-        "summary": "يُرجع سور ورود الكلمة ضمن نطاق النوع: قائمتا السور الواردة والمفقودة دون تقسيم صفحات.",
         "parameters": [
           {
             "name": "tashkeelWordId",
             "in": "path",
-            "description": "معرّف الكلمة المشكولة.",
             "required": true,
             "schema": {
               "type": "integer",
@@ -3282,7 +4431,6 @@
           {
             "name": "contextCode",
             "in": "query",
-            "description": "رمز السياق الصرفي (جزء من الهوية).",
             "schema": {
               "type": "string"
             }
@@ -3290,7 +4438,6 @@
           {
             "name": "case",
             "in": "query",
-            "description": "مرشّح الحالة الإعرابية (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -3298,7 +4445,6 @@
           {
             "name": "tense",
             "in": "query",
-            "description": "مرشّح الزمن (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -3306,7 +4452,6 @@
           {
             "name": "voice",
             "in": "query",
-            "description": "مرشّح البناء للمعلوم/المجهول (اختياري).",
             "schema": {
               "type": "string"
             }
@@ -3314,7 +4459,7 @@
         ],
         "responses": {
           "200": {
-            "description": "تم تحميل سور الكلمة بنجاح.",
+            "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
@@ -3332,12 +4477,6 @@
                 }
               }
             }
-          },
-          "400": {
-            "description": "هوية كلمة غير صالحة."
-          },
-          "404": {
-            "description": "الكلمة غير موجودة ضمن النطاق المحدّد."
           }
         }
       }
@@ -3345,6 +4484,744 @@
   },
   "components": {
     "schemas": {
+      "AbwabBulkDoorRef": {
+        "required": [
+          "doorId",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "doorId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabDoorDto": {
+        "required": [
+          "aliases",
+          "description",
+          "globalOrderValue",
+          "id",
+          "name",
+          "orderValue",
+          "parentId",
+          "representativeAyahText",
+          "sectionId",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sectionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parentId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "representativeAyahText": {
+            "type": "string",
+            "nullable": true
+          },
+          "orderValue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "globalOrderValue": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabDoorDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbwabDoorDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabDoorDtoIReadOnlyListApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbwabDoorDto"
+            },
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabDoorRelationDto": {
+        "required": [
+          "direction",
+          "id",
+          "otherDoorId",
+          "otherDoorName",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "otherDoorId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "otherDoorName": {
+            "type": "string"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbwabRelationType"
+              }
+            ]
+          },
+          "direction": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbwabRelationDirection"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabDoorRelationDtoIReadOnlyListApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbwabDoorRelationDto"
+            },
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabRelationDirection": {
+        "enum": [
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "AbwabRelationType": {
+        "enum": [
+          1,
+          2,
+          3
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "AbwabReorderScope": {
+        "enum": [
+          1,
+          2
+        ],
+        "type": "integer",
+        "format": "int32"
+      },
+      "AbwabSectionDto": {
+        "required": [
+          "id",
+          "name",
+          "orderValue",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "orderValue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabSectionDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbwabSectionDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabTemplateDto": {
+        "required": [
+          "id",
+          "name",
+          "nodes"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbwabTemplateNodeDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabTemplateDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbwabTemplateDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabTemplateNodeDto": {
+        "required": [
+          "aliases",
+          "description",
+          "id",
+          "name",
+          "orderValue",
+          "parentNodeId",
+          "representativeAyahText"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parentNodeId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "representativeAyahText": {
+            "type": "string",
+            "nullable": true
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "orderValue": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabTemplateNodeDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbwabTemplateNodeDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabTemplateSummaryDto": {
+        "required": [
+          "id",
+          "name",
+          "nodeCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nodeCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabTemplateSummaryDtoIReadOnlyListApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbwabTemplateSummaryDto"
+            },
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabTreeDoorDto": {
+        "required": [
+          "aliases",
+          "description",
+          "directChildCount",
+          "globalOrderValue",
+          "id",
+          "isArchived",
+          "name",
+          "orderValue",
+          "parentId",
+          "relationCount",
+          "representativeAyahText",
+          "sectionId",
+          "sectionRetired",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sectionId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sectionRetired": {
+            "type": "boolean"
+          },
+          "parentId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "representativeAyahText": {
+            "type": "string",
+            "nullable": true
+          },
+          "orderValue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "globalOrderValue": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "directChildCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "relationCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabTreeDto": {
+        "required": [
+          "doors",
+          "sections",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbwabTreeSectionDto"
+            }
+          },
+          "doors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbwabTreeDoorDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabTreeDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbwabTreeDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AbwabTreeSectionDto": {
+        "required": [
+          "doorsInScopeCount",
+          "id",
+          "name",
+          "orderValue",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "orderValue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "doorsInScopeCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddDoorRelationsBody": {
+        "required": [
+          "direction",
+          "targetDoorIds",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbwabRelationType"
+              }
+            ]
+          },
+          "direction": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbwabRelationDirection"
+              }
+            ],
+            "nullable": true
+          },
+          "targetDoorIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddTemplateNodeBody": {
+        "required": [
+          "aliases",
+          "description",
+          "name",
+          "parentNodeId",
+          "representativeAyahText"
+        ],
+        "type": "object",
+        "properties": {
+          "parentNodeId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "representativeAyahText": {
+            "type": "string",
+            "nullable": true
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "AppInfoData": {
         "required": [
           "appName",
@@ -3393,6 +5270,23 @@
             "type": "array",
             "items": {
               "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ApplyTemplateBody": {
+        "required": [
+          "targetDoorIds"
+        ],
+        "type": "object",
+        "properties": {
+          "targetDoorIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
             },
             "nullable": true
           }
@@ -3656,6 +5550,132 @@
         },
         "additionalProperties": false
       },
+      "BulkArchiveDoorsCommand": {
+        "required": [
+          "doors"
+        ],
+        "type": "object",
+        "properties": {
+          "doors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbwabBulkDoorRef"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "BulkMoveDoorsCommand": {
+        "required": [
+          "doors",
+          "targetParentId",
+          "targetSectionId"
+        ],
+        "type": "object",
+        "properties": {
+          "doors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbwabBulkDoorRef"
+            }
+          },
+          "targetSectionId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "targetParentId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateDoorCommand": {
+        "required": [
+          "aliases",
+          "description",
+          "name",
+          "parentId",
+          "representativeAyahText",
+          "sectionId"
+        ],
+        "type": "object",
+        "properties": {
+          "sectionId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "parentId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "representativeAyahText": {
+            "type": "string",
+            "nullable": true
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateSectionCommand": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateTemplateBody": {
+        "required": [
+          "aliases",
+          "description",
+          "name",
+          "representativeAyahText"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "representativeAyahText": {
+            "type": "string",
+            "nullable": true
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "CurrentUserResponse": {
         "required": [
           "displayName",
@@ -3717,6 +5737,84 @@
             "nullable": true
           },
           "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeleteDoorBody": {
+        "required": [
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EditDoorBody": {
+        "required": [
+          "aliases",
+          "description",
+          "name",
+          "representativeAyahText",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "representativeAyahText": {
+            "type": "string",
+            "nullable": true
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EditTemplateNodeBody": {
+        "required": [
+          "aliases",
+          "description",
+          "name",
+          "representativeAyahText"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "representativeAyahText": {
+            "type": "string",
+            "nullable": true
+          },
+          "aliases": {
             "type": "array",
             "items": {
               "type": "string"
@@ -3837,6 +5935,40 @@
                 "$ref": "#/components/schemas/HealthReportData"
               }
             ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Int32IReadOnlyListApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
             "nullable": true
           },
           "errors": {
@@ -4532,6 +6664,31 @@
         },
         "additionalProperties": false
       },
+      "MoveDoorBody": {
+        "required": [
+          "targetParentId",
+          "targetSectionId",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "targetSectionId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "targetParentId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "MushafLineDto": {
         "required": [
           "isCentered",
@@ -4984,6 +7141,35 @@
         },
         "additionalProperties": false
       },
+      "ObjectApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "PageMarkerDto": {
         "required": [
           "lineNumber",
@@ -5047,6 +7233,23 @@
               "type": "integer",
               "format": "int32"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "RenameSectionBody": {
+        "required": [
+          "name",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -5132,6 +7335,82 @@
               }
             ],
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReorderDoorBody": {
+        "required": [
+          "position",
+          "scope",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "scope": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbwabReorderScope"
+              }
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReorderSectionBody": {
+        "required": [
+          "position",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReorderTemplateNodeBody": {
+        "required": [
+          "position"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RestoreDoorBody": {
+        "required": [
+          "sectionId",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "sectionId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -8862,6 +11141,24 @@
     }
   },
   "tags": [
+    {
+      "name": "AbwabDoorRelations"
+    },
+    {
+      "name": "AbwabDoors"
+    },
+    {
+      "name": "AbwabSections"
+    },
+    {
+      "name": "AbwabTemplateNodes"
+    },
+    {
+      "name": "AbwabTemplates"
+    },
+    {
+      "name": "AbwabTree"
+    },
     {
       "name": "Access"
     },

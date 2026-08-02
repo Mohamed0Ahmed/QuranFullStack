@@ -165,6 +165,18 @@ button.qd-interactive-surface {
   align-items: stretch;
 }
 
+// Wrapping fixed-column strip (UI_STYLE_SYSTEM.md §17 `qd-tabs`). Declared after the base so
+// its `display` wins at equal specificity, the same way `--vertical` above relies on order.
+// `minmax(0, …)`, not a bare `1fr`: a grid item's `min-width: auto` would otherwise let a long
+// label push its track past the column width instead of ellipsizing inside it. The tracks exist
+// whether or not they are filled, so a two-tab strip renders two full-width cells beside three
+// empty ones rather than two stretched halves.
+.qd-tabs--grid {
+  display: grid;
+  grid-template-columns: repeat(var(--qd-tabs-grid-columns, 5), minmax(0, 1fr));
+  gap: var(--qd-space-2);
+}
+
 .qd-tabs__tab {
   display: inline-flex;
   align-items: center;
@@ -222,6 +234,12 @@ button.qd-interactive-surface {
 .qd-tabs__tab.qd-is-selected .qd-tabs__count {
   background: var(--qd-surface);
   color: var(--qd-accent-text);
+}
+
+// Opacity only (not background/color, which the selected-state rule above already owns) —
+// composes with both tab states instead of forking a second selected+empty rule.
+.qd-tabs__count--empty {
+  opacity: 0.5;
 }
 
 /* --- qd-chip (UI_STYLE_SYSTEM.md §17 qd-chip) --- */
@@ -287,6 +305,76 @@ button.qd-interactive-surface {
 .qd-chip.qd-is-selected .qd-chip__count {
   background: var(--qd-surface);
   color: var(--qd-accent-text);
+}
+
+/* The label's opt-in control (Slice D): a removable chip's static wrapper is what makes a
+   nested button legal, so the name can act while `×` removes. Inherits the chip's own type
+   and color and adds only the affordance, so an opted-in chip reads as one chip with two
+   controls rather than a button glued inside a pill. */
+.qd-chip__label--clickable {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.qd-chip__label--clickable:hover:not(:disabled) {
+  color: var(--qd-accent-text);
+  text-decoration: underline;
+}
+
+.qd-chip__label--clickable:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--qd-radius-sm);
+}
+
+.qd-chip__label--clickable:disabled {
+  cursor: not-allowed;
+}
+
+/* Removable chips (plan-slice-b.md T412) are a static wrapper, not a clickable chip. */
+.qd-chip--static {
+  cursor: default;
+}
+
+.qd-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1rem;
+  block-size: 1rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--qd-radius-pill);
+  background: transparent;
+  color: var(--qd-text-muted);
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--qd-t-fast), color var(--qd-t-fast);
+}
+
+.qd-chip__remove:hover:not(:disabled) {
+  background: var(--qd-surface-hover);
+  color: var(--qd-accent-text);
+}
+
+.qd-chip__remove:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: 1px;
+}
+
+.qd-chip__remove:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.qd-chip.qd-is-selected .qd-chip__remove:hover:not(:disabled) {
+  background: var(--qd-surface);
 }
 
 /* --- qd-state (UI_STYLE_SYSTEM.md §17 loading/empty/error family) ---
@@ -502,7 +590,7 @@ button.qd-interactive-surface {
 .qd-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: var(--qd-z-modal-backdrop);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -520,6 +608,95 @@ button.qd-interactive-surface {
   box-shadow: var(--qd-shadow-lg);
   padding: var(--qd-space-5);
   width: min(100%, 36rem);
+}
+
+// The sanctioned wide step (UI_STYLE_SYSTEM.md §17 `.qd-modal` entry). 52rem == 832px
+// fits inside the 992px available at the 1024px minimum desktop with ~80px gutters per
+// side; the existing 46rem step is only +160px over the base and under-delivers for
+// two-pane content. A literal rem on the class, not a token, because every other modal
+// geometry in this file is a literal (28/36/42/44/46rem) and a lone width token would be
+// the odd one out. Width variants opt in here; the base is never edited.
+.qd-modal--wide {
+  width: min(100%, 52rem);
+}
+
+// Opt-in geometry modifier (UI_STYLE_SYSTEM.md §17 `.qd-modal` entry) — never
+// merged into the base above. `.qd-modal.explorer-detail-modal` sets
+// `max-height` but no `height`/`block-size`, so a block-size on the base would
+// apply there too and clamp five shipped words modals; --fixed is how a
+// consumer opts into §17's "fixed block-size, never max-block-size" rule
+// without that collision.
+.qd-modal--fixed {
+  display: flex;
+  flex-direction: column;
+  block-size: min(92dvh, 44rem);
+  padding: 0;
+  overflow: hidden;
+}
+
+.qd-modal__head,
+.qd-modal__foot {
+  flex-shrink: 0;
+  padding: var(--qd-space-5);
+}
+
+// The only scroller inside --fixed; stable gutter so the reserved scrollbar
+// track cannot reflow content width when the list crosses the scroll
+// threshold (audit item 3, one level down from the page-level fix).
+.qd-modal__body {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding-inline: var(--qd-space-5);
+}
+
+@media (max-width: bp.$qd-bp-phone-max) {
+  .qd-modal--fixed {
+    block-size: min(94dvh, 44rem);
+  }
+
+  .qd-modal__head,
+  .qd-modal__foot {
+    padding: var(--qd-space-3);
+  }
+
+  .qd-modal__body {
+    padding-inline: var(--qd-space-3);
+  }
+}
+
+// Item styling for `qd-context-menu`'s projected content (`shared/ui/context-menu/`).
+// Global, not scoped to the primitive's own stylesheet: these classes are applied by
+// consumer templates directly onto their own projected buttons, so a rule scoped to the
+// primitive's component stylesheet would never reach them under emulated encapsulation
+// (the same reason `.qd-tabs__tab` lives here rather than in `tabs.component.scss`).
+.qd-context-menu__item {
+  display: flex;
+  inline-size: 100%;
+  border: none;
+  background: transparent;
+  text-align: start;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-radius: var(--qd-radius-sm);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--qd-text);
+  cursor: pointer;
+}
+
+.qd-context-menu__item:hover {
+  background: var(--qd-surface-hover);
+}
+
+.qd-context-menu__item:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -2px;
+}
+
+.qd-context-menu__item--danger:hover {
+  background: var(--qd-danger-tint);
+  color: var(--qd-danger);
 }
 
 .qd-skeleton {

@@ -13,6 +13,7 @@ import {
 import { QdTabDirective } from './tab.directive';
 
 export type QdTabsOrientation = 'horizontal' | 'vertical';
+export type QdTabsLayout = 'inline' | 'grid';
 
 // The app-wide tab-strip (UI_STYLE_SYSTEM.md §17 `qd-tabs`). It does not own
 // selection: consumers project their own `qdTab` elements with their `[selected]`
@@ -31,6 +32,12 @@ export type QdTabsOrientation = 'horizontal' | 'vertical';
 export class QdTabsComponent {
   readonly ariaLabel = input.required<string>();
   readonly orientation = input<QdTabsOrientation>('horizontal');
+  /**
+   * `grid` wraps the tabs into fixed-width columns instead of one inline row. Layout only —
+   * keyboard nav still follows `orientation`, so a grid strip keeps the horizontal
+   * Arrow/Home/End model rather than gaining a row-aware one.
+   */
+  readonly layout = input<QdTabsLayout>('inline');
 
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly tabs = contentChildren(QdTabDirective, { descendants: true });

@@ -1,0 +1,129 @@
+// T801 — the viewport reservation (NEW PATTERN, `UI_STYLE_SYSTEM.md` §17 "Viewport reservation").
+// `.qd-page-frame` (`_layout.scss`) already carries `box-sizing: border-box`, which this needs —
+// without it the reservation would overshoot the viewport by `.qd-page-frame`'s own inline
+// padding under the app's default `content-box`. Abwab-local for now: kept on this component
+// rather than promoted onto `.qd-page-frame` itself, so the five explorer pages are untouched.
+.abwab-page__frame {
+  min-block-size: calc(100dvh - var(--qd-navbar-block-size));
+}
+
+// Item 17's stats bar (Slice B2, T1003) — the shape of `.uw-toolbar-recess__stat`
+// (`_words-explorer-layout.scss`), reused as abwab-local tokens rather than the `uw-`-prefixed
+// words class itself: phase 7 (T701-T704) just de-words-ified the shared frame class for the
+// same reason, and this page owns no `.uw-toolbar-recess` wrapper to begin with.
+.abwab-page__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-4);
+  margin-block-end: var(--qd-space-3);
+}
+
+.abwab-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+  flex-wrap: wrap;
+}
+
+.abwab-page__layout {
+  display: flex;
+  flex: 1;
+  min-block-size: 0;
+  gap: var(--qd-space-4);
+  align-items: flex-start;
+  margin-block-start: var(--qd-space-3);
+}
+
+// `align-items: flex-start` on the row above is load-bearing for `.abwab-page__side`'s
+// `position: sticky` (a stretched aside would have zero scroll travel), so only the main
+// column opts into filling the frame's reserved viewport (T802).
+.abwab-page__main {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+}
+
+// Replaces the old `min-height: 20rem` (T802): the card now stretches to fill whatever the
+// frame's `min-block-size` reservation leaves it, so no state — loading, loaded, empty, error —
+// can resize the frame itself. See `.abwab-page__frame` above for the reservation.
+.abwab-page__tree-card {
+  flex: 1;
+  min-block-size: 0;
+}
+
+.abwab-page__side {
+  inline-size: 18rem;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+  position: sticky;
+  // Re-based under the sticky navbar (Slice B2, T902) — was `var(--qd-space-4)` alone.
+  top: calc(var(--qd-navbar-block-size) + var(--qd-space-4));
+}
+
+/* T502 measured the loaded tree row at 32px against a 12px skeleton row, falsifying §4.7's
+   claim that `rowTemplate="1.25rem 1fr auto"` alone matched the row: it matches the column
+   widths, not the block-size. `.abwab-tree` is a gapless column flex, so its pitch is the row's
+   own 32px; `qd-skeleton-rows` adds `--qd-space-2` between rows, so a 1.5rem bar restores pitch
+   parity. `--qd-skeleton-h` is the primitive's documented parameter (`_components.scss`), and it
+   inherits, so this reaches the spans inside the shared component without editing it.
+   Residual, stated rather than hidden: the skeleton's gap is not parameterized, so n rows come
+   out one gap (8px) short of n loaded rows. Exact total parity is unreachable through this lever
+   alone, and the card absorbs the difference. */
+.abwab-page__tree-skeleton {
+  --qd-skeleton-h: 1.5rem;
+}
+
+.abwab-page__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  flex-wrap: wrap;
+}
+
+/* Toggle state per §16.1 — tint + accent text + hairline, never a solid fill. */
+.abwab-page__header-btn--active {
+  background: var(--qd-selected-bg);
+  color: var(--qd-accent-text);
+  border-color: var(--qd-border-accent);
+}
+
+.abwab-page__add-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qd-space-1);
+  margin-block-start: var(--qd-space-2);
+  border: none;
+  background: transparent;
+  color: var(--qd-text-muted);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-radius: var(--qd-radius-sm);
+  cursor: pointer;
+}
+
+.abwab-page__add-ghost:hover {
+  background: var(--qd-surface-hover);
+  color: var(--qd-accent-text);
+}
+
+.abwab-page__add-ghost:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -2px;
+}
+
+@media (max-width: 900px) {
+  .abwab-page__layout {
+    flex-direction: column;
+  }
+
+  .abwab-page__side {
+    inline-size: 100%;
+    position: static;
+  }
+}

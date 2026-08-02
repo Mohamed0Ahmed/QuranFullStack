@@ -1,0 +1,26 @@
+.qd-context-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--qd-z-menu-backdrop);
+  background: transparent;
+}
+
+.qd-context-menu {
+  position: fixed;
+  z-index: var(--qd-z-menu);
+  min-inline-size: 11rem;
+  background: var(--qd-surface);
+  border: 1px solid var(--qd-border-strong);
+  border-radius: var(--qd-radius-md);
+  box-shadow: var(--qd-shadow-lg);
+  padding: var(--qd-space-1);
+  display: flex;
+  flex-direction: column;
+}
+
+/* One frame, and only in a browser: the box has to be measured before it can be placed toward
+   the anchor's inline-start, and painting it at the raw anchor meanwhile would flash it on the
+   wrong side. `visibility` rather than `display: none` — a zero-box element cannot be measured. */
+.qd-context-menu--measuring {
+  visibility: hidden;
+}

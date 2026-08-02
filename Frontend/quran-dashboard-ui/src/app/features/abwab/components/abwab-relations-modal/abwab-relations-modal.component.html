@@ -1,0 +1,196 @@
+@if (open()) {
+  <div class="qd-modal-backdrop" data-testid="abwab-relations-modal-backdrop" (click)="close()">
+    <section
+      class="qd-modal qd-modal--fixed qd-modal--wide abwab-relations-modal"
+      role="dialog"
+      aria-modal="true"
+      dir="rtl"
+      [attr.aria-labelledby]="titleId"
+      qdModalScrollLock
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
+      data-testid="abwab-relations-modal"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="close()"
+    >
+      <header class="qd-modal__head">
+        <h3 [id]="titleId">
+          {{ titleText() }}
+          <!-- Only once the list is the answer: a `0` shown while the fetch is still out would be
+               the modal asserting something it has not been told yet. -->
+          @if (!anchorPickMode() && status() === 'ready') {
+            <span class="qd-chip qd-chip--pill qd-chip--static" data-testid="abwab-relations-modal-count">
+              {{ relations().length }}
+            </span>
+          }
+        </h3>
+        <p class="abwab-relations-modal__desc">{{ descriptionText }}</p>
+      </header>
+
+      <div class="qd-modal__body">
+        @if (errorMessage(); as error) {
+          <!-- The retry belongs to the READ only (§17 allows exactly one action): an add or a
+               delete that failed is retried with the control that issued it. -->
+          <qd-state
+            variant="error"
+            [reserve]="true"
+            [message]="error"
+            [actionLabel]="status() === 'error' ? retryLabel : null"
+            data-testid="abwab-relations-modal-error"
+            (action)="retryLoad()"
+          />
+        }
+
+        @if (anchorPickMode()) {
+          <div class="abwab-relations-modal__targets" data-testid="abwab-relations-modal-targets">
+            @for (target of bulkTargets(); track target.id) {
+              <span class="abwab-relations-modal__target qd-truncate" [title]="target.name">{{ target.name }}</span>
+            }
+          </div>
+        } @else if (status() === 'loading') {
+          <qd-skeleton-rows
+            class="abwab-relations-modal__loading"
+            [count]="2"
+            rowTemplate="0.5rem 6rem 1fr"
+            [loadingLabel]="loadingLabel"
+            data-testid="abwab-relations-modal-loading"
+          />
+        } @else if (status() === 'ready') {
+          @if (groups().length === 0) {
+            <qd-state variant="empty" [message]="emptyText" data-testid="abwab-relations-modal-empty" />
+          } @else {
+            @for (group of groups(); track group.key) {
+              <div class="abwab-relations-modal__group" [attr.data-testid]="'abwab-relations-modal-group-' + group.key">
+                <h4>
+                  <span class="abwab-relations-modal__dot" [class]="'abwab-relations-modal__dot--' + groupDotKind(group.key)"></span>
+                  {{ groupLabel(group.key) }}
+                </h4>
+                <div class="abwab-relations-modal__chips">
+                  @for (relation of group.relations; track relation.id) {
+                    <qd-chip
+                      [removable]="true"
+                      [removeAriaLabel]="deleteAriaLabel(relation.otherDoorName)"
+                      [labelClickable]="true"
+                      [labelAriaLabel]="revealAriaLabel(relation.otherDoorName)"
+                      (remove)="remove(relation)"
+                      (labelClick)="requestReveal(relation.otherDoorId)"
+                    >
+                      {{ relation.otherDoorName }}
+                    </qd-chip>
+                  }
+                </div>
+              </div>
+            }
+          }
+        }
+
+        <hr class="abwab-relations-modal__divider" />
+
+        <div class="abwab-relations-modal__add-title">{{ addTitle }}</div>
+
+        <qd-tabs [ariaLabel]="typeTabsAriaLabel" class="abwab-relations-modal__types">
+          @for (kind of typeOptions; track kind) {
+            <button
+              type="button"
+              qdTab
+              [selected]="type() === kind"
+              [attr.data-testid]="'abwab-relations-modal-type-' + kind"
+              (click)="pickType(kind)"
+            >
+              <span class="abwab-relations-modal__dot" [class]="'abwab-relations-modal__dot--' + kind"></span>
+              {{ typeLabel(kind) }}
+            </button>
+          }
+        </qd-tabs>
+
+        @if (directionRowVisible()) {
+          <div class="abwab-relations-modal__direction" data-testid="abwab-relations-modal-direction">
+            <span>{{ directionLabel }}</span>
+            <div class="abwab-relations-modal__pill">
+              <button
+                type="button"
+                [class.abwab-relations-modal__pill-btn--active]="direction() === 'anchor-more'"
+                [attr.aria-pressed]="direction() === 'anchor-more'"
+                data-testid="abwab-relations-modal-direction-anchor-more"
+                (click)="pickDirection('anchor-more')"
+              >
+                {{ anchorMoreLabel() }}
+              </button>
+              <button
+                type="button"
+                [class.abwab-relations-modal__pill-btn--active]="direction() === 'anchor-less'"
+                [attr.aria-pressed]="direction() === 'anchor-less'"
+                data-testid="abwab-relations-modal-direction-anchor-less"
+                (click)="pickDirection('anchor-less')"
+              >
+                {{ anchorLessLabel() }}
+              </button>
+            </div>
+            <span class="abwab-relations-modal__preview" data-testid="abwab-relations-modal-direction-preview">
+              {{ directionPreview() }}
+            </span>
+          </div>
+        }
+
+        <div class="abwab-relations-modal__picker">
+          @if (anchorPickMode()) {
+            <p class="abwab-relations-modal__picker-hint">{{ bulkAnchorHint }}</p>
+          }
+          <qd-abwab-door-picker
+            [nodes]="liveRoots()"
+            [pickedIds]="pickedIdList()"
+            [excludedIds]="excludedIdList()"
+            [excludedTag]="excludedTagLabel()"
+            [disabledIds]="linkedIdList()"
+            [disabledTag]="alreadyLinkedLabel"
+            [emptyMessage]="pickerEmptyLabel"
+            [single]="anchorPickMode()"
+            [searchPlaceholder]="searchPlaceholder()"
+            testIdPrefix="abwab-relations-modal"
+            (toggled)="togglePicked($event)"
+          />
+          <p class="abwab-relations-modal__selected" data-testid="abwab-relations-modal-selected">
+            {{ pickedIds().size === 0 ? noneSelectedLabel : selectedSummary() }}
+          </p>
+        </div>
+      </div>
+
+      <footer class="qd-modal__foot">
+        <div class="abwab-relations-modal__foot">
+          <button
+            type="button"
+            class="qd-btn qd-btn-primary"
+            [disabled]="addCount() === 0"
+            data-testid="abwab-relations-modal-add"
+            (click)="add()"
+          >
+            {{ addButtonLabel() }}
+          </button>
+          <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-relations-modal-close" (click)="close()">
+            {{ closeLabel }}
+          </button>
+        </div>
+      </footer>
+    </section>
+  </div>
+
+  @if (pendingDelete(); as relation) {
+    <qd-confirm-dialog
+      testIdPrefix="abwab-relations-delete-confirm"
+      [open]="true"
+      [titleText]="deleteConfirmTitle"
+      [confirmLabel]="deleteConfirmLabel"
+      [cancelLabel]="cancelLabel"
+      tone="danger"
+      [busy]="deleteBusy()"
+      (confirmed)="confirmRemove()"
+      (cancelled)="cancelRemove()"
+    >
+      <p>{{ deleteConfirmBody(relation) }}</p>
+      <p>{{ deleteConfirmSides }}</p>
+      @if (deleteError(); as message) {
+        <qd-state variant="error" [message]="message" data-testid="abwab-relations-delete-confirm-error" />
+      }
+    </qd-confirm-dialog>
+  }
+}

@@ -49,6 +49,13 @@ Two source shapes are supported side-by-side (Feature 020):
 - Write mechanics: `Persistence/DataPipelines/Quran/README.md`.
 - CLI verbs `import-morphology [--enriched]` / `validate-enriched-morphology`:
   `tools/QuranDashboard.DataImporter/README.md`.
-- Spec: `specs/004-word-morphology-foundation/`. DB baseline:
+- Contract truth for morphology import is this README + the code here; the thin index is
+  `docs/contracts/import-pipelines.md`. DB baseline:
   `Backend/report/database/current-database-tables-and-relationships-report.md`.
-  (Prior feature-020/019 evidence reports were purged — recover from git history if needed.)
+  (Planning artifacts for the features that built this area were swept per the
+  planning-artifact lifecycle rule — recover from git history if needed.)
+- The curation files under `Corrections/` carry `sourceAudit` / `sources` fields naming
+  `docs/feature-017-lexical-explorers-polish/*` audit reports. Those folders no longer
+  exist in the working tree. **The fields are provenance and must not be rewritten** —
+  they record which document the curation was derived from at the time it was made.
+  Retrieve those reports from git history if a curation entry ever needs re-deriving.

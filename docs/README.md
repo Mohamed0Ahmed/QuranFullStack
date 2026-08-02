@@ -10,10 +10,26 @@ Where things live now:
   (e.g. `Backend/README.md`, `Backend/infrastructure/.../MorphologyImporting/README.md`,
   `Frontend/quran-dashboard-ui/src/app/features/words/README.md`). Read the nearest one before
   changing an area. `docs/contracts/` indexes these READMEs and **defers to them — the README/code wins.**
-- **Feature plans** → `specs/<feature>/` hosts active per-feature Spec-Kit planning (spec/plan/tasks/contracts); merged 001–019 are historical (their contracts removed). Current contract index → `docs/contracts/`.
+- **Feature plans** → `specs/<feature>/` hosts per-feature Spec-Kit planning (spec/plan/tasks/contracts) for open features plus the N-2 buffer. Current contract index → `docs/contracts/`.
 - **How to work / how to write code** → `AGENTS.md` / `CLAUDE.md` / `.architecture/*`.
+- **Which tests to run and when** → `TESTING_STRATEGY.md` (workspace root) — execution tiers A–E, pipeline triggers, and the PR/release gates. Not a planning doc and not superseded by anything here.
+- **Which tests were deliberately not written** → `docs/TESTING_DEBT.md` — one row per skipped area, each naming the concrete change that pays it. Not a place to defer a tier `TESTING_STRATEGY.md` requires, and never a home for `SmokeRouteCatalog` parity entries (those are a build-level gate).
 - **Evidence / reference** (audits, imports, diagnostics, DB inventory) → `Backend/report/`.
 
-Prior per-feature planning docs were consolidated into the above and removed. Add a new
-`docs/feature-XXX-<name>/` folder only for genuinely new pre-spec planning; do not recreate
-the old feature-report indexes here.
+Add a new `docs/feature-XXX-<name>/` folder only for genuinely new pre-spec planning; do
+not recreate the old feature-report indexes here.
+
+## Lifecycle — `docs/feature-XXX-*/` dies with its feature
+
+Per the planning-artifact lifecycle rule in `CLAUDE.md` §Workspace Path Conventions, a
+feature's `docs/feature-XXX-*/` folder is deleted from the working tree when the feature
+closes; only the **two most recently closed** features plus every open one are kept. Git
+history is the archive. Before deleting, repoint every inbound reference into the nearest
+`README.md`, and promote any fact that no live document restates.
+
+Non-feature folders here are **not** subject to the sweep and stay indefinitely:
+`contracts/`, `api-reference/`, `deployment-railway/`, `design-preview/`,
+`performance-review/`, and cross-cutting audits kept at the top level of `docs/`.
+
+Currently buffered: `feature-033-auth-roles-permissions/` (closed 2026-07-19) and
+`feature-032-rate-limiting/` (closed 2026-07-18).

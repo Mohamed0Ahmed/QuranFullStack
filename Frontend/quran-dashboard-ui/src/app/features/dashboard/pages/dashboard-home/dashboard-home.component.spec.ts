@@ -115,3 +115,18 @@ describe('DashboardHomeComponent — stable app-meta loading (N3 row 14)', () =>
     expect(error?.textContent).toContain('تعذر تحميل بيانات التطبيق');
   });
 });
+
+// R13 (plan-slice-b.md §3.1): the «الأبواب» card's routerLink is hardcoded HTML, not
+// derived from nav-items.ts, so a nav-route rename can silently leave a dead card. This
+// test names the card by its own heading so it fails if the rename isn't applied here too.
+describe('DashboardHomeComponent — the «الأبواب» card targets /abwab (R13)', () => {
+  it('points the abwab card at /abwab, not the retired /gates path', () => {
+    const root = renderWith(of(APP_INFO));
+
+    const cards = Array.from(root.querySelectorAll<HTMLAnchorElement>('a.dashboard-card'));
+    const abwabCard = cards.find((card) => card.querySelector('.qd-card-title')?.textContent?.trim() === 'الأبواب');
+
+    expect(abwabCard).toBeTruthy();
+    expect(abwabCard!.getAttribute('href')).toBe('/abwab');
+  });
+});

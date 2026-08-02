@@ -1,4 +1,45 @@
-@if (elementType() === 'a') {
+<!-- Declared once and rendered through an outlet, because two `<ng-content>` elements
+     sharing one selector would leave the second slot permanently empty. -->
+<ng-template #labelContent><ng-content></ng-content></ng-template>
+
+<ng-template #labelAndCount>
+  @if (labelIsButton()) {
+    <button
+      type="button"
+      class="qd-chip__label qd-chip__label--clickable"
+      [attr.aria-label]="labelAriaLabel()"
+      [disabled]="disabled()"
+      data-testid="qd-chip-label"
+      (click)="onLabelClick($event)"
+    >
+      <ng-container [ngTemplateOutlet]="labelContent"></ng-container>
+    </button>
+  } @else {
+    <span class="qd-chip__label"><ng-container [ngTemplateOutlet]="labelContent"></ng-container></span>
+  }
+  @if (count() !== null) {
+    <span class="qd-chip__count" data-testid="qd-chip-count">{{ count() }}</span>
+  }
+</ng-template>
+
+@if (removable()) {
+  <span
+    class="qd-chip qd-chip--pill qd-chip--static"
+    [class.qd-is-selected]="selected()"
+    [class.qd-chip--disabled]="disabled()"
+    data-testid="qd-chip"
+  >
+    <ng-container [ngTemplateOutlet]="labelAndCount"></ng-container>
+    <button
+      type="button"
+      class="qd-chip__remove"
+      [attr.aria-label]="removeAriaLabel()"
+      [disabled]="disabled()"
+      data-testid="qd-chip-remove"
+      (click)="onRemoveClick($event)"
+    >×</button>
+  </span>
+} @else if (elementType() === 'a') {
   <a
     class="qd-chip qd-chip--pill"
     [class.qd-is-selected]="selected()"
@@ -11,10 +52,7 @@
     data-testid="qd-chip"
     (click)="onClick($event)"
   >
-    <span class="qd-chip__label"><ng-content></ng-content></span>
-    @if (count() !== null) {
-      <span class="qd-chip__count" data-testid="qd-chip-count">{{ count() }}</span>
-    }
+    <ng-container [ngTemplateOutlet]="labelAndCount"></ng-container>
   </a>
 } @else {
   <button
@@ -27,9 +65,6 @@
     data-testid="qd-chip"
     (click)="onClick($event)"
   >
-    <span class="qd-chip__label"><ng-content></ng-content></span>
-    @if (count() !== null) {
-      <span class="qd-chip__count" data-testid="qd-chip-count">{{ count() }}</span>
-    }
+    <ng-container [ngTemplateOutlet]="labelAndCount"></ng-container>
   </button>
 }

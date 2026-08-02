@@ -1,0 +1,77 @@
+@if (open()) {
+  <div class="qd-modal-backdrop" data-testid="abwab-template-copy-modal-backdrop" (click)="close()">
+    <section
+      class="qd-modal qd-modal--fixed qd-modal--wide abwab-template-copy-modal"
+      role="dialog"
+      aria-modal="true"
+      dir="rtl"
+      [attr.aria-labelledby]="titleId"
+      qdModalScrollLock
+      cdkTrapFocus
+      cdkTrapFocusAutoCapture
+      data-testid="abwab-template-copy-modal"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="close()"
+    >
+      <header class="qd-modal__head">
+        <h3 [id]="titleId">{{ titleText() }}</h3>
+        <p class="abwab-template-copy-modal__desc">{{ descriptionText }}</p>
+      </header>
+
+      <div class="qd-modal__body">
+        @if (errorMessage(); as error) {
+          <qd-state variant="error" [reserve]="true" [message]="error" data-testid="abwab-template-copy-modal-error" />
+        }
+
+        <div class="abwab-template-copy-modal__preview" data-testid="abwab-template-copy-modal-preview">
+          @if (hasElements()) {
+            <p>{{ previewText() }}</p>
+          } @else {
+            <qd-state variant="empty" [message]="emptyTemplateText" data-testid="abwab-template-copy-modal-empty" />
+          }
+          <p>{{ previewNoRootText }}</p>
+          <p>{{ previewDetachedText }}</p>
+        </div>
+
+        <div class="abwab-template-copy-modal__picker">
+          <qd-abwab-door-picker
+            [nodes]="liveRoots()"
+            [pickedIds]="pickedIdList()"
+            [status]="pickerStatus()"
+            [errorMessage]="doorsError() ?? ''"
+            [emptyMessage]="emptyDoorsLabel"
+            [searchPlaceholder]="searchPlaceholder"
+            testIdPrefix="abwab-template-copy-modal"
+            (toggled)="togglePicked($event)"
+            (retry)="retryDoors.emit()"
+          />
+          <p class="abwab-template-copy-modal__selected" data-testid="abwab-template-copy-modal-selected">
+            {{ pickedIds().size === 0 ? noneSelectedLabel : selectedSummary() }}
+          </p>
+        </div>
+      </div>
+
+      <footer class="qd-modal__foot">
+        <div class="abwab-template-copy-modal__foot">
+          <button
+            type="button"
+            class="qd-btn qd-btn-primary"
+            [disabled]="!hasElements() || pickedIds().size === 0"
+            data-testid="abwab-template-copy-modal-confirm"
+            (click)="confirm()"
+          >
+            {{ confirmLabel() }}
+          </button>
+          <button
+            type="button"
+            class="qd-btn qd-btn-ghost"
+            data-testid="abwab-template-copy-modal-cancel"
+            (click)="close()"
+          >
+            {{ cancelLabel }}
+          </button>
+        </div>
+      </footer>
+    </section>
+  </div>
+}

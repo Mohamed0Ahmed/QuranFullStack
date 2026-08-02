@@ -1,0 +1,63 @@
+@if (errorMessage(); as error) {
+  <qd-state variant="error" [reserve]="true" [message]="error" [attr.data-testid]="testIdPrefix() + '-error'" />
+}
+
+<div class="abwab-door-fields-form__field">
+  <label [attr.for]="testIdPrefix() + '-name'">{{ nameLabel }} *</label>
+  <!-- cdkFocusInitial: see the picker's search input — both hosts are auto-capturing modals
+    that want this field, so the trap lands here once rather than being corrected. -->
+  <input
+    #nameInput
+    cdkFocusInitial
+    [id]="testIdPrefix() + '-name'"
+    type="text"
+    [value]="name()"
+    (input)="onNameInput($event)"
+    [attr.data-testid]="testIdPrefix() + '-name'"
+  />
+</div>
+
+<div class="abwab-door-fields-form__field">
+  <label [attr.for]="testIdPrefix() + '-description'">{{ descriptionLabel }}</label>
+  <textarea
+    [id]="testIdPrefix() + '-description'"
+    rows="2"
+    [placeholder]="descriptionPlaceholder"
+    [value]="description()"
+    (input)="onDescriptionInput($event)"
+    [attr.data-testid]="testIdPrefix() + '-description'"
+  ></textarea>
+</div>
+
+<div class="abwab-door-fields-form__field">
+  <label [attr.for]="testIdPrefix() + '-ayah'">{{ ayahLabel }}</label>
+  <input
+    [id]="testIdPrefix() + '-ayah'"
+    type="text"
+    [placeholder]="ayahPlaceholder"
+    [value]="ayah()"
+    (input)="onAyahInput($event)"
+    [attr.data-testid]="testIdPrefix() + '-ayah'"
+  />
+  <p class="abwab-door-fields-form__hint">{{ ayahHint }}</p>
+</div>
+
+<div class="abwab-door-fields-form__field">
+  <label [attr.for]="testIdPrefix() + '-alias-input'">{{ aliasLabel }}</label>
+  <input
+    [id]="testIdPrefix() + '-alias-input'"
+    type="text"
+    [placeholder]="aliasPlaceholder"
+    [value]="aliasDraft()"
+    (input)="onAliasDraftInput($event)"
+    (keydown.enter)="onAliasEnter($event)"
+    [attr.data-testid]="testIdPrefix() + '-alias-input'"
+  />
+  <div class="abwab-door-fields-form__chips">
+    @for (alias of aliases(); track alias; let i = $index) {
+      <qd-chip [removable]="true" [removeAriaLabel]="removeAliasLabel(alias)" (remove)="removeAliasAt(i)">
+        {{ alias }}
+      </qd-chip>
+    }
+  </div>
+</div>

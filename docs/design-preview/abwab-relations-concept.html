@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>علاقات الباب — تصور المودال</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --qd-bg:#f6f4ee; --qd-surface:#fffdf8; --qd-section-bg:#fbf8f0;
+    --qd-recessed:#f0ede2; --qd-text:#2b2a26; --qd-muted:#6f6b62;
+    --qd-border:#e7e2d7; --qd-border-strong:#d5cfbf; --qd-primary:#2f6d5f;
+    --qd-primary-soft:#e8f0ed; --qd-danger:#9c4a3c;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--qd-bg); color:var(--qd-text);
+    font-family:'IBM Plex Sans Arabic',system-ui,sans-serif; font-size:14px; min-height:100vh;}
+
+  /* خلفية باهتة توحي بصفحة الأبواب */
+  .page-ghost{filter:blur(2px); opacity:.45; padding:30px 40px; pointer-events:none;}
+  .page-ghost h1{font-size:22px;}
+  .ghost-row{background:var(--qd-surface); border:1px solid var(--qd-border);
+    border-radius:8px; padding:10px 14px; margin-top:10px; max-width:520px;}
+
+  .overlay{position:fixed; inset:0; background:rgba(43,42,38,.35);
+    display:flex; align-items:center; justify-content:center; padding:20px;}
+  .modal{background:var(--qd-surface); border-radius:14px; width:min(680px,94vw);
+    max-height:90vh; overflow:auto; box-shadow:0 8px 24px rgba(43,42,38,.2); padding:24px;}
+  .modal h3{font-size:17px; display:flex; align-items:center; gap:8px;}
+  .modal h3 .cnt{font-size:11px; color:var(--qd-muted); background:var(--qd-section-bg);
+    border:1px solid var(--qd-border); border-radius:10px; padding:1px 8px;}
+  .modal p.desc{color:var(--qd-muted); font-size:12.5px; margin:4px 0 16px;}
+
+  /* ===== العلاقات الحالية ===== */
+  .rel-group{margin-bottom:14px;}
+  .rel-group h4{font-size:12px; color:var(--qd-muted); font-weight:600; margin-bottom:6px;
+    display:flex; align-items:center; gap:6px;}
+  .type-dot{width:8px; height:8px; border-radius:50%;}
+  .dot-sim{background:var(--qd-primary);}
+  .dot-opp{background:#8a6d1d;}
+  .dot-hier{background:#5b6d8a;}
+  .rel-rows{display:flex; flex-wrap:wrap; gap:6px;}
+  .rel-chip{display:inline-flex; align-items:center; gap:7px; background:var(--qd-section-bg);
+    border:1px solid var(--qd-border); border-radius:20px; padding:4px 6px 4px 12px; font-size:13px;}
+  .rel-chip .dir{font-size:10.5px; color:var(--qd-muted);}
+  .rel-chip b{cursor:pointer; color:var(--qd-muted); font-weight:400; width:18px; height:18px;
+    display:inline-flex; align-items:center; justify-content:center; border-radius:50%;}
+  .rel-chip b:hover{background:#f6ebe8; color:var(--qd-danger);}
+  .empty{color:var(--qd-muted); font-size:12.5px; background:var(--qd-section-bg);
+    border:1px dashed var(--qd-border-strong); border-radius:10px; padding:14px; text-align:center;}
+
+  .divider{height:1px; background:var(--qd-border); margin:18px 0 16px;}
+
+  /* ===== إضافة علاقة ===== */
+  .add-title{font-size:13px; font-weight:700; margin-bottom:10px;}
+  .type-seg{display:flex; gap:4px; background:var(--qd-section-bg);
+    border:1px solid var(--qd-border); border-radius:10px; padding:4px; width:fit-content;}
+  .type-seg button{border:none; background:transparent; padding:7px 16px; border-radius:7px;
+    font-family:inherit; font-size:13px; color:var(--qd-muted); cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px;}
+  .type-seg button.active{background:var(--qd-surface); color:var(--qd-text); font-weight:600;
+    border:1px solid var(--qd-border);}
+
+  .dir-row{margin-top:10px; display:none; align-items:center; gap:10px; font-size:12.5px;
+    background:var(--qd-section-bg); border:1px solid var(--qd-border); border-radius:10px;
+    padding:8px 12px;}
+  .dir-row.show{display:flex;}
+  .dir-row .pill{display:flex; border:1px solid var(--qd-border-strong); border-radius:8px; overflow:hidden;}
+  .dir-row .pill button{border:none; background:var(--qd-surface); padding:5px 12px;
+    font-family:inherit; font-size:12px; cursor:pointer; color:var(--qd-muted);}
+  .dir-row .pill button.active{background:var(--qd-primary-soft); color:var(--qd-primary); font-weight:600;}
+  .dir-preview{color:var(--qd-muted);}
+  .dir-preview b{color:var(--qd-primary); font-weight:600;}
+
+  .picker{margin-top:12px; border:1px solid var(--qd-border); border-radius:10px;
+    background:var(--qd-section-bg); padding:10px;}
+  .picker input{width:100%; border:1px solid var(--qd-border); border-radius:8px;
+    padding:7px 12px; font-family:inherit; font-size:13px; background:var(--qd-surface);}
+  .picker input:focus{outline:2px solid var(--qd-primary); outline-offset:-1px;}
+  .pick-list{max-height:180px; overflow:auto; margin-top:8px;}
+  .pick-row{display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:7px; cursor:pointer;}
+  .pick-row:hover{background:var(--qd-recessed);}
+  .pick-row input{width:15px; height:15px; accent-color:var(--qd-primary);}
+  .pk-chevron{width:14px; height:14px; display:inline-flex; align-items:center;
+    justify-content:center; color:var(--qd-muted); flex:none; cursor:pointer;
+    transition:transform .12s; border-radius:4px;}
+  .pk-chevron:hover{background:var(--qd-recessed);}
+  .pick-row .nm{flex:1;}
+  .pick-row .already{font-size:10.5px; color:var(--qd-muted);}
+  .pick-row.disabled{opacity:.45; cursor:default;}
+  .selected-bar{margin-top:10px; font-size:12.5px; color:var(--qd-muted); min-height:20px;}
+  .selected-bar .n{color:var(--qd-primary); font-weight:700;}
+
+  .foot{display:flex; justify-content:flex-start; gap:8px; margin-top:16px;}
+  .btn{border:1px solid var(--qd-border-strong); background:var(--qd-surface);
+    color:var(--qd-text); border-radius:8px; padding:8px 16px; font-size:13px;
+    font-family:inherit; cursor:pointer;}
+  .btn:hover{background:var(--qd-recessed);}
+  .btn.primary{background:var(--qd-primary); border-color:var(--qd-primary); color:#fff;}
+  .btn.primary:disabled{opacity:.45; cursor:default;}
+
+  .hint{position:fixed; bottom:12px; right:0; left:0; text-align:center;
+    color:var(--qd-muted); font-size:12px;}
+</style>
+</head>
+<body>
+
+<div class="page-ghost">
+  <h1>الأبواب</h1>
+  <div class="ghost-row">1 · العلم بالله</div>
+  <div class="ghost-row">6 · الجنة</div>
+  <div class="ghost-row">7 · النار</div>
+</div>
+
+<div class="overlay">
+  <div class="modal">
+    <h3>علاقات «الجنة» <span class="cnt" id="relCount">3</span></h3>
+    <p class="desc">العلاقات المتبادلة تظهر تلقائيًا عند الطرف الآخر. الحذف من هنا يحذفها من الطرفين.</p>
+
+    <div id="groups"></div>
+
+    <div class="divider"></div>
+
+    <div class="add-title">إضافة علاقة جديدة</div>
+
+    <div class="type-seg" id="typeSeg">
+      <button class="active" data-t="sim"><span class="type-dot dot-sim"></span> تشابه</button>
+      <button data-t="opp"><span class="type-dot dot-opp"></span> تضاد</button>
+      <button data-t="hier"><span class="type-dot dot-hier"></span> شمولية</button>
+    </div>
+
+    <div class="dir-row" id="dirRow">
+      <span>الاتجاه:</span>
+      <div class="pill">
+        <button class="active" data-d="broader">المحدد أقل شمولية</button>
+        <button data-d="narrower">المحدد أكثر شمولية</button>
+      </div>
+      <span class="dir-preview" id="dirPreview">الأبواب اللي هتختارها <b>أقل شمولية</b> من «الجنة»</span>
+    </div>
+
+    <div class="picker">
+      <input id="pickSearch" placeholder="ابحث واختر بابًا أو أكثر… (تقدر تربط كذا باب مرة واحدة)">
+      <div class="pick-list" id="pickList"></div>
+      <div class="selected-bar" id="selBar">لم تختر شيئًا بعد</div>
+    </div>
+
+    <div class="foot">
+      <button class="btn primary" id="addBtn" disabled>أضف العلاقة</button>
+      <button class="btn">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<p class="hint">تصور تفاعلي — جرّب تبديل النوع (أعم/أخص بيظهر الاتجاه) · اختار كذا باب وشوف الزرار بيتحدث · «أضف» بينشئ العلاقات ويبان في المجموعات فوق · ✕ بيحذف.</p>
+
+<script>
+const DOOR='الجنة';
+const TREE=[
+ {name:'العلم بالله',kids:[{name:'الألوهية'},{name:'الربوبية'},{name:'الأسماء والصفات',kids:[{name:'أسماء الله الحسنى'},{name:'صفات الأفعال'}]}]},
+ {name:'الرسول ﷺ',kids:[{name:'مسمياته'},{name:'مهامه'},{name:'قصصه'}]},
+ {name:'القرآن',kids:[{name:'أسماؤه'},{name:'وصفه'}]},
+ {name:'الآخرة'},
+ {name:'الدنيا'},
+ {name:'النار'},
+ {name:'الخلق',kids:[{name:'الانسان'},{name:'عالم الغيب'},{name:'الكونيات'}]},
+ {name:'مواضيع القرآن'},
+ {name:'الأوامر والنواهي'},
+ {name:'النعيم'},
+];
+const expanded=new Set();
+let rels=[
+  {t:'opp', other:'النار'},
+  {t:'sim', other:'النعيم'},
+  {t:'hier', other:'الآخرة', dir:'narrower'}, // الجنة أخص من الآخرة
+];
+let curType='sim', curDir='broader';
+const sel=new Set();
+
+const TYPE_META={
+  sim:{label:'تشابه', dot:'dot-sim'},
+  opp:{label:'تضاد', dot:'dot-opp'},
+  hier:{label:'أعم / أخص', dot:'dot-hier'},
+};
+
+function renderGroups(){
+  const g=document.getElementById('groups'); g.innerHTML='';
+  document.getElementById('relCount').textContent=rels.length;
+  if(!rels.length){
+    g.innerHTML=`<div class="empty">لا توجد علاقات لهذا الباب بعد — أضف أول علاقة من الأسفل.</div>`;
+    return;
+  }
+  const groups=[
+    ['sim','تشابه',r=>r.t==='sim'],
+    ['opp','تضاد',r=>r.t==='opp'],
+    ['hier-up','أبواب أكثر شمولية',r=>r.t==='hier'&&r.dir==='narrower'],
+    ['hier-down','أبواب أقل شمولية',r=>r.t==='hier'&&r.dir==='broader'],
+  ];
+  groups.forEach(([key,label,filter])=>{
+    const items=rels.filter(filter);
+    if(!items.length)return;
+    const dot=key.startsWith('hier')?'dot-hier':TYPE_META[key].dot;
+    const grp=document.createElement('div'); grp.className='rel-group';
+    grp.innerHTML=`<h4><span class="type-dot ${dot}"></span> ${label}</h4>`;
+    const rows=document.createElement('div'); rows.className='rel-rows';
+    items.forEach(r=>{
+      const chip=document.createElement('span'); chip.className='rel-chip';
+      chip.innerHTML=`${r.other} <b title="حذف العلاقة">✕</b>`;
+      chip.querySelector('b').onclick=()=>{rels=rels.filter(x=>x!==r); renderGroups(); renderPickList();};
+      rows.appendChild(chip);
+    });
+    grp.appendChild(rows); g.appendChild(grp);
+  });
+}
+
+function subtreeMatches(node,q){
+  if(node.name.includes(q))return true;
+  return (node.kids||[]).some(k=>subtreeMatches(k,q));
+}
+function renderPickRow(node,depth,list,q){
+  if(node.name===DOOR)return;
+  if(q&&!subtreeMatches(node,q))return;
+  const hasKids=node.kids&&node.kids.length;
+  const open=expanded.has(node.name)||(q&&hasKids);
+  const existing=rels.find(r=>r.other===node.name&&r.t===curType);
+  const row=document.createElement('div');
+  row.className='pick-row'+(existing?' disabled':'');
+  row.style.paddingInlineStart=(8+depth*22)+'px';
+  row.innerHTML=`
+    <span class="pk-chevron" style="visibility:${hasKids?'visible':'hidden'};
+      transform:rotate(${open?'-90deg':'0'});">‹</span>
+    <input type="checkbox" ${sel.has(node.name)?'checked':''} ${existing?'disabled':''}>
+    <span class="nm">${node.name}</span>
+    ${existing?'<span class="already">مرتبط بالفعل بهذا النوع</span>':''}`;
+  const chev=row.querySelector('.pk-chevron');
+  if(hasKids)chev.onclick=e=>{e.stopPropagation();
+    expanded.has(node.name)?expanded.delete(node.name):expanded.add(node.name);
+    renderPickList();};
+  if(!existing)row.onclick=e=>{
+    if(e.target===chev)return;
+    if(e.target.tagName!=='INPUT'){const cb=row.querySelector('input'); cb.checked=!cb.checked;}
+    const on=row.querySelector('input').checked;
+    on?sel.add(node.name):sel.delete(node.name);
+    updateSelBar();
+  };
+  list.appendChild(row);
+  if(hasKids&&open)(node.kids||[]).forEach(k=>renderPickRow(k,depth+1,list,q));
+}
+function renderPickList(){
+  const q=document.getElementById('pickSearch').value.trim();
+  const list=document.getElementById('pickList'); list.innerHTML='';
+  TREE.forEach(n=>renderPickRow(n,0,list,q));
+}
+
+function updateSelBar(){
+  const bar=document.getElementById('selBar');
+  const btn=document.getElementById('addBtn');
+  if(!sel.size){bar.textContent='لم تختر شيئًا بعد'; btn.disabled=true; btn.textContent='أضف العلاقة'; return;}
+  bar.innerHTML=`<span class="n">${sel.size}</span> مختار: ${[...sel].join('، ')}`;
+  btn.disabled=false;
+  btn.textContent=sel.size===1?'أضف العلاقة':`أضف ${sel.size} علاقات`;
+}
+
+document.getElementById('typeSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#typeSeg button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); curType=b.dataset.t;
+  document.getElementById('dirRow').classList.toggle('show',curType==='hier');
+  sel.clear(); updateSelBar(); renderPickList();
+});
+document.querySelectorAll('#dirRow .pill button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#dirRow .pill button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); curDir=b.dataset.d;
+  document.getElementById('dirPreview').innerHTML=
+    curDir==='broader'?`الأبواب اللي هتختارها <b>أقل شمولية</b> من «الجنة»`:`الأبواب اللي هتختارها <b>أكثر شمولية</b> من «الجنة»`;
+});
+document.getElementById('pickSearch').oninput=renderPickList;
+document.getElementById('addBtn').onclick=()=>{
+  [...sel].forEach(n=>rels.push({t:curType, other:n, ...(curType==='hier'?{dir:curDir}:{})}));
+  sel.clear(); updateSelBar(); renderGroups(); renderPickList();
+};
+
+renderGroups(); renderPickList(); updateSelBar();
+</script>
+</body>
+</html>

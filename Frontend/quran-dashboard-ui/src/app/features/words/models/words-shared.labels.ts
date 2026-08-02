@@ -77,14 +77,9 @@ export const WORDS_ASSOCIATION_FILTER_LABELS = {
   noResults: 'لا توجد نتائج',
 } as const;
 
-// UI labels for the shared result-count stat (Feature 026, US4). loading is the sr-only text
-// announced by the skeleton's role="status" container. unavailable stands in for the number when the
-// list errored (Feature 030, N3 row 6): the stat holds its line instead of unmounting, while the
-// page's own error state stays the only place that explains the failure.
-export const WORDS_RESULT_COUNT_LABELS = {
-  loading: 'جارٍ التحميل…',
-  unavailable: '—',
-} as const;
+// The result-count stat's own labels moved with the component to shared/ui/result-count/
+// (Slice B2, T1001 — it is now a shared primitive, not words-only). See
+// shared/ui/result-count/result-count.labels.ts.
 
 /**
  * The single recovery action offered on a failed detail load (Feature 030, M3),

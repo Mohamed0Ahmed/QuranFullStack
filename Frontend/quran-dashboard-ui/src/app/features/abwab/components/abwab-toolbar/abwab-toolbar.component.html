@@ -1,0 +1,86 @@
+<div class="abwab-toolbar">
+  @if (!hideSectionControls()) {
+    <qd-tabs [ariaLabel]="sectionTabsAriaLabel" class="abwab-toolbar__tabs">
+      <button
+        type="button"
+        qdTab
+        [selected]="activeSectionId() === null"
+        [attr.aria-label]="allDoorsCountAriaLabel"
+        data-testid="abwab-toolbar-tab-all"
+        (click)="selectSection(null)"
+      >
+        {{ allDoorsTabLabel }}
+        <span
+          class="qd-tabs__count"
+          [class.qd-tabs__count--empty]="totalRootCount() === 0"
+          aria-hidden="true"
+          data-testid="abwab-toolbar-tab-all-count"
+        >{{ totalRootCount() }}</span>
+      </button>
+      @for (section of sections(); track section.id) {
+        <button
+          type="button"
+          qdTab
+          [selected]="activeSectionId() === section.id"
+          [attr.aria-label]="sectionCountAriaLabel(section.name, section.id)"
+          [attr.data-testid]="'abwab-toolbar-tab-' + section.id"
+          (click)="selectSection(section.id)"
+        >
+          {{ section.name }}
+          <span
+            class="qd-tabs__count"
+            [class.qd-tabs__count--empty]="rootCountFor(section.id) === 0"
+            aria-hidden="true"
+            [attr.data-testid]="'abwab-toolbar-tab-' + section.id + '-count'"
+          >{{ rootCountFor(section.id) }}</span>
+        </button>
+      }
+    </qd-tabs>
+  }
+
+  <div class="abwab-toolbar__search">
+    <input
+      type="search"
+      [attr.aria-label]="searchLabel"
+      [placeholder]="searchPlaceholder"
+      [value]="searchQuery()"
+      data-testid="abwab-toolbar-search"
+      (input)="onSearchInput($event)"
+    />
+    <!-- Two elements, because the seen value and the spoken value update at different rates.
+         This one is live and per keystroke, and silent to AT. -->
+    @if (searchQuery() !== '') {
+      <span class="abwab-toolbar__search-count" aria-hidden="true" data-testid="abwab-toolbar-search-count">
+        {{ matchCountText() }}
+      </span>
+    }
+    <!-- And this one speaks, once typing settles. Always mounted: a status region has to exist
+         before its content changes to be announced reliably. -->
+    <span class="qd-sr-only" role="status" data-testid="abwab-toolbar-search-count-announce">
+      {{ announcedCountText() }}
+    </span>
+  </div>
+
+  @if (!hideSectionControls()) {
+    <div class="abwab-toolbar__view-toggle" role="group" [attr.aria-label]="sectionTabsAriaLabel">
+      <button
+        type="button"
+        class="abwab-toolbar__view-btn"
+        [class.abwab-toolbar__view-btn--active]="view() === 'tree'"
+        data-testid="abwab-toolbar-view-tree"
+        (click)="selectView('tree')"
+      >
+        {{ treeViewLabel }}
+      </button>
+      <button
+        type="button"
+        class="abwab-toolbar__view-btn"
+        [class.abwab-toolbar__view-btn--active]="view() === 'cards'"
+        data-testid="abwab-toolbar-view-cards"
+        (click)="selectView('cards')"
+      >
+        {{ cardsViewLabel }}
+      </button>
+    </div>
+  }
+</div>

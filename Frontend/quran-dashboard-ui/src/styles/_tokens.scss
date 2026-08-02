@@ -74,7 +74,12 @@
   --qd-mushaf-text-column-width: 28rem;
   --qd-mushaf-surah-header-frame-width: 12rem;
   --qd-navbar-block-size: 3.5rem;
-  --qd-mushaf-panel-height: calc(100dvh - var(--qd-navbar-block-size));
+  // Sized off `--qd-mushaf-sticky-top` (below), not the bare navbar token (Slice B2, T902/T903):
+  // the panel's stuck top is navbar + --qd-space-3, so a height measured from the navbar alone
+  // pushes its bottom edge that same --qd-space-3 past the viewport once stuck. CSS custom
+  // properties resolve at used-value time, so referencing a token declared later in this same
+  // block is fine — no declaration-order requirement.
+  --qd-mushaf-panel-height: calc(100dvh - var(--qd-mushaf-sticky-top));
   --qd-mushaf-word-selection-indicator: var(--qd-accent);
   /* Mushaf word interaction ladder: canvas < hover < selection. Both washes tint the
      selection indicator, so hover reads as "pre-selection" of the same word, and both are
@@ -104,7 +109,9 @@
   --qd-mushaf-word-selection-ring: color-mix(in oklch, var(--qd-mushaf-word-selection-indicator) 55%, transparent);
   --qd-mushaf-ayah-marker-font-size: 1.5rem;
   --qd-mushaf-ayah-marker-color: var(--qd-text-muted);
-  --qd-mushaf-sticky-top: var(--qd-space-3);
+  // Re-based under the sticky navbar (Slice B2, T902) — the navbar now stays in view while
+  // scrolling, so the panel's own top offset must clear it, not just --qd-space-3.
+  --qd-mushaf-sticky-top: calc(var(--qd-navbar-block-size) + var(--qd-space-3));
 
   --qd-segment-cat-1: oklch(0.521 0.089 69.2);
   --qd-segment-cat-2: oklch(0.490 0.068 176.3);
@@ -147,6 +154,67 @@
   );
 
   --qd-segment-card-min-height: 5.6rem;
+
+  /* `.qd-checkbox`'s fixed square box (`_forms.scss`). 0.9375rem == 15px at the app's
+     unscaled 16px root — the exact value the approved concept specifies
+     (abwab-relations-concept.html:84), reached through the app's own rem scale rather
+     than a raw px: it is the same step as --qd-btn-font-size and .qd-input/.qd-select's
+     font-size, not a one-off. */
+  --qd-checkbox-size: 0.9375rem;
+
+  /* `.qd-truncate`'s reserved minimum (`_utilities.scss`), for a truncatable entity-name
+     column that wants "flexible with a floor" instead of unbounded shrink-to-nothing
+     (`flex: 1; min-inline-size: var(--qd-name-min-inline-size)`). No existing name-render
+     site sets a minimum today (UI_STYLE_SYSTEM.md §17's new truncatable-names entry), so
+     this is derived from the one shipped site that already has this exact shape on the
+     same abwab surface: `abwab-toolbar.component.scss`'s `.abwab-toolbar__search { flex: 1;
+     min-inline-size: 12rem; }`. Checked against `abwab-tree`'s row budget (audit's
+     "~36rem-ish column"): checkbox 0.9375rem + chevron 1.25rem + order pill ~1.25rem + count
+     ~2rem + flags ~3.2rem + two row actions ~3rem + six `--qd-space-2` gaps ~3rem ≈ 14.6rem
+     of fixed siblings, leaving roughly 21rem for the name at depth 0 — 12rem fits with room
+     to spare even several indent levels deep. Independent corroboration:
+     `.abwab-cards__grid`'s `minmax(13rem, 1fr)` card minimum, minus two `--qd-space-3` card
+     paddings, is a ~11.5rem content box — the same order of magnitude on a different
+     surface. */
+  --qd-name-min-inline-size: 12rem;
+
+  /* Layer scale (UI_STYLE_SYSTEM.md §4). Every stacking `z-index` in the app is one of
+     these rungs — never write a bare z-index. The four abwab context-menu literals that
+     used to live at abwab-page.component.scss:88,94 and
+     abwab-templates-page.component.scss:146,152 were the sole exception until Slice A
+     phase 6 moved both pages onto the shared `qd-context-menu` component
+     (`shared/ui/context-menu/`), which consumes --qd-z-menu-backdrop/--qd-z-menu from
+     birth — zero bare z-index literals remain outside this file.
+     Ascending: sticky < popover < floating < mobile-nav < menu-backdrop < menu ==
+     modal-backdrop < modal. --qd-z-mobile-nav sits below --qd-z-modal-backdrop
+     deliberately — the navbar's dropdown/mobile menu used to paint at 100/200, above
+     every modal backdrop (50); that was a latent defect (nothing made the shell inert
+     under an open abwab modal), fixed here by lowering the rung rather than the modal.
+     --qd-z-menu == --qd-z-modal-backdrop (50) is an inherited collision, not introduced
+     by this change — the context-menu and the modal backdrop never need to compete
+     because a modal open state does not currently suppress the menu (Slice B territory).
+     --qd-z-modal has no consumer yet (`.qd-modal` paints via DOM order inside its
+     backdrop's stacking context); reserved for the day a modal box needs to escape it.
+
+     `.qd-navbar` itself is ALSO --qd-z-mobile-nav, not --qd-z-sticky (Slice B2, T901/T903).
+     `position: sticky` unconditionally creates a stacking context in every engine regardless
+     of z-index, so a sticky element's own rung becomes the ceiling every descendant is capped
+     at — the navbar's dropdown and mobile menu are descendants that already declare
+     --qd-z-mobile-nav for themselves, so the navbar has to sit on that same rung or it clamps
+     them below it (verified: at --qd-z-sticky the dropdown lost to a synthetic --qd-z-floating
+     probe placed outside the navbar, and page popovers at 30 would paint over the sticky
+     navbar's own box on a scrolled page — a failure mode that didn't exist before the navbar
+     was sticky, since content never scrolled under it). --qd-z-sticky (5) stays reserved for a
+     genuinely in-page sticky element with no competing descendants of its own
+     (mushaf-header-navigation.component.scss is the one consumer). */
+  --qd-z-sticky: 5;             /* in-page sticky headers with no descendant menus of their own */
+  --qd-z-popover: 30;           /* selector/filter popover panels */
+  --qd-z-floating: 40;          /* the detail-modal-shell restore control */
+  --qd-z-mobile-nav: 45;        /* .qd-navbar itself (sticky, T901/T903) + its dropdown + mobile menu — see note above */
+  --qd-z-menu-backdrop: 49;     /* qd-context-menu backdrop */
+  --qd-z-menu: 50;              /* qd-context-menu */
+  --qd-z-modal-backdrop: 50;    /* .qd-modal-backdrop */
+  --qd-z-modal: 51;             /* reserved for a future direct modal-box consumer */
 }
 
 /* The bar tightens its own leading margin on phones; the token carries that so the reserved slot

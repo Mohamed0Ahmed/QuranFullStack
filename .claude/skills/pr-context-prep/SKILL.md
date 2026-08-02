@@ -93,6 +93,26 @@ exists, say so plainly and state what should be run — do not claim green.
 - Frontend: the Angular build and the touched `*.spec.ts` (respect the test worker
   cap; the Angular builder ignores `vitest.config.ts`).
 
+State the executed tier against the tier `TESTING_STRATEGY.md` requires for the changed
+scope (its §3, §4) — an ordinary PR is Tier C; a change touching `DataPipelines`, importer
+tools, canonical resources, pipeline tables/migrations, or shared persistence adds Tier D.
+Three tree facts the package must get right (section numbers refer to
+`TESTING_STRATEGY.md`, not this skill's own steps):
+
+- **There is no CI** (its §8). There is no workflow; every gate is local and unverified.
+  Never write "CI will catch it" or present a green pipeline.
+- **The route-parity/smoke gate is active** (`QuranDashboard.Tests.Smoke`, its §3 Tier A/C,
+  §4, §5). For route, contract, auth, middleware, or binding changes, the evidence section
+  MUST carry a Smoke line —
+  `--filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."` with its pass/fail/skip
+  counts — **and MUST state whether the `Tests.Smoke.Data` tier ran or skipped** ("74
+  passed, 0 skipped" with the canonical dump staged; "61 passed, data tier skipped"
+  without it). An unqualified "smoke passed" is incomplete evidence. If a route was added
+  or changed, confirm the matching `SmokeRouteCatalog` entry is in the same diff (its §10).
+- **The browser E2E layer is opt-in, never a required tier** (its §3 Tier E, §6). It may
+  appear as supplementary evidence and must be labelled supplementary; it never stands in
+  for the smoke tier or any required tier.
+
 Recommend the relevant skill for missing evidence (`deploy-smoke` for build/migrate/
 run, `test-guard` for test quality) rather than running it yourself here.
 

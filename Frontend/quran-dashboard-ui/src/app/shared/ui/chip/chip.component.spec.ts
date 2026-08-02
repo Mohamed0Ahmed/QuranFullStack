@@ -1,7 +1,40 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 
+import { Component, input } from '@angular/core';
+
 import { QdChipComponent } from './chip.component';
+
+const PROJECTED_LABEL = 'باب العلم بالله';
+
+/** A real host, because the label wrapper is chosen by an `@if` and the only way to catch a
+ * broken projection slot is to project something and look for it. */
+@Component({
+  standalone: true,
+  imports: [QdChipComponent],
+  template: `<qd-chip
+    [removable]="removable()"
+    [labelClickable]="labelClickable()"
+    [labelAriaLabel]="labelAriaLabel()"
+    [removeAriaLabel]="removeAriaLabel()"
+    [as]="elementType()"
+    [href]="href()"
+    (labelClick)="labelClicks.push(1)"
+    (remove)="removes.push(1)"
+    >{{ projected }}</qd-chip
+  >`,
+})
+class ChipHostComponent {
+  readonly removable = input(false);
+  readonly labelClickable = input(false);
+  readonly labelAriaLabel = input<string | null>(null);
+  readonly removeAriaLabel = input<string | null>(null);
+  readonly elementType = input<'button' | 'a'>('button');
+  readonly href = input<string | null>(null);
+  readonly projected = PROJECTED_LABEL;
+  readonly labelClicks: number[] = [];
+  readonly removes: number[] = [];
+}
 
 describe('QdChipComponent', () => {
   beforeEach(() => {
@@ -104,5 +137,119 @@ describe('QdChipComponent', () => {
     (fixture.nativeElement as HTMLElement).querySelector('button')?.dispatchEvent(new Event('click'));
 
     expect(emitted).toHaveLength(1);
+  });
+
+  describe('removable (plan-slice-b.md T412 — the alias-chip remove affordance)', () => {
+    it('renders a static, non-button wrapper carrying a nested remove button', () => {
+      const fixture = render({ removable: true, removeAriaLabel: 'إزالة التوحيد' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      const wrapper = root.querySelector('[data-testid="qd-chip"]') as HTMLElement;
+      expect(wrapper.tagName).toBe('SPAN');
+
+      const removeButton = root.querySelector('[data-testid="qd-chip-remove"]') as HTMLButtonElement;
+      expect(removeButton).toBeTruthy();
+      expect(removeButton.tagName).toBe('BUTTON');
+      expect(removeButton.getAttribute('aria-label')).toBe('إزالة التوحيد');
+    });
+
+    it('emits remove (not chipClick) when the nested button is clicked, and does not bubble to a parent click handler', () => {
+      const fixture = render({ removable: true, removeAriaLabel: 'إزالة' });
+      const removed: void[] = [];
+      const clicked: void[] = [];
+      fixture.componentInstance.remove.subscribe(() => removed.push(undefined));
+      fixture.componentInstance.chipClick.subscribe(() => clicked.push(undefined));
+
+      const removeButton = (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="qd-chip-remove"]',
+      ) as HTMLButtonElement;
+      removeButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(removed).toHaveLength(1);
+      expect(clicked).toHaveLength(0);
+    });
+
+    it('never writes an inline style on the remove button (tint/hairline only, no solid fill)', () => {
+      const fixture = render({ removable: true, removeAriaLabel: 'إزالة' });
+      const removeButton = (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="qd-chip-remove"]',
+      ) as HTMLButtonElement;
+
+      expect(removeButton.getAttribute('style')).toBeNull();
+    });
+  });
+
+  describe('labelClickable — the label as its own control (Slice D)', () => {
+    // Projection is the thing to guard: the label wrapper is chosen by an @if, and two
+    // `<ng-content>` slots sharing one selector would leave the opted-in chip's label empty
+    // while every element-type assertion still passed.
+    function renderWithLabel(overrides: Record<string, unknown>) {
+      const fixture = TestBed.createComponent(ChipHostComponent);
+      for (const [key, value] of Object.entries(overrides)) {
+        (fixture.componentRef as { setInput: (name: string, value: unknown) => void }).setInput(key, value);
+      }
+      fixture.detectChanges();
+      return fixture;
+    }
+
+
+    it('leaves the label a plain span by default, projected content intact', () => {
+      const fixture = renderWithLabel({ removable: true, removeAriaLabel: 'إزالة' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="qd-chip-label"]')).toBeNull();
+      const label = root.querySelector('.qd-chip__label');
+      expect(label?.tagName).toBe('SPAN');
+      expect(label?.textContent?.trim()).toBe(PROJECTED_LABEL);
+    });
+
+    it('renders the label as a button when opted in, and emits labelClick', () => {
+      const fixture = renderWithLabel({
+        removable: true,
+        removeAriaLabel: 'إزالة',
+        labelClickable: true,
+        labelAriaLabel: 'إظهار في الشجرة',
+      });
+      const label = (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="qd-chip-label"]',
+      ) as HTMLButtonElement;
+      expect(label.tagName).toBe('BUTTON');
+      expect(label.getAttribute('aria-label')).toBe('إظهار في الشجرة');
+      expect(label.textContent?.trim()).toBe(PROJECTED_LABEL);
+
+      label.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(fixture.componentInstance.labelClicks).toHaveLength(1);
+    });
+
+    it('keeps the two controls independent — removing does not emit labelClick and vice versa', () => {
+      const fixture = renderWithLabel({
+        removable: true,
+        removeAriaLabel: 'إزالة',
+        labelClickable: true,
+      });
+      const { labelClicks, removes } = fixture.componentInstance;
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="qd-chip-remove"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      expect(removes).toHaveLength(1);
+      expect(labelClicks).toHaveLength(0);
+
+      (root.querySelector('[data-testid="qd-chip-label"]') as HTMLElement).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      expect(labelClicks).toHaveLength(1);
+      expect(removes).toHaveLength(1);
+    });
+
+    // A nested button inside the button/anchor branches would be invalid HTML, so the opt-in
+    // is ignored there rather than trusted.
+    it('ignores the opt-in on the non-removable branches', () => {
+      const asButton = renderWithLabel({ labelClickable: true });
+      expect((asButton.nativeElement as HTMLElement).querySelector('[data-testid="qd-chip-label"]')).toBeNull();
+
+      const asAnchor = renderWithLabel({ labelClickable: true, elementType: 'a', href: '/x' });
+      expect((asAnchor.nativeElement as HTMLElement).querySelector('[data-testid="qd-chip-label"]')).toBeNull();
+    });
   });
 });

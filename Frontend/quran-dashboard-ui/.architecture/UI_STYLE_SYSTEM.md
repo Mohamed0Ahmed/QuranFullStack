@@ -104,6 +104,13 @@ Rules:
 > contract for how these partials are consumed; this section still governs file
 > organization. Only add a new global partial when it holds a genuinely reusable,
 > app-wide pattern — do not scaffold speculative empty files.
+>
+> `.qd-page-frame` (`_layout.scss`, beside `.qd-container`) is the full-bleed page-frame rule —
+> `box-sizing: border-box`, no width cap, column flex, a reserved mobile-stat-bar
+> `padding-block-end`. It was `.qd-explorer-frame` in `_words-explorer-layout.scss` until Slice B2
+> renamed and moved it (the frame stopped being words-only once Abwab adopted it); the old name is
+> kept as a working alias on the same rule so the five existing explorer call-sites are untouched.
+> New call-sites use `.qd-page-frame`.
 
 ## 3. Naming Convention
 
@@ -158,6 +165,23 @@ superseded prototype reference):
 - motion durations (fast ~140ms, base ~220ms)
 - radius
 - spacing scale
+- layer scale (stacking order for every fixed/absolute layer in the app), ascending:
+  `--qd-z-sticky` (in-page sticky headers with no descendant menus of their own, e.g.
+  `mushaf-header-navigation`) → `--qd-z-popover` (selector/filter panels) →
+  `--qd-z-floating` (a fixed control floating over page content, e.g. the
+  detail-modal-shell restore button) → `--qd-z-mobile-nav` (`.qd-navbar` itself — sticky,
+  Slice B2 T901/T903 — plus its dropdown and mobile menu, all three on the same rung so the
+  sticky navbar's own stacking context never clamps its own menus below what they declare)
+  → `--qd-z-menu-backdrop` / `--qd-z-menu` (`qd-context-menu`) → `--qd-z-modal-backdrop` /
+  `--qd-z-modal` (`.qd-modal-backdrop` / a future direct modal-box consumer). **Never write a
+  bare `z-index`** — always reference one of these tokens. There are no exceptions: every
+  stacking layer in the app resolves through this scale.
+  Two caveats the numbers carry, both inherited rather than chosen: `--qd-z-menu` and
+  `--qd-z-modal-backdrop` currently resolve to the **same** value, so the rung order above
+  is authoritative but the arithmetic does not enforce it — a context menu and a modal
+  backdrop rendered as siblings tie, and DOM order decides. And `--qd-z-modal` has no
+  consumer yet (`.qd-modal` itself stacks inside its backdrop). Whoever first needs either
+  rung to win by number should respace the scale, not add a literal.
 
 Example shape only — **do not force exact colors yet** (the real palette is
 resolved in `DESIGN.md`):
@@ -552,8 +576,7 @@ component-by-component color decisions. New and changed UI must conform to this
 section. The token set it depends on (`--qd-accent-fg`, `--qd-border-accent`,
 `--qd-surface-hover`, `--qd-selected-bg`, `--qd-danger-tint`, `--qd-success-tint`,
 `--qd-warning-tint`) is live in `_tokens.scss` / `_themes.scss`. Rolling every
-existing call-site onto this doctrine was a phased migration tracked in
-`docs/feature-028-color-doctrine-unification/plan.md` (P1–P7); the migration is
+existing call-site onto this doctrine was a phased migration; the migration is
 **complete** — no *new* code may reintroduce a pattern this section bans.
 
 ### 16.1 Role → color table
@@ -661,12 +684,12 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 
 > **Status: implemented.** This section is the **live contract** for the shared
 > primitives below. `qd-tabs`, `qd-chip`, `qd-state`, and the skeleton primitives
-> (`qd-skeleton-rows`, `qd-panel-skeleton`) are Angular components shipped in P2 of
-> `docs/feature-028-color-doctrine-unification/plan.md`; `.qd-explorer-table` and
-> `.qd-detail-list` are CSS class-family collapses shipped in P3/P4. Chip/tab
-> call-sites and the solid-accent-fill ban landed in P5; density/motion/radius/ladder
-> cleanup in P6; the remaining ad-hoc text-loading states (dashboard-home,
-> mushaf-page-area) moved onto `qd-skeleton-rows`/`qd-panel-skeleton` in P7 — the
+> (`qd-skeleton-rows`, `qd-panel-skeleton`) are shipped Angular components;
+> `.qd-explorer-table` and `.qd-detail-list` are shipped CSS class-family collapses.
+> The chip/tab call-site unification, the solid-accent-fill ban, the
+> density/motion/radius/ladder cleanup, and the move of the remaining ad-hoc
+> text-loading states (dashboard-home, mushaf-page-area) onto
+> `qd-skeleton-rows`/`qd-panel-skeleton` all landed — the
 > `selected-ayah-section` and `selected-word-section` loading states already used
 > `.qd-skeleton` + an sr-only `role="status"` label before P7 and needed no change.
 > The phased migration (P1–P7) is complete. Once a contract exists for a pattern,
@@ -674,26 +697,135 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 
 ### `qd-tabs`
 - **Purpose:** the one tab-strip implementation app-wide (explorer view-mode tabs,
-  mushaf ayah-section tabs, inline list tabs).
-- **Inputs / roles:** `ariaLabel`, `orientation?='horizontal'`; container is
-  `role="tablist"`; each item is `role="tab"` with `aria-selected`, roving
-  tabindex, Arrow/Home/End keyboard nav (RTL-aware).
+  mushaf ayah-section tabs, inline list tabs, and — at `layout='grid'` — a modal's
+  section strip).
+- **Inputs / roles:** `ariaLabel`, `orientation?='horizontal'`, `layout?='inline'`;
+  container is `role="tablist"`; each item is `role="tab"` with `aria-selected`,
+  roving tabindex, Arrow/Home/End keyboard nav (RTL-aware).
 - **Selected / hover / disabled:** selected per §16.1 (tint background +
   accent-text label + hairline/indicator edge); hover = `--qd-surface-hover`;
   disabled is non-interactive and drops out of the roving tab order.
-- **Backing classes:** `.qd-tabs`, `.qd-tabs__tab`, `.qd-tabs__tab.qd-is-selected`,
-  `.qd-tabs__count`. Compose, do not re-style.
+- **Backing classes:** `.qd-tabs`, `.qd-tabs--vertical`, `.qd-tabs--grid`,
+  `.qd-tabs__tab`, `.qd-tabs__tab.qd-is-selected`, `.qd-tabs__count`. Compose, do
+  not re-style.
+- **`layout='grid'` — the wrapping fixed-column strip (`.qd-tabs--grid`, added by
+  ux-slice-m).** For a tablist that must show **every** option at once rather than
+  one scrolling row: `display: grid; grid-template-columns: repeat(var(--qd-tabs-grid-columns, 5), minmax(0, 1fr)); gap: var(--qd-space-2)`.
+  A horizontally scrolling row was the rejected alternative — it is hostile in RTL
+  and unreachable by keyboard without a scroll-into-view crutch, whereas a grid
+  simply wraps. Three properties are load-bearing:
+  - **`minmax(0, …)`, never a bare `1fr`.** A grid item's `min-width: auto` lets a
+    long label push its track past the column width instead of ellipsizing inside
+    it, so a name that should truncate silently widens the strip instead. The same
+    class of failure as the specificity traps below: nothing looks broken until the
+    data gets long.
+  - **The tracks exist whether or not they are filled**, which is what makes the
+    cells *equal-width* rather than *proportional* — two tabs render as two
+    full-width cells beside three empty tracks, not two stretched halves. A call-site
+    wanting the stretched behaviour wants `--inline`, not this.
+  - **Keyboard nav still follows `orientation`, not `layout`.** A grid strip keeps
+    the horizontal Arrow/Home/End model, moving linearly through DOM order across
+    the wrap. A row-aware Up/Down model (±one row) is deliberately **not** built:
+    it would be a second keyboard contract for one consumer, and linear traversal
+    already reaches every cell.
+  - **Consumer (exactly one):** `abwab-move-picker`'s section strip. Its cells
+    measure **150 px** — the `--wide` modal's 832 px, minus 2 px of border and the
+    48 px of `.qd-modal__head` padding, minus four `--qd-space-2` gaps, over five
+    tracks — so the ~15-section product ceiling is exactly three rows. The strip
+    sits in `__head` (`flex-shrink: 0`), so it needs **no `max-block-size` and no
+    scroller of its own**, and `.qd-modal__body` stays the modal's only scroller per
+    the `.qd-modal` entry below. A call-site needing a different column count sets
+    `--qd-tabs-grid-columns` and records its own arithmetic the same way.
+- **Extending the tab's visual state:** a call-site adding a cue the primitive does
+  not carry puts it on a **feature-local class beside** `.qd-tabs__tab`
+  (`lemma-details-panel__tab`, `abwab-move-picker__section`), never by re-styling
+  `.qd-tabs__tab` from the consumer's own stylesheet. The move picker's active cell
+  adds `font-weight: 700` that way, because §17's tint-plus-accent-border selected
+  state is a colour cue and an active state must not rest on colour alone.
+- **Count meta (`.qd-tabs__count`):** rendered by the call-site's template, not by `qdTab` —
+  the directive is host-bindings-only and cannot project a child element. Latin digits,
+  `tabular-nums`; **always** rendered, dimmed at zero via `.qd-tabs__count--empty` (opacity
+  only, so it composes with the selected-state rule instead of forking a second one). The
+  visible digits are `aria-hidden="true"`; the tab's own `aria-label` carries the accessible
+  count (item 19 of the abwab UX audit).
 
 ### `qd-chip`
 - **Purpose:** the one selectable/informational chip (filters, association
-  popovers, count badges).
+  popovers, count badges) — and, since Abwab Slice B (plan-slice-b.md T412), the one
+  removable chip (alias chips in the door-details modal).
 - **Inputs / roles:** `selected`, `disabled`, `as?='button'|'a'`, optional
-  trailing `count`.
+  trailing `count`; `removable?=false` + `removeAriaLabel` for the remove
+  affordance, emitting a `remove` output.
 - **Selected / hover / disabled:** selected = `--qd-selected-bg` +
   `--qd-accent-text` + `--qd-border-accent` (§16.1) — **no solid green fill**;
   hover = `--qd-surface-hover`; disabled is visually muted and non-interactive.
-- **Backing classes:** `.qd-chip`, `.qd-chip--pill`, `.qd-chip.qd-is-selected`,
-  `.qd-chip__count`. Compose, do not re-style.
+- **Removable variant:** when `removable` is true the chip renders a static
+  `<span>` wrapper (not the `button`/`a` from `as`) with a nested `<button
+  class="qd-chip__remove">` carrying the caller's Arabic `aria-label` — nesting an
+  interactive remove control inside another `<button>`/`<a>` is invalid HTML, so a
+  removable chip is informational, not itself clickable. The remove button is
+  tint/hairline only on hover (`--qd-surface-hover` + `--qd-accent-text`), never a
+  solid fill.
+- **Clickable label (`labelClickable`, opt-in, default off — Slice D):** renders the
+  chip's label as a nested `<button>` (`.qd-chip__label--clickable`, emitting
+  `labelClick`, named by `labelAriaLabel`), so a removable chip can carry **two**
+  independent controls — a name that acts and an `×` that removes. Honored **only**
+  in the removable branch, and that guard is the contract, not caution: the other
+  two branches *are* a `<button>`/`<a>`, and the removable branch's static `<span>`
+  wrapper is precisely what makes the nesting legal. This extends the base rather
+  than forking it — the alternative, hand-rolled buttons inside each consumer's
+  `ng-content`, would have every future consumer re-inventing focus and hover
+  styling. Implementation note for anyone editing the template: the label wrapper is
+  chosen by an `@if`, so the projected content is declared **once** in its own
+  `ng-template` and rendered through an outlet in both arms — two `<ng-content>`
+  elements sharing one selector would leave the second slot permanently empty while
+  every element-type assertion still passed.
+- **Backing classes:** `.qd-chip`, `.qd-chip--pill`, `.qd-chip--static`,
+  `.qd-chip.qd-is-selected`, `.qd-chip__count`, `.qd-chip__remove`,
+  `.qd-chip__label`, `.qd-chip__label--clickable`. Compose, do not re-style.
+
+### `qd-confirm-dialog`
+- **Purpose:** the one confirmation dialog — a decision that interrupts and needs an explicit
+  yes/no. Supersedes hand-written `role="alertdialog"` blocks: those get the role right and the
+  focus handling wrong, and each one drifts from the next. **Do not hand-write these again.**
+- **Inputs / roles:** `open`, `titleText`, `confirmLabel`, `cancelLabel`,
+  `tone?: 'default' | 'danger'`, `busy?`, `confirmDisabled?`, `testIdPrefix?`; outputs
+  `confirmed`, `cancelled`. Container is `role="alertdialog"` + `aria-modal="true"`, labelled
+  by its own title.
+- **`testIdPrefix` renames all four testids** (`{prefix}`, `-backdrop`, `-confirm`, `-cancel`)
+  and defaults to `qd-confirm-dialog`. **Pass it whenever a page can host more than one
+  confirm** — otherwise two dialogs on one page answer the same selector and every assertion
+  against them is ambiguous.
+- **Transient, never URL-addressable — no consumer may write a URL key for a confirm dialog.**
+  A destructive confirm must be re-initiated, never restored from a URL: a link that reopens
+  "are you sure you want to delete this" is a link that can be sent to someone.
+- **Body is projected** (`<ng-content>`), so a consumer composes whatever the decision needs — a
+  path, a selector, an inline `qd-state variant="error"`. The dialog owns the framing and the
+  dismissal routes; it never owns the content.
+- **Behavior:** focus trapped (`cdkTrapFocus` + auto-capture); **initial focus on CANCEL** — the
+  dialog interrupts, so a reflexive Enter must produce the safe answer. `Escape` and a backdrop
+  click both emit `cancelled`. `busy` disables BOTH buttons (a decision in flight is not
+  cancellable into an inconsistent state either), carries the house busy affordance
+  (`aria-busy="true"` on the confirm button, the same signal the skeletons and `qd-state` use),
+  blocks a second `confirmed` emission, and suppresses `Escape` and backdrop dismissal for the
+  same reason it disables cancel; `confirmDisabled` disables confirm alone, for a decision that
+  is not yet complete.
+- **Visuals / RTL:** `tone: 'danger'` maps confirm to `--qd-danger` per §16.1 — scoped to this
+  component rather than a global `.qd-btn-danger`, since a new global button variant is a
+  design-system decision, not this dialog's. Logical properties only; scroll locked through the
+  shared `modal-scroll-lock`.
+- **Not a modal shell.** Authoring modals (a form plus its dirty guard) keep their own shell —
+  that is a different contract. This is for confirmations only.
+- **Retrofit complete.** Every destructive confirmation in the app now composes this primitive:
+  the abwab page's single and bulk archive confirms, the sections modal's delete, the relations
+  modal's relation-delete, and the templates page's template- and node-delete. The relations one
+  is the primitive's first **new** consumer rather than a retrofit — no hand-written confirm
+  existed there; the chip deleted on click — and it nests above an open modal, the sections
+  modal's precedent, which needs no focus-trap gating on the host. The only surviving hand-written
+  `role="alertdialog"` blocks are the three **dirty-discard strips** (door, sections, and
+  template-node modals) — those are in-shell footers guarding unsaved work, not interrupting
+  dialogs, and they deliberately stay where the unsaved work is. A new hand-rolled confirm is a
+  defect.
 
 ### `qd-state`
 - **Purpose:** the one empty / loading / error presentation.
@@ -711,6 +843,32 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   status color.
 - Supersedes ad-hoc `.qd-empty-state` / `.qd-loading-state` / `.qd-error-state`
   usage; those classes remain as the backing layer. Compose, do not re-style.
+- **`reserve` (optional, `boolean`, default `false`):** additive input applying the
+  §N3 no-layout-shift doctrine (see the Loading/skeleton system entry above; not
+  restated here) to this component. On, the **message span** (not the container —
+  its padding alone already exceeds one control row, so a container-level
+  reservation would be a no-op) carries
+  `min-block-size: var(--qd-control-block-size)` — the shared control-geometry
+  token family `.qd-checkbox` / `.qd-modal--fixed` already draw from
+  (`styles/README.md`'s "size a new reserved slot from these tokens; never
+  re-measure the control by hand" rule) — so its box never appears/disappears;
+  only its text fades in, opacity only, static under `prefers-reduced-motion`,
+  mirroring `qd-detail-modal-shell`'s count span (above). Default off, so today's
+  seven call-sites are unaffected.
+- **`reserve` under an `@if` reserves nothing, and abwab does exactly that — knowingly.**
+  All four abwab modal error surfaces render as
+  `@if (message; as m) { <qd-state variant="error" [reserve]="true" [message]="m" /> }`,
+  so the box appears and disappears with the message and the input's own contract
+  ("never appears/disappears") cannot hold; what survives is the message span's
+  `min-block-size` and a fade that never fires, since the element is born visible.
+  Slice C briefly rendered the door/template-node surface **unguarded** to honor the
+  input literally, and shipped a 105px empty danger box on every open of both modals
+  (the container's own `padding: var(--qd-space-6)` plus the reserved row, with nothing
+  in it) — reverted to match the other three. The lesson for whoever revisits this
+  input: `reserve` earns its keep where a box is **permanently mounted** and only its
+  content arrives late; guarding the whole component is the right call for an error
+  that is absent on the happy path, and those two uses want different tools. Do not
+  "fix" abwab's four sites by deleting the `@if`.
 
 ### `.qd-explorer-table`
 - **Purpose:** the one table implementation for all 5 explorer tables (roots,
@@ -860,3 +1018,528 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   content always sizes itself.
 - Compose, do not re-style — a new loading state is a `shape`/`rowTemplate` input,
   not a new component.
+
+### `.qd-checkbox` / `.qd-check-row`
+- **Purpose:** the one checkbox box + label-row pairing app-wide (bulk-select in
+  `abwab-tree`/`abwab-cards`, pick-lists in `abwab-relations-modal`/
+  `abwab-template-copy-modal`).
+- **Shape:** utility classes, not a component — `.qd-checkbox` sizes and colors a
+  native `<input type="checkbox">`; `.qd-check-row` is the flex wrapper that pairs
+  it with its label at a fixed gap.
+- **Geometry / color:** a fixed `--qd-checkbox-size` square (`0.9375rem`, reached
+  through the app's own rem scale — same step as `--qd-btn-font-size` and
+  `.qd-input`/`.qd-select`'s font-size — rather than a raw px; it equals the
+  approved concept's `15px` at the app's unscaled root,
+  `abwab-relations-concept.html:84`), `flex: none`, `margin: 0`, and
+  `accent-color: var(--qd-accent)` — no new hue, and correct in both themes since
+  `--qd-accent` is defined per theme (`_tokens.scss` light / `_themes.scss` dark
+  override) with zero `_themes.scss` change needed here.
+- **Row gap:** `.qd-check-row` is `display: flex; align-items: center` with a
+  single `--qd-space-2` gap between box and label, so the audit's "checkbox far
+  from its label" gap cannot be reintroduced per call-site.
+- **Accessible name (contract, not optional):** every checkbox composing
+  `.qd-checkbox` MUST carry a real `<label for>` or an `aria-label` naming what it
+  selects. **Debt paid (Slice D):** `abwab-tree` and `abwab-cards` compose the class
+  and name each box after its door, joining the modal pickers. `abwab-cards` keeps a
+  local rule for *placement only* — the card positions its box absolutely — and
+  states neither size nor accent, which is the boundary the trap below draws.
+- **Consumers:** `abwab-door-picker` (both modal call-sites), `abwab-tree`,
+  `abwab-cards`.
+- **Composing means deleting the local rule, not adding beside it.** Under Angular
+  emulated encapsulation a call-site selector like
+  `.some-modal__pick-row input[type='checkbox']` (the shape both abwab pickers carried
+  before Slice C folded them into `abwab-door-picker`) outranks the global
+  `.qd-checkbox` class on specificity — adding the class without deleting the local
+  rule leaves the old size/accent in force with no visible change, which reads as
+  "done" and is not (the same specificity trap §17's `.qd-modal` entry names for
+  the modal geometry work).
+- Compose, do not re-style — a call-site needing a different box size or accent is
+  a signal to extend this contract, not fork it.
+
+### `.qd-modal` / `.qd-modal--fixed` / `.qd-modal--wide`
+- **The base is width-only and scroller-less, and stays that way.** `.qd-modal`
+  (`_components.scss`) sets surface/border/radius/shadow/padding and
+  `width: min(100%, 36rem)` — no block-size, no scroller, no `overflow`. It is
+  what the six abwab modals compose today and must keep composing unmodified.
+  **Width variants opt in via `--wide`, never by editing the base** — the same
+  discipline `--fixed` applies to block-size.
+- **`--wide` is the one sanctioned wide step: `width: min(100%, 52rem)`.** The
+  ladder is now 28rem (`qd-confirm-dialog`) / 36rem (base) / 42rem (the
+  `explorer-detail-modal` hold-out) / 44–46rem (`--fixed` block-size,
+  `qd-detail-modal-shell`) / 52rem (`--wide`), and **no further ad-hoc width may
+  be added** — a call-site that wants something else extends this ladder here or
+  composes an existing step. 52rem == 832px fits inside the 992px available at
+  the 1024px minimum desktop with ~80px gutters per side; the rejected
+  literal-double 72rem goes full-bleed below 1184px, and the existing 46rem step
+  is only +160px over the base, which under-delivers for the two-pane content
+  that motivates the variant. **Consumers (exactly three):**
+  `abwab-relations-modal`, `abwab-move-picker`, `abwab-template-copy-modal`.
+  Everything else stays at the base. The modifier is `(0,1,0)`, so a call-site
+  class that sets its own width outranks it — compose `--wide` by *deleting* the
+  local width, never by adding specificity (the same trap the `--fixed` entry
+  names below).
+- **`--fixed` is the opt-in that carries this section's geometry rule** (a fixed
+  block-size, never `max-block-size`): `display: flex; flex-direction: column;
+  block-size: min(92dvh, 44rem); padding: 0; overflow: hidden`. `dvh`, not `vh`,
+  matching every other modal block-size in the app. `44rem` is
+  `qd-detail-modal-shell`'s own value — reused deliberately so the app converges
+  on one fixed modal height instead of gaining a fourth geometry.
+- **Slot contract:** `.qd-modal__head` / `.qd-modal__foot` are `flex-shrink: 0`
+  with their own `--qd-space-5` padding (the same step the base's uniform
+  padding uses, so composing surfaces keep today's rhythm); `.qd-modal__body`
+  is `flex: 1; min-block-size: 0; overflow-y: auto` — the **only** scroller —
+  with `padding-inline: var(--qd-space-5)` and `scrollbar-gutter: stable` so
+  the reserved scrollbar track cannot reflow content width once the list
+  crosses the scroll threshold (the same class of defect as audit item 3, one
+  level down). **`__body` has no block padding by design** — the gap at the
+  head/body and body/foot seams comes entirely from `__head`'s
+  `padding-block-end` and `__foot`'s `padding-block-start`, so `__foot` is
+  load-bearing for that gap, not an optional slot. A `--fixed` dialog composed
+  without a foot must give `__body` its own `padding-block-end` or its last
+  content line sits flush against the dialog's bottom edge. Phone
+  (≤ `$qd-bp-phone-max`) tightens to `--qd-space-3` padding and
+  `block-size: min(94dvh, 44rem)`, mirroring `qd-detail-modal-shell`'s own
+  phone rule — but **not** its backdrop padding: `.qd-modal-backdrop` is the
+  shared base for all twelve modal consumers, so `--fixed` does not touch it.
+- **Why opt-in and not a base change:** `.qd-modal.explorer-detail-modal` sets
+  `max-height: min(90vh, 36rem)` but never `height`/`block-size`. A block-size
+  added to the base would therefore also apply to it — silently clamping the
+  five shipped words detail modals that use that variant. `--fixed` is how a
+  consumer reaches this section's geometry rule without that collision; the
+  base must never gain a block-size.
+- **Specificity trap when composing:** the same trap named in the `.qd-checkbox`
+  entry above — an existing call-site rule can outrank `.qd-modal--fixed`
+  under Angular emulated encapsulation. Composing the modifier means
+  **deleting** any inner `max-block-size`, not adding the class beside it.
+  Slice C deleted four such caps when it composed the modifier on the six
+  abwab modals — the sections list (14rem), the copy and relations pick-lists
+  (13rem and 11rem), and the move picker's destination list (15rem, which no
+  audit had inventoried) — along with the nested scrollers they implied. The
+  standing rule the greps enforce: **no `max-block-size` in a modal's own
+  SCSS.**
+- **Convergence trigger for `.qd-modal.explorer-detail-modal` (required, not
+  optional):** `--fixed` deliberately reuses `qd-detail-modal-shell`'s own
+  `44rem` rather than introducing a new height, so no new modal height enters
+  the system by this change. `.qd-modal.explorer-detail-modal` is therefore
+  the **one remaining** violation of this section's rule — `max-height` on
+  desktop instead of a fixed block-size. This section tolerates
+  `qd-detail-modal-shell` as a genuinely separate component; it must not
+  silently tolerate a second, permanent exception. **The next change that
+  touches any of the five words detail modals' geometry converges all five
+  onto `--fixed` and deletes the `vh` hold-out.**
+- **Consumers:** the six abwab modals (`abwab-door-modal`,
+  `abwab-template-node-modal`, `abwab-sections-modal`, `abwab-move-picker`,
+  `abwab-relations-modal`, `abwab-template-copy-modal`), all composed by Slice C
+  with `__head`/`__body`/`__foot` and an unconditional `cdkTrapFocus`. A modal
+  that wants a control other than the first tabbable one marks that control
+  `cdkFocusInitial` rather than moving focus itself after the trap captures —
+  one focus move, and `cdkTrapFocusAutoCapture` stays on, which is the only
+  thing that returns focus to the trigger on close. The
+  shallow ones (door, template-node) render with empty space below the fields:
+  that is this section's "zero resize" trade, not a defect to fix back to
+  content height.
+
+### Header over badge columns (feature-local pattern)
+
+- **Where it applies:** a row list whose trailing numeric badges want naming, and only
+  there. The doors tree (`features/abwab/components/abwab-tree/`) is the one
+  consumer; this is a documented pattern, not a `qd-` class.
+- **The header must sit OUTSIDE the `role="tree"` / `role="list"` element** and be
+  `aria-hidden="true"`. A presentational row inside the ARIA container reads as an
+  unlabelled item to a screen reader. Meaning stays on each badge's own
+  `aria-label` — the visible header is a hint, never the semantic carrier. This is
+  the `qd-tabs` count-meta precedent: visible digits `aria-hidden`, meaning in the
+  label.
+- **Alignment is structural, via a three-level subgrid**, never eyeballed:
+
+  ```
+  .abwab-tree-frame            display: grid   — owns the ONE column template
+  ├── .abwab-tree__header      subgrid, grid-column: 1 / -1, aria-hidden
+  └── .abwab-tree  [role=tree] subgrid, grid-column: 1 / -1
+      └── .abwab-tree__row     subgrid, grid-column: 1 / -1
+  ```
+
+  The frame exists because the header must be outside the ARIA container, so the
+  grid owner has to be an ancestor of both. `display: contents` on the ARIA element
+  is **not** the shortcut it looks like: it has a history of dropping elements from
+  the accessibility tree, and that element carries the role and its `aria-label`.
+- **Four rules the layout depends on**, each of which fails silently if broken:
+  - The flexible name track is `minmax(0, 1fr)`, never a bare `1fr` — `1fr` means
+    `minmax(auto, 1fr)`, whose auto minimum refuses to shrink past min-content, so
+    `.qd-truncate` never engages and the name pushes the badge tracks out.
+  - **No inline padding on any subgrid element.** It is subtracted from the space
+    the tracks occupy. Row insets live on the first and last cells instead
+    (`> *:last-child` covers the trailing one across conditional layouts).
+  - Every row renders every badge cell, empty when it has no value. Auto-placement
+    is positional: one row that skips a cell puts its trailing furniture in the
+    wrong track and breaks alignment for the whole list.
+  - When a column drops responsively, the **cells and the template's tracks drop in
+    the same media query**, or the two drift apart.
+- **The column width is a name-budget decision, not a typographic one.** Every pixel
+  of a fixed badge track is taken from the row's only shrinkable item. Size the
+  column from the widest *badge* a real value produces, then check the labels fit —
+  not the other way round. If full words do not fit, **abbreviate the visible label
+  and leave the `aria-label` alone**; the accessible layer is where the meaning has
+  to survive. Slice J's full words needed 2.5 rem and cost the name 55 px; the
+  abbreviated set needs 1.75 rem and costs 19 px, with identical screen-reader
+  output. Re-measure the truncation entry's budget rule whenever this changes.
+
+### `qd-context-menu`
+- **Purpose:** the one row/node context-menu shell app-wide (Abwab's doors tree row menu
+  and the templates workshop's node tree row menu — the two pre-existing copies this
+  primitive replaces).
+- **Inputs / outputs:** `position: {x, y}` (positions the menu via
+  `[style.left.px]`/`[style.top.px]`, unchanged from both prior copies); `menuTestId` /
+  `backdropTestId` (both `string`, required) — **non-negotiable**, because 4 Vitest
+  assertions and ~8 Playwright assertions select `abwab-page-context-menu` /
+  `abwab-page-ctx-backdrop` / the templates-page equivalents by test id, and inputs are
+  what let the extraction keep them byte-identical; `dismissed` output, emitted on
+  backdrop click and on `Escape`.
+- **Shape:** a `position: fixed; inset: 0` transparent backdrop at
+  `--qd-z-menu-backdrop`, and a positioned `role="menu"` box at `--qd-z-menu`. Items are
+  **projected content** (`<ng-content>`) carrying their own test ids, labels, and click
+  handlers — the primitive learns nothing about doors or template nodes.
+- **Item styling lives outside this component, on purpose:** hover, the `:focus-visible`
+  ring, and the `--danger` item variant are the global `.qd-context-menu__item` /
+  `.qd-context-menu__item--danger` classes in `_components.scss` (the `.qd-tabs__tab`
+  precedent) — content projected via `<ng-content>` is compiled in the *consumer's*
+  template under Angular's emulated encapsulation, so a rule scoped to this component's
+  own stylesheet would never reach it. Consumers apply the classes directly to their own
+  projected buttons.
+- **Escape dismissal is document-level** (`@HostListener('document:keydown.escape')`,
+  copying `top-navbar.component.ts`), not bound to the menu element, because none of the
+  four paths that open a menu (right-click, the row's `⋯`, or either page's keyboard
+  path) puts focus inside it — an element-bound handler would never receive the key.
+  **This is the one place this primitive is not literally behavior-preserving:** neither
+  prior copy dismissed on `Escape`. Deliberate, additive a11y gain, not a bug.
+- **Placement contract (slice L).** The menu extends toward the **inline-start** of the
+  anchor point: under RTL its right edge sits at `x` and the box grows leftward; under LTR
+  the mirror (left edge at `x`), which is the behaviour that originally shipped. Direction
+  is resolved from `closest('[dir]')`, never hardcoded. It **flips** on collision — inline
+  when the preferred side would cross the inline-start viewport edge, block when opening
+  below would cross the bottom — and is clamped into `[8px, viewport − 8px]` afterwards; a
+  menu larger than the viewport keeps its start edge on screen, since those are the items
+  reached first. Because all three decisions need the box's own size, the menu renders
+  `visibility: hidden` for one frame, measures itself in `afterRenderEffect`, then places
+  and shows — no flash on the wrong side. jsdom reports zero-sized rects and is skipped
+  (the menu keeps the raw anchor there and stays measurable by the specs), so **the browser
+  is the verification tier**: `e2e/abwab-operations.e2e.ts` asserts the inline-start
+  extension, the inline flip at 900px, and the block flip at 420px height. Both trees'
+  keyboard paths anchor at the focused row's inline-start edge to match.
+  Recorded browser walk (1024px and 1440px, both themes, 12 points): mid-viewport right-edge
+  delta 0.0px; inline-start-edge and bottom-edge opens never clipped; the bottom open flipped
+  upward in every case. `menuTestId`/`backdropTestId` and the projected-item contract are
+  unchanged.
+- **Two gaps this primitive deliberately did not fix** — named so a future reader does
+  not assume a shared, contracted primitive already covers them (gap 1, no viewport
+  clamping, was **closed by slice L**; see the placement contract above):
+  2. **No focus management into the menu.** Neither prior copy moved focus into it on
+     open; adding that changes keyboard behavior on a shipped surface and belongs to
+     Slice G's row-menu keyboard-path work, not this extraction.
+  3. **The `--danger` item's rest-state color is not unified.** The two prior copies
+     were not byte-identical here: the doors page's danger item was plain-colored until
+     hover (`--qd-danger-tint` background + `--qd-danger` text on `:hover` only, the
+     `abwab-side-panel__op--danger` app-wide idiom); the templates page's danger item
+     read `--qd-danger` at rest, unconditionally. The shared `--danger` modifier carries
+     the doors page's hover-only idiom; the templates page keeps a short page-scoped
+     override (`abwab-templates-page.component.scss`) so its own rendering stays
+     unchanged. Reconciling the two recipes into one is a later slice's call, not this
+     extraction's.
+- Compose, do not re-style.
+
+### Truncatable entity names
+- **Purpose:** the one rule for any entity name that can overflow its row/column
+  (door names, template names, and their eleven abwab render sites at the time of
+  writing — trees, cards, the archive view, move/relations/copy pick-lists, the
+  side panel, the sections modal, the templates page).
+- **The app's rule is flexible-with-ellipsis, not a hard column.** Every existing
+  precedent truncates a name/title inside a flexible item —
+  `detail-modal-shell.component.scss:28-35`'s `__title` (`flex: 1; min-inline-size:
+  0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap`) is the
+  canonical shape, and `abwab-tree.component.scss:70-75`'s own `__name` already
+  does the same. **This section states that as the rule, in both directions:** a
+  name column composes `.qd-truncate` (`_utilities.scss`) on a flex item that owns
+  `flex: 1` (or a reserved floor via `flex: 1; min-inline-size:
+  var(--qd-name-min-inline-size)`, `_tokens.scss`, for a column that must not
+  shrink to nothing under sibling pressure — see its derivation comment there). A
+  **hard, fixed `inline-size` name column is a per-surface exception, not a second
+  house rule** — it trades away exactly the flexibility every other truncated name
+  in the app relies on, so a surface reaching for one must write down, at that
+  call-site, why its layout cannot tolerate a shrinking name column the way every
+  other one does. The audit that produced this entry found a request for a fixed
+  name width where every existing precedent was flexible; this paragraph is where
+  that gets settled once, so a later reviewer does not re-litigate it per
+  call-site.
+- **Mandatory `[title]`, not optional:** any element composing `.qd-truncate` (or
+  otherwise capable of visually truncating) MUST carry `[title]="fullName"` so the
+  full name is available on hover/long-press once the ellipsis hides it —
+  precedent `word-type-filter.component.html:57`:
+  `<span class="word-type-filter__child-label" [title]="child.label.ar">{{
+  child.label.ar }}</span>`. A truncated name with no `[title]` is a contract
+  violation, not a style nit.
+- **Debt paid (Slice D).** Slice C composed the rule inside the abwab modals — the
+  door picker's row names and the relations modal's bulk target chips. Slice D
+  finished the page surfaces: the doors tree, the archive view, the template tree,
+  the side panel's active door, the cards' title and breadcrumb trail, the sections
+  modal, the templates list and its editor title, and the move picker's two row
+  kinds. Every one composes `.qd-truncate` with its mandatory `[title]`, and each
+  local ellipsis rule it supersedes was **deleted**, not left beside it. Three of
+  those sites needed a shape change rather than a class: a name sharing one text
+  node with a sibling chip (the card title, the templates editor title) had to
+  become its own span before it could truncate independently, and the move picker's
+  row buttons needed an inner block-level span, since `text-overflow` needs a block
+  box. **No site took the `--qd-name-min-inline-size` floor**, and a 12 rem floor on
+  the tree row would overflow the row instead of truncating inside it. The token
+  stays available for a surface that measures differently.
+- **The doors-tree name budget is a rule, not a figure** (measured 2026-08-02, slice
+  J, in-browser at three viewports in both themes — no theme token participates in
+  geometry, so the two are identical). On a **branch row carrying all three badges**:
+  **325 px at 1024 px, 485 px at 1184 px, 741 px at 1440 px — minus 24 px per depth
+  level** (the indent step is `--qd-space-5`, and the indent is the only depth-varying
+  term). A leaf row gains back what its absent badges cost. This entry previously
+  carried "~184 px at the narrowest viewport the doors page reaches", which is
+  reproducible only on a branch row at depth ≈ 6–7 at 1024 px — a deep-row number
+  stated as a general one. **Any change to the row's leading or trailing furniture
+  re-measures this rule rather than inheriting it**; slice J's badge-column header
+  cost 19 px against a 20 px ceiling set before the work began, and the visible header
+  labels were abbreviated (their `aria-label`s were not) precisely to stay under it.
+- Compose, do not re-style — a surface that seems to need a fixed name column
+  should re-read the paragraph above before reaching for `inline-size` instead of
+  `.qd-truncate`.
+
+### Reveal highlight (the app's "here it is" mark)
+
+- **Purpose:** the one way to answer "where did that go?" — a control elsewhere
+  navigates to a row/item and the destination has to identify itself on arrival.
+  First consumer: abwab's reveal-in-tree, where a relation chip in the modal reveals
+  the related door in the doors tree.
+- **It cannot be a background tint, and this is the trap worth stating first.**
+  `--qd-selected-bg` **is** `--qd-accent-tint` in both themes (`_tokens.scss`
+  light, `_themes.scss` dark — measured: light `oklch(0.954 0.010 164.9)`, dark
+  `oklch(0.250 0.030 281.2)`), and a reveal lands on the row it has just selected.
+  A tint highlight is therefore an exact **zero-delta** against the destination's own
+  selected fill: the code looks right, ships, and marks nothing. Read `_tokens.scss:94`'s
+  recorded lesson the other way round — there a mark too *close* to hover read as a
+  flash; here a mark *equal* to selected does not read at all.
+- **The mark is an outline**, because a selected row carries `outline-style: none` at
+  rest, so a ring is a genuinely new signal rather than a competing fill: `2px solid
+  var(--qd-accent)` at `outline-offset: -2px`, decaying to `transparent` over ~3s
+  through a keyframe animation, with the consuming component clearing the class on the
+  **same** duration so nothing lingers invisibly. No new hue — `--qd-accent` is on
+  §16.3's allowed list and is defined per theme.
+- **Reduced motion (§15-F/§17's blanket rule):** `animation: none` plus the mark held
+  statically at full strength for the same span. The reveal must still *say where*; it
+  just must not animate.
+- **Focus keeps precedence.** `:focus-visible`'s own outline is declared after the
+  reveal rule, so a keyboard user never loses the focus ring to a decaying mark.
+- **The class is a signal the host owns, not a self-clearing effect.** The consumer
+  holds the marked id in a signal and clears it on a timer it also clears on destroy;
+  the CSS only renders it. Keeping the timer with the host is what lets the same host
+  key the mark off the navigation that makes the destination exist (see the abwab
+  README's reveal note) instead of off the click.
+- **The persistent variant: a search match mark (ux-slice-l).** The same "this row is the
+  one" problem with a different lifetime — it holds for as long as the query does instead of
+  decaying. Same reasoning rules out a tint (see above), so it is also outline-family, but it
+  takes a **different CSS property**: `box-shadow: inset 0 0 0 1px var(--qd-accent)`, while
+  the reveal keeps `outline`. That split is the point. The reveal ring and `:focus-visible`
+  already both claim `outline`, and a third claimant would make which mark shows depend on
+  SCSS declaration order — a silent-reformat hazard. Separate properties compose
+  order-independently: **match + revealed** shows the 2px decaying outline around the static
+  1px inset ring, and **match + focused** shows the focus ring with the match still visible.
+  The 1px/2px pairing keeps the persistent mark quieter than the transient one. It never
+  animates, so reduced motion needs nothing new; the row's `border-radius` is followed by an
+  inset shadow, so it hugs the same shape hover does. **Do not unify the two onto one
+  property** — that reintroduces the race this split removes.
+  Measured in-browser (1024px and 1440px, both themes, rest / hover / selected / focused —
+  16 readings): the mark is `oklch(0.49 0.068 176.3)` in light against fills of transparent,
+  `oklch(0.945 0.015 94.2)` hover and `oklch(0.954 0.01 164.9)` selected — a lightness delta
+  of 0.46–0.46 on the two fills; in dark it is `oklch(0.772 0.098 82)` against
+  `oklch(0.265 0.039 262.7)` hover and `oklch(0.25 0.03 281.2)` selected, delta 0.51–0.52.
+  The shadow was byte-identical in all four states in both themes — no fill and no focus ring
+  overwrites it.
+- Compose, do not re-style — a second consumer takes this class shape, not a new one.
+
+### Viewport reservation
+- **Purpose:** a page's content region reserves a full viewport below the navbar, so
+  no state change (loading → loaded → empty → error) resizes the page frame. Slice
+  B2's item 4; the shell already made the page *scroll* one footer-height
+  (`.qd-shell-viewport { min-height: 100vh }`, `_layout.scss`) — this is the
+  separate, narrower claim that a page's own content fills what the shell reserves.
+- **The arithmetic is always `100dvh` minus the navbar token, never a footer
+  number:** `min-block-size: calc(100dvh - var(--qd-navbar-block-size))`. A
+  `--qd-footer-block-size` token was considered and refused — the footer has no
+  stable height (`qd-footer.component.html`'s health indicator has three branches,
+  one with a retry button, all free to wrap at narrow widths), so a token for it
+  would be a magic number wearing a token's clothes. The reservation instead lets
+  the footer sit wholly below the fold, unconditionally.
+- **Requires `box-sizing: border-box` on the element carrying the reservation.**
+  The app has no global `border-box`; without it the reservation overshoots the
+  viewport by that element's own padding under the default `content-box`.
+  `.qd-page-frame` (`_layout.scss`) already carries `border-box`, which is why the
+  page-frame rename (§2) is a prerequisite of this pattern, not a coincidence.
+- **Abwab-local for now.** The reservation lives on `abwab-page.component.scss`
+  (`.abwab-page__frame`), not on the shared `.qd-page-frame` rule — promoting it
+  there would silently reserve a viewport on all five explorer pages, which nobody
+  has measured. **Generalize it only when** a second feature's page needs the same
+  state-stability guarantee; at that point promote the rule onto `.qd-page-frame`
+  itself and re-verify the five explorer pages' bottom-of-page geometry (their
+  existing `padding-block-end` mobile-stat-bar reservation interacts with any
+  `min-block-size` added alongside it) rather than assuming the abwab measurement
+  transfers.
+- **Reserving space is not enough — the content must stretch into it.** The
+  reservation on the frame only bounds the frame; a child card still collapses to
+  its own content unless something in the chain between frame and card carries
+  `flex: 1; min-block-size: 0`. Abwab's chain: `.abwab-page__frame` (the
+  reservation) → `.abwab-page__layout` (`flex: 1; min-block-size: 0`) →
+  `.abwab-page__main` (`align-self: stretch`, its own column flex context) →
+  `.abwab-page__tree-card` (`flex: 1; min-block-size: 0`, replacing a fixed
+  `min-height`). The row's `align-items: flex-start` stays put rather than becoming
+  `stretch` — `.abwab-page__side` is `position: sticky`, and stretching the row
+  would give the sticky aside zero scroll travel, silently breaking it. Stretch the
+  main column with `align-self`, not the row with `align-items`.
+
+### Sticky app chrome
+- **Purpose:** `.qd-navbar` (`_layout.scss`) stays visible while the page scrolls —
+  Slice B2, item 6, T901. `position: sticky; inset-block-start: 0; z-index:
+  var(--qd-z-mobile-nav)`, **not** `--qd-z-sticky` — see the stacking-context entry below
+  for why the rung had to be `--qd-z-mobile-nav`, the one its own dropdown and mobile menu
+  already declare.
+- **A sticky element's containing block must be TALLER than the element itself, or
+  it never sticks at all — not a Chrome quirk, spec behavior in every engine.** A
+  sticky box's travel is clamped to its containing block's content box; when the
+  containing block is exactly the element's own height, available travel is zero,
+  so the box can never leave its static position and just scrolls away with the
+  page. This is the single most common real-world cause of "sticky doesn't stick,"
+  and it bit this exact rung: `.qd-navbar`'s Angular component host
+  (`<qd-top-navbar>`) is a flex item of `.qd-shell-viewport` (flex items are
+  blockified), and with no height of its own it wraps the 56px navbar in a 56px
+  box — zero travel. The fix is `:host { display: contents; }` on
+  `top-navbar.component.scss`, which drops the host out of the box tree so
+  `.qd-navbar` becomes the direct flex item of the (903px+) `.qd-shell-viewport`
+  instead. **Any future sticky element whose component host wraps it tightly hits
+  the same wall** — check the sticky element's actual containing block in the
+  browser before shipping, not just its computed `position`/`top`.
+- **Both viewport-relative sticky offsets that predate this rung had to be
+  re-based onto it, or two shipped surfaces regress (T902):**
+  `--qd-mushaf-sticky-top` (`_tokens.scss`) and `.abwab-page__side`'s `top`
+  (`abwab-page.component.scss`) both become `calc(var(--qd-navbar-block-size) +
+  <existing offset>)`. **`--qd-mushaf-panel-height` had to be re-derived from the
+  re-based offset, not just the bare navbar token** — sizing it as `100dvh -
+  var(--qd-navbar-block-size)` leaves the panel's stuck bottom edge exactly
+  `--qd-mushaf-sticky-top`'s extra gap (`--qd-space-3`) past the viewport once
+  stuck, since the height formula never accounted for that gap. Re-derived as
+  `100dvh - var(--qd-mushaf-sticky-top)` instead (`_tokens.scss`), which makes the
+  panel's stuck bottom edge land exactly flush with the viewport by construction:
+  CSS custom properties resolve at used-value time, so referencing a token declared
+  later in the same block is fine. **The lesson generalizes: a sticky element's own
+  height/`min-block-size`/`max-block-size` must be measured from its OWN stuck
+  `top`, never from a shorter token that ignores part of that offset** — the two
+  will only coincide by accident.
+- **A sticky element's own rung must be the SAME rung its descendant menus already declare, or
+  it clamps them — this is a real mechanism, resolved by rung choice, not a limitation.**
+  `position: sticky` unconditionally establishes a new stacking context in every current engine,
+  regardless of `z-index` value (verified: forcing `.qd-navbar`'s `z-index` to `auto` does not
+  restore the escape — sticky itself is the trigger, confirmed with an isolated repro on this
+  app's own page). `.qd-navbar`'s own dropdown menu and mobile-menu overlay
+  (`top-navbar.component.scss`) both already declare `--qd-z-mobile-nav` (45) for themselves.
+  Putting `.qd-navbar` on `--qd-z-sticky` (5) instead — the first, wrong instinct, since it reads
+  as "the lowest rung, so everything else wins" — clamps those descendants down to 5 against
+  anything painting *outside* the navbar, regardless of their own declared z-index. **That isn't
+  only a dropdown problem: confirmed against every z-scale consumer (`grep -rn "var(--qd-z-"`),
+  it silently breaks three real surfaces once the navbar is sticky:**
+  1. `.dropdown-menu` (`--qd-z-mobile-nav`) loses to a `--qd-z-floating` (40) sibling outside the
+     navbar — confirmed live with a synthetic probe positioned over an open dropdown.
+  2. `.mobile-menu` (`--qd-z-mobile-nav`, `position: fixed; inset: 0`, the full-screen mobile nav
+     overlay) would paint *below* every page popover (`--qd-z-popover` = 30) and below
+     `.detail-modal-shell__restore` (`--qd-z-floating` = 40) — a visible regression, not latent.
+  3. Page popovers (`source-selector`, `surah-jump-picker`, `explorer-association-filter`, all
+     `--qd-z-popover` = 30) would paint *over* the sticky navbar's own box on a scrolled page — a
+     failure mode that did not exist before the navbar was sticky, since content never used to
+     scroll under it.
+  **Resolution: `.qd-navbar` sits on `--qd-z-mobile-nav` (45), the same rung its dropdown and
+  mobile menu already declare** — not a new token, and not a respacing of the scale. This
+  satisfies the scale's stated purpose exactly (§4: "deliberately below `--qd-z-menu-backdrop`,
+  so row menus and modals paint above the chrome") while fixing the mechanism: 45 beats popover
+  (30) and floating (40), so a `qd-context-menu`/modal backdrop still paints above the chrome at
+  49/50/51. Re-verified live after the fix: an open dropdown now beats a `--qd-z-floating` probe
+  at the same screen position; `.mobile-menu` covers page content; a `qd-context-menu` and a modal
+  backdrop still paint above the sticky navbar; a page popover no longer overpaints the navbar on
+  a scrolled page. **`--qd-z-sticky` (5) stays reserved for a genuinely in-page sticky element
+  with no competing descendants of its own** (`mushaf-header-navigation.component.scss` is the one
+  consumer) — the failure mode above is specific to a sticky element that *also* hosts its own
+  higher-rung menus, which is why respacing the whole scale was rejected: nothing else on the
+  scale has that shape.
+
+### Chrome-inert rule
+- **Purpose:** while any modal dialog holds `ScrollLockService`'s lock, `.qd-navbar`
+  itself goes `[inert]` + `[aria-hidden="true"]` — Slice B2, item 6's keyboard half,
+  T904, completing Slice A's T203. Copies `app.ts:14`'s existing shell-inert pairing
+  at the one level that does not also inert the dialog: `inert` goes on **the
+  navbar, not the shell**, because abwab's modals render *inside* `<main>`, inside
+  the shell — shell-level inert would inert the dialog itself. `.qd-navbar` is a
+  sibling of `<main>`, so inerting it leaves every dialog interactive.
+- **`ScrollLockService.lockCount` is the one piece of state every modal dialog in
+  the app already holds** (`shared/ui/modal-scroll-lock/`) — it gained a
+  signal-backed `isLocked` computed for this (`scroll-lock.service.ts`), rather than
+  a second "any modal open" service, which would duplicate `lockCount`'s job and
+  give two sources of truth for the same fact.
+- **Blast radius: nine surfaces, enumerated because it reaches beyond abwab.** Four
+  abwab modals (`abwab-door-modal`, `abwab-relations-modal`,
+  `abwab-template-copy-modal`, `abwab-template-node-modal`) plus, as of this phase,
+  `abwab-sections-modal` and `abwab-move-picker` (T905 — they render real
+  `.qd-modal`/`.qd-modal-backdrop` dialogs and previously held no lock, so the page
+  also scrolled behind them; both gaps close together) — six abwab modals in all —
+  plus **five words surfaces** that already held the lock before this phase
+  (`root-details-panel`, `lemma-details-panel`, `stem-details-panel`,
+  `word-type-details-panel`, `word-drilldown-modal`). The navbar is
+  keyboard-unreachable while any of these nine is open. This is an intentional
+  behavior change on five shipped words surfaces nobody asked about, accepted
+  deliberately: each of the nine is a modal dialog, "app chrome is not reachable
+  while a modal dialog is open" is not an abwab-only doctrine, and the precedent is
+  *stronger* — `app.ts:14` already inerts the entire shell for the global overlay.
+- **Inert-inside-inert is real and was observed live, not just unit-tested.** With a
+  words drawer (e.g. `root-details-panel`, holding the lock) open *under* the global
+  detail overlay (`app.ts`'s `overlayOpen()`, which inerts the whole shell): the
+  shell carries `inert`/`aria-hidden` from `app.ts`, and `.qd-navbar` — itself a
+  shell descendant, already inert by cascade — *also* carries its own explicit
+  `inert`/`aria-hidden` from `ScrollLockService.isLocked()`. Both apply
+  simultaneously and harmlessly; browsers treat nested/duplicate `inert` as
+  idempotent. `app.nested-layers.spec.ts`'s "exactly one focus trap enabled" (the
+  dialog's, not the drawer's) still holds in this state — confirmed both by that
+  spec and by a live count of enabled `.cdk-focus-trap-anchor` elements in the
+  browser (`evidence.md` phase 9).
+
+### `qd-result-count`
+- **Purpose:** a one-line "label: N" stat that holds its line across loading/error/
+  loaded instead of unmounting and resizing whatever it sits above (Feature 026,
+  US4). Three states render the same line box: loaded shows the label plus the
+  number; loading shows an `aria-hidden` skeleton bar with sr-only loading text
+  (`role="status"`); error shows an `aria-hidden` muted placeholder (`—`) — the
+  page's own error surface stays the only place that announces or explains a
+  failure. Never a card, never a KPI row — `PRODUCT.md`'s anti-reference list names
+  "identical gradient stat cards" explicitly.
+- **Promoted to `shared/ui/result-count/` in Slice B2 (T1001)**, class
+  `ExplorerResultCountComponent`, selector `qd-result-count, qd-explorer-result-count`
+  — the same dual-selector alias mechanism as `qd-panel-skeleton,
+  qd-explorer-panel-skeleton` (`ui/explorer-panel-skeleton/`), kept so the four
+  existing words explorer call-sites (Unique Words, Roots, Lemmas, Stems) and their
+  spec needed no template change, only an import-path update. New call-sites (item
+  17's abwab stats bar) use the neutral `qd-result-count` selector.
+- **Its own labels are read through a TDZ-safe getter**
+  (`result-count.labels.ts` → `protected get labels()`), never a `readonly` field —
+  a `readonly` field resolves to `undefined` in the bundled test build (temporal
+  dead zone). This is the same rule `features/words/README.md` and
+  `features/abwab/README.md` state for their own `*.labels.ts` files; the promotion
+  preserved the idiom rather than dropping it on the move.
+- **Renders `labelPrefix()`: `count()` — a data-display idiom, not a counted-noun
+  sentence.** Every consumer (the four words explorers' "عدد الجذور: 1642"-shaped
+  copy, and item 17's abwab «كل الأبواب: N» / «أبواب هذا التبويب: N») passes a
+  static `labelPrefix` and the raw digit; none run the count through
+  `abwab.labels.ts`'s `countPhrase` agreement forms, because "label: N" is a stat
+  display, not a sentence embedding a counted noun — the "never a bare interpolated
+  count" rule targets sentence-shaped copy like `archiveConfirm`, not this shape.
+- **Item 17's second consumer, abwab's stats bar, is two instances above the
+  toolbar** (`abwab-page.component.html`), both live-only and both derived from the
+  existing tree snapshot with no new backend read — see `features/abwab/README.md`
+  for the two numbers, the nullable-`sectionId` caveat, and why the stats stay
+  mounted through every tab switch.

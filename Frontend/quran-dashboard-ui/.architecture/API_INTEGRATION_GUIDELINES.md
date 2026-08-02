@@ -307,6 +307,35 @@ Rules:
 - Unexpected errors should produce a controlled page error state.
 - Technical details should stay out of the UI.
 
+### A third category: `304 Not Modified`
+
+A conditional read adds a category that arrives on the error channel but is **not** a failure.
+`HttpClient` treats only `2xx` as ok (`ok = status >= 200 && status < 300`), so a `304` is
+routed to `observer.error` as an `HttpErrorResponse` — distinguishable by `err.status`, with no
+interceptor needed.
+
+Rules:
+
+- **`304` means "keep the current value".** Handle it before the generic error branch: end
+  loading, leave the held value in place, and **set no error**. Absorbing it into the generic
+  branch puts a failure banner over live, current data on every cached revisit.
+- **The validator lives in the facade, beside the value it validates, and the two are written
+  as one unit** — replaced together on a `200`, kept together on a failure or a `304`, and
+  dropped together wherever the value is cleared. A validator that outlives its value can
+  answer a later fetch `304` with nothing left to render.
+- **A validator is per resource.** When a facade owns a resource that changes identity (a
+  selected entity), key the validator by that identity and send it only for the id it was
+  issued for.
+- **`observe: 'response'` is the sanctioned shape for a validator-bearing read.** The api
+  service attaches `If-None-Match` when a validator is passed and returns the whole response;
+  reading `.body` and `.headers.get('ETag')` is the facade's job. API services stay
+  mapping-free.
+- **The header is only readable cross-origin if the backend exposes it.** `ETag` is not a
+  CORS-safelisted response header, so without `WithExposedHeaders("ETag")` on the server policy
+  `headers.get('ETag')` returns `null`, no validator is ever stored, and the whole conditional
+  path degrades to unconditional fetches **with nothing erroring**. Verify it in a browser, not
+  in a unit test.
+
 ## Quranic Data Safety in API Integration
 
 Rules:

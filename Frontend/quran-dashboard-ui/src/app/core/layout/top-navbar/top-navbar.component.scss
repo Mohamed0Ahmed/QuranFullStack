@@ -1,3 +1,16 @@
+// `display: contents` (Slice B2, T901) drops the component host out of the box tree so
+// `.qd-navbar` becomes the direct flex item of `.qd-shell-viewport` (903px+) instead of this
+// host. Without it, the host wraps `.qd-navbar` in a block exactly as tall as the navbar
+// itself (flex items are blockified) — a sticky box's travel is clamped to its containing
+// block's content box, so a containing block exactly the element's own height gives it zero
+// travel: it can never leave its static position and just scrolls away with the page. Spec
+// behavior in every engine, not a Chrome quirk — confirmed in the browser (`evidence.md`
+// phase 9). Any future sticky element wrapped tightly by its own component host hits the
+// same wall; the remedy generalizes (`UI_STYLE_SYSTEM.md` §17 "Sticky app chrome").
+:host {
+  display: contents;
+}
+
 .brand {
   text-decoration: none;
   color: inherit;
@@ -41,8 +54,7 @@
   color: var(--qd-accent-text);
 }
 
-.more-dropdown,
-.words-dropdown {
+.nav-dropdown {
   position: relative;
 }
 
@@ -51,8 +63,7 @@
   transition: transform var(--qd-t-fast);
 }
 
-.more-dropdown.open .chevron,
-.words-dropdown.open .chevron {
+.nav-dropdown.open .chevron {
   transform: rotate(180deg);
 }
 
@@ -60,7 +71,9 @@
   position: absolute;
   top: 100%;
   inset-inline-start: 0;
-  z-index: 100;
+  /* Below --qd-z-modal-backdrop (was 100, above every modal): an abwab modal does not
+     make the shell inert, so an open navbar dropdown could paint over the dialog. */
+  z-index: var(--qd-z-mobile-nav);
   background: var(--qd-surface);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
@@ -133,7 +146,8 @@
 .mobile-menu {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  /* Same rung/reasoning as .dropdown-menu above (was 200). */
+  z-index: var(--qd-z-mobile-nav);
   background: var(--qd-overlay);
 }
 
@@ -166,6 +180,16 @@
 
 .mobile-link.active {
   color: var(--qd-accent-text);
+}
+
+.mobile-menu-sublist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mobile-menu-sublist .mobile-link {
+  padding-inline-start: var(--qd-space-6);
 }
 
 @media (max-width: 767px) {

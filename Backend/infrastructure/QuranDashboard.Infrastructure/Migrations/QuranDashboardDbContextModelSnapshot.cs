@@ -23,6 +23,459 @@ namespace QuranDashboard.Infrastructure.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at");
+
+                    b.Property<int?>("ApprovedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("approved_by");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<int?>("GlobalOrderValue")
+                        .HasColumnType("integer")
+                        .HasColumnName("global_order_value");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<int>("OrderValue")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_value");
+
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("integer")
+                        .HasColumnName("parent_id");
+
+                    b.Property<string>("RepresentativeAyahText")
+                        .HasColumnType("text")
+                        .HasColumnName("representative_ayah_text");
+
+                    b.Property<int>("SectionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("section_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedAtUtc");
+
+                    b.HasIndex("GlobalOrderValue")
+                        .HasFilter("parent_id IS NULL AND deleted_at IS NULL");
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("SectionId", "ParentId", "Name")
+                        .IsUnique()
+                        .HasFilter("deleted_at IS NULL");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("SectionId", "ParentId", "Name"), false);
+
+                    b.HasIndex("SectionId", "ParentId", "OrderValue");
+
+                    b.ToTable("abwab_doors", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoorAlias", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at");
+
+                    b.Property<int?>("ApprovedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("approved_by");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<int>("DoorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("door_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("updated_by");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("value");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DoorId");
+
+                    b.ToTable("abwab_door_aliases", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoorRelation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at");
+
+                    b.Property<int?>("ApprovedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("approved_by");
+
+                    b.Property<int?>("BroaderDoorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("broader_door_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<int>("DoorAId")
+                        .HasColumnType("integer")
+                        .HasColumnName("door_a_id");
+
+                    b.Property<int>("DoorBId")
+                        .HasColumnType("integer")
+                        .HasColumnName("door_b_id");
+
+                    b.Property<int>("RelationType")
+                        .HasColumnType("integer")
+                        .HasColumnName("relation_type");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedAtUtc");
+
+                    b.HasIndex("DoorBId");
+
+                    b.HasIndex("DoorAId", "DoorBId", "RelationType")
+                        .IsUnique()
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.ToTable("abwab_door_relations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_abwab_door_relations_canonical_pair", "door_a_id < door_b_id");
+
+                            t.HasCheckConstraint("CK_abwab_door_relations_direction", "(relation_type = 3) = (broader_door_id IS NOT NULL) AND (broader_door_id IS NULL OR broader_door_id IN (door_a_id, door_b_id))");
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabSection", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at");
+
+                    b.Property<int?>("ApprovedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("approved_by");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<int>("OrderValue")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_value");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedAtUtc");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.ToTable("abwab_sections", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at");
+
+                    b.Property<int?>("ApprovedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("approved_by");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedAtUtc");
+
+                    b.ToTable("abwab_templates", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabTemplateNode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.PrimitiveCollection<string[]>("Aliases")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("aliases");
+
+                    b.Property<DateTimeOffset?>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at");
+
+                    b.Property<int?>("ApprovedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("approved_by");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<int>("OrderValue")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_value");
+
+                    b.Property<int?>("ParentNodeId")
+                        .HasColumnType("integer")
+                        .HasColumnName("parent_node_id");
+
+                    b.Property<string>("RepresentativeAyahText")
+                        .HasColumnType("text")
+                        .HasColumnName("representative_ayah_text");
+
+                    b.Property<int>("TemplateId")
+                        .HasColumnType("integer")
+                        .HasColumnName("template_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedAtUtc");
+
+                    b.HasIndex("ParentNodeId");
+
+                    b.HasIndex("TemplateId")
+                        .IsUnique()
+                        .HasFilter("parent_node_id IS NULL AND deleted_at IS NULL");
+
+                    b.HasIndex("TemplateId", "ParentNodeId", "Name")
+                        .IsUnique()
+                        .HasFilter("deleted_at IS NULL");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("TemplateId", "ParentNodeId", "Name"), false);
+
+                    b.HasIndex("TemplateId", "ParentNodeId", "OrderValue");
+
+                    b.ToTable("abwab_template_nodes", (string)null);
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Access.Role", b =>
                 {
                     b.Property<int>("Id")
@@ -2220,6 +2673,58 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .HasFilter("is_ayah_marker = false");
 
                     b.ToTable("quran_words", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoor", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoor", null)
+                        .WithMany()
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabSection", null)
+                        .WithMany()
+                        .HasForeignKey("SectionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoorAlias", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoor", null)
+                        .WithMany()
+                        .HasForeignKey("DoorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoorRelation", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoor", null)
+                        .WithMany()
+                        .HasForeignKey("DoorAId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoor", null)
+                        .WithMany()
+                        .HasForeignKey("DoorBId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabTemplateNode", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabTemplateNode", null)
+                        .WithMany()
+                        .HasForeignKey("ParentNodeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabTemplate", null)
+                        .WithMany()
+                        .HasForeignKey("TemplateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("QuranDashboard.Domain.Access.User", b =>

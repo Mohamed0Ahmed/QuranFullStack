@@ -50,6 +50,8 @@ context for those.
 **Always read:**
 
 - `CODING_PRINCIPLES.md`
+- `TESTING_STRATEGY.md` — when judging whether the executed tests were sufficient
+  for the changed scope (the Verification Check below).
 
 **For deep code-quality review, also consult the clean-code reference pack** (naming
 and functions, comments and formatting, SOLID, DRY/KISS/YAGNI, and AI-generated-code
@@ -375,6 +377,35 @@ Keep this distinct from build/test verification below:
 - Data-related work includes a validation/report path.
 - Any skipped verification is clearly stated. If build/test status is unknown, say
   unknown — do not assume success.
+- Judge verification *sufficiency* against `TESTING_STRATEGY.md` (workspace root),
+  the single source of truth for test selection tiers:
+  - verify the executed tier matches the changed scope and risk;
+  - do not demand a full or exhaustive suite when the strategy accepts focused
+    (Tier A/B) evidence for the change under review;
+  - a change hitting a Tier D trigger (`DataPipelines`, importer/data-generation
+    tools, pipeline tables/migrations, canonical resources, shared persistence
+    infrastructure) with no affected pipeline family run is a **BLOCKING** finding;
+  - required canonical tests that skipped because `resources/import-sources/` was
+    absent are missing evidence, not passing evidence (`TESTING_STRATEGY.md` §3
+    Tier E and §9);
+  - there is no CI (`TESTING_STRATEGY.md` §8) — never accept "CI is green" as
+    evidence, and never assume a gate ran because a workflow would have run it;
+  - the route-parity/smoke gate is active (`QuranDashboard.Tests.Smoke`,
+    `TESTING_STRATEGY.md` §3 Tier A/C, §4, §5). For route, contract, auth, middleware,
+    or binding changes, expect the `Tests.Api.*` families plus a
+    `--filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."` run. **A change that
+    touched an API route, contract, auth, middleware, or binding without the Smoke
+    suite running is a BLOCKING finding**, as is a route added or changed without the
+    matching `SmokeRouteCatalog` entry in the same change
+    (`SmokeCoverageParityTests` fails otherwise — `TESTING_STRATEGY.md` §10);
+  - Smoke evidence MUST state whether the `Tests.Smoke.Data` tier ran or skipped.
+    "74 passed, 0 skipped" (dump staged) and "61 passed, data tier skipped" (dump
+    absent) are both acceptable; an unqualified "smoke passed" is not. A *stale* dump
+    fails loud rather than skipping, so a skip claim paired with a failure is not a
+    resources problem — read the message.
+
+  (Section numbers above refer to `TESTING_STRATEGY.md`, not this skill's own
+  numbered output sections.)
 
 ## Severity Levels
 
@@ -479,7 +510,10 @@ changed, omit it. When present, report:
 
 ## 9. Verification Check
 
-Report build/test evidence if provided. If no build/test was run, say so clearly.
+Report build/test evidence if provided, and state the executed verification tier
+versus the tier `TESTING_STRATEGY.md` requires for the changed scope (sufficient /
+insufficient / stale). If no build/test was run, say so clearly. Skipped required
+canonical tests count as missing evidence.
 
 ## Commit workflow reminder
 

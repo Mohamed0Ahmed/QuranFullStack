@@ -1,0 +1,156 @@
+<div class="abwab-tree-frame" [class.abwab-tree-frame--bulk]="bulkMode()">
+  <!-- Presentational only: the per-badge aria-labels remain the accessible layer, so this must
+       stay outside the role="tree" element rather than becoming a row inside it. -->
+  <div class="abwab-tree__header" aria-hidden="true" data-testid="abwab-tree-header">
+    @if (bulkMode()) {
+      <span></span>
+    }
+    <span></span>
+    <span class="abwab-tree__header-cell">{{ headerDirectLabel }}</span>
+    <span class="abwab-tree__header-cell abwab-tree__count--wide">{{ headerTotalLabel }}</span>
+    <span class="abwab-tree__header-cell abwab-tree__count--wide">{{ headerDepthLabel }}</span>
+    <span></span>
+    @if (!bulkMode()) {
+      <span></span>
+    }
+  </div>
+  <div class="abwab-tree" role="tree" [attr.aria-label]="ariaLabel()" data-testid="abwab-tree">
+  @for (row of visibleRows(); track row.id) {
+    @let node = nodesById().get(row.id);
+    @if (node) {
+      <div
+        class="abwab-tree__row"
+        [class.abwab-tree__row--revealed]="revealedId() === node.id"
+        [class.abwab-tree__row--match]="matchedIds().has(node.id)"
+        role="treeitem"
+        [attr.aria-level]="node.depth + 1"
+        [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
+        [attr.aria-selected]="selectedId() === node.id"
+        [attr.tabindex]="rovingId() === node.id ? 0 : -1"
+        [style.--abwab-tree-depth]="node.depth"
+        [attr.data-testid]="'abwab-tree-row-' + node.id"
+        (click)="onRowClick(node.id)"
+        (dblclick)="onRowDblClick(row)"
+        (contextmenu)="onRowContextMenu($event, node.id)"
+        (keydown)="onKeydown($event)"
+      >
+        <span class="abwab-tree__lead">
+        @if (bulkMode()) {
+          <input
+            type="checkbox"
+            class="qd-checkbox"
+            [checked]="bulkSelectedIds().has(node.id)"
+            [attr.aria-label]="node.name"
+            [attr.data-testid]="'abwab-tree-checkbox-' + node.id"
+            (click)="onCheckboxClick($event, node.id)"
+          />
+        }
+        <button
+          type="button"
+          class="abwab-tree__chevron"
+          [class.abwab-tree__chevron--leaf]="!row.hasChildren"
+          [attr.data-testid]="'abwab-tree-chevron-' + node.id"
+          [attr.tabindex]="-1"
+          (click)="onChevronClick($event, row)"
+        >
+          @if (row.hasChildren) {
+            <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
+          }
+        </button>
+
+        @if (editingId() === node.id) {
+          <input
+            type="number"
+            min="1"
+            class="abwab-tree__order-input"
+            [value]="displayOrder(node)"
+            [attr.data-testid]="'abwab-tree-order-input-' + node.id"
+            (click)="$event.stopPropagation()"
+            (keydown)="onOrderKeydown($event, node.id)"
+            (blur)="cancelOrderEdit(node.id)"
+          />
+        } @else {
+          <span
+            class="abwab-tree__order qd-chip qd-chip--pill"
+            [attr.data-testid]="'abwab-tree-order-' + node.id"
+            (click)="onOrderClick($event, node.id)"
+            >{{ displayOrder(node) }}</span
+          >
+        }
+
+        <span class="abwab-tree__name qd-truncate" [title]="node.name">{{ node.name }}</span>
+        </span>
+
+        <span class="abwab-tree__count-cell">
+          @if (row.hasChildren) {
+            <span
+              class="abwab-tree__count qd-chip__count"
+              [attr.aria-label]="childCountAriaLabel(node.liveChildCount)"
+              [attr.data-testid]="'abwab-tree-count-' + node.id"
+              >{{ node.liveChildCount }}</span
+            >
+          }
+        </span>
+        <span class="abwab-tree__count-cell abwab-tree__count--wide">
+          @if (row.hasChildren) {
+            <span
+              class="abwab-tree__count abwab-tree__count--wide qd-chip__count"
+              [attr.aria-label]="descendantCountAriaLabel(node.liveDescendantCount)"
+              [attr.data-testid]="'abwab-tree-descendants-' + node.id"
+              >{{ node.liveDescendantCount }}</span
+            >
+          }
+        </span>
+        <span class="abwab-tree__count-cell abwab-tree__count--wide">
+          @if (row.hasChildren) {
+            <span
+              class="abwab-tree__count abwab-tree__count--wide qd-chip__count"
+              [attr.aria-label]="depthAriaLabel(node.maxRelativeDepth)"
+              [attr.data-testid]="'abwab-tree-depth-' + node.id"
+              >{{ depthBadge(node.maxRelativeDepth) }}</span
+            >
+          }
+        </span>
+        <span class="abwab-tree__flags">
+          <button
+            type="button"
+            class="abwab-tree__flag qd-chip qd-chip--pill"
+            [class.abwab-tree__flag--empty]="node.relationCount === 0"
+            [attr.aria-label]="relationsAriaLabel(node.name, node.relationCount)"
+            [attr.data-testid]="'abwab-tree-flag-rel-' + node.id"
+            [attr.tabindex]="-1"
+            (click)="onFlagClick($event, node.id)"
+          >
+            {{ relationsFlagLabel }}
+          </button>
+        </span>
+
+        @if (!bulkMode()) {
+          <span class="abwab-tree__actions">
+            <button
+              type="button"
+              class="abwab-tree__act"
+              [attr.aria-label]="addChildAriaLabel(node.name)"
+              [attr.data-testid]="'abwab-tree-add-child-' + node.id"
+              [attr.tabindex]="-1"
+              (click)="onAddChildClick($event, node.id)"
+            >
+              <span aria-hidden="true">＋</span>
+            </button>
+            <button
+              type="button"
+              class="abwab-tree__act"
+              [attr.aria-label]="menuAriaLabel(node.name)"
+              [attr.data-testid]="'abwab-tree-more-' + node.id"
+              [attr.tabindex]="-1"
+              (click)="onMoreClick($event, node.id)"
+            >
+              <span aria-hidden="true">⋯</span>
+            </button>
+          </span>
+        }
+      </div>
+    }
+  }
+</div>
+</div>

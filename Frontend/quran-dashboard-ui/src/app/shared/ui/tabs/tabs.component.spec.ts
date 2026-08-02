@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 
-import { QdTabsComponent } from './tabs.component';
+import { QdTabsComponent, QdTabsLayout } from './tabs.component';
 import { QdTabDirective } from './tab.directive';
 
 type TabKey = 'a' | 'b' | 'c';
@@ -13,7 +13,7 @@ type TabKey = 'a' | 'b' | 'c';
   imports: [QdTabsComponent, QdTabDirective],
   template: `
     <div [attr.dir]="dir()">
-      <qd-tabs ariaLabel="أوضاع العرض">
+      <qd-tabs ariaLabel="أوضاع العرض" [layout]="layout()">
         <button qdTab type="button" [selected]="active() === 'a'" data-testid="tab-a">أ</button>
         <button qdTab type="button" [selected]="active() === 'b'" data-testid="tab-b">ب</button>
         <button qdTab type="button" [selected]="active() === 'c'" data-testid="tab-c">ج</button>
@@ -24,6 +24,7 @@ type TabKey = 'a' | 'b' | 'c';
 class TestTabsHostComponent {
   readonly active = signal<TabKey>('b');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
+  readonly layout = signal<QdTabsLayout>('inline');
 }
 
 describe('QdTabsComponent', () => {
@@ -143,5 +144,20 @@ describe('QdTabsComponent', () => {
     const tabB = root.querySelector('[data-testid="tab-b"]') as HTMLElement;
 
     expect(['none', '']).toContain(getComputedStyle(tabB).transform);
+  });
+
+  // `layout` is a layout switch only: the grid strip keeps the horizontal Arrow/Home/End model
+  // rather than gaining a row-aware one, so what is asserted here is the class the stylesheet keys
+  // off — the geometry itself is a browser fact jsdom cannot measure.
+  it('marks the tablist as a grid when asked, and leaves it inline by default', () => {
+    const fixture = render();
+    const tablist = (fixture.nativeElement as HTMLElement).querySelector('[role="tablist"]')!;
+    expect(tablist.classList.contains('qd-tabs--grid')).toBe(false);
+
+    fixture.componentInstance.layout.set('grid');
+    fixture.detectChanges();
+
+    expect(tablist.classList.contains('qd-tabs--grid')).toBe(true);
+    expect(tablist.getAttribute('aria-orientation')).toBe('horizontal');
   });
 });

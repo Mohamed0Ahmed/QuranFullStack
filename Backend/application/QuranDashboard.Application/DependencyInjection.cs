@@ -1,4 +1,29 @@
 using Microsoft.Extensions.DependencyInjection;
+using QuranDashboard.Application.Abwab.Commands.Sections.CreateSection;
+using QuranDashboard.Application.Abwab.Commands.Sections.RenameSection;
+using QuranDashboard.Application.Abwab.Commands.Sections.DeleteSection;
+using QuranDashboard.Application.Abwab.Commands.Sections.ReorderSection;
+using QuranDashboard.Application.Abwab.Commands.Doors.CreateDoor;
+using QuranDashboard.Application.Abwab.Commands.Doors.EditDoor;
+using QuranDashboard.Application.Abwab.Commands.Doors.MoveDoor;
+using QuranDashboard.Application.Abwab.Commands.Doors.ReorderDoor;
+using QuranDashboard.Application.Abwab.Commands.Doors.BulkMoveDoors;
+using QuranDashboard.Application.Abwab.Commands.Doors.BulkArchiveDoors;
+using QuranDashboard.Application.Abwab.Commands.Doors.DeleteDoor;
+using QuranDashboard.Application.Abwab.Commands.Doors.RestoreDoor;
+using QuranDashboard.Application.Abwab.Queries.GetAbwabTree;
+using QuranDashboard.Application.Abwab.Queries.GetDoorRelations;
+using QuranDashboard.Application.Abwab.Commands.Templates.AddTemplateNode;
+using QuranDashboard.Application.Abwab.Commands.Templates.ApplyTemplate;
+using QuranDashboard.Application.Abwab.Commands.Templates.CreateTemplate;
+using QuranDashboard.Application.Abwab.Commands.Templates.DeleteTemplate;
+using QuranDashboard.Application.Abwab.Commands.Templates.DeleteTemplateNode;
+using QuranDashboard.Application.Abwab.Commands.Templates.EditTemplateNode;
+using QuranDashboard.Application.Abwab.Commands.Templates.ReorderTemplateNode;
+using QuranDashboard.Application.Abwab.Queries.GetTemplate;
+using QuranDashboard.Application.Abwab.Queries.GetTemplates;
+using QuranDashboard.Application.Abwab.Commands.Relations.AddDoorRelations;
+using QuranDashboard.Application.Abwab.Commands.Relations.DeleteDoorRelation;
 using QuranDashboard.Application.Access.Commands.ProvisionCurrentUser;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation.Validation;
@@ -120,6 +145,34 @@ public static class DependencyInjection
         services.AddScoped<GetWordTypeSurahsHandler>();
 
         services.AddScoped<ProvisionCurrentUserHandler>();
+
+        services.AddScoped<CreateSectionHandler>();
+        services.AddScoped<RenameSectionHandler>();
+        services.AddScoped<DeleteSectionHandler>();
+        services.AddScoped<ReorderSectionHandler>();
+
+        services.AddScoped<CreateDoorHandler>();
+        services.AddScoped<EditDoorHandler>();
+        services.AddScoped<MoveDoorHandler>();
+        services.AddScoped<ReorderDoorHandler>();
+        services.AddScoped<BulkMoveDoorsHandler>();
+        services.AddScoped<BulkArchiveDoorsHandler>();
+        services.AddScoped<DeleteDoorHandler>();
+        services.AddScoped<RestoreDoorHandler>();
+        services.AddScoped<GetAbwabTreeHandler>();
+        services.AddScoped<GetDoorRelationsHandler>();
+        services.AddScoped<AddDoorRelationsHandler>();
+        services.AddScoped<DeleteDoorRelationHandler>();
+
+        services.AddScoped<GetTemplatesHandler>();
+        services.AddScoped<GetTemplateHandler>();
+        services.AddScoped<CreateTemplateHandler>();
+        services.AddScoped<DeleteTemplateHandler>();
+        services.AddScoped<AddTemplateNodeHandler>();
+        services.AddScoped<EditTemplateNodeHandler>();
+        services.AddScoped<ReorderTemplateNodeHandler>();
+        services.AddScoped<DeleteTemplateNodeHandler>();
+        services.AddScoped<ApplyTemplateHandler>();
 
         return services;
     }

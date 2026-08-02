@@ -44,12 +44,22 @@ per-feature.
 - `layout/` — `app-shell`, `top-navbar`, `footer`, `shell-layout.model.ts`.
 - `navigation/` — `route-paths.ts` (canonical route constants — incl. `DASHBOARD_ROUTE_PATH`
   and `CALLBACK_PATH` for the Feature-033 landing route — plus `navLabel(key)` for a
-  nav item's Arabic label) + `nav-items.ts` + `app-title.strategy.ts` (the `TitleStrategy`
+  nav item's Arabic label) + `app-title.strategy.ts` (the `TitleStrategy`
   registered in `app.config.ts`: browser-tab title = `<route title> — المنهج القرآني`, and
   the brand alone on the titleless `dashboard`/home route; each route supplies its own
-  `title` from its nav label or explorer page-title constant) + `words-nav-items.ts`
-  (`WORDS_MENU_ITEMS` — the Words-section sub-nav rendered as the top-navbar
-  "الكلمات والجذور" dropdown; routes from `route-paths`, labels owned here in core).
+  `title` from its nav label or explorer page-title constant). The nav menu model is three
+  files: `nav-items.ts` (the flat `NAV_ITEMS` registry — routes, titles, placeholder
+  derivation; `NavItem` also carries optional `children`/`queryParams`, navbar-presentation
+  fields that never enter this registry); `words-nav-items.ts` (`WORDS_MENU_ITEMS` as
+  `NavItem[]`, labels owned here in core, routes from `route-paths`); and `nav-menu.ts` (the
+  navbar's presentation tree — `NAV_MENU`, `NAV_ITEMS` with children attached from a
+  `childrenByParentKey` table). Children attach **outside** `NAV_ITEMS` because
+  `route-paths.ts` imports `NAV_ITEMS` and derives every route constant from it at module
+  init — nesting children into `nav-items.ts` would create an import cycle that hits a TDZ
+  `ReferenceError`; recorded here so nobody "simplifies" the children back in. The top-navbar
+  dropdown ("الكلمات والجذور", "الأبواب") is `@if (item.children)`, data-driven, not a
+  per-key template branch; «الأرشيف» (`/abwab` + `{archive:'1'}`) is the app's first
+  query-param nav entry.
 - `navigation/detail-overlay/` — the app-wide floating detail-overlay navigation layer
   (Feature 029, Change B): `detail-overlay.models.ts` (versioned `v1~…` frame union — the
   URL contract, deliberately decoupled from Words models), `detail-overlay-url-codec.ts`
@@ -86,9 +96,11 @@ per-feature.
   anonymously (the Phase-1 blanket `authGuard` was removed, decision record §G1). URLs are
   unchanged. `/callback` (`CALLBACK_PATH`, the `features/auth/` landing page) is public and
   sits before the `**` wildcard in `app.routes.ts`. The placeholder nav routes (e.g.
-  `/tafsirs`, `/gates`) stay top-level and unguarded. Nothing is protected in this phase:
-  the reusable `roleGuard` exists but is attached to no route — a future admin feature
-  wires it onto its own admin routes.
+  `/tafsirs`) stay top-level and unguarded. `/abwab` (Abwab doors & sections, Slice B) is a
+  real top-level lazy feature route, same unguarded posture — see
+  `../features/abwab/README.md`. Nothing is protected in this phase: the reusable
+  `roleGuard` exists but is attached to no route — a future admin feature wires it onto its
+  own admin routes.
 - Interceptor order matters (`secureUrlInterceptor`, then `authInterceptor()`, then
   `devLatencyInterceptor`); keep registration order in `app.config.ts`. `authInterceptor()`
   (from `angular-auth-oidc-client`) attaches the Logto Bearer token only to requests under

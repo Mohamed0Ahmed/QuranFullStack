@@ -13,6 +13,29 @@ Before adding or changing logging, exception handling, diagnostics, DataPipeline
 
 - `.architecture/LOGGING_GUIDELINES.md`
 
+## Backend Test Selection
+
+Before selecting or running Backend tests, read:
+
+- `../TESTING_STRATEGY.md` (workspace root)
+
+Use the tier required by the changed scope (§3, §4). Do not run the full Backend suite or
+the slow Quran data-pipeline families after every phase unless a Tier D trigger fires —
+`DataPipelines` code, importer tools, canonical packages under `resources/import-sources/`,
+pipeline entities/migrations, or shared persistence that can reach pipeline tables. The
+validated `dotnet test` filters live in §5; the ten pipeline namespaces are dot-bounded, so
+keep the leading and trailing dots and list the enriched morphology family explicitly.
+
+- There is no CI (§8) — every tier is a local gate, and "CI is green" is never evidence.
+- The route-parity/smoke gate is active: `QuranDashboard.Tests.Smoke` (§3 Tier A/C, §4, §5).
+  Route, contract, auth, middleware, or binding changes MUST run
+  `--filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."` alongside the `Tests.Api.*`
+  families, and the evidence MUST state whether the `Tests.Smoke.Data` tier ran or skipped
+  (it self-skips when `resources/db-dumps/quran-canonical/` is absent; a stale dump fails
+  loud). Adding or changing a route requires the matching `SmokeRouteCatalog` entry in the
+  same change — `SmokeCoverageParityTests` fails otherwise (§10). The namespace is excluded
+  from the Tier B/C no-pipeline filter via `&FullyQualifiedName!~QuranDashboard.Tests.Smoke.`.
+
 ## Backend Local READMEs
 
 - Before touching a backend area, read the nearest `README.md` (e.g.
@@ -50,7 +73,7 @@ Planning and Spec Kit separation:
 
 - Workspace planning reports and pre-Spec Kit documents belong under `/projects/Dashboard/App/docs/feature-XXX-feature-name/`.
 - Spec Kit artifacts belong under `/projects/Dashboard/App/specs/<feature>/`, the per-feature planning workspace; for an active feature its `spec`/`plan`/`tasks`/`contracts` are live planning inputs (the Spec-Kit implementation-review checks the work against `specs/<feature>/contracts/`).
-- Merged features 001–019 are historical (their `contracts/` were removed); steady-state contract truth is code + nearest README, indexed by `docs/contracts/`. New features still populate `specs/<feature>/contracts/`.
+- Steady-state contract truth is code + nearest README, indexed by `docs/contracts/`. New features still populate `specs/<feature>/contracts/`. Closed features' `specs/`, `docs/feature-XXX-*/`, and `Backend/report/feature-XXX-*/` folders are swept per the planning-artifact lifecycle rule in the root `CLAUDE.md` — only open features plus the two most recently closed ones remain.
 - Backend post-work and validation reports belong under `/projects/Dashboard/App/Backend/report/`, not under workspace `docs/`.
 
 ## EF Core Migrations

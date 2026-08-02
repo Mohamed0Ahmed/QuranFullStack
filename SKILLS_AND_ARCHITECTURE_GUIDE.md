@@ -44,6 +44,7 @@ These live at the workspace root and apply across Backend + Frontend.
 | File | What it is for | Who/what reads it | When it matters |
 |------|----------------|-------------------|-----------------|
 | `CODING_PRINCIPLES.md` | General coding principles for the whole workspace: Clean Code, SOLID, DRY/KISS/YAGNI, separation of concerns, strong typing, focused changes, error handling, testing/verification, **Quranic Data Safety**, UI/product consistency, Definition of Done. Also points to the deeper `clean-code-guard` references and the `test-guard` skill. | Every agent/human before implementation; `engineering-review` (always reads it); `backend-structure-review` (always reads it). | All implementation and review work. |
+| `TESTING_STRATEGY.md` | Single source of truth for **test selection, verification depth, execution tiers (A–E), slow data-pipeline triggers, and the phase/milestone/PR/release gates**. Tier A focused per-phase, Tier B no-pipeline milestone regression, Tier C ordinary pre-PR, Tier D pipeline-triggered, Tier E release/canonical acceptance, plus the change-to-tier matrix (its §4) and validated command catalogs (its §5 Backend, §6 Frontend). Records one absence that changes what counts as evidence — **no CI** (its §8) — and one active gate agents forget: the **route-parity/smoke tier** `QuranDashboard.Tests.Smoke`, required for route/contract/auth/middleware/binding changes (its §3 Tier A/C, §4, §5). The browser E2E layer is **opt-in and not a required tier** (its §3 Tier E, §6). | Every agent/human before selecting or running tests; `engineering-review` (verification sufficiency); `test-guard` (evidence tiers); `pr-context-prep` (evidence section). | Whenever tests are selected, run, or verification evidence is judged. |
 | `PRODUCT.md` | Product strategy & context: register, users (Arabic-speaking admins/supervisors/teachers), product purpose (manage Quran research data, review ayah links, organize gates أبواب, publish), principles, anti-references. | Anyone doing user-facing/product or UI work. | Frontend/UX/product decisions and any backend change that affects user-facing behavior. |
 | `DESIGN.md` | Visual/design direction — the "Quiet Scriptorium" north star: Arabic-first RTL, restrained parchment/ink palette, calm typography; explicitly rejects generic SaaS, kitschy religious decor, gamified UI, enterprise greige. Currently a **seed/direction** doc (see §8). | Anyone doing UI/visual work. | Frontend visual/design tasks. For concrete tokens/classes use `UI_STYLE_SYSTEM.md`. |
 | `AGENTS.md` | Workspace entrypoint for non-Claude agents (Codex/OpenCode/etc.). Points to project instruction files, coding principles, the clean-code & test-code self-checks, and design context. | Non-Claude coding agents. | Loaded at session start for those agents. |
@@ -92,7 +93,7 @@ review/commit skills detailed below (`engineering-review`, `test-guard`,
 - **Boundary:** it does **not** judge Git staging, commit ordering, push readiness, or untracked-file risk. It reviews implementation content, including untracked files when they are part of the requested scope, but Git tracking/staging state never affects findings, notes, Test Guard verdict, or final verdict.
 - **Do not use when:** you only need a narrow structure question answered (use `backend-structure-review`), only test files changed (use `test-guard`), or you want fixes implemented (review is findings-only).
 - **Reads / references (path-based, only what changed):**
-  - Always: `CODING_PRINCIPLES.md`.
+  - Always: `CODING_PRINCIPLES.md`, and `TESTING_STRATEGY.md` when judging whether the executed tests were sufficient for the changed scope.
   - Deep clean-code: `.claude/skills/engineering-review/references/clean-code-guard/*`.
   - Backend changed: `Backend/.architecture/{BACKEND_STRUCTURE,CLEAN_ARCHITECTURE,API_GUIDELINES}.md`.
   - Frontend changed: `Frontend/quran-dashboard-ui/.architecture/{FRONTEND_STRUCTURE,UI_STYLE_SYSTEM,API_INTEGRATION_GUIDELINES}.md`, plus `PRODUCT.md`/`DESIGN.md` for UI/product decisions.
@@ -202,6 +203,7 @@ and what is **reference-only**. Use this to know when each item actually comes i
 | `CLAUDE.md` | Entry-point / auto-loaded context | **Auto** | Session start (Claude) | Claude Code | Points to principles, the clean-code & test-code self-checks, design context. |
 | `AGENTS.md` | Entry-point / auto-loaded context | **Auto** | Session start (non-Claude agents) | Codex / OpenCode / etc. | Mirror of `CLAUDE.md` for other agents. |
 | `CODING_PRINCIPLES.md` | Required project principle | **Mandated read** (not auto-injected) | Before any implementation or review | Every agent; **always** read by `engineering-review` & `backend-structure-review` | Core principles incl. **Quranic Data Safety**. Required by the entry-point files. |
+| `TESTING_STRATEGY.md` | Required project policy | **Mandated read** (not auto-injected) | Before selecting/running tests or judging verification evidence | Every agent; `engineering-review`, `test-guard`, `pr-context-prep` | Tiered test execution (A–E), pipeline-trigger rules, release canonical gate. Controls test *selection*; test *quality* stays with `test-guard`. |
 | `PRODUCT.md` | Conditional architecture doc | **Conditional** | Only when product / user-facing behavior is involved | Anyone doing product/UX/UI work | Product context (not under `.architecture`). **Not needed for backend-only work unless user-facing behavior is affected.** |
 | `DESIGN.md` | Conditional architecture doc | **Conditional** | Only for UI / visual work | Anyone doing UI work | Design direction (seed). For concrete tokens/classes use `UI_STYLE_SYSTEM.md`. **Not for backend-only work** unless user-facing. |
 | Backend `.architecture/*` (`BACKEND_STRUCTURE.md`, `CLEAN_ARCHITECTURE.md`, `API_GUIDELINES.md`) | Conditional architecture doc | **Conditional** | When backend files in the relevant area change | `engineering-review`, `backend-structure-review` (path-based) | **Not read on every command** — read only when the touched area matches. |
@@ -283,6 +285,7 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 
 - Implement **by phase/chunk**, not all tasks at once (see §7).
 - Follow `AGENTS.md`/`CLAUDE.md` + `CODING_PRINCIPLES.md`.
+- Select test commands per `TESTING_STRATEGY.md` — Tier A (focused, changed scope) for ordinary phases; do not run full or pipeline suites unless its triggers require them.
 - Read the Backend/Frontend `.architecture/` docs **for the area you're touching** (§3, §4).
 - Run the **clean-code self-check before delivery** (in `CLAUDE.md`/`AGENTS.md`; backed by `clean-code-guard` references).
 - If writing tests, run the **test-code self-check** (in `CLAUDE.md`/`AGENTS.md`; backed by `test-guard`).
@@ -316,6 +319,7 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 ### G. Before opening a PR
 
 - Run `deploy-smoke` to confirm the change still builds, migrates, and runs locally.
+- Run the pre-PR tier `TESTING_STRATEGY.md` requires — Tier C for an ordinary PR, plus Tier D when the change touches `DataPipelines`, importer tools, canonical resources, pipeline tables/migrations, or shared persistence (`TESTING_STRATEGY.md` §3, §4). If the change touched `Backend/api/` routes, contracts, auth, middleware, or model binding, run the `Tests.Api.*` families **plus the route-smoke tier** (`--filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."`) and state whether its data tier ran or skipped (`TESTING_STRATEGY.md` §3 Tier A/C, §10). There is no CI (`TESTING_STRATEGY.md` §8), so nothing runs these for you.
 - Then run `pr-context-prep` to package scope, invariants, evidence, and reviewer/CodeRabbit focus.
 - Open the PR with `commit-workflow` for staging/commits; for unsquashed subtree-import PRs, use GitHub's **merge commit** strategy.
 
@@ -334,6 +338,7 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 |-----------------|--------------------|-----|
 | "Review Phase 3 implementation from Spec Kit" | `engineering-review` + `SPEC_KIT_IMPLEMENTATION_REVIEW.md` | Holistic review + phase/task/contract compliance. |
 | "Review only new test files" | `test-guard` | Narrow test-code quality gate. |
+| "Which tests must I run for this change?" | `TESTING_STRATEGY.md` | Tiered test selection (A–E) by changed scope and pipeline triggers. |
 | "Where should `WordSortBy` enum live?" | `backend-structure-review` + `BACKEND_STRUCTURE.md` | Placement/foldering question. |
 | "Review API endpoint response shape" | `engineering-review` + `API_GUIDELINES.md` | API boundary & `ApiResponse` envelope. |
 | "Review Angular feature folder layout" | `engineering-review` + `FRONTEND_STRUCTURE.md` | Frontend structure/routeable pages. |
@@ -368,7 +373,7 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 
 **Inventory check (all present unless noted):**
 
-- Root docs: `CODING_PRINCIPLES.md`, `PRODUCT.md`, `DESIGN.md`, `AGENTS.md`, `CLAUDE.md` ✅
+- Root docs: `CODING_PRINCIPLES.md`, `TESTING_STRATEGY.md`, `PRODUCT.md`, `DESIGN.md`, `AGENTS.md`, `CLAUDE.md` ✅
 - Skills: `engineering-review/` (+ `SPEC_KIT_IMPLEMENTATION_REVIEW.md`, `references/clean-code-guard/`), `test-guard/` (+ `dotnet.md`, `jest.md`, `llm-app-testing.md`, `frontend-test-harness-constraints.md`), `backend-structure-review/`, `commit-workflow/`, `deploy-smoke/`, `pr-context-prep/`, `dependency-audit/`, `performance-backend-review/`, `performance-angular-review/`, `backend-global-usings-cleanup/` ✅; plus 14 `speckit-*` skills ✅
 - Backend `.architecture/`: `BACKEND_STRUCTURE.md`, `CLEAN_ARCHITECTURE.md`, `API_GUIDELINES.md` ✅
 - Frontend `.architecture/`: `FRONTEND_STRUCTURE.md`, `UI_STYLE_SYSTEM.md`, `API_INTEGRATION_GUIDELINES.md` ✅

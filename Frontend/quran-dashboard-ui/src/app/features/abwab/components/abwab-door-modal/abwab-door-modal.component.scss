@@ -1,0 +1,59 @@
+.abwab-door-modal__context {
+  color: var(--qd-text-muted);
+  font-size: 0.8125rem;
+}
+
+.abwab-door-modal__discard-confirm {
+  border: 1px solid var(--qd-border-accent);
+  background: var(--qd-selected-bg);
+  border-radius: var(--qd-radius-md);
+  padding: var(--qd-space-3);
+}
+
+.abwab-door-modal__discard-actions,
+.abwab-door-modal__foot {
+  display: flex;
+  gap: var(--qd-space-2);
+}
+
+.abwab-door-modal__discard-actions {
+  margin-block-start: var(--qd-space-3);
+}
+
+.abwab-door-modal__section {
+  margin-block-start: var(--qd-space-3);
+}
+
+.abwab-door-modal__section label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+  margin-block-end: var(--qd-space-1);
+  font-weight: 700;
+}
+
+.abwab-door-modal__section select {
+  inline-size: 100%;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  background: var(--qd-surface);
+  color: var(--qd-text);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.abwab-door-modal__section select[aria-invalid='true'] {
+  border-color: var(--qd-danger);
+}
+
+.abwab-door-modal__section-error {
+  margin-block-start: var(--qd-space-1);
+  font-size: 0.75rem;
+  color: var(--qd-danger);
+}
+
+.abwab-door-modal__section-hint {
+  font-size: 0.75rem;
+  color: var(--qd-text-muted);
+}
