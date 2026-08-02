@@ -31,13 +31,19 @@ export class AbwabSnapshotFacade {
   private readonly api = inject(AbwabApi);
 
   private readonly rawTree = signal<AbwabTreeDto | null>(null);
-  private etagState: string | null = null;
+  private readonly etagState = signal<string | null>(null);
   private readonly loadingState = signal(false);
   private readonly errorState = signal<string | null>(null);
   private pendingRequest: Subscription | null = null;
 
   readonly isLoading = this.loadingState.asReadonly();
   readonly errorMessage = this.errorState.asReadonly();
+
+  /** `bootId + tree generation` as the server computed it — the one identity every write that can
+   * change a door list moves, rename included. Exposed so client-side caches keyed on "the tree I
+   * hold" can key on the server's own answer instead of inventing a second, weaker one
+   * (`AbwabTreeDto.version` is diagnostics and is blind to relation writes). */
+  readonly snapshotValidator = this.etagState.asReadonly();
 
   readonly snapshot = computed<AbwabTreeSnapshotVm | null>(() => {
     const dto = this.rawTree();
@@ -59,13 +65,13 @@ export class AbwabSnapshotFacade {
     this.loadingState.set(true);
     this.errorState.set(null);
 
-    const request$ = this.api.getTree(this.etagState).pipe(
+    const request$ = this.api.getTree(this.etagState()).pipe(
       tap((response) => {
         this.loadingState.set(false);
         const envelope = response.body;
         if (envelope?.isSuccess && envelope.data) {
           this.rawTree.set(envelope.data);
-          this.etagState = response.headers.get('ETag');
+          this.etagState.set(response.headers.get('ETag'));
           this.errorState.set(null);
         } else {
           this.errorState.set(envelope?.message ?? ABWAB_LABELS.loadErrorFallback);

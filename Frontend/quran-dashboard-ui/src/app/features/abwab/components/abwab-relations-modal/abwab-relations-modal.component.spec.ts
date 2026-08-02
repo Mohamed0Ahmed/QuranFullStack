@@ -66,6 +66,7 @@ function render(options: RenderOptions = {}) {
   const loadResult: AbwabRelationsLoadResult =
     options.loadResult ?? { kind: 'success', relations: options.relations ?? [] };
   const loadRelations = vi.fn().mockReturnValue(options.loadStream ?? of(loadResult));
+  const refetchRelations = vi.fn().mockReturnValue(of(loadResult));
   const addRelations = vi.fn().mockReturnValue(of(options.addOutcome ?? { kind: 'success', data: [] }));
   const deleteRelation = vi.fn().mockReturnValue(of({ kind: 'success', data: null }));
 
@@ -82,6 +83,7 @@ function render(options: RenderOptions = {}) {
   fixture.componentRef.setInput('bulkTargets', options.bulkTargets ?? []);
   fixture.componentRef.setInput('liveRoots', options.liveRoots ?? ROOTS);
   fixture.componentRef.setInput('loadRelations', loadRelations);
+  fixture.componentRef.setInput('refetchRelations', refetchRelations);
   fixture.componentRef.setInput('addRelations', addRelations);
   fixture.componentRef.setInput('deleteRelation', deleteRelation);
   fixture.detectChanges();
@@ -103,7 +105,7 @@ function render(options: RenderOptions = {}) {
       (checkbox) => (checkbox as HTMLInputElement).checked,
     );
 
-  return { fixture, root, el, click, search, pickedRows, loadRelations, addRelations, deleteRelation };
+  return { fixture, root, el, click, search, pickedRows, loadRelations, refetchRelations, addRelations, deleteRelation };
 }
 
 describe('AbwabRelationsModalComponent', () => {
@@ -215,6 +217,37 @@ describe('AbwabRelationsModalComponent', () => {
 
       expect((el('abwab-relations-modal-pick-checkbox-2') as HTMLInputElement).checked).toBe(true);
       expect(loadRelations).not.toHaveBeenCalled();
+    });
+
+    // What a cache hit is, from this component's side: an answer already in hand. The skeleton
+    // branch must not flicker through on the way to rendering it.
+    it('paints no skeleton when the read answers without waiting', () => {
+      const { root, el } = render({ anchorRelationCount: 1, relations: [relation(10, 2, 'الصبر', 'similarity')] });
+
+      expect(root.querySelector('[data-testid="qd-skeleton-rows"]')).toBeNull();
+      expect(el('abwab-relations-modal-loading')).toBeNull();
+      expect(el('abwab-relations-modal-group-similarity')).toBeTruthy();
+    });
+
+    // The cached list is the one thing that cannot answer for a door the user just wrote to, and
+    // the snapshot refresh that would evict it has not landed when this runs.
+    it('takes the uncached read after a write, never the cache-aware one', () => {
+      const { fixture, root, click, loadRelations, refetchRelations } = render({
+        anchorRelationCount: 1,
+        relations: [relation(10, 2, 'الصبر', 'similarity')],
+      });
+      expect(loadRelations).toHaveBeenCalledTimes(1);
+
+      click('abwab-relations-modal-pick-3');
+      click('abwab-relations-modal-add');
+
+      expect(refetchRelations).toHaveBeenCalledWith(1);
+      expect(loadRelations).toHaveBeenCalledTimes(1);
+
+      (root.querySelector('[data-testid="qd-chip-remove"]') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(refetchRelations).toHaveBeenCalledTimes(2);
+      expect(loadRelations).toHaveBeenCalledTimes(1);
     });
 
     it('reads no count and issues no fetch in anchor-pick mode', () => {

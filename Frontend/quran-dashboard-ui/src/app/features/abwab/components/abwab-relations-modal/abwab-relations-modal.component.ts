@@ -94,6 +94,8 @@ export class AbwabRelationsModalComponent {
   readonly bulkTargets = input<readonly AbwabRelationTarget[]>([]);
   readonly liveRoots = input<readonly AbwabNode[]>([]);
   readonly loadRelations = input.required<(doorId: number) => Observable<AbwabRelationsLoadResult>>();
+  /** The same read, minus any cached answer: what the modal owes a user who just wrote. */
+  readonly refetchRelations = input.required<(doorId: number) => Observable<AbwabRelationsLoadResult>>();
   readonly addRelations = input.required<
     (
       anchorDoorId: number,
@@ -327,7 +329,7 @@ export class AbwabRelationsModalComponent {
         this.closed.emit();
         return;
       }
-      this.reload(anchorId);
+      this.refetchAfterWrite(anchorId);
     });
   }
 
@@ -340,7 +342,7 @@ export class AbwabRelationsModalComponent {
       }
       this.errorMessage.set(null);
       if (anchorId !== null) {
-        this.reload(anchorId);
+        this.refetchAfterWrite(anchorId);
       }
     });
   }
@@ -362,11 +364,15 @@ export class AbwabRelationsModalComponent {
    * what is on screen there is still the truth until the refetch lands. */
   private loadWithSkeleton(anchorId: number): void {
     this.status.set('loading');
-    this.reload(anchorId);
+    this.consume(this.loadRelations()(anchorId));
   }
 
-  private reload(anchorId: number): void {
-    this.loadRelations()(anchorId).subscribe((result) => {
+  private refetchAfterWrite(anchorId: number): void {
+    this.consume(this.refetchRelations()(anchorId));
+  }
+
+  private consume(load$: Observable<AbwabRelationsLoadResult>): void {
+    load$.subscribe((result) => {
       if (result.kind === 'success') {
         this.relations.set(result.relations);
         // Clearing here is what un-sticks an error the user has already recovered from: before

@@ -393,6 +393,7 @@ export class AbwabPageOverlaysController {
   }
 
   readonly loadRelations = (doorId: number) => this.relationsController.loadFor(doorId);
+  readonly refetchRelations = (doorId: number) => this.relationsController.refetchFor(doorId);
   readonly addRelations = (
     anchorDoorId: number,
     kind: AbwabRelationKind,

@@ -268,10 +268,28 @@ nine), four of them reads.
   `sections` live from the facade snapshot (never cached) and forwards
   create/rename/delete to the shared write controller above.
 - `state/abwab-relations.controller.ts` — the relations-facing surface, built the same
-  way: it owns only what is relation-specific (the per-door fetch and the wire↔domain
-  mapping of both enums) and forwards both writes to the shared write controller, so the
-  409 policy and the refresh-after-write invariant stay in one place for all three
-  aggregates.
+  way: it owns only what is relation-specific (the per-door fetch, **its cache**, and the
+  wire↔domain mapping of both enums) and forwards both writes to the shared write
+  controller, so the 409 policy and the refresh-after-write invariant stay in one place for
+  all three aggregates. **The cache is a `doorId → list` map whose identity is the snapshot
+  ETag** the facade exposes as `snapshotValidator` — `bootId + tree generation`, the server's
+  own answer to "which tree is this", moved by every write that can alter any relation list.
+  When it moves, **every** entry is dropped; a null validator (no snapshot identity held)
+  serves nothing from the map. A `304` and a failed refresh both keep it, because both keep
+  the snapshot and its validator as one unit. `loadFor` is the cache-aware read; `refetchFor`
+  is the forced one the modal uses after a write, because the write's own snapshot refetch is
+  fire-and-forget and has usually not landed when the modal reloads.
+  - **Rename pin — binding on any future finer-grained invalidation.** A narrower rule must
+    still evict on **door rename**: a cached list embeds the partner's name and its ordering,
+    and a rename changes both while no count moves anywhere to signal it. Today's
+    clear-everything-on-validator-change covers this for free, so the guard spec in
+    `abwab-relations.controller.spec.ts` is labeled a regression guard rather than proof — this
+    sentence is what binds the requirement, and `Persistence/Reads/Abwab/README.md` carries it
+    on the server side.
+  - **Why not `AbwabTreeDto.version`:** it is diagnostics-only (below) and is *factually blind*
+    to relation writes — `GetSnapshotVersionAsync` reads sections/doors/aliases only, so an add
+    or a delete moves the ETag and leaves `version` untouched. A version-keyed cache would serve
+    stale lists on exactly the writes that matter most.
 - `state/abwab-templates.facade.ts` — the template list and the selected template's tree,
   on the snapshot facade's contract (`refresh` always refetches; a failure leaves the
   previous value in place). Root-scoped: it is a cache.
@@ -308,13 +326,13 @@ control renders, and (per the fail-closed convention below) the URL is not rewri
 
 **`modal` selects an overlay, never a data scope, and it enters no identity anywhere.** It
 is not part of any cache key, restore identity, history identity or ETag: the snapshot read
-is one unparameterized root-scoped tree GET, and the relations read is keyed by door id and
-uncached (`state/abwab-relations.controller.ts`), so a restored relations modal re-fetches
-honestly. This is the one row of this table a future caching design must **not** pick up —
-adding the key to a scope or cache input would be a contract change, not an optimisation.
-The caching that since landed honors this: the tree validator is a server-side generation
-counter keyed on nothing from the URL, the snapshot read is still one unparameterized tree
-GET, and the relations read is still uncached and unconditional.
+is one unparameterized root-scoped tree GET, and the relations read is keyed by **door id and
+the tree validator only** (`state/abwab-relations.controller.ts`). This is the one row of this
+table a future caching design must **not** pick up — adding the key to a scope or cache input
+would be a contract change, not an optimisation. Both caching layers that have since landed
+honor it: the tree validator is a server-side generation counter keyed on nothing from the
+URL, the snapshot read is still one unparameterized tree GET, and the relations cache is
+keyed on that same server validator — never on `modal`, and never on which overlay asked.
 
 **Restoring reopens the overlay, not a draft.** The key encodes *which* overlay is
 restorable and nothing else; a reopened door modal is pristine from the snapshot, the same
