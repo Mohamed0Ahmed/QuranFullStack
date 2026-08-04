@@ -63,8 +63,6 @@ public sealed class AddDoorRelationsHandler(
         }
     }
 
-    // A direction on a mutual type is a caller bug, not something to drop silently — and a
-    // comprehensiveness row without one could not be stored at all (the CHECK forbids it).
     private static bool IsDirectionValidFor(AbwabRelationType type, AbwabRelationDirection? direction) =>
         type == AbwabRelationType.Comprehensiveness
             ? direction is not null && Enum.IsDefined(direction.Value)

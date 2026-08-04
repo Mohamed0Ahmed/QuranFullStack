@@ -19,8 +19,6 @@ public sealed class BulkMoveDoorsHandler(
             return new BulkMoveDoorsOutcome.InvalidRequest();
         }
 
-        // All-or-nothing is intended, not a bug: every door's own concurrency token is checked inside
-        // one SaveChanges, so a single stale row fails the whole batch rather than partially applying.
         try
         {
             var doors = await writer.BulkMoveAsync(
