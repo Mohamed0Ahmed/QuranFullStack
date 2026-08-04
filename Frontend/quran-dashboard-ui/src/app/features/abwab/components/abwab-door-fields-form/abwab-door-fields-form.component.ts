@@ -55,8 +55,6 @@ export class AbwabDoorFieldsFormComponent {
   }
 
   constructor() {
-    // `untracked` is load-bearing: the reset both writes and reads the field signals, so without
-    // it every keystroke would re-trigger it and wipe the user's input back to `value`.
     effect(() => {
       const fields = this.value();
       untracked(() => this.resetFrom(fields));

@@ -399,7 +399,6 @@ export class AbwabPageComponent implements OnInit {
       this.revealAnnouncement.set(ABWAB_LABELS.revealUnavailable);
       return;
     }
-    // Read before the overlay closes — closing releases it.
     const anchorId = this.overlays.relationsAnchorDoorId();
     this.overlays.closeRelationsModal();
     this.modalUrl.releaseTracking();
