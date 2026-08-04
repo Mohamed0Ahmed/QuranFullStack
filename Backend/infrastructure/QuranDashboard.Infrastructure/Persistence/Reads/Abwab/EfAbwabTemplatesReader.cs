@@ -7,8 +7,6 @@ internal sealed class EfAbwabTemplatesReader(QuranDashboardDbContext db) : IAbwa
 {
     public async Task<IReadOnlyList<AbwabTemplateSummaryDto>> GetAllAsync(CancellationToken cancellationToken)
     {
-        // One round trip, and the count is computed in SQL rather than by materializing a row per
-        // node: what crosses the wire is one row per template, not one per node in the database.
         var rows = await db.AbwabTemplates.AsNoTracking()
             .Where(t => t.DeletedAtUtc == null)
             .OrderBy(t => t.CreatedAtUtc)
@@ -25,9 +23,6 @@ internal sealed class EfAbwabTemplatesReader(QuranDashboardDbContext db) : IAbwa
             })
             .ToListAsync(cancellationToken);
 
-        // A rootless template is skipped, matching GetAsync's null. Unreachable today — create is the
-        // only path and it always writes the root — but the name has no value to return, and the list
-        // UI renders nothing else.
         return rows
             .Where(row => row.RootName is not null)
             .Select(row => new AbwabTemplateSummaryDto(row.Id, row.RootName!, row.DescendantCount))

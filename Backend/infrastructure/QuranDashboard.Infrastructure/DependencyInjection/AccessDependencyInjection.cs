@@ -12,7 +12,6 @@ internal static class AccessDependencyInjection
         services.Configure<LogtoManagementApiOptions>(
             configuration.GetSection(LogtoManagementApiOptions.SectionName));
 
-        // Empty BootstrapOwnerEmail disables owner bootstrap; only a supplied value is format-validated.
         services.AddOptions<OwnerBootstrapOptions>()
             .Bind(configuration.GetSection(OwnerBootstrapOptions.SectionName))
             .ValidateOnStart();

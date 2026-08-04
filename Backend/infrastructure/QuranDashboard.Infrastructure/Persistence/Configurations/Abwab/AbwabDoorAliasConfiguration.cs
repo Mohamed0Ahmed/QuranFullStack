@@ -47,7 +47,6 @@ public sealed class AbwabDoorAliasConfiguration : IEntityTypeConfiguration<Abwab
         builder.Property(a => a.DeletedBy)
             .HasColumnName("deleted_by");
 
-        // An alias has no life without its door — Cascade, unlike the Restrict FKs on AbwabDoor.
         builder.HasOne<AbwabDoor>()
             .WithMany()
             .HasForeignKey(a => a.DoorId)

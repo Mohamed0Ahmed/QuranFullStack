@@ -3,8 +3,6 @@ using Microsoft.Extensions.Options;
 
 namespace QuranDashboard.Infrastructure.Access;
 
-// An EMPTY BootstrapOwnerEmail DISABLES owner bootstrap and is a valid config that must not fail
-// startup; a non-empty value is format-validated fail-fast (see OwnerBootstrapOptionsValidator).
 public sealed class OwnerBootstrapOptions
 {
     public const string SectionName = "Auth";

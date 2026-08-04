@@ -7,16 +7,11 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
 {
     public async Task<AbwabTreeDto> GetTreeAsync(CancellationToken cancellationToken)
     {
-        // Archived sections are never restorable in this slice (no restore route exists for sections —
-        // only doors have one), so an archived section is excluded outright rather than included-and-flagged.
         var sections = await db.AbwabSections.AsNoTracking()
             .Where(s => s.DeletedAtUtc == null)
             .OrderBy(s => s.OrderValue).ThenBy(s => s.Id)
             .ToListAsync(cancellationToken);
 
-        // Every door, live and archived — doors DO have a restore route, so §4's "archived included,
-        // flagged" applies here. Ordered by scope (section, parent) then sibling order, Id as a pure
-        // hardening tie-break (OrderValue is unique within a scope by construction, never across scopes).
         var doors = await db.AbwabDoors.AsNoTracking()
             .OrderBy(d => d.SectionId).ThenBy(d => d.ParentId).ThenBy(d => d.OrderValue).ThenBy(d => d.Id)
             .ToListAsync(cancellationToken);
@@ -27,9 +22,6 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
             .GroupBy(a => a.DoorId)
             .ToDictionaryAsync(g => g.Key, g => (IReadOnlyList<string>)g.Select(a => a.Value).ToList(), cancellationToken);
 
-        // Both counts are LIVE-only: they are the "how many doors are here right now" badge, not inflated
-        // by an archived subtree that the main view no longer shows. Archived doors stay individually
-        // visible via IsArchived; they just do not count toward a parent's or section's live total.
         var liveChildCounts = doors
             .Where(d => d.DeletedAtUtc == null && d.ParentId.HasValue)
             .GroupBy(d => d.ParentId!.Value)
@@ -39,8 +31,6 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
             .GroupBy(d => d.SectionId)
             .ToDictionary(g => g.Key, g => g.Count());
 
-        // The sections list above holds only live ones, so it cannot answer "is this door's section
-        // retired" for an archived door — the one door restore has to ask about.
         var retiredSectionIds = await db.AbwabSections.AsNoTracking()
             .Where(s => s.DeletedAtUtc != null)
             .Select(s => s.Id)
@@ -89,11 +79,6 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
         return counts;
     }
 
-    // max(updated_at, deleted_at) across the three tables, one query per table: each row's own greatest
-    // of the two, then MAX() aggregates across rows — MaxAsync on a nullable projection returns null for
-    // an empty table rather than throwing, which is exactly "no rows yet" for an empty schema. Three
-    // near-identical queries rather than one generic helper: the entities share no common interface, and
-    // introducing one just for this single read would be an abstraction with a single caller.
     private async Task<DateTimeOffset?> GetSnapshotVersionAsync(CancellationToken cancellationToken)
     {
         var sectionsMax = await db.AbwabSections.AsNoTracking()

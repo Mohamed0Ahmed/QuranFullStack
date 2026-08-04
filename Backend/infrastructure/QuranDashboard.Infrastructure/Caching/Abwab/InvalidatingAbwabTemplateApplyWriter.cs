@@ -4,8 +4,6 @@ using QuranDashboard.Infrastructure.Persistence.Writes.Abwab;
 
 namespace QuranDashboard.Infrastructure.Caching.Abwab;
 
-// Apply reads templates and writes doors + aliases, so it bumps the TREE generation and not the
-// templates one — the direction that surprises readers of the route's name.
 internal sealed class InvalidatingAbwabTemplateApplyWriter(
     EfAbwabTemplateApplyWriter inner,
     IAbwabCacheInvalidator invalidator) : IAbwabTemplateApplyWriter

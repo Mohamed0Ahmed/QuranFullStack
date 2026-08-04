@@ -47,13 +47,9 @@ public sealed class AbwabSectionConfiguration : IEntityTypeConfiguration<AbwabSe
         builder.Property(s => s.DeletedBy)
             .HasColumnName("deleted_by");
 
-        // uint + IsRowVersion() maps directly to Postgres's xmin system column — no HasColumnName,
-        // since giving it one would make EF treat it as a real column and add it to migrations.
         builder.Property(s => s.Version)
             .IsRowVersion();
 
-        // Per-sibling name uniqueness has no parent for sections, so it's a plain non-deleted-scope
-        // uniqueness (locked decision: sections reject duplicate names with 409).
         builder.HasIndex(s => s.Name)
             .IsUnique()
             .HasFilter("deleted_at IS NULL");

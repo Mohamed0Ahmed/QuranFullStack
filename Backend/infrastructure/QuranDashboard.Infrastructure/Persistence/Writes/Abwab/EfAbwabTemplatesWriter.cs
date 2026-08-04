@@ -17,8 +17,6 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
         var template = new AbwabTemplate { CreatedAtUtc = now, UpdatedAtUtc = now };
         db.AbwabTemplates.Add(template);
 
-        // Two SaveChanges calls (the template, then its root node keyed by the generated id) need an
-        // explicit transaction — EF's implicit one covers a single call. The doors CreateAsync trap.
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 
@@ -61,13 +59,9 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
         }
         catch (DbUpdateConcurrencyException)
         {
-            // A concurrent delete won. The template is gone either way, which is what the caller
-            // asked for — the EfAbwabRelationsWriter.DeleteAsync judgment.
             return false;
         }
 
-        // The node rows are deliberately untouched: both reads filter by the template's own
-        // deleted_at, so cascading would write rows nothing looks at.
         return true;
     }
 
@@ -96,8 +90,6 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
             throw new AbwabTemplateNodeNotFoundException();
         }
 
-        // Append, never insert — the doors CreateAsync precedent. Every sibling scope stays 1..N by
-        // construction, so nothing here resequences.
         var nextOrder = await db.AbwabTemplateNodes.CountAsync(
             n => n.TemplateId == templateId && n.ParentNodeId == parentNodeId && n.DeletedAtUtc == null,
             cancellationToken) + 1;
@@ -139,9 +131,6 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
         node.Name = name;
         node.Description = description;
         node.RepresentativeAyahText = representativeAyahText;
-        // A NEW array, never an in-place mutation: EF change-tracks this property by reference.
-        // Normalized on the way in, like a door's aliases — otherwise a template node keeps blank and
-        // untrimmed entries that the copy would silently drop, and the two would disagree.
         node.Aliases = AbwabAliasNormalization.Normalize(aliases);
         node.UpdatedAtUtc = DateTimeOffset.UtcNow;
 
@@ -204,8 +193,6 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
             .Where(n => n.TemplateId == node.TemplateId && n.DeletedAtUtc == null)
             .ToListAsync(cancellationToken);
 
-        // The subtree goes with it: a template child has no meaning without its parent. One parent
-        // map for the whole operation, walked as a plain BFS.
         var doomedIds = CollectSubtreeIds(liveNodes, node.Id);
         var now = DateTimeOffset.UtcNow;
         foreach (var doomed in liveNodes.Where(n => doomedIds.Contains(n.Id)))
@@ -226,9 +213,6 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
         return AbwabTemplateNodeDeleteResult.Deleted;
     }
 
-    // A node whose TEMPLATE is soft-deleted is not addressable. Both reads answer 404 for such a
-    // template, so a node write that still succeeded would be a read/write asymmetry on routes that
-    // ship without authentication — the node id alone is enough to reach one.
     private Task<AbwabTemplateNode?> FindLiveNodeAsync(int nodeId, CancellationToken cancellationToken) =>
         db.AbwabTemplateNodes
             .Where(n => n.Id == nodeId
@@ -276,8 +260,6 @@ internal sealed class EfAbwabTemplatesWriter(QuranDashboardDbContext db) : IAbwa
         }
     }
 
-    // Its own translation, like EfAbwabRelationsWriter's: a bare SaveChangesAsync would let 23505
-    // cross the seam as a 500 instead of the 409 the duplicate-sibling-name rule owes.
     private async Task SaveTranslatingDuplicateNameAsync(CancellationToken cancellationToken)
     {
         try

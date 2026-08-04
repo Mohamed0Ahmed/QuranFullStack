@@ -1,7 +1,5 @@
 namespace QuranDashboard.Infrastructure.Access;
 
-// Not validated at startup: AppSecret is legitimately absent on a fresh clone, so these options are
-// validated on first use instead (see LogtoManagementApiUserProfileSource.EnsureConfigured).
 public sealed class LogtoManagementApiOptions
 {
     public const string SectionName = "Auth:ManagementApi";

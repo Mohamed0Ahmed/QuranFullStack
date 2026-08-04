@@ -33,14 +33,11 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.RoleId)
             .HasColumnName("role_id");
 
-        // Nullable FK → roles, keeping the existing role_id column. Restrict deletes: a seeded role
-        // may not be removed while any user references it (the role set is fixed regardless).
         builder.HasOne(u => u.Role)
             .WithMany()
             .HasForeignKey(u => u.RoleId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Enum stored with EF's default mapping (int), matching the pinned UserStatus values.
         builder.Property(u => u.Status)
             .IsRequired()
             .HasColumnName("status");

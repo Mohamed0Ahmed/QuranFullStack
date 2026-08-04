@@ -4,8 +4,6 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Abwab;
 
 namespace QuranDashboard.Infrastructure.Caching.Abwab;
 
-// List and details share one generation, so a node edit on template A also invalidates B's cached
-// detail — one counter instead of a per-id registry, an admin-scale trade.
 internal sealed class CachedAbwabTemplatesReader(
     EfAbwabTemplatesReader inner,
     IMemoryCache cache,
@@ -43,8 +41,6 @@ internal sealed class CachedAbwabTemplatesReader(
 
         var template = await _inner.GetAsync(templateId, cancellationToken);
 
-        // A miss is never cached: template ids come from the caller, so caching absences would let an id
-        // probe grow the key space without bound. Present entries are bounded by the templates admins own.
         if (template is not null)
         {
             _cache.Set(key, new StampedTemplate(generation, template));

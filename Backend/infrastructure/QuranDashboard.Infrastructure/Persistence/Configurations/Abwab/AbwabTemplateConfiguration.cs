@@ -39,8 +39,6 @@ public sealed class AbwabTemplateConfiguration : IEntityTypeConfiguration<AbwabT
         builder.Property(t => t.DeletedBy)
             .HasColumnName("deleted_by");
 
-        // uint + IsRowVersion() maps directly to Postgres's xmin system column — no HasColumnName,
-        // since giving it one would make EF treat it as a real column and add it to migrations.
         builder.Property(t => t.Version)
             .IsRowVersion();
 

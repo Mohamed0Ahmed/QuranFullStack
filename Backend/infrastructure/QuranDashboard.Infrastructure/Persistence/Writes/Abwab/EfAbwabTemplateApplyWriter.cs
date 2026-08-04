@@ -17,9 +17,6 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-        // Read once, inside the transaction. A concurrent template edit either commits before this
-        // read (copied) or after it (not copied); both are legitimate outcomes, and no token is
-        // offered because the caller holds no template version.
         var templateExists = await db.AbwabTemplates.AsNoTracking()
             .AnyAsync(t => t.Id == templateId && t.DeletedAtUtc == null, cancellationToken);
         if (!templateExists)
@@ -39,9 +36,6 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
             .GroupBy(n => n.ParentNodeId!.Value)
             .ToDictionary(group => group.Key, group => group.OrderBy(n => n.OrderValue).ThenBy(n => n.Id).ToList());
 
-        // The template's emptiness is a property of the template alone — it does not depend on which
-        // doors were picked, so this refusal fires before the target reads. Consequence: an empty
-        // template applied to an archived target returns THIS 400, not the archived-target 400.
         if (!childrenByParentNode.TryGetValue(rootNode.Id, out var rootChildren) || rootChildren.Count == 0)
         {
             throw new AbwabTemplateEmptyException();
@@ -57,9 +51,6 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
             throw new AbwabNotFoundException();
         }
 
-        // The response lists N created children per target (the root's direct children), and the
-        // collision message names (target, child) pairs in the same order — the CALLER's target
-        // order, then the template's own sibling order for the names under each target.
         targets = [.. targets.OrderBy(t => targetIds.IndexOf(t.Id))];
 
         if (targets.Exists(t => t.DeletedAtUtc != null))
@@ -67,8 +58,6 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
             throw new AbwabTemplateTargetArchivedException();
         }
 
-        // Named up front so the 409 can say WHICH child name collided under WHICH target; 23505
-        // names no row. The catch in the save helper stays as the race backstop, without names.
         var rootChildNames = rootChildren.Select(c => c.Name).ToHashSet();
         var collisionHits = await db.AbwabDoors.AsNoTracking()
             .Where(d => d.ParentId != null
@@ -99,15 +88,9 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
 
         foreach (var target in targets)
         {
-            // Scoped by parent alone, where CreateAsync scopes by (section, parent). Equivalent here
-            // and not a shortcut: every live child of a door carries that door's section by the
-            // cascade invariant, so the section term could only ever narrow the count to itself.
             var nextOrder = await db.AbwabDoors.CountAsync(
                 d => d.ParentId == target.Id && d.DeletedAtUtc == null, cancellationToken) + 1;
 
-            // The root's direct children seed the BFS descent below, offset by their index so all N
-            // land contiguously at nextOrder..nextOrder+N-1 — level 1's exception to the verbatim-
-            // OrderValue rule the descent loop applies at every deeper level.
             for (var i = 0; i < rootChildren.Count; i++)
             {
                 var child = rootChildren[i];
@@ -117,9 +100,6 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
             }
         }
 
-        // AbwabDoor carries no parent navigation property, so a child's ParentId can only be set
-        // once its parent's id exists — the copy therefore descends one level per save. All of it
-        // is inside the one transaction above, so the batch stays all-or-nothing.
         await SaveTranslatingDuplicateNameAsync(cancellationToken);
 
         var level = createdRoots;
@@ -137,26 +117,18 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
 
                 foreach (var child in children)
                 {
-                    // The node's own OrderValue is carried through verbatim — that is what preserves
-                    // sibling order in every copied scope, contiguous because the template's own
-                    // scopes are 1..N.
                     var copiedChild = NewDoor(child, copied.SectionId, copied.Door.Id, child.OrderValue, now);
                     db.AbwabDoors.Add(copiedChild);
                     nextLevel.Add(new CopiedNode(copiedChild, child, copied.SectionId));
                 }
             }
 
-            // Flushes this level's aliases together with the next level's doors; the final pass
-            // flushes the deepest level's aliases with nothing new to add.
             await SaveTranslatingDuplicateNameAsync(cancellationToken);
             level = nextLevel;
         }
 
         await transaction.CommitAsync(cancellationToken);
 
-        // Each door carries its OWN node's aliases — not the root's (ux-slice-g DRIFT-1). The alias
-        // ROWS were already correct at any seed (AddAliases above is per-node); this only fixes what
-        // the response payload reports.
         return createdRoots
             .Select(copied => new AbwabDoorDto(
                 copied.Door.Id,
@@ -176,15 +148,12 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
         AbwabTemplateNode node, int sectionId, int parentId, int orderValue, DateTimeOffset now) =>
         new()
         {
-            // Every copied node at every depth inherits the TARGET's section — the invariant every
-            // door write owes the read side, stated once here instead of derived per node.
             SectionId = sectionId,
             ParentId = parentId,
             Name = node.Name,
             Description = node.Description,
             RepresentativeAyahText = node.RepresentativeAyahText,
             OrderValue = orderValue,
-            // GlobalOrderValue stays null: a copy is never a root door.
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
         };
@@ -203,10 +172,6 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
         }
     }
 
-    // The duplicate here genuinely IS a door name — the inverse of the relations writer's case,
-    // where the door-name-keyed message would have been the wrong constraint entirely. Only
-    // reachable as a race: the pre-check already refused every collision it could see, and the
-    // template's own sibling-name index makes an internal collision unrepresentable.
     private async Task SaveTranslatingDuplicateNameAsync(CancellationToken cancellationToken)
     {
         try

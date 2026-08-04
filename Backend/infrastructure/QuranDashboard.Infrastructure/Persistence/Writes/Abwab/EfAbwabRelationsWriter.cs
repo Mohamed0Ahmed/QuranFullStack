@@ -83,17 +83,12 @@ internal sealed class EfAbwabRelationsWriter(QuranDashboardDbContext db) : IAbwa
         }
         catch (DbUpdateConcurrencyException)
         {
-            // The row is rowversion-mapped, so a delete landing between the read above and this save
-            // affects zero rows. The relation is gone either way, which is what the caller asked for —
-            // reporting "already deleted" beats surfacing a 500 for a race with no losing side.
             return false;
         }
 
         return true;
     }
 
-    // Named up front so the 409 can say which doors collided; 23505 itself names no row. The catch in
-    // SaveTranslatingDuplicateAsync remains as the race backstop, without names.
     private async Task GuardAgainstExistingAsync(
         int doorId,
         AbwabRelationType type,
@@ -119,9 +114,6 @@ internal sealed class EfAbwabRelationsWriter(QuranDashboardDbContext db) : IAbwa
         }
     }
 
-    // Its own translation, not the doors writer's: that helper names a door for the duplicate-name
-    // message, which is a different constraint entirely. A bare SaveChangesAsync would let 23505 cross
-    // the seam as a 500 instead of the 409 this feature owes.
     private async Task SaveTranslatingDuplicateAsync(CancellationToken cancellationToken)
     {
         try
