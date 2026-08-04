@@ -24,6 +24,13 @@ in the last commit before the fix branch merges — the same lifecycle as a plan
 Every finding ends in one of three states: **fixed**, **converted** to a `docs/TESTING_DEBT.md`
 row, or **closed** with a written reason. Nothing is left merely noted.
 
+> **This claim was false as first written.** Bundles 1–6 left **19 findings with no state at
+> all** — an independent review of this branch caught it, along with a failed refutation
+> (F-95), two closures that were not what they claimed (F-51's discriminator, F-52), two
+> overstated PAID marks (F-65, F-69), a half-done F-104, and one-sided doc fixes. **Bundle 7**
+> below adjudicates the 19 and corrects every entry the review faulted; the review itself is
+> `docs/abwab-review-fixes-independent-review.md`.
+
 ### Bundle 1 — F-35, the HIGH
 
 | Finding | State | Where |
@@ -403,6 +410,108 @@ silent.
 **60 passed**; `~QuranDashboard.Tests.Smoke.` **145 passed, 0 skipped — `Tests.Smoke.Data` tier
 ran**. Frontend: `tsc` app 0 / spec 0; full suite **204 files, 2620 tests**, 0 failures;
 `npm run build` clean with exactly the three known budget warnings.
+
+### Bundle 7 — the independent review's findings (second fix pass)
+
+The review (`docs/abwab-review-fixes-independent-review.md`) found the log above incomplete and
+several of its closures false. This bundle adjudicates the 19 findings bundles 1–6 skipped and
+corrects the faulted entries.
+
+**The 19, now adjudicated — 17 fixed, 2 closed with reason:**
+
+| Finding | State | Where |
+|---------|-------|-------|
+| F-02 | **fixed** | `[ProducesResponseType(204)]` on all five DELETEs; swagger re-exported, frontend client regenerated (`ObjectApiResponse` gone from the spec and the generated models) |
+| F-03 | **fixed** | scope guard moved into `ReorderDoorHandler` (first check); controller reduced to the plain call |
+| F-04 | **fixed** (honest equivalent) | the 409 mapping is **race-reachable**, not dead — rename/reorder/delete of the same section between load and save raises the translated concurrency throw — so the mapping stays and both READMEs now state section delete is the one version-free write whose 409 is a lost-interior-race answer |
+| F-06 | **fixed** | Reads README states `NodeCount` = live non-root descendants, proven from `EfAbwabTemplatesReader.cs:21-22` |
+| F-12 | **closed with reason** | the migration is already applied in production; Postgres `SET NOT NULL` fails loud and rolls back on a NULL row; no auto-migrate path exists anywhere (`Migrate()`/`MigrateAsync` grep: test fixtures only); `Backend/scripts/wipe-abwab` is the sanctioned local remedy. Editing an applied migration would be worse than the gap |
+| F-15 | **fixed** | `CreateDoorOutcome.StaleVersion` + catch mirroring `EditDoorHandler`; controller maps to 409; pinned by `CreateDoorHandlerTests` (fails without the catch) |
+| F-16 | **fixed** | leading `/` on all six `Created(...)` URIs; no smoke test asserts `Location`, so no catalog change |
+| F-22 | **closed with reason** | per the finding's own prescription: the create/delete gap is deliberately ledgered as rows F1/F2 with an owner condition; a test asserting delete resequences would pin behavior the code intentionally lacks |
+| F-28 | **fixed** | writer-seam refusal (exhaustive switch, throws on null/undefined `Comprehensiveness` direction) + handler 400 pinned at both layers |
+| F-33 | **fixed** | existence answered before the validator; nonexistent id + crafted `If-None-Match` ⇒ 404 with no validator headers, pinned by `SmokeAbwabTemplateReadTests` (fails with the old order). Scoped exception recorded in `API_GUIDELINES.md` |
+| F-36 | **fixed** (stronger than prescribed) | plain `refCount: true` provably cannot stop a stale response still held by `refreshAndRebind`; implemented `refCount: true` **plus** a fetch-generation guard in the snapshot facade and both templates-facade paths; four new stale-response specs fail without it |
+| F-37 | **fixed** | settle-gated fallback to «كل الأبواب» for a `section` id not in the snapshot, URL rewritten by replace (only the `section` key — clearing `modal` would slam the sections modal shut after deleting the active section); store scope synced eagerly so the URL echo cannot wipe a later bulk set |
+| F-60 | **fixed** | `SELECTED_DOOR_FORMS` + `countPhrase`: «بابان محددان», «لا أبواب محددة» … — the counted-noun rule the rest of the feature uses |
+| F-67 | **fixed** | zero-count dim replaced by a dropped pill (`background: transparent`); measured 4.82:1 light / 7.08:1 dark unselected, 7.55:1 / 8.21:1 selected; ratios recorded in `src/styles/README.md` and §17 |
+| F-71 | **fixed** | `AbwabWriteOutcome` success arm is honestly `data: T \| null`; no cast; sole fallout the door modal's `saved` output widened |
+| F-74 | **fixed** | every tab badge carries a visible `title` with the same root-scope phrase its `aria-label` speaks |
+| F-89 | **fixed** | cards' child count carries the tree's `rowChildCountAriaLabel` and the gate now matches the printed number (`liveChildCount`) |
+| F-90 | **fixed** | `door` fails closed to `null` whenever `archive` is on — the prescribed subscription-clear alone was inert because the settle effect re-selects |
+| F-93 | **fixed** | all three breakpoints unified on `bp.$qd-bp-tablet-max` (side panel 900→1023, templates layout 60rem→1023) |
+
+**Corrections to bundles 1–6:**
+
+- **F-95's refutation is REVERSED.** Arrow-key radio selection is a *simulated click* —
+  cancelable and bubbling — so the input's `(click)="$event.preventDefault()"` (one input, both
+  modes) suppresses `change` and selection flows through the row's `togglePicked`. The cited
+  "live test" manufactured its `change` event by hand. The dead path is now **removed** (the
+  `(change)` binding and `onRowChange`), and the synthetic test was rewritten to pin the real
+  mechanism (authorized meaning change, listed below).
+- **F-51's discriminator was false in code**: none of the four "reserved" surfaces existed while
+  empty — all were `@if`-inserted, `[reserve]` inert under the `@if`. Resolution: the copy modal
+  became genuinely reserved (unconditional render + the new `.qd-state--reserve-empty` quiet
+  shape), the other three keep their `@if` and DROP **because a `role="alert"` inserted into a
+  plain `role="dialog"` announces on insertion** — the unreliable case is insertion inside an
+  already-focused `role="alertdialog"`, which is exactly the KEEP set. The announcer entry and
+  §17 now state this two-shape discriminator. The **template-apply DROP row was never
+  implemented** — `abwab-templates.controller.ts` announced every failure unconditionally; it now
+  carries the same per-op options (apply DROPs, everything else KEEPs), pinned by its new spec.
+- **F-52 was marked fixed but only the mechanism had been unified.** Now one policy: **every**
+  write announces a short polite success phrase (`successAnnouncement` per op in both
+  controllers; bulk phrases counted). createDoor/archiveDoor/deleteSection had been pinned silent
+  by three assertions — rewritten under authorization, listed below.
+- **F-65 and F-69 were marked PAID on half-payment.** Second installments landed: the node
+  modal's submit/validation specs, and the placement math extracted to the pure
+  `context-menu-placement.ts` with all four branches unit-pinned. The ledger now describes both
+  installments.
+- **F-104 was half-done** — the context-menu SCSS comment survived; now deleted.
+- **F-94's closure was made stale by this branch itself**: `abwab-templates-page.component.ts`
+  hit 408 (hard 400) — split at once (`abwab-templates-page-delete.controller.ts`, 392 + 48);
+  `abwab-sections-modal.component.ts` (305), the tree's SCSS (235) and the inherited
+  `abwab-relations-modal.component.ts` (381) are now recorded in the README with reasons and
+  triggers; `abwab-page.component.ts` grew 604 → 622 under its existing acknowledged record.
+- **Q-01/F-01's "last surviving reference" claim was overstated**: the literal-pattern grep was
+  clean, but nine references *by section/item number* («plan §4», «audit item 10» …) survived in
+  the two persistence READMEs, the feature README and §17. All nine are now rewritten
+  self-containedly. The M27 "fails loudly on either side" sentence was also an always-green claim
+  (no backend test pins the literal) and now states exactly what is and is not pinned.
+- **F-34's evidence line is stale by design**: the new template-detail smoke test exercises
+  `If-None-Match`, so "zero ETag hits in Backend/tests" no longer holds; the finding's substance
+  (the decorator/generation mechanism unasserted) still stands minus that one path.
+- **F-46's uncovered branch is paid**: `deleteRelation`'s null-envelope 204 success branch is
+  pinned beside its archive/section siblings.
+- **F-18's «227 lines, verified»** drifted to 225 during bundles 1–6 and is 227 again after this
+  pass; the Controllers README records the threshold as a rule, not a number, so nothing rots.
+- Also fixed from the review's list: the template-node modal's missing in-flight guard (F-63's
+  twin — `saveBusy`), the copy modal's mid-flight dismissal (`close()` refuses while
+  `applyBusy`), F-98's `'ready'` finally pinned by a spec that fails without it, the four
+  one-sided doc fixes (F-11's Writes-README half, F-38/F-100/F-70's `shared/README.md` halves),
+  the `«المزيد»` behavior deltas disclosed (subset active-matching + hover-open, kept
+  deliberately as the data-driven branch's semantics), the stale shell-nav e2e comment, and the
+  navbar outside-click restore tests retitled to scope their claim to the focus-still-inside
+  branch (title-only).
+
+**Authorized assertion-meaning changes in this pass — the complete list.** (1) The F-95
+synthetic test: `'follows keyboard radio selection, not just clicks'` →
+`'keyboard radio selection works through the row click path (arrow keys synthesize clicks)'`,
+now dispatching a real cancelable bubbling click. (2) `'leaves the region silent for a write
+that declares no announcement'` → `'announces each write with its own phrase, the newer
+replacing the older'`. (3)/(4) The archiveDoor and deleteSection null-response tests:
+`announcement()` null → the op's new phrase. (5) The counted-noun format updates
+(`abwab-side-panel` spec, four F-35 assertions in the page spec, three e2e expectations):
+bare digits → the corrected Arabic phrases, meaning preserved. Nothing else changed meaning;
+every other spec edit in this pass is additive.
+
+**Verification (parent-run, after all seven bundles).** Backend: build 0 errors; no-pipeline
+regression **1103 passed, 0 failed** (+3: the F-15 handler test, the F-28 pair);
+`~QuranDashboard.Tests.Smoke.` **146 passed, 0 skipped — `Tests.Smoke.Data` tier RAN** (13/13;
++1 smoke test, F-33). Frontend: `tsc` app 0 / spec 0; full suite **2694 tests, 0 failures**
+(2624 → 2694, +70 from this pass, all additive apart from the five authorized changes above);
+`npm run build` clean with exactly the three known budget warnings. Every fix that closed a
+behavioral finding carries fail-without-fix evidence recorded in the implementing agents'
+reports and re-verified where the parent adjudicated (S4–S6, F-46).
 
 ---
 

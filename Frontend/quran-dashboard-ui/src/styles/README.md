@@ -114,6 +114,8 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   | `--qd-warning` (`:40`) | as a dot on the navy footer | 3.02:1 |
   | `--qd-danger-tint` (`:42`) | danger text on it | 5.01:1 |
   | `--qd-success-tint` (`:43`) | against `--qd-success` | 4.58:1 (`UI_STYLE_SYSTEM.md` §16) |
+  | `--qd-text-muted` (`:21`) | zero tab-count digit on `--qd-bg` | 4.82:1 (AA; computed from the oklch tokens) |
+  | `--qd-accent-text` (`:35`) | selected tab count on its `--qd-surface` pill | 7.55:1 (computed from the oklch tokens) |
 
   `--qd-ayah-card-bg` is a warm tone deliberately recessed below `--qd-surface` so an ayah card
   reads as a distinct card on the near-white surfaces it sits on; the dark theme overrides it to

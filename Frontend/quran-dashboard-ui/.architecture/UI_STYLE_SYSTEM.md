@@ -752,10 +752,14 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   state is a colour cue and an active state must not rest on colour alone.
 - **Count meta (`.qd-tabs__count`):** rendered by the call-site's template, not by `qdTab` —
   the directive is host-bindings-only and cannot project a child element. Latin digits,
-  `tabular-nums`; **always** rendered, dimmed at zero via `.qd-tabs__count--empty` (opacity
-  only, so it composes with the selected-state rule instead of forking a second one). The
-  visible digits are `aria-hidden="true"`; the tab's own `aria-label` carries the accessible
-  count.
+  `tabular-nums`; **always** rendered. At zero, `.qd-tabs__count--empty` drops the filled
+  pill (`background: transparent`, `_components.scss`) so the distinction is shape, not
+  transparency — the digit keeps full-strength muted ink, measuring 4.82:1 against
+  `--qd-bg` in light (7.08:1 dark); on a **selected** tab the selected-state count rule
+  outranks the modifier, so a selected zero renders like any other count at 7.55:1 light
+  (8.21:1 dark). Ratios computed from the oklch tokens; re-measure if any of those tokens
+  move. The visible digits are `aria-hidden="true"`; the tab's own `aria-label` carries
+  the accessible count.
 
 ### `qd-chip`
 - **Purpose:** the one selectable/informational chip (filters, association
@@ -871,26 +875,32 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   only its text fades in, opacity only, static under `prefers-reduced-motion`,
   mirroring `qd-detail-modal-shell`'s count span (above). Default off, so existing
   call-sites are unaffected.
-- **`reserve` under an `@if` reserves nothing, and abwab does exactly that — knowingly.**
-  **Every** abwab `[reserve]` error surface is guarded on a **non-empty message**, and no
-  count belongs here — the inventory is the grep `shared/README.md` already points at,
-  `grep -rn '\[reserve\]' src/app/`. Most take the direct shape
+- **`reserve` under an `@if` reserves nothing, and most abwab sites do exactly that —
+  knowingly.** All but one abwab `[reserve]` error surface are guarded on a **non-empty
+  message**, and no count belongs here — the inventory is the grep `shared/README.md`
+  already points at, `grep -rn '\[reserve\]' src/app/`. Most take the direct shape
   `@if (message; as m) { <qd-state variant="error" [reserve]="true" [message]="m" /> }`;
   the two list-level page surfaces add a "nothing loaded yet" test to the same truthiness
   (`abwab-page.component.html`, `abwab-templates-page.component.html`); and
   `abwab-door-picker` reaches the same shape through a computed that is empty unless the
-  picker is in its error status (`abwab-door-picker.component.ts:62`). So the box appears
-  and disappears with the message and the input's own contract
-  ("never appears/disappears") cannot hold; what survives is the message span's
-  `min-block-size` and a fade that never fires, since the element is born visible.
-  Slice C briefly rendered the door/template-node surface **unguarded** to honor the
-  input literally, and shipped a 105px empty danger box on every open of both modals
-  (the container's own `padding: var(--qd-space-6)` plus the reserved row, with nothing
-  in it) — reverted to match its guarded siblings. The lesson for whoever revisits this
-  input: `reserve` earns its keep where a box is **permanently mounted** and only its
-  content arrives late; guarding the whole component is the right call for an error
-  that is absent on the happy path, and those two uses want different tools. Do not
-  "fix" abwab's guarded sites by deleting the `@if`.
+  picker is in its error status (`abwab-door-picker.component.ts:62`). At a guarded site
+  the box appears and disappears with the message, the input's own contract
+  ("never appears/disappears") cannot hold, and the announcing comes from the
+  `role="alert"` being **inserted** into the open `role="dialog"`, not from the reserve.
+  **The one unconditional site is the template-copy modal**
+  (`abwab-template-copy-modal.component.html`): its region is permanently mounted so the
+  live region exists before any failure, and `.qd-state--reserve-empty`
+  (`state.component.html:20`, `_components.scss`) keeps it visually quiet while empty —
+  `role="alert"` and block size retained, danger tint dropped to transparent and
+  transitioned in over `--qd-t-fast` (static under `prefers-reduced-motion`) when the
+  message lands. That class exists because Slice C once rendered the door/template-node
+  surface unguarded **without** it and shipped a 105px empty danger box on every open of
+  both modals — the quiet class is what makes a permanently-mounted reserve viable.
+  `reserve` earns its keep where a box is **permanently mounted** and only its content
+  arrives late; guarding the whole component remains right where the failure's announcing
+  comes from insertion into a plain dialog. Do not delete a guarded site's `@if` without
+  also giving it the quiet-empty shape, and flip the operation's `announceFailure` if you
+  change which shape a surface has (`features/abwab/README.md`, the announcer entry).
 
 ### `.qd-explorer-table`
 - **Purpose:** the one table implementation for all 5 explorer tables (roots,
@@ -1065,7 +1075,7 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   `--qd-accent` is defined per theme (`_tokens.scss` light / `_themes.scss` dark
   override) with zero `_themes.scss` change needed here.
 - **Row gap:** `.qd-check-row` is `display: flex; align-items: center` with a
-  single `--qd-space-2` gap between box and label, so the audit's "checkbox far
+  single `--qd-space-2` gap between box and label, so a "checkbox far
   from its label" gap cannot be reintroduced per call-site.
 - **Accessible name (contract, not optional):** every checkbox composing
   `.qd-checkbox` MUST carry a real `<label for>` or an `aria-label` naming what it
@@ -1120,8 +1130,8 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   is `flex: 1; min-block-size: 0; overflow-y: auto` — the **only** scroller —
   with `padding-inline: var(--qd-space-5)` and `scrollbar-gutter: stable` so
   the reserved scrollbar track cannot reflow content width once the list
-  crosses the scroll threshold (the same class of defect as audit item 3, one
-  level down). **`__body` has no block padding by design** — the gap at the
+  crosses the scroll threshold (the same reflow-on-scroll defect class this
+  section exists to prevent, one level down). **`__body` has no block padding by design** — the gap at the
   head/body and body/foot seams comes entirely from `__head`'s
   `padding-block-end` and `__foot`'s `padding-block-start`, so `__foot` is
   load-bearing for that gap, not an optional slot. A `--fixed` dialog composed
@@ -1145,8 +1155,8 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   **deleting** any inner `max-block-size`, not adding the class beside it.
   Slice C deleted four such caps when it composed the modifier on the six
   abwab modals — the sections list (14rem), the copy and relations pick-lists
-  (13rem and 11rem), and the move picker's destination list (15rem, which no
-  audit had inventoried) — along with the nested scrollers they implied. The
+  (13rem and 11rem), and the move picker's destination list (15rem, found only
+  during the deletion itself) — along with the nested scrollers they implied. The
   standing rule the greps enforce: **no `max-block-size` in a modal's own
   SCSS.**
 - **Convergence trigger for `.qd-modal.explorer-detail-modal` (required, not
@@ -1297,7 +1307,11 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   unchanged.
 - **Two of the three gaps this primitive originally left open are now closed** — kept
   named so a future reader does not re-open them as work: gap 1, no viewport clamping,
-  **closed by slice L** (the placement contract above); gap 2, no focus management into
+  **closed by slice L** (the placement contract above — whose math now lives in the pure
+  `placeContextMenu()`/`resolveMenuDirection()` helpers of
+  `shared/ui/context-menu/context-menu-placement.ts`, with the RTL/LTR default, the flip
+  and the clamp branches unit-pinned in `context-menu-placement.spec.ts`, so placement
+  coverage no longer depends on the opt-in e2e tier); gap 2, no focus management into
   the menu, **closed** (the keyboard contract above). What is still open:
   3. **The `--danger` item's rest-state color is not unified.** The two prior copies
      were not byte-identical here: the doors page's danger item was plain-colored until
@@ -1329,7 +1343,7 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   house rule** — it trades away exactly the flexibility every other truncated name
   in the app relies on, so a surface reaching for one must write down, at that
   call-site, why its layout cannot tolerate a shrinking name column the way every
-  other one does. The audit that produced this entry found a request for a fixed
+  other one does. This entry exists because a request once arrived for a fixed
   name width where every existing precedent was flexible; this paragraph is where
   that gets settled once, so a later reviewer does not re-litigate it per
   call-site.
