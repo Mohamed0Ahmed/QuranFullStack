@@ -82,9 +82,10 @@ Pull [naming-and-functions.md](naming-and-functions.md) if you need source citat
 
 Pull [comments-and-formatting.md](comments-and-formatting.md) if needed.
 
+0. **Start from the project rule, not the chapter:** comments are forbidden by default (root `CLAUDE.md`). Flag every comment in production source that does not clear its three-part test, and check the scope boundary before flagging anything — tests, `.claude/`, `.agents/`, `.specify/`, `Backend/scripts/`, the DataImporter, build config and generated files are **out of scope**.
 1. Flag every comment that paraphrases the code below it.
 2. Flag commented-out code blocks.
-3. Flag step-number, "First...", or "Then..." scaffolding comments.
+3. Flag step-number, "First...", or "Then..." scaffolding comments, and any XML doc / JSDoc on a controller, endpoint, DTO, component or service.
 4. Flag docstrings that restate the signature with no contract.
 5. Flag style inconsistencies with the surrounding file (casing, quoting, import order).
 
@@ -136,7 +137,7 @@ For each item flagged:
 
 ## When the review is contested
 
-If the user pushes back on a finding, cite the source from the relevant `references/` file. The rules trace to primary sources (Uncle Bob, Fowler, Hunt & Thomas, McCabe, Metz) and published 2024–2026 research on LLM code generation. If the user has a context-specific reason to override (e.g., a 7-parameter constructor for a config DTO is acceptable), document the override in a code comment that names the principle and the reason — and downgrade the finding to "Documented exception" rather than removing it.
+If the user pushes back on a finding, cite the source from the relevant `references/` file. The rules trace to primary sources (Uncle Bob, Fowler, Hunt & Thomas, McCabe, Metz) and published 2024–2026 research on LLM code generation. If the user has a context-specific reason to override (e.g., a 7-parameter constructor for a config DTO is acceptable), document the override in the nearest `README.md`, naming the principle and the reason — and downgrade the finding to "Documented exception" rather than removing it. (The generic guidance says to record it in a code comment; this project records it in the README instead, per the root `CLAUDE.md` comment rule.)
 
 ## What this review does not do
 

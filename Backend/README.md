@@ -58,8 +58,8 @@ Connection string via user secrets — see `api/QuranDashboard.Api/README.md`. S
 
 The API is containerized for Railway (Hobby). Artifacts live at the backend root:
 `Dockerfile` (multi-stage: `sdk:10.0` build → `aspnet:10.0` runtime, publishes only
-`api/QuranDashboard.Api`), `.dockerignore`, and `railway.json`. Full plan:
-`docs/deployment-railway/plan.md`.
+`api/QuranDashboard.Api`), `.dockerignore`, and `railway.json`. Those three files plus the
+variables below are the whole contract — this section is the record, not a summary of one.
 
 Build the image locally (build context is this `Backend/` folder):
 

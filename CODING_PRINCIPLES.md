@@ -18,13 +18,16 @@ This document defines the general coding principles for the whole FullStack work
 - Prefer small focused functions/classes/components.
 - Each unit should have one clear responsibility.
 - Avoid vague names like DataItem, Obj, Temp, Info2.
-- Avoid unnecessary comments that explain obvious code.
 - Code should read clearly without hidden surprises.
+- **Comments are forbidden by default** — see *Comment policy* in the root `CLAUDE.md`, which is
+  the canonical rule. This file does not restate it, so the two cannot drift apart.
 
 Deeper clean-code review guidance (naming/functions, comments/formatting, SOLID,
 DRY/KISS/YAGNI, and AI-generated-code failure modes) lives under
 `.claude/skills/engineering-review/references/clean-code-guard/`. It is reference
-material for the `engineering-review` skill, not a separate skill.
+material for the `engineering-review` skill, not a separate skill. **On comments
+specifically, the root `CLAUDE.md` rule is stricter than the generic pack and overrides
+it** — the pack's list of comment kinds that "earn their keep" is not this project's bar.
 
 Project overrides for that generic guidance:
 

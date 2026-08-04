@@ -49,30 +49,42 @@ Canonical workspace paths:
 - The current/steady-state contract truth is the code + nearest README, indexed by `docs/contracts/`. New features still populate `specs/<feature>/contracts/` during development.
 - Backend implementation, import, engineering review, real-run, validation, and completion reports live under `Backend/report/feature-XXX-feature-name/`.
 - Frontend report conventions are not established yet; do not invent frontend report folders unless the task explicitly asks for that decision.
-- **Planning artifacts are feature-scoped and die when the feature closes.** At feature
-  close, delete that feature's `specs/<feature>/`, `docs/feature-XXX-*/`, and
-  `Backend/report/feature-XXX-*/` from the working tree. Git history is the archive; the
-  deletion is hygiene so agents stop grepping decisions that no longer bind.
-  - **N-2 buffer.** Keep the planning artifacts of the **two most recently closed**
-    features (by merge date into `dev`) plus **every currently open** feature. Closing a
-    third feature evicts the oldest buffered one.
-  - **Never deleted by this rule:**
-    - Live non-feature folders: `Backend/report/architecture/`, `report/database/`,
-      `report/database-inventory/`, `docs/contracts/`, `docs/api-reference/`,
-      `docs/deployment-railway/`, `docs/design-preview/`, and the `README.md` of
-      `specs/`, `docs/`, and `Backend/report/`.
-    - **Umbrella plans still governing unbuilt work** — a master plan spanning several
-      unfinished features outlives any one of them.
-    - **Evidence** whose facts are not restated by a live document: import/source
-      verification, canonical counts and hashes, measured performance budgets that back a
-      live assertion, destructive-path and Quran-safety inventories, cross-cutting audits.
-      Evidence is judged **per file**, not per folder — a feature folder may lose its
-      completion report and keep its import report.
-  - **Repoint before you delete.** `grep -rn` the whole repo (code, tests, skills, data
-    files, READMEs, `.specify/`) for every path being removed. A referenced artifact may
-    not be deleted until the reference is repointed to code + the nearest `README.md`, or
-    the fact is folded into that README. Dangling links are a defect, not an acceptable
-    cost.
+- **Planning artifacts and reports are deleted by the feature that created them.** A
+  feature's `specs/<feature>/`, `docs/feature-*/`, and `Backend/report/feature-*/` are
+  working files, and the feature's **last commit before merge is a deletion commit** that
+  removes them. There is no buffer, no grace period, and no deferred cleanup pass; the
+  project stays clean continuously rather than accumulating and being swept.
+  - **The deletion commit comes AFTER the engineering review passes**, never before — the
+    review compares the work against the plan, so the plan has to still be there.
+  - **It is pure deletion.** README amendments already land in the same commit as the work
+    they describe (see *Local README Context* below), so by the time this commit runs the
+    READMEs are already true.
+  - **The gate, applied per file:** *does this file assert a fact that is not recoverable
+    from code, tests, or an existing README?* **No** → delete it; most files answer no.
+    **Yes** → write the fact into the nearest README, **prove it from code with a
+    `file:LINE`**, repoint every inbound reference, then delete. Never fold a claim you
+    could not confirm in code — the artifact says "do this", the code says "I do this", and
+    only the second is evidence. Folding wrong is worse than deleting: a paraphrase in a
+    README becomes the truth with nothing left to check it against. Folding nothing is just
+    as bad — silence about an invariant misleads exactly as much as a stale claim.
+  - **Evidence worth keeping becomes a test that fails on drift, not a report.** A canonical
+    count, source hash, or measured budget with nothing asserting it is a rumour. If the
+    assertion has nowhere to live yet, keep the file and record in `docs/TESTING_DEBT.md`
+    what the test must assert and where it must go.
+  - **Repoint before you delete.** `grep -rn` the whole repo — code, tests, `.claude/`,
+    `.agents/`, `.specify/`, scripts, manifests, every README — for each path being removed.
+    A dangling link blocks the delete; it is a defect, not an acceptable cost.
+- **The long-lived documentation is exactly this list.** Anything not on it is
+  feature-scoped and dies with its feature:
+  - every `README.md` anywhere in the repo — the current truth of the area it sits in;
+  - root and per-project law: `CLAUDE.md`, `AGENTS.md`, `CODING_PRINCIPLES.md`,
+    `TESTING_STRATEGY.md`, `PRODUCT.md`, `DESIGN.md`, `SKILLS_AND_ARCHITECTURE_GUIDE.md`
+    and their Backend/Frontend counterparts;
+  - all `.architecture/**` documents;
+  - `docs/contracts/**` — the pointer index that makes this rule workable;
+  - `docs/TESTING_DEBT.md` — a live ledger and the agenda of the next feature;
+  - everything under `.claude/`, `.agents/`, `.specify/`, and all code, tests, and
+    configuration.
 
 ## Local README Context (read before you change a folder)
 
@@ -81,8 +93,8 @@ Canonical workspace paths:
   current truth, boundaries, and invariants of that area.
 - Local `README.md` = WHAT an area does now and what must not break.
   `AGENTS.md` / `CLAUDE.md` / `.architecture/*` = HOW to work and how to write code.
-  `specs/<feature>/` = per-feature Spec-Kit planning for open features plus the N-2 buffer;
-  closed features are deleted from the tree and live in git history. Reports = evidence only.
+  `specs/<feature>/` = per-feature Spec-Kit planning, for **open features only**; a feature
+  deletes its own planning artifacts before it merges. Reports = evidence only.
 - If your change alters behavior, commands, boundaries, routes, data invariants,
   import behavior, API contracts, URL state, or tests described in a README, UPDATE
   that README in the SAME change.
@@ -98,21 +110,70 @@ Before any implementation work, read and follow:
 
 These principles apply to the whole FullStack workspace. Project-specific instruction files may add more detailed rules for Backend or Frontend work.
 
-### Comment sparingly
+### Comments are forbidden by default
 
-Comment only the non-obvious WHY — rationale, gotchas, invariants, decisions, local
-security/fail-closed choices — tied to the specific line it explains. Do NOT narrate
-WHAT the code does, restate obvious logic, or duplicate a README. This applies to both
-Backend and Frontend.
+**This section is the canonical comment rule for the whole workspace.** Everything else that
+mentions comments — `CODING_PRINCIPLES.md`, the Backend and Frontend instruction files, the
+`clean-code-guard` reference pack — defers to it and adds only language-specific detail. If any
+of them appears to say something different, this wins and that copy is a defect.
 
-- No `///`/XML-doc comments on controllers, endpoints, or DTOs/models (internal solo
-  project; no Swagger/API-doc consumer reads them). Keep XML-doc only for the rare case
-  where it carries genuine non-obvious WHY, and prefer a short plain `//` comment there.
-- Frontend: no boilerplate JSDoc (`/** */`) narrating a component/service; no
-  step-narrating `//`, `<!-- -->`, or SCSS comments that restate the code/markup/style.
-- Area-level explanation (WHAT an area does, its boundaries/invariants) belongs in the
-  nearest `README.md`, not in per-line comments. If a spot seems to need many comments
-  to be understood, add or expand that README instead.
+Not "used sparingly" — **forbidden**. Code, names and structure carry the meaning. When a piece
+of code seems to need a comment, the remedies, in order, are: a better name, a smaller function,
+a clearer structure, or a line in the nearest `README.md`. Writing a comment is the last resort,
+never the first.
+
+**The single exception, and its bar is deliberately extreme.** A comment may exist only when
+**all three** hold:
+
+1. The fact cannot be derived from the code by a competent reader.
+2. Omitting it would let a competent developer make a change that is **WRONG** — not merely
+   slower to understand. Convenience is not a justification; only prevented harm is.
+3. It cannot be solved by renaming, restructuring, or a sentence in the nearest `README.md`.
+
+**The burden of proof lies with the comment, never with its deletion.** If it is arguable
+whether a comment meets the bar, it does not — delete it.
+
+**Form, when the exception is genuinely met:** one line, on the exact line it explains, stating
+the WHY only. If it needs a paragraph, it is not a comment — it is a README entry.
+
+**Forbidden, with no exception:** narrating what the next line does; restating logic in prose;
+section-banner or separator comments; JSDoc or XML doc on components, controllers, DTOs,
+services and endpoints; step-by-step comments in templates and stylesheets; commented-out code;
+`TODO` with no tracked item; comments that repeat a README.
+
+**NOT comments for the purposes of this rule, and never to be removed:** tool and compiler
+directives — `// <auto-generated />`, `#pragma warning disable`, `// eslint-disable-*`,
+`// @ts-ignore`, `// prettier-ignore`, `/*! … */` in SCSS (it survives minification) — and
+license or copyright headers in vendored or third-party files.
+
+#### Scope — production source code only
+
+The policy governs, and governs nothing else:
+
+- **Backend:** `.cs` under `Backend/api/`, `Backend/application/`, `Backend/domain/`,
+  `Backend/infrastructure/`.
+- **Frontend:** `.ts`, `.html` and `.scss` under `Frontend/quran-dashboard-ui/src/` —
+  templates and stylesheets are production code and are included.
+
+**Out of scope. Leave every comment alone: do not edit them, do not report them as findings.**
+Test projects and spec files (`Backend/tests/**`, `*.spec.ts`, `e2e/**`); everything under
+`.claude/`, `.agents/` and `.specify/`; `Backend/scripts/**`; the DataImporter tooling; build
+and CI configuration; and all generated files (`Migrations/*.Designer.cs`, `*ModelSnapshot.cs`,
+`*.d.ts`, build output). These are not where the noise is, and churning them costs more than it
+returns. **This boundary is part of the rule — do not widen it.**
+
+#### Where removed knowledge goes
+
+Area-level explanation — what an area does, its boundaries and invariants — belongs in the
+nearest `README.md`. If the area has no README, create one; if it has one, extend it. Any fact
+written there must be provable from the code it describes: a paraphrase that cannot be checked
+against code is worse than the comment it replaced.
+
+#### Enforcement — self-cleaning, like planning artifacts
+
+Every change deletes the offending comments **in the area it touches**, in the same commit as
+the work, and updates that area's README when something worth keeping was removed. There is no
+separate comment-cleanup pass and no backlog.
 
 ### Clean-code self-check before delivery
 
@@ -134,6 +195,9 @@ Notes:
 - Project-specific rules override generic clean-code guidance — in particular, C#/.NET
   `I`-prefixed interface names and the `ApiResponse` contract /
   `Backend/.architecture/API_GUIDELINES.md` at the API boundary are authoritative.
+- **On comments the pack is not the standard.** *Comments are forbidden by default* above is,
+  and it is stricter than the pack's "comments that earn their keep" list. The pack is
+  annotated to say so; if you find a copy that is not, fix it.
 
 ### Test-code self-check before delivery
 
@@ -203,10 +267,10 @@ enterprise greige.
 
 ## Active Spec Kit Feature
 
-- Open: `abwab-doors-a` (Abwab doors & sections, Slice A — backend only). Plan:
-  `docs/feature-abwab-doors/plan.md`. Design contract: `docs/design-preview/abwab-tree-concept.html`.
+None.
+
 - When a feature opens, record it here as: feature slug, its `specs/<feature>/plan.md`, and
-  its `docs/feature-XXX-*/` decision record. Clear this section back to "None" when the
-  feature closes and its planning artifacts are swept per the lifecycle rule above.
+  its `docs/feature-XXX-*/` decision record. Clear this section back to "None" in the same
+  deletion commit that removes those artifacts, per the lifecycle rule above.
 
 <!-- SPECKIT END -->

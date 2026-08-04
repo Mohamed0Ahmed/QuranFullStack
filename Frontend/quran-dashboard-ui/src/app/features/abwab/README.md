@@ -3,14 +3,27 @@
 **HOW rules:** `.architecture/UI_STYLE_SYSTEM.md`, `.architecture/FRONTEND_STRUCTURE.md`,
 `.architecture/API_INTEGRATION_GUIDELINES.md` (project root). This file is the WHAT.
 
-**Status: Slice B2 complete**, plus the superset's global order, door relations, and the
-templates workshop — the full page (tree, cards, bulk mode, move, reorder, search, archive
-view, sections management, row context menu — Slice B1, phases 4 + 5), the browser e2e flows
-and the two test-doc amendments (`docs/feature-abwab-doors/plan-slice-b2.md`), the relations
-modal with its three entry points, and `/abwab/templates`. The routes are `Open` (no auth)
-per `plan.md` §10 — **do not** include this feature in a `dev → main` release until write
-protection lands; that block now covers **seven** more write-capable routes (template
-create/delete, node add/edit/reorder/delete, and the apply).
+**Status: shipped.** The full doors page (tree, cards, bulk mode, move, reorder, search, archive
+view, sections management, row context menu), the superset's global order, door relations, the
+templates workshop at `/abwab/templates`, and the browser e2e flows are all in. The UX slice
+series that followed rewrote search, reveal, the move picker, the confirms and the row menu;
+this file is the current record of all of it, so read it rather than reconstructing the order
+the pieces arrived in.
+
+**The routes are `Open` (no auth), and every write route in this feature is unauthenticated.**
+The requirement stands: **do not** include this feature in a `dev → main` release until write
+protection lands.
+
+> **Status note — 2026-08-04.** The requirement above was not met before release, and this note
+> records that state; it does not waive the requirement and it authorises nothing further.
+> Abwab merged to `main` in PR #63 (`bc61bdaa`) and was deployed by the redeploy commit
+> `b666cb38`, with the production schema at migration 24. Write protection did **not** land:
+> `Backend/api/.../Extensions/WebApplicationExtensions.cs` configures no fallback policy and
+> `api/access/me` remains the only `[Authorize]` endpoint
+> (`Backend/api/QuranDashboard.Api/Authentication/README.md`), so the Abwab write routes are
+> currently reachable anonymously in production. Rate limiting is per-IP and ships disabled, so
+> it is not a substitute. Closing this is the next feature; until it closes, nothing here may be
+> read as permission to ship further write surface unprotected.
 
 ## What this feature does
 
@@ -250,7 +263,8 @@ nine), four of them reads.
   below); the guard strip renders in `__foot`, where it cannot scroll away.
 - `components/abwab-door-picker/` — the one searchable, expandable door picker, composed
   by the relations and copy modals. Selection is consumer-owned: it renders `pickedIds`
-  and emits `toggled`, and `excludedIds` hides a door **without** hiding its subtree,
+  and emits `toggled`, and `excludedIds` **disables** a door without hiding it or its subtree —
+  it renders as a non-selectable row at its true depth with an `excludedTag` chip naming why,
   since a door may relate to its own ancestor. `testIdPrefix` keeps each host's existing
   testids. Rows compose `.qd-check-row`/`.qd-checkbox`/`.qd-truncate`, so it states no
   geometry of its own. Two things the picker owns that consumer-owned selection cannot
@@ -433,14 +447,17 @@ archive confirms and the row context menu never write the key — their subjects
 `bulkSet` (deliberately not URL state), a destructive confirmation that must be
 re-initiated rather than restored, and a transient position.
 
-**Reveal-in-tree writes the keys above, and the only thing it does to `modal` is clear
+**Reveal-in-tree writes the keys above, and it *rewrites* `modal` rather than clearing
 it.** A relation chip's name reveals that door in the doors tree, and every state it can
 be in is folded into **one** `buildAbwabQueryParams` patch, so there is one navigation and
-no race: `door` always; `modal: null` always, because the seventh key carries no id of its
-own — its subject *is* `door=`, which this patch rewrites, so retaining
-`relations-closed` across a reveal would offer to reopen the **target's** relations while
-the user is expecting the source's; `section` **only when a section tab is active and it is
-not the target's**
+no race: `door` always; `modal` always — as `relations-<id>-closed` carrying the **source**
+anchor's id, so the restore control reopens the door the user came from rather than the one
+they landed on (the id-carrying form and why it exists are above, under `relations-<id>-closed`).
+Only a null anchor, unreachable in door mode, emits `modal: null`. Until ux-slice-l this patch
+discarded the key outright, because a plain `relations-closed` follows `door=` — which this
+same patch is pointing at the *target* — and would have offered the target's relations; the
+id-carrying form is what removed that ambiguity. `section` **only when a section tab is active
+and it is not the target's**
 («كل الأبواب» already shows every door, so narrowing to the target's tab there would be
 gratuitous — and an explicit `door` in the same change survives the scope-invalidation
 clear, which is what makes the cross-section case one navigation instead of two);
@@ -548,8 +565,8 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **`.qd-navbar` is sticky and goes inert while any modal dialog is open (Slice B2, T901/T904).**
   `.abwab-page__side`'s own sticky `top` is re-based onto `--qd-navbar-block-size`
   (`abwab-page.component.scss`) so it sits flush under the now-always-visible chrome instead of
-  under the old scrolled-away navbar. Two intentional behavior changes ship with this phase, both
-  named per `docs/feature-ux-slice-b/plan.md` §9: (1) the navbar is keyboard-unreachable while any
+  under the old scrolled-away navbar. Two intentional behavior changes shipped with this phase,
+  both deliberate and both recorded here: (1) the navbar is keyboard-unreachable while any
   of abwab's six modals — now including `abwab-sections-modal` and `abwab-move-picker` (T905,
   below) — is open, same doctrine `app.ts` already applies to the global words overlay; (2) both
   those two modals now lock body scroll like the other four, so the page no longer scrolls behind
@@ -863,8 +880,9 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   fetch nobody sees. The doors snapshot *is* fetched when the copy modal opens — the picker
   is its only consumer, and the workshop is reachable directly by URL, so it cannot assume
   `/abwab` was visited first.
-- **Applying copies the template root's direct children, never the root itself** (reversed in
-  ux-slice-g — see `docs/feature-abwab-templates/plan.md` §5.1). Each target gains N new
+- **Applying copies the template root's direct children, never the root itself** (the ux-slice-g
+  reversal; `Backend/infrastructure/.../Persistence/Writes/Abwab/README.md` holds the axiom and
+  the writer's own class comment restates it). Each target gains N new
   children, one per the root's direct children, each with its own subtree; the copy modal's
   description and preview (`abwab-template-copy-modal.component.ts`, `abwab.labels.ts`) state
   this before the write. An empty-root template (no live children — the default state of every
@@ -935,7 +953,8 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 `abwab-archive.e2e.ts`, `abwab-url-and-a11y.e2e.ts`, and `abwab-global-order.e2e.ts` drive this
 page end to end — sections, root/child doors with alias chips, the dirty guard, inline reorder,
 single and bulk move, bulk archive, the row context menu, archive/restore including the
-parent-must-restore-first rule and the detach announcement, all seven URL query keys including a
+parent-must-restore-first rule and the retired-section restore that demands a destination, all
+seven URL query keys including a
 restorable overlay's reload/Back-Forward round trip, the tree's
 ARIA/roving-tabindex/RTL keyboard model, both halves of the section-delete contract (409 while a
 live door remains, and the `204 No Content` success once its doors are archived), and the
@@ -952,13 +971,41 @@ then `409`s silently for the rest, which is what previously left live sandbox do
 undeleted sandbox sections behind. See `e2e/README.md` and `TESTING_STRATEGY.md` §6 for the
 residue that legitimately remains.
 
+## Decisions that reversed mid-series
+
+Four decisions in this feature were made, shipped, and then reversed by the user during the UX
+slice series. Each line below states what holds **now** and cites the code that implements it.
+They are recorded because the reversal is the part a reader cannot recover: the code shows the
+current answer but not that an earlier, opposite one was deliberately abandoned — and re-deriving
+the earlier answer from first principles is exactly the mistake to avoid.
+
+- **Inline reorder: Enter is the only commit; blur and Escape both abandon the edit.** The first
+  implementation committed on blur. `abwab-tree.component.html:70` binds
+  `(blur)="cancelOrderEdit(node.id)"`, and `abwab-tree.component.ts:263-266` guards the cancel on
+  the same id as the commit, so the blur that follows an Enter commit is a no-op. This aligns the
+  reorder editor with the workshop's inline authoring rows, which were already Enter-only.
+- **The علاقات flag is always rendered, dimmed at zero, and clickable.** It was previously
+  render-only-when-`> 0` and deliberately a non-control. It is now a real `<button>` —
+  `abwab-tree.component.html:115-123` — carrying `[attr.tabindex]="-1"` so the row's roving
+  tabindex survives, an `--empty` modifier at zero (`abwab-tree.component.scss:257`), and an
+  Arabic `aria-label`. The archive view and cards are **not** part of this reversal: an archived
+  door's visible relation count is always 0 there.
+- **Apply copies the template root's direct children, never the root itself.** The original axiom
+  was "the template root becomes a new child of each target". `EfAbwabTemplateApplyWriter.cs:16-18`
+  states the current rule, and `Persistence/Writes/Abwab/README.md` holds the axiom. The
+  consequence worth keeping in mind: the collision surface is N names per target, not one, so the
+  `409` names every colliding `(target, child)` pair.
+- **الأبواب is a hover dropdown — الرئيسية / القوالب / الأرشيف.** `abwab.routes.ts` previously
+  recorded the opposite: the workshop is reached from the doors page header, "not the sidebar",
+  and adding a nav entry "would put an item in the nav nobody asked for". It is now data-driven
+  through `core/navigation/nav-menu.ts:9-29`.
+
 ## Related
 
-- Plan: `docs/feature-abwab-doors/plan-slice-b.md` (Slice B1/B2 interaction matrix),
-  `docs/feature-abwab-doors/plan-slice-b2.md` (Slice B2, this e2e slice), and
-  `docs/feature-abwab-doors/plan.md` (Slice A, backend).
-- Design contracts: `docs/design-preview/abwab-tree-concept.html`,
-  `abwab-relations-concept.html`, and `abwab-templates-concept.html` — **its «كاملًا بجذره» copy
-  apply description is superseded by ux-slice-g's children-only reversal** (`:139`, `:145`); the
-  historical mockup is not edited, this note is the record.
+- Planning history: the feature's plans and the UX slice series that followed were swept per the
+  planning-artifact lifecycle rule (`CLAUDE.md`) and live in git history. **This file is the
+  current record** — it is where a decision those plans made should be read from now.
+- Design contracts: the static comps this feature was drawn against were adopted and then deleted;
+  the shipped tree, relations modal, and templates workshop are the contract now, with the token
+  and component vocabulary in `.architecture/UI_STYLE_SYSTEM.md`.
 - Shared UI primitives: `../../shared/README.md`.

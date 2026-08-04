@@ -137,7 +137,7 @@ if counter > daily_limit:
     counter = 0
 ```
 
-**Rule.** Comments explain *why*, never *what*. Strip restating-code comments and any leftover "Step N" scaffolding before finalizing. Keep comments only where the rationale wouldn't be obvious to a reader of the code.
+**Rule.** In this project comments are **forbidden by default** (root `CLAUDE.md`): a comment survives only when its absence would let a competent developer make a *wrong* change, and only when a better name, a smaller function, or a README line cannot carry it. Strip restating-code comments and any leftover "Step N" scaffolding before finalizing. "The rationale wouldn't be obvious" is the generic Clean Code bar and is **lower** than this project's.
 
 ---
 
@@ -285,7 +285,7 @@ for index from 1 to items.length - 1:
   ...  // silently drops items[0]
 ```
 
-**Rule.** For any boundary, range, off-by-one, or null-semantic question, write the case enumeration in a comment first (`cases: empty / one / even / odd / null`) and verify each case before the code. Never copy a similar function and adapt — re-derive from the spec.
+**Rule.** For any boundary, range, off-by-one, or null-semantic question, enumerate the cases (`empty / one / even / odd / null`) and verify each before writing the code. Use a scratch note or the test names — **not** a comment left in the source; the enumeration is a thinking aid, and shipping it violates the comment rule. Never copy a similar function and adapt — re-derive from the spec.
 
 ---
 

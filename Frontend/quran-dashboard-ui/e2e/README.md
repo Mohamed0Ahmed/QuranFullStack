@@ -90,8 +90,8 @@ project and the worker count yourself: `npx playwright test --project=abwab --wo
   same terms: a local, disposable dev DB, not a shared one.
 - **Read-only flows and loose count assertions, except for Abwab.** Every suite but Abwab reads
   the live local dev DB without writing to it; exact row counts would break on the next reseed.
-  The eight Abwab specs are a deliberate, named exception (`docs/feature-abwab-doors/plan-slice-b2.md`
-  §2, and `TESTING_STRATEGY.md` §6, which this amendment mirrors): each test creates its own
+  The eight Abwab specs are a deliberate, named exception (`TESTING_STRATEGY.md` §6, which this
+  amendment mirrors; the slice plan that first recorded it is in git history): each test creates its own
   uniquely-named sandbox section over the API (`fixtures/abwab.ts`) and drives real writes
   against it through the UI. Teardown archives **every live door in that section** — swept from
   the tree by `sectionId`, not just the ids the fixture handed out, because flows also create

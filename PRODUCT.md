@@ -38,18 +38,18 @@ emotional goal is confidence and sustained focus.
 ## Visual Identity
 
 The official visual identity is the **flat parchment + single scholarly-green**
-direction, locked in the approved static comps under `docs/design-preview/`
-(read its `README.md`; the divergence list there is the record of what changed).
-`DESIGN.md` is the design system of record, with the token contract in
+direction. It was approved as static comps, adopted in full, and the comps retired
+once the shipped app became the reference. `DESIGN.md` is the design system of
+record, with the token contract in
 `Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md`.
 
 > **Superseded (historical).** The previous visual source of truth was the
 > **Real Pages prototype** (`/projects/Real Pages`, brand reference
 > "الباحث القرآني"): a navy + gold + parchment identity with soft card
 > elevation and hover lifts, which itself superseded an earlier exploratory
-> green / teal / petrol chrome direction. Its extraction report remains at
-> `Frontend/quran-dashboard-ui/report/ui/real-pages-visual-system-extraction-report.md`
-> as historical reference.
+> green / teal / petrol chrome direction. Its extraction report was a local working
+> artifact and was never committed to this repository; the reference values that
+> survived it are recorded in `UI_STYLE_SYSTEM.md` §15 instead.
 
 The identity is **flat parchment + ink + one scholarly green**:
 

@@ -41,9 +41,8 @@ design context. Read those first and treat them as the source of truth:
   flat elevation doctrine, motion, rules)
 
 The official visual identity is the **flat parchment + single scholarly-green**
-direction, approved as static comps in `../../docs/design-preview/` (read its README
-first — it carries the point-by-point divergence list from the previous identity):
-warm parchment surfaces structured by **hairline borders**, fully flat in light (no
+direction — approved as static comps, adopted in full, and the comps retired once the
+shipped app became the reference: warm parchment surfaces structured by **hairline borders**, fully flat in light (no
 resting card shadows, no hover lifts, no gradients, no navbar blur — shadows exist
 only on floating layers), **one green accent that is also the primary color**, and
 **navy demoted to the footer only**. The app stays **light + dark**: light implements
@@ -173,9 +172,12 @@ superseded prototype reference):
   Slice B2 T901/T903 — plus its dropdown and mobile menu, all three on the same rung so the
   sticky navbar's own stacking context never clamps its own menus below what they declare)
   → `--qd-z-menu-backdrop` / `--qd-z-menu` (`qd-context-menu`) → `--qd-z-modal-backdrop` /
-  `--qd-z-modal` (`.qd-modal-backdrop` / a future direct modal-box consumer). **Never write a
-  bare `z-index`** — always reference one of these tokens. There are no exceptions: every
-  stacking layer in the app resolves through this scale.
+  `--qd-z-modal` (`.qd-modal-backdrop` / a future direct modal-box consumer) → and on upward.
+  **`src/styles/_tokens.scss` is the authoritative scale**: the `--qd-z-*` tokens are declared
+  there in ascending order, each with the consumer it exists for, and a rung added there is part
+  of the scale whether or not this paragraph names it — so read the tokens, do not trust this
+  transcription to be complete. **Never write a bare `z-index`** — always reference one of these
+  tokens. There are no exceptions: every stacking layer in the app resolves through this scale.
   Two caveats the numbers carry, both inherited rather than chosen: `--qd-z-menu` and
   `--qd-z-modal-backdrop` currently resolve to the **same** value, so the rung order above
   is authoritative but the arithmetic does not enforce it — a context menu and a modal
@@ -399,9 +401,8 @@ Any future style system change should report:
 This section was the **implementation contract** for adopting the Real Pages
 prototype (navy + gold + parchment) as the visual source of truth. **Status:
 superseded.** The identity this contract implemented has been replaced by the
-**flat parchment + scholarly-green** direction (approved comps:
-`../../docs/design-preview/` — its README carries the point-by-point divergence
-list). The live truth is `_tokens.scss` / `_themes.scss` plus §16/§17 below and
+**flat parchment + scholarly-green** direction. The live truth is
+`_tokens.scss` / `_themes.scss` plus §16/§17 below and
 `DESIGN.md`; wherever this section conflicts with them — the B color tables, the
 translucent/blurred navbar (C), the gold footer accent and gradient hairline (D),
 card shadows and hover lifts (E), gold-accent buttons and states (G) — **§16/§17
@@ -409,8 +410,9 @@ and `DESIGN.md` win**. The typography roles (A) and the two-token motion contrac
 (F) remain in force (minus card lifts, which are gone with the flat doctrine). This
 section is retained as the historical record of the phased rollout (phases A–H) and
 the prototype's reference values; do not rewrite those reference values to green.
-The extraction reference is
-`../report/ui/real-pages-visual-system-extraction-report.md`.
+**This section is itself the surviving extraction record** — the original extraction report was
+a local working artifact and was never committed to this repository, so nothing else holds the
+prototype's values.
 
 App themes remain **light + dark**, and every token **must** be defined for both
 themes. Light fully implements the green direction; **dark interim-runs the
@@ -1106,7 +1108,9 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   (≤ `$qd-bp-phone-max`) tightens to `--qd-space-3` padding and
   `block-size: min(94dvh, 44rem)`, mirroring `qd-detail-modal-shell`'s own
   phone rule — but **not** its backdrop padding: `.qd-modal-backdrop` is the
-  shared base for all twelve modal consumers, so `--fixed` does not touch it.
+  shared base for **every** modal consumer — `qd-confirm-dialog` included, so every
+  confirm inherits it too — which is why `--fixed` does not touch it. Grep the class
+  for the current consumer set rather than trusting a count here.
 - **Why opt-in and not a base change:** `.qd-modal.explorer-detail-modal` sets
   `max-height: min(90vh, 36rem)` but never `height`/`block-size`. A block-size
   added to the base would therefore also apply to it — silently clamping the
@@ -1262,7 +1266,7 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   precedent truncates a name/title inside a flexible item —
   `detail-modal-shell.component.scss:28-35`'s `__title` (`flex: 1; min-inline-size:
   0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap`) is the
-  canonical shape, and `abwab-tree.component.scss:70-75`'s own `__name` already
+  canonical shape, and `abwab-tree.component.scss`'s own `.abwab-tree__name` rule already
   does the same. **This section states that as the rule, in both directions:** a
   name column composes `.qd-truncate` (`_utilities.scss`) on a flex item that owns
   `flex: 1` (or a reserved floor via `flex: 1; min-inline-size:
@@ -1489,15 +1493,13 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   signal-backed `isLocked` computed for this (`scroll-lock.service.ts`), rather than
   a second "any modal open" service, which would duplicate `lockCount`'s job and
   give two sources of truth for the same fact.
-- **Blast radius: nine surfaces, enumerated because it reaches beyond abwab.** Four
-  abwab modals (`abwab-door-modal`, `abwab-relations-modal`,
-  `abwab-template-copy-modal`, `abwab-template-node-modal`) plus, as of this phase,
-  `abwab-sections-modal` and `abwab-move-picker` (T905 — they render real
-  `.qd-modal`/`.qd-modal-backdrop` dialogs and previously held no lock, so the page
-  also scrolled behind them; both gaps close together) — six abwab modals in all —
-  plus **five words surfaces** that already held the lock before this phase
-  (`root-details-panel`, `lemma-details-panel`, `stem-details-panel`,
-  `word-type-details-panel`, `word-drilldown-modal`). The navbar is
+- **Blast radius: the rule is the membership test, not a list.** Any surface that applies
+  `qdModalScrollLock` makes the chrome inert, so **the directive's usages ARE the blast
+  radius** — `grep -rn qdModalScrollLock src/app/` answers it, and no count belongs here
+  because every new dialog moves it. It reaches well beyond abwab: the abwab modals, the
+  words detail panels and drilldown, and — since it composes the directive itself —
+  **every `qd-confirm-dialog`, and therefore every confirm in the app**. That last one is
+  the trap: adding a confirm anywhere silently enlarges this radius. The navbar is
   keyboard-unreachable while any of these nine is open. This is an intentional
   behavior change on five shipped words surfaces nobody asked about, accepted
   deliberately: each of the nine is a modal dialog, "app chrome is not reachable

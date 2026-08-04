@@ -8,12 +8,15 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 cd "$REPO_ROOT/Frontend/quran-dashboard-ui"
 npm run generate:api
-npm run docs:api
 
+# The browsable Redoc bundle is deliberately absent from both lines below. It is not committed,
+# and `git diff` cannot see untracked output — so listing it here produced a check that passed
+# unconditionally, reporting a safety it did not provide. The spec and the generated client are
+# the actual contract a caller breaks against; the bundle is a rendering of them. Build it on
+# demand with `npm run docs:api`.
 if ! git -C "$REPO_ROOT" diff --exit-code -- \
   Frontend/quran-dashboard-ui/openapi \
-  Frontend/quran-dashboard-ui/src/app/core/api/generated \
-  docs/api-reference; then
+  Frontend/quran-dashboard-ui/src/app/core/api/generated; then
   echo ""
   echo "STALE API CONTRACT: backend spec and committed generated output differ."
   echo "Run Backend/scripts/check-api-contract, review the diff, and commit it."

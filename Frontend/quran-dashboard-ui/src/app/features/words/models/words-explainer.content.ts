@@ -3,8 +3,7 @@
  * the per-page explorer heroes AND the hub navigation cards, so a card description and its
  * page's tagline can never drift.
  *
- * Copy is transcribed verbatim from the approved comp `docs/design-preview/words-pages-hero.html`
- * (intro at :71-82, five `<section class="hero">` at :85/:110/:134/:156/:174). Presentation-only:
+ * Copy is transcribed verbatim from the approved design comp. Presentation-only:
  * no backend read, no count, no Quran-data logic. The example words rendered per page are clearly
  * labelled `مثال` illustrative morphology — never presented as Quranic quotations or queryable
  * counts (plan D10).

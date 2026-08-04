@@ -26,10 +26,12 @@ attach to. CLI: `import-foundation --source <path>` (source is **required**; no 
 - **IDs are contiguous and order-significant** (`IdContiguityCheck`); layout must fully cover the
   Mushaf (`LayoutCoverageCheck` / `PageReconstructionCheck`). A failing check fails the import.
 - **Foundation seeds first** — reset/reseed order starts here (see
-  `Backend/report/database-inventory/database-reset-and-seeding-order.md`).
+  `Backend/scripts/README.md`, "Rebuilding the local database from nothing").
 - **Do not silently modify source data**; preserve traceability to the staged package.
 
 ## Related
 
 - Write mechanics: `../../../Persistence/DataPipelines/Quran/README.md`.
-- CLI: `tools/QuranDashboard.DataImporter/README.md`. DB baseline: `Backend/report/database/`.
+- CLI: `tools/QuranDashboard.DataImporter/README.md`. Reset/reseed runbook:
+  `Backend/scripts/README.md`. The schema itself is `../../Migrations/` plus the EF
+  configurations under `Persistence/Configurations/Quran/`.

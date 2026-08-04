@@ -48,6 +48,22 @@ commands are in §6.
 - Do not create standalone frontend feature reports by default; reserve reports for
   audits, UX contracts, diagnostics, and acceptance evidence.
 
+## Frontend Comment Policy
+
+The canonical rule is *Comments are forbidden by default* in the root `CLAUDE.md`; read it
+first. Only the Angular-specific detail lives here.
+
+- **Scope:** `.ts`, `.html` and `.scss` under `src/`. Templates and stylesheets are production
+  code and are included. Not `*.spec.ts`, not `e2e/`, not build config.
+- **No JSDoc (`/** */`) narrating a component, service, facade, store or directive.** A block
+  comment above a class is the default failure mode here and is forbidden outright.
+- **No step-narrating `//` in `.ts`, `<!-- -->` in templates, or `//` section banners in SCSS.**
+  A stylesheet that needs banners to be navigable needs splitting, not labelling.
+- `// eslint-disable-*`, `// @ts-ignore`, `// prettier-ignore` and `/*! … */` in SCSS are
+  directives, not comments. Never remove them.
+- Feature behaviour, URL contracts and component boundaries belong in the feature's
+  `README.md`, and the token/component vocabulary in `.architecture/UI_STYLE_SYSTEM.md`.
+
 ## API Integration
 
 Before adding or changing frontend API services, data-access files, facade/store

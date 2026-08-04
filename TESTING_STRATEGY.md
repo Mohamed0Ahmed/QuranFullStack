@@ -146,10 +146,12 @@ dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab.&FullyQualifiedName!~QuranDashboard.Tests.Smoke."
 ```
 
-Coverage statement (be accurate about this): this run keeps every `Tests.Api.*` family,
-the `Quran.MushafReader`, `Quran.Words`, `Quran.WordsMorphologyExplorers`,
-`Quran.WordsRoots`, and `Quran.WordsWordTypes` read-model families, and
-`Tests.TestSupport.Logging`. It excludes the ten pipeline namespaces **completely —
+Coverage statement (be accurate about this): **the filter above is the definition — it is
+subtractive, so it keeps every namespace under `QuranDashboard.Tests.` that no `!~` term
+names.** Do not maintain a second list of kept families here; it drifts the moment a namespace
+is added. To see what a run actually covers, read the `!~` terms above against
+`Backend/tests/QuranDashboard.Tests/` (`grep -rn "^namespace" Backend/tests/QuranDashboard.Tests/ | sort -u`).
+It excludes the pipeline namespaces **completely —
 including the fast unit tests that live inside them** (617 tests) — and it excludes
 `QuranDashboard.Tests.Smoke.` (140 tests), which has its own gate below. It is a fast broad
 regression tier, not full coverage; the excluded families run under the Tier A/C route gate
@@ -298,7 +300,7 @@ pipeline provides this gate — see §8.
 | Change type | Minimum phase tier | Pre-PR tier | Pipeline tests required? |
 | --- | --- | --- | --- |
 | API Backend only (`Tests.Api.*`), touching no route, contract, auth, middleware, or binding | A | C | No |
-| Frontend feature only (`words`, `mushaf`, `auth`, `dashboard`) | A | C | No |
+| Frontend feature only (any one directory under `src/app/features/`) | A | C | No |
 | Shared API/auth infrastructure | A + adjacent `Api.Access` / `Api.Middleware` tests + Smoke | C + Smoke | Only if pipeline execution paths are affected |
 | Explorer/read-model change (MushafReader, Words*) | Focused explorer family | B/C | No, unless shared pipeline persistence changed |
 | EF migration affecting only non-pipeline tables | A + affected migration/schema tests | C | No |
@@ -424,15 +426,16 @@ npm run e2e:ui                                # Playwright UI mode
 npx playwright test e2e/mushaf-reader.e2e.ts  # one flow file, any worker count
 ```
 
-The frontend features are `auth`, `dashboard`, `mushaf`, and `words`; shared code lives
-in `src/app/core/` and `src/app/shared/`, with app-shell specs at `src/app/*.spec.ts`.
+A frontend feature is one directory under `src/app/features/` — `ls src/app/features/` is the
+list, and a Tier A glob is `src/app/features/<name>/**/*.spec.ts`. Shared code lives in
+`src/app/core/` and `src/app/shared/`, with app-shell specs at `src/app/*.spec.ts`.
 
 The E2E suite boots the Angular dev server **and** the backend `https` launch profile
 (`ASPNETCORE_ENVIRONMENT=Development`), so it reads the real local `quran_dashboard` database.
 Every flow is read-only and every count assertion is loose, **with one named, deliberate
 exception**: the eight Abwab specs (`abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`,
 `abwab-archive.e2e.ts`, `abwab-url-and-a11y.e2e.ts` added in Slice B2,
-`docs/feature-abwab-doors/plan-slice-b2.md`, plus `abwab-global-order.e2e.ts` added by
+plus `abwab-global-order.e2e.ts` added by
 `abwab-global-order`, `abwab-tree-row-budget.e2e.ts`, `abwab-slice-j-widths.e2e.ts`, and
 `abwab-relations.e2e.ts` added by slice K) write against the local dev DB through a per-test sandbox section created
 over the API (`e2e/fixtures/abwab.ts`), not the seeded/canonical data.
@@ -460,7 +463,8 @@ disposable dev database with loose, id-scoped assertions.
 live-root set across the database, not just the acting test's own sandbox, so two Abwab specs in
 different workers can race the same rows — measured directly: at 2 workers this produced a
 wrong-result failure (not even a `409`) from another worker's teardown resequencing mid-test; at 1
-worker all 20 Abwab tests pass repeatably. See `e2e/README.md` for the full measurement and the
+worker the Abwab project passes repeatably. `e2e/README.md` carries the measured counts and their
+date — it is the one place they are recorded, so do not restate a figure here. See it also for the
 `playwright.config.ts` project split.
 **The precondition above is reinstated** — future write flows for other features again require an
 isolated e2e database first — the moment this suite runs anywhere the accumulating archived

@@ -50,8 +50,8 @@ Two source shapes are supported side-by-side (Feature 020):
 - CLI verbs `import-morphology [--enriched]` / `validate-enriched-morphology`:
   `tools/QuranDashboard.DataImporter/README.md`.
 - Contract truth for morphology import is this README + the code here; the thin index is
-  `docs/contracts/import-pipelines.md`. DB baseline:
-  `Backend/report/database/current-database-tables-and-relationships-report.md`.
+  `docs/contracts/import-pipelines.md`. The schema these writes target is declared by the EF
+  configurations under `Persistence/Configurations/Quran/`, not by any report.
   (Planning artifacts for the features that built this area were swept per the
   planning-artifact lifecycle rule — recover from git history if needed.)
 - The curation files under `Corrections/` carry `sourceAudit` / `sources` fields naming

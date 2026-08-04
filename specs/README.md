@@ -7,34 +7,31 @@ inputs** — the Spec-Kit implementation-review compares the in-progress work ag
 feature's own `specs/<feature>/contracts/`. New features still populate
 `specs/<feature>/contracts/` during development.
 
-## Lifecycle — a feature's specs die with the feature
+## Lifecycle — a feature's specs die with the feature, in the feature's own last commit
 
-`specs/<feature>/` is a **working** artifact, not an archive. When a feature closes, its
-folder is deleted from the working tree; git history keeps it. Only the **two most
-recently closed** features stay as a buffer, plus every open feature.
-
-Merged features 001–019 and 026 were removed by the 2026-07-27 lifecycle sweep (001–019
-had already lost their `contracts/` during Feature 024). Their planning artifacts are in
-git history; nothing in the working tree should link to them.
+`specs/<feature>/` is a **working** artifact, not an archive. The feature deletes its own
+folder in its **last commit before merge**; git history is the archive. There is no buffer
+and no later sweep, so a `specs/<feature>/` in the tree means that feature is **open**.
 
 ### Closing a feature — checklist
 
-1. **Merge** the feature branch into `dev` (PR merged, branch state clean).
-2. **Acceptance** recorded — quickstart/exit gates run against the final tree; any
-   completion or validation report written under `Backend/report/feature-XXX-*/`.
-3. **Promote the evidence.** Move anything that must outlive the feature into a live home:
-   current truth → the nearest `README.md`; contracts → the code + `docs/contracts/`
-   index; durable evidence (import verification, measured budgets backing a live
-   assertion, safety inventories) → keep the file and note *why* it is exempt.
-4. **Repoint inbound references.** `grep -rn` for every path about to be removed — code,
-   tests, skills, data files, READMEs, `.specify/feature.json`. Repoint or inline each
-   hit. A dangling link blocks the delete.
-5. **Delete the N-2 buffer overflow.** With this feature closed, the feature that was
-   third-most-recent loses its `specs/<feature>/`, `docs/feature-XXX-*/`, and
-   `Backend/report/feature-XXX-*/` — minus the files exempted at step 3.
-6. **Update the folder charters** if a listed folder disappeared: `specs/README.md`,
-   `docs/README.md`, `Backend/report/README.md`'s "What lives here now" table, and the
-   **Active Spec Kit Feature** section of `CLAUDE.md` / `AGENTS.md`.
+1. **Engineering review passes.** It compares the work against the plan, so nothing may be
+   deleted before it runs.
+2. **Acceptance** recorded — quickstart/exit gates run against the final tree.
+3. **Apply the per-file gate** (`CLAUDE.md` §Workspace Path Conventions) to every planning
+   file: does it assert a fact not recoverable from code, tests, or an existing README?
+   No → it goes. Yes → write the fact into the nearest `README.md` and **prove it from code
+   with a `file:LINE`** before deleting. A claim you cannot confirm in code is not folded —
+   it is dropped, and said out loud.
+4. **Turn evidence into a test, not a report.** A canonical count, hash, or measured budget
+   that nothing asserts is a rumour. If it has nowhere to be asserted yet, keep that one
+   file and add the owed assertion to `docs/TESTING_DEBT.md`.
+5. **Repoint inbound references.** `grep -rn` for every path about to be removed — code,
+   tests, `.claude/`, `.agents/`, `.specify/`, scripts, manifests, READMEs. A dangling link
+   blocks the delete.
+6. **Delete `specs/<feature>/`, `docs/feature-*/`, and `Backend/report/feature-*/`** in one
+   commit, and clear the **Active Spec Kit Feature** section of `CLAUDE.md` / `AGENTS.md` in
+   the same commit.
 
 ## Current / steady-state truth lives elsewhere
 

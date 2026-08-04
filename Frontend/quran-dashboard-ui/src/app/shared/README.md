@@ -23,10 +23,12 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   (`<ng-content>`): the primitive knows nothing about doors or template nodes, and the item
   hover/focus/danger styling lives in the global `.qd-context-menu__item` classes
   (`_components.scss`), not this component's own stylesheet, since content the *consumer*
-  projects sits outside the primitive's emulated-encapsulation boundary. Deliberately does
-  **not** clamp to the viewport (positions from the caller's raw pointer coords, matching
-  both prior copies) and does **not** manage focus into the menu — see
-  `UI_STYLE_SYSTEM.md` §17 for both gaps. See `UI_STYLE_SYSTEM.md` §17.
+  projects sits outside the primitive's emulated-encapsulation boundary. Since ux-slice-l it
+  **owns its own placement**: it measures its box after render, extends toward inline-start,
+  flips on either viewport edge, and clamps both axes to an 8 px margin — so a caller passes a
+  raw pointer position and the primitive decides where the menu actually lands. It still does
+  **not** manage focus into the menu — see `UI_STYLE_SYSTEM.md` §17 for that gap and for the
+  full placement contract.
 - `ui/ayah-card/` — `qdAyahCard` (attribute component, host class `qd-ayah-card`), the one
   presentation-only flat frame for ayah-shaped list items (recessed warm card background
   `--qd-ayah-card-bg`, hairline border, control radius, compact padding/gap; no shadow, no
@@ -37,8 +39,9 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   items and `mutashabihat-groups-card` occurrences. See `UI_STYLE_SYSTEM.md` §17.
 - `ui/state/` — `qd-state`, the one empty/loading/error presentation; backed by the existing
   `.qd-empty-state`/`.qd-loading-state`/`.qd-error-state` classes. Carries an additive `reserve`
-  input (default off) for the §N3 no-layout-shift box; no current call-site turns it on. See
-  `UI_STYLE_SYSTEM.md` §17.
+  input (default off) for the §N3 no-layout-shift box; the abwab modals and pages opt in where an
+  error must not shift the layout under it — `grep -rn '\[reserve\]' src/app/` for the current
+  consumers, and see §17's note on `reserve` under `@if`. See `UI_STYLE_SYSTEM.md` §17.
 - `ui/skeleton/` — `qd-skeleton-rows`, renders N skeleton rows into a caller-supplied
   `grid-template-columns` string so loading rows match loaded rows exactly; plus the pure
   `splitGridTemplateColumns` helper it's built on.
@@ -82,12 +85,10 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   (`core/layout/top-navbar/`) reads it to go `[inert]`/`[aria-hidden]` while any modal dialog
   holds the lock, so this is the one piece of state the chrome-inert rule reads; do not add a
   second "any modal open" service (`.architecture/UI_STYLE_SYSTEM.md` §17 "Chrome-inert
-  rule"). Nine surfaces hold the lock as of this phase: six abwab modals
-  (`abwab-door-modal`, `abwab-relations-modal`, `abwab-template-copy-modal`,
-  `abwab-template-node-modal`, plus `abwab-sections-modal`/`abwab-move-picker` added at
-  T905) and five words detail surfaces/dialogs (`root-details-panel`,
-  `lemma-details-panel`, `stem-details-panel`, `word-type-details-panel`,
-  `word-drilldown-modal`).
+  rule"). Which surfaces hold the lock is not a list to maintain here — it is whatever applies
+  `qdModalScrollLock`, so `grep -rn qdModalScrollLock src/app/` is the answer. Note that
+  `qd-confirm-dialog` applies it, so **every confirm in the app** is a holder and makes the
+  chrome inert.
 - `ui/pagination/` — reusable pagination component, windowing helpers, labels, and tests.
 - `ui/placeholder-page/` — generic placeholder page that reads its title from route data.
 - `ui/safe-html/` — HTML sanitizing pipe for trusted API-backed markup display.

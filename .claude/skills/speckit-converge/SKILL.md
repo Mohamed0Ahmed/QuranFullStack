@@ -87,10 +87,13 @@ of the code relative to the feature's artifacts — no git, no branch comparison
 When the codebase already satisfies everything, the command MUST leave `tasks.md`
 **byte-for-byte unchanged** (no empty Convergence header) and report a clean result.
 
-**Constitution Authority**: The project constitution (`.specify/memory/constitution.md`) is
-**non-negotiable**. Code that violates a MUST principle is the highest-severity finding and
-produces a corresponding remediation task. If the constitution is an unfilled template,
-skip constitution checks gracefully rather than failing.
+**Constitution Authority**: *If* a project constitution exists at
+`.specify/memory/constitution.md`, it is **non-negotiable** — code violating a MUST principle
+is the highest-severity finding and produces a remediation task. **If it is absent, or present
+but still an unfilled template, there is no constitution gate**: skip those checks, say so once,
+and continue. Absence is not a finding. This repository deliberately has no constitution; its
+binding rules live in `CLAUDE.md`, `CODING_PRINCIPLES.md`, `TESTING_STRATEGY.md`, and
+`.architecture/`.
 
 ## Execution Steps
 
