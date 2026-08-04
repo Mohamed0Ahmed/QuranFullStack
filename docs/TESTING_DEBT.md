@@ -205,3 +205,25 @@ touched cannot be settled by reading code, so they are recorded here instead of 
 |---|---|---|---|
 | P1 | **The `'Uthmanic Hafs'` trigger mechanism is UNVERIFIED.** Its `font-display: block` comment states the face "renders via ligature substitution, keyed off ASCII trigger strings (ayah-marker glyphs)". The face's only production consumer is `--qd-font-quran-ayah-marker` (`_tokens.scss:70`) applied at `mushaf-word.component.scss:29`, and unlike the three QCF packs it has **no ligature key map** in `features/mushaf/assets/` — so nothing in the repo confirms or refutes the mechanism. The comment was deliberately LEFT IN PLACE: an unverified claim is not a false one, and the `font-display: block` decision it carries is Quran-safety and correct regardless | `src/styles/_typography.scss` ('Uthmanic Hafs' block), `mushaf-word.component.scss:29` | Someone with font knowledge inspecting `UthmanicHafs_V22.ttf`'s GSUB table, **or** the next change to the ayah-marker rendering path. Confirm the mechanism and trim the comment to what is true, or correct it |
 | P2 | **The measured contrast ratios have nothing asserting them.** Seven token/surface pairings carry measured WCAG ratios that were folded out of `_tokens.scss` comments into `src/styles/README.md` Invariants. Nothing recomputes them, so re-tuning a token by eye silently drops a pairing below target — exactly the drift a fold turns from a comment into a rumour. **The test must assert**, for each row of that README table, that the WCAG 2.x contrast computed from the two resolved OKLCH token values meets its floor: `--qd-ayah-card-bg` vs Quran text >= 12.7:1 and vs muted meta >= 4.5:1 (AA); `--qd-accent-text` on light surfaces >= 7:1 (AAA); `--qd-warning` on `--qd-warning-tint` >= 4.5:1 and as a non-text dot on the navy footer >= 3:1 (AA non-text); danger text on `--qd-danger-tint` >= 4.5:1; `--qd-success-tint` vs `--qd-success` >= 4.5:1. Assert **floors, not exact equality** — the stated figures are measurements and will drift with rounding. Both themes must be covered: `_themes.scss` overrides `--qd-ayah-card-bg` to `--qd-surface` in dark, so the dark pairing is a different computation, not the same one | Test to live at `src/styles/token-contrast.spec.ts` (Vitest already globs `*.spec.ts` under `src/`), reading `src/styles/_tokens.scss` and `_themes.scss`; ratios listed in `src/styles/README.md` Invariants | The next change to any `--qd-*` colour token, or the next theme/palette pass. Whoever re-tunes a colour is already holding the contrast question |
+
+## abwab-review-fixes (branch `abwab-review-fixes`, 2026-08-04)
+
+The whole-feature engineering review's test-coverage findings. **Most of them were not new debt.**
+Six findings named an untested behavior; adjudicated against this ledger and against the code they
+resolve to one new row, two behaviors that gained real specs during the fix branch, and three
+areas that already had rows here. The review's own F-34 entry flagged the double-count risk; it was
+right, and it applied to two more.
+
+- **F-65** (`abwab-template-node-modal` had no spec) and **F-69** (`qd-context-menu` had no spec)
+  are **paid, not deferred** — both components gained real specs on this branch while their
+  accessibility findings were fixed. No row.
+- **F-13** (relations canonical pair, broader-door direction, derived dormancy) is already row 1 of
+  *abwab-relations* above. **F-14** (apply copies children never root, the `(target, child)`
+  collision key, the empty-root `400`) is already row 7 of *abwab-templates*. **F-34** (the
+  ETag/generation/`304` mechanism) is already row I2 of *ux-slice-i*. All three stay unpaid under
+  their existing rows and their existing triggers; duplicating them here would inflate the ledger
+  and split each obligation across two triggers.
+
+| # | Uncovered area | Where | Pays it |
+|---|---|---|---|
+| R1 | **The tree snapshot's alias projection.** `EfAbwabTreeReader` builds every door's alias list in one `GroupBy` + `ToDictionaryAsync` over the live alias rows, and nothing asserts it: that each door receives its own aliases and no other door's, that a door with no aliases gets an empty list rather than being absent from the dictionary, and that soft-deleted alias rows are excluded. This is the hottest read path in the feature — every tree GET runs it — and it is the one part of the snapshot projection with no cover of any kind. Row 2 of *abwab-relations* covers `GetLiveRelationCountsAsync` on the same reader; the alias half has nothing | `Persistence/Reads/Abwab/EfAbwabTreeReader.cs` | The next change to the tree reader's projection or to `abwab_door_aliases` — including the alias-normalization path, which already has to re-derive what a door's alias set is |

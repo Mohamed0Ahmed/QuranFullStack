@@ -299,6 +299,31 @@ is the qualified form `TESTING_STRATEGY.md` requires rather than an unqualified 
 smoke gate is mandatory here because F-29/F-30 changed writer and exception contracts behind live
 routes.
 
+### Bundle 5 — test-coverage gaps → ledger rows (6 findings, 1 new row)
+
+| Finding | State | Where |
+|---------|-------|-------|
+| F-13 | **already converted** — pre-existing row | `docs/TESTING_DEBT.md` *abwab-relations* row 1 |
+| F-14 | **already converted** — pre-existing row | `docs/TESTING_DEBT.md` *abwab-templates* row 7 |
+| F-20 | **converted — NEW row R1** | `docs/TESTING_DEBT.md` *abwab-review-fixes* R1 |
+| F-34 | **already converted** — pre-existing row | `docs/TESTING_DEBT.md` *ux-slice-i* row I2 |
+| F-65 | **PAID, not deferred** | `components/abwab-template-node-modal/…component.spec.ts` (new on this branch) |
+| F-69 | **PAID, not deferred** | `shared/ui/context-menu/context-menu.component.spec.ts` (new on this branch) |
+
+**The headline result of this bundle is that five of its six findings did not need a row.** Three
+were already in the ledger under their own triggers, and two were paid during bundles 2–3 as a side
+effect of fixing their accessibility findings — both components gained real specs. Only F-20, the
+tree snapshot's **alias** projection, was genuinely uncovered anywhere.
+
+Writing rows for the three pre-existing items would have inflated the ledger and split each
+obligation across two triggers, which is precisely the drift the ledger exists to prevent. The
+review anticipated this for F-34 ("already recorded as debt, flagged so the parent does not
+double-count it") and was right; the same was true of F-13 and F-14, which it did not flag.
+
+Five spec files are new on this branch in total: `top-navbar`, `context-menu`,
+`abwab-template-node-modal`, `abwab-template-tree`, `abwab-templates-page` — four of them for
+components that previously had **no** spec at all.
+
 ---
 
 ## 1. Areas covered / remaining
