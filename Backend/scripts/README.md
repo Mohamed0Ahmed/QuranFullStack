@@ -27,6 +27,67 @@ having done nothing. There is no `--allow-remote`-style escape on either: they a
 goal is only to clear abwab rows, and note that a full reset also discards the canonical
 `quran_*` data, which then has to be re-imported.
 
+## Rebuilding the local database from nothing
+
+The reset → migrate → seed runbook. It lived under `Backend/report/` until 2026-08-04, where it
+went stale and cost one confusing `create-smoke-dump` failure; it is here now, next to the
+commands it drives.
+
+**Provide the connection string via the `ConnectionStrings__QuranDashboardDb` environment
+variable when running any importer verb.** The DataImporter does not read the API's user secrets,
+and its own `appsettings.json` default password is not the local one.
+
+### 1. Reset and migrate
+
+```bash
+./scripts/reset-db --yes
+```
+
+`reset-db` is literally `drop-db --yes` followed by `update-db`, so it lands on an empty database
+at migration head. Run `clean-local-build` first if stale sandbox assets are in the way — both
+`drop-db` and `update-db` run a preflight check for them and will refuse otherwise.
+
+**Migrations are applied in filename order and that order is not transcribed anywhere.** The set
+is whatever is in `infrastructure/QuranDashboard.Infrastructure/Migrations/`, ordered by its
+timestamp prefix; `dotnet ef database update` applies them in exactly that order. A written list
+is what went stale before — it claimed 15 migrations long after the tree held more, and
+`create-smoke-dump` refuses to run when the applied count and the file count disagree, so the
+document sent an operator hunting for a database problem that did not exist. That guard is the
+enforcement; read the directory for the list.
+
+### 2. Seed, in dependency order
+
+Verbs are dispatched from `tools/QuranDashboard.DataImporter/Program.cs` and documented in
+`tools/QuranDashboard.DataImporter/README.md`, which owns each verb's flags and source package.
+Only two dependencies actually constrain the order:
+
+1. **`import-foundation` first.** Everything else resolves against `quran_ayahs` or
+   `quran_words`, and nothing else creates them.
+2. **`rebuild-words` → `import-morphology` → `generate-i3rab`.** Display words come from
+   foundation words; morphology attaches to display words; simple i3rab is generated from
+   morphology segments.
+
+Every other verb — `import-mutashabihat`, `import-tafsirs`, `import-translations`,
+`import-navigation-metadata`, `import-full-i3rab` — resolves `verse_key → ayah_id` against
+`quran_ayahs` alone and may run at any point after `import-foundation`, in any order relative to
+each other. `validate-enriched-morphology` is a check, not a seeding step.
+
+Verify the dependency claim rather than trusting this list: each importer's resolver is in
+`infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/<pipeline>/`, and the
+hard checks that enforce it are in the matching
+`Persistence/DataPipelines/Quran/<pipeline>/` validator.
+
+### 3. Refresh the smoke dump
+
+After a reseed, regenerate the canonical dump the backend smoke data tier restores — see
+`create-smoke-dump` below. Its migration-count and baseline-row guards are what tell you the
+reseed actually landed.
+
+**What is not verified here.** No end-to-end reset → full reseed of the whole chain has ever been
+captured in one run. The reset → migrate → `import-foundation` → `rebuild-words` head of the chain
+has been; the individual imports have each been run against an already-foundation-seeded database.
+Treat the ordering above as derived from the code, not as a replayed transcript.
+
 ### `create-smoke-dump`
 
 ```bash

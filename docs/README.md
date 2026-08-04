@@ -14,7 +14,12 @@ Where things live now:
 - **How to work / how to write code** → `AGENTS.md` / `CLAUDE.md` / `.architecture/*`.
 - **Which tests to run and when** → `TESTING_STRATEGY.md` (workspace root) — execution tiers A–E, pipeline triggers, and the PR/release gates. Not a planning doc and not superseded by anything here.
 - **Which tests were deliberately not written** → `docs/TESTING_DEBT.md` — one row per skipped area, each naming the concrete change that pays it. Not a place to defer a tier `TESTING_STRATEGY.md` requires, and never a home for `SmokeRouteCatalog` parity entries (those are a build-level gate).
-- **Evidence / reference** (audits, imports, diagnostics, DB inventory) → `Backend/report/`.
+- **Evidence / reference** (import verification, source hashes, provenance) → `Backend/report/`.
+- **A browsable HTTP API reference** → not committed. Generate it on demand from
+  `Frontend/quran-dashboard-ui/` with `npm run docs:api`, which writes
+  `docs/api-reference/index.html`. It used to be committed and nobody regenerated it, which made
+  it stale data wearing a contract's clothes.
+- **How to rebuild the local database** → `Backend/scripts/README.md`.
 
 Add a new `docs/feature-XXX-<name>/` folder only for genuinely new pre-spec planning; do
 not recreate the old feature-report indexes here.

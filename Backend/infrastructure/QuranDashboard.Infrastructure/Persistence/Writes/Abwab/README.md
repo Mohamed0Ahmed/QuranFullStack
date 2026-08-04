@@ -178,6 +178,12 @@ incidentally.
 - **`ResequenceGlobal` reads every live root on any root-affecting write** — an accepted cost, not
   a violation of "one parent map per operation" above: the sequence is global by definition, so its
   scope query cannot be narrowed the way a `(section_id, parent_id)` scope query narrows.
+- **The column was backfilled by hand-written SQL inside its own migration** — the one sanctioned
+  deviation from "never hand-write a migration" in this area. `Migrations/20260729105806_AddAbwabGlobalOrderValue.cs:28`
+  appends a `migrationBuilder.Sql(...)` to the EF-generated `Up()`; nothing in the `.Designer.cs`
+  or the model snapshot was touched. It exists because existing roots had no order to derive from
+  and an EF operation cannot express the numbering. A schema-only replay against an empty database
+  makes that call a no-op, so no test covers it — the migration file is the record.
 - **No `UNIQUE` index on `global_order_value`**, for the same reason `order_value` has none:
   renumbering issues one `UPDATE` per row, and a per-statement unique index would transiently
   violate mid-resequence. Do not "harden" this with a unique index.

@@ -29,7 +29,7 @@ an `EfI3rabGenerationSource` + write-probe (`II3rabGenerationWriteProbe`).
 - **Bulk-copy, not per-row EF tracking**, for the large tables — keep it that way for
   import throughput.
 - **Reset/reseed ordering matters** — foreign-key order across domains is fixed; follow
-  `Backend/report/database-inventory/database-reset-and-seeding-order.md`.
+  `Backend/scripts/README.md`, "Rebuilding the local database from nothing".
 - Run reports follow `LOGGING_GUIDELINES.md`; do not invent a new report shape per domain.
 - **Do not hand-write migrations here** — schema comes from EF migrations under
   `../../Migrations/`; this area writes data, not DDL.
@@ -39,5 +39,5 @@ an `EfI3rabGenerationSource` + write-probe (`II3rabGenerationWriteProbe`).
 - Source-read half: `../../../Files/Quran/DataPipelines/<Domain>/`
   (morphology: `.../Words/MorphologyImporting/README.md`).
 - Commands: `tools/QuranDashboard.DataImporter/README.md`.
-- Reference: DB reset/seeding order in `Backend/report/database-inventory/` (per-feature
-  import-run reports were purged; new ones are evidence-only per `Backend/report/README.md`).
+- Reference: DB reset/seeding order in `Backend/scripts/README.md`. Import-run reports are
+  evidence only, per `Backend/report/README.md`.

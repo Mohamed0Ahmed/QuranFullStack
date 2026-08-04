@@ -1,11 +1,9 @@
-<!-- Visual source of truth: the approved flat parchment + green comps in
-     docs/design-preview/ (read docs/design-preview/README.md first — it records the
-     divergences that were reconciled into this document). This direction SUPERSEDES
-     the earlier Real Pages navy + gold + parchment identity (whose reference values are
-     recorded in UI_STYLE_SYSTEM.md §15 — its extraction report was a local artifact and is
-     not in this repository)
-     for the LIGHT theme; the dark theme still runs the interim navy + gold values
-     pending reconciliation. Token contract:
+<!-- Visual source of truth: this document plus the shipped code. The flat parchment + green
+     direction was approved as static comps, adopted in full, and the comps deleted once the
+     app became the reference. It SUPERSEDES the earlier Real Pages navy + gold + parchment
+     identity (whose reference values are recorded in UI_STYLE_SYSTEM.md §15) for the LIGHT
+     theme; the dark theme still runs the interim navy + gold values pending reconciliation.
+     Token contract:
      Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md; implemented tokens:
      src/styles/_tokens.scss (light) and src/styles/_themes.scss (dark). -->
 ---
@@ -29,8 +27,7 @@ careful margins.
 
 The interface is **Arabic-first and right-to-left** by default, not retrofitted.
 The visual identity is **flat parchment + one scholarly green**, with **navy as a
-footer-only anchor** — the approved comps in `docs/design-preview/` are the visual
-reference for this direction. Color is **restrained**: a warm parchment canvas and
+footer-only anchor**. Color is **restrained**: a warm parchment canvas and
 near-white cards carry the surfaces, and a single scholarly **green** is both the
 structural color (primary actions, brand) and the accent (state, emphasis, focus).
 Deep **navy** appears nowhere in the light theme except the footer. Content leads;

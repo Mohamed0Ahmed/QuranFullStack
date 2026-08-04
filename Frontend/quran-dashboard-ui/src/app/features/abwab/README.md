@@ -971,13 +971,41 @@ then `409`s silently for the rest, which is what previously left live sandbox do
 undeleted sandbox sections behind. See `e2e/README.md` and `TESTING_STRATEGY.md` §6 for the
 residue that legitimately remains.
 
+## Decisions that reversed mid-series
+
+Four decisions in this feature were made, shipped, and then reversed by the user during the UX
+slice series. Each line below states what holds **now** and cites the code that implements it.
+They are recorded because the reversal is the part a reader cannot recover: the code shows the
+current answer but not that an earlier, opposite one was deliberately abandoned — and re-deriving
+the earlier answer from first principles is exactly the mistake to avoid.
+
+- **Inline reorder: Enter is the only commit; blur and Escape both abandon the edit.** The first
+  implementation committed on blur. `abwab-tree.component.html:70` binds
+  `(blur)="cancelOrderEdit(node.id)"`, and `abwab-tree.component.ts:263-266` guards the cancel on
+  the same id as the commit, so the blur that follows an Enter commit is a no-op. This aligns the
+  reorder editor with the workshop's inline authoring rows, which were already Enter-only.
+- **The علاقات flag is always rendered, dimmed at zero, and clickable.** It was previously
+  render-only-when-`> 0` and deliberately a non-control. It is now a real `<button>` —
+  `abwab-tree.component.html:115-123` — carrying `[attr.tabindex]="-1"` so the row's roving
+  tabindex survives, an `--empty` modifier at zero (`abwab-tree.component.scss:257`), and an
+  Arabic `aria-label`. The archive view and cards are **not** part of this reversal: an archived
+  door's visible relation count is always 0 there.
+- **Apply copies the template root's direct children, never the root itself.** The original axiom
+  was "the template root becomes a new child of each target". `EfAbwabTemplateApplyWriter.cs:16-18`
+  states the current rule, and `Persistence/Writes/Abwab/README.md` holds the axiom. The
+  consequence worth keeping in mind: the collision surface is N names per target, not one, so the
+  `409` names every colliding `(target, child)` pair.
+- **الأبواب is a hover dropdown — الرئيسية / القوالب / الأرشيف.** `abwab.routes.ts` previously
+  recorded the opposite: the workshop is reached from the doors page header, "not the sidebar",
+  and adding a nav entry "would put an item in the nav nobody asked for". It is now data-driven
+  through `core/navigation/nav-menu.ts:9-29`.
+
 ## Related
 
 - Planning history: the feature's plans and the UX slice series that followed were swept per the
   planning-artifact lifecycle rule (`CLAUDE.md`) and live in git history. **This file is the
   current record** — it is where a decision those plans made should be read from now.
-- Design contracts: `docs/design-preview/abwab-tree-concept.html`,
-  `abwab-relations-concept.html`, and `abwab-templates-concept.html` — **its «كاملًا بجذره» copy
-  apply description is superseded by ux-slice-g's children-only reversal** (`:139`, `:145`); the
-  historical mockup is not edited, this note is the record.
+- Design contracts: the static comps this feature was drawn against were adopted and then deleted;
+  the shipped tree, relations modal, and templates workshop are the contract now, with the token
+  and component vocabulary in `.architecture/UI_STYLE_SYSTEM.md`.
 - Shared UI primitives: `../../shared/README.md`.

@@ -186,7 +186,7 @@ store — see the DB-credential decision; deliberately not moved to user-secrets
    - **NEVER** run `scripts/drop-db` / `reset-db` / `update-db` against Railway (local-dev helpers;
      drop/reset are destructive). The DB is fresh — migrate + import only.
 2. **(d2) Canonical enriched import.** Run the DataImporter CLI locally against the Railway DB, in the
-   seeding order from `Backend/report/database-inventory/database-reset-and-seeding-order.md` §3 (connection
+   seeding order from `Backend/scripts/README.md`, "Rebuilding the local database from nothing" (connection
    via `ConnectionStrings__QuranDashboardDb` — the importer host does not read API user-secrets):
    1. `import-foundation` → 2. `rebuild-words` → 3. `import-morphology` (**enriched** — populates
    `quran_word_morphology`, `_segments`, `quran_roots`, `quran_lemmas`, `quran_stems`, `quran_pos_tags`,
@@ -262,12 +262,11 @@ not repoint the frontend.
 
   Also verify: `content_coverage_count = 6236` on the tafsir/translation/full-i3rab source families;
   52 FKs resolve (0 orphans on cascade FKs); `quran_lemma_analyses` present (migration 17).
-- **Baseline and inventory now agree on the enriched tables.** The
-  `Backend/report/database-inventory/current-database-inventory.md` refresh of 2026-07-28 re-measured
-  these against the live database and carries the post-feature-026 values — `quran_lemmas` 4,817,
-  `quran_stems` 11,843, and `quran_lemma_analyses` 4,832 — matching the enriched baseline above. The
-  earlier caveat that the inventory contradicted this baseline (it listed 4,790 / 12,108 and no
-  `quran_lemma_analyses`) no longer applies. A difference in these three rows is now a real signal, not
+- **The enriched-table baseline stands on its own.** It was cross-checked against a live-database
+  inventory taken on 2026-07-28, which agreed with it; that inventory has since been deleted as a
+  point-in-time artifact with nothing asserting it. The baseline above is the surviving statement —
+  re-measure against the database rather than against a second document. A difference in these rows
+  is a real signal, not
   an expected staleness artifact.
 
 ## 6. Configuration & runtime rules
@@ -311,8 +310,8 @@ not repoint the frontend.
   see `docs/deployment-railway/`) in the same commit as the Dockerfile — required because the change
   alters how the backend is hosted/run (a WHAT change the README must reflect).
 - No `docs/README.md` change; no `feature-XXX` folder (infra, not a feature). The fresh import **follows**
-  `database-reset-and-seeding-order.md` but does not require editing it (its migration list is dev-facing
-  and intentionally lags; the authoritative migration target here is id 17).
+  the reset/reseed runbook in `Backend/scripts/README.md` but does not require editing it; the
+  authoritative migration target for this deployment is id 17.
 
 ## 9. Risks, rollback & stop conditions
 

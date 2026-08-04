@@ -41,9 +41,8 @@ design context. Read those first and treat them as the source of truth:
   flat elevation doctrine, motion, rules)
 
 The official visual identity is the **flat parchment + single scholarly-green**
-direction, approved as static comps in `../../docs/design-preview/` (read its README
-first — it carries the point-by-point divergence list from the previous identity):
-warm parchment surfaces structured by **hairline borders**, fully flat in light (no
+direction — approved as static comps, adopted in full, and the comps retired once the
+shipped app became the reference: warm parchment surfaces structured by **hairline borders**, fully flat in light (no
 resting card shadows, no hover lifts, no gradients, no navbar blur — shadows exist
 only on floating layers), **one green accent that is also the primary color**, and
 **navy demoted to the footer only**. The app stays **light + dark**: light implements
@@ -402,9 +401,8 @@ Any future style system change should report:
 This section was the **implementation contract** for adopting the Real Pages
 prototype (navy + gold + parchment) as the visual source of truth. **Status:
 superseded.** The identity this contract implemented has been replaced by the
-**flat parchment + scholarly-green** direction (approved comps:
-`../../docs/design-preview/` — its README carries the point-by-point divergence
-list). The live truth is `_tokens.scss` / `_themes.scss` plus §16/§17 below and
+**flat parchment + scholarly-green** direction. The live truth is
+`_tokens.scss` / `_themes.scss` plus §16/§17 below and
 `DESIGN.md`; wherever this section conflicts with them — the B color tables, the
 translucent/blurred navbar (C), the gold footer accent and gradient hairline (D),
 card shadows and hover lifts (E), gold-accent buttons and states (G) — **§16/§17

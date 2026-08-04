@@ -130,9 +130,9 @@ are in use, and they are not interchangeable:
   `check-api-contract` compares regenerated-against-committed and cannot see a spec that nothing has
   regenerated; run it after any change that alters what the exporter reads.
 - Frontend payload types are generated from that spec into
-  `Frontend/quran-dashboard-ui/src/app/core/api/generated/` (models-only consumption), and a
-  static human-browsable reference is generated at `docs/api-reference/index.html`.
-  `Backend/scripts/check-api-contract` detects stale generated output.
+  `Frontend/quran-dashboard-ui/src/app/core/api/generated/` (models-only consumption).
+  `Backend/scripts/check-api-contract` detects stale generated output. A static human-browsable
+  reference can be built on demand with `npm run docs:api`; it is not committed.
 - Typed non-200 response schemas (`[ProducesResponseType]` for 400/404/500) are a recorded
   follow-up. Until they land, **the exported spec documents no error codes at all** — there are
   no XML `<response>` tags either, since no controller in the tree carries XML docs (see above).
