@@ -6,7 +6,7 @@
   --qd-surface: oklch(0.994 0.007 88.6);
   --qd-section-bg: oklch(0.979 0.011 89.7);
   --qd-surface-recessed: oklch(0.945 0.015 94.2);
-  --qd-surface-hover: oklch(0.945 0.015 94.2);        /* single hover fill (== light recessed tone) */
+  --qd-surface-hover: oklch(0.945 0.015 94.2);
   --qd-ayah-card-bg: oklch(0.958 0.013 92);           /* shared qdAyahCard: a warm tone recessed below --qd-surface so an ayah card reads as a distinct card on the near-white surfaces it sits on (Quran text 12.7:1, muted meta 4.69:1 AA). Dark overrides to --qd-surface. */
 
   --qd-explorer-detail-bg: oklch(0.979 0.011 89.7);
@@ -22,7 +22,7 @@
 
   --qd-border: oklch(0.914 0.016 86.4);
   --qd-border-strong: oklch(0.855 0.023 89.8);
-  --qd-border-accent: oklch(0.854 0.031 170.4);       /* one canonical soft-green border (selected/active edge) */
+  --qd-border-accent: oklch(0.854 0.031 170.4);
 
   --qd-primary: oklch(0.490 0.068 176.3);
   --qd-primary-fg: oklch(0.980 0.007 164.9);
@@ -33,8 +33,8 @@
   --qd-accent-soft: oklch(0.854 0.031 170.4);
   --qd-accent-tint: oklch(0.954 0.010 164.9);
   --qd-accent-text: oklch(0.435 0.060 176.3);         /* deep AA green for text emphasis (7:1 range on light surfaces) */
-  --qd-accent-fg: oklch(0.980 0.007 164.9);           /* ink on ANY solid-accent indicator; near-white on green — dark overrides it (dark accent is gold, needs navy ink) */
-  --qd-selected-bg: var(--qd-accent-tint);            /* semantic alias — selected/active background */
+  --qd-accent-fg: oklch(0.980 0.007 164.9);
+  --qd-selected-bg: var(--qd-accent-tint);
 
   --qd-danger: oklch(0.522 0.122 28.9);
   --qd-warning: oklch(0.540 0.111 75.1);              /* AA-tuned: 4.58:1 on --qd-warning-tint, 3.02:1 as dot on navy footer */
@@ -47,17 +47,17 @@
   --qd-ring: 0 0 0 4px oklch(0.490 0.068 176.3 / 0.22);
 
   --qd-footer-bg: oklch(0.260 0.046 253.3);
-  --qd-footer-bg-2: oklch(0.260 0.046 253.3);         /* == footer-bg: the footer is flat; token kept for architecture */
+  --qd-footer-bg-2: oklch(0.260 0.046 253.3);
   --qd-footer-text: oklch(0.924 0.016 95.2);
   --qd-footer-muted: oklch(0.708 0.036 257.9);
   --qd-footer-accent: oklch(0.805 0.040 167.1);
   --qd-footer-accent-hover: oklch(0.854 0.031 170.4);
   --qd-footer-border: oklch(1 0 0 / 0.10);
 
-  --qd-chrome-bg: var(--qd-surface);                  /* opaque flat navbar; structure comes from the hairline border */
+  --qd-chrome-bg: var(--qd-surface);
 
-  --qd-shadow-sm: none;                               /* flat: no resting-card shadows */
-  --qd-shadow: none;                                  /* flat: no hover shadows */
+  --qd-shadow-sm: none;
+  --qd-shadow: none;
   --qd-shadow-lg: 0 14px 36px oklch(0.285 0.007 95.3 / 0.16), 0 2px 8px oklch(0.285 0.007 95.3 / 0.08);
   --qd-floating-shadow: 0 14px 36px oklch(0.285 0.007 95.3 / 0.16), 0 2px 8px oklch(0.285 0.007 95.3 / 0.08);
 
@@ -74,11 +74,6 @@
   --qd-mushaf-text-column-width: 28rem;
   --qd-mushaf-surah-header-frame-width: 12rem;
   --qd-navbar-block-size: 3.5rem;
-  // Sized off `--qd-mushaf-sticky-top` (below), not the bare navbar token (Slice B2, T902/T903):
-  // the panel's stuck top is navbar + --qd-space-3, so a height measured from the navbar alone
-  // pushes its bottom edge that same --qd-space-3 past the viewport once stuck. CSS custom
-  // properties resolve at used-value time, so referencing a token declared later in this same
-  // block is fine — no declaration-order requirement.
   --qd-mushaf-panel-height: calc(100dvh - var(--qd-mushaf-sticky-top));
   --qd-mushaf-word-selection-indicator: var(--qd-accent);
   /* Mushaf word interaction ladder: canvas < hover < selection. Both washes tint the
@@ -109,8 +104,6 @@
   --qd-mushaf-word-selection-ring: color-mix(in oklch, var(--qd-mushaf-word-selection-indicator) 55%, transparent);
   --qd-mushaf-ayah-marker-font-size: 1.5rem;
   --qd-mushaf-ayah-marker-color: var(--qd-text-muted);
-  // Re-based under the sticky navbar (Slice B2, T902) — the navbar now stays in view while
-  // scrolling, so the panel's own top offset must clear it, not just --qd-space-3.
   --qd-mushaf-sticky-top: calc(var(--qd-navbar-block-size) + var(--qd-space-3));
 
   --qd-segment-cat-1: oklch(0.521 0.089 69.2);
@@ -132,10 +125,6 @@
   --qd-space-5: 1.5rem;
   --qd-space-6: 2rem;
 
-  /* Shared control geometry. `.qd-btn` in `_components.scss` is built from these values, and the
-     reserved slots that have to hold a not-yet-mounted control row derive their height from the
-     same ones — so a slot can never drift from the control it reserves. Change the button box here
-     and every reservation follows. */
   --qd-btn-font-size: 0.9375rem;
   --qd-btn-line-height: 1.5;
   --qd-btn-padding-block: var(--qd-space-2);
@@ -145,9 +134,6 @@
       * var(--qd-btn-border-width)
   );
 
-  /* `.qd-pagination`'s own leading margin (pagination.component.scss consumes this token, so the
-     two cannot diverge). A mounted pagination bar is one `.qd-btn` row plus this margin — that sum
-     is what `--qd-pagination-slot-block-size` reserves. */
   --qd-pagination-margin-block-start: var(--qd-space-3);
   --qd-pagination-slot-block-size: calc(
     var(--qd-control-block-size) + var(--qd-pagination-margin-block-start)
@@ -155,75 +141,21 @@
 
   --qd-segment-card-min-height: 5.6rem;
 
-  /* `.qd-checkbox`'s fixed square box (`_forms.scss`). 0.9375rem == 15px at the app's
-     unscaled 16px root — the exact value the approved concept specifies
-     (abwab-relations-concept.html:84), reached through the app's own rem scale rather
-     than a raw px: it is the same step as --qd-btn-font-size and .qd-input/.qd-select's
-     font-size, not a one-off. */
   --qd-checkbox-size: 0.9375rem;
 
-  /* `.qd-truncate`'s reserved minimum (`_utilities.scss`), for a truncatable entity-name
-     column that wants "flexible with a floor" instead of unbounded shrink-to-nothing
-     (`flex: 1; min-inline-size: var(--qd-name-min-inline-size)`). No existing name-render
-     site sets a minimum today (UI_STYLE_SYSTEM.md §17's new truncatable-names entry), so
-     this is derived from the one shipped site that already has this exact shape on the
-     same abwab surface: `abwab-toolbar.component.scss`'s `.abwab-toolbar__search { flex: 1;
-     min-inline-size: 12rem; }`. Checked against `abwab-tree`'s row budget (audit's
-     "~36rem-ish column"): checkbox 0.9375rem + chevron 1.25rem + order pill ~1.25rem + count
-     ~2rem + flags ~3.2rem + two row actions ~3rem + six `--qd-space-2` gaps ~3rem ≈ 14.6rem
-     of fixed siblings, leaving roughly 21rem for the name at depth 0 — 12rem fits with room
-     to spare even several indent levels deep. Independent corroboration:
-     `.abwab-cards__grid`'s `minmax(13rem, 1fr)` card minimum, minus two `--qd-space-3` card
-     paddings, is a ~11.5rem content box — the same order of magnitude on a different
-     surface. */
   --qd-name-min-inline-size: 12rem;
 
-  /* Layer scale (UI_STYLE_SYSTEM.md §4). Every stacking `z-index` in the app is one of
-     these rungs — never write a bare z-index. The four abwab context-menu literals that
-     used to live at abwab-page.component.scss:88,94 and
-     abwab-templates-page.component.scss:146,152 were the sole exception until Slice A
-     phase 6 moved both pages onto the shared `qd-context-menu` component
-     (`shared/ui/context-menu/`), which consumes --qd-z-menu-backdrop/--qd-z-menu from
-     birth — zero bare z-index literals remain outside this file.
-     Ascending: sticky < popover < floating < mobile-nav < menu-backdrop < menu ==
-     modal-backdrop < modal < nav-progress. --qd-z-mobile-nav sits below --qd-z-modal-backdrop
-     deliberately — the navbar's dropdown/mobile menu used to paint at 100/200, above
-     every modal backdrop (50); that was a latent defect (nothing made the shell inert
-     under an open abwab modal), fixed here by lowering the rung rather than the modal.
-     --qd-z-menu == --qd-z-modal-backdrop (50) is an inherited collision, not introduced
-     by this change — the context-menu and the modal backdrop never need to compete
-     because a modal open state does not currently suppress the menu (Slice B territory).
-     --qd-z-modal has no consumer yet (`.qd-modal` paints via DOM order inside its
-     backdrop's stacking context); reserved for the day a modal box needs to escape it.
-
-     `.qd-navbar` itself is ALSO --qd-z-mobile-nav, not --qd-z-sticky (Slice B2, T901/T903).
-     `position: sticky` unconditionally creates a stacking context in every engine regardless
-     of z-index, so a sticky element's own rung becomes the ceiling every descendant is capped
-     at — the navbar's dropdown and mobile menu are descendants that already declare
-     --qd-z-mobile-nav for themselves, so the navbar has to sit on that same rung or it clamps
-     them below it (verified: at --qd-z-sticky the dropdown lost to a synthetic --qd-z-floating
-     probe placed outside the navbar, and page popovers at 30 would paint over the sticky
-     navbar's own box on a scrolled page — a failure mode that didn't exist before the navbar
-     was sticky, since content never scrolled under it). --qd-z-sticky (5) stays reserved for a
-     genuinely in-page sticky element with no competing descendants of its own
-     (mushaf-header-navigation.component.scss is the one consumer). */
-  --qd-z-sticky: 5;             /* in-page sticky headers with no descendant menus of their own */
-  --qd-z-popover: 30;           /* selector/filter popover panels */
-  --qd-z-floating: 40;          /* the detail-modal-shell restore control */
-  --qd-z-mobile-nav: 45;        /* .qd-navbar itself (sticky, T901/T903) + its dropdown + mobile menu — see note above */
-  --qd-z-menu-backdrop: 49;     /* qd-context-menu backdrop */
-  --qd-z-menu: 50;              /* qd-context-menu */
-  --qd-z-modal-backdrop: 50;    /* .qd-modal-backdrop */
-  --qd-z-modal: 51;             /* reserved for a future direct modal-box consumer */
-  --qd-z-nav-progress: 60;      /* qd-nav-progress — a 2px pointer-events-none hairline that must
-                                   stay visible above everything, including an open modal (a
-                                   navigation can be triggered from inside one); painting above
-                                   the whole scale is safe because nothing can ever interact
-                                   with it */
+  --qd-z-sticky: 5;
+  --qd-z-popover: 30;
+  --qd-z-floating: 40;
+  --qd-z-mobile-nav: 45;
+  --qd-z-menu-backdrop: 49;
+  --qd-z-menu: 50;
+  --qd-z-modal-backdrop: 50;
+  --qd-z-modal: 51;
+  --qd-z-nav-progress: 60;
 }
 
-/* The bar tightens its own leading margin on phones; the token carries that so the reserved slot
-   tightens with it instead of leaving a dead strip. */
 @media (max-width: bp.$qd-bp-phone-max) {
   :root {
     --qd-pagination-margin-block-start: var(--qd-space-2);
