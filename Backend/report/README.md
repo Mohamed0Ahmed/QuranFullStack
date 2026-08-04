@@ -19,6 +19,7 @@ of folder is for:
 | --- | --- |
 | `feature-XXX-*/` for a Quran import | Generated import acceptance reports (Markdown + JSON): source coverage, validation, exclusions, provenance warnings. Kept — see below. |
 | `feature-*/` for any other feature | Phase and completion evidence. Deleted by the feature itself, in its last commit before merge. |
+| `database/` | The read-only table/relationship baseline. Kept only because `.claude/skills/performance-backend-review/SKILL.md` names it as an input for the index / join-path check. It is a point-in-time snapshot: the schema's live truth is `infrastructure/QuranDashboard.Infrastructure/Migrations/` plus the EF configurations under `Persistence/Configurations/`. Read it for orientation, never as an authority. |
 
 **Reviews, audits, plans, and structure inventories do not belong here.** They used to. They
 were deleted on 2026-08-04 because a review records what was true on its date and cannot say
