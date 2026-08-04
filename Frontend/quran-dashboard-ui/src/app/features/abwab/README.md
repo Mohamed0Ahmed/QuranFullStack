@@ -68,6 +68,14 @@ nine), four of them reads.
   (`FRONTEND_STRUCTURE.md`'s Large Page Split guidance) — it holds state/orchestration
   only, no template of its own. **Provided by `AbwabPageComponent`, not
   `providedIn: 'root'`** — see the Gotchas below.
+  **It now sits at 416 lines, just over the 400-line soft threshold for state services**,
+  and is kept there deliberately: it is one flat family of overlay signals with their
+  open/close handlers and no branching logic, so a split would divide by overlay count
+  rather than by responsibility and leave the page wiring two controllers instead of one.
+  **The trigger that forces the split** is the same one the templates workshop carries —
+  crossing the 600-line hard threshold, or an overlay arriving that owns URL state of its
+  own, at which point the URL-backed overlays move to their own controller beside
+  `abwab-modal-url.controller.ts`.
 - `components/abwab-toolbar/` — «كل الأبواب» + one tab per section (composing
   `qd-tabs`/`qdTab`, **no** «الأبواب الرئيسية» tab per `plan.md` §5.1), the name+alias
   search box, and the tree/cards view toggle. `hideSectionControls` hides the tabs and
@@ -105,7 +113,14 @@ nine), four of them reads.
     in `models/abwab.labels.ts`) so the two numbers are distinguishable in the
     accessible layer, not only by convention.
 - `components/abwab-tree/` — presentational tree (`role="tree"`/`treeitem`, full ARIA,
-  roving tabindex) + `abwab-tree-keyboard.controller.ts`, a pure, DOM-free key model
+  roving tabindex). **Its TS sits at 356 lines and its host page's template at 312, both
+  just over their 300-line soft thresholds** and both kept there deliberately: the tree's
+  TS is one row-rendering component plus the flag/bulk/order handlers that must stay with
+  the row they act on, and the page template is a composition root whose length is child
+  elements and their bindings, not logic. The hard thresholds (400 for both) are the
+  trigger; the tree's split, when it comes, is the row into its own component, and the
+  page's is the archive branch into a sibling template.
+  Also here: `abwab-tree-keyboard.controller.ts`, a pure, DOM-free key model
   (RTL-mirrored per the `qd-tabs` precedent: ArrowLeft expands/enters, ArrowRight
   collapses/exits). Renders **flat** (one row per visible node, `aria-level` conveys
   depth) rather than nesting `role="group"` per level. Inline reorder editing (click

@@ -82,6 +82,14 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 Controllers have a 300-line hard limit (`../../../.architecture/BACKEND_STRUCTURE.md`). Two shapes
 are in use, and they are not interchangeable:
 
+`AbwabDoorsController` is at **227 lines**, over the 200-line soft threshold and under the hard
+limit, and stays whole deliberately: its eight actions are one resource's write surface (create,
+edit, move, reorder, restore, delete, and the two bulk writes), every one of them a thin
+outcome-to-status map with no logic to extract. Splitting it would divide one resource across two
+classes — the failure the template split above was careful to avoid, since that split followed a
+route family, not a line count. The trigger here is the 300-line hard limit, and the shape would
+be a bulk-writes controller, because the bulk pair is the only subset with its own route segment.
+
 - **A new route family → a new controller class.** `WordTypeGroupedDetailsController` is the
   precedent: it shares the `…/word-types/table` route base without growing `WordTypesController`.
 - **An existing endpoint group → a `partial` part of the same class.** `RootsController` (list) +

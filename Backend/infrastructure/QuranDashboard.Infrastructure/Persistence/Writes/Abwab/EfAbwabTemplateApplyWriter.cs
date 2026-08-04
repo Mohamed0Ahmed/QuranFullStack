@@ -84,7 +84,7 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
         }
 
         var now = DateTimeOffset.UtcNow;
-        var createdRoots = new List<CopiedNode>(targets.Count * rootChildren.Count);
+        var copiedChildren = new List<CopiedNode>(targets.Count * rootChildren.Count);
 
         foreach (var target in targets)
         {
@@ -96,13 +96,13 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
                 var child = rootChildren[i];
                 var copiedChild = NewDoor(child, target.SectionId, target.Id, nextOrder + i, now);
                 db.AbwabDoors.Add(copiedChild);
-                createdRoots.Add(new CopiedNode(copiedChild, child, target.SectionId));
+                copiedChildren.Add(new CopiedNode(copiedChild, child, target.SectionId));
             }
         }
 
         await SaveTranslatingDuplicateNameAsync(cancellationToken);
 
-        var level = createdRoots;
+        var level = copiedChildren;
         while (level.Count > 0)
         {
             var nextLevel = new List<CopiedNode>();
@@ -129,7 +129,7 @@ internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : I
 
         await transaction.CommitAsync(cancellationToken);
 
-        return createdRoots
+        return copiedChildren
             .Select(copied => new AbwabDoorDto(
                 copied.Door.Id,
                 copied.Door.SectionId,

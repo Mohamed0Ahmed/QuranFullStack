@@ -232,6 +232,73 @@ unambiguously; after the repoint a repo-wide grep finds **zero** stale reference
   that agrees with the code.**
 - `features/abwab/README.md:603-608` — the "traps are unconditional" paragraph, same cause.
 
+### Bundle 4 — dead code, remnants, layering and the size thresholds (12 items)
+
+| Finding | State | Where |
+|---------|-------|-------|
+| F-18 | **recorded** (README, per the standing rule) | `Backend/api/.../Controllers/README.md` — 227 lines, verified |
+| F-23 | **fixed** | `Persistence/Writes/Abwab/EfAbwabDoorsWriter.cs:640` — `int? sectionId` → `int` |
+| F-27 | **fixed** | `EfAbwabTemplateApplyWriter.cs:87,99,105,132` — `createdRoots` → `copiedChildren` |
+| F-29 | **fixed** | `AbwabDuplicateNameException.cs:3-4` — dead `Name` + two-branch message removed |
+| F-30 | **fixed** | `EfAbwabDoorsWriter.cs` — two unreachable `doors.Count == 0` early returns removed |
+| F-42 | **fixed** | `core/layout/top-navbar/*` — the 52-line hand-rolled `more` remnant folded into the data-driven branch |
+| F-72 | **recorded** (README) | `features/abwab/README.md` — 416 lines, verified |
+| F-73 | **fixed by the parent** | `models/abwab.models.ts` now owns `AbwabMoveDestination` |
+| F-75 | **fixed** | closed as a side effect of F-42 |
+| **F-95** | **REFUTED — no change made** | `components/abwab-door-picker/abwab-door-picker.component.ts` |
+| F-94 | **partly refuted, remainder recorded** | see below |
+| F-98 | **fixed** | `abwab-template-copy-modal.component.ts` — `'ready'` made reachable |
+
+#### F-95 is refuted. `onRowChange` is not dead code.
+
+The review called it unreachable because "the checkbox's own click handler cancels activation, so
+`change` never fires". That evidence was correctly gathered but **scoped to the wrong element**:
+`onRowChange` is the handler for **keyboard radio-group selection** in the picker's single-pick
+mode, where arrow keys move the selection and fire `change` without any click at all. A live test
+already drives that path. Nothing was changed. This is the second finding this review produced that
+did not survive contact with the code (F-92 was the first), and both are recorded rather than
+quietly dropped.
+
+#### F-94 is partly refuted; only its genuine remainder was recorded.
+
+The finding said one file is over its hard threshold and three over soft "without the README
+mention `FRONTEND_STRUCTURE` requires". The hard-threshold file — `abwab-page.component.ts` at
+**604** — is in fact already documented at `features/abwab/README.md:45`, knowingly and with its
+split trigger named, so that half is refuted. The real gap was three files with no acknowledgement
+at all, now recorded with numbers **verified from the files, not from the findings**:
+`state/abwab-page-overlays.controller.ts` **416** (soft 400), `components/abwab-tree/…component.ts`
+**356** and `pages/abwab-page/…component.html` **312** (soft 300 each). Each entry names why it is
+kept whole and the concrete trigger that forces the split. No file was refactored, per the brief.
+
+Related, and left for bundle 6: `EfAbwabDoorsWriter.cs` is **757** lines, not the 816 that two
+long-lived documents state (F-32).
+
+#### The two inert constructs
+
+- **The `untracked` wrapper in `abwab-door-fields-form` — removed.** Re-verified inert first:
+  `resetFrom` is six `.set()` writes plus a pure `JSON.stringify`, so there is no signal read to
+  untrack.
+- **The read-before-close ordering in `abwab-page.component` — nothing to remove.** The agent
+  established that the inert construct here was the *comment*, which commit `5fb6f234` already
+  deleted; the ordering itself is load-bearing (`relationsAnchorId` is read before the overlay
+  close releases it). Closed as already-done rather than reported as fixed.
+
+#### A follow-on deliberately not taken
+
+F-29's removal leaves the `string? name` parameter threaded into the two
+`SaveTranslatingWriteExceptionsAsync` helpers completely inert (7 call sites). It was **not**
+removed: the finding names `Name` and the message only, removing it would exceed "the smallest
+thing", and it would force an edit to `Writes/Abwab/README.md`, which bundle 6 owns. Recorded here
+so it is not lost.
+
+**Verification (parent-run).** Frontend: `tsc` app 0 / spec 0; full suite **204 files, 2619 tests**,
+0 failures. Backend: `dotnet build` **0 warnings, 0 errors**; `~QuranDashboard.Tests.Abwab` **60
+passed**; `~QuranDashboard.Tests.Smoke.` **145 passed, 0 skipped — the `Tests.Smoke.Data` tier RAN**
+(13 of those 145; the canonical dump under `resources/db-dumps/quran-canonical/` is present), which
+is the qualified form `TESTING_STRATEGY.md` requires rather than an unqualified "smoke passed". The
+smoke gate is mandatory here because F-29/F-30 changed writer and exception contracts behind live
+routes.
+
 ---
 
 ## 1. Areas covered / remaining

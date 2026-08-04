@@ -9,7 +9,7 @@ import { TopNavbarComponent } from './top-navbar.component';
 import { ScrollLockService } from '../../../shared/ui/modal-scroll-lock/scroll-lock.service';
 import { ThemeService } from '../../theme/theme.service';
 
-const DROPDOWN_KEYS = ['words', 'abwab'] as const;
+const DROPDOWN_KEYS = ['words', 'abwab', 'more'] as const;
 
 describe('TopNavbarComponent', () => {
   beforeEach(() => {

@@ -8,6 +8,17 @@ import { NAV_MENU } from '../../navigation/nav-menu';
 import { ThemeService } from '../../theme/theme.service';
 import { ScrollLockService } from '../../../shared/ui/modal-scroll-lock/scroll-lock.service';
 
+const GROUP_ONLY_ROUTE = '';
+
+const MORE_MENU_ITEM: NavItem = {
+  key: 'more',
+  labelAr: 'المزيد',
+  labelEn: 'More',
+  route: GROUP_ONLY_ROUTE,
+  group: 'primary',
+  children: NAV_MENU.filter((item) => item.group === 'more'),
+};
+
 @Component({
   selector: 'qd-top-navbar',
   standalone: true,
@@ -24,8 +35,10 @@ export class TopNavbarComponent {
   protected readonly locked = this.scrollLock.isLocked;
 
   readonly allItems: NavItem[] = NAV_MENU;
-  readonly primaryItems = NAV_MENU.filter((i) => i.group === 'primary');
-  readonly moreItems = NAV_MENU.filter((i) => i.group === 'more');
+  readonly desktopItems: NavItem[] = [
+    ...NAV_MENU.filter((i) => i.group === 'primary'),
+    MORE_MENU_ITEM,
+  ];
   readonly actionItems = NAV_MENU.filter((i) => i.group === 'actions');
 
   openMenuKey: string | null = null;
@@ -145,10 +158,10 @@ export class TopNavbarComponent {
     this.oidcSecurityService.logoff().subscribe();
   }
 
-  isMoreActive(): boolean {
-    return this.moreItems.some((item) =>
-      this.router.isActive(item.route, {
-        paths: 'exact',
+  isMenuActive(item: NavItem): boolean {
+    return this.activeMatchRoutes(item).some((route) =>
+      this.router.isActive(route, {
+        paths: 'subset',
         queryParams: 'ignored',
         fragment: 'ignored',
         matrixParams: 'ignored',
@@ -156,12 +169,9 @@ export class TopNavbarComponent {
     );
   }
 
-  isMenuActive(item: NavItem): boolean {
-    return this.router.isActive(item.route, {
-      paths: 'subset',
-      queryParams: 'ignored',
-      fragment: 'ignored',
-      matrixParams: 'ignored',
-    });
+  private activeMatchRoutes(item: NavItem): string[] {
+    return item.route === GROUP_ONLY_ROUTE
+      ? (item.children ?? []).map((child) => child.route)
+      : [item.route];
   }
 }

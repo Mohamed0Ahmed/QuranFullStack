@@ -30,6 +30,7 @@ import { parseAbwabQueryParams, buildAbwabQueryParams } from '../../state/abwab-
 import {
   ABWAB_ORDER_SCOPE_TO_WIRE,
   AbwabModalKind,
+  AbwabMoveDestination,
   AbwabNode,
   AbwabOrderScope,
   AbwabView,
@@ -42,10 +43,7 @@ import { AbwabArchiveViewComponent } from '../../components/abwab-archive-view/a
 import { AbwabSidePanelComponent } from '../../components/abwab-side-panel/abwab-side-panel.component';
 import { AbwabAnnouncerComponent } from '../../components/abwab-announcer/abwab-announcer.component';
 import { AbwabDoorModalComponent } from '../../components/abwab-door-modal/abwab-door-modal.component';
-import {
-  AbwabMoveDestination,
-  AbwabMovePickerComponent,
-} from '../../components/abwab-move-picker/abwab-move-picker.component';
+import { AbwabMovePickerComponent } from '../../components/abwab-move-picker/abwab-move-picker.component';
 import { AbwabDoorRestoreModalComponent } from '../../components/abwab-door-restore-modal/abwab-door-restore-modal.component';
 import { AbwabSectionsModalComponent } from '../../components/abwab-sections-modal/abwab-sections-modal.component';
 import { AbwabModalRestoreComponent } from '../../components/abwab-modal-restore/abwab-modal-restore.component';
@@ -412,13 +410,13 @@ export class AbwabPageComponent implements OnInit {
       this.revealAnnouncement.set(ABWAB_LABELS.revealUnavailable);
       return;
     }
-    const anchorId = this.overlays.relationsAnchorDoorId();
     this.overlays.closeRelationsModal();
     this.modalUrl.releaseTracking();
     this.revealAnnouncement.set(null);
     this.revealTargetId.set(doorId);
     this.revealSequence.update((n) => n + 1);
     this.revealPending = true;
+    const anchorId = this.overlays.relationsAnchorDoorId();
     this.updateQueryParams(
       buildAbwabQueryParams({
         door: doorId,

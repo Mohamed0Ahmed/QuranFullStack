@@ -150,6 +150,11 @@ export interface AbwabTreeSnapshotVm {
   readonly version: string | null;
 }
 
+export interface AbwabMoveDestination {
+  readonly targetParentId: number | null;
+  readonly targetSectionId: number;
+}
+
 export const ABWAB_QUERY_KEYS = {
   section: 'section',
   view: 'view',

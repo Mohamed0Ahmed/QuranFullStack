@@ -8,7 +8,7 @@ import { AbwabRelationsController } from './abwab-relations.controller';
 import { AbwabNode, AbwabRelationDirectionKind, AbwabRelationKind } from '../models/abwab.models';
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
 import { ABWAB_LABELS } from '../models/abwab.labels';
-import { AbwabMoveDestination } from '../components/abwab-move-picker/abwab-move-picker.component';
+import { AbwabMoveDestination } from '../models/abwab.models';
 
 type ContextActionCallback = (doorId: number) => void;
 

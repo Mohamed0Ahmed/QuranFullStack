@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, signal, viewChild } from '@angular/core';
 
 import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
@@ -56,8 +56,7 @@ export class AbwabDoorFieldsFormComponent {
 
   constructor() {
     effect(() => {
-      const fields = this.value();
-      untracked(() => this.resetFrom(fields));
+      this.resetFrom(this.value());
     });
   }
 

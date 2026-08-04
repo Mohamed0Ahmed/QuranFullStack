@@ -61,7 +61,7 @@ export class AbwabTemplateCopyModalComponent {
   protected readonly hasElements = computed(() => this.templateNodeCount() > 0);
 
   protected readonly pickerStatus = computed<AbwabDoorPickerStatus>(() =>
-    this.doorsLoading() ? 'loading' : this.doorsError() ? 'error' : 'empty',
+    this.doorsLoading() ? 'loading' : this.doorsError() ? 'error' : this.liveRoots().length === 0 ? 'empty' : 'ready',
   );
 
   protected readonly pickedIdList = computed(() => Array.from(this.pickedIds()));
