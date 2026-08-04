@@ -31,7 +31,7 @@ public sealed class AbwabDoorsController(
         return outcome switch
         {
             CreateDoorOutcome.Success success =>
-                Created($"api/abwab/doors/{success.Door.Id}", ApiResponse<AbwabDoorDto>.Ok(success.Door, ApiMessages.AbwabDoorCreated)),
+                Created($"/api/abwab/doors/{success.Door.Id}", ApiResponse<AbwabDoorDto>.Ok(success.Door, ApiMessages.AbwabDoorCreated)),
             CreateDoorOutcome.InvalidName =>
                 BadRequest(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorInvalidName)),
             CreateDoorOutcome.ParentNotFound =>
@@ -42,6 +42,8 @@ public sealed class AbwabDoorsController(
                 BadRequest(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorSectionRequired)),
             CreateDoorOutcome.SectionParentMismatch =>
                 BadRequest(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorSectionParentMismatch)),
+            CreateDoorOutcome.StaleVersion =>
+                Conflict(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorStaleVersion)),
             CreateDoorOutcome.DuplicateName =>
                 Conflict(ApiResponse<AbwabDoorDto>.Fail(ApiMessages.AbwabDoorDuplicateName)),
             _ => throw new InvalidOperationException($"Unhandled {nameof(CreateDoorOutcome)} variant."),
@@ -105,9 +107,8 @@ public sealed class AbwabDoorsController(
     public async Task<ActionResult<ApiResponse<AbwabDoorDto>>> Reorder(
         int id, [FromBody] ReorderDoorBody body, CancellationToken cancellationToken)
     {
-        var outcome = Enum.IsDefined(body.Scope)
-            ? await reorderHandler.HandleAsync(new ReorderDoorCommand(id, body.Position, body.Scope, body.Version), cancellationToken)
-            : new ReorderDoorOutcome.InvalidScope();
+        var outcome = await reorderHandler.HandleAsync(
+            new ReorderDoorCommand(id, body.Position, body.Scope, body.Version), cancellationToken);
 
         return outcome switch
         {
@@ -178,6 +179,7 @@ public sealed class AbwabDoorsController(
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<ActionResult<ApiResponse<object>>> Delete(
         int id, [FromBody] DeleteDoorBody body, CancellationToken cancellationToken)
     {

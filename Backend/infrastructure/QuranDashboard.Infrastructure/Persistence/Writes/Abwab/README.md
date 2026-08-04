@@ -38,13 +38,25 @@ incidentally.
   (`../../Configurations/Abwab/`) puts `xmin` in every UPDATE's WHERE clause whether or not the writer
   sets `OriginalValue`.
   - `SaveTranslatingWriteExceptionsAsync` — writes that put a row **into** the unique index's live scope
-    (create, edit, move, bulk-move, restore): both a stale token and a duplicate name are reachable.
+    (create, edit, move, bulk-move, restore): both a stale token and a duplicate name are reachable —
+    with one narrowing: **section create** saves a single INSERT and updates nothing
+    (`EfAbwabSectionsWriter.cs:9-26`), so only its duplicate branch can fire. **Door create** genuinely
+    can raise the stale branch even though the door row itself is an INSERT: a ROOT create issues
+    tracked sibling UPDATEs through `MaintainGlobalOrderAsync` (`EfAbwabDoorsWriter.cs:40`), and
+    `CreateDoorHandler.cs:57-61` maps the translated exception to its own `StaleVersion` outcome
+    (`409`), like every other door write.
     Its `name` parameter — in `EfAbwabDoorsWriter` and in `EfAbwabSectionsWriter` — is **inert**:
     `AbwabDuplicateNameException` carries no name and its message names no row
     (`Application.Abstractions/Abwab/AbwabDuplicateNameException.cs`), and `BulkMoveAsync` already
     passes `null`. Drop it or use it; do not write a caller that assumes the `409` says which row.
   - `SaveTranslatingConcurrencyAsync` — writes that only move a row **out** of it (archive, reorder,
     section delete): a duplicate-name violation is structurally impossible, so only the token can fail.
+    **Section delete is the version-free member of that list**: its route carries no token and the
+    writer pins no `OriginalValue` (`EfAbwabSectionsWriter.cs:47-70`), so the stale exception it can
+    raise is never a client-held token — it is a lost race between its own load and save, a concurrent
+    rename, reorder, or delete of the same section row. The controller still answers it `409`, which is
+    the accurate instruction for every one of those races: reload and retry
+    (`../../../../api/QuranDashboard.Api/Controllers/README.md`).
   - `EfAbwabRelationsWriter.SaveTranslatingDuplicateAsync` — its **own** third helper, deliberately not
     one of the two above. Those are keyed to the doors/sections duplicate-**name** message and would
     report the wrong constraint entirely; the relations index is `(door_a_id, door_b_id, relation_type)`.
@@ -193,8 +205,8 @@ incidentally.
     members share that `parent_id`, so the cascade has no duplicate-name violation to report in the
     first place.
   - Deliberate asymmetry: create **rejects** a disagreeing section, move **ignores** `targetSectionId`
-    whenever `targetParentId` is set (plan §4, §13.5). Move's pair describes a destination where the plan
-    locks parent-wins; create's body is an authored record, where a disagreement is a caller bug worth
+    whenever `targetParentId` is set. Move's pair describes a destination where parent-wins is the
+    locked rule; create's body is an authored record, where a disagreement is a caller bug worth
     reporting. Do not "harmonize" one into the other.
 - **Aliases are replaced wholesale under the door's own token** and soft-deleted, never hard-deleted.
   `AbwabDoorAlias` deliberately has no `xmin` of its own.
@@ -251,14 +263,21 @@ incidentally.
   writer overrides its `OriginalValue`**, but EF still compares it on the soft-delete UPDATE, which is
   what `DeleteAsync`'s concurrency catch answers. Do not add a `version` to the delete body "for
   consistency": a token nothing checks is a lie in the contract.
-- **Add is all-or-nothing, like bulk move/archive.** One call carries the anchor, the type, an
-  optional direction, and N targets; any refusal — self (`400`), unknown id (`404`), archived endpoint
-  (`400`), duplicate pair (`409`) — fails the whole batch before `SaveChanges`. `GuardAgainstExistingAsync`
+- **Add is all-or-nothing, like bulk move/archive.** One call carries the anchor, the type, a
+  direction — **required** for `Comprehensiveness`, forbidden for the other two types — and N
+  targets; any refusal — empty target list (`400`), unrecognised type (`400`), missing or misplaced
+  direction (`400`), self (`400`), unknown id (`404`), archived endpoint (`400`), duplicate pair
+  (`409`) — fails the whole batch before `SaveChanges`. `GuardAgainstExistingAsync`
   runs the duplicate check up front purely so the `409` can **name** the colliding doors; `23505` names
   no row. The catch in the save helper stays as the race backstop, with no names.
 - **The canonical pair is the writer's job.** Every row is stored `door_a_id < door_b_id` via
   `Math.Min`/`Math.Max` **for all three types**, directional included, and `broader_door_id` carries the
-  direction (`NOT NULL` exactly for `Comprehensiveness`). That is what makes "delete from either side
+  direction (`NOT NULL` exactly for `Comprehensiveness`). A `Comprehensiveness` add with a null or
+  unrecognised direction is refused at this seam — `EfAbwabRelationsWriter.cs:137-143` throws
+  `ArgumentOutOfRangeException` rather than defaulting to "target is broader". The handler's `400`
+  (`AddDoorRelationsHandler.cs:69-72`) is the API answer; the throw is what keeps
+  `IAbwabRelationsWriter.AddAsync` from storing a direction the caller never stated should a future
+  caller skip that validation. That is what makes "delete from either side
   deletes the row" structural rather than handler logic, and what makes A-more-than-B and
   B-more-than-A the same row — i.e. a duplicate — which a `(source, target, type)` index could not
   express. Flipping a direction is delete + re-add; there is no update path.
@@ -322,8 +341,10 @@ incidentally.
 - Domain entities: `Backend/domain/QuranDashboard.Domain/Abwab/`.
 - Tests: `Backend/tests/QuranDashboard.Tests/Abwab/` (writer behavior) and
   `Backend/tests/QuranDashboard.Tests/Smoke/SmokeAbwabWriteTests.cs` (status/envelope contract).
-  **`EfAbwabRelationsWriter` and `EfAbwabTemplatesWriter` have none of either** — both features wrote
-  no tests by decision. `EfAbwabTemplateApplyWriter` has one behavior test and no smoke coverage:
+  **`EfAbwabTemplatesWriter` has none of either** — that feature wrote no tests by decision.
+  `EfAbwabRelationsWriter` has exactly one behavior test and no smoke coverage:
+  `Backend/tests/QuranDashboard.Tests/Abwab/AbwabRelationWriteBehaviorTests.cs` pins the
+  null-direction refusal at the seam. `EfAbwabTemplateApplyWriter` has one behavior test and no smoke coverage:
   `Backend/tests/QuranDashboard.Tests/Abwab/AbwabTemplateApplyBehaviorTests.cs` pins the target's
   section carrying to every copied depth, which `docs/TESTING_DEBT.md` row 7 records as the one paid
   obligation of that row; the offsets, the aliases, all-or-nothing across N targets and the

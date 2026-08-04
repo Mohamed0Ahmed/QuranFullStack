@@ -152,7 +152,12 @@ not change, the rule is scoped to the conditional read:
   racing the client's explicit one.
 - A matching `If-None-Match` returns `304` with **no body** and the same two headers. The
   `304` path must not run the query — a revalidation that still reads the database has bought
-  nothing.
+  nothing. One scoped exception: a **per-resource** validator embeds no existence — an
+  `abwab-template-{id}-…` value is derivable for an id that never existed — so the template
+  detail read answers existence first and takes the `304` branch only on a found row
+  (`AbwabTemplatesController.Get`); its warm-path revalidation is served by the template
+  cache. List-shaped validators (the tree, the templates list) keep the pre-query
+  short-circuit: a list always exists.
 - **Validators are opaque server-side generations, never derived from row data.** A validator
   built out of a payload hash or a data-derived version field turns a diagnostics field into a
   concurrency-adjacent one; keep the two apart.

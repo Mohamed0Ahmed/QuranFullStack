@@ -24,7 +24,7 @@ public sealed class AbwabSectionsController(
         return outcome switch
         {
             CreateSectionOutcome.Success success =>
-                Created($"api/abwab/sections/{success.Section.Id}",
+                Created($"/api/abwab/sections/{success.Section.Id}",
                     ApiResponse<AbwabSectionDto>.Ok(success.Section, ApiMessages.AbwabSectionCreated)),
             CreateSectionOutcome.InvalidName =>
                 BadRequest(ApiResponse<AbwabSectionDto>.Fail(ApiMessages.AbwabSectionInvalidName)),
@@ -60,6 +60,7 @@ public sealed class AbwabSectionsController(
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<ActionResult<ApiResponse<object>>> Delete(int id, CancellationToken cancellationToken)
     {
         var outcome = await deleteHandler.HandleAsync(new DeleteSectionCommand(id), cancellationToken);

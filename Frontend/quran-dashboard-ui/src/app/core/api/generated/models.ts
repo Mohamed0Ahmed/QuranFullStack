@@ -85,7 +85,6 @@ export type { MushafWordDto } from './models/mushaf-word-dto';
 export type { MutashabihatGroupDto } from './models/mutashabihat-group-dto';
 export type { MutashabihatOccurrenceDto } from './models/mutashabihat-occurrence-dto';
 export type { MutashabihatSelectedOccurrenceDto } from './models/mutashabihat-selected-occurrence-dto';
-export type { ObjectApiResponse } from './models/object-api-response';
 export type { PageMarkerDto } from './models/page-marker-dto';
 export type { PageNavigationSummary } from './models/page-navigation-summary';
 export type { RenameSectionBody } from './models/rename-section-body';

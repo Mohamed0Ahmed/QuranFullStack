@@ -134,7 +134,13 @@ internal sealed class EfAbwabRelationsWriter(QuranDashboardDbContext db) : IAbwa
             return null;
         }
 
-        return direction == AbwabRelationDirection.AnchorMoreComprehensive ? anchorDoorId : targetDoorId;
+        return direction switch
+        {
+            AbwabRelationDirection.AnchorMoreComprehensive => anchorDoorId,
+            AbwabRelationDirection.AnchorLessComprehensive => targetDoorId,
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(direction), direction, "A Comprehensiveness relation requires a stated direction."),
+        };
     }
 
     private static AbwabRelationDirection? ResolveDirection(

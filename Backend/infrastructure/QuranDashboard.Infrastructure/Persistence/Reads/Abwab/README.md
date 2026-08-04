@@ -28,8 +28,8 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
 ## Shape and invariants (read before changing)
 
 - **Flat, not nested.** `AbwabTreeDto.Doors` is a flat list; each `AbwabTreeDoorDto` carries its own
-  `SectionId`/`ParentId` so a consumer assembles the tree at any depth (doors nest without limit —
-  feature plan §4). `DirectChildCount` is deliberately present on the flat DTO — it would be a
+  `SectionId`/`ParentId` so a consumer assembles the tree at any depth (doors nest without limit,
+  by contract). `DirectChildCount` is deliberately present on the flat DTO — it would be a
   redundant, always-derivable field if doors were nested arrays instead.
 - **Archived sections are excluded; archived doors are included and flagged.** Sections have no
   restore route in this slice (only `DELETE`, and only when empty of live doors), so an archived
@@ -49,8 +49,8 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
   **Stated, not inferred.** Do not replace it with a client-side "its `SectionId` is absent from the
   snapshot's `Sections`" check: explicit beats inference at a contract boundary, and that inference
   breaks the day sections gain an archived-but-listed representation.
-- **`DirectChildCount` and `AbwabTreeSectionDto.DoorsInScopeCount` count LIVE rows only** (own
-  documented judgment call, not stated verbatim in the feature plan): they are the "how many doors are
+- **`DirectChildCount` and `AbwabTreeSectionDto.DoorsInScopeCount` count LIVE rows only** (this
+  README's own documented judgment call): they are the "how many doors are
   here right now" badge, not inflated by an archived subtree the main view no longer shows. An archived
   door is still individually visible via `IsArchived`; it simply does not count toward a parent's or a
   section's live total. `DoorsInScopeCount` counts every live door with that `SectionId` regardless of
@@ -116,6 +116,10 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
 - **The templates list is one query, not one per template, and it aggregates in SQL.** Root name and
   live descendant count are correlated subqueries inside one statement — the `GetLiveRelationCountsAsync`
   rule, plus the second half of it: what crosses the wire is one row per template, never one per node.
+  On the wire that count is `AbwabTemplateSummaryDto.NodeCount`, and its scope is the same LIVE-only
+  judgment the three counts above carry — live **non-root** descendants only
+  (`EfAbwabTemplatesReader.cs:21-22` filters `ParentNodeId != null && DeletedAtUtc == null`): a
+  template whose root has two live children reports 2, not 3.
 - **Templates never touch the snapshot.** `abwab_templates` / `abwab_template_nodes` are separate
   admin tables, so no `AbwabTreeDoorDto` field, no `Version` term, and no filter here changes because
   of them. An applied template shows up as ordinary doors on the next snapshot read, with nothing

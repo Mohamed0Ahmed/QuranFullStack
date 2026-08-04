@@ -54,6 +54,11 @@ public sealed class CreateDoorHandler(
             logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "sectionParentMismatch");
             return new CreateDoorOutcome.SectionParentMismatch();
         }
+        catch (AbwabStaleVersionException)
+        {
+            logger.LogWarning("Rejected {feature} {operation} {reason}", FeatureName, OperationName, "staleVersion");
+            return new CreateDoorOutcome.StaleVersion();
+        }
         catch (AbwabDuplicateNameException)
         {
             logger.LogWarning("Rejected {feature} {operation} {reason} {name}", FeatureName, OperationName, "duplicateName", name);

@@ -18,7 +18,13 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   routes are `Open` — this is the repository's first write surface, and it shipped to production still
   unauthenticated; the 2026-08-04 abwab note in [`docs/TESTING_DEBT.md`](../../../../docs/TESTING_DEBT.md)
   records that state and the feature that must close it. Optimistic
-  concurrency is `uint xmin`, surfaced as `409` in the shared envelope. Creating a door under a parent
+  concurrency is `uint xmin`, surfaced as `409` in the shared envelope. Section **delete** is the one
+  door/section write that carries **no version token** — `DELETE api/abwab/sections/{id}` takes no
+  body, because the server re-derives its only precondition (no live doors) itself. Its stale-version
+  `409` is therefore never a stale-token comparison: it is the writer's translated answer to a lost
+  interior race — a concurrent rename, reorder, or delete of the same section between the delete's own
+  load and save (`Persistence/Writes/Abwab/EfAbwabSectionsWriter.cs:67`) — and the reload-and-retry
+  message is accurate for every one of those races. Creating a door under a parent
   derives its section from that parent; a stated section that disagrees is a `400`, not a silent
   overwrite — on create and on restore alike. Creating or moving a door at **root** scope must name its
   section: there is no parent to derive one from, so an omitted section is a `400`
@@ -149,7 +155,11 @@ be a bulk-writes controller, because the bulk pair is the only subset with its o
   follow-up. Until they land, **the exported spec documents no error codes at all** — there are
   no XML `<response>` tags either, since no controller in the tree carries XML docs (see above).
   This file and the nearest area README are the only description of a route's failure statuses.
-  All error bodies use the shared `ApiResponse<T>` envelope.
+  All error bodies use the shared `ApiResponse<T>` envelope. The five Abwab DELETE actions are the
+  one place `[ProducesResponseType]` already exists: each declares its `204` success
+  (`Abwab/AbwabDoorsController.cs:182`), so the spec documents the no-body `204` they actually send
+  rather than the inferred `200`-with-`ObjectApiResponse` they never did; their error codes stay
+  undocumented like everyone else's.
 
 ## Related
 

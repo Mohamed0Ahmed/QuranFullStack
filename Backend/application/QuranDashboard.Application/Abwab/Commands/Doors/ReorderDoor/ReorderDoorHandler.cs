@@ -13,6 +13,12 @@ public sealed class ReorderDoorHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
+        if (!Enum.IsDefined(command.Scope))
+        {
+            logger.LogWarning("Rejected {feature} {operation} {reason} {doorId}", FeatureName, OperationName, "invalidScope", command.Id);
+            return new ReorderDoorOutcome.InvalidScope();
+        }
+
         try
         {
             var door = await writer.ReorderAsync(command.Id, command.Position, command.Scope, command.Version, cancellationToken);
