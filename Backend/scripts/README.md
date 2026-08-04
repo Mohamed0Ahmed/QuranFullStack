@@ -23,6 +23,12 @@ Short commands to build/run the backend API and Angular dev server from any dire
 their single argument is exactly `--yes`; without it they print the warning and exit non-zero
 having done nothing. There is no `--allow-remote`-style escape on either: they act on whatever
 `dotnet ef` resolves as the configured connection, so check what that is before typing `--yes`.
+
+**`drop-db`, `reset-db` and `update-db` are local-dev helpers and must never be pointed at the
+Railway database.** There is a real production database on the other end of a
+`ConnectionStrings__QuranDashboardDb` you may have exported for an importer run, and none of these
+three ask a second time. Schema changes reach production by deploying, not by running `update-db`
+against it.
 `abwab_*` content is authored curation data that nothing restores — prefer `wipe-abwab` when the
 goal is only to clear abwab rows, and note that a full reset also discards the canonical
 `quran_*` data, which then has to be re-imported.

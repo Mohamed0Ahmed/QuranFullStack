@@ -37,5 +37,5 @@ test, or README already says gets that fact written into the nearest README — 
 with a `file:LINE` — and every inbound reference repointed. Everything else just goes.
 
 What survives here long-term is only what the survivor list in `CLAUDE.md` names: this README,
-`contracts/`, `TESTING_DEBT.md`, and `deployment-railway/`. That list lives in one place so it
-cannot drift against a second copy.
+`contracts/`, and `TESTING_DEBT.md`. That list lives in one place so it cannot drift against a
+second copy.

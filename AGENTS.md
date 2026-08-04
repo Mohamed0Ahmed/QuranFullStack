@@ -83,7 +83,6 @@ Canonical workspace paths:
   - all `.architecture/**` documents;
   - `docs/contracts/**` — the pointer index that makes this rule workable;
   - `docs/TESTING_DEBT.md` — a live ledger and the agenda of the next feature;
-  - `docs/deployment-railway/**` — a live runbook; production runs on Railway right now;
   - everything under `.claude/`, `.agents/`, `.specify/`, and all code, tests, and
     configuration.
 
