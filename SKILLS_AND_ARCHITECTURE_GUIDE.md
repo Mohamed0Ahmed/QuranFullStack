@@ -61,14 +61,20 @@ These live at the workspace root and apply across Backend + Frontend.
 
 ## 2. Current skills
 
-All custom skills live under `.claude/skills/`. Ten are workspace skills — the four
-review/commit skills detailed below (`engineering-review`, `test-guard`,
-`backend-structure-review`, `commit-workflow`) plus six operational skills
-(`deploy-smoke`, `pr-context-prep`, `dependency-audit`, `performance-backend-review`,
-`performance-angular-review`, `backend-global-usings-cleanup`). There are also **14
-`speckit-*` skills** (the Spec Kit command set: `specify`, `clarify`, `plan`, `tasks`,
-`analyze`, `implement`, `checklist`, `constitution`, the `git-*` helpers,
-`taskstoissues`) — the Spec Kit workflow commands referenced in §5.
+All custom skills live under `.claude/skills/` — **`ls .claude/skills/` is the roster**; this
+guide describes what the workspace skills are *for* and does not count them, because a count here
+drifts the moment one is added. They fall into two families: the workspace skills detailed below
+(the review/commit set — `engineering-review`, `test-guard`, `backend-structure-review`,
+`commit-workflow` — plus the operational set: `deploy-smoke`, `pr-context-prep`,
+`dependency-audit`, `performance-backend-review`, `performance-angular-review`,
+`backend-global-usings-cleanup`), and the **`speckit-*`** family, which is the Spec Kit command
+set referenced in §5 (`specify`, `clarify`, `plan`, `tasks`, `analyze`, `implement`, `converge`,
+`checklist`, `constitution`, `taskstoissues`, and the `git-*` helpers).
+
+> A second copy of the skill tree lives at `.agents/skills/` for non-Claude runtimes. **The two
+> have drifted** — `.claude/skills/` currently carries `speckit-converge` and the `speckit-git-*`
+> helpers that `.agents/skills/` does not. Diff the two directories before assuming a skill is
+> available to whichever runtime you are in.
 
 ### Quick orientation
 
@@ -220,7 +226,7 @@ and what is **reference-only**. Use this to know when each item actually comes i
 | `performance-backend-review` | Perf-audit skill | **Manual (explicit)** | Explicit backend/DB performance review only | Invoked on request | Review-only; changed scope; never code fixes. Not the general gate. |
 | `performance-angular-review` | Perf-audit skill | **Manual (explicit)** | Explicit Angular/frontend performance review only | Invoked on request | Review-only; changed scope; never code fixes. Not the general gate. |
 | `backend-global-usings-cleanup` | Action skill | **Manual** | Repeated imports / sprawling `GlobalUsings.cs` in a Backend project | Invoked on request | **Edits code** (usings only); verifies with `dotnet build`. |
-| Spec Kit skills (`speckit-*`: specify, clarify, plan, tasks, analyze, implement, …) | Spec Kit command | **Manual** (user-invoked slash commands) | Feature spec → clarify → plan → tasks → analyze → implement lifecycle | User invokes | 14 commands; see workflow §5A. |
+| Spec Kit skills (`speckit-*`: specify, clarify, plan, tasks, analyze, implement, …) | Spec Kit command | **Manual** (user-invoked slash commands) | Feature spec → clarify → plan → tasks → analyze → implement lifecycle | User invokes | See workflow §5A; `ls .claude/skills/speckit-*` for the current set. |
 
 ### Practical rule of thumb
 
@@ -374,7 +380,7 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 **Inventory check (all present unless noted):**
 
 - Root docs: `CODING_PRINCIPLES.md`, `TESTING_STRATEGY.md`, `PRODUCT.md`, `DESIGN.md`, `AGENTS.md`, `CLAUDE.md` ✅
-- Skills: `engineering-review/` (+ `SPEC_KIT_IMPLEMENTATION_REVIEW.md`, `references/clean-code-guard/`), `test-guard/` (+ `dotnet.md`, `jest.md`, `llm-app-testing.md`, `frontend-test-harness-constraints.md`), `backend-structure-review/`, `commit-workflow/`, `deploy-smoke/`, `pr-context-prep/`, `dependency-audit/`, `performance-backend-review/`, `performance-angular-review/`, `backend-global-usings-cleanup/` ✅; plus 14 `speckit-*` skills ✅
+- Skills: `engineering-review/` (+ `SPEC_KIT_IMPLEMENTATION_REVIEW.md`, `references/clean-code-guard/`), `test-guard/` (+ `dotnet.md`, `jest.md`, `llm-app-testing.md`, `frontend-test-harness-constraints.md`), `backend-structure-review/`, `commit-workflow/`, `deploy-smoke/`, `pr-context-prep/`, `dependency-audit/`, `performance-backend-review/`, `performance-angular-review/`, `backend-global-usings-cleanup/` ✅; plus the `speckit-*` family ✅
 - Backend `.architecture/`: `BACKEND_STRUCTURE.md`, `CLEAN_ARCHITECTURE.md`, `API_GUIDELINES.md` ✅
 - Frontend `.architecture/`: `FRONTEND_STRUCTURE.md`, `UI_STYLE_SYSTEM.md`, `API_INTEGRATION_GUIDELINES.md` ✅
 

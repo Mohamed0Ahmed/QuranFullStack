@@ -9,15 +9,17 @@ truth of a code area lives in the local `README.md` near that code; plans/contra
 Do **not** spawn a per-feature report for routine work, and do not recreate the deleted
 feature-report indexes.
 
-## What lives here now
+## What lives here
 
-| Folder | Scope |
+`ls Backend/report/` is the inventory — this file deliberately keeps no folder list, because a
+written one goes stale on the next feature close and then contradicts the tree. What each **kind**
+of folder is for:
+
+| Kind | Scope |
 | --- | --- |
-| `architecture/` | Backend structure inventory, target-structure feasibility/execution/review, and the global logging/observability foundation plan. |
-| `database/` | `current-database-tables-and-relationships-report.md` — read-only DB baseline. |
-| `database-inventory/` | Live PostgreSQL inventory + the DB reset/seeding-order runbook. |
-| `feature-008-quran-translations-foundation/` | Generated Quran translation import acceptance reports (Markdown + JSON), including source coverage, validation, exclusions, and provenance warnings. |
-| `feature-009-quran-navigation-metadata-foundation/` | Generated Quran navigation metadata import acceptance reports (Markdown + JSON) for juz, hizb, rub, sajda, and ayah coverage validation. |
+| Non-feature folders (`architecture/`, `database/`, `database-inventory/`) | Durable cross-cutting records: backend structure and target-structure reviews, the logging/observability foundation plan, the read-only DB baseline, and the live PostgreSQL inventory + reset/seeding-order runbook. Never swept. |
+| `feature-XXX-*/` for a Quran import | Generated import acceptance reports (Markdown + JSON): source coverage, validation, exclusions, provenance warnings. Exempt from the sweep on the evidence ground below. |
+| `feature-*/` for any other feature | Phase and completion evidence. Swept with the feature unless an individual file qualifies as evidence — the judgement is **per file**, not per folder. |
 
 ## Lifecycle — `feature-XXX-*/` folders die with their feature
 

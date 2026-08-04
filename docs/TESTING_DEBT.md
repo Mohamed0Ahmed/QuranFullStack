@@ -67,10 +67,11 @@ Row 7 is the one with no cover **anywhere**. Row 10 is the cheapest thing that w
 most: it crosses the template writes, the deep copy, the doors read, and detachment in one pass.
 
 **Not debt, and not deferrable:** the `abwab-door-fields-form` extraction is covered by
-`abwab-door-modal.component.spec.ts` running green **unchanged** (11/11) — the extraction
-preserved every `data-testid` through a `testIdPrefix` input precisely so that spec keeps
-pinning the behavior it always pinned. The form has no spec of its own, and does not need one
-while that remains true.
+`abwab-door-modal.component.spec.ts`, which still exercises the extracted fields end to end —
+the extraction preserved every `data-testid` through a `testIdPrefix` input precisely so that
+spec keeps pinning the behavior it always pinned. (That spec has since grown its own cases, so
+this is an invariant about *what it covers*, not a claim that it went unedited.) The form has no
+spec of its own, and does not need one while that remains true.
 
 ## ux-slice-f (branch `ux-slice-f-sections`, 2026-08-01)
 
@@ -154,3 +155,25 @@ have tests. Row 7's `section_id` obligation above is paid outright. What follows
 | # | Uncovered area | Where | Pays it |
 |---|---|---|---|
 | J1 | **`EfAbwabDoorsWriter` is past the 600-line file threshold** — 816 lines before this feature and larger after. Not a coverage gap but a structural one, and the reason every change to it is harder to review than it should be. A split (create/move/order/archive-restore) is a dedicated slice; it was an explicit non-goal here, since mixing a refactor into a semantics change makes both unreviewable | `Persistence/Writes/Abwab/EfAbwabDoorsWriter.cs` | Blocked on nothing. The next substantial change to the writer — do it first, not alongside |
+
+## Enumeration drift tests (doc-contradiction sweep, 2026-08-04)
+
+The sweep found that **every hand-maintained enumeration in the long-lived docs had drifted** —
+scroll-lock surfaces, `.qd-modal-backdrop` consumers, the `--qd-z-*` scale, frontend feature
+lists, skill counts, test counts. The one enumeration that had **not** drifted is
+`SmokeRouteCatalog`, because `SmokeCoverageParityTests` fails by name when it does.
+
+Those docs have been rewritten to state the rule and point at the source of truth instead of
+counting (so nothing below is a stale-doc bug any more). What is owed is the mechanism that made
+the route catalog trustworthy, for the three enumerations that are genuinely **binding** — where
+a reader needs the membership set, not just the rule. Each is a parity test modelled on
+`SmokeCoverageParityTests`: assert both directions between the declared set and the live set.
+
+| # | Uncovered area | Where | Pays it |
+|---|---|---|---|
+| E1 | **The `--qd-z-*` layer scale** — that every `--qd-z-*` token declared in `_tokens.scss` appears in the §4 rung order, and that no SCSS in `src/` writes a bare `z-index` outside the scale. The scale is binding (a rung inversion breaks a real surface, as the sticky-navbar case proved) and nothing asserts it | `src/styles/_tokens.scss`, `.architecture/UI_STYLE_SYSTEM.md` §4 | The next `--qd-z-*` token added or reordered — the change that would otherwise silently break the rung order is exactly the one that should carry the test |
+| E2 | **The chrome-inert blast radius** — that every template applying `qdModalScrollLock` makes `.qd-navbar` inert, and that no dialog renders `.qd-modal-backdrop` without acquiring the lock. `qd-confirm-dialog` composing the directive means any new confirm silently joins this set, which is precisely why it needs a test rather than a list | `shared/ui/modal-scroll-lock/`, `core/layout/top-navbar/` | The next surface that acquires the scroll lock — including any new `qd-confirm-dialog` consumer |
+| E3 | **The `.qd-modal-backdrop` consumer set** — that every modal/dialog composes the shared backdrop rather than rolling its own, so the phone padding rule cannot be forked per consumer | `src/styles/`, `shared/ui/confirm-dialog/`, the abwab and words modals | The next modal or dialog added anywhere in `src/app/` |
+
+Writing these three is the **next** pass; this section records that they are owed, not that they
+exist. Until they land, the rule-plus-pointer wording in the docs is the whole safeguard.

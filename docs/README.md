@@ -27,9 +27,11 @@ closes; only the **two most recently closed** features plus every open one are k
 history is the archive. Before deleting, repoint every inbound reference into the nearest
 `README.md`, and promote any fact that no live document restates.
 
-Non-feature folders here are **not** subject to the sweep and stay indefinitely:
-`contracts/`, `api-reference/`, `deployment-railway/`, `design-preview/`,
-`performance-review/`, and cross-cutting audits kept at the top level of `docs/`.
+Non-feature folders here are **not** subject to the sweep and stay indefinitely. `CLAUDE.md`
+§Workspace Path Conventions holds the authoritative never-deleted list; this file defers to it
+rather than repeating it, so that one list cannot drift against a second. Cross-cutting audits
+kept at the top level of `docs/` are covered by the same exemption.
 
-Currently buffered: `feature-033-auth-roles-permissions/` (closed 2026-07-19) and
-`feature-032-rate-limiting/` (closed 2026-07-18).
+Which feature folders are currently buffered is not recorded here — a written list goes stale the
+next time a feature closes. `ls -d docs/feature-*/` is the answer; the N-2 rule in `CLAUDE.md`
+says how many of them should be there.

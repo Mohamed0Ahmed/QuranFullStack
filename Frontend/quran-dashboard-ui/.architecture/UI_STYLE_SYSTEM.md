@@ -173,9 +173,12 @@ superseded prototype reference):
   Slice B2 T901/T903 — plus its dropdown and mobile menu, all three on the same rung so the
   sticky navbar's own stacking context never clamps its own menus below what they declare)
   → `--qd-z-menu-backdrop` / `--qd-z-menu` (`qd-context-menu`) → `--qd-z-modal-backdrop` /
-  `--qd-z-modal` (`.qd-modal-backdrop` / a future direct modal-box consumer). **Never write a
-  bare `z-index`** — always reference one of these tokens. There are no exceptions: every
-  stacking layer in the app resolves through this scale.
+  `--qd-z-modal` (`.qd-modal-backdrop` / a future direct modal-box consumer) → and on upward.
+  **`src/styles/_tokens.scss` is the authoritative scale**: the `--qd-z-*` tokens are declared
+  there in ascending order, each with the consumer it exists for, and a rung added there is part
+  of the scale whether or not this paragraph names it — so read the tokens, do not trust this
+  transcription to be complete. **Never write a bare `z-index`** — always reference one of these
+  tokens. There are no exceptions: every stacking layer in the app resolves through this scale.
   Two caveats the numbers carry, both inherited rather than chosen: `--qd-z-menu` and
   `--qd-z-modal-backdrop` currently resolve to the **same** value, so the rung order above
   is authoritative but the arithmetic does not enforce it — a context menu and a modal
@@ -1106,7 +1109,9 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   (≤ `$qd-bp-phone-max`) tightens to `--qd-space-3` padding and
   `block-size: min(94dvh, 44rem)`, mirroring `qd-detail-modal-shell`'s own
   phone rule — but **not** its backdrop padding: `.qd-modal-backdrop` is the
-  shared base for all twelve modal consumers, so `--fixed` does not touch it.
+  shared base for **every** modal consumer — `qd-confirm-dialog` included, so every
+  confirm inherits it too — which is why `--fixed` does not touch it. Grep the class
+  for the current consumer set rather than trusting a count here.
 - **Why opt-in and not a base change:** `.qd-modal.explorer-detail-modal` sets
   `max-height: min(90vh, 36rem)` but never `height`/`block-size`. A block-size
   added to the base would therefore also apply to it — silently clamping the
@@ -1489,15 +1494,13 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   signal-backed `isLocked` computed for this (`scroll-lock.service.ts`), rather than
   a second "any modal open" service, which would duplicate `lockCount`'s job and
   give two sources of truth for the same fact.
-- **Blast radius: nine surfaces, enumerated because it reaches beyond abwab.** Four
-  abwab modals (`abwab-door-modal`, `abwab-relations-modal`,
-  `abwab-template-copy-modal`, `abwab-template-node-modal`) plus, as of this phase,
-  `abwab-sections-modal` and `abwab-move-picker` (T905 — they render real
-  `.qd-modal`/`.qd-modal-backdrop` dialogs and previously held no lock, so the page
-  also scrolled behind them; both gaps close together) — six abwab modals in all —
-  plus **five words surfaces** that already held the lock before this phase
-  (`root-details-panel`, `lemma-details-panel`, `stem-details-panel`,
-  `word-type-details-panel`, `word-drilldown-modal`). The navbar is
+- **Blast radius: the rule is the membership test, not a list.** Any surface that applies
+  `qdModalScrollLock` makes the chrome inert, so **the directive's usages ARE the blast
+  radius** — `grep -rn qdModalScrollLock src/app/` answers it, and no count belongs here
+  because every new dialog moves it. It reaches well beyond abwab: the abwab modals, the
+  words detail panels and drilldown, and — since it composes the directive itself —
+  **every `qd-confirm-dialog`, and therefore every confirm in the app**. That last one is
+  the trap: adding a confirm anywhere silently enlarges this radius. The navbar is
   keyboard-unreachable while any of these nine is open. This is an intentional
   behavior change on five shipped words surfaces nobody asked about, accepted
   deliberately: each of the nine is a modal dialog, "app chrome is not reachable
