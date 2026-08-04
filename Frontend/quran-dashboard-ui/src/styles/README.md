@@ -100,3 +100,9 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
 - Arabic-first typography and RTL-friendly spacing start here; do not swap shared font roles casually.
 - Keep breakpoint values synchronized between `_breakpoints.scss` and `../app/shared/layout/breakpoints.ts`.
 - Global explorer partials should stay generic across Roots, Lemmas, Stems, Word Types, and related detail panels.
+- `.qd-badge`'s line box (`_components.scss:132,135,137,140` — `padding-block var(--qd-space-1)`,
+  `0.75rem` text at `1.4` line-height, `1px` border each side) is mirrored by the dashboard
+  app-meta skeleton, which composes the same metrics into one height
+  (`../app/features/dashboard/pages/dashboard-home/dashboard-home.component.scss:40-48`). There is
+  no shared badge line-box token, so any `.qd-badge` restyle must be repeated there or the skeleton
+  silently stops matching the loaded badge it stands in for.
