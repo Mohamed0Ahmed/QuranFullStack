@@ -261,6 +261,7 @@ export class AbwabPageComponent implements OnInit {
       this.searchQueryParam.set(parsed.q);
       this.modalUrl.syncFromUrl(parsed.modal, parsed.door);
       this.selection.setArchiveViewActive(parsed.archive);
+      this.selection.setSectionScope(parsed.section);
       if (parsed.door === null) {
         this.selection.clearSelection();
       }

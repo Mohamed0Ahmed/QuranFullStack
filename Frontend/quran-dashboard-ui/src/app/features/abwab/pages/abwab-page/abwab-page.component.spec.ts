@@ -665,6 +665,87 @@ describe('AbwabPageComponent', () => {
 
       expect(root.querySelector('[data-testid="abwab-side-panel-active-door"]')).toBeNull();
     });
+
+    // F-35 (HIGH). A scope change invalidated the single selection but not the bulk set, so bulk
+    // archive/move/relations submitted doors that were no longer on screen. The archive toggle
+    // already cleared bulk; the section scope did not. Two entry paths reach a section change and
+    // both are pinned here, because the defect is the seam between them.
+    it('F-35 — a section switch clears the bulk set, not just the single selection', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-side-panel-bulk-toggle"]') as HTMLElement).click();
+      fixture.detectChanges();
+      (root.querySelector('[data-testid="abwab-tree-checkbox-1"]') as HTMLElement).click();
+      (root.querySelector('[data-testid="abwab-tree-checkbox-2"]') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('2');
+
+      queryParamMap$.next(convertToParamMap({ section: '1' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('0');
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-bar"]')).toBeTruthy();
+    });
+
+    it('F-35 — revealing a door in another section clears the bulk set through the same rule', async () => {
+      const TWO_SECTIONS: AbwabTreeDto = {
+        doors: [
+          door({ id: 1, name: 'العلم بالله', sectionId: 1, orderValue: 1, globalOrderValue: 9 }),
+          door({ id: 2, name: 'الرسول', sectionId: 2, orderValue: 1, globalOrderValue: 8 }),
+        ],
+        sections: [
+          { id: 1, name: 'اللغة العربية', orderValue: 1, version: 1, doorsInScopeCount: 1 },
+          { id: 2, name: 'الفقه', orderValue: 2, version: 1, doorsInScopeCount: 1 },
+        ],
+        version: 'v1',
+      };
+      getTestBed().resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [AbwabPageComponent],
+        providers: [
+          provideRouter([]),
+          { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(treeResponse(TWO_SECTIONS)), archiveDoor } },
+          { provide: ActivatedRoute, useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } } },
+        ],
+      }).compileComponents();
+      router = TestBed.inject(Router);
+      vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+      queryParamMap$.next(convertToParamMap({ section: '1' }));
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-side-panel-bulk-toggle"]') as HTMLElement).click();
+      fixture.detectChanges();
+      (root.querySelector('[data-testid="abwab-tree-checkbox-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('1');
+
+      // Reveal is the entry path a per-slice review could not see: it writes `section` itself when
+      // the revealed door lives elsewhere, so the user never touches a section tab.
+      (fixture.componentInstance as unknown as { onRevealRequested(doorId: number): void }).onRevealRequested(2);
+
+      const calls = (router.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+      const emitted = (calls[calls.length - 1][1] as { queryParams: Record<string, string | null> }).queryParams;
+      expect(emitted['section']).toBe('2');
+
+      // Feed back what navigate actually produced, merged as `queryParamsHandling: 'merge'` does,
+      // rather than a hand-written URL that could drift from the handler.
+      const merged: Record<string, string> = { section: '1' };
+      for (const [key, value] of Object.entries(emitted)) {
+        if (value === null) {
+          delete merged[key];
+        } else {
+          merged[key] = value;
+        }
+      }
+      queryParamMap$.next(convertToParamMap(merged));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('0');
+    });
   });
 
   describe('overlay state is page-scoped, not application-scoped', () => {
