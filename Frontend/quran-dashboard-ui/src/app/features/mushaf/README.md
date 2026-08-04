@@ -115,10 +115,15 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   percentages by eye.**
   The light canvas is `--qd-bg` `oklch(0.967 …)` and the dark canvas `oklch(0.189 …)`
   (`styles/_tokens.scss:5`, `styles/_themes.scss:3`).
-  The hover wash is the one documented exception to the single hover fill
-  (`.architecture/UI_STYLE_SYSTEM.md` §16.1): the shared `--qd-surface-hover`
-  (`oklch(0.945 …)`, `styles/_tokens.scss:9`) sits only **ΔL 0.022** below `--qd-bg` on the
-  parchment canvas, which is imperceptible there.
+  **Why this ladder is allowed its own hover fill at all** (`.architecture/UI_STYLE_SYSTEM.md`
+  §16.1 otherwise mandates one shared hover fill): the shared `--qd-surface-hover`
+  `oklch(0.945 …)` (`styles/_tokens.scss:9`) sits only **ΔL 0.022** below the `--qd-bg` canvas
+  `oklch(0.967 …)` — exact by subtraction, not a measurement — and that is imperceptible on
+  parchment. **This 0.022 describes the SHARED token being displaced, not a rung of this
+  ladder.** The ladder's own hover rung is `--qd-mushaf-word-hover-bg`, a `color-mix` result
+  whose measured value sits further from the canvas; it is one of the numbers recorded in the
+  `styles/_tokens.scss` comment. Do not reconcile the two figures — they measure different
+  colours against the same canvas.
   Both washes are scoped to the ONE word under the pointer and never fan out across the ayah —
   hover is applied on the word element itself
   (`components/mushaf-word/mushaf-word.component.scss:39`), selection at `:52`.
