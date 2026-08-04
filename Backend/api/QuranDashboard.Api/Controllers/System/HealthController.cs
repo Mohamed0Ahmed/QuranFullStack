@@ -28,9 +28,6 @@ public sealed class HealthController(HealthCheckService healthCheckService) : Co
 
         if (report.Status == HealthStatus.Unhealthy)
         {
-            // Railway/infra probes key on HTTP status, so an unhealthy dependency must not report 200.
-            // ApiResponse.Fail carries no data, so the failure envelope is built inline to still carry
-            // the per-check detail probes/consumers need.
             var failureEnvelope = new ApiResponse<HealthReportData>
             {
                 IsSuccess = false,

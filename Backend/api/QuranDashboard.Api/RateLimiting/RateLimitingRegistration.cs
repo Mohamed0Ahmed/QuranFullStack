@@ -22,7 +22,6 @@ internal static class RateLimitingRegistration
 
         services.AddRateLimiter(limiterOptions =>
         {
-            // The built-in default is 503; the API contract requires 429.
             limiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             limiterOptions.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(CreatePartition);
             limiterOptions.OnRejected = static async (context, cancellationToken) =>
@@ -59,9 +58,6 @@ internal static class RateLimitingRegistration
 
         var clientIp = services.GetRequiredService<IClientIpResolver>().Resolve(context);
 
-        // Namespaced keys: PartitionedRateLimiter caches the materialized limiter by key (first-wins),
-        // so a raw-IP key shared by both profiles would make whichever limiter is created first serve
-        // both health and general requests for that IP. The general:/health: prefixes keep them apart.
         return RateLimitRequestClassifier.IsHealthRequest(context.Request.Path)
             ? RateLimitPartition.GetFixedWindowLimiter(
                 $"health:{clientIp}",
