@@ -374,8 +374,8 @@ F-102, plus the nine claims listed under bundles 2–4 as "carried to bundle 6".
 (**pre-existing, not Abwab-owned**), F-82, F-104.
 
 **F-01 is closed and verified exactly.** All 33 references to the deleted planning artifacts are
-gone except **one** — `features/abwab/README.md:819`, the Q-01 sentence — which was left untouched
-on purpose. Repo-wide grep for `plan-slice-b.md|plan-slice-b2.md|plan.md|abwab UX audit` across
+gone except one — the Q-01 sentence — which was left untouched at the time and has since been
+closed too (see Q-01 below), so **the count is now 33 of 33**. Repo-wide grep for `plan-slice-b.md|plan-slice-b2.md|plan.md|abwab UX audit` across
 `Frontend/`, `Backend/` and `docs/` now returns that single line and nothing else. Test and e2e
 comments kept their content; only the unresolvable pointer was removed, and no test's assertions
 changed.
@@ -2194,7 +2194,7 @@ Three sub-patterns, each with its own risk:
    production before a write policy attaches" while that surface is live and unauthenticated
    (**F-05**).
 
-Only one README claim needs a human decision rather than an edit: **Q-01**.
+One README claim needed a human decision rather than an edit — **Q-01**, now answered and closed.
 
 **On the review's own instruction to say when the code is right and the README is wrong:** that is
 the majority verdict here. Of the documentation findings, the correction is to the documentation
@@ -2683,14 +2683,25 @@ the per-area appendix behind it.
 
 ---
 
-## 6. Open questions for the user
+## 6. Open questions for the user — **none remain**
 
-- **Q-01 — `README.md:757` asserts a deliberate divergence from a deleted plan.** The sentence
-  states that the shipped Arabic string differs from what `plan-slice-b.md` §2 locked
-  («القسم يحتوي أبوابًا نشطة»). The plan is gone, so the claim is unfalsifiable from the repo.
-  Was the divergence deliberate (in which case the sentence should state the shipped string and
-  its reason, dropping the comparison), or is it a defect the README has been documenting since
-  the fold? Only you can answer this — see [F-01](#f-01--dangling-references-to-the-deleted-planning-artifacts-medium-abwab-owned).
+All three questions this review raised have been answered and closed: **Q-01** (the section-delete
+conflict copy), **Q-02** (the single-instance constraint the in-memory ETag counter depends on, now
+recorded in `Backend/README.md`), and **Q-03** (which live region owns a write failure). They are
+kept below with their resolutions rather than deleted, because each one records a decision that
+constrains future work.
+
+
+- **Q-01 — ANSWERED and CLOSED.** The user verified the shipped Arabic string by eye and confirmed
+  it is correct. The sentence was rewritten to state the shipped string and its reason on their own
+  terms, with the comparison to the deleted plan removed entirely: section delete answers `409` with
+  «لا يمكن حذف القسم لاحتوائه على أبواب حالية» (`ApiMessages.cs:117`), the write controller renders
+  the backend message whenever one is present (`abwab-write.controller.ts:43`), and no client
+  constant exists for it deliberately — a client copy would be reachable only if the backend omitted
+  its own message, and `writeConflictFallback` already covers that. Both facts were re-verified
+  against code before being written. **This was the last surviving reference to a deleted planning
+  artifact in the repository**; a repo-wide grep for `plan-slice-*`, `plan.md` and "UX audit" now
+  returns nothing outside `specs/README.md`, which describes the Spec-Kit convention itself.
 - **Q-03 — ANSWERED and CLOSED (option a).** `qd-state`'s `role="alert"` owns write failures;
   the announcer keeps only what has no reliably-announcing surface. Applied per operation, not per
   site — see §0, Bundle 3, F-51. The user's condition (check each site; keep where a failure would

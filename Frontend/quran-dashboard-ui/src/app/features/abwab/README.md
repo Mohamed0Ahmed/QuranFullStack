@@ -832,16 +832,17 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   door in the *attempted* selection, and that selection is preserved rather than
   cleared on conflict — a single-door conflict, by contrast, clears just that door's
   now-invalidated selection.
-- **The section-delete conflict copy the UI actually shows is the backend's, not the
-  plan's.** `plan-slice-b.md` §2 locks «القسم يحتوي أبوابًا نشطة», but
-  `AbwabSectionsController.cs` / `ApiMessages.cs` always send «لا يمكن حذف القسم لاحتوائه
-  على أبواب حالية» on this conflict, and the write controller's 409 policy prefers the
-  backend message whenever one is present. The plan's string therefore **never renders**,
-  and no constant for it exists in `abwab.labels.ts` — a "fallback" that can only be
-  reached when the backend omits its own message would be dead code dressed as a
-  safeguard, and the generic `writeConflictFallback` already covers that case. Reported as
-  a contract-vs-decision conflict rather than silently reconciling one string into the
-  other; the M27 test is pinned against the real backend copy.
+- **The section-delete conflict copy is the backend's, and the client holds no constant for
+  it.** Deleting a section that still holds live doors answers `409` with
+  «لا يمكن حذف القسم لاحتوائه على أبواب حالية» (`ApiMessages.AbwabSectionHasLiveDoors`,
+  `Backend/api/QuranDashboard.Api/Common/ApiMessages.cs:117`), and the write controller's 409
+  policy renders the backend message whenever the response carries one —
+  `backendMessage ?? ABWAB_LABELS.writeConflictFallback` (`state/abwab-write.controller.ts:43`).
+  So this string is never authored client-side and **no constant for it exists in
+  `abwab.labels.ts`**, deliberately: a client copy could only ever be reached if the backend
+  omitted its own message, which is dead code dressed as a safeguard, and the generic
+  `writeConflictFallback` already covers that case. The M27 test is pinned against the shipped
+  backend copy, so a change to either side fails loudly rather than drifting.
 - **`AbwabDoorDto` carries no audit-seed columns on the wire** (no `createdAt`/
   `createdBy`/`approvedAt`/`approvedBy` — verified against the generated model and
   `openapi/swagger.json`). No surface may render an authored-by, approved-by, or
