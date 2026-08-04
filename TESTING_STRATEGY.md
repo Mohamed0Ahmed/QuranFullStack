@@ -389,6 +389,12 @@ npm test -- --include="src/app/features/words/**/*.spec.ts"
 # Full Frontend suite (several minutes):
 npm test
 
+# Type-check. The ONLY valid targets are the leaf configs — the root tsconfig.json is
+# "files": [] plus project references, and --noEmit does not follow references, so a root
+# `npx tsc --noEmit` exits 0 having type-checked NOTHING. Never cite a root run as a gate.
+npx tsc -p tsconfig.app.json --noEmit
+npx tsc -p tsconfig.spec.json --noEmit
+
 # Production build (separate from tests — the test builder ignores dist/):
 npm run build
 

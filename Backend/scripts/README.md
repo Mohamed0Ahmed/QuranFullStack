@@ -142,6 +142,17 @@ rather than committed.
 becoming `NOT NULL`, say) has a sanctioned local reset. Abwab content is authored curation data:
 nothing restores it, and the canonical dump covers `quran_*` only.
 
+That hazard is not hypothetical: `20260802062011_RequireAbwabDoorSection` makes
+`abwab_doors.section_id` `NOT NULL` with no backfill and no guard
+(`../infrastructure/QuranDashboard.Infrastructure/Migrations/20260802062011_RequireAbwabDoorSection.cs:13-20`),
+and nothing in the running app auto-migrates — `MigrateAsync` exists only in test fixtures. The
+deployed database already has it applied (recorded 2026-08, an operational fact no code proves),
+so the exposure is forward-looking only: replaying the migration chain against a database that
+holds a NULL `section_id` row — a pre-2026-08-02 backup restore, or a new environment seeded from
+old data — fails loud at that migration and rolls back. Postgres `SET NOT NULL` refuses the whole
+statement; nothing is silently coerced. This script is the sanctioned local remedy; a deployed
+restore needs the NULL rows resolved by hand first.
+
 | Flag | Effect |
 |------|--------|
 | `--yes` | Required. Without it the script prints the six tables and the target database, and exits non-zero having wiped nothing |

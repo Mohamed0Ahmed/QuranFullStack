@@ -64,6 +64,13 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   pair it with `--qd-name-min-inline-size` (`_tokens.scss`) for a reserved minimum.
 - `_words-explorer-layout.scss` — shared layout pieces for words explorer intro/toolbar surfaces.
   (The page-frame rule that used to live here moved to `_layout.scss` — see above.)
+  Its `--qd-explorer-chrome-block-size` (`14rem` at `:77`, `12rem` in the wide-desktop override
+  at `:143`) is a hand-measured viewport budget consumed by
+  `calc(100dvh - var(--qd-explorer-chrome-block-size))` (`:116,145`): it includes the navbar's
+  height but deliberately does not reference `--qd-navbar-block-size`, unlike every other
+  viewport-relative figure the sticky-navbar work re-based. A navbar height change therefore
+  does not track into it automatically — re-measure it by hand, per the measured-not-derived
+  doctrine of the contrast table below.
 - `_words-explainer.scss` — shared visual primitives for the Words explainer hero example regions
   (global, not component-scoped, because pages project their own example markup via `<ng-content>`).
 - `_explorer-tables.scss` — responsive shared table/list rules for explorer pages.
