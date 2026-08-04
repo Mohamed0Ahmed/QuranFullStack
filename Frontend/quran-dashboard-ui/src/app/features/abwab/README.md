@@ -46,7 +46,8 @@ nine), four of them reads.
   extractions have already come out of it (the overlay state, then the `modal` key's
   machinery), and what remains is a route shell's own work — one `queryParamMap`
   subscription, two settle-gated effects, the label getters the TDZ rule mandates, and one
-  thin handler per output of the fifteen children it composes. **The next seam, when the
+  thin handler per output of every child it composes (`abwab-page.component.ts`'s own
+  `imports` array is the list — do not restate its length here). **The next seam, when the
   file next has to grow**, is the reveal-in-tree machinery (audit item 10: the target/
   sequence/mark signals, the hold timer and `onRevealRequested`) moving to a page-scoped
   `abwab-reveal.controller.ts` on the same precedent — deliberately not done inside a
@@ -77,7 +78,7 @@ nine), four of them reads.
   own, at which point the URL-backed overlays move to their own controller beside
   `abwab-modal-url.controller.ts`.
 - `components/abwab-toolbar/` — «كل الأبواب» + one tab per section (composing
-  `qd-tabs`/`qdTab`, **no** «الأبواب الرئيسية» tab per `plan.md` §5.1), the name+alias
+  `qd-tabs`/`qdTab`, **no** «الأبواب الرئيسية» tab), the name+alias
   search box, and the tree/cards view toggle. `hideSectionControls` hides the tabs and
   the view toggle while the archive view is active — they have no live section
   grouping to act on there — leaving only search, which still filters the archive tree
@@ -86,11 +87,23 @@ nine), four of them reads.
   - **One search box, two behaviours, deliberately (ux-slice-l).** In the **tree** a query
     *marks* matching rows in place (a 1px inset accent ring) and hides nothing; every door
     stays where the user last saw it, and a zero-match query leaves the full tree with a zero
-    count rather than collapsing into «لا توجد أبواب بعد», which was a lie about the data. In
-    **cards** and the **archive** the same query still *filters* (`pruneAbwabNodesToVisible`)
-    — those are flat browsing surfaces where a filter costs no structure. The door picker's
-    own search also stays a filter. The split is per view, not per query, and lives here
-    rather than in the placeholder, which would otherwise have to be view-dependent.
+    count rather than collapsing into «لا توجد أبواب بعد.», which was a lie about the data. In
+    **cards** and the **archive** the same query still *filters* — those are flat browsing
+    surfaces where a filter costs no structure — but they filter differently: the **archive**
+    prunes its tree to the visible ids (`pruneAbwabNodesToVisible`), while **cards** receive
+    the unpruned roots plus `visibleIds`/`isFiltering` and filter the level currently on
+    screen, at **every** depth, so a drilled level obeys the query too and each card's
+    drillability and child count still come from the real node rather than a pruned copy. The
+    door picker's own search also stays a filter. The split is per view, not per query, and
+    lives here rather than in the placeholder, which would otherwise have to be
+    view-dependent.
+  - **No surface lies about which nothing it is showing.** The tree's answer above is the
+    same rule the other two now apply: cards and the archive each choose between «nothing
+    here» and «nothing matched» from `AbwabSearchResult.isFiltering` **and** whether the
+    unfiltered level held anything at all — a filter over an already-empty level is still
+    «nothing here». It is never `q !== ''`: `searchAbwabNodes` trims, so a whitespace-only
+    query is not filtering and the surface still reads its plain empty message
+    («لا توجد أبواب مؤرشفة.» in the archive) instead of claiming a filter ran.
   - **The match count sits beside the input**, not in the stats row: it answers the query, so
     it belongs to the control that asked. It is two elements — a live `aria-hidden` span that
     updates per keystroke, and an always-mounted visually-hidden `role="status"` region that
@@ -123,15 +136,19 @@ nine), four of them reads.
   Also here: `abwab-tree-keyboard.controller.ts`, a pure, DOM-free key model
   (RTL-mirrored per the `qd-tabs` precedent: ArrowLeft expands/enters, ArrowRight
   collapses/exits). Renders **flat** (one row per visible node, `aria-level` conveys
-  depth) rather than nesting `role="group"` per level. Inline reorder editing (click
+  depth) rather than nesting `role="group"` per level. Inline reorder editing (activate
   the order number → input) dispatches through `reorderDoor`, and **Enter is the only
-  commit — blur and Escape both cancel.** Blur used to commit; that made clicking away
+  commit — blur and Escape both cancel.** The order number is a real `<button>` with an
+  Arabic `aria-label`, and it is the one row control that joins the row's roving tabindex
+  (`rovingId() === node.id ? 0 : -1`) instead of being pinned to `-1` like the flag and the
+  two hover actions — that is the only keyboard path to reorder in this feature, so do not
+  "align" it to `-1`. Blur used to commit; that made clicking away
   from a half-typed number resequence a scope the user never confirmed, and it is the one
   grammar in this feature where an unconfirmed value could be written. Enter-only matches
   the workshop's two inline authoring rows, which already commit on Enter with no submit
   button (see below). Saying "Enter commits, Escape reverts" and staying silent on blur is
-  what let the two drift apart, so all three are named here. Rows carry the contract's two hover actions (`abwab-tree-concept.html:114`,
-  `:436-443`): `＋` (add child) and `⋯` (open the row menu), revealed on hover and on the
+  what let the two drift apart, so all three are named here. Rows carry the design contract's
+  two hover actions: `＋` (add child) and `⋯` (open the row menu), revealed on hover and on the
   selected row, hidden in bulk mode, and kept out of the tab order so the roving-tabindex
   invariant holds. `⋯`, right-click, and the keyboard `ContextMenu`/`Shift+F10` path all
   emit `menuRequested` **with an anchor point** — the pointer position for the mouse paths,
@@ -140,17 +157,21 @@ nine), four of them reads.
   buttons in (Slice A, phase 6 — both `abwab-page` and `abwab-templates-page` compose it now,
   each keeping only its own page-specific items and, for the templates workshop, the
   root-vs-node item swap).
-  **Every** row carries the «علاقات» flag, and it is a control: dimmed to a muted hairline at
-  zero, accent-tinted once the door has relations, and clicking it emits `relationsRequested`,
+  **Every** row carries the «علاقات» flag, and it is a control: accent-tinted once the door has
+  relations, dimmed to a muted hairline at zero, and clicking it emits `relationsRequested`,
   which the page turns into select-the-door-then-open-the-relations-modal. It renders at zero
   too because a flag that only appears when there is something to see cannot answer "does this
   door have relations?" — the absent state was indistinguishable from a door the user had not
-  looked at. Like the two row actions it is `tabindex="-1"`, so the roving-tabindex invariant
-  holds, and it is inert in bulk mode, where a row click means "toggle this door". The archive
+  looked at. **Two non-colour differentiators carry that answer**, because the tint alone did
+  not: the flag shows the door's relation count beside its label, and the zero state's border
+  is **dashed** as well as muted (`.abwab-tree__flag--empty` in `abwab-tree.component.scss`).
+  Like the two row actions it is `tabindex="-1"`, so the roving-tabindex invariant
+  holds, and in bulk mode it toggles the row's own bulk selection rather than opening
+  relations, where a row click means "toggle this door". The archive
   view and the cards still render no flag, since an archived door's visible relation count is
   always 0 (see the derivation in the Gotchas).
   A branch row carries **three** count badges: direct live children (the design contract's
-  own, `abwab-tree-concept.html:107`), total live descendants at any depth, and the deepest
+  own), total live descendants at any depth, and the deepest
   live nesting below the door. The last two are a commissioned extension of the contract, not
   a missed line. All three are live-only and both derivations are memoized on the node by
   `abwab-tree.builder.ts`.
@@ -172,32 +193,40 @@ nine), four of them reads.
 - `components/abwab-cards/` — the drill-down grid: `cardId` names only the
   drilled-into parent (not a full path array) — the breadcrumb chain is derived by
   walking `parentId` up from it via `byId`, so the URL never needs an array. Fails
-  closed to the root level for an archived or unknown `cardId` (M25/M31). **Has no row
+  closed to the root level for an archived or unknown `cardId` (M25/M31).
+  **The empty / no-results state lives inside this component, below the breadcrumb** — not in
+  a page-level guard around it, which would unmount the breadcrumb and leave a drilled user
+  with a zero-match query no in-page way back out. Which of the two messages it shows follows
+  the `isFiltering` rule above, read against the level currently on screen.
+  **A card is a real `<button>` and its accessible name is the door's name**; the bulk
+  checkbox is a **sibling** of that button inside `.abwab-cards__cell`, never nested inside it
+  — a checkbox inside a button is not a control, and the wrapper cell carries no click handler
+  of its own, so the two never fight over one activation. **Has no row
   context menu** — unlike the doors tree and, since ux-slice-g, the templates workshop tree.
   Recorded as an open decision for a later slice, not an oversight to close here: a third menu
   consumer landing in the same slice as the second would land in a slice whose test posture
   cannot cover either.
-- `components/abwab-archive-view/` — the archived hierarchy, restore-only
-  (`plan.md` §4.5). A-live vs A-arch is read straight off the builder's tree partition
+- `components/abwab-archive-view/` — the archived hierarchy, restore-only.
+  A-live vs A-arch is read straight off the builder's tree partition
   (`node.depth === 0` ⇒ restorable, `depth > 0` ⇒ parent is archived ⇒ restore disabled
   with «استرجع الأب أولًا») — never re-derived by walking `byId`. No child-count badge:
   every archived door's live-child count is always 0, so the badge would be meaningless.
 - `components/abwab-side-panel/` — active door + single-door operations (add child,
   edit, move, relations, archive) plus bulk mode: the toggle, its `.on` state (tint +
-  accent-text + hairline, **not** a solid fill — the first allowed-green fix,
-  `plan-slice-b.md` T503), and the bulk bar (count, names, bulk move/relations/archive/
-  clear). **No** protection entry (`plan.md` §5.1). No reorder button — the tree's own inline number editor is
+  accent-text + hairline, **not** a solid fill — the first allowed-green fix), and the bulk bar
+  (count, names, bulk move/relations/archive/clear). **No** protection entry. No reorder button — the tree's own inline number editor is
   the one reorder affordance; a second control doing the same thing would be redundant.
   This panel is the second of the contract's three add-child paths; the tree row's own
   `＋` and the row menu are the other two.
 - `components/abwab-move-picker/` — the one-screen destination picker shared by single
   and bulk move. A **persistent section strip** sits in the modal's `__head`, showing every
-  section at once; picking one swaps the destination list below it in place — «كباب رئيسي»
+  section at once; picking one swaps the destination list below it in place — the make-it-a-root
+  option «كباب رئيسي (أعلى الشجرة)» (`asMainDoorOption`, the *main-door option* everywhere below)
   plus that section's doors — with no navigation step. The two-stage flow it replaced
   (ux-slice-m) hid the sections behind a «تغيير القسم» control, so the one thing a mover
   needs to see, which section they are aiming at, was the one thing the modal never showed.
-  «كباب رئيسي» stays in the doors area: it is a destination, not a section. There is no «بلا
-  قسم» — every door belongs to a section, so "no section" is not a destination.
+  The main-door option stays in the doors area: it is a destination, not a section. There is
+  no «بلا قسم» — every door belongs to a section, so "no section" is not a destination.
   The strip is `qd-tabs` at `layout="grid"` (§17), so it is a real tablist: `role="tab"` cells
   over a `role="tabpanel"` destination list, roving tabindex, RTL-aware Arrow/Home/End, and
   five 150 px columns that wrap — the ~15-section ceiling is three rows, which is why it needs
@@ -227,11 +256,12 @@ nine), four of them reads.
   both directions: it neither leaves the tree open behind the user nor collapses branches they
   opened by hand. The query **survives a section change** (unlike expansion): it is a filter over
   whichever section is active, so hopping the strip with a query typed is how a user finds a door
-  whose section they have forgotten. A query matching nothing says so and still offers «كباب رئيسي»,
-  which is pinned outside the filtered tree. This mirrors `abwab-door-picker`'s search contract
+  whose section they have forgotten. A query matching nothing says so and still offers the
+  main-door option, which is pinned outside the filtered tree. This mirrors
+  `abwab-door-picker`'s search contract
   (relations / template-copy) without importing it — see Gotchas on why the two stay separate.
-  If the cycle guard excludes every root a section has, the panel is still not empty: «كباب رئيسي»
-  is pinned above the tree and no exclusion can remove it.
+  If the cycle guard excludes every root a section has, the panel is still not empty: the
+  main-door option is pinned above the tree and no exclusion can remove it.
   `excludedIds` is the moved door(s) plus every descendant, the client half of
   the cycle guard; the server's `409 WouldCycle` stays authoritative.
 - `components/abwab-door-restore-modal/` — confirms restoring an ARCHIVED DOOR, on
@@ -253,14 +283,15 @@ nine), four of them reads.
   exercises the 409/success outcomes without the facade/controller chain. Rename always
   reads the section's row from the live `sections` input at submit time, never a value
   captured when edit mode opened.
-  - **The order editor (Slice F, item 18) reuses the tree's editor grammar**: click the
+  - **The order editor (Slice F, item 18) reuses the tree's editor grammar**: activate the
     order chip → an `<input type="number" min="1">`, **Enter commits, blur and Escape
     both cancel**, seeded from and submitted against the section's *live* row exactly
     like rename. Its own `editingOrderId` signal is separate from `editingId` — an open
     order edit is **not** unsaved work, so it does not raise the dirty guard. Its trigger
-    is a real `<button>`, not the tree's `<span>`: the modal's rows already carry real
-    buttons for rename/delete, and reusing the tree's dead `<span>` here would be a step
-    backward. **The Escape guard is mandatory, not cosmetic**: the dialog itself binds
+    is a real `<button>`, as the doors tree's order chip now is too — this modal's rows
+    already carried real buttons for rename/delete, so it never copied the click-only
+    `<span>` the tree used to render, and the tree has since been brought up to the same
+    bar. **The Escape guard is mandatory, not cosmetic**: the dialog itself binds
     `(keydown.escape)="requestClose()"`, so the editor's keydown handler opens with
     `event.stopPropagation()` — without it, Escape-to-cancel-an-edit would close the
     whole modal (and write `modal=sections-closed` to the URL, post-Slice-E).
@@ -285,7 +316,7 @@ nine), four of them reads.
   geometry of its own. Two things the picker owns that consumer-owned selection cannot
   cover: `single` picks the **affordance** (radio, not checkbox — a checkbox promises
   "pick any number" and anchor-pick mode takes one), and an unmatched search renders the
-  picker's own «لا يوجد باب مطابق» rather than the host's `emptyMessage`, because "your
+  picker's own «لا يوجد باب مطابق لبحثك.» rather than the host's `emptyMessage`, because "your
   query found nothing" and "there is nothing to pick" are different answers and only one
   of them is true when doors are one keystroke away.
 - `components/abwab-template-node-modal/` — the template node's shell around the same
@@ -339,27 +370,37 @@ nine), four of them reads.
   The modal knows nothing about the tree, the URL, or scope; the page owns all of that.
 - `components/abwab-announcer/` — one `aria-live="polite"` `role="status"` region for
   operation messages; a feature-scoped stand-in for a toast primitive this one
-  feature does not warrant (`plan-slice-b.md` §4.1).
+  feature does not warrant.
 - `state/abwab-snapshot.facade.ts` — owns the tree snapshot, loading/error/empty
   state, `load()`/`refresh()`.
 - `state/abwab-tree.builder.ts` — pure: DTO → `AbwabTreeSnapshotVm` (live/archive
   partition, gap-tolerant ordering, per-section filtering, name+alias search, and
   `pruneAbwabNodesToVisible` — rebuilds a node list to only the search-visible ids,
-  recursing into children, backing the **cards and archive** search filter). One walk feeds
+  recursing into children, backing the **archive** search filter; cards do not use it, see
+  above). One walk feeds
   two presentations: the tree reads `matchedIds`/`autoExpandedIds` to mark and seed, the
-  filtering views read `visibleIds`. The walk carries a single push/pop ancestor stack rather
+  filtering views read `visibleIds` — the archive through the prune, cards directly. The walk
+  carries a single push/pop ancestor stack rather
   than allocating a path array per edge; the builder spec's exact-set cases are the fence
   that keeps its output identical.
 - `state/abwab-selection.store.ts` — single selection + bulk set, rebinds by id after
   every refresh, dropping ids a write made vanish. Bulk mode is unavailable while the
-  archive view is active.
+  archive view is active. **A scope change empties the bulk set, and the rule lives in the
+  store, not at the call sites**: `setArchiveViewActive` and `setSectionScope` are fed from
+  the page's one URL subscription, so both entry paths into a section change (the tabs, and
+  a reveal that writes `section` itself) are covered by one rule and a bulk operation can
+  never carry doors that are no longer in the visible scope. The two are not symmetric —
+  turning the archive view on also **exits** bulk mode, because bulk is forbidden there
+  (`setBulkMode` refuses while it is active), while a section change only clears the set and
+  leaves the mode the user turned on alone.
 - `state/abwab-write.controller.ts` — every door write, plus the section commands
   `state/abwab-sections.controller.ts` delegates to it, the outcome→message mapping,
   and the 409 policy (see Gotchas below) — one policy for both aggregates, not
   duplicated per command.
 - `state/abwab-sections.controller.ts` — the section-facing write surface: reads
   `sections` live from the facade snapshot (never cached) and forwards
-  create/rename/delete to the shared write controller above.
+  create/rename/reorder/delete to the shared write controller above — the same four writes
+  the sections modal takes as inputs.
 - `state/abwab-relations.controller.ts` — the relations-facing surface, built the same
   way: it owns only what is relation-specific (the per-door fetch, **its cache**, and the
   wire↔domain mapping of both enums) and forwards both writes to the shared write
@@ -389,9 +430,10 @@ nine), four of them reads.
 - `state/abwab-templates.controller.ts` — every templates write, its refresh target, and
   the announcement. **Not** `AbwabWriteController` — see Gotchas.
 - `state/abwab-url-sync.ts` — parses/builds the seven query keys below, fail-closed.
-- `data-access/abwab.api.ts` — the fifteen doors/sections/relations endpoints under
-  `/api/abwab`; `data-access/abwab-templates.api.ts` — the nine templates endpoints.
-  Two files, not one: a separate route family, and nine of them.
+- `data-access/abwab.api.ts` — the doors/sections/relations endpoints under
+  `/api/abwab`; `data-access/abwab-templates.api.ts` — the templates endpoints. Each file's
+  own public methods are the list; do not restate either length here. Two files, not one:
+  a separate route family, and enough of them to carry their own file.
 - `models/abwab.models.ts` / `models/abwab.labels.ts` — view models and every Arabic
   string (read via TDZ-safe getters in consumers, never `readonly` field
   initialisers).
@@ -563,7 +605,7 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **The move picker's open-reset must keep `open()` as its ONLY tracked dependency.**
   `abwab-move-picker.component.ts` resets the picker in an `effect` and reads `movedSectionIds`
   inside `untracked`. `AbwabPageOverlaysController.moveSectionIds`
-  (`state/abwab-page-overlays.controller.ts:202`) is a `computed` that rebuilds a fresh array via
+  (`state/abwab-page-overlays.controller.ts`) is a `computed` that rebuilds a fresh array via
   `.map().filter()` on every `byId()` snapshot change, so tracking it would let a refresh landing
   mid-pick re-run the reset and silently discard a stage-two choice the user had already made. The
   caller sets the moved ids *before* opening the picker, so the untracked read still sees the right
@@ -610,17 +652,24 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   Every authoring one is
   `.qd-modal.qd-modal--fixed` with `__head`/`__body`/`__foot`, `role="dialog"`,
   `aria-modal="true"`, an `aria-labelledby` pointing at its own `<h3>`, `qdModalScrollLock`,
-  Escape-to-close, and `cdkTrapFocus cdkTrapFocusAutoCapture`. Consequences worth knowing before
+  Escape-to-close, and `cdkTrapFocus cdkTrapFocusAutoCapture` — the trap conditional in exactly
+  the two that nest a `qd-confirm-dialog`, see below. Consequences worth knowing before
   changing one:
   - **No modal states a height, and none nests a scroller.** `__body` is the single scroller;
     the four inner `max-block-size` caps that existed before Slice C are deleted. Adding one back
     re-creates the §17 specificity trap the caps were.
-  - **Authoring modals never stack with each other**, so their traps are unconditional. The one
+  - **Authoring modals never stack with each other**, so the four that nest no
+    `qd-confirm-dialog` trap unconditionally — the door and template-node modals' dirty-discard
+    strip is a `role="alertdialog"` region inside `__foot` with no trap of its own, so it does
+    not qualify. The one
     permitted nesting is a **confirmation dialog above exactly one authoring modal**, and the
-    host yields while it is open: the sections modal binds `[cdkTrapFocus]="deleteConfirmId() === null"`
-    so its delete confirm's own trap is the only live one (the words dialogs' `drawerTrapEnabled`
-    pattern, applied). Two live traps fight over focus, so a second nesting level — or a
-    confirmation above a confirmation — is still forbidden.
+    host yields while it is open — **two modals do this now, not one**: the sections modal binds
+    `[cdkTrapFocus]="deleteConfirmId() === null"` for its section-delete confirm and the
+    relations modal `[cdkTrapFocus]="pendingDelete() === null"` for its relation-delete confirm,
+    so in each case the confirm's own trap is the only live one (the words dialogs'
+    `drawerTrapEnabled` pattern, applied). Two live traps fight over focus, so a second nesting
+    level — or a confirmation above a confirmation — is still forbidden, and a modal that grows
+    a nested confirm must make its trap conditional in the same change.
   - **Auto-capture is aimed, not corrected after the fact.** Four modals want a control the trap
     would not pick on its own: the door and template-node modals want the name field, the
     relations and copy modals the picker search. Each of those two targets carries
@@ -733,8 +782,7 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **Restore's descendant set is not previewable.** `isArchived` carries no `deletedAt`,
   so a descendant archived in the same operation and one archived earlier are
   indistinguishable in the snapshot. The UI promises nothing about which descendants
-  come back — no preview, no count. Do not "fix" this by guessing a count
-  (`plan-slice-b.md` §6.4, R12).
+  come back — no preview, no count. Do not "fix" this by guessing a count.
 - **The move picker's destination list collapses; it does not nest.** Two separate
   decisions that read as one, and the second reversed the first's earlier reading:
   - *Flat, not nested* — still true. Rows are indented by depth rather than rendered
@@ -745,8 +793,7 @@ in scope, which is exactly what §6.2's M22 cell forbids.
     destination", and rendered every door in the section at once. What that misses is
     the cost on the other side: a section of any size arrives as a wall of rows to
     scroll past, every one of them a destination the user did not ask to see. The list
-    now opens on the section's root doors and the user expands what they want, which is
-    also what `plan.md` §4's "an expandable door tree" asked for in the first place.
+    now opens on the section's root doors and the user expands what they want.
     The toggle is `abwab-door-picker`'s chevron contract, mirrored — not imported.
 - **The move picker and `abwab-door-picker` look alike and are still separate — on purpose.**
   Since ux-slice-m the move picker has a search, a chevron, truncated names, and a
@@ -754,7 +801,7 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   question "why not share one component?" is a fair one to keep asking. What differs
   is the part a shared component would have to fork anyway: the door picker's row is a
   **checkbox/radio pick from a set**, the move picker's is a **single destination**
-  with a pinned non-door option («كباب رئيسي») above it and a whole-subtree cycle
+  with a pinned non-door option (the main-door option) above it and a whole-subtree cycle
   exclusion inside it; the move picker also has no loading/error status to render,
   because its tree arrives with the page snapshot rather than from a fetch of its own.
   Merging them means a component with two selection models, an optional pinned row, an
@@ -806,18 +853,28 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   answered. Which read runs at all is decided by the anchor's snapshot `relationCount` — a
   zero-count door issues **no request**, and the count is read untracked so a post-write snapshot
   refresh cannot reset the open draft. The fetched list overrules a disagreeing count; the count
-  only chooses between asking and not asking. Only three error sites carry the single
-  `actionLabel` retry §17 permits — the doors page's own snapshot-load failure and the copy
-  modal's doors-load failure, both wired to `AbwabSnapshotFacade.load()`, plus the relations
-  modal's own load failure — because those are the transport reads abwab otherwise offers no
-  recovery from at all. The relations modal's **write** errors deliberately carry no retry: the
+  only chooses between asking and not asking. **The single `actionLabel` retry §17 permits is
+  carried by the feature's transport reads and by nothing else** — the doors page's own
+  snapshot-load failure and the copy modal's doors-load failure (both wired to
+  `AbwabSnapshotFacade.load()`), the relations modal's own load failure (`retryLoad()`), and
+  the templates list's load failure (`AbwabTemplatesFacade.loadList()`); `grep -rn actionLabel`
+  under this feature is the inventory, and each hit must be a read the user has no other
+  recovery from. The relations modal's **write** errors deliberately carry no retry: the
   add and remove controls are themselves that retry, and §17 allows one action per error. A
   **relation delete confirms first** (`qd-confirm-dialog`, `tone: 'danger'`, nested above the open
   modal): the body names **both** doors and the relation's display group, and states that the
-  delete removes the relation from both ends — «تُحذف من الطرفين» is empty wording without the two
+  delete removes the relation from both ends — telling the user it is removed from both sides is
+  empty wording without the two
   names. That dialog owns its own write error, so a failed delete lands beside the decision that
   caused it instead of on the modal's shared line, and it stays open, busy, until the write
-  resolves — which is also what closes the double-dispatch hole the bare chip had. Any
+  resolves — which is also what closes the double-dispatch hole the bare chip had. **Every write
+  dispatched from a modal now closes that hole the same way, with a busy signal per write rather
+  than one per modal**: the door modal's submit (`saveBusy`, so a double-clicked create makes one
+  door, not two), the sections modal's add (`addBusy`) and its delete confirm (`deleteBusy`), the
+  copy modal's apply (`applyBusy`, so a second click on the confirm cannot duplicate the
+  template's children under every selected door), and the relation-delete confirm above. Each
+  one reads its signal first and returns, then sets it, then clears it in the subscribe
+  callback. Any
   successful load clears the message, so a recovered failure no longer sticks for the life of the
   open modal. The templates page's
   «اختر قالبًا» now means only what it says: `AbwabTemplatesFacade.selectedLoading` covers the
@@ -838,8 +895,13 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   `AbwabTreeSectionDto.doorsInScopeCount` for a specific section tab, or falling back to the same
   live-only total on «كل الأبواب» itself (`countAbwabDoorsInOpenScope`). **The two numbers are
   live-only by definition — the same choice every other count in this feature makes.** They now
-  DO reconcile (`AbwabNode.sectionId` is a plain `number`, so Σ `doorsInScopeCount` over every
-  section equals the total), but the stance is unchanged for a different reason: summing sections
+  DO reconcile, but only because **no live door can sit in a retired section** — the reader
+  emits `doorsInScopeCount` for live sections only, so Σ over the listed sections equals the
+  live total exactly while that holds, and two write guards are what hold it: a section delete
+  is refused while live doors remain (`ApiMessages.AbwabSectionHasLiveDoors`) and restoring a
+  root whose section was retired demands a live destination
+  (`RestoreDoorOutcome.SectionRequired`). It is not structural — loosen either guard and the
+  sum breaks. The stance is unchanged for a different reason again: summing sections
   to get the total would recompute client-side what the backend already answered, and fork from
   its definition of "in scope at any depth" the moment the two drift. Do not "fix" this by
   summing sections instead of counting live doors, and do not add a test asserting the two sum —
@@ -909,8 +971,9 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   is its only consumer, and the workshop is reachable directly by URL, so it cannot assume
   `/abwab` was visited first.
 - **Applying copies the template root's direct children, never the root itself** (the ux-slice-g
-  reversal; `Backend/infrastructure/.../Persistence/Writes/Abwab/README.md` holds the axiom and
-  the writer's own class comment restates it). Each target gains N new
+  reversal; `Backend/infrastructure/.../Persistence/Writes/Abwab/README.md` holds the axiom, and
+  `EfAbwabTemplateApplyWriter` implements it — the file carries no comment, and under the
+  workspace comment ban it may not). Each target gains N new
   children, one per the root's direct children, each with its own subtree; the copy modal's
   description and preview (`abwab-template-copy-modal.component.ts`, `abwab.labels.ts`) state
   this before the write. An empty-root template (no live children — the default state of every
@@ -972,13 +1035,21 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   because the specs mocked `AbwabApi` with well-formed envelopes; the browser suite caught it.
   Both the null-envelope path and the real 204 flush are now pinned by tests, and
   `abwab-archive.e2e.ts` drives archive through the UI end to end. The relation delete rides on
-  that same already-pinned `handleSuccess` branch but has no test of its own
-  (`docs/TESTING_DEBT.md`).
+  that same already-pinned `handleSuccess` branch but has **no test of its own at the controller
+  seam**: `abwab-write.controller.spec.ts` has no `deleteRelation` case, and the modal-level
+  cover in `abwab-relations-modal.component.spec.ts` runs against a mocked delete function that
+  never reaches this branch. Anyone touching the 204 handling or the relations routes should
+  assume this half is unpinned.
 
 ## Browser e2e (Slice B2)
 
-`Frontend/quran-dashboard-ui/e2e/abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`,
-`abwab-archive.e2e.ts`, `abwab-url-and-a11y.e2e.ts`, and `abwab-global-order.e2e.ts` drive this
+**Every `e2e/abwab-*.e2e.ts` spec belongs to this feature — that glob is the rule, not a list
+kept here.** It is also literally the membership test: `playwright.config.ts`'s `abwab` project
+is `testMatch: /abwab-.*\.e2e\.ts$/` and the `default` project `testIgnore`s the same pattern, so
+naming a spec `abwab-*` is what enrolls it. `e2e/README.md` carries the inventory and what each
+one owns; do not re-enumerate them here, and do not read any list in this file as complete.
+
+Between them those specs drive this
 page end to end — sections, root/child doors with alias chips, the dirty guard, inline reorder,
 single and bulk move, bulk archive, the row context menu, archive/restore including the
 parent-must-restore-first rule and the retired-section restore that demands a destination, all
@@ -987,8 +1058,8 @@ restorable overlay's reload/Back-Forward round trip, the tree's
 ARIA/roving-tabindex/RTL keyboard model, both halves of the section-delete contract (409 while a
 live door remains, and the `204 No Content` success once its doors are archived), and the
 superset/section order independence (a `Global` reorder leaves a section's `orderValue` untouched
-and vice versa). Because a `Global` reorder resequences every live root in the database, these
-five specs run in their own single-worker Playwright project — see `e2e/README.md`.
+and vice versa). Because a `Global` reorder resequences every live root in the database, the
+whole `abwab` project runs single-worker — see `e2e/README.md`.
 
 `e2e/fixtures/abwab.ts` is the shared sandbox: each test creates its own uniquely-named
 section over the API, and tears down by archiving **every live door in that section** — not
@@ -1002,31 +1073,39 @@ residue that legitimately remains.
 ## Decisions that reversed mid-series
 
 Four decisions in this feature were made, shipped, and then reversed by the user during the UX
-slice series. Each line below states what holds **now** and cites the code that implements it.
+slice series. Each line below states what holds **now** and names the code that implements it.
 They are recorded because the reversal is the part a reader cannot recover: the code shows the
 current answer but not that an earlier, opposite one was deliberately abandoned — and re-deriving
-the earlier answer from first principles is exactly the mistake to avoid.
+the earlier answer from first principles is exactly the mistake to avoid. **Anchors here are
+symbol and selector names, not line numbers**, deliberately: this is the section most likely to
+outlive its line numbers, and every previous set of numbers in it had drifted.
 
 - **Inline reorder: Enter is the only commit; blur and Escape both abandon the edit.** The first
-  implementation committed on blur. `abwab-tree.component.html:70` binds
-  `(blur)="cancelOrderEdit(node.id)"`, and `abwab-tree.component.ts:263-266` guards the cancel on
+  implementation committed on blur. `abwab-tree.component.html`'s order input binds
+  `(blur)="cancelOrderEdit(node.id)"`, and `AbwabTreeComponent.cancelOrderEdit` guards on
   the same id as the commit, so the blur that follows an Enter commit is a no-op. This aligns the
   reorder editor with the workshop's inline authoring rows, which were already Enter-only.
 - **The علاقات flag is always rendered, dimmed at zero, and clickable.** It was previously
   render-only-when-`> 0` and deliberately a non-control. It is now a real `<button>` —
-  `abwab-tree.component.html:115-123` — carrying `[attr.tabindex]="-1"` so the row's roving
-  tabindex survives, an `--empty` modifier at zero (`abwab-tree.component.scss:257`), and an
+  `.abwab-tree__flag` in `abwab-tree.component.html` — carrying `[attr.tabindex]="-1"` so the
+  row's roving tabindex survives, an `.abwab-tree__flag--empty` modifier at zero
+  (`abwab-tree.component.scss`), a visible relation count, and an
   Arabic `aria-label`. The archive view and cards are **not** part of this reversal: an archived
   door's visible relation count is always 0 there.
 - **Apply copies the template root's direct children, never the root itself.** The original axiom
-  was "the template root becomes a new child of each target". `EfAbwabTemplateApplyWriter.cs:16-18`
-  states the current rule, and `Persistence/Writes/Abwab/README.md` holds the axiom. The
+  was "the template root becomes a new child of each target". `EfAbwabTemplateApplyWriter`
+  implements the rule that replaced it — `ApplyAsync` finds the single parentless node, refuses
+  a template whose root has no live children (`AbwabTemplateEmptyException`), and creates one
+  door per `rootChildren[i]` per target — and `Persistence/Writes/Abwab/README.md` holds the
+  axiom. The
   consequence worth keeping in mind: the collision surface is N names per target, not one, so the
   `409` names every colliding `(target, child)` pair.
-- **الأبواب is a hover dropdown — الرئيسية / القوالب / الأرشيف.** `abwab.routes.ts` previously
-  recorded the opposite: the workshop is reached from the doors page header, "not the sidebar",
-  and adding a nav entry "would put an item in the nav nobody asked for". It is now data-driven
-  through `core/navigation/nav-menu.ts:9-29`.
+- **الأبواب is a hover dropdown — الرئيسية / قوالب الأبواب / الأرشيف.** `abwab.routes.ts`
+  previously recorded the opposite: the workshop is reached from the doors page header, "not the
+  sidebar", and adding a nav entry "would put an item in the nav nobody asked for". It is now
+  data-driven through `ABWAB_MENU_ITEMS` in `core/navigation/nav-menu.ts`, and the navbar renders
+  every dropdown from that data with no hand-rolled branch left. The middle item's label is
+  «قوالب الأبواب» — **not** «القوالب», which is `templatesButton`, the doors-page header button.
 
 ## Related
 

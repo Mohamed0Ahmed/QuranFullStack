@@ -5,6 +5,7 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { map } from 'rxjs';
 import { NavItem } from '../../navigation/nav-items';
 import { NAV_MENU } from '../../navigation/nav-menu';
+import { DASHBOARD_ROUTE_PATH } from '../../navigation/route-paths';
 import { ThemeService } from '../../theme/theme.service';
 import { ScrollLockService } from '../../../shared/ui/modal-scroll-lock/scroll-lock.service';
 
@@ -33,6 +34,8 @@ export class TopNavbarComponent {
   private readonly oidcSecurityService = inject(OidcSecurityService);
   private readonly scrollLock = inject(ScrollLockService);
   protected readonly locked = this.scrollLock.isLocked;
+
+  protected readonly dashboardRoute = DASHBOARD_ROUTE_PATH;
 
   readonly allItems: NavItem[] = NAV_MENU;
   readonly desktopItems: NavItem[] = [

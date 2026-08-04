@@ -14,9 +14,10 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   direct-child and relation counts, per-section live-doors count, no paging),
   `api/abwab/doors/{doorId}/relations` (one door's visible relations, `404` for an unknown door,
   `200` with `[]` for a door with none), and `api/abwab/templates` + `api/abwab/templates/{templateId}`
-  (the admin-only door templates and one template's flat node list). Twenty-five routes in all. All routes are
-  `Open` — this is the repository's first write surface and it ships without authentication in Slice A
-  (see feature plan §9/§10); it must not reach production before a write policy attaches. Optimistic
+  (the admin-authored door templates and one template's flat node list). Twenty-five routes in all. All
+  routes are `Open` — this is the repository's first write surface, and it shipped to production still
+  unauthenticated; the 2026-08-04 abwab note in [`docs/TESTING_DEBT.md`](../../../../docs/TESTING_DEBT.md)
+  records that state and the feature that must close it. Optimistic
   concurrency is `uint xmin`, surfaced as `409` in the shared envelope. Creating a door under a parent
   derives its section from that parent; a stated section that disagrees is a `400`, not a silent
   overwrite — on create and on restore alike. Creating or moving a door at **root** scope must name its
@@ -34,7 +35,10 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   family that carries **no version token**: they touch no door row, so no `xmin` moves and the only
   `409` they can produce is the duplicate pair (same two doors + same type, either direction) —
   mapped by `AbwabDoorRelationsController`, which owns its own status mapping exactly as the other
-  Abwab controllers own theirs. Self-relation and an archived endpoint are `400`; an unknown
+  Abwab controllers own theirs. Self-relation and an archived endpoint are `400`, and so are an empty
+  target list and an unrecognised `type`; a **recognised `direction` is required** for a
+  `Comprehensiveness` relation and **forbidden** for the other two types, and a violation either
+  way is a `400`. An unknown
   door id is `404`; the multi-target add is all-or-nothing. The template routes carry **no version
   token** either, and split across two controllers because nine actions on one would sit at the
   200-line threshold: `AbwabTemplatesController` owns the template list/detail/create/delete plus
@@ -82,7 +86,7 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 Controllers have a 300-line hard limit (`../../../.architecture/BACKEND_STRUCTURE.md`). Two shapes
 are in use, and they are not interchangeable:
 
-`AbwabDoorsController` is at **227 lines**, over the 200-line soft threshold and under the hard
+`AbwabDoorsController` sits over the 200-line soft threshold and under the hard
 limit, and stays whole deliberately: its eight actions are one resource's write surface (create,
 edit, move, reorder, restore, delete, and the two bulk writes), every one of them a thin
 outcome-to-status map with no logic to extract. Splitting it would divide one resource across two

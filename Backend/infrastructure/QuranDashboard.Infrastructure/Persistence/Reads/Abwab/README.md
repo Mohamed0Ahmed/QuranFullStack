@@ -96,9 +96,10 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
 - **`RelationCount` counts LIVE-endpoint relations only**, the same judgment call `DirectChildCount`
   and `DoorsInScopeCount` carry above: it is the "how many relations are on this door right now"
   badge. An archived door's count is therefore always 0, and so is a live door's count for a partner
-  that is archived. One grouped query per snapshot (`GetLiveRelationCountsAsync`), incrementing
-  **both** endpoints of each visible row — never one query per door, which would turn the snapshot
-  into an N+1.
+  that is archived. One query per snapshot (`GetLiveRelationCountsAsync`), which materializes every
+  visible pair and increments **both** endpoints of each row in memory — no `GroupBy` and no SQL
+  aggregate, unlike the templates list below. What matters is that it is never one query per door,
+  which would turn the snapshot into an N+1.
 - **Snapshot `Version` deliberately ignores `abwab_door_relations`.** `Version` is
   `max(updated_at, deleted_at)` across sections, doors, and aliases only, so a relation write changes
   the snapshot's `RelationCount` values without moving `Version`. That is safe **because `Version` is
@@ -145,13 +146,14 @@ readers are.
 
 - **The ETag mixes a per-process boot id with the generation counter, and that is restart-safety,
   not decoration.** `AbwabCacheGeneration` takes a fresh `Guid` per instance
-  (`Caching/Abwab/AbwabCacheGeneration.cs:11`) and interpolates it into every validator alongside
-  the counter (`:22`). A bare counter resets to 0 on restart and other admins' writes climb it back
+  (`Caching/Abwab/AbwabCacheGeneration.cs:7`) and interpolates it into every validator alongside
+  the counter (`:16`, `:18`, `:20-21`). A bare counter resets to 0 on restart and other admins'
+  writes climb it back
   through values an idle client still holds, whose next `If-None-Match` would false-match and be
   answered `304` with stale data. The boot id makes cross-restart equality impossible; a restart
   costs each client exactly one refetch.
 - **`AbwabCacheGeneration` must stay ONE object behind both interfaces.**
-  `DependencyInjection/AbwabDependencyInjection.cs:19-21` registers the concrete type once as a
+  `DependencyInjection/AbwabDependencyInjection.cs:14-16` registers the concrete type once as a
   singleton and forwards both `IAbwabCacheInvalidator` and `IAbwabCacheValidators` to it via
   `GetRequiredService`. Registering the two interfaces separately against the same implementation
   type builds *two* counters — writers bump one, controllers read the other, and every client is

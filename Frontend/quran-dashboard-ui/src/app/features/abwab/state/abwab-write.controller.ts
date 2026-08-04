@@ -213,7 +213,7 @@ export class AbwabWriteController {
   ): Observable<AbwabWriteOutcome<T>> {
     const outcome = this.toFailureOutcome(err);
     if (outcome.kind === 'conflict') {
-      const message = this.bulkConflictMessage();
+      const message = this.bulkConflictMessage(attempted);
       this.announcementState.set(message);
       return of({ kind: 'conflict', message });
     }
@@ -233,11 +233,9 @@ export class AbwabWriteController {
     );
   }
 
-  private bulkConflictMessage(): string {
+  private bulkConflictMessage(attempted: readonly AbwabBulkDoorRef[]): string {
     const snapshot = this.facade.snapshot();
-    const names = Array.from(this.selection.bulkSet().keys()).map(
-      (doorId) => snapshot?.byId.get(doorId)?.name ?? String(doorId),
-    );
+    const names = attempted.map((ref) => snapshot?.byId.get(ref.doorId)?.name ?? String(ref.doorId));
     return ABWAB_LABELS.bulkConflictMessage(names.join('، '));
   }
 

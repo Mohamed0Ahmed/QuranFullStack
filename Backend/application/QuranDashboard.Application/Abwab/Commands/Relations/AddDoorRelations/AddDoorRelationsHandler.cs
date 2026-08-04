@@ -17,16 +17,19 @@ public sealed class AddDoorRelationsHandler(
 
         if (command.TargetDoorIds.Count == 0)
         {
+            logger.LogWarning("Rejected {feature} {operation} {reason} {doorId}", FeatureName, OperationName, "invalidRequest", command.DoorId);
             return new AddDoorRelationsOutcome.InvalidRequest();
         }
 
         if (!Enum.IsDefined(command.Type))
         {
+            logger.LogWarning("Rejected {feature} {operation} {reason} {doorId}", FeatureName, OperationName, "invalidType", command.DoorId);
             return new AddDoorRelationsOutcome.InvalidType();
         }
 
         if (!IsDirectionValidFor(command.Type, command.Direction))
         {
+            logger.LogWarning("Rejected {feature} {operation} {reason} {doorId}", FeatureName, OperationName, "invalidDirection", command.DoorId);
             return new AddDoorRelationsOutcome.InvalidDirection();
         }
 

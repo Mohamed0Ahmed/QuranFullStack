@@ -324,6 +324,50 @@ Five spec files are new on this branch in total: `top-navbar`, `context-menu`,
 `abwab-template-node-modal`, `abwab-template-tree`, `abwab-templates-page` — four of them for
 components that previously had **no** spec at all.
 
+### Bundle 6 — documentation, rewritten against what shipped (~35 findings)
+
+Documentation was deliberately last so it could describe the behaviour bundles 1–5 actually
+shipped, not the behaviour the review saw. Every claim those bundles falsified — tracked in the
+entries above as they arose — was corrected here rather than patched twice.
+
+**Fixed as documentation:** F-05, F-07, F-08, F-09, F-10, F-11, F-17, F-19, F-24, F-26, F-32,
+F-38, F-39, F-43, F-44, F-45, F-46, F-78, F-79, F-80, F-81, F-83, F-84, F-85, F-99, F-100, F-101,
+F-102, plus the nine claims listed under bundles 2–4 as "carried to bundle 6".
+
+**Fixed as code** (filed by the review under docs, but code changes): F-21, F-25, F-31, F-76
+(**pre-existing, not Abwab-owned**), F-82, F-104.
+
+**F-01 is closed and verified exactly.** All 33 references to the deleted planning artifacts are
+gone except **one** — `features/abwab/README.md:819`, the Q-01 sentence — which was left untouched
+on purpose. Repo-wide grep for `plan-slice-b.md|plan-slice-b2.md|plan.md|abwab UX audit` across
+`Frontend/`, `Backend/` and `docs/` now returns that single line and nothing else. Test and e2e
+comments kept their content; only the unresolvable pointer was removed, and no test's assertions
+changed.
+
+**Q-02 is closed with the user's answer.** `Backend/README.md` now records that Railway runs a
+single instance, that this holds **by accident rather than by configuration**, and what would have
+to change if a second instance is ever added. The change itself was not implemented, as instructed.
+
+**F-84 closed with a new pointer page**, `docs/contracts/abwab.md`, thin and pointer-only like its
+siblings, added to the `docs/contracts/README.md` index — so the 1,024-line feature README is now
+reachable from the index the workspace declares as the way to find contract truth.
+
+**Rule 3 was applied throughout:** stale counts became rules plus pointers rather than fresh
+counts, so they cannot rot again. The one measured figure the review supplied (`EfAbwabDoorsWriter`
+= 757, not 816) was deliberately **not** written into the docs for that reason.
+
+**A contradiction the fix surfaced and could not close.** Correcting F-07 revealed that two *test*
+comments — `AbwabDoorWriteBehaviorTests.cs:332` and `SmokeAbwabWriteTests.cs:771` — still assert
+the ordering the README just stopped claiming (that the target section is resolved before the doors
+load). Test files are outside the comment policy's scope and outside the agent's ownership, so both
+were left alone; the README now names both files so the contradiction is discoverable rather than
+silent.
+
+**Verification (parent-run).** Backend: `dotnet build` 0 errors; `~QuranDashboard.Tests.Abwab`
+**60 passed**; `~QuranDashboard.Tests.Smoke.` **145 passed, 0 skipped — `Tests.Smoke.Data` tier
+ran**. Frontend: `tsc` app 0 / spec 0; full suite **204 files, 2620 tests**, 0 failures;
+`npm run build` clean with exactly the three known budget warnings.
+
 ---
 
 ## 1. Areas covered / remaining

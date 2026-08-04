@@ -213,6 +213,31 @@ describe('AbwabWriteController', () => {
       });
       expect(selection.bulkSet().size).toBe(2); // preserved, not cleared
     });
+
+    // The submit filter drops archived ids, so the bulk set is a superset of what went to the
+    // wire. The message must name the refs the request actually carried, never the live set.
+    it('names only the doors the request carried, not the archived one the bulk set still holds', () => {
+      const { controller, facade, selection } = setup({
+        getTree: () =>
+          of(
+            ok<AbwabTreeDto>({
+              doors: [door({ id: 1, name: 'باب مؤرشف', isArchived: true, version: 9 }), door({ id: 3, name: 'باب حي', version: 9 })],
+              sections: [],
+              version: 'v',
+            }),
+          ),
+        bulkMoveDoors: () => throwError(() => httpError(409, 'stale')),
+      });
+      facade.load();
+      selection.setBulkMode(true);
+      selection.toggleBulk(1, 9);
+      selection.toggleBulk(3, 9);
+
+      let outcome: unknown;
+      controller.bulkMoveDoors(null, null).subscribe((result) => (outcome = result));
+
+      expect(outcome).toEqual({ kind: 'conflict', message: ABWAB_LABELS.bulkConflictMessage('باب حي') });
+    });
   });
 
   describe('the bulk-archive stale-id 404 (Slice D): archived ids never reach the wire, and a 404 names doors', () => {

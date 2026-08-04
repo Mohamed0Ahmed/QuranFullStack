@@ -82,10 +82,9 @@ describe('AbwabSectionsController', () => {
 
   describe('M27 — delete answers 409 and keeps the modal open (the actual backend copy, not the stale plan string)', () => {
     it('reports the conflict outcome unchanged, without closing anything itself', () => {
-      // Verified against Backend/api/QuranDashboard.Api/Common/ApiMessages.cs:115
-      // (AbwabSectionHasLiveDoors) — the real wire string differs from plan-slice-b.md's
-      // locked copy «القسم يحتوي أبوابًا نشطة»; reported as a conflict, not silently
-      // reconciled (plan.md §5).
+      // The wire string is Backend/api/QuranDashboard.Api/Common/ApiMessages.cs:117
+      // (AbwabSectionHasLiveDoors) «لا يمكن حذف القسم لاحتوائه على أبواب حالية»; the
+      // controller reports it as a conflict, unchanged, rather than restating it locally.
       const backendMessage = 'لا يمكن حذف القسم لاحتوائه على أبواب حالية';
       const { controller, facade } = setup({
         getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [TREE_SECTION], version: 'v' })),

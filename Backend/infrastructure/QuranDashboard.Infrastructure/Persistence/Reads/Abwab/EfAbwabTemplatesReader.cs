@@ -40,7 +40,8 @@ internal sealed class EfAbwabTemplatesReader(QuranDashboardDbContext db) : IAbwa
 
         var nodes = await db.AbwabTemplateNodes.AsNoTracking()
             .Where(n => n.TemplateId == templateId && n.DeletedAtUtc == null)
-            .OrderBy(n => n.ParentNodeId)
+            .OrderBy(n => n.ParentNodeId != null)
+            .ThenBy(n => n.ParentNodeId)
             .ThenBy(n => n.OrderValue)
             .ThenBy(n => n.Id)
             .Select(n => new AbwabTemplateNodeDto(

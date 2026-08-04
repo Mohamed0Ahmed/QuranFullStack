@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures/abwab';
 
-// Archive/restore flow (plan-slice-b2.md T604). The archive view is not section-filtered
+// Archive/restore flow. The archive view is not section-filtered
 // (`abwab-page.component.ts`'s `archivedRoots` reads the whole snapshot, unlike the live
 // tree's `visibleRoots`), so every assertion here addresses rows by the id the fixture
 // itself created — never by position, text search, or a count of "how many are archived"
@@ -77,7 +77,7 @@ test('a child archived under an archived parent shows a disabled restore until t
 
   // Archived in two SEPARATE operations (not one subtree archive) — matching descendants
   // by their own deleted_at means restoring the parent later must not silently pull the
-  // child back too (plan.md §13.1).
+  // child back too.
   await abwabSandbox.archiveDoor(child.id);
   await abwabSandbox.archiveDoor(parent.id);
 

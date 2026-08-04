@@ -105,8 +105,6 @@ public sealed class AbwabDoorsController(
     public async Task<ActionResult<ApiResponse<AbwabDoorDto>>> Reorder(
         int id, [FromBody] ReorderDoorBody body, CancellationToken cancellationToken)
     {
-        // An omitted scope lands on the enum's unmapped default (0, plan §6) rather than Section — the
-        // guard here is what refuses that, before the command ever reaches the handler.
         var outcome = Enum.IsDefined(body.Scope)
             ? await reorderHandler.HandleAsync(new ReorderDoorCommand(id, body.Position, body.Scope, body.Version), cancellationToken)
             : new ReorderDoorOutcome.InvalidScope();

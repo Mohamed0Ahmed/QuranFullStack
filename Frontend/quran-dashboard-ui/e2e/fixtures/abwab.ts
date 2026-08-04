@@ -6,7 +6,7 @@ export { expect };
 
 // Same host the backend launch profile serves (playwright.config.ts's API_HEALTH_URL) —
 // setup/teardown go through the API directly, never the UI, so a flow that breaks the UI
-// still tears down cleanly (plan-slice-b2.md T601).
+// still tears down cleanly.
 const API_BASE = 'https://localhost:5015';
 
 export interface AbwabSandboxDoor {
@@ -64,7 +64,7 @@ async function createDoorViaApi(
     parentId: input.parentId ?? null,
   };
   // The backend derives the section from `parentId` once it is set, and 400s on a stated
-  // mismatch (plan-slice-b.md §4 input 5) — so `sectionId` must be genuinely absent, not
+  // mismatch — so `sectionId` must be genuinely absent, not
   // `null`, once a parent is given (mirrors `AbwabApi#buildCreateDoorBody`).
   if (!input.parentId) {
     body['sectionId'] = sectionId;
@@ -144,7 +144,7 @@ async function renameDoorViaApi(request: APIRequestContext, doorId: number, name
  * Two things this has to get right, both learned the hard way from real residue:
  *
  * 1. **Re-read the version before every archive.** Every write resequences its scope to
- *    `1..N`, which bumps every sibling's `xmin` (plan-slice-b.md §4.6/R10). Archiving from
+ *    `1..N`, which bumps every sibling's `xmin`. Archiving from
  *    one up-front snapshot therefore succeeds for the first door and `409`s for all the
  *    rest — silently, because a `409` is a response, not a thrown error. One fetch per
  *    archive is the price of the invariant.

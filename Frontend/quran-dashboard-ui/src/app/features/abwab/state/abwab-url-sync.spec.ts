@@ -156,7 +156,7 @@ describe('buildAbwabQueryParams', () => {
     expect(buildAbwabQueryParams({ archive: false })).toEqual({ archive: null });
   });
 
-  it('switching section invalidates door and card (plan-slice-b.md §4.4)', () => {
+  it('switching section invalidates door and card', () => {
     expect(buildAbwabQueryParams({ section: 7 })).toEqual({ section: '7', door: null, card: null, modal: null });
   });
 

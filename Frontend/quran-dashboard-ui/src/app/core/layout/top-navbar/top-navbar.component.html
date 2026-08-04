@@ -74,7 +74,7 @@
             class="qd-btn qd-btn-ghost nav-link"
             [routerLink]="item.route"
             routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+            [routerLinkActiveOptions]="{ exact: item.route === dashboardRoute }"
             [attr.data-testid]="'nav-link--' + item.key"
           >
             {{ item.labelAr }}
@@ -258,7 +258,7 @@
               class="qd-btn qd-btn-ghost mobile-link"
               [routerLink]="item.route"
               routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+              [routerLinkActiveOptions]="{ exact: item.route === dashboardRoute }"
               (click)="closeMobile()"
             >
               {{ item.labelAr }}

@@ -755,12 +755,12 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   `tabular-nums`; **always** rendered, dimmed at zero via `.qd-tabs__count--empty` (opacity
   only, so it composes with the selected-state rule instead of forking a second one). The
   visible digits are `aria-hidden="true"`; the tab's own `aria-label` carries the accessible
-  count (item 19 of the abwab UX audit).
+  count.
 
 ### `qd-chip`
 - **Purpose:** the one selectable/informational chip (filters, association
-  popovers, count badges) — and, since Abwab Slice B (plan-slice-b.md T412), the one
-  removable chip (alias chips in the door-details modal).
+  popovers, count badges) — and the one removable chip (alias chips in the
+  door-details modal).
 - **Inputs / roles:** `selected`, `disabled`, `as?='button'|'a'`, optional
   trailing `count`; `removable?=false` + `removeAriaLabel` for the remove
   affordance, emitting a `remove` output.
@@ -789,8 +789,16 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   elements sharing one selector would leave the second slot permanently empty while
   every element-type assertion still passed.
 - **Backing classes:** `.qd-chip`, `.qd-chip--pill`, `.qd-chip--static`,
-  `.qd-chip.qd-is-selected`, `.qd-chip__count`, `.qd-chip__remove`,
-  `.qd-chip__label`, `.qd-chip__label--clickable`. Compose, do not re-style.
+  `.qd-chip.qd-is-selected`, `.qd-chip--disabled`, `.qd-chip__count`,
+  `.qd-chip__remove`, `.qd-chip__label`, `.qd-chip__label--clickable`. Compose, do
+  not re-style. `.qd-chip--disabled` is what delivers the disabled state named above
+  on the two branches that are not a `<button>`: the removable `<span>` and the
+  anchor cannot carry the native `disabled` attribute, so `chip.component.html`
+  binds `[class.qd-chip--disabled]="disabled()"` on both, and `_components.scss`
+  pairs the class with `:disabled` in one rule
+  (`.qd-chip:disabled, .qd-chip.qd-chip--disabled { cursor: not-allowed; opacity:
+  0.5; pointer-events: none; }`). Omit the class on those branches and a disabled
+  chip still takes hover and clicks.
 
 ### `qd-confirm-dialog`
 - **Purpose:** the one confirmation dialog — a decision that interrupts and needs an explicit
@@ -861,22 +869,28 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   (`styles/README.md`'s "size a new reserved slot from these tokens; never
   re-measure the control by hand" rule) — so its box never appears/disappears;
   only its text fades in, opacity only, static under `prefers-reduced-motion`,
-  mirroring `qd-detail-modal-shell`'s count span (above). Default off, so today's
-  seven call-sites are unaffected.
+  mirroring `qd-detail-modal-shell`'s count span (above). Default off, so existing
+  call-sites are unaffected.
 - **`reserve` under an `@if` reserves nothing, and abwab does exactly that — knowingly.**
-  All four abwab modal error surfaces render as
-  `@if (message; as m) { <qd-state variant="error" [reserve]="true" [message]="m" /> }`,
-  so the box appears and disappears with the message and the input's own contract
+  **Every** abwab `[reserve]` error surface is guarded on a **non-empty message**, and no
+  count belongs here — the inventory is the grep `shared/README.md` already points at,
+  `grep -rn '\[reserve\]' src/app/`. Most take the direct shape
+  `@if (message; as m) { <qd-state variant="error" [reserve]="true" [message]="m" /> }`;
+  the two list-level page surfaces add a "nothing loaded yet" test to the same truthiness
+  (`abwab-page.component.html`, `abwab-templates-page.component.html`); and
+  `abwab-door-picker` reaches the same shape through a computed that is empty unless the
+  picker is in its error status (`abwab-door-picker.component.ts:62`). So the box appears
+  and disappears with the message and the input's own contract
   ("never appears/disappears") cannot hold; what survives is the message span's
   `min-block-size` and a fade that never fires, since the element is born visible.
   Slice C briefly rendered the door/template-node surface **unguarded** to honor the
   input literally, and shipped a 105px empty danger box on every open of both modals
   (the container's own `padding: var(--qd-space-6)` plus the reserved row, with nothing
-  in it) — reverted to match the other three. The lesson for whoever revisits this
+  in it) — reverted to match its guarded siblings. The lesson for whoever revisits this
   input: `reserve` earns its keep where a box is **permanently mounted** and only its
   content arrives late; guarding the whole component is the right call for an error
   that is absent on the happy path, and those two uses want different tools. Do not
-  "fix" abwab's four sites by deleting the `@if`.
+  "fix" abwab's guarded sites by deleting the `@if`.
 
 ### `.qd-explorer-table`
 - **Purpose:** the one table implementation for all 5 explorer tables (roots,
@@ -1032,13 +1046,21 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   `abwab-tree`/`abwab-cards`, pick-lists in `abwab-relations-modal`/
   `abwab-template-copy-modal`).
 - **Shape:** utility classes, not a component — `.qd-checkbox` sizes and colors a
-  native `<input type="checkbox">`; `.qd-check-row` is the flex wrapper that pairs
-  it with its label at a fixed gap.
+  native `<input type="checkbox">` **or `<input type="radio">`**; `.qd-check-row` is
+  the flex wrapper that pairs it with its label at a fixed gap. The radio is a
+  sanctioned composition, not drift: `abwab-door-picker` keeps one row markup and
+  switches the input type on its `single` input
+  (`abwab-door-picker.component.html:54-56`,
+  `[attr.type]="single() ? 'radio' : 'checkbox'"` plus one `name` shared by that
+  picker's rows), so
+  single-pick mode is a real radio group with a live keyboard `change` path
+  (`abwab-door-picker.component.ts:151-156`). The geometry below is type-agnostic — do
+  not "fix" the radio call-site off this class.
 - **Geometry / color:** a fixed `--qd-checkbox-size` square (`0.9375rem`, reached
-  through the app's own rem scale — same step as `--qd-btn-font-size` and
-  `.qd-input`/`.qd-select`'s font-size — rather than a raw px; it equals the
-  approved concept's `15px` at the app's unscaled root,
-  `abwab-relations-concept.html:84`), `flex: none`, `margin: 0`, and
+  through the app's own rem scale — the same step as `--qd-btn-font-size`
+  (`_tokens.scss:119`, beside `--qd-checkbox-size` at `:135`) and as
+  `.qd-input`/`.qd-select`'s font-size (`_forms.scss:10`, `:52`) — rather than a raw
+  px), `flex: none`, `margin: 0`, and
   `accent-color: var(--qd-accent)` — no new hue, and correct in both themes since
   `--qd-accent` is defined per theme (`_tokens.scss` light / `_themes.scss` dark
   override) with zero `_themes.scss` change needed here.
@@ -1140,9 +1162,18 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Consumers:** the six abwab modals (`abwab-door-modal`,
   `abwab-template-node-modal`, `abwab-sections-modal`, `abwab-move-picker`,
   `abwab-relations-modal`, `abwab-template-copy-modal`), all composed by Slice C
-  with `__head`/`__body`/`__foot` and an unconditional `cdkTrapFocus`. A modal
-  that wants a control other than the first tabbable one marks that control
-  `cdkFocusInitial` rather than moving focus itself after the trap captures —
+  with `__head`/`__body`/`__foot` and `cdkTrapFocus cdkTrapFocusAutoCapture`.
+  **The trap rule is conditional by design: a modal that hosts a nested confirm
+  dialog yields its trap while that confirm is open, so two traps are never live at
+  once.** Such a modal binds the trap to "no confirm open" — `abwab-sections-modal`
+  (`[cdkTrapFocus]="deleteConfirmId() === null"`,
+  `abwab-sections-modal.component.html:10`) and `abwab-relations-modal`
+  (`[cdkTrapFocus]="pendingDelete() === null"`,
+  `abwab-relations-modal.component.html:10`); the rest carry it bare because nothing
+  nests above them. `features/abwab/README.md` holds the reasoning (two live traps
+  fight over focus) and the limit (no second nesting level, no confirm above a
+  confirm). A modal that wants a control other than the first tabbable one marks that
+  control `cdkFocusInitial` rather than moving focus itself after the trap captures —
   one focus move, and `cdkTrapFocusAutoCapture` stays on, which is the only
   thing that returns focus to the trigger on close. The
   shallow ones (door, template-node) render with empty space below the fields:
@@ -1203,7 +1234,10 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   `backdropTestId` (both `string`, required) — **non-negotiable**, because 4 Vitest
   assertions and ~8 Playwright assertions select `abwab-page-context-menu` /
   `abwab-page-ctx-backdrop` / the templates-page equivalents by test id, and inputs are
-  what let the extraction keep them byte-identical; `dismissed` output, emitted on
+  what let the extraction keep them byte-identical; `menuAriaLabel` (optional, defaults to
+  `CONTEXT_MENU_LABELS.menuAriaLabel`) names the `role="menu"` box — a menu with no
+  accessible name is announced as an unlabelled group, so a consumer whose menu is not
+  "operations" passes its own Arabic string; `dismissed` output, emitted on
   backdrop click and on `Escape`.
 - **Shape:** a `position: fixed; inset: 0` transparent backdrop at
   `--qd-z-menu-backdrop`, and a positioned `role="menu"` box at `--qd-z-menu`. Items are
@@ -1217,35 +1251,54 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   own stylesheet would never reach it. Consumers apply the classes directly to their own
   projected buttons.
 - **Escape dismissal is document-level** (`@HostListener('document:keydown.escape')`,
-  copying `top-navbar.component.ts`), not bound to the menu element, because none of the
-  four paths that open a menu (right-click, the row's `⋯`, or either page's keyboard
-  path) puts focus inside it — an element-bound handler would never receive the key.
+  copying `top-navbar.component.ts`), not bound to the menu element. It has to stay
+  document-level even now that the menu takes focus on open (below): the open-focus is a
+  best effort over *projected* items, so a menu whose consumer projects nothing focusable
+  leaves focus outside it, and an element-bound handler would never receive the key there.
   **This is the one place this primitive is not literally behavior-preserving:** neither
   prior copy dismissed on `Escape`. Deliberate, additive a11y gain, not a bug.
-- **Placement contract (slice L).** The menu extends toward the **inline-start** of the
-  anchor point: under RTL its right edge sits at `x` and the box grows leftward; under LTR
-  the mirror (left edge at `x`), which is the behaviour that originally shipped. Direction
-  is resolved from `closest('[dir]')`, never hardcoded. It **flips** on collision — inline
-  when the preferred side would cross the inline-start viewport edge, block when opening
-  below would cross the bottom — and is clamped into `[8px, viewport − 8px]` afterwards; a
-  menu larger than the viewport keeps its start edge on screen, since those are the items
-  reached first. Because all three decisions need the box's own size, the menu renders
-  `visibility: hidden` for one frame, measures itself in `afterRenderEffect`, then places
-  and shows — no flash on the wrong side. jsdom reports zero-sized rects and is skipped
-  (the menu keeps the raw anchor there and stays measurable by the specs), so **the browser
-  is the verification tier**: `e2e/abwab-operations.e2e.ts` asserts the inline-start
-  extension, the inline flip at 900px, and the block flip at 420px height. Both trees'
-  keyboard paths anchor at the focused row's inline-start edge to match.
+- **Keyboard contract — the menu owns its own focus.** On open it moves focus to the first
+  projected `[role="menuitem"]` (`context-menu.component.ts:52-56`; queued so the items
+  have rendered, and skipped if the menu was destroyed in the meantime).
+  `ArrowDown`/`ArrowUp` move between items with wrap-around, `preventDefault`d so the page
+  does not scroll (`:79-92`, bound on the `role="menu"` box). On destroy focus returns to
+  whatever was focused when the menu opened (`:98-105`, `:138-141`), but **only if focus is
+  still inside the menu or has been lost to `<body>`** — a consumer that deliberately moves
+  focus elsewhere while acting on an item keeps it. Traversal reads the live DOM
+  (`querySelectorAll('[role="menuitem"]')`) rather than a registry, because the items are
+  projected: **an item the consumer does not mark `role="menuitem"` is invisible to both
+  the open-focus and the arrow keys.**
+- **Placement contract (slice L).** State it as the mechanics, never as a bare direction
+  word: a box that *begins* at the inline-start and grows away from it reads as
+  "extending" toward whichever end you had in mind, and a doc that names the wrong one
+  gets implemented against.
+  **The menu's inline-START edge is pinned at the anchor point and the box grows in the
+  reading direction:** under RTL its right edge sits at `x` and the box grows leftward;
+  under LTR the mirror (left edge at `x`), which is the behaviour that originally shipped.
+  Direction is resolved from `closest('[dir]')`, never hardcoded. It **flips** on
+  collision — inline when the box's **trailing (inline-END)** edge would cross the
+  viewport, block when opening below would cross the bottom — and is clamped into
+  `[8px, viewport − 8px]` afterwards (`context-menu.component.ts:107-126`). The clamp is a
+  floor, not a guarantee: a menu wider or taller than that axis of the viewport is pinned
+  at the `8px` margin and overflows the far side — and since the pin is always `left`/`top`,
+  under RTL that means the edge nearest the anchor is the one lost.
+  Because all three decisions need the box's own size, the menu
+  renders `visibility: hidden` for one frame, measures itself in `afterRenderEffect`, then
+  places and shows — no flash on the wrong side. jsdom reports zero-sized rects and is
+  skipped (the menu keeps the raw anchor there and stays measurable by the specs), so
+  **the browser is the verification tier**: the row-context-menu placement test in
+  `e2e/abwab-operations.e2e.ts` asserts that the RTL box's start (right) edge lands on the
+  anchor within 2px, the inline flip at 900px width, and the block flip at 420px height.
+  Both trees' keyboard paths anchor at the focused row's inline-start edge to match
+  (`abwab-tree.component.ts:317-319`, `abwab-template-tree.component.ts:106-108`).
   Recorded browser walk (1024px and 1440px, both themes, 12 points): mid-viewport right-edge
-  delta 0.0px; inline-start-edge and bottom-edge opens never clipped; the bottom open flipped
+  delta 0.0px; viewport-edge and bottom-edge opens never clipped; the bottom open flipped
   upward in every case. `menuTestId`/`backdropTestId` and the projected-item contract are
   unchanged.
-- **Two gaps this primitive deliberately did not fix** — named so a future reader does
-  not assume a shared, contracted primitive already covers them (gap 1, no viewport
-  clamping, was **closed by slice L**; see the placement contract above):
-  2. **No focus management into the menu.** Neither prior copy moved focus into it on
-     open; adding that changes keyboard behavior on a shipped surface and belongs to
-     Slice G's row-menu keyboard-path work, not this extraction.
+- **Two of the three gaps this primitive originally left open are now closed** — kept
+  named so a future reader does not re-open them as work: gap 1, no viewport clamping,
+  **closed by slice L** (the placement contract above); gap 2, no focus management into
+  the menu, **closed** (the keyboard contract above). What is still open:
   3. **The `--danger` item's rest-state color is not unified.** The two prior copies
      were not byte-identical here: the doors page's danger item was plain-colored until
      hover (`--qd-danger-tint` background + `--qd-danger` text on `:hover` only, the
@@ -1493,18 +1546,22 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   signal-backed `isLocked` computed for this (`scroll-lock.service.ts`), rather than
   a second "any modal open" service, which would duplicate `lockCount`'s job and
   give two sources of truth for the same fact.
-- **Blast radius: the rule is the membership test, not a list.** Any surface that applies
-  `qdModalScrollLock` makes the chrome inert, so **the directive's usages ARE the blast
-  radius** — `grep -rn qdModalScrollLock src/app/` answers it, and no count belongs here
-  because every new dialog moves it. It reaches well beyond abwab: the abwab modals, the
-  words detail panels and drilldown, and — since it composes the directive itself —
+- **Blast radius: the rule is the membership test, not a list.** The membership test is
+  **holding `ScrollLockService`'s lock** — not applying the directive, which is only the
+  usual way to hold it. So the radius is `grep -rn qdModalScrollLock src/app/` **plus
+  `detail-modal-shell.component.ts:63`**, where the global entity-detail overlay shell
+  acquires the lock **imperatively** in an effect (releasing at `:66` and `:104`) while
+  its template applies no directive: it inerts the chrome exactly like the rest and the
+  grep alone never returns it. No count belongs here either, because every new dialog
+  moves it. The radius reaches well beyond abwab: the abwab modals, the words detail
+  panels and drilldown, that overlay shell, and — since it composes the directive itself —
   **every `qd-confirm-dialog`, and therefore every confirm in the app**. That last one is
   the trap: adding a confirm anywhere silently enlarges this radius. The navbar is
-  keyboard-unreachable while any of these nine is open. This is an intentional
-  behavior change on five shipped words surfaces nobody asked about, accepted
-  deliberately: each of the nine is a modal dialog, "app chrome is not reachable
-  while a modal dialog is open" is not an abwab-only doctrine, and the precedent is
-  *stronger* — `app.ts:14` already inerts the entire shell for the global overlay.
+  keyboard-unreachable while any lock holder is open. This is an intentional
+  behavior change on shipped words surfaces nobody asked about, accepted
+  deliberately: every holder is a modal dialog or a modal overlay, "app chrome is not
+  reachable while a modal dialog is open" is not an abwab-only doctrine, and the precedent
+  is *stronger* — `app.ts:14` already inerts the entire shell for the global overlay.
 - **Inert-inside-inert is real and was observed live, not just unit-tested.** With a
   words drawer (e.g. `root-details-panel`, holding the lock) open *under* the global
   detail overlay (`app.ts`'s `overlayOpen()`, which inerts the whole shell): the
@@ -1515,7 +1572,7 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   idempotent. `app.nested-layers.spec.ts`'s "exactly one focus trap enabled" (the
   dialog's, not the drawer's) still holds in this state — confirmed both by that
   spec and by a live count of enabled `.cdk-focus-trap-anchor` elements in the
-  browser (`evidence.md` phase 9).
+  browser.
 
 ### `qd-result-count`
 - **Purpose:** a one-line "label: N" stat that holds its line across loading/error/

@@ -53,7 +53,7 @@ describe('ABWAB_QUERY_KEYS / ABWAB_QUERY_DEFAULTS', () => {
     });
   });
 
-  it('fails closed to the documented defaults (plan-slice-b.md §4.4)', () => {
+  it('fails closed to the documented defaults', () => {
     expect(ABWAB_QUERY_DEFAULTS).toEqual({
       section: null,
       view: 'tree',

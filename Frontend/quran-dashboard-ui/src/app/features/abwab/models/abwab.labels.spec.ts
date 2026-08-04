@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ABWAB_LABELS } from './abwab.labels';
 
-// Pins the locked strings from plan-slice-b.md §2 (items 2, 3, 6) — every consumer must
+// Pins the locked Arabic strings — every consumer must
 // read these, never restate them. §2's fourth locked string (the section-delete conflict)
 // is deliberately absent: the backend sends its own copy on that 409 and the write
 // controller prefers it, so a local constant would be dead. See features/abwab/README.md.

@@ -1,6 +1,6 @@
 import { abwabTestIdNumber, abwabTreeRowByName, expect, test } from './fixtures/abwab';
 
-// Structure flow (plan-slice-b2.md T602): sections (rename, delete-blocked-by-live-door),
+// Structure flow: sections (rename, delete-blocked-by-live-door),
 // root/child door creation through the modal including alias chips, editing, and the
 // dirty guard. Each test owns its own sandbox section (e2e/fixtures/abwab.ts) — no shared
 // state between tests, no global counts (R18).
