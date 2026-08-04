@@ -7,7 +7,7 @@
   --qd-section-bg: oklch(0.979 0.011 89.7);
   --qd-surface-recessed: oklch(0.945 0.015 94.2);
   --qd-surface-hover: oklch(0.945 0.015 94.2);
-  --qd-ayah-card-bg: oklch(0.958 0.013 92);           /* shared qdAyahCard: a warm tone recessed below --qd-surface so an ayah card reads as a distinct card on the near-white surfaces it sits on (Quran text 12.7:1, muted meta 4.69:1 AA). Dark overrides to --qd-surface. */
+  --qd-ayah-card-bg: oklch(0.958 0.013 92);
 
   --qd-explorer-detail-bg: oklch(0.979 0.011 89.7);
   --qd-explorer-detail-header-bg: oklch(0.994 0.007 88.6);
@@ -32,15 +32,15 @@
   --qd-accent-hover: oklch(0.409 0.056 174.7);
   --qd-accent-soft: oklch(0.854 0.031 170.4);
   --qd-accent-tint: oklch(0.954 0.010 164.9);
-  --qd-accent-text: oklch(0.435 0.060 176.3);         /* deep AA green for text emphasis (7:1 range on light surfaces) */
+  --qd-accent-text: oklch(0.435 0.060 176.3);
   --qd-accent-fg: oklch(0.980 0.007 164.9);
   --qd-selected-bg: var(--qd-accent-tint);
 
   --qd-danger: oklch(0.522 0.122 28.9);
-  --qd-warning: oklch(0.540 0.111 75.1);              /* AA-tuned: 4.58:1 on --qd-warning-tint, 3.02:1 as dot on navy footer */
+  --qd-warning: oklch(0.540 0.111 75.1);
   --qd-success: oklch(0.546 0.062 162.7);
-  --qd-danger-tint: oklch(0.952 0.015 37.9);          /* danger wash; danger text hits 5.01:1 on it */
-  --qd-success-tint: oklch(0.982 0.020 163);          /* 4.58:1 against --qd-success, see UI_STYLE_SYSTEM §16 */
+  --qd-danger-tint: oklch(0.952 0.015 37.9);
+  --qd-success-tint: oklch(0.982 0.020 163);
   --qd-warning-tint: oklch(0.960 0.030 85.6);
 
   --qd-focus-ring: oklch(0.490 0.068 176.3);
