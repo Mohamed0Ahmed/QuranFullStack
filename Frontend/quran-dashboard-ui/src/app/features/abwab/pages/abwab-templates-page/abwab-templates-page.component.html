@@ -25,7 +25,14 @@
         </div>
       </div>
     } @else if (facade.errorMessage() && facade.templates().length === 0) {
-      <qd-state variant="error" [reserve]="true" [message]="facade.errorMessage() ?? ''" />
+      <qd-state
+        variant="error"
+        [reserve]="true"
+        [message]="facade.errorMessage() ?? ''"
+        [actionLabel]="retryLabel"
+        data-testid="abwab-templates-page-list-error"
+        (action)="facade.loadList()"
+      />
     } @else {
       <div class="abwab-templates-page__layout">
         <aside class="abwab-templates-page__list" [attr.aria-label]="templatesListAriaLabel">

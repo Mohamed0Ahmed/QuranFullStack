@@ -66,6 +66,79 @@ filter, deliberately, from the same box." Clearing bulk on `q` would therefore b
 tree, which is the majority surface. Flagged here and carried into bundle 2, where F-55 changes
 cards' filtering depth; the interaction should be settled there rather than by a rule in the store.
 
+### Bundle 2 — missing guards and missing states (11 findings)
+
+| Finding | State | Where |
+|---------|-------|-------|
+| F-53 | **fixed** | `components/abwab-cards/abwab-cards.component.html:28`, `.ts:76` |
+| F-54 | **fixed** | `pages/abwab-page/abwab-page.component.ts:197` |
+| F-55 | **fixed** (user ruling) | `components/abwab-cards/abwab-cards.component.ts:67` |
+| F-56 | **fixed** (user ruling) | `components/abwab-cards/abwab-cards.component.html:34` |
+| F-57 | **fixed** (accepted consequence) | `components/abwab-template-tree/abwab-template-tree.component.ts:133-138` |
+| F-61 | **fixed** | `components/abwab-template-copy-modal/abwab-template-copy-modal.component.ts:111-116` |
+| F-63 | **fixed** | `components/abwab-door-modal/abwab-door-modal.component.ts:130`, `abwab-sections-modal` |
+| F-66 | **fixed** | `components/abwab-door-picker/abwab-door-picker.component.ts:62` |
+| F-91 | **fixed** | `pages/abwab-templates-page/abwab-templates-page.component.html:28-35` |
+| F-92 | **fixed, scenario partly refuted** | `pages/abwab-templates-page/abwab-templates-page.component.ts:308-314` |
+| F-97 | **fixed** | `components/abwab-door-picker/abwab-door-picker.component.html:11` |
+
+**Deliberate deviation on F-53, accepted.** The finding suggested a page-level
+`@if (displayRoots().length === 0)` wrapper around `<qd-abwab-cards>`. That guard removes the
+component *including its breadcrumb*, so a drilled user (`card=5`) typing a zero-match query would
+lose the only in-page way back out. The empty state was therefore placed inside the cards
+component, below the breadcrumb, still composing the shared `qd-state`. After F-55, `displayRoots()`
+is also no longer the right emptiness signal — the emptiness that matters is the level being
+viewed, which only the cards component can derive from `cardId`.
+
+**F-92's stated failure scenario is REFUTED, though the fix still landed.** The dialog was never
+dismissible mid-flight: `ConfirmDialogComponent.cancel()` already guards. The mirror of
+`cancelNodeDelete()` was applied anyway because the *error-clearing* half of the finding was real.
+Recorded so the finding is not cited later as evidence of a hole that did not exist.
+
+**Both new "no results" states distinguish filtering from emptiness via `AbwabSearchResult.isFiltering`,
+not `q !== ''`** — `searchAbwabNodes` trims and returns `EMPTY_SEARCH_RESULT` for a whitespace-only
+query, so `q='   '` correctly still reads «لا توجد أبواب مؤرشفة.» instead of falsely claiming a
+filter ran.
+
+**Verification (run by the parent, not the implementing agents).**
+`tsc --noEmit -p tsconfig.app.json` → 0; `-p tsconfig.spec.json` → 0; `npm run build` → success with
+exactly the three known budget warnings; abwab suite **538 → 566**, 29 files, 0 failures. Diff audit
+confirms the rise is purely additive: no `it(`, `expect(` or `describe(` line was deleted from any
+existing spec, and `abwab.labels.ts` gained two strings with no edits to existing values. All 27
+touched files fall inside the four agents' declared ownership lists; no README was touched.
+
+> **Correction to the Bundle 1 entry above.** Bundle 1 reported `tsc --noEmit -p tsconfig.json`
+> exit 0. That check is **vacuous**: the root `tsconfig.json` is `"files": []` plus project
+> references, and `--noEmit` does not follow references, so it type-checks nothing. Bundle 1's real
+> evidence is its passing specs, plus the `npm run build` above, which AOT-compiles the committed
+> bundle-1 code and succeeded. The leaf configs (`tsconfig.app.json`, `tsconfig.spec.json`) are the
+> correct targets and are what every later bundle uses.
+
+**Carried to bundle 6 — README claims these fixes newly falsified** (docs are deliberately last,
+so they are tracked here rather than patched twice):
+
+- `features/abwab/README.md:83-85` — «In **cards** and the **archive** the same query still
+  *filters* (`pruneAbwabNodesToVisible`)». Cards no longer use `pruneAbwabNodesToVisible` at all.
+  The archive half is still true.
+- `README.md:79-83` — the "lie about the data" reasoning now applies to all three surfaces.
+- `README.md:157-166` — the `abwab-cards/` description predates the component owning its own
+  empty state and the card being a real `<button>`.
+- `README.md:794-798` — «Only three error sites carry the single `actionLabel` retry»; F-91 makes
+  it four (the templates-list read wired to `AbwabTemplatesFacade.loadList()`).
+- `README.md:~804-805` — the double-dispatch closure is documented only for the relation-delete
+  confirm; template apply, create/edit-door and create-section now share it.
+
+**Noticed, not fixed** (no finding behind them; recorded rather than silently swept):
+
+- The door picker's retry gives no in-flight feedback over stale rows — residue of F-97's
+  error-only hoist; the skeleton is still trapped in `@empty`.
+- `abwab-cards.component.ts:96` `onCheckboxClick`'s `stopPropagation()` is now redundant, the
+  checkbox being a sibling rather than nested.
+- `abwab-templates-page.component.ts:352-358` `closeOverlays()` bypasses the new busy guard, exactly
+  as its `deletingNodeId` twin does; left symmetric.
+- F-58 confirmed still open — the workshop's order chip remains a click-only `<span>`. It is
+  bundle 3 work.
+
 ---
 
 ## 1. Areas covered / remaining

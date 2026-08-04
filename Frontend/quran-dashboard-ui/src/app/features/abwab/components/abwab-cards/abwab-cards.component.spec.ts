@@ -3,6 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { AbwabCardsComponent } from './abwab-cards.component';
 import { AbwabNode } from '../../models/abwab.models';
+import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 function node(overrides: Partial<AbwabNode> & { id: number; name: string }): AbwabNode {
   return {
@@ -186,6 +187,91 @@ describe('AbwabCardsComponent', () => {
       const checkbox = root.querySelector('[data-testid="abwab-card-checkbox-4"]');
       expect(checkbox?.getAttribute('aria-label')).toBe('ورقة');
       expect(checkbox?.classList.contains('qd-checkbox')).toBe(true);
+    });
+  });
+
+  describe('F-56 — every card is a real interactive element carrying an accessible name', () => {
+    it('renders each card as a button named after its door, so Tab reaches it and Enter/Space press it', () => {
+      const root = render().nativeElement as HTMLElement;
+      const card = root.querySelector('[data-testid="abwab-card-4"]');
+
+      expect(card?.tagName).toBe('BUTTON');
+      expect(card?.getAttribute('type')).toBe('button');
+      expect(card?.getAttribute('aria-label')).toBe('ورقة');
+    });
+
+    // A checkbox nested inside the card button would be interactive content inside a button:
+    // invalid HTML, and unreachable by keyboard for exactly the reason the div was.
+    it('keeps the bulk checkbox outside the card button rather than nested in it', () => {
+      const root = render({ bulkMode: true }).nativeElement as HTMLElement;
+      const card = root.querySelector('[data-testid="abwab-card-4"]')!;
+
+      expect(card.querySelector('input')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-card-checkbox-4"]')).toBeTruthy();
+    });
+  });
+
+  describe('F-53 — the level that is on screen has an empty state and a distinct no-results state', () => {
+    it('states that there are no doors yet when the level is genuinely empty', () => {
+      const root = render({ roots: [] }).nativeElement as HTMLElement;
+      const state = root.querySelector('[data-testid="abwab-cards-empty"]');
+
+      expect(state?.textContent).toContain(ABWAB_LABELS.emptyTreeMessage);
+      expect(root.querySelector('.abwab-cards__grid')).toBeNull();
+    });
+
+    it('reads differently when a query filtered every door away — the doors exist, the matches do not', () => {
+      const root = render({ isFiltering: true, visibleIds: new Set<number>() }).nativeElement as HTMLElement;
+      const state = root.querySelector('[data-testid="abwab-cards-empty"]');
+
+      expect(state?.textContent).toContain(ABWAB_LABELS.noSearchMatchesMessage);
+      expect(state?.textContent).not.toContain(ABWAB_LABELS.emptyTreeMessage);
+    });
+
+    it('keeps the breadcrumb on screen in the no-results state so a drilled user can get back out', () => {
+      const root = render({ cardId: 2, isFiltering: true, visibleIds: new Set([1, 2]) })
+        .nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-cards-empty"]')).toBeTruthy();
+      expect(Array.from(root.querySelectorAll('[data-testid="abwab-cards-crumb"]'))).toHaveLength(3);
+    });
+  });
+
+  describe('F-55 — the query filters at every level, and a matching root stays openable', () => {
+    it('keeps a matching root drillable with its real child count when no descendant matches', () => {
+      const fixture = render({ isFiltering: true, visibleIds: new Set([1]) });
+      const root = fixture.nativeElement as HTMLElement;
+      const card = root.querySelector('[data-testid="abwab-card-1"]')!;
+      const drilled: number[] = [];
+      fixture.componentInstance.drilled.subscribe((id) => drilled.push(id));
+
+      expect(card.classList.contains('abwab-cards__card--leaf')).toBe(false);
+      expect(card.querySelector('.abwab-cards__meta')?.textContent?.trim()).toBe('1');
+
+      (card as HTMLElement).click();
+      expect(drilled).toEqual([1]);
+    });
+
+    it('applies the query to a drilled level too, not just the root level', () => {
+      const matching = node({ id: 21, name: 'مطابق', parentId: 20, depth: 1 });
+      const other = node({ id: 22, name: 'غير مطابق', parentId: 20, depth: 1 });
+      const parent = node({ id: 20, name: 'أب', liveChildCount: 2, children: [matching, other] });
+      const byId = new Map<number, AbwabNode>([
+        [20, parent],
+        [21, matching],
+        [22, other],
+      ]);
+
+      const root = render({
+        roots: [parent],
+        byId,
+        cardId: 20,
+        isFiltering: true,
+        visibleIds: new Set([20, 21]),
+      }).nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-card-21"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-card-22"]')).toBeNull();
     });
   });
 });

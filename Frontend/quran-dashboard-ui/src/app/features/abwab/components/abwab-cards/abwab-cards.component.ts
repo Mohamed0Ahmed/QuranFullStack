@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 
 export interface AbwabCardsCrumb {
   readonly id: number | null;
@@ -11,6 +12,7 @@ export interface AbwabCardsCrumb {
 @Component({
   selector: 'qd-abwab-cards',
   standalone: true,
+  imports: [QdStateComponent],
   templateUrl: './abwab-cards.component.html',
   styleUrl: './abwab-cards.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -23,6 +25,8 @@ export class AbwabCardsComponent {
   readonly selectedId = input<number | null>(null);
   readonly bulkMode = input(false);
   readonly bulkSelectedIds = input<ReadonlySet<number>>(new Set());
+  readonly isFiltering = input(false);
+  readonly visibleIds = input<ReadonlySet<number>>(new Set());
 
   readonly selected = output<number>();
   readonly bulkToggled = output<number>();
@@ -55,10 +59,25 @@ export class AbwabCardsComponent {
     this.path().map((node) => ({ id: node.id, name: node.name })),
   );
 
-  protected readonly level = computed<readonly AbwabNode[]>(() => {
+  private readonly level = computed<readonly AbwabNode[]>(() => {
     const path = this.path();
     return path.length > 0 ? path[path.length - 1].children : this.roots();
   });
+
+  protected readonly visibleLevel = computed<readonly AbwabNode[]>(() => {
+    const level = this.level();
+    if (!this.isFiltering()) {
+      return level;
+    }
+    const visibleIds = this.visibleIds();
+    return level.filter((node) => visibleIds.has(node.id));
+  });
+
+  protected readonly emptyStateMessage = computed<string>(() =>
+    this.isFiltering() && this.level().length > 0
+      ? ABWAB_LABELS.noSearchMatchesMessage
+      : ABWAB_LABELS.emptyTreeMessage,
+  );
 
   protected displayOrder(node: AbwabNode): number {
     const isTopLevel = this.cardId() === null;

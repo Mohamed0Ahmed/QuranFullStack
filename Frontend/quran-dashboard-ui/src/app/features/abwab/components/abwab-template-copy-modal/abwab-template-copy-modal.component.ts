@@ -39,6 +39,7 @@ export class AbwabTemplateCopyModalComponent {
   protected readonly titleId = `abwab-template-copy-modal-title-${nextModalId++}`;
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly pickedIds = signal<ReadonlySet<number>>(new Set());
+  protected readonly applyBusy = signal(false);
 
   protected get descriptionText(): string { return ABWAB_LABELS.templateCopyDescription; }
   protected get emptyTemplateText(): string { return ABWAB_LABELS.templateCopyEmptyTemplate; }
@@ -107,10 +108,12 @@ export class AbwabTemplateCopyModalComponent {
 
   protected confirm(): void {
     const targets = Array.from(this.pickedIds());
-    if (targets.length === 0) {
+    if (targets.length === 0 || this.applyBusy()) {
       return;
     }
+    this.applyBusy.set(true);
     this.applyTemplate()(targets).subscribe((outcome) => {
+      this.applyBusy.set(false);
       if (outcome.kind !== 'success') {
         this.errorMessage.set(outcome.message);
         return;
@@ -126,6 +129,7 @@ export class AbwabTemplateCopyModalComponent {
 
   private resetDraft(): void {
     this.errorMessage.set(null);
+    this.applyBusy.set(false);
     this.pickedIds.set(new Set());
     this.picker()?.reset();
   }

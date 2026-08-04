@@ -166,6 +166,7 @@ export const ABWAB_LABELS = {
   sectionOrderInputAriaLabel: (sectionName: string): string => `أدخل ترتيبًا جديدًا لـ«${sectionName}»`,
 
   archiveEmptyMessage: 'لا توجد أبواب مؤرشفة.',
+  archiveNoSearchMatchesMessage: 'لا يوجد باب مؤرشف مطابق لبحثك.',
   restoreButton: 'استرجاع',
   restoreParentFirstHint: 'استرجع الأب أولًا',
   restoreAnnouncement: 'استُرجع الباب',
@@ -185,6 +186,7 @@ export const ABWAB_LABELS = {
 
   loadErrorFallback: 'تعذر تحميل شجرة الأبواب. حاول مرة أخرى.',
   emptyTreeMessage: 'لا توجد أبواب بعد.',
+  noSearchMatchesMessage: 'لا يوجد باب مطابق لبحثك.',
   loadingTreeMessage: 'جارٍ تحميل شجرة الأبواب...',
 
   relationsOp: 'العلاقات',

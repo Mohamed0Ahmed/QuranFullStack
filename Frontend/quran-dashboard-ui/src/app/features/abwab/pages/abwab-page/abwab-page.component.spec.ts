@@ -558,6 +558,53 @@ describe('AbwabPageComponent', () => {
       expect(root.querySelector('[data-testid="abwab-card-2"]')).toBeTruthy();
       expect(root.querySelector('[data-testid="abwab-card-1"]')).toBeNull();
     });
+
+    // F-53: the cards branch used to render a bare breadcrumb over a blank grid.
+    it('a zero-match cards query states that nothing matched, and keeps the breadcrumb', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+      queryParamMap$.next(convertToParamMap({ view: 'cards', q: 'لا يوجد باب بهذا الاسم' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-cards-empty"]')?.textContent).toContain(
+        ABWAB_LABELS.noSearchMatchesMessage,
+      );
+      expect(root.querySelector('[data-testid="abwab-cards-crumb"]')).toBeTruthy();
+    });
+
+    // F-55: the pruned tree turned a matching root whose children did not match into a card
+    // that looked and behaved like a leaf, hiding its real children behind a dead affordance.
+    it('leaves a matching root openable in cards, with its real child count, when no descendant matches', async () => {
+      const nested: AbwabTreeDto = {
+        doors: [
+          door({ id: 1, name: 'العلم بالله', orderValue: 1, globalOrderValue: 1 }),
+          door({ id: 2, name: 'الرسول', parentId: 1, orderValue: 1 }),
+        ],
+        sections: TREE.sections,
+        version: 'v1',
+      };
+      getTestBed().resetTestingModule();
+      queryParamMap$.next(convertToParamMap({ view: 'cards', q: 'العلم' }));
+      await TestBed.configureTestingModule({
+        imports: [AbwabPageComponent],
+        providers: [
+          provideRouter([]),
+          { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(treeResponse(nested)) } },
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } },
+          },
+        ],
+      }).compileComponents();
+      vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const card = root.querySelector('[data-testid="abwab-card-1"]')!;
+      expect(card.classList.contains('abwab-cards__card--leaf')).toBe(false);
+      expect(card.querySelector('.abwab-cards__meta')?.textContent?.trim()).toBe('1');
+    });
   });
 
   describe('T503/T504 — bulk mode and bulk archive', () => {
@@ -816,6 +863,42 @@ describe('AbwabPageComponent', () => {
 
       expect(root.querySelector('[data-testid="abwab-archive-row-3"]')).toBeNull();
       expect(root.querySelector('[data-testid="abwab-page-archive-empty"]')).toBeTruthy();
+    });
+
+    // F-54: «لا توجد أبواب مؤرشفة.» under a zero-match query is a lie about the data — the
+    // archive is not empty, the query simply matched nothing in it.
+    it('says nothing matched, not that the archive is empty, when a query prunes every archived door', () => {
+      queryParamMap$.next(convertToParamMap({ archive: '1', q: 'لا يوجد شيء بهذا الاسم' }));
+      const root = render().nativeElement as HTMLElement;
+      const state = root.querySelector('[data-testid="abwab-page-archive-empty"]');
+
+      expect(state?.textContent).toContain(ABWAB_LABELS.archiveNoSearchMatchesMessage);
+      expect(state?.textContent).not.toContain(ABWAB_LABELS.archiveEmptyMessage);
+    });
+
+    it('still says the archive is empty when it genuinely holds nothing', () => {
+      const noArchive: AbwabTreeDto = { doors: [TREE.doors[0]], sections: TREE.sections, version: 'v1' };
+      getTestBed().resetTestingModule();
+      queryParamMap$.next(convertToParamMap({ archive: '1' }));
+      TestBed.configureTestingModule({
+        imports: [AbwabPageComponent],
+        providers: [
+          provideRouter([]),
+          { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(treeResponse(noArchive)) } },
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } },
+          },
+        ],
+      });
+      vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-page-archive-empty"]')?.textContent).toContain(
+        ABWAB_LABELS.archiveEmptyMessage,
+      );
     });
   });
 

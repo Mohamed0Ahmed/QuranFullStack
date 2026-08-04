@@ -3,7 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { DebugElement } from '@angular/core';
 import { By } from '@angular/platform-browser';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 
 import { AbwabSectionsModalComponent } from './abwab-sections-modal.component';
 import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
@@ -78,6 +78,34 @@ describe('AbwabSectionsModalComponent', () => {
     (root.querySelector('[data-testid="abwab-sections-modal-add"]') as HTMLElement).click();
 
     expect(createSection).toHaveBeenCalledWith('قسم جديد');
+  });
+
+  // F-63: unlike the rename, the create carries no version token, so nothing downstream rejects a
+  // duplicate — the add button has to refuse the second click itself.
+  it('creates one section for two clicks on add, and re-enables add when the create fails', () => {
+    const inFlight = new Subject<AbwabWriteOutcome<AbwabSectionDto | null>>();
+    const createSection = vi.fn().mockReturnValue(inFlight);
+    const { fixture } = render({ createSection });
+    const root = fixture.nativeElement as HTMLElement;
+    const addButton = () => root.querySelector('[data-testid="abwab-sections-modal-add"]') as HTMLButtonElement;
+
+    const input = root.querySelector<HTMLInputElement>('[data-testid="abwab-sections-modal-name-input"]')!;
+    input.value = 'قسم جديد';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    addButton().click();
+    fixture.detectChanges();
+    addButton().click();
+    fixture.detectChanges();
+
+    expect(createSection).toHaveBeenCalledTimes(1);
+    expect(addButton().disabled).toBe(true);
+
+    inFlight.next(conflict('يوجد قسم بنفس الاسم'));
+    fixture.detectChanges();
+
+    expect(addButton().disabled).toBe(false);
   });
 
   it('renames a section using its current version', () => {

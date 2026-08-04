@@ -59,6 +59,8 @@ export class AbwabDoorPickerComponent {
 
   protected readonly pickerName = `abwab-door-picker-${nextPickerId++}`;
 
+  protected readonly doorsErrorMessage = computed(() => (this.status() === 'error' ? this.errorMessage() : ''));
+
   protected readonly searchFoundNothing = computed(
     () => this.searchQuery().trim() !== '' && this.nodes().length > 0,
   );

@@ -137,6 +137,7 @@ export class AbwabTemplatesPageComponent implements OnInit {
   protected get templateDeleteConfirmMessage(): string { return ABWAB_LABELS.templateDeleteConfirm; }
   protected get deleteConfirmLabel(): string { return ABWAB_LABELS.deleteConfirmButton; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
+  protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
 
   protected elementCountLabel(count: number): string {
     return ABWAB_LABELS.templateElementCount(count);
@@ -305,7 +306,11 @@ export class AbwabTemplatesPageComponent implements OnInit {
   }
 
   protected cancelTemplateDelete(): void {
+    if (this.templateDeleteBusy()) {
+      return;
+    }
     this.confirmingTemplateDelete.set(false);
+    this.templateDeleteError.set(null);
   }
 
   protected openCopyModal(): void {

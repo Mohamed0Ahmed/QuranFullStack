@@ -137,10 +137,8 @@ export class AbwabPageComponent implements OnInit {
 
   private readonly searchResult = computed(() => searchAbwabNodes(this.visibleRoots(), this.searchQueryParam()));
 
-  protected readonly displayRoots = computed(() => {
-    const result = this.searchResult();
-    return result.isFiltering ? pruneAbwabNodesToVisible(this.visibleRoots(), result.visibleIds) : this.visibleRoots();
-  });
+  protected readonly searchIsFiltering = computed(() => this.searchResult().isFiltering);
+  protected readonly searchVisibleIds = computed(() => this.searchResult().visibleIds);
 
   protected readonly treeMatchedIds = computed(() => this.searchResult().matchedIds);
 
@@ -196,6 +194,12 @@ export class AbwabPageComponent implements OnInit {
       : this.archivedRoots();
   });
 
+  protected readonly archiveEmptyStateMessage = computed<string>(() =>
+    this.archiveSearchResult().isFiltering && this.archivedRoots().length > 0
+      ? ABWAB_LABELS.archiveNoSearchMatchesMessage
+      : ABWAB_LABELS.archiveEmptyMessage,
+  );
+
   protected readonly bulkSelectedIds = computed(() => new Set(this.selection.bulkSet().keys()));
   protected readonly bulkNames = computed(() => {
     const snapshot = this.facade.snapshot();
@@ -214,7 +218,6 @@ export class AbwabPageComponent implements OnInit {
   protected get treeAriaLabel(): string { return ABWAB_LABELS.treeAriaLabel; }
   protected get archiveTreeAriaLabel(): string { return ABWAB_LABELS.archiveTreeAriaLabel; }
   protected get emptyLabel(): string { return ABWAB_LABELS.emptyTreeMessage; }
-  protected get archiveEmptyLabel(): string { return ABWAB_LABELS.archiveEmptyMessage; }
   protected get loadingLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
   protected get archiveLabel(): string { return ABWAB_LABELS.archiveOp; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }

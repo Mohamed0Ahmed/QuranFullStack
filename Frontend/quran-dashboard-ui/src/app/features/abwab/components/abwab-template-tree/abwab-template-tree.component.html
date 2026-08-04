@@ -36,7 +36,7 @@
           [value]="row.node.orderValue"
           [attr.data-testid]="'abwab-template-tree-order-input-' + row.node.id"
           (keydown)="onOrderKeydown($event, row.node.id)"
-          (blur)="commitOrderEdit(row.node.id, $event.target)"
+          (blur)="cancelOrderEdit(row.node.id)"
         />
       } @else {
         <span

@@ -8,6 +8,17 @@
   [attr.data-testid]="testIdPrefix() + '-search'"
   (input)="onSearchInput($event)"
 />
+@if (doorsErrorMessage(); as error) {
+  <qd-state
+    class="abwab-door-picker__error"
+    variant="error"
+    [reserve]="true"
+    [message]="error"
+    [actionLabel]="retryLabel"
+    (action)="retry.emit()"
+    [attr.data-testid]="testIdPrefix() + '-doors-error'"
+  />
+}
 <div class="abwab-door-picker__list qd-scroll-stable">
   @for (row of rows(); track row.node.id) {
     <div
@@ -64,18 +75,9 @@
         [loadingLabel]="loadingLabel"
         [attr.data-testid]="testIdPrefix() + '-loading'"
       />
-    } @else if (status() === 'error') {
-      <qd-state
-        variant="error"
-        [reserve]="true"
-        [message]="errorMessage()"
-        [actionLabel]="retryLabel"
-        (action)="retry.emit()"
-        [attr.data-testid]="testIdPrefix() + '-doors-error'"
-      />
     } @else if (searchFoundNothing()) {
       <qd-state variant="empty" [message]="noMatchesLabel" [attr.data-testid]="testIdPrefix() + '-no-matches'" />
-    } @else {
+    } @else if (doorsErrorMessage() === '') {
       <qd-state variant="empty" [message]="emptyMessage()" [attr.data-testid]="testIdPrefix() + '-doors-empty'" />
     }
   }

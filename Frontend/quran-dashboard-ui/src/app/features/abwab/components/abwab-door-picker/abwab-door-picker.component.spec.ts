@@ -147,3 +147,50 @@ describe('AbwabDoorPickerComponent — the excluded-door contract (slice K)', ()
     expect(el(fixture, 'picker-pick-2')).toBeTruthy();
   });
 });
+
+describe('AbwabDoorPickerComponent — the load-state surfaces (F-66, F-97)', () => {
+  const LOAD_ERROR = 'تعذّر تحميل الأبواب.';
+
+  it('shows the doors error and its retry above the rows when the load fails while rows are still bound', () => {
+    const fixture = render({ status: 'error', errorMessage: LOAD_ERROR });
+
+    const error = el(fixture, 'picker-doors-error');
+    expect(error).toBeTruthy();
+    expect(error!.textContent).toContain(LOAD_ERROR);
+    // The stale rows survive: the failure arrived over an already-rendered list.
+    expect(el(fixture, 'picker-pick-1')).toBeTruthy();
+    expect(error!.compareDocumentPosition(el(fixture, 'picker-pick-1')!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it('emits retry from the error shown over stale rows', () => {
+    const fixture = render({ status: 'error', errorMessage: LOAD_ERROR });
+    const retried = vi.fn();
+    fixture.componentInstance.retry.subscribe(retried);
+
+    (el(fixture, 'qd-state-action') as HTMLButtonElement).click();
+
+    expect(retried).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the empty state, never an empty danger box, when the error status carries no message', () => {
+    const fixture = render({ nodes: [], status: 'error' });
+
+    expect(el(fixture, 'picker-doors-error')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="qd-state-error"]')).toBeNull();
+    expect(el(fixture, 'picker-doors-empty')!.textContent).toContain('لا توجد أبواب.');
+  });
+
+  it('shows the error alone — not the empty state too — when the load fails with no rows', () => {
+    const fixture = render({ nodes: [], status: 'error', errorMessage: LOAD_ERROR });
+
+    expect(el(fixture, 'picker-doors-error')!.textContent).toContain(LOAD_ERROR);
+    expect(el(fixture, 'picker-doors-empty')).toBeNull();
+  });
+
+  it('keeps the loading skeleton and the plain empty state on their own statuses', () => {
+    expect(el(render({ nodes: [], status: 'loading' }), 'picker-loading')).toBeTruthy();
+    expect(el(render({ nodes: [], status: 'empty' }), 'picker-doors-empty')).toBeTruthy();
+  });
+});

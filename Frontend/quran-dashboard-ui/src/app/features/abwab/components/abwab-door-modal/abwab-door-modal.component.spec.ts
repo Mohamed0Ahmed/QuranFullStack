@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 
 import { AbwabDoorModalComponent } from './abwab-door-modal.component';
-import { AbwabWriteController } from '../../state/abwab-write.controller';
+import { AbwabWriteController, AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
 import { CreateDoorCommand } from '../../../../core/api/generated/models/create-door-command';
 import { EditDoorBody } from '../../../../core/api/generated/models/edit-door-body';
@@ -179,6 +179,49 @@ describe('AbwabDoorModalComponent', () => {
     });
   });
 
+  // F-63: the create command carries no version, so a second dispatch is indistinguishable from a
+  // deliberate second door. The save button is what has to refuse it.
+  describe('the save button refuses a second submit while the write is in flight', () => {
+    function saveButton(fixture: ReturnType<typeof render>): HTMLButtonElement {
+      return (fixture.nativeElement as HTMLElement)
+        .querySelector('[data-testid="abwab-door-modal-save"]') as HTMLButtonElement;
+    }
+
+    it('creates one door for two clicks, and re-enables save when the create fails', () => {
+      const inFlight = new Subject<AbwabWriteOutcome<AbwabDoorDto>>();
+      const createDoor = vi.fn().mockReturnValue(inFlight);
+      const fixture = render({ parentId: null, activeSectionId: 4 }, { createDoor });
+
+      setName(fixture, 'باب جديد');
+      clickSave(fixture);
+      clickSave(fixture);
+
+      expect(createDoor).toHaveBeenCalledTimes(1);
+      expect(saveButton(fixture).disabled).toBe(true);
+
+      inFlight.next({ kind: 'conflict', message: 'يوجد باب بنفس الاسم' });
+      fixture.detectChanges();
+
+      expect(saveButton(fixture).disabled).toBe(false);
+    });
+
+    it('leaves save enabled when a validation failure stops the submit before any write', () => {
+      const createDoor = vi.fn().mockReturnValue(new Subject<AbwabWriteOutcome<AbwabDoorDto>>());
+      const fixture = render({ parentId: null, activeSectionId: null, sections: SECTIONS }, { createDoor });
+
+      setName(fixture, 'باب جديد');
+      clickSave(fixture);
+
+      expect(createDoor).not.toHaveBeenCalled();
+      expect(saveButton(fixture).disabled).toBe(false);
+
+      pickSection(fixture, 7);
+      clickSave(fixture);
+
+      expect(createDoor).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('M12 — the dirty guard blocks close with unsaved input; the inline error surface renders the backend message', () => {
     it('does not close immediately when the form is dirty, and closes once discard is confirmed', () => {
       const fixture = render({}, {});
@@ -289,6 +332,17 @@ describe('AbwabDoorModalComponent', () => {
       clickSave(fixture);
 
       expect(captured!.version).toBe(EXISTING_DOOR.version);
+    });
+
+    it('shares the create path\'s in-flight guard, so two clicks send one edit', () => {
+      const updateDoor = vi.fn().mockReturnValue(new Subject<AbwabWriteOutcome<AbwabDoorDto>>());
+      const fixture = render({ door: EXISTING_DOOR }, { updateDoor });
+
+      setName(fixture, 'الألوهية المعدّلة');
+      clickSave(fixture);
+      clickSave(fixture);
+
+      expect(updateDoor).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { Observable, Subject, of } from 'rxjs';
 
 import { AbwabTemplateCopyModalComponent } from './abwab-template-copy-modal.component';
 import { AbwabNode } from '../../models/abwab.models';
@@ -38,13 +38,17 @@ interface RenderOptions {
   readonly doorsLoading?: boolean;
   readonly doorsError?: string | null;
   readonly applyOutcome?: AbwabWriteOutcome<AbwabDoorDto[] | null>;
+  readonly applyResponse?: Observable<AbwabWriteOutcome<AbwabDoorDto[] | null>>;
 }
 
 function render(options: RenderOptions = {}) {
   getTestBed().resetTestingModule();
   const applyTemplate = vi
     .fn()
-    .mockReturnValue(of(options.applyOutcome ?? ({ kind: 'success', data: null } as AbwabWriteOutcome<AbwabDoorDto[] | null>)));
+    .mockReturnValue(
+      options.applyResponse ??
+        of(options.applyOutcome ?? ({ kind: 'success', data: null } as AbwabWriteOutcome<AbwabDoorDto[] | null>)),
+    );
 
   TestBed.configureTestingModule({ imports: [AbwabTemplateCopyModalComponent] });
   const fixture = TestBed.createComponent(AbwabTemplateCopyModalComponent);
@@ -123,6 +127,27 @@ describe('AbwabTemplateCopyModalComponent', () => {
       click('abwab-template-copy-modal-confirm');
       expect(applyTemplate).toHaveBeenCalledWith([2, 3]);
     });
+  });
+
+  // F-61: the apply carries no version token, so nothing downstream can tell a duplicate apply
+  // from a deliberate one — the modal itself has to refuse the second click.
+  it('does not re-issue the apply while the first one is still in flight', () => {
+    const inFlight = new Subject<AbwabWriteOutcome<AbwabDoorDto[] | null>>();
+    const { fixture, el, click, applyTemplate } = render({ applyResponse: inFlight });
+    const confirmButton = () => el('abwab-template-copy-modal-confirm') as HTMLButtonElement;
+
+    click('abwab-template-copy-modal-pick-1');
+    click('abwab-template-copy-modal-confirm');
+    click('abwab-template-copy-modal-confirm');
+
+    expect(applyTemplate).toHaveBeenCalledTimes(1);
+    expect(confirmButton().disabled).toBe(true);
+
+    // A failed apply has to hand the button back, or the retry is impossible.
+    inFlight.next({ kind: 'conflict', message: 'يوجد باب بنفس الاسم تحت الهدف' });
+    fixture.detectChanges();
+
+    expect(confirmButton().disabled).toBe(false);
   });
 
   it('keeps the selection and shows the message when the apply conflicts', () => {

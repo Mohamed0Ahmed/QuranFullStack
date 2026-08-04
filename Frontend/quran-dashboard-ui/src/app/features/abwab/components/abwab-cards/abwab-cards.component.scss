@@ -49,12 +49,21 @@
   gap: var(--qd-space-3);
 }
 
-.abwab-cards__card {
+.abwab-cards__cell {
   position: relative;
+}
+
+.abwab-cards__card {
+  display: block;
+  inline-size: 100%;
+  text-align: start;
   background: var(--qd-surface);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
   padding: var(--qd-space-3);
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
   cursor: pointer;
 }
 
@@ -112,6 +121,7 @@
 }
 
 .abwab-cards__meta {
+  display: block;
   color: var(--qd-text-muted);
   font-size: 0.75rem;
   margin-block-start: var(--qd-space-2);

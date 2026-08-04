@@ -126,8 +126,15 @@ export class AbwabTemplateTreeComponent {
     if (event.key === 'Enter') {
       this.commitOrderEdit(nodeId, event.target);
     } else if (event.key === 'Escape') {
-      this.editingOrderId.set(null);
+      this.cancelOrderEdit(nodeId);
     }
+  }
+
+  protected cancelOrderEdit(nodeId: number): void {
+    if (this.editingOrderId() !== nodeId) {
+      return;
+    }
+    this.editingOrderId.set(null);
   }
 
   protected commitOrderEdit(nodeId: number, target: EventTarget | null): void {
