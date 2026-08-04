@@ -12,63 +12,43 @@ strategy about *which tests to run and when*, **this strategy controls test sele
 its own scope. Test *quality* rules (test-guard, CODING_PRINCIPLES) and Quranic data
 safety rules are unaffected and always apply.
 
-The **Backend** baselines below were re-taken **2026-07-29** at the close of the
-`abwab-relations` feature (phase 7, T704) and re-verified at the `abwab-templates` Slice A PR
-boundary, on a developer machine with Docker up,
-`resources/import-sources/` staged, and the canonical dump at
-`resources/db-dumps/quran-canonical/` present (regenerated against this tree's migration head
-when `abwab-relations` added its migration — a stale dump fails loud rather than skipping, per
-§3 Tier A/C).
+**This document does not carry test counts.** It used to, and they drifted: the figures here
+stated 1,843 backend tests and 191 files / 2,161 frontend tests while the suites actually ran
+1,862 and 199 / 2,525. A count written in prose is wrong the moment the next test lands, and
+nothing in this repo re-checks it — there is no CI (§8). So the rule is:
 
-**Every Backend number below is unchanged from the previous re-measurement, and that is the
-finding — the Frontend row moved once, at the end of `abwab-templates` Slice B, and only there
-(see the review-fix paragraph two below).**
-`abwab-relations` wrote **no tests at all**, by explicit decision (the gaps and their paying
-triggers are in `docs/TESTING_DEBT.md`), so `Tests.Abwab` stayed at **46** and the Frontend suite
-stayed at 190 files / 2,158 tests — the phase-6 work repaired existing fixtures rather than adding
-cases, and an unchanged Frontend count is the check that it did.
+> **Never record a test count, file count, or pass total in this file, in a README, or in a
+> commit message as a standing fact. Run the command and read the number.** A count belongs in
+> evidence for a specific run, dated and attached to that run — never in prose that outlives it.
 
-The route smoke tier also stayed at **140**, which contradicts the feature plan's expectation that
-it would grow: all three new relations routes are catalogued **`ParityOnly`**, so they satisfy
-`SmokeCoverageParityTests` — which is two `[Fact]`s over the whole catalog, not a per-route
-theory — without adding a dispatched case. Recorded here because the plan's prediction, not the
-measurement, was wrong.
+The commands that produce each current number are in §5 (Backend) and §6 (Frontend). Every
+`dotnet test` line prints `Passed! - Failed: N, Passed: N, Skipped: N, Total: N`; `npm test`
+prints `Test Files` and `Tests`. That output is the number; this file is not.
 
-**`abwab-templates` (2026-07-29) moved none of them either, and that is again the finding.**
-The same no-new-tests posture, a second time: `Tests.Abwab` **46**, the full Backend suite
-**1,843**, no-pipeline **1,086**, route smoke **140 passed / 0 skipped with the data tier having
-run** (all **nine** new templates routes are `ParityOnly`, so the parity gate's two set-comparison
-`[Fact]`s absorb them without adding a dispatched case), and the Frontend suite re-measured at
-**190 spec files / 2,158 tests / 0 failures** after the Slice B work — the identical figure. The
-Frontend number is the load-bearing one here: Slice B extracted the door modal's four authoring
-fields into a shared form, and an unchanged count is the evidence that
-`abwab-door-modal.component.spec.ts` kept passing **unchanged** rather than being adjusted to fit
-the refactor. The partition identity re-verifies as **1,086 + 617 + 140 = 1,843**. The canonical
-dump was regenerated in Slice A against migration head `20260729162330_AddAbwabTemplates`.
+Baselines are taken on a developer machine with Docker up, `resources/import-sources/` staged,
+and the canonical dump at `resources/db-dumps/quran-canonical/` present and regenerated against
+this tree's migration head. A stale dump fails loud rather than skipping (§3 Tier A/C).
 
-The Slice B **review-fix round (2026-07-30) then moved the Frontend count for the first time in
-three features: 191 spec files / 2,161 tests / 0 failures (205.45 s)**. The three cases are one
-new file, `abwab-templates.facade.spec.ts`, pinning the correctness fix that round exists for —
-the selected template's identity, i.e. that a failed switch shows no template rather than the
-previous one, while a failed *refresh* of the same template keeps it on screen. The no-new-tests
-posture is otherwise intact; nothing else in the round adjusted an existing spec, and no Backend
-number moved (the round is frontend + docs only).
+**The partition identity is a rule, not a number.** The no-pipeline filter, the all-pipeline
+filter, and the smoke filter MUST partition the Backend suite losslessly: run all three plus the
+unfiltered suite and confirm the three totals sum to the full total, with no family falling
+outside all three and none counted twice. Re-verify whenever a namespace is added — a new
+top-level namespace lands in the no-pipeline set by default, a new *pipeline* family must be
+added to both pipeline filters, and anything under `QuranDashboard.Tests.Smoke.` must be a
+genuine route-smoke test. This identity is what catches an accidental namespace collision with
+the two legacy `*SmokeTests` classes that live in other families.
 
-The pipeline row is **derived, not re-run** — this feature touches no pipeline namespace:
-`1,843 − 1,086 − 140 = 617`, which is what the partition identity below is for:
+**A no-new-tests posture is a legitimate finding, and the way to record it is a dated evidence
+line in `docs/TESTING_DEBT.md`, not a frozen count here.** Several features (`abwab-relations`,
+`abwab-templates`) shipped deliberately without new tests; their uncovered areas and paying
+triggers are recorded there. Note that routes catalogued **`ParityOnly`** satisfy
+`SmokeCoverageParityTests` — two `[Fact]`s over the whole catalog, not a per-route theory —
+without adding a dispatched case, so adding routes does not necessarily move the smoke total.
 
-| Run | Tests | Duration | Skipped |
-| --- | --- | --- | --- |
-| Backend full suite | 1,843 | 5 m 46 s | 0 |
-| Backend no-pipeline (Tier B/C) | 1,086 | ~23 s | 0 |
-| Backend ten pipeline families (Tier D) — derived, last timed 2026-07-28 | 617 | 3 m 54 s | 0 |
-| Backend route smoke (§3 Tier A/C route gate) | 140 | ~45 s | 0 |
-| Frontend full suite (191 spec files) | 2,161 | 205.45 s | 0 |
-
-Counts and durations are indicative, not contractual. The zero-skip column holds only
-because the staged canonical resources *and* the canonical dump were present; on a machine
-without them the canonical families self-skip (§3 Tier D, §3 Tier E) and the data-smoke rows
-self-skip, leaving 127 passed on the smoke tier (§3 Tier A/C).
+Durations quoted anywhere in this file are indicative order-of-magnitude guidance for choosing a
+tier, never assertions of fact. The zero-skip property holds only when the staged canonical
+resources *and* the canonical dump are present; without them the canonical families and the
+data-smoke rows self-skip (§3 Tier D, §3 Tier E).
 
 ## 2. Core principles
 
@@ -107,27 +87,27 @@ below are validated against the namespaces that exist in this tree — they are 
 not universal commands for unrelated future features.
 
 ```bash
-# Focused namespace (20 tests, ~1 s):
+# Focused namespace (fastest; any area):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build \
   --filter "FullyQualifiedName~QuranDashboard.Tests.Api.RateLimiting"
 
-# Whole API slice — Access, ApiBehavior, Health, Middleware, RateLimiting (60 tests, ~10 s):
+# Whole API slice — Access, ApiBehavior, Health, Middleware, RateLimiting (seconds):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build \
   --filter "FullyQualifiedName~QuranDashboard.Tests.Api"
 
-# One explorer read-model family (266 tests, ~18 s):
+# One explorer read-model family (seconds):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build \
   --filter "FullyQualifiedName~QuranDashboard.Tests.Quran.WordsWordTypes"
 
-# Route smoke tier (140 tests, ~52 s) — REQUIRED at Tier A when the phase touched an API
+# Route smoke tier (~1 min; boots Testcontainers) — REQUIRED at Tier A when the phase touched an API
 # route, a request/response contract, authentication/authorization, middleware, or binding:
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
 
-# Frontend words feature (93 spec files, 1,384 tests, ~98 s):
+# Frontend words feature (~2 min):
 cd Frontend/quran-dashboard-ui
 npm test -- --include="src/app/features/words/**/*.spec.ts"
 ```
@@ -138,7 +118,7 @@ The complete Backend or Frontend suite MUST NOT be demanded for an ordinary phas
 
 Run after a vertical slice, a substantial User Story, or a related group of phases.
 
-Backend broad regression — the **no-pipeline** run (~21 s, 1,086 tests):
+Backend broad regression — the **no-pipeline** run:
 
 ```bash
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
@@ -152,8 +132,8 @@ names.** Do not maintain a second list of kept families here; it drifts the mome
 is added. To see what a run actually covers, read the `!~` terms above against
 `Backend/tests/QuranDashboard.Tests/` (`grep -rn "^namespace" Backend/tests/QuranDashboard.Tests/ | sort -u`).
 It excludes the pipeline namespaces **completely —
-including the fast unit tests that live inside them** (617 tests) — and it excludes
-`QuranDashboard.Tests.Smoke.` (140 tests), which has its own gate below. It is a fast broad
+including the fast unit tests that live inside them** — and it excludes
+`QuranDashboard.Tests.Smoke.`, which has its own gate below. It is a fast broad
 regression tier, not full coverage; the excluded families run under the Tier A/C route gate
 and the Tier D/E gates.
 
@@ -211,19 +191,20 @@ route through routing, authorization, model binding, and serialization; a bidire
 
 The evidence MUST state **whether the data tier ran or skipped**. `Tests.Smoke.Data`
 restores the canonical Quran dump from `resources/db-dumps/quran-canonical/` and self-skips
-when that dump is absent (140 passed with it; **127 reasoned, not freshly re-measured** —
-140 minus the 13 data-tier tests (`QuranDashboard.Tests.Smoke.Data`) that self-skip without the
-dump, none of which are among the Abwab-global-order additions, so the 13-test gap carries
-forward unchanged). A present dump that is corrupt or stale — sha256 or migration-head mismatch —
-fails loud rather than skipping, which is what happened on this feature's own first re-measurement
-pass: the dump predated the `AddAbwabGlobalOrderValue` migration and was regenerated
-(`Backend/scripts/create-smoke-dump --yes`) before the 140-passed number above was taken.
-The same rule bit again in `abwab-relations`: `AddAbwabDoorRelations` moved the migration head,
-so the dump was regenerated with the same command as part of that feature's phase 1 before any
-smoke run counted as evidence. **Any migration invalidates the dump — regenerate it in the same
-change, never at the next run's expense.**
-"140 passed, 0 skipped" and "127 passed, data tier skipped" are both valid evidence; an
-unqualified "smoke passed" is not.
+when that dump is absent, so the tier has two legitimate totals: the full one with the dump
+staged, and that total minus the `QuranDashboard.Tests.Smoke.Data` tests without it. Read both
+from the run; do not carry either here.
+
+A present dump that is corrupt or stale — sha256 or migration-head mismatch — fails loud rather
+than skipping. This has bitten repeatedly: `AddAbwabGlobalOrderValue` and then
+`AddAbwabDoorRelations` each moved the migration head and the dump had to be regenerated
+(`Backend/scripts/create-smoke-dump --yes`) before any smoke run counted as evidence.
+**Any migration invalidates the dump — regenerate it in the same change, never at the next
+run's expense.**
+
+Evidence must be qualified: "N passed, 0 skipped, data tier ran" and "N passed, data tier
+skipped" are both valid; an unqualified "smoke passed" is not, and neither is a bare number
+with no statement of which of the two it is.
 
 ### Tier D — Slow pipeline / canonical acceptance (trigger-based)
 
@@ -272,7 +253,7 @@ Rules:
 Run on a machine where `resources/import-sources/` (including the enriched
 morphology artifact) is staged:
 
-- full Backend suite (~5 m 20 s);
+- full Backend suite;
 - full Frontend suite;
 - Backend + Frontend production builds;
 - canonical-source acceptance (Quran.Import canonical tests, WordsDisplay
@@ -345,28 +326,28 @@ Tests.Smoke               Tests.Smoke.Data
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api.RateLimiting"
 
-# Whole API slice (60 tests, ~10 s):
+# Whole API slice (seconds):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api"
 
-# Broad no-pipeline regression (1,086 tests, ~21 s; excludes the ten pipeline namespaces
+# Broad no-pipeline regression (~30 s; excludes the ten pipeline namespaces
 # and the smoke namespace entirely):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build \
   --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab.&FullyQualifiedName!~QuranDashboard.Tests.Smoke."
 
-# Route smoke tier (140 tests, ~52 s; boots the real API composition over Testcontainers):
+# Route smoke tier (~1 min; boots the real API composition over Testcontainers):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
 
-# Full Backend suite (1,843 tests, ~5 m 34 s):
+# Full Backend suite (several minutes):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build
 
 # One pipeline family (example — Translations):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build --filter "FullyQualifiedName~.Quran.Translations."
 
-# All ten pipeline families (617 tests, ~3 m 54 s):
+# All ten pipeline families (several minutes):
 dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
   --no-build \
   --filter "FullyQualifiedName~.Quran.Import.|FullyQualifiedName~.Quran.WordsDisplay.|FullyQualifiedName~.Quran.WordsMorphology.|FullyQualifiedName~.Quran.WordsMorphologyEnriched.|FullyQualifiedName~.Quran.WordsSimpleI3rab.|FullyQualifiedName~.Quran.Mutashabihat.|FullyQualifiedName~.Quran.Navigation.|FullyQualifiedName~.Quran.Tafsirs.|FullyQualifiedName~.Quran.Translations.|FullyQualifiedName~.Quran.FullI3rab."
@@ -375,21 +356,17 @@ dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
 `--no-build` requires a preceding `dotnet build Backend/QuranDashboard.sln` for the
 current code state (§7).
 
-**Partition check (re-measured 2026-07-29, not asserted):** the no-pipeline filter, the
-all-pipeline filter, and the smoke filter partition the suite losslessly —
-**1,086 + 617 + 140 = 1,843**, exactly the full-suite total, with zero failures and zero
-skips. Three of the four runs were fresh on 2026-07-29 **against the `abwab-relations` tree**;
-the pipeline term is the identity's remainder rather than a fourth run, which is legitimate only
-because the other three were measured against this same tree. `Tests.Abwab` is **still 46** —
-`abwab-relations` added a fourth table, three routes, and a whole frontend modal without adding a
-single test, deliberately (`docs/TESTING_DEBT.md`), so the identity holds by all three terms
-standing still rather than by two moving together. No test
-family falls outside all three tiers, and none is
-counted twice. Re-verify this three-way identity whenever a namespace is added: a new
-top-level namespace lands in the no-pipeline set by default, a new *pipeline* family must be
-added to both pipeline filters, and anything landing under `QuranDashboard.Tests.Smoke.`
-must be a genuine route-smoke test — the identity is what catches an accidental namespace
-collision with the two legacy `*SmokeTests` classes that live in other families.
+**Partition check — run it, do not read it here.** The no-pipeline filter, the all-pipeline
+filter, and the smoke filter MUST partition the suite losslessly: their three totals sum to the
+unfiltered total, no family falls outside all three, none is counted twice. Verify by running
+all four and summing; a remainder term may stand in for the pipeline run **only** when the other
+three were measured against the same tree in the same session.
+
+Re-verify whenever a namespace is added: a new top-level namespace lands in the no-pipeline set
+by default, a new *pipeline* family must be added to both pipeline filters, and anything landing
+under `QuranDashboard.Tests.Smoke.` must be a genuine route-smoke test — the identity is what
+catches an accidental namespace collision with the two legacy `*SmokeTests` classes that live in
+other families.
 
 ## 6. Frontend command catalog
 
@@ -406,20 +383,19 @@ cd Frontend/quran-dashboard-ui
 # Focused spec file:
 npm test -- --include="src/app/features/words/data-access/*.spec.ts"
 
-# Focused feature glob (93 files, 1,384 tests, ~98 s):
+# Focused feature glob (~2 min):
 npm test -- --include="src/app/features/words/**/*.spec.ts"
 
-# Full Frontend suite (191 files, 2,161 tests, ~205 s):
+# Full Frontend suite (several minutes):
 npm test
 
 # Production build (separate from tests — the test builder ignores dist/):
 npm run build
 
 # Browser E2E — opt-in, chromium only, boots both servers (see e2e/README.md).
-# 68 passed, ~3 m 40 s (measured 2026-08-02): two sequential Playwright projects —
-# `default` (28 tests, 2 workers) then `abwab` (40 tests across eight specs, 1 worker) —
-# since a Global-scope Abwab reorder resequences every live root and can race a second
-# worker's write (e2e/README.md):
+# Two sequential Playwright projects: `default` (2 workers) then `abwab` (1 worker).
+# The abwab project MUST stay at 1 worker — a Global-scope Abwab reorder resequences
+# every live root and can race a second worker's write (e2e/README.md):
 npm run e2e                                   # headless (both projects, the gate)
 npm run e2e:headed                            # visible browser
 npm run e2e:ui                                # Playwright UI mode
