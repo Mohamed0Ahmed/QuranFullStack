@@ -118,6 +118,11 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 
 - Breakpoints in `layout/breakpoints.ts` must stay in sync with `../../styles/_breakpoints.scss`.
 - `safe-html` sanitizes HTML; it does not bypass Angular security.
+- `ui/skeleton/grid-template-columns.ts` splits a `grid-template-columns` string on top-level
+  whitespace only (`depth === 0`, `grid-template-columns.ts:22`), so a parenthesised function such
+  as `minmax(0, 1fr)` stays one track — but `repeat(n, …)` collapses to a single track instead of
+  expanding to `n`. Skeleton `rowTemplate` inputs must therefore be explicit space-separated track
+  lists, never `repeat()`, or the skeleton renders the wrong column count.
 - Browser-only helpers here keep SSR/test guards where needed (`matchMedia`, `document.body`, and similar).
 
 ## Related

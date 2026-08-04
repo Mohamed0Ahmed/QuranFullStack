@@ -31,8 +31,6 @@ export class ConfirmDialogComponent {
   private readonly cancelButton = viewChild<ElementRef<HTMLButtonElement>>('cancelButton');
 
   constructor() {
-    // cdkTrapFocusAutoCapture does not run in jsdom, and can resolve before the button renders in a
-    // browser; this is both the test path and the guard for that race.
     effect(() => {
       if (this.open()) {
         setTimeout(() => this.cancelButton()?.nativeElement.focus());

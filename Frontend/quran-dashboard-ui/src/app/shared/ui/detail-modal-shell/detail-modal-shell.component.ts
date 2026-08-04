@@ -68,8 +68,6 @@ export class DetailModalShellComponent {
       }
     });
 
-    // The very first render never steals focus; afterwards every transition that
-    // destroys the focused control must hand focus somewhere deterministic.
     effect(() => {
       const visibility = this.visibility();
       const depth = this.depth();
@@ -82,8 +80,6 @@ export class DetailModalShellComponent {
         return;
       }
 
-      // Close (Escape/backdrop/Close button) keeps a retained stack; focus moves
-      // to the restore control so keyboard users can immediately reopen it.
       if (visibility === 'closed') {
         setTimeout(() => this.restoreButton()?.nativeElement.focus(), 0);
         return;
@@ -93,17 +89,11 @@ export class DetailModalShellComponent {
         return;
       }
 
-      // A pop destroys the frame the user was standing in — and at depth one it
-      // also destroys the Back button they pressed.
       if (depth < previousDepth) {
         this.restoreFocusAfterPop(depth);
         return;
       }
 
-      // A push swaps the frame while the dialog stays open, destroying the link
-      // that was activated to open it. The trap only holds focus that is already
-      // inside it, so without this the same "focus left on the document" failure
-      // the pop had happens on the way in.
       if (depth > previousDepth) {
         this.focusFrameEntryControl();
       }

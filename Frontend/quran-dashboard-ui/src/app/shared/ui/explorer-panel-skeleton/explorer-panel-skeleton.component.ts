@@ -4,8 +4,6 @@ import { QdSkeletonRowsComponent } from '../skeleton/skeleton-rows.component';
 
 export type QdPanelSkeletonShape = 'lines' | 'rows' | 'panel';
 
-// `qd-explorer-panel-skeleton` is kept as a thin alias so existing call-sites keep
-// working; default shape 'lines' reproduces the original six-line skeleton byte-for-byte.
 @Component({
   selector: 'qd-panel-skeleton, qd-explorer-panel-skeleton',
   standalone: true,

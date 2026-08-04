@@ -15,10 +15,6 @@ import { QdTabDirective } from './tab.directive';
 export type QdTabsOrientation = 'horizontal' | 'vertical';
 export type QdTabsLayout = 'inline' | 'grid';
 
-// The app-wide tab-strip (UI_STYLE_SYSTEM.md §17 `qd-tabs`). It does not own
-// selection: consumers project their own `qdTab` elements with their `[selected]`
-// flag and click/routerLink handling. This only supplies the `role="tablist"`
-// wrapper and RTL-aware roving-tabindex keyboard nav (Arrow/Home/End).
 @Component({
   selector: 'qd-tabs',
   standalone: true,

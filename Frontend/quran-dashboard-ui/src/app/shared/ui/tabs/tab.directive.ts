@@ -1,8 +1,5 @@
 import { Directive, ElementRef, inject, input, signal } from '@angular/core';
 
-// One tab inside a `qd-tabs` tablist. Supplies only the ARIA `tab` role, the
-// visual classes, and the roving `tabindex` that `qd-tabs` assigns; selection
-// and navigation stay consumer-owned — this directive never sets `selected`.
 @Directive({
   selector: '[qdTab]',
   standalone: true,

@@ -1,18 +1,9 @@
-<!--
-  All three states render the same one-line box (Feature 030, N3 row 6): the stat used to unmount on a
-  list error and collapse the toolbar, and its loading bar sat ~1.4px taller than the loaded line. Each
-  branch is now a `.explorer-result-count` line whose height is the one real line box.
--->
 @if (hasError()) {
-  <!-- Visual placeholder only (aria-hidden, no live region): the number is unavailable, and the page's
-       own role="alert" error state is the single place that announces and explains the failure. -->
   <p class="explorer-result-count" aria-hidden="true" data-testid="explorer-result-count-error">
     <span class="explorer-result-count__label">{{ labelPrefix() }}:</span>
     <span class="explorer-result-count__value explorer-result-count__value--unavailable">{{ labels.unavailable }}</span>
   </p>
 } @else if (loading()) {
-  <!-- The visual skeleton stays aria-hidden; the sr-only text inside the role="status" container is
-       what assistive technology announces (same pattern as the scope-counts / association-filter hints). -->
   <p
     class="explorer-result-count"
     role="status"

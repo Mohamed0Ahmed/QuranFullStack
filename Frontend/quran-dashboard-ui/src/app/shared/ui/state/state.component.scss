@@ -2,23 +2,10 @@
   display: block;
 }
 
-/* Sits the error's single recovery action under its message. The button itself
-   is the global .qd-btn (+ .qd-btn-secondary); only this local placement belongs here. */
 .qd-state__action {
   margin-block-start: var(--qd-space-3);
 }
 
-/* `reserve` input (state.component.ts), additive and off by default. Sized from the shared
-   control token per styles/README.md's standing rule ("size a new reserved slot from these
-   tokens; never re-measure the control by hand") — the same family `.qd-checkbox` /
-   `.qd-modal--fixed` draw from. Mirrors detail-modal-shell's count span (UI_STYLE_SYSTEM.md
-   §17, N3 doctrine): only the message fades in, opacity only, never a translate/height
-   animation.
-   The reservation sits on the message span, not the container: the container already
-   carries `padding: var(--qd-space-6)` (`_components.scss`) on both block edges, which
-   alone exceeds one control row, so a min-block-size there would be a no-op. `display:
-   block` is set explicitly (not left to the parent's flex blockification) so the span
-   still reserves correctly if the container's layout ever changes. */
 .qd-state--reserve .qd-state__message {
   display: block;
   min-block-size: var(--qd-control-block-size);

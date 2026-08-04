@@ -2,8 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 
 import { splitGridTemplateColumns } from './grid-template-columns';
 
-// Rows reuse the caller's `rowTemplate` as their grid so loading rows line up with
-// the real, loaded row grid exactly.
 @Component({
   selector: 'qd-skeleton-rows',
   standalone: true,
