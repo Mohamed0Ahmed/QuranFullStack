@@ -1,17 +1,11 @@
-// Serialized vocabulary of the detail overlay: a typed, versioned frame union carried in
-// the URL. Deliberately NOT imported from Words feature models — the URL grammar is a
-// shareable contract (old links must keep meaning) while feature models may evolve.
 
 export const DETAIL_OVERLAY_QUERY_KEYS = {
-  /** Repeated query key; values are ordered bottom → top of the stack. */
   frame: 'qdDetail',
-  /** Present (value `1`) while the dialog is visible; absent when closed. */
   open: 'qdDetailOpen',
 } as const;
 
 export const DETAIL_OVERLAY_FRAME_VERSION = 'v1' as const;
 
-/** Hard stack cap: a ninth append is refused, never silently dropped. */
 export const DETAIL_OVERLAY_MAX_FRAMES = 8;
 
 export type UniqueFrameMode = 'simple' | 'tashkeel';
@@ -95,8 +89,6 @@ export const CLOSED_DETAIL_OVERLAY_STATE: DetailOverlayUrlState = {
   stack: [],
 };
 
-// Complete-identity equality (every identity AND view field): never compare by numeric id
-// alone, so a push of the identical current top frame is correctly treated as a no-op.
 export function detailFramesEqual(a: DetailFrame, b: DetailFrame): boolean {
   if (a.kind !== b.kind) {
     return false;
