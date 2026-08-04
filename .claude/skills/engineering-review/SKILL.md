@@ -149,7 +149,8 @@ output rather than inventing its rules.
 ## General Review Goals (both stacks)
 
 1. **Clean Code** — clear descriptive names; small focused units; no vague names
-   like `DataItem`, `Obj`, `Temp`, `Info2`; no comments restating obvious code;
+   like `DataItem`, `Obj`, `Temp`, `Info2`; comments forbidden by default per the root
+   `CLAUDE.md` (not merely "no comments restating obvious code");
    readable flow. For deeper checks (intention-revealing names, function size and
    single-level-of-abstraction, command/query separation, when a comment earns its
    keep), see `references/clean-code-guard/naming-and-functions.md` and

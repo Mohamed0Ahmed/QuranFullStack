@@ -18,18 +18,25 @@ Source: Robert C. Martin, *Clean Code*. Summaries: Vivek Khatri Ch. 4, Vivek Kha
 
 ## Comments
 
+> **This project is stricter than the chapter.** The canonical rule is *Comments are forbidden
+> by default* in the root `CLAUDE.md`. Where this file and that rule disagree, **that rule wins**
+> and this section is wrong. The list below is kept as the generic Clean Code position and as the
+> reviewer's vocabulary for naming a violation — it is **not** the bar a comment must clear here.
+
 The foundational rule: **"Don't comment bad code — rewrite it."** Comments are failures to express intent in code. Every comment is a candidate for rename or extract.
 
-### C1. Acceptable comments
+### C1. Comments that earn their keep — generic Clean Code, NOT this project's bar
 
-A short list of comments that earn their keep:
+Clean Code accepts these. **This project accepts only the second kind, and only when omitting it
+would let a competent developer make a change that is wrong** — see the root `CLAUDE.md` for the
+three-part test and the tool-directive carve-out.
 
-- **Legal headers** — license boilerplate, copyright.
-- **Intent** — explaining *why* a decision was made when the choice is non-obvious. Example: `// Use exponential backoff to avoid hammering the rate limiter during retries.`
-- **Warnings of consequences** — `// This function is called during transaction commit; do not raise.`
-- **TODOs** — sparingly, with a tracking ticket reference. `// TODO(JIRA-1234): switch to streaming once API supports it.`
-- **Public API documentation** — docstrings that document *contract* (preconditions, postconditions, raises), not body.
-- **Amplification** — calling attention to something non-obvious. `# The `+ 1` accounts for the inclusive end of the range; see RFC §3.2.`
+- **Legal headers** — license boilerplate, copyright. *(Here: only in vendored/third-party files.)*
+- **Intent** — explaining *why* a decision was made when the choice is non-obvious. Example: `// Use exponential backoff to avoid hammering the rate limiter during retries.` *(Here: the only surviving category, and it must clear the harm test.)*
+- **Warnings of consequences** — `// This function is called during transaction commit; do not raise.` *(Here: this is a form of intent, and qualifies only if the harm is real.)*
+- **TODOs** — sparingly, with a tracking ticket reference. *(Here: a TODO with no tracked item is forbidden outright.)*
+- **Public API documentation** — docstrings that document *contract*. *(Here: forbidden. No XML doc or JSDoc on controllers, endpoints, DTOs, components or services — nothing consumes it.)*
+- **Amplification** — calling attention to something non-obvious. *(Here: try a name or a README line first; amplification alone is not a justification.)*
 
 ### C2. Banned comments
 
@@ -107,9 +114,10 @@ Team rules override personal preference. Read the file, then write.
 
 Before you ship code:
 
-1. Walk every comment you added. For each, ask: does it explain *why*? If it explains *what*, delete it.
-2. Walk every documentation comment you added. Is it paraphrasing the signature? Delete the paraphrase; keep only contract documentation.
+1. Walk every comment you added. For each: could a competent developer make a **wrong** change without it? If not, delete it. "It explains why" is not sufficient here — see the root `CLAUDE.md`.
+2. Walk every documentation comment you added. In this project, XML doc and JSDoc on controllers, endpoints, DTOs, components and services are forbidden regardless of content. Delete them.
 3. Any commented-out code? Delete it.
 4. Any `Step 1`, `Step 2`, `First, ...`, or `Then, ...` scaffolding comments? Delete.
+5. Could the surviving comment be a better name, a smaller function, or a line in the nearest `README.md`? Then it is not a comment. Move it.
 5. Are variables declared near their use, not at the top?
 6. Does the casing, quoting, and import order match the file's existing style?
