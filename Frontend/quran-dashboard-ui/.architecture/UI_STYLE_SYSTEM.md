@@ -1268,7 +1268,7 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   precedent truncates a name/title inside a flexible item —
   `detail-modal-shell.component.scss:28-35`'s `__title` (`flex: 1; min-inline-size:
   0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap`) is the
-  canonical shape, and `abwab-tree.component.scss:70-75`'s own `__name` already
+  canonical shape, and `abwab-tree.component.scss`'s own `.abwab-tree__name` rule already
   does the same. **This section states that as the rule, in both directions:** a
   name column composes `.qd-truncate` (`_utilities.scss`) on a flex item that owns
   `flex: 1` (or a reserved floor via `flex: 1; min-inline-size:

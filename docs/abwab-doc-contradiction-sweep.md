@@ -938,3 +938,132 @@ larger after"*). Two are stale — F19 above, and F16/F18's strategy-side omissi
   not 14) and F23 (five undocumented scripts, not four).
 - **Nothing was modified.** `git status --porcelain` after the sweep shows exactly one entry: this
   file.
+
+---
+
+## 6. Resolution — implementation pass, 2026-08-04
+
+Branch `docs-cleanup-sweep`, four commits. **Documentation and deletions only**: nothing outside
+`*.md` was touched, verified by `git diff --name-only` against the base.
+
+Three decisions taken by the user after the sweep governed this pass:
+
+- **D1 — long-lived docs stop counting.** A doc states the rule and points at the source of
+  truth; it does not assert "nine surfaces", "twelve consumers", "14 skills", "two buffered
+  folders". A stale count is **not** fixed by writing a fresh count — the fresh one drifts on the
+  next slice. The only enumeration in this repo that had not drifted is `SmokeRouteCatalog`,
+  because `SmokeCoverageParityTests` fails by name when it does.
+- **D2 — auth is the next feature**, not part of this pass. Nothing here touches the auth surface.
+- **D3 — tests come before any feature going forward.** The five smoke rows keyed to "when write
+  protection lands" are re-keyed as acceptance criteria of the auth feature.
+
+D1 changed two of §3's own recommendations. F17 said "change 463 to 40" and F19 said "re-measure
+the 11/11" — both would have replaced a stale count with a fresh one. They were re-read against D1
+before being applied: `TESTING_STRATEGY.md` now points at `e2e/README.md` for the measured figure
+and states none of its own, and the TESTING_DEBT line states the invariant instead of a case count.
+
+### Per-finding record
+
+| ID | Outcome | Fix |
+|---|---|---|
+| F01 | **recorded, gate kept** | `Frontend/…/features/abwab/README.md:17` — dated status note; the requirement at `:13` is untouched. Also `docs/TESTING_DEBT.md:20` (D3 header) |
+| F02 | closed | `AGENTS.md:206` → `None.` Mirror restored: byte-identical to `CLAUDE.md` except the filename |
+| F03 | closed | `Backend/api/QuranDashboard.Api/Controllers/README.md:47` — children-only apply, the empty-root `400`, and the `(target, child)` collision pairs |
+| F05 | closed | `Frontend/…/features/abwab/README.md:450` — the reveal *rewrites* `modal`, retaining `relations-<id>-closed` |
+| F06 | closed | `Frontend/…/features/abwab/README.md:956` |
+| **F07** | **deferred — out of scope** | Untouched by instruction. `BulkMoveAsync`'s validation ordering is a code/API-contract decision the user has not taken; the README (`Writes/Abwab/README.md:145`) and two test comments (`AbwabDoorWriteBehaviorTests.cs:332`, `SmokeAbwabWriteTests.cs:771`) still state an ordering the code does not have, and no test discriminates. **This is the one finding that may need a CODE change, and it is still open.** |
+| F08 | closed | `Frontend/…/src/app/shared/README.md:27` — the slice-L placement contract |
+| F09 | closed | `Frontend/…/features/abwab/README.md:266` |
+| F10 | closed | `Backend/api/QuranDashboard.Api/README.md:31` — limiter runs before auth, deliberately |
+| F11 | closed | `docs/design-preview/README.md:9` — re-charted adopted-and-historical; `:145` records the dark theme as the one unreconciled point |
+| F12 | closed | `PRODUCT.md:51`, `DESIGN.md:6`, `UI_STYLE_SYSTEM.md:415`. The report was never tracked in this repo at all (`git log --all` → nothing), so the pointers were dangling from the start; §15 is named as the surviving record |
+| F13 | closed (D1) | `docs/design-preview/README.md:25` — the three abwab contracts listed **by role**, each noting the copy later slices reversed |
+| F14 | closed | `SKILLS_AND_ARCHITECTURE_GUIDE.md:389` |
+| F15 | closed | `.claude/skills/speckit-analyze/SKILL.md:66` **and** `.agents/skills/speckit-analyze/SKILL.md:61` — converge's unfilled-template escape hatch, ported verbatim to both trees |
+| F16 | closed (D1) | `TESTING_STRATEGY.md:303` and `:429` — "a directory under `src/app/features/`", not a list |
+| F17 | closed (D1) | `TESTING_STRATEGY.md:466` — points at `e2e/README.md`, states no figure |
+| F18 | closed (D1) | `TESTING_STRATEGY.md:149` — the filter *is* the coverage definition; the kept-family list is gone |
+| F19 | closed (D1) | `docs/TESTING_DEBT.md:70` — the invariant, not a case count |
+| F20 | closed (D1) | `docs/README.md:35` — `ls -d docs/feature-*/` plus the N-2 rule, no folder list. Deletion itself under Task 3 |
+| F21 | closed | `Backend/report/README.md:39` — deletion loses evidence, it does not break a verb |
+| F22 | closed | `Backend/tools/QuranDashboard.DataImporter/README.md:8` → `Backend/AGENTS.md` |
+| F23 | closed | `Backend/scripts/README.md:19` — five rows added; `drop-db`/`reset-db` marked destructive with their fail-closed `--yes` gates written down |
+| F24 | closed (D1) | `Frontend/…/src/app/shared/README.md:42` — grep, not a consumer list |
+| F25 | closed (D1) | `UI_STYLE_SYSTEM.md:1498` and `shared/README.md:88` — the blast radius is whatever applies `qdModalScrollLock`, which now includes every `qd-confirm-dialog` |
+| F26 | closed (D1) | `UI_STYLE_SYSTEM.md:177` — `_tokens.scss` named authoritative; the transcription is explicitly not trusted to be complete |
+| F27 | closed | `Backend/…/Controllers/README.md:28` — restore's parent-still-archived `409` |
+| F28 | closed | `Backend/…/Controllers/README.md:30` — the reorder `scope` field and its two `400`s |
+| F29 | closed | `Backend/api/QuranDashboard.Api/README.md:43` — `access/me`'s provisioning `409` |
+| F30 | closed | `docs/abwab-ux-audit.md:3` — CLOSED BACKLOG header names this as a verified example of its stale citations |
+| F31 | closed (D1) | `Backend/report/README.md:14` — the table describes **kinds** of folder; `ls` answers what is in the tree |
+| F32 | closed (D1) | `UI_STYLE_SYSTEM.md:1113` |
+| F33 | closed | `UI_STYLE_SYSTEM.md:1271` — cites the selector, which cannot drift, not a line range |
+| F34 | closed | `Backend/…/Controllers/README.md:137` — the spec documents no error codes at all |
+| F35 | closed | `Backend/…/Controllers/README.md:42` — the add hangs off its parent template |
+| F36 | closed | `docs/abwab-ux-audit.md:3` — same header, item 15 named as a verified example |
+| F37 | closed (D1) | `docs/README.md:31` — defers to `CLAUDE.md`'s never-deleted list rather than keeping a second copy |
+| F38 | closed (D1) | `SKILLS_AND_ARCHITECTURE_GUIDE.md:64` — `ls` is the roster, and the `.claude` vs `.agents` drift is now stated outright |
+| F39 | closed | `docs/abwab-ux-audit.md:3` — same header, the open-feature claim named |
+| F40 | closed | `Frontend/…/features/abwab/README.md:6` — "Status: shipped", no slice-count |
+
+**39 findings: 38 closed, 1 deferred (F07).**
+
+### The enumeration drift tests this pass owes
+
+D1 removes the stale counts but not the reason they went stale. `docs/TESTING_DEBT.md` gains a new
+section with **E1–E3**, one parity test each — the `--qd-z-*` layer scale, the chrome-inert blast
+radius, and the `.qd-modal-backdrop` consumer set — modelled on `SmokeCoverageParityTests` and each
+keyed to a concrete trigger. Writing them is the **next** pass; until they land, the
+rule-plus-pointer wording is the whole safeguard.
+
+### Task 3 — the lifecycle sweep
+
+**N-2 buffer: `feature-ux-slice-k` and `feature-ux-slice-l` kept.** They are the two most recently
+closed features that entered the buffer at all: slice M (`feb47cf3`) and the nav-progress work
+(`4f1ac91c`) merged straight to `dev` without planning folders, so they never took a slot and
+cannot evict one. Un-numbered `feature-<name>/` folders were treated as ordinary feature folders,
+with no separate class — per the user's instruction.
+
+**Deleted (15 folders whole):** `feature-032-rate-limiting`, `feature-033-auth-roles-permissions`,
+`feature-abwab-doors`, `feature-abwab-global-order`, `feature-abwab-mandatory-section`,
+`feature-abwab-relations`, `feature-abwab-templates`, and `feature-ux-slice-{a,b,c,d,e,f,h,j}` —
+all under `docs/`. Plus `feature-ux-slice-g/plan.md`, `feature-ux-slice-i/plan.md`, and four
+phase-completion reports under `Backend/report/feature-abwab-global-order/`. Two empty directories
+left by the seeder deletion were removed from disk.
+
+**Kept as evidence, judged per file:**
+
+| File | Why it outlived its folder |
+|---|---|
+| `docs/feature-ux-slice-g/evidence.md` | `docs/TESTING_DEBT.md` row 9 cites it as **the only check that exists** for the template tree's menu paths (the T703 browser walk; jsdom cannot produce the events) |
+| `docs/feature-ux-slice-i/evidence.md` | `docs/TESTING_DEBT.md` §ux-slice-i cites it for the `Tests.Smoke.Data` **RAN** statement on the series' highest-risk correctness work, which has zero automated coverage |
+| `Backend/report/feature-abwab-global-order/001-phase1-migration-and-backfill.md` | The only record of a hand-appended `migrationBuilder.Sql(...)` backfill — a documented deviation from the no-hand-written-migrations rule. Its four sibling phase-completion reports carry no such fact and were deleted |
+
+Each of the three carries a new "Retained evidence" header explaining why it survived and that its
+own citations now resolve in git history.
+
+**Repointed before deletion** — `AGENTS.md:206`; `docs/README.md:35`;
+`Frontend/…/features/abwab/README.md` (the `## Related` plan list → "this file is the current
+record", plus the slice-b and templates-plan citations at `:569` and `:884`);
+`Frontend/…/e2e/README.md:93`; `TESTING_STRATEGY.md:435`; and the two buffered plans
+(`feature-ux-slice-k/plan.md:5`, `feature-ux-slice-l/plan.md:3`) which named deleted siblings.
+
+**Citations deliberately left pointing into git history**, each with a header saying so:
+`docs/abwab-ux-audit.md`, `docs/engineering-review-full-project-2026-07-18.md`, the three retained
+evidence files, and this report. Repointing a dated record at today's READMEs would falsify what it
+witnessed.
+
+**`docs/abwab-ux-audit.md`: kept, not retired.** All 23 items shipped across slices A–M, so it is a
+closed backlog — but the four ⟲ USER REVERSAL entries and the appendix pairing each with the text
+it invalidated are the only written record of decisions the user changed mid-series. It now opens
+with a CLOSED BACKLOG header stating that its per-item citations are pre-slice and naming three
+verified-false examples (F30, F36, F39), and pointing readers at the feature README instead.
+
+### Known residue
+
+- **`EfAbwabTemplateApplyWriter.cs:18`** cites `docs/feature-abwab-templates/plan.md §5.1` in an
+  XML-doc comment. `.cs` files are out of this pass's scope, so it is untouched. It is
+  **provenance-only** — the comment states the children-only axiom directly in the two lines above
+  and cites the plan only for *why the reversal happened* — so nothing depends on the plan being
+  readable. The one-line edit for a future in-scope pass: drop the parenthetical path, or point it
+  at `Persistence/Writes/Abwab/README.md`.
