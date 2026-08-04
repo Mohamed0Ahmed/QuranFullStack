@@ -154,8 +154,6 @@ public static class ApiMessages
     public const string AbwabDoorRelationDuplicate = "توجد علاقة من هذا النوع بالفعل مع هذا الباب";
     public const string AbwabDoorRelationNotFound = "العلاقة غير موجودة";
 
-    // The pre-check names the colliding doors; the 23505 race backstop cannot, since Postgres does not
-    // report which row lost. Both paths answer 409, and only the naming differs.
     private const string AbwabDoorRelationDuplicatePrefix = "توجد علاقة من هذا النوع بالفعل مع";
 
     public static string AbwabDoorRelationDuplicateWith(IReadOnlyList<string> doorNames) =>
@@ -186,9 +184,6 @@ public static class ApiMessages
     public const string AbwabTemplateApplyEmpty = "القالب لا يحتوي عناصر لنسخها";
     public const string AbwabTemplateApplyCollision = "يوجد باب بنفس اسم أحد عناصر القالب داخل الباب المستهدف";
 
-    // The whole copy fails on any collision (all-or-nothing), so the message names every
-    // (target, child) pair that blocked it. The 23505 race backstop names none, and falls back to
-    // the sentence above.
     private const string AbwabTemplateApplyCollisionPrefix = "لم يتم النسخ — أسماء موجودة داخل الأبواب المستهدفة";
 
     public static string AbwabTemplateApplyCollisionWith(IReadOnlyList<AbwabTemplateApplyCollisionPair> collisions) =>

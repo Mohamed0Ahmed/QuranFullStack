@@ -110,8 +110,6 @@ public sealed class AbwabTemplatesController(
 
         return outcome switch
         {
-            // A multi-create has no single resource URI, so the location is the collection the new
-            // doors joined — the AbwabDoorRelationsController judgment.
             ApplyTemplateOutcome.Success success =>
                 Created("api/abwab/doors",
                     ApiResponse<IReadOnlyList<AbwabDoorDto>>.Ok(success.CreatedDoors, ApiMessages.AbwabTemplateApplied)),

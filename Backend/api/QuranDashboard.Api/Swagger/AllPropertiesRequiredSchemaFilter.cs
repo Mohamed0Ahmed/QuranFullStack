@@ -3,9 +3,6 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace QuranDashboard.Api.Swagger;
 
-// System.Text.Json serializes every property of the response DTOs (nulls included), so nullable
-// properties are always present on the wire; marking all properties required makes the spec and
-// generated clients reflect that.
 public sealed class AllPropertiesRequiredSchemaFilter : ISchemaFilter
 {
     public void Apply(IOpenApiSchema schema, SchemaFilterContext context)

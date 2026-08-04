@@ -4,13 +4,10 @@ public sealed class RateLimitingOptions
 {
     public const string SectionName = "RateLimiting";
 
-    // Secure by default: ships false everywhere; enabled via environment override only after the
-    // deploy-time verification gates. When false the partitioner returns a no-op limiter.
     public bool Enabled { get; set; }
 
     public string ClientIpHeaderName { get; set; } = "X-Real-IP";
 
-    // General limiter (token bucket) — applies to every non-exempt request except /api/health*.
     public int TokenLimit { get; set; } = 30;
 
     public int TokensPerPeriod { get; set; } = 30;
@@ -19,14 +16,11 @@ public sealed class RateLimitingOptions
 
     public int QueueLimit { get; set; }
 
-    // Health limiter (fixed window) — applies to /api/health* only, per IP.
     public int HealthPermitLimit { get; set; } = 300;
 
     public int HealthWindowSeconds { get; set; } = 60;
 }
 
-// Registered with ValidateOnStart() so invalid configuration throws at startup, not as runtime
-// rate-limiter errors.
 internal sealed class RateLimitingOptionsValidator : IValidateOptions<RateLimitingOptions>
 {
     public ValidateOptionsResult Validate(string? name, RateLimitingOptions options)

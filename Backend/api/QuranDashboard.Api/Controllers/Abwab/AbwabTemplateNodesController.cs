@@ -6,8 +6,6 @@ using QuranDashboard.Application.Abwab.Commands.Templates.ReorderTemplateNode;
 
 namespace QuranDashboard.Api.Controllers.Abwab;
 
-// Split from AbwabTemplatesController rather than a ninth action on it: nine template actions would
-// sit at the controller soft threshold, and the node routes address template-nodes/{nodeId} anyway.
 [ApiController]
 [Route("api/abwab")]
 public sealed class AbwabTemplateNodesController(

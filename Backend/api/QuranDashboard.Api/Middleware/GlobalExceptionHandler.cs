@@ -23,8 +23,6 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
 
         if (exception is UserProvisioningEmailConflictException)
         {
-            // An expected business conflict (email already registered under a different Logto
-            // subject), not a server fault — log at Warning and map to 409, never the generic 500.
             logger.LogWarning(
                 "Provisioning email conflict while processing request {traceId} {requestId} {method} {path}",
                 traceId,

@@ -32,8 +32,6 @@ public sealed class RateLimitRejectionWriter(IOptions<RateLimitingOptions> optio
             return Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds));
         }
 
-        // Both built-in limiters normally supply RetryAfter metadata; fall back to the relevant
-        // window/period only if it is ever missing. The health-path rule is shared with the partitioner.
         var limits = options.Value;
         return RateLimitRequestClassifier.IsHealthRequest(context.HttpContext.Request.Path)
             ? limits.HealthWindowSeconds

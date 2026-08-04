@@ -79,8 +79,6 @@ internal static class RateLimitingRegistration
                     TokensPerPeriod = options.TokensPerPeriod,
                     ReplenishmentPeriod = TimeSpan.FromSeconds(options.ReplenishmentPeriodSeconds),
                     QueueLimit = options.QueueLimit,
-                    // The partition forces AutoReplenishment=false and drives replenishment from its own
-                    // timer; setting it explicitly also avoids a redundant per-limiter timer allocation.
                     AutoReplenishment = false,
                 });
     }
