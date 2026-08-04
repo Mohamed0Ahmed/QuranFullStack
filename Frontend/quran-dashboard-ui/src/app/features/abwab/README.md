@@ -3,14 +3,27 @@
 **HOW rules:** `.architecture/UI_STYLE_SYSTEM.md`, `.architecture/FRONTEND_STRUCTURE.md`,
 `.architecture/API_INTEGRATION_GUIDELINES.md` (project root). This file is the WHAT.
 
-**Status: Slice B2 complete**, plus the superset's global order, door relations, and the
-templates workshop — the full page (tree, cards, bulk mode, move, reorder, search, archive
-view, sections management, row context menu — Slice B1, phases 4 + 5), the browser e2e flows
-and the two test-doc amendments (`docs/feature-abwab-doors/plan-slice-b2.md`), the relations
-modal with its three entry points, and `/abwab/templates`. The routes are `Open` (no auth)
-per `plan.md` §10 — **do not** include this feature in a `dev → main` release until write
-protection lands; that block now covers **seven** more write-capable routes (template
-create/delete, node add/edit/reorder/delete, and the apply).
+**Status: shipped.** The full doors page (tree, cards, bulk mode, move, reorder, search, archive
+view, sections management, row context menu), the superset's global order, door relations, the
+templates workshop at `/abwab/templates`, and the browser e2e flows are all in. The UX slice
+series that followed rewrote search, reveal, the move picker, the confirms and the row menu;
+this file is the current record of all of it, so read it rather than reconstructing the order
+the pieces arrived in.
+
+**The routes are `Open` (no auth), and every write route in this feature is unauthenticated.**
+The requirement stands: **do not** include this feature in a `dev → main` release until write
+protection lands.
+
+> **Status note — 2026-08-04.** The requirement above was not met before release, and this note
+> records that state; it does not waive the requirement and it authorises nothing further.
+> Abwab merged to `main` in PR #63 (`bc61bdaa`) and was deployed by the redeploy commit
+> `b666cb38`, with the production schema at migration 24. Write protection did **not** land:
+> `Backend/api/.../Extensions/WebApplicationExtensions.cs` configures no fallback policy and
+> `api/access/me` remains the only `[Authorize]` endpoint
+> (`Backend/api/QuranDashboard.Api/Authentication/README.md`), so the Abwab write routes are
+> currently reachable anonymously in production. Rate limiting is per-IP and ships disabled, so
+> it is not a substitute. Closing this is the next feature; until it closes, nothing here may be
+> read as permission to ship further write surface unprotected.
 
 ## What this feature does
 

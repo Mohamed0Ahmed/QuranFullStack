@@ -37,10 +37,14 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   `api/abwab/template-nodes/{nodeId}`. A template's name is its root node's name, so there is no
   rename route — editing the root through the node edit **is** the rename. The root refuses
   reordering and deletion alike (`400`); deleting the template is the way. The apply copies the
-  template subtree as a **new child** of each target door and is all-or-nothing: an empty target
-  list is `400` (which is also how "never a root door" is enforced at the wire), an archived target
-  is `400`, an unknown template or target is `404`, and a target that already has a live child
-  named like the template root fails the whole batch with one `409` naming every colliding target.
+  template root's **direct children** as new children of each target door — never the root itself
+  (the ux-slice-g reversal; `Persistence/Writes/Abwab/README.md` holds the axiom) — so each target
+  gains N doors, one per direct child, each with its own subtree beneath it. It is all-or-nothing:
+  an empty target list is `400` (which is also how "never a root door" is enforced at the wire), an
+  **empty-root template** (no live children) is a distinct `400` raised before any target row is
+  read, an archived target is `400`, an unknown template or target is `404`, and a target that
+  already has a live child named like any of the root's direct children fails the whole batch with
+  one `409` naming every colliding **(target, child)** pair.
   None of the Abwab controllers
   carries `///` XML docs (root `CLAUDE.md` comment policy — see "Generated
   contract artifacts" below for what that means for the exported spec).
