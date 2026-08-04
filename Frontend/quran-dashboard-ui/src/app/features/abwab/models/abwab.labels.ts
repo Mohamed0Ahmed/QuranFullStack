@@ -251,9 +251,9 @@ export const ABWAB_LABELS = {
   emptyTreeMessage: 'لا توجد أبواب بعد.',
   loadingTreeMessage: 'جارٍ تحميل شجرة الأبواب...',
 
-  // Relations. Copy is the approved contract's (docs/design-preview/abwab-relations-concept.html),
-  // with one deliberate exception: the contract's `TYPE_META.hier.label` («أعم / أخص», :183) and its
-  // hint paragraph (:155) violate the locked comprehensiveness-only vocabulary. Both are unreachable
+  // Relations. Copy is the approved design contract's, with one deliberate exception: that
+  // contract's «أعم / أخص» type label and its hint paragraph violate the locked
+  // comprehensiveness-only vocabulary. Both are unreachable
   // in the contract's own rendering, and neither string is reproduced here.
   relationsOp: 'العلاقات',
   relationsFlagLabel: 'علاقات',
@@ -360,9 +360,8 @@ export const ABWAB_LABELS = {
   relationsBulkDirectionPreview: (count: number, doorName: string, anchorIsMore: boolean): string =>
     `الأبواب المحددة (${count}) هتبقى ${anchorIsMore ? 'أقل شمولية' : 'أكثر شمولية'} من «${doorName}»`,
 
-  // Templates workshop. Copy is the approved contract's
-  // (docs/design-preview/abwab-templates-concept.html) except where plan §9 names a line the
-  // decisions overrule: «إعادة تسمية» (`:127`) becomes «تعديل القالب», because the root is edited
+  // Templates workshop. Copy is the approved design contract's, except where a decision
+  // overrules a line: «إعادة تسمية» becomes «تعديل القالب», because the root is edited
   // through the full authoring modal like every other node. No conflict copy is authored here —
   // the write path prefers the backend's own Arabic message, so a duplicate string would be dead.
   templatesButton: 'القوالب',

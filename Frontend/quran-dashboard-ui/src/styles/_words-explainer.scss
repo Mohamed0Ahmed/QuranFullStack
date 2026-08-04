@@ -3,8 +3,8 @@
 // These are GLOBAL (not component-scoped) on purpose: each explorer page projects its own example
 // markup into `qd-words-explainer` via `<ng-content>`, and projected content keeps the PAGE's view
 // encapsulation — so the shared visuals cannot live in the component's scoped stylesheet. Pages
-// compose these classes; no page defines a color. All tokens map from the approved comp
-// `docs/design-preview/words-pages-hero.html` (no raw hex): recessed surfaces on the parchment
+// compose these classes; no page defines a color. Every value is a token, never a raw hex:
+// recessed surfaces on the parchment
 // ladder, hairline borders, control radii, and the Amiri Quran face for the illustrative example
 // words. Flat doctrine: no shadow, no gradient, no lift.
 @use 'breakpoints' as bp;

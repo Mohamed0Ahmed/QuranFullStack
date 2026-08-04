@@ -14,8 +14,8 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab;
 /// invariant stated directly).
 ///
 /// Copies the template root's DIRECT CHILDREN as new children of each target, recursively copying
-/// each of their subtrees. The root itself is never copied (ux-slice-g reversal of the original
-/// "root becomes a new child" axiom — docs/feature-abwab-templates/plan.md §5.1).
+/// each of their subtrees. The root itself is never copied — a deliberate reversal of the
+/// original "root becomes a new child" axiom.
 /// </remarks>
 internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : IAbwabTemplateApplyWriter
 {

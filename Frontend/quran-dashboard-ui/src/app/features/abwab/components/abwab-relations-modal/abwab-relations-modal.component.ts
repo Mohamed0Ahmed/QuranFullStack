@@ -57,9 +57,8 @@ const GROUP_DOT_KIND: Readonly<Record<AbwabRelationGroupKey, AbwabRelationKind>>
 let nextModalId = 0;
 
 /**
- * The relations modal (plan §7 T601/T602), implementing `docs/design-preview/abwab-relations-concept.html`:
- * the four display groups, the type segment, the direction pill with its live preview, an
- * expandable/searchable door picker, and one multi-target add. Presentational in the
+ * The relations modal: the four display groups, the type segment, the direction pill with its
+ * live preview, an expandable/searchable door picker, and one multi-target add. Presentational in the
  * `abwab-sections-modal` sense — the read and the two writes arrive as function inputs, bound by
  * the page to `AbwabRelationsController`, so this component never reaches for the facade.
  *
