@@ -105,10 +105,16 @@ there. "Slower but correct" is the right answer for this product.
 - `Backend/.architecture/BACKEND_STRUCTURE.md`, `CLEAN_ARCHITECTURE.md`,
   `API_GUIDELINES.md` — layer boundaries and the `ApiResponse` contract, so a perf
   recommendation does not violate architecture.
-- `Backend/report/database/current-database-tables-and-relationships-report.md` — the
-  read-only database baseline; useful for the index / join-path check.
-- The relevant EF Core entity configurations / `DbContext` and migration files for the
-  changed tables.
+- The relevant EF Core entity configurations under
+  `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/`
+  (`Quran/`, `Abwab/`, `Access/`) — the authoritative declaration of every index, key, and
+  relationship, and therefore the only trustworthy input to an index / join-path check.
+  `Migrations/` records how the live schema got there; `QuranDashboardDbContext` records
+  what is mapped.
+- There is deliberately **no database-baseline report** to read. One existed and was deleted:
+  a snapshot of table shapes and row counts is stale the moment a migration lands, and it was
+  being consulted as if current. If you need live cardinality, measure it in a read-only
+  session and say when you measured it.
 
 If a referenced document is missing, say so rather than inventing its contents.
 
