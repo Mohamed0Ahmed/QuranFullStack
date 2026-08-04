@@ -27,8 +27,6 @@ import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-p
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 
-/** What the node modal is currently authoring. `parentNodeId` is the new node's parent when
- * adding; `nodeId` is the edited node when editing. */
 type AbwabNodeModalState =
   | { readonly mode: 'add'; readonly parentNodeId: number }
   | { readonly mode: 'edit'; readonly nodeId: number };
@@ -178,10 +176,6 @@ export class AbwabTemplatesPageComponent implements OnInit {
       }
       this.namingTemplate.set(false);
       this.newTemplateName.set('');
-      // Selecting the new template is what puts its root — the only node it has — on screen so
-      // it can be authored through the full modal. Through `selectTemplate`, not the facade
-      // directly: every selection change must also close the overlays, or a node id from the
-      // previous template survives the switch in a still-open modal or confirm.
       if (outcome.data) {
         this.selectTemplate(outcome.data.id);
       }
@@ -221,8 +215,6 @@ export class AbwabTemplatesPageComponent implements OnInit {
     }
     const template = this.facade.selectedTemplate();
     if (state === null || template === null) {
-      // Unreachable: the modal only opens over a selected template. No request is invented for a
-      // state that would have to fabricate an id to send.
       return of<AbwabWriteOutcome<unknown>>({ kind: 'invalid', message: ABWAB_LABELS.writeInvalidFallback });
     }
     return this.controller.addNode(template.id, state.parentNodeId, fields);

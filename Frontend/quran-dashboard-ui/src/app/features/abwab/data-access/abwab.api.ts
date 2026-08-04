@@ -22,19 +22,8 @@ import { RestoreDoorBody } from '../../../core/api/generated/models/restore-door
 import { AbwabDoorRelationDto } from '../../../core/api/generated/models/abwab-door-relation-dto';
 import { AddDoorRelationsBody } from '../../../core/api/generated/models/add-door-relations-body';
 
-/**
- * Wire body for door creation. `sectionId` is optional here (unlike the generated
- * `CreateDoorCommand`, where it is a required nullable key) because the backend derives
- * the section from `parentId` when set and 400s on a stated mismatch
- * (plan-slice-b.md §4, input 5) — so the key must be genuinely absent, not `null`, once a
- * parent is given.
- */
 type CreateDoorWireBody = Omit<CreateDoorCommand, 'sectionId'> & { sectionId?: number | null };
 
-/**
- * Same reason as `CreateDoorWireBody`: omitting `sectionId` means "back where it came from", which is
- * the ordinary restore. Only a door being re-sectioned on the way back states one.
- */
 type RestoreDoorWireBody = Omit<RestoreDoorBody, 'sectionId'> & { sectionId?: number };
 
 function buildCreateDoorBody(command: CreateDoorCommand): CreateDoorWireBody {
@@ -47,8 +36,6 @@ export class AbwabApi {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiBaseUrl}/api/abwab`;
 
-  // The only read that observes the response rather than the body: the caller needs the ETag header
-  // beside the envelope. Mapping stays the facade's job.
   getTree(etag: string | null = null): Observable<HttpResponse<ApiResponse<AbwabTreeDto>>> {
     return this.http.get<ApiResponse<AbwabTreeDto>>(`${this.base}/tree`, {
       observe: 'response',
@@ -64,7 +51,6 @@ export class AbwabApi {
     return this.http.put<ApiResponse<AbwabSectionDto>>(`${this.base}/sections/${id}`, body);
   }
 
-  // 204 No Content on success, so HttpClient yields `null` rather than an envelope.
   deleteSection(id: number): Observable<ApiResponse<unknown> | null> {
     return this.http.delete<ApiResponse<unknown> | null>(`${this.base}/sections/${id}`);
   }
@@ -97,8 +83,6 @@ export class AbwabApi {
     return this.http.post<ApiResponse<number[]>>(`${this.base}/doors/bulk-archive`, command);
   }
 
-  // Archive is `DELETE` **with** a body — Angular's `HttpClient.delete` needs `{ body }`.
-  // 204 No Content on success, so HttpClient yields `null` rather than an envelope.
   archiveDoor(id: number, body: DeleteDoorBody): Observable<ApiResponse<unknown> | null> {
     return this.http.delete<ApiResponse<unknown> | null>(`${this.base}/doors/${id}`, { body });
   }
@@ -115,7 +99,6 @@ export class AbwabApi {
     return this.http.post<ApiResponse<AbwabDoorRelationDto[]>>(`${this.base}/doors/${doorId}/relations`, body);
   }
 
-  // 204 No Content on success, so HttpClient yields `null` rather than an envelope.
   deleteRelation(relationId: number): Observable<ApiResponse<unknown> | null> {
     return this.http.delete<ApiResponse<unknown> | null>(`${this.base}/relations/${relationId}`);
   }

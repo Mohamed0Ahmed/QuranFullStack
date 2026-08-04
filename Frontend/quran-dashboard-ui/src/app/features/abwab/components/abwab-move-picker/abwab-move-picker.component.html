@@ -58,8 +58,6 @@
               (input)="onSearchInput($event)"
             />
             <div class="abwab-move-picker__list">
-              <!-- Pinned above the tree and outside it: moving to the top of the section is a
-                   destination, not a door, so neither expansion nor the search reaches it. -->
               <div class="abwab-move-picker__row" [class.abwab-move-picker__row--picked]="pickedParentId() === null">
                 <span class="abwab-move-picker__chevron abwab-move-picker__chevron--leaf" aria-hidden="true"></span>
                 <button
@@ -77,9 +75,6 @@
                   [class.abwab-move-picker__row--picked]="pickedParentId() === row.node.id"
                   [style.--abwab-move-picker-depth]="row.depth"
                 >
-                  <!-- A leaf keeps the element for alignment only: no tab stop, nothing to announce.
-                       Mirrors `abwab-door-picker`'s chevron contract without importing it — the two
-                       lists share a shape, not code. -->
                   <button
                     type="button"
                     class="abwab-move-picker__chevron"

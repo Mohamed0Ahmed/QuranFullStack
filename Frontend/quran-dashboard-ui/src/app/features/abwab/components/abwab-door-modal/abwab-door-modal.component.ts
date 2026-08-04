@@ -94,8 +94,6 @@ export class AbwabDoorModalComponent {
   }
 
   constructor() {
-    // The form resets itself from `initialFields`; this clears only what the shell owns. Reopening
-    // must not surface the previous attempt's error or a half-answered discard prompt.
     effect(() => {
       if (!this.open()) {
         return;
@@ -104,10 +102,6 @@ export class AbwabDoorModalComponent {
       this.confirmingDiscard.set(false);
       this.chosenSectionId.set(null);
       this.sectionMissing.set(false);
-      // The trap now captures straight onto this field (`cdkFocusInitial` in the fields form), so
-      // this call normally re-focuses what is already focused and fires no second focus event.
-      // It stays as the jsdom path — auto-capture cannot fire there — and as the guard for a
-      // capture that resolves before the field renders.
       setTimeout(() => this.fieldsForm()?.focusFirstField());
     });
   }
@@ -130,8 +124,6 @@ export class AbwabDoorModalComponent {
   }
 
   protected submit(): void {
-    // The form and this button live under the same `@if (open())`, so the form is present
-    // whenever the button is clickable.
     const fields = this.fieldsForm()?.current();
     if (!fields) {
       return;

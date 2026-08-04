@@ -57,8 +57,6 @@ export class AbwabRelationsController {
           return { kind: 'error', message: response.message ?? ABWAB_LABELS.relationsLoadError };
         }
         const relations = (response.data ?? []).map(toRelationVm);
-        // Re-checked on arrival, not just on departure: a tree that moved while this request was
-        // out makes the response itself possibly stale, so it is rendered but not kept.
         if (requestValidator !== null && this.adoptCurrentValidator() === requestValidator) {
           this.cache.set(doorId, relations);
         }
@@ -76,8 +74,6 @@ export class AbwabRelationsController {
   ): Observable<AbwabWriteOutcome<AbwabDoorRelationDto[]>> {
     return this.writeController.addDoorRelations(doorId, {
       type: ABWAB_RELATION_KIND_TO_WIRE[kind],
-      // Null for the two mutual types, and the backend refuses a direction sent with one — the
-      // asymmetry is the contract's, not a defensive default.
       direction: direction === null ? null : ABWAB_RELATION_DIRECTION_TO_WIRE[direction],
       targetDoorIds: [...targetDoorIds],
     });

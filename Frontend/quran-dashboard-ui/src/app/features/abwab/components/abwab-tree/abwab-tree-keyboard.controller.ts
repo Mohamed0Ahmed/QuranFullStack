@@ -7,8 +7,6 @@ export interface AbwabTreeRow {
   readonly isExpanded: boolean;
 }
 
-/** Flattens a tree into document order, skipping the children of any node not in
- * `expandedIds` (M8 — collapsed subtrees are skipped, never rendered-and-hidden). */
 export function flattenVisibleAbwabRows(
   roots: readonly AbwabNode[],
   expandedIds: ReadonlySet<number>,
@@ -62,8 +60,6 @@ function moveBy(rows: readonly AbwabTreeRow[], index: number, delta: number): Ab
   return { type: 'focus', id: rows[nextIndex].id };
 }
 
-/** ArrowLeft in RTL / ArrowRight in LTR: expand a collapsed branch, or step into its
- * already-visible first child (the next row in document order). */
 function intoChildOrExpand(row: AbwabTreeRow, rows: readonly AbwabTreeRow[], index: number): AbwabTreeKeyboardIntent {
   if (!row.hasChildren) {
     return NONE;
@@ -75,8 +71,6 @@ function intoChildOrExpand(row: AbwabTreeRow, rows: readonly AbwabTreeRow[], ind
   return next ? { type: 'focus', id: next.id } : NONE;
 }
 
-/** ArrowRight in RTL / ArrowLeft in LTR: collapse an expanded branch, or step out to the
- * parent (the R11-mirrored `qd-tabs` precedent, `tabs.component.ts:82-93`). */
 function outOfChildOrCollapse(row: AbwabTreeRow): AbwabTreeKeyboardIntent {
   if (row.hasChildren && row.isExpanded) {
     return { type: 'collapse', id: row.id };
@@ -84,9 +78,6 @@ function outOfChildOrCollapse(row: AbwabTreeRow): AbwabTreeKeyboardIntent {
   return row.parentId !== null ? { type: 'focus', id: row.parentId } : NONE;
 }
 
-/** Pure key model for the Abwab tree (plan-slice-b.md T413). No DOM: direction is an
- * explicit input, never resolved from `closest('[dir]')` — that stays the presentational
- * component's job. */
 export function resolveAbwabTreeKeyboardIntent(input: AbwabTreeKeyboardInput): AbwabTreeKeyboardIntent {
   const { key, visibleRows, focusedId, direction, bulkMode, shiftKey } = input;
   const index = visibleRows.findIndex((row) => row.id === focusedId);

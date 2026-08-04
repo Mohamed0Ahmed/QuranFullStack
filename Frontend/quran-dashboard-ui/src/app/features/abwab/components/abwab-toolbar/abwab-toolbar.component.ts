@@ -6,7 +6,6 @@ import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab
 import { AbwabView } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
-/** Long enough that a typed word announces once, short enough to feel like a response. */
 const ANNOUNCE_SETTLE_MS = 500;
 
 @Component({
@@ -45,16 +44,12 @@ export class AbwabToolbarComponent {
   private announceTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
-    // A `role="status"` bound straight to the count would speak once per typed character. The
-    // visible number stays live; the announcement waits for the typing to stop. Debouncing the
-    // announcement only — the URL write stays per keystroke, which is a separate open decision.
     effect(() => {
       const query = this.searchQuery();
       const count = this.searchMatchCount();
       untracked(() => {
         this.clearAnnounceTimer();
         if (query === '') {
-          // Clearing announces nothing, and emptying now stops a stale count being re-read later.
           this.announcedCountText.set('');
           return;
         }
@@ -65,7 +60,6 @@ export class AbwabToolbarComponent {
       });
     });
 
-    // Or a navigation away mid-typing announces into a destroyed view.
     inject(DestroyRef).onDestroy(() => this.clearAnnounceTimer());
   }
 

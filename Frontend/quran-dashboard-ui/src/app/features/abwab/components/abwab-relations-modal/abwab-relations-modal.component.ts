@@ -45,8 +45,6 @@ const TYPE_LABELS: Readonly<Record<AbwabRelationKind, string>> = {
   comprehensiveness: ABWAB_LABELS.relationTypeComprehensiveness,
 };
 
-/** The four display groups collapse back onto three dot colors: both شمولية groups are the same
- * relation type seen from the two ends, so they share one marker (contract `:202`). */
 const GROUP_DOT_KIND: Readonly<Record<AbwabRelationGroupKey, AbwabRelationKind>> = {
   similarity: 'similarity',
   opposition: 'opposition',
@@ -245,24 +243,12 @@ export class AbwabRelationsModalComponent {
         this.relations.set([]);
         this.errorMessage.set(null);
         this.status.set('ready');
-        // The instance outlives a close (only the template is torn down), so a confirm still
-        // pending when the modal closed would render again over the next door's list.
         this.pendingDelete.set(null);
         this.deleteBusy.set(false);
         this.deleteError.set(null);
-        // Every read below is untracked on purpose: the count is snapshot-derived, so tracking it
-        // would re-run this whole reset — draft picks included — the moment a write refreshes the
-        // tree. The anchor id and `open` are the only legitimate triggers.
         if (!this.anchorPickMode() && anchorId !== null && this.anchorRelationCount() > 0) {
-          // A zero-count door is answered from the snapshot: the request is skipped, not issued and
-          // then hidden behind an empty state that is only true once it returns.
           this.loadWithSkeleton(anchorId);
         }
-        // Both modes open on a list, so the trap's capture would stop at the first chip or tab
-        // were the picker's search not marked `cdkFocusInitial`. With that mark the trap lands
-        // here itself, and this call normally re-focuses what is already focused. It stays as the
-        // jsdom path — auto-capture cannot fire there — and as the guard for a capture that
-        // resolves before the picker renders.
         setTimeout(() => this.picker()?.focusSearch());
       });
     });
@@ -273,8 +259,6 @@ export class AbwabRelationsModalComponent {
       return;
     }
     this.type.set(kind);
-    // Picks are cleared with the type (contract `:268`): "already linked" is per type, so a
-    // carried-over pick could be one the new type blocks.
     this.pickedIds.set(new Set());
   }
 
@@ -310,8 +294,6 @@ export class AbwabRelationsModalComponent {
       }
       this.errorMessage.set(null);
       this.pickedIds.set(new Set());
-      // Anchor-pick mode shows no groups, so there is nothing here that could confirm the write;
-      // closing hands the user back to the tree, where the flags did move.
       if (anchorPick) {
         this.closed.emit();
         return;
@@ -381,8 +363,6 @@ export class AbwabRelationsModalComponent {
     load$.subscribe((result) => {
       if (result.kind === 'success') {
         this.relations.set(result.relations);
-        // Clearing here is what un-sticks an error the user has already recovered from: before
-        // this, one failed load kept its message on screen for the life of the open modal.
         this.errorMessage.set(null);
         this.status.set('ready');
       } else {

@@ -56,8 +56,6 @@ export class AbwabSectionsModalComponent {
   protected readonly newSectionName = signal('');
   protected readonly editingId = signal<number | null>(null);
   protected readonly editingName = signal('');
-  // Separate from editingId on purpose (§4.2-15): a rename and an order edit are independent
-  // drafts, and only a rename/typed-name counts as unsaved work — see isDirty below.
   protected readonly editingOrderId = signal<number | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
 
@@ -69,7 +67,6 @@ export class AbwabSectionsModalComponent {
   );
   protected readonly confirmingDiscard = signal(false);
 
-  // Unique at any moment: only one row's editing branch renders the input at a time.
   private readonly orderInput = viewChild<ElementRef<HTMLInputElement>>('orderInput');
 
   private readonly pendingOrderFocusId = signal<number | null>(null);
@@ -109,20 +106,12 @@ export class AbwabSectionsModalComponent {
   }
 
   constructor() {
-    // This modal is a static sibling on the page shell, so the instance outlives every close and
-    // only its inner template is destroyed — unlike the door modal, whose drafts live in a
-    // `abwab-door-fields-form` that `@if (open())` throws away. Without this reset «تجاهل
-    // التغييرات» would hide the draft rather than discard it, and the next open would find the
-    // modal dirty before the user touched anything.
     effect(() => {
       if (this.open()) {
         this.resetDraft();
       }
     });
 
-    // Untracked read of pendingOrderFocusId: this effect must fire only when `sections()`
-    // itself changes (the post-refresh render), not when commitOrderEdit sets the pending id
-    // (that moment is handled synchronously by the immediate focusOrderButton call there).
     effect(() => {
       this.sections();
       const id = untracked(this.pendingOrderFocusId);
@@ -226,7 +215,6 @@ export class AbwabSectionsModalComponent {
   }
 
   protected startOrderEdit(section: AbwabTreeSectionDto, event: Event): void {
-    // Stops here (not just on the input) so a future row-level click handler cannot fight it.
     event.stopPropagation();
     this.editingOrderId.set(section.id);
     this.errorMessage.set(null);
@@ -234,8 +222,6 @@ export class AbwabSectionsModalComponent {
   }
 
   protected onOrderKeydown(event: KeyboardEvent, id: number): void {
-    // Mandatory, not cosmetic: the dialog binds (keydown.escape)="requestClose()" on itself, and
-    // without this the modal would close under an in-progress order edit (§4.2-9).
     event.stopPropagation();
     if (event.key === 'Enter') {
       this.commitOrderEdit(id, event.target);
@@ -264,30 +250,21 @@ export class AbwabSectionsModalComponent {
     if (!Number.isInteger(value) || value < 1) {
       return;
     }
-    // The row's *current* version, read at submit time — never a value captured when the
-    // editor opened (matches saveRename above).
     const current = this.sections().find((section) => section.id === id);
     if (!current) {
       return;
     }
-    // Armed here, consumed by the sections()-watching effect above — a successful reorder's
-    // refresh-after-write can move this row and drop the focus the line above just restored.
     this.pendingOrderFocusId.set(id);
     this.reorderSection()(id, value, current.version).subscribe((outcome) => {
       if (outcome.kind === 'success') {
         this.errorMessage.set(null);
       } else {
-        // No refresh follows a failure, so nothing will consume the pending id — clear it here
-        // or a later, unrelated reorder's refresh would steal focus back to this stale row.
         this.pendingOrderFocusId.set(null);
         this.errorMessage.set(outcome.message);
       }
     });
   }
 
-  // No viewChild here: at commit/cancel time every row not being edited renders its own order
-  // button, so a single viewChild() query can't identify which row's button to return focus to.
-  // Scoping by this row's own testid through the host ElementRef is unambiguous.
   private focusOrderButton(id: number): void {
     afterNextRender(
       () => this.elementRef.nativeElement

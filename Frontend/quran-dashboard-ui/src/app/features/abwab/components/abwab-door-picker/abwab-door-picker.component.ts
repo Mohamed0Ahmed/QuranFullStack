@@ -7,9 +7,6 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 export type AbwabDoorPickerStatus = 'ready' | 'loading' | 'error' | 'empty';
 
-// Radio grouping is document-scoped by `name`, and emulated encapsulation does not scope an
-// attribute. Two pickers sharing a literal name would merge into one group across modals, so the
-// name is minted per instance the way these modals already mint their `titleId`.
 let nextPickerId = 0;
 
 interface AbwabDoorPickerRow {
@@ -82,8 +79,6 @@ export class AbwabDoorPickerComponent {
       }
       const hasChildren = node.children.length > 0;
       const isExcluded = excluded.has(node.id);
-      // A search forces every matching path open, so a deep match is never hidden behind a
-      // collapsed ancestor the user never touched.
       const defaultExpanded = isExcluded ? !collapsedExcluded.has(node.id) : expanded.has(node.id);
       const isExpanded = defaultExpanded || (query !== '' && hasChildren);
       rows.push({ node, depth, hasChildren, isExpanded, isDisabled: disabled.has(node.id), isExcluded });

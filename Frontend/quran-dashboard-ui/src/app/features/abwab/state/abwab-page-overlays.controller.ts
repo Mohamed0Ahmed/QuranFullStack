@@ -12,8 +12,6 @@ import { AbwabMoveDestination } from '../components/abwab-move-picker/abwab-move
 
 type ContextActionCallback = (doorId: number) => void;
 
-/** Shared empty chain for `restoreAncestors` while no restore target exists — the same identity
- * argument as the page's own `NO_IDS`/`NO_ROOTS`. */
 const NO_ANCESTORS: readonly AbwabNode[] = [];
 
 @Injectable()
@@ -46,7 +44,6 @@ export class AbwabPageOverlaysController {
     };
   });
 
-  // Door modal (add/edit)
   readonly modalOpen = signal(false);
   readonly modalDoor = signal<AbwabDoorDto | null>(null);
   readonly modalParentId = signal<number | null>(null);
@@ -116,8 +113,6 @@ export class AbwabPageOverlaysController {
     return this.writeController.bulkArchiveConfirmMessage(Array.from(this.selection.bulkSet().keys()));
   }
 
-  /** The dialog now closes in the subscriber, not before dispatch: it stays open with both
-   * buttons disabled until the write resolves, so a failure has somewhere to land. */
   confirmArchive(onSuccess: () => void): void {
     const door = this.selectedDoor();
     if (!door || this.archiveBusy()) {
@@ -180,7 +175,6 @@ export class AbwabPageOverlaysController {
     this.archiveError.set(null);
   }
 
-  // Move picker (single and bulk share it)
   readonly movePickerOpen = signal(false);
   private readonly moveDoorIds = signal<readonly number[]>([]);
 
@@ -256,8 +250,6 @@ export class AbwabPageOverlaysController {
     this.writeController.bulkMoveDoors(destination.targetParentId, destination.targetSectionId).subscribe();
   }
 
-  // Door restore modal — opened instead of writing straight through, because a root whose section
-  // was retired meanwhile cannot be restored without being told where to go.
   private readonly restoreDoorId = signal<number | null>(null);
 
   readonly restoreTarget = computed(() => {
@@ -295,7 +287,6 @@ export class AbwabPageOverlaysController {
     this.restoreDoorId.set(null);
   }
 
-  // Sections modal
   readonly sectionsModalOpen = signal(false);
 
   openSectionsModal(): void {
@@ -313,8 +304,6 @@ export class AbwabPageOverlaysController {
   readonly reorderSection = (id: number, position: number, version: number) =>
     this.sectionsController.reorderSection(id, position, version);
 
-  // Relations modal (T604). Only open/closed + anchor + mode live here; the modal owns its own
-  // type/direction/picks/search state.
   readonly relationsModalOpen = signal(false);
   readonly relationsAnchorPickMode = signal(false);
   private readonly relationsAnchorId = signal<number | null>(null);
@@ -372,10 +361,6 @@ export class AbwabPageOverlaysController {
   ) => this.relationsController.addRelations(anchorDoorId, kind, direction, targetDoorIds);
   readonly deleteRelation = (relationId: number) => this.relationsController.deleteRelation(relationId);
 
-  // Row context menu (T511) — right-click/keyboard both funnel through `menuRequested`.
-  // The URL-writing menu actions hand the page the id they acted on through this callback,
-  // the same shape `confirmArchive` already uses, so the page can fold the selection and the
-  // `modal` key into one patch without this controller learning about the Router.
   readonly contextMenuDoorId = signal<number | null>(null);
   readonly contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
 

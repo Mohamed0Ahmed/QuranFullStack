@@ -87,8 +87,6 @@
   margin: var(--qd-space-1) 0;
 }
 
-/* The first allowed-green fix (T503, UI_STYLE_SYSTEM.md §16.3): the mock's `.on` state
-   is a solid `--qd-primary` fill (contract `:76`) — tint + accent-text + hairline instead. */
 .abwab-side-panel__op--on {
   background: var(--qd-selected-bg);
   color: var(--qd-accent-text);

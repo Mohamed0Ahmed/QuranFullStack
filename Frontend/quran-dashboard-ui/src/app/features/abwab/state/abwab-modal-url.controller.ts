@@ -4,14 +4,8 @@ import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabPageOverlaysController } from './abwab-page-overlays.controller';
 import { AbwabModalKind, AbwabModalState, isDoorDependentAbwabModalKind } from '../models/abwab.models';
 
-/** The three modes the one door modal serves — which of them it is showing is the private
- * signal set the opener wrote, so the URL kind is the page's own record of it. */
 export const DOOR_MODAL_KINDS: readonly AbwabModalKind[] = ['create', 'child', 'edit'];
 
-/** What the page holds open **on the URL's behalf**. The subject is tracked beside the kind so
- * an emission that keeps the kind but moves `door=` still reads as a different overlay rather
- * than as the same one — without it the state machine would rely on the modal backdrop being
- * the only thing that can write `door=`, which is true today and is not a contract. */
 interface OpenedModal {
   readonly kind: AbwabModalKind;
   readonly doorId: number | null;
@@ -34,11 +28,6 @@ export class AbwabModalUrlController {
     if (modal === null || !modal.closed) {
       return null;
     }
-    // A carried subject is checked against itself, not against `door=`: the whole point of the
-    // id is that `door=` has moved on (a reveal put the target there). The liveness rule is the
-    // same one `canOpen` applies, and an id naming a dead or archived door leaves the key inert
-    // — no control, no rewrite — exactly as a dead `door=` already does. Unlike the plain
-    // `-closed` forms, this subject is **pinned**: selecting another door does not move it.
     if (modal.subjectDoorId !== null) {
       const node = this.facade.snapshot()?.byId.get(modal.subjectDoorId);
       return !!node && !node.isArchived ? modal : null;
@@ -67,10 +56,6 @@ export class AbwabModalUrlController {
     if (modal === null || modal.closed) {
       return;
     }
-    // `isOverlayOpen` is the guard for the overlays a bulk gesture shares (the move picker and
-    // the relations modal): those are opened without ever writing the key, so `opened` is null
-    // for them, and restoring a retained key while one is on screen would convert it to
-    // single-subject mode under the user.
     if (this.opened !== null || this.isOverlayOpen(modal.kind) || !this.canOpen(modal.kind)) {
       return;
     }

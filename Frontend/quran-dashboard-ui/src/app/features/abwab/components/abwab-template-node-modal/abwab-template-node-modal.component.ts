@@ -65,10 +65,6 @@ export class AbwabTemplateNodeModalComponent {
       }
       this.errorMessage.set(null);
       this.confirmingDiscard.set(false);
-      // The trap now captures straight onto this field (`cdkFocusInitial` in the fields form), so
-      // this call normally re-focuses what is already focused and fires no second focus event.
-      // It stays as the jsdom path — auto-capture cannot fire there — and as the guard for a
-      // capture that resolves before the field renders.
       setTimeout(() => this.fieldsForm()?.focusFirstField());
     });
   }
@@ -105,7 +101,6 @@ export class AbwabTemplateNodeModalComponent {
         this.errorMessage.set(outcome.message);
         return;
       }
-      // The controller refreshes the template on success, so there is nothing to hand back.
       this.errorMessage.set(null);
       this.closed.emit();
     });

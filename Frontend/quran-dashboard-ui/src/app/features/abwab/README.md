@@ -545,6 +545,14 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 
 ## Gotchas / invariants (read before changing)
 
+- **The move picker's open-reset must keep `open()` as its ONLY tracked dependency.**
+  `abwab-move-picker.component.ts` resets the picker in an `effect` and reads `movedSectionIds`
+  inside `untracked`. `AbwabPageOverlaysController.moveSectionIds`
+  (`state/abwab-page-overlays.controller.ts:202`) is a `computed` that rebuilds a fresh array via
+  `.map().filter()` on every `byId()` snapshot change, so tracking it would let a refresh landing
+  mid-pick re-run the reset and silently discard a stage-two choice the user had already made. The
+  caller sets the moved ids *before* opening the picker, so the untracked read still sees the right
+  ones. Removing the `untracked` wrapper compiles and passes type-checking.
 - **Both pages are full-bleed on the shared page frame, not the reading-measure container.**
   `abwab-page.component.html:2` and `abwab-templates-page.component.html:2` compose
   `qd-container qd-page-frame` (Slice B2, T703) — the frame that used to be `qd-explorer-frame`,

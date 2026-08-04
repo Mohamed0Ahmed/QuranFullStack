@@ -79,8 +79,6 @@
   flex: 1;
 }
 
-/* Revealed on hover, the design contract's `.row:hover .actions`. `visibility` rather than
-   `display` keeps the row height stable, and :focus-within keeps them reachable by keyboard. */
 .abwab-template-tree__actions {
   display: inline-flex;
   gap: var(--qd-space-1);

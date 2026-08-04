@@ -17,9 +17,6 @@
   gap: var(--qd-space-2);
 }
 
-/* Beside the input, not in the stats row: it answers the query, so it belongs to the control
-   that asked. Muted and one step down the ramp — a running count should not compete with the
-   text being typed. */
 .abwab-toolbar__search-count {
   flex: none;
   color: var(--qd-text-muted);
@@ -70,7 +67,6 @@
   outline-offset: -2px;
 }
 
-/* Selected state per §16.1 — tint + accent text, never a solid fill. */
 .abwab-toolbar__view-btn--active {
   background: var(--qd-selected-bg);
   color: var(--qd-accent-text);

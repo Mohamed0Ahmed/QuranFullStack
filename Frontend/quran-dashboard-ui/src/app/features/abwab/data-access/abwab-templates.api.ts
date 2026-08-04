@@ -20,7 +20,6 @@ export class AbwabTemplatesApi {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiBaseUrl}/api/abwab`;
 
-  // The two conditional reads: `observe: 'response'` so the facade can store the ETag beside the value.
   getTemplates(etag: string | null = null): Observable<HttpResponse<ApiResponse<AbwabTemplateSummaryDto[]>>> {
     return this.http.get<ApiResponse<AbwabTemplateSummaryDto[]>>(`${this.base}/templates`, {
       observe: 'response',
@@ -39,7 +38,6 @@ export class AbwabTemplatesApi {
     return this.http.post<ApiResponse<AbwabTemplateDto>>(`${this.base}/templates`, body);
   }
 
-  // 204 No Content on success, so HttpClient yields `null` rather than an envelope.
   deleteTemplate(templateId: number): Observable<ApiResponse<unknown> | null> {
     return this.http.delete<ApiResponse<unknown> | null>(`${this.base}/templates/${templateId}`);
   }
@@ -60,7 +58,6 @@ export class AbwabTemplatesApi {
     return this.http.post<ApiResponse<AbwabTemplateNodeDto>>(`${this.base}/template-nodes/${nodeId}/order`, body);
   }
 
-  // 204 No Content on success, so HttpClient yields `null` rather than an envelope.
   deleteNode(nodeId: number): Observable<ApiResponse<unknown> | null> {
     return this.http.delete<ApiResponse<unknown> | null>(`${this.base}/template-nodes/${nodeId}`);
   }

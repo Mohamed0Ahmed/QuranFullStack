@@ -28,9 +28,6 @@ export type AbwabWriteFailureOutcome =
 
 export type AbwabWriteOutcome<T> = { readonly kind: 'success'; readonly data: T } | AbwabWriteFailureOutcome;
 
-/** The 409 policy, at module scope so the templates controller — which cannot reuse this
- * controller, having no snapshot to refresh and no version tokens to rebind — still shares one
- * status→outcome mapping instead of forking a second one that could drift. */
 export function toAbwabWriteFailure(err: unknown): AbwabWriteFailureOutcome {
   if (err instanceof HttpErrorResponse) {
     const body = err.error as ApiResponse<unknown> | null | undefined;
@@ -46,9 +43,6 @@ export function toAbwabWriteFailure(err: unknown): AbwabWriteFailureOutcome {
   return { kind: 'error', message: ABWAB_LABELS.writeTransportFallback };
 }
 
-/** Counts a door plus every live descendant — the live tree only ever holds live nodes
- * (abwab-tree.builder.ts partitions archived ones out), so no extra `isArchived` guard is
- * needed past the root (plan-slice-b.md §6.4, the archive-count cell). */
 function countLiveSubtree(node: AbwabNode): number {
   return 1 + node.children.reduce((sum, child) => sum + countLiveSubtree(child), 0);
 }
@@ -107,8 +101,6 @@ export class AbwabWriteController {
     return this.dispatch(this.api.deleteSection(id));
   }
 
-  // No conflictClearsSelectionId, matching renameSection: a section write invalidates no
-  // door selection.
   reorderSection(id: number, body: ReorderSectionBody): Observable<AbwabWriteOutcome<AbwabSectionDto>> {
     return this.dispatch(this.api.reorderSection(id, body));
   }
@@ -133,9 +125,6 @@ export class AbwabWriteController {
     return this.dispatch(this.api.archiveDoor(id, { version }), id);
   }
 
-  // sectionId is the restore destination and is omitted for the ordinary "back where it came from"
-  // case; a root whose section was retired meanwhile has no such place and the backend 400s without
-  // one, which is what the restore modal asks for.
   restoreDoor(id: number, options: { sectionId?: number; version: number }): Observable<AbwabWriteOutcome<AbwabDoorDto>> {
     return this.api.restoreDoor(id, options).pipe(
       map((response) => this.handleSuccess(response, () => {
@@ -164,9 +153,6 @@ export class AbwabWriteController {
     );
   }
 
-  // Relation writes carry no version token — they move no door's xmin, so no stale-token 409 is
-  // reachable — but they still go through `dispatch`, because they change relation counts on two
-  // rows of the snapshot and the refresh-after-write invariant is what keeps those honest.
   addDoorRelations(doorId: number, body: AddDoorRelationsBody): Observable<AbwabWriteOutcome<AbwabDoorRelationDto[]>> {
     return this.dispatch(this.api.addDoorRelations(doorId, body));
   }
@@ -193,16 +179,6 @@ export class AbwabWriteController {
   }
 
   private handleSuccess<T>(response: ApiResponse<T> | null, onData?: (data: T) => void): AbwabWriteOutcome<T> {
-    // `isSuccess` alone is authoritative here — unlike a read, a void write's success
-    // payload (archive, section delete) is legitimately `null`; requiring non-null data
-    // would silently treat those successes as failures.
-    //
-    // The whole envelope is `null` too on those two routes: they answer `204 No Content`
-    // (AbwabDoorsController.cs:176, AbwabSectionsController.cs:67) and HttpClient parses an
-    // empty body as `null`. Only a success is ever a 204 — every failure arrives as a 4xx
-    // through `catchError` — so a null response is a payload-less success. Reading
-    // `response.isSuccess` first threw here, and the throw was swallowed as a transport
-    // error while the write had in fact committed.
     const data = (response?.data ?? null) as T;
     if (response === null || response.isSuccess) {
       if (onData && data !== null) {
@@ -235,7 +211,6 @@ export class AbwabWriteController {
   ): Observable<AbwabWriteOutcome<T>> {
     const outcome = this.toFailureOutcome(err);
     if (outcome.kind === 'conflict') {
-      // Bulk selection is preserved on conflict (M17) — see the class doc for why.
       const message = this.bulkConflictMessage();
       this.announcementState.set(message);
       return of({ kind: 'conflict', message });
@@ -244,8 +219,6 @@ export class AbwabWriteController {
       this.announcementState.set(outcome.message);
       return of(outcome);
     }
-    // The backend's bulk 404 is «الباب غير موجود» and identifies no door, so refetch, rebind
-    // (which drops whatever is now archived), and name the offenders from what came back.
     return this.facade.refresh().pipe(
       map((snapshot) => {
         if (snapshot) {

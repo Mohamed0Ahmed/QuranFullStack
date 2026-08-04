@@ -92,10 +92,6 @@ export class AbwabTemplateCopyModalComponent {
           return;
         }
         this.resetDraft();
-        // The trap now captures straight onto the picker's search (`cdkFocusInitial`), instead of
-        // the first control above the list, so this call normally re-focuses what is already
-        // focused. It stays as the jsdom path — auto-capture cannot fire there — and as the guard
-        // for a capture that resolves before the picker renders.
         setTimeout(() => this.picker()?.focusSearch());
       });
     });
@@ -116,9 +112,6 @@ export class AbwabTemplateCopyModalComponent {
     }
     this.applyTemplate()(targets).subscribe((outcome) => {
       if (outcome.kind !== 'success') {
-        // The apply is all-or-nothing, so nothing was created and every pick is still a valid
-        // retry once the collision is resolved — the bulk-conflict precedent: the selection is
-        // preserved rather than cleared.
         this.errorMessage.set(outcome.message);
         return;
       }

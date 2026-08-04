@@ -59,9 +59,6 @@ export class AbwabSnapshotFacade {
       catchError((error: unknown) => {
         this.loadingState.set(false);
 
-        // A 304 arrives on the error channel because HttpClient treats only 2xx as ok. It is the
-        // opposite of a failure: the held snapshot and its validator are current, so both stay and no
-        // error is reported. Checked before the generic branch, or every cached revisit shows a banner.
         if (error instanceof HttpErrorResponse && error.status === HttpStatusCode.NotModified) {
           return of(this.snapshot());
         }

@@ -145,8 +145,6 @@ export class AbwabTreeComponent {
 
   protected onFlagClick(event: Event, id: number): void {
     event.stopPropagation();
-    // Inert in bulk mode, like the row actions are hidden there: the row click means "toggle
-    // this door's bulk selection", and a control that opened a modal instead would fight it.
     if (this.bulkMode()) {
       return;
     }
@@ -184,8 +182,6 @@ export class AbwabTreeComponent {
 
   private openMenuFor(id: number, x: number, y: number): void {
     this.manualFocusId.set(id);
-    // Select first: the menu acts on the row it opened over, and the page writes
-    // `door=<id>` on selection — so every menu path leaves the URL agreeing with the store.
     this.selected.emit(id);
     this.menuRequested.emit({ id, x, y });
   }
@@ -286,11 +282,6 @@ export class AbwabTreeComponent {
         break;
       case 'openMenu': {
         event.preventDefault();
-        // Anchor to the focused row rather than the viewport origin — a keyboard user has no
-        // pointer position, and a menu pinned at (0,0) is not a usable keyboard path. The x is
-        // the row's INLINE-START edge because that is the edge the menu now extends from
-        // (`qd-context-menu`'s placement contract); anchoring at `left` under RTL would push the
-        // menu off the row entirely.
         const rect = this.rowElement(intent.id)?.getBoundingClientRect();
         const anchorX = this.resolveDirection() === 'rtl' ? rect?.right : rect?.left;
         this.openMenuFor(intent.id, anchorX ?? 0, rect?.bottom ?? 0);

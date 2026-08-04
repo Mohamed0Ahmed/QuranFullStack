@@ -68,8 +68,6 @@ export class AbwabDoorRestoreModalComponent {
   private readonly doorSubjectId = computed(() => this.door()?.id ?? null);
 
   constructor() {
-    // A door whose section is still live is prefilled with it; one whose section is gone starts
-    // empty, so the choice is made rather than inherited from a section that no longer exists.
     effect(() => {
       this.doorSubjectId();
       const door = untracked(() => this.door());
@@ -100,8 +98,6 @@ export class AbwabDoorRestoreModalComponent {
     this.errorMessage.set(null);
     this.writeController
       .restoreDoor(door.id, {
-        // Omitted unless this restore is also a re-section: the backend reads an absent key as
-        // "back where it came from", which is the ordinary case and the only one a child allows.
         ...(this.needsDestination() && chosen !== null && chosen !== door.sectionId
           ? { sectionId: chosen }
           : {}),
@@ -114,8 +110,6 @@ export class AbwabDoorRestoreModalComponent {
           this.closed.emit();
           return;
         }
-        // Stays open on failure — a stale version or a name collision is worth retrying from here
-        // rather than reopening from the archive list.
         this.errorMessage.set(outcome.message);
       });
   }

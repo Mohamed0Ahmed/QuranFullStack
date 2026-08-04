@@ -38,8 +38,6 @@ function byOrderThenId(a: AbwabTemplateNodeDto, b: AbwabTemplateNodeDto): number
   return a.orderValue - b.orderValue || a.id - b.id;
 }
 
-/** Flat → tree, the `abwab-tree.builder.ts` shape: siblings sort by `orderValue` then `id`, so a
- * gap or a tie left by a concurrent write still renders in a stable order. */
 export function buildAbwabTemplateTree(dto: AbwabTemplateDto): AbwabTemplateVm {
   const childrenByParentId = new Map<number, AbwabTemplateNodeDto[]>();
   let rootDto: AbwabTemplateNodeDto | null = null;
@@ -81,7 +79,6 @@ export function buildAbwabTemplateTree(dto: AbwabTemplateDto): AbwabTemplateVm {
   return { id: dto.id, name: dto.name, root, nodeCount: descendantCount };
 }
 
-/** O(1) lookup for the workshop's action handlers, which know a node id and need its row. */
 export function collectAbwabTemplateNodes(root: AbwabTemplateNodeVm | null): ReadonlyMap<number, AbwabTemplateNodeVm> {
   const byId = new Map<number, AbwabTemplateNodeVm>();
   const walk = (node: AbwabTemplateNodeVm): void => {

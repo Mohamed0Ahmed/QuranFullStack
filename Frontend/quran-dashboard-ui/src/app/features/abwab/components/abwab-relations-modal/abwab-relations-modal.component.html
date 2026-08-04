@@ -16,8 +16,6 @@
       <header class="qd-modal__head">
         <h3 [id]="titleId">
           {{ titleText() }}
-          <!-- Only once the list is the answer: a `0` shown while the fetch is still out would be
-               the modal asserting something it has not been told yet. -->
           @if (!anchorPickMode() && status() === 'ready') {
             <span class="qd-chip qd-chip--pill qd-chip--static" data-testid="abwab-relations-modal-count">
               {{ relations().length }}
@@ -29,8 +27,6 @@
 
       <div class="qd-modal__body">
         @if (errorMessage(); as error) {
-          <!-- The retry belongs to the READ only (§17 allows exactly one action): an add or a
-               delete that failed is retried with the control that issued it. -->
           <qd-state
             variant="error"
             [reserve]="true"

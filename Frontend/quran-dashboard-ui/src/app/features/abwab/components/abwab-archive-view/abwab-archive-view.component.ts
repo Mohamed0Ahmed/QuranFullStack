@@ -96,8 +96,6 @@ export class AbwabArchiveViewComponent {
         event.preventDefault();
         this.setExpanded(intent.id, false);
         break;
-      // 'select' / 'toggleBulk' / 'openMenu' do not apply: the archive view has no
-      // selection or bulk concept, and restore is a direct per-row button, not a menu.
       default:
         break;
     }

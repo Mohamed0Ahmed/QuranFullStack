@@ -1,6 +1,4 @@
 <div class="abwab-tree-frame" [class.abwab-tree-frame--bulk]="bulkMode()">
-  <!-- Presentational only: the per-badge aria-labels remain the accessible layer, so this must
-       stay outside the role="tree" element rather than becoming a row inside it. -->
   <div class="abwab-tree__header" aria-hidden="true" data-testid="abwab-tree-header">
     @if (bulkMode()) {
       <span></span>

@@ -4,19 +4,10 @@
   margin-block-end: var(--qd-space-3);
 }
 
-/* The strip is five equal tracks across the `--wide` modal: 832px − 2px border − 48px of
-   `.qd-modal__head` padding = 782px, minus four `--qd-space-2` gaps = 750px, so a cell measures
-   exactly 150px at both 1024px and 1440px (the modal is 52rem at each). Fifteen sections — the
-   product ceiling — is therefore exactly three rows, and the strip needs no scroller: it lives in
-   `__head`, which is `flex-shrink: 0`, so `.qd-modal__body` stays the modal's only scroller. */
 .abwab-move-picker__strip {
   margin-block-start: var(--qd-space-1);
 }
 
-/* Feature-local class beside `.qd-tabs__tab` (the `lemma-details-panel__tab` shape), so the active
-   cue extends the primitive instead of re-styling it. Weight, not colour alone: the tint and accent
-   border come from `.qd-is-selected`, and bold is this component's own existing "picked" cue on
-   `.abwab-move-picker__row--picked`. */
 .abwab-move-picker__section {
   min-inline-size: 0;
 }
@@ -25,8 +16,6 @@
   font-weight: 700;
 }
 
-/* Same shape as `abwab-door-picker`'s own search box — the two lists look alike because they are
-   the same kind of thing, not because either imports the other. */
 .abwab-move-picker__search {
   inline-size: 100%;
   border: 1px solid var(--qd-border);
@@ -53,8 +42,6 @@
   flex-direction: column;
 }
 
-/* The row is a wrapper, not the control: a chevron button cannot nest inside a row button, so the
-   row holds two siblings — the chevron and the pick — and keeps only the indent and the states. */
 .abwab-move-picker__row {
   display: flex;
   align-items: center;
@@ -68,8 +55,6 @@
   background: var(--qd-surface-hover);
 }
 
-/* The chevron and the pick are the row's two tab stops, so keyboard focus has to read as a row
-   highlight — the row itself is not focusable and gets no ring of its own. */
 .abwab-move-picker__row:has(:focus-visible) {
   background: var(--qd-surface-hover);
 }
@@ -89,8 +74,6 @@
   cursor: pointer;
 }
 
-/* Kept in the layout, dropped from interaction: the element reserves the chevron column so leaf
-   and branch names stay on one vertical line. */
 .abwab-move-picker__chevron--leaf {
   cursor: default;
   pointer-events: none;
@@ -120,7 +103,6 @@
   outline-offset: -2px;
 }
 
-/* `text-overflow` needs a block box, and a span inside the pick button is inline. */
 .abwab-move-picker__name {
   display: block;
 }
