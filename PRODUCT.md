@@ -47,9 +47,9 @@ direction, locked in the approved static comps under `docs/design-preview/`
 > **Real Pages prototype** (`/projects/Real Pages`, brand reference
 > "الباحث القرآني"): a navy + gold + parchment identity with soft card
 > elevation and hover lifts, which itself superseded an earlier exploratory
-> green / teal / petrol chrome direction. Its extraction report remains at
-> `Frontend/quran-dashboard-ui/report/ui/real-pages-visual-system-extraction-report.md`
-> as historical reference.
+> green / teal / petrol chrome direction. Its extraction report was a local working
+> artifact and was never committed to this repository; the reference values that
+> survived it are recorded in `UI_STYLE_SYSTEM.md` §15 instead.
 
 The identity is **flat parchment + ink + one scholarly green**:
 

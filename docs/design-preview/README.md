@@ -6,12 +6,27 @@ Dashboard (المنهج القرآني) **before any app code changes**. Every c
 data baked in** — each file opens standalone in a browser (double-click the `.html`
 file; no backend, no build step, no JavaScript).
 
-These files are review artifacts only. Nothing under the Angular app was modified.
+**Status: adopted, and these comps are now historical.** The direction below was approved and
+implemented — `src/styles/_tokens.scss` is the live light-theme source, `PRODUCT.md` §Visual
+Identity records green as the official identity, and `UI_STYLE_SYSTEM.md` §16.3 holds the locked
+allowed-green list. The comps are kept as the approved reference the implementation was measured
+against, not as a proposal awaiting a decision. **Where a comp and the shipped app disagree, the
+app and `UI_STYLE_SYSTEM.md` win** — the comps are not edited to track it.
 
 ## Files
 
+The abwab concept files are the ones most often cited elsewhere as governing design contracts
+(`features/abwab/README.md`, `abwab.labels.ts`, `abwab-tree.component.scss` all point at them),
+so they are listed here rather than left to `ls`. Two of them carry copy that later slices
+**reversed** — noted per row, because the mockups are not edited.
+
 | File | What it shows |
 |---|---|
+| `abwab-tree-concept.html` | The doors tree contract: row furniture, hover actions, the children-count badge, the section tab strip. |
+| `abwab-relations-concept.html` | The relations modal contract. **Superseded copy:** its `TYPE_META.hier.label` («أعم / أخص») and hint paragraph violate the locked comprehensiveness-only vocabulary; the shipped copy uses «شمولية» and never reproduces those strings (`abwab.labels.ts` records the exception). |
+| `abwab-templates-concept.html` | The templates workshop contract. **Superseded copy:** its «كاملًا بجذره» apply description predates ux-slice-g, which made apply copy the root's direct children and never the root. |
+| `decisions.html` | The design decision log behind the comps. |
+| `words-pages-hero.html` | Hero/landing treatment for the words pages. |
 | `design-language.html` | The shared system: palette, typography, buttons, fields, chips, tabs, badges, tables, detail lists, ayah cards, states, the one floating-layer shadow, navy footer. |
 | `mushaf.html` | Mushaf reader — real page **440** (end of فاطر + start of يس), selected ayah **35:45**, selected word **بِعِبَادِهِۦ** with its real 3-segment analysis, morphology summary, occurrence cards, study tabs with التفسير الميسر content. |
 | `roots.html` | Roots explorer — real first page (mushaf order), selected root **ا ل ه** + detail panel (words list, real tab counts). |
@@ -87,11 +102,13 @@ full imported corpus) and baked statically. No writes, no migrations.
   selected row and its open panel always agree (roots ا ل ه، lemmas ٱللَّه، stems
   ٱللَّهِ، unique ٱللَّهِ، word-types root ا ل ه).
 
-## Divergences from DESIGN.md / PRODUCT.md / UI_STYLE_SYSTEM.md (to reconcile at implementation time)
+## Divergences from the previous identity — reconciled, kept as the record of what changed
 
-The current docs lock a **navy + gold + parchment** identity with a soft-shadow
-elevation ladder. These comps intentionally diverge; adopting them means updating the
-docs on every point below:
+At the time these comps were drawn the docs locked a **navy + gold + parchment** identity with a
+soft-shadow elevation ladder. **Every point below was subsequently reconciled into `DESIGN.md`,
+`PRODUCT.md` and `UI_STYLE_SYSTEM.md`**, which is why those three now send readers here: this list
+is the changelog of that adoption, not a to-do. One item is deliberately unfinished — see the
+dark-theme note at the end.
 
 1. **Accent color.** Gold (`--qd-accent` family, the One Voice Rule, the locked
    allowed-gold list — DESIGN.md §2, UI_STYLE_SYSTEM §16.3) → replaced by one
@@ -121,9 +138,9 @@ docs on every point below:
     plain parchment recess.
 11. **Segment palette.** The six `--qd-segment-cat-*` data colors re-tuned to
     desaturated parchment-friendly values (function unchanged).
-12. **PRODUCT.md Visual Identity.** The "Real Pages prototype (navy + gold +
-    parchment) is the visual source of truth" section would be superseded by this
-    direction; the register, principles, and anti-references stand unchanged.
+12. **PRODUCT.md Visual Identity.** Done — that section now names the flat parchment +
+    green direction as the official identity and marks the Real Pages prototype
+    superseded/historical; the register, principles, and anti-references stand unchanged.
 13. **Gradients.** The two sanctioned exceptions (footer gradient hairline, optional
     navbar blur) are removed — zero gradients/blur.
 
@@ -132,6 +149,12 @@ Amiri + IBM Plex Sans Arabic roles, all Quran-font/rendering invariants (Amiri f
 words, Uthmanic Hafs markers-only, ligature fonts, never animate Quran text), calm
 motion, WCAG AA intent (green ink `#275c50` on tint passes AA), light+dark theming
 remains a goal — these comps preview **day mode only**.
+
+**The one point not reconciled: the dark theme.** These comps cover light mode, and the adoption
+followed them there. `src/styles/_themes.scss` still runs the previous navy + gold values in dark;
+reconciling dark to the green direction is a deliberately deferred later task (`PRODUCT.md` says
+the same). Theme-neutral changes — flat navbar/footer geometry, lift removal, crisper radii — did
+apply to dark.
 
 ## Known comp limitations
 

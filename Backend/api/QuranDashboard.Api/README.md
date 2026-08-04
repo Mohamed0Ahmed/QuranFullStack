@@ -27,9 +27,10 @@ export ConnectionStrings__QuranDashboardDb="Host=localhost;Port=5432;Database=qu
 ## Authentication
 
 Logto access-token authentication lives in `Authentication/` and is wired via
-`AddApiAuthentication` (DI) + `UseAuthentication` / `UseAuthorization` (pipeline, after CORS,
-before the rate limiter). It uses the standard `JwtBearer` handler to validate a Logto **access
-token** (not the ID token):
+`AddApiAuthentication` (DI) + `UseAuthentication` / `UseAuthorization` (pipeline, after CORS and
+**after the rate limiter** — the limiter keys per client IP, not per user, so it deliberately
+throttles unauthenticated traffic before authentication ever runs; see `RateLimiting/README.md`).
+It uses the standard `JwtBearer` handler to validate a Logto **access token** (not the ID token):
 
 - **Issuer & signing keys** are auto-discovered from the `Auth:Authority` OIDC metadata
   (`jwks_uri`) — no manual key handling.
@@ -39,6 +40,10 @@ token** (not the ID token):
 - A missing/invalid token yields `401 Unauthorized` with the shared `ApiResponse` failure
   envelope (`isSuccess:false`, Arabic `message`, `errors:[]`) instead of the framework's default
   empty body.
+- `GET api/access/me` provisions the caller on first sight, so it carries one status the other
+  authenticated paths do not: an email already registered to a different `sub` is a
+  `409 Conflict` in the same failure envelope (`UserProvisioningEmailConflictException` →
+  `Middleware/GlobalExceptionHandler.cs`, the only non-`500` that handler produces).
 
 `GET /api/access/me` carries `[Authorize]` (authenticated-only) and, on first login,
 **get-or-create provisions** the local user keyed by the Logto `sub`. The user's email is **verified

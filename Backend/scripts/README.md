@@ -13,6 +13,19 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `check-api-contract` | Runs `export-swagger`, regenerates the frontend API models (`npm run generate:api`) and the static API reference (`npm run docs:api`), then fails with `git diff --exit-code` if any committed generated output is stale |
 | `create-smoke-dump` | Regenerates the canonical `quran_*` data dump the backend smoke data tier restores: `resources/db-dumps/quran-canonical/{quran-canonical.dump,manifest.json}` |
 | `wipe-abwab` | Empties the six `abwab_*` tables on a local database, leaving the canonical `quran_*` data intact |
+| `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project. EF tooling only — never hand-write a migration (`Backend/CLAUDE.md`) |
+| `update-db` | `dotnet ef database update` — applies pending migrations to the configured database |
+| `clean-local-build` | Clears the NuGet caches, deletes every `bin`/`obj`, and restores the solution. Non-destructive to data |
+| **`drop-db --yes`** | **DESTRUCTIVE.** `dotnet ef database drop --force` — drops the configured database outright, all data lost |
+| **`reset-db --yes`** | **DESTRUCTIVE.** `drop-db --yes` followed by `update-db` — an empty database at migration head |
+
+**The two destructive rows fail closed.** `drop-db` and `reset-db` both refuse to run unless
+their single argument is exactly `--yes`; without it they print the warning and exit non-zero
+having done nothing. There is no `--allow-remote`-style escape on either: they act on whatever
+`dotnet ef` resolves as the configured connection, so check what that is before typing `--yes`.
+`abwab_*` content is authored curation data that nothing restores — prefer `wipe-abwab` when the
+goal is only to clear abwab rows, and note that a full reset also discards the canonical
+`quran_*` data, which then has to be re-imported.
 
 ### `create-smoke-dump`
 

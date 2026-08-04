@@ -1,8 +1,9 @@
 <!-- Visual source of truth: the approved flat parchment + green comps in
      docs/design-preview/ (read docs/design-preview/README.md first — it records the
      divergences that were reconciled into this document). This direction SUPERSEDES
-     the earlier Real Pages navy + gold + parchment identity
-     (Frontend/quran-dashboard-ui/report/ui/real-pages-visual-system-extraction-report.md)
+     the earlier Real Pages navy + gold + parchment identity (whose reference values are
+     recorded in UI_STYLE_SYSTEM.md §15 — its extraction report was a local artifact and is
+     not in this repository)
      for the LIGHT theme; the dark theme still runs the interim navy + gold values
      pending reconciliation. Token contract:
      Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md; implemented tokens:

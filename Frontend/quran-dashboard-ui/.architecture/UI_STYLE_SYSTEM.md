@@ -412,8 +412,9 @@ and `DESIGN.md` win**. The typography roles (A) and the two-token motion contrac
 (F) remain in force (minus card lifts, which are gone with the flat doctrine). This
 section is retained as the historical record of the phased rollout (phases A–H) and
 the prototype's reference values; do not rewrite those reference values to green.
-The extraction reference is
-`../report/ui/real-pages-visual-system-extraction-report.md`.
+**This section is itself the surviving extraction record** — the original extraction report was
+a local working artifact and was never committed to this repository, so nothing else holds the
+prototype's values.
 
 App themes remain **light + dark**, and every token **must** be defined for both
 themes. Light fully implements the green direction; **dark interim-runs the

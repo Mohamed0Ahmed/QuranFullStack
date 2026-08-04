@@ -23,10 +23,12 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   (`<ng-content>`): the primitive knows nothing about doors or template nodes, and the item
   hover/focus/danger styling lives in the global `.qd-context-menu__item` classes
   (`_components.scss`), not this component's own stylesheet, since content the *consumer*
-  projects sits outside the primitive's emulated-encapsulation boundary. Deliberately does
-  **not** clamp to the viewport (positions from the caller's raw pointer coords, matching
-  both prior copies) and does **not** manage focus into the menu — see
-  `UI_STYLE_SYSTEM.md` §17 for both gaps. See `UI_STYLE_SYSTEM.md` §17.
+  projects sits outside the primitive's emulated-encapsulation boundary. Since ux-slice-l it
+  **owns its own placement**: it measures its box after render, extends toward inline-start,
+  flips on either viewport edge, and clamps both axes to an 8 px margin — so a caller passes a
+  raw pointer position and the primitive decides where the menu actually lands. It still does
+  **not** manage focus into the menu — see `UI_STYLE_SYSTEM.md` §17 for that gap and for the
+  full placement contract.
 - `ui/ayah-card/` — `qdAyahCard` (attribute component, host class `qd-ayah-card`), the one
   presentation-only flat frame for ayah-shaped list items (recessed warm card background
   `--qd-ayah-card-bg`, hairline border, control radius, compact padding/gap; no shadow, no

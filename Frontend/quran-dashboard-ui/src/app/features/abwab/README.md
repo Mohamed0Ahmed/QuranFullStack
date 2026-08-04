@@ -263,7 +263,8 @@ nine), four of them reads.
   below); the guard strip renders in `__foot`, where it cannot scroll away.
 - `components/abwab-door-picker/` — the one searchable, expandable door picker, composed
   by the relations and copy modals. Selection is consumer-owned: it renders `pickedIds`
-  and emits `toggled`, and `excludedIds` hides a door **without** hiding its subtree,
+  and emits `toggled`, and `excludedIds` **disables** a door without hiding it or its subtree —
+  it renders as a non-selectable row at its true depth with an `excludedTag` chip naming why,
   since a door may relate to its own ancestor. `testIdPrefix` keeps each host's existing
   testids. Rows compose `.qd-check-row`/`.qd-checkbox`/`.qd-truncate`, so it states no
   geometry of its own. Two things the picker owns that consumer-owned selection cannot
@@ -446,14 +447,17 @@ archive confirms and the row context menu never write the key — their subjects
 `bulkSet` (deliberately not URL state), a destructive confirmation that must be
 re-initiated rather than restored, and a transient position.
 
-**Reveal-in-tree writes the keys above, and the only thing it does to `modal` is clear
+**Reveal-in-tree writes the keys above, and it *rewrites* `modal` rather than clearing
 it.** A relation chip's name reveals that door in the doors tree, and every state it can
 be in is folded into **one** `buildAbwabQueryParams` patch, so there is one navigation and
-no race: `door` always; `modal: null` always, because the seventh key carries no id of its
-own — its subject *is* `door=`, which this patch rewrites, so retaining
-`relations-closed` across a reveal would offer to reopen the **target's** relations while
-the user is expecting the source's; `section` **only when a section tab is active and it is
-not the target's**
+no race: `door` always; `modal` always — as `relations-<id>-closed` carrying the **source**
+anchor's id, so the restore control reopens the door the user came from rather than the one
+they landed on (the id-carrying form and why it exists are above, under `relations-<id>-closed`).
+Only a null anchor, unreachable in door mode, emits `modal: null`. Until ux-slice-l this patch
+discarded the key outright, because a plain `relations-closed` follows `door=` — which this
+same patch is pointing at the *target* — and would have offered the target's relations; the
+id-carrying form is what removed that ambiguity. `section` **only when a section tab is active
+and it is not the target's**
 («كل الأبواب» already shows every door, so narrowing to the target's tab there would be
 gratuitous — and an explicit `door` in the same change survives the scope-invalidation
 clear, which is what makes the cross-section case one navigation instead of two);
@@ -948,7 +952,8 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 `abwab-archive.e2e.ts`, `abwab-url-and-a11y.e2e.ts`, and `abwab-global-order.e2e.ts` drive this
 page end to end — sections, root/child doors with alias chips, the dirty guard, inline reorder,
 single and bulk move, bulk archive, the row context menu, archive/restore including the
-parent-must-restore-first rule and the detach announcement, all seven URL query keys including a
+parent-must-restore-first rule and the retired-section restore that demands a destination, all
+seven URL query keys including a
 restorable overlay's reload/Back-Forward round trip, the tree's
 ARIA/roving-tabindex/RTL keyboard model, both halves of the section-delete contract (409 while a
 live door remains, and the `204 No Content` success once its doors are archived), and the

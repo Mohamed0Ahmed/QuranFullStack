@@ -386,7 +386,7 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 
 **Gaps found:**
 
-- `DESIGN.md` is still a **seed** doc — its header notes it should be regenerated (`/impeccable document`) once there is real UI code to capture actual tokens/components. Until then, `UI_STYLE_SYSTEM.md` is the operative styling source.
+- ~~`DESIGN.md` is still a seed doc.~~ **No longer true.** `DESIGN.md` is the design system of record (`PRODUCT.md` §Visual Identity says so, and its own header names the approved comps as the visual source of truth); `UI_STYLE_SYSTEM.md` holds the token contract. The two are companions, not a stand-in and a placeholder.
 - No workspace-root `README.md` — this guide partly fills the "what is here / how do I work" gap, but a short README pointing newcomers to this guide would help.
 - `test-guard` has **no Angular-specific reference** yet (`jest.md` is the closest match). Consider an `angular.md` later only if real Angular test conventions diverge.
 

@@ -35,8 +35,10 @@ The two `feature-008` / `feature-009` folders above are **permanently exempt** o
 independent grounds:
 
 - `tools/QuranDashboard.DataImporter/Import/DefaultPaths/DataImporterDefaults.cs`
-  hardcodes both directories as the importers' default output targets — deleting them
-  breaks `import-translations` and `import-navigation-metadata`.
+  hardcodes both directories as the importers' default output targets. Deleting them does
+  not *break* those verbs — both report writers call `Directory.CreateDirectory` first and
+  would simply recreate an empty folder — but the next run would then be writing into a
+  directory whose history had been silently discarded.
 - Their reports are the only surviving record of source verification, per-source hashes,
   exclusions, and provenance warnings for those imports. `database-inventory/` supersedes
   **counts** only; it never supersedes source-verification, exclusion, or provenance facts.

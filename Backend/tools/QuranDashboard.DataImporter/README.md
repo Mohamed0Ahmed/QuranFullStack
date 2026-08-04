@@ -5,7 +5,8 @@
 runs the matching `application/.../Quran/DataPipelines/**` handler.
 
 **HOW rules:** `Backend/.architecture/LOGGING_GUIDELINES.md` (run summaries). Source-data
-rules: root `AGENTS.md` → "Backend Reports and Import Sources".
+rules: `Backend/AGENTS.md` → "Backend Reports and Import Sources" (that heading is in the
+**Backend** agent guide, not the workspace-root one).
 
 ## Verbs
 
