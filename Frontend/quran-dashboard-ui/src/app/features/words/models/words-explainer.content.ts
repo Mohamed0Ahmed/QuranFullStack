@@ -16,13 +16,10 @@
 export type WordsExplainerKey = 'unique' | 'roots' | 'lemmas' | 'stems' | 'word-types';
 
 export interface WordsExplainerContent {
-  /** Stable slug — drives testids and the collapse-memory storage key (never the Arabic label). */
   readonly key: WordsExplainerKey;
   readonly ordinal: string;
   readonly eyebrow: string;
-  /** MUST equal the explorer page's own `pageTitle` (asserted in the content spec). */
   readonly title: string;
-  /** The one-liner — shown under the title AND as the hub card's description. */
   readonly tagline: string;
   readonly body: string;
   readonly benefit: string;
@@ -100,14 +97,6 @@ export const WORDS_HUB_INTRO = {
     'خمسة مستكشفات، كل واحد يفحص القرآن من زاوية. السلسلة الصرفية من الأوسع للأضيق، بالإضافة إلى التصنيف النحوي.',
 } as const;
 
-/**
- * A single chain node in the hub orientation diagram (approved comp `:75-81`) — the clearest
- * single artifact explaining why there are five sections. `connector` is the separator rendered
- * AFTER this node (`arrow` `←` between the morphological layers, `plus` `+` before the grammatical
- * axis, `null` on the last node). The grammatical/morphological split is carried TEXTUALLY by the
- * `(نحوي)` marker in the last label — never by color (green-budget / Green Thread): every node
- * renders in the same neutral style.
- */
 export interface WordsHubChainNode {
   readonly label: string;
   readonly connector: 'arrow' | 'plus' | null;

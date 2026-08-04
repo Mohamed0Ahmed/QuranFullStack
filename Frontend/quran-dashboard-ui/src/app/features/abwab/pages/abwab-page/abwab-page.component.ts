@@ -57,30 +57,12 @@ import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 
-/** Shared empty set, so `revealExpandSeedIds` keeps one identity while no reveal is running —
- * a fresh `new Set()` per evaluation would re-run the tree's expand effect on every tick. */
 const NO_IDS: ReadonlySet<number> = new Set<number>();
 
-/** Same reason as `NO_IDS`, for the two pickers fed `liveRoots`: an inline `?? []` in the
- * template allocates a fresh array on every change-detection tick, which marks both OnPush
- * modals dirty for as long as the snapshot is absent — the load window, and every error
- * state until a retry succeeds. */
 const NO_ROOTS: readonly AbwabNode[] = [];
 
-/** How long the reveal mark is held. Must match the animation duration in
- * `abwab-tree.component.scss`, which decays over the same span. */
 const REVEAL_HOLD_MS = 3000;
 
-/**
- * Route shell for `/abwab` (plan-slice-b.md T415/T501-T511): URL ⇄ state wiring,
- * composing the toolbar, tree/cards, archive view, side panel, announcer and the
- * overlays (door modal, move picker, sections modal, archive confirms, context menu —
- * all owned by `AbwabPageOverlaysController`, split out once this file approached the
- * component-TS soft threshold). Every one of the seven URL keys (`section`/`view`/
- * `archive`/`door`/`card`/`q`/`modal`) is parsed in one subscription so no view is left reading
- * a param nobody restores (a gap phase 4 left: `view`/`archive`/`card`/`q` were parsed
- * and discarded, and `selection.setArchiveViewActive` was never called at all).
- */
 @Component({
   selector: 'qd-abwab-page',
   standalone: true,
@@ -131,24 +113,18 @@ export class AbwabPageComponent implements OnInit {
   protected readonly searchQueryParam = signal('');
 
   private readonly modalRestoreControl = viewChild(AbwabModalRestoreComponent);
-  /** Where focus goes when the discard X removes itself — without it focus would fall to
-   * `<body>` and a keyboard user would lose the header row entirely. */
   private readonly headerFallbackFocus = viewChild<ElementRef<HTMLButtonElement>>('headerFallbackFocus');
 
   protected readonly sections = computed(() => this.facade.snapshot()?.sections ?? []);
   protected readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
 
-  /** Item 19's badge inputs. `totalRootCount` is `liveRoots.length`, NOT a sum over
-   * `rootCountBySectionId` — a live root can sit outside every section (§4.2-12). */
   protected readonly rootCountBySectionId = computed(
     () => this.facade.snapshot()?.rootCountBySectionId ?? new Map<number, number>(),
   );
   protected readonly totalRootCount = computed(() => this.facade.snapshot()?.liveRoots.length ?? 0);
 
-  /** «كل الأبواب» (no active section) is the superset — its own, independent order (plan.md §4). */
   protected readonly orderScope = computed<AbwabOrderScope>(() => (this.activeSectionId() === null ? 'global' : 'section'));
 
-  /** Item 17's stats bar (Slice B2, T1002) — both numbers, live-only by definition, §5.7. */
   protected readonly totalLiveDoorsCount = computed(() => countLiveAbwabDoors(this.byId()));
   protected readonly openScopeDoorsCount = computed(() =>
     countAbwabDoorsInOpenScope(this.sections(), this.activeSectionId(), this.totalLiveDoorsCount()),
@@ -166,38 +142,21 @@ export class AbwabPageComponent implements OnInit {
     return result.isFiltering ? pruneAbwabNodesToVisible(this.visibleRoots(), result.visibleIds) : this.visibleRoots();
   });
 
-  /** The tree marks these rows; it never drops the ones it did not match. Cards and archive
-   * read `displayRoots`/`displayArchivedRoots` above and still prune. */
   protected readonly treeMatchedIds = computed(() => this.searchResult().matchedIds);
 
-  /** The count follows whichever walk actually ran for the view on screen. Both computeds are
-   * lazy, so reading one here does not cost a second walk per keystroke. */
   protected readonly searchMatchCount = computed(() =>
     this.archiveParam() ? this.archiveSearchResult().matchedIds.size : this.searchResult().matchedIds.size,
   );
 
-  // Reveal-in-tree (audit item 10). `revealTargetId` is what the reveal is *about*;
-  // `revealedId` is what currently carries the mark. They are separate because the mark is
-  // released on a timer while the target survives until then, and because the mark must not
-  // appear until the navigation it depends on has actually landed.
   private readonly revealTargetId = signal<number | null>(null);
-  /** Bumped on every reveal, and read by the seed computed purely to invalidate it. Without
-   * it, revealing the **same** door twice while the first reveal is still held is a no-op
-   * write (`Object.is`), the seed never recomputes, and a chain the user collapsed in between
-   * stays collapsed — leaving the reveal marking a row that is not on screen. */
   private readonly revealSequence = signal(0);
   protected readonly revealedId = signal<number | null>(null);
   protected readonly revealAnnouncement = signal<string | null>(null);
   private revealTimer: ReturnType<typeof setTimeout> | null = null;
-  /** Set when a reveal navigates, cleared by the param emission that lands it. */
   private revealPending = false;
 
-  /** Set by the door modal's `saved` output, read by the `closed` that follows it. */
   private doorModalCommitted = false;
 
-  /** The target's ancestor chain, walked up `parentId` the way the cards breadcrumb does.
-   * Handed to the tree as a **seed**, not a force: forced-open ids cannot be collapsed, and a
-   * reveal that locked the chain open would trade one bug for a worse one. */
   protected readonly revealExpandSeedIds = computed<ReadonlySet<number>>(() => {
     this.revealSequence();
     const targetId = this.revealTargetId();
@@ -214,14 +173,6 @@ export class AbwabPageComponent implements OnInit {
     return chain;
   });
 
-  /** Two seed sources on one input: the reveal's ancestor chain and the search's. Both are
-   * merged into the tree's manual set, so a branch either opens is collapsible immediately and
-   * survives clearing the query — which is also why search seeds accumulate across keystrokes
-   * (broadening then narrowing leaves the earlier branches open). Intended, not incidental.
-   *
-   * The identity rules matter as much as the union: returning a fresh Set when nothing changed
-   * would re-run the tree's merge effect on every change-detection tick, so an empty union is
-   * the shared `NO_IDS` and a one-sided union is that side's own set, unwrapped. */
   protected readonly expandSeedIds = computed<ReadonlySet<number>>(() => {
     const reveal = this.revealExpandSeedIds();
     const search = this.searchResult().autoExpandedIds;
@@ -234,7 +185,6 @@ export class AbwabPageComponent implements OnInit {
     return new Set([...reveal, ...search]);
   });
 
-  /** The unfiltered live roots the move picker and the relations modal both browse. */
   protected readonly pickerLiveRoots = computed<readonly AbwabNode[]>(() => this.facade.snapshot()?.liveRoots ?? NO_ROOTS);
 
   protected readonly archivedRoots = computed(() => this.facade.snapshot()?.archivedRoots ?? []);
@@ -278,9 +228,6 @@ export class AbwabPageComponent implements OnInit {
   protected get statOpenScopeLabel(): string { return ABWAB_LABELS.statOpenScopeDoors; }
 
   constructor() {
-    // Restores the `door` deep link once both the URL and the snapshot are ready —
-    // whichever arrives second. `untracked` avoids the effect re-triggering on its own
-    // `selection.select()` write (the door-modal reset effect had exactly this bug).
     effect(() => {
       const doorId = this.doorParam();
       const snapshot = this.facade.snapshot();
@@ -293,11 +240,6 @@ export class AbwabPageComponent implements OnInit {
       }
     });
 
-    // Audit item 11's restore ordering, and only the **open** half of reconciliation.
-    // Declared after the `door=` effect so a deep link carrying both keys sees the selection
-    // already bound in the same flush. The three reads below exist to re-run this effect
-    // when the subject settles; the decision itself is `untracked`, because reconciliation
-    // only ever reads the URL into state.
     effect(() => {
       this.modalUrl.modal();
       this.facade.snapshot();
@@ -319,21 +261,11 @@ export class AbwabPageComponent implements OnInit {
       this.searchQueryParam.set(parsed.q);
       this.modalUrl.syncFromUrl(parsed.modal, parsed.door);
       this.selection.setArchiveViewActive(parsed.archive);
-      // The URL is the single source of truth for the selection, exactly as it already is
-      // for view/archive/card/q. `buildAbwabQueryParams` drops `door` whenever the scope
-      // changes (§4.4: a selection is not meaningful across scopes), so without this the
-      // store would keep a door the URL has abandoned — and the side panel would keep
-      // offering edit/move/archive on a door that is no longer on screen (M22).
       if (parsed.door === null) {
         this.selection.clearSelection();
       }
 
-      // Any navigation retires a stale reveal message, so a failed reveal cannot outlive the
-      // next thing that happens and mask a write's own announcement.
       this.revealAnnouncement.set(null);
-      // `revealPending` rather than "is nothing marked yet": within the hold window any other
-      // navigation (a keystroke writing `q`, say) also emits with `door` still equal to the
-      // target, and re-arming the mark and the scroll off that would be wrong.
       const revealTarget = this.revealTargetId();
       if (this.revealPending && revealTarget !== null && parsed.door === revealTarget) {
         this.revealPending = false;
@@ -388,8 +320,6 @@ export class AbwabPageComponent implements OnInit {
   protected onBulkToggled(id: number): void {
     const node = this.byId().get(id);
     if (!node) {
-      // No sentinel version: a fabricated token cannot succeed, and bulk is all-or-nothing,
-      // so one bogus entry would 409 the whole operation with nothing the user can act on.
       return;
     }
     this.selection.toggleBulk(id, node.version);
@@ -402,8 +332,6 @@ export class AbwabPageComponent implements OnInit {
   protected confirmArchiveAndClearUrl(): void {
     this.overlays.confirmArchive(() => {
       this.updateQueryParams(buildAbwabQueryParams({ door: null }));
-      // Success clears the selection, so the op button that opened this is now disabled and the
-      // ctx-menu row is gone — `cdkTrapFocusAutoCapture` would hand focus to a dead target.
       this.focusTreeRovingItem();
     });
   }
@@ -412,9 +340,6 @@ export class AbwabPageComponent implements OnInit {
     this.overlays.confirmBulkArchive(() => this.focusTreeRovingItem());
   }
 
-  /** Cancel leaves the trigger alive and focusable (the side-panel op button, the bulk bar), so
-   * the primitive's own auto-restore is correct and this only covers the ctx-menu entry point,
-   * whose menu closed when the dialog opened. */
   protected onArchiveConfirmCancelled(): void {
     const cameFromContextMenu = this.overlays.archiveCameFromContextMenu();
     this.overlays.cancelArchiveConfirm();
@@ -427,9 +352,6 @@ export class AbwabPageComponent implements OnInit {
     this.overlays.cancelBulkArchiveConfirm();
   }
 
-  /** The tree's roving-focus item is the one row carrying `tabindex="0"`. Falls back to the
-   * header control rather than letting focus drop to `<body>` when the tree unmounted entirely
-   * (archiving the last door swaps the page to its empty state). */
   private focusTreeRovingItem(): void {
     this.focusQueued(() => {
       const root = this.elementRef.nativeElement;
@@ -456,16 +378,10 @@ export class AbwabPageComponent implements OnInit {
       .subscribe();
   }
 
-  // Opens the modal rather than writing: the destination a retired section leaves open is the
-  // user's to answer, and the backend refuses the write without it.
   protected onRestoreRequested(id: number): void {
     this.overlays.openRestoreModal(id);
   }
 
-  /** Select-then-act (README "The URL is the single source of truth for the selection"), in the
-   * `runContextAction` order: the store is written **synchronously** before `openRelations()`,
-   * which reads `selectedDoor()`. Waiting for the URL subscription to echo `door=` back would
-   * open the modal on whatever was selected before. */
   protected onRelationsRequested(doorId: number): void {
     const node = this.byId().get(doorId);
     if (!node) {
@@ -476,37 +392,15 @@ export class AbwabPageComponent implements OnInit {
     this.commitModalOpen('relations', doorId);
   }
 
-  /**
-   * Reveal a related door in the tree (audit item 10). Every state the target can be in is
-   * folded into **one** query patch, so there is one navigation and no race between them:
-   * `door` always; `section` when the target lives elsewhere (an explicit `door` in the same
-   * change overrides the scope-invalidation clear, `abwab-url-sync.ts`); and `view: 'tree'`
-   * when the cards drill is open, since the item is reveal-in-*tree*.
-   *
-   * `q` is **not** touched (ux-slice-l, reversing slice D). Clearing it existed only because a
-   * filtering tree could leave the target pruned; the tree highlights instead of pruning now,
-   * so the target is on screen either way and throwing the user's query away would be a second,
-   * unasked-for action.
-   *
-   * The archived/missing guard is defensively unreachable — the relations read hides any
-   * relation whose endpoint is archived — and is kept anyway, so an impossible state is a
-   * visible non-action rather than a silent broken reveal.
-   */
   protected onRevealRequested(doorId: number): void {
     const node = this.byId().get(doorId);
     if (!node || node.isArchived) {
-      // This branch navigates nowhere, so closing the modal has to carry the key itself —
-      // otherwise the modal shuts while `modal=relations` stays in the URL with no emission
-      // coming to reconcile it, and the overlay becomes unreachable for the page's lifetime.
       this.closeUrlBackedModal(['relations'], () => this.overlays.closeRelationsModal(), true);
       this.revealAnnouncement.set(ABWAB_LABELS.revealUnavailable);
       return;
     }
-    // Read before the overlay closes — closing releases it.
     const anchorId = this.overlays.relationsAnchorDoorId();
     this.overlays.closeRelationsModal();
-    // The single patch below already rewrites the key; clearing the tracked kind here rather
-    // than waiting for the emission keeps this one navigation instead of two.
     this.modalUrl.releaseTracking();
     this.revealAnnouncement.set(null);
     this.revealTargetId.set(doorId);
@@ -515,17 +409,7 @@ export class AbwabPageComponent implements OnInit {
     this.updateQueryParams(
       buildAbwabQueryParams({
         door: doorId,
-        // Retained WITH the source's id (ux-slice-l). A plain `relations-closed` would follow
-        // `door=`, which this patch is pointing at the TARGET — so the restore control would
-        // reopen the target's relations while the user is expecting the source's. That
-        // ambiguity is why the reveal used to discard the key outright. The key now carries
-        // the diverged subject itself, so restore reopens the door the user came from.
-        // A null anchor is unreachable in door mode; emitting no key beats emitting a malformed one.
         modal: anchorId === null ? null : { kind: 'relations' as const, closed: true, subjectDoorId: anchorId },
-        // Only when the active tab genuinely excludes the target. «كل الأبواب» shows every
-        // door, section-less ones included, so switching to the target's own tab there would
-        // narrow the view for no reason; a *section* tab that isn't the target's does exclude
-        // it, and then the reveal lands where the door actually lives.
         ...(this.activeSectionId() !== null && node.sectionId !== this.activeSectionId()
           ? { section: node.sectionId }
           : {}),
@@ -534,9 +418,6 @@ export class AbwabPageComponent implements OnInit {
     );
   }
 
-  /** Keyed off the param emission rather than the click: the rows that must exist for the
-   * scroll to find anything are rendered by the change detection that emission triggers, and
-   * in the cross-section / cards / search cases they do not exist before it at all. */
   private startReveal(doorId: number): void {
     this.revealedId.set(doorId);
     this.clearRevealTimer();
@@ -547,8 +428,6 @@ export class AbwabPageComponent implements OnInit {
     }, REVEAL_HOLD_MS);
     queueMicrotask(() => {
       const row = this.elementRef.nativeElement.querySelector(`[data-testid="abwab-tree-row-${doorId}"]`);
-      // jsdom gives elements no `scrollIntoView`, and the reveal must not throw where it is
-      // simply unavailable — the mark and the expand are the parts that carry the behavior.
       row?.scrollIntoView?.({ block: 'nearest' });
     });
   }
@@ -565,11 +444,6 @@ export class AbwabPageComponent implements OnInit {
     this.overlays.requestContextMenu(request.id);
   }
 
-  // Audit item 11 — the restorable overlays. Every gesture below opens its overlay
-  // **synchronously**, exactly as it did before the key existed, and writes `modal=<kind>`
-  // in the same patch as any selection it changes. The URL is a record of what is open, not
-  // the mechanism that opens it: waiting for the emission would make every click wait on a
-  // navigation, and `openedModalKind` makes the echo a no-op when it arrives.
 
   protected onCreateRootRequested(): void {
     this.modalUrl.open('create');
@@ -597,9 +471,6 @@ export class AbwabPageComponent implements OnInit {
     this.openOnSelectedDoor('relations');
   }
 
-  /** The tree's `＋` selects the row and then asks for the child modal as two separate
-   * outputs (its own contract since Slice B), so this patch restates `door` rather than
-   * relying on the selection write that just preceded it. */
   protected onTreeAddChildRequested(doorId: number): void {
     const node = this.byId().get(doorId);
     if (!node) {
@@ -625,18 +496,12 @@ export class AbwabPageComponent implements OnInit {
     this.overlays.ctxRelations((id) => this.commitModalOpen('relations', id));
   }
 
-  // Closing keeps the overlay in the URL in a retained state, so the page can offer it back
-  // (the words overlay's contract, `detail-overlay-history.service.ts:125-141`). Retains and
-  // discards both replace, so the closed state never becomes its own Back target; only
-  // opening and restoring push.
 
   protected onDoorModalSaved(): void {
     this.doorModalCommitted = true;
   }
 
   protected onDoorModalClosed(): void {
-    // A saved door has nothing left to restore — offering to reopen the form it was written
-    // in would point at work that is already committed.
     const committed = this.doorModalCommitted;
     this.doorModalCommitted = false;
     this.closeUrlBackedModal(DOOR_MODAL_KINDS, () => this.overlays.closeModal(), committed);
@@ -658,8 +523,6 @@ export class AbwabPageComponent implements OnInit {
     this.closeUrlBackedModal(['relations'], () => this.overlays.closeRelationsModal());
   }
 
-  /** Null unless the retained state pins a subject of its own — then the control names it.
-   * `restorableModal` has already checked the door is live, so a name is always found here. */
   protected readonly retainedSubjectDoorName = computed(() => {
     const subjectDoorId = this.modalUrl.restorableModal()?.subjectDoorId ?? null;
     return subjectDoorId === null ? null : (this.byId().get(subjectDoorId)?.name ?? null);
@@ -670,12 +533,6 @@ export class AbwabPageComponent implements OnInit {
     if (retained === null) {
       return;
     }
-    // A push, so Back returns to the closed state rather than skipping past it. A carried
-    // subject is restored by writing it back to `door=` in the SAME patch: the open state's
-    // subject is always `door=`, so the id is dropped here and every invariant holds again.
-    // The patch is all this does — the emission drives the existing deep-link machinery, which
-    // selects the door and opens the overlay. Opening it synchronously here would break the
-    // echo-no-op invariant `reconcileOpen` depends on.
     this.updateQueryParams(
       buildAbwabQueryParams({
         ...(retained.subjectDoorId === null ? {} : { door: retained.subjectDoorId }),
@@ -686,17 +543,9 @@ export class AbwabPageComponent implements OnInit {
 
   protected onModalDiscardRequested(): void {
     this.updateQueryParams(buildAbwabQueryParams({ modal: null }), true);
-    // The X removes itself, so focus has to be handed somewhere deliberately; the discard's
-    // own trap-free close would otherwise drop it on `<body>`.
     this.focusQueued(() => this.headerFallbackFocus()?.nativeElement.focus());
   }
 
-  /** `kinds` is what this overlay can be holding on the URL's behalf. A mismatch means a bulk
-   * gesture opened it — the key was never written, so closing must not write one either.
-   *
-   * A `discard` close hands focus to nobody on purpose: those paths (a saved door, a confirmed
-   * move, the reveal's dead-target guard) still have the modal's own `cdkTrapFocusAutoCapture`
-   * releasing, which returns focus to whatever opened it. */
   private closeUrlBackedModal(kinds: readonly AbwabModalKind[], close: () => void, discard = false): void {
     const kind = this.modalUrl.urlBackedKind(kinds);
     close();
@@ -710,9 +559,6 @@ export class AbwabPageComponent implements OnInit {
     }
   }
 
-  /** Queued, not immediate: the target does not exist until the navigation's emission renders
-   * it, and the modal's focus trap is still releasing on this tick. Same shape as the words
-   * shell's `detail-modal-shell.component.ts:91-95`, which solved the identical race. */
   private focusQueued(focus: () => void): void {
     setTimeout(focus, 0);
   }

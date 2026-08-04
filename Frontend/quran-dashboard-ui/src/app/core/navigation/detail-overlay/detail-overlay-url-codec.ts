@@ -17,8 +17,6 @@ import {
   WordTypeFrameView,
 } from './detail-overlay.models';
 
-// Strict on input (fail closed), explicit on output: defaults are always serialized so a
-// future default change cannot re-interpret an old shared URL.
 
 const FIELD_SEPARATOR = '~';
 const NULL_SENTINEL = '-';
@@ -35,8 +33,6 @@ const WORD_TYPE_TENSES: readonly WordTypeFrameTense[] = ['all', 'past', 'present
 const WORD_TYPE_VOICES: readonly WordTypeFrameVoice[] = ['all', 'active', 'passive'];
 const WORD_TYPE_VIEWS: readonly WordTypeFrameView[] = ['words', 'ayahs', 'surahs'];
 
-// `~` is unreserved for encodeURIComponent, so escape it explicitly to keep the separator
-// unambiguous; a value equal to the `-` sentinel is escaped so it cannot be misread as null.
 function encodeField(value: string): string {
   const encoded = encodeURIComponent(value).replace(/~/g, '%7E');
   return encoded === NULL_SENTINEL ? '%2D' : encoded;
@@ -53,9 +49,6 @@ function decodeField(raw: string): string | null {
   }
 }
 
-// Decimal syntax alone is not enough: a digit run above Number.MAX_SAFE_INTEGER rounds to a
-// different integer (or Infinity), so a shared URL could silently resolve to another entity.
-// The safe-integer guard keeps the value exact across the round trip.
 function parsePositiveInt(raw: string): number | null {
   if (!/^[1-9]\d*$/.test(raw)) {
     return null;
@@ -68,7 +61,6 @@ function parseEnum<T extends string>(raw: string, allowed: readonly T[]): T | nu
   return (allowed as readonly string[]).includes(raw) ? (raw as T) : null;
 }
 
-/** `-` means null; anything else must decode to a non-empty string. */
 function parseNullableCode(raw: string): { value: string | null } | null {
   if (raw === NULL_SENTINEL) {
     return { value: null };
@@ -119,7 +111,6 @@ export function serializeDetailFrame(frame: DetailFrame): string {
   }
 }
 
-/** Strict single-frame parse; any malformed field fails the whole frame. */
 export function parseDetailFrame(raw: string): DetailFrame | null {
   const fields = raw.split(FIELD_SEPARATOR);
   if (fields[0] !== DETAIL_OVERLAY_FRAME_VERSION) {
@@ -213,9 +204,7 @@ export function parseDetailFrame(raw: string): DetailFrame | null {
 }
 
 export interface SerializedDetailOverlayParams {
-  /** Values for the repeated `qdDetail` key, bottom → top. */
   readonly frames: readonly string[];
-  /** Value for `qdDetailOpen`, or null when the key must be absent. */
   readonly open: '1' | null;
 }
 
@@ -228,13 +217,9 @@ export function serializeDetailOverlayState(state: DetailOverlayUrlState): Seria
 
 export interface ParsedDetailOverlayParams {
   readonly state: DetailOverlayUrlState;
-  /** False when the raw params must be rewritten (replace semantics) to match `state`. */
   readonly isCanonical: boolean;
 }
 
-// Canonicalization rules: an invalid first frame means no overlay; a malformed later frame
-// truncates the stack before it; frames beyond the cap are dropped; `qdDetailOpen=1` without
-// a valid frame collapses to closed/no overlay.
 export function parseDetailOverlayParams(
   rawFrames: readonly string[],
   rawOpen: string | null,

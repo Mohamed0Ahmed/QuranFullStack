@@ -9,13 +9,8 @@ internal static class AbwabDependencyInjection
 {
     public static IServiceCollection AddAbwab(this IServiceCollection services)
     {
-        // Idempotent (TryAdd-based), and registered here rather than relied upon from the mushaf module,
-        // which a host composing only abwab would never call.
         services.AddMemoryCache();
 
-        // One object behind both interfaces. Registering the two interfaces separately against the same
-        // implementation type would build two counters: writers would bump one, controllers would read the
-        // other, and every client would be served a permanent 304 with a green build and green tests.
         services.AddSingleton<AbwabCacheGeneration>();
         services.AddSingleton<IAbwabCacheInvalidator>(sp => sp.GetRequiredService<AbwabCacheGeneration>());
         services.AddSingleton<IAbwabCacheValidators>(sp => sp.GetRequiredService<AbwabCacheGeneration>());
@@ -57,7 +52,6 @@ internal static class AbwabDependencyInjection
             sp.GetRequiredService<IMemoryCache>(),
             sp.GetRequiredService<AbwabCacheGeneration>()));
 
-        // The relations read is deliberately uncached and unconditional (area README).
         services.AddScoped<IAbwabRelationsReader, EfAbwabRelationsReader>();
 
         return services;

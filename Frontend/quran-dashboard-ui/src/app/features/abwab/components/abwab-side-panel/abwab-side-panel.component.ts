@@ -3,13 +3,6 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
-/**
- * Active-door display + single-door operations + bulk mode (plan-slice-b.md T415/T503).
- * «العلاقات» joined the operations list once relations existed to open (abwab-relations
- * plan §7 T604); **protection still has no entry** (plan.md §5.1, contract `:250-251`).
- * Reorder has no button here — the tree's own inline number editor (T413/T506) is the one
- * reorder affordance; a second control doing the same thing would be redundant, not additive.
- */
 @Component({
   selector: 'qd-abwab-side-panel',
   standalone: true,

@@ -10,11 +10,6 @@ import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 
 type AuthCallbackStatus = 'pending' | 'error';
 
-// The app-initializer has already processed the Logto code/state, so `isAuthenticated$` is
-// settled by the time this activates. A settled-but-unauthenticated visit is a genuine
-// FAILURE (an `error` or a `code` query param is present — read before navigateByUrl replaces
-// them) versus a benign ABANDONMENT (neither param), which still navigates since browsing is
-// public. Only FAILURE stays here and renders the calm error state.
 @Component({
   selector: 'qd-auth-callback',
   standalone: true,

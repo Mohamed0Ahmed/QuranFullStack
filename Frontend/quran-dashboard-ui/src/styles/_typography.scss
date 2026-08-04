@@ -48,7 +48,7 @@
   src: url('/fonts/mushaf/surah-name-v1.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
-  /* Quran-safety: ligature-trigger font ('surah001', 'header', ...) — see the
+  /* Quran-safety: ligature-trigger font ('surah', 'surah001', ...) — see the
      'Uthmanic Hafs' block above for why this must not use font-display: swap. */
   font-display: block;
 }
@@ -58,7 +58,7 @@
   src: url('/fonts/mushaf/surah-name-v2.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
-  /* Quran-safety: ligature-trigger font ('makkah', 'madinah', ...) — see the
+  /* Quran-safety: ligature-trigger font ('surah001', ...) — see the
      'Uthmanic Hafs' block above for why this must not use font-display: swap. */
   font-display: block;
 }

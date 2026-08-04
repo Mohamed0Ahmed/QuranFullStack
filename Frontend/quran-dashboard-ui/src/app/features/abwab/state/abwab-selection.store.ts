@@ -16,12 +16,6 @@ const INITIAL_STATE: AbwabSelectionState = {
   bulkSet: new Map(),
 };
 
-/**
- * Single selection (door id + its live optimistic-concurrency token) and the bulk set,
- * kept as one state object so entering/leaving bulk mode can atomically clear the other.
- * Bulk mode is unavailable while the archive view is active (§6.2 M23) — archived doors
- * offer restore only, never bulk ops.
- */
 @Injectable({ providedIn: 'root' })
 export class AbwabSelectionStore {
   private readonly state = signal<AbwabSelectionState>(INITIAL_STATE);
@@ -80,19 +74,6 @@ export class AbwabSelectionStore {
     this.state.update((current) => ({ ...current, bulkSet: new Map() }));
   }
 
-  /** After every write (plan-slice-b.md §4.6): rebind every token by id from the fresh
-   * snapshot, dropping ids the write made vanish (M24).
-   *
-   * "Vanished" includes **archived-in-snapshot**, and for the bulk set that is the only
-   * form it ever takes in production: an archive is a soft delete, and the builder keeps
-   * every archived door in `byId` (it builds `archivedRoots` too), so a missing-only test
-   * drops nothing and leaves a just-archived door in the set with a freshly rebound
-   * version — which the next bulk submit sends, earning an all-or-nothing 404.
-   *
-   * The single selection deliberately keeps the missing-only rule: an archived single
-   * selection is already cleared by the archive-confirm flow and by the URL's own
-   * scope-invalidation, and the archive view needs the selection to survive to offer
-   * restore. Bulk is the only place a stale id reaches a write. */
   rebindTo(snapshot: AbwabTreeSnapshotVm): void {
     this.state.update((current) => {
       const selectedNode =

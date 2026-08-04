@@ -52,8 +52,6 @@ button.qd-interactive-surface {
   align-items: center;
   justify-content: center;
   gap: var(--qd-space-2);
-  /* The block-axis half of this box comes from tokens (_tokens.scss): reserved slots that must
-     hold a not-yet-mounted control row compute their height from the same values. */
   padding: var(--qd-btn-padding-block) var(--qd-space-4);
   border: var(--qd-btn-border-width) solid var(--qd-border);
   border-radius: var(--qd-radius-sm);
@@ -152,7 +150,6 @@ button.qd-interactive-surface {
   color: var(--qd-accent-text);
 }
 
-/* --- qd-tabs (UI_STYLE_SYSTEM.md §17 qd-tabs) --- */
 
 .qd-tabs {
   display: inline-flex;
@@ -165,12 +162,6 @@ button.qd-interactive-surface {
   align-items: stretch;
 }
 
-// Wrapping fixed-column strip (UI_STYLE_SYSTEM.md §17 `qd-tabs`). Declared after the base so
-// its `display` wins at equal specificity, the same way `--vertical` above relies on order.
-// `minmax(0, …)`, not a bare `1fr`: a grid item's `min-width: auto` would otherwise let a long
-// label push its track past the column width instead of ellipsizing inside it. The tracks exist
-// whether or not they are filled, so a two-tab strip renders two full-width cells beside three
-// empty ones rather than two stretched halves.
 .qd-tabs--grid {
   display: grid;
   grid-template-columns: repeat(var(--qd-tabs-grid-columns, 5), minmax(0, 1fr));
@@ -236,13 +227,10 @@ button.qd-interactive-surface {
   color: var(--qd-accent-text);
 }
 
-// Opacity only (not background/color, which the selected-state rule above already owns) —
-// composes with both tab states instead of forking a second selected+empty rule.
 .qd-tabs__count--empty {
   opacity: 0.5;
 }
 
-/* --- qd-chip (UI_STYLE_SYSTEM.md §17 qd-chip) --- */
 
 .qd-chip {
   display: inline-flex;
@@ -307,10 +295,6 @@ button.qd-interactive-surface {
   color: var(--qd-accent-text);
 }
 
-/* The label's opt-in control (Slice D): a removable chip's static wrapper is what makes a
-   nested button legal, so the name can act while `×` removes. Inherits the chip's own type
-   and color and adds only the affordance, so an opted-in chip reads as one chip with two
-   controls rather than a button glued inside a pill. */
 .qd-chip__label--clickable {
   border: none;
   background: transparent;
@@ -336,7 +320,6 @@ button.qd-interactive-surface {
   cursor: not-allowed;
 }
 
-/* Removable chips (plan-slice-b.md T412) are a static wrapper, not a clickable chip. */
 .qd-chip--static {
   cursor: default;
 }
@@ -377,11 +360,6 @@ button.qd-interactive-surface {
   background: var(--qd-surface);
 }
 
-/* --- qd-state (UI_STYLE_SYSTEM.md §17 loading/empty/error family) ---
-   Backed by the existing .qd-empty-state / .qd-loading-state / .qd-error-state
-   classes below (kept as-is); only .qd-error-state gains the danger-on-tint
-   surface the doctrine requires. Extending these shared classes in place also
-   improves every current ad-hoc consumer — no call-site edits needed. */
 
 .qd-error-state {
   background: var(--qd-danger-tint);
@@ -599,9 +577,6 @@ button.qd-interactive-surface {
 }
 
 .qd-modal {
-  /* Option B (R1, color-doctrine plan P6): elevation comes from --qd-shadow-lg
-     + the dimmed backdrop, not a distinct surface tone — the modal sits on the
-     same near-white card surface as everything else. */
   background: var(--qd-surface);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-lg);
@@ -610,22 +585,10 @@ button.qd-interactive-surface {
   width: min(100%, 36rem);
 }
 
-// The sanctioned wide step (UI_STYLE_SYSTEM.md §17 `.qd-modal` entry). 52rem == 832px
-// fits inside the 992px available at the 1024px minimum desktop with ~80px gutters per
-// side; the existing 46rem step is only +160px over the base and under-delivers for
-// two-pane content. A literal rem on the class, not a token, because every other modal
-// geometry in this file is a literal (28/36/42/44/46rem) and a lone width token would be
-// the odd one out. Width variants opt in here; the base is never edited.
 .qd-modal--wide {
   width: min(100%, 52rem);
 }
 
-// Opt-in geometry modifier (UI_STYLE_SYSTEM.md §17 `.qd-modal` entry) — never
-// merged into the base above. `.qd-modal.explorer-detail-modal` sets
-// `max-height` but no `height`/`block-size`, so a block-size on the base would
-// apply there too and clamp five shipped words modals; --fixed is how a
-// consumer opts into §17's "fixed block-size, never max-block-size" rule
-// without that collision.
 .qd-modal--fixed {
   display: flex;
   flex-direction: column;
@@ -640,9 +603,6 @@ button.qd-interactive-surface {
   padding: var(--qd-space-5);
 }
 
-// The only scroller inside --fixed; stable gutter so the reserved scrollbar
-// track cannot reflow content width when the list crosses the scroll
-// threshold (audit item 3, one level down from the page-level fix).
 .qd-modal__body {
   flex: 1;
   min-block-size: 0;
@@ -666,11 +626,6 @@ button.qd-interactive-surface {
   }
 }
 
-// Item styling for `qd-context-menu`'s projected content (`shared/ui/context-menu/`).
-// Global, not scoped to the primitive's own stylesheet: these classes are applied by
-// consumer templates directly onto their own projected buttons, so a rule scoped to the
-// primitive's component stylesheet would never reach them under emulated encapsulation
-// (the same reason `.qd-tabs__tab` lives here rather than in `tabs.component.scss`).
 .qd-context-menu__item {
   display: flex;
   inline-size: 100%;
@@ -701,13 +656,8 @@ button.qd-interactive-surface {
 
 .qd-skeleton {
   display: block;
-  /* Parameterized sizing (UI_STYLE_SYSTEM.md §17 loading/skeleton system).
-     --text/--block/--w-* below stay as thin aliases that set these same vars,
-     so existing call-sites keep working unchanged. */
   width: var(--qd-skeleton-w, 100%);
   height: var(--qd-skeleton-h, 0.75rem);
-  /* one-off: shimmer-system base tone, kept (color-doctrine plan §11) — no role
-     token models a skeleton placeholder tint */
   background: color-mix(in oklch, var(--qd-surface) 78%, var(--qd-border));
   border-radius: var(--qd-radius-sm);
   position: relative;
@@ -748,8 +698,6 @@ button.qd-interactive-surface {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  /* one-off: shimmer-wave gradient, kept (color-doctrine plan §11 named
-     exception) — a moving highlight, not a role-derivable fill */
   background: linear-gradient(
     90deg,
     transparent 0%,
@@ -777,14 +725,8 @@ button.qd-interactive-surface {
 
   .qd-skeleton::after {
     animation: none;
-    /* one-off: static stand-in for the shimmer gradient above, same rationale */
     background: color-mix(in oklch, var(--qd-surface) 50%, var(--qd-text) 16%);
     transform: none;
   }
 }
 
-// Mushaf selected-ayah-section / selected-word-section responsive rules moved
-// to their owning component SCSS files (UI_STYLE_SYSTEM.md §2 / styles/README.md
-// boundary — component internals belong in the owning component's SCSS):
-// src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss
-// src/app/features/mushaf/components/selected-word-section/selected-word-section.component.scss

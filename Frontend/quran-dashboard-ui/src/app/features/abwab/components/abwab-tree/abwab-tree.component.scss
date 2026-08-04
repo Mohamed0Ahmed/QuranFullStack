@@ -1,41 +1,15 @@
 @use '../../../../../styles/breakpoints' as bp;
 
-/* One column template, owned by the frame and re-exposed down two levels of subgrid so the
-   aria-hidden header can sit OUTSIDE `role="tree"` and still share the rows' badge tracks
-   (UI_STYLE_SYSTEM.md §17, "header over badge columns"). The rows already agreed on those
-   positions before this — depth padding only ever shifted the leading content, so the
-   `flex: none` trailing items sat at a constant offset from each row's inline-end. Subgrid is
-   here for the header's benefit, not to fix a row-to-row misalignment.
-
-   `display: contents` on the `role="tree"` element would have removed the wrapper instead, but
-   that element carries the tree role and its aria-label, and `display: contents` has a history
-   of dropping such elements from the accessibility tree. */
 .abwab-tree-frame {
   display: grid;
-  /* `minmax(0, 1fr)`, never a bare `1fr`: `1fr` means `minmax(auto, 1fr)`, whose auto minimum
-     refuses to shrink past min-content — `.qd-truncate` would never engage and a long name
-     would push the badge tracks out of the row. */
   grid-template-columns: minmax(0, 1fr) repeat(3, var(--abwab-tree-count-col)) auto auto;
   column-gap: var(--qd-space-2);
 }
 
-/* Bulk mode trades the row actions for a leading checkbox. Two declared templates rather than
-   conditional tracks, so the rendered cells and the tracks can never drift apart. */
 .abwab-tree-frame--bulk {
   grid-template-columns: auto minmax(0, 1fr) repeat(3, var(--abwab-tree-count-col)) auto;
 }
 
-/* 1.75rem == 28px, derived from two measured constraints rather than eyeballed:
-   the widest header label («مباشر», 21px at the row's own 0.6875rem) and the widest badge a
-   real count produces (a three-digit chip, ~25px). Both clear 28px, so the header needs no
-   type of its own — it reads at the same size as the row, which is what DESIGN.md's calm
-   register asks for.
-
-   The column is also a name-budget decision, and that is the binding one: every pixel here is
-   taken from `.abwab-tree__name`, the row's only shrinkable item. Three fixed 28px tracks cost
-   the name 19px against the natural badge widths they replace (measured: 3 × 28 − 65.2). The
-   original full words («مباشرين» et al.) needed 2.5rem and cost 55px — which is why the visible
-   labels are abbreviated and the aria-labels, which carry the actual meaning, are not. */
 .abwab-tree-frame {
   --abwab-tree-count-col: 1.75rem;
 }
@@ -51,18 +25,12 @@
   grid-template-columns: subgrid;
   grid-column: 1 / -1;
   align-items: center;
-  /* Block padding only. Inline padding on a subgrid is taken out of the space its tracks
-     occupy, so the row's insets live on its first and last cells instead — see
-     `.abwab-tree__lead` (which also carries the depth indent) and the `:last-child` rule. */
   padding-block: var(--qd-space-1);
   border-radius: var(--qd-radius-sm);
   cursor: pointer;
   color: var(--qd-text);
 }
 
-/* Exactly what indented before the subgrid conversion — chevron, order pill, name — so the
-   visual indent step and the set of things that indent are both unchanged. Indenting only the
-   chevron would have left the order pill and name flush, which is a different-looking tree. */
 .abwab-tree__lead {
   display: flex;
   align-items: center;
@@ -71,14 +39,11 @@
   padding-inline-start: calc(var(--abwab-tree-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
 }
 
-/* Covers the trailing inset in both templates: actions are last when not bulk, flags when bulk. */
 .abwab-tree__row > *:last-child,
 .abwab-tree__header > *:last-child {
   padding-inline-end: var(--qd-space-2);
 }
 
-/* Rendered on every row, empty on leaves: subgrid auto-placement is positional, so a leaf that
-   skipped these would put its flags in the first count track. */
 .abwab-tree__count-cell {
   display: flex;
   justify-content: center;
@@ -108,14 +73,6 @@
   color: var(--qd-accent-text);
 }
 
-/* The reveal mark (audit item 10). It CANNOT be a background tint: `--qd-selected-bg` IS
-   `--qd-accent-tint` in both themes (`_tokens.scss` / `_themes.scss`), and a reveal always
-   lands on the row it just selected — so a tint highlight would be an exact zero-delta
-   against the row's own selected fill. The outline carries the signal instead, because a
-   selected row has no border or outline at rest, and it decays to transparent over the same
-   ~3s the page holds the class. This is `_tokens.scss:94`'s recorded lesson read the other
-   way round: there a mark too close to hover read as a flash; here a mark equal to selected
-   would not read at all. */
 @keyframes abwab-tree-reveal {
   from {
     outline-color: var(--qd-accent);
@@ -131,7 +88,6 @@
   animation: abwab-tree-reveal 3s ease-out;
 }
 
-/* §15-F/§17's blanket rule: no decay, the same mark held for the same duration. */
 @media (prefers-reduced-motion: reduce) {
   .abwab-tree__row--revealed {
     animation: none;
@@ -139,19 +95,10 @@
   }
 }
 
-/* Persistent match mark (ux-slice-l). Outline-family, never a tint, for the reason directly
-   above: `--qd-selected-bg` IS `--qd-accent-tint`, so a tint is zero-delta on a matched row
-   that is also selected, and `_tokens.scss:94` records a tint too close to hover reading as a
-   flash. Inset `box-shadow` rather than `outline` ON PURPOSE: the reveal ring and the focus
-   ring both own `outline`, and a third claim on that one channel would make which mark shows
-   depend on SCSS declaration order — a silent-reformat hazard. Separate properties compose
-   instead of competing, so match+revealed shows both signals at once and match+focused keeps
-   the match visible under the focus ring. Never animated, so reduced motion needs nothing. */
 .abwab-tree__row--match {
   box-shadow: inset 0 0 0 1px var(--qd-accent);
 }
 
-/* Focus still wins over the reveal — a keyboard user must always see where focus is. */
 .abwab-tree__row:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: -2px;
@@ -174,14 +121,6 @@
   visibility: hidden;
 }
 
-/* One vocabulary for the row's metadata (Slice D, audit item 13): the order pill, the
-   child count and the relations flag all compose the `qd-chip` backing classes, and this
-   file only compresses them to the tree row's scale. The `word-type-filter` child button is
-   the precedent for composing those classes with a local sizing rule rather than
-   re-declaring border/background/hover/focus per call-site. The order pill stays a control
-   with its click-to-edit affordance — it aligns to the chip metrics but is not a `qd-chip`
-   component, because the chip contract has no editable-number variant and inventing one for
-   a single consumer would fork it. */
 .abwab-tree__order,
 .abwab-tree__flag {
   flex: none;
@@ -211,22 +150,12 @@
   min-inline-size: 0;
 }
 
-/* `.qd-chip__count` supplies the pill, the recessed fill and the tabular numerals; only the
-   row's smaller type is local. */
 .abwab-tree__count {
   flex: none;
   font-size: 0.6875rem;
 }
 
-/* Row width budget (audit item 14). Priority, widest to narrowest: the name is the only
-   shrinkable item (ellipsis, `.qd-truncate`), then order pill > actions > direct-children
-   count > descendants/depth > flag. Below the tablet breakpoint the two badges this slice
-   added drop out; the direct-children count — the one the design contract itself specifies —
-   survives at every width. §17's detail-shell "Header priority" is the reasoning precedent:
-   drop whole items rather than shrink every item toward illegibility. */
 @media (max-width: bp.$qd-bp-tablet-max) {
-  /* `display: none` removes these cells from auto-placement, so the frame drops the two
-     matching tracks in the same query — rendered cells and tracks must stay in step. */
   .abwab-tree__count--wide {
     display: none;
   }
@@ -246,8 +175,6 @@
   flex: none;
 }
 
-/* The accent tint is the "has relations" mark, so the empty state drops it for a muted
-   hairline rather than dimming the same tint — a faded accent still reads as "some". */
 .abwab-tree__flag {
   background: var(--qd-accent-tint);
   color: var(--qd-accent-text);
@@ -260,9 +187,6 @@
   border-color: var(--qd-border);
 }
 
-/* Row actions follow the design contract (abwab-tree-concept.html:114): revealed on hover
-   and on the selected row. `visibility` rather than `display` keeps the row height stable,
-   and :focus-within keeps them reachable once focus lands inside. */
 .abwab-tree__actions {
   display: inline-flex;
   gap: var(--qd-space-1);

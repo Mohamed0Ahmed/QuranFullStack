@@ -8,13 +8,6 @@ export interface AbwabCardsCrumb {
   readonly name: string;
 }
 
-/**
- * Cards drill-down (plan-slice-b.md T501): a grid of the current level's live doors plus
- * breadcrumbs. `cardId` names only the drilled-into parent (plan-slice-b.md §4.4) — the
- * full breadcrumb chain is derived by walking `parentId` up from it via `byId`, so the URL
- * never needs to carry an array. A `cardId` that is absent from `byId` or resolves to an
- * archived door fails closed to the root level (an archived door is never a card, M31).
- */
 @Component({
   selector: 'qd-abwab-cards',
   standalone: true,
@@ -26,8 +19,6 @@ export class AbwabCardsComponent {
   readonly roots = input<readonly AbwabNode[]>([]);
   readonly byId = input<ReadonlyMap<number, AbwabNode>>(new Map());
   readonly cardId = input<number | null>(null);
-  /** Top level only (T404) — global applies when the superset is active **and** `cardId` is
-   * null; every drilled-in level is a per-parent scope and stays on `orderValue`. */
   readonly orderScope = input<AbwabOrderScope>('section');
   readonly selectedId = input<number | null>(null);
   readonly bulkMode = input(false);

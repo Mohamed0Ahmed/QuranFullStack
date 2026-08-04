@@ -1,14 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 
-// Reference-counted so stacked layers (drawer + detail overlay) can hold the lock at
-// once: the body unlocks only when the last holder releases, restoring the original
-// overflow value exactly once.
-//
-// `isLocked` (Slice B2, T904) is the one piece of state the chrome-inert rule reads —
-// `.qd-navbar` inerts itself off it rather than a second "any modal open" service, since
-// every modal dialog in the app already acquires this same lock (UI_STYLE_SYSTEM.md §17
-// "Chrome-inert rule").
 @Injectable({ providedIn: 'root' })
 export class ScrollLockService {
   private readonly platformId = inject(PLATFORM_ID);

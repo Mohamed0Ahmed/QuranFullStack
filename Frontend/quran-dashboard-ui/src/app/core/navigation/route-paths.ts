@@ -21,7 +21,6 @@ export const MUSHAF_ROUTE_PATH = navRoute('mushaf');
 export const WORDS_ROUTE_PATH = navRoute('words');
 export const ABWAB_ROUTE_PATH = navRoute('abwab');
 
-/** Public OIDC redirect landing route segment (Feature 033); matches the `logto.redirectUri`. */
 export const CALLBACK_PATH = 'callback' as const;
 
 export const WORDS_UNIQUE_MODE_SEGMENT = 'unique/:mode' as const;

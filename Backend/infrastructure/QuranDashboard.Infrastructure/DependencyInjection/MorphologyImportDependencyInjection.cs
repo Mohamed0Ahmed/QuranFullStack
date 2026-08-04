@@ -7,8 +7,6 @@ using QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.Words.Morphology
 
 namespace QuranDashboard.Infrastructure.ServiceRegistration;
 
-// Public keyed-service keys so the CLI host (a separate assembly) can resolve either import source
-// without depending on the internal DI registration class.
 public static class MorphologyImportSourceKeys
 {
     public const string Legacy = "morphology-source:legacy";
@@ -17,8 +15,6 @@ public static class MorphologyImportSourceKeys
 
 internal static class MorphologyImportDependencyInjection
 {
-    // Keyed-service keys for the two import sources. The CLI runner resolves one of these based on the
-    // --enriched flag (or the equivalent default) and constructs ImportMorphologyHandler against it.
     public const string LegacySourceKey = MorphologyImportSourceKeys.Legacy;
     public const string EnrichedSourceKey = MorphologyImportSourceKeys.Enriched;
 
@@ -27,7 +23,6 @@ internal static class MorphologyImportDependencyInjection
         services.AddSingleton<BuckwalterArabicMap>();
         services.AddSingleton<SegmentArabicRenderer>();
 
-        // Legacy pathway (kept runnable for parity/diff until Phase 2 cleanup).
         services.AddSingleton<MorphologyManifestReader>();
         services.AddSingleton<JsonAlignedCorpusReader>();
         services.AddSingleton<JsonQulRootReader>();
@@ -37,16 +32,10 @@ internal static class MorphologyImportDependencyInjection
         services.AddSingleton<ISegmentStemCorrectionReader, SegmentStemCorrectionReader>();
         services.AddSingleton<MorphologyAssembler>();
 
-        // Enriched pathway (Feature 020) reuses the unchanged writer/handler/report via the shared
-        // MorphologySourceData DTO.
         services.AddSingleton<EnrichedMorphologyManifestReader>();
         services.AddSingleton<EnrichedMorphologyReader>();
         services.AddSingleton<EnrichedDimensionBuilder>();
 
-        // Both sources are registered as keyed services so the handler can be built against either one
-        // at run time. The legacy source remains the DEFAULT unkeyed binding to preserve current behavior
-        // (the selector is only flipped when --enriched is passed). This keeps old callers/paths working
-        // unchanged until the cut-over.
         services.AddScoped<MorphologyImportSource>();
         services.AddScoped<EnrichedMorphologyImportSource>();
         services.AddKeyedScoped<IMorphologyImportSource, MorphologyImportSource>(LegacySourceKey);

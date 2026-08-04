@@ -77,6 +77,17 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   change resizes the dialog or shifts the header; the count sits outside the heading and
   both live regions (it would otherwise double-announce) and is wired via
   `aria-describedby`. See `.architecture/UI_STYLE_SYSTEM.md` §17 for the full contract.
+- `ui/confirm-dialog/` — `qd-confirm-dialog`, the house confirmation dialog. Body content is
+  projected, so a consumer composes whatever the decision needs while the primitive keeps the
+  framing, the roles, the focus trap and the dismissal routes. It does **not** replace an
+  authoring-modal shell: those own a form and its dirty state. Two invariants that are not
+  visible from the call site and must not be "fixed":
+  - **Initial focus is the CANCEL button, deliberately** (`confirm-dialog.component.ts`
+    `focusCancel`). A confirm dialog interrupts, so the answer a reflexive Enter produces has to
+    be the safe one. Moving initial focus to the confirm button turns every destructive dialog
+    into a one-keystroke accident.
+  - **`busy` disables both buttons, not just confirm.** A decision in flight must not be
+    double-fired, and cancelling mid-write would leave the caller's state ambiguous.
 - `ui/modal-scroll-lock/` — `qdModalScrollLock` directive + `ScrollLockService`, the
   **reference-counted** body scroll lock (Feature 029): overlapping layers (responsive
   drawer + global overlay) each acquire/release; the body unlocks only when the last
@@ -107,6 +118,11 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 
 - Breakpoints in `layout/breakpoints.ts` must stay in sync with `../../styles/_breakpoints.scss`.
 - `safe-html` sanitizes HTML; it does not bypass Angular security.
+- `ui/skeleton/grid-template-columns.ts` splits a `grid-template-columns` string on top-level
+  whitespace only (`depth === 0`, `grid-template-columns.ts:22`), so a parenthesised function such
+  as `minmax(0, 1fr)` stays one track — but `repeat(n, …)` collapses to a single track instead of
+  expanding to `n`. Skeleton `rowTemplate` inputs must therefore be explicit space-separated track
+  lists, never `repeat()`, or the skeleton renders the wrong column count.
 - Browser-only helpers here keep SSR/test guards where needed (`matchMedia`, `document.body`, and similar).
 
 ## Related

@@ -11,21 +11,8 @@ import { AbwabTemplateDto } from '../../../core/api/generated/models/abwab-templ
 import { AbwabTemplateNodeDto } from '../../../core/api/generated/models/abwab-template-node-dto';
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
 
-/** What the workshop refetches after a write. Every node write moves the selected template's tree,
- * and most move the list's name or «N عناصر» chip too, so `both` is the ordinary case. */
 type AbwabTemplatesRefresh = 'list' | 'selected' | 'both' | 'none';
 
-/**
- * The templates-facing write surface. It deliberately does **not** reuse
- * `AbwabWriteController`: that controller's core invariant is refresh-the-doors-snapshot-and-
- * rebind-every-version-token, and templates carry no version tokens and are not in that
- * snapshot. What the two must not fork is the 409 policy, so both call
- * `toAbwabWriteFailure` — one status→outcome mapping, two refresh targets.
- *
- * Apply refreshes nothing: it writes doors, and `AbwabPageComponent.ngOnInit` calls
- * `facade.load()` on every entry, so returning to `/abwab` is what makes the copies visible.
- * Refreshing the doors snapshot from here would buy a fetch nobody sees.
- */
 @Injectable({ providedIn: 'root' })
 export class AbwabTemplatesController {
   private readonly api = inject(AbwabTemplatesApi);
@@ -35,8 +22,6 @@ export class AbwabTemplatesController {
   readonly announcement = this.announcementState.asReadonly();
 
   createTemplate(name: string): Observable<AbwabWriteOutcome<AbwabTemplateDto | null>> {
-    // The other three authoring fields are `null` at birth: creation is a name-only prompt, and
-    // the root is then edited through the full authoring modal like every other node (plan T704).
     return this.dispatch(
       this.api.createTemplate({ name, description: null, representativeAyahText: null, aliases: [] }),
       'list',
@@ -95,11 +80,6 @@ export class AbwabTemplatesController {
     refresh: AbwabTemplatesRefresh,
     successMessage?: string,
   ): AbwabWriteOutcome<T | null> {
-    // Both delete routes answer `204 No Content`, and HttpClient parses an empty body as `null`.
-    // Only a success is ever a 204 — every failure arrives as a 4xx through `catchError` — so a
-    // null response is a payload-less success. Dereferencing `isSuccess` first throws, gets
-    // swallowed as a transport error, and reports failure on a committed write. `data` is
-    // therefore nullable on the success arm too: it is what a 204 carries.
     const data = response?.data ?? null;
     if (response === null || response.isSuccess) {
       this.announcementState.set(successMessage ?? null);
@@ -127,8 +107,6 @@ export class AbwabTemplatesController {
   }
 }
 
-/** Aliases are sent as a real array, never `null`: the backend normalizes either, but an empty
- * list is what "no aliases" means and it keeps the create/edit bodies one shape. */
 function toWireFields(fields: AbwabAuthoringFields): {
   name: string;
   description: string | null;

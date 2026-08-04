@@ -2,14 +2,11 @@
   inline-size: min(28rem, 100%);
 }
 
-/* Logical properties only — the dialog renders RTL, and the footer must not reverse itself. */
 .qd-confirm-dialog__foot {
   display: flex;
   gap: var(--qd-space-2);
 }
 
-/* Scoped rather than a global .qd-btn-danger: nothing else needs a destructive button yet, and a
-   new global variant is a design-system decision, not this dialog's to make. */
 .qd-confirm-dialog__confirm--danger {
   background: var(--qd-danger);
   border-color: var(--qd-danger);

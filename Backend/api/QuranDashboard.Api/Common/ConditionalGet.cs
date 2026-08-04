@@ -37,8 +37,6 @@ internal static class ConditionalGet
             {
                 var candidate = member.Trim();
 
-                // The backend emits only strong validators, so a W/ member can match only by its opaque
-                // remainder — in practice it never does.
                 if (candidate.StartsWith("W/", StringComparison.Ordinal))
                 {
                     candidate = candidate[2..];

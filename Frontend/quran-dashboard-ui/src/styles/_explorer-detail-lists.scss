@@ -1,14 +1,3 @@
-// ============================================================================
-// .qd-detail-list — shared base for the 10 explorer detail-list families
-// (§17 `.qd-detail-list` contract in UI_STYLE_SYSTEM.md).
-//
-// Per-component selectors below (keyed on the original `X__*` class names,
-// still present in every list's template) retain ONLY grid-template-columns,
-// gaps, column-specific cells, and list-specific scroll heights. Everything
-// that was identical across the family comma-lists lives here instead, and
-// is applied additively via `qd-detail-list__*` classes in each component's
-// template alongside its existing `X__*` classes.
-// ============================================================================
 
 @mixin explorer-detail-list-header {
   padding: 6px 10px;
@@ -38,9 +27,6 @@
   text-decoration: none;
 }
 
-// Flat/hairline row variant: missing-surahs-list and surah-occurrences-list
-// render bottom-hairline rows inside a scrolling list, not bordered cards.
-// `min-block-size: 44px` is an a11y touch-target floor — never shrink it.
 .qd-detail-list__row--flat {
   min-block-size: 44px;
   padding: 6px 10px;
@@ -72,18 +58,8 @@
   scrollbar-gutter: stable;
 }
 
-// Reserved pagination slot (Feature 030, N3 row 4) — shared by the 5 paginated detail lists
-// (ayah-matches, root/lemma/stem words, word-type grouped words).
 
-// The slot, not `qd-pagination`, is what reserves the bar: the component self-hides whenever
-// `totalCount <= pageSize` (`pagination.component.ts`), so merely keeping it mounted through a load
-// reserves nothing. This wrapper is rendered in EVERY list state, so a load/refetch repaints the list
-// without the bar unmounting and dragging the panel body up under it. Flex-column so the mounted
-// `qd-pagination` stays a blockified flex item, as it was when it was a direct child of the list.
 
-// The reservation is derived, never eyeballed: `--qd-pagination-slot-block-size` (_tokens.scss) is one
-// shared `.qd-btn` row plus the bar's own leading margin — the bar's real mounted minimum — so the slot
-// tracks the control instead of drifting from it.
 .qd-detail-list__pagination-slot {
   display: flex;
   flex-direction: column;
@@ -173,9 +149,6 @@ qd-type-distribution-list {
   font-size: 0.875rem;
 }
 
-// ---------------------------------------------------------------------------
-// Per-family grid columns + gaps only (shared row/header visuals live above).
-// ---------------------------------------------------------------------------
 
 .root-words-list__header,
 .root-lemmas-list__header,
@@ -240,10 +213,6 @@ qd-type-distribution-list {
   gap: var(--qd-space-3);
 }
 
-// ---------------------------------------------------------------------------
-// Scroll containers — list-specific heights only; overflow/scrollbar-gutter
-// mechanics live on `.qd-detail-list__viewport` above.
-// ---------------------------------------------------------------------------
 
 .missing-surahs-list,
 .surah-occurrences-list {
@@ -255,10 +224,6 @@ qd-type-distribution-list {
   block-size: min(58vh, 30rem);
 }
 
-// ---------------------------------------------------------------------------
-// Column-specific cells and family-only rules that are not duplicated
-// identically across the whole 10-family set (kept per-component).
-// ---------------------------------------------------------------------------
 
 .root-words-list__row-number,
 .root-lemmas-list__row-number,
@@ -331,14 +296,6 @@ qd-type-distribution-list {
   padding: var(--qd-space-2);
 }
 
-// ---------------------------------------------------------------------------
-// `.explorer-detail-panel__body` / `.explorer-detail-modal` integration.
-// Kept on the original per-component selectors: which families appear in a
-// scrolling panel body vs. a modal is context-specific (shell-wrapped vs.
-// viewport-suffixed vs. neither) and not a safe generic collapse (R2).
-// `.ayah-matches-list*` card visuals live on the shared `qdAyahCard` frame
-// (Feature 029, Change A); only layout/scroll wiring remains here.
-// ---------------------------------------------------------------------------
 
 .explorer-detail-panel__body,
 .explorer-detail-modal {
@@ -395,8 +352,6 @@ qd-type-distribution-list {
     scrollbar-gutter: stable;
   }
 
-  // `.ayah-matches-list__card` context recolors were removed (Feature 029, Change A):
-  // the shared `qdAyahCard` frame owns the card surface/border everywhere.
 
   .root-words-list__row,
   .root-lemmas-list__row,
@@ -439,8 +394,6 @@ qd-type-distribution-list {
     scrollbar-gutter: stable;
   }
 
-  // The modal card flattening was removed (Feature 029, Change A): cards keep the
-  // shared `qdAyahCard` frame inside the responsive drawer too.
 
   .ayah-matches-list__meta-row,
   .ayah-matches-list__meta {

@@ -37,8 +37,6 @@ public sealed class AbwabDoorRelationsController(
 
         return outcome switch
         {
-            // A multi-create has no single resource URI, so the location is the collection this call
-            // just added to.
             AddDoorRelationsOutcome.Success success =>
                 Created($"api/abwab/doors/{doorId}/relations",
                     ApiResponse<IReadOnlyList<AbwabDoorRelationDto>>.Ok(success.Relations, ApiMessages.AbwabDoorRelationsCreated)),

@@ -9,8 +9,6 @@ using QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootWords;
 
 namespace QuranDashboard.Api.Controllers.Words;
 
-// Same partial class as RootsController.cs by design: a second controller class would retag these
-// endpoints in the generated OpenAPI document.
 public sealed partial class RootsController
 {
     [HttpGet("{id:int}")]

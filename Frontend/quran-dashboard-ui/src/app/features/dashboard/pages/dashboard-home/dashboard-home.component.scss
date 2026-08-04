@@ -10,17 +10,11 @@
   }
 }
 
-/* qd-card--hover + qd-interactive-surface (styles/_components.scss) supply
-   border/shadow/hover-lift/focus-visible; this card only needs anchor-as-card
-   display + underline reset, which are genuinely layout-specific. */
 .dashboard-card {
   display: block;
   text-decoration: none;
 }
 
-/* N3 row 14: the loading row and the loaded badge strip must occupy the same box,
-   so the cards below never shift on settle. One shared margin declaration keeps the
-   two from drifting apart. */
 .app-meta,
 .app-meta-skeleton {
   margin-block-start: var(--qd-space-2);
@@ -32,11 +26,6 @@
   gap: var(--qd-space-2);
 }
 
-/* Mirrors the loaded .qd-badge line box (styles/_components.scss): padding-block
-   (2 × --qd-space-1) + 0.75rem text at 1.4 line-height + the 1px hairline both
-   sides. There is no shared badge line-box token yet, so the badge's text metrics
-   live here as named locals composed into one height instead of repeated literals;
-   mirror any .qd-badge restyle here. */
 $badge-line-font-size: 0.75rem;
 $badge-line-height: 1.4;
 $badge-line-border-width: 1px;

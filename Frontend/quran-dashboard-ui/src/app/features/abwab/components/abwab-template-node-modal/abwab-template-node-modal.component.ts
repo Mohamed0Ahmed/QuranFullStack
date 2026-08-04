@@ -10,13 +10,6 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 let nextModalId = 0;
 
-/**
- * The template node's authoring shell — the same four fields as a door, through the same form
- * component, because the user's locked requirement is the same modal rather than a parallel one.
- * Presentational in the `abwab-sections-modal` sense: the submit arrives as a function input,
- * bound by the workshop page to `AbwabTemplatesController`, so this component never reaches for
- * a controller itself.
- */
 @Component({
   selector: 'qd-abwab-template-node-modal',
   standalone: true,
@@ -27,11 +20,8 @@ let nextModalId = 0;
 })
 export class AbwabTemplateNodeModalComponent {
   readonly open = input(false);
-  /** `null` when adding; the node's current field values when editing. */
   readonly fields = input<AbwabAuthoringFields | null>(null);
   readonly isEdit = input(false);
-  /** The parent node's name when adding a child, the edited node's name when editing, and `null`
-   * for the template root — whose context line says so instead. */
   readonly contextName = input<string | null>(null);
   readonly isRoot = input(false);
   readonly submitNode = input.required<(fields: AbwabAuthoringFields) => Observable<AbwabWriteOutcome<unknown>>>();
@@ -75,10 +65,6 @@ export class AbwabTemplateNodeModalComponent {
       }
       this.errorMessage.set(null);
       this.confirmingDiscard.set(false);
-      // The trap now captures straight onto this field (`cdkFocusInitial` in the fields form), so
-      // this call normally re-focuses what is already focused and fires no second focus event.
-      // It stays as the jsdom path — auto-capture cannot fire there — and as the guard for a
-      // capture that resolves before the field renders.
       setTimeout(() => this.fieldsForm()?.focusFirstField());
     });
   }
@@ -115,7 +101,6 @@ export class AbwabTemplateNodeModalComponent {
         this.errorMessage.set(outcome.message);
         return;
       }
-      // The controller refreshes the template on success, so there is nothing to hand back.
       this.errorMessage.set(null);
       this.closed.emit();
     });

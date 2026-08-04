@@ -25,22 +25,6 @@ export interface AbwabTreeMenuRequest {
   readonly y: number;
 }
 
-/**
- * Presentational Abwab tree (plan-slice-b.md T413): `role="tree"` + `treeitem` rows,
- * `aria-level`/`aria-expanded`/`aria-selected`, roving tabindex, and the RTL-mirrored
- * keyboard model from `abwab-tree-keyboard.controller.ts` (pure, unit-tested on its own).
- * Renders flat (one row per visible node, indented by `depth`) rather than nesting
- * `role="group"` per level — `aria-level` already conveys depth to assistive tech, and a
- * flat list keeps roving-tabindex/keyboard wiring in one place; revisit only if an AT
- * regression is found.
- *
- * Rows carry the design contract's two hover actions (`abwab-tree-concept.html:114,436-443`):
- * `＋` (add child) and `⋯` (open the row menu), revealed on hover and on the selected row.
- * They are the contract's *third* add-child path alongside the side panel and the context
- * menu (plan-slice-b.md §6.2), and `⋯` is the only mouse path to the row menu that is not
- * right-click. No relations/protection controls (plan.md §5.1): edit/move/archive stay in
- * the side panel and the menu, which compose this tree rather than the other way around.
- */
 @Component({
   selector: 'qd-abwab-tree',
   standalone: true,
@@ -52,36 +36,20 @@ export class AbwabTreeComponent {
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly roots = input<readonly AbwabNode[]>([]);
-  /** Which order space depth-0 rows display/edit. Rows at depth > 0 always use `orderValue`
-   * (§5 — `globalOrderValue` is `NULL` past the root) regardless of this input. */
   readonly orderScope = input<AbwabOrderScope>('section');
   readonly ariaLabel = input('');
   readonly selectedId = input<number | null>(null);
   readonly bulkMode = input(false);
   readonly bulkSelectedIds = input<ReadonlySet<number>>(new Set());
-  /** Ids to open **once**, merged into the manual set rather than unioned — a forced-open id
-   * cannot be collapsed, and a branch that stayed locked open because a search or a reveal put
-   * it there would be a worse bug than the one it fixes. Seeding hands those branches back to
-   * the user's own chevrons immediately. Search auto-expansion arrives here too (ux-slice-l);
-   * the `forceExpandedIds` input it used to arrive on is gone. */
   readonly expandSeedIds = input<ReadonlySet<number>>(new Set());
-  /** Rows the current search matched. The tree marks them in place and hides nothing — the
-   * cards and archive views are the ones that still filter. */
   readonly matchedIds = input<ReadonlySet<number>>(new Set());
-  /** The row currently carrying the reveal mark; the page clears it on its own timer. */
   readonly revealedId = input<number | null>(null);
 
   readonly selected = output<number>();
   readonly bulkToggled = output<number>();
   readonly addChildRequested = output<number>();
-  /** Carries the anchor point, so the mouse paths (right-click, `⋯`) and the keyboard path
-   * (`ContextMenu`/`Shift+F10`, anchored to the focused row) all place the menu themselves
-   * instead of the page guessing from a separate `contextmenu` listener. */
   readonly menuRequested = output<AbwabTreeMenuRequest>();
   readonly orderCommitted = output<{ id: number; position: number; scope: AbwabOrderScope }>();
-  /** The row's relations chip is a control (Slice D, audit item 13): the page selects the
-   * door and opens the relations modal on it, the select-then-act shape every other row
-   * path already follows. */
   readonly relationsRequested = output<number>();
 
   private readonly manuallyExpandedIds = signal<ReadonlySet<number>>(new Set());
@@ -177,8 +145,6 @@ export class AbwabTreeComponent {
 
   protected onFlagClick(event: Event, id: number): void {
     event.stopPropagation();
-    // Inert in bulk mode, like the row actions are hidden there: the row click means "toggle
-    // this door's bulk selection", and a control that opened a modal instead would fight it.
     if (this.bulkMode()) {
       return;
     }
@@ -216,8 +182,6 @@ export class AbwabTreeComponent {
 
   private openMenuFor(id: number, x: number, y: number): void {
     this.manualFocusId.set(id);
-    // Select first: the menu acts on the row it opened over, and the page writes
-    // `door=<id>` on selection — so every menu path leaves the URL agreeing with the store.
     this.selected.emit(id);
     this.menuRequested.emit({ id, x, y });
   }
@@ -237,7 +201,6 @@ export class AbwabTreeComponent {
     this.toggleExpanded(row.id);
   }
 
-  /** Depth > 0 always stays on `orderValue` — `globalOrderValue` is `NULL` there by construction. */
   protected scopeFor(node: AbwabNode): AbwabOrderScope {
     return node.depth === 0 && this.orderScope() === 'global' ? 'global' : 'section';
   }
@@ -260,9 +223,6 @@ export class AbwabTreeComponent {
     }
   }
 
-  /** Enter is the only commit — blur and Escape both abandon the edit. Guarded on the same
-   * id as `commitOrderEdit`, so the blur that follows an Enter commit (the input unmounts
-   * under the focused element) finds `editingId` already cleared and does nothing. */
   protected cancelOrderEdit(id: number): void {
     if (this.editingId() !== id) {
       return;
@@ -322,11 +282,6 @@ export class AbwabTreeComponent {
         break;
       case 'openMenu': {
         event.preventDefault();
-        // Anchor to the focused row rather than the viewport origin — a keyboard user has no
-        // pointer position, and a menu pinned at (0,0) is not a usable keyboard path. The x is
-        // the row's INLINE-START edge because that is the edge the menu now extends from
-        // (`qd-context-menu`'s placement contract); anchoring at `left` under RTL would push the
-        // menu off the row entirely.
         const rect = this.rowElement(intent.id)?.getBoundingClientRect();
         const anchorX = this.resolveDirection() === 'rtl' ? rect?.right : rect?.left;
         this.openMenuFor(intent.id, anchorX ?? 0, rect?.bottom ?? 0);

@@ -25,8 +25,6 @@ public sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
 
         builder.HasIndex(r => r.Name).IsUnique();
 
-        // Fixed, seeded role set. Capabilities are enforced in code keyed by Name; the Arabic
-        // DisplayName is the user-facing label. Ids are pinned to keep the FK/seed stable.
         builder.HasData(
             new Role { Id = 1, Name = RoleNames.Owner, DisplayName = "المالك" },
             new Role { Id = 2, Name = RoleNames.Admin, DisplayName = "المشرف" },

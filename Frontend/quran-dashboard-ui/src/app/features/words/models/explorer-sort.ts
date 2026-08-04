@@ -49,7 +49,6 @@ const DESCENDING_SUFFIX = '-desc';
 export interface ExplorerSortColumn<TColumn extends string = string> {
   readonly key: TColumn;
   readonly natural: ExplorerSortDirection;
-  /** The Arabic column header — also the stem of the aria-label and of the select option text. */
   readonly label: string;
 }
 

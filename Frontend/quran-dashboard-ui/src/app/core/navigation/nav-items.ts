@@ -4,8 +4,6 @@ export interface NavItem {
   labelEn: string;
   route: string;
   group: 'primary' | 'more' | 'actions';
-  // Navbar-menu presentation only — children never enter `NAV_ITEMS`, `navLabel`'s registry,
-  // or the placeholder-route derivation (see `nav-menu.ts`).
   children?: NavItem[];
   queryParams?: Record<string, string>;
 }

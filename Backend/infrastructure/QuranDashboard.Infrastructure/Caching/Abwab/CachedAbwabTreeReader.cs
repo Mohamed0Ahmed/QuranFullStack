@@ -4,10 +4,6 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Abwab;
 
 namespace QuranDashboard.Infrastructure.Caching.Abwab;
 
-// One indivisible entry for the whole snapshot: any root-affecting write moves every row's xmin, so a
-// per-section or live-vs-archive split would be wrong, not merely finer. No expiration — eviction is the
-// generation stamp, which changes atomically with the write's bump. No CacheLoadGate: its keys are held
-// for the process lifetime and it cannot express "present but stale", which is the only question here.
 internal sealed class CachedAbwabTreeReader(
     EfAbwabTreeReader inner,
     IMemoryCache cache,
@@ -21,9 +17,6 @@ internal sealed class CachedAbwabTreeReader(
 
     public async Task<AbwabTreeDto> GetTreeAsync(CancellationToken cancellationToken)
     {
-        // Captured BEFORE the load, not after: a write committing mid-load bumps past this value, so the
-        // entry is stored already-stale and the next read reloads. The failure direction is an extra
-        // query, never a stale hit.
         var generation = _generations.TreeGeneration();
 
         if (_cache.TryGetValue(Key, out StampedTree? cached) && cached is not null && cached.Generation == generation)

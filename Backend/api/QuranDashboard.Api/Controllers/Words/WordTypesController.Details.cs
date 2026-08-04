@@ -5,8 +5,6 @@ using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs
 
 namespace QuranDashboard.Api.Controllers.Words;
 
-// Same partial class as WordTypesController.cs by design: a second controller class would retag
-// these endpoints in the generated OpenAPI document.
 public sealed partial class WordTypesController
 {
     [HttpGet("words/{tashkeelWordId:int}")]

@@ -12,20 +12,6 @@ import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-d
 
 let nextModalId = 0;
 
-/**
- * «نسخ إلى أبواب…» — the multi-target picker for applying a template
- * (`abwab-templates-concept.html:142-160`, superseded by the ux-slice-g reversal below). The
- * preview states the whole contract before the write: each target gains the template's
- * elements (never the root itself, since ux-slice-g), that a copy can never be a root door, and
- * — the sentence the mockup does not have — that the copies are independent of the template
- * from birth (plan §5.6).
- *
- * The picker lists live doors only and offers no root-level option, which is what makes the
- * route's empty-targets `400` unreachable through the UI; the refusal exists so the route is not
- * a hole, not because a control leads to it. The writer's empty-template `400` is the same kind
- * of guarantee — this modal's `hasElements` affordance only makes it legible before the write; it
- * is a courtesy, not the check (§4.2-11).
- */
 @Component({
   selector: 'qd-abwab-template-copy-modal',
   standalone: true,
@@ -39,10 +25,6 @@ export class AbwabTemplateCopyModalComponent {
   readonly templateName = input('');
   readonly templateNodeCount = input(0);
   readonly liveRoots = input<readonly AbwabNode[]>([]);
-  /** The doors snapshot is fetched as this modal opens, so an empty picker means "still
-   * loading" until it resolves. Saying «لا توجد أبواب حية» there would be a positive false
-   * statement, not a flash of nothing — and it is exactly what direct URL entry to the
-   * workshop would hit, where no snapshot was ever loaded. */
   readonly doorsLoading = input(false);
   readonly doorsError = input<string | null>(null);
   readonly applyTemplate = input.required<
@@ -50,8 +32,6 @@ export class AbwabTemplateCopyModalComponent {
   >();
 
   readonly closed = output<void>();
-  /** Abwab today offers no recovery from a failed doors fetch at all; this is the retry the
-   * parent page's `AbwabSnapshotFacade` already supports via `load()`. */
   readonly retryDoors = output<void>();
 
   private readonly picker = viewChild(AbwabDoorPickerComponent);
@@ -77,14 +57,8 @@ export class AbwabTemplateCopyModalComponent {
     ABWAB_LABELS.templateCopyPreview(this.templateName(), this.templateNodeCount()),
   );
 
-  /** A courtesy, not the guarantee: the writer's empty-template `400` is authoritative. This only
-   * keeps a stale list from showing a disabled-looking confirm that would otherwise still promise
-   * copies a template that has since lost its last child cannot produce (§4.2-11). */
   protected readonly hasElements = computed(() => this.templateNodeCount() > 0);
 
-  /** The picker's own empty/loading/error block only renders when it has no rows, so mapping the
-   * two snapshot inputs onto the status is exhaustive: whatever is not loading or failed is the
-   * "no live doors" answer. */
   protected readonly pickerStatus = computed<AbwabDoorPickerStatus>(() =>
     this.doorsLoading() ? 'loading' : this.doorsError() ? 'error' : 'empty',
   );
@@ -108,9 +82,6 @@ export class AbwabTemplateCopyModalComponent {
 
   protected readonly selectedSummary = computed(() => ABWAB_LABELS.templateCopySelectedSummary(this.pickedNames()));
 
-  /** Always the number of targets, never a union: selecting a door and its own descendant
-   * produces two independent copies. This is the deliberate opposite of bulk-archive's union
-   * count, where archiving an ancestor already claims its descendants (plan §6.1). */
   protected readonly confirmLabel = computed(() => ABWAB_LABELS.templateCopyConfirmButton(this.pickedIds().size));
 
   constructor() {
@@ -121,10 +92,6 @@ export class AbwabTemplateCopyModalComponent {
           return;
         }
         this.resetDraft();
-        // The trap now captures straight onto the picker's search (`cdkFocusInitial`), instead of
-        // the first control above the list, so this call normally re-focuses what is already
-        // focused. It stays as the jsdom path — auto-capture cannot fire there — and as the guard
-        // for a capture that resolves before the picker renders.
         setTimeout(() => this.picker()?.focusSearch());
       });
     });
@@ -145,9 +112,6 @@ export class AbwabTemplateCopyModalComponent {
     }
     this.applyTemplate()(targets).subscribe((outcome) => {
       if (outcome.kind !== 'success') {
-        // The apply is all-or-nothing, so nothing was created and every pick is still a valid
-        // retry once the collision is resolved — the bulk-conflict precedent: the selection is
-        // preserved rather than cleared.
         this.errorMessage.set(outcome.message);
         return;
       }

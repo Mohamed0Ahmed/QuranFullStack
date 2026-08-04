@@ -120,7 +120,6 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapLemmaAyahMatchToShared) } : this.emptyAyahsPage;
   });
-  /** This panel's own typed frame (Feature 029 B7): an ayah click promotes it over the Mushaf. */
   protected readonly ayahParentFrame = computed<LemmaDetailFrame | null>(() => {
     const state = this.panelState();
     if (state.selectedLemmaId === null) {
@@ -199,13 +198,11 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     this.selectedRootLabel.set(option?.label ?? null);
     this.updateQueryParams({ rootId: option === null ? null : String(option.id), page: null });
   }
-  /** A header cycle step (token) or its release (null). Changing the ordering always resets page. */
   protected onSortChange(sort: LemmaSort | null): void {
     this.clearTableFocus();
     this.updateQueryParams(buildLemmasQueryParams({ sort, page: null }));
   }
 
-  /** The ≤1023px fallback select drives the same contract; the default order stays param-absent. */
   protected onSortSelect(value: string): void {
     this.onSortChange(sortQueryValue(normalizeLemmaSort(value), DEFAULT_LEMMA_SORT));
   }

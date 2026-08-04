@@ -5,8 +5,6 @@ using QuranDashboard.Infrastructure.Persistence.Writes.Abwab;
 
 namespace QuranDashboard.Infrastructure.Caching.Abwab;
 
-// Relations bump the TREE generation: RelationCount is projected onto the snapshot's door rows
-// (EfAbwabTreeReader), so a relation write changes the cached tree even though no door row moves.
 internal sealed class InvalidatingAbwabRelationsWriter(
     EfAbwabRelationsWriter inner,
     IAbwabCacheInvalidator invalidator) : IAbwabRelationsWriter

@@ -4,9 +4,6 @@ using QuranDashboard.Infrastructure.Persistence.Writes.Abwab;
 
 namespace QuranDashboard.Infrastructure.Caching.Abwab;
 
-// The bump is in finally, not on success: several writers run multi-save operations on implicit
-// transactions, so a thrown exception does not prove nothing committed. Bumping after a failed write
-// costs one refetch; not bumping after a partially committed one serves stale data.
 internal sealed class InvalidatingAbwabSectionsWriter(
     EfAbwabSectionsWriter inner,
     IAbwabCacheInvalidator invalidator) : IAbwabSectionsWriter

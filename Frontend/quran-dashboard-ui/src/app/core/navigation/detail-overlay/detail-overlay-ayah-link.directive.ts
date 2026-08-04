@@ -9,9 +9,6 @@ export interface DetailOverlayBaseTarget {
   readonly queryParams: Params;
 }
 
-// Real anchor with a canonical href so copy-link, modifier/middle clicks, and the
-// context menu keep native browser behavior; only an unmodified primary click is
-// intercepted into an in-app continuity navigation (see navigateBaseWithOverlay).
 @Directive({
   selector: 'a[qdAyahOverlayLink]',
   standalone: true,

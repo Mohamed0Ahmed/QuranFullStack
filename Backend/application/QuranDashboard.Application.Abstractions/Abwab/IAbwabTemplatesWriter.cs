@@ -4,8 +4,6 @@ namespace QuranDashboard.Application.Abstractions.Abwab;
 
 public interface IAbwabTemplatesWriter
 {
-    // Creates the template AND its root node — a template without a root cannot be applied, so the
-    // two are never separately creatable.
     Task<AbwabTemplateDto> CreateAsync(
         string name,
         string? description,
@@ -15,8 +13,6 @@ public interface IAbwabTemplatesWriter
 
     Task<bool> DeleteAsync(int templateId, CancellationToken cancellationToken);
 
-    // parentNodeId is NOT nullable: every added node is a child of something. A second root would
-    // leave the apply's children-only copy unable to tell which root's children to copy.
     Task<AbwabTemplateNodeDto> AddNodeAsync(
         int templateId,
         int parentNodeId,

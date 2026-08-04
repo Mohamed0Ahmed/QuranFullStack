@@ -11,8 +11,6 @@
     <qd-abwab-announcer [message]="controller.announcement()" />
 
     @if (facade.isLoading() && facade.templates().length === 0) {
-      <!-- The list and the editor panel both stay mounted so the layout does not collapse to a
-           single line during a cold load — same reasoning as the doors page's tree skeleton. -->
       <div class="abwab-templates-page__layout">
         <aside class="abwab-templates-page__list" [attr.aria-label]="templatesListAriaLabel">
           <qd-skeleton-rows
@@ -86,8 +84,6 @@
 
           @let template = facade.selectedTemplate();
           @if (facade.selectedLoading()) {
-            <!-- The selected template is null for the whole in-flight window, so without this the
-                 empty state below would answer «اختر قالبًا» to a user who just chose one. -->
             <qd-skeleton-rows
               [count]="5"
               rowTemplate="1fr"
@@ -95,8 +91,6 @@
               data-testid="abwab-templates-page-selected-loading"
             />
           } @else if (!template) {
-            <!-- A failed load already says why nothing is here; stacking «اختر قالبًا» under the
-                 error would read as a second, contradictory status. -->
             @if (!facade.selectedErrorMessage()) {
               <qd-state variant="empty" [message]="templateNoneSelectedMessage" data-testid="abwab-templates-page-none-selected" />
             }
@@ -221,8 +215,6 @@
     <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-templates-page-ctx-add-child" (click)="ctxAddChild()">
       {{ nodeAddChildOpLabel }}
     </button>
-    <!-- The root has no node delete: deleting the template is the way (the API refuses the root
-         with a 400), so the menu offers that instead of a control that can only fail. -->
     @if (contextMenuIsRoot()) {
       <button
         type="button"

@@ -15,6 +15,5 @@ public sealed class AbwabSection
     public DateTimeOffset? DeletedAtUtc { get; set; }
     public int? DeletedBy { get; set; }
 
-    // Bound to Postgres's xmin system column (AbwabSectionConfiguration) — never assigned in code.
     public uint Version { get; set; }
 }

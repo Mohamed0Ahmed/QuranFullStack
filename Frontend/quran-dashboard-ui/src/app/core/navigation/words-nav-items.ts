@@ -8,9 +8,6 @@ import {
   wordTypesRoutePath,
 } from './route-paths';
 
-// Labels are the menu section names, owned here in core like `NAV_ITEMS`; routes come from
-// `route-paths`. `unique` points at the `tashkeel` mode so the link skips the redirect hop.
-// Consumed as `NavItem[]` via `nav-menu.ts`, not read directly by the navbar.
 export const WORDS_MENU_ITEMS: readonly NavItem[] = [
   { key: 'words-home', labelAr: 'الرئيسية', labelEn: 'Home', route: WORDS_ROUTE_PATH, group: 'primary' },
   { key: 'words-unique', labelAr: 'الكلمات الفريدة', labelEn: 'Unique Words', route: uniqueWordsRoutePath('tashkeel'), group: 'primary' },

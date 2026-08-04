@@ -54,8 +54,6 @@ public sealed class AbwabTemplatesController(
 
         var outcome = await getTemplateHandler.HandleAsync(new GetTemplateQuery(templateId), cancellationToken);
 
-        // A 404 carries no validator headers: there is no representation to validate, and an ETag on an
-        // absence would invite a client to revalidate a resource it never had.
         return outcome switch
         {
             GetTemplateOutcome.Success success =>
@@ -110,8 +108,6 @@ public sealed class AbwabTemplatesController(
 
         return outcome switch
         {
-            // A multi-create has no single resource URI, so the location is the collection the new
-            // doors joined — the AbwabDoorRelationsController judgment.
             ApplyTemplateOutcome.Success success =>
                 Created("api/abwab/doors",
                     ApiResponse<IReadOnlyList<AbwabDoorDto>>.Ok(success.CreatedDoors, ApiMessages.AbwabTemplateApplied)),

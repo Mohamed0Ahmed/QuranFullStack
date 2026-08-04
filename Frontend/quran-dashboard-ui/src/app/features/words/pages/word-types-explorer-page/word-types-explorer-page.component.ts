@@ -345,16 +345,10 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     this.filter()?.focusSelectedType();
   }
 
-  /** A header cycle step (token) or its release (null). The facade resets the list page either way. */
   protected onSortChange(sort: WordTypeSort | null): void {
     this.explorerFacade.changeSort(sort);
   }
 
-  /**
-   * The ≤1023px fallback select drives the same contract. Selecting المواضع — this explorer's
-   * default — releases the param rather than writing `sort=occurrences`, so the default state stays
-   * param-free and matches what a header release produces.
-   */
   protected onSortSelect(value: string): void {
     this.onSortChange(sortQueryValue(normalizeWordTypeSort(value), DEFAULT_WORD_TYPE_SORT));
   }

@@ -40,7 +40,6 @@ internal static class AuthenticationRegistration
                 {
                     OnChallenge = static async context =>
                     {
-                        // Suppress the framework's default empty 401 and emit the shared failure envelope.
                         context.HandleResponse();
                         var writer = context.HttpContext.RequestServices.GetRequiredService<UnauthorizedRejectionWriter>();
                         await writer.WriteAsync(context.HttpContext, context.HttpContext.RequestAborted);
@@ -48,8 +47,6 @@ internal static class AuthenticationRegistration
                 };
             });
 
-        // One named policy per role, each requiring an authenticated caller in that role. Registered for
-        // future admin surfaces; NO global fallback policy and NOT applied to any endpoint in this phase.
         services.AddAuthorization(options =>
         {
             options.AddPolicy(AuthorizationPolicyNames.Owner, policy =>

@@ -103,9 +103,32 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
 - **The selected word is the page's one persistent mark** (M1): it paints
   `--qd-mushaf-word-selection-bg` + a `--qd-mushaf-word-selection-ring` hairline and is
   excluded from the hover wash, so it never dims or animates while the pointer moves. Its
-  `transition: none` is load-bearing — a transition here reads as a flash. The
-  canvas < hover < selection ladder is calibrated in-browser and documented in
-  `styles/_tokens.scss`; re-measure there rather than nudging percentages by eye.
+  `transition: none` is load-bearing — a transition here reads as a flash.
+- **The canvas < hover < selection ladder, and why its rungs cannot be read off its
+  percentages.** Both washes tint the *same* indicator — `--qd-mushaf-word-selection-indicator`,
+  which is `var(--qd-accent)` in both themes (`styles/_tokens.scss:78`, `styles/_themes.scss:63`),
+  so the ladder resolves per theme automatically (gold-into-navy in dark). But the two washes mix
+  that indicator into **different bases**: hover is `8%` into `--qd-bg`
+  (`styles/_tokens.scss:93`) while selection is `28%` into `--qd-surface`
+  (`styles/_tokens.scss:94`). The bases work against the gap, so comparing `8%` to `28%` tells
+  you nothing about the resulting rungs — **re-measure in-browser rather than nudging the
+  percentages by eye.**
+  The light canvas is `--qd-bg` `oklch(0.967 …)` and the dark canvas `oklch(0.189 …)`
+  (`styles/_tokens.scss:5`, `styles/_themes.scss:3`).
+  **Why this ladder is allowed its own hover fill at all** (`.architecture/UI_STYLE_SYSTEM.md`
+  §16.1 otherwise mandates one shared hover fill): the shared `--qd-surface-hover`
+  `oklch(0.945 …)` (`styles/_tokens.scss:9`) sits only **ΔL 0.022** below the `--qd-bg` canvas
+  `oklch(0.967 …)` — exact by subtraction, not a measurement — and that is imperceptible on
+  parchment. **This 0.022 describes the SHARED token being displaced, not a rung of this
+  ladder.** The ladder's own hover rung is `--qd-mushaf-word-hover-bg`, a `color-mix` result
+  whose measured value sits further from the canvas; it is one of the numbers recorded in the
+  `styles/_tokens.scss` comment. Do not reconcile the two figures — they measure different
+  colours against the same canvas.
+  Both washes are scoped to the ONE word under the pointer and never fan out across the ayah —
+  hover is applied on the word element itself
+  (`components/mushaf-word/mushaf-word.component.scss:39`), selection at `:52`.
+  The measured rung values and the calibration history that produced them are **not derivable
+  from code** and remain in the `styles/_tokens.scss` comment above the tokens.
 - **Mushaf font is Amiri** (`public/fonts/` + `assets/fonts/quran/`) — **not**
   `UthmanicHafs_V22`, which mis-renders mark **U+06DF** as baseline dots. Do not swap the
   Mushaf font.

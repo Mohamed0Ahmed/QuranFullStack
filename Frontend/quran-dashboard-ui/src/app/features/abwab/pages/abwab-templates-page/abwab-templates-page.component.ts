@@ -27,20 +27,10 @@ import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-p
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 
-/** What the node modal is currently authoring. `parentNodeId` is the new node's parent when
- * adding; `nodeId` is the edited node when editing. */
 type AbwabNodeModalState =
   | { readonly mode: 'add'; readonly parentNodeId: number }
   | { readonly mode: 'edit'; readonly nodeId: number };
 
-/**
- * Route shell for `/abwab/templates` — the templates workshop: the template list, the tree
- * editor, and the node authoring modal. It composes the same `.qd-page`/`.qd-container` shell as
- * the doors page, so the flat parchment+green surface rules apply without being restated here.
- *
- * State lives in the root-scoped `AbwabTemplatesFacade` (a cache) while the overlays are owned by
- * this component (page-scoped) — the split `features/abwab/README.md` already records.
- */
 @Component({
   selector: 'qd-abwab-templates-page',
   standalone: true,
@@ -80,12 +70,7 @@ export class AbwabTemplatesPageComponent implements OnInit {
   protected readonly nodeDeleteError = signal<string | null>(null);
   protected readonly copyModalOpen = signal(false);
 
-  /** The picker's only source. It is fetched when the modal opens rather than on page entry:
-   * the workshop is reachable directly by URL, so the doors snapshot may never have been
-   * loaded — and loading it on every entry would buy a request the picker often never uses. */
   protected readonly liveRoots = computed(() => this.doorsFacade.snapshot()?.liveRoots ?? []);
-  /** Only while there is nothing to show — once a snapshot exists the facade leaves it in place
-   * across a refresh, so the picker keeps rendering doors rather than blinking to a status line. */
   protected readonly doorsLoading = computed(() => this.doorsFacade.isLoading() && !this.doorsFacade.snapshot());
   protected readonly doorsError = computed(() =>
     this.doorsFacade.snapshot() ? null : this.doorsFacade.errorMessage(),
@@ -124,8 +109,6 @@ export class AbwabTemplatesPageComponent implements OnInit {
     return nodeId === null ? null : (this.nodesById().get(nodeId)?.name ?? null);
   });
 
-  /** The root is the template itself: deleting it is refused by the API, so the row menu offers
-   * «حذف القالب» rather than a node delete the user would only see fail. */
   protected readonly contextMenuIsRoot = computed(() => {
     const nodeId = this.contextMenuNodeId();
     return nodeId !== null && this.nodesById().get(nodeId)?.parentNodeId === null;
@@ -193,10 +176,6 @@ export class AbwabTemplatesPageComponent implements OnInit {
       }
       this.namingTemplate.set(false);
       this.newTemplateName.set('');
-      // Selecting the new template is what puts its root — the only node it has — on screen so
-      // it can be authored through the full modal. Through `selectTemplate`, not the facade
-      // directly: every selection change must also close the overlays, or a node id from the
-      // previous template survives the switch in a still-open modal or confirm.
       if (outcome.data) {
         this.selectTemplate(outcome.data.id);
       }
@@ -229,8 +208,6 @@ export class AbwabTemplatesPageComponent implements OnInit {
     this.nodeModal.set(null);
   }
 
-  /** Bound into the node modal as a function input, the `abwab-sections-modal` precedent, so the
-   * modal never reaches for a controller of its own. */
   protected readonly submitNode = (fields: AbwabAuthoringFields): Observable<AbwabWriteOutcome<unknown>> => {
     const state = this.nodeModal();
     if (state?.mode === 'edit') {
@@ -238,8 +215,6 @@ export class AbwabTemplatesPageComponent implements OnInit {
     }
     const template = this.facade.selectedTemplate();
     if (state === null || template === null) {
-      // Unreachable: the modal only opens over a selected template. No request is invented for a
-      // state that would have to fabricate an id to send.
       return of<AbwabWriteOutcome<unknown>>({ kind: 'invalid', message: ABWAB_LABELS.writeInvalidFallback });
     }
     return this.controller.addNode(template.id, state.parentNodeId, fields);
@@ -279,7 +254,6 @@ export class AbwabTemplatesPageComponent implements OnInit {
     }
   }
 
-  /** Closes in the subscriber, not before dispatch: the dialog is where a failed delete reports. */
   protected confirmNodeDelete(): void {
     const nodeId = this.deletingNodeId();
     if (nodeId === null || this.nodeDeleteBusy()) {
@@ -343,20 +317,10 @@ export class AbwabTemplatesPageComponent implements OnInit {
     this.copyModalOpen.set(false);
   }
 
-  /** The picker's only recovery from a failed doors fetch — today there is none. Re-issues the
-   * same load `openCopyModal` triggers; the facade's own `fetch()` cancels any still-pending
-   * request, so a retry while the first request is in flight is safe. */
   protected retryDoorsLoad(): void {
     this.doorsFacade.load();
   }
 
-  /** Bound into the copy modal as a function input. The apply refreshes nothing here: it writes
-   * doors, and `AbwabPageComponent.ngOnInit` calls `facade.load()` on every entry, so returning
-   * to `/abwab` is what makes the copies visible.
-   *
-   * The id comes off the same object the modal's preview renders from, never from
-   * `selectedTemplateId()`: the two can only ever name the same template that way, so a copy
-   * cannot land under a template the user was not shown. */
   protected readonly applyTemplate = (
     targetDoorIds: readonly number[],
   ): Observable<AbwabWriteOutcome<AbwabDoorDto[] | null>> => {

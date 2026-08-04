@@ -58,8 +58,6 @@
   cursor: pointer;
 }
 
-/* Hover matches the shared `.qd-interactive-surface` convention (neutral border, not
-   accent) — the accent border is reserved for the selected/checked state below. */
 .abwab-cards__card:hover {
   border-color: var(--qd-border-strong);
 }
@@ -87,8 +85,6 @@
   background: var(--qd-selected-bg);
 }
 
-/* Placement only — `.qd-checkbox` owns the size and the accent, and re-stating either here
-   would out-specificity the shared class for no visible reason (§17's named trap). */
 .abwab-cards__checkbox {
   position: absolute;
   inset-block-start: var(--qd-space-3);

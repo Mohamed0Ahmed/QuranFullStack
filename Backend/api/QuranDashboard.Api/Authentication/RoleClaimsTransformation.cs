@@ -6,8 +6,6 @@ namespace QuranDashboard.Api.Authentication;
 
 public sealed class RoleClaimsTransformation(IUserRoleResolver roleResolver) : IClaimsTransformation
 {
-    // Stamped on the identity this transformation adds, so a repeat invocation recognizes its own
-    // prior work regardless of any token-borne role claim.
     public const string RoleClaimsAuthenticationType = "QuranDashboardRoleClaims";
 
     public async Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
@@ -25,7 +23,6 @@ public sealed class RoleClaimsTransformation(IUserRoleResolver roleResolver) : I
             return principal;
         }
 
-        // Raw claim types are preserved (MapInboundClaims = false), so the identity key is the literal "sub".
         var sub = principal.FindFirst("sub")?.Value;
         if (string.IsNullOrEmpty(sub))
         {
@@ -38,8 +35,6 @@ public sealed class RoleClaimsTransformation(IUserRoleResolver roleResolver) : I
             return principal;
         }
 
-        // Attach the role on a separate, marked identity so IsInRole/RequireRole (ClaimTypes.Role) see it
-        // and a later invocation recognizes this transformation's work via RoleClaimsAuthenticationType.
         var roleIdentity = new ClaimsIdentity(RoleClaimsAuthenticationType);
         roleIdentity.AddClaim(new Claim(ClaimTypes.Role, roleName));
         principal.AddIdentity(roleIdentity);

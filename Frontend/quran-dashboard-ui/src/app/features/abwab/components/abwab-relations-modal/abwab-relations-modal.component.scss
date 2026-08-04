@@ -26,9 +26,6 @@
   margin-block-end: var(--qd-space-4);
 }
 
-/* A loaded "row" here is a group heading over a wrapped chip line, well above the primitive's
-   0.75rem default — the documented `--qd-skeleton-h` override (README, `_components.scss`) is what
-   keeps the waiting block the size of the thing it stands in for. */
 .abwab-relations-modal__loading {
   display: block;
   --qd-skeleton-h: 1.25rem;
@@ -41,9 +38,6 @@
   gap: var(--qd-space-2);
 }
 
-/* Three markers, not four: both شمولية groups are one type seen from opposite ends. The
-   contract's slate blue has no token in the parchment+green palette, so the third marker is the
-   muted ink rather than a pasted hex (UI_STYLE_SYSTEM §12). */
 .abwab-relations-modal__dot {
   inline-size: 0.5rem;
   block-size: 0.5rem;
@@ -74,10 +68,6 @@
   margin-block-end: var(--qd-space-3);
 }
 
-/* The `max-inline-size` is a ceiling, not §17's discouraged fixed name column: these chips sit in
-   a `flex-wrap` row with no `flex: 1` to share, so without a ceiling one long door name takes the
-   whole row and the remaining targets wrap under it one per line. The chip still shrinks freely
-   below the ceiling, which is the flexibility the fixed-column exception would have traded away. */
 .abwab-relations-modal__target {
   font-size: 0.8125rem;
   background: var(--qd-section-bg);
@@ -100,8 +90,6 @@
   margin-block-end: var(--qd-space-2);
 }
 
-/* The strip is `qd-tabs`; only its own inset inside the modal lives here. Selected state is
-   §16.1 through the primitive — deliberately not the concept mock's surface+bold. */
 .abwab-relations-modal__types {
   display: block;
   inline-size: fit-content;

@@ -1,17 +1,11 @@
-// Serialized vocabulary of the detail overlay: a typed, versioned frame union carried in
-// the URL. Deliberately NOT imported from Words feature models — the URL grammar is a
-// shareable contract (old links must keep meaning) while feature models may evolve.
 
 export const DETAIL_OVERLAY_QUERY_KEYS = {
-  /** Repeated query key; values are ordered bottom → top of the stack. */
   frame: 'qdDetail',
-  /** Present (value `1`) while the dialog is visible; absent when closed. */
   open: 'qdDetailOpen',
 } as const;
 
 export const DETAIL_OVERLAY_FRAME_VERSION = 'v1' as const;
 
-/** Hard stack cap: a ninth append is refused, never silently dropped. */
 export const DETAIL_OVERLAY_MAX_FRAMES = 8;
 
 export type UniqueFrameMode = 'simple' | 'tashkeel';
@@ -26,7 +20,6 @@ export type WordTypeFrameTense = 'all' | 'past' | 'present' | 'imperative';
 export type WordTypeFrameVoice = 'all' | 'active' | 'passive';
 export type WordTypeFrameView = 'words' | 'ayahs' | 'surahs';
 
-/** `v1~unique~<simple|tashkeel>~<id>~<view>~<ayahPage>` */
 export interface UniqueDetailFrame {
   readonly kind: 'unique';
   readonly mode: UniqueFrameMode;
@@ -35,7 +28,6 @@ export interface UniqueDetailFrame {
   readonly ayahPage: number;
 }
 
-/** `v1~root~<id>~<view>~<wordView>~<surahView>~<detailPage>` */
 export interface RootDetailFrame {
   readonly kind: 'root';
   readonly id: number;
@@ -45,7 +37,6 @@ export interface RootDetailFrame {
   readonly detailPage: number;
 }
 
-/** `v1~lemma~<id>~<view>~<wordView>~<surahView>~<detailPage>~<typeCode|->` */
 export interface LemmaDetailFrame {
   readonly kind: 'lemma';
   readonly id: number;
@@ -56,7 +47,6 @@ export interface LemmaDetailFrame {
   readonly typeCode: string | null;
 }
 
-/** `v1~stem~<id>~<view>~<wordView>~<surahView>~<detailPage>~<typeCode|->` */
 export interface StemDetailFrame {
   readonly kind: 'stem';
   readonly id: number;
@@ -67,7 +57,6 @@ export interface StemDetailFrame {
   readonly typeCode: string | null;
 }
 
-/** `v1~wordType~<tashkeelId>~<contextCode>~<case>~<tense>~<voice>~<view>~<detailPage>` */
 export interface WordTypeDetailFrame {
   readonly kind: 'wordType';
   readonly tashkeelWordId: number;
@@ -90,7 +79,6 @@ export type DetailFrameKind = DetailFrame['kind'];
 
 export type DetailOverlayVisibility = 'open' | 'closed';
 
-/** URL-authoritative overlay state: what the current URL says, nothing more. */
 export interface DetailOverlayUrlState {
   readonly visibility: DetailOverlayVisibility;
   readonly stack: readonly DetailFrame[];
@@ -101,8 +89,6 @@ export const CLOSED_DETAIL_OVERLAY_STATE: DetailOverlayUrlState = {
   stack: [],
 };
 
-// Complete-identity equality (every identity AND view field): never compare by numeric id
-// alone, so a push of the identical current top frame is correctly treated as a no-op.
 export function detailFramesEqual(a: DetailFrame, b: DetailFrame): boolean {
   if (a.kind !== b.kind) {
     return false;

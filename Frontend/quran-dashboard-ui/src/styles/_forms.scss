@@ -33,10 +33,6 @@
   min-height: 2.375rem;
   padding: calc(var(--qd-space-2) * 0.85) var(--qd-space-3);
   padding-inline-end: calc(var(--qd-space-4) + 0.5rem);
-  /* This app is RTL-only (dir="rtl"): padding-inline-end reserves the gutter on
-     the physical LEFT, so the chevron below is drawn at a physical-left
-     background-position to land in that same gutter. appearance: none suppresses
-     the browser's own native arrow so only this custom chevron renders. */
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;

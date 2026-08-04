@@ -13,22 +13,16 @@
   font-size: 0.8125rem;
 }
 
-/* The checkbox is deliberately absent: its focus ring belongs to `.qd-checkbox`, and a local
-   rule here would outrank the primitive rather than compose it (UI_STYLE_SYSTEM §17). */
 :host > input:focus-visible,
 .abwab-door-picker__chevron:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: -1px;
 }
 
-/* No height of its own and no scroller of its own: inside a fixed-height dialog the single
-   scroller is `.qd-modal__body` (UI_STYLE_SYSTEM §17). */
 .abwab-door-picker__list {
   margin-block-start: var(--qd-space-2);
 }
 
-/* Layout (display/align/gap) comes from `.qd-check-row`; only the row's own indent, hit area,
-   and states live here. */
 .abwab-door-picker__row {
   padding: var(--qd-space-1) var(--qd-space-2);
   padding-inline-start: calc(var(--abwab-door-picker-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
@@ -40,8 +34,6 @@
   background: var(--qd-surface-hover);
 }
 
-/* The checkbox and the chevron are the row's two tab stops, so keyboard focus has to read as a
-   row highlight — the row itself is not focusable and gets no ring of its own. */
 .abwab-door-picker__row:has(:focus-visible) {
   background: var(--qd-surface-hover);
 }
@@ -53,9 +45,6 @@
   background: transparent;
 }
 
-/* Excluded ≠ disabled: this row is context (the opened door / a fixed target), not a greyed
-   choice. Muted text + no pick control + the tag carry the meaning — never color alone. The
-   chevron inside stays fully interactive. */
 .abwab-door-picker__row--excluded,
 .abwab-door-picker__row--excluded:hover {
   color: var(--qd-text-muted);
@@ -63,7 +52,6 @@
   background: transparent;
 }
 
-/* Holds the pick control's slot so excluded rows' names align with selectable ones. */
 .abwab-door-picker__control-gap {
   inline-size: var(--qd-checkbox-size);
   flex: none;

@@ -23,17 +23,9 @@ import {
   RoutesRecognized,
 } from '@angular/router';
 
-// Warm (chunk-cached) navigations here settle in well under 100ms; 200ms keeps every one of
-// them flash-free while still appearing early inside the 500–1000ms cold-chunk gap.
 export const NAV_PROGRESS_SHOW_DELAY_MS = 200;
-// Covers the done state's snap-to-full plus the --qd-t-base fade before removal.
 const DONE_LINGER_MS = 400;
 
-// The known lifecycle events emitted *between* NavigationStart and a navigation's terminal
-// event. The whitelist is deliberately of in-flight events, not terminal ones: anything not
-// listed here (and not a NavigationStart) settles the bar — End/Cancel/Error/Skipped today,
-// and any event class a future Angular adds. An unknown event therefore fails closed (the bar
-// clears early) instead of sticking forever behind an incomplete terminal whitelist.
 const IN_FLIGHT_EVENT_CLASSES = [
   RouteConfigLoadStart,
   RouteConfigLoadEnd,
@@ -65,9 +57,6 @@ export class NavProgressComponent {
   protected readonly barVisible = computed(
     () => this.state() === 'visible' || this.state() === 'done',
   );
-  // Populated only once the bar actually shows, so warm navigations announce nothing and the
-  // shell never queues chatter against a page-owned polite region (e.g. abwab's announcer).
-  // The text stays through 'done' so a still-queued announcement is not cancelled mid-fade.
   protected readonly statusMessage = computed(() =>
     this.barVisible() ? 'جارٍ تحميل الصفحة…' : '',
   );

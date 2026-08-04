@@ -143,6 +143,19 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
 `AbwabDependencyInjection` the same concrete-Ef + interface→decorator way the `Caching/Quran`
 readers are.
 
+- **The ETag mixes a per-process boot id with the generation counter, and that is restart-safety,
+  not decoration.** `AbwabCacheGeneration` takes a fresh `Guid` per instance
+  (`Caching/Abwab/AbwabCacheGeneration.cs:11`) and interpolates it into every validator alongside
+  the counter (`:22`). A bare counter resets to 0 on restart and other admins' writes climb it back
+  through values an idle client still holds, whose next `If-None-Match` would false-match and be
+  answered `304` with stale data. The boot id makes cross-restart equality impossible; a restart
+  costs each client exactly one refetch.
+- **`AbwabCacheGeneration` must stay ONE object behind both interfaces.**
+  `DependencyInjection/AbwabDependencyInjection.cs:19-21` registers the concrete type once as a
+  singleton and forwards both `IAbwabCacheInvalidator` and `IAbwabCacheValidators` to it via
+  `GetRequiredService`. Registering the two interfaces separately against the same implementation
+  type builds *two* counters — writers bump one, controllers read the other, and every client is
+  served a permanent `304`, with a green build and green tests.
 - **Entries.** `abwab:tree` holds the whole `AbwabTreeDto` as **one indivisible entry** — a
   root-affecting write moves every row's `xmin`, so a per-section or live-vs-archive split would be
   wrong rather than merely finer, and the archive view is a client-side partition of this same

@@ -4,7 +4,6 @@ using QuranDashboard.Infrastructure.Persistence.Writes.Abwab;
 
 namespace QuranDashboard.Infrastructure.Caching.Abwab;
 
-// The only seam that bumps templates and never the tree: template tables are not part of the snapshot.
 internal sealed class InvalidatingAbwabTemplatesWriter(
     EfAbwabTemplatesWriter inner,
     IAbwabCacheInvalidator invalidator) : IAbwabTemplatesWriter

@@ -38,8 +38,6 @@
   border-color: var(--qd-border-strong);
 }
 
-/* The selected template reads as a tint plus an accent hairline, never a solid fill — the
-   allowed-green rule the side panel's bulk toggle already follows. */
 .abwab-templates-page__item--active {
   border-color: var(--qd-border-accent);
   background: var(--qd-selected-bg);
@@ -94,10 +92,6 @@
   min-block-size: 22rem;
 }
 
-// `.abwab-templates-page__layout`'s `align-items: flex-start` leaves the editor card's own
-// block size intrinsic, so `qd-panel-skeleton[shape="panel"]`'s host has no stretch context to
-// fill (its own §17 contract: "a host with an auto block size is unaffected"). This modifier is
-// scoped to the loading site only — the loaded editor keeps its plain block flow.
 .abwab-templates-page__editor--loading {
   display: flex;
   flex-direction: column;
@@ -108,12 +102,6 @@
   }
 }
 
-// The real card is a two-line stacked item (name over count, `--qd-space-3` padding, a 1px
-// border) — roughly 3.75rem tall — which `qd-skeleton-rows`' flat single-line row cannot
-// reproduce column-for-column. Overriding `--qd-skeleton-h` (its documented parameter,
-// `_components.scss:651`) keeps the sidebar's reserved height from shrinking against the
-// loaded list, which is the N3 property that actually matters here; the two lines are not
-// separately represented, which is the residual approximation this override buys.
 .abwab-templates-page__list-skeleton {
   --qd-skeleton-h: 3.75rem;
 }
@@ -154,11 +142,6 @@
   gap: var(--qd-space-2);
 }
 
-// This page's delete item has always read red at rest, unlike the doors page's hover-only
-// danger idiom the shared `.qd-context-menu__item--danger` modifier carries (verified: the
-// two pages' pre-extraction rules were not byte-identical here). Kept as a page-scoped
-// override so this page's rendering stays visually unchanged (plan §3); reconciling the two
-// recipes is a later slice's call (see the §17 context-menu entry).
 .qd-context-menu__item--danger {
   color: var(--qd-danger);
 

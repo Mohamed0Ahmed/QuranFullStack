@@ -33,8 +33,6 @@
           {{ manageSectionsLabel }}
         </button>
         @if (!archiveParam()) {
-          <!-- Hidden in the archive view like the add-root button: a template applies to live
-               doors only, so the entry would lead nowhere usable there. -->
           <a class="qd-btn" [routerLink]="templatesRoutePath" data-testid="abwab-page-templates">
             {{ templatesLabel }}
           </a>
@@ -52,10 +50,6 @@
 
     <qd-abwab-announcer [message]="revealAnnouncement() ?? writeController.announcement()" />
 
-    <!-- Item 17's stats bar (Slice B2, T1003): a quiet inline stat line, never a card
-         (PRODUCT.md's anti-reference list names "identical gradient stat cards" — §5.7). Both
-         instances stay mounted through loading/error/loaded alike, same reasoning as the toolbar
-         below, so switching tabs or a transient load never moves the toolbar under it. -->
     <div class="abwab-page__stats">
       <qd-result-count
         data-testid="abwab-page-stat-total"
@@ -73,10 +67,6 @@
       />
     </div>
 
-    <!-- The toolbar is mounted once for loading, error and loaded alike (T402): the old chain
-         swapped the entire toolbar + tree subtree for a one-line loader or error, collapsing the
-         frame to a single line — §5.2/§4.7. Hoisting it here means only the content below it
-         ever changes shape. -->
     <qd-abwab-toolbar
       [sections]="sections()"
       [activeSectionId]="activeSectionId()"
@@ -105,13 +95,6 @@
         </div>
       </div>
     } @else if (facade.errorMessage() && !facade.snapshot()) {
-      <!-- The error is a reserved slot inside the frame (T402), not a replacement of it: the
-           card that would otherwise hold the tree/cards/archive view holds the error instead, so
-           the toolbar above never disappears and the layout keeps its shape. This branch is only
-           reachable before any load has ever succeeded — AbwabSnapshotFacade's `rawTree` is
-           written only on success, never cleared on failure, so a refresh failure with data
-           already loaded leaves `snapshot()` non-null and falls through to the loaded branch
-           below instead, per the facade's own "leave the previous value in place" contract. -->
       <div class="abwab-page__layout">
         <div class="abwab-page__main">
           <div class="qd-card abwab-page__tree-card">

@@ -26,14 +26,9 @@ export const routes: Routes = [
     redirectTo: 'dashboard',
   },
   {
-    // Public-browse by default (Feature 033, Phase 2, §G1): intentionally no guard here. A
-    // reusable `roleGuard` exists (core/auth/role.guard.ts) but is attached to nothing until the
-    // first admin feature. See core/README.md for the route-posture contract.
     path: 'dashboard',
     children: [
       {
-        // No title here is intentional → brand-only tab (AppTitleStrategy shows the brand alone
-        // when no route in the tree carries a title).
         path: '',
         pathMatch: 'full',
         loadComponent: () =>
@@ -56,14 +51,10 @@ export const routes: Routes = [
     ],
   },
   {
-    // Root-level, like the placeholder it replaces (`nav-items.ts`'s `abwab` entry routes
-    // to `/abwab`, not `/dashboard/abwab`). Must sit before `...placeholderRoutes` and the
-    // `**` wildcard.
     path: 'abwab',
     loadChildren: () => import('./features/abwab/abwab.routes').then((m) => m.ABWAB_ROUTES),
   },
   {
-    // Must sit before the `**` wildcard, which would otherwise swallow this OIDC landing route.
     path: CALLBACK_PATH,
     title: 'تسجيل الدخول',
     loadComponent: () =>

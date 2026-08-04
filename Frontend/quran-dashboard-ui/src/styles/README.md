@@ -100,3 +100,28 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
 - Arabic-first typography and RTL-friendly spacing start here; do not swap shared font roles casually.
 - Keep breakpoint values synchronized between `_breakpoints.scss` and `../app/shared/layout/breakpoints.ts`.
 - Global explorer partials should stay generic across Roots, Lemmas, Stems, Word Types, and related detail panels.
+- **Measured contrast ratios pinned to light-theme tokens (`_tokens.scss`).** These were measured,
+  not derived: nothing in the file recomputes them, so re-tuning any of these tokens by eye
+  silently drops the pairing below its target. Re-measure rather than adjust. Each ratio is stated
+  against the surface it was measured on:
+
+  | token | measured against | ratio |
+  |---|---|---|
+  | `--qd-ayah-card-bg` (`:10`) | Quran text on the ayah card | 12.7:1 |
+  | `--qd-ayah-card-bg` (`:10`) | muted meta text on the ayah card | 4.69:1 (AA) |
+  | `--qd-accent-text` (`:35`) | text emphasis on light surfaces | 7:1 range |
+  | `--qd-warning` (`:40`) | on `--qd-warning-tint` | 4.58:1 |
+  | `--qd-warning` (`:40`) | as a dot on the navy footer | 3.02:1 |
+  | `--qd-danger-tint` (`:42`) | danger text on it | 5.01:1 |
+  | `--qd-success-tint` (`:43`) | against `--qd-success` | 4.58:1 (`UI_STYLE_SYSTEM.md` §16) |
+
+  `--qd-ayah-card-bg` is a warm tone deliberately recessed below `--qd-surface` so an ayah card
+  reads as a distinct card on the near-white surfaces it sits on; the dark theme overrides it to
+  `--qd-surface` (`_themes.scss`). Nothing asserts any of these numbers — see
+  `docs/TESTING_DEBT.md` row P2.
+- `.qd-badge`'s line box (`_components.scss:132,135,137,140` — `padding-block var(--qd-space-1)`,
+  `0.75rem` text at `1.4` line-height, `1px` border each side) is mirrored by the dashboard
+  app-meta skeleton, which composes the same metrics into one height
+  (`../app/features/dashboard/pages/dashboard-home/dashboard-home.component.scss:40-48`). There is
+  no shared badge line-box token, so any `.qd-badge` restyle must be repeated there or the skeleton
+  silently stops matching the loaded badge it stands in for.

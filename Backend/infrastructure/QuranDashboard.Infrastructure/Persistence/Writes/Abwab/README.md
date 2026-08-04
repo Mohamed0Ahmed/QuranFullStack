@@ -148,6 +148,11 @@ incidentally.
     through soft-delete, and one left behind would later restore into a section its parent has left.
     A live-only cascade passes every test that ignores archived rows, so the discriminating test asserts
     an archived grandchild's `SectionId`.
+  - The same all-rows rule governs the **cycle guard**, not just the cascade.
+    `LoadChildrenByParentAsync` (`EfAbwabDoorsWriter.cs:699-701`) selects every `AbwabDoors` row with
+    no `DeletedAtUtc` filter, and `EnsureNotCycle` walks that same map. Filtering it to live rows
+    would let a move nest a door under its own descendant whenever the connecting node is archived —
+    `parent_id` survives soft-delete, so the cycle is real but invisible to a live-only map.
   - Descendants keep their `parent_id`, so their sibling scope's membership does not change and they need
     no resequencing. For the same reason a descendant can never collide on the unique index: only subtree
     members share that `parent_id`, so `SaveTranslatingWriteExceptionsAsync(door.Name, …)` still names the

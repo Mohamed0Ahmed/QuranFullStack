@@ -16,10 +16,6 @@ export const ABWAB_ROUTES: Routes = [
     title: navLabel('abwab'),
   },
   {
-    // The nav carries this entry as a child of «الأبواب» in the navbar's menu model
-    // (`nav-menu.ts`); `NAV_ITEMS` still carries no `templates` key, so the title remains its
-    // own page title rather than a `navLabel`: `navLabel` throws on a key `NAV_ITEMS` does not
-    // carry.
     path: 'templates',
     loadComponent: loadAbwabTemplatesPage,
     title: ABWAB_LABELS.templatesPageTitle,

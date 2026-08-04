@@ -5,11 +5,6 @@ using QuranDashboard.Application.Abstractions.Security;
 
 namespace QuranDashboard.Infrastructure.Access;
 
-// Resolves a user's server-verified profile from the Logto Management API. The inbound access token
-// (audience = our API resource) cannot call Logto's userinfo endpoint, so the trusted source is the
-// Management API, authorized by an M2M client-credentials token cached until just before expiry. Every
-// returned value originates from Logto and is never client-supplied; email verification is derived from
-// linked identities (see GetProfileAsync) because the endpoint has no dedicated verified-email field.
 public sealed class LogtoManagementApiUserProfileSource(
     HttpClient httpClient,
     IMemoryCache cache,
@@ -18,8 +13,6 @@ public sealed class LogtoManagementApiUserProfileSource(
     private const string TokenCacheKey = "auth:logto:management-api:m2m-token";
     private const int TokenExpirySkewSeconds = 60;
 
-    // Single global token key, so one gate keeps concurrent cold-cache callers from stampeding the
-    // Logto token endpoint. Static because the typed HttpClient makes this service transient.
     private static readonly SemaphoreSlim TokenGate = new(1, 1);
 
     private readonly HttpClient _httpClient = httpClient;

@@ -4,11 +4,6 @@ using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Infrastructure.Access;
 
-// First-login provisioning keyed by the Logto sub (decision 3). A new subject is created only from a
-// server-verified email (never a client-supplied value) as Pending/no-role; the configured Owner email
-// is the sole exception, provisioned or promoted to Owner/Active only when the email is also
-// IdP-verified. A Disabled user is never auto-revived or promoted by login. Any role/status change here
-// evicts the subject's cached role so the claims transformation observes it immediately.
 public sealed class UserProvisioningService(
     QuranDashboardDbContext db,
     IExternalUserProfileSource profileSource,
@@ -44,7 +39,6 @@ public sealed class UserProvisioningService(
             return Project(existing, existing.Role?.Name);
         }
 
-        // decision 3: never auto-revive or auto-promote a Disabled user on login.
         if (existing.Status == UserStatus.Disabled)
         {
             return Project(existing, existing.Role?.Name);
@@ -56,8 +50,6 @@ public sealed class UserProvisioningService(
             return Project(existing, existing.Role?.Name);
         }
 
-        // decision 3: only promote a pre-existing owner-email user when their email is IdP-verified. This
-        // profile fetch runs only on this rare owner-upgrade path, not on every reconcile call.
         var profile = await profileSource.GetProfileAsync(logtoSub, ct);
         if (!profile.EmailVerified)
         {
@@ -76,9 +68,6 @@ public sealed class UserProvisioningService(
 
     private async Task<ProvisionedUser> CreateAsync(string logtoSub, ExternalUserProfile profile, CancellationToken ct)
     {
-        // decision 3: an owner-email first login is provisioned as Owner/Active only when the IdP also
-        // reports the email as verified; otherwise it is provisioned exactly like a normal user (Pending,
-        // no role) and can be promoted later once verified.
         var ownerRole = IsConfiguredOwner(profile.Email!) && profile.EmailVerified
             ? await GetOwnerRoleAsync(ct)
             : null;
@@ -103,15 +92,12 @@ public sealed class UserProvisioningService(
             await db.SaveChangesAsync(ct);
             if (ownerRole is not null)
             {
-                // A negative role may have been cached for this subject before the row existed; drop it.
                 roleResolver.Evict(logtoSub);
             }
             return Project(user, ownerRole?.Name);
         }
         catch (DbUpdateException ex)
         {
-            // A concurrent first login for the same subject won the unique-index race. Detach our
-            // failed insert and return the row that landed first; rethrow if it was some other failure.
             db.Entry(user).State = EntityState.Detached;
             var winner = await db.AccessUsers
                 .AsNoTracking()
@@ -119,10 +105,6 @@ public sealed class UserProvisioningService(
                 .SingleOrDefaultAsync(u => u.LogtoSub == logtoSub, ct);
             if (winner is null)
             {
-                // No row under our sub means the unique-index hit wasn't the same-sub race above — the
-                // sub index would have produced a winner. It is the email unique index instead: a
-                // subject deleted+recreated in Logto now presents a new sub with an already-registered
-                // email. That is an expected business conflict, not a server fault.
                 if (ex.InnerException is PostgresException { SqlState: "23505" })
                 {
                     throw new UserProvisioningEmailConflictException(profile.Email!);
