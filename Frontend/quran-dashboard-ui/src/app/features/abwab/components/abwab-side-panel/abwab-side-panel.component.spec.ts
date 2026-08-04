@@ -133,7 +133,7 @@ describe('AbwabSidePanelComponent', () => {
       const fixture = render({ bulkMode: true, bulkCount: 2, bulkNames: ['الألوهية', 'الربوبية'] });
       const root = fixture.nativeElement as HTMLElement;
 
-      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent).toContain('2');
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent).toContain('بابان محددان');
       expect(root.querySelector('[data-testid="abwab-side-panel-bulk-names"]')?.textContent).toContain('الألوهية');
 
       const bulkMoved: void[] = [];
@@ -150,6 +150,21 @@ describe('AbwabSidePanelComponent', () => {
       expect(bulkMoved).toHaveLength(1);
       expect(bulkArchived).toHaveLength(1);
       expect(bulkCleared).toHaveLength(1);
+    });
+
+    // F-60: the bulk count is a counted-door sentence, so it renders the full countPhrase
+    // form — never a bare digit interpolated beside an invariant singular noun.
+    it('renders the bulk count as a counted-noun phrase, not a bare digit plus a fixed suffix', () => {
+      const root = render({ bulkMode: true, bulkCount: 3, bulkNames: ['أ', 'ب', 'ج'] }).nativeElement as HTMLElement;
+      const count = root.querySelector('[data-testid="abwab-side-panel-bulk-count"]');
+
+      expect(count?.textContent?.trim()).toBe('3 أبواب محددة');
+      expect(count?.parentElement?.textContent).not.toContain('باب محدد');
+
+      const zeroRoot = render({ bulkMode: true, bulkCount: 0, bulkNames: [] }).nativeElement as HTMLElement;
+      expect(zeroRoot.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe(
+        'لا أبواب محددة',
+      );
     });
 
     it('hides the bulk bar entirely while bulk mode is off', () => {

@@ -59,7 +59,6 @@
           [attr.aria-label]="rowAriaLabel(row)"
           [attr.data-testid]="testIdPrefix() + '-pick-checkbox-' + row.node.id"
           (click)="$event.preventDefault()"
-          (change)="onRowChange(row)"
         />
       }
       <span class="abwab-door-picker__name qd-truncate" [title]="row.node.name">{{ row.node.name }}</span>

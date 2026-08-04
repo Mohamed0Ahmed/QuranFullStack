@@ -14,13 +14,7 @@ import {
 } from '@angular/core';
 
 import { CONTEXT_MENU_LABELS } from './context-menu.labels';
-
-const VIEWPORT_MARGIN = 8;
-
-interface MenuPlacement {
-  readonly left: number;
-  readonly top: number;
-}
+import { MenuPlacement, placeContextMenu, resolveMenuDirection } from './context-menu-placement';
 
 @Component({
   selector: 'qd-context-menu',
@@ -61,7 +55,12 @@ export class QdContextMenuComponent {
       if (rect.width === 0 && rect.height === 0) {
         return;
       }
-      const next = this.place(anchor, rect.width, rect.height);
+      const next = placeContextMenu(
+        anchor,
+        { width: rect.width, height: rect.height },
+        { width: window.innerWidth, height: window.innerHeight },
+        resolveMenuDirection(this.elementRef.nativeElement),
+      );
       untracked(() => {
         const current = this.placement();
         if (current === null || current.left !== next.left || current.top !== next.top) {
@@ -104,35 +103,6 @@ export class QdContextMenuComponent {
     }
   }
 
-  private place(anchor: { x: number; y: number }, width: number, height: number): MenuPlacement {
-    const rtl = this.resolveDirection() === 'rtl';
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    let left = rtl ? anchor.x - width : anchor.x;
-    if (rtl ? left < VIEWPORT_MARGIN : left + width > viewportWidth - VIEWPORT_MARGIN) {
-      left = rtl ? anchor.x : anchor.x - width;
-    }
-
-    let top = anchor.y;
-    if (top + height > viewportHeight - VIEWPORT_MARGIN) {
-      top = anchor.y - height;
-    }
-
-    return {
-      left: clamp(left, VIEWPORT_MARGIN, viewportWidth - width - VIEWPORT_MARGIN),
-      top: clamp(top, VIEWPORT_MARGIN, viewportHeight - height - VIEWPORT_MARGIN),
-    };
-  }
-
-  private resolveDirection(): 'ltr' | 'rtl' {
-    const dirHost = (this.elementRef.nativeElement as HTMLElement).closest('[dir]');
-    return dirHost?.getAttribute('dir') === 'rtl' ? 'rtl' : 'ltr';
-  }
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(value, max));
 }
 
 function resolveInvoker(): HTMLElement | null {

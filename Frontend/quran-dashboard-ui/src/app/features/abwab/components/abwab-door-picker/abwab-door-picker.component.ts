@@ -148,13 +148,6 @@ export class AbwabDoorPickerComponent {
     this.toggled.emit(row.node.id);
   }
 
-  protected onRowChange(row: AbwabDoorPickerRow): void {
-    if (!this.single()) {
-      return;
-    }
-    this.togglePicked(row);
-  }
-
   reset(): void {
     this.searchQuery.set('');
     this.expandedIds.set(new Set());

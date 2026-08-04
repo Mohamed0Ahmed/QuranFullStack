@@ -26,7 +26,7 @@ export type AbwabWriteFailureOutcome =
   | { readonly kind: 'invalid'; readonly message: string }
   | { readonly kind: 'error'; readonly message: string };
 
-export type AbwabWriteOutcome<T> = { readonly kind: 'success'; readonly data: T } | AbwabWriteFailureOutcome;
+export type AbwabWriteOutcome<T> = { readonly kind: 'success'; readonly data: T | null } | AbwabWriteFailureOutcome;
 
 interface AbwabWriteOptions {
   readonly successAnnouncement?: string;
@@ -96,39 +96,60 @@ export class AbwabWriteController {
   }
 
   createSection(command: CreateSectionCommand): Observable<AbwabWriteOutcome<AbwabSectionDto>> {
-    return this.dispatch(this.api.createSection(command));
+    return this.dispatch(this.api.createSection(command), {
+      successAnnouncement: ABWAB_LABELS.sectionCreatedAnnouncement,
+    });
   }
 
   renameSection(id: number, body: RenameSectionBody): Observable<AbwabWriteOutcome<AbwabSectionDto>> {
-    return this.dispatch(this.api.renameSection(id, body));
+    return this.dispatch(this.api.renameSection(id, body), {
+      successAnnouncement: ABWAB_LABELS.sectionRenamedAnnouncement,
+    });
   }
 
   deleteSection(id: number): Observable<AbwabWriteOutcome<unknown>> {
-    return this.dispatch(this.api.deleteSection(id), { announceFailure: true });
+    return this.dispatch(this.api.deleteSection(id), { successAnnouncement: ABWAB_LABELS.sectionDeletedAnnouncement, announceFailure: true });
   }
 
   reorderSection(id: number, body: ReorderSectionBody): Observable<AbwabWriteOutcome<AbwabSectionDto>> {
-    return this.dispatch(this.api.reorderSection(id, body));
+    return this.dispatch(this.api.reorderSection(id, body), {
+      successAnnouncement: ABWAB_LABELS.sectionReorderedAnnouncement,
+    });
   }
 
   createDoor(command: CreateDoorCommand): Observable<AbwabWriteOutcome<AbwabDoorDto>> {
-    return this.dispatch(this.api.createDoor(command));
+    return this.dispatch(this.api.createDoor(command), { successAnnouncement: ABWAB_LABELS.doorCreatedAnnouncement });
   }
 
   updateDoor(id: number, body: EditDoorBody): Observable<AbwabWriteOutcome<AbwabDoorDto>> {
-    return this.dispatch(this.api.updateDoor(id, body), { conflictClearsSelectionId: id });
+    return this.dispatch(this.api.updateDoor(id, body), {
+      successAnnouncement: ABWAB_LABELS.doorUpdatedAnnouncement,
+      conflictClearsSelectionId: id,
+    });
   }
 
   moveDoor(id: number, body: MoveDoorBody): Observable<AbwabWriteOutcome<AbwabDoorDto>> {
-    return this.dispatch(this.api.moveDoor(id, body), { conflictClearsSelectionId: id, announceFailure: true });
+    return this.dispatch(this.api.moveDoor(id, body), {
+      successAnnouncement: ABWAB_LABELS.doorMovedAnnouncement,
+      conflictClearsSelectionId: id,
+      announceFailure: true,
+    });
   }
 
   reorderDoor(id: number, body: ReorderDoorBody): Observable<AbwabWriteOutcome<AbwabDoorDto>> {
-    return this.dispatch(this.api.reorderDoor(id, body), { conflictClearsSelectionId: id, announceFailure: true });
+    return this.dispatch(this.api.reorderDoor(id, body), {
+      successAnnouncement: ABWAB_LABELS.doorReorderedAnnouncement,
+      conflictClearsSelectionId: id,
+      announceFailure: true,
+    });
   }
 
   archiveDoor(id: number, version: number): Observable<AbwabWriteOutcome<unknown>> {
-    return this.dispatch(this.api.archiveDoor(id, { version }), { conflictClearsSelectionId: id, announceFailure: true });
+    return this.dispatch(this.api.archiveDoor(id, { version }), {
+      successAnnouncement: ABWAB_LABELS.doorArchivedAnnouncement,
+      conflictClearsSelectionId: id,
+      announceFailure: true,
+    });
   }
 
   restoreDoor(id: number, options: { sectionId?: number; version: number }): Observable<AbwabWriteOutcome<AbwabDoorDto>> {
@@ -144,7 +165,10 @@ export class AbwabWriteController {
     targetSectionId: number | null,
   ): Observable<AbwabWriteOutcome<AbwabDoorDto[]>> {
     const doors = this.currentBulkRefs();
-    const options: AbwabWriteOptions = { announceFailure: true };
+    const options: AbwabWriteOptions = {
+      successAnnouncement: ABWAB_LABELS.bulkMoveAnnouncement(doors.length),
+      announceFailure: true,
+    };
     return this.api.bulkMoveDoors({ doors, targetParentId, targetSectionId }).pipe(
       map((response) => this.handleSuccess(response, options)),
       catchError((err: unknown) => this.handleBulkFailure<AbwabDoorDto[]>(err, doors, options)),
@@ -153,7 +177,10 @@ export class AbwabWriteController {
 
   bulkArchiveDoors(): Observable<AbwabWriteOutcome<number[]>> {
     const doors = this.currentBulkRefs();
-    const options: AbwabWriteOptions = { announceFailure: true };
+    const options: AbwabWriteOptions = {
+      successAnnouncement: ABWAB_LABELS.bulkArchiveAnnouncement(doors.length),
+      announceFailure: true,
+    };
     return this.api.bulkArchiveDoors({ doors }).pipe(
       map((response) => this.handleSuccess(response, options)),
       catchError((err: unknown) => this.handleBulkFailure<number[]>(err, doors, options)),
@@ -161,11 +188,16 @@ export class AbwabWriteController {
   }
 
   addDoorRelations(doorId: number, body: AddDoorRelationsBody): Observable<AbwabWriteOutcome<AbwabDoorRelationDto[]>> {
-    return this.dispatch(this.api.addDoorRelations(doorId, body));
+    return this.dispatch(this.api.addDoorRelations(doorId, body), {
+      successAnnouncement: ABWAB_LABELS.relationsAddedAnnouncement(body.targetDoorIds.length),
+    });
   }
 
   deleteRelation(relationId: number): Observable<AbwabWriteOutcome<unknown>> {
-    return this.dispatch(this.api.deleteRelation(relationId), { announceFailure: true });
+    return this.dispatch(this.api.deleteRelation(relationId), {
+      successAnnouncement: ABWAB_LABELS.relationDeletedAnnouncement,
+      announceFailure: true,
+    });
   }
 
   private currentBulkRefs(): AbwabBulkDoorRef[] {
@@ -189,11 +221,10 @@ export class AbwabWriteController {
   }
 
   private handleSuccess<T>(response: ApiResponse<T> | null, options: AbwabWriteOptions = {}): AbwabWriteOutcome<T> {
-    const data = (response?.data ?? null) as T;
     if (response === null || response.isSuccess) {
       this.announcementState.set(options.successAnnouncement ?? null);
       this.refreshAndRebind();
-      return { kind: 'success', data };
+      return { kind: 'success', data: response?.data ?? null };
     }
     const message = response.message ?? ABWAB_LABELS.writeInvalidFallback;
     this.announcementState.set(options.announceFailure ? message : null);

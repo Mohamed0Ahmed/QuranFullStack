@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, HttpHeaders, HttpResponse, HttpStatusCode } from '@angular/common/http';
-import { Observable, map, of, throwError } from 'rxjs';
+import { Observable, Subscriber, map, of, throwError } from 'rxjs';
 
 import { AbwabApi } from '../data-access/abwab.api';
 import { AbwabTreeDto } from '../../../core/api/generated/models/abwab-tree-dto';
@@ -198,5 +198,64 @@ describe('AbwabSnapshotFacade', () => {
     facade.refresh();
     expect(facade.errorMessage()).toBe('تعارض');
     expect(facade.snapshot()).not.toBeNull();
+  });
+});
+
+// F-36. `pendingRequest?.unsubscribe()` under `shareReplay(1)` (refCount: false) never tore the
+// HTTP source down, so a superseded refresh landing late overwrote the newer tree AND its ETag —
+// the validator the whole write path rebinds against. Two shapes are pinned: the plain race
+// (nothing else holds the old request, cancellation must be real) and the write-controller shape
+// (`refresh().subscribe()` keeps the old request alive, so last-write-wins must hold anyway).
+describe('AbwabSnapshotFacade — F-36: an out-of-order response cannot overwrite a newer tree', () => {
+  function setupRace() {
+    getTestBed().resetTestingModule();
+    const pending: Subscriber<HttpResponse<ApiResponse<AbwabTreeDto>>>[] = [];
+    const getTree = () =>
+      new Observable<HttpResponse<ApiResponse<AbwabTreeDto>>>((subscriber) => {
+        pending.push(subscriber);
+      });
+    TestBed.configureTestingModule({
+      providers: [AbwabSnapshotFacade, { provide: AbwabApi, useValue: { getTree } }],
+    });
+    const resolve = (index: number, name: string, etag: string) => {
+      pending[index].next(
+        new HttpResponse({
+          body: treeResponse({ doors: [{ ...DOOR, name }] }),
+          headers: new HttpHeaders({ ETag: etag }),
+        }),
+      );
+      pending[index].complete();
+    };
+    return { facade: TestBed.inject(AbwabSnapshotFacade), resolve };
+  }
+
+  it('the newer refresh wins even when the older response lands last', () => {
+    const { facade, resolve } = setupRace();
+
+    facade.load();
+    facade.refresh().subscribe();
+
+    resolve(1, 'الأحدث', 'W/"gen-B"');
+    resolve(0, 'الأقدم', 'W/"gen-A"');
+
+    expect(facade.snapshot()?.liveRoots.map((n) => n.name)).toEqual(['الأحدث']);
+    expect(facade.snapshotValidator()).toBe('W/"gen-B"');
+    expect(facade.errorMessage()).toBeNull();
+    expect(facade.isLoading()).toBe(false);
+  });
+
+  it('a superseded refresh still held by its caller neither writes state nor hands back the older tree', () => {
+    const { facade, resolve } = setupRace();
+    const seen: (string | undefined)[] = [];
+
+    facade.refresh().subscribe((snapshot) => seen.push(snapshot?.liveRoots[0]?.name));
+    facade.refresh().subscribe();
+
+    resolve(1, 'الأحدث', 'W/"gen-B"');
+    resolve(0, 'الأقدم', 'W/"gen-A"');
+
+    expect(facade.snapshot()?.liveRoots.map((n) => n.name)).toEqual(['الأحدث']);
+    expect(facade.snapshotValidator()).toBe('W/"gen-B"');
+    expect(seen).toEqual(['الأحدث']);
   });
 });

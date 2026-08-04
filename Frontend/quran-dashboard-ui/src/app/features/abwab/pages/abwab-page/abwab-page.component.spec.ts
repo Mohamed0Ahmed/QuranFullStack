@@ -749,12 +749,12 @@ describe('AbwabPageComponent', () => {
       (root.querySelector('[data-testid="abwab-tree-checkbox-1"]') as HTMLElement).click();
       (root.querySelector('[data-testid="abwab-tree-checkbox-2"]') as HTMLElement).click();
       fixture.detectChanges();
-      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('2');
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('بابان محددان');
 
       queryParamMap$.next(convertToParamMap({ section: '1' }));
       fixture.detectChanges();
 
-      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('0');
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('لا أبواب محددة');
       expect(root.querySelector('[data-testid="abwab-side-panel-bulk-bar"]')).toBeTruthy();
     });
 
@@ -791,7 +791,7 @@ describe('AbwabPageComponent', () => {
       fixture.detectChanges();
       (root.querySelector('[data-testid="abwab-tree-checkbox-1"]') as HTMLElement).click();
       fixture.detectChanges();
-      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('1');
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('باب محدد واحد');
 
       // Reveal is the entry path a per-slice review could not see: it writes `section` itself when
       // the revealed door lives elsewhere, so the user never touches a section tab.
@@ -814,7 +814,71 @@ describe('AbwabPageComponent', () => {
       queryParamMap$.next(convertToParamMap(merged));
       fixture.detectChanges();
 
-      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('0');
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('لا أبواب محددة');
+    });
+
+    // F-90 (LOW). The in-app archive toggle drops `door` via buildAbwabQueryParams, but a
+    // hand-entered or bookmarked `?archive=1&door=<live id>` bypassed that clear: the door=
+    // effect selected the door and the side panel offered edit/move/archive/add-child over the
+    // archive view. The parse now fails `door` closed to null whenever `archive` is on.
+    it('F-90 — a hand-entered archive=1&door=<live id> keeps the side panel unselected and read-only', () => {
+      queryParamMap$.next(convertToParamMap({ archive: '1', door: '1' }));
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-side-panel-active-door"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-side-panel-empty"]')).toBeTruthy();
+      expect(
+        root.querySelector<HTMLButtonElement>('[data-testid="abwab-side-panel-op-archive"]')?.disabled,
+      ).toBe(true);
+      expect(
+        root.querySelector<HTMLButtonElement>('[data-testid="abwab-side-panel-op-edit"]')?.disabled,
+      ).toBe(true);
+    });
+  });
+
+  // F-37 (MEDIUM). `parsePositiveId` validates shape, not existence, so a restored URL carrying
+  // a section id that no longer exists left a permanently empty tree, a 0 stat and no active
+  // tab. Once the snapshot has landed the page falls back to «كل الأبواب» — mirroring the
+  // settle-gated door= effect — and rewrites the URL by replace.
+  describe('F-37 — a section id that no longer exists fails closed to «كل الأبواب»', () => {
+    it('falls back to the all-doors scope once the snapshot lands and rewrites the URL by replace', () => {
+      queryParamMap$.next(convertToParamMap({ section: '999' }));
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-row-1"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-tree-row-2"]')).toBeTruthy();
+      expect(
+        root.querySelector('[data-testid="abwab-toolbar-tab-all"]')?.getAttribute('aria-selected'),
+      ).toBe('true');
+      expect(router.navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: expect.objectContaining({ section: null }),
+          replaceUrl: true,
+        }),
+      );
+    });
+
+    // The fallback must also settle AbwabSelectionStore.sectionScope, not just the page signal:
+    // if the store were left on the dead id, the replace navigation's own echo would arrive as a
+    // 999 → null scope change and wipe any bulk set built after the fallback.
+    it('keeps the store scope in sync, so the URL echo of the rewrite cannot wipe a later bulk set', () => {
+      queryParamMap$.next(convertToParamMap({ section: '999' }));
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-side-panel-bulk-toggle"]') as HTMLElement).click();
+      fixture.detectChanges();
+      (root.querySelector('[data-testid="abwab-tree-checkbox-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(root.querySelector<HTMLInputElement>('[data-testid="abwab-tree-checkbox-1"]')?.checked).toBe(true);
+
+      queryParamMap$.next(convertToParamMap({}));
+      fixture.detectChanges();
+
+      expect(root.querySelector<HTMLInputElement>('[data-testid="abwab-tree-checkbox-1"]')?.checked).toBe(true);
     });
   });
 

@@ -12,6 +12,7 @@ import { RouterLink } from '@angular/router';
 import { Observable, of } from 'rxjs';
 
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
+import { AbwabTemplatesPageDeleteController } from './abwab-templates-page-delete.controller';
 import { AbwabTemplatesFacade } from '../../state/abwab-templates.facade';
 import { AbwabTemplatesController } from '../../state/abwab-templates.controller';
 import { AbwabSnapshotFacade } from '../../state/abwab-snapshot.facade';
@@ -58,6 +59,7 @@ type AbwabNodeModalState =
   templateUrl: './abwab-templates-page.component.html',
   styleUrl: './abwab-templates-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [AbwabTemplatesPageDeleteController],
 })
 export class AbwabTemplatesPageComponent implements OnInit {
   protected readonly facade = inject(AbwabTemplatesFacade);
@@ -72,9 +74,10 @@ export class AbwabTemplatesPageComponent implements OnInit {
   protected readonly contextMenuNodeId = signal<number | null>(null);
   protected readonly contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
   protected readonly deletingNodeId = signal<number | null>(null);
-  protected readonly confirmingTemplateDelete = signal(false);
-  protected readonly templateDeleteBusy = signal(false);
-  protected readonly templateDeleteError = signal<string | null>(null);
+  private readonly templateDelete = inject(AbwabTemplatesPageDeleteController);
+  protected readonly confirmingTemplateDelete = this.templateDelete.confirming;
+  protected readonly templateDeleteBusy = this.templateDelete.busy;
+  protected readonly templateDeleteError = this.templateDelete.error;
   protected readonly nodeDeleteBusy = signal(false);
   protected readonly nodeDeleteError = signal<string | null>(null);
   protected readonly copyModalOpen = signal(false);
@@ -303,9 +306,7 @@ export class AbwabTemplatesPageComponent implements OnInit {
 
   protected requestTemplateDelete(): void {
     this.closeContextMenu();
-    this.templateDeleteError.set(null);
-    this.templateDeleteBusy.set(false);
-    this.confirmingTemplateDelete.set(true);
+    this.templateDelete.request();
   }
 
   protected ctxDeleteTemplate(): void {
@@ -314,35 +315,18 @@ export class AbwabTemplatesPageComponent implements OnInit {
   }
 
   protected confirmTemplateDelete(): void {
-    const template = this.facade.selectedTemplate();
-    if (template === null || this.templateDeleteBusy()) {
-      return;
-    }
-    this.templateDeleteBusy.set(true);
-    this.templateDeleteError.set(null);
-    this.controller.deleteTemplate(template.id).subscribe((outcome) => {
-      this.templateDeleteBusy.set(false);
-      if (outcome.kind !== 'success') {
-        this.templateDeleteError.set(outcome.message);
-        return;
-      }
+    this.templateDelete.confirm(() => {
       this.consumeContextMenuOrigin();
-      this.confirmingTemplateDelete.set(false);
-      this.facade.clearSelection();
       this.focusHeaderFallback();
     });
   }
 
   protected cancelTemplateDelete(): void {
-    if (this.templateDeleteBusy()) {
-      return;
-    }
-    const fromContextMenu = this.consumeContextMenuOrigin();
-    this.confirmingTemplateDelete.set(false);
-    this.templateDeleteError.set(null);
-    if (fromContextMenu) {
-      this.focusHeaderFallback();
-    }
+    this.templateDelete.cancel(() => {
+      if (this.consumeContextMenuOrigin()) {
+        this.focusHeaderFallback();
+      }
+    });
   }
 
   protected openCopyModal(): void {

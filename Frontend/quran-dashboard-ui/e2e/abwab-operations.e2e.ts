@@ -87,7 +87,7 @@ test('bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
   await page.getByTestId('abwab-side-panel-bulk-toggle').click();
   await page.getByTestId(`abwab-tree-checkbox-${bulkA.id}`).click();
   await page.getByTestId(`abwab-tree-checkbox-${bulkB.id}`).click();
-  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('2');
+  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('بابان محددان');
   await expect(page.getByTestId('abwab-side-panel-bulk-names')).toContainText(bulkA.name);
   await expect(page.getByTestId('abwab-side-panel-bulk-names')).toContainText(bulkB.name);
 
@@ -108,7 +108,7 @@ test('bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
 
   // The move refetches and rebinds by id (§4.6) — both moved doors stay bulk-selected,
   // so the archive confirm below counts the same union of two live doors.
-  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('2');
+  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('بابان محددان');
   await page.getByTestId('abwab-side-panel-bulk-archive').click();
   // Two doors is the Arabic dual, so the confirm reads «بابين» and carries no digit — the
   // union count is what is being asserted, in the form a reader actually sees.
@@ -120,7 +120,7 @@ test('bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
 
   // The rebind drops archived ids as well as missing ones (Slice D). Without this the set
   // kept both now-archived doors with freshly rebound versions, and the next submit 404'd.
-  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('0');
+  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('لا أبواب محددة');
 });
 
 test('row context menu offers exactly edit / add-child / move / relations / archive', async ({ page, abwabSandbox }) => {

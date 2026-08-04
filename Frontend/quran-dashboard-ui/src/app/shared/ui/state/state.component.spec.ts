@@ -124,4 +124,41 @@ describe('QdStateComponent', () => {
     const filledMessage = (filled.nativeElement as HTMLElement).querySelector('.qd-state__message');
     expect(filledMessage?.classList.contains('qd-state__message--visible')).toBe(true);
   });
+
+  // A reserved error region must EXIST while empty (so text insertion into the live region is
+  // announced) yet stay visually quiet: the danger tint belongs to a message, not to the box.
+  describe('reserved-empty error region (the genuinely-reserved live-region contract)', () => {
+    it('keeps role="alert" in the DOM while empty and marks the box quiet', () => {
+      const fixture = render('error', '', null, true);
+      const box = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="qd-state-error"]');
+
+      expect(box).toBeTruthy();
+      expect(box?.getAttribute('role')).toBe('alert');
+      expect(box?.classList.contains('qd-state--reserve')).toBe(true);
+      expect(box?.classList.contains('qd-state--reserve-empty')).toBe(true);
+      expect(box?.querySelector('.qd-state__message')?.classList.contains('qd-state__message--visible')).toBe(false);
+    });
+
+    it('drops the quiet class on the SAME element once the message lands, so the danger box appears', () => {
+      const fixture = render('error', '', null, true);
+      const before = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="qd-state-error"]');
+
+      fixture.componentRef.setInput('message', 'تعذر تنفيذ العملية.');
+      fixture.detectChanges();
+      const after = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="qd-state-error"]');
+
+      expect(after).toBe(before);
+      expect(after?.classList.contains('qd-state--reserve-empty')).toBe(false);
+      expect(after?.classList.contains('qd-state--reserve')).toBe(true);
+      expect(after?.querySelector('.qd-state__message')?.classList.contains('qd-state__message--visible')).toBe(true);
+      expect(after?.textContent?.trim()).toBe('تعذر تنفيذ العملية.');
+    });
+
+    it('never marks a non-reserved error quiet, even with an empty message', () => {
+      const fixture = render('error', '');
+      const box = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="qd-state-error"]');
+
+      expect(box?.classList.contains('qd-state--reserve-empty')).toBe(false);
+    });
+  });
 });

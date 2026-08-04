@@ -18,9 +18,6 @@
   flex-direction: column;
 }
 
-/* One frame, and only in a browser: the box has to be measured before it can be placed toward
-   the anchor's inline-start, and painting it at the raw anchor meanwhile would flash it on the
-   wrong side. `visibility` rather than `display: none` — a zero-box element cannot be measured. */
 .qd-context-menu--measuring {
   visibility: hidden;
 }

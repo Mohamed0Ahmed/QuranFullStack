@@ -79,6 +79,10 @@ export class AbwabCardsComponent {
       : ABWAB_LABELS.emptyTreeMessage,
   );
 
+  protected childCountAriaLabel(count: number): string {
+    return ABWAB_LABELS.rowChildCountAriaLabel(count);
+  }
+
   protected displayOrder(node: AbwabNode): number {
     const isTopLevel = this.cardId() === null;
     return isTopLevel && this.orderScope() === 'global' ? (node.globalOrderValue ?? node.orderValue) : node.orderValue;

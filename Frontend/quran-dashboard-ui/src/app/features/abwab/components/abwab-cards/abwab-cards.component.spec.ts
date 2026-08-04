@@ -211,6 +211,25 @@ describe('AbwabCardsComponent', () => {
     });
   });
 
+  describe('F-89 — the card child count declares its scope, matching the tree badge', () => {
+    it('labels the count with the shared direct-children phrase from abwab.labels', () => {
+      const root = render().nativeElement as HTMLElement;
+      const meta = root.querySelector('[data-testid="abwab-card-1"] .abwab-cards__meta');
+
+      expect(meta?.getAttribute('aria-label')).toBe(ABWAB_LABELS.rowChildCountAriaLabel(1));
+      expect(ABWAB_LABELS.rowChildCountAriaLabel(1)).toContain('مباشرة');
+    });
+
+    it('gates the digit and its label on liveChildCount, so the condition and the number describe one set', () => {
+      const orphaned = node({ id: 7, name: 'بلا أحياء', liveChildCount: 0, children: [GRANDCHILD] });
+      const root = render({ roots: [orphaned], byId: new Map([[7, orphaned]]) }).nativeElement as HTMLElement;
+      const meta = root.querySelector('[data-testid="abwab-card-7"] .abwab-cards__meta');
+
+      expect(meta?.textContent?.trim()).toBe('');
+      expect(meta?.getAttribute('aria-label')).toBeNull();
+    });
+  });
+
   describe('F-53 — the level that is on screen has an empty state and a distinct no-results state', () => {
     it('states that there are no doors yet when the level is genuinely empty', () => {
       const root = render({ roots: [] }).nativeElement as HTMLElement;

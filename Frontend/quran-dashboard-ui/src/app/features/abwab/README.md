@@ -48,12 +48,12 @@ nine), four of them reads.
   subscription, two settle-gated effects, the label getters the TDZ rule mandates, and one
   thin handler per output of every child it composes (`abwab-page.component.ts`'s own
   `imports` array is the list — do not restate its length here). **The next seam, when the
-  file next has to grow**, is the reveal-in-tree machinery (audit item 10: the target/
+  file next has to grow**, is the reveal-in-tree machinery (the target/
   sequence/mark signals, the hold timer and `onRevealRequested`) moving to a page-scoped
   `abwab-reveal.controller.ts` on the same precedent — deliberately not done inside a
   feature slice, because it would rewrite behavior pinned since Slice D for no user-visible
   gain.
-- `state/abwab-modal-url.controller.ts` — audit item 11's page-side machinery for the
+- `state/abwab-modal-url.controller.ts` — the page-side machinery for the
   seventh key: which overlay the URL currently owns (kind **and** subject), whether a
   parsed key may be acted on (the live-door guard), and the two halves of reconciliation.
   Same boundary as the overlays controller — **no `Router`/`ActivatedRoute`**; the page
@@ -118,7 +118,10 @@ nine), four of them reads.
     them.
   - **Item 19's root-count badge** renders `.qd-tabs__count` at the call-site on every
     tab, composing `qd-tabs`'s backing class rather than adding a directive input —
-    `qdTab` stays a host-bindings-only directive and cannot project a child span.
+    `qdTab` stays a host-bindings-only directive and cannot project a child span. Each
+    badge also carries a visible `title` with the same root-scope phrase its
+    `aria-label` speaks (`abwab-toolbar.component.html`), so the scope is readable by
+    eye, not only by convention.
     **Root doors only** (`state/abwab-tree.builder.ts`'s `rootCountBySectionId`), a
     different question from item 17's shipped `doorsInScopeCount` stat below, which
     counts at any depth. Visible digits are Latin and `aria-hidden`; the tab's own
@@ -132,7 +135,11 @@ nine), four of them reads.
   the row they act on, and the page template is a composition root whose length is child
   elements and their bindings, not logic. The hard thresholds (400 for both) are the
   trigger; the tree's split, when it comes, is the row into its own component, and the
-  page's is the archive branch into a sibling template.
+  page's is the archive branch into a sibling template. **The tree's SCSS sits at 235
+  lines, over the 200-line soft threshold** — the relation flag's two-state rendering and
+  the bulk/order affordances are row styling that belongs beside the row; the 300-line
+  hard threshold is the trigger, and the split follows the TS's (the row's styles leave
+  with the row).
   Also here: `abwab-tree-keyboard.controller.ts`, a pure, DOM-free key model
   (RTL-mirrored per the `qd-tabs` precedent: ArrowLeft expands/enters, ArrowRight
   collapses/exits). Renders **flat** (one row per visible node, `aria-level` conveys
@@ -272,20 +279,23 @@ nine), four of them reads.
   A child has no question to answer; it returns under its live parent, in that parent's current
   section. Success announces «استُرجع الباب» through the existing aria-live announcer; a failure
   keeps the modal open with the message inline **and is also announced**, because that message is
-  `@if`-inserted rather than reserved — see the announcer entry below for why that distinction
-  decides which region speaks.
+  inserted inside the already-focused confirm `role="alertdialog"` — see the announcer entry below
+  for why that placement decides which region speaks.
 - `components/abwab-sections-modal/` — list / add / rename / reorder / delete-empty, with full
   dialog semantics and a dirty guard as of Slice C (a typed section name or an altered
   rename draft raises the door modal's confirm strip; an opened-but-unedited rename is
   not dirty). **Its drafts live on the component, and the page hosts it as a static
   sibling, so it must reset them on open** — unlike the door modal, whose drafts sit in
   a child that `@if (open())` destroys. Skip that reset and «تجاهل التغييرات» hides the
-  draft instead of discarding it. Takes its four write functions as inputs (bound by the page to
+  draft instead of discarding it. **Its TS sits at 305 lines, just over the 300-line soft
+  threshold** — the Escape/dirty-strip handling and the per-write busy signals
+  landed on one component; the hard threshold (400) is the trigger, and the split is the
+  rename-draft machinery into a child form. Takes its four write functions as inputs (bound by the page to
   `state/abwab-sections.controller.ts`) rather than injecting a service, so its own spec
   exercises the 409/success outcomes without the facade/controller chain. Rename always
   reads the section's row from the live `sections` input at submit time, never a value
   captured when edit mode opened.
-  - **The order editor (Slice F, item 18) reuses the tree's editor grammar**: activate the
+  - **The order editor reuses the tree's editor grammar**: activate the
     order chip → an `<input type="number" min="1">`, **Enter commits, blur and Escape
     both cancel**, seeded from and submitted against the section's *live* row exactly
     like rename. Its own `editingOrderId` signal is separate from `editingId` — an open
@@ -335,21 +345,30 @@ nine), four of them reads.
 - `pages/abwab-templates-page/` — the `/abwab/templates` shell: the template list with
   «+ قالب جديد», the editor panel, the node/template actions, the row context menu, and
   the two confirms. It owns the overlay state itself (page-scoped) while the caches stay
-  root-scoped. **Its TS sits just over the 300-line soft threshold** — deliberately, not
-  yet split: ~22 of those lines are the one-line label getters the TDZ rule mandates
-  (its SCSS dropped back under the 200-line threshold once Slice A phase 6 moved the row
-  context menu's markup/styling onto the shared `qd-context-menu`), the page carries no
-  URL state at all (unlike
-  `abwab-page`, whose seven URL keys were half of what forced its overlay controller out),
-  and the page has no spec of its own, so an extraction here would be an unpinned
-  refactor of the one file nothing verifies. **The trigger that forces the split** is a
+  root-scoped. **Its TS crossed the 400-line hard threshold during the review-fix work
+  and was split at once**: the template-delete confirm flow (its confirming/busy/error
+  signals and the F-92 guard semantics) moved to the component-provided
+  `abwab-templates-page-delete.controller.ts`, the `abwab-page-overlays.controller.ts`
+  idiom one page over, bringing the component back under the hard line while staying
+  over the 300 soft line — deliberately: ~22 of those lines are the one-line label
+  getters the TDZ rule mandates (its SCSS dropped back under the 200-line threshold once
+  Slice A phase 6 moved the row context menu's markup/styling onto the shared
+  `qd-context-menu`), and the page carries no URL state at all (unlike `abwab-page`,
+  whose seven URL keys were half of what forced its overlay controller out). The page
+  now has a spec of its own (`abwab-templates-page.component.spec.ts`), which is what
+  made that extraction a pinned refactor. **The trigger that forces the next split** is a
   sixth overlay, a URL-state contract arriving on this route, or crossing the 400-line
   hard threshold — at which point the overlay signals and their handlers move to a
   page-scoped `abwab-templates-overlays.controller.ts` on the `abwab-page` precedent.
 - `components/abwab-relations-modal/` — the door's relations: four display groups
   (تشابه · تضاد · «أبواب أكثر شمولية» · «أبواب أقل شمولية», empty ones dropped), the type
   segment, the direction pill with its live preview, and an expandable/searchable door
-  picker that adds N targets in **one** call. Takes its read and its two writes as
+  picker that adds N targets in **one** call. **Its TS sits at 381 lines, over the
+  300-line soft threshold** — deliberately: one dialog owns display, authoring and the
+  nested delete confirm, and splitting the confirm out would separate the trap-yield
+  logic from the trap it yields. The hard threshold (400) is the trigger; the split,
+  when it comes, is the add-form (type segment + direction + picker wiring) into a child
+  component. Takes its read and its two writes as
   function inputs (bound by the page to `state/abwab-relations.controller.ts`), the
   `abwab-sections-modal` precedent. `anchorPickMode` inverts the picker for the bulk
   entry: the selected doors become the fixed target list and the picker single-selects
@@ -376,18 +395,28 @@ nine), four of them reads.
   **A write failure reaches exactly one live region, never two.** It is announced here only when
   the operation has no reliably-announcing error surface of its own; otherwise the surface owns it
   and the announcer stays silent, because `qd-state variant="error"` already carries
-  `role="alert"`. The discriminator is **not** "is there an error element" but **"is that element
-  present before the message lands"**: a `qd-state` bound with `[reserve]="true"` exists while
-  empty, so inserting text into it announces (the door form, the sections modal, the copy modal,
-  the relations modal — these DROP the announcer). A `qd-state` rendered by `@if` is *created* at
-  the moment of failure, inside an already-focused `role="alertdialog"`, which is not reliably
-  announced — so the archive and bulk-archive confirms, the restore modal, section delete and
-  relation delete all KEEP it. Writes with no surface at all — move, bulk move, and the tree's
-  inline reorder — obviously keep it; the announcer is their only channel.
-  The switch is `announceFailure` on `AbwabWriteOptions`, set per operation in
-  `state/abwab-write.controller.ts` so the decision is readable in one place rather than
-  re-derived per call site. **If you give one of the KEEP surfaces a reserved region, flip its flag
-  in the same change** — otherwise the failure is announced twice again.
+  `role="alert"`. Two surface shapes reliably announce on their own. A **reserved region** —
+  `[reserve]="true"` rendered **unconditionally**, so the empty alert element exists before the
+  message lands and text insertion announces; the template-copy modal has this shape
+  (`abwab-template-copy-modal.component.html`), kept visually quiet while empty by
+  `.qd-state--reserve-empty`. An **alert inserted into a plain `role="dialog"`** — a
+  `role="alert"` created at failure time inside an open non-alert dialog announces on insertion;
+  the door form, the sections modal's create/rename strip and the relations modal have this shape
+  (`[reserve]` under their `@if` reserves nothing — the announcing comes from the insertion).
+  Both shapes DROP the announcer. What does **not** reliably announce is an alert created inside
+  an already-focused `role="alertdialog"` — so the archive and bulk-archive confirms, the restore
+  modal, section delete's confirm and relation delete's confirm all KEEP it. Writes with no
+  surface at all — move, bulk move, and the tree's inline reorder — obviously keep it; the
+  announcer is their only channel.
+  The switch is `announceFailure`, set per operation in `state/abwab-write.controller.ts` and
+  `state/abwab-templates.controller.ts` (template apply DROPs into the copy modal's reserved
+  region; every other templates-side failure KEEPs) so the decision is readable in one place
+  rather than re-derived per call site. **If you give a KEEP surface one of the two announcing
+  shapes, or take either shape away from a DROP surface, flip its flag in the same change** —
+  otherwise a failure is announced twice, or not at all.
+  **Success is one policy, not two:** every write announces a short polite phrase here on success
+  — `successAnnouncement`, declared per operation in the same two controllers, with bulk phrases
+  counting their doors via `countPhrase`.
 - `state/abwab-snapshot.facade.ts` — owns the tree snapshot, loading/error/empty
   state, `load()`/`refresh()`.
 - `state/abwab-tree.builder.ts` — pure: DTO → `AbwabTreeSnapshotVm` (live/archive
@@ -571,15 +600,21 @@ rather than a silent broken reveal.
 **`/abwab/templates` carries no URL state at all** — no selected-template key, no expanded
 set. Deliberate: every key above is a documented contract with a fail-closed parse and a
 scope-invalidation rule, and the workshop has no deep link anyone asked for. Entering the
-route always starts with nothing selected. **Revisited when `modal` was added (audit item
-11 required it) and retained:** the workshop's overlays are template-editor working state
+route always starts with nothing selected. **Revisited when `modal` was added
+and retained:** the workshop's overlays are template-editor working state
 whose own subjects — the selected template, the editor node — are not URL state either, so
 a `modal` key there would restore an overlay onto nothing. Adding one would also fire the
 split trigger this README records for that route ("a URL-state contract arriving on this
 route") for no user benefit. This is a decision, not an oversight.
 
-Fails closed to the defaults on anything invalid. Switching `section`, or turning
-`archive` on, clears `door`, `card` **and `modal`** (neither a selection nor an overlay
+Fails closed to the defaults on anything invalid. `section` is additionally validated for
+**existence**, settle-gated on the snapshot: an id not in `snapshot.sections` falls back to
+«كل الأبواب» and the URL is rewritten by replace — only the `section` key, because the null
+scope is a superset of any selection and clearing `modal` would slam shut a sections modal
+that just deleted the active section (`abwab-page.component.ts`, the section-fallback
+effect). A hand-entered `archive=1&door=<live id>` fails `door` closed to `null` on
+parse-in, mirroring the clear the in-app archive toggle already performs. Switching
+`section`, or turning `archive` on, clears `door`, `card` **and `modal`** (neither a selection nor an overlay
 over it is meaningful across scopes — the rule stays uniform for the door-independent
 kinds too, because a scope switch is a context change and one rule beats a per-kind
 table); turning `archive` off restores none of them. An explicit `door`/`card`/`modal` in
@@ -841,8 +876,10 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   So this string is never authored client-side and **no constant for it exists in
   `abwab.labels.ts`**, deliberately: a client copy could only ever be reached if the backend
   omitted its own message, which is dead code dressed as a safeguard, and the generic
-  `writeConflictFallback` already covers that case. The M27 test is pinned against the shipped
-  backend copy, so a change to either side fails loudly rather than drifting.
+  `writeConflictFallback` already covers that case. The M27 test pins the frontend's verbatim copy
+  of the shipped backend string, so frontend drift fails loudly; the backend literal
+  (`ApiMessages.cs:117`) is pinned by no backend test, so a backend copy edit is caught only by
+  this paragraph's sync rule — re-verify the pair whenever either file changes.
 - **`AbwabDoorDto` carries no audit-seed columns on the wire** (no `createdAt`/
   `createdBy`/`approvedAt`/`approvedBy` — verified against the generated model and
   `openapi/swagger.json`). No surface may render an authored-by, approved-by, or
@@ -890,7 +927,11 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   than one per modal**: the door modal's submit (`saveBusy`, so a double-clicked create makes one
   door, not two), the sections modal's add (`addBusy`) and its delete confirm (`deleteBusy`), the
   copy modal's apply (`applyBusy`, so a second click on the confirm cannot duplicate the
-  template's children under every selected door), and the relation-delete confirm above. Each
+  template's children under every selected door — and while it is in flight the modal also
+  refuses Escape/backdrop/cancel dismissal, `abwab-template-copy-modal.component.ts`'s `close()`
+  guard), the template-node modal's submit (`saveBusy`,
+  `abwab-template-node-modal.component.ts` — the door modal's twin, closed late), and the
+  relation-delete confirm above. Each
   one reads its signal first and returns, then sets it, then clears it in the subscribe
   callback. Any
   successful load clears the message, so a recovered failure no longer sticks for the life of the

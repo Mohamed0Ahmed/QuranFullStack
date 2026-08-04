@@ -16,19 +16,23 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 - `ui/context-menu/` — `qd-context-menu`, the one row/node context-menu shell (Slice A, both
   Abwab pages' row menus). Owns a `position: fixed; inset: 0` backdrop and a positioned
   `role="menu"` box (`[x, y]` via a `position` input), both keyed off the shared `--qd-z-*`
-  layer scale, plus a document-level `keydown.escape` dismissal (`dismissed` output) — added
-  because none of the four paths that open the menu puts focus inside it, so an
-  element-bound handler could never fire. `menuTestId` / `backdropTestId` inputs keep each
+  layer scale, plus a document-level `keydown.escape` dismissal (`dismissed` output) —
+  document-level so Escape works whether or not focus sits inside the menu (the menu now
+  takes focus on open, but a pointer-opened menu can lose it again to the page). `menuTestId` / `backdropTestId` inputs keep each
   page's test ids byte-identical through the extraction. Items are projected content
   (`<ng-content>`): the primitive knows nothing about doors or template nodes, and the item
   hover/focus/danger styling lives in the global `.qd-context-menu__item` classes
   (`_components.scss`), not this component's own stylesheet, since content the *consumer*
   projects sits outside the primitive's emulated-encapsulation boundary. Since ux-slice-l it
-  **owns its own placement**: it measures its box after render, extends toward inline-start,
-  flips on either viewport edge, and clamps both axes to an 8 px margin — so a caller passes a
-  raw pointer position and the primitive decides where the menu actually lands. It still does
-  **not** manage focus into the menu — see `UI_STYLE_SYSTEM.md` §17 for that gap and for the
-  full placement contract.
+  **owns its own placement**: it measures its box after render, pins the box's inline-start
+  edge to the anchor so the box grows in the reading direction, flips when it would cross the
+  far viewport edge, and clamps both axes to an 8 px margin — so a caller passes a raw pointer
+  position and the primitive decides where the menu actually lands — the math is the pure
+  `placeContextMenu()`/`resolveMenuDirection()` in `context-menu-placement.ts`, unit-pinned
+  per branch in `context-menu-placement.spec.ts`. It also **manages focus**:
+  first `role="menuitem"` focused on open, ArrowDown/ArrowUp traversal with wrap, and focus
+  returned to the opener on close unless something else already claimed it. See
+  `UI_STYLE_SYSTEM.md` §17 for the full placement and focus contract.
 - `ui/ayah-card/` — `qdAyahCard` (attribute component, host class `qd-ayah-card`), the one
   presentation-only flat frame for ayah-shaped list items (recessed warm card background
   `--qd-ayah-card-bg`, hairline border, control radius, compact padding/gap; no shadow, no
@@ -96,8 +100,10 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   (`core/layout/top-navbar/`) reads it to go `[inert]`/`[aria-hidden]` while any modal dialog
   holds the lock, so this is the one piece of state the chrome-inert rule reads; do not add a
   second "any modal open" service (`.architecture/UI_STYLE_SYSTEM.md` §17 "Chrome-inert
-  rule"). Which surfaces hold the lock is not a list to maintain here — it is whatever applies
-  `qdModalScrollLock`, so `grep -rn qdModalScrollLock src/app/` is the answer. Note that
+  rule"). Which surfaces hold the lock is not a list to maintain here — it is whatever holds
+  `ScrollLockService`'s lock: `grep -rn qdModalScrollLock src/app/` **plus**
+  `detail-modal-shell.component.ts:63`, which acquires it imperatively in an effect with no
+  directive in its template, so the grep alone under-reports by one. Note that
   `qd-confirm-dialog` applies it, so **every confirm in the app** is a holder and makes the
   chrome inert.
 - `ui/pagination/` — reusable pagination component, windowing helpers, labels, and tests.

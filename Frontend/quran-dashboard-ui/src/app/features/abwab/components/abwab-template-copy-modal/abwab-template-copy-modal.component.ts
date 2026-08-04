@@ -124,6 +124,9 @@ export class AbwabTemplateCopyModalComponent {
   }
 
   protected close(): void {
+    if (this.applyBusy()) {
+      return;
+    }
     this.closed.emit();
   }
 

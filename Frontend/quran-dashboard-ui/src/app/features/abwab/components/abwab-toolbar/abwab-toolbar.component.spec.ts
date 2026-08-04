@@ -142,6 +142,24 @@ describe('AbwabToolbarComponent', () => {
       );
     });
 
+    // F-74: the tab badge counts ROOT doors while the stat bar's «كل الأبواب» line counts
+    // every depth — the title gives a sighted user the same scope-naming phrase the tab's
+    // aria-label already carries, so the two adjacent numbers stop reading as one count.
+    it('carries a visible root-scope qualifier on every badge, matching the tab’s accessible phrase', () => {
+      const root = render({
+        totalRootCount: 8,
+        rootCountBySectionId: new Map([[1, 3]]),
+      }).nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-toolbar-tab-all-count"]')?.getAttribute('title')).toBe(
+        ABWAB_LABELS.allDoorsTabRootCountAriaLabel(8),
+      );
+      expect(root.querySelector('[data-testid="abwab-toolbar-tab-1-count"]')?.getAttribute('title')).toBe(
+        ABWAB_LABELS.tabRootCountAriaLabel('اللغة العربية', 3),
+      );
+      expect(ABWAB_LABELS.allDoorsTabRootCountAriaLabel(8)).toContain('رئيسية');
+    });
+
     it('hides the badge digits from assistive technology and names the counted noun on the tab instead', () => {
       const root = render({
         totalRootCount: 8,

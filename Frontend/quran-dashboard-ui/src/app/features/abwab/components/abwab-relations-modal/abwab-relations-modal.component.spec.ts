@@ -421,16 +421,19 @@ describe('AbwabRelationsModalComponent', () => {
       );
     });
 
-    // Arrow keys move a radio group's selection and fire `change` without the click the row
-    // listens to; without that path wired the control would tick while the anchor stayed put.
-    it('follows keyboard radio selection, not just clicks', () => {
+    // Arrow keys never fire a bare `change` here: engines dispatch arrow-key radio selection as a
+    // simulated click (cancelable, bubbling), the input's own (click) handler cancels the default
+    // activation, and the bubbled click lands on the row's togglePicked — the same path a mouse
+    // click takes. F-95: the (change) handler that once shadowed this path was dead code.
+    it('keyboard radio selection works through the row click path (arrow keys synthesize clicks)', () => {
       const { fixture, el, pickedRows } = render({ anchorPickMode: true, bulkTargets });
 
       const target = el('abwab-relations-modal-pick-checkbox-4') as HTMLInputElement;
-      target.checked = true;
-      target.dispatchEvent(new Event('change', { bubbles: true }));
+      const synthesizedClick = new MouseEvent('click', { bubbles: true, cancelable: true });
+      target.dispatchEvent(synthesizedClick);
       fixture.detectChanges();
 
+      expect(synthesizedClick.defaultPrevented).toBe(true);
       expect(pickedRows()).toHaveLength(1);
       expect((el('abwab-relations-modal-pick-checkbox-4') as HTMLInputElement).checked).toBe(true);
       expect(el('abwab-relations-modal-add')?.textContent?.trim()).toBe(ABWAB_LABELS.relationAddButton(2));

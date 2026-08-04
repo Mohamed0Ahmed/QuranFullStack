@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { Observable, Subject, of } from 'rxjs';
 
 import { AbwabTemplateCopyModalComponent } from './abwab-template-copy-modal.component';
+import { AbwabDoorPickerComponent } from '../abwab-door-picker/abwab-door-picker.component';
 import { AbwabNode } from '../../models/abwab.models';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
@@ -164,7 +166,49 @@ describe('AbwabTemplateCopyModalComponent', () => {
     expect(closed).toHaveLength(0);
   });
 
+  // The apply failure DROPS the polite announcer (abwab-templates.controller.ts), so this region
+  // is the failure's only channel. role="alert" announces reliably only if the element already
+  // exists when the text is inserted — the region must be in the DOM, empty and quiet, from open.
+  describe('the reserved error live region', () => {
+    it('exists in the DOM, empty and quiet, before any failure', () => {
+      const { el } = render();
+      const region = el('abwab-template-copy-modal-error');
+      const box = region?.querySelector('[data-testid="qd-state-error"]');
+
+      expect(box).toBeTruthy();
+      expect(box?.getAttribute('role')).toBe('alert');
+      expect(box?.classList.contains('qd-state--reserve-empty')).toBe(true);
+      expect(box?.textContent?.trim()).toBe('');
+    });
+
+    it('lands the apply failure in the SAME pre-existing element, which sheds its quiet class', () => {
+      const message = 'يوجد باب بنفس الاسم تحت الهدف';
+      const { el, click } = render({ applyOutcome: { kind: 'conflict', message } });
+      const boxBefore = el('abwab-template-copy-modal-error')?.querySelector('[data-testid="qd-state-error"]');
+      expect(boxBefore).toBeTruthy();
+
+      click('abwab-template-copy-modal-pick-1');
+      click('abwab-template-copy-modal-confirm');
+      const boxAfter = el('abwab-template-copy-modal-error')?.querySelector('[data-testid="qd-state-error"]');
+
+      expect(boxAfter).toBe(boxBefore);
+      expect(boxAfter?.textContent).toContain(message);
+      expect(boxAfter?.classList.contains('qd-state--reserve-empty')).toBe(false);
+    });
+  });
+
   describe('the doors snapshot states are separated', () => {
+    // F-98 pin: 'ready' must be reachable — a silent reversion of the final branch to 'empty'
+    // passed every other test in this file.
+    it('hands the door picker status "ready" when live roots are present and loading is resolved', () => {
+      const { fixture } = render();
+
+      const picker = fixture.debugElement.query(By.directive(AbwabDoorPickerComponent))
+        .componentInstance as AbwabDoorPickerComponent;
+
+      expect(picker.status()).toBe('ready');
+    });
+
     it('shows skeleton rows while loading, the error with a retry, and empty only when resolved', () => {
       const loading = render({ liveRoots: [], doorsLoading: true });
       expect(loading.el('abwab-template-copy-modal-loading')).toBeTruthy();
@@ -205,6 +249,32 @@ describe('AbwabTemplateCopyModalComponent', () => {
   });
 
   describe('closing', () => {
+    // The same F-92 shape the delete confirms carry: a dismissal mid-apply would abandon a write
+    // that still lands, with no feedback about its outcome.
+    it('refuses to dismiss while the apply is in flight', () => {
+      const inFlight = new Subject<AbwabWriteOutcome<AbwabDoorDto[] | null>>();
+      const { fixture, el, click } = render({ applyResponse: inFlight });
+      const closed: void[] = [];
+      fixture.componentInstance.closed.subscribe(() => closed.push(undefined));
+
+      click('abwab-template-copy-modal-pick-1');
+      click('abwab-template-copy-modal-confirm');
+
+      el('abwab-template-copy-modal')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      el('abwab-template-copy-modal-backdrop')!.click();
+      el('abwab-template-copy-modal-cancel')!.click();
+      fixture.detectChanges();
+
+      expect(closed).toHaveLength(0);
+
+      // A resolved apply hands the dismissal paths back.
+      inFlight.next({ kind: 'error', message: 'تعذر الاتصال بالخادم. حاول مرة أخرى.' });
+      fixture.detectChanges();
+      el('abwab-template-copy-modal-backdrop')!.click();
+
+      expect(closed).toHaveLength(1);
+    });
+
     it('emits closed on Escape and on a backdrop click', () => {
       const { fixture, el } = render();
       const closed: void[] = [];

@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 
 import { AbwabTemplateNodeModalComponent } from './abwab-template-node-modal.component';
+import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
+import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 function render() {
   getTestBed().resetTestingModule();
@@ -69,6 +71,77 @@ describe('AbwabTemplateNodeModalComponent', () => {
       expect(root.querySelector('[data-testid="abwab-template-node-modal-discard-confirm"]')).toBeNull();
       expect(closed).toHaveLength(0);
       expect(root.querySelector('[data-testid="abwab-template-node-modal"]')).toBeTruthy();
+    });
+  });
+
+  describe('submit and validation (F-65)', () => {
+    function save(fixture: ReturnType<typeof render>['fixture']): void {
+      (fixture.nativeElement as HTMLElement)
+        .querySelector<HTMLButtonElement>('[data-testid="abwab-template-node-modal-save"]')!
+        .click();
+      fixture.detectChanges();
+    }
+
+    function errorText(root: HTMLElement): string | undefined {
+      return root.querySelector('[data-testid="abwab-template-node-modal-error"]')?.textContent ?? undefined;
+    }
+
+    it('rejects an empty name: sets the required error and never calls submitNode', () => {
+      const { fixture, submitNode, root } = render();
+
+      save(fixture);
+
+      expect(submitNode).not.toHaveBeenCalled();
+      expect(errorText(root)).toContain(ABWAB_LABELS.nameRequiredError);
+    });
+
+    it('keeps the modal open and shows the message when the write fails', () => {
+      const { fixture, submitNode, root } = render();
+      submitNode.mockReturnValue(of({ kind: 'conflict', message: 'اسم مكرر' }));
+      const closed: void[] = [];
+      fixture.componentInstance.closed.subscribe(() => closed.push(undefined));
+
+      setName(fixture, 'باب جديد');
+      save(fixture);
+
+      expect(closed).toHaveLength(0);
+      expect(root.querySelector('[data-testid="abwab-template-node-modal"]')).toBeTruthy();
+      expect(errorText(root)).toContain('اسم مكرر');
+    });
+
+    it('emits closed on a successful save, handing the entered fields to submitNode', () => {
+      const { fixture, submitNode } = render();
+      const closed: void[] = [];
+      fixture.componentInstance.closed.subscribe(() => closed.push(undefined));
+
+      setName(fixture, 'باب جديد');
+      save(fixture);
+
+      expect(submitNode).toHaveBeenCalledTimes(1);
+      expect(submitNode).toHaveBeenCalledWith(expect.objectContaining({ name: 'باب جديد' }));
+      expect(closed).toHaveLength(1);
+    });
+
+    // M3 — F-63's twin: the door modal's in-flight submit guard, mirrored on this modal.
+    it('two clicks send one save: the submit is refused while the write is in flight', () => {
+      const pending = new Subject<AbwabWriteOutcome<unknown>>();
+      const { fixture, submitNode, root } = render();
+      submitNode.mockReturnValue(pending);
+      const saveButton = () =>
+        root.querySelector<HTMLButtonElement>('[data-testid="abwab-template-node-modal-save"]')!;
+
+      setName(fixture, 'باب جديد');
+      save(fixture);
+      save(fixture);
+
+      expect(submitNode).toHaveBeenCalledTimes(1);
+      expect(saveButton().disabled).toBe(true);
+
+      // A failed save has to hand the button back, or the retry is impossible.
+      pending.next({ kind: 'conflict', message: 'اسم مكرر' });
+      fixture.detectChanges();
+
+      expect(saveButton().disabled).toBe(false);
     });
   });
 });

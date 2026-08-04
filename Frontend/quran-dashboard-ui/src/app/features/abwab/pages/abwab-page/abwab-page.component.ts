@@ -29,6 +29,7 @@ import {
 import { parseAbwabQueryParams, buildAbwabQueryParams } from '../../state/abwab-url-sync';
 import {
   ABWAB_ORDER_SCOPE_TO_WIRE,
+  ABWAB_QUERY_KEYS,
   AbwabModalKind,
   AbwabMoveDestination,
   AbwabNode,
@@ -248,28 +249,45 @@ export class AbwabPageComponent implements OnInit {
       this.selectedDoor();
       untracked(() => this.modalUrl.reconcileOpen());
     });
+
+    effect(() => {
+      const sectionId = this.activeSectionId();
+      const snapshot = this.facade.snapshot();
+      if (sectionId === null || !snapshot) {
+        return;
+      }
+      if (snapshot.sections.some((section) => section.id === sectionId)) {
+        return;
+      }
+      untracked(() => {
+        this.activeSectionId.set(null);
+        this.selection.setSectionScope(null);
+        this.updateQueryParams({ [ABWAB_QUERY_KEYS.section]: null }, true);
+      });
+    });
   }
 
   ngOnInit(): void {
     this.facade.load();
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const parsed = parseAbwabQueryParams(params);
+      const door = parsed.archive ? null : parsed.door;
       this.activeSectionId.set(parsed.section);
-      this.doorParam.set(parsed.door);
+      this.doorParam.set(door);
       this.viewParam.set(parsed.view);
       this.archiveParam.set(parsed.archive);
       this.cardParam.set(parsed.card);
       this.searchQueryParam.set(parsed.q);
-      this.modalUrl.syncFromUrl(parsed.modal, parsed.door);
+      this.modalUrl.syncFromUrl(parsed.modal, door);
       this.selection.setArchiveViewActive(parsed.archive);
       this.selection.setSectionScope(parsed.section);
-      if (parsed.door === null) {
+      if (door === null) {
         this.selection.clearSelection();
       }
 
       this.revealAnnouncement.set(null);
       const revealTarget = this.revealTargetId();
-      if (this.revealPending && revealTarget !== null && parsed.door === revealTarget) {
+      if (this.revealPending && revealTarget !== null && door === revealTarget) {
         this.revealPending = false;
         this.startReveal(revealTarget);
       }

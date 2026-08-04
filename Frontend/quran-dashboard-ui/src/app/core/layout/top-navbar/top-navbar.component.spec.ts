@@ -143,7 +143,7 @@ describe('TopNavbarComponent', () => {
   );
 
   it.each(DROPDOWN_KEYS)(
-    'returns focus to the %s trigger when an outside click closes the menu from inside it',
+    'returns focus to the %s trigger when the menu closes while focus is still inside it (real browsers usually move focus out before the click handler runs; this pins the still-inside branch)',
     (key) => {
       const fixture = mount();
       const outside = addOutsideButton();

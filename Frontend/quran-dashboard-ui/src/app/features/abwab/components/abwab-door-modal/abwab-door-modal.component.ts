@@ -30,7 +30,7 @@ export class AbwabDoorModalComponent {
   readonly sections = input<readonly AbwabTreeSectionDto[]>([]);
 
   readonly closed = output<void>();
-  readonly saved = output<AbwabDoorDto>();
+  readonly saved = output<AbwabDoorDto | null>();
 
   private readonly fieldsForm = viewChild(AbwabDoorFieldsFormComponent);
 

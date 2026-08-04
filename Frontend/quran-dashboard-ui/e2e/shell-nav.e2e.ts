@@ -12,8 +12,10 @@ test('the navbar links reach the Mushaf reader', async ({ page }) => {
 test('the words dropdown reaches the words hub', async ({ page }) => {
   await page.goto('/dashboard');
 
-  // Hover, not click: the words item opens on `mouseenter` and the button's own click handler
-  // toggles it shut again, so a Playwright click would open and close the menu in one action.
+  // Hover is the pointer path this spec pins: the item opens on hover-intent alone, and the
+  // link click below proves the menu works without ever clicking the trigger. (A trigger click
+  // after hover now also works — the hover/click fight was fixed — but that path is pinned by
+  // the unit spec, not here.)
   await page.getByTestId('nav-words-trigger').hover();
   await page.locator('#words-menu').getByRole('link', { name: 'الرئيسية' }).click();
 

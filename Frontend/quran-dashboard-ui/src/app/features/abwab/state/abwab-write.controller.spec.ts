@@ -3,7 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { Observable, map, of, throwError } from 'rxjs';
 
-import { AbwabWriteController } from './abwab-write.controller';
+import { AbwabWriteController, AbwabWriteOutcome } from './abwab-write.controller';
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabSelectionStore } from './abwab-selection.store';
 import { AbwabApi } from '../data-access/abwab.api';
@@ -66,9 +66,14 @@ interface FakeApi {
   moveDoor?: () => Observable<ApiResponse<AbwabDoorDto>>;
   restoreDoor?: () => Observable<ApiResponse<unknown>>;
   reorderDoor?: (id: number, body: ReorderDoorBody) => Observable<ApiResponse<AbwabDoorDto>>;
+  createSection?: () => Observable<ApiResponse<AbwabSectionDto>>;
+  deleteSection?: () => Observable<ApiResponse<unknown>>;
+  renameSection?: () => Observable<ApiResponse<AbwabSectionDto>>;
   reorderSection?: (id: number, body: ReorderSectionBody) => Observable<ApiResponse<AbwabSectionDto>>;
   bulkMoveDoors?: (command: BulkMoveDoorsCommand) => Observable<ApiResponse<AbwabDoorDto[]>>;
   bulkArchiveDoors?: () => Observable<ApiResponse<number[]>>;
+  addDoorRelations?: () => Observable<ApiResponse<unknown>>;
+  deleteRelation?: () => Observable<ApiResponse<unknown>>;
 }
 
 function setup(fakeApi: FakeApi) {
@@ -186,8 +191,8 @@ describe('AbwabWriteController', () => {
         .updateDoor(1, { name: 'x', description: null, representativeAyahText: null, aliases: null, version: 1 })
         .subscribe();
 
-      // abwab-door-fields-form.component.html:2 renders qd-state with [reserve]="true", so the
-      // live region exists before the message lands and announces it. One region, not two.
+      // abwab-door-fields-form.component.html renders the failure as a qd-state role="alert"
+      // inserted into a plain role="dialog", which announces on insertion. One region, not two.
       expect(controller.announcement()).toBeNull();
     });
   });
@@ -498,9 +503,9 @@ describe('AbwabWriteController', () => {
       expect(controller.announcement()).toBe(ABWAB_LABELS.restoreAnnouncement);
     });
 
-    // Announcing is per command, not a blanket success policy: a write with no declared
-    // message leaves the region silent rather than repeating the previous write's message.
-    it('leaves the region silent for a write that declares no announcement', () => {
+    // Every public write op declares its own success phrase, so consecutive writes replace
+    // each other's message rather than leaking the previous one into the region.
+    it('announces each write with its own phrase, the newer replacing the older', () => {
       const { controller } = setup({
         getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
         restoreDoor: () => of(ok(EDITED_DOOR)),
@@ -514,7 +519,7 @@ describe('AbwabWriteController', () => {
         .createDoor({ name: 'ب', description: null, representativeAyahText: null, aliases: null, parentId: null, sectionId: 1 })
         .subscribe();
 
-      expect(controller.announcement()).toBeNull();
+      expect(controller.announcement()).toBe(ABWAB_LABELS.doorCreatedAnnouncement);
     });
 
     // The destination is passed through untouched: an omitted key means "back where it came from",
@@ -557,7 +562,7 @@ describe('AbwabWriteController', () => {
       controller.archiveDoor(1, 1).subscribe((result) => (outcome = result));
 
       expect(outcome).toEqual({ kind: 'success', data: null });
-      expect(controller.announcement()).toBeNull();
+      expect(controller.announcement()).toBe(ABWAB_LABELS.doorArchivedAnnouncement);
       expect(treeCalls).toBe(1);
       expect(selection.selectedVersion()).toBe(7);
     });
@@ -576,7 +581,25 @@ describe('AbwabWriteController', () => {
       controller.deleteSection(1).subscribe((result) => (outcome = result));
 
       expect(outcome).toEqual({ kind: 'success', data: null });
-      expect(controller.announcement()).toBeNull();
+      expect(controller.announcement()).toBe(ABWAB_LABELS.sectionDeletedAnnouncement);
+      expect(treeCalls).toBe(1);
+    });
+
+    it('treats a null response to deleteRelation as a success and still refetches', () => {
+      let treeCalls = 0;
+      const { controller } = setup({
+        getTree: () => {
+          treeCalls += 1;
+          return of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v2' }));
+        },
+        deleteRelation: () => of(null),
+      } as unknown as FakeApi);
+
+      let outcome: unknown;
+      controller.deleteRelation(1).subscribe((result) => (outcome = result));
+
+      expect(outcome).toEqual({ kind: 'success', data: null });
+      expect(controller.announcement()).toBe(ABWAB_LABELS.relationDeletedAnnouncement);
       expect(treeCalls).toBe(1);
     });
   });
@@ -654,6 +677,120 @@ describe('AbwabWriteController', () => {
       controller.reorderSection(1, { position: 3, version: 1 }).subscribe();
 
       expect(selection.selectedDoorId()).toBe(1);
+    });
+  });
+
+  // F-52. One success policy for the one announcer region: every write that declares a success
+  // announcement speaks politely, and each op's phrase is its own. (createDoor, archiveDoor and
+  // deleteSection are pinned silent by earlier tests in this file and are deliberately absent.)
+  describe('F-52 — write successes announce politely, per operation', () => {
+    const emptyTree = () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' }));
+
+    it.each([
+      [
+        'createDoor',
+        { createDoor: () => of(ok<AbwabDoorDto>(EDITED_DOOR)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> =>
+          controller.createDoor({ name: 'ب', description: null, representativeAyahText: null, aliases: null, parentId: null, sectionId: 1 }),
+        ABWAB_LABELS.doorCreatedAnnouncement,
+      ],
+      [
+        'updateDoor',
+        { updateDoor: () => of(ok<AbwabDoorDto>(EDITED_DOOR)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> =>
+          controller.updateDoor(1, { name: 'x', description: null, representativeAyahText: null, aliases: null, version: 1 }),
+        ABWAB_LABELS.doorUpdatedAnnouncement,
+      ],
+      [
+        'archiveDoor',
+        { archiveDoor: () => of(ok<unknown>(null)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.archiveDoor(1, 1),
+        ABWAB_LABELS.doorArchivedAnnouncement,
+      ],
+      [
+        'deleteSection',
+        { deleteSection: () => of(ok<unknown>(null)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.deleteSection(1),
+        ABWAB_LABELS.sectionDeletedAnnouncement,
+      ],
+      [
+        'moveDoor',
+        { moveDoor: () => of(ok<AbwabDoorDto>(EDITED_DOOR)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.moveDoor(1, { targetParentId: null, targetSectionId: 2, version: 1 }),
+        ABWAB_LABELS.doorMovedAnnouncement,
+      ],
+      [
+        'reorderDoor',
+        { reorderDoor: () => of(ok<AbwabDoorDto>(EDITED_DOOR)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.reorderDoor(1, { position: 2, scope: 1, version: 1 }),
+        ABWAB_LABELS.doorReorderedAnnouncement,
+      ],
+      [
+        'createSection',
+        { createSection: () => of(ok<AbwabSectionDto>(REORDERED_SECTION)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.createSection({ name: 'قسم' }),
+        ABWAB_LABELS.sectionCreatedAnnouncement,
+      ],
+      [
+        'renameSection',
+        { renameSection: () => of(ok<AbwabSectionDto>(REORDERED_SECTION)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.renameSection(1, { name: 'قسم', version: 1 }),
+        ABWAB_LABELS.sectionRenamedAnnouncement,
+      ],
+      [
+        'reorderSection',
+        { reorderSection: () => of(ok<AbwabSectionDto>(REORDERED_SECTION)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.reorderSection(1, { position: 2, version: 1 }),
+        ABWAB_LABELS.sectionReorderedAnnouncement,
+      ],
+      [
+        'addDoorRelations',
+        { addDoorRelations: () => of(ok<unknown>([])) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> =>
+          controller.addDoorRelations(1, { type: 1, direction: null, targetDoorIds: [2, 3, 4] }),
+        ABWAB_LABELS.relationsAddedAnnouncement(3),
+      ],
+      [
+        'deleteRelation',
+        { deleteRelation: () => of(ok<unknown>(null)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.deleteRelation(1),
+        ABWAB_LABELS.relationDeletedAnnouncement,
+      ],
+    ] as const)('%s announces its own phrase on success', (_op, api, dispatch, expected) => {
+      const { controller } = setup({ getTree: emptyTree, ...api });
+
+      dispatch(controller).subscribe();
+
+      expect(controller.announcement()).toBe(expected);
+    });
+
+    it.each([
+      [
+        'bulkArchiveDoors',
+        { bulkArchiveDoors: () => of(ok<number[]>([1, 2])) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.bulkArchiveDoors(),
+        ABWAB_LABELS.bulkArchiveAnnouncement(2),
+      ],
+      [
+        'bulkMoveDoors',
+        { bulkMoveDoors: () => of(ok<AbwabDoorDto[]>([])) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.bulkMoveDoors(null, null),
+        ABWAB_LABELS.bulkMoveAnnouncement(2),
+      ],
+    ] as const)('%s announces the counted phrase for the doors it carried', (_op, api, dispatch, expected) => {
+      const { controller, facade, selection } = setup({
+        getTree: () =>
+          of(ok<AbwabTreeDto>({ doors: [door({ id: 1, name: 'أ' }), door({ id: 2, name: 'ب' })], sections: [], version: 'v' })),
+        ...api,
+      });
+      facade.load();
+      selection.setBulkMode(true);
+      selection.toggleBulk(1, 1);
+      selection.toggleBulk(2, 1);
+
+      dispatch(controller).subscribe();
+
+      expect(controller.announcement()).toBe(expected);
     });
   });
 

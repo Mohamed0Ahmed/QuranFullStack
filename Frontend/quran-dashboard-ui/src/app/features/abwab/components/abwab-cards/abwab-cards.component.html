@@ -45,8 +45,11 @@
               <span class="abwab-cards__order">{{ displayOrder(node) }}</span>
               <span class="abwab-cards__name qd-truncate" [title]="node.name">{{ node.name }}</span>
             </span>
-            <span class="abwab-cards__meta">
-              {{ node.children.length > 0 ? node.liveChildCount : '' }}
+            <span
+              class="abwab-cards__meta"
+              [attr.aria-label]="node.liveChildCount > 0 ? childCountAriaLabel(node.liveChildCount) : null"
+            >
+              {{ node.liveChildCount > 0 ? node.liveChildCount : '' }}
             </span>
           </button>
           @if (bulkMode()) {

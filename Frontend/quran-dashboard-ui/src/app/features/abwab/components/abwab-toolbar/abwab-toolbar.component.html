@@ -14,6 +14,7 @@
           class="qd-tabs__count"
           [class.qd-tabs__count--empty]="totalRootCount() === 0"
           aria-hidden="true"
+          [title]="allDoorsCountAriaLabel"
           data-testid="abwab-toolbar-tab-all-count"
         >{{ totalRootCount() }}</span>
       </button>
@@ -31,6 +32,7 @@
             class="qd-tabs__count"
             [class.qd-tabs__count--empty]="rootCountFor(section.id) === 0"
             aria-hidden="true"
+            [title]="sectionCountAriaLabel(section.name, section.id)"
             [attr.data-testid]="'abwab-toolbar-tab-' + section.id + '-count'"
           >{{ rootCountFor(section.id) }}</span>
         </button>
