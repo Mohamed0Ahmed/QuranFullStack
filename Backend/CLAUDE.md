@@ -73,7 +73,7 @@ Planning and Spec Kit separation:
 
 - Workspace planning reports and pre-Spec Kit documents belong under `/projects/Dashboard/App/docs/feature-XXX-feature-name/`.
 - Spec Kit artifacts belong under `/projects/Dashboard/App/specs/<feature>/`, the per-feature planning workspace; for an active feature its `spec`/`plan`/`tasks`/`contracts` are live planning inputs (the Spec-Kit implementation-review checks the work against `specs/<feature>/contracts/`).
-- Steady-state contract truth is code + nearest README, indexed by `docs/contracts/`. New features still populate `specs/<feature>/contracts/`. Closed features' `specs/`, `docs/feature-XXX-*/`, and `Backend/report/feature-XXX-*/` folders are swept per the planning-artifact lifecycle rule in the root `CLAUDE.md` — only open features plus the two most recently closed ones remain.
+- Steady-state contract truth is code + nearest README, indexed by `docs/contracts/`. New features still populate `specs/<feature>/contracts/`. A feature deletes its own `specs/`, `docs/feature-*/`, and `Backend/report/feature-*/` in its last commit before merge, per the planning-artifact lifecycle rule in the root `CLAUDE.md` — only **open** features have planning artifacts in the tree.
 - Backend post-work and validation reports belong under `/projects/Dashboard/App/Backend/report/`, not under workspace `docs/`.
 
 ## EF Core Migrations
