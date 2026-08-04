@@ -39,12 +39,15 @@
           (blur)="cancelOrderEdit(row.node.id)"
         />
       } @else {
-        <span
+        <button
+          type="button"
           class="abwab-template-tree__order"
+          [attr.aria-label]="orderEditAriaLabel(row.node)"
           [attr.data-testid]="'abwab-template-tree-order-' + row.node.id"
           (click)="onOrderClick(row.node)"
-          >{{ row.node.orderValue }}</span
         >
+          {{ row.node.orderValue }}
+        </button>
       }
 
       <span class="abwab-template-tree__name qd-truncate" [title]="row.node.name">{{ row.node.name }}</span>
@@ -64,6 +67,7 @@
           class="abwab-template-tree__act"
           [attr.aria-label]="menuAriaLabel(row.node.name)"
           [attr.data-testid]="'abwab-template-tree-more-' + row.node.id"
+          [attr.tabindex]="-1"
           (click)="onMoreClick($event, row.node.id)"
         >
           <span aria-hidden="true">⋯</span>

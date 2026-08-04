@@ -385,6 +385,25 @@ describe('AbwabDoorModalComponent', () => {
       ).toBeTruthy();
     });
 
+    // F-49: with the strip up, Escape is the topmost surface's key — it dismisses the strip and
+    // leaves the modal open, rather than re-raising an already-raised guard and doing nothing.
+    it('dismisses the discard strip on Escape and keeps the modal open', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+      const closed: void[] = [];
+      fixture.componentInstance.closed.subscribe(() => closed.push(undefined));
+
+      setName(fixture, 'مسودة');
+      escape(fixture);
+      expect(root.querySelector('[data-testid="abwab-door-modal-discard-confirm"]')).toBeTruthy();
+
+      escape(fixture);
+
+      expect(root.querySelector('[data-testid="abwab-door-modal-discard-confirm"]')).toBeNull();
+      expect(closed).toHaveLength(0);
+      expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeTruthy();
+    });
+
     // The error surface is `qd-state`, which reserves a message row and carries the shared
     // container's padding — rendered unconditionally it is a 105px empty danger box on every
     // open, which is exactly what shipped once and was caught by a screenshot rather than here.

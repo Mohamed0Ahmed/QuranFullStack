@@ -40,6 +40,7 @@
             [checked]="bulkSelectedIds().has(node.id)"
             [attr.aria-label]="node.name"
             [attr.data-testid]="'abwab-tree-checkbox-' + node.id"
+            [attr.tabindex]="-1"
             (click)="onCheckboxClick($event, node.id)"
           />
         }
@@ -49,6 +50,8 @@
           [class.abwab-tree__chevron--leaf]="!row.hasChildren"
           [attr.data-testid]="'abwab-tree-chevron-' + node.id"
           [attr.tabindex]="-1"
+          [attr.aria-hidden]="row.hasChildren ? null : true"
+          [attr.aria-label]="row.hasChildren ? expandAriaLabel(row, node) : null"
           (click)="onChevronClick($event, row)"
         >
           @if (row.hasChildren) {
@@ -68,12 +71,16 @@
             (blur)="cancelOrderEdit(node.id)"
           />
         } @else {
-          <span
+          <button
+            type="button"
             class="abwab-tree__order qd-chip qd-chip--pill"
+            [attr.aria-label]="orderEditAriaLabel(node)"
             [attr.data-testid]="'abwab-tree-order-' + node.id"
+            [attr.tabindex]="rovingId() === node.id ? 0 : -1"
             (click)="onOrderClick($event, node.id)"
-            >{{ displayOrder(node) }}</span
           >
+            {{ displayOrder(node) }}
+          </button>
         }
 
         <span class="abwab-tree__name qd-truncate" [title]="node.name">{{ node.name }}</span>
@@ -120,6 +127,11 @@
             (click)="onFlagClick($event, node.id)"
           >
             {{ relationsFlagLabel }}
+            <span
+              class="abwab-tree__flag-count"
+              [attr.data-testid]="'abwab-tree-relations-count-' + node.id"
+              >{{ node.relationCount }}</span
+            >
           </button>
         </span>
 

@@ -34,6 +34,7 @@ export class AbwabToolbarComponent {
   protected get allDoorsTabLabel(): string { return ABWAB_LABELS.allDoorsTab; }
   protected get searchLabel(): string { return ABWAB_LABELS.searchLabel; }
   protected get searchPlaceholder(): string { return ABWAB_LABELS.searchPlaceholder; }
+  protected get viewToggleAriaLabel(): string { return ABWAB_LABELS.viewToggleAriaLabel; }
   protected get treeViewLabel(): string { return ABWAB_LABELS.viewToggleTree; }
   protected get cardsViewLabel(): string { return ABWAB_LABELS.viewToggleCards; }
 

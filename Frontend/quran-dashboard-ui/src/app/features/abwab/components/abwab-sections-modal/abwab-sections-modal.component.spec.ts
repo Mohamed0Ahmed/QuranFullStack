@@ -356,6 +356,25 @@ describe('AbwabSectionsModalComponent', () => {
       expect(closed).toHaveLength(1);
     });
 
+    // F-49: Escape answers the topmost surface. With the strip up it dismisses the strip and the
+    // modal stays open — it must not be a dead key, and it must not close over unsaved work.
+    it('dismisses the discard strip on Escape and keeps the modal open', () => {
+      const { fixture } = render();
+      const root = fixture.nativeElement as HTMLElement;
+      const closed: void[] = [];
+      fixture.componentInstance.closed.subscribe(() => closed.push(undefined));
+
+      type(fixture, 'abwab-sections-modal-name-input', 'قسم لم يُحفظ');
+      escape(fixture);
+      expect(root.querySelector('[data-testid="abwab-sections-modal-discard-confirm"]')).toBeTruthy();
+
+      escape(fixture);
+
+      expect(root.querySelector('[data-testid="abwab-sections-modal-discard-confirm"]')).toBeNull();
+      expect(closed).toHaveLength(0);
+      expect(root.querySelector('[data-testid="abwab-sections-modal"]')).toBeTruthy();
+    });
+
     it('treats an opened rename as dirty only once the draft differs from the saved name', () => {
       const { fixture } = render();
       const root = fixture.nativeElement as HTMLElement;

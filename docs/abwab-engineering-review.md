@@ -139,6 +139,99 @@ so they are tracked here rather than patched twice):
 - F-58 confirmed still open — the workshop's order chip remains a click-only `<span>`. It is
   bundle 3 work.
 
+### Bundle 3 — accessibility (20 findings: 19 fixed, 1 stopped)
+
+| Finding | State | Where |
+|---------|-------|-------|
+| F-40 | **fixed — PRE-EXISTING, not Abwab-owned** | `core/layout/top-navbar/top-navbar.component.ts:89-108` |
+| F-41 | **fixed** | `core/layout/top-navbar/top-navbar.component.ts:69-79, 110-122` |
+| F-47 | **fixed** | `pages/abwab-templates-page/abwab-templates-page.component.html:8-13` |
+| F-48 | **fixed** | `pages/abwab-page/abwab-page.component.ts:393` |
+| F-49 | **fixed** | `components/abwab-door-modal/…component.ts` + sections + template-node |
+| F-50 | **fixed** | `components/abwab-archive-view/abwab-archive-view.component.html` |
+| **F-51** | **STOPPED — stop condition hit** | `state/abwab-write.controller.ts:204` — see below |
+| F-52 | **fixed** | `state/abwab-write.controller.ts:190` |
+| F-58 | **fixed** (user ruling) | `components/abwab-tree/…component.html:71` + template tree |
+| F-59 | **fixed** (second half completed by the parent) | `components/abwab-toolbar/abwab-toolbar.component.html:61` |
+| F-62 | **fixed** | `components/abwab-relations-modal/…component.html:10` |
+| F-64 | **fixed** | `components/abwab-move-picker/…component.html:66, 97` |
+| F-68 | **fixed** | `components/abwab-template-tree/…component.html` |
+| F-70 | **fixed as shared UI** | `shared/ui/context-menu/*` |
+| F-77 | **fixed** | `core/layout/top-navbar/top-navbar.component.html:235-242` |
+| F-86 | **fixed** | `components/abwab-archive-view/…` + doors tree |
+| F-87 | **fixed** (user ruling) | `components/abwab-tree/abwab-tree.component.ts:146` |
+| F-88 | **fixed** | `components/abwab-tree/abwab-tree.component.scss:184` + count text |
+| F-96 | **fixed** | `components/abwab-door-picker/…component.ts:104-107` |
+| F-103 | **fixed by the parent** | `components/abwab-door-restore-modal/…component.html:2` |
+
+#### F-51 — stopped, not fixed. The user's stop condition applies.
+
+Every write failure is announced twice (a `role="alert"` and the polite announcer fed the same
+string). The defect is real and **wider than the citation** — the same string reaches both regions
+from five sites, not one. The agent diagnosed it, built a fix, and reverted it, because closing it
+requires changing what an existing test asserts:
+`state/abwab-write.controller.spec.ts:117` pins
+`expect(controller.announcement()).toBe('تم تعديل الباب من مستخدم آخر')` — i.e. it asserts that a
+409 **does** reach the announcer. Any fix that stops failures being double-announced changes that
+assertion's meaning. The brief says to stop rather than change an existing test's meaning, so it
+stopped. **This needs a decision — see Q-03.**
+
+#### F-87 — the user's expectation about the README did not hold. Reporting it rather than quietly editing.
+
+The ruling said this "matches the existing README rule that a row click in bulk mode means 'toggle
+this door', so the README needs no change here — verify that and say so." Verified, and it is half
+right:
+
+- `features/abwab/README.md:134` contains the clause **«and it is inert in bulk mode»** describing
+  the relations flag. That clause is now **false** — the flag toggles the row's bulk selection.
+- The rest of the same sentence — «where a row click in bulk mode means "toggle this door"» — is
+  now **more** true than before and needs no change, exactly as the ruling predicted.
+
+So one stale clause must go in bundle 6; the rule the ruling relied on is intact.
+
+#### One existing test was rewritten, and it is the F-87 ruling's direct consequence.
+
+`components/abwab-tree/abwab-tree.component.spec.ts` —
+`it('is inert in bulk mode, and the click never reaches the row's bulk toggle')` with
+`expect(toggled).toHaveLength(0)` became
+`it('toggles the row's bulk selection in bulk mode instead of opening relations')` with
+`expect(toggled).toEqual([1])`. This is the one place in the whole fix branch where an existing
+assertion changed meaning. It is unavoidable: the old test pinned precisely the behavior the ruling
+reverses. Flagged explicitly rather than absorbed into the diff.
+
+#### Notes on two fixes whose shape is not obvious
+
+- **F-68 removes a keyboard path on purpose, and net keyboard access improves.** The `⋯` button
+  became `tabindex="-1"` because a keyboard activation reports `clientX/clientY === 0`, anchoring
+  the menu at the viewport corner. The keyboard route is now exclusively the row-anchored
+  `ContextMenu`/`Shift+F10` handler that already existed, which measures the row rect — and that is
+  the conventional way to open a context menu. It also makes the `⋯` consistent with F-86's
+  roving-tabindex resolution. Combined with F-70 (the shared menu gained an accessible name, focus
+  on open, arrow traversal with wrap, and focus return), the keyboard story is better, not worse.
+- **F-40's fix was chosen to avoid breaking a file outside the agent's ownership.** The review
+  offered two options; the "make all three dropdowns click-only" option would have broken
+  `e2e/shell-nav.e2e.ts:17`, which relies on `.hover()` opening the menu. The hover-intent option
+  was taken instead. Keyboard behavior is untouched — `mouseenter` never fires for a keyboard user.
+
+**Verification (run by the parent).** `tsc -p tsconfig.app.json` → 0; `-p tsconfig.spec.json` → 0;
+**full frontend suite** (Tier B is required — this bundle touched `core/` and `shared/`):
+**204 files, 2613 tests, 0 failures**; `npm run build` → success with exactly the three known
+budget warnings. All changed files fall within `features/abwab`, `core/layout`, `shared/ui`.
+F-103's repoint was verified exhaustively: the door-restore modal was the **only** confirm dialog
+in the app without a `testIdPrefix`, so every default `qd-confirm-dialog-*` id referred to it
+unambiguously; after the repoint a repo-wide grep finds **zero** stale references.
+
+**Carried to bundle 6 — further README/doc claims falsified:**
+
+- `features/abwab/README.md:134` — «and it is inert in bulk mode» (F-87, above).
+- `features/abwab/README.md:129-132` — the flag's rendering description omits the new visible
+  relation count and dashed zero border (F-88).
+- `.architecture/UI_STYLE_SYSTEM.md:1143` — «an unconditional `cdkTrapFocus`» across the six abwab
+  modals is now wrong about **two** of them, not one. **This is the §17 half of the F-43
+  documentation conflict, and it is the copy that should be corrected — the abwab README is the one
+  that agrees with the code.**
+- `features/abwab/README.md:603-608` — the "traps are unconditional" paragraph, same cause.
+
 ---
 
 ## 1. Areas covered / remaining
@@ -2426,6 +2519,15 @@ the per-area appendix behind it.
   Was the divergence deliberate (in which case the sentence should state the shipped string and
   its reason, dropping the comparison), or is it a defect the README has been documenting since
   the fold? Only you can answer this — see [F-01](#f-01--dangling-references-to-the-deleted-planning-artifacts-medium-abwab-owned).
+- **Q-03 — F-51, the double announcement: which live region owns write failures?** Closing it
+  requires changing what `state/abwab-write.controller.spec.ts:117` asserts — it currently pins
+  that a 409 **does** reach the polite announcer, and the fix is to stop failures being announced
+  twice. Three options, none of which the review settled: (a) `qd-state`'s `role="alert"` owns
+  failures and the announcer stops carrying them — then that assertion must change; (b) the
+  announcer owns failures and the inline `qd-state` drops `role="alert"` — a wider change touching
+  every failure surface; (c) keep both but make the announcer carry a *different*, shorter string
+  so the two regions do not duplicate. The brief's stop condition ("stop if a fix would require
+  changing an existing test's meaning") is why this is a question rather than a commit.
 - **Q-02 — Deployment shape, needed to grade the in-memory ETag generation counter.**
   `Backend/README.md` records no replica/scaling information (grepped for
   `replica|instance|scale|horizontal|in-memory`: no hits). The Abwab tree ETag is an in-memory

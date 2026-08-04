@@ -39,6 +39,7 @@
 }
 
 .abwab-template-tree__chevron:focus-visible,
+.abwab-template-tree__order:focus-visible,
 .abwab-template-tree__act:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: 1px;
@@ -58,6 +59,7 @@
 }
 
 .abwab-template-tree__order {
+  font-family: inherit;
   cursor: pointer;
 }
 

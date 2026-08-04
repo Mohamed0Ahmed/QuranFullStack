@@ -148,6 +148,42 @@ describe('AbwabDoorPickerComponent — the excluded-door contract (slice K)', ()
   });
 });
 
+describe('AbwabDoorPickerComponent — the exclusion reason reaches assistive tech (F-96)', () => {
+  it('folds the disabled tag into the checkbox’s accessible name so the reason is heard, not only seen', () => {
+    const fixture = render({ disabledIds: [3], disabledTag: 'مرتبط بالفعل' });
+
+    const box = el(fixture, 'picker-pick-checkbox-3') as HTMLInputElement;
+    expect(box.disabled).toBe(true);
+    expect(box.getAttribute('aria-label')).toBe('الشكر — مرتبط بالفعل');
+  });
+
+  it('leaves the accessible name as the bare door name when the row is enabled or the tag is empty', () => {
+    const tagged = render({ disabledIds: [3], disabledTag: 'مرتبط بالفعل' });
+    expect(el(tagged, 'picker-pick-checkbox-1')!.getAttribute('aria-label')).toBe('الصبر');
+
+    const untagged = render({ disabledIds: [3] });
+    expect(el(untagged, 'picker-pick-checkbox-3')!.getAttribute('aria-label')).toBe('الشكر');
+  });
+
+  it('carries the excluded row’s reason and disabled state on a role that exposes them', () => {
+    const fixture = render({ excludedIds: [1], excludedTag: 'الباب المفتوح' });
+
+    const excludedRow = el(fixture, 'picker-excluded-1')!;
+    expect(excludedRow.getAttribute('role')).toBe('group');
+    expect(excludedRow.getAttribute('aria-disabled')).toBe('true');
+    expect(excludedRow.getAttribute('aria-label')).toBe('الصبر — الباب المفتوح');
+    // A pickable row stays a plain container: those attributes are the excluded row's alone.
+    const pickableRow = el(fixture, 'picker-pick-3')!;
+    expect(pickableRow.getAttribute('role')).toBeNull();
+    expect(pickableRow.getAttribute('aria-label')).toBeNull();
+  });
+
+  it('names the excluded row by the door alone when no excludedTag is supplied', () => {
+    const excludedRow = el(render({ excludedIds: [1] }), 'picker-excluded-1')!;
+    expect(excludedRow.getAttribute('aria-label')).toBe('الصبر');
+  });
+});
+
 describe('AbwabDoorPickerComponent — the load-state surfaces (F-66, F-97)', () => {
   const LOAD_ERROR = 'تعذّر تحميل الأبواب.';
 

@@ -58,11 +58,12 @@
   </div>
 
   @if (!hideSectionControls()) {
-    <div class="abwab-toolbar__view-toggle" role="group" [attr.aria-label]="sectionTabsAriaLabel">
+    <div class="abwab-toolbar__view-toggle" role="group" [attr.aria-label]="viewToggleAriaLabel">
       <button
         type="button"
         class="abwab-toolbar__view-btn"
         [class.abwab-toolbar__view-btn--active]="view() === 'tree'"
+        [attr.aria-pressed]="view() === 'tree'"
         data-testid="abwab-toolbar-view-tree"
         (click)="selectView('tree')"
       >
@@ -72,6 +73,7 @@
         type="button"
         class="abwab-toolbar__view-btn"
         [class.abwab-toolbar__view-btn--active]="view() === 'cards'"
+        [attr.aria-pressed]="view() === 'cards'"
         data-testid="abwab-toolbar-view-cards"
         (click)="selectView('cards')"
       >

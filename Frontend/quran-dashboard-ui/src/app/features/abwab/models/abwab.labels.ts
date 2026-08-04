@@ -84,6 +84,7 @@ export const ABWAB_LABELS = {
   searchMatchCount: (count: number): string => countPhrase(count, RESULT_FORMS),
   viewToggleTree: 'شجرة',
   viewToggleCards: 'بطاقات',
+  viewToggleAriaLabel: 'طريقة العرض',
   archiveButton: 'الأرشيف',
   manageSectionsButton: 'إدارة الأقسام',
   addRootDoorButton: 'باب رئيسي جديد',
@@ -95,6 +96,8 @@ export const ABWAB_LABELS = {
   rowMenuAriaLabel: (doorName: string): string => `عمليات «${doorName}»`,
   rowRelationsAriaLabel: (doorName: string, count: number): string =>
     `عرض علاقات «${doorName}» — ${countPhrase(count, RELATION_FORMS)}`,
+  rowOrderEditAriaLabel: (doorName: string, order: number): string =>
+    `تعديل ترتيب «${doorName}» — الترتيب الحالي ${order}`,
 
   rowChildCountAriaLabel: (count: number): string => `${countPhrase(count, DOOR_FORMS)} تحته مباشرة`,
   rowDescendantCountAriaLabel: (count: number): string =>
@@ -291,6 +294,8 @@ export const ABWAB_LABELS = {
   templateAddChildPlaceholder: 'إضافة عنصر… (Enter)',
   templateNodeExpandAriaLabel: (nodeName: string): string => `عرض العناصر الفرعية لـ«${nodeName}»`,
   templateNodeCollapseAriaLabel: (nodeName: string): string => `إخفاء العناصر الفرعية لـ«${nodeName}»`,
+  templateNodeOrderEditAriaLabel: (nodeName: string, order: number): string =>
+    `تعديل ترتيب «${nodeName}» — الترتيب الحالي ${order}`,
   templateNodeEditOp: 'تعديل العنصر',
   templateNodeAddChildOp: 'إضافة عنصر فرعي',
   templateNodeDeleteOp: 'حذف العنصر',

@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  OnInit,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Observable, of } from 'rxjs';
 
@@ -69,6 +78,9 @@ export class AbwabTemplatesPageComponent implements OnInit {
   protected readonly nodeDeleteBusy = signal(false);
   protected readonly nodeDeleteError = signal<string | null>(null);
   protected readonly copyModalOpen = signal(false);
+
+  private readonly headerFallbackFocus = viewChild<ElementRef<HTMLAnchorElement>>('headerFallbackFocus');
+  private readonly overlayFromContextMenu = signal(false);
 
   protected readonly liveRoots = computed(() => this.doorsFacade.snapshot()?.liveRoots ?? []);
   protected readonly doorsLoading = computed(() => this.doorsFacade.isLoading() && !this.doorsFacade.snapshot());
@@ -206,7 +218,11 @@ export class AbwabTemplatesPageComponent implements OnInit {
   }
 
   protected closeNodeModal(): void {
+    const fromContextMenu = this.consumeContextMenuOrigin();
     this.nodeModal.set(null);
+    if (fromContextMenu) {
+      this.focusHeaderFallback();
+    }
   }
 
   protected readonly submitNode = (fields: AbwabAuthoringFields): Observable<AbwabWriteOutcome<unknown>> => {
@@ -252,6 +268,7 @@ export class AbwabTemplatesPageComponent implements OnInit {
       this.nodeDeleteError.set(null);
       this.nodeDeleteBusy.set(false);
       this.deletingNodeId.set(nodeId);
+      this.overlayFromContextMenu.set(true);
     }
   }
 
@@ -265,7 +282,9 @@ export class AbwabTemplatesPageComponent implements OnInit {
     this.controller.deleteNode(nodeId).subscribe((outcome) => {
       this.nodeDeleteBusy.set(false);
       if (outcome.kind === 'success') {
+        this.consumeContextMenuOrigin();
         this.deletingNodeId.set(null);
+        this.focusHeaderFallback();
         return;
       }
       this.nodeDeleteError.set(outcome.message);
@@ -276,8 +295,10 @@ export class AbwabTemplatesPageComponent implements OnInit {
     if (this.nodeDeleteBusy()) {
       return;
     }
+    this.consumeContextMenuOrigin();
     this.deletingNodeId.set(null);
     this.nodeDeleteError.set(null);
+    this.focusHeaderFallback();
   }
 
   protected requestTemplateDelete(): void {
@@ -285,6 +306,11 @@ export class AbwabTemplatesPageComponent implements OnInit {
     this.templateDeleteError.set(null);
     this.templateDeleteBusy.set(false);
     this.confirmingTemplateDelete.set(true);
+  }
+
+  protected ctxDeleteTemplate(): void {
+    this.requestTemplateDelete();
+    this.overlayFromContextMenu.set(true);
   }
 
   protected confirmTemplateDelete(): void {
@@ -300,8 +326,10 @@ export class AbwabTemplatesPageComponent implements OnInit {
         this.templateDeleteError.set(outcome.message);
         return;
       }
+      this.consumeContextMenuOrigin();
       this.confirmingTemplateDelete.set(false);
       this.facade.clearSelection();
+      this.focusHeaderFallback();
     });
   }
 
@@ -309,8 +337,12 @@ export class AbwabTemplatesPageComponent implements OnInit {
     if (this.templateDeleteBusy()) {
       return;
     }
+    const fromContextMenu = this.consumeContextMenuOrigin();
     this.confirmingTemplateDelete.set(false);
     this.templateDeleteError.set(null);
+    if (fromContextMenu) {
+      this.focusHeaderFallback();
+    }
   }
 
   protected openCopyModal(): void {
@@ -343,6 +375,7 @@ export class AbwabTemplatesPageComponent implements OnInit {
     const nodeId = this.contextMenuNodeId();
     if (nodeId !== null) {
       this.onEditRequested(nodeId);
+      this.overlayFromContextMenu.set(true);
     }
   }
 
@@ -350,10 +383,22 @@ export class AbwabTemplatesPageComponent implements OnInit {
     const nodeId = this.contextMenuNodeId();
     if (nodeId !== null) {
       this.onAddChildRequested(nodeId);
+      this.overlayFromContextMenu.set(true);
     }
   }
 
+  private consumeContextMenuOrigin(): boolean {
+    const fromContextMenu = this.overlayFromContextMenu();
+    this.overlayFromContextMenu.set(false);
+    return fromContextMenu;
+  }
+
+  private focusHeaderFallback(): void {
+    setTimeout(() => this.headerFallbackFocus()?.nativeElement.focus(), 0);
+  }
+
   private closeOverlays(): void {
+    this.overlayFromContextMenu.set(false);
     this.nodeModal.set(null);
     this.contextMenuNodeId.set(null);
     this.deletingNodeId.set(null);

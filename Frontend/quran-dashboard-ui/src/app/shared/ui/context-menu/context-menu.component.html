@@ -4,7 +4,9 @@
   class="qd-context-menu"
   [class.qd-context-menu--measuring]="placement() === null"
   role="menu"
+  [attr.aria-label]="menuAriaLabel()"
   [attr.data-testid]="menuTestId()"
+  (keydown)="onMenuKeydown($event)"
   [style.left.px]="placement()?.left ?? position().x"
   [style.top.px]="placement()?.top ?? position().y"
 >

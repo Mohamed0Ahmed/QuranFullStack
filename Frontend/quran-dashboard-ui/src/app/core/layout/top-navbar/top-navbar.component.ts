@@ -30,6 +30,7 @@ export class TopNavbarComponent {
 
   openMenuKey: string | null = null;
   mobileOpen = false;
+  private hoveredMenuKey: string | null = null;
 
   protected readonly isDark = toSignal(this.themeService.isDark$, { initialValue: false });
 
@@ -66,13 +67,58 @@ export class TopNavbarComponent {
   }
 
   closeMenu(key: string): void {
-    if (this.openMenuKey === key) {
-      this.openMenuKey = null;
+    if (this.openMenuKey !== key) {
+      return;
+    }
+    const trigger = this.menuTrigger(key);
+    const focusWasInsideMenu = this.menuHoldsFocus(key);
+    this.openMenuKey = null;
+    if (focusWasInsideMenu) {
+      trigger?.focus();
     }
   }
 
   toggleMenu(key: string): void {
-    this.openMenuKey = this.openMenuKey === key ? null : key;
+    if (this.openMenuKey === key) {
+      this.closeMenu(key);
+      return;
+    }
+    this.openMenu(key);
+  }
+
+  onMenuPointerEnter(key: string): void {
+    this.hoveredMenuKey = key;
+    this.openMenu(key);
+  }
+
+  onMenuPointerLeave(key: string): void {
+    if (this.hoveredMenuKey === key) {
+      this.hoveredMenuKey = null;
+    }
+    this.closeMenu(key);
+  }
+
+  onTriggerClick(key: string): void {
+    if (this.hoveredMenuKey === key && this.openMenuKey === key) {
+      this.hoveredMenuKey = null;
+      this.openMenu(key);
+      return;
+    }
+    this.toggleMenu(key);
+  }
+
+  private menuHost(key: string): HTMLElement | null {
+    const host = this.elementRef.nativeElement as HTMLElement;
+    return host.querySelector<HTMLElement>(`.nav-dropdown[data-menu-key="${key}"]`);
+  }
+
+  private menuTrigger(key: string): HTMLElement | null {
+    return this.menuHost(key)?.querySelector<HTMLElement>('button') ?? null;
+  }
+
+  private menuHoldsFocus(key: string): boolean {
+    const active = document.activeElement;
+    return active instanceof HTMLElement && (this.menuHost(key)?.contains(active) ?? false);
   }
 
   toggleMobile(): void {

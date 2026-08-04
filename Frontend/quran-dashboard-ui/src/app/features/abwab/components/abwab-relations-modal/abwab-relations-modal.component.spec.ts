@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { DebugElement } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { Observable, Subject, of } from 'rxjs';
 
 import { AbwabRelationsModalComponent, AbwabRelationTarget } from './abwab-relations-modal.component';
@@ -45,6 +48,12 @@ function relation(
   direction: AbwabRelationVm['direction'] = null,
 ): AbwabRelationVm {
   return { id, otherDoorId, otherDoorName, kind, direction };
+}
+
+/** The modal's own trap, not the nested confirm's — `query` returns the first match in DOM
+ * order and the confirm dialog renders after the modal section. */
+function trapOf(fixture: { debugElement: DebugElement }): CdkTrapFocus {
+  return fixture.debugElement.query(By.directive(CdkTrapFocus)).injector.get(CdkTrapFocus);
 }
 
 interface RenderOptions {
@@ -663,6 +672,23 @@ describe('AbwabRelationsModalComponent', () => {
         ABWAB_LABELS.relationDeleteConfirmBody('الباب المرساة', 'الصبر', 'less-comprehensive'),
       );
       expect(body).toContain(ABWAB_LABELS.relationDeleteConfirmSides);
+    });
+
+    // F-62, copying the sections modal's pin (abwab-sections-modal.component.spec.ts): the one
+    // permitted nesting is a confirm above one authoring modal, and the host yields its trap while
+    // that confirm is open — two live traps fight over focus.
+    it('yields its focus trap while the confirm is open and takes it back on cancel', () => {
+      const { fixture, root, click } = render({
+        relations: [relation(10, 42, 'الصبر', 'similarity')],
+      });
+
+      expect(trapOf(fixture).enabled).toBe(true);
+
+      removeChip(root, fixture);
+      expect(trapOf(fixture).enabled).toBe(false);
+
+      click('abwab-relations-delete-confirm-cancel');
+      expect(trapOf(fixture).enabled).toBe(true);
     });
 
     it('cancels without dispatching and leaves the list untouched', () => {

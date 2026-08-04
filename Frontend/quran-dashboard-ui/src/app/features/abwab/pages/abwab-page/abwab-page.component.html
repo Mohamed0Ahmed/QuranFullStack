@@ -231,7 +231,7 @@
   [ancestors]="overlays.restoreAncestors()"
   [sections]="sections()"
   (closed)="overlays.closeRestoreModal()"
-  (restored)="overlays.closeRestoreModal()"
+  (restored)="onDoorRestored()"
 />
 
 <qd-abwab-relations-modal

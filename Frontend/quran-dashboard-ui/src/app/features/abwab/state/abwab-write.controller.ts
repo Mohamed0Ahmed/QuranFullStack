@@ -28,6 +28,11 @@ export type AbwabWriteFailureOutcome =
 
 export type AbwabWriteOutcome<T> = { readonly kind: 'success'; readonly data: T } | AbwabWriteFailureOutcome;
 
+interface AbwabWriteOptions {
+  readonly successAnnouncement?: string;
+  readonly conflictClearsSelectionId?: number;
+}
+
 export function toAbwabWriteFailure(err: unknown): AbwabWriteFailureOutcome {
   if (err instanceof HttpErrorResponse) {
     const body = err.error as ApiResponse<unknown> | null | undefined;
@@ -110,28 +115,26 @@ export class AbwabWriteController {
   }
 
   updateDoor(id: number, body: EditDoorBody): Observable<AbwabWriteOutcome<AbwabDoorDto>> {
-    return this.dispatch(this.api.updateDoor(id, body), id);
+    return this.dispatch(this.api.updateDoor(id, body), { conflictClearsSelectionId: id });
   }
 
   moveDoor(id: number, body: MoveDoorBody): Observable<AbwabWriteOutcome<AbwabDoorDto>> {
-    return this.dispatch(this.api.moveDoor(id, body), id);
+    return this.dispatch(this.api.moveDoor(id, body), { conflictClearsSelectionId: id });
   }
 
   reorderDoor(id: number, body: ReorderDoorBody): Observable<AbwabWriteOutcome<AbwabDoorDto>> {
-    return this.dispatch(this.api.reorderDoor(id, body), id);
+    return this.dispatch(this.api.reorderDoor(id, body), { conflictClearsSelectionId: id });
   }
 
   archiveDoor(id: number, version: number): Observable<AbwabWriteOutcome<unknown>> {
-    return this.dispatch(this.api.archiveDoor(id, { version }), id);
+    return this.dispatch(this.api.archiveDoor(id, { version }), { conflictClearsSelectionId: id });
   }
 
   restoreDoor(id: number, options: { sectionId?: number; version: number }): Observable<AbwabWriteOutcome<AbwabDoorDto>> {
-    return this.api.restoreDoor(id, options).pipe(
-      map((response) => this.handleSuccess(response, () => {
-        this.announcementState.set(ABWAB_LABELS.restoreAnnouncement);
-      })),
-      catchError((err: unknown) => of(this.handleFailure<AbwabDoorDto>(err, id))),
-    );
+    return this.dispatch(this.api.restoreDoor(id, options), {
+      successAnnouncement: ABWAB_LABELS.restoreAnnouncement,
+      conflictClearsSelectionId: id,
+    });
   }
 
   bulkMoveDoors(
@@ -171,21 +174,20 @@ export class AbwabWriteController {
     );
   }
 
-  private dispatch<T>(request$: Observable<ApiResponse<T> | null>, conflictClearsSelectionId?: number): Observable<AbwabWriteOutcome<T>> {
+  private dispatch<T>(
+    request$: Observable<ApiResponse<T> | null>,
+    options: AbwabWriteOptions = {},
+  ): Observable<AbwabWriteOutcome<T>> {
     return request$.pipe(
-      map((response) => this.handleSuccess(response)),
-      catchError((err: unknown) => of(this.handleFailure<T>(err, conflictClearsSelectionId))),
+      map((response) => this.handleSuccess(response, options)),
+      catchError((err: unknown) => of(this.handleFailure<T>(err, options))),
     );
   }
 
-  private handleSuccess<T>(response: ApiResponse<T> | null, onData?: (data: T) => void): AbwabWriteOutcome<T> {
+  private handleSuccess<T>(response: ApiResponse<T> | null, options: AbwabWriteOptions = {}): AbwabWriteOutcome<T> {
     const data = (response?.data ?? null) as T;
     if (response === null || response.isSuccess) {
-      if (onData && data !== null) {
-        onData(data);
-      } else {
-        this.announcementState.set(null);
-      }
+      this.announcementState.set(options.successAnnouncement ?? null);
       this.refreshAndRebind();
       return { kind: 'success', data };
     }
@@ -194,10 +196,10 @@ export class AbwabWriteController {
     return { kind: 'invalid', message };
   }
 
-  private handleFailure<T>(err: unknown, conflictClearsSelectionId?: number): AbwabWriteOutcome<T> {
+  private handleFailure<T>(err: unknown, options: AbwabWriteOptions): AbwabWriteOutcome<T> {
     const outcome = this.toFailureOutcome(err);
-    if (outcome.kind === 'conflict' && conflictClearsSelectionId !== undefined) {
-      if (this.selection.selectedDoorId() === conflictClearsSelectionId) {
+    if (outcome.kind === 'conflict' && options.conflictClearsSelectionId !== undefined) {
+      if (this.selection.selectedDoorId() === options.conflictClearsSelectionId) {
         this.selection.clearSelection();
       }
     }

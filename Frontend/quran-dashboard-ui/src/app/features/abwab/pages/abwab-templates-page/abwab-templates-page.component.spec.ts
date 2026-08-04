@@ -139,4 +139,58 @@ describe('AbwabTemplatesPageComponent', () => {
       expect(element(fixture, 'abwab-templates-page-delete-template-confirm')).not.toBeNull();
     });
   });
+
+  // Every one of these overlays is opened from the row context menu, which closeContextMenu()
+  // destroys before the overlay mounts — so cdkTrapFocusAutoCapture's restore target is already
+  // detached and focus would land on <body>. The doors page solves this with a stable header
+  // control (abwab-page.component.ts headerFallbackFocus); this is the same fallback.
+  describe('focus never drops to <body> when a context-menu overlay closes', () => {
+    function flushFocus(): Promise<void> {
+      return new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    function backLink(fixture: ComponentFixture<AbwabTemplatesPageComponent>): HTMLElement | null {
+      return element(fixture, 'abwab-templates-page-back');
+    }
+
+    async function openContextMenu(): Promise<ComponentFixture<AbwabTemplatesPageComponent>> {
+      const fixture = await render();
+      click(fixture, 'abwab-templates-page-item-1');
+      click(fixture, 'abwab-template-tree-more-11');
+      return fixture;
+    }
+
+    it('returns focus to the header when the node modal it opened closes', async () => {
+      const fixture = await openContextMenu();
+      click(fixture, 'abwab-templates-page-ctx-edit');
+      expect(element(fixture, 'abwab-template-node-modal')).not.toBeNull();
+
+      click(fixture, 'abwab-template-node-modal-cancel');
+      await flushFocus();
+
+      expect(document.activeElement).toBe(backLink(fixture));
+    });
+
+    it('returns focus to the header when the node-delete confirm it opened is cancelled', async () => {
+      const fixture = await openContextMenu();
+      click(fixture, 'abwab-templates-page-ctx-delete-node');
+      expect(element(fixture, 'abwab-templates-page-delete-node-confirm')).not.toBeNull();
+
+      click(fixture, 'abwab-templates-page-delete-node-confirm-cancel');
+      await flushFocus();
+
+      expect(document.activeElement).toBe(backLink(fixture));
+    });
+
+    it('leaves focus alone when the node modal was opened from a control that survives', async () => {
+      const fixture = await render();
+      click(fixture, 'abwab-templates-page-item-1');
+      click(fixture, 'abwab-templates-page-edit-template');
+
+      click(fixture, 'abwab-template-node-modal-cancel');
+      await flushFocus();
+
+      expect(document.activeElement).not.toBe(backLink(fixture));
+    });
+  });
 });

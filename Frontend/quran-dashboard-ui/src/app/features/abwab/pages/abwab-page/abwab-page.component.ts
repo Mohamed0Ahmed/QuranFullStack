@@ -357,9 +357,13 @@ export class AbwabPageComponent implements OnInit {
   }
 
   private focusTreeRovingItem(): void {
+    this.focusRovingItem('abwab-tree');
+  }
+
+  private focusRovingItem(containerTestId: string): void {
     this.focusQueued(() => {
       const root = this.elementRef.nativeElement;
-      const roving = root.querySelector<HTMLElement>('[data-testid="abwab-tree"] [tabindex="0"]');
+      const roving = root.querySelector<HTMLElement>(`[data-testid="${containerTestId}"] [tabindex="0"]`);
       if (roving) {
         roving.focus();
         return;
@@ -384,6 +388,11 @@ export class AbwabPageComponent implements OnInit {
 
   protected onRestoreRequested(id: number): void {
     this.overlays.openRestoreModal(id);
+  }
+
+  protected onDoorRestored(): void {
+    this.overlays.closeRestoreModal();
+    this.focusRovingItem('abwab-archive-view');
   }
 
   protected onRelationsRequested(doorId: number): void {

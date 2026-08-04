@@ -17,6 +17,9 @@
           class="abwab-archive-view__chevron"
           [class.abwab-archive-view__chevron--leaf]="!row.hasChildren"
           [attr.data-testid]="'abwab-archive-chevron-' + node.id"
+          [attr.tabindex]="-1"
+          [attr.aria-hidden]="row.hasChildren ? null : true"
+          [attr.aria-label]="row.hasChildren ? expandAriaLabel(row, node) : null"
           (click)="onChevronClick($event, row)"
         >
           @if (row.hasChildren) {
@@ -31,6 +34,7 @@
           class="abwab-archive-view__restore"
           [disabled]="node.depth > 0"
           [attr.data-testid]="'abwab-archive-restore-' + node.id"
+          [attr.tabindex]="-1"
           (click)="onRestoreClick(node.id)"
         >
           {{ restoreLabel }}

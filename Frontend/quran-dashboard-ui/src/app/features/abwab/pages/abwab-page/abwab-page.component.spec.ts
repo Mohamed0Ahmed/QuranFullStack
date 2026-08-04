@@ -338,6 +338,29 @@ describe('AbwabPageComponent', () => {
     });
   });
 
+  // The restore modal's invoking control is the archive row's restore button, which the
+  // refresh removes on success — the mirror of the archive-confirm case above, and the page
+  // owes it the same deliberate landing rather than letting focus fall to <body>.
+  describe('focus never drops to <body> when the restore modal closes', () => {
+    it('success places focus deliberately once the restored row is gone', async () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      queryParamMap$.next(convertToParamMap({ archive: '1' }));
+      fixture.detectChanges();
+
+      click(root, 'abwab-archive-restore-3');
+      fixture.detectChanges();
+      click(root, 'abwab-door-restore-confirm-confirm');
+      fixture.detectChanges();
+      await flushFocus();
+
+      expect(restoreDoor).toHaveBeenCalled();
+      expect(document.activeElement).not.toBe(document.body);
+      expect(root.contains(document.activeElement)).toBe(true);
+    });
+  });
+
   it('the two archive confirms cannot be open at once', () => {
     const fixture = render();
     const root = fixture.nativeElement as HTMLElement;
@@ -417,7 +440,7 @@ describe('AbwabPageComponent', () => {
       expect(restoreDoor).not.toHaveBeenCalled();
       expect(root.querySelector('[data-testid="abwab-door-restore-modal-name"]')?.textContent).toContain('باب مؤرشف');
 
-      (root.querySelector('[data-testid="qd-confirm-dialog-confirm"]') as HTMLElement).click();
+      (root.querySelector('[data-testid="abwab-door-restore-confirm-confirm"]') as HTMLElement).click();
       fixture.detectChanges();
 
       expect(restoreDoor).toHaveBeenCalledWith(3, { version: 1 });
@@ -431,7 +454,7 @@ describe('AbwabPageComponent', () => {
 
       (root.querySelector('[data-testid="abwab-archive-restore-3"]') as HTMLElement).click();
       fixture.detectChanges();
-      (root.querySelector('[data-testid="qd-confirm-dialog-cancel"]') as HTMLElement).click();
+      (root.querySelector('[data-testid="abwab-door-restore-confirm-cancel"]') as HTMLElement).click();
       fixture.detectChanges();
 
       expect(restoreDoor).not.toHaveBeenCalled();

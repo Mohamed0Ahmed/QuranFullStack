@@ -16,14 +16,14 @@
           class="nav-item nav-dropdown"
           [class.open]="openMenuKey === item.key"
           [attr.data-menu-key]="item.key"
-          (mouseenter)="openMenu(item.key)"
-          (mouseleave)="closeMenu(item.key)"
+          (mouseenter)="onMenuPointerEnter(item.key)"
+          (mouseleave)="onMenuPointerLeave(item.key)"
         >
           <button
             class="qd-btn qd-btn-ghost nav-link"
             [class.active]="isMenuActive(item)"
             type="button"
-            (click)="toggleMenu(item.key)"
+            (click)="onTriggerClick(item.key)"
             aria-haspopup="true"
             [attr.aria-controls]="item.key + '-menu'"
             [attr.aria-expanded]="openMenuKey === item.key"
@@ -232,7 +232,14 @@
 </nav>
 
 @if (mobileOpen) {
-  <div class="mobile-menu" role="navigation" aria-label="القائمة" (click)="closeMobile()">
+  <div
+    class="mobile-menu"
+    role="navigation"
+    aria-label="القائمة"
+    [attr.inert]="locked() ? '' : null"
+    [attr.aria-hidden]="locked() ? true : null"
+    (click)="closeMobile()"
+  >
     <div class="mobile-menu-panel" (click)="$event.stopPropagation()">
       <div class="mobile-theme-toggle">
         <button

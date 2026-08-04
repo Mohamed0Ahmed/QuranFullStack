@@ -5,7 +5,12 @@
         <h1 class="qd-page-title">{{ pageTitle }}</h1>
         <p class="qd-text-muted">{{ pageSubtitle }}</p>
       </div>
-      <a class="qd-btn" [routerLink]="doorsRoutePath" data-testid="abwab-templates-page-back">{{ backToDoorsLabel }}</a>
+      <a
+        #headerFallbackFocus
+        class="qd-btn"
+        [routerLink]="doorsRoutePath"
+        data-testid="abwab-templates-page-back"
+      >{{ backToDoorsLabel }}</a>
     </header>
 
     <qd-abwab-announcer [message]="controller.announcement()" />
@@ -228,7 +233,7 @@
         role="menuitem"
         class="qd-context-menu__item qd-context-menu__item--danger"
         data-testid="abwab-templates-page-ctx-delete-template"
-        (click)="requestTemplateDelete()"
+        (click)="ctxDeleteTemplate()"
       >
         {{ deleteTemplateLabel }}
       </button>

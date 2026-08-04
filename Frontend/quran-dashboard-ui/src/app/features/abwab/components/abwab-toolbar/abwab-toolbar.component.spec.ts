@@ -75,6 +75,26 @@ describe('AbwabToolbarComponent', () => {
 
       expect(changes).toEqual(['cards']);
     });
+
+    // F-59: the active view was carried by class + colour alone. aria-pressed is the same
+    // attribute the relations modal's direction pill already uses.
+    it('exposes the active view through aria-pressed on both buttons', () => {
+      const treeRoot = render({ view: 'tree' }).nativeElement as HTMLElement;
+      expect(treeRoot.querySelector('[data-testid="abwab-toolbar-view-tree"]')?.getAttribute('aria-pressed')).toBe(
+        'true',
+      );
+      expect(treeRoot.querySelector('[data-testid="abwab-toolbar-view-cards"]')?.getAttribute('aria-pressed')).toBe(
+        'false',
+      );
+
+      const cardsRoot = render({ view: 'cards' }).nativeElement as HTMLElement;
+      expect(cardsRoot.querySelector('[data-testid="abwab-toolbar-view-tree"]')?.getAttribute('aria-pressed')).toBe(
+        'false',
+      );
+      expect(cardsRoot.querySelector('[data-testid="abwab-toolbar-view-cards"]')?.getAttribute('aria-pressed')).toBe(
+        'true',
+      );
+    });
   });
 
   describe('T508 — hideSectionControls (the archive view has no live section grouping)', () => {

@@ -70,7 +70,7 @@ test('a relation shows on both doors, goes dormant when one endpoint is archived
   // generation, which is what must evict the client's cached «no relations» answer.
   await page.getByTestId('abwab-page-archive-toggle').click();
   await page.getByTestId(`abwab-archive-restore-${partner.id}`).click();
-  await page.getByTestId('qd-confirm-dialog-confirm').click();
+  await page.getByTestId('abwab-door-restore-confirm-confirm').click();
   await page.getByTestId('abwab-page-archive-toggle').click();
 
   await expect(page.getByTestId(`abwab-tree-flag-rel-${anchor.id}`)).not.toHaveClass(EMPTY_FLAG);

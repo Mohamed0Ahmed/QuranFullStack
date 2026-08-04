@@ -558,4 +558,27 @@ describe('AbwabMovePickerComponent — M30', () => {
       expect(root.querySelector('.qd-modal__body')!.contains(foot)).toBe(false);
     });
   });
+
+  // F-64: the picked destination was carried by background + weight alone, so the target of a
+  // structural move was not programmatically determinable. Same attribute as the relations
+  // modal's direction pill (abwab-relations-modal.component.html:109,118).
+  describe('the picked destination is programmatically determinable', () => {
+    it('marks the picked destination with aria-pressed and moves it when another is picked', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+      const pressed = (testId: string) => root.querySelector(`[data-testid="${testId}"]`)!.getAttribute('aria-pressed');
+
+      (root.querySelector('[data-testid="abwab-move-picker-section-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      expect(pressed('abwab-move-picker-dest-asmain')).toBe('true');
+      expect(pressed('abwab-move-picker-dest-1')).toBe('false');
+
+      (root.querySelector('[data-testid="abwab-move-picker-dest-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      expect(pressed('abwab-move-picker-dest-asmain')).toBe('false');
+      expect(pressed('abwab-move-picker-dest-1')).toBe('true');
+    });
+  });
 });

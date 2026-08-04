@@ -108,6 +108,14 @@ export class AbwabDoorModalComponent {
     });
   }
 
+  protected onEscape(): void {
+    if (this.confirmingDiscard()) {
+      this.cancelDiscard();
+      return;
+    }
+    this.requestClose();
+  }
+
   protected requestClose(): void {
     if (this.fieldsForm()?.isDirty() ?? false) {
       this.confirmingDiscard.set(true);

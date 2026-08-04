@@ -392,6 +392,42 @@ describe('AbwabWriteController', () => {
       expect(controller.announcement()).toBe(ABWAB_LABELS.restoreAnnouncement);
     });
 
+    // The announcement belongs to the command, not to the payload. A 204 restore hands the
+    // controller a null envelope and a 200 may carry null data; both are successes and both
+    // must still speak, or a screen-reader user gets silence on a write that committed.
+    it.each([
+      ['a null envelope', null],
+      ['an envelope carrying null data', ok(null)],
+    ])('announces the restore when the backend answers with %s', (_shape, response) => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        restoreDoor: () => of(response),
+      } as unknown as FakeApi);
+
+      controller.restoreDoor(1, { version: 1 }).subscribe();
+
+      expect(controller.announcement()).toBe(ABWAB_LABELS.restoreAnnouncement);
+    });
+
+    // Announcing is per command, not a blanket success policy: a write with no declared
+    // message leaves the region silent rather than repeating the previous write's message.
+    it('leaves the region silent for a write that declares no announcement', () => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        restoreDoor: () => of(ok(EDITED_DOOR)),
+        createDoor: () => of(ok(EDITED_DOOR)),
+      } as unknown as FakeApi);
+
+      controller.restoreDoor(1, { version: 1 }).subscribe();
+      expect(controller.announcement()).toBe(ABWAB_LABELS.restoreAnnouncement);
+
+      controller
+        .createDoor({ name: 'ب', description: null, representativeAyahText: null, aliases: null, parentId: null, sectionId: 1 })
+        .subscribe();
+
+      expect(controller.announcement()).toBeNull();
+    });
+
     // The destination is passed through untouched: an omitted key means "back where it came from",
     // and turning that into an explicit null would ask the backend for a section-less door.
     it('passes a stated destination section through, and omits the key when there is none', () => {

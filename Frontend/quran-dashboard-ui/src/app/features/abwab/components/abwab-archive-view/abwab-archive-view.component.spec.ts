@@ -142,4 +142,73 @@ describe('AbwabArchiveViewComponent', () => {
       expect(requested).toEqual([1]);
     });
   });
+
+  // F-50 / F-86: the row carries the roving tabindex, so its two controls must not be tab
+  // stops of their own, and the chevron must be named — or hidden when it is an empty leaf.
+  describe('F-50/F-86 — the row’s controls sit under the roving tabindex, and the chevron is named', () => {
+    it('names the branch chevron in Arabic and flips the name with the expanded state', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const chevron = root.querySelector('[data-testid="abwab-archive-chevron-1"]') as HTMLElement;
+      expect(chevron.getAttribute('aria-label')).toBe('عرض الأبواب الفرعية لـ«باب مؤرشف»');
+
+      chevron.click();
+      fixture.detectChanges();
+
+      expect(
+        (root.querySelector('[data-testid="abwab-archive-chevron-1"]') as HTMLElement).getAttribute('aria-label'),
+      ).toBe('إخفاء الأبواب الفرعية لـ«باب مؤرشف»');
+    });
+
+    it('hides the empty leaf chevron from the accessible layer instead of leaving it an unnamed tab stop', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-archive-chevron-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+
+      const leaf = root.querySelector('[data-testid="abwab-archive-chevron-2"]') as HTMLElement;
+      expect(leaf.getAttribute('aria-hidden')).toBe('true');
+      expect(leaf.getAttribute('aria-label')).toBeNull();
+    });
+
+    it('leaves the roving row as the only tab stop — chevron and restore are both tabindex -1', () => {
+      const root = render().nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-archive-chevron-1"]')?.getAttribute('tabindex')).toBe('-1');
+      expect(root.querySelector('[data-testid="abwab-archive-restore-1"]')?.getAttribute('tabindex')).toBe('-1');
+      expect(root.querySelectorAll('[tabindex="0"]')).toHaveLength(1);
+    });
+
+    it('Enter on the focused row restores it, replacing the tab stop the restore button used to be', () => {
+      const fixture = render();
+      const requested: number[] = [];
+      fixture.componentInstance.restoreRequested.subscribe((id) => requested.push(id));
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-archive-row-1"]') as HTMLElement).dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      );
+
+      expect(requested).toEqual([1]);
+    });
+
+    it('Enter on a nested row restores nothing — its own button is disabled for the same reason', () => {
+      const fixture = render();
+      const requested: number[] = [];
+      fixture.componentInstance.restoreRequested.subscribe((id) => requested.push(id));
+
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-archive-chevron-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+      const childRow = root.querySelector('[data-testid="abwab-archive-row-2"]') as HTMLElement;
+      childRow.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      fixture.detectChanges();
+      (root.querySelector('[data-testid="abwab-archive-row-2"]') as HTMLElement).dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      );
+
+      expect(requested).toHaveLength(0);
+    });
+  });
 });

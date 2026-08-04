@@ -278,6 +278,14 @@ export class AbwabSectionsModalComponent {
     );
   }
 
+  protected onEscape(): void {
+    if (this.confirmingDiscard()) {
+      this.cancelDiscard();
+      return;
+    }
+    this.requestClose();
+  }
+
   protected requestClose(): void {
     if (this.isDirty()) {
       this.confirmingDiscard.set(true);

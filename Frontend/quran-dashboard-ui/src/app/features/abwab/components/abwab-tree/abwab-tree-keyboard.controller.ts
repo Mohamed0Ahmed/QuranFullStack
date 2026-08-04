@@ -112,3 +112,7 @@ export function resolveAbwabTreeKeyboardIntent(input: AbwabTreeKeyboardInput): A
       return NONE;
   }
 }
+
+export function isNativeButtonActivation(key: string): boolean {
+  return key === 'Enter' || key === ' ' || key === 'Spacebar';
+}

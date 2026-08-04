@@ -73,6 +73,10 @@ export class AbwabTemplateTreeComponent {
       : ABWAB_LABELS.templateNodeExpandAriaLabel(row.node.name);
   }
 
+  protected orderEditAriaLabel(node: AbwabTemplateNodeVm): string {
+    return ABWAB_LABELS.templateNodeOrderEditAriaLabel(node.name, node.orderValue);
+  }
+
   protected toggleExpanded(nodeId: number): void {
     const next = new Set(this.collapsedIds());
     if (!next.delete(nodeId)) {
@@ -120,14 +124,31 @@ export class AbwabTemplateTreeComponent {
       return;
     }
     this.editingOrderId.set(node.id);
+    setTimeout(() => this.orderInput(node.id)?.focus());
+  }
+
+  private orderInput(nodeId: number): HTMLInputElement | null {
+    return this.elementRef.nativeElement.querySelector<HTMLInputElement>(
+      `[data-testid="abwab-template-tree-order-input-${nodeId}"]`,
+    );
   }
 
   protected onOrderKeydown(event: KeyboardEvent, nodeId: number): void {
     if (event.key === 'Enter') {
       this.commitOrderEdit(nodeId, event.target);
+      this.focusOrderChip(nodeId);
     } else if (event.key === 'Escape') {
       this.cancelOrderEdit(nodeId);
+      this.focusOrderChip(nodeId);
     }
+  }
+
+  private focusOrderChip(nodeId: number): void {
+    setTimeout(() =>
+      this.elementRef.nativeElement
+        .querySelector<HTMLElement>(`[data-testid="abwab-template-tree-order-${nodeId}"]`)
+        ?.focus(),
+    );
   }
 
   protected cancelOrderEdit(nodeId: number): void {
