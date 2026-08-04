@@ -16,9 +16,12 @@ contracts** — not just against good engineering taste.
 
 You cannot judge scope without knowing what was asked. First pin down:
 
-1. **Which feature** — the `specs/<feature>/` directory under review. Only open features
-   and the two most recently closed ones have a folder there; closed features are swept
-   per the planning-artifact lifecycle rule in `CLAUDE.md`.
+1. **Which feature** — the `specs/<feature>/` directory under review. **Only open features
+   have a folder there.** A feature deletes its own planning artifacts in its last commit
+   before merge, *after* this review passes — which is why the artifacts you are reviewing
+   against still exist while you run, and why a missing `specs/<feature>/` means the feature
+   already closed rather than that something was lost. See the planning-artifact lifecycle
+   rule in `CLAUDE.md`.
 2. **Which phase / tasks were requested** — read it from the user's request
    ("implemented Phase 3", "did T013–T018", "User Story 2"). If the request is vague,
    infer the intended scope from `tasks.md` and **state the assumption** you made.
