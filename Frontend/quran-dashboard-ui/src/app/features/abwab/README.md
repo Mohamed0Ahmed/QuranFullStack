@@ -271,7 +271,9 @@ nine), four of them reads.
   the write without one — the archive view's button would otherwise produce an unresolvable 400.
   A child has no question to answer; it returns under its live parent, in that parent's current
   section. Success announces «استُرجع الباب» through the existing aria-live announcer; a failure
-  keeps the modal open with the message inline.
+  keeps the modal open with the message inline **and is also announced**, because that message is
+  `@if`-inserted rather than reserved — see the announcer entry below for why that distinction
+  decides which region speaks.
 - `components/abwab-sections-modal/` — list / add / rename / reorder / delete-empty, with full
   dialog semantics and a dirty guard as of Slice C (a typed section name or an altered
   rename draft raises the door modal's confirm strip; an opened-but-unedited rename is
@@ -371,6 +373,21 @@ nine), four of them reads.
 - `components/abwab-announcer/` — one `aria-live="polite"` `role="status"` region for
   operation messages; a feature-scoped stand-in for a toast primitive this one
   feature does not warrant.
+  **A write failure reaches exactly one live region, never two.** It is announced here only when
+  the operation has no reliably-announcing error surface of its own; otherwise the surface owns it
+  and the announcer stays silent, because `qd-state variant="error"` already carries
+  `role="alert"`. The discriminator is **not** "is there an error element" but **"is that element
+  present before the message lands"**: a `qd-state` bound with `[reserve]="true"` exists while
+  empty, so inserting text into it announces (the door form, the sections modal, the copy modal,
+  the relations modal — these DROP the announcer). A `qd-state` rendered by `@if` is *created* at
+  the moment of failure, inside an already-focused `role="alertdialog"`, which is not reliably
+  announced — so the archive and bulk-archive confirms, the restore modal, section delete and
+  relation delete all KEEP it. Writes with no surface at all — move, bulk move, and the tree's
+  inline reorder — obviously keep it; the announcer is their only channel.
+  The switch is `announceFailure` on `AbwabWriteOptions`, set per operation in
+  `state/abwab-write.controller.ts` so the decision is readable in one place rather than
+  re-derived per call site. **If you give one of the KEEP surfaces a reserved region, flip its flag
+  in the same change** — otherwise the failure is announced twice again.
 - `state/abwab-snapshot.facade.ts` — owns the tree snapshot, loading/error/empty
   state, `load()`/`refresh()`.
 - `state/abwab-tree.builder.ts` — pure: DTO → `AbwabTreeSnapshotVm` (live/archive

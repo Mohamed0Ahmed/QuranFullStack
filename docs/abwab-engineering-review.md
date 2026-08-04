@@ -149,7 +149,7 @@ so they are tracked here rather than patched twice):
 | F-48 | **fixed** | `pages/abwab-page/abwab-page.component.ts:393` |
 | F-49 | **fixed** | `components/abwab-door-modal/…component.ts` + sections + template-node |
 | F-50 | **fixed** | `components/abwab-archive-view/abwab-archive-view.component.html` |
-| **F-51** | **STOPPED — stop condition hit** | `state/abwab-write.controller.ts:204` — see below |
+| F-51 | **fixed** (user ruling, follow-up commit) | `state/abwab-write.controller.ts:34` (`announceFailure`) — see §0 F-51 below |
 | F-52 | **fixed** | `state/abwab-write.controller.ts:190` |
 | F-58 | **fixed** (user ruling) | `components/abwab-tree/…component.html:71` + template tree |
 | F-59 | **fixed** (second half completed by the parent) | `components/abwab-toolbar/abwab-toolbar.component.html:61` |
@@ -164,17 +164,53 @@ so they are tracked here rather than patched twice):
 | F-96 | **fixed** | `components/abwab-door-picker/…component.ts:104-107` |
 | F-103 | **fixed by the parent** | `components/abwab-door-restore-modal/…component.html:2` |
 
-#### F-51 — stopped, not fixed. The user's stop condition applies.
+#### F-51 — CLOSED with the user's ruling (option a), applied per operation rather than per site.
 
-Every write failure is announced twice (a `role="alert"` and the polite announcer fed the same
-string). The defect is real and **wider than the citation** — the same string reaches both regions
-from five sites, not one. The agent diagnosed it, built a fix, and reverted it, because closing it
-requires changing what an existing test asserts:
-`state/abwab-write.controller.spec.ts:117` pins
-`expect(controller.announcement()).toBe('تم تعديل الباب من مستخدم آخر')` — i.e. it asserts that a
-409 **does** reach the announcer. Any fix that stops failures being double-announced changes that
-assertion's meaning. The brief says to stop rather than change an existing test's meaning, so it
-stopped. **This needs a decision — see Q-03.**
+**The ruling.** `qd-state`'s `role="alert"` owns write failures; the polite announcer stops
+carrying them and keeps only what has no visual anchor. **The condition:** check each of the five
+sites individually, because a site with no visible error surface must KEEP the announcer — applying
+(a) blindly would silence a failure.
+
+**Why the fix is per-operation.** The five announcer sites are *shared*: `handleFailure:206` serves
+both the door modal (which has a surface) and the tree's inline reorder (which has none), and the
+three `handleBulkFailure` sites serve bulk archive and bulk move together. Editing the sites
+directly could not express the ruling. `AbwabWriteOptions` gained `announceFailure`, set per
+operation in one readable block.
+
+**The discriminator turned out not to be "is there an error element" but "is that element present
+before the message lands".** A `qd-state` bound `[reserve]="true"` exists while empty, so text
+insertion announces. A `qd-state` rendered by `@if` is *created* at the moment of failure inside an
+already-focused `role="alertdialog"` — which is not reliably announced. Per-site verdicts:
+
+| Operation | Surface | Rule applied |
+|---|---|---|
+| createDoor, updateDoor | `abwab-door-fields-form.component.html:2`, **reserved** | **DROP** |
+| createSection, renameSection, reorderSection | `abwab-sections-modal.component.html:22`, **reserved** | **DROP** |
+| template apply | `abwab-template-copy-modal.component.html:23`, **reserved** | **DROP** |
+| addDoorRelations | `abwab-relations-modal.component.html:30`, **reserved** | **DROP** |
+| archiveDoor, bulkArchiveDoors | `abwab-page.component.html:276, :293`, `@if`-inserted in an alertdialog | **KEEP** |
+| restoreDoor | `abwab-door-restore-modal.component.html:15`, `@if`-inserted | **KEEP** |
+| deleteSection | `abwab-sections-modal.component.html:158`, `@if`-inserted | **KEEP** |
+| deleteRelation | `abwab-relations-modal.component.html:188`, `@if`-inserted | **KEEP** |
+| moveDoor, bulkMoveDoors, reorderDoor | **none at all** — picker closes before dispatch; inline reorder discards the outcome | **KEEP** |
+
+**An existing test defended the KEEP side, and it was right.** `abwab-page.component.spec.ts:277-282`
+already asserted the announcer carries the archive failure, with a comment recording it as
+deliberate: "alertdialog content changes are not announced, so suppressing it would leave a
+screen-reader user with silence on failure." My first pass classified archive as DROP purely on
+"a surface exists" and that test failed. Investigating the failure produced the reserved-vs-inserted
+distinction above and corrected the classification. **That test passes unchanged** — the earlier
+decision was preserved on its own evidence rather than overruled.
+
+**Exactly one existing assertion changed meaning: the one authorised.**
+`abwab-write.controller.spec.ts:117` was REPLACED, not deleted — it now asserts
+`announcement()` is `null` for a door-edit 409 and names the region that owns it. Four tests were
+added pinning both sides of the contract (three KEEP cases, one DROP case), since asserting only
+the drop side would let a silenced failure pass.
+
+**Documentation landed in the same commit**, as instructed: the announcer entry in
+`features/abwab/README.md` now states the contract, the discriminator, and the maintenance rule —
+if a KEEP surface is ever given a reserved region, flip its flag in the same change.
 
 #### F-87 — the user's expectation about the README did not hold. Reporting it rather than quietly editing.
 
@@ -2655,15 +2691,10 @@ the per-area appendix behind it.
   Was the divergence deliberate (in which case the sentence should state the shipped string and
   its reason, dropping the comparison), or is it a defect the README has been documenting since
   the fold? Only you can answer this — see [F-01](#f-01--dangling-references-to-the-deleted-planning-artifacts-medium-abwab-owned).
-- **Q-03 — F-51, the double announcement: which live region owns write failures?** Closing it
-  requires changing what `state/abwab-write.controller.spec.ts:117` asserts — it currently pins
-  that a 409 **does** reach the polite announcer, and the fix is to stop failures being announced
-  twice. Three options, none of which the review settled: (a) `qd-state`'s `role="alert"` owns
-  failures and the announcer stops carrying them — then that assertion must change; (b) the
-  announcer owns failures and the inline `qd-state` drops `role="alert"` — a wider change touching
-  every failure surface; (c) keep both but make the announcer carry a *different*, shorter string
-  so the two regions do not duplicate. The brief's stop condition ("stop if a fix would require
-  changing an existing test's meaning") is why this is a question rather than a commit.
+- **Q-03 — ANSWERED and CLOSED (option a).** `qd-state`'s `role="alert"` owns write failures;
+  the announcer keeps only what has no reliably-announcing surface. Applied per operation, not per
+  site — see §0, Bundle 3, F-51. The user's condition (check each site; keep where a failure would
+  otherwise be silent) is what surfaced the reserved-vs-`@if` distinction that decides it.
 - **Q-02 — Deployment shape, needed to grade the in-memory ETag generation counter.**
   `Backend/README.md` records no replica/scaling information (grepped for
   `replica|instance|scale|horizontal|in-memory`: no hits). The Abwab tree ETag is an in-memory

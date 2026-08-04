@@ -63,6 +63,7 @@ interface FakeApi {
   updateDoor?: () => Observable<ApiResponse<AbwabDoorDto>>;
   createDoor?: () => Observable<ApiResponse<AbwabDoorDto>>;
   archiveDoor?: () => Observable<ApiResponse<unknown>>;
+  moveDoor?: () => Observable<ApiResponse<AbwabDoorDto>>;
   restoreDoor?: () => Observable<ApiResponse<unknown>>;
   reorderDoor?: (id: number, body: ReorderDoorBody) => Observable<ApiResponse<AbwabDoorDto>>;
   reorderSection?: (id: number, body: ReorderSectionBody) => Observable<ApiResponse<AbwabSectionDto>>;
@@ -114,7 +115,11 @@ describe('AbwabWriteController', () => {
 
       expect(callCount).toBe(1); // never auto-retried
       expect(selection.selectedDoorId()).toBeNull(); // the conflicted door's selection is invalidated
-      expect(controller.announcement()).toBe('تم تعديل الباب من مستخدم آخر');
+      // F-51: a failure reaches exactly ONE live region. updateDoor is dispatched from the door
+      // modal, which stays open on failure and renders the message in qd-state variant="error"
+      // (role="alert") — abwab-door-fields-form.component.html:2. That element owns this failure,
+      // so the polite announcer must NOT also carry it.
+      expect(controller.announcement()).toBeNull();
     });
 
     it('does not clear selection belonging to an unrelated door', () => {
@@ -129,6 +134,61 @@ describe('AbwabWriteController', () => {
         .subscribe();
 
       expect(selection.selectedDoorId()).toBe(99);
+    });
+  });
+
+  // F-51. The contract is "a failure reaches exactly ONE live region". Which region depends on
+  // whether the operation has a visible error surface, so the two branches are pinned together —
+  // asserting only the drop side would let a silenced failure pass.
+  describe('F-51 — a write failure reaches exactly one live region', () => {
+    it('keeps the announcer for a failed reorder, whose inline commit has no error surface at all', () => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        reorderDoor: () => throwError(() => httpError(409, 'تعذر إعادة الترتيب')),
+      });
+
+      controller.reorderDoor(1, { position: 2, scope: 1, version: 1 }).subscribe();
+
+      // The tree's inline order editor closes on commit and nothing on the row binds the outcome,
+      // so the polite announcer is the user's ONLY channel here. Dropping it would silence it.
+      expect(controller.announcement()).toBe('تعذر إعادة الترتيب');
+    });
+
+    it('keeps the announcer for a failed move, whose picker closes before the request is sent', () => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        moveDoor: () => throwError(() => httpError(409, 'تعذر النقل')),
+      });
+
+      controller.moveDoor(1, { targetParentId: null, targetSectionId: 2, version: 1 }).subscribe();
+
+      expect(controller.announcement()).toBe('تعذر النقل');
+    });
+
+    it('keeps the announcer for a failed archive, whose confirm inserts its alert rather than reserving it', () => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        archiveDoor: () => throwError(() => httpError(409, 'تعذر الأرشفة')),
+      });
+
+      controller.archiveDoor(1, 1).subscribe();
+
+      expect(controller.announcement()).toBe('تعذر الأرشفة');
+    });
+
+    it('drops the announcer for a failed door edit, whose form reserves its alert region', () => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        updateDoor: () => throwError(() => httpError(400, 'اسم مكرر')),
+      });
+
+      controller
+        .updateDoor(1, { name: 'x', description: null, representativeAyahText: null, aliases: null, version: 1 })
+        .subscribe();
+
+      // abwab-door-fields-form.component.html:2 renders qd-state with [reserve]="true", so the
+      // live region exists before the message lands and announces it. One region, not two.
+      expect(controller.announcement()).toBeNull();
     });
   });
 
@@ -304,6 +364,10 @@ describe('AbwabWriteController', () => {
 
       const expected = ABWAB_LABELS.bulkVanishedMessage(2, 'د-أب، د-ابن');
       expect(outcome).toEqual({ kind: 'invalid', message: expected });
+      // F-51: bulk archive KEEPS the announcer. Its confirm dialog does render the message, but
+      // the surface is `@if`-inserted inside an already-focused role="alertdialog"
+      // (abwab-page.component.html:292-293) rather than a reserved live region, so it is not
+      // reliably announced — the polite announcer is the screen-reader user's real channel here.
       expect(controller.announcement()).toBe(expected);
       expect(selection.bulkSet().size).toBe(0); // the refresh's rebind dropped them
     });
