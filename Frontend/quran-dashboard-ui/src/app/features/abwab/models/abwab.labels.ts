@@ -1,6 +1,5 @@
 import type { AbwabModalKind, AbwabRelationGroupKey } from './abwab.models';
 
-
 interface ArabicCountForms {
   readonly zero?: string;
   readonly one: string;
