@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { DebugElement } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { Observable, Subject, of } from 'rxjs';
 
 import { AbwabRelationsModalComponent, AbwabRelationTarget } from './abwab-relations-modal.component';
@@ -45,6 +48,12 @@ function relation(
   direction: AbwabRelationVm['direction'] = null,
 ): AbwabRelationVm {
   return { id, otherDoorId, otherDoorName, kind, direction };
+}
+
+/** The modal's own trap, not the nested confirm's — `query` returns the first match in DOM
+ * order and the confirm dialog renders after the modal section. */
+function trapOf(fixture: { debugElement: DebugElement }): CdkTrapFocus {
+  return fixture.debugElement.query(By.directive(CdkTrapFocus)).injector.get(CdkTrapFocus);
 }
 
 interface RenderOptions {
@@ -412,16 +421,19 @@ describe('AbwabRelationsModalComponent', () => {
       );
     });
 
-    // Arrow keys move a radio group's selection and fire `change` without the click the row
-    // listens to; without that path wired the control would tick while the anchor stayed put.
-    it('follows keyboard radio selection, not just clicks', () => {
+    // Arrow keys never fire a bare `change` here: engines dispatch arrow-key radio selection as a
+    // simulated click (cancelable, bubbling), the input's own (click) handler cancels the default
+    // activation, and the bubbled click lands on the row's togglePicked — the same path a mouse
+    // click takes. F-95: the (change) handler that once shadowed this path was dead code.
+    it('keyboard radio selection works through the row click path (arrow keys synthesize clicks)', () => {
       const { fixture, el, pickedRows } = render({ anchorPickMode: true, bulkTargets });
 
       const target = el('abwab-relations-modal-pick-checkbox-4') as HTMLInputElement;
-      target.checked = true;
-      target.dispatchEvent(new Event('change', { bubbles: true }));
+      const synthesizedClick = new MouseEvent('click', { bubbles: true, cancelable: true });
+      target.dispatchEvent(synthesizedClick);
       fixture.detectChanges();
 
+      expect(synthesizedClick.defaultPrevented).toBe(true);
       expect(pickedRows()).toHaveLength(1);
       expect((el('abwab-relations-modal-pick-checkbox-4') as HTMLInputElement).checked).toBe(true);
       expect(el('abwab-relations-modal-add')?.textContent?.trim()).toBe(ABWAB_LABELS.relationAddButton(2));
@@ -663,6 +675,23 @@ describe('AbwabRelationsModalComponent', () => {
         ABWAB_LABELS.relationDeleteConfirmBody('الباب المرساة', 'الصبر', 'less-comprehensive'),
       );
       expect(body).toContain(ABWAB_LABELS.relationDeleteConfirmSides);
+    });
+
+    // F-62, copying the sections modal's pin (abwab-sections-modal.component.spec.ts): the one
+    // permitted nesting is a confirm above one authoring modal, and the host yields its trap while
+    // that confirm is open — two live traps fight over focus.
+    it('yields its focus trap while the confirm is open and takes it back on cancel', () => {
+      const { fixture, root, click } = render({
+        relations: [relation(10, 42, 'الصبر', 'similarity')],
+      });
+
+      expect(trapOf(fixture).enabled).toBe(true);
+
+      removeChip(root, fixture);
+      expect(trapOf(fixture).enabled).toBe(false);
+
+      click('abwab-relations-delete-confirm-cancel');
+      expect(trapOf(fixture).enabled).toBe(true);
     });
 
     it('cancels without dispatching and leaves the list untouched', () => {

@@ -122,7 +122,7 @@ internal sealed class EfAbwabSectionsWriter(QuranDashboardDbContext db) : IAbwab
         }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505" })
         {
-            throw new AbwabDuplicateNameException(name);
+            throw new AbwabDuplicateNameException();
         }
     }
 

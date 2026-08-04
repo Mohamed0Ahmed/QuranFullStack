@@ -11,7 +11,7 @@
       cdkTrapFocusAutoCapture
       data-testid="abwab-template-node-modal"
       (click)="$event.stopPropagation()"
-      (keydown.escape)="requestClose()"
+      (keydown.escape)="onEscape()"
     >
       <header class="qd-modal__head">
         <h3 [id]="titleId">{{ modalTitle }}</h3>
@@ -60,6 +60,7 @@
             <button
               type="button"
               class="qd-btn qd-btn-primary"
+              [disabled]="saveBusy()"
               data-testid="abwab-template-node-modal-save"
               (click)="submit()"
             >

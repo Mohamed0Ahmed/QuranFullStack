@@ -338,6 +338,29 @@ describe('AbwabPageComponent', () => {
     });
   });
 
+  // The restore modal's invoking control is the archive row's restore button, which the
+  // refresh removes on success — the mirror of the archive-confirm case above, and the page
+  // owes it the same deliberate landing rather than letting focus fall to <body>.
+  describe('focus never drops to <body> when the restore modal closes', () => {
+    it('success places focus deliberately once the restored row is gone', async () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      queryParamMap$.next(convertToParamMap({ archive: '1' }));
+      fixture.detectChanges();
+
+      click(root, 'abwab-archive-restore-3');
+      fixture.detectChanges();
+      click(root, 'abwab-door-restore-confirm-confirm');
+      fixture.detectChanges();
+      await flushFocus();
+
+      expect(restoreDoor).toHaveBeenCalled();
+      expect(document.activeElement).not.toBe(document.body);
+      expect(root.contains(document.activeElement)).toBe(true);
+    });
+  });
+
   it('the two archive confirms cannot be open at once', () => {
     const fixture = render();
     const root = fixture.nativeElement as HTMLElement;
@@ -417,7 +440,7 @@ describe('AbwabPageComponent', () => {
       expect(restoreDoor).not.toHaveBeenCalled();
       expect(root.querySelector('[data-testid="abwab-door-restore-modal-name"]')?.textContent).toContain('باب مؤرشف');
 
-      (root.querySelector('[data-testid="qd-confirm-dialog-confirm"]') as HTMLElement).click();
+      (root.querySelector('[data-testid="abwab-door-restore-confirm-confirm"]') as HTMLElement).click();
       fixture.detectChanges();
 
       expect(restoreDoor).toHaveBeenCalledWith(3, { version: 1 });
@@ -431,7 +454,7 @@ describe('AbwabPageComponent', () => {
 
       (root.querySelector('[data-testid="abwab-archive-restore-3"]') as HTMLElement).click();
       fixture.detectChanges();
-      (root.querySelector('[data-testid="qd-confirm-dialog-cancel"]') as HTMLElement).click();
+      (root.querySelector('[data-testid="abwab-door-restore-confirm-cancel"]') as HTMLElement).click();
       fixture.detectChanges();
 
       expect(restoreDoor).not.toHaveBeenCalled();
@@ -558,6 +581,53 @@ describe('AbwabPageComponent', () => {
       expect(root.querySelector('[data-testid="abwab-card-2"]')).toBeTruthy();
       expect(root.querySelector('[data-testid="abwab-card-1"]')).toBeNull();
     });
+
+    // F-53: the cards branch used to render a bare breadcrumb over a blank grid.
+    it('a zero-match cards query states that nothing matched, and keeps the breadcrumb', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+      queryParamMap$.next(convertToParamMap({ view: 'cards', q: 'لا يوجد باب بهذا الاسم' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-cards-empty"]')?.textContent).toContain(
+        ABWAB_LABELS.noSearchMatchesMessage,
+      );
+      expect(root.querySelector('[data-testid="abwab-cards-crumb"]')).toBeTruthy();
+    });
+
+    // F-55: the pruned tree turned a matching root whose children did not match into a card
+    // that looked and behaved like a leaf, hiding its real children behind a dead affordance.
+    it('leaves a matching root openable in cards, with its real child count, when no descendant matches', async () => {
+      const nested: AbwabTreeDto = {
+        doors: [
+          door({ id: 1, name: 'العلم بالله', orderValue: 1, globalOrderValue: 1 }),
+          door({ id: 2, name: 'الرسول', parentId: 1, orderValue: 1 }),
+        ],
+        sections: TREE.sections,
+        version: 'v1',
+      };
+      getTestBed().resetTestingModule();
+      queryParamMap$.next(convertToParamMap({ view: 'cards', q: 'العلم' }));
+      await TestBed.configureTestingModule({
+        imports: [AbwabPageComponent],
+        providers: [
+          provideRouter([]),
+          { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(treeResponse(nested)) } },
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } },
+          },
+        ],
+      }).compileComponents();
+      vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const card = root.querySelector('[data-testid="abwab-card-1"]')!;
+      expect(card.classList.contains('abwab-cards__card--leaf')).toBe(false);
+      expect(card.querySelector('.abwab-cards__meta')?.textContent?.trim()).toBe('1');
+    });
   });
 
   describe('T503/T504 — bulk mode and bulk archive', () => {
@@ -665,6 +735,151 @@ describe('AbwabPageComponent', () => {
 
       expect(root.querySelector('[data-testid="abwab-side-panel-active-door"]')).toBeNull();
     });
+
+    // F-35 (HIGH). A scope change invalidated the single selection but not the bulk set, so bulk
+    // archive/move/relations submitted doors that were no longer on screen. The archive toggle
+    // already cleared bulk; the section scope did not. Two entry paths reach a section change and
+    // both are pinned here, because the defect is the seam between them.
+    it('F-35 — a section switch clears the bulk set, not just the single selection', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-side-panel-bulk-toggle"]') as HTMLElement).click();
+      fixture.detectChanges();
+      (root.querySelector('[data-testid="abwab-tree-checkbox-1"]') as HTMLElement).click();
+      (root.querySelector('[data-testid="abwab-tree-checkbox-2"]') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('بابان محددان');
+
+      queryParamMap$.next(convertToParamMap({ section: '1' }));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('لا أبواب محددة');
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-bar"]')).toBeTruthy();
+    });
+
+    it('F-35 — revealing a door in another section clears the bulk set through the same rule', async () => {
+      const TWO_SECTIONS: AbwabTreeDto = {
+        doors: [
+          door({ id: 1, name: 'العلم بالله', sectionId: 1, orderValue: 1, globalOrderValue: 9 }),
+          door({ id: 2, name: 'الرسول', sectionId: 2, orderValue: 1, globalOrderValue: 8 }),
+        ],
+        sections: [
+          { id: 1, name: 'اللغة العربية', orderValue: 1, version: 1, doorsInScopeCount: 1 },
+          { id: 2, name: 'الفقه', orderValue: 2, version: 1, doorsInScopeCount: 1 },
+        ],
+        version: 'v1',
+      };
+      getTestBed().resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [AbwabPageComponent],
+        providers: [
+          provideRouter([]),
+          { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(treeResponse(TWO_SECTIONS)), archiveDoor } },
+          { provide: ActivatedRoute, useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } } },
+        ],
+      }).compileComponents();
+      router = TestBed.inject(Router);
+      vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+      queryParamMap$.next(convertToParamMap({ section: '1' }));
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-side-panel-bulk-toggle"]') as HTMLElement).click();
+      fixture.detectChanges();
+      (root.querySelector('[data-testid="abwab-tree-checkbox-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('باب محدد واحد');
+
+      // Reveal is the entry path a per-slice review could not see: it writes `section` itself when
+      // the revealed door lives elsewhere, so the user never touches a section tab.
+      (fixture.componentInstance as unknown as { onRevealRequested(doorId: number): void }).onRevealRequested(2);
+
+      const calls = (router.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+      const emitted = (calls[calls.length - 1][1] as { queryParams: Record<string, string | null> }).queryParams;
+      expect(emitted['section']).toBe('2');
+
+      // Feed back what navigate actually produced, merged as `queryParamsHandling: 'merge'` does,
+      // rather than a hand-written URL that could drift from the handler.
+      const merged: Record<string, string> = { section: '1' };
+      for (const [key, value] of Object.entries(emitted)) {
+        if (value === null) {
+          delete merged[key];
+        } else {
+          merged[key] = value;
+        }
+      }
+      queryParamMap$.next(convertToParamMap(merged));
+      fixture.detectChanges();
+
+      expect(root.querySelector('[data-testid="abwab-side-panel-bulk-count"]')?.textContent?.trim()).toBe('لا أبواب محددة');
+    });
+
+    // F-90 (LOW). The in-app archive toggle drops `door` via buildAbwabQueryParams, but a
+    // hand-entered or bookmarked `?archive=1&door=<live id>` bypassed that clear: the door=
+    // effect selected the door and the side panel offered edit/move/archive/add-child over the
+    // archive view. The parse now fails `door` closed to null whenever `archive` is on.
+    it('F-90 — a hand-entered archive=1&door=<live id> keeps the side panel unselected and read-only', () => {
+      queryParamMap$.next(convertToParamMap({ archive: '1', door: '1' }));
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-side-panel-active-door"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-side-panel-empty"]')).toBeTruthy();
+      expect(
+        root.querySelector<HTMLButtonElement>('[data-testid="abwab-side-panel-op-archive"]')?.disabled,
+      ).toBe(true);
+      expect(
+        root.querySelector<HTMLButtonElement>('[data-testid="abwab-side-panel-op-edit"]')?.disabled,
+      ).toBe(true);
+    });
+  });
+
+  // F-37 (MEDIUM). `parsePositiveId` validates shape, not existence, so a restored URL carrying
+  // a section id that no longer exists left a permanently empty tree, a 0 stat and no active
+  // tab. Once the snapshot has landed the page falls back to «كل الأبواب» — mirroring the
+  // settle-gated door= effect — and rewrites the URL by replace.
+  describe('F-37 — a section id that no longer exists fails closed to «كل الأبواب»', () => {
+    it('falls back to the all-doors scope once the snapshot lands and rewrites the URL by replace', () => {
+      queryParamMap$.next(convertToParamMap({ section: '999' }));
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-row-1"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-tree-row-2"]')).toBeTruthy();
+      expect(
+        root.querySelector('[data-testid="abwab-toolbar-tab-all"]')?.getAttribute('aria-selected'),
+      ).toBe('true');
+      expect(router.navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: expect.objectContaining({ section: null }),
+          replaceUrl: true,
+        }),
+      );
+    });
+
+    // The fallback must also settle AbwabSelectionStore.sectionScope, not just the page signal:
+    // if the store were left on the dead id, the replace navigation's own echo would arrive as a
+    // 999 → null scope change and wipe any bulk set built after the fallback.
+    it('keeps the store scope in sync, so the URL echo of the rewrite cannot wipe a later bulk set', () => {
+      queryParamMap$.next(convertToParamMap({ section: '999' }));
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-side-panel-bulk-toggle"]') as HTMLElement).click();
+      fixture.detectChanges();
+      (root.querySelector('[data-testid="abwab-tree-checkbox-1"]') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(root.querySelector<HTMLInputElement>('[data-testid="abwab-tree-checkbox-1"]')?.checked).toBe(true);
+
+      queryParamMap$.next(convertToParamMap({}));
+      fixture.detectChanges();
+
+      expect(root.querySelector<HTMLInputElement>('[data-testid="abwab-tree-checkbox-1"]')?.checked).toBe(true);
+    });
   });
 
   describe('overlay state is page-scoped, not application-scoped', () => {
@@ -735,6 +950,42 @@ describe('AbwabPageComponent', () => {
 
       expect(root.querySelector('[data-testid="abwab-archive-row-3"]')).toBeNull();
       expect(root.querySelector('[data-testid="abwab-page-archive-empty"]')).toBeTruthy();
+    });
+
+    // F-54: «لا توجد أبواب مؤرشفة.» under a zero-match query is a lie about the data — the
+    // archive is not empty, the query simply matched nothing in it.
+    it('says nothing matched, not that the archive is empty, when a query prunes every archived door', () => {
+      queryParamMap$.next(convertToParamMap({ archive: '1', q: 'لا يوجد شيء بهذا الاسم' }));
+      const root = render().nativeElement as HTMLElement;
+      const state = root.querySelector('[data-testid="abwab-page-archive-empty"]');
+
+      expect(state?.textContent).toContain(ABWAB_LABELS.archiveNoSearchMatchesMessage);
+      expect(state?.textContent).not.toContain(ABWAB_LABELS.archiveEmptyMessage);
+    });
+
+    it('still says the archive is empty when it genuinely holds nothing', () => {
+      const noArchive: AbwabTreeDto = { doors: [TREE.doors[0]], sections: TREE.sections, version: 'v1' };
+      getTestBed().resetTestingModule();
+      queryParamMap$.next(convertToParamMap({ archive: '1' }));
+      TestBed.configureTestingModule({
+        imports: [AbwabPageComponent],
+        providers: [
+          provideRouter([]),
+          { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(treeResponse(noArchive)) } },
+          {
+            provide: ActivatedRoute,
+            useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } },
+          },
+        ],
+      });
+      vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      const fixture = TestBed.createComponent(AbwabPageComponent);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-page-archive-empty"]')?.textContent).toContain(
+        ABWAB_LABELS.archiveEmptyMessage,
+      );
     });
   });
 

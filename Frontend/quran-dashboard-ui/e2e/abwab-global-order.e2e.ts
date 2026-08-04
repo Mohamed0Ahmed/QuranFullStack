@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures/abwab';
 
-// Global-order independence flow (plan.md T501): the superset («كل الأبواب») and a section
-// each carry their own root order (plan.md §3/§5) — a write in one space must never move the
+// Global-order independence flow: the superset («كل الأبواب») and a section
+// each carry their own root order — a write in one space must never move the
 // other. Asserts relative order among the sandbox's own doors only, never an absolute global
 // number and never a global count (TESTING_STRATEGY.md §6).
 
@@ -36,7 +36,7 @@ test('a superset (Global) reorder leaves the section order untouched, and a sect
   expect(await readOrder(page, doorC.id)).toBeLessThan(globalAAfter);
   expect(globalAAfter).toBeLessThan(await readOrder(page, doorB.id));
 
-  // The section view's own order_value is untouched by the Global write above (plan.md §5.1).
+  // The section view's own order_value is untouched by the Global write above.
   await page.goto(`/abwab?section=${abwabSandbox.sectionId}`);
   await expect(page.getByTestId(`abwab-tree-order-${doorA.id}`)).toHaveText('1');
   await expect(page.getByTestId(`abwab-tree-order-${doorB.id}`)).toHaveText('2');

@@ -19,9 +19,12 @@
       </header>
 
       <div class="qd-modal__body">
-        @if (errorMessage(); as error) {
-          <qd-state variant="error" [reserve]="true" [message]="error" data-testid="abwab-template-copy-modal-error" />
-        }
+        <qd-state
+          variant="error"
+          [reserve]="true"
+          [message]="errorMessage() ?? ''"
+          data-testid="abwab-template-copy-modal-error"
+        />
 
         <div class="abwab-template-copy-modal__preview" data-testid="abwab-template-copy-modal-preview">
           @if (hasElements()) {
@@ -56,7 +59,7 @@
           <button
             type="button"
             class="qd-btn qd-btn-primary"
-            [disabled]="!hasElements() || pickedIds().size === 0"
+            [disabled]="!hasElements() || pickedIds().size === 0 || applyBusy()"
             data-testid="abwab-template-copy-modal-confirm"
             (click)="confirm()"
           >

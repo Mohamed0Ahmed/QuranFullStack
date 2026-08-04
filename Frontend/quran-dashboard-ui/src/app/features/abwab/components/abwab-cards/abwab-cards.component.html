@@ -25,34 +25,45 @@
     }
   </nav>
 
-  <div class="abwab-cards__grid">
-    @for (node of level(); track node.id) {
-      <div
-        class="abwab-cards__card"
-        [class.abwab-cards__card--leaf]="node.children.length === 0"
-        [class.abwab-cards__card--selected]="selectedId() === node.id"
-        [class.abwab-cards__card--checked]="bulkSelectedIds().has(node.id)"
-        [attr.data-testid]="'abwab-card-' + node.id"
-        (click)="onCardClick(node)"
-      >
-        @if (bulkMode()) {
-          <input
-            type="checkbox"
-            class="abwab-cards__checkbox qd-checkbox"
-            [checked]="bulkSelectedIds().has(node.id)"
+  @if (visibleLevel().length === 0) {
+    <qd-state variant="empty" [message]="emptyStateMessage()" data-testid="abwab-cards-empty" />
+  } @else {
+    <div class="abwab-cards__grid">
+      @for (node of visibleLevel(); track node.id) {
+        <div class="abwab-cards__cell">
+          <button
+            type="button"
+            class="abwab-cards__card"
+            [class.abwab-cards__card--leaf]="node.children.length === 0"
+            [class.abwab-cards__card--selected]="selectedId() === node.id"
+            [class.abwab-cards__card--checked]="bulkSelectedIds().has(node.id)"
             [attr.aria-label]="node.name"
-            [attr.data-testid]="'abwab-card-checkbox-' + node.id"
-            (click)="onCheckboxClick($event, node.id)"
-          />
-        }
-        <div class="abwab-cards__title">
-          <span class="abwab-cards__order">{{ displayOrder(node) }}</span>
-          <span class="abwab-cards__name qd-truncate" [title]="node.name">{{ node.name }}</span>
+            [attr.data-testid]="'abwab-card-' + node.id"
+            (click)="onCardClick(node)"
+          >
+            <span class="abwab-cards__title">
+              <span class="abwab-cards__order">{{ displayOrder(node) }}</span>
+              <span class="abwab-cards__name qd-truncate" [title]="node.name">{{ node.name }}</span>
+            </span>
+            <span
+              class="abwab-cards__meta"
+              [attr.aria-label]="node.liveChildCount > 0 ? childCountAriaLabel(node.liveChildCount) : null"
+            >
+              {{ node.liveChildCount > 0 ? node.liveChildCount : '' }}
+            </span>
+          </button>
+          @if (bulkMode()) {
+            <input
+              type="checkbox"
+              class="abwab-cards__checkbox qd-checkbox"
+              [checked]="bulkSelectedIds().has(node.id)"
+              [attr.aria-label]="node.name"
+              [attr.data-testid]="'abwab-card-checkbox-' + node.id"
+              (click)="onCheckboxClick($event, node.id)"
+            />
+          }
         </div>
-        <div class="abwab-cards__meta">
-          {{ node.children.length > 0 ? node.liveChildCount : '' }}
-        </div>
-      </div>
-    }
-  </div>
+      }
+    </div>
+  }
 </div>

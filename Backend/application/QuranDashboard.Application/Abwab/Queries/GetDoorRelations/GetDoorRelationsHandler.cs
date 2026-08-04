@@ -17,6 +17,7 @@ public sealed class GetDoorRelationsHandler(
         var relations = await reader.GetForDoorAsync(query.DoorId, cancellationToken);
         if (relations is null)
         {
+            logger.LogWarning("Not found {feature} {operation} {doorId}", FeatureName, OperationName, query.DoorId);
             return new GetDoorRelationsOutcome.NotFound();
         }
 

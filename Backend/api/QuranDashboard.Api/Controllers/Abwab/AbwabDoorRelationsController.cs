@@ -38,7 +38,7 @@ public sealed class AbwabDoorRelationsController(
         return outcome switch
         {
             AddDoorRelationsOutcome.Success success =>
-                Created($"api/abwab/doors/{doorId}/relations",
+                Created($"/api/abwab/doors/{doorId}/relations",
                     ApiResponse<IReadOnlyList<AbwabDoorRelationDto>>.Ok(success.Relations, ApiMessages.AbwabDoorRelationsCreated)),
             AddDoorRelationsOutcome.InvalidRequest =>
                 BadRequest(ApiResponse<IReadOnlyList<AbwabDoorRelationDto>>.Fail(ApiMessages.AbwabDoorRelationsInvalidRequest)),
@@ -60,6 +60,7 @@ public sealed class AbwabDoorRelationsController(
     }
 
     [HttpDelete("relations/{relationId:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<ActionResult<ApiResponse<object>>> Delete(
         int relationId, CancellationToken cancellationToken)
     {

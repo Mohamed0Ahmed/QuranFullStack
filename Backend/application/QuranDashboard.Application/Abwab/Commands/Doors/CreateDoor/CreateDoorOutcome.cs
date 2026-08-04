@@ -12,5 +12,6 @@ public abstract record CreateDoorOutcome
     public sealed record SectionNotFound : CreateDoorOutcome;
     public sealed record SectionRequired : CreateDoorOutcome;
     public sealed record SectionParentMismatch : CreateDoorOutcome;
+    public sealed record StaleVersion : CreateDoorOutcome;
     public sealed record DuplicateName : CreateDoorOutcome;
 }

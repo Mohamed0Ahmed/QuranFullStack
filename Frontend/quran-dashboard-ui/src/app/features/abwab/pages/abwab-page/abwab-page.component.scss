@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .abwab-page__frame {
   min-block-size: calc(100dvh - var(--qd-navbar-block-size));
 }
@@ -91,7 +93,7 @@
   outline-offset: -2px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: bp.$qd-bp-tablet-max) {
   .abwab-page__layout {
     flex-direction: column;
   }

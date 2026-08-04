@@ -114,7 +114,11 @@
           @if (archiveParam()) {
             <div class="qd-card abwab-page__tree-card">
               @if (displayArchivedRoots().length === 0) {
-                <qd-state variant="empty" [message]="archiveEmptyLabel" data-testid="abwab-page-archive-empty" />
+                <qd-state
+                  variant="empty"
+                  [message]="archiveEmptyStateMessage()"
+                  data-testid="abwab-page-archive-empty"
+                />
               } @else {
                 <qd-abwab-archive-view
                   [roots]="displayArchivedRoots()"
@@ -126,8 +130,10 @@
           } @else if (viewParam() === 'cards') {
             <div class="qd-card abwab-page__tree-card">
               <qd-abwab-cards
-                [roots]="displayRoots()"
+                [roots]="visibleRoots()"
                 [byId]="byId()"
+                [isFiltering]="searchIsFiltering()"
+                [visibleIds]="searchVisibleIds()"
                 [cardId]="cardParam()"
                 [orderScope]="orderScope()"
                 [selectedId]="selection.selectedDoorId()"
@@ -225,7 +231,7 @@
   [ancestors]="overlays.restoreAncestors()"
   [sections]="sections()"
   (closed)="overlays.closeRestoreModal()"
-  (restored)="overlays.closeRestoreModal()"
+  (restored)="onDoorRestored()"
 />
 
 <qd-abwab-relations-modal

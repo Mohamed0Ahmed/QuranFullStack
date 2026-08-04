@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ABWAB_LABELS } from './abwab.labels';
 
-// Pins the locked strings from plan-slice-b.md §2 (items 2, 3, 6) — every consumer must
+// Pins the locked Arabic strings — every consumer must
 // read these, never restate them. §2's fourth locked string (the section-delete conflict)
 // is deliberately absent: the backend sends its own copy on that 409 and the write
 // controller prefers it, so a local constant would be dead. See features/abwab/README.md.
@@ -71,6 +71,22 @@ describe('ABWAB_LABELS — Arabic number agreement on counted doors', () => {
   });
 });
 
+// F-60: the bulk bar is a counted-door sentence, not a stat tile, so it goes through
+// countPhrase like every other counted door surface. SELECTED_DOOR_FORMS carries the
+// adjective «محدد» with its own agreement per count form, like ROOT_DOOR_FORMS does for «رئيسي».
+describe('ABWAB_LABELS — Arabic number agreement on the bulk-selected count', () => {
+  it.each([
+    [0, 'لا أبواب محددة'],
+    [1, 'باب محدد واحد'],
+    [2, 'بابان محددان'],
+    [3, '3 أبواب محددة'],
+    [10, '10 أبواب محددة'],
+    [11, '11 بابًا محددًا'],
+  ])('count %i reads correctly in the bulk bar', (count, expected) => {
+    expect(ABWAB_LABELS.bulkSelectedCount(count)).toBe(expected);
+  });
+});
+
 // ux-slice-l's search count — RESULT_FORMS, a counted noun of its own. Zero has a distinct
 // wording here (unlike the tab badge below): «0 نتائج» beside a search box reads as a broken
 // control rather than an answer.
@@ -125,5 +141,44 @@ describe('ABWAB_LABELS — root-door count agreement on the tab badge (§4.2-13)
     it('the node-delete title is not an alias of the menu item', () => {
       expect(ABWAB_LABELS.templateNodeDeleteConfirmTitle).toBe(ABWAB_LABELS.templateNodeDeleteOp);
     });
+  });
+});
+
+// F-52's one success policy: short past-tense verb-first fusha, no exclamation, matching the
+// existing register («استُرجع الباب», «أُنشئ القالب»). The bulk phrases follow the feature's own
+// «سيتم أرشفة X» construction so the genitive counted noun stays grammatical.
+describe('ABWAB_LABELS — write success announcements', () => {
+  it.each([
+    ['doorCreatedAnnouncement', ABWAB_LABELS.doorCreatedAnnouncement, 'أُنشئ الباب'],
+    ['doorUpdatedAnnouncement', ABWAB_LABELS.doorUpdatedAnnouncement, 'حُدّث الباب'],
+    ['doorArchivedAnnouncement', ABWAB_LABELS.doorArchivedAnnouncement, 'أُرشف الباب'],
+    ['sectionDeletedAnnouncement', ABWAB_LABELS.sectionDeletedAnnouncement, 'حُذف القسم'],
+    ['doorMovedAnnouncement', ABWAB_LABELS.doorMovedAnnouncement, 'نُقل الباب'],
+    ['doorReorderedAnnouncement', ABWAB_LABELS.doorReorderedAnnouncement, 'أُعيد ترتيب الباب'],
+    ['sectionCreatedAnnouncement', ABWAB_LABELS.sectionCreatedAnnouncement, 'أُنشئ القسم'],
+    ['sectionRenamedAnnouncement', ABWAB_LABELS.sectionRenamedAnnouncement, 'أُعيدت تسمية القسم'],
+    ['sectionReorderedAnnouncement', ABWAB_LABELS.sectionReorderedAnnouncement, 'أُعيد ترتيب القسم'],
+    ['relationDeletedAnnouncement', ABWAB_LABELS.relationDeletedAnnouncement, 'حُذفت العلاقة'],
+  ])('%s is the locked phrase', (_key, actual, expected) => {
+    expect(actual).toBe(expected);
+  });
+
+  it.each([
+    [1, 'تمت أرشفة باب واحد', 'تم نقل باب واحد'],
+    [2, 'تمت أرشفة بابين', 'تم نقل بابين'],
+    [3, 'تمت أرشفة 3 أبواب', 'تم نقل 3 أبواب'],
+    [11, 'تمت أرشفة 11 بابًا', 'تم نقل 11 بابًا'],
+  ])('the bulk phrases agree with count %i', (count, archive, move) => {
+    expect(ABWAB_LABELS.bulkArchiveAnnouncement(count)).toBe(archive);
+    expect(ABWAB_LABELS.bulkMoveAnnouncement(count)).toBe(move);
+  });
+
+  it.each([
+    [1, 'تمت إضافة علاقة واحدة'],
+    [2, 'تمت إضافة علاقتين'],
+    [3, 'تمت إضافة 3 علاقات'],
+    [11, 'تمت إضافة 11 علاقة'],
+  ])('the added-relations phrase agrees with count %i', (count, expected) => {
+    expect(ABWAB_LABELS.relationsAddedAnnouncement(count)).toBe(expected);
   });
 });

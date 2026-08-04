@@ -10,20 +10,20 @@
   </a>
 
   <ul class="nav-links desktop-nav">
-    @for (item of primaryItems; track item.route) {
+    @for (item of desktopItems; track item.route) {
       @if (item.children) {
         <li
           class="nav-item nav-dropdown"
           [class.open]="openMenuKey === item.key"
           [attr.data-menu-key]="item.key"
-          (mouseenter)="openMenu(item.key)"
-          (mouseleave)="closeMenu(item.key)"
+          (mouseenter)="onMenuPointerEnter(item.key)"
+          (mouseleave)="onMenuPointerLeave(item.key)"
         >
           <button
             class="qd-btn qd-btn-ghost nav-link"
             [class.active]="isMenuActive(item)"
             type="button"
-            (click)="toggleMenu(item.key)"
+            (click)="onTriggerClick(item.key)"
             aria-haspopup="true"
             [attr.aria-controls]="item.key + '-menu'"
             [attr.aria-expanded]="openMenuKey === item.key"
@@ -74,7 +74,7 @@
             class="qd-btn qd-btn-ghost nav-link"
             [routerLink]="item.route"
             routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+            [routerLinkActiveOptions]="{ exact: item.route === dashboardRoute }"
             [attr.data-testid]="'nav-link--' + item.key"
           >
             {{ item.labelAr }}
@@ -82,58 +82,6 @@
         </li>
       }
     }
-    <li
-      class="nav-item more-dropdown nav-dropdown"
-      [class.open]="openMenuKey === 'more'"
-      data-menu-key="more"
-    >
-      <button
-        class="qd-btn qd-btn-ghost nav-link"
-        [class.active]="isMoreActive()"
-        type="button"
-        (click)="toggleMenu('more')"
-        aria-haspopup="true"
-        aria-controls="more-menu"
-        [attr.aria-expanded]="openMenuKey === 'more'"
-        data-testid="nav-more-trigger"
-      >
-        المزيد
-        <svg
-          class="chevron"
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          fill="none"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path
-            d="M3 4.5L6 7.5L9 4.5"
-            stroke="currentColor"
-            stroke-width="1.2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
-      @if (openMenuKey === 'more') {
-        <ul id="more-menu" class="dropdown-menu">
-          @for (item of moreItems; track item.route) {
-            <li>
-              <a
-                class="qd-btn qd-btn-ghost dropdown-link"
-                [routerLink]="item.route"
-                routerLinkActive="active"
-                [attr.data-testid]="'nav-menu-link--' + item.key"
-                (click)="closeMenu('more')"
-              >
-                {{ item.labelAr }}
-              </a>
-            </li>
-          }
-        </ul>
-      }
-    </li>
   </ul>
 
   <span class="spacer"></span>
@@ -232,7 +180,14 @@
 </nav>
 
 @if (mobileOpen) {
-  <div class="mobile-menu" role="navigation" aria-label="القائمة" (click)="closeMobile()">
+  <div
+    class="mobile-menu"
+    role="navigation"
+    aria-label="القائمة"
+    [attr.inert]="locked() ? '' : null"
+    [attr.aria-hidden]="locked() ? true : null"
+    (click)="closeMobile()"
+  >
     <div class="mobile-menu-panel" (click)="$event.stopPropagation()">
       <div class="mobile-theme-toggle">
         <button
@@ -303,7 +258,7 @@
               class="qd-btn qd-btn-ghost mobile-link"
               [routerLink]="item.route"
               routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+              [routerLinkActiveOptions]="{ exact: item.route === dashboardRoute }"
               (click)="closeMobile()"
             >
               {{ item.labelAr }}

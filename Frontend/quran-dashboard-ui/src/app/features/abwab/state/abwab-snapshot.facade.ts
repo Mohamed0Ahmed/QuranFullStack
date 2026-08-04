@@ -17,6 +17,7 @@ export class AbwabSnapshotFacade {
   private readonly loadingState = signal(false);
   private readonly errorState = signal<string | null>(null);
   private pendingRequest: Subscription | null = null;
+  private fetchGeneration = 0;
 
   readonly isLoading = this.loadingState.asReadonly();
   readonly errorMessage = this.errorState.asReadonly();
@@ -31,7 +32,7 @@ export class AbwabSnapshotFacade {
   readonly isEmpty = computed(() => (this.rawTree()?.doors.length ?? -1) === 0);
 
   load(): void {
-    this.fetch().subscribe();
+    this.fetch();
   }
 
   refresh(): Observable<AbwabTreeSnapshotVm | null> {
@@ -40,11 +41,16 @@ export class AbwabSnapshotFacade {
 
   private fetch(): Observable<AbwabTreeSnapshotVm | null> {
     this.pendingRequest?.unsubscribe();
+    const generation = ++this.fetchGeneration;
+    const isSuperseded = () => generation !== this.fetchGeneration;
     this.loadingState.set(true);
     this.errorState.set(null);
 
     const request$ = this.api.getTree(this.etagState()).pipe(
       tap((response) => {
+        if (isSuperseded()) {
+          return;
+        }
         this.loadingState.set(false);
         const envelope = response.body;
         if (envelope?.isSuccess && envelope.data) {
@@ -57,6 +63,9 @@ export class AbwabSnapshotFacade {
       }),
       map(() => this.snapshot()),
       catchError((error: unknown) => {
+        if (isSuperseded()) {
+          return of(this.snapshot());
+        }
         this.loadingState.set(false);
 
         if (error instanceof HttpErrorResponse && error.status === HttpStatusCode.NotModified) {
@@ -66,7 +75,7 @@ export class AbwabSnapshotFacade {
         this.errorState.set(ABWAB_LABELS.loadErrorFallback);
         return of(this.snapshot());
       }),
-      shareReplay(1),
+      shareReplay({ bufferSize: 1, refCount: true }),
     );
 
     this.pendingRequest = request$.subscribe();

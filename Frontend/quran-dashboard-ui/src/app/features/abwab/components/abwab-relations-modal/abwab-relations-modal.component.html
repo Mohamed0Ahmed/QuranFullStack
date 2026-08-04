@@ -7,7 +7,7 @@
       dir="rtl"
       [attr.aria-labelledby]="titleId"
       qdModalScrollLock
-      cdkTrapFocus
+      [cdkTrapFocus]="pendingDelete() === null"
       cdkTrapFocusAutoCapture
       data-testid="abwab-relations-modal"
       (click)="$event.stopPropagation()"

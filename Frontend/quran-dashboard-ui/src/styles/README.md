@@ -64,6 +64,13 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   pair it with `--qd-name-min-inline-size` (`_tokens.scss`) for a reserved minimum.
 - `_words-explorer-layout.scss` — shared layout pieces for words explorer intro/toolbar surfaces.
   (The page-frame rule that used to live here moved to `_layout.scss` — see above.)
+  Its `--qd-explorer-chrome-block-size` (`14rem` at `:77`, `12rem` in the wide-desktop override
+  at `:143`) is a hand-measured viewport budget consumed by
+  `calc(100dvh - var(--qd-explorer-chrome-block-size))` (`:116,145`): it includes the navbar's
+  height but deliberately does not reference `--qd-navbar-block-size`, unlike every other
+  viewport-relative figure the sticky-navbar work re-based. A navbar height change therefore
+  does not track into it automatically — re-measure it by hand, per the measured-not-derived
+  doctrine of the contrast table below.
 - `_words-explainer.scss` — shared visual primitives for the Words explainer hero example regions
   (global, not component-scoped, because pages project their own example markup via `<ng-content>`).
 - `_explorer-tables.scss` — responsive shared table/list rules for explorer pages.
@@ -114,6 +121,8 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   | `--qd-warning` (`:40`) | as a dot on the navy footer | 3.02:1 |
   | `--qd-danger-tint` (`:42`) | danger text on it | 5.01:1 |
   | `--qd-success-tint` (`:43`) | against `--qd-success` | 4.58:1 (`UI_STYLE_SYSTEM.md` §16) |
+  | `--qd-text-muted` (`:21`) | zero tab-count digit on `--qd-bg` | 4.82:1 (AA; computed from the oklch tokens) |
+  | `--qd-accent-text` (`:35`) | selected tab count on its `--qd-surface` pill | 7.55:1 (computed from the oklch tokens) |
 
   `--qd-ayah-card-bg` is a warm tone deliberately recessed below `--qd-surface` so an ayah card
   reads as a distinct card on the near-white surfaces it sits on; the dark theme overrides it to

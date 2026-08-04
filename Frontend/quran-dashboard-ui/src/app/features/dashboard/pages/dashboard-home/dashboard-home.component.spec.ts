@@ -116,7 +116,7 @@ describe('DashboardHomeComponent — stable app-meta loading (N3 row 14)', () =>
   });
 });
 
-// R13 (plan-slice-b.md §3.1): the «الأبواب» card's routerLink is hardcoded HTML, not
+// The «الأبواب» card's routerLink is hardcoded HTML, not
 // derived from nav-items.ts, so a nav-route rename can silently leave a dead card. This
 // test names the card by its own heading so it fails if the rename isn't applied here too.
 describe('DashboardHomeComponent — the «الأبواب» card targets /abwab (R13)', () => {

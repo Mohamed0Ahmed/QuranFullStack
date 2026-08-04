@@ -27,6 +27,8 @@ export class AbwabTemplatesFacade {
   private readonly selectedIdState = signal<number | null>(null);
   private listRequest: Subscription | null = null;
   private selectedRequest: Subscription | null = null;
+  private listGeneration = 0;
+  private selectedGeneration = 0;
 
   readonly isLoading = this.listLoadingState.asReadonly();
   readonly errorMessage = this.listErrorState.asReadonly();
@@ -46,7 +48,7 @@ export class AbwabTemplatesFacade {
   });
 
   loadList(): void {
-    this.fetchList().subscribe();
+    this.fetchList();
   }
 
   refreshList(): Observable<readonly AbwabTemplateSummaryDto[]> {
@@ -55,7 +57,7 @@ export class AbwabTemplatesFacade {
 
   select(templateId: number): void {
     this.selectedIdState.set(templateId);
-    this.fetchSelected(templateId).subscribe();
+    this.fetchSelected(templateId);
   }
 
   clearSelection(): void {
@@ -77,11 +79,16 @@ export class AbwabTemplatesFacade {
 
   private fetchList(): Observable<readonly AbwabTemplateSummaryDto[]> {
     this.listRequest?.unsubscribe();
+    const generation = ++this.listGeneration;
+    const isSuperseded = () => generation !== this.listGeneration;
     this.listLoadingState.set(true);
     this.listErrorState.set(null);
 
     const request$ = this.api.getTemplates(this.listEtagState).pipe(
       tap((response) => {
+        if (isSuperseded()) {
+          return;
+        }
         this.listLoadingState.set(false);
         const envelope = response.body;
         if (envelope?.isSuccess && envelope.data) {
@@ -94,6 +101,9 @@ export class AbwabTemplatesFacade {
       }),
       map(() => this.templates()),
       catchError((error: unknown) => {
+        if (isSuperseded()) {
+          return of(this.templates());
+        }
         this.listLoadingState.set(false);
 
         if (isNotModified(error)) {
@@ -103,7 +113,7 @@ export class AbwabTemplatesFacade {
         this.listErrorState.set(ABWAB_LABELS.templatesLoadError);
         return of(this.templates());
       }),
-      shareReplay(1),
+      shareReplay({ bufferSize: 1, refCount: true }),
     );
 
     this.listRequest = request$.subscribe();
@@ -112,6 +122,8 @@ export class AbwabTemplatesFacade {
 
   private fetchSelected(templateId: number): Observable<AbwabTemplateVm | null> {
     this.selectedRequest?.unsubscribe();
+    const generation = ++this.selectedGeneration;
+    const isSuperseded = () => generation !== this.selectedGeneration;
     this.selectedErrorState.set(null);
     this.selectedLoadingState.set(true);
 
@@ -119,6 +131,9 @@ export class AbwabTemplatesFacade {
 
     const request$ = this.api.getTemplate(templateId, heldEtag).pipe(
       tap((response) => {
+        if (isSuperseded()) {
+          return;
+        }
         this.selectedLoadingState.set(false);
         const envelope = response.body;
         if (envelope?.isSuccess && envelope.data) {
@@ -132,6 +147,9 @@ export class AbwabTemplatesFacade {
       }),
       map(() => this.selectedTemplate()),
       catchError((error: unknown) => {
+        if (isSuperseded()) {
+          return of(this.selectedTemplate());
+        }
         this.selectedLoadingState.set(false);
 
         if (isNotModified(error)) {
@@ -141,7 +159,7 @@ export class AbwabTemplatesFacade {
         this.selectedErrorState.set(ABWAB_LABELS.templateLoadError);
         return of(this.selectedTemplate());
       }),
-      shareReplay(1),
+      shareReplay({ bufferSize: 1, refCount: true }),
     );
 
     this.selectedRequest = request$.subscribe();

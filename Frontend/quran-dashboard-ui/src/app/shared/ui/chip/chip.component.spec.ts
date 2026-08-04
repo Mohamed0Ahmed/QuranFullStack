@@ -139,7 +139,7 @@ describe('QdChipComponent', () => {
     expect(emitted).toHaveLength(1);
   });
 
-  describe('removable (plan-slice-b.md T412 — the alias-chip remove affordance)', () => {
+  describe('removable — the alias-chip remove affordance', () => {
     it('renders a static, non-button wrapper carrying a nested remove button', () => {
       const fixture = render({ removable: true, removeAriaLabel: 'إزالة التوحيد' });
       const root = fixture.nativeElement as HTMLElement;

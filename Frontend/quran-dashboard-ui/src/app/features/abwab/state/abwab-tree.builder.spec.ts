@@ -44,11 +44,11 @@ describe('buildAbwabTreeSnapshot', () => {
     );
 
     // orderValue alone would give [A, B, C]; globalOrderValue gives [B, C, A] — proves the
-    // superset's own order drives root placement, not the per-scope order (plan.md §3).
+    // superset's own order drives root placement, not the per-scope order.
     expect(snapshot.liveRoots.map((n) => n.name)).toEqual(['B', 'C', 'A']);
   });
 
-  it('breaks a globalOrderValue tie by id (hardening — the column has no unique index, plan.md §6)', () => {
+  it('breaks a globalOrderValue tie by id (hardening — the column has no unique index)', () => {
     const snapshot = buildAbwabTreeSnapshot(
       tree([
         door({ id: 2, name: 'higher-id', orderValue: 1, globalOrderValue: 1 }),

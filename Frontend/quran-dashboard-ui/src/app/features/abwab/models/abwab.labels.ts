@@ -69,6 +69,14 @@ const ROOT_DOOR_FORMS: ArabicCountForms = {
   many: 'بابًا رئيسيًا',
 };
 
+const SELECTED_DOOR_FORMS: ArabicCountForms = {
+  zero: 'لا أبواب محددة',
+  one: 'باب محدد واحد',
+  two: 'بابان محددان',
+  few: 'أبواب محددة',
+  many: 'بابًا محددًا',
+};
+
 export const ABWAB_LABELS = {
   pageTitle: 'الأبواب',
   pageSubtitle: 'هيكل التصنيفات القرآنية — كل عملية تتم في مكانها.',
@@ -84,6 +92,7 @@ export const ABWAB_LABELS = {
   searchMatchCount: (count: number): string => countPhrase(count, RESULT_FORMS),
   viewToggleTree: 'شجرة',
   viewToggleCards: 'بطاقات',
+  viewToggleAriaLabel: 'طريقة العرض',
   archiveButton: 'الأرشيف',
   manageSectionsButton: 'إدارة الأقسام',
   addRootDoorButton: 'باب رئيسي جديد',
@@ -95,6 +104,8 @@ export const ABWAB_LABELS = {
   rowMenuAriaLabel: (doorName: string): string => `عمليات «${doorName}»`,
   rowRelationsAriaLabel: (doorName: string, count: number): string =>
     `عرض علاقات «${doorName}» — ${countPhrase(count, RELATION_FORMS)}`,
+  rowOrderEditAriaLabel: (doorName: string, order: number): string =>
+    `تعديل ترتيب «${doorName}» — الترتيب الحالي ${order}`,
 
   rowChildCountAriaLabel: (count: number): string => `${countPhrase(count, DOOR_FORMS)} تحته مباشرة`,
   rowDescendantCountAriaLabel: (count: number): string =>
@@ -116,7 +127,7 @@ export const ABWAB_LABELS = {
   moveOp: 'نقل إلى…',
   archiveOp: 'أرشفة',
 
-  bulkCountSuffix: 'باب محدد',
+  bulkSelectedCount: (count: number): string => countPhrase(count, SELECTED_DOOR_FORMS),
   bulkMoveAll: 'نقل الكل إلى…',
   bulkArchiveAll: 'أرشفة الكل',
   bulkClear: 'إلغاء التحديد',
@@ -166,6 +177,7 @@ export const ABWAB_LABELS = {
   sectionOrderInputAriaLabel: (sectionName: string): string => `أدخل ترتيبًا جديدًا لـ«${sectionName}»`,
 
   archiveEmptyMessage: 'لا توجد أبواب مؤرشفة.',
+  archiveNoSearchMatchesMessage: 'لا يوجد باب مؤرشف مطابق لبحثك.',
   restoreButton: 'استرجاع',
   restoreParentFirstHint: 'استرجع الأب أولًا',
   restoreAnnouncement: 'استُرجع الباب',
@@ -185,6 +197,7 @@ export const ABWAB_LABELS = {
 
   loadErrorFallback: 'تعذر تحميل شجرة الأبواب. حاول مرة أخرى.',
   emptyTreeMessage: 'لا توجد أبواب بعد.',
+  noSearchMatchesMessage: 'لا يوجد باب مطابق لبحثك.',
   loadingTreeMessage: 'جارٍ تحميل شجرة الأبواب...',
 
   relationsOp: 'العلاقات',
@@ -289,6 +302,8 @@ export const ABWAB_LABELS = {
   templateAddChildPlaceholder: 'إضافة عنصر… (Enter)',
   templateNodeExpandAriaLabel: (nodeName: string): string => `عرض العناصر الفرعية لـ«${nodeName}»`,
   templateNodeCollapseAriaLabel: (nodeName: string): string => `إخفاء العناصر الفرعية لـ«${nodeName}»`,
+  templateNodeOrderEditAriaLabel: (nodeName: string, order: number): string =>
+    `تعديل ترتيب «${nodeName}» — الترتيب الحالي ${order}`,
   templateNodeEditOp: 'تعديل العنصر',
   templateNodeAddChildOp: 'إضافة عنصر فرعي',
   templateNodeDeleteOp: 'حذف العنصر',
@@ -323,6 +338,20 @@ export const ABWAB_LABELS = {
   templateCreatedAnnouncement: 'أُنشئ القالب',
   templateDeletedAnnouncement: 'حُذف القالب',
   templateAppliedAnnouncement: (count: number): string => `تم النسخ إلى ${countPhrase(count, DOOR_FORMS)}`,
+
+  doorCreatedAnnouncement: 'أُنشئ الباب',
+  doorUpdatedAnnouncement: 'حُدّث الباب',
+  doorMovedAnnouncement: 'نُقل الباب',
+  doorReorderedAnnouncement: 'أُعيد ترتيب الباب',
+  doorArchivedAnnouncement: 'أُرشف الباب',
+  bulkArchiveAnnouncement: (count: number): string => `تمت أرشفة ${countPhrase(count, DOOR_FORMS)}`,
+  bulkMoveAnnouncement: (count: number): string => `تم نقل ${countPhrase(count, DOOR_FORMS)}`,
+  sectionCreatedAnnouncement: 'أُنشئ القسم',
+  sectionRenamedAnnouncement: 'أُعيدت تسمية القسم',
+  sectionReorderedAnnouncement: 'أُعيد ترتيب القسم',
+  sectionDeletedAnnouncement: 'حُذف القسم',
+  relationsAddedAnnouncement: (count: number): string => `تمت إضافة ${countPhrase(count, RELATION_FORMS)}`,
+  relationDeletedAnnouncement: 'حُذفت العلاقة',
 
   writeConflictFallback: 'حدث تعارض أثناء الحفظ. يرجى تحديث البيانات والمحاولة مرة أخرى.',
   writeInvalidFallback: 'تعذر تنفيذ العملية. تحقق من البيانات وحاول مرة أخرى.',

@@ -26,7 +26,7 @@ public sealed class AbwabTemplateNodesController(
         return outcome switch
         {
             AddTemplateNodeOutcome.Success success =>
-                Created($"api/abwab/template-nodes/{success.Node.Id}",
+                Created($"/api/abwab/template-nodes/{success.Node.Id}",
                     ApiResponse<AbwabTemplateNodeDto>.Ok(success.Node, ApiMessages.AbwabTemplateNodeCreated)),
             AddTemplateNodeOutcome.InvalidName =>
                 BadRequest(ApiResponse<AbwabTemplateNodeDto>.Fail(ApiMessages.AbwabTemplateNodeInvalidName)),
@@ -86,6 +86,7 @@ public sealed class AbwabTemplateNodesController(
     }
 
     [HttpDelete("template-nodes/{nodeId:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<ActionResult<ApiResponse<object>>> Delete(
         int nodeId, CancellationToken cancellationToken)
     {

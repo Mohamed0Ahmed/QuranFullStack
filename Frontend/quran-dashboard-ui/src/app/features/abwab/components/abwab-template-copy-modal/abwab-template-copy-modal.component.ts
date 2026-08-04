@@ -39,6 +39,7 @@ export class AbwabTemplateCopyModalComponent {
   protected readonly titleId = `abwab-template-copy-modal-title-${nextModalId++}`;
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly pickedIds = signal<ReadonlySet<number>>(new Set());
+  protected readonly applyBusy = signal(false);
 
   protected get descriptionText(): string { return ABWAB_LABELS.templateCopyDescription; }
   protected get emptyTemplateText(): string { return ABWAB_LABELS.templateCopyEmptyTemplate; }
@@ -60,7 +61,7 @@ export class AbwabTemplateCopyModalComponent {
   protected readonly hasElements = computed(() => this.templateNodeCount() > 0);
 
   protected readonly pickerStatus = computed<AbwabDoorPickerStatus>(() =>
-    this.doorsLoading() ? 'loading' : this.doorsError() ? 'error' : 'empty',
+    this.doorsLoading() ? 'loading' : this.doorsError() ? 'error' : this.liveRoots().length === 0 ? 'empty' : 'ready',
   );
 
   protected readonly pickedIdList = computed(() => Array.from(this.pickedIds()));
@@ -107,10 +108,12 @@ export class AbwabTemplateCopyModalComponent {
 
   protected confirm(): void {
     const targets = Array.from(this.pickedIds());
-    if (targets.length === 0) {
+    if (targets.length === 0 || this.applyBusy()) {
       return;
     }
+    this.applyBusy.set(true);
     this.applyTemplate()(targets).subscribe((outcome) => {
+      this.applyBusy.set(false);
       if (outcome.kind !== 'success') {
         this.errorMessage.set(outcome.message);
         return;
@@ -121,11 +124,15 @@ export class AbwabTemplateCopyModalComponent {
   }
 
   protected close(): void {
+    if (this.applyBusy()) {
+      return;
+    }
     this.closed.emit();
   }
 
   private resetDraft(): void {
     this.errorMessage.set(null);
+    this.applyBusy.set(false);
     this.pickedIds.set(new Set());
     this.picker()?.reset();
   }

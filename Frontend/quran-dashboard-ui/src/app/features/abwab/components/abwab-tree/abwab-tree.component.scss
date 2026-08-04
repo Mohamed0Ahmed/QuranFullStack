@@ -185,6 +185,13 @@
   background: transparent;
   color: var(--qd-text-muted);
   border-color: var(--qd-border);
+  border-style: dashed;
+}
+
+.abwab-tree__flag-count {
+  margin-inline-start: 0.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .abwab-tree__actions {

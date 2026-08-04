@@ -30,7 +30,7 @@ export class AbwabDoorModalComponent {
   readonly sections = input<readonly AbwabTreeSectionDto[]>([]);
 
   readonly closed = output<void>();
-  readonly saved = output<AbwabDoorDto>();
+  readonly saved = output<AbwabDoorDto | null>();
 
   private readonly fieldsForm = viewChild(AbwabDoorFieldsFormComponent);
 
@@ -42,6 +42,7 @@ export class AbwabDoorModalComponent {
   protected readonly confirmingDiscard = signal(false);
   protected readonly chosenSectionId = signal<number | null>(null);
   protected readonly sectionMissing = signal(false);
+  protected readonly saveBusy = signal(false);
 
   protected readonly sectionId = `abwab-door-modal-section-${this.modalId}`;
 
@@ -102,8 +103,17 @@ export class AbwabDoorModalComponent {
       this.confirmingDiscard.set(false);
       this.chosenSectionId.set(null);
       this.sectionMissing.set(false);
+      this.saveBusy.set(false);
       setTimeout(() => this.fieldsForm()?.focusFirstField());
     });
+  }
+
+  protected onEscape(): void {
+    if (this.confirmingDiscard()) {
+      this.cancelDiscard();
+      return;
+    }
+    this.requestClose();
   }
 
   protected requestClose(): void {
@@ -125,7 +135,7 @@ export class AbwabDoorModalComponent {
 
   protected submit(): void {
     const fields = this.fieldsForm()?.current();
-    if (!fields) {
+    if (!fields || this.saveBusy()) {
       return;
     }
     const name = fields.name.trim();
@@ -140,6 +150,7 @@ export class AbwabDoorModalComponent {
     const door = this.door();
 
     if (door) {
+      this.saveBusy.set(true);
       this.writeController
         .updateDoor(door.id, { name, description, representativeAyahText, aliases, version: door.version })
         .subscribe((outcome) => this.handleOutcome(outcome));
@@ -153,6 +164,7 @@ export class AbwabDoorModalComponent {
       return;
     }
 
+    this.saveBusy.set(true);
     this.writeController
       .createDoor({
         name,
@@ -166,6 +178,7 @@ export class AbwabDoorModalComponent {
   }
 
   private handleOutcome(outcome: AbwabWriteOutcome<AbwabDoorDto>): void {
+    this.saveBusy.set(false);
     if (outcome.kind === 'success') {
       this.errorMessage.set(null);
       this.saved.emit(outcome.data);

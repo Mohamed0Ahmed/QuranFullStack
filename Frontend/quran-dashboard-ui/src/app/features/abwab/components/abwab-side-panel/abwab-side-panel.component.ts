@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -39,7 +39,7 @@ export class AbwabSidePanelComponent {
   protected get moveLabel(): string { return ABWAB_LABELS.moveOp; }
   protected get relationsLabel(): string { return ABWAB_LABELS.relationsOp; }
   protected get archiveLabel(): string { return ABWAB_LABELS.archiveOp; }
-  protected get bulkCountSuffix(): string { return ABWAB_LABELS.bulkCountSuffix; }
+  protected readonly bulkCountText = computed(() => ABWAB_LABELS.bulkSelectedCount(this.bulkCount()));
   protected get bulkMoveAllLabel(): string { return ABWAB_LABELS.bulkMoveAll; }
   protected get bulkRelationsLabel(): string { return ABWAB_LABELS.relationsBulkAddOp; }
   protected get bulkArchiveAllLabel(): string { return ABWAB_LABELS.bulkArchiveAll; }

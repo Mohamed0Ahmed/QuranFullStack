@@ -71,7 +71,7 @@ const select = (fixture: ReturnType<typeof render>): HTMLSelectElement | null =>
   query(fixture, 'abwab-door-restore-modal-section-select') as HTMLSelectElement | null;
 
 const confirmButton = (fixture: ReturnType<typeof render>): HTMLButtonElement =>
-  query(fixture, 'qd-confirm-dialog-confirm') as HTMLButtonElement;
+  query(fixture, 'abwab-door-restore-confirm-confirm') as HTMLButtonElement;
 
 function pick(fixture: ReturnType<typeof render>, sectionId: number): void {
   const el = select(fixture)!;
@@ -249,7 +249,7 @@ describe('AbwabDoorRestoreModalComponent', () => {
     const closed: void[] = [];
     fixture.componentInstance.closed.subscribe(() => closed.push(undefined));
 
-    (query(fixture, 'qd-confirm-dialog-cancel') as HTMLElement).click();
+    (query(fixture, 'abwab-door-restore-confirm-cancel') as HTMLElement).click();
 
     expect(closed).toHaveLength(1);
     expect(calls).toEqual([]);

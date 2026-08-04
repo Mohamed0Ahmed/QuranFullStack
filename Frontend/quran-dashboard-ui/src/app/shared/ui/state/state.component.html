@@ -12,7 +12,13 @@
     </div>
   }
   @case ('error') {
-    <div class="qd-error-state" role="alert" data-testid="qd-state-error" [class.qd-state--reserve]="reserve()">
+    <div
+      class="qd-error-state"
+      role="alert"
+      data-testid="qd-state-error"
+      [class.qd-state--reserve]="reserve()"
+      [class.qd-state--reserve-empty]="reserve() && message() === ''"
+    >
       <span class="qd-state__message" [class.qd-state__message--visible]="message() !== ''">{{ message() }}</span>
       @if (actionLabel(); as label) {
         <button type="button" class="qd-btn qd-btn-secondary qd-state__action" data-testid="qd-state-action" (click)="action.emit()">

@@ -3,7 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { Observable, map, of, throwError } from 'rxjs';
 
-import { AbwabWriteController } from './abwab-write.controller';
+import { AbwabWriteController, AbwabWriteOutcome } from './abwab-write.controller';
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabSelectionStore } from './abwab-selection.store';
 import { AbwabApi } from '../data-access/abwab.api';
@@ -63,11 +63,17 @@ interface FakeApi {
   updateDoor?: () => Observable<ApiResponse<AbwabDoorDto>>;
   createDoor?: () => Observable<ApiResponse<AbwabDoorDto>>;
   archiveDoor?: () => Observable<ApiResponse<unknown>>;
+  moveDoor?: () => Observable<ApiResponse<AbwabDoorDto>>;
   restoreDoor?: () => Observable<ApiResponse<unknown>>;
   reorderDoor?: (id: number, body: ReorderDoorBody) => Observable<ApiResponse<AbwabDoorDto>>;
+  createSection?: () => Observable<ApiResponse<AbwabSectionDto>>;
+  deleteSection?: () => Observable<ApiResponse<unknown>>;
+  renameSection?: () => Observable<ApiResponse<AbwabSectionDto>>;
   reorderSection?: (id: number, body: ReorderSectionBody) => Observable<ApiResponse<AbwabSectionDto>>;
   bulkMoveDoors?: (command: BulkMoveDoorsCommand) => Observable<ApiResponse<AbwabDoorDto[]>>;
   bulkArchiveDoors?: () => Observable<ApiResponse<number[]>>;
+  addDoorRelations?: () => Observable<ApiResponse<unknown>>;
+  deleteRelation?: () => Observable<ApiResponse<unknown>>;
 }
 
 function setup(fakeApi: FakeApi) {
@@ -114,7 +120,11 @@ describe('AbwabWriteController', () => {
 
       expect(callCount).toBe(1); // never auto-retried
       expect(selection.selectedDoorId()).toBeNull(); // the conflicted door's selection is invalidated
-      expect(controller.announcement()).toBe('تم تعديل الباب من مستخدم آخر');
+      // F-51: a failure reaches exactly ONE live region. updateDoor is dispatched from the door
+      // modal, which stays open on failure and renders the message in qd-state variant="error"
+      // (role="alert") — abwab-door-fields-form.component.html:2. That element owns this failure,
+      // so the polite announcer must NOT also carry it.
+      expect(controller.announcement()).toBeNull();
     });
 
     it('does not clear selection belonging to an unrelated door', () => {
@@ -129,6 +139,61 @@ describe('AbwabWriteController', () => {
         .subscribe();
 
       expect(selection.selectedDoorId()).toBe(99);
+    });
+  });
+
+  // F-51. The contract is "a failure reaches exactly ONE live region". Which region depends on
+  // whether the operation has a visible error surface, so the two branches are pinned together —
+  // asserting only the drop side would let a silenced failure pass.
+  describe('F-51 — a write failure reaches exactly one live region', () => {
+    it('keeps the announcer for a failed reorder, whose inline commit has no error surface at all', () => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        reorderDoor: () => throwError(() => httpError(409, 'تعذر إعادة الترتيب')),
+      });
+
+      controller.reorderDoor(1, { position: 2, scope: 1, version: 1 }).subscribe();
+
+      // The tree's inline order editor closes on commit and nothing on the row binds the outcome,
+      // so the polite announcer is the user's ONLY channel here. Dropping it would silence it.
+      expect(controller.announcement()).toBe('تعذر إعادة الترتيب');
+    });
+
+    it('keeps the announcer for a failed move, whose picker closes before the request is sent', () => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        moveDoor: () => throwError(() => httpError(409, 'تعذر النقل')),
+      });
+
+      controller.moveDoor(1, { targetParentId: null, targetSectionId: 2, version: 1 }).subscribe();
+
+      expect(controller.announcement()).toBe('تعذر النقل');
+    });
+
+    it('keeps the announcer for a failed archive, whose confirm inserts its alert rather than reserving it', () => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        archiveDoor: () => throwError(() => httpError(409, 'تعذر الأرشفة')),
+      });
+
+      controller.archiveDoor(1, 1).subscribe();
+
+      expect(controller.announcement()).toBe('تعذر الأرشفة');
+    });
+
+    it('drops the announcer for a failed door edit, whose form reserves its alert region', () => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        updateDoor: () => throwError(() => httpError(400, 'اسم مكرر')),
+      });
+
+      controller
+        .updateDoor(1, { name: 'x', description: null, representativeAyahText: null, aliases: null, version: 1 })
+        .subscribe();
+
+      // abwab-door-fields-form.component.html renders the failure as a qd-state role="alert"
+      // inserted into a plain role="dialog", which announces on insertion. One region, not two.
+      expect(controller.announcement()).toBeNull();
     });
   });
 
@@ -213,6 +278,31 @@ describe('AbwabWriteController', () => {
       });
       expect(selection.bulkSet().size).toBe(2); // preserved, not cleared
     });
+
+    // The submit filter drops archived ids, so the bulk set is a superset of what went to the
+    // wire. The message must name the refs the request actually carried, never the live set.
+    it('names only the doors the request carried, not the archived one the bulk set still holds', () => {
+      const { controller, facade, selection } = setup({
+        getTree: () =>
+          of(
+            ok<AbwabTreeDto>({
+              doors: [door({ id: 1, name: 'باب مؤرشف', isArchived: true, version: 9 }), door({ id: 3, name: 'باب حي', version: 9 })],
+              sections: [],
+              version: 'v',
+            }),
+          ),
+        bulkMoveDoors: () => throwError(() => httpError(409, 'stale')),
+      });
+      facade.load();
+      selection.setBulkMode(true);
+      selection.toggleBulk(1, 9);
+      selection.toggleBulk(3, 9);
+
+      let outcome: unknown;
+      controller.bulkMoveDoors(null, null).subscribe((result) => (outcome = result));
+
+      expect(outcome).toEqual({ kind: 'conflict', message: ABWAB_LABELS.bulkConflictMessage('باب حي') });
+    });
   });
 
   describe('the bulk-archive stale-id 404 (Slice D): archived ids never reach the wire, and a 404 names doors', () => {
@@ -279,6 +369,10 @@ describe('AbwabWriteController', () => {
 
       const expected = ABWAB_LABELS.bulkVanishedMessage(2, 'د-أب، د-ابن');
       expect(outcome).toEqual({ kind: 'invalid', message: expected });
+      // F-51: bulk archive KEEPS the announcer. Its confirm dialog does render the message, but
+      // the surface is `@if`-inserted inside an already-focused role="alertdialog"
+      // (abwab-page.component.html:292-293) rather than a reserved live region, so it is not
+      // reliably announced — the polite announcer is the screen-reader user's real channel here.
       expect(controller.announcement()).toBe(expected);
       expect(selection.bulkSet().size).toBe(0); // the refresh's rebind dropped them
     });
@@ -392,6 +486,42 @@ describe('AbwabWriteController', () => {
       expect(controller.announcement()).toBe(ABWAB_LABELS.restoreAnnouncement);
     });
 
+    // The announcement belongs to the command, not to the payload. A 204 restore hands the
+    // controller a null envelope and a 200 may carry null data; both are successes and both
+    // must still speak, or a screen-reader user gets silence on a write that committed.
+    it.each([
+      ['a null envelope', null],
+      ['an envelope carrying null data', ok(null)],
+    ])('announces the restore when the backend answers with %s', (_shape, response) => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        restoreDoor: () => of(response),
+      } as unknown as FakeApi);
+
+      controller.restoreDoor(1, { version: 1 }).subscribe();
+
+      expect(controller.announcement()).toBe(ABWAB_LABELS.restoreAnnouncement);
+    });
+
+    // Every public write op declares its own success phrase, so consecutive writes replace
+    // each other's message rather than leaking the previous one into the region.
+    it('announces each write with its own phrase, the newer replacing the older', () => {
+      const { controller } = setup({
+        getTree: () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' })),
+        restoreDoor: () => of(ok(EDITED_DOOR)),
+        createDoor: () => of(ok(EDITED_DOOR)),
+      } as unknown as FakeApi);
+
+      controller.restoreDoor(1, { version: 1 }).subscribe();
+      expect(controller.announcement()).toBe(ABWAB_LABELS.restoreAnnouncement);
+
+      controller
+        .createDoor({ name: 'ب', description: null, representativeAyahText: null, aliases: null, parentId: null, sectionId: 1 })
+        .subscribe();
+
+      expect(controller.announcement()).toBe(ABWAB_LABELS.doorCreatedAnnouncement);
+    });
+
     // The destination is passed through untouched: an omitted key means "back where it came from",
     // and turning that into an explicit null would ask the backend for a section-less door.
     it('passes a stated destination section through, and omits the key when there is none', () => {
@@ -432,7 +562,7 @@ describe('AbwabWriteController', () => {
       controller.archiveDoor(1, 1).subscribe((result) => (outcome = result));
 
       expect(outcome).toEqual({ kind: 'success', data: null });
-      expect(controller.announcement()).toBeNull();
+      expect(controller.announcement()).toBe(ABWAB_LABELS.doorArchivedAnnouncement);
       expect(treeCalls).toBe(1);
       expect(selection.selectedVersion()).toBe(7);
     });
@@ -451,7 +581,25 @@ describe('AbwabWriteController', () => {
       controller.deleteSection(1).subscribe((result) => (outcome = result));
 
       expect(outcome).toEqual({ kind: 'success', data: null });
-      expect(controller.announcement()).toBeNull();
+      expect(controller.announcement()).toBe(ABWAB_LABELS.sectionDeletedAnnouncement);
+      expect(treeCalls).toBe(1);
+    });
+
+    it('treats a null response to deleteRelation as a success and still refetches', () => {
+      let treeCalls = 0;
+      const { controller } = setup({
+        getTree: () => {
+          treeCalls += 1;
+          return of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v2' }));
+        },
+        deleteRelation: () => of(null),
+      } as unknown as FakeApi);
+
+      let outcome: unknown;
+      controller.deleteRelation(1).subscribe((result) => (outcome = result));
+
+      expect(outcome).toEqual({ kind: 'success', data: null });
+      expect(controller.announcement()).toBe(ABWAB_LABELS.relationDeletedAnnouncement);
       expect(treeCalls).toBe(1);
     });
   });
@@ -529,6 +677,120 @@ describe('AbwabWriteController', () => {
       controller.reorderSection(1, { position: 3, version: 1 }).subscribe();
 
       expect(selection.selectedDoorId()).toBe(1);
+    });
+  });
+
+  // F-52. One success policy for the one announcer region: every write that declares a success
+  // announcement speaks politely, and each op's phrase is its own. (createDoor, archiveDoor and
+  // deleteSection are pinned silent by earlier tests in this file and are deliberately absent.)
+  describe('F-52 — write successes announce politely, per operation', () => {
+    const emptyTree = () => of(ok<AbwabTreeDto>({ doors: [], sections: [], version: 'v' }));
+
+    it.each([
+      [
+        'createDoor',
+        { createDoor: () => of(ok<AbwabDoorDto>(EDITED_DOOR)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> =>
+          controller.createDoor({ name: 'ب', description: null, representativeAyahText: null, aliases: null, parentId: null, sectionId: 1 }),
+        ABWAB_LABELS.doorCreatedAnnouncement,
+      ],
+      [
+        'updateDoor',
+        { updateDoor: () => of(ok<AbwabDoorDto>(EDITED_DOOR)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> =>
+          controller.updateDoor(1, { name: 'x', description: null, representativeAyahText: null, aliases: null, version: 1 }),
+        ABWAB_LABELS.doorUpdatedAnnouncement,
+      ],
+      [
+        'archiveDoor',
+        { archiveDoor: () => of(ok<unknown>(null)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.archiveDoor(1, 1),
+        ABWAB_LABELS.doorArchivedAnnouncement,
+      ],
+      [
+        'deleteSection',
+        { deleteSection: () => of(ok<unknown>(null)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.deleteSection(1),
+        ABWAB_LABELS.sectionDeletedAnnouncement,
+      ],
+      [
+        'moveDoor',
+        { moveDoor: () => of(ok<AbwabDoorDto>(EDITED_DOOR)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.moveDoor(1, { targetParentId: null, targetSectionId: 2, version: 1 }),
+        ABWAB_LABELS.doorMovedAnnouncement,
+      ],
+      [
+        'reorderDoor',
+        { reorderDoor: () => of(ok<AbwabDoorDto>(EDITED_DOOR)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.reorderDoor(1, { position: 2, scope: 1, version: 1 }),
+        ABWAB_LABELS.doorReorderedAnnouncement,
+      ],
+      [
+        'createSection',
+        { createSection: () => of(ok<AbwabSectionDto>(REORDERED_SECTION)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.createSection({ name: 'قسم' }),
+        ABWAB_LABELS.sectionCreatedAnnouncement,
+      ],
+      [
+        'renameSection',
+        { renameSection: () => of(ok<AbwabSectionDto>(REORDERED_SECTION)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.renameSection(1, { name: 'قسم', version: 1 }),
+        ABWAB_LABELS.sectionRenamedAnnouncement,
+      ],
+      [
+        'reorderSection',
+        { reorderSection: () => of(ok<AbwabSectionDto>(REORDERED_SECTION)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.reorderSection(1, { position: 2, version: 1 }),
+        ABWAB_LABELS.sectionReorderedAnnouncement,
+      ],
+      [
+        'addDoorRelations',
+        { addDoorRelations: () => of(ok<unknown>([])) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> =>
+          controller.addDoorRelations(1, { type: 1, direction: null, targetDoorIds: [2, 3, 4] }),
+        ABWAB_LABELS.relationsAddedAnnouncement(3),
+      ],
+      [
+        'deleteRelation',
+        { deleteRelation: () => of(ok<unknown>(null)) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.deleteRelation(1),
+        ABWAB_LABELS.relationDeletedAnnouncement,
+      ],
+    ] as const)('%s announces its own phrase on success', (_op, api, dispatch, expected) => {
+      const { controller } = setup({ getTree: emptyTree, ...api });
+
+      dispatch(controller).subscribe();
+
+      expect(controller.announcement()).toBe(expected);
+    });
+
+    it.each([
+      [
+        'bulkArchiveDoors',
+        { bulkArchiveDoors: () => of(ok<number[]>([1, 2])) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.bulkArchiveDoors(),
+        ABWAB_LABELS.bulkArchiveAnnouncement(2),
+      ],
+      [
+        'bulkMoveDoors',
+        { bulkMoveDoors: () => of(ok<AbwabDoorDto[]>([])) },
+        (controller: AbwabWriteController): Observable<AbwabWriteOutcome<unknown>> => controller.bulkMoveDoors(null, null),
+        ABWAB_LABELS.bulkMoveAnnouncement(2),
+      ],
+    ] as const)('%s announces the counted phrase for the doors it carried', (_op, api, dispatch, expected) => {
+      const { controller, facade, selection } = setup({
+        getTree: () =>
+          of(ok<AbwabTreeDto>({ doors: [door({ id: 1, name: 'أ' }), door({ id: 2, name: 'ب' })], sections: [], version: 'v' })),
+        ...api,
+      });
+      facade.load();
+      selection.setBulkMode(true);
+      selection.toggleBulk(1, 1);
+      selection.toggleBulk(2, 1);
+
+      dispatch(controller).subscribe();
+
+      expect(controller.announcement()).toBe(expected);
     });
   });
 

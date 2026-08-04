@@ -20,6 +20,7 @@ const INITIAL_STATE: AbwabSelectionState = {
 export class AbwabSelectionStore {
   private readonly state = signal<AbwabSelectionState>(INITIAL_STATE);
   private readonly archiveViewActive = signal(false);
+  private readonly sectionScope = signal<number | null>(null);
 
   readonly selectedDoorId = computed(() => this.state().selectedDoorId);
   readonly selectedVersion = computed(() => this.state().selectedVersion);
@@ -43,6 +44,14 @@ export class AbwabSelectionStore {
     if (active) {
       this.setBulkMode(false);
     }
+  }
+
+  setSectionScope(sectionId: number | null): void {
+    if (this.sectionScope() === sectionId) {
+      return;
+    }
+    this.sectionScope.set(sectionId);
+    this.clearBulk();
   }
 
   setBulkMode(on: boolean): void {

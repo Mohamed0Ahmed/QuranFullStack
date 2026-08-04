@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
-import { HttpResponse } from '@angular/common/http';
-import { Observable, map, of, throwError } from 'rxjs';
+import { HttpHeaders, HttpResponse } from '@angular/common/http';
+import { Observable, Subscriber, map, of, throwError } from 'rxjs';
 
 import { AbwabTemplatesApi } from '../data-access/abwab-templates.api';
 import { AbwabTemplateDto } from '../../../core/api/generated/models/abwab-template-dto';
+import { AbwabTemplateSummaryDto } from '../../../core/api/generated/models/abwab-template-summary-dto';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { ABWAB_LABELS } from '../models/abwab.labels';
 import { AbwabTemplatesFacade } from './abwab-templates.facade';
@@ -125,5 +126,98 @@ describe('AbwabTemplatesFacade', () => {
 
     expect(facade.selectedErrorMessage()).toBe(ABWAB_LABELS.templateLoadError);
     expect(facade.selectedTemplate()?.id).toBe(1);
+  });
+});
+
+// F-36, templates half — same defect as the snapshot facade: `listRequest`/`selectedRequest`
+// unsubscribes under `shareReplay(1)` (refCount: false) cancelled nothing, so an older response
+// landing late overwrote the newer list/template and the ETag the next conditional read sends.
+describe('AbwabTemplatesFacade — F-36: out-of-order responses cannot overwrite newer state', () => {
+  function setupRace() {
+    getTestBed().resetTestingModule();
+    const pendingList: Subscriber<HttpResponse<ApiResponse<readonly AbwabTemplateSummaryDto[]>>>[] = [];
+    const pendingSelected: Subscriber<HttpResponse<ApiResponse<AbwabTemplateDto>>>[] = [];
+    const sentListEtags: (string | null)[] = [];
+    const sentSelectedEtags: (string | null)[] = [];
+    TestBed.configureTestingModule({
+      providers: [
+        AbwabTemplatesFacade,
+        {
+          provide: AbwabTemplatesApi,
+          useValue: {
+            getTemplates: (etag: string | null) =>
+              new Observable<HttpResponse<ApiResponse<readonly AbwabTemplateSummaryDto[]>>>((subscriber) => {
+                sentListEtags.push(etag);
+                pendingList.push(subscriber);
+              }),
+            getTemplate: (_id: number, etag: string | null) =>
+              new Observable<HttpResponse<ApiResponse<AbwabTemplateDto>>>((subscriber) => {
+                sentSelectedEtags.push(etag);
+                pendingSelected.push(subscriber);
+              }),
+          },
+        },
+      ],
+    });
+    const resolveList = (index: number, name: string, etag: string) => {
+      pendingList[index].next(
+        new HttpResponse({
+          body: { isSuccess: true, message: 'تم', data: [{ id: 1, name, nodeCount: 1 }] },
+          headers: new HttpHeaders({ ETag: etag }),
+        }),
+      );
+      pendingList[index].complete();
+    };
+    const resolveSelected = (index: number, name: string, etag: string) => {
+      pendingSelected[index].next(
+        new HttpResponse({
+          body: templateResponse(1, name),
+          headers: new HttpHeaders({ ETag: etag }),
+        }),
+      );
+      pendingSelected[index].complete();
+    };
+    return {
+      facade: TestBed.inject(AbwabTemplatesFacade),
+      resolveList,
+      resolveSelected,
+      sentListEtags,
+      sentSelectedEtags,
+    };
+  }
+
+  it('an older list response landing late does not overwrite the newer list or the validator it sends next', () => {
+    const { facade, resolveList, sentListEtags } = setupRace();
+
+    facade.refreshList().subscribe();
+    facade.refreshList().subscribe();
+
+    resolveList(1, 'الأحدث', 'W/"list-B"');
+    resolveList(0, 'الأقدم', 'W/"list-A"');
+
+    expect(facade.templates().map((template) => template.name)).toEqual(['الأحدث']);
+    expect(facade.isLoading()).toBe(false);
+    expect(facade.errorMessage()).toBeNull();
+
+    facade.loadList();
+    expect(sentListEtags[2]).toBe('W/"list-B"');
+  });
+
+  it('an older selected-template response landing late does not overwrite the newer one or its validator', () => {
+    const { facade, resolveSelected, sentSelectedEtags } = setupRace();
+
+    facade.select(1);
+    facade.refreshSelected().subscribe();
+    facade.refreshSelected().subscribe();
+
+    resolveSelected(2, 'قالب أحدث', 'W/"sel-B"');
+    resolveSelected(1, 'قالب أقدم', 'W/"sel-A"');
+
+    expect(facade.selectedTemplate()?.name).toBe('قالب أحدث');
+    expect(facade.selectedLoading()).toBe(false);
+    expect(facade.selectedErrorMessage()).toBeNull();
+
+    facade.refreshSelected();
+    expect(sentSelectedEtags[3]).toBe('W/"sel-B"');
   });
 });

@@ -147,3 +147,86 @@ describe('AbwabDoorPickerComponent — the excluded-door contract (slice K)', ()
     expect(el(fixture, 'picker-pick-2')).toBeTruthy();
   });
 });
+
+describe('AbwabDoorPickerComponent — the exclusion reason reaches assistive tech (F-96)', () => {
+  it('folds the disabled tag into the checkbox’s accessible name so the reason is heard, not only seen', () => {
+    const fixture = render({ disabledIds: [3], disabledTag: 'مرتبط بالفعل' });
+
+    const box = el(fixture, 'picker-pick-checkbox-3') as HTMLInputElement;
+    expect(box.disabled).toBe(true);
+    expect(box.getAttribute('aria-label')).toBe('الشكر — مرتبط بالفعل');
+  });
+
+  it('leaves the accessible name as the bare door name when the row is enabled or the tag is empty', () => {
+    const tagged = render({ disabledIds: [3], disabledTag: 'مرتبط بالفعل' });
+    expect(el(tagged, 'picker-pick-checkbox-1')!.getAttribute('aria-label')).toBe('الصبر');
+
+    const untagged = render({ disabledIds: [3] });
+    expect(el(untagged, 'picker-pick-checkbox-3')!.getAttribute('aria-label')).toBe('الشكر');
+  });
+
+  it('carries the excluded row’s reason and disabled state on a role that exposes them', () => {
+    const fixture = render({ excludedIds: [1], excludedTag: 'الباب المفتوح' });
+
+    const excludedRow = el(fixture, 'picker-excluded-1')!;
+    expect(excludedRow.getAttribute('role')).toBe('group');
+    expect(excludedRow.getAttribute('aria-disabled')).toBe('true');
+    expect(excludedRow.getAttribute('aria-label')).toBe('الصبر — الباب المفتوح');
+    // A pickable row stays a plain container: those attributes are the excluded row's alone.
+    const pickableRow = el(fixture, 'picker-pick-3')!;
+    expect(pickableRow.getAttribute('role')).toBeNull();
+    expect(pickableRow.getAttribute('aria-label')).toBeNull();
+  });
+
+  it('names the excluded row by the door alone when no excludedTag is supplied', () => {
+    const excludedRow = el(render({ excludedIds: [1] }), 'picker-excluded-1')!;
+    expect(excludedRow.getAttribute('aria-label')).toBe('الصبر');
+  });
+});
+
+describe('AbwabDoorPickerComponent — the load-state surfaces (F-66, F-97)', () => {
+  const LOAD_ERROR = 'تعذّر تحميل الأبواب.';
+
+  it('shows the doors error and its retry above the rows when the load fails while rows are still bound', () => {
+    const fixture = render({ status: 'error', errorMessage: LOAD_ERROR });
+
+    const error = el(fixture, 'picker-doors-error');
+    expect(error).toBeTruthy();
+    expect(error!.textContent).toContain(LOAD_ERROR);
+    // The stale rows survive: the failure arrived over an already-rendered list.
+    expect(el(fixture, 'picker-pick-1')).toBeTruthy();
+    expect(error!.compareDocumentPosition(el(fixture, 'picker-pick-1')!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it('emits retry from the error shown over stale rows', () => {
+    const fixture = render({ status: 'error', errorMessage: LOAD_ERROR });
+    const retried = vi.fn();
+    fixture.componentInstance.retry.subscribe(retried);
+
+    (el(fixture, 'qd-state-action') as HTMLButtonElement).click();
+
+    expect(retried).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the empty state, never an empty danger box, when the error status carries no message', () => {
+    const fixture = render({ nodes: [], status: 'error' });
+
+    expect(el(fixture, 'picker-doors-error')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="qd-state-error"]')).toBeNull();
+    expect(el(fixture, 'picker-doors-empty')!.textContent).toContain('لا توجد أبواب.');
+  });
+
+  it('shows the error alone — not the empty state too — when the load fails with no rows', () => {
+    const fixture = render({ nodes: [], status: 'error', errorMessage: LOAD_ERROR });
+
+    expect(el(fixture, 'picker-doors-error')!.textContent).toContain(LOAD_ERROR);
+    expect(el(fixture, 'picker-doors-empty')).toBeNull();
+  });
+
+  it('keeps the loading skeleton and the plain empty state on their own statuses', () => {
+    expect(el(render({ nodes: [], status: 'loading' }), 'picker-loading')).toBeTruthy();
+    expect(el(render({ nodes: [], status: 'empty' }), 'picker-doors-empty')).toBeTruthy();
+  });
+});

@@ -228,7 +228,7 @@ button.qd-interactive-surface {
 }
 
 .qd-tabs__count--empty {
-  opacity: 0.5;
+  background: transparent;
 }
 
 
@@ -364,6 +364,20 @@ button.qd-interactive-surface {
 .qd-error-state {
   background: var(--qd-danger-tint);
   border-radius: var(--qd-radius-md);
+}
+
+.qd-error-state.qd-state--reserve {
+  transition: background-color var(--qd-t-fast);
+}
+
+.qd-error-state.qd-state--reserve-empty {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qd-error-state.qd-state--reserve {
+    transition: none;
+  }
 }
 
 .explorer-panel-header {

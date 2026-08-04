@@ -45,17 +45,12 @@ public sealed class AbwabTemplatesController(
         int templateId, CancellationToken cancellationToken)
     {
         var etag = validators.TemplateETag(templateId);
-
-        if (ConditionalGet.Matches(Request, etag))
-        {
-            ConditionalGet.SetValidatorHeaders(Response, etag);
-            return StatusCode(StatusCodes.Status304NotModified);
-        }
-
         var outcome = await getTemplateHandler.HandleAsync(new GetTemplateQuery(templateId), cancellationToken);
 
         return outcome switch
         {
+            GetTemplateOutcome.Success when ConditionalGet.Matches(Request, etag) =>
+                NotModifiedWithValidator(etag),
             GetTemplateOutcome.Success success =>
                 OkWithValidator(ApiResponse<AbwabTemplateDto>.Ok(success.Template, ApiMessages.AbwabTemplateLoaded), etag),
             GetTemplateOutcome.NotFound =>
@@ -75,7 +70,7 @@ public sealed class AbwabTemplatesController(
         return outcome switch
         {
             CreateTemplateOutcome.Success success =>
-                Created($"api/abwab/templates/{success.Template.Id}",
+                Created($"/api/abwab/templates/{success.Template.Id}",
                     ApiResponse<AbwabTemplateDto>.Ok(success.Template, ApiMessages.AbwabTemplateCreated)),
             CreateTemplateOutcome.InvalidName =>
                 BadRequest(ApiResponse<AbwabTemplateDto>.Fail(ApiMessages.AbwabTemplateInvalidName)),
@@ -84,6 +79,7 @@ public sealed class AbwabTemplatesController(
     }
 
     [HttpDelete("templates/{templateId:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<ActionResult<ApiResponse<object>>> Delete(
         int templateId, CancellationToken cancellationToken)
     {
@@ -109,7 +105,7 @@ public sealed class AbwabTemplatesController(
         return outcome switch
         {
             ApplyTemplateOutcome.Success success =>
-                Created("api/abwab/doors",
+                Created("/api/abwab/doors",
                     ApiResponse<IReadOnlyList<AbwabDoorDto>>.Ok(success.CreatedDoors, ApiMessages.AbwabTemplateApplied)),
             ApplyTemplateOutcome.InvalidRequest =>
                 BadRequest(ApiResponse<IReadOnlyList<AbwabDoorDto>>.Fail(ApiMessages.AbwabTemplateApplyNoTargets)),
@@ -132,5 +128,11 @@ public sealed class AbwabTemplatesController(
     {
         ConditionalGet.SetValidatorHeaders(Response, etag);
         return Ok(body);
+    }
+
+    private StatusCodeResult NotModifiedWithValidator(string etag)
+    {
+        ConditionalGet.SetValidatorHeaders(Response, etag);
+        return StatusCode(StatusCodes.Status304NotModified);
     }
 }

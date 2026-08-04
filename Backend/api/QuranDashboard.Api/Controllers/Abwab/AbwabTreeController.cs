@@ -13,9 +13,6 @@ public sealed class AbwabTreeController(
     [HttpGet]
     public async Task<ActionResult<ApiResponse<AbwabTreeDto>>> Get(CancellationToken cancellationToken)
     {
-        // Captured before anything else, and never re-read afterwards: a validator captured then bumped
-        // is merely older than the data, which costs one refetch. Reading it after the load could stamp a
-        // fresh-looking validator onto a pre-write body.
         var etag = validators.TreeETag();
         ConditionalGet.SetValidatorHeaders(Response, etag);
 

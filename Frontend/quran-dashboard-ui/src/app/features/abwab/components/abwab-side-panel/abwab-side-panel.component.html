@@ -85,8 +85,7 @@
   @if (bulkMode()) {
     <div class="qd-card abwab-side-panel__bulk-bar" data-testid="abwab-side-panel-bulk-bar">
       <div>
-        <span class="abwab-side-panel__bulk-count" data-testid="abwab-side-panel-bulk-count">{{ bulkCount() }}</span>
-        {{ bulkCountSuffix }}
+        <span class="abwab-side-panel__bulk-count" data-testid="abwab-side-panel-bulk-count">{{ bulkCountText() }}</span>
       </div>
       <div class="abwab-side-panel__bulk-names" data-testid="abwab-side-panel-bulk-names">
         {{ bulkNames().join('، ') || '—' }}

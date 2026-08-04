@@ -58,6 +58,7 @@ export class AbwabSectionsModalComponent {
   protected readonly editingName = signal('');
   protected readonly editingOrderId = signal<number | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly addBusy = signal(false);
 
   protected readonly deleteConfirmId = signal<number | null>(null);
   protected readonly deleteBusy = signal(false);
@@ -130,6 +131,7 @@ export class AbwabSectionsModalComponent {
     this.editingOrderId.set(null);
     this.pendingOrderFocusId.set(null);
     this.errorMessage.set(null);
+    this.addBusy.set(false);
     this.confirmingDiscard.set(false);
   }
 
@@ -143,10 +145,12 @@ export class AbwabSectionsModalComponent {
 
   protected add(): void {
     const name = this.newSectionName().trim();
-    if (!name) {
+    if (!name || this.addBusy()) {
       return;
     }
+    this.addBusy.set(true);
     this.createSection()(name).subscribe((outcome) => {
+      this.addBusy.set(false);
       if (outcome.kind === 'success') {
         this.newSectionName.set('');
         this.errorMessage.set(null);
@@ -272,6 +276,14 @@ export class AbwabSectionsModalComponent {
         ?.focus(),
       { injector: this.injector },
     );
+  }
+
+  protected onEscape(): void {
+    if (this.confirmingDiscard()) {
+      this.cancelDiscard();
+      return;
+    }
+    this.requestClose();
   }
 
   protected requestClose(): void {

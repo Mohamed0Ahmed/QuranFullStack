@@ -417,7 +417,10 @@ describe('AbwabTreeComponent', () => {
       expect(menus).toHaveLength(0);
     });
 
-    it('is inert in bulk mode, and the click never reaches the row’s bulk toggle', () => {
+    // F-87: in bulk mode the strip stops being a relations control and joins the row — a click
+    // anywhere on a bulk row means "toggle this door", so the flag must toggle it exactly once
+    // (it swallows the event rather than also letting the row handler run).
+    it('toggles the row’s bulk selection in bulk mode instead of opening relations', () => {
       const fixture = render({ bulkMode: true });
       const requested: number[] = [];
       const toggled: number[] = [];
@@ -430,7 +433,19 @@ describe('AbwabTreeComponent', () => {
       );
 
       expect(requested).toHaveLength(0);
-      expect(toggled).toHaveLength(0);
+      expect(toggled).toEqual([1]);
+    });
+
+    // F-88: the two states differed by hue only — the visible count is the non-chromatic
+    // differentiator, so it has to render on both the empty and the populated flag.
+    it('renders the relation count as text in both states, not colour alone', () => {
+      const root = render().nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-relations-count-1"]')?.textContent?.trim()).toBe('3');
+      expect(root.querySelector('[data-testid="abwab-tree-relations-count-3"]')?.textContent?.trim()).toBe('0');
+      expect(
+        (root.querySelector('[data-testid="abwab-tree-flag-rel-3"]') as HTMLElement).textContent,
+      ).toContain('0');
     });
 
     it('adds no tab stop to the row', () => {
@@ -451,6 +466,122 @@ describe('AbwabTreeComponent', () => {
       const checkbox = root.querySelector('[data-testid="abwab-tree-checkbox-1"]');
       expect(checkbox?.classList.contains('qd-checkbox')).toBe(true);
       expect(checkbox?.getAttribute('aria-label')).toBe('جذر-1');
+    });
+
+    // F-86: the row owns the roving tabindex, so no in-row control may be a second tab stop —
+    // Space on the focused row already toggles it.
+    it('is not a tab stop inside the roving row', () => {
+      const root = render({ bulkMode: true }).nativeElement as HTMLElement;
+
+      const checkboxes = [...root.querySelectorAll('[data-testid^="abwab-tree-checkbox-"]')];
+      expect(checkboxes.length).toBeGreaterThan(0);
+      expect(checkboxes.every((el) => el.getAttribute('tabindex') === '-1')).toBe(true);
+    });
+  });
+
+  describe('F-58 — the inline order chip is a real button with a keyboard path', () => {
+    it('renders a <button> with an Arabic accessible name naming the door and its order', () => {
+      const root = render().nativeElement as HTMLElement;
+
+      const chip = root.querySelector('[data-testid="abwab-tree-order-1"]') as HTMLElement;
+      expect(chip.tagName).toBe('BUTTON');
+      expect(chip.getAttribute('type')).toBe('button');
+      expect(chip.getAttribute('aria-label')).toBe(ABWAB_LABELS.rowOrderEditAriaLabel('جذر-1', 1));
+    });
+
+    // A native button fires `click` on Enter and Space, so this is the keyboard path: no
+    // key handler of our own, and none needed.
+    it('opens the existing inline editor on activation and puts focus in it', async () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-tree-order-1"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      await new Promise((resolve) => setTimeout(resolve));
+
+      const input = root.querySelector('[data-testid="abwab-tree-order-input-1"]') as HTMLInputElement;
+      expect(input).toBeTruthy();
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('is reachable from the roving row only, so the tree keeps one tab stop per control', () => {
+      const root = render({ selectedId: 1 }).nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-tree-order-1"]')?.getAttribute('tabindex')).toBe('0');
+      expect(root.querySelector('[data-testid="abwab-tree-order-3"]')?.getAttribute('tabindex')).toBe('-1');
+    });
+
+    // The row-level key model must not swallow the button's own activation.
+    it('leaves the row key model alone: Enter on the chip does not also select the row', () => {
+      const fixture = render();
+      const selected: number[] = [];
+      fixture.componentInstance.selected.subscribe((id: number) => selected.push(id));
+
+      const root = fixture.nativeElement as HTMLElement;
+      const chip = root.querySelector('[data-testid="abwab-tree-order-1"]') as HTMLElement;
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      chip.dispatchEvent(event);
+
+      expect(selected).toHaveLength(0);
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    // Only the activation keys are withheld from the row model — everything else must keep
+    // bubbling, or focus parked on an in-row control (after a mouse click, or after the row
+    // menu returns focus to `⋯`) would kill arrow navigation.
+    it('still lets ArrowDown from an in-row control move the roving row', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      (root.querySelector('[data-testid="abwab-tree-order-1"]') as HTMLElement).dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }),
+      );
+      fixture.detectChanges();
+
+      expect(
+        root.querySelector('[data-testid="abwab-tree-row-3"]')?.getAttribute('tabindex'),
+      ).toBe('0');
+    });
+
+    it('returns focus to the chip when the editor closes on a key, so the path does not dead-end', async () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+      (root.querySelector('[data-testid="abwab-tree-order-1"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      const input = root.querySelector('[data-testid="abwab-tree-order-input-1"]') as HTMLInputElement;
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      fixture.detectChanges();
+      await new Promise((resolve) => setTimeout(resolve));
+
+      expect(document.activeElement).toBe(root.querySelector('[data-testid="abwab-tree-order-1"]'));
+    });
+  });
+
+  describe('F-50 — the chevron is named, and inert on a leaf', () => {
+    it('names the branch chevron in Arabic and flips the name with the expanded state', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const chevron = root.querySelector('[data-testid="abwab-tree-chevron-1"]') as HTMLElement;
+      expect(chevron.getAttribute('aria-label')).toBe(ABWAB_LABELS.relationPickerExpandAriaLabel('جذر-1'));
+      expect(chevron.getAttribute('aria-hidden')).toBeNull();
+
+      chevron.click();
+      fixture.detectChanges();
+
+      expect(
+        (root.querySelector('[data-testid="abwab-tree-chevron-1"]') as HTMLElement).getAttribute('aria-label'),
+      ).toBe(ABWAB_LABELS.relationPickerCollapseAriaLabel('جذر-1'));
+    });
+
+    it('hides the empty leaf chevron from the accessible layer instead of leaving it unnamed', () => {
+      const root = render().nativeElement as HTMLElement;
+
+      const leaf = root.querySelector('[data-testid="abwab-tree-chevron-3"]') as HTMLElement;
+      expect(leaf.getAttribute('aria-hidden')).toBe('true');
+      expect(leaf.getAttribute('aria-label')).toBeNull();
+      expect(leaf.getAttribute('tabindex')).toBe('-1');
     });
   });
 

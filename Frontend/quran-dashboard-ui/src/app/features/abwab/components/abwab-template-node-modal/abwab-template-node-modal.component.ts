@@ -33,6 +33,7 @@ export class AbwabTemplateNodeModalComponent {
   protected readonly titleId = `abwab-template-node-modal-title-${nextModalId++}`;
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly confirmingDiscard = signal(false);
+  protected readonly saveBusy = signal(false);
 
   protected get initialFields(): AbwabAuthoringFields {
     return this.fields() ?? EMPTY_AUTHORING_FIELDS;
@@ -65,8 +66,17 @@ export class AbwabTemplateNodeModalComponent {
       }
       this.errorMessage.set(null);
       this.confirmingDiscard.set(false);
+      this.saveBusy.set(false);
       setTimeout(() => this.fieldsForm()?.focusFirstField());
     });
+  }
+
+  protected onEscape(): void {
+    if (this.confirmingDiscard()) {
+      this.cancelDiscard();
+      return;
+    }
+    this.requestClose();
   }
 
   protected requestClose(): void {
@@ -88,7 +98,7 @@ export class AbwabTemplateNodeModalComponent {
 
   protected submit(): void {
     const fields = this.fieldsForm()?.current();
-    if (!fields) {
+    if (!fields || this.saveBusy()) {
       return;
     }
     if (!fields.name.trim()) {
@@ -96,7 +106,9 @@ export class AbwabTemplateNodeModalComponent {
       return;
     }
 
+    this.saveBusy.set(true);
     this.submitNode()(fields).subscribe((outcome) => {
+      this.saveBusy.set(false);
       if (outcome.kind !== 'success') {
         this.errorMessage.set(outcome.message);
         return;

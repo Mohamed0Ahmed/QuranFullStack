@@ -28,8 +28,8 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
 ## Shape and invariants (read before changing)
 
 - **Flat, not nested.** `AbwabTreeDto.Doors` is a flat list; each `AbwabTreeDoorDto` carries its own
-  `SectionId`/`ParentId` so a consumer assembles the tree at any depth (doors nest without limit —
-  feature plan §4). `DirectChildCount` is deliberately present on the flat DTO — it would be a
+  `SectionId`/`ParentId` so a consumer assembles the tree at any depth (doors nest without limit,
+  by contract). `DirectChildCount` is deliberately present on the flat DTO — it would be a
   redundant, always-derivable field if doors were nested arrays instead.
 - **Archived sections are excluded; archived doors are included and flagged.** Sections have no
   restore route in this slice (only `DELETE`, and only when empty of live doors), so an archived
@@ -49,8 +49,8 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
   **Stated, not inferred.** Do not replace it with a client-side "its `SectionId` is absent from the
   snapshot's `Sections`" check: explicit beats inference at a contract boundary, and that inference
   breaks the day sections gain an archived-but-listed representation.
-- **`DirectChildCount` and `AbwabTreeSectionDto.DoorsInScopeCount` count LIVE rows only** (own
-  documented judgment call, not stated verbatim in the feature plan): they are the "how many doors are
+- **`DirectChildCount` and `AbwabTreeSectionDto.DoorsInScopeCount` count LIVE rows only** (this
+  README's own documented judgment call): they are the "how many doors are
   here right now" badge, not inflated by an archived subtree the main view no longer shows. An archived
   door is still individually visible via `IsArchived`; it simply does not count toward a parent's or a
   section's live total. `DoorsInScopeCount` counts every live door with that `SectionId` regardless of
@@ -96,9 +96,10 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
 - **`RelationCount` counts LIVE-endpoint relations only**, the same judgment call `DirectChildCount`
   and `DoorsInScopeCount` carry above: it is the "how many relations are on this door right now"
   badge. An archived door's count is therefore always 0, and so is a live door's count for a partner
-  that is archived. One grouped query per snapshot (`GetLiveRelationCountsAsync`), incrementing
-  **both** endpoints of each visible row — never one query per door, which would turn the snapshot
-  into an N+1.
+  that is archived. One query per snapshot (`GetLiveRelationCountsAsync`), which materializes every
+  visible pair and increments **both** endpoints of each row in memory — no `GroupBy` and no SQL
+  aggregate, unlike the templates list below. What matters is that it is never one query per door,
+  which would turn the snapshot into an N+1.
 - **Snapshot `Version` deliberately ignores `abwab_door_relations`.** `Version` is
   `max(updated_at, deleted_at)` across sections, doors, and aliases only, so a relation write changes
   the snapshot's `RelationCount` values without moving `Version`. That is safe **because `Version` is
@@ -115,6 +116,10 @@ The write side lives beside it at `../../Writes/Abwab/`; the domain entities are
 - **The templates list is one query, not one per template, and it aggregates in SQL.** Root name and
   live descendant count are correlated subqueries inside one statement — the `GetLiveRelationCountsAsync`
   rule, plus the second half of it: what crosses the wire is one row per template, never one per node.
+  On the wire that count is `AbwabTemplateSummaryDto.NodeCount`, and its scope is the same LIVE-only
+  judgment the three counts above carry — live **non-root** descendants only
+  (`EfAbwabTemplatesReader.cs:21-22` filters `ParentNodeId != null && DeletedAtUtc == null`): a
+  template whose root has two live children reports 2, not 3.
 - **Templates never touch the snapshot.** `abwab_templates` / `abwab_template_nodes` are separate
   admin tables, so no `AbwabTreeDoorDto` field, no `Version` term, and no filter here changes because
   of them. An applied template shows up as ordinary doors on the next snapshot read, with nothing
@@ -145,13 +150,14 @@ readers are.
 
 - **The ETag mixes a per-process boot id with the generation counter, and that is restart-safety,
   not decoration.** `AbwabCacheGeneration` takes a fresh `Guid` per instance
-  (`Caching/Abwab/AbwabCacheGeneration.cs:11`) and interpolates it into every validator alongside
-  the counter (`:22`). A bare counter resets to 0 on restart and other admins' writes climb it back
+  (`Caching/Abwab/AbwabCacheGeneration.cs:7`) and interpolates it into every validator alongside
+  the counter (`:16`, `:18`, `:20-21`). A bare counter resets to 0 on restart and other admins'
+  writes climb it back
   through values an idle client still holds, whose next `If-None-Match` would false-match and be
   answered `304` with stale data. The boot id makes cross-restart equality impossible; a restart
   costs each client exactly one refetch.
 - **`AbwabCacheGeneration` must stay ONE object behind both interfaces.**
-  `DependencyInjection/AbwabDependencyInjection.cs:19-21` registers the concrete type once as a
+  `DependencyInjection/AbwabDependencyInjection.cs:14-16` registers the concrete type once as a
   singleton and forwards both `IAbwabCacheInvalidator` and `IAbwabCacheValidators` to it via
   `GetRequiredService`. Registering the two interfaces separately against the same implementation
   type builds *two* counters — writers bump one, controllers read the other, and every client is

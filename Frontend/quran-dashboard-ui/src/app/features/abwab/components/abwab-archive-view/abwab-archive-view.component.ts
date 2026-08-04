@@ -4,6 +4,7 @@ import { AbwabNode } from '../../models/abwab.models';
 import {
   AbwabTreeRow,
   flattenVisibleAbwabRows,
+  isNativeButtonActivation,
   resolveAbwabTreeKeyboardIntent,
 } from '../abwab-tree/abwab-tree-keyboard.controller';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -55,6 +56,12 @@ export class AbwabArchiveViewComponent {
     return rows[0].id;
   });
 
+  protected expandAriaLabel(row: AbwabTreeRow, node: AbwabNode): string {
+    return row.isExpanded
+      ? ABWAB_LABELS.relationPickerCollapseAriaLabel(node.name)
+      : ABWAB_LABELS.relationPickerExpandAriaLabel(node.name);
+  }
+
   protected onChevronClick(event: Event, row: AbwabTreeRow): void {
     event.stopPropagation();
     if (!row.hasChildren) {
@@ -68,6 +75,9 @@ export class AbwabArchiveViewComponent {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
+    if (event.target !== event.currentTarget && isNativeButtonActivation(event.key)) {
+      return;
+    }
     const focusedId = this.rovingId();
     if (focusedId === null) {
       return;
@@ -96,9 +106,21 @@ export class AbwabArchiveViewComponent {
         event.preventDefault();
         this.setExpanded(intent.id, false);
         break;
+      case 'select':
+        event.preventDefault();
+        this.requestRestoreIfAllowed(intent.id);
+        break;
       default:
         break;
     }
+  }
+
+  private requestRestoreIfAllowed(id: number): void {
+    const node = this.nodesById().get(id);
+    if (!node || node.depth > 0) {
+      return;
+    }
+    this.restoreRequested.emit(id);
   }
 
   private setExpanded(id: number, expanded: boolean): void {

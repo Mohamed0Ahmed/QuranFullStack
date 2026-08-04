@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures/abwab';
 
-// URL state and a11y flow (plan-slice-b2.md T605, extended by slice E for audit item 11):
+// URL state and a11y flow:
 // the seven query keys round-trip through reload and Back/Forward, invalid values fail
 // closed to their defaults, cards drill-down writes `card`, search matches by alias (not
 // just name), a restorable overlay survives a reload and its retained state is reachable by

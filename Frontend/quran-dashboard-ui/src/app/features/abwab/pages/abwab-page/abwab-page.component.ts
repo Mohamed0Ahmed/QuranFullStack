@@ -29,7 +29,9 @@ import {
 import { parseAbwabQueryParams, buildAbwabQueryParams } from '../../state/abwab-url-sync';
 import {
   ABWAB_ORDER_SCOPE_TO_WIRE,
+  ABWAB_QUERY_KEYS,
   AbwabModalKind,
+  AbwabMoveDestination,
   AbwabNode,
   AbwabOrderScope,
   AbwabView,
@@ -42,10 +44,7 @@ import { AbwabArchiveViewComponent } from '../../components/abwab-archive-view/a
 import { AbwabSidePanelComponent } from '../../components/abwab-side-panel/abwab-side-panel.component';
 import { AbwabAnnouncerComponent } from '../../components/abwab-announcer/abwab-announcer.component';
 import { AbwabDoorModalComponent } from '../../components/abwab-door-modal/abwab-door-modal.component';
-import {
-  AbwabMoveDestination,
-  AbwabMovePickerComponent,
-} from '../../components/abwab-move-picker/abwab-move-picker.component';
+import { AbwabMovePickerComponent } from '../../components/abwab-move-picker/abwab-move-picker.component';
 import { AbwabDoorRestoreModalComponent } from '../../components/abwab-door-restore-modal/abwab-door-restore-modal.component';
 import { AbwabSectionsModalComponent } from '../../components/abwab-sections-modal/abwab-sections-modal.component';
 import { AbwabModalRestoreComponent } from '../../components/abwab-modal-restore/abwab-modal-restore.component';
@@ -137,10 +136,8 @@ export class AbwabPageComponent implements OnInit {
 
   private readonly searchResult = computed(() => searchAbwabNodes(this.visibleRoots(), this.searchQueryParam()));
 
-  protected readonly displayRoots = computed(() => {
-    const result = this.searchResult();
-    return result.isFiltering ? pruneAbwabNodesToVisible(this.visibleRoots(), result.visibleIds) : this.visibleRoots();
-  });
+  protected readonly searchIsFiltering = computed(() => this.searchResult().isFiltering);
+  protected readonly searchVisibleIds = computed(() => this.searchResult().visibleIds);
 
   protected readonly treeMatchedIds = computed(() => this.searchResult().matchedIds);
 
@@ -196,6 +193,12 @@ export class AbwabPageComponent implements OnInit {
       : this.archivedRoots();
   });
 
+  protected readonly archiveEmptyStateMessage = computed<string>(() =>
+    this.archiveSearchResult().isFiltering && this.archivedRoots().length > 0
+      ? ABWAB_LABELS.archiveNoSearchMatchesMessage
+      : ABWAB_LABELS.archiveEmptyMessage,
+  );
+
   protected readonly bulkSelectedIds = computed(() => new Set(this.selection.bulkSet().keys()));
   protected readonly bulkNames = computed(() => {
     const snapshot = this.facade.snapshot();
@@ -214,7 +217,6 @@ export class AbwabPageComponent implements OnInit {
   protected get treeAriaLabel(): string { return ABWAB_LABELS.treeAriaLabel; }
   protected get archiveTreeAriaLabel(): string { return ABWAB_LABELS.archiveTreeAriaLabel; }
   protected get emptyLabel(): string { return ABWAB_LABELS.emptyTreeMessage; }
-  protected get archiveEmptyLabel(): string { return ABWAB_LABELS.archiveEmptyMessage; }
   protected get loadingLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
   protected get archiveLabel(): string { return ABWAB_LABELS.archiveOp; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
@@ -247,27 +249,45 @@ export class AbwabPageComponent implements OnInit {
       this.selectedDoor();
       untracked(() => this.modalUrl.reconcileOpen());
     });
+
+    effect(() => {
+      const sectionId = this.activeSectionId();
+      const snapshot = this.facade.snapshot();
+      if (sectionId === null || !snapshot) {
+        return;
+      }
+      if (snapshot.sections.some((section) => section.id === sectionId)) {
+        return;
+      }
+      untracked(() => {
+        this.activeSectionId.set(null);
+        this.selection.setSectionScope(null);
+        this.updateQueryParams({ [ABWAB_QUERY_KEYS.section]: null }, true);
+      });
+    });
   }
 
   ngOnInit(): void {
     this.facade.load();
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const parsed = parseAbwabQueryParams(params);
+      const door = parsed.archive ? null : parsed.door;
       this.activeSectionId.set(parsed.section);
-      this.doorParam.set(parsed.door);
+      this.doorParam.set(door);
       this.viewParam.set(parsed.view);
       this.archiveParam.set(parsed.archive);
       this.cardParam.set(parsed.card);
       this.searchQueryParam.set(parsed.q);
-      this.modalUrl.syncFromUrl(parsed.modal, parsed.door);
+      this.modalUrl.syncFromUrl(parsed.modal, door);
       this.selection.setArchiveViewActive(parsed.archive);
-      if (parsed.door === null) {
+      this.selection.setSectionScope(parsed.section);
+      if (door === null) {
         this.selection.clearSelection();
       }
 
       this.revealAnnouncement.set(null);
       const revealTarget = this.revealTargetId();
-      if (this.revealPending && revealTarget !== null && parsed.door === revealTarget) {
+      if (this.revealPending && revealTarget !== null && door === revealTarget) {
         this.revealPending = false;
         this.startReveal(revealTarget);
       }
@@ -353,9 +373,13 @@ export class AbwabPageComponent implements OnInit {
   }
 
   private focusTreeRovingItem(): void {
+    this.focusRovingItem('abwab-tree');
+  }
+
+  private focusRovingItem(containerTestId: string): void {
     this.focusQueued(() => {
       const root = this.elementRef.nativeElement;
-      const roving = root.querySelector<HTMLElement>('[data-testid="abwab-tree"] [tabindex="0"]');
+      const roving = root.querySelector<HTMLElement>(`[data-testid="${containerTestId}"] [tabindex="0"]`);
       if (roving) {
         roving.focus();
         return;
@@ -382,6 +406,11 @@ export class AbwabPageComponent implements OnInit {
     this.overlays.openRestoreModal(id);
   }
 
+  protected onDoorRestored(): void {
+    this.overlays.closeRestoreModal();
+    this.focusRovingItem('abwab-archive-view');
+  }
+
   protected onRelationsRequested(doorId: number): void {
     const node = this.byId().get(doorId);
     if (!node) {
@@ -399,13 +428,13 @@ export class AbwabPageComponent implements OnInit {
       this.revealAnnouncement.set(ABWAB_LABELS.revealUnavailable);
       return;
     }
-    const anchorId = this.overlays.relationsAnchorDoorId();
     this.overlays.closeRelationsModal();
     this.modalUrl.releaseTracking();
     this.revealAnnouncement.set(null);
     this.revealTargetId.set(doorId);
     this.revealSequence.update((n) => n + 1);
     this.revealPending = true;
+    const anchorId = this.overlays.relationsAnchorDoorId();
     this.updateQueryParams(
       buildAbwabQueryParams({
         door: doorId,

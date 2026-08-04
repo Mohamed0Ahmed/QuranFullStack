@@ -212,11 +212,6 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         int? targetParentId,
         CancellationToken cancellationToken)
     {
-        if (doors.Count == 0)
-        {
-            return [];
-        }
-
         var ids = doors.Select(d => d.DoorId).ToList();
         var loaded = await db.AbwabDoors
             .Where(d => ids.Contains(d.Id) && d.DeletedAtUtc == null)
@@ -300,11 +295,6 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
 
     public async Task<IReadOnlyList<int>> BulkArchiveAsync(IReadOnlyList<AbwabBulkDoorRef> doors, CancellationToken cancellationToken)
     {
-        if (doors.Count == 0)
-        {
-            return [];
-        }
-
         var ids = doors.Select(d => d.DoorId).ToList();
         var loaded = await db.AbwabDoors
             .Where(d => ids.Contains(d.Id) && d.DeletedAtUtc == null)
@@ -648,7 +638,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
     }
 
     private async Task ResequenceSiblingsExcludingAsync(
-        int? sectionId, int? parentId, IReadOnlySet<int> excludeIds, CancellationToken cancellationToken)
+        int sectionId, int? parentId, IReadOnlySet<int> excludeIds, CancellationToken cancellationToken)
     {
         var siblings = await db.AbwabDoors
             .Where(d => d.SectionId == sectionId && d.ParentId == parentId && d.DeletedAtUtc == null)
@@ -749,7 +739,7 @@ internal sealed class EfAbwabDoorsWriter(QuranDashboardDbContext db) : IAbwabDoo
         }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505" })
         {
-            throw new AbwabDuplicateNameException(name);
+            throw new AbwabDuplicateNameException();
         }
     }
 

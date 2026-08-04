@@ -59,6 +59,8 @@ export class AbwabDoorPickerComponent {
 
   protected readonly pickerName = `abwab-door-picker-${nextPickerId++}`;
 
+  protected readonly doorsErrorMessage = computed(() => (this.status() === 'error' ? this.errorMessage() : ''));
+
   protected readonly searchFoundNothing = computed(
     () => this.searchQuery().trim() !== '' && this.nodes().length > 0,
   );
@@ -99,6 +101,19 @@ export class AbwabDoorPickerComponent {
     return this.pickedSet().has(doorId);
   }
 
+  protected rowAriaLabel(row: AbwabDoorPickerRow): string {
+    const tag = this.disabledTag();
+    return row.isDisabled && tag !== '' ? `${row.node.name} — ${tag}` : row.node.name;
+  }
+
+  protected excludedRowAriaLabel(row: AbwabDoorPickerRow): string | null {
+    const tag = this.excludedTag();
+    if (!row.isExcluded) {
+      return null;
+    }
+    return tag === '' ? row.node.name : `${row.node.name} — ${tag}`;
+  }
+
   protected expandAriaLabel(row: AbwabDoorPickerRow): string {
     return row.isExpanded
       ? ABWAB_LABELS.relationPickerCollapseAriaLabel(row.node.name)
@@ -131,13 +146,6 @@ export class AbwabDoorPickerComponent {
       return;
     }
     this.toggled.emit(row.node.id);
-  }
-
-  protected onRowChange(row: AbwabDoorPickerRow): void {
-    if (!this.single()) {
-      return;
-    }
-    this.togglePicked(row);
   }
 
   reset(): void {

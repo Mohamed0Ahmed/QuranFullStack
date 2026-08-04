@@ -75,6 +75,26 @@ describe('AbwabToolbarComponent', () => {
 
       expect(changes).toEqual(['cards']);
     });
+
+    // F-59: the active view was carried by class + colour alone. aria-pressed is the same
+    // attribute the relations modal's direction pill already uses.
+    it('exposes the active view through aria-pressed on both buttons', () => {
+      const treeRoot = render({ view: 'tree' }).nativeElement as HTMLElement;
+      expect(treeRoot.querySelector('[data-testid="abwab-toolbar-view-tree"]')?.getAttribute('aria-pressed')).toBe(
+        'true',
+      );
+      expect(treeRoot.querySelector('[data-testid="abwab-toolbar-view-cards"]')?.getAttribute('aria-pressed')).toBe(
+        'false',
+      );
+
+      const cardsRoot = render({ view: 'cards' }).nativeElement as HTMLElement;
+      expect(cardsRoot.querySelector('[data-testid="abwab-toolbar-view-tree"]')?.getAttribute('aria-pressed')).toBe(
+        'false',
+      );
+      expect(cardsRoot.querySelector('[data-testid="abwab-toolbar-view-cards"]')?.getAttribute('aria-pressed')).toBe(
+        'true',
+      );
+    });
   });
 
   describe('T508 — hideSectionControls (the archive view has no live section grouping)', () => {
@@ -120,6 +140,24 @@ describe('AbwabToolbarComponent', () => {
       expect(root.querySelector('[data-testid="abwab-toolbar-tab-1-count"]')?.classList).not.toContain(
         'qd-tabs__count--empty',
       );
+    });
+
+    // F-74: the tab badge counts ROOT doors while the stat bar's «كل الأبواب» line counts
+    // every depth — the title gives a sighted user the same scope-naming phrase the tab's
+    // aria-label already carries, so the two adjacent numbers stop reading as one count.
+    it('carries a visible root-scope qualifier on every badge, matching the tab’s accessible phrase', () => {
+      const root = render({
+        totalRootCount: 8,
+        rootCountBySectionId: new Map([[1, 3]]),
+      }).nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="abwab-toolbar-tab-all-count"]')?.getAttribute('title')).toBe(
+        ABWAB_LABELS.allDoorsTabRootCountAriaLabel(8),
+      );
+      expect(root.querySelector('[data-testid="abwab-toolbar-tab-1-count"]')?.getAttribute('title')).toBe(
+        ABWAB_LABELS.tabRootCountAriaLabel('اللغة العربية', 3),
+      );
+      expect(ABWAB_LABELS.allDoorsTabRootCountAriaLabel(8)).toContain('رئيسية');
     });
 
     it('hides the badge digits from assistive technology and names the counted noun on the tab instead', () => {

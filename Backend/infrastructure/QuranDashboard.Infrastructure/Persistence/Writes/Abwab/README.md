@@ -30,13 +30,33 @@ incidentally.
 - **One seam per aggregate, no EF types cross it.** Application never references EF Core, so each
   writer catches `DbUpdateConcurrencyException` and `PostgresException` `23505` itself and rethrows
   the plain types in `Application.Abstractions/Abwab/` (`AbwabStaleVersionException`,
-  `AbwabDuplicateNameException`, `AbwabRelationDuplicateException`, …). **Every** `SaveChangesAsync` in this
-  folder goes through a translating helper — a bare save is how a raw EF exception reaches the global
-  handler as a 500 instead of a 409.
+  `AbwabDuplicateNameException`, `AbwabRelationDuplicateException`, …). **A save that can raise
+  `DbUpdateConcurrencyException` or a `23505` MUST translate it** — through one of the helpers below,
+  or inline where the answer is `false` rather than an exception. An untranslated save is how a raw EF
+  exception reaches the global handler as a 500 instead of a 409. What decides whether a save needs
+  this is what EF can raise, not what the client sent: an entity mapped `IsRowVersion()`
+  (`../../Configurations/Abwab/`) puts `xmin` in every UPDATE's WHERE clause whether or not the writer
+  sets `OriginalValue`.
   - `SaveTranslatingWriteExceptionsAsync` — writes that put a row **into** the unique index's live scope
-    (create, edit, move, bulk-move, restore): both a stale token and a duplicate name are reachable.
+    (create, edit, move, bulk-move, restore): both a stale token and a duplicate name are reachable —
+    with one narrowing: **section create** saves a single INSERT and updates nothing
+    (`EfAbwabSectionsWriter.cs:9-26`), so only its duplicate branch can fire. **Door create** genuinely
+    can raise the stale branch even though the door row itself is an INSERT: a ROOT create issues
+    tracked sibling UPDATEs through `MaintainGlobalOrderAsync` (`EfAbwabDoorsWriter.cs:40`), and
+    `CreateDoorHandler.cs:57-61` maps the translated exception to its own `StaleVersion` outcome
+    (`409`), like every other door write.
+    Its `name` parameter — in `EfAbwabDoorsWriter` and in `EfAbwabSectionsWriter` — is **inert**:
+    `AbwabDuplicateNameException` carries no name and its message names no row
+    (`Application.Abstractions/Abwab/AbwabDuplicateNameException.cs`), and `BulkMoveAsync` already
+    passes `null`. Drop it or use it; do not write a caller that assumes the `409` says which row.
   - `SaveTranslatingConcurrencyAsync` — writes that only move a row **out** of it (archive, reorder,
     section delete): a duplicate-name violation is structurally impossible, so only the token can fail.
+    **Section delete is the version-free member of that list**: its route carries no token and the
+    writer pins no `OriginalValue` (`EfAbwabSectionsWriter.cs:47-70`), so the stale exception it can
+    raise is never a client-held token — it is a lost race between its own load and save, a concurrent
+    rename, reorder, or delete of the same section row. The controller still answers it `409`, which is
+    the accurate instruction for every one of those races: reload and retry
+    (`../../../../api/QuranDashboard.Api/Controllers/README.md`).
   - `EfAbwabRelationsWriter.SaveTranslatingDuplicateAsync` — its **own** third helper, deliberately not
     one of the two above. Those are keyed to the doors/sections duplicate-**name** message and would
     report the wrong constraint entirely; the relations index is `(door_a_id, door_b_id, relation_type)`.
@@ -46,12 +66,34 @@ incidentally.
   - `EfAbwabTemplateApplyWriter.SaveTranslatingDuplicateNameAsync` — here the duplicate genuinely **is**
     a door name, the inverse of the relations case. It is still its own helper because it is only ever
     a race backstop: the pre-check below already refused every collision it could see.
+  - **The two soft-delete saves translate INLINE, not through a helper.**
+    `EfAbwabRelationsWriter.DeleteAsync` and `EfAbwabTemplatesWriter.DeleteAsync` catch
+    `DbUpdateConcurrencyException` around their own save and answer `false`, because a concurrent
+    delete winning is not a caller error — the row is gone either way. See the delete bullets below.
+  - **Saves with nothing to raise, so nothing to translate.** `EfAbwabDoorsWriter.CreateAsync` and
+    `EditAsync` flush the alias diff in a second, bare save inside their own transaction, and
+    `EfAbwabTemplatesWriter.CreateAsync` saves the template then its root node the same way. The alias
+    flushes are safe **while** `abwab_door_aliases` carries no version token and no unique index
+    (`../../Configurations/Abwab/AbwabDoorAliasConfiguration.cs`) and `ReplaceAliasesAsync` only ever
+    soft-deletes; **add a per-door unique alias index and the two alias flushes become 500s where the
+    contract says 409** — route them through the helper in the same change. The template pair is safe
+    because both are inserts into a template row generated moments earlier in the same transaction, so
+    neither the one-live-root index nor the `(template_id, parent_node_id, name)` sibling-name index
+    (`../../Configurations/Abwab/AbwabTemplateNodeConfiguration.cs:81-88`) has an existing row to
+    collide with.
+  - **`EfAbwabTemplatesWriter.ReorderNodeAsync` and `DeleteNodeAsync` are a GAP, not a decision.**
+    `AbwabTemplateNode` is row-versioned
+    (`../../Configurations/Abwab/AbwabTemplateNodeConfiguration.cs:68-69`), so a lost race on their bare
+    save raises `DbUpdateConcurrencyException` and the global handler answers `500`. No templates
+    route carries a version token, so there is no stale-token `409` to map it to — the honest outcome
+    has to be chosen before the save is wrapped.
 - **The one exception to "per aggregate" is a use-case seam.** `EfAbwabTemplateApplyWriter` reads
   `abwab_template_nodes` and writes `abwab_doors`, so it belongs to neither aggregate's writer. That
   is the rule bending to `BACKEND_STRUCTURE.md` §4's own instruction to "split large repositories by
   aggregate, feature, read model, **or use case**": the copy is a use case, and `EfAbwabDoorsWriter`
-  is already 816 lines against that section's 600-line hard threshold, so hanging it there was never
-  available. Every other writer here stays one-aggregate.
+  is already past that section's 600-line hard threshold — the split it owes is tracked as
+  `docs/TESTING_DEBT.md` row J1 — so hanging it there was never available. Every other writer here
+  stays one-aggregate.
 - **Every writer interface here is DI-wrapped by an invalidating decorator, and that is not
   optional.** `Infrastructure/Caching/Abwab/Invalidating*Writer` wraps each of the five interfaces and
   bumps the cache generation the write's data belongs to: sections / doors / relations / **apply** bump
@@ -140,35 +182,42 @@ incidentally.
   - **At root scope there is no parent to derive from, so an unstated section has no answer and is
     refused** (`AbwabSectionRequiredException` → `400`). This covers create, `MoveAsync`, and
     `BulkMoveAsync` alike — `ResolveCreateSectionAsync` and `ResolveTargetSectionAsync` both return a
-    non-nullable `int`, so no write path can reach `SaveChanges` with a section-less door. Check ORDER
-    differs on purpose and is load-bearing: `MoveAsync` loads the door first (unknown id stays a `404`),
-    while `BulkMoveAsync` resolves the target first (request-shape validation before entity checks).
+    non-nullable `int`, so no write path can reach `SaveChanges` with a section-less door. **Both move
+    paths check the doors FIRST and resolve the section second** — `MoveAsync` returns `null` for a
+    missing door and `BulkMoveAsync` throws `AbwabNotFoundException`, each before its own
+    `ResolveTargetSectionAsync` call — so a request that names an unknown door AND omits the root
+    section answers `404`, not `400`. Whether that is the intended order is still open and nothing
+    discriminates the two (`docs/TESTING_DEBT.md` row C1); comments in
+    `AbwabDoorWriteBehaviorTests.cs` and `SmokeAbwabWriteTests.cs` still describe the bulk path the
+    other way round.
   - `MoveAsync` and `BulkMoveAsync` **cascade** a section change to the moved door's whole subtree,
     `CascadeSectionToDescendantsAsync`. **Archived descendants included** — they keep their `parent_id`
     through soft-delete, and one left behind would later restore into a section its parent has left.
     A live-only cascade passes every test that ignores archived rows, so the discriminating test asserts
     an archived grandchild's `SectionId`.
   - The same all-rows rule governs the **cycle guard**, not just the cascade.
-    `LoadChildrenByParentAsync` (`EfAbwabDoorsWriter.cs:699-701`) selects every `AbwabDoors` row with
+    `EfAbwabDoorsWriter.LoadChildrenByParentAsync` selects every `AbwabDoors` row with
     no `DeletedAtUtc` filter, and `EnsureNotCycle` walks that same map. Filtering it to live rows
     would let a move nest a door under its own descendant whenever the connecting node is archived —
     `parent_id` survives soft-delete, so the cycle is real but invisible to a live-only map.
   - Descendants keep their `parent_id`, so their sibling scope's membership does not change and they need
     no resequencing. For the same reason a descendant can never collide on the unique index: only subtree
-    members share that `parent_id`, so `SaveTranslatingWriteExceptionsAsync(door.Name, …)` still names the
-    only row that can actually conflict.
+    members share that `parent_id`, so the cascade has no duplicate-name violation to report in the
+    first place.
   - Deliberate asymmetry: create **rejects** a disagreeing section, move **ignores** `targetSectionId`
-    whenever `targetParentId` is set (plan §4, §13.5). Move's pair describes a destination where the plan
-    locks parent-wins; create's body is an authored record, where a disagreement is a caller bug worth
+    whenever `targetParentId` is set. Move's pair describes a destination where parent-wins is the
+    locked rule; create's body is an authored record, where a disagreement is a caller bug worth
     reporting. Do not "harmonize" one into the other.
 - **Aliases are replaced wholesale under the door's own token** and soft-deleted, never hard-deleted.
   `AbwabDoorAlias` deliberately has no `xmin` of its own.
 - **Descendant walks share one parent map per operation.** `LoadChildrenByParentAsync` projects
   `(id, parent_id)` once; `CollectDescendantIds` is a pure BFS over it. Calling the loader per door turns
   a bulk operation into one full table read per door.
-- **Create needs an explicit transaction**; nothing else does. It is the only path with two
-  `SaveChangesAsync` calls (the door, then aliases keyed by its generated id), and EF's implicit
-  transaction covers one call only.
+- **Any write whose result spans more than one `SaveChangesAsync` opens an explicit transaction** —
+  EF's implicit transaction covers one call only. The paths that do: `EfAbwabDoorsWriter.CreateAsync`
+  and `EditAsync` (the door row, then its aliases keyed by its generated id),
+  `EfAbwabTemplatesWriter.CreateAsync` (the template, then its root node), and
+  `EfAbwabTemplateApplyWriter.ApplyAsync`, whose one-save-per-level shape is the apply bullet below.
 - **Two independent root orders, zero coupling.** `OrderValue` is per-scope
   (`(section_id, parent_id)`); `GlobalOrderValue` is a second, independent order over **live root
   doors only** — `NULL` at every depth > 0 and for archived doors. Invariant:
@@ -209,17 +258,26 @@ incidentally.
     redundant write.
 - **Relation writes carry no version token.** They touch `abwab_door_relations` only, so no door's
   `xmin` moves and there is nothing for a stale-token 409 to compare. The relation row still has its
-  own `xmin` for symmetry with the two other abwab tables, but **nothing reads it** — delete addresses
-  a row by id, add creates. Do not add a `version` to the delete body "for consistency": a token
-  nothing checks is a lie in the contract.
-- **Add is all-or-nothing, like bulk move/archive.** One call carries the anchor, the type, an
-  optional direction, and N targets; any refusal — self (`400`), unknown id (`404`), archived endpoint
-  (`400`), duplicate pair (`409`) — fails the whole batch before `SaveChanges`. `GuardAgainstExistingAsync`
+  own `xmin`, mapped `IsRowVersion()`
+  (`../../Configurations/Abwab/AbwabDoorRelationConfiguration.cs:69-70`): **no route carries it and no
+  writer overrides its `OriginalValue`**, but EF still compares it on the soft-delete UPDATE, which is
+  what `DeleteAsync`'s concurrency catch answers. Do not add a `version` to the delete body "for
+  consistency": a token nothing checks is a lie in the contract.
+- **Add is all-or-nothing, like bulk move/archive.** One call carries the anchor, the type, a
+  direction — **required** for `Comprehensiveness`, forbidden for the other two types — and N
+  targets; any refusal — empty target list (`400`), unrecognised type (`400`), missing or misplaced
+  direction (`400`), self (`400`), unknown id (`404`), archived endpoint (`400`), duplicate pair
+  (`409`) — fails the whole batch before `SaveChanges`. `GuardAgainstExistingAsync`
   runs the duplicate check up front purely so the `409` can **name** the colliding doors; `23505` names
   no row. The catch in the save helper stays as the race backstop, with no names.
 - **The canonical pair is the writer's job.** Every row is stored `door_a_id < door_b_id` via
   `Math.Min`/`Math.Max` **for all three types**, directional included, and `broader_door_id` carries the
-  direction (`NOT NULL` exactly for `Comprehensiveness`). That is what makes "delete from either side
+  direction (`NOT NULL` exactly for `Comprehensiveness`). A `Comprehensiveness` add with a null or
+  unrecognised direction is refused at this seam — `EfAbwabRelationsWriter.cs:137-143` throws
+  `ArgumentOutOfRangeException` rather than defaulting to "target is broader". The handler's `400`
+  (`AddDoorRelationsHandler.cs:69-72`) is the API answer; the throw is what keeps
+  `IAbwabRelationsWriter.AddAsync` from storing a direction the caller never stated should a future
+  caller skip that validation. That is what makes "delete from either side
   deletes the row" structural rather than handler logic, and what makes A-more-than-B and
   B-more-than-A the same row — i.e. a duplicate — which a `(source, target, type)` index could not
   express. Flipping a direction is delete + re-add; there is no update path.
@@ -283,9 +341,17 @@ incidentally.
 - Domain entities: `Backend/domain/QuranDashboard.Domain/Abwab/`.
 - Tests: `Backend/tests/QuranDashboard.Tests/Abwab/` (writer behavior) and
   `Backend/tests/QuranDashboard.Tests/Smoke/SmokeAbwabWriteTests.cs` (status/envelope contract).
-  **`EfAbwabRelationsWriter`, `EfAbwabTemplatesWriter`, and `EfAbwabTemplateApplyWriter` have none of
-  either** — both features wrote no tests by decision, and their twelve routes are catalogued
-  `ParityOnly`. The relations gaps and what pays them are in `docs/TESTING_DEBT.md`; the templates
-  rows land with that feature's frontend slice. The apply writer is the highest-value gap of the
-  set: it is the only path in the repository that creates door rows outside
-  `EfAbwabDoorsWriter.CreateAsync`.
+  **`EfAbwabTemplatesWriter` has none of either** — that feature wrote no tests by decision.
+  `EfAbwabRelationsWriter` has exactly one behavior test and no smoke coverage:
+  `Backend/tests/QuranDashboard.Tests/Abwab/AbwabRelationWriteBehaviorTests.cs` pins the
+  null-direction refusal at the seam. `EfAbwabTemplateApplyWriter` has one behavior test and no smoke coverage:
+  `Backend/tests/QuranDashboard.Tests/Abwab/AbwabTemplateApplyBehaviorTests.cs` pins the target's
+  section carrying to every copied depth, which `docs/TESTING_DEBT.md` row 7 records as the one paid
+  obligation of that row; the offsets, the aliases, all-or-nothing across N targets and the
+  `(target, child)` `409` are still open, so the apply path stays the highest-value gap of the set —
+  it is the only path in the repository that creates door rows outside
+  `EfAbwabDoorsWriter.CreateAsync`. No Abwab route is dispatched by the smoke sweep except
+  `api/abwab/tree`; every other one is catalogued `ParityOnly` in
+  `Backend/tests/QuranDashboard.Tests/Smoke/SmokeRouteCatalog.cs`.
+  The relations gaps and what pays them are in `docs/TESTING_DEBT.md`; the templates rows land with
+  that feature's frontend slice.

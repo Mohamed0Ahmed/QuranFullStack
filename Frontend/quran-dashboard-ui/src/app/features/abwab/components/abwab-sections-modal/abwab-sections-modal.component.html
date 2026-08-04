@@ -11,7 +11,7 @@
       cdkTrapFocusAutoCapture
       data-testid="abwab-sections-modal"
       (click)="$event.stopPropagation()"
-      (keydown.escape)="requestClose()"
+      (keydown.escape)="onEscape()"
     >
       <header class="qd-modal__head">
         <h3 [id]="titleId">{{ title }}</h3>
@@ -95,7 +95,13 @@
             data-testid="abwab-sections-modal-name-input"
             (input)="onNewNameInput($event)"
           />
-          <button type="button" class="qd-btn qd-btn-primary" data-testid="abwab-sections-modal-add" (click)="add()">
+          <button
+            type="button"
+            class="qd-btn qd-btn-primary"
+            [disabled]="addBusy()"
+            data-testid="abwab-sections-modal-add"
+            (click)="add()"
+          >
             {{ addLabel }}
           </button>
         </div>

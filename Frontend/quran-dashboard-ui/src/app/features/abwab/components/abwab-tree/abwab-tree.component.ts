@@ -16,6 +16,7 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 import {
   AbwabTreeRow,
   flattenVisibleAbwabRows,
+  isNativeButtonActivation,
   resolveAbwabTreeKeyboardIntent,
 } from './abwab-tree-keyboard.controller';
 
@@ -146,6 +147,7 @@ export class AbwabTreeComponent {
   protected onFlagClick(event: Event, id: number): void {
     event.stopPropagation();
     if (this.bulkMode()) {
+      this.bulkToggled.emit(id);
       return;
     }
     this.manualFocusId.set(id);
@@ -158,6 +160,16 @@ export class AbwabTreeComponent {
 
   protected menuAriaLabel(name: string): string {
     return ABWAB_LABELS.rowMenuAriaLabel(name);
+  }
+
+  protected expandAriaLabel(row: AbwabTreeRow, node: AbwabNode): string {
+    return row.isExpanded
+      ? ABWAB_LABELS.relationPickerCollapseAriaLabel(node.name)
+      : ABWAB_LABELS.relationPickerExpandAriaLabel(node.name);
+  }
+
+  protected orderEditAriaLabel(node: AbwabNode): string {
+    return ABWAB_LABELS.rowOrderEditAriaLabel(node.name, this.displayOrder(node));
   }
 
   protected onRowContextMenu(event: MouseEvent, id: number): void {
@@ -212,14 +224,31 @@ export class AbwabTreeComponent {
   protected onOrderClick(event: Event, id: number): void {
     event.stopPropagation();
     this.editingId.set(id);
+    setTimeout(() => this.orderInput(id)?.focus());
+  }
+
+  private orderInput(id: number): HTMLInputElement | null {
+    return this.elementRef.nativeElement.querySelector<HTMLInputElement>(
+      `[data-testid="abwab-tree-order-input-${id}"]`,
+    );
+  }
+
+  private focusOrderChip(id: number): void {
+    setTimeout(() =>
+      this.elementRef.nativeElement
+        .querySelector<HTMLElement>(`[data-testid="abwab-tree-order-${id}"]`)
+        ?.focus(),
+    );
   }
 
   protected onOrderKeydown(event: KeyboardEvent, id: number): void {
     event.stopPropagation();
     if (event.key === 'Enter') {
       this.commitOrderEdit(id, event.target);
+      this.focusOrderChip(id);
     } else if (event.key === 'Escape') {
       this.cancelOrderEdit(id);
+      this.focusOrderChip(id);
     }
   }
 
@@ -244,6 +273,9 @@ export class AbwabTreeComponent {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
+    if (event.target !== event.currentTarget && isNativeButtonActivation(event.key)) {
+      return;
+    }
     const focusedId = this.rovingId();
     if (focusedId === null) {
       return;

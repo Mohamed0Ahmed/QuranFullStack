@@ -4,14 +4,10 @@ import { A11yModule } from '@angular/cdk/a11y';
 import { AbwabNode } from '../../models/abwab.models';
 import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { AbwabMoveDestination } from '../../models/abwab.models';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
-
-export interface AbwabMoveDestination {
-  readonly targetParentId: number | null;
-  readonly targetSectionId: number;
-}
 
 function subtreeMatches(node: AbwabNode, query: string): boolean {
   return node.name.includes(query) || node.children.some((child) => subtreeMatches(child, query));

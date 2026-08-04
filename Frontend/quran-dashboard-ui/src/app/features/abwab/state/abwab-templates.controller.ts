@@ -13,6 +13,12 @@ import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto'
 
 type AbwabTemplatesRefresh = 'list' | 'selected' | 'both' | 'none';
 
+interface AbwabTemplatesWriteOptions {
+  readonly refresh: AbwabTemplatesRefresh;
+  readonly successAnnouncement?: string;
+  readonly announceFailure?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AbwabTemplatesController {
   private readonly api = inject(AbwabTemplatesApi);
@@ -22,15 +28,19 @@ export class AbwabTemplatesController {
   readonly announcement = this.announcementState.asReadonly();
 
   createTemplate(name: string): Observable<AbwabWriteOutcome<AbwabTemplateDto | null>> {
-    return this.dispatch(
-      this.api.createTemplate({ name, description: null, representativeAyahText: null, aliases: [] }),
-      'list',
-      ABWAB_LABELS.templateCreatedAnnouncement,
-    );
+    return this.dispatch(this.api.createTemplate({ name, description: null, representativeAyahText: null, aliases: [] }), {
+      refresh: 'list',
+      successAnnouncement: ABWAB_LABELS.templateCreatedAnnouncement,
+      announceFailure: true,
+    });
   }
 
   deleteTemplate(templateId: number): Observable<AbwabWriteOutcome<unknown>> {
-    return this.dispatch(this.api.deleteTemplate(templateId), 'list', ABWAB_LABELS.templateDeletedAnnouncement);
+    return this.dispatch(this.api.deleteTemplate(templateId), {
+      refresh: 'list',
+      successAnnouncement: ABWAB_LABELS.templateDeletedAnnouncement,
+      announceFailure: true,
+    });
   }
 
   addNode(
@@ -38,62 +48,62 @@ export class AbwabTemplatesController {
     parentNodeId: number | null,
     fields: AbwabAuthoringFields,
   ): Observable<AbwabWriteOutcome<AbwabTemplateNodeDto | null>> {
-    return this.dispatch(this.api.addNode(templateId, { parentNodeId, ...toWireFields(fields) }), 'both');
+    return this.dispatch(this.api.addNode(templateId, { parentNodeId, ...toWireFields(fields) }), {
+      refresh: 'both',
+      announceFailure: true,
+    });
   }
 
   editNode(nodeId: number, fields: AbwabAuthoringFields): Observable<AbwabWriteOutcome<AbwabTemplateNodeDto | null>> {
-    return this.dispatch(this.api.editNode(nodeId, toWireFields(fields)), 'both');
+    return this.dispatch(this.api.editNode(nodeId, toWireFields(fields)), { refresh: 'both', announceFailure: true });
   }
 
   reorderNode(nodeId: number, position: number): Observable<AbwabWriteOutcome<AbwabTemplateNodeDto | null>> {
-    return this.dispatch(this.api.reorderNode(nodeId, { position }), 'selected');
+    return this.dispatch(this.api.reorderNode(nodeId, { position }), { refresh: 'selected', announceFailure: true });
   }
 
   deleteNode(nodeId: number): Observable<AbwabWriteOutcome<unknown>> {
-    return this.dispatch(this.api.deleteNode(nodeId), 'both');
+    return this.dispatch(this.api.deleteNode(nodeId), { refresh: 'both', announceFailure: true });
   }
 
   applyTemplate(
     templateId: number,
     targetDoorIds: readonly number[],
   ): Observable<AbwabWriteOutcome<AbwabDoorDto[] | null>> {
-    return this.dispatch(
-      this.api.applyTemplate(templateId, { targetDoorIds: [...targetDoorIds] }),
-      'none',
-      ABWAB_LABELS.templateAppliedAnnouncement(targetDoorIds.length),
-    );
+    return this.dispatch(this.api.applyTemplate(templateId, { targetDoorIds: [...targetDoorIds] }), {
+      refresh: 'none',
+      successAnnouncement: ABWAB_LABELS.templateAppliedAnnouncement(targetDoorIds.length),
+    });
   }
 
   private dispatch<T>(
     request$: Observable<ApiResponse<T> | null>,
-    refresh: AbwabTemplatesRefresh,
-    successMessage?: string,
+    options: AbwabTemplatesWriteOptions,
   ): Observable<AbwabWriteOutcome<T | null>> {
     return request$.pipe(
-      map((response) => this.handleSuccess(response, refresh, successMessage)),
-      catchError((err: unknown) => of(this.handleFailure<T | null>(err))),
+      map((response) => this.handleSuccess(response, options)),
+      catchError((err: unknown) => of(this.handleFailure<T | null>(err, options))),
     );
   }
 
   private handleSuccess<T>(
     response: ApiResponse<T> | null,
-    refresh: AbwabTemplatesRefresh,
-    successMessage?: string,
+    options: AbwabTemplatesWriteOptions,
   ): AbwabWriteOutcome<T | null> {
     const data = response?.data ?? null;
     if (response === null || response.isSuccess) {
-      this.announcementState.set(successMessage ?? null);
-      this.applyRefresh(refresh);
+      this.announcementState.set(options.successAnnouncement ?? null);
+      this.applyRefresh(options.refresh);
       return { kind: 'success', data };
     }
     const message = response.message ?? ABWAB_LABELS.writeInvalidFallback;
-    this.announcementState.set(message);
+    this.announcementState.set(options.announceFailure ? message : null);
     return { kind: 'invalid', message };
   }
 
-  private handleFailure<T>(err: unknown): AbwabWriteOutcome<T> {
+  private handleFailure<T>(err: unknown, options: AbwabTemplatesWriteOptions): AbwabWriteOutcome<T> {
     const outcome = toAbwabWriteFailure(err);
-    this.announcementState.set(outcome.message);
+    this.announcementState.set(options.announceFailure ? outcome.message : null);
     return outcome;
   }
 

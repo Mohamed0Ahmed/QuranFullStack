@@ -1,9 +1,9 @@
 import { expect, test } from './fixtures/abwab';
 
-// Operations flow (plan-slice-b2.md T603): inline reorder (commit/revert), single move
+// Operations flow: inline reorder (commit/revert), single move
 // (into a destination, then back out "as main"), bulk mode (select/move/archive with the
 // all-or-nothing confirm), and the row context menu — including the "must stay absent"
-// assertion for the relations/protection controls (plan.md §5.1).
+// assertion for the relations/protection controls.
 
 test('inline reorder: Enter commits and resequences siblings; Escape and blur cancel', async ({ page, abwabSandbox }) => {
   const doorA = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('reorder-a') });
@@ -87,7 +87,7 @@ test('bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
   await page.getByTestId('abwab-side-panel-bulk-toggle').click();
   await page.getByTestId(`abwab-tree-checkbox-${bulkA.id}`).click();
   await page.getByTestId(`abwab-tree-checkbox-${bulkB.id}`).click();
-  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('2');
+  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('بابان محددان');
   await expect(page.getByTestId('abwab-side-panel-bulk-names')).toContainText(bulkA.name);
   await expect(page.getByTestId('abwab-side-panel-bulk-names')).toContainText(bulkB.name);
 
@@ -108,7 +108,7 @@ test('bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
 
   // The move refetches and rebinds by id (§4.6) — both moved doors stay bulk-selected,
   // so the archive confirm below counts the same union of two live doors.
-  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('2');
+  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('بابان محددان');
   await page.getByTestId('abwab-side-panel-bulk-archive').click();
   // Two doors is the Arabic dual, so the confirm reads «بابين» and carries no digit — the
   // union count is what is being asserted, in the form a reader actually sees.
@@ -120,7 +120,7 @@ test('bulk mode: select, bulk move, then the all-or-nothing bulk archive confirm
 
   // The rebind drops archived ids as well as missing ones (Slice D). Without this the set
   // kept both now-archived doors with freshly rebound versions, and the next submit 404'd.
-  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('0');
+  await expect(page.getByTestId('abwab-side-panel-bulk-count')).toHaveText('لا أبواب محددة');
 });
 
 test('row context menu offers exactly edit / add-child / move / relations / archive', async ({ page, abwabSandbox }) => {
@@ -137,7 +137,7 @@ test('row context menu offers exactly edit / add-child / move / relations / arch
   await expect(menu.getByTestId('abwab-page-ctx-relations')).toBeVisible();
   await expect(menu.getByTestId('abwab-page-ctx-archive')).toBeVisible();
 
-  // Zero dead controls (plan.md §5.1) — pinned at the browser level, not just in specs. Relations
+  // Zero dead controls — pinned at the browser level, not just in specs. Relations
   // stopped being one when `abwab-relations` gave them a real read; protection has not.
   await expect(page.getByTestId('abwab-side-panel-op-protect')).toHaveCount(0);
 
@@ -203,7 +203,7 @@ test('the row hover actions: ⋯ opens the same menu without right-click, ＋ op
 }) => {
   // The design contract puts both on every row (abwab-tree-concept.html:114, 436-443); ⋯ is
   // the only mouse path to the row menu that is not right-click, and ＋ is the third
-  // add-child path alongside the side panel and the menu (plan-slice-b.md §6.2).
+  // add-child path alongside the side panel and the menu.
   const door = await abwabSandbox.createDoor({ name: abwabSandbox.uniqueName('row-actions') });
 
   await page.goto(`/abwab?section=${abwabSandbox.sectionId}`);
