@@ -16,23 +16,6 @@ type ContextActionCallback = (doorId: number) => void;
  * argument as the page's own `NO_IDS`/`NO_ROOTS`. */
 const NO_ANCESTORS: readonly AbwabNode[] = [];
 
-/**
- * Owns every overlay's open/closed state and orchestration for `AbwabPageComponent`
- * (door modal, single/bulk archive confirm, move picker, sections modal, row context
- * menu) — split out once the page shell's own file (URL ⇄ state wiring + composition)
- * approached the component-TS soft threshold (`FRONTEND_STRUCTURE.md`'s Large Page
- * Split guidance). This is state/orchestration only, not a template; the page still
- * renders every dialog and reads/calls into this controller. URL-side effects (writing
- * `door=null` back after an archive) stay the page's job via the optional callbacks
- * below — this controller has no `Router`/`ActivatedRoute` dependency.
- *
- * **Deliberately not `providedIn: 'root'`** — `AbwabPageComponent` provides it, so its
- * lifetime is the page's. Same rule as `features/words/state/*-detail.controller.ts`
- * ("Not `providedIn: 'root'`: … each overlay adapter provides its own component-scoped
- * instance"): caches and data facades are app-scoped, overlay state is not. A root-scoped
- * instance survives leaving `/abwab`, and the page renders every dialog outside its
- * loading/error guard, so a left-open modal would paint again on re-entry.
- */
 @Injectable()
 export class AbwabPageOverlaysController {
   private readonly facade = inject(AbwabSnapshotFacade);
@@ -102,20 +85,13 @@ export class AbwabPageOverlaysController {
     this.modalOpen.set(false);
   }
 
-  /** One signal, not two booleans: as backdropped `aria-modal` dialogs with focus traps, two
-   * archive confirms open at once would be two competing traps. As inline cards the overlap was
-   * only cosmetic, which is why this could stay two booleans until the retrofit. */
   readonly archiveConfirm = signal<'single' | 'bulk' | null>(null);
   readonly archiveBusy = signal(false);
-  /** The failed write's own message, rendered inside the dialog that dispatched it. Cleared on
-   * every open and every retry so a stale failure never greets a fresh confirm. */
   readonly archiveError = signal<string | null>(null);
 
   readonly archiveConfirming = computed(() => this.archiveConfirm() === 'single');
   readonly bulkArchiveConfirming = computed(() => this.archiveConfirm() === 'bulk');
 
-  /** The row context menu closes when the dialog opens, so its trigger is gone in both outcomes
-   * and the page has to place focus itself. Every other entry point keeps a live trigger. */
   private readonly archiveFromContextMenu = signal(false);
   readonly archiveCameFromContextMenu = this.archiveFromContextMenu.asReadonly();
 
@@ -289,9 +265,6 @@ export class AbwabPageOverlaysController {
     return id === null ? null : (this.byId().get(id) ?? null);
   });
 
-  /** Outermost first, the door itself excluded — the same «، » chain the side panel shows.
-   * Returns the shared empty array while closed (the `NO_IDS`/`NO_ROOTS` reason): a fresh `[]`
-   * per snapshot rebuild marks the OnPush restore modal dirty for as long as no restore runs. */
   readonly restoreAncestors = computed<readonly AbwabNode[]>(() => {
     const target = this.restoreTarget();
     if (!target) {
@@ -353,9 +326,6 @@ export class AbwabPageOverlaysController {
     return id === null ? '' : (this.byId().get(id)?.name ?? '');
   });
 
-  /** Derived from the snapshot on every read rather than captured at open: the modal decides
-   * whether to fetch at all from this number, and a value frozen at open would keep saying
-   * «لا توجد علاقات» after the first add refreshed the tree underneath it. */
   readonly relationsAnchorCount = computed(() => {
     const id = this.relationsAnchorId();
     return id === null ? 0 : (this.byId().get(id)?.relationCount ?? 0);

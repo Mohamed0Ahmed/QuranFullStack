@@ -8,24 +8,6 @@ import {
 } from '../abwab-tree/abwab-tree-keyboard.controller';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
-/**
- * The archived-doors hierarchy (plan-slice-b.md T508). Restore is the **only** action
- * (plan.md §5.1/§4.5) — no edit/move/reorder/add-child/bulk anywhere here, so this is a
- * deliberately separate, smaller component rather than a projection slot bolted onto
- * `AbwabTreeComponent` (whose doc already states it carries no inline row-action
- * buttons). It reuses the tree's pure row-flattening and keyboard-intent helpers for
- * expand/collapse and roving tabindex (M20's "keyboard focus, within the archive tree"
- * cell) — the `select`/`toggleBulk`/`openMenu` intents that helper can also produce are
- * simply ignored here, since this view has no selection or bulk concept of its own.
- *
- * **A-live vs A-arch is read straight off the builder's partition**, never re-derived:
- * `buildAbwabTreeSnapshot` gives every archive root `depth = 0` exactly when its own
- * parent is live or absent (`abwab-tree.builder.ts`'s archive-root filter) — so `depth
- * === 0` ⇒ restorable, `depth > 0` ⇒ its parent is archived ⇒ restore is disabled with
- * «استرجع الأب أولًا» (M21). No child-count badge is rendered: every archived door's
- * live-child count is always 0 (archiving a subtree archives all of it), so the badge
- * would print a meaningless "0" on every branch.
- */
 @Component({
   selector: 'qd-abwab-archive-view',
   standalone: true,

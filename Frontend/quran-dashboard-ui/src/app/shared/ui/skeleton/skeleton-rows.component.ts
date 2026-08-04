@@ -13,7 +13,6 @@ import { splitGridTemplateColumns } from './grid-template-columns';
 })
 export class QdSkeletonRowsComponent {
   readonly count = input.required<number>();
-  /** A `grid-template-columns` value, e.g. `"2.5rem 1fr auto"`. */
   readonly rowTemplate = input.required<string>();
   readonly loadingLabel = input('جارٍ التحميل…');
 

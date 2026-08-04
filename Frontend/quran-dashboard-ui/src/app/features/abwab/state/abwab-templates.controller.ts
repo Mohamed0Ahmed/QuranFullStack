@@ -15,17 +15,6 @@ import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto'
  * and most move the list's name or «N عناصر» chip too, so `both` is the ordinary case. */
 type AbwabTemplatesRefresh = 'list' | 'selected' | 'both' | 'none';
 
-/**
- * The templates-facing write surface. It deliberately does **not** reuse
- * `AbwabWriteController`: that controller's core invariant is refresh-the-doors-snapshot-and-
- * rebind-every-version-token, and templates carry no version tokens and are not in that
- * snapshot. What the two must not fork is the 409 policy, so both call
- * `toAbwabWriteFailure` — one status→outcome mapping, two refresh targets.
- *
- * Apply refreshes nothing: it writes doors, and `AbwabPageComponent.ngOnInit` calls
- * `facade.load()` on every entry, so returning to `/abwab` is what makes the copies visible.
- * Refreshing the doors snapshot from here would buy a fetch nobody sees.
- */
 @Injectable({ providedIn: 'root' })
 export class AbwabTemplatesController {
   private readonly api = inject(AbwabTemplatesApi);

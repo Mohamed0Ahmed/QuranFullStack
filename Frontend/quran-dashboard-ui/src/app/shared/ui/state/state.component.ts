@@ -17,7 +17,6 @@ export class QdStateComponent {
   readonly variant = input.required<QdStateVariant>();
   readonly message = input.required<string>();
 
-  /** Arabic label of the error's single recovery action; omit for plain text. */
   readonly actionLabel = input<string | null>(null);
 
   // Additive, default off: every existing call-site stays byte-identical. On, the box's

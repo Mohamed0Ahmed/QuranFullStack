@@ -26,7 +26,6 @@ export type WordTypeFrameTense = 'all' | 'past' | 'present' | 'imperative';
 export type WordTypeFrameVoice = 'all' | 'active' | 'passive';
 export type WordTypeFrameView = 'words' | 'ayahs' | 'surahs';
 
-/** `v1~unique~<simple|tashkeel>~<id>~<view>~<ayahPage>` */
 export interface UniqueDetailFrame {
   readonly kind: 'unique';
   readonly mode: UniqueFrameMode;
@@ -35,7 +34,6 @@ export interface UniqueDetailFrame {
   readonly ayahPage: number;
 }
 
-/** `v1~root~<id>~<view>~<wordView>~<surahView>~<detailPage>` */
 export interface RootDetailFrame {
   readonly kind: 'root';
   readonly id: number;
@@ -45,7 +43,6 @@ export interface RootDetailFrame {
   readonly detailPage: number;
 }
 
-/** `v1~lemma~<id>~<view>~<wordView>~<surahView>~<detailPage>~<typeCode|->` */
 export interface LemmaDetailFrame {
   readonly kind: 'lemma';
   readonly id: number;
@@ -56,7 +53,6 @@ export interface LemmaDetailFrame {
   readonly typeCode: string | null;
 }
 
-/** `v1~stem~<id>~<view>~<wordView>~<surahView>~<detailPage>~<typeCode|->` */
 export interface StemDetailFrame {
   readonly kind: 'stem';
   readonly id: number;
@@ -67,7 +63,6 @@ export interface StemDetailFrame {
   readonly typeCode: string | null;
 }
 
-/** `v1~wordType~<tashkeelId>~<contextCode>~<case>~<tense>~<voice>~<view>~<detailPage>` */
 export interface WordTypeDetailFrame {
   readonly kind: 'wordType';
   readonly tashkeelWordId: number;
@@ -90,7 +85,6 @@ export type DetailFrameKind = DetailFrame['kind'];
 
 export type DetailOverlayVisibility = 'open' | 'closed';
 
-/** URL-authoritative overlay state: what the current URL says, nothing more. */
 export interface DetailOverlayUrlState {
   readonly visibility: DetailOverlayVisibility;
   readonly stack: readonly DetailFrame[];

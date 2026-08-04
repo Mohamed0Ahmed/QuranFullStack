@@ -77,6 +77,17 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   change resizes the dialog or shifts the header; the count sits outside the heading and
   both live regions (it would otherwise double-announce) and is wired via
   `aria-describedby`. See `.architecture/UI_STYLE_SYSTEM.md` §17 for the full contract.
+- `ui/confirm-dialog/` — `qd-confirm-dialog`, the house confirmation dialog. Body content is
+  projected, so a consumer composes whatever the decision needs while the primitive keeps the
+  framing, the roles, the focus trap and the dismissal routes. It does **not** replace an
+  authoring-modal shell: those own a form and its dirty state. Two invariants that are not
+  visible from the call site and must not be "fixed":
+  - **Initial focus is the CANCEL button, deliberately** (`confirm-dialog.component.ts`
+    `focusCancel`). A confirm dialog interrupts, so the answer a reflexive Enter produces has to
+    be the safe one. Moving initial focus to the confirm button turns every destructive dialog
+    into a one-keystroke accident.
+  - **`busy` disables both buttons, not just confirm.** A decision in flight must not be
+    double-fired, and cancelling mid-write would leave the caller's state ambiguous.
 - `ui/modal-scroll-lock/` — `qdModalScrollLock` directive + `ScrollLockService`, the
   **reference-counted** body scroll lock (Feature 029): overlapping layers (responsive
   drawer + global overlay) each acquire/release; the body unlocks only when the last

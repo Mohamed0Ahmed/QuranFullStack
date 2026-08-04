@@ -15,9 +15,7 @@ interface ArabicCountForms {
   readonly zero?: string;
   readonly one: string;
   readonly two: string;
-  /** 3–10, the broken plural. */
   readonly few: string;
-  /** 11+, the accusative singular. */
   readonly many: string;
 }
 

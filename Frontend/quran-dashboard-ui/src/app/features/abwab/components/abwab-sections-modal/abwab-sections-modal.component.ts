@@ -26,19 +26,6 @@ import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/con
 
 let nextModalId = 0;
 
-/**
- * List / add / rename / reorder / delete-empty for sections (plan-slice-b.md T510).
- * Presentational: the write functions are inputs (bound by the page shell to
- * `AbwabSectionsController`) rather than an injected service, so this component's own
- * spec exercises the M27/M28 outcomes without standing up the controller/facade chain.
- * Rename always reads the section's row from the live `sections` input at submit time
- * (never a value captured when edit mode opened), since `version` goes stale the moment
- * any other write touches this scope.
- *
- * The dirty guard is this modal's one behavior change in Slice C: a rename draft or a typed
- * section name is unsaved work, and closing used to discard it silently. It follows the door
- * modal's trio rather than inventing a second confirmation shape.
- */
 @Component({
   selector: 'qd-abwab-sections-modal',
   standalone: true,
@@ -74,8 +61,6 @@ export class AbwabSectionsModalComponent {
   protected readonly editingOrderId = signal<number | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
 
-  /** The section awaiting delete confirmation, or `null`. Its dialog nests above this modal —
-   * the one nesting the abwab README's trap rule allows — so `cdkTrapFocus` below yields to it. */
   protected readonly deleteConfirmId = signal<number | null>(null);
   protected readonly deleteBusy = signal(false);
   protected readonly deleteError = signal<string | null>(null);
@@ -87,16 +72,8 @@ export class AbwabSectionsModalComponent {
   // Unique at any moment: only one row's editing branch renders the input at a time.
   private readonly orderInput = viewChild<ElementRef<HTMLInputElement>>('orderInput');
 
-  /** Set only by a successful commit (T602 follow-up, found in browser acceptance testing,
-   * T902): a reorder that actually moves the row is followed by a refresh-after-write that
-   * replaces `sections()` with a re-ordered array. `@for` then moves this row's DOM node to its
-   * new position, which — unlike updating a binding in place — detaches and reattaches it,
-   * dropping the focus `focusOrderButton` already restored on the earlier, pre-refresh render.
-   * The `effect` below watches `sections()` specifically to catch that second, later render. */
   private readonly pendingOrderFocusId = signal<number | null>(null);
 
-  /** Unsaved work is a typed section name or a rename draft that differs from the saved name;
-   * an opened rename the user has not altered is not a change to discard. */
   private readonly isDirty = computed(() => {
     if (this.newSectionName().trim() !== '') {
       return true;
@@ -230,9 +207,6 @@ export class AbwabSectionsModalComponent {
     this.deleteError.set(null);
   }
 
-  /** The dialog stays open until the write resolves, so the 409 «لا يمكن حذف القسم…» lands beside
-   * the decision that caused it rather than on the modal-level line, which belongs to
-   * create/rename. */
   protected confirmRemove(): void {
     const id = this.deleteConfirmId();
     if (id === null || this.deleteBusy()) {
@@ -270,9 +244,6 @@ export class AbwabSectionsModalComponent {
     }
   }
 
-  /** Guarded on the same id as commitOrderEdit, so the blur that follows an Enter commit (the
-   * input unmounts under the focused element) finds editingOrderId already cleared and does
-   * nothing — the tree's order editor uses the same guard. */
   protected cancelOrderEdit(id: number): void {
     if (this.editingOrderId() !== id) {
       return;

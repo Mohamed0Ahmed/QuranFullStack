@@ -13,15 +13,9 @@ export type AbwabView = 'tree' | 'cards';
  */
 export type AbwabModalKind = 'create' | 'child' | 'edit' | 'move' | 'sections' | 'relations';
 
-/** `modal=<kind>` while open, `modal=<kind>-closed` while retained and restorable. */
 export interface AbwabModalState {
   readonly kind: AbwabModalKind;
   readonly closed: boolean;
-  /** The subject this retained state belongs to, when it is NOT `door=`. Null on every open
-   * state and on every plain `-closed` one — those follow `door=`, so a later selection moves
-   * what restore would reopen. Only a retained `relations` may carry an id, and only because
-   * a reveal deliberately points `door=` somewhere else: the id pins the subject so the
-   * restore control still reopens the door the user came from. */
   readonly subjectDoorId: number | null;
 }
 
@@ -71,8 +65,6 @@ export const ABWAB_RELATION_DIRECTION_FROM_WIRE: Readonly<
   2: 'anchor-less',
 };
 
-/** One relation as the open modal sees it: always the OTHER door, and a direction already resolved
- * from this door's perspective by the backend. */
 export interface AbwabRelationVm {
   readonly id: number;
   readonly otherDoorId: number;
@@ -150,7 +142,6 @@ export function isDoorDependentAbwabModalKind(kind: AbwabModalKind): boolean {
   return ABWAB_DOOR_DEPENDENT_MODAL_KINDS.has(kind);
 }
 
-/** One tree row, built from `AbwabTreeDoorDto` plus its computed nesting (state/abwab-tree.builder.ts). */
 export interface AbwabNode {
   readonly id: number;
   readonly name: string;
@@ -158,45 +149,26 @@ export interface AbwabNode {
   readonly representativeAyahText: string | null;
   readonly aliases: readonly string[];
   readonly sectionId: number;
-  /** Its section has been archived — true only for an archived door, since a section is only
-   * archivable while it holds no live ones. Restoring such a door needs a destination chosen. */
   readonly sectionRetired: boolean;
   readonly parentId: number | null;
   readonly orderValue: number;
-  /** Live root doors only — `null` at any depth > 0 and for every archived door
-   * (`global_order_value IS NOT NULL ⟺ parent_id IS NULL AND deleted_at IS NULL`, plan.md §5). */
   readonly globalOrderValue: number | null;
   readonly version: number;
   readonly isArchived: boolean;
   readonly depth: number;
-  /** Direct live (non-archived) children count — drives the tree's `.count` badge. */
   readonly liveChildCount: number;
-  /** Every live descendant at any depth, the door itself excluded. Live-only like every other
-   * count in this feature: an archived subtree never inflates it. */
   readonly liveDescendantCount: number;
-  /** How many levels of live descendants hang below this door — child + grandchild +
-   * great-grandchild is **3**. Relative to the door, never `depth`, and not derivable from
-   * `liveDescendantCount`: a chain of three and a fan of three both count 3 descendants but
-   * measure 3 and 1 here. */
   readonly maxRelativeDepth: number;
-  /** Visible relations only: a relation whose other endpoint is archived is dormant and counts 0,
-   * so an archived door's count is always 0 and its row never shows the flag. */
   readonly relationCount: number;
   readonly children: readonly AbwabNode[];
 }
 
-/** The builder's output: one snapshot split into the live tree and the archive tree. */
 export interface AbwabTreeSnapshotVm {
   readonly sections: readonly AbwabTreeSectionDto[];
   readonly liveRoots: readonly AbwabNode[];
   readonly archivedRoots: readonly AbwabNode[];
-  /** Item 19 — ROOT doors only, per section. Not reconcilable with `liveRoots.length` by
-   * arithmetic: a live root can have `sectionId === null` (outside every section), so summing
-   * this map's values can be strictly less than the total (abwab-tree.builder.ts). */
   readonly rootCountBySectionId: ReadonlyMap<number, number>;
-  /** O(1) lookup for selection rebinding and search-ancestor walks. */
   readonly byId: ReadonlyMap<number, AbwabNode>;
-  /** Diagnostics only — never used for conflict detection (plan-slice-b.md §7 T407). */
   readonly version: string | null;
 }
 

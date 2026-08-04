@@ -15,24 +15,6 @@ interface AbwabTemplateTreeRow {
   readonly isExpanded: boolean;
 }
 
-/**
- * The template editor's tree: the same tree *language* as the doors tree — chevron
- * expand/collapse at any depth, an order chip, the root marked `◆` with a bold name, and the
- * hover-revealed `＋` (add child) and `⋯` (row menu) actions — but not the same component.
- * `AbwabTreeComponent` is typed on `AbwabNode` and carries selection, bulk mode, roving
- * tabindex, and URL concerns this page has none of, plus a spec suite pinned to that behavior.
- *
- * It renders a list rather than `role="tree"`, deliberately: the doors tree earns that role with
- * a full RTL-mirrored keyboard model, and claiming the role without the arrow-key model would
- * promise a navigation contract this component does not implement. Every row is reachable by Tab
- * through its own controls, and `aria-level` still conveys depth. ux-slice-g adds `ContextMenu` /
- * `Shift+F10` as a third path to the same row menu (alongside `⋯` and right-click): the row `<div>`
- * catches the key as it bubbles from whichever of the row's own controls has focus, so no row
- * becomes a tab stop and this reasoning still holds.
- *
- * Presentational — every action is an output; the only injected dependency is `ElementRef`, read
- * to anchor the keyboard menu path at the focused row's own bounding rect.
- */
 @Component({
   selector: 'qd-abwab-template-tree',
   standalone: true,
@@ -49,12 +31,8 @@ export class AbwabTemplateTreeComponent {
   readonly addChildRequested = output<number>();
   readonly menuRequested = output<AbwabTemplateNodeMenuRequest>();
   readonly orderCommitted = output<{ nodeId: number; position: number }>();
-  /** The inline «إضافة عنصر…» row: a name-only child of the root, then editable through the full
-   * authoring modal like every other node. */
   readonly quickAddRequested = output<string>();
 
-  /** Collapsed, not expanded: the contract renders every node open (`renderNode`'s `node open`),
-   * so the set starts empty and only a deliberate collapse puts an id in it. */
   private readonly collapsedIds = signal<ReadonlySet<number>>(new Set());
   protected readonly editingOrderId = signal<number | null>(null);
   protected readonly quickAddDraft = signal('');
@@ -111,17 +89,11 @@ export class AbwabTemplateTreeComponent {
     this.menuRequested.emit({ nodeId, x: event.clientX, y: event.clientY });
   }
 
-  /** No bulk-mode guard here, unlike the doors tree's equivalent: the workshop tree has no bulk
-   * mode, so importing the guard would be a branch that can never be taken. */
   protected onRowContextMenu(event: MouseEvent, nodeId: number): void {
     event.preventDefault();
     this.menuRequested.emit({ nodeId, x: event.clientX, y: event.clientY });
   }
 
-  /** Bubbles from whichever of the row's own controls (chevron / ＋ / ⋯) has focus — there is no
-   * roving-tabindex model here, so the row itself is what catches the key. Anchored at the row's
-   * inline-start edge, falling back to (0, 0) only if the row is missing — a menu pinned at the
-   * viewport origin is not a usable keyboard path (the doors tree's own reason, carried over). */
   protected onRowKeydown(event: KeyboardEvent, nodeId: number): void {
     if (event.key !== 'ContextMenu' && !(event.key === 'F10' && event.shiftKey)) {
       return;
@@ -138,14 +110,11 @@ export class AbwabTemplateTreeComponent {
     );
   }
 
-  /** Mirrored from the doors tree: the keyboard anchor is the row's inline-start edge, which
-   * `qd-context-menu` now extends from, and that edge is dir-dependent. */
   private resolveDirection(): 'ltr' | 'rtl' {
     const dirHost = this.elementRef.nativeElement.closest('[dir]');
     return dirHost?.getAttribute('dir') === 'rtl' ? 'rtl' : 'ltr';
   }
 
-  /** The root has no siblings, so its chip is the `◆` marker and is not an order editor. */
   protected onOrderClick(node: AbwabTemplateNodeVm): void {
     if (node.parentNodeId === null) {
       return;

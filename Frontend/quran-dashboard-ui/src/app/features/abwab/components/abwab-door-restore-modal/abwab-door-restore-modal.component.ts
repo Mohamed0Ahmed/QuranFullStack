@@ -7,18 +7,6 @@ import { AbwabNode } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabWriteController } from '../../state/abwab-write.controller';
 
-/**
- * Confirms restoring an ARCHIVED DOOR, and — for a root whose section was retired meanwhile — asks
- * where it should go. Not to be confused with `abwab-modal-restore`, which reopens a minimized
- * overlay.
- *
- * The destination question is not cosmetic: the backend refuses such a restore without one, so
- * without this modal the archive view's button would produce an unresolvable 400. Sections have no
- * restore route, which is why the old section can never simply be reinstated.
- *
- * A child door has no question to answer — it returns under its live parent, in that parent's
- * current section — so it gets the confirmation and no selector.
- */
 @Component({
   selector: 'qd-abwab-door-restore-modal',
   standalone: true,
@@ -32,7 +20,6 @@ export class AbwabDoorRestoreModalComponent {
 
   readonly door = input<AbwabNode | null>(null);
   readonly sections = input<readonly AbwabTreeSectionDto[]>([]);
-  /** Ancestor chain, outermost first — the door itself excluded. */
   readonly ancestors = input<readonly AbwabNode[]>([]);
 
   readonly closed = output<void>();
@@ -41,20 +28,17 @@ export class AbwabDoorRestoreModalComponent {
   protected readonly chosenSectionId = signal<number | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly busy = signal(false);
-  /** A required-but-untouched field is not an error yet — same rule the door modal's shell follows. */
   protected readonly sectionTouched = signal(false);
 
   protected readonly selectId = 'abwab-door-restore-modal-section';
 
   protected readonly open = computed(() => this.door() !== null);
 
-  /** Only a ROOT is asked: a child derives its parent's section, whatever that now is. */
   protected readonly needsDestination = computed(() => {
     const door = this.door();
     return door !== null && door.parentId === null;
   });
 
-  /** Its section is gone, so "back where it came from" has no meaning and a choice is mandatory. */
   protected readonly destinationRequired = computed(
     () => this.needsDestination() && (this.door()?.sectionRetired ?? false),
   );
@@ -67,8 +51,6 @@ export class AbwabDoorRestoreModalComponent {
     () => this.destinationRequired() && this.chosenSectionId() === null,
   );
 
-  /** Only after the user has actually been at the control: announcing an error on a field nobody has
-   * touched is noise, and the hint below already says what is wanted. */
   protected readonly sectionInvalid = computed(() => this.sectionTouched() && this.confirmDisabled());
 
   protected readonly pathText = computed(() =>
@@ -83,9 +65,6 @@ export class AbwabDoorRestoreModalComponent {
   protected get noSectionsHint(): string { return ABWAB_LABELS.restoreModalNoSectionsHint; }
   protected get childHint(): string { return ABWAB_LABELS.restoreModalChildHint; }
 
-  /** The subject's identity, not the node object. A snapshot rebuild hands this input a NEW object
-   * for the same door, and tracking that object would re-run the reset below and throw away a
-   * section the user had already chosen (the `abwab-move-picker` guard, same failure). */
   private readonly doorSubjectId = computed(() => this.door()?.id ?? null);
 
   constructor() {

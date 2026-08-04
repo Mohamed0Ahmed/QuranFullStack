@@ -213,9 +213,7 @@ export function parseDetailFrame(raw: string): DetailFrame | null {
 }
 
 export interface SerializedDetailOverlayParams {
-  /** Values for the repeated `qdDetail` key, bottom → top. */
   readonly frames: readonly string[];
-  /** Value for `qdDetailOpen`, or null when the key must be absent. */
   readonly open: '1' | null;
 }
 
@@ -228,7 +226,6 @@ export function serializeDetailOverlayState(state: DetailOverlayUrlState): Seria
 
 export interface ParsedDetailOverlayParams {
   readonly state: DetailOverlayUrlState;
-  /** False when the raw params must be rewritten (replace semantics) to match `state`. */
   readonly isCanonical: boolean;
 }
 

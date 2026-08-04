@@ -40,7 +40,6 @@ export class QdContextMenuComponent {
   private readonly elementRef = inject(ElementRef<HTMLElement>);
   private readonly menu = viewChild.required<ElementRef<HTMLElement>>('menu');
 
-  /** Null until the box has been measured — see the placement contract below. */
   protected readonly placement = signal<MenuPlacement | null>(null);
 
   constructor() {

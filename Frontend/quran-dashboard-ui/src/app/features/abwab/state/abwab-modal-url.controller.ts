@@ -14,21 +14,9 @@ export const DOOR_MODAL_KINDS: readonly AbwabModalKind[] = ['create', 'child', '
  * the only thing that can write `door=`, which is true today and is not a contract. */
 interface OpenedModal {
   readonly kind: AbwabModalKind;
-  /** `null` for the door-independent kinds, whose subject is not `door=` at all. */
   readonly doorId: number | null;
 }
 
-/**
- * Audit item 11's page-side machinery for the seventh URL key: which overlay the URL currently
- * owns, whether a parsed key may be acted on, and the two halves of reconciliation. Split out
- * of `AbwabPageComponent` on the `abwab-page-overlays.controller.ts` precedent, and with the
- * same boundary — **no `Router`/`ActivatedRoute` dependency**. Every navigation this state
- * implies stays the page's job: the page feeds URL values in through `syncFromUrl`, asks this
- * controller what it may do, and writes the key itself.
- *
- * **Deliberately not `providedIn: 'root'`** — `AbwabPageComponent` provides it, so its lifetime
- * is the page's, exactly like the overlay state it tracks.
- */
 @Injectable()
 export class AbwabModalUrlController {
   private readonly facade = inject(AbwabSnapshotFacade);
@@ -37,14 +25,10 @@ export class AbwabModalUrlController {
   private readonly modalSignal = signal<AbwabModalState | null>(null);
   private readonly doorSignal = signal<number | null>(null);
 
-  /** The parsed key, for the page's settle-gated open effect to depend on. */
   readonly modal = this.modalSignal.asReadonly();
 
   private opened: OpenedModal | null = null;
 
-  /** The retained state the restore control renders from — null while the key is absent, open,
-   * or pointing at a subject that cannot be restored (the same live guard `reconcileOpen`
-   * applies), so an inert key shows no affordance at all. */
   readonly restorableModal = computed<AbwabModalState | null>(() => {
     const modal = this.modalSignal();
     if (modal === null || !modal.closed) {
@@ -62,19 +46,6 @@ export class AbwabModalUrlController {
     return this.canOpen(modal.kind) ? modal : null;
   });
 
-  /**
-   * The close half of reconciliation, driven by the param emission and **not** by an effect:
-   * between a gesture's navigation and the emission that lands it the URL still says nothing,
-   * and an effect that read that as "close everything" would shut the modal the click just
-   * opened. The emission fires exactly when the URL genuinely changed, which is the only
-   * moment a close can be inferred from it.
-   *
-   * A URL-driven close goes through the overlay's own `close` setter and therefore **bypasses
-   * the door and sections modals' unsaved-changes confirm** — deliberate: the URL is the single
-   * source of truth, so a Back that says the overlay is closed closes it, and restoring returns
-   * a pristine overlay rather than the draft (README, «Restoring reopens the overlay, not a
-   * draft»).
-   */
   syncFromUrl(modal: AbwabModalState | null, door: number | null): void {
     this.modalSignal.set(modal);
     this.doorSignal.set(door);
@@ -91,11 +62,6 @@ export class AbwabModalUrlController {
     this.opened = null;
   }
 
-  /**
-   * The open half, and only that. Acts on the delta between what the page holds open and what
-   * the URL asks for, which is what makes the echo of a gesture's own patch a no-op —
-   * re-opening an already-open door modal would reset the form under the user.
-   */
   reconcileOpen(): void {
     const modal = this.modalSignal();
     if (modal === null || modal.closed) {
@@ -112,8 +78,6 @@ export class AbwabModalUrlController {
     this.trackOpen(modal.kind, this.doorSignal());
   }
 
-  /** Opens an overlay in response to a user gesture. The page writes the key in the same patch
-   * as any selection the gesture changes; this only puts the overlay on screen. */
   open(kind: AbwabModalKind): void {
     switch (kind) {
       case 'create':
@@ -137,30 +101,19 @@ export class AbwabModalUrlController {
     }
   }
 
-  /** Records an overlay as URL-backed. Called before the page navigates, so the emission that
-   * lands the gesture's own patch is recognised as an echo rather than as a change. */
   trackOpen(kind: AbwabModalKind, doorId: number | null): void {
     this.opened = { kind, doorId: isDoorDependentAbwabModalKind(kind) ? doorId : null };
   }
 
-  /** `kinds` is what the closing overlay can be holding on the URL's behalf. A mismatch means a
-   * bulk gesture opened it — the key was never written, so closing must not write one either. */
   urlBackedKind(kinds: readonly AbwabModalKind[]): AbwabModalKind | null {
     const opened = this.opened;
     return opened !== null && kinds.includes(opened.kind) ? opened.kind : null;
   }
 
-  /** Drops the tracking without touching an overlay — for the paths that close it themselves
-   * (every `(closed)` handler) and for the reveal, whose single patch discards the key. */
   releaseTracking(): void {
     this.opened = null;
   }
 
-  /** Door-dependent kinds need a subject that is bound **and live**. `byId` holds archived nodes
-   * and the `door=` effect checks presence only, so a crafted `modal=edit` on an archived door
-   * would otherwise open an editor over something the tree does not show. The fail-closed
-   * outcome is the one a dead `door=` already produces: nothing happens and the key sits
-   * inert. */
   private canOpen(kind: AbwabModalKind): boolean {
     if (!isDoorDependentAbwabModalKind(kind)) {
       return this.facade.snapshot() !== null;

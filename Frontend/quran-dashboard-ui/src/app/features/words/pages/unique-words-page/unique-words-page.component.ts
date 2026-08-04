@@ -170,7 +170,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     () => this.tableFocus.focus() !== null || this.drilldownState().isOpen,
   );
 
-  /** This drilldown's own typed frame (Feature 029 B7): an ayah click promotes it over the Mushaf. */
   protected readonly ayahParentFrame = computed<UniqueDetailFrame | null>(() => {
     const state = this.drilldownState();
     if (!state.isOpen || state.selectedWordId === null) {
@@ -260,13 +259,11 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.searchInput.next(value);
   }
 
-  /** A header cycle step (token) or its release (null). Changing the ordering always resets page. */
   protected onSortChange(sort: UniqueWordSort | null): void {
     this.clearTableFocus();
     this.updateQueryParams(buildUniqueWordsQueryParams({ sort, page: null }));
   }
 
-  /** The ≤1023px fallback select drives the same contract; the default order stays param-absent. */
   protected onSortSelect(value: string): void {
     this.onSortChange(sortQueryValue(normalizeUniqueWordSort(value), DEFAULT_UNIQUE_WORD_SORT));
   }
@@ -322,10 +319,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.updateQueryParams(buildModalCloseQueryParams());
   }
 
-  /**
-   * Re-drives the current drilldown identity after a failed load (Feature 030,
-   * M3). The identity is unchanged, so the URL is untouched.
-   */
   protected onDrilldownRetry(): void {
     this.facade.retryDrilldown();
   }

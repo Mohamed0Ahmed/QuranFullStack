@@ -313,6 +313,11 @@ nine), four of them reads.
   makes the label state the opposite of what the row stores in one of the two modes. The
   picker's expand chevron is a real tab stop with `aria-expanded` — search auto-expand is a
   convenience, not the keyboard path to a nested door.
+  **"Already linked" is computed per `(pair, type)` with no direction term**
+  (`abwab-relations-modal.component.ts`, `linkedIds`), so flipping the type segment re-computes
+  which rows are blocked and flipping the direction pill does not. It is deliberately **empty in
+  anchor-pick mode**: there the flag would have to mean "all N selected targets already relate to
+  this candidate anchor", a condition the user cannot see on screen and would read as a bug.
   **Each related door's name is a control** (Slice D): it composes `qd-chip`'s
   `labelClickable` opt-in, so one chip carries two independent controls — reveal that door in
   the tree, or remove the relation — and emits `revealRequested` with the *other* door's id.

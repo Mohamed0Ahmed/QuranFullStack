@@ -133,9 +133,7 @@ export function filterAbwabRootsBySection(
 export interface AbwabSearchResult {
   readonly isFiltering: boolean;
   readonly matchedIds: ReadonlySet<number>;
-  /** Matched nodes plus every strict ancestor of a match — what stays on screen. */
   readonly visibleIds: ReadonlySet<number>;
-  /** Strict ancestors of a match only — these must open even if the user collapsed them. */
   readonly autoExpandedIds: ReadonlySet<number>;
 }
 

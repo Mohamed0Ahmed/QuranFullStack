@@ -10,7 +10,6 @@ import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 
 export interface AbwabMoveDestination {
   readonly targetParentId: number | null;
-  /** Never null: a door always lands in a section, and the backend refuses a root move without one. */
   readonly targetSectionId: number;
 }
 
@@ -75,7 +74,6 @@ export class AbwabMovePickerComponent {
   readonly sections = input<readonly AbwabTreeSectionDto[]>([]);
   readonly liveRoots = input<readonly AbwabNode[]>([]);
   readonly excludedIds = input<ReadonlySet<number>>(new Set());
-  /** The current sections of the doors being moved — one entry per door, duplicates included. */
   readonly movedSectionIds = input<readonly number[]>([]);
   readonly titleText = input('');
 
@@ -86,15 +84,8 @@ export class AbwabMovePickerComponent {
   protected readonly titleId = `abwab-move-picker-title-${this.modalId}`;
   protected readonly destinationsId = `abwab-move-picker-destinations-${this.modalId}`;
 
-  /** Null until a section is picked — one screen needs one signal, so there is no separate stage. */
   protected readonly pickedSectionId = signal<number | null>(null);
   protected readonly pickedParentId = signal<number | null>(null);
-  /**
-   * Membership means EXPANDED, so the empty set is a collapsed list — the list opens on the
-   * section's root doors and every branch below is opened by hand. The moved door's own parent
-   * chain is deliberately not seeded: a move is a choice of a new home, and pre-opening the old
-   * one puts the answer the user is moving away from at the top of the list.
-   */
   private readonly expandedIds = signal<ReadonlySet<number>>(new Set());
   protected readonly searchQuery = signal('');
 
@@ -151,18 +142,12 @@ export class AbwabMovePickerComponent {
     return rows;
   });
 
-  /** Whether the active section offers any door at all once the cycle guard has taken its share. */
   private readonly sectionHasDoors = computed(() => {
     const sectionId = this.pickedSectionId();
     const excluded = this.excludedIds();
     return this.liveRoots().some((root) => root.sectionId === sectionId && !excluded.has(root.id));
   });
 
-  /** A query that reaches nothing is not "this section has no doors" — the doors are there, the
-   * query just does not reach them. The `sectionHasDoors` term is what separates the two answers:
-   * in a section whose every root the cycle guard excluded, an empty list is the guard's answer,
-   * not the query's, and «لا يوجد باب مطابق لبحثك» would be blaming the wrong thing. Same guard the
-   * mirrored `abwab-door-picker` applies through its own `nodes()` term. */
   protected readonly searchFoundNothing = computed(
     () => this.searchQuery().trim() !== '' && this.sectionHasDoors() && this.destinationRows().length === 0,
   );

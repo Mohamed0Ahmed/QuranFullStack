@@ -32,23 +32,13 @@ export type QdTabsLayout = 'inline' | 'grid';
 export class QdTabsComponent {
   readonly ariaLabel = input.required<string>();
   readonly orientation = input<QdTabsOrientation>('horizontal');
-  /**
-   * `grid` wraps the tabs into fixed-width columns instead of one inline row. Layout only —
-   * keyboard nav still follows `orientation`, so a grid strip keeps the horizontal
-   * Arrow/Home/End model rather than gaining a row-aware one.
-   */
   readonly layout = input<QdTabsLayout>('inline');
 
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly tabs = contentChildren(QdTabDirective, { descendants: true });
 
-  /** Index the user last reached via arrow-key navigation, if any. */
   private readonly manualFocusIndex = signal<number | null>(null);
 
-  /**
-   * The single tab currently reachable via Tab: the manually-focused tab if
-   * still valid, otherwise the selected tab, otherwise the first enabled tab.
-   */
   private readonly rovingIndex = computed(() => {
     const tabs = this.tabs();
     if (tabs.length === 0) {

@@ -31,7 +31,6 @@ export const SURAHS_RANGE_THRESHOLD = 50;
 /** The two shortcut chips a metric offers. The kind is the stable testid suffix and the `@for` track. */
 export type RangeChipKind = 'gt' | 'lt';
 
-/** A preset chip: presentation config that resolves to an ordinary range, never to a URL identity. */
 export interface RangeChip {
   readonly kind: RangeChipKind;
   readonly threshold: number;

@@ -4,19 +4,6 @@ using QuranDashboard.Domain.Abwab;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab;
 
-/// <remarks>
-/// What this writer deliberately does NOT do, and why — each is a door-write mechanism with no work
-/// here: no global-order maintenance (a copy is never a root, so it never joins that sequence); no
-/// resequencing (every insert appends into a scope it either just created or is the newest member
-/// of — the level-1 offset (<c>nextOrder + i</c>) is what keeps this true when N children land in
-/// one save — so all touched scopes stay 1..N by construction); no per-node section resolution (the
-/// section is read once off each target and carried down the whole subtree, which is the cascade
-/// invariant stated directly).
-///
-/// Copies the template root's DIRECT CHILDREN as new children of each target, recursively copying
-/// each of their subtrees. The root itself is never copied — a deliberate reversal of the
-/// original "root becomes a new child" axiom.
-/// </remarks>
 internal sealed class EfAbwabTemplateApplyWriter(QuranDashboardDbContext db) : IAbwabTemplateApplyWriter
 {
     private sealed record CopiedNode(AbwabDoor Door, AbwabTemplateNode Node, int SectionId);

@@ -14,17 +14,6 @@ function isNotModified(error: unknown): boolean {
   return error instanceof HttpErrorResponse && error.status === HttpStatusCode.NotModified;
 }
 
-/**
- * Owns the template list and the selected template's tree, on the `AbwabSnapshotFacade`
- * contract: `refresh()` always issues a new request rather than replaying a cached one, and on
- * failure the previous list/tree is left in place instead of blanking the page.
- *
- * Root-scoped like the doors snapshot — it is a cache, not overlay state
- * (`features/abwab/README.md`, "Overlay state is page-scoped; caches are app-scoped").
- *
- * Two validators, each stored beside the value it validates and written with it: one for the list,
- * one keyed by the selected template's id. A `304` keeps value and validator and reports nothing.
- */
 @Injectable({ providedIn: 'root' })
 export class AbwabTemplatesFacade {
   private readonly api = inject(AbwabTemplatesApi);
@@ -46,27 +35,12 @@ export class AbwabTemplatesFacade {
   readonly isLoading = this.listLoadingState.asReadonly();
   readonly errorMessage = this.listErrorState.asReadonly();
   readonly selectedErrorMessage = this.selectedErrorState.asReadonly();
-  /** True only while a per-template fetch is in flight. `selectedTemplate` is null for that whole
-   * window — `select()` writes the id before the request resolves — so without this the page
-   * cannot tell "nothing chosen" from "still loading" and says «اختر قالبًا» to a user who just
-   * chose one. */
   readonly selectedLoading = this.selectedLoadingState.asReadonly();
   readonly selectedTemplateId = this.selectedIdState.asReadonly();
 
-  /** Each row's `nodeCount` counts the root's live descendants, excluding the root itself — the
-   * contract's «N عناصر» chip. */
   readonly templates = computed<readonly AbwabTemplateSummaryDto[]>(() => this.rawList() ?? []);
   readonly isEmpty = computed(() => (this.rawList()?.length ?? -1) === 0);
 
-  /**
-   * Null unless the loaded template *is* the selected one. Leaving a previous value in place
-   * across a failed load is the `AbwabSnapshotFacade` contract, but that facade owns a single
-   * resource; this one changes resource on every `select()`, so the same rule would let the page
-   * name one template while every write sent another id — and template copies are detached by
-   * design, so there is no provenance to undo a wrong copy by.
-   *
-   * A refresh of the *same* template does not trip this, so writes never blink the editor.
-   */
   readonly selectedTemplate = computed<AbwabTemplateVm | null>(() => {
     const dto = this.rawSelected();
     if (dto === null || dto.id !== this.selectedIdState()) {
@@ -99,8 +73,6 @@ export class AbwabTemplatesFacade {
     this.selectedLoadingState.set(false);
   }
 
-  /** Re-reads whatever is selected. Every write in the workshop changes the selected template's
-   * own tree, and most change the list's «N عناصر» chip or its name too, so both are refetched. */
   refreshSelected(): Observable<AbwabTemplateVm | null> {
     const templateId = this.selectedIdState();
     if (templateId === null) {

@@ -103,11 +103,6 @@ export class SelectedWordSectionComponent {
     }
   }
 
-  /**
-   * Records the loaded natural geometry, and drops a stale reservation when the
-   * available inline size changes mid-loading (a wide measurement must never be
-   * imposed on a narrower layout, or vice versa).
-   */
   private onSectionResize(entries: ResizeObserverEntry[]): void {
     const target = entries[entries.length - 1]?.target;
     if (!target) {

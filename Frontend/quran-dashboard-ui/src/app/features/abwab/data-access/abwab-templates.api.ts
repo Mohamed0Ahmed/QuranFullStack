@@ -15,10 +15,6 @@ import { AddTemplateNodeBody } from '../../../core/api/generated/models/add-temp
 import { EditTemplateNodeBody } from '../../../core/api/generated/models/edit-template-node-body';
 import { ReorderTemplateNodeBody } from '../../../core/api/generated/models/reorder-template-node-body';
 
-/**
- * The nine templates endpoints. Its own data-access file rather than more methods on
- * `abwab.api.ts` (already fifteen): a separate route family, and nine of them.
- */
 @Injectable({ providedIn: 'root' })
 export class AbwabTemplatesApi {
   private readonly http = inject(HttpClient);

@@ -17,12 +17,10 @@ import { Directive, ElementRef, inject, input, signal } from '@angular/core';
 })
 export class QdTabDirective {
   readonly selected = input(false);
-  /** Drops this tab out of the roving tabindex order when true. */
   readonly disabled = input(false);
 
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  /** Set by the parent `qd-tabs` — true for the single tab currently reachable via Tab. */
   readonly roving = signal(false);
 
   setRoving(isRoving: boolean): void {

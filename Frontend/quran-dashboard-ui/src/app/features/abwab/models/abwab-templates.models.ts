@@ -1,7 +1,6 @@
 import { AbwabTemplateDto } from '../../../core/api/generated/models/abwab-template-dto';
 import { AbwabTemplateNodeDto } from '../../../core/api/generated/models/abwab-template-node-dto';
 
-/** One node of the template tree, built from the flat `AbwabTemplateDto.nodes` list. */
 export interface AbwabTemplateNodeVm {
   readonly id: number;
   readonly parentNodeId: number | null;
@@ -17,16 +16,10 @@ export interface AbwabTemplateNodeVm {
 export interface AbwabTemplateVm {
   readonly id: number;
   readonly name: string;
-  /** Exactly one root per template, enforced by a partial unique index (plan §5.2). `null` only
-   * for a template whose root the reader could not resolve, which the backend treats as
-   * not-found — so the workshop never renders a rootless template. */
   readonly root: AbwabTemplateNodeVm | null;
-  /** Live descendants of the root, matching the list's «N عناصر» chip. */
   readonly nodeCount: number;
 }
 
-/** The four fields every door and every template node is authored through — the value type the
- * shared authoring form reads and emits. */
 export interface AbwabAuthoringFields {
   readonly name: string;
   readonly description: string;

@@ -56,17 +56,6 @@ const GROUP_DOT_KIND: Readonly<Record<AbwabRelationGroupKey, AbwabRelationKind>>
 
 let nextModalId = 0;
 
-/**
- * The relations modal: the four display groups, the type segment, the direction pill with its
- * live preview, an expandable/searchable door picker, and one multi-target add. Presentational in the
- * `abwab-sections-modal` sense — the read and the two writes arrive as function inputs, bound by
- * the page to `AbwabRelationsController`, so this component never reaches for the facade.
- *
- * Two modes, one component (§4, bulk entry). `anchorPickMode` inverts which side the picker
- * chooses: normally the anchor is the open door and the picker selects N targets; in bulk mode
- * the N selected doors are the fixed targets and the picker single-selects the anchor. Direction
- * stays anchor-relative in both, so the add call has one shape either way.
- */
 @Component({
   selector: 'qd-abwab-relations-modal',
   standalone: true,
@@ -89,14 +78,11 @@ export class AbwabRelationsModalComponent {
   readonly open = input(false);
   readonly anchorDoorId = input<number | null>(null);
   readonly anchorDoorName = input('');
-  /** The snapshot's own live-relation count for the anchor. It decides whether the modal asks the
-   * server at all — see the open effect. */
   readonly anchorRelationCount = input(0);
   readonly anchorPickMode = input(false);
   readonly bulkTargets = input<readonly AbwabRelationTarget[]>([]);
   readonly liveRoots = input<readonly AbwabNode[]>([]);
   readonly loadRelations = input.required<(doorId: number) => Observable<AbwabRelationsLoadResult>>();
-  /** The same read, minus any cached answer: what the modal owes a user who just wrote. */
   readonly refetchRelations = input.required<(doorId: number) => Observable<AbwabRelationsLoadResult>>();
   readonly addRelations = input.required<
     (
@@ -109,26 +95,17 @@ export class AbwabRelationsModalComponent {
   readonly deleteRelation = input.required<(relationId: number) => Observable<AbwabWriteOutcome<unknown>>>();
 
   readonly closed = output<void>();
-  /** The related door's name is a control now (audit item 10): it asks the page to reveal that
-   * door in the tree. The modal itself knows nothing about the tree, the URL, or scope. */
   readonly revealRequested = output<number>();
 
   private readonly picker = viewChild(AbwabDoorPickerComponent);
 
   protected readonly relations = signal<readonly AbwabRelationVm[]>([]);
-  /** `'error'` is the READ's failure only, which is why it is a status and not a flag on the
-   * message below: a write error leaves the list on screen valid and retryable through the
-   * add/remove controls themselves, so it must not hide the groups or offer a second retry. */
   protected readonly status = signal<'loading' | 'ready' | 'error'>('ready');
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly type = signal<AbwabRelationKind>('similarity');
   protected readonly direction = signal<AbwabRelationDirectionKind>('anchor-more');
   protected readonly pickedIds = signal<ReadonlySet<number>>(new Set());
 
-  /** The relation awaiting delete confirmation, or `null`. Its dialog nests above this modal — the
-   * `abwab-sections-modal` precedent, which needed no host trap gating. The whole VM is held, not
-   * the id: the body names the partner door and the group, and a refetch could be rewriting the
-   * list the dialog would otherwise re-derive them from. */
   protected readonly pendingDelete = signal<AbwabRelationVm | null>(null);
   protected readonly deleteBusy = signal(false);
   protected readonly deleteError = signal<string | null>(null);
@@ -168,21 +145,14 @@ export class AbwabRelationsModalComponent {
     this.revealRequested.emit(otherDoorId);
   }
 
-  /** Door mode's placeholder invites several doors; anchor-pick mode takes exactly one, and the
-   * picker's radio affordance should not be the only place that says so. */
   protected readonly searchPlaceholder = computed(() =>
     this.anchorPickMode() ? ABWAB_LABELS.relationsBulkAnchorPlaceholder : ABWAB_LABELS.relationPickerPlaceholder,
   );
 
-  /** Excluded rows are context, and the tag names WHICH context: the open door in door mode, a
-   * fixed bulk target in anchor-pick mode. */
   protected readonly excludedTagLabel = computed(() =>
     this.anchorPickMode() ? ABWAB_LABELS.pickerExcludedTargetTag : ABWAB_LABELS.pickerExcludedAnchorTag,
   );
 
-  /** The pill names whichever side the picker chooses, and the two modes choose opposite sides:
-   * door mode picks the targets, anchor-pick mode picks the anchor. One pair of strings would
-   * therefore be right in one mode and inverted in the other. */
   protected readonly anchorMoreLabel = computed(() =>
     this.anchorPickMode() ? ABWAB_LABELS.relationsBulkDirectionAnchorMore : ABWAB_LABELS.relationDirectionAnchorMore,
   );
@@ -214,8 +184,6 @@ export class AbwabRelationsModalComponent {
     return byId;
   });
 
-  /** Never pickable: the anchor itself in door mode (contract `:221`), and every fixed target in
-   * anchor-pick mode — an anchor drawn from the bulk set would be a self-relation. */
   private readonly excludedIds = computed<ReadonlySet<number>>(() => {
     if (this.anchorPickMode()) {
       return new Set(this.bulkTargets().map((target) => target.id));
@@ -224,9 +192,6 @@ export class AbwabRelationsModalComponent {
     return anchorId === null ? new Set<number>() : new Set([anchorId]);
   });
 
-  /** "Already linked" is per (pair, type) with no direction term (§5.2), so switching the type
-   * segment re-computes which rows are blocked. Empty in anchor-pick mode: the flag would have to
-   * mean "all N pairs already exist", a rule the user cannot see (T602). */
   private readonly linkedIds = computed<ReadonlySet<number>>(() => {
     if (this.anchorPickMode()) {
       return new Set<number>();
@@ -244,8 +209,6 @@ export class AbwabRelationsModalComponent {
     return Array.from(this.pickedIds(), (id) => byId.get(id)?.name ?? String(id));
   });
 
-  /** Door mode counts the picked targets; anchor-pick mode counts the fixed bulk targets, which
-   * is how many relations the one call actually creates once an anchor exists. */
   protected readonly addCount = computed(() => {
     if (!this.anchorPickMode()) {
       return this.pickedIds().size;
@@ -319,9 +282,6 @@ export class AbwabRelationsModalComponent {
     this.direction.set(value);
   }
 
-  /** Anchor-pick mode selects exactly one door — the picker renders what it is told and leaves
-   * which-selection-rule-applies to its host. Selecting, not toggling: the control is a radio
-   * there, and a radio group has no "click the selected one to clear it" gesture to mirror. */
   protected togglePicked(doorId: number): void {
     if (this.anchorPickMode()) {
       this.pickedIds.set(new Set([doorId]));
@@ -360,8 +320,6 @@ export class AbwabRelationsModalComponent {
     });
   }
 
-  /** Opens the confirm; it never dispatches. A relation delete is two-sided and irreversible from
-   * here, so it earns the same danger dialog every other destructive control in the feature uses. */
   protected remove(relation: AbwabRelationVm): void {
     this.pendingDelete.set(relation);
     this.deleteError.set(null);
@@ -375,9 +333,6 @@ export class AbwabRelationsModalComponent {
     this.deleteError.set(null);
   }
 
-  /** The dialog stays open until the write resolves, so a failure lands beside the decision that
-   * caused it rather than on the modal's shared line, which belongs to the read and the add. The
-   * busy guard plus the dialog's own backdrop close the double-dispatch hole the bare chip had. */
   protected confirmRemove(): void {
     const relation = this.pendingDelete();
     if (relation === null || this.deleteBusy()) {
@@ -413,8 +368,6 @@ export class AbwabRelationsModalComponent {
     this.loadWithSkeleton(anchorId);
   }
 
-  /** The open path and the retry blank the list while they wait; a post-write refresh does not —
-   * what is on screen there is still the truth until the refetch lands. */
   private loadWithSkeleton(anchorId: number): void {
     this.status.set('loading');
     this.consume(this.loadRelations()(anchorId));

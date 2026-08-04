@@ -11,21 +11,6 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 let nextModalId = 0;
 
-/**
- * Add/edit door modal (plan-slice-b.md T414). Composes `.qd-modal`/`.qd-modal-backdrop`
- * and `qdModalScrollLock` rather than hand-rolling a dialog, and renders the four authoring
- * fields through the shared `qd-abwab-door-fields-form` — this shell keeps the framing, the
- * dirty guard's confirm strip, and the write dispatch.
- *
- * Create-under-a-parent nulls `sectionId` here (M10) even though `AbwabApi.createDoor` already
- * strips the key at the wire level (T405/M33) — defense in depth at the layer that decides
- * *whether* a section applies, not just how it is serialized. It stays in this shell: the shared
- * form has no concept of a section, and must not acquire one.
- *
- * The section `<select>` lives here for the same reason. It appears in exactly one case — a root
- * create from «كل الأبواب», where there is no parent to derive from and no active tab to read — and
- * the backend refuses that write without a section, so blocking it here turns a 400 into a choice.
- */
 @Component({
   selector: 'qd-abwab-door-modal',
   standalone: true,
@@ -60,14 +45,10 @@ export class AbwabDoorModalComponent {
 
   protected readonly sectionId = `abwab-door-modal-section-${this.modalId}`;
 
-  /** Only «كل الأبواب» leaves a root create with nowhere to put the door: a section tab supplies one
-   * and a child derives its parent's. */
   protected readonly needsSection = computed(
     () => !this.isEdit && this.parentId() === null && this.activeSectionId() === null,
   );
 
-  /** Nothing to pick and no way forward — say so, the way the restore modal does, rather than showing
-   * an empty control and answering a save with an error the user cannot act on. */
   protected readonly noSectionsAvailable = computed(
     () => this.needsSection() && this.sections().length === 0,
   );

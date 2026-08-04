@@ -5,24 +5,6 @@ import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { AbwabAuthoringFields, EMPTY_AUTHORING_FIELDS } from '../../models/abwab-templates.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
-/**
- * The four authoring fields shared by a door and a template node — name, description,
- * representative-ayah free text, and alias chips — plus their dirty tracking and inline error
- * surface. Presentational: it injects nothing, so a shell can render it without standing up a
- * write controller.
- *
- * Two shells compose it: `abwab-door-modal` and `abwab-template-node-modal`. The field labels are
- * the door's in both, deliberately — a template node exists to become a door, and the user's
- * locked requirement is the *same* authoring modal, not a parallel vocabulary. The shells carry
- * the framing (title, context line).
- *
- * `testIdPrefix` keeps the door modal's existing ids (`abwab-door-modal-name`, …) byte-identical
- * through the extraction, which is what lets `abwab-door-modal.component.spec.ts` and
- * `abwab-operations.e2e.ts` stay green unchanged.
- *
- * What deliberately does **not** live here: the door modal's `sectionId` defense-in-depth
- * (M10/M33). This form has no concept of a section and must not acquire one.
- */
 @Component({
   selector: 'qd-abwab-door-fields-form',
   standalone: true,
@@ -68,8 +50,6 @@ export class AbwabDoorFieldsFormComponent {
     return ABWAB_LABELS.removeAliasAriaLabel(alias);
   }
 
-  /** A shell composing this form owns focus-on-open, but must not reach into the form's DOM to
-   * place it. */
   focusFirstField(): void {
     this.nameInput()?.nativeElement.focus();
   }

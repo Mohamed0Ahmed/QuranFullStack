@@ -62,12 +62,7 @@ type MutashabihatGroupView = MutashabihatGroupDto & {
 export class MutashabihatGroupsCardComponent {
   readonly mutashabihat = input<AyahMutashabihatDto | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
-  /**
-   * Group count known before this list loads: `null` = unknown, `0` = known empty
-   * (see the constants above).
-   */
   readonly expectedGroupCount = input<number | null>(null);
-  /** Total occurrence count across those groups: `null` = unknown, `0` = known empty. */
   readonly expectedOccurrenceCount = input<number | null>(null);
 
   readonly ayahNavigate = output<AyahNavigationTarget>();
