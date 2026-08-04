@@ -1,5 +1,11 @@
 # Phase 1 — migration and backfill evidence
 
+> **Retained evidence — 2026-08-04.** This file survived the planning-artifact lifecycle sweep
+> because a live document cites it as the only existing check for the work it records
+> (it is the only record of the hand-appended `migrationBuilder.Sql(...)` backfill, a documented deviation from the no-hand-written-migrations rule). Its sibling `plan.md` and the other slice folders it references were swept and
+> resolve in **git history** only. The citations are left as written: this is a dated record of
+> what was verified and when, and repointing it at today's READMEs would falsify it.
+
 Plan: `docs/feature-abwab-global-order/plan.md` §7 Phase 1 (T101–T105).
 
 ## Migration

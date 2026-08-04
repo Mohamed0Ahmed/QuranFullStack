@@ -1,5 +1,28 @@
 # Abwab UX/UI audit — shipped-surface critique, located and classified
 
+> ## ⚠ CLOSED BACKLOG — 2026-08-04. Do not read this as current behavior.
+>
+> **All 23 items below were implemented**, across the UX slice series A–M that followed this
+> audit. This file is retained as the record of *why* those changes were made and which
+> decisions the user reversed — not as a work list and **not as a description of how the app
+> behaves**.
+>
+> **Its per-item `file:line` citations are pre-slice and many are now wrong.** Verified
+> examples: item 10 describes a `forceExpandedIds` input that no longer exists (the tree takes
+> `expandSeedIds`, and seeds rather than forces — the opposite of what item 10's fix recipe
+> prescribes); item 15 asserts a `[title]` is "missing at all 11 sites" including a line that
+> has carried one since ux-slice-d; and the scope note below calls
+> `docs/feature-abwab-templates/plan.md` "the open feature named in the root `CLAUDE.md`" when
+> no feature is open and that plan has since been swept to git history. Assume any citation
+> here is stale until re-checked.
+>
+> **The current record is `Frontend/quran-dashboard-ui/src/app/features/abwab/README.md`**,
+> plus the backend area READMEs under `Persistence/Reads|Writes/Abwab/`. Read those first.
+>
+> Kept rather than deleted because the four ⟲ USER REVERSAL entries are the only written
+> record of decisions the user changed mid-series, and the appendix pairs each with the text
+> it invalidated — context git history holds but does not surface.
+
 **Mode:** read-only. No code changed, no Git action taken. This is a working doc, not a
 feature folder; it is not swept by the planning-artifact lifecycle rule and nothing under
 `docs/README.md` points at it yet (a pointer line is the user's call, not this audit's).

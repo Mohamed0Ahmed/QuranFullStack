@@ -1,6 +1,6 @@
 # UX Slice L — search highlights, relation-delete confirms, the menu opens the right way, the relations modal comes back
 
-**Mode:** normal plan, NOT Spec Kit — same path as every sibling (`docs/feature-ux-slice-a` … `-k/plan.md` all exist and are normal plans; confirmed against the tree).
+**Mode:** normal plan, NOT Spec Kit — same path as every sibling in the `docs/feature-ux-slice-<letter>/` series, all normal plans (slices a–j were swept per the planning-artifact lifecycle rule on 2026-08-04 and are in git history; this folder and slice-k's are the N-2 buffer).
 **Scope:** frontend-only. The inspection's §8 verdict stands: no route, request/response contract, auth, middleware, or binding changes. This verdict is **void the moment any `Backend/` file enters scope** — that is stop condition 1.
 **Branch (executor):** `feature/ux-slice-l` off `dev`. One commit per phase at the stated boundary. No push/PR without an explicit ask.
 

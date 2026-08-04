@@ -1,5 +1,12 @@
 # Engineering Review — Full Project Code Audit
 
+> **Dated evidence.** This is a record of what was true on the date below, not a description of
+> the current tree. Its `docs/feature-*/` citations — used to record *which* task closed a
+> finding — resolve in git history only, since those planning folders were swept on 2026-08-04
+> per the lifecycle rule in `CLAUDE.md`. The citations are deliberately left as written: they
+> are the historical record of how a finding was closed, and repointing them at today's READMEs
+> would falsify it.
+
 - **Date:** 2026-07-18
 - **Branch reviewed:** `033-auth-roles-permissions` (whole codebase, not diff-only)
 - **Verdict:** **CHANGES REQUESTED**

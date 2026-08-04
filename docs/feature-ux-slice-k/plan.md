@@ -2,8 +2,10 @@
 
 - **Status:** planned, not started. Normal implementation plan, NOT Spec Kit. **Frontend-only.**
 - **Base branch:** `dev`; feature branch off `dev`, PR into `dev`.
-- **Path rationale:** the slice series lives at `docs/feature-ux-slice-a/` … `docs/feature-ux-slice-j/`,
-  one `plan.md` each; hence `docs/feature-ux-slice-k/plan.md`.
+- **Path rationale:** the slice series lived at `docs/feature-ux-slice-<letter>/`, one `plan.md`
+  each; hence `docs/feature-ux-slice-k/plan.md`. (Slices a–j were swept per the
+  planning-artifact lifecycle rule on 2026-08-04 and are in git history; this folder and
+  slice-l's are the N-2 buffer.)
 - **Planning basis:** the slice-K inspection of 2026-08-02 (post-PR-#60 tree); every file:line
   below re-verified against the working tree on that date.
 - **Locked decisions:** K1 (client-side relations cache keyed by door id, invalidated by tree

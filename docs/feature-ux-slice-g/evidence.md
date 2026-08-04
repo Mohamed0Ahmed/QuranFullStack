@@ -1,5 +1,11 @@
 # Slice G — Evidence
 
+> **Retained evidence — 2026-08-04.** This file survived the planning-artifact lifecycle sweep
+> because a live document cites it as the only existing check for the work it records
+> (`docs/TESTING_DEBT.md` row 9, the T703 browser walk). Its sibling `plan.md` and the other slice folders it references were swept and
+> resolve in **git history** only. The citations are left as written: this is a dated record of
+> what was verified and when, and repointing it at today's READMEs would falsify it.
+
 Plan: `docs/feature-ux-slice-g/plan.md`. Branch: `ux-slice-g`, off `dev` @ `79d3501c`.
 
 ## T101 — Baseline (dev @ `79d3501c`, clean)

@@ -435,7 +435,7 @@ The E2E suite boots the Angular dev server **and** the backend `https` launch pr
 Every flow is read-only and every count assertion is loose, **with one named, deliberate
 exception**: the eight Abwab specs (`abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`,
 `abwab-archive.e2e.ts`, `abwab-url-and-a11y.e2e.ts` added in Slice B2,
-`docs/feature-abwab-doors/plan-slice-b2.md`, plus `abwab-global-order.e2e.ts` added by
+plus `abwab-global-order.e2e.ts` added by
 `abwab-global-order`, `abwab-tree-row-budget.e2e.ts`, `abwab-slice-j-widths.e2e.ts`, and
 `abwab-relations.e2e.ts` added by slice K) write against the local dev DB through a per-test sandbox section created
 over the API (`e2e/fixtures/abwab.ts`), not the seeded/canonical data.

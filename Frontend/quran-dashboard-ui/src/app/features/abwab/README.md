@@ -565,8 +565,8 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **`.qd-navbar` is sticky and goes inert while any modal dialog is open (Slice B2, T901/T904).**
   `.abwab-page__side`'s own sticky `top` is re-based onto `--qd-navbar-block-size`
   (`abwab-page.component.scss`) so it sits flush under the now-always-visible chrome instead of
-  under the old scrolled-away navbar. Two intentional behavior changes ship with this phase, both
-  named per `docs/feature-ux-slice-b/plan.md` §9: (1) the navbar is keyboard-unreachable while any
+  under the old scrolled-away navbar. Two intentional behavior changes shipped with this phase,
+  both deliberate and both recorded here: (1) the navbar is keyboard-unreachable while any
   of abwab's six modals — now including `abwab-sections-modal` and `abwab-move-picker` (T905,
   below) — is open, same doctrine `app.ts` already applies to the global words overlay; (2) both
   those two modals now lock body scroll like the other four, so the page no longer scrolls behind
@@ -880,8 +880,9 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   fetch nobody sees. The doors snapshot *is* fetched when the copy modal opens — the picker
   is its only consumer, and the workshop is reachable directly by URL, so it cannot assume
   `/abwab` was visited first.
-- **Applying copies the template root's direct children, never the root itself** (reversed in
-  ux-slice-g — see `docs/feature-abwab-templates/plan.md` §5.1). Each target gains N new
+- **Applying copies the template root's direct children, never the root itself** (the ux-slice-g
+  reversal; `Backend/infrastructure/.../Persistence/Writes/Abwab/README.md` holds the axiom and
+  the writer's own class comment restates it). Each target gains N new
   children, one per the root's direct children, each with its own subtree; the copy modal's
   description and preview (`abwab-template-copy-modal.component.ts`, `abwab.labels.ts`) state
   this before the write. An empty-root template (no live children — the default state of every
@@ -972,9 +973,9 @@ residue that legitimately remains.
 
 ## Related
 
-- Plan: `docs/feature-abwab-doors/plan-slice-b.md` (Slice B1/B2 interaction matrix),
-  `docs/feature-abwab-doors/plan-slice-b2.md` (Slice B2, this e2e slice), and
-  `docs/feature-abwab-doors/plan.md` (Slice A, backend).
+- Planning history: the feature's plans and the UX slice series that followed were swept per the
+  planning-artifact lifecycle rule (`CLAUDE.md`) and live in git history. **This file is the
+  current record** — it is where a decision those plans made should be read from now.
 - Design contracts: `docs/design-preview/abwab-tree-concept.html`,
   `abwab-relations-concept.html`, and `abwab-templates-concept.html` — **its «كاملًا بجذره» copy
   apply description is superseded by ux-slice-g's children-only reversal** (`:139`, `:145`); the

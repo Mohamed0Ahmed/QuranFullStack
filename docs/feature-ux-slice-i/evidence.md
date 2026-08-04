@@ -1,5 +1,11 @@
 # Slice I — Evidence
 
+> **Retained evidence — 2026-08-04.** This file survived the planning-artifact lifecycle sweep
+> because a live document cites it as the only existing check for the work it records
+> (`docs/TESTING_DEBT.md` §ux-slice-i, the `Tests.Smoke.Data` **RAN** statement). Its sibling `plan.md` and the other slice folders it references were swept and
+> resolve in **git history** only. The citations are left as written: this is a dated record of
+> what was verified and when, and repointing it at today's READMEs would falsify it.
+
 Plan: `docs/feature-ux-slice-i/plan.md`. Branch: `ux-slice-i`, off `dev` @ `5adc9bc0`
 (clean). Plan committed to the branch as `65b664b4`, not to `dev`.
 
