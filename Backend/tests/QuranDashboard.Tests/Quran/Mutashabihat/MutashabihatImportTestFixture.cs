@@ -5,27 +5,54 @@ using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Mutashabihat;
+using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;
 
 public sealed class MutashabihatImportTestFixture : IAsyncLifetime
 {
     private readonly List<string> tempSourceDirs = new();
+    private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    private PostgreSqlDatabaseLease? databaseLease;
+    private ServiceProvider? readerProvider;
+    private ServiceProvider? importProvider;
 
     public async Task InitializeAsync()
     {
-        await postgresContainer.StartAsync();
+        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
+            nameof(MutashabihatImportTestFixture));
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await dbContext.Database.MigrateAsync();
+        try
+        {
+            readerProvider = ownedProviders.Own(BuildServiceProvider(configure: null));
+            importProvider = ownedProviders.Own(
+                BuildServiceProvider(services => services.AddMutashabihatImportServices()));
+        }
+        catch
+        {
+            await DisposeAsync();
+            throw;
+        }
     }
 
     public async Task DisposeAsync()
+    {
+        readerProvider = null;
+        importProvider = null;
+        await ownedProviders.DisposeAsync();
+
+        if (databaseLease is not null)
+        {
+            await databaseLease.DisposeAsync();
+            databaseLease = null;
+        }
+
+        DeleteTempSourceDirs();
+    }
+
+    private void DeleteTempSourceDirs()
     {
         foreach (var dir in tempSourceDirs)
         {
@@ -36,17 +63,36 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
             catch (IOException)
             {
             }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
 
-        await postgresContainer.DisposeAsync();
+        tempSourceDirs.Clear();
     }
 
-    public ServiceProvider CreateServiceProvider(Action<IServiceCollection>? configure = null)
+    public AsyncServiceScope CreateScope() => Initialized(readerProvider).CreateAsyncScope();
+
+    public AsyncServiceScope CreateImportScope() => Initialized(importProvider).CreateAsyncScope();
+
+    public ServiceProvider CreateCallerDisposedServiceProvider(Action<IServiceCollection> configure)
     {
+        ArgumentNullException.ThrowIfNull(configure);
+
+        return BuildServiceProvider(configure);
+    }
+
+    private ServiceProvider BuildServiceProvider(Action<IServiceCollection>? configure)
+    {
+        var connectionString = databaseLease?.ConnectionString
+            ?? throw new InvalidOperationException(
+                $"{nameof(MutashabihatImportTestFixture)} holds no database lease. Use it as a collection fixture "
+                + $"through [Collection(nameof({nameof(MutashabihatImportTestCollection)}))].");
+
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:QuranDashboardDb"] = postgresContainer.GetConnectionString()
+                ["ConnectionStrings:QuranDashboardDb"] = connectionString
             })
             .Build();
 
@@ -61,6 +107,11 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
         return services.BuildServiceProvider();
     }
 
+    private static ServiceProvider Initialized(ServiceProvider? provider) =>
+        provider ?? throw new InvalidOperationException(
+            $"{nameof(MutashabihatImportTestFixture)} has not been initialized. Use it as a collection fixture "
+            + $"through [Collection(nameof({nameof(MutashabihatImportTestCollection)}))].");
+
     public async Task<ImportMutashabihatResult> RunImportAsync(
         string sourcePath,
         bool force = false,
@@ -68,8 +119,7 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
         string? reportOutDir = null)
     {
         reportOutDir ??= Path.Combine(Path.GetTempPath(), $"mutashabihat-report-{Guid.NewGuid():N}");
-        await using var scope = CreateServiceProvider(services => services.AddMutashabihatImportServices())
-            .CreateAsyncScope();
+        await using var scope = CreateImportScope();
         var handler = scope.ServiceProvider.GetRequiredService<ImportMutashabihatHandler>();
 
         return await handler.HandleAsync(
@@ -209,7 +259,7 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
     {
         await SeedSyntheticAyahsAsync((1, "900:1"), (2, "900:2"));
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var readableWords = new List<QuranWord>
@@ -232,8 +282,7 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
         bool force = false,
         MutashabihatExpectedCounts? expectedCounts = null)
     {
-        await using var scope = CreateServiceProvider(services => services.AddMutashabihatImportServices())
-            .CreateAsyncScope();
+        await using var scope = CreateImportScope();
         var importSource = scope.ServiceProvider.GetRequiredService<IMutashabihatImportSource>();
         var importWriter = scope.ServiceProvider.GetRequiredService<IMutashabihatImportWriter>();
 
@@ -290,7 +339,7 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
     {
         await TruncateFoundationAsync();
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var surah = new Surah
@@ -442,7 +491,7 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
 
     public async Task TruncateMutashabihatTablesAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """
@@ -456,7 +505,7 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
 
     public async Task TruncateFoundationAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """
@@ -479,7 +528,7 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
 
     public async Task<MutashabihatTableSnapshot> CaptureTableSnapshotAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return new MutashabihatTableSnapshot(

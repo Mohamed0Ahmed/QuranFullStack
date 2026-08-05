@@ -56,7 +56,7 @@ public sealed class NavigationRefusalForceTests(NavigationImportTestFixture fixt
         var navSnapshot = await fixture.CaptureNavigationSnapshotAsync();
         navSnapshot.Should().Be(new NavigationTableSnapshot(0, 0, 0, 0, 1));
 
-        await using (var scope = fixture.CreateServiceProvider().CreateAsyncScope())
+        await using (var scope = fixture.CreateScope())
         {
             var writer = scope.ServiceProvider.GetRequiredService<INavigationMetadataImportWriter>();
             (await writer.AnyTargetTableHasDataAsync(CancellationToken.None)).Should().BeTrue();

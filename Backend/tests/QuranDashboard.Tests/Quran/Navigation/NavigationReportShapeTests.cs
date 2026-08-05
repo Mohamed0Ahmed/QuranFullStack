@@ -304,10 +304,12 @@ public sealed class NavigationReportShapeTests(NavigationImportTestFixture fixtu
         var packageDir = await fixture.WriteSyntheticPackageAsync(NavigationSyntheticSeed.DefaultTestExpectedCounts);
         var reportDir = Path.Combine(Path.GetTempPath(), $"navigation-report-{Guid.NewGuid():N}");
 
-        await using var scope = fixture.CreateServiceProvider(services =>
+        await using var provider = fixture.CreateCallerDisposedServiceProvider(services =>
         {
             services.AddSingleton<INavigationMetadataReportWriter, FailingNavigationReportWriter>();
-        }).CreateAsyncScope();
+        });
+
+        await using var scope = provider.CreateAsyncScope();
 
         var handler = scope.ServiceProvider.GetRequiredService<ImportNavigationMetadataHandler>();
         var result = await handler.HandleAsync(

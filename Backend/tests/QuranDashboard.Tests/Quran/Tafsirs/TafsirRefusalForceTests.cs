@@ -55,7 +55,7 @@ public sealed class TafsirRefusalForceTests(TafsirImportTestFixture fixture)
 
         firstRun.Succeeded.Should().BeTrue(firstRun.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var writer = scope.ServiceProvider.GetRequiredService<ITafsirImportWriter>();
 
         (await writer.AnyTargetTableHasDataAsync(CancellationToken.None)).Should().BeTrue();

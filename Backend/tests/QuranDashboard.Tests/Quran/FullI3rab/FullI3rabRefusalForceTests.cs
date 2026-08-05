@@ -55,7 +55,7 @@ public sealed class FullI3rabRefusalForceTests(FullI3rabImportTestFixture fixtur
 
         firstRun.Succeeded.Should().BeTrue(firstRun.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var writer = scope.ServiceProvider.GetRequiredService<IFullI3rabImportWriter>();
 
         (await writer.AnyTargetTableHasDataAsync(CancellationToken.None)).Should().BeTrue();

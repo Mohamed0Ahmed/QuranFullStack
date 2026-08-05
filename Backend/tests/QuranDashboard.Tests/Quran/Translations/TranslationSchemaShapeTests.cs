@@ -123,7 +123,7 @@ public sealed class TranslationSchemaShapeTests(TranslationImportTestFixture fix
     [Fact]
     public async Task Schema_has_exactly_two_translation_tables()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         var tables = await QueryTableNamesAsync(connection);
@@ -137,7 +137,7 @@ public sealed class TranslationSchemaShapeTests(TranslationImportTestFixture fix
     [Fact]
     public async Task Schema_has_required_source_columns()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         await AssertColumnsMatchAsync(connection, "quran_translation_sources", SourceColumns);
@@ -146,7 +146,7 @@ public sealed class TranslationSchemaShapeTests(TranslationImportTestFixture fix
     [Fact]
     public async Task Schema_has_required_ayah_entry_columns()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         await AssertColumnsMatchAsync(connection, "quran_translation_ayah_entries", AyahEntryColumns);
@@ -155,7 +155,7 @@ public sealed class TranslationSchemaShapeTests(TranslationImportTestFixture fix
     [Fact]
     public async Task Schema_has_required_source_indexes_and_checks()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         const string table = "quran_translation_sources";
@@ -171,7 +171,7 @@ public sealed class TranslationSchemaShapeTests(TranslationImportTestFixture fix
     [Fact]
     public async Task Schema_has_required_ayah_entry_indexes_checks_and_foreign_keys()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         const string table = "quran_translation_ayah_entries";
@@ -188,7 +188,7 @@ public sealed class TranslationSchemaShapeTests(TranslationImportTestFixture fix
     {
         await fixture.TruncateTranslationTablesAsync();
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         dbContext.TranslationSources.Add(new TranslationSource

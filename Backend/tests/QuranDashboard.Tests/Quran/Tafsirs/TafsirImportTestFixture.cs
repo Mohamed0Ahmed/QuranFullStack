@@ -3,27 +3,49 @@ using QuranDashboard.Application.Quran.DataPipelines.Tafsirs;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
+using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Tafsirs;
 
 public sealed class TafsirImportTestFixture : IAsyncLifetime
 {
     private readonly List<string> tempDirs = new();
+    private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    private PostgreSqlDatabaseLease? databaseLease;
+    private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        await postgresContainer.StartAsync();
+        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(TafsirImportTestFixture));
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await dbContext.Database.MigrateAsync();
+        try
+        {
+            rootProvider = ownedProviders.Own(BuildServiceProvider(databaseLease.ConnectionString));
+        }
+        catch
+        {
+            await DisposeAsync();
+            throw;
+        }
     }
 
     public async Task DisposeAsync()
+    {
+        rootProvider = null;
+        await ownedProviders.DisposeAsync();
+
+        if (databaseLease is not null)
+        {
+            await databaseLease.DisposeAsync();
+            databaseLease = null;
+        }
+
+        DeleteTempDirs();
+    }
+
+    private void DeleteTempDirs()
     {
         foreach (var dir in tempDirs)
         {
@@ -34,35 +56,25 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
             catch (IOException)
             {
             }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
 
-        await postgresContainer.DisposeAsync();
+        tempDirs.Clear();
     }
 
-    public ServiceProvider CreateServiceProvider(Action<IServiceCollection>? configure = null)
+    public AsyncServiceScope CreateScope()
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:QuranDashboardDb"] = postgresContainer.GetConnectionString()
-            })
-            .Build();
-
-        var services = new ServiceCollection()
-            .AddSingleton<IConfiguration>(configuration)
-            .AddApplication()
-            .AddInfrastructure(configuration);
-
-        configure?.Invoke(services);
-
-        return services.BuildServiceProvider();
+        return InitializedRootProvider.CreateAsyncScope();
     }
 
     public async Task SeedSyntheticAyahsAsync(params (int Id, string VerseKey)[] ayahs)
     {
+        await TruncateTafsirTablesAsync();
         await TruncateFoundationAsync();
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         dbContext.QuranSurahs.Add(new Surah
@@ -111,7 +123,7 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
 
     public async Task TruncateTafsirTablesAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """
@@ -125,7 +137,7 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
 
     public async Task<TafsirTableSnapshot> CaptureTafsirTableSnapshotAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return new TafsirTableSnapshot(
@@ -136,7 +148,7 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
 
     public async Task<QuranFoundationSnapshot> CaptureQuranFoundationSnapshotAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var ayahTexts = await dbContext.QuranAyahs
@@ -203,7 +215,7 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
         bool force = false)
     {
         reportOutDir ??= Path.Combine(Path.GetTempPath(), $"tafsir-report-default-{Guid.NewGuid():N}");
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<ImportTafsirsHandler>();
         return await handler.HandleAsync(
             new ImportTafsirsCommand(packageDir, force, expectedCounts, reportOutDir),
@@ -212,7 +224,7 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
 
     public async Task TruncateFoundationAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """
@@ -307,6 +319,28 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
     }
 
     public const short SyntheticSurahNumber = 900;
+
+    private ServiceProvider InitializedRootProvider =>
+        rootProvider ?? throw new InvalidOperationException(
+            $"{nameof(TafsirImportTestFixture)} holds no database. Only its package-writing helpers work on a "
+            + "directly constructed instance; every database helper needs the "
+            + $"[{nameof(TafsirImportTestCollection)}] collection fixture.");
+
+    private static ServiceProvider BuildServiceProvider(string connectionString)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:QuranDashboardDb"] = connectionString
+            })
+            .Build();
+
+        return new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddApplication()
+            .AddInfrastructure(configuration)
+            .BuildServiceProvider();
+    }
 
     private static object BuildSourceRecord(
         SyntheticTafsirSourceSpec spec,

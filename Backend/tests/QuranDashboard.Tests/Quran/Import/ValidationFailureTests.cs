@@ -14,7 +14,7 @@ public sealed class ValidationFailureTests
         this.fixture = fixture;
     }
 
-    [Fact]
+    [FoundationImportSourceFact]
     public async Task CorruptedSourceWithDuplicateWordId_AbortsImportAndPersistsNothing()
     {
         var corruptSourceRoot = ImportSourceTestHelpers.CopySourceToTemp(fixture.SourceRoot);
@@ -32,7 +32,7 @@ public sealed class ValidationFailureTests
             result.Succeeded.Should().BeFalse();
             result.Message.Should().Contain("id-contiguous");
 
-            await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+            await using var scope = fixture.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
             (await dbContext.QuranSurahs.CountAsync()).Should().Be(0);

@@ -69,7 +69,7 @@ public sealed class TafsirSchemaShapeTests(TafsirImportTestFixture fixture)
     [Fact]
     public async Task Schema_has_exactly_three_tafsir_tables()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         var tables = await QueryTableNamesAsync(connection);
@@ -84,7 +84,7 @@ public sealed class TafsirSchemaShapeTests(TafsirImportTestFixture fixture)
     [Fact]
     public async Task Schema_has_required_source_indexes_and_checks()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         const string table = "quran_tafsir_sources";
@@ -99,7 +99,7 @@ public sealed class TafsirSchemaShapeTests(TafsirImportTestFixture fixture)
     [Fact]
     public async Task Schema_has_required_entry_indexes_and_checks()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         const string table = "quran_tafsir_entries";
@@ -114,7 +114,7 @@ public sealed class TafsirSchemaShapeTests(TafsirImportTestFixture fixture)
     [Fact]
     public async Task Schema_has_required_ayah_entry_indexes_and_checks()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         const string table = "quran_tafsir_ayah_entries";

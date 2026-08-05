@@ -34,8 +34,17 @@ Folders are clustered by Quran domain/use case, not by project layer.
   `test-resources.tsv` catalogs the `Backend/scripts/test-backend` lanes read),
   `Logging/RecordingLoggerProvider.cs`, and `PostgreSql/` — the one shared
   `postgres:16-alpine` runtime, its migrated template, and the per-collection database leases
-  the Access and explorer fixtures take instead of starting their own container. The
-  import/pipeline fixtures and the smoke fixtures still build their own container.
+  the Access, explorer, FullI3rab, foundation Import, Mutashabihat, Navigation, Tafsirs, and
+  Translations fixtures take instead of starting their own container. The two FullI3rab
+  collections lease separately — `FullI3rabImportTestFixture` and `FullI3rabSchemaFixture`
+  never share one database. The remaining pipeline fixtures (WordsDisplay, WordsMorphology,
+  WordsSimpleI3rab), the Access migration fixture, and the smoke fixtures still build their
+  own container.
+- `TranslationImportTestFixture` owns exactly one root `ServiceProvider` for its collection and
+  reaches it through `CreateScope()`. Constructed directly, without `InitializeAsync`, it leases
+  nothing and starts nothing: `WriteSyntheticPackageAsync` works, every database helper throws.
+  Four `Kind=Fast` classes in `Quran/Translations/` construct it purely to write a synthetic
+  package, and the container-free `fast` lane must stay container-free.
 
 ## Navigation conventions
 
@@ -50,6 +59,11 @@ Folders are clustered by Quran domain/use case, not by project layer.
   or other religious content in tests.
 - Source-backed tests should keep using staged packages under `resources/import-sources/` and
   fixture wiring that preserves provenance.
+- A source-backed fixture decides on the staged package **before** it acquires a database. When
+  `resources/import-sources/quran-foundation/` is absent, `Quran/Import/FoundationImportSourceGate.cs`
+  skips every foundation-import case and `ImportTestFixture.InitializeAsync` returns without
+  leasing — so a run started outside `Backend/scripts/test-backend` (an IDE, a plain `dotnet test`)
+  starts no server at all. The runner refuses the lane earlier still, in its canonical preflight.
 - Synthetic packages/helpers are acceptable for structural or validation scenarios only when they
   do not fabricate scripture content.
 - Many clusters use real PostgreSQL infrastructure and EF migrations through shared fixtures;

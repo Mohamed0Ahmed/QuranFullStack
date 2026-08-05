@@ -153,7 +153,7 @@ public sealed class FullI3rabSchemaShapeTests(FullI3rabSchemaFixture fixture)
     [Fact]
     public async Task Schema_has_exactly_three_full_i3rab_tables()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         var tables = await QueryTableNamesAsync(connection);
@@ -168,7 +168,7 @@ public sealed class FullI3rabSchemaShapeTests(FullI3rabSchemaFixture fixture)
     [Fact]
     public async Task Schema_is_distinct_from_simple_i3rab_rules_table()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         var fullI3rabTables = await QueryTableNamesAsync(connection);
@@ -185,7 +185,7 @@ public sealed class FullI3rabSchemaShapeTests(FullI3rabSchemaFixture fixture)
     [Fact]
     public async Task Source_table_has_required_columns_indexes_and_checks()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         const string table = "quran_full_i3rab_sources";
@@ -205,7 +205,7 @@ public sealed class FullI3rabSchemaShapeTests(FullI3rabSchemaFixture fixture)
     [Fact]
     public async Task Entry_table_has_required_columns_indexes_checks_and_foreign_keys()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         const string table = "quran_full_i3rab_entries";
@@ -226,7 +226,7 @@ public sealed class FullI3rabSchemaShapeTests(FullI3rabSchemaFixture fixture)
     [Fact]
     public async Task Ayah_entry_table_has_required_columns_indexes_checks_and_foreign_keys()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         const string table = "quran_full_i3rab_ayah_entries";

@@ -27,7 +27,7 @@ public sealed class TafsirImportTests(TafsirImportTestFixture fixture)
         result.Totals.AyahMappingRows.Should().Be(3);
         result.Totals.DistinctAyahs.Should().Be(3);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var sources = await dbContext.TafsirSources.AsNoTracking().ToListAsync();
@@ -91,7 +91,7 @@ public sealed class TafsirImportTests(TafsirImportTestFixture fixture)
         result.Totals.AyahMappingRows.Should().Be(6);
         result.Totals.TafsirTextBlockRows.Should().Be(4);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var entries = await dbContext.TafsirEntries

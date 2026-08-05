@@ -4,66 +4,65 @@ using QuranDashboard.Application.Quran.DataPipelines.FullI3rab;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
+using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.FullI3rab;
 
 public sealed class FullI3rabImportTestFixture : IAsyncLifetime
 {
     private readonly List<string> tempDirs = [];
+    private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    private PostgreSqlDatabaseLease? databaseLease;
+    private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        await postgresContainer.StartAsync();
+        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
+            nameof(FullI3rabImportTestFixture));
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await dbContext.Database.MigrateAsync();
+        try
+        {
+            rootProvider = ownedProviders.Own(BuildServiceProvider(databaseLease.ConnectionString));
+        }
+        catch
+        {
+            await DisposeAsync();
+            throw;
+        }
     }
 
     public async Task DisposeAsync()
     {
-        foreach (var dir in tempDirs)
+        rootProvider = null;
+        await ownedProviders.DisposeAsync();
+
+        if (databaseLease is not null)
         {
-            try
-            {
-                Directory.Delete(dir, recursive: true);
-            }
-            catch (IOException)
-            {
-            }
+            await databaseLease.DisposeAsync();
+            databaseLease = null;
         }
 
-        await postgresContainer.DisposeAsync();
+        DeleteTempDirs();
     }
 
-    public ServiceProvider CreateServiceProvider(Action<IServiceCollection>? configure = null)
+    public AsyncServiceScope CreateScope()
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:QuranDashboardDb"] = postgresContainer.GetConnectionString()
-            })
-            .Build();
+        if (rootProvider is null)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(FullI3rabImportTestFixture)} has not been initialized. Ensure it is used as a collection fixture.");
+        }
 
-        var services = new ServiceCollection()
-            .AddSingleton<IConfiguration>(configuration)
-            .AddApplication()
-            .AddInfrastructure(configuration);
-
-        configure?.Invoke(services);
-
-        return services.BuildServiceProvider();
+        return rootProvider.CreateAsyncScope();
     }
 
     public async Task SeedSyntheticAyahsAsync(params (int Id, string VerseKey)[] ayahs)
     {
         await TruncateFoundationAsync();
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         dbContext.QuranSurahs.Add(new Surah
@@ -112,7 +111,7 @@ public sealed class FullI3rabImportTestFixture : IAsyncLifetime
 
     public async Task TruncateFullI3rabTablesAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """
@@ -126,7 +125,7 @@ public sealed class FullI3rabImportTestFixture : IAsyncLifetime
 
     public async Task TruncateFoundationAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """
@@ -145,7 +144,7 @@ public sealed class FullI3rabImportTestFixture : IAsyncLifetime
         bool force = false)
     {
         reportOutDir ??= CreateTempDir();
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<ImportFullI3rabHandler>();
         return await handler.HandleAsync(
             new ImportFullI3rabCommand(packageDir, force, expectedCounts, reportOutDir),
@@ -162,7 +161,7 @@ public sealed class FullI3rabImportTestFixture : IAsyncLifetime
 
     public async Task<FullI3rabTableSnapshot> CaptureFullI3rabTableSnapshotAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return new FullI3rabTableSnapshot(
@@ -173,7 +172,7 @@ public sealed class FullI3rabImportTestFixture : IAsyncLifetime
 
     public async Task<QuranFoundationSnapshot> CaptureQuranFoundationSnapshotAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var ayahTexts = await dbContext.QuranAyahs
@@ -187,6 +186,41 @@ public sealed class FullI3rabImportTestFixture : IAsyncLifetime
             await dbContext.QuranAyahs.CountAsync(),
             Convert.ToHexString(SHA256.HashData(
                 Encoding.UTF8.GetBytes(string.Join('|', ayahTexts)))));
+    }
+
+    private static ServiceProvider BuildServiceProvider(string connectionString)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:QuranDashboardDb"] = connectionString
+            })
+            .Build();
+
+        return new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddApplication()
+            .AddInfrastructure(configuration)
+            .BuildServiceProvider();
+    }
+
+    private void DeleteTempDirs()
+    {
+        foreach (var dir in tempDirs)
+        {
+            try
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+
+        tempDirs.Clear();
     }
 }
 

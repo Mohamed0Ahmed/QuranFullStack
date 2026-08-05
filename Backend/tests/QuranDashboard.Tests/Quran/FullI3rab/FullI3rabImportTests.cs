@@ -27,7 +27,7 @@ public sealed class FullI3rabImportTests(FullI3rabImportTestFixture fixture) : I
         result.Totals.DistinctAyahs.Should().Be(3);
         result.WarningCount.Should().Be(0);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var sources = await dbContext.FullI3rabSources.AsNoTracking().ToListAsync();
