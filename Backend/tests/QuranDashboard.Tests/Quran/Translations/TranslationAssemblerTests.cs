@@ -3,15 +3,17 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Translations;
 
 namespace QuranDashboard.Tests.Quran.Translations;
 
-public sealed class TranslationAssemblerTests
+public sealed class TranslationAssemblerTests : IDisposable
 {
     private readonly TranslationAssembler assembler = new();
-    private readonly TranslationImportTestFixture fixture = new();
+    private readonly TranslationSyntheticPackage packages = new();
+
+    public void Dispose() => packages.Dispose();
 
     [Fact]
     public async Task AssembleSource_resolves_verse_keys_and_preserves_exact_text()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync(
+        var packageDir = await packages.WriteAsync(
             sources: TranslationSyntheticSeed.MinimalSources);
         var manifestReader = new TranslationManifestReader();
         var displayReader = new TranslationDisplayMetadataReader();
@@ -58,7 +60,7 @@ public sealed class TranslationAssemblerTests
     [Fact]
     public async Task AssembleSource_detects_inline_footnotes_and_html_markup()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync(
+        var packageDir = await packages.WriteAsync(
             sources:
             [
                 new SyntheticTranslationSourceSpec(

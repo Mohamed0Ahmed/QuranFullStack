@@ -4,15 +4,17 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Translations;
 
 namespace QuranDashboard.Tests.Quran.Translations;
 
-public sealed class TranslationDisplayMetadataReaderTests
+public sealed class TranslationDisplayMetadataReaderTests : IDisposable
 {
     private readonly TranslationDisplayMetadataReader reader = new();
-    private readonly TranslationImportTestFixture fixture = new();
+    private readonly TranslationSyntheticPackage packages = new();
+
+    public void Dispose() => packages.Dispose();
 
     [Fact]
     public async Task ReadAsync_parses_final_display_metadata_contract()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
         var approvedKeys = new[] { "en-test-simple" };
 
         var metadata = await reader.ReadAsync(
@@ -37,7 +39,7 @@ public sealed class TranslationDisplayMetadataReaderTests
     [Fact]
     public async Task ReadAsync_requires_manifest_source_set_alignment()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync(
+        var packageDir = await packages.WriteAsync(
             sources: TranslationSyntheticSeed.IntegrationSources);
         var approvedKeys = TranslationSyntheticSeed.IntegrationSources
             .Select(source => source.SourceKey)
@@ -57,7 +59,7 @@ public sealed class TranslationDisplayMetadataReaderTests
     [Fact]
     public async Task ReadAsync_refuses_source_set_mismatch_with_manifest()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
         var approvedKeys = new[] { "en-test-simple", "missing-source-key" };
 
         var act = () => reader.ReadAsync(
@@ -73,7 +75,7 @@ public sealed class TranslationDisplayMetadataReaderTests
     [Fact]
     public async Task ReadAsync_throws_when_display_metadata_file_is_missing()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
         File.Delete(Path.Combine(packageDir, "source-display-metadata.json"));
 
         var act = () => reader.ReadAsync(
@@ -88,7 +90,7 @@ public sealed class TranslationDisplayMetadataReaderTests
     [Fact]
     public async Task ReadAsync_throws_on_invalid_json()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
         await File.WriteAllTextAsync(
             Path.Combine(packageDir, "source-display-metadata.json"),
             "{ this is not valid json");
@@ -105,7 +107,7 @@ public sealed class TranslationDisplayMetadataReaderTests
     [Fact]
     public async Task ReadAsync_fails_tr_display_metadata_final_when_status_is_not_final()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
         await ModifyDisplayMetadataAsync(packageDir, root =>
         {
             root["status"] = "draft";
@@ -125,7 +127,7 @@ public sealed class TranslationDisplayMetadataReaderTests
     [Fact]
     public async Task ReadAsync_fails_tr_display_metadata_final_when_source_count_is_wrong()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
         await ModifyDisplayMetadataAsync(packageDir, root =>
         {
             root["sourceCount"] = 999;
@@ -145,7 +147,7 @@ public sealed class TranslationDisplayMetadataReaderTests
     [Fact]
     public async Task ReadAsync_fails_tr_display_metadata_required_fields_when_display_name_is_empty()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
         await ModifyDisplayMetadataAsync(packageDir, root =>
         {
             root["records"]![0]!["displayNameEn"] = "";
@@ -165,7 +167,7 @@ public sealed class TranslationDisplayMetadataReaderTests
     [Fact]
     public async Task ReadAsync_fails_tr_display_metadata_required_fields_when_record_status_is_not_final()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
         await ModifyDisplayMetadataAsync(packageDir, root =>
         {
             root["records"]![0]!["metadataStatus"] = "needs_review";
@@ -185,7 +187,7 @@ public sealed class TranslationDisplayMetadataReaderTests
     [Fact]
     public async Task ReadAsync_fails_tr_display_metadata_required_fields_when_translation_type_is_invalid()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
         await ModifyDisplayMetadataAsync(packageDir, root =>
         {
             root["records"]![0]!["translationType"] = "word_by_word";

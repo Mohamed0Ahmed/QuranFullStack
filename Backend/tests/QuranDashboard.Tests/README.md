@@ -17,11 +17,13 @@ Folders are clustered by Quran domain/use case, not by project layer.
 - `Quran/WordsMorphology/`, `WordsMorphologyEnriched/`, `WordsSimpleI3rab/`, `WordsDisplay/` —
   morphology import, enriched morphology, generated simple i3rab, and display-word rebuild coverage.
 - `Smoke/` — the route-smoke tier (`QuranDashboard.Tests.Smoke`). Boots the real API
-  composition once under `ASPNETCORE_ENVIRONMENT=Testing` over a Testcontainers
-  `postgres:16-alpine`, and drives every registered route through routing, authorization,
-  model binding, and serialization. `SmokeRouteCatalog` is bidirectionally locked to the
-  live `EndpointDataSource` by `SmokeCoverageParityTests`, so **adding or changing an API
-  route requires updating the catalog in the same change** or the suite fails by route name.
+  composition once under `ASPNETCORE_ENVIRONMENT=Testing` over a migrated-but-empty database
+  leased from the shared `postgres:16-alpine` runtime — the sweep's expectations are derived
+  against an empty schema, so nothing seeds it — and drives every registered route through
+  routing, authorization, model binding, and serialization. `SmokeRouteCatalog` is
+  bidirectionally locked to the live `EndpointDataSource` by `SmokeCoverageParityTests`,
+  so **adding or changing an API route requires updating the catalog in the same change**
+  or the suite fails by route name.
   Three personas (anonymous / authenticated-unknown-sub / owner) run over the real
   JwtBearer handler with RSA test tokens.
 - `Smoke/Data/` — the data tier (`QuranDashboard.Tests.Smoke.Data`), which restores the
@@ -34,17 +36,31 @@ Folders are clustered by Quran domain/use case, not by project layer.
   `test-resources.tsv` catalogs the `Backend/scripts/test-backend` lanes read),
   `Logging/RecordingLoggerProvider.cs`, and `PostgreSql/` — the one shared
   `postgres:16-alpine` runtime, its migrated template, and the per-collection database leases
-  the Access, explorer, FullI3rab, foundation Import, Mutashabihat, Navigation, Tafsirs, and
-  Translations fixtures take instead of starting their own container. The two FullI3rab
-  collections lease separately — `FullI3rabImportTestFixture` and `FullI3rabSchemaFixture`
-  never share one database. The remaining pipeline fixtures (WordsDisplay, WordsMorphology,
-  WordsSimpleI3rab), the Access migration fixture, and the smoke fixtures still build their
-  own container.
+  the Access, explorer, FullI3rab, foundation Import, Mutashabihat, Navigation, Tafsirs,
+  Translations, WordsDisplay, WordsMorphology, WordsSimpleI3rab, and route-smoke fixtures take
+  instead of starting their own container. The two FullI3rab collections lease separately — `FullI3rabImportTestFixture` and
+  `FullI3rabSchemaFixture` never share one database — and so do the two WordsDisplay
+  collections: `WordsDisplayTestFixture` (synthetic seed) and `DisplayWordsRealImportFixture`
+  (real foundation import) each take their own lease. The Access migration fixture and the
+  `Smoke/Data/` canonical fixture still build their own container.
 - `TranslationImportTestFixture` owns exactly one root `ServiceProvider` for its collection and
-  reaches it through `CreateScope()`. Constructed directly, without `InitializeAsync`, it leases
-  nothing and starts nothing: `WriteSyntheticPackageAsync` works, every database helper throws.
-  Four `Kind=Fast` classes in `Quran/Translations/` construct it purely to write a synthetic
-  package, and the container-free `fast` lane must stay container-free.
+  reaches it through `CreateScope()`; every helper on it needs the collection, and throws without
+  one. Writing a synthetic source package needs no database, so it lives in the disposable
+  `TranslationSyntheticPackage` (temp dirs in, `Dispose()` deletes them) — the fixture owns one and
+  disposes it after releasing its lease, and the four `Kind=Fast` classes in `Quran/Translations/`
+  own their own, which is what keeps the container-free `fast` lane container-free.
+- `MorphologyImportTestFixture` serves plain cases from one root `ServiceProvider` and gives
+  `CreateScope(configure)` its own extra root, because several cases replace singletons such as
+  `IWordLemmaNormalizationReader`. `configure` must run after `AddMorphologyImportServices()` —
+  last registration wins is what makes those replacements take effect. Every root, plain or
+  overridden, is registry-owned and disposed before the lease.
+- `I3rabGenerationTestFixture` serves every read and reset helper from one registry-owned root
+  through `CreateScope()`, and builds one throwaway root per `RunGenerationAsync` call because
+  each run needs its own `I3rabExpectedCounts` singleton and, for the tamper theories, its own
+  `configure` overrides. That root is disposed inside the call — `GenerateI3rabResult` is a
+  record of primitives, so nothing survives it — which keeps ~20 generation runs from holding
+  ~20 live connection pools against one leased clone. `configure` must stay last: the tamper
+  cases replace `II3rabAssembler` and `II3rabGenerationWriteProbe`, and last registration wins.
 
 ## Navigation conventions
 
@@ -64,6 +80,16 @@ Folders are clustered by Quran domain/use case, not by project layer.
   skips every foundation-import case and `ImportTestFixture.InitializeAsync` returns without
   leasing — so a run started outside `Backend/scripts/test-backend` (an IDE, a plain `dotnet test`)
   starts no server at all. The runner refuses the lane earlier still, in its canonical preflight.
+  `Quran/WordsDisplay/CanonicalImportSourceTestGate.cs` gates the real display-words import the
+  same way: every `DisplayWordsRealImportIdentityLinksTests` case skips and
+  `DisplayWordsRealImportFixture.InitializeAsync` returns before it leases anything.
+- `WordsDisplayTestFixture.CreateHandler()` hands out one child scope per call, registered through
+  `OwnedServiceProviderRegistry` so reverse-order disposal releases every scope before the root
+  provider and before the lease, and so one failing scope disposal cannot strand the leased
+  database. Every call must get its own `QuranDashboardDbContext` — do not resolve the rebuild
+  handler from the root provider and reuse it across runs: `SqlDisplayWordsRebuilder` opens the
+  underlying connection itself, outside EF's bookkeeping, and never closes it, so a reused context
+  enters the next rebuild with its connection already open.
 - Synthetic packages/helpers are acceptable for structural or validation scenarios only when they
   do not fabricate scripture content.
 - Many clusters use real PostgreSQL infrastructure and EF migrations through shared fixtures;

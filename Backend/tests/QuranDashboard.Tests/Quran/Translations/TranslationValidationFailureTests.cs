@@ -3,11 +3,11 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Translations;
 
 namespace QuranDashboard.Tests.Quran.Translations;
 
-public sealed class TranslationValidationFailureTests
+public sealed class TranslationValidationFailureTests : IDisposable
 {
     private readonly TranslationManifestReader manifestReader = new();
     private readonly TranslationAssembler assembler = new();
-    private readonly TranslationImportTestFixture fixture = new();
+    private readonly TranslationSyntheticPackage packages = new();
 
     private static readonly TranslationExpectedCounts SingleSourceExpected = new(
         ApprovedSources: 1,
@@ -18,10 +18,12 @@ public sealed class TranslationValidationFailureTests
         AyahsPerSource: 1,
         SourceAyahMappings: 1);
 
+    public void Dispose() => packages.Dispose();
+
     [Fact]
     public async Task Missing_package_file_fails_with_tr_package_shape()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync(
+        var packageDir = await packages.WriteAsync(
             sources:
             [
                 new SyntheticTranslationSourceSpec(
@@ -53,7 +55,7 @@ public sealed class TranslationValidationFailureTests
     [Fact]
     public async Task Non_final_manifest_fails_with_tr_manifest_final()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync(
+        var packageDir = await packages.WriteAsync(
             sources: TranslationSyntheticSeed.MinimalSources,
             isFinalImportManifest: false);
 
@@ -68,7 +70,7 @@ public sealed class TranslationValidationFailureTests
     [Fact]
     public async Task Wrong_source_count_fails_with_tr_source_count()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
 
         var wrongCounts = TranslationSyntheticSeed.DefaultTestExpectedCounts with { ApprovedSources = 999 };
 
@@ -82,7 +84,7 @@ public sealed class TranslationValidationFailureTests
     [Fact]
     public async Task Extra_source_file_fails_with_tr_source_set()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
 
         await File.WriteAllTextAsync(
             Path.Combine(packageDir, "sources", "en-extra-unlisted.json"),
@@ -99,7 +101,7 @@ public sealed class TranslationValidationFailureTests
     [Fact]
     public async Task Tampered_source_file_fails_with_tr_source_hash()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
 
         var sourceFile = Path.Combine(packageDir, "sources", "en-test-simple.json");
         await File.AppendAllTextAsync(sourceFile, "TAMPERED");

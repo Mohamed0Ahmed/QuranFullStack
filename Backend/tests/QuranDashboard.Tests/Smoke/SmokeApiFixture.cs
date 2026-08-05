@@ -3,16 +3,14 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using QuranDashboard.Api.Controllers.System;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Tests.Api.Access;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Smoke;
 
 public sealed class SmokeApiFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
-
     private readonly object _apiFactoryLock = new();
+    private PostgreSqlDatabaseLease? _databaseLease;
     private WebApplicationFactory<HealthController>? _apiFactory;
     private ServiceProvider? _queryProvider;
 
@@ -23,28 +21,46 @@ public sealed class SmokeApiFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await _container.StartAsync();
-        ConnectionString = _container.GetConnectionString();
+        _databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(SmokeApiFixture));
+        ConnectionString = _databaseLease.ConnectionString;
 
-        _queryProvider = BuildQueryProvider();
-
-        await using var scope = _queryProvider.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.MigrateAsync();
+        try
+        {
+            _queryProvider = BuildQueryProvider();
+        }
+        catch
+        {
+            await DisposeAsync();
+            throw;
+        }
     }
 
     public async Task DisposeAsync()
     {
-        _apiFactory?.Dispose();
-        _apiFactory = null;
-
-        if (_queryProvider is not null)
+        // The lease is released in the finally so a failing host or provider disposal cannot strand a
+        // leased database on the shared server for the rest of the test process.
+        try
         {
-            await _queryProvider.DisposeAsync();
-            _queryProvider = null;
-        }
+            if (_apiFactory is not null)
+            {
+                await _apiFactory.DisposeAsync();
+                _apiFactory = null;
+            }
 
-        await _container.DisposeAsync();
+            if (_queryProvider is not null)
+            {
+                await _queryProvider.DisposeAsync();
+                _queryProvider = null;
+            }
+        }
+        finally
+        {
+            if (_databaseLease is not null)
+            {
+                await _databaseLease.DisposeAsync();
+                _databaseLease = null;
+            }
+        }
     }
 
     public HttpClient CreateClient() => SmokeApiHost.CreateClient(Factory);

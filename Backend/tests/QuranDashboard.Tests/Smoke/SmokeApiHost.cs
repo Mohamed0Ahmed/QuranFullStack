@@ -8,7 +8,7 @@ using QuranDashboard.Tests.Api.Access;
 namespace QuranDashboard.Tests.Smoke;
 
 // The one Testing-environment composition, shared by the empty-schema fixture and the dump-seeded one.
-// The two tiers own separate containers on purpose, but they must not own separate host wiring: if they
+// The two tiers own separate databases on purpose, but they must not own separate host wiring: if they
 // did, a route answering differently between them could mean a difference in configuration rather than
 // the difference in data the data tier is there to measure.
 internal static class SmokeApiHost

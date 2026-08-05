@@ -83,7 +83,7 @@ public sealed class TranslationRollbackTests(TranslationImportTestFixture fixtur
         snapshotAfter.AyahEntryRows.Should().Be(snapshotBefore.AyahEntryRows);
     }
 
-    private static async Task<string> CreateReclassifiedSourcePackageAsync()
+    private async Task<string> CreateReclassifiedSourcePackageAsync()
     {
         var entries = new Dictionary<string, string>(TranslationInvariants.ExpectedAyahsPerSource);
         for (var ayah = 1; ayah <= TranslationInvariants.ExpectedAyahsPerSource; ayah++)
@@ -95,7 +95,6 @@ public sealed class TranslationRollbackTests(TranslationImportTestFixture fixtur
             entries[verseKey] = text;
         }
 
-        var fixture = new TranslationImportTestFixture();
         return await fixture.WriteSyntheticPackageAsync(
             sources:
             [
