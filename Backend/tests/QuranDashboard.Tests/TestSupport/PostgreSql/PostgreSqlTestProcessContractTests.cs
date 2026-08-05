@@ -7,6 +7,13 @@ public sealed class PostgreSqlTestProcessContractTests
 {
     private const string Owner = nameof(PostgreSqlTestProcessContractTests);
     private const string FlockExecutable = "/usr/bin/flock";
+    private const string LocalDiagnosticConnection = "Host=localhost;Database=quran_dashboard;Username=reader";
+
+    private static Func<string, string?> Variables(params (string Name, string Value)[] set)
+    {
+        var values = set.ToDictionary(entry => entry.Name, entry => entry.Value, StringComparer.Ordinal);
+        return name => values.GetValueOrDefault(name);
+    }
 
     [Fact]
     public async Task ConcurrentMigratedLeases_ShareOneServer_AndIsolateTheirData()
@@ -190,6 +197,55 @@ public sealed class PostgreSqlTestProcessContractTests
 
         external.Should().Throw<InvalidOperationException>()
             .WithMessage("*not a loopback or local host*");
+    }
+
+    [Fact]
+    public void FeatureDatabaseOverride_IsRefused_WithoutTheReadOnlyOptIn()
+    {
+        var resolve = () => ExternalReadOnlyDatabaseOptIn.ResolveConnectionString(
+            ExternalReadOnlyDatabaseOptIn.MushafReaderConnectionVariable,
+            Variables((ExternalReadOnlyDatabaseOptIn.MushafReaderConnectionVariable, LocalDiagnosticConnection)));
+
+        resolve.Should().Throw<InvalidOperationException>()
+            .WithMessage($"*{ExternalReadOnlyDatabaseOptIn.ModeVariable}={ExternalReadOnlyDatabaseOptIn.AcknowledgedMode}*");
+    }
+
+    [Fact]
+    public void FeatureDatabaseOverride_IsHonoured_WithTheReadOnlyOptIn()
+    {
+        var resolved = ExternalReadOnlyDatabaseOptIn.ResolveConnectionString(
+            ExternalReadOnlyDatabaseOptIn.MushafReaderConnectionVariable,
+            Variables(
+                (ExternalReadOnlyDatabaseOptIn.MushafReaderConnectionVariable, LocalDiagnosticConnection),
+                (ExternalReadOnlyDatabaseOptIn.ModeVariable, ExternalReadOnlyDatabaseOptIn.AcknowledgedMode)));
+
+        resolved.Should().Be(LocalDiagnosticConnection);
+    }
+
+    [Fact]
+    public void FeatureDatabaseOverride_IsIgnored_WhenOnlyAnotherFeatureIsAcknowledged()
+    {
+        var resolved = ExternalReadOnlyDatabaseOptIn.ResolveConnectionString(
+            ExternalReadOnlyDatabaseOptIn.MushafReaderConnectionVariable,
+            Variables(
+                (ExternalReadOnlyDatabaseOptIn.WordTypesConnectionVariable, LocalDiagnosticConnection),
+                (ExternalReadOnlyDatabaseOptIn.ModeVariable, ExternalReadOnlyDatabaseOptIn.AcknowledgedMode)));
+
+        resolved.Should().BeNull("an unset override leaves its fixture on an owned migrated lease");
+    }
+
+    [Fact]
+    public void FeatureDatabaseOverride_IsRefused_WhenTwoFeaturesAreSetTogether()
+    {
+        var resolve = () => ExternalReadOnlyDatabaseOptIn.ResolveConnectionString(
+            ExternalReadOnlyDatabaseOptIn.MushafReaderConnectionVariable,
+            Variables(
+                (ExternalReadOnlyDatabaseOptIn.MushafReaderConnectionVariable, LocalDiagnosticConnection),
+                (ExternalReadOnlyDatabaseOptIn.RootsExplorerConnectionVariable, LocalDiagnosticConnection),
+                (ExternalReadOnlyDatabaseOptIn.ModeVariable, ExternalReadOnlyDatabaseOptIn.AcknowledgedMode)));
+
+        resolve.Should().Throw<InvalidOperationException>()
+            .WithMessage($"*{ExternalReadOnlyDatabaseOptIn.RootsExplorerConnectionVariable}*");
     }
 
     [Fact]

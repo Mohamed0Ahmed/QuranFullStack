@@ -6,16 +6,14 @@ using QuranDashboard.Api.Controllers.Access;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Infrastructure.Access;
 using QuranDashboard.Tests.TestSupport.Access;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Api.Access;
 
 public sealed class AccessTestFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
-
     private readonly object _apiFactoryLock = new();
+    private PostgreSqlDatabaseLease? _databaseLease;
     private WebApplicationFactory<AccessController>? _apiFactory;
     private ServiceProvider? _queryProvider;
 
@@ -31,20 +29,19 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await _container.StartAsync();
-        ConnectionString = _container.GetConnectionString();
+        _databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(AccessTestFixture));
+        ConnectionString = _databaseLease.ConnectionString;
 
         _queryProvider = BuildQueryProvider();
-
-        await using var scope = _queryProvider.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.MigrateAsync();
     }
 
     public async Task DisposeAsync()
     {
-        _apiFactory?.Dispose();
-        _apiFactory = null;
+        if (_apiFactory is not null)
+        {
+            await _apiFactory.DisposeAsync();
+            _apiFactory = null;
+        }
 
         if (_queryProvider is not null)
         {
@@ -52,7 +49,11 @@ public sealed class AccessTestFixture : IAsyncLifetime
             _queryProvider = null;
         }
 
-        await _container.DisposeAsync();
+        if (_databaseLease is not null)
+        {
+            await _databaseLease.DisposeAsync();
+            _databaseLease = null;
+        }
     }
 
     public HttpClient CreateApiClient()

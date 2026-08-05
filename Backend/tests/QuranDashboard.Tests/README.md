@@ -27,8 +27,15 @@ Folders are clustered by Quran domain/use case, not by project layer.
 - `Smoke/Data/` — the data tier (`QuranDashboard.Tests.Smoke.Data`), which restores the
   canonical Quran dump so the seeded read routes are asserted against real data instead of
   an empty schema. See the dump note under *Related*.
-- `TestSupport/` — shared helpers used across clusters; today this holds logging capture under
-  `TestSupport/Logging/RecordingLoggerProvider.cs`.
+- `TestSupport/` — shared helpers used across clusters: `Access/` personas and email-identity
+  vectors, `Http/ApiEnvelope.cs`,
+  `DependencyInjection/OwnedServiceProviderRegistry.cs` (disposes fixture-owned root
+  `ServiceProvider`s in reverse creation order), `Execution/` (the `test-gates.tsv` /
+  `test-resources.tsv` catalogs the `Backend/scripts/test-backend` lanes read),
+  `Logging/RecordingLoggerProvider.cs`, and `PostgreSql/` — the one shared
+  `postgres:16-alpine` runtime, its migrated template, and the per-collection database leases
+  the Access and explorer fixtures take instead of starting their own container. The
+  import/pipeline fixtures and the smoke fixtures still build their own container.
 
 ## Navigation conventions
 
