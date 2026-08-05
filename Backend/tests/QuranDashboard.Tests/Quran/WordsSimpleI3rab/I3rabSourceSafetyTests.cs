@@ -30,7 +30,7 @@ public sealed class I3rabSourceSafetyTests(I3rabGenerationTestFixture fixture)
 
     private async Task AssertNullFormSegmentsStillHaveLabelsAsync()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var nullFormSegments = await dbContext.WordMorphologySegments.AsNoTracking()

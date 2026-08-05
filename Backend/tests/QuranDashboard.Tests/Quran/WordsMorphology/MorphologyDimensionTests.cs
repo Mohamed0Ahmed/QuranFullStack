@@ -16,7 +16,7 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var roots = await dbContext.QuranRoots.AsNoTracking().ToListAsync();
@@ -35,7 +35,7 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var row12 = await dbContext.WordMorphologies
@@ -66,7 +66,7 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var roots = await dbContext.QuranRoots.AsNoTracking().ToListAsync();
@@ -91,7 +91,7 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var sharedRoot = await dbContext.QuranRoots.AsNoTracking()
@@ -116,7 +116,7 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var danglingRoots = await dbContext.Database.SqlQueryRaw<int>(
@@ -159,7 +159,7 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var danglingSegmentRoots = await dbContext.Database.SqlQueryRaw<int>(
@@ -193,7 +193,7 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var nonStemLemmaIds = await dbContext.WordMorphologySegments
@@ -225,7 +225,7 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var root121 = await dbContext.WordMorphologies.AsNoTracking()
@@ -249,7 +249,7 @@ public sealed class MorphologyDimensionTests(MorphologyImportTestFixture fixture
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var nonStemWithStemId = await dbContext.WordMorphologySegments

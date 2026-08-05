@@ -45,7 +45,7 @@ public sealed class DisplayWordsIdempotencyTests
 
     private async Task<DerivedTablesSnapshot> CaptureDerivedSnapshotAsync()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var orderedTashkeel = await dbContext.QuranWordsOrderedTashkeel

@@ -24,7 +24,7 @@ public sealed class I3rabWordCompositionTests(I3rabGenerationTestFixture fixture
         var result = await fixture.RunGenerationAsync(I3rabGenerationTestFixture.BihamdikaWordCompositionCounts);
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var connection = dbContext.Database.GetDbConnection();
@@ -60,7 +60,7 @@ public sealed class I3rabWordCompositionTests(I3rabGenerationTestFixture fixture
         displayableCheck.GetProperty("expected").GetString().Should().Be(expectedCounts.ReadableWordCount.ToString());
         displayableCheck.GetProperty("observed").GetString().Should().Be(expectedCounts.ReadableWordCount.ToString());
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var connection = dbContext.Database.GetDbConnection();
         if (connection.State != ConnectionState.Open)

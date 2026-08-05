@@ -1,14 +1,17 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.DisplayRebuilding;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 using QuranDashboard.Application.Quran.DataPipelines.Words.DisplayRebuilding;
+using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
 
 public sealed class DisplayWordsRealImportFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    private readonly OwnedServiceProviderRegistry ownedProviders = new();
+
+    private PostgreSqlDatabaseLease? databaseLease;
+    private ServiceProvider? rootProvider;
 
     public int ImportRunCount { get; private set; }
 
@@ -22,61 +25,46 @@ public sealed class DisplayWordsRealImportFixture : IAsyncLifetime
     {
         if (CanonicalImportSourceTestGate.IsMissing)
         {
-            throw new InvalidOperationException(CanonicalImportSourceTestGate.MissingReason);
+            return;
         }
 
-        await postgresContainer.StartAsync();
+        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
+            nameof(DisplayWordsRealImportFixture));
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await dbContext.Database.MigrateAsync();
-
-        await ImportAndRebuildAsync();
+        try
+        {
+            rootProvider = ownedProviders.Own(BuildServiceProvider(databaseLease.ConnectionString));
+            await ImportAndRebuildAsync();
+        }
+        catch
+        {
+            await DisposeAsync();
+            throw;
+        }
     }
 
     public async Task DisposeAsync()
     {
-        if (!string.IsNullOrEmpty(RebuildReportDir))
+        rootProvider = null;
+        await ownedProviders.DisposeAsync();
+
+        if (databaseLease is not null)
         {
-            try
-            {
-                if (Directory.Exists(RebuildReportDir))
-                {
-                    Directory.Delete(RebuildReportDir, recursive: true);
-                }
-            }
-            catch (IOException)
-            {
-
-            }
-            catch (UnauthorizedAccessException)
-            {
-
-            }
+            await databaseLease.DisposeAsync();
+            databaseLease = null;
         }
 
-        await postgresContainer.DisposeAsync();
+        DeleteRebuildReportDir();
     }
 
-    public ServiceProvider CreateServiceProvider()
+    public AsyncServiceScope CreateScope()
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:QuranDashboardDb"] = postgresContainer.GetConnectionString()
-            })
-            .Build();
-
-        return new ServiceCollection()
-            .AddSingleton<IConfiguration>(configuration)
-            .AddApplication()
-            .AddInfrastructure(configuration)
-            .BuildServiceProvider();
+        return InitializedRootProvider.CreateAsyncScope();
     }
 
     public async Task<IReadOnlyList<SourceWordColumns>> ReadSourceWordColumnsAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return await dbContext.QuranWords
@@ -95,25 +83,83 @@ public sealed class DisplayWordsRealImportFixture : IAsyncLifetime
     private async Task ImportAndRebuildAsync()
     {
         var importReportDir = Path.Combine(Path.GetTempPath(), $"quran-foundation-report-{Guid.NewGuid():N}");
-        var importHandler = CreateServiceProvider().GetRequiredService<ImportQuranFoundationHandler>();
-        var importResult = await importHandler.HandleAsync(
-            new ImportQuranFoundationCommand(CanonicalImportSourceTestGate.SourceRoot, ReportOutDir: importReportDir),
-            CancellationToken.None);
-        importResult.Succeeded.Should().BeTrue(importResult.Message);
+
+        await using (var importScope = CreateScope())
+        {
+            var importHandler = importScope.ServiceProvider.GetRequiredService<ImportQuranFoundationHandler>();
+            var importResult = await importHandler.HandleAsync(
+                new ImportQuranFoundationCommand(
+                    CanonicalImportSourceTestGate.SourceRoot,
+                    ReportOutDir: importReportDir),
+                CancellationToken.None);
+            importResult.Succeeded.Should().BeTrue(importResult.Message);
+        }
+
         ImportRunCount++;
 
         SourceWordsAfterImport = await ReadSourceWordColumnsAsync();
 
         RebuildReportDir = Path.Combine(Path.GetTempPath(), $"words-display-real-{Guid.NewGuid():N}");
-        var rebuildHandler = CreateServiceProvider().GetRequiredService<RebuildDisplayWordsHandler>();
-        var rebuildResult = await rebuildHandler.HandleAsync(
-            new RebuildDisplayWordsCommand(
-                Force: true,
-                ReportOutDir: RebuildReportDir,
-                ExpectedReadableWords: DisplayWordsInvariants.ExpectedReadableWords),
-            CancellationToken.None);
-        rebuildResult.Succeeded.Should().BeTrue(rebuildResult.Message);
+
+        await using (var rebuildScope = CreateScope())
+        {
+            var rebuildHandler = rebuildScope.ServiceProvider.GetRequiredService<RebuildDisplayWordsHandler>();
+            var rebuildResult = await rebuildHandler.HandleAsync(
+                new RebuildDisplayWordsCommand(
+                    Force: true,
+                    ReportOutDir: RebuildReportDir,
+                    ExpectedReadableWords: DisplayWordsInvariants.ExpectedReadableWords),
+                CancellationToken.None);
+            rebuildResult.Succeeded.Should().BeTrue(rebuildResult.Message);
+        }
+
         RebuildRunCount++;
+    }
+
+    private void DeleteRebuildReportDir()
+    {
+        if (string.IsNullOrEmpty(RebuildReportDir))
+        {
+            return;
+        }
+
+        try
+        {
+            if (Directory.Exists(RebuildReportDir))
+            {
+                Directory.Delete(RebuildReportDir, recursive: true);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private ServiceProvider InitializedRootProvider =>
+        rootProvider ?? throw new InvalidOperationException(
+            $"{nameof(DisplayWordsRealImportFixture)} holds no database. Use it through the "
+            + $"[{nameof(DisplayWordsRealImportCollection)}] collection fixture, and mark every case that reaches "
+            + $"the database with [{nameof(CanonicalImportSourceFactAttribute)}] or "
+            + $"[{nameof(CanonicalImportSourceTheoryAttribute)}] so it skips when "
+            + $"{CanonicalImportSourceTestGate.SourceRoot} is absent.");
+
+    private static ServiceProvider BuildServiceProvider(string connectionString)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:QuranDashboardDb"] = connectionString
+            })
+            .Build();
+
+        return new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddApplication()
+            .AddInfrastructure(configuration)
+            .BuildServiceProvider();
     }
 }
 

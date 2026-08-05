@@ -47,7 +47,7 @@ public sealed class MorphologyValidationFailureTests(MorphologyImportTestFixture
 
         try
         {
-            await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+            await using var scope = fixture.CreateScope();
             var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
             var result = await handler.HandleAsync(
                 new ImportMorphologyCommand(sourcePath, false, readableCount, reportDir),
@@ -333,12 +333,12 @@ public sealed class MorphologyValidationFailureTests(MorphologyImportTestFixture
 
         try
         {
-            await using var scope = fixture.CreateServiceProvider(services =>
+            await using var scope = fixture.CreateScope(services =>
             {
                 services.AddScoped<SourceChangedAfterLoadMorphologyImportSource>();
                 services.AddScoped<IMorphologyImportSource>(sp =>
                     sp.GetRequiredService<SourceChangedAfterLoadMorphologyImportSource>());
-            }).CreateAsyncScope();
+            });
 
             var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
             var result = await handler.HandleAsync(
@@ -394,10 +394,10 @@ public sealed class MorphologyValidationFailureTests(MorphologyImportTestFixture
 
         try
         {
-            await using var scope = fixture.CreateServiceProvider(services =>
+            await using var scope = fixture.CreateScope(services =>
             {
                 services.AddSingleton<IWordLemmaNormalizationReader>(new PendingWordLemmaNormalizationReader());
-            }).CreateAsyncScope();
+            });
 
             var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
             var result = await handler.HandleAsync(
@@ -438,10 +438,10 @@ public sealed class MorphologyValidationFailureTests(MorphologyImportTestFixture
 
         try
         {
-            await using var scope = fixture.CreateServiceProvider(services =>
+            await using var scope = fixture.CreateScope(services =>
             {
                 services.AddSingleton<IWordLemmaNormalizationReader>(new BrokenSummaryWordLemmaNormalizationReader());
-            }).CreateAsyncScope();
+            });
 
             var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
             var result = await handler.HandleAsync(

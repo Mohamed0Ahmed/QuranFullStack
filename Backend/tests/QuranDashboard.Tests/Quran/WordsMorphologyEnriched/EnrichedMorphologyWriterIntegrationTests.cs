@@ -16,11 +16,11 @@ public sealed class EnrichedMorphologyWriterIntegrationTests(MorphologyImportTes
         var sourcePath = await WriteEnrichedSourceFolderAsync();
         var reportOutDir = Path.Combine(Path.GetTempPath(), "enriched-morph-writer-report-" + Guid.NewGuid().ToString("N"));
 
-        await using var scope = fixture.CreateServiceProvider(services =>
+        await using var scope = fixture.CreateScope(services =>
         {
             services.AddSingleton<IWordLemmaNormalizationReader, ThrowingWordLemmaNormalizationReader>();
             services.AddSingleton<ISegmentStemCorrectionReader, ThrowingSegmentStemCorrectionReader>();
-        }).CreateAsyncScope();
+        });
         var importSource = scope.ServiceProvider.GetRequiredKeyedService<IMorphologyImportSource>(
             MorphologyImportSourceKeys.Enriched);
         var importWriter = scope.ServiceProvider.GetRequiredService<IMorphologyImportWriter>();
@@ -49,7 +49,7 @@ public sealed class EnrichedMorphologyWriterIntegrationTests(MorphologyImportTes
         var sourcePath = await WriteMultiStemEnrichedSourceFolderAsync();
         var reportOutDir = Path.Combine(Path.GetTempPath(), "enriched-morph-multistem-report-" + Guid.NewGuid().ToString("N"));
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var importSource = scope.ServiceProvider.GetRequiredKeyedService<IMorphologyImportSource>(
             MorphologyImportSourceKeys.Enriched);
         var importWriter = scope.ServiceProvider.GetRequiredService<IMorphologyImportWriter>();
@@ -83,7 +83,7 @@ public sealed class EnrichedMorphologyWriterIntegrationTests(MorphologyImportTes
         var sourcePath = await WriteCollidingLemmaEnrichedSourceFolderAsync();
         var reportOutDir = Path.Combine(Path.GetTempPath(), "enriched-morph-collision-report-" + Guid.NewGuid().ToString("N"));
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var importSource = scope.ServiceProvider.GetRequiredKeyedService<IMorphologyImportSource>(
             MorphologyImportSourceKeys.Enriched);
         var importWriter = scope.ServiceProvider.GetRequiredService<IMorphologyImportWriter>();
@@ -118,7 +118,7 @@ public sealed class EnrichedMorphologyWriterIntegrationTests(MorphologyImportTes
         var sourcePath = await WriteSmallYehStemIdentitySourceFolderAsync();
         var reportOutDir = Path.Combine(Path.GetTempPath(), "enriched-morph-small-yeh-report-" + Guid.NewGuid().ToString("N"));
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var importSource = scope.ServiceProvider.GetRequiredKeyedService<IMorphologyImportSource>(
             MorphologyImportSourceKeys.Enriched);
         var importWriter = scope.ServiceProvider.GetRequiredService<IMorphologyImportWriter>();

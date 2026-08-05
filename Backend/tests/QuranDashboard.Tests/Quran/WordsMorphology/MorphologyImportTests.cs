@@ -22,7 +22,7 @@ public sealed class MorphologyImportTests(MorphologyImportTestFixture fixture)
         result.Totals.SegmentRows.Should().Be(7);
         result.Totals.ReadableWords.Should().Be(expectedReadableCount);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var morphologyRows = await dbContext.WordMorphologies
@@ -84,7 +84,7 @@ public sealed class MorphologyImportTests(MorphologyImportTestFixture fixture)
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var morphology = await dbContext.WordMorphologies
@@ -162,10 +162,10 @@ public sealed class MorphologyImportTests(MorphologyImportTestFixture fixture)
 
         try
         {
-            await using var scope = fixture.CreateServiceProvider(services =>
+            await using var scope = fixture.CreateScope(services =>
             {
                 services.AddSingleton<IWordLemmaNormalizationReader>(new ReportingWordLemmaNormalizationReader());
-            }).CreateAsyncScope();
+            });
 
             var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
             var result = await handler.HandleAsync(

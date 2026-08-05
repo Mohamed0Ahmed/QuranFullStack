@@ -12,7 +12,7 @@ public sealed class I3rabWordDisplayabilityTests(I3rabGenerationTestFixture fixt
     {
         await fixture.ResetToPartialMorphologyAsync();
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var multiSegmentWordId = 5;

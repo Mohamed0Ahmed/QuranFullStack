@@ -69,7 +69,7 @@ public sealed class DisplayWordsRefusalForceTests
 
     private async Task<DerivedSnapshot> CaptureDerivedSnapshotAsync()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var orderedTashkeelCount = await dbContext.QuranWordsOrderedTashkeel.CountAsync();

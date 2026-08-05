@@ -19,7 +19,7 @@ public sealed class MorphologySegmentRenderingTests(MorphologyImportTestFixture 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
         result.Totals!.RenderTierCounts["clean"].Should().Be(7);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var allSegments = await dbContext.WordMorphologySegments
@@ -41,7 +41,7 @@ public sealed class MorphologySegmentRenderingTests(MorphologyImportTestFixture 
 
         await fixture.RunImportAsync(sourcePath, expectedReadableWords: readableCount);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var segments = await dbContext.WordMorphologySegments.AsNoTracking().ToListAsync();
@@ -57,7 +57,7 @@ public sealed class MorphologySegmentRenderingTests(MorphologyImportTestFixture 
 
         var rendered = new BuckwalterArabicMap().Transliterate("l~Ahi").Arabic;
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var word = await dbContext.QuranWords.SingleAsync(w => w.Location == "1:1:2");
@@ -189,7 +189,7 @@ public sealed class MorphologySegmentRenderingTests(MorphologyImportTestFixture 
 
         try
         {
-            await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+            await using var scope = fixture.CreateScope();
             var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
             var result = await handler.HandleAsync(
                 new ImportMorphologyCommand(sourcePath, false, readableCount, reportDir),
@@ -228,7 +228,7 @@ public sealed class MorphologySegmentRenderingTests(MorphologyImportTestFixture 
 
         try
         {
-            await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+            await using var scope = fixture.CreateScope();
             var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
             var result = await handler.HandleAsync(
                 new ImportMorphologyCommand(sourcePath, false, readableCount, reportDir),
@@ -268,7 +268,7 @@ public sealed class MorphologySegmentRenderingTests(MorphologyImportTestFixture 
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var nonEmptyNullRender = await dbContext.Database.SqlQueryRaw<int>(
@@ -284,13 +284,13 @@ public sealed class MorphologySegmentRenderingTests(MorphologyImportTestFixture 
         string sourcePath,
         RenderMutation mutation)
     {
-        await using var scope = fixture.CreateServiceProvider(services =>
+        await using var scope = fixture.CreateScope(services =>
         {
             services.AddScoped<IMorphologyImportSource>(sp =>
                 new MutatingMorphologyImportSource(
                     sp.GetRequiredService<MorphologyImportSource>(),
                     mutation));
-        }).CreateAsyncScope();
+        });
 
         var reportDir = Path.Combine(Path.GetTempPath(), $"morph-mutated-report-{Guid.NewGuid():N}");
         var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();

@@ -20,7 +20,7 @@ public sealed class MorphologyUs1GateTests(MorphologyImportTestFixture fixture)
         result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
         result.Message.Should().Contain("MORPH-VERB-FEATURE-CONSISTENCY");
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         (await dbContext.WordMorphologies.CountAsync()).Should().Be(0);
     }
@@ -39,7 +39,7 @@ public sealed class MorphologyUs1GateTests(MorphologyImportTestFixture fixture)
         result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
         result.Message.Should().Contain("MORPH-VERB-FEATURE-CONSISTENCY");
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         (await dbContext.WordMorphologies.CountAsync()).Should().Be(0);
     }
@@ -72,7 +72,7 @@ public sealed class MorphologyUs1GateTests(MorphologyImportTestFixture fixture)
         result.ExitCode.Should().Be(ImportMorphologyResult.FailureExitCode);
         result.Message.Should().Contain("MORPH-POS-PRESENT");
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         (await dbContext.WordMorphologies.CountAsync()).Should().Be(0);
     }
@@ -114,7 +114,7 @@ public sealed class MorphologyUs1GateTests(MorphologyImportTestFixture fixture)
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var row = await dbContext.WordMorphologies

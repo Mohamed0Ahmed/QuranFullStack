@@ -3,43 +3,48 @@ using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
+using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
 
 public sealed class WordsDisplayTestFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    private readonly OwnedServiceProviderRegistry ownedProviders = new();
+
+    private PostgreSqlDatabaseLease? databaseLease;
+    private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        await postgresContainer.StartAsync();
+        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(WordsDisplayTestFixture));
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await dbContext.Database.MigrateAsync();
+        try
+        {
+            rootProvider = ownedProviders.Own(BuildServiceProvider(databaseLease.ConnectionString));
+        }
+        catch
+        {
+            await DisposeAsync();
+            throw;
+        }
     }
 
     public async Task DisposeAsync()
     {
-        await postgresContainer.DisposeAsync();
+        rootProvider = null;
+        await ownedProviders.DisposeAsync();
+
+        if (databaseLease is not null)
+        {
+            await databaseLease.DisposeAsync();
+            databaseLease = null;
+        }
     }
 
-    public ServiceProvider CreateServiceProvider()
+    public AsyncServiceScope CreateScope()
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:QuranDashboardDb"] = postgresContainer.GetConnectionString()
-            })
-            .Build();
-
-        return new ServiceCollection()
-            .AddSingleton<IConfiguration>(configuration)
-            .AddApplication()
-            .AddInfrastructure(configuration)
-            .BuildServiceProvider();
+        return InitializedRootProvider.CreateAsyncScope();
     }
 
     public async Task SeedReadableWordsAsync(IEnumerable<QuranWord> words, IEnumerable<Ayah> ayahs)
@@ -47,7 +52,7 @@ public sealed class WordsDisplayTestFixture : IAsyncLifetime
         var wordList = words.ToList();
         var ayahList = ayahs.ToList();
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         await EnsurePrerequisitesAsync(dbContext, ayahList, wordList);
@@ -58,8 +63,12 @@ public sealed class WordsDisplayTestFixture : IAsyncLifetime
         await dbContext.SaveChangesAsync();
     }
 
-    public RebuildDisplayWordsHandler CreateHandler() =>
-        CreateServiceProvider().GetRequiredService<RebuildDisplayWordsHandler>();
+    public RebuildDisplayWordsHandler CreateHandler()
+    {
+        return ownedProviders.Own(CreateScope())
+            .ServiceProvider
+            .GetRequiredService<RebuildDisplayWordsHandler>();
+    }
 
     public async Task SeedDefaultSyntheticDataAsync()
     {
@@ -71,7 +80,7 @@ public sealed class WordsDisplayTestFixture : IAsyncLifetime
 
     public async Task TruncateAllAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """
@@ -87,6 +96,27 @@ public sealed class WordsDisplayTestFixture : IAsyncLifetime
                 quran_surahs
             RESTART IDENTITY CASCADE;
             """);
+    }
+
+    private ServiceProvider InitializedRootProvider =>
+        rootProvider ?? throw new InvalidOperationException(
+            $"{nameof(WordsDisplayTestFixture)} holds no database. Use it through the "
+            + $"[{nameof(WordsDisplayTestCollection)}] collection fixture.");
+
+    private static ServiceProvider BuildServiceProvider(string connectionString)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:QuranDashboardDb"] = connectionString
+            })
+            .Build();
+
+        return new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddApplication()
+            .AddInfrastructure(configuration)
+            .BuildServiceProvider();
     }
 
     private static async Task EnsurePrerequisitesAsync(
