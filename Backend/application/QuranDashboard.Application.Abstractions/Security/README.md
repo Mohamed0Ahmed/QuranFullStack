@@ -4,6 +4,12 @@ This folder defines the **contracts** for first-login user provisioning and role
 resolution. It contains only abstractions and their DTOs; the concrete behavior lives
 in the Application and Infrastructure layers (see **Implementations** below).
 
+The sibling `Access/` contracts define the shared email identity boundary used by access
+provisioning and the Phase 2 operator preflight. `IEmailIdentityNormalizer` produces the required
+canonical identity while preserving the provider value for display; `IEmailIdentityPreflight`
+reports invalid, missing, mismatched, and colliding persisted identities and performs the explicit
+normalizer-backed backfill between the staged migrations.
+
 ## What this folder defines
 
 - **`ICurrentUser`** — exposes `Sub`, the authenticated caller's Logto `sub` claim: the

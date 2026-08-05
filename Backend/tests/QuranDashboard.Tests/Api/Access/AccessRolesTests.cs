@@ -99,6 +99,19 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         (await ResolveRoleAsync(AccessTestFixture.OwnerSub)).Should().Be(RoleNames.Owner);
     }
 
+    [Fact]
+    public async Task PersonaFixture_CanSeedAStatusAndRoleWithoutGrantTables()
+    {
+        await fixture.ResetAsync();
+
+        var userId = await fixture.InsertPersonaAsync("DisabledOwner");
+        var user = await fixture.GetUserBySubAsync("smoke-disabled-owner");
+
+        user!.Id.Should().Be(userId);
+        user.Status.Should().Be(UserStatus.Disabled);
+        user.RoleId.Should().Be(await OwnerRoleIdAsync());
+    }
+
     private async Task<int> OwnerRoleIdAsync()
         => (await fixture.GetRolesAsync()).Single(r => r.Name == RoleNames.Owner).Id;
 

@@ -15,6 +15,7 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `wipe-abwab` | Empties the six `abwab_*` tables on a local database, leaving the canonical `quran_*` data intact |
 | `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project. EF tooling only — never hand-write a migration (`Backend/CLAUDE.md`) |
 | `update-db` | `dotnet ef database update` — applies pending migrations to the configured database |
+| `access-admin` | Runs the Phase 2 normalized-identity scan/backfill, permission-catalogue sync, and schema/catalogue preflight tool |
 | `clean-local-build` | Clears the NuGet caches, deletes every `bin`/`obj`, and restores the solution. Non-destructive to data |
 | **`drop-db --yes`** | **DESTRUCTIVE.** `dotnet ef database drop --force` — drops the configured database outright, all data lost |
 | **`reset-db --yes`** | **DESTRUCTIVE.** `drop-db --yes` followed by `update-db` — an empty database at migration head |
@@ -179,6 +180,22 @@ qd-build
 qd-api
 qd-ui
 ```
+
+### `access-admin`
+
+Build and run `tools/QuranDashboard.AccessAdmin/`. The staged Phase 2 deployment order is:
+
+```bash
+dotnet ef database update --migration AddAuthorizationAccessFoundation
+dotnet run --project tools/QuranDashboard.AccessAdmin -- identity scan
+dotnet run --project tools/QuranDashboard.AccessAdmin -- identity backfill --apply
+dotnet ef database update
+dotnet run --project tools/QuranDashboard.AccessAdmin -- catalogue sync
+dotnet run --project tools/QuranDashboard.AccessAdmin -- authorization preflight
+```
+
+The tool does not assign Owners or grants and does not run migrations itself. `identity backfill`
+uses the shared application normalizer and refuses invalid or colliding identities.
 
 After the first successful build, use `qd-api` directly until backend code changes.
 

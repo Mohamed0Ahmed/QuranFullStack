@@ -42,14 +42,24 @@ internal static class TestJwtTokens
         string subject,
         DateTime? expires = null,
         string? audience = null,
-        SecurityKey? signingKey = null)
+        SecurityKey? signingKey = null,
+        IReadOnlyDictionary<string, object>? additionalClaims = null)
     {
+        var claims = new Dictionary<string, object> { ["sub"] = subject };
+        if (additionalClaims is not null)
+        {
+            foreach (var claim in additionalClaims)
+            {
+                claims[claim.Key] = claim.Value;
+            }
+        }
+
         var descriptor = new SecurityTokenDescriptor
         {
             Issuer = TestIssuer,
             Audience = audience ?? TestAudience,
             Expires = expires ?? DateTime.UtcNow.AddHours(1),
-            Claims = new Dictionary<string, object> { ["sub"] = subject },
+            Claims = claims,
             SigningCredentials = new SigningCredentials(signingKey ?? SigningKey, SecurityAlgorithms.RsaSha256),
         };
 

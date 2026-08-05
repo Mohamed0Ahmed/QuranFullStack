@@ -1,0 +1,39 @@
+using QuranDashboard.Tests.TestSupport.Http;
+
+namespace QuranDashboard.Tests.Smoke;
+
+[Collection(nameof(SmokeCollection))]
+public sealed class SmokePublicReadRegressionTests(SmokeApiFixture fixture)
+{
+    public static TheoryData<string> PublicReadPaths =>
+    [
+        "/api/health",
+        "/api/dashboard/info",
+        "/api/mushaf/pages/1",
+        "/api/mushaf/surahs",
+        "/api/words/roots",
+        "/api/words/lemmas",
+        "/api/words/stems",
+        "/api/words/unique/tashkeel",
+        "/api/abwab/tree",
+        "/api/abwab/doors/1/relations",
+        "/api/abwab/templates",
+        "/api/abwab/templates/1",
+    ];
+
+    [Theory]
+    [MemberData(nameof(PublicReadPaths))]
+    public async Task PublicRead_WithoutToken_DoesNotChallenge(string path)
+    {
+        var route = SmokeRouteCatalog.Routes.Single(route =>
+            route.Method == HttpMethod.Get && route.Path == path);
+        using var client = fixture.CreateClientFor(SmokePersona.Anonymous);
+
+        using var response = await client.GetAsync(path);
+
+        response.StatusCode.Should().NotBe(HttpStatusCode.Unauthorized);
+        response.StatusCode.Should().NotBe(HttpStatusCode.Forbidden);
+        response.StatusCode.Should().Be(route.DerivedStatus);
+        await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
+    }
+}

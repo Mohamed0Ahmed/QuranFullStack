@@ -55,7 +55,9 @@ public sealed class SmokeApiFixture : IAsyncLifetime
         if (SmokePersonas.SubFor(persona) is { } sub)
         {
             client.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", TestJwtTokens.Mint(sub));
+                new AuthenticationHeaderValue(
+                    "Bearer",
+                    TestJwtTokens.Mint(sub, additionalClaims: SmokePersonas.ClaimsFor(persona)));
         }
 
         return client;

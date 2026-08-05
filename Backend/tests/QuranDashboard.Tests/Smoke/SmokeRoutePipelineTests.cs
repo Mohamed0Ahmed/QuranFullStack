@@ -37,7 +37,7 @@ public sealed class SmokeRoutePipelineTests(SmokeApiFixture fixture)
         response.StatusCode.Should().NotBe(
             HttpStatusCode.Forbidden,
             "no endpoint in this tree carries an authorization policy");
-        if (route.Access is SmokeRouteAccess.Open)
+        if (route.Access.Kind is SmokeRouteAccessKind.Public)
         {
             response.StatusCode.Should().NotBe(
                 HttpStatusCode.Unauthorized,

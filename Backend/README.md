@@ -14,6 +14,8 @@ writes happen only through the import/generate CLI.
 - **Words explorers** — Roots, Lemmas, Stems, WordTypes, Unique Words (read-only).
 - **Import/generate pipelines** — foundation, morphology (+ enriched), simple/full إعراب,
   mutashabihat, tafsirs, translations, navigation metadata, display-word rebuild.
+- **Access foundation** — normalized identity, the 19-code Abwab catalogue, direct-grant/audit
+  persistence, and the operator preflight CLI; endpoint enforcement is a later phase.
 
 ## Layer map
 
@@ -29,6 +31,7 @@ infrastructure/QuranDashboard.Infrastructure
   Persistence/{Configurations,Migrations,QuranDashboardDbContext.cs}
 shared/QuranDashboard.Shared           Result/Error primitives
 tools/QuranDashboard.DataImporter      import/generate CLI                    → see its README
+tools/QuranDashboard.AccessAdmin       access preflight CLI                    → see its README
 tests/QuranDashboard.Tests
 scripts/                               dev CLI shortcuts                      → see its README
 ```
@@ -41,6 +44,7 @@ scripts/                               dev CLI shortcuts                      �
 - `infrastructure/.../Persistence/DataPipelines/Quran/README.md`
 - `infrastructure/.../Persistence/Reads/Quran/Words/README.md`
 - `tools/QuranDashboard.DataImporter/README.md`
+- `tools/QuranDashboard.AccessAdmin/README.md`
 - `report/README.md` (report locations + filename conventions)
 
 ## Build / run

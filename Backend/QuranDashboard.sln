@@ -33,6 +33,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuranDashboard.Tests", "tests\QuranDashboard.Tests\QuranDashboard.Tests.csproj", "{E51BF484-14BE-4B3F-9795-C632F9E03255}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuranDashboard.AccessAdmin", "tools\QuranDashboard.AccessAdmin\QuranDashboard.AccessAdmin.csproj", "{E0EF14D1-9448-4447-99B0-4966FBBC6F46}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -139,6 +141,18 @@ Global
 		{E51BF484-14BE-4B3F-9795-C632F9E03255}.Release|x64.Build.0 = Release|Any CPU
 		{E51BF484-14BE-4B3F-9795-C632F9E03255}.Release|x86.ActiveCfg = Release|Any CPU
 		{E51BF484-14BE-4B3F-9795-C632F9E03255}.Release|x86.Build.0 = Release|Any CPU
+		{E0EF14D1-9448-4447-99B0-4966FBBC6F46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0EF14D1-9448-4447-99B0-4966FBBC6F46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0EF14D1-9448-4447-99B0-4966FBBC6F46}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E0EF14D1-9448-4447-99B0-4966FBBC6F46}.Debug|x64.Build.0 = Debug|Any CPU
+		{E0EF14D1-9448-4447-99B0-4966FBBC6F46}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E0EF14D1-9448-4447-99B0-4966FBBC6F46}.Debug|x86.Build.0 = Debug|Any CPU
+		{E0EF14D1-9448-4447-99B0-4966FBBC6F46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0EF14D1-9448-4447-99B0-4966FBBC6F46}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0EF14D1-9448-4447-99B0-4966FBBC6F46}.Release|x64.ActiveCfg = Release|Any CPU
+		{E0EF14D1-9448-4447-99B0-4966FBBC6F46}.Release|x64.Build.0 = Release|Any CPU
+		{E0EF14D1-9448-4447-99B0-4966FBBC6F46}.Release|x86.ActiveCfg = Release|Any CPU
+		{E0EF14D1-9448-4447-99B0-4966FBBC6F46}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -152,5 +166,6 @@ Global
 		{E0209021-2B39-404D-8D00-6B03BBCB78C5} = {DFEE68D8-A7D0-1A41-506C-9B74AA9A7B7B}
 		{155DE389-64B3-4FAC-9EA2-D2E53D0CE7E2} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 		{E51BF484-14BE-4B3F-9795-C632F9E03255} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{E0EF14D1-9448-4447-99B0-4966FBBC6F46} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 	EndGlobalSection
 EndGlobal

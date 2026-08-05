@@ -2,10 +2,25 @@ namespace QuranDashboard.Tests.Smoke;
 
 // What a route requires of its caller, not who the caller is — SmokePersona is the caller side, and
 // naming both ends "Anonymous" would put two different meanings on one word in one namespace.
-internal enum SmokeRouteAccess
+internal enum SmokeRouteAccessKind
 {
-    Open,
-    RequiresAuthentication,
+    Public,
+    AuthenticatedOnly,
+    Permission,
+    OwnerOnly,
+}
+
+internal sealed record SmokeRouteAccess(SmokeRouteAccessKind Kind, string? PermissionCode = null)
+{
+    public static SmokeRouteAccess Public { get; } = new(SmokeRouteAccessKind.Public);
+    public static SmokeRouteAccess AuthenticatedOnly { get; } = new(SmokeRouteAccessKind.AuthenticatedOnly);
+    public static SmokeRouteAccess OwnerOnly { get; } = new(SmokeRouteAccessKind.OwnerOnly);
+
+    public static SmokeRouteAccess Permission(string code)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
+        return new(SmokeRouteAccessKind.Permission, code);
+    }
 }
 
 // What "answered with real data" means for one route. Four payload shapes sit behind the shared envelope:
@@ -68,8 +83,10 @@ internal sealed record SmokeRoute(
     string Template,
     string Path,
     HttpStatusCode DerivedStatus,
-    SmokeRouteAccess Access = SmokeRouteAccess.Open)
+    SmokeRouteAccess? Access = null)
 {
+    public SmokeRouteAccess Access { get; init; } = Access ?? SmokeRouteAccess.Public;
+
     public SmokeSeededExpectation? Seeded { get; init; }
 
     // Defaults to GET so all pre-existing entries stay untouched. A write route sets this explicitly.
@@ -219,7 +236,7 @@ internal static class SmokeRouteCatalog
         // evidence; access/me is the tree's only [Authorize] endpoint (AccessController class level).
         new("api/health", "/api/health", HttpStatusCode.OK),
         new("api/dashboard/info", "/api/dashboard/info", HttpStatusCode.OK),
-        new("api/access/me", "/api/access/me", HttpStatusCode.Unauthorized, SmokeRouteAccess.RequiresAuthentication),
+        new("api/access/me", "/api/access/me", HttpStatusCode.Unauthorized, SmokeRouteAccess.AuthenticatedOnly),
 
         // api/abwab/sections — AbwabSectionsController. ParityOnly: these write, so the generic sweep
         // (which sends no body and shares the migrated-but-empty schema across every other case) must

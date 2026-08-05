@@ -52,6 +52,9 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
 
     public DbSet<User> AccessUsers => Set<User>();
     public DbSet<Role> AccessRoles => Set<Role>();
+    public DbSet<Permission> AccessPermissions => Set<Permission>();
+    public DbSet<UserPermission> AccessUserPermissions => Set<UserPermission>();
+    public DbSet<AccessAuditEvent> AccessAuditEvents => Set<AccessAuditEvent>();
 
     public DbSet<AbwabSection> AbwabSections => Set<AbwabSection>();
     public DbSet<AbwabDoor> AbwabDoors => Set<AbwabDoor>();
@@ -64,5 +67,38 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     {
         modelBuilder.HasPostgresExtension("pg_trgm");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(QuranDashboardDbContext).Assembly);
+    }
+
+    public override int SaveChanges()
+    {
+        return SaveChanges(true);
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        EnsureAuditEventsAreAppendOnly();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return SaveChangesAsync(true, cancellationToken);
+    }
+
+    public override Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureAuditEventsAreAppendOnly();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void EnsureAuditEventsAreAppendOnly()
+    {
+        if (ChangeTracker.Entries<AccessAuditEvent>()
+            .Any(entry => entry.State is EntityState.Modified or EntityState.Deleted))
+        {
+            throw new InvalidOperationException("Access audit events are append-only.");
+        }
     }
 }

@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using QuranDashboard.Application.Abstractions.Access;
 using QuranDashboard.Api.Controllers.Access;
 using QuranDashboard.Domain.Access;
+using QuranDashboard.Infrastructure.Access;
+using QuranDashboard.Tests.TestSupport.Access;
 
 namespace QuranDashboard.Tests.Api.Access;
 
@@ -64,6 +67,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
     // so the cache primed/evicted through the pipeline is the same instance a test observes.
     public IServiceProvider ApiServices => Factory.Services;
 
+    public IServiceProvider QueryServices => QueryProvider;
+
     private WebApplicationFactory<AccessController> Factory
     {
         get
@@ -120,9 +125,25 @@ public sealed class AccessTestFixture : IAsyncLifetime
     {
         await using var scope = QueryProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        var normalizer = scope.ServiceProvider.GetRequiredService<IEmailIdentityNormalizer>();
+        if (string.IsNullOrWhiteSpace(user.NormalizedEmail))
+        {
+            user.NormalizedEmail = normalizer.Normalize(user.Email);
+        }
+
         db.AccessUsers.Add(user);
         await db.SaveChangesAsync();
         return user.Id;
+    }
+
+    public async Task<int> InsertPersonaAsync(string key)
+    {
+        var persona = TestAccessPersonas.For(key);
+        var roleId = persona.RoleName is null
+            ? (int?)null
+            : (await GetRolesAsync()).Single(role => role.Name == persona.RoleName).Id;
+
+        return await InsertUserAsync(persona.BuildUser(roleId));
     }
 
     private ServiceProvider QueryProvider => _queryProvider
@@ -170,6 +191,7 @@ public sealed class AccessTestFixture : IAsyncLifetime
     {
         return new ServiceCollection()
             .AddDbContext<QuranDashboardDbContext>(options => options.UseNpgsql(ConnectionString))
+            .AddSingleton<IEmailIdentityNormalizer, EmailIdentityNormalizer>()
             .BuildServiceProvider();
     }
 }

@@ -39,6 +39,50 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
     }
 
     [Fact]
+    public async Task GetOrCreateAsync_PersistsTheSharedNormalizedIdentityWhilePreservingDisplayEmail()
+    {
+        await fixture.ResetAsync();
+        const string sub = "logto-normalized-display";
+        const string displayEmail = " Teacher@Example.Test ";
+        fixture.ProfileSource.ReturnEmailFor(sub, displayEmail);
+
+        using var scope = fixture.ApiServices.CreateScope();
+        var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
+
+        await provisioningService.GetOrCreateAsync(sub, CancellationToken.None);
+
+        var persisted = await fixture.GetUserBySubAsync(sub);
+        persisted!.Email.Should().Be(displayEmail);
+        persisted.NormalizedEmail.Should().Be("TEACHER@EXAMPLE.TEST");
+    }
+
+    [Fact]
+    public async Task GetOrCreateAsync_NormalizedEmailCollidesAcrossDisplayFormatting_ThrowsWithoutMerge()
+    {
+        await fixture.ResetAsync();
+        const string existingSub = "logto-normalized-existing";
+        const string newSub = "logto-normalized-new";
+        await fixture.InsertUserAsync(new User
+        {
+            LogtoSub = existingSub,
+            Email = "owner@example.test",
+            Status = UserStatus.Pending,
+            CreatedAtUtc = DateTimeOffset.UtcNow,
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        });
+        fixture.ProfileSource.ReturnEmailFor(newSub, " Owner@Example.Test ");
+
+        using var scope = fixture.ApiServices.CreateScope();
+        var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
+
+        var act = () => provisioningService.GetOrCreateAsync(newSub, CancellationToken.None);
+
+        var thrown = await act.Should().ThrowAsync<UserProvisioningEmailConflictException>();
+        thrown.Which.Email.Should().Be(" Owner@Example.Test ");
+        (await fixture.GetUsersAsync()).Should().ContainSingle(user => user.LogtoSub == existingSub);
+    }
+
+    [Fact]
     public async Task GetOrCreateAsync_OwnerEmailFirstLogin_EmailUnverified_IsNotPromoted()
     {
         await fixture.ResetAsync();

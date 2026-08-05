@@ -1,6 +1,62 @@
 import { EnvironmentProviders } from '@angular/core';
 import { provideAuth } from 'angular-auth-oidc-client';
 
+export interface AccessMeContractFixture {
+  sub: string;
+  email: string;
+  displayName: string | null;
+  status: 'pending' | 'active' | 'disabled';
+  isOwner: boolean;
+  permissions: readonly string[];
+  roleName: 'Owner' | null;
+}
+
+interface AccessMeContractFixtures {
+  pending: AccessMeContractFixture;
+  readOnly: AccessMeContractFixture;
+  exactPermission: AccessMeContractFixture;
+  owner: AccessMeContractFixture;
+}
+
+export const ACCESS_ME_CONTRACT_FIXTURES: AccessMeContractFixtures = {
+  pending: {
+    sub: 'test-pending',
+    email: 'pending@example.test',
+    displayName: null,
+    status: 'pending',
+    isOwner: false,
+    permissions: [],
+    roleName: null,
+  },
+  readOnly: {
+    sub: 'test-read-only',
+    email: 'read-only@example.test',
+    displayName: 'Read only',
+    status: 'active',
+    isOwner: false,
+    permissions: [],
+    roleName: null,
+  },
+  exactPermission: {
+    sub: 'test-exact-permission',
+    email: 'exact@example.test',
+    displayName: 'Exact permission',
+    status: 'active',
+    isOwner: false,
+    permissions: ['abwab.doors.create'],
+    roleName: null,
+  },
+  owner: {
+    sub: 'test-owner',
+    email: 'owner@example.test',
+    displayName: 'Owner',
+    status: 'active',
+    isOwner: true,
+    permissions: [],
+    roleName: 'Owner',
+  },
+};
+
 export function provideAuthTesting(): EnvironmentProviders {
   return provideAuth({
     config: {

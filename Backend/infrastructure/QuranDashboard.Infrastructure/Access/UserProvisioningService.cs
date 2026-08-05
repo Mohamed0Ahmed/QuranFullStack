@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using QuranDashboard.Application.Abstractions.Access;
 using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Domain.Access;
 
@@ -8,7 +9,8 @@ public sealed class UserProvisioningService(
     QuranDashboardDbContext db,
     IExternalUserProfileSource profileSource,
     IUserRoleResolver roleResolver,
-    IOptions<OwnerBootstrapOptions> bootstrapOptions) : IUserProvisioningService
+    IOptions<OwnerBootstrapOptions> bootstrapOptions,
+    IEmailIdentityNormalizer emailIdentityNormalizer) : IUserProvisioningService
 {
     public async Task<ProvisionedUser> GetOrCreateAsync(string logtoSub, CancellationToken ct)
     {
@@ -68,6 +70,15 @@ public sealed class UserProvisioningService(
 
     private async Task<ProvisionedUser> CreateAsync(string logtoSub, ExternalUserProfile profile, CancellationToken ct)
     {
+        var normalizedEmail = emailIdentityNormalizer.Normalize(profile.Email!);
+        var normalizedCollision = await db.AccessUsers
+            .AsNoTracking()
+            .SingleOrDefaultAsync(user => user.NormalizedEmail == normalizedEmail, ct);
+        if (normalizedCollision is not null && normalizedCollision.LogtoSub != logtoSub)
+        {
+            throw new UserProvisioningEmailConflictException(profile.Email!);
+        }
+
         var ownerRole = IsConfiguredOwner(profile.Email!) && profile.EmailVerified
             ? await GetOwnerRoleAsync(ct)
             : null;
@@ -77,6 +88,7 @@ public sealed class UserProvisioningService(
         {
             LogtoSub = logtoSub,
             Email = profile.Email!,
+            NormalizedEmail = normalizedEmail,
             UserName = profile.UserName,
             DisplayName = profile.DisplayName,
             Title = null,
@@ -119,8 +131,9 @@ public sealed class UserProvisioningService(
     private bool IsConfiguredOwner(string email)
     {
         var ownerEmail = bootstrapOptions.Value.BootstrapOwnerEmail;
-        return !string.IsNullOrWhiteSpace(ownerEmail)
-            && string.Equals(email, ownerEmail, StringComparison.OrdinalIgnoreCase);
+        return emailIdentityNormalizer.TryNormalize(email, out var normalizedEmail)
+            && emailIdentityNormalizer.TryNormalize(ownerEmail, out var normalizedOwnerEmail)
+            && normalizedEmail == normalizedOwnerEmail;
     }
 
     private Task<Role?> GetOwnerRoleAsync(CancellationToken ct)
