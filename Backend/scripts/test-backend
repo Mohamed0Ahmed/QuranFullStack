@@ -398,6 +398,17 @@ unset MORPHOLOGY_EXPLORERS_REAL_DB_CONNECTION
 unset WORD_TYPES_REAL_DB_CONNECTION
 echo "cleanup run ID: ${QURAN_DASHBOARD_TEST_RUN_ID}"
 
+clean_up_run() {
+  local exit_status=$?
+  trap - EXIT
+  "${SCRIPT_DIR}/cleanup-test-runtime" --run-id "${QURAN_DASHBOARD_TEST_RUN_ID}" || true
+  exit "${exit_status}"
+}
+
+trap clean_up_run EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
 canonical_preflight() {
   local missing=false
   local require_foundation=false

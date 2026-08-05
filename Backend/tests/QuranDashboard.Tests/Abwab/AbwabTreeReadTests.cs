@@ -8,27 +8,21 @@ namespace QuranDashboard.Tests.Abwab;
 public sealed class AbwabTreeReadTests(AbwabSchemaFixture fixture)
 {
     [Fact]
-    public async Task GetTreeAsync_OnFreshSchema_ReturnsEmptySnapshotWithNullVersion()
+    public async Task GetTreeAsync_OnEmptyDatabase_ReturnsEmptySnapshotWithNullVersion()
     {
-        // A dedicated, unshared container: the collection fixture above is shared with every other
-        // Abwab test class and accumulates rows for the whole test run, so it can never assert "empty".
-        var freshFixture = new AbwabSchemaFixture();
-        await freshFixture.InitializeAsync();
-        try
-        {
-            await using var scope = freshFixture.Services.CreateAsyncScope();
-            var reader = scope.ServiceProvider.GetRequiredService<IAbwabTreeReader>();
+        // The collection fixture is shared with every other Abwab test class and accumulates rows for the
+        // whole run, so "empty" has to be established rather than assumed. Classes inside one xUnit
+        // collection never run concurrently, and no Abwab class depends on rows another one wrote.
+        await fixture.ResetAbwabAsync();
 
-            var tree = await reader.GetTreeAsync(CancellationToken.None);
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var reader = scope.ServiceProvider.GetRequiredService<IAbwabTreeReader>();
 
-            tree.Version.Should().BeNull();
-            tree.Sections.Should().BeEmpty();
-            tree.Doors.Should().BeEmpty();
-        }
-        finally
-        {
-            await freshFixture.DisposeAsync();
-        }
+        var tree = await reader.GetTreeAsync(CancellationToken.None);
+
+        tree.Version.Should().BeNull();
+        tree.Sections.Should().BeEmpty();
+        tree.Doors.Should().BeEmpty();
     }
 
     [Fact]
