@@ -12,7 +12,7 @@ using QuranDashboard.Infrastructure.Persistence;
 namespace QuranDashboard.Infrastructure.Migrations
 {
     [DbContext(typeof(QuranDashboardDbContext))]
-    [Migration("20260805004057_AddAuthorizationAccessFoundation")]
+    [Migration("20260805121524_AddAuthorizationAccessFoundation")]
     partial class AddAuthorizationAccessFoundation
     {
         /// <inheritdoc />
@@ -517,7 +517,7 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("before_state");
 
-                    b.Property<string>("MetadataJson")
+                    b.Property<string>("Metadata")
                         .IsRequired()
                         .HasColumnType("jsonb")
                         .HasColumnName("metadata");
@@ -561,7 +561,12 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.HasIndex("TargetUserId", "OccurredAtUtc", "Id")
                         .IsDescending(false, true, true);
 
-                    b.ToTable("access_audit_events", (string)null);
+                    b.ToTable("access_audit_events", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_access_audit_events_documents_are_objects", "jsonb_typeof(actor_snapshot) = 'object'\nAND jsonb_typeof(target_snapshot) = 'object'\nAND (before_state IS NULL OR jsonb_typeof(before_state) = 'object')\nAND (after_state IS NULL OR jsonb_typeof(after_state) = 'object')");
+
+                            t.HasCheckConstraint("ck_access_audit_events_metadata_schema_version", "jsonb_typeof(metadata) = 'object'\nAND jsonb_exists(metadata, 'schemaVersion')\nAND jsonb_typeof(metadata -> 'schemaVersion') = 'number'\nAND (metadata ->> 'schemaVersion') ~ '^[1-9][0-9]*$'\nAND (metadata ->> 'schemaVersion')::numeric <= 2147483647");
+                        });
                 });
 
             modelBuilder.Entity("QuranDashboard.Domain.Access.Permission", b =>
@@ -724,9 +729,6 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("LogtoSub")
-                        .IsUnique();
-
-                    b.HasIndex("NormalizedEmail")
                         .IsUnique();
 
                     b.HasIndex("RoleId");

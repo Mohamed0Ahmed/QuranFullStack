@@ -48,6 +48,8 @@ namespace QuranDashboard.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_access_audit_events", x => x.id);
+                    table.CheckConstraint("ck_access_audit_events_documents_are_objects", "jsonb_typeof(actor_snapshot) = 'object'\nAND jsonb_typeof(target_snapshot) = 'object'\nAND (before_state IS NULL OR jsonb_typeof(before_state) = 'object')\nAND (after_state IS NULL OR jsonb_typeof(after_state) = 'object')");
+                    table.CheckConstraint("ck_access_audit_events_metadata_schema_version", "jsonb_typeof(metadata) = 'object'\nAND jsonb_exists(metadata, 'schemaVersion')\nAND jsonb_typeof(metadata -> 'schemaVersion') = 'number'\nAND (metadata ->> 'schemaVersion') ~ '^[1-9][0-9]*$'\nAND (metadata ->> 'schemaVersion')::numeric <= 2147483647");
                     table.ForeignKey(
                         name: "FK_access_audit_events_users_actor_user_id",
                         column: x => x.actor_user_id,
@@ -111,12 +113,6 @@ namespace QuranDashboard.Infrastructure.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_users_normalized_email",
-                table: "users",
-                column: "normalized_email",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_users_status_id",
@@ -190,10 +186,6 @@ namespace QuranDashboard.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "permissions");
-
-            migrationBuilder.DropIndex(
-                name: "IX_users_normalized_email",
-                table: "users");
 
             migrationBuilder.DropIndex(
                 name: "IX_users_status_id",

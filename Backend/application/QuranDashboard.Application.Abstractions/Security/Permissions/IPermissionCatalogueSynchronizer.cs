@@ -8,4 +8,5 @@ public interface IPermissionCatalogueSynchronizer
 public sealed record PermissionCatalogueSyncResult(
     IReadOnlyList<string> AddedCodes,
     IReadOnlyList<string> UpdatedCodes,
-    IReadOnlyList<string> UnknownDatabaseCodes);
+    IReadOnlyList<string> UnknownDatabaseCodes,
+    IReadOnlyList<string> RetiredCanonicalCodes);

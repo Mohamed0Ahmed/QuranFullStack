@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+BACKEND_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
+TOOL_PROJECT="${BACKEND_ROOT}/tools/QuranDashboard.AccessAdmin/QuranDashboard.AccessAdmin.csproj"
+
+export DOTNET_ENVIRONMENT="${DOTNET_ENVIRONMENT:-Development}"
+
+cd "${BACKEND_ROOT}"
+dotnet run --no-build --project "${TOOL_PROJECT}" -- "$@"

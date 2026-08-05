@@ -18,7 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\application\QuranDashboard.Application\QuranDashboard.Application.csproj" />
+    <InternalsVisibleTo Include="QuranDashboard.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\application\QuranDashboard.Application.Abstractions\QuranDashboard.Application.Abstractions.csproj" />
     <ProjectReference Include="..\..\infrastructure\QuranDashboard.Infrastructure\QuranDashboard.Infrastructure.csproj" />
   </ItemGroup>

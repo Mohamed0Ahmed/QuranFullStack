@@ -7,8 +7,9 @@ in the Application and Infrastructure layers (see **Implementations** below).
 The sibling `Access/` contracts define the shared email identity boundary used by access
 provisioning and the Phase 2 operator preflight. `IEmailIdentityNormalizer` produces the required
 canonical identity while preserving the provider value for display; `IEmailIdentityPreflight`
-reports invalid, missing, mismatched, and colliding persisted identities and performs the explicit
-normalizer-backed backfill between the staged migrations.
+reports invalid and colliding legacy identities before the additive migration, then missing,
+mismatched, and colliding persisted identities while it performs the explicit normalizer-backed
+backfill between the staged migrations.
 
 ## What this folder defines
 
@@ -60,6 +61,25 @@ race-safely.)
 
 - `UserStatus`: `Pending = 1`, `Active = 2`, `Disabled = 3` (values pinned explicitly).
 - `RoleNames`: `Owner`, `Admin`, `Editor` (seeded `roles.name` values that auth policies match).
+- `AccessAuditMetadata` is the audit envelope and the only construction path for an
+  `AccessAuditEvent`'s metadata: `SchemaVersion` is an `int` rejected below `1`, `CorrelationId` is
+  null or non-blank, and `Provenance` is a copied ordinal string map. The version invariant is a
+  typed Domain rule, so no caller can express an unversioned event.
+- The audit **payloads** (`ActorSnapshotJson`, `TargetSnapshotJson`, `BeforeStateJson`,
+  `AfterStateJson`) stay opaque versioned documents rather than fixed types, because
+  `SchemaVersion` exists so historical rows stay readable after their shape evolves. Domain
+  therefore rejects only blank documents and **never parses JSON** — that would be parsing
+  infrastructure in Domain (`Backend/.architecture/CLEAN_ARCHITECTURE.md`). Well-formedness comes
+  from the `jsonb` columns, and object-ness from
+  `ck_access_audit_events_documents_are_objects`; `ck_access_audit_events_metadata_schema_version`
+  re-asserts the version at the storage boundary as a **positive `Int32`-range integer**, matching
+  what `AccessAuditMetadata.SchemaVersion` can hold — a decimal-form, fractional, or out-of-range
+  raw write would otherwise persist audit history the typed reader cannot deserialize. Both are
+  enforced for every writer, including SQL that bypasses the Domain, and
+  `AuthorizationSchemaPreflight` requires them by exact definition.
+- `AccessAuditMetadata` is stored as `jsonb` through the value conversion in
+  `Infrastructure/Persistence/Configurations/Access/AccessAuditEventConfiguration.cs`; the camelCase
+  `schemaVersion` property name the check constraint reads is that converter's contract.
 
 ## Implementations (outside this folder)
 

@@ -240,7 +240,11 @@ the API owns HTTP authorization and response mapping. This follows
   `sub`; reconciliation metadata includes the normalized configured email and deployment/config
   fingerprint.
 - Audit JSON schemas are versioned in metadata (for example `schemaVersion: 1`) so later readers can
-  interpret historical snapshots without rewriting them.
+  interpret historical snapshots without rewriting them. Because the snapshots are versioned
+  documents rather than fixed types, Domain models the metadata envelope (`AccessAuditMetadata`,
+  positive `SchemaVersion`) and treats the payloads as opaque; JSON parsing stays out of Domain and
+  the storage invariants — every payload a JSON object, metadata carrying a positive
+  `schemaVersion` — are `access_audit_events` check constraints, so they bind raw SQL writers too.
 
 ### Additive and cleanup migrations
 

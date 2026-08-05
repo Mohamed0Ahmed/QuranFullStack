@@ -13,6 +13,7 @@ internal static class AccessDependencyInjection
     {
         services.AddSingleton<IEmailIdentityNormalizer, EmailIdentityNormalizer>();
         services.AddScoped<IEmailIdentityPreflight, EmailIdentityPreflight>();
+        services.AddScoped<AuthorizationSchemaPreflight>();
         services.Configure<LogtoManagementApiOptions>(
             configuration.GetSection(LogtoManagementApiOptions.SectionName));
 

@@ -18,20 +18,20 @@ public sealed class AccessAuditEvent
         string? beforeStateJson,
         string? afterStateJson,
         string? reason,
-        string metadataJson)
+        AccessAuditMetadata metadata)
     {
         OccurredAtUtc = occurredAtUtc;
         ActionType = actionType;
         ActorType = actorType;
         ActorUserId = actorUserId;
         TargetUserId = targetUserId;
-        ActorSnapshotJson = actorSnapshotJson;
-        TargetSnapshotJson = targetSnapshotJson;
+        ActorSnapshotJson = RequireDocument(actorSnapshotJson, nameof(actorSnapshotJson));
+        TargetSnapshotJson = RequireDocument(targetSnapshotJson, nameof(targetSnapshotJson));
         PermissionCode = permissionCode;
-        BeforeStateJson = beforeStateJson;
-        AfterStateJson = afterStateJson;
+        BeforeStateJson = RequireOptionalDocument(beforeStateJson, nameof(beforeStateJson));
+        AfterStateJson = RequireOptionalDocument(afterStateJson, nameof(afterStateJson));
         Reason = reason;
-        MetadataJson = metadataJson;
+        Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
     }
 
     public long Id { get; private set; }
@@ -46,8 +46,23 @@ public sealed class AccessAuditEvent
     public string? BeforeStateJson { get; private set; }
     public string? AfterStateJson { get; private set; }
     public string? Reason { get; private set; }
-    public string MetadataJson { get; private set; } = string.Empty;
+    public AccessAuditMetadata Metadata { get; private set; } = null!;
 
     public User? ActorUser { get; private set; }
     public User TargetUser { get; private set; } = null!;
+
+    private static string RequireDocument(string value, string parameterName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException("Audit document must be non-empty.", parameterName);
+        }
+
+        return value;
+    }
+
+    private static string? RequireOptionalDocument(string? value, string parameterName)
+    {
+        return value is null ? null : RequireDocument(value, parameterName);
+    }
 }

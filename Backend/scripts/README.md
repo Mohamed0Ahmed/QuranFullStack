@@ -183,19 +183,40 @@ qd-ui
 
 ### `access-admin`
 
-Build and run `tools/QuranDashboard.AccessAdmin/`. The staged Phase 2 deployment order is:
+`access-admin` runs the already-built `tools/QuranDashboard.AccessAdmin/` and anchors its copied
+tool configuration, so it can be invoked from any directory. Run `qd-build` after backend code
+changes before using it. The wrapper defaults `DOTNET_ENVIRONMENT` to `Development` without
+overriding a value the caller already exported, so the tool's Development user secrets load on the
+documented local path. The connection source is the tool's `appsettings.json`, then those user
+secrets, then `ConnectionStrings__QuranDashboardDb` as the final override.
+
+From `Backend/`, the staged Phase 2 deployment order is:
 
 ```bash
-dotnet ef database update --migration AddAuthorizationAccessFoundation
-dotnet run --project tools/QuranDashboard.AccessAdmin -- identity scan
-dotnet run --project tools/QuranDashboard.AccessAdmin -- identity backfill --apply
-dotnet ef database update
-dotnet run --project tools/QuranDashboard.AccessAdmin -- catalogue sync
-dotnet run --project tools/QuranDashboard.AccessAdmin -- authorization preflight
+./scripts/access-admin identity scan
+dotnet ef database update --migration AddAuthorizationAccessFoundation --project infrastructure/QuranDashboard.Infrastructure --startup-project api/QuranDashboard.Api --context QuranDashboardDbContext
+./scripts/access-admin identity scan
+./scripts/access-admin identity backfill --apply
+./scripts/access-admin identity scan
+dotnet ef database update --migration RequireNormalizedEmail --project infrastructure/QuranDashboard.Infrastructure --startup-project api/QuranDashboard.Api --context QuranDashboardDbContext
+./scripts/access-admin catalogue sync
+./scripts/access-admin authorization preflight
 ```
 
-The tool does not assign Owners or grants and does not run migrations itself. `identity backfill`
-uses the shared application normalizer and refuses invalid or colliding identities.
+The first scan runs before any Phase 2 DDL and reads only legacy `users.id` and `users.email`; a
+collision exits non-zero without mutation. The additive migration intentionally leaves
+`normalized_email` nullable and without its unique index while creating the access tables and audit
+document constraints. The final identity migration succeeds only after the explicit
+normalizer-backed backfill.
+`authorization preflight` additionally inspects the live Phase 2 schema — column types, nullability
+and identity generation, plus index and constraint definitions compared verbatim — before checking
+migration history, normalized identities, and the catalogue. Catalogue parity is over active codes:
+a canonical permission carrying `retired_at` fails as `catalogue_retired=`. The tool does not assign
+Owners or grants and does not run migrations itself.
+
+Exit codes are stable: `0` clean, `2` usage, `3` a reported preflight/catalogue failure, and `4` a
+configuration or database failure the tool reports as `access_admin_failure=<type>` without a stack
+trace.
 
 After the first successful build, use `qd-api` directly until backend code changes.
 

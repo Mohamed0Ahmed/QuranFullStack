@@ -57,7 +57,16 @@ public sealed class PermissionCatalogueSynchronizer(
             .Select(permission => permission.Code)
             .OrderBy(code => code, StringComparer.Ordinal)
             .ToArray();
+        var retiredCanonicalCodes = existing
+            .Where(permission => knownCodes.Contains(permission.Code) && permission.RetiredAtUtc is not null)
+            .Select(permission => permission.Code)
+            .OrderBy(code => code, StringComparer.Ordinal)
+            .ToArray();
 
-        return new PermissionCatalogueSyncResult(addedCodes, updatedCodes, unknownCodes);
+        return new PermissionCatalogueSyncResult(
+            addedCodes,
+            updatedCodes,
+            unknownCodes,
+            retiredCanonicalCodes);
     }
 }

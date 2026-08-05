@@ -1,12 +1,38 @@
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Infrastructure.Persistence.Configurations.Access;
 
 public sealed class AccessAuditEventConfiguration : IEntityTypeConfiguration<AccessAuditEvent>
 {
+    private static readonly JsonSerializerOptions MetadataSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    };
+
     public void Configure(EntityTypeBuilder<AccessAuditEvent> builder)
     {
-        builder.ToTable("access_audit_events");
+        builder.ToTable("access_audit_events", table =>
+        {
+            table.HasCheckConstraint(
+                "ck_access_audit_events_documents_are_objects",
+                """
+                jsonb_typeof(actor_snapshot) = 'object'
+                AND jsonb_typeof(target_snapshot) = 'object'
+                AND (before_state IS NULL OR jsonb_typeof(before_state) = 'object')
+                AND (after_state IS NULL OR jsonb_typeof(after_state) = 'object')
+                """);
+            table.HasCheckConstraint(
+                "ck_access_audit_events_metadata_schema_version",
+                """
+                jsonb_typeof(metadata) = 'object'
+                AND jsonb_exists(metadata, 'schemaVersion')
+                AND jsonb_typeof(metadata -> 'schemaVersion') = 'number'
+                AND (metadata ->> 'schemaVersion') ~ '^[1-9][0-9]*$'
+                AND (metadata ->> 'schemaVersion')::numeric <= 2147483647
+                """);
+        });
 
         builder.HasKey(eventItem => eventItem.Id);
         builder.Property(eventItem => eventItem.Id)
@@ -62,10 +88,17 @@ public sealed class AccessAuditEventConfiguration : IEntityTypeConfiguration<Acc
             .HasMaxLength(1024)
             .HasColumnName("reason");
 
-        builder.Property(eventItem => eventItem.MetadataJson)
+        builder.Property(eventItem => eventItem.Metadata)
             .IsRequired()
             .HasColumnType("jsonb")
-            .HasColumnName("metadata");
+            .HasColumnName("metadata")
+            .HasConversion(
+                metadata => Serialize(metadata),
+                json => Deserialize(json),
+                new ValueComparer<AccessAuditMetadata>(
+                    (left, right) => Serialize(left) == Serialize(right),
+                    metadata => Serialize(metadata).GetHashCode(StringComparison.Ordinal),
+                    metadata => Deserialize(Serialize(metadata))));
 
         builder.HasOne(eventItem => eventItem.ActorUser)
             .WithMany()
@@ -86,5 +119,16 @@ public sealed class AccessAuditEventConfiguration : IEntityTypeConfiguration<Acc
             .IsDescending(false, true);
         builder.HasIndex(eventItem => eventItem.PermissionCode)
             .HasFilter("permission_code IS NOT NULL");
+    }
+
+    private static string Serialize(AccessAuditMetadata? metadata)
+    {
+        return JsonSerializer.Serialize(metadata, MetadataSerializerOptions);
+    }
+
+    private static AccessAuditMetadata Deserialize(string json)
+    {
+        return JsonSerializer.Deserialize<AccessAuditMetadata>(json, MetadataSerializerOptions)
+            ?? throw new InvalidOperationException("Audit metadata JSON must deserialize to metadata.");
     }
 }
