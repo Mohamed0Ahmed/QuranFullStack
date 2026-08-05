@@ -1,0 +1,536 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd -P)"
+BACKEND_ROOT="${REPO_ROOT}/Backend"
+SOLUTION="${BACKEND_ROOT}/QuranDashboard.sln"
+TEST_PROJECT="${BACKEND_ROOT}/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj"
+CATALOG="${BACKEND_ROOT}/tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv"
+TEST_OUTPUT="${BACKEND_ROOT}/tests/QuranDashboard.Tests/bin/Debug/net10.0/QuranDashboard.Tests.dll"
+ACCESS_ADMIN_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.AccessAdmin/bin/Debug/net10.0/QuranDashboard.AccessAdmin.dll"
+DATA_IMPORTER_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.DataImporter/bin/Debug/net10.0/QuranDashboard.DataImporter.dll"
+CALLER_DIR="$(pwd -P)"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|canonical-data
+    --build|--no-build [--list-tests] [--results-dir PATH]
+  Backend/scripts/test-backend feature FEATURE_KEY --build|--no-build
+    [--list-tests] [--results-dir PATH]
+  Backend/scripts/test-backend feature --class FULL_CLASS_NAME --build|--no-build
+    [--list-tests] [--results-dir PATH]
+  Backend/scripts/test-backend feature --test FULL_METHOD_NAME --build|--no-build
+    [--list-tests] [--results-dir PATH]
+  Backend/scripts/test-backend pipeline [--feature FEATURE_KEY] --build|--no-build
+    [--list-tests] [--results-dir PATH]
+  Backend/scripts/test-backend pre-pr [--results-dir PATH]
+  Backend/scripts/test-backend pre-pr --list-tests --no-build [--results-dir PATH]
+EOF
+}
+
+fail_usage() {
+  echo "ERROR: $1" >&2
+  usage >&2
+  exit 2
+}
+
+require_value() {
+  local option="$1"
+  local value="${2:-}"
+
+  if [[ -z "${value}" || "${value}" == --* ]]; then
+    fail_usage "${option} requires a value."
+  fi
+}
+
+if [[ $# -eq 0 ]]; then
+  fail_usage "A test lane is required."
+fi
+
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+  usage
+  exit 0
+fi
+
+lane="$1"
+shift
+
+case "${lane}" in
+  fast|access|access-db|migration|process|smoke|tier-b|canonical-data|feature|pipeline|pre-pr)
+    ;;
+  *)
+    fail_usage "Unknown lane: ${lane}"
+    ;;
+esac
+
+feature_selector=""
+class_selector=""
+test_selector=""
+build_mode=""
+list_tests=false
+results_dir=""
+
+if [[ "${lane}" == "feature" && $# -gt 0 && "$1" != --* ]]; then
+  feature_selector="$1"
+  shift
+fi
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --build)
+      [[ -z "${build_mode}" ]] || fail_usage "Choose exactly one of --build or --no-build."
+      build_mode="build"
+      shift
+      ;;
+    --no-build)
+      [[ -z "${build_mode}" ]] || fail_usage "Choose exactly one of --build or --no-build."
+      build_mode="no-build"
+      shift
+      ;;
+    --list-tests)
+      list_tests=true
+      shift
+      ;;
+    --results-dir)
+      require_value "$1" "${2:-}"
+      results_dir="$2"
+      shift 2
+      ;;
+    --feature)
+      require_value "$1" "${2:-}"
+      [[ "${lane}" == "pipeline" ]] || fail_usage "--feature is valid only for the pipeline lane."
+      [[ -z "${feature_selector}" ]] || fail_usage "Only one feature selector is allowed."
+      feature_selector="$2"
+      shift 2
+      ;;
+    --class)
+      require_value "$1" "${2:-}"
+      [[ "${lane}" == "feature" ]] || fail_usage "--class is valid only for the feature lane."
+      [[ -z "${class_selector}" ]] || fail_usage "Only one class selector is allowed."
+      class_selector="$2"
+      shift 2
+      ;;
+    --test)
+      require_value "$1" "${2:-}"
+      [[ "${lane}" == "feature" ]] || fail_usage "--test is valid only for the feature lane."
+      [[ -z "${test_selector}" ]] || fail_usage "Only one test selector is allowed."
+      test_selector="$2"
+      shift 2
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    *)
+      fail_usage "Unknown argument: $1"
+      ;;
+  esac
+done
+
+if [[ "${lane}" == "pre-pr" ]]; then
+  if [[ "${list_tests}" == true ]]; then
+    [[ "${build_mode}" == "no-build" ]] \
+      || fail_usage "pre-pr discovery requires --list-tests --no-build."
+  else
+    [[ -z "${build_mode}" || "${build_mode}" == "build" ]] \
+      || fail_usage "Executing pre-pr always builds once."
+    build_mode="build"
+  fi
+else
+  [[ -n "${build_mode}" ]] || fail_usage "Focused lanes require --build or --no-build."
+fi
+
+if [[ "${lane}" == "feature" ]]; then
+  selector_count=0
+  [[ -n "${feature_selector}" ]] && selector_count=$((selector_count + 1))
+  [[ -n "${class_selector}" ]] && selector_count=$((selector_count + 1))
+  [[ -n "${test_selector}" ]] && selector_count=$((selector_count + 1))
+  [[ "${selector_count}" -eq 1 ]] \
+    || fail_usage "feature requires exactly one FEATURE_KEY, --class, or --test selector."
+elif [[ -n "${class_selector}" || -n "${test_selector}" ]]; then
+  fail_usage "Class and test selectors are valid only for the feature lane."
+fi
+
+if [[ ! -f "${CATALOG}" ]]; then
+  echo "ERROR: Backend test catalog is missing: ${CATALOG}" >&2
+  exit 1
+fi
+
+catalog_header="$(head -n 1 "${CATALOG}")"
+expected_header=$'FullyQualifiedClassName\tFeature\tKind\tGate\tConcerns'
+if [[ "${catalog_header}" != "${expected_header}" ]]; then
+  echo "ERROR: Backend test catalog header is invalid: ${catalog_header}" >&2
+  exit 1
+fi
+
+declare -a selected_classes=()
+declare -a selected_features=()
+declare -a selected_kinds=()
+declare -a selected_gates=()
+declare -a selected_concerns=()
+
+add_selected_row() {
+  selected_classes+=("$1")
+  selected_features+=("$2")
+  selected_kinds+=("$3")
+  selected_gates+=("$4")
+  selected_concerns+=("$5")
+}
+
+feature_exists=false
+pipeline_feature_exists=false
+class_exists=false
+test_class_exists=false
+
+while IFS=$'\t' read -r class_name feature kind gate concerns; do
+  [[ -n "${class_name}" ]] || continue
+
+  if [[ -n "${feature_selector}" && "${feature}" == "${feature_selector}" ]]; then
+    feature_exists=true
+    [[ "${gate}" == "Pipeline" ]] && pipeline_feature_exists=true
+  fi
+  [[ -n "${class_selector}" && "${class_name}" == "${class_selector}" ]] && class_exists=true
+  if [[ -n "${test_selector}" && "${test_selector}" == "${class_name}".* ]]; then
+    test_class_exists=true
+  fi
+
+  selected=false
+  case "${lane}" in
+    fast)
+      [[ "${kind}" == "Fast" ]] && selected=true
+      ;;
+    access)
+      [[ "${feature}" == "Access" ]] && selected=true
+      ;;
+    access-db)
+      if [[ "${feature}" == "Access" ]] \
+        && { [[ "${kind}" == "Database" ]] || [[ ",${concerns}," == *",Schema,"* ]]; }; then
+        selected=true
+      fi
+      ;;
+    migration)
+      [[ "${kind}" == "Migration" ]] && selected=true
+      ;;
+    process)
+      [[ "${kind}" == "Process" ]] && selected=true
+      ;;
+    smoke)
+      [[ "${gate}" == "Smoke" && "${kind}" != "Canonical" ]] && selected=true
+      ;;
+    tier-b)
+      [[ "${gate}" == "TierB" ]] && selected=true
+      ;;
+    canonical-data)
+      [[ "${kind}" == "Canonical" ]] && selected=true
+      ;;
+    feature)
+      if [[ -n "${feature_selector}" && "${feature}" == "${feature_selector}" ]]; then
+        selected=true
+      elif [[ -n "${class_selector}" && "${class_name}" == "${class_selector}" ]]; then
+        selected=true
+      elif [[ -n "${test_selector}" && "${test_selector}" == "${class_name}".* ]]; then
+        selected=true
+      fi
+      ;;
+    pipeline)
+      if [[ "${gate}" == "Pipeline" && "${kind}" != "Canonical" ]] \
+        && { [[ -z "${feature_selector}" ]] || [[ "${feature}" == "${feature_selector}" ]]; }; then
+        selected=true
+      fi
+      ;;
+    pre-pr)
+      selected=true
+      ;;
+  esac
+
+  if [[ "${selected}" == true ]]; then
+    add_selected_row "${class_name}" "${feature}" "${kind}" "${gate}" "${concerns}"
+  fi
+done < <(tail -n +2 "${CATALOG}")
+
+if [[ -n "${feature_selector}" && "${feature_exists}" != true ]]; then
+  fail_usage "Unknown feature key: ${feature_selector}"
+fi
+if [[ "${lane}" == "pipeline" && -n "${feature_selector}" && "${pipeline_feature_exists}" != true ]]; then
+  fail_usage "Feature is not a Pipeline feature: ${feature_selector}"
+fi
+if [[ -n "${class_selector}" && "${class_exists}" != true ]]; then
+  fail_usage "Unknown test class: ${class_selector}"
+fi
+if [[ -n "${test_selector}" && "${test_class_exists}" != true ]]; then
+  fail_usage "The method does not belong to a cataloged test class: ${test_selector}"
+fi
+if [[ "${#selected_classes[@]}" -eq 0 ]]; then
+  fail_usage "The selector resolved to no catalog rows."
+fi
+
+if [[ "${build_mode}" == "build" ]]; then
+  dotnet build "${SOLUTION}" \
+    --disable-build-servers \
+    -m:1 \
+    -p:BuildInParallel=false \
+    -v minimal
+fi
+
+if [[ "${build_mode}" == "no-build" ]]; then
+  missing_output=false
+  for output in "${TEST_OUTPUT}"; do
+    if [[ ! -f "${output}" ]]; then
+      echo "ERROR: --no-build requires existing output: ${output}" >&2
+      missing_output=true
+    fi
+  done
+
+  requires_access_admin=false
+  requires_data_importer=false
+  for index in "${!selected_kinds[@]}"; do
+    kind="${selected_kinds[$index]}"
+    gate="${selected_gates[$index]}"
+    [[ "${kind}" == "Migration" || "${kind}" == "Process" ]] && requires_access_admin=true
+    [[ "${gate}" == "Pipeline" || "${kind}" == "Canonical" ]] && requires_data_importer=true
+  done
+
+  if [[ "${requires_access_admin}" == true && ! -f "${ACCESS_ADMIN_OUTPUT}" ]]; then
+    echo "ERROR: --no-build requires existing AccessAdmin output: ${ACCESS_ADMIN_OUTPUT}" >&2
+    missing_output=true
+  fi
+  if [[ "${requires_data_importer}" == true && ! -f "${DATA_IMPORTER_OUTPUT}" ]]; then
+    echo "ERROR: --no-build requires existing DataImporter output: ${DATA_IMPORTER_OUTPUT}" >&2
+    missing_output=true
+  fi
+  [[ "${missing_output}" == false ]] || exit 1
+fi
+
+if [[ -n "${test_selector}" ]]; then
+  set +e
+  discovery_output="$(
+    dotnet test "${TEST_PROJECT}" \
+      --no-build \
+      --no-restore \
+      --disable-build-servers \
+      -m:1 \
+      -p:BuildInParallel=false \
+      --list-tests \
+      -v quiet 2>&1
+  )"
+  discovery_status=$?
+  set -e
+  if [[ "${discovery_status}" -ne 0 || "${discovery_output}" == *"System.Net.Sockets.SocketException"* ]]; then
+    printf '%s\n' "${discovery_output}" >&2
+    echo "ERROR: VSTest discovery failed while validating the exact method." >&2
+    exit 1
+  fi
+
+  test_discovered=false
+  while IFS= read -r discovered_test; do
+    discovered_test="${discovered_test#"${discovered_test%%[![:space:]]*}"}"
+    discovered_test="${discovered_test%%(*}"
+    if [[ "${discovered_test}" == "${test_selector}" ]]; then
+      test_discovered=true
+      break
+    fi
+  done <<< "${discovery_output}"
+
+  [[ "${test_discovered}" == true ]] || fail_usage "Unknown discovered test method: ${test_selector}"
+fi
+
+if [[ -n "${results_dir}" ]]; then
+  if [[ "${results_dir}" != /* ]]; then
+    results_dir="${CALLER_DIR}/${results_dir}"
+  fi
+  mkdir -p "${results_dir}"
+fi
+
+filter=""
+if [[ -n "${test_selector}" ]]; then
+  filter="FullyQualifiedName=${test_selector}"
+elif [[ "${lane}" != "pre-pr" ]]; then
+  for class_name in "${selected_classes[@]}"; do
+    term="(FullyQualifiedName~${class_name}.)"
+    filter="${filter:+${filter}|}${term}"
+  done
+fi
+
+echo "lane: ${lane}"
+echo "catalog: ${CATALOG}"
+echo "selected catalog rows:"
+for index in "${!selected_classes[@]}"; do
+  printf '  %s\t%s\t%s\t%s\t%s\n' \
+    "${selected_classes[$index]}" \
+    "${selected_features[$index]}" \
+    "${selected_kinds[$index]}" \
+    "${selected_gates[$index]}" \
+    "${selected_concerns[$index]}"
+done
+echo "expanded filter: ${filter:-<unfiltered>}"
+
+declare -A resource_kinds=()
+all_fast=true
+canonical_selected=false
+for index in "${!selected_kinds[@]}"; do
+  kind="${selected_kinds[$index]}"
+  [[ "${kind}" == "Fast" ]] || all_fast=false
+  [[ "${kind}" == "Canonical" ]] && canonical_selected=true
+  [[ "${kind}" != "Fast" ]] && resource_kinds["${kind}"]=1
+done
+
+if [[ "${#resource_kinds[@]}" -eq 0 ]]; then
+  echo "resource needs: none"
+else
+  resource_summary=""
+  for kind in Database Migration Process Canonical; do
+    if [[ -n "${resource_kinds[${kind}]:-}" ]]; then
+      resource_summary="${resource_summary:+${resource_summary},}${kind}"
+    fi
+  done
+  echo "resource needs: ${resource_summary}"
+fi
+
+run_id="$(tr -d '-' < /proc/sys/kernel/random/uuid)"
+export QURAN_DASHBOARD_TEST_RUN_ID="${run_id}"
+export QURAN_DASHBOARD_TEST_DB_PARALLELISM=4
+unset MUSHAF_READER_REAL_DB_CONNECTION
+unset UNIQUE_WORDS_REAL_DB_CONNECTION
+unset ROOTS_EXPLORER_REAL_DB_CONNECTION
+unset MORPHOLOGY_EXPLORERS_REAL_DB_CONNECTION
+unset WORD_TYPES_REAL_DB_CONNECTION
+echo "cleanup run ID: ${QURAN_DASHBOARD_TEST_RUN_ID}"
+
+canonical_preflight() {
+  local missing=false
+  local require_foundation=false
+  local require_enriched=false
+  local require_dump=false
+
+  for class_name in "${selected_classes[@]}"; do
+    [[ "${class_name}" == QuranDashboard.Tests.Quran.Import.* ]] && require_foundation=true
+    [[ "${class_name}" == QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRealImportIdentityLinksTests ]] \
+      && require_foundation=true
+    [[ "${class_name}" == QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyArtifactTests ]] \
+      && require_enriched=true
+    [[ "${class_name}" == QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests ]] && require_dump=true
+  done
+
+  if [[ "${require_foundation}" == true \
+    && ! -d "${REPO_ROOT}/resources/import-sources/quran-foundation" ]]; then
+    echo "ERROR: canonical foundation source is missing." >&2
+    missing=true
+  fi
+  if [[ "${require_enriched}" == true \
+    && ! -f "${REPO_ROOT}/resources/import-sources/quran-enriched-morphology/corpus-based-enriched-morphology.dashboard-ready.json" ]]; then
+    echo "ERROR: canonical enriched morphology artifact is missing." >&2
+    missing=true
+  fi
+  if [[ "${require_dump}" == true ]]; then
+    for path in \
+      "${REPO_ROOT}/resources/db-dumps/quran-canonical/quran-canonical.dump" \
+      "${REPO_ROOT}/resources/db-dumps/quran-canonical/manifest.json"; do
+      if [[ ! -f "${path}" ]]; then
+        echo "ERROR: canonical Smoke resource is missing: ${path}" >&2
+        missing=true
+      fi
+    done
+  fi
+
+  [[ "${missing}" == false ]]
+}
+
+if [[ "${list_tests}" == false && "${canonical_selected}" == true ]]; then
+  if ! canonical_preflight; then
+    echo "canonical data tier: failed preflight" >&2
+    exit 1
+  fi
+elif [[ "${list_tests}" == true && "${canonical_selected}" == true ]]; then
+  echo "canonical data tier: discovery only"
+else
+  echo "canonical data tier: not selected"
+fi
+
+verbosity="normal"
+hang_timeout="20m"
+if [[ "${all_fast}" == true ]]; then
+  verbosity="minimal"
+  hang_timeout="5m"
+fi
+
+test_args=(
+  test
+  "${TEST_PROJECT}"
+  --no-build
+  --no-restore
+  --disable-build-servers
+  -m:1
+  -p:BuildInParallel=false
+  --blame-hang
+  --blame-hang-dump-type
+  none
+  --blame-hang-timeout
+  "${hang_timeout}"
+  -v
+  "${verbosity}"
+)
+
+[[ -n "${filter}" ]] && test_args+=(--filter "${filter}")
+[[ "${list_tests}" == true ]] && test_args+=(--list-tests)
+[[ -n "${results_dir}" ]] && test_args+=(--results-directory "${results_dir}")
+
+if [[ "${list_tests}" == true ]]; then
+  set +e
+  discovery_output="$(dotnet "${test_args[@]}" 2>&1)"
+  test_status=$?
+  set -e
+  printf '%s\n' "${discovery_output}"
+
+  if [[ "${test_status}" -ne 0 || "${discovery_output}" == *"System.Net.Sockets.SocketException"* ]]; then
+    echo "ERROR: VSTest discovery failed." >&2
+    exit 1
+  fi
+
+  declare -A selected_class_set=()
+  declare -A discovered_class_set=()
+  for class_name in "${selected_classes[@]}"; do
+    selected_class_set["${class_name}"]=1
+  done
+
+  while IFS= read -r discovered_test; do
+    discovered_test="${discovered_test#"${discovered_test%%[![:space:]]*}"}"
+    [[ "${discovered_test}" == QuranDashboard.Tests.* ]] || continue
+    discovered_test="${discovered_test%%(*}"
+    discovered_class="${discovered_test%.*}"
+    discovered_class_set["${discovered_class}"]=1
+  done <<< "${discovery_output}"
+
+  discovery_valid=true
+  for class_name in "${selected_classes[@]}"; do
+    if [[ -z "${discovered_class_set[${class_name}]:-}" ]]; then
+      echo "ERROR: selected catalog class discovered no tests: ${class_name}" >&2
+      discovery_valid=false
+    fi
+  done
+  for class_name in "${!discovered_class_set[@]}"; do
+    if [[ -z "${selected_class_set[${class_name}]:-}" ]]; then
+      echo "ERROR: filter discovered a class outside the selected catalog rows: ${class_name}" >&2
+      discovery_valid=false
+    fi
+  done
+
+  [[ "${discovery_valid}" == true ]] || exit 1
+  exit 0
+fi
+
+set +e
+dotnet "${test_args[@]}"
+test_status=$?
+set -e
+
+if [[ "${list_tests}" == false && "${canonical_selected}" == true ]]; then
+  if [[ "${test_status}" -eq 0 ]]; then
+    echo "canonical data tier: ran"
+  else
+    echo "canonical data tier: failed" >&2
+  fi
+fi
+
+exit "${test_status}"

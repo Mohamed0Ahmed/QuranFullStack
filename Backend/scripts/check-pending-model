@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+BACKEND_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
+SOLUTION="${BACKEND_ROOT}/QuranDashboard.sln"
+INFRASTRUCTURE_PROJECT="${BACKEND_ROOT}/infrastructure/QuranDashboard.Infrastructure/QuranDashboard.Infrastructure.csproj"
+STARTUP_PROJECT="${BACKEND_ROOT}/api/QuranDashboard.Api/QuranDashboard.Api.csproj"
+INFRASTRUCTURE_OUTPUT="${BACKEND_ROOT}/infrastructure/QuranDashboard.Infrastructure/bin/Debug/net10.0/QuranDashboard.Infrastructure.dll"
+STARTUP_OUTPUT="${BACKEND_ROOT}/api/QuranDashboard.Api/bin/Debug/net10.0/QuranDashboard.Api.dll"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  Backend/scripts/check-pending-model --build
+  Backend/scripts/check-pending-model --no-build
+
+Checks whether the EF Core model has pending changes. It never adds or applies a migration.
+EOF
+}
+
+if [[ $# -eq 1 && ( "$1" == "--help" || "$1" == "-h" ) ]]; then
+  usage
+  exit 0
+fi
+
+if [[ $# -ne 1 || ( "$1" != "--build" && "$1" != "--no-build" ) ]]; then
+  usage >&2
+  exit 2
+fi
+
+build_mode="$1"
+
+if [[ "${build_mode}" == "--build" ]]; then
+  dotnet build "${SOLUTION}" \
+    --disable-build-servers \
+    -m:1 \
+    -p:BuildInParallel=false \
+    -v minimal
+else
+  for output in "${INFRASTRUCTURE_OUTPUT}" "${STARTUP_OUTPUT}"; do
+    if [[ ! -f "${output}" ]]; then
+      echo "ERROR: --no-build requires existing output: ${output}" >&2
+      exit 1
+    fi
+  done
+fi
+
+cd "${BACKEND_ROOT}"
+source "${SCRIPT_DIR}/_preflight-sandbox.sh"
+preflight_check_stale_sandbox_assets "${BACKEND_ROOT}"
+
+export DOTNET_ENVIRONMENT=Development
+
+dotnet ef migrations has-pending-model-changes \
+  --no-build \
+  --project "${INFRASTRUCTURE_PROJECT}" \
+  --startup-project "${STARTUP_PROJECT}" \
+  --context QuranDashboardDbContext

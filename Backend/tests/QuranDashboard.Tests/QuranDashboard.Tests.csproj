@@ -40,4 +40,9 @@
     <EmbeddedResource Include="Quran\WordsWordTypes\word-types-explorer-seed.sql" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="TestSupport\Execution\test-gates.tsv" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="TestSupport\Execution\test-resources.tsv" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
