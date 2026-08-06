@@ -81,6 +81,12 @@ and when is `../../TESTING_STRATEGY.md` §4 and §5.
   captures which timer APIs exist on `globalThis` at that moment; with the order swapped a
   still-installed `requestIdleCallback` stub gets faked for the rest of the file, and
   `src/app/core/navigation/idle-preload.strategy.spec.ts` loses its fallback branch.
+- **The `console.warn` filter in `src/test-setup.ts` is a plain assignment on purpose**
+  (`src/test-setup.ts:10-15`): it swallows jsdom's unfixable `[cdkFocusInitial]` warning and
+  delegates every other warning to the captured original. Rewriting it as
+  `vi.spyOn(console, 'warn')` would put it under the `vi.restoreAllMocks()` on line 21, which
+  removes it after the first test of every file and brings the noise back. It is the one global
+  the safety net deliberately does not restore — not a leak.
 - **A spec that appends a fixture host to `document.body` removes it itself**, in a file-local
   `afterEach` that calls `fixture.destroy()` first and `fixture.nativeElement.remove()` second
   (see `src/app/shared/ui/context-menu/context-menu.component.spec.ts`) — Angular teardown

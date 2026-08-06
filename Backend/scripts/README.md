@@ -243,7 +243,7 @@ usage text (`test-backend:72-78`).
 |------|--------|
 | `--build` / `--no-build` | **Required, exactly one**, on every lane except `pre-pr` (`test-backend:144-155`). `--build` builds `QuranDashboard.sln` once, single-threaded. `--no-build` verifies the outputs the selection actually needs — the test assembly always, `QuranDashboard.AccessAdmin` for `Kind=Migration`/`Kind=Process`, `QuranDashboard.DataImporter` for `Gate=Pipeline`/`Kind=Canonical` — and names the missing path instead of running stale (`:299-326`) |
 | `--list-tests` | Discovery only. Starts no container, never shards, and additionally fails if a selected catalog class discovers no tests or discovery finds a class outside the selection (`:602-631`) |
-| `--results-dir PATH` | Passed through as `--results-directory`; a relative path resolves against your working directory, not the repo root (`:361-366`) |
+| `--results-dir PATH` | Passed through as `--results-directory`; a relative path resolves against your working directory, not the repo root (`:361-366`). **It does not produce a TRX file.** The script registers no VSTest logger — `:536-555` is the whole argument list — so the directory receives the blame-hang output and nothing machine-readable. When you need parseable results, prefix the invocation with `VSTestLogger=trx`, which MSBuild reads as a property; the script itself needs no change |
 | `--feature KEY` | `pipeline` only — narrows the lane to one validated Pipeline feature; a non-Pipeline feature exits 2 |
 | `--class NAME` / `--test NAME` | `feature` only, as the two exact alternatives to a `FEATURE_KEY`. `--test` is additionally validated against VSTest discovery, so a typo'd method name fails before anything runs (`:328-359`) |
 

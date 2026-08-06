@@ -77,6 +77,17 @@ them: jsdom under it has no `matchMedia`, `ResizeObserver`, or `requestIdleCallb
 `../src/test-setup.ts` owns a global `afterEach` safety net. Both are documented in
 `../README.md`.
 
+### The builder takes `--reporters`, and nothing else about reporting
+
+`npm test -- --reporters=default --reporters=junit` is valid: `reporters` is a real builder
+option, passed straight through to Vitest
+(`../node_modules/@angular/build/src/builders/unit-test/schema.json:91-97`). **There is no
+`outputFile`.** The schema declares none and closes itself with `"additionalProperties": false`
+(`:111`), so an added `--outputFile=…` is refused by option validation before a single spec runs
+— it is not a slow failure, it is an immediate one. A JUnit reporter therefore writes into
+stdout alongside the default reporter, and a report file has to be carved out of the captured
+output rather than requested from the builder. Verified against `@angular/build` 20.3.27.
+
 ## What `verify-test-gates.mjs` proves
 
 It reads `../angular.json` and the real file inventory — no Angular build, no test run — and
