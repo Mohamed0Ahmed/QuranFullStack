@@ -6,6 +6,9 @@ Folders are clustered by Quran domain/use case, not by project layer.
 ## Folder map
 
 - `Api/Middleware/` — HTTP-boundary tests for global exception handling.
+- `Api/Access/` — first-login provisioning, Owner reconciliation, permission catalogues, scoped
+  authorization state, requirement handlers, controlled denial envelopes, and authorization metadata
+  validation.
 - `Quran/Import/` — foundation import, validation, reconstruction, and source-staging checks.
 - `Quran/MushafReader/` — page reader, ayah study, similar ayahs, mutashabihat, catalogs,
   word analysis, and cache behavior.

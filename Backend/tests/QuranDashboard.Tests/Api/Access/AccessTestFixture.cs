@@ -62,9 +62,28 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
     public HttpClient CreateApiClient()
     {
-        return Factory.CreateClient(new WebApplicationFactoryClientOptions
+        return CreateApiClient(Factory);
+    }
+
+    public HttpClient CreateApiClient(WebApplicationFactory<AccessController> factory)
+    {
+        return factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             BaseAddress = new Uri("https://localhost"),
+        });
+    }
+
+    public WebApplicationFactory<AccessController> CreateAuthorizationPipelineFactory(
+        Action<IServiceCollection>? configureServices = null)
+    {
+        return Factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureTestServices(services =>
+            {
+                services.AddControllers().AddApplicationPart(typeof(AuthorizationPipelineProbeController).Assembly);
+                services.AddSingleton<AuthorizationPipelineProbe>();
+                configureServices?.Invoke(services);
+            });
         });
     }
 

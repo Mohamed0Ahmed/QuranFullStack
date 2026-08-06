@@ -12,6 +12,11 @@ public static class ApiMessages
     public const string OperationSuccess = "تمت العملية بنجاح";
     public const string TooManyRequests = "عدد كبير من الطلبات. يرجى المحاولة بعد قليل.";
     public const string Unauthorized = "يجب تسجيل الدخول للوصول إلى هذا المورد";
+    public const string AccessUnprovisioned = "لم يتم إعداد حسابك للوصول إلى هذا المورد";
+    public const string AccessInactive = "حسابك غير نشط";
+    public const string AccessPermissionDenied = "ليس لديك الصلاحية اللازمة للوصول إلى هذا المورد";
+    public const string AccessOwnerRequired = "يتطلب هذا المورد صلاحية المالك";
+    public const string AuthorizationUnavailable = "تعذّر التحقق من صلاحيات الوصول. يرجى المحاولة لاحقًا.";
     public const string ValidationFailed = "الطلب غير صالح";
     public const string EmailAlreadyRegistered = "هذا البريد الإلكتروني مسجَّل بالفعل لحساب آخر";
 

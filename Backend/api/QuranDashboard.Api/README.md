@@ -41,7 +41,8 @@ It uses the standard `JwtBearer` handler to validate a Logto **access token** (n
   survives unchanged.
 - A missing/invalid token yields `401 Unauthorized` with the shared `ApiResponse` failure
   envelope (`isSuccess:false`, Arabic `message`, `errors:[]`) instead of the framework's default
-  empty body.
+  empty body. `ApiAuthorizationMiddlewareResultHandler` owns that challenge body and every future
+  authorization forbid body, so the JWT bearer handler does not write a competing response.
 - `GET api/access/me` provisions the caller on first sight, so it carries one status the other
   authenticated paths do not: an email already registered to a different `sub` is a
   `409 Conflict` in the same failure envelope (`UserProvisioningEmailConflictException` →
@@ -53,6 +54,14 @@ is **verified server-side through the already-validated OIDC claims**: matching 
 `email`, and `email_verified=true`. Logto Management API `primaryEmail` is used only to match provider
 identity data and is never email-verification authority. A new user starts `Pending` with no role. This is the only endpoint that requires
 authentication — there is **no global fallback policy**, so every other endpoint stays anonymous.
+
+The API now has a database-backed authorization core ready for explicit unsafe-route metadata:
+`[RequirePermission(...)]` checks an active local user's exact direct grant, while an active local Owner
+bypasses that exact check; `[RequireOwner]` accepts only an active local Owner. Both resolve the `sub`
+through `ICurrentUser` and ignore token-borne role or permission claims. The unsafe-route validator and
+handler checks fail closed for missing, unknown, or conflicting metadata, but startup registration and
+all controller annotations are deliberately deferred to Phase 5. This does not change public `GET`
+endpoints or `/api/access/me`.
 
 ### Roles (Phase 2 — infrastructure only)
 
@@ -67,15 +76,17 @@ are enforced in code keyed by the role **name** (`RoleNames`); roles are never c
   cannot promote an Owner from M2M data. Each promotion revokes direct grants and appends audit
   history in the same transaction. Empty, invalid, or duplicate normalized lists fail startup
   validation; a Disabled configured user is never reactivated.
-- **Role loading:** `RoleClaimsTransformation` (`IClaimsTransformation`) loads the caller's active role
-  into a `ClaimTypes.Role` claim, resolved by `sub` via a short-TTL (`30s`) cached `IUserRoleResolver`.
-  It is idempotent (never duplicates the claim) and the role/status write path evicts the subject's cache
-  entry so a change is observed immediately, not after the TTL.
+- **Authorization state:** a scoped `IAuthorizationStateResolver` projects status, the local Owner
+  relation, and active non-Owner direct grant codes once per protected request. It never provisions a
+  user and rejects a second distinct `sub` in its request scope. The old role-claim transformation is
+  no longer registered; `IUserRoleResolver` remains transitional for existing reconciliation/cache
+  invalidation work and is not consulted by the new requirement handlers.
 - **`GET /api/access/me`** returns `roleName` (null when no role) alongside `roleId`/`status`.
 - **Named policies registered, applied to nothing:** one policy per role
   (`AuthorizationPolicyNames.Owner`/`Admin`/`Editor`, each `RequireAuthenticatedUser().RequireRole(name)`)
   is registered ready for future admin surfaces. **No `[Authorize(Policy = …)]` is applied to any
   endpoint**, and there is still no global fallback policy — the whole product remains publicly browsable.
+  New authorization metadata does not use these policies or transformed/token role claims.
 
 ### Configuration (`Auth` section)
 

@@ -4,6 +4,7 @@ using QuranDashboard.Application.Abstractions.Access;
 using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Infrastructure.Access;
+using QuranDashboard.Infrastructure.Persistence.Reads.Access;
 
 namespace QuranDashboard.Infrastructure.ServiceRegistration;
 
@@ -26,6 +27,7 @@ internal static class AccessDependencyInjection
 
         services.AddScoped<IUserProvisioningService, UserProvisioningService>();
         services.AddScoped<IUserRoleResolver, CachedUserRoleResolver>();
+        services.AddScoped<IAuthorizationStateResolver, AuthorizationStateResolver>();
         services.AddScoped<IOwnerBootstrapConfigurationSource, OwnerBootstrapConfigurationSource>();
         services.AddScoped<IOwnerReconciliationStore, OwnerReconciliationStore>();
         services.AddScoped<IPermissionCatalogueSynchronizer, PermissionCatalogueSynchronizer>();

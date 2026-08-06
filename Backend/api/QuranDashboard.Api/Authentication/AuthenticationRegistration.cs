@@ -1,5 +1,8 @@
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using QuranDashboard.Api.Authorization;
+using QuranDashboard.Api.Authorization.Owner;
+using QuranDashboard.Api.Authorization.Permissions;
 using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Domain.Access;
 
@@ -14,15 +17,15 @@ internal static class AuthenticationRegistration
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<JwtAuthenticationOptions>, JwtAuthenticationOptionsValidator>();
 
-        services.AddSingleton<UnauthorizedRejectionWriter>();
-
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+        services.AddScoped<AuthorizationFailureState>();
+        services.AddScoped<AuthorizationStateAccessEvaluator>();
+        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        services.AddScoped<IAuthorizationHandler, OwnerAuthorizationHandler>();
+        services.AddSingleton<AuthorizationRejectionWriter>();
+        services.AddSingleton<IAuthorizationMiddlewareResultHandler, ApiAuthorizationMiddlewareResultHandler>();
 
-        services.AddScoped<IClaimsTransformation, RoleClaimsTransformation>();
-
-        // IOptions DI is not resolvable before the container is built, so bind the section locally to
-        // feed the JwtBearer setup. Values are still validated fail-fast via ValidateOnStart above.
         var authOptions = configuration.GetSection(JwtAuthenticationOptions.SectionName).Get<JwtAuthenticationOptions>()
             ?? new JwtAuthenticationOptions();
 
@@ -32,19 +35,7 @@ internal static class AuthenticationRegistration
                 options.Authority = authOptions.Authority;
                 options.TokenValidationParameters.ValidAudience = authOptions.Audience;
 
-                // Keep raw claim types (notably `sub`, the identity key). Logto issues RFC 9068
-                // `at+jwt` access tokens; the default inbound claim-type map would rename `sub`.
                 options.MapInboundClaims = false;
-
-                options.Events = new JwtBearerEvents
-                {
-                    OnChallenge = static async context =>
-                    {
-                        context.HandleResponse();
-                        var writer = context.HttpContext.RequestServices.GetRequiredService<UnauthorizedRejectionWriter>();
-                        await writer.WriteAsync(context.HttpContext, context.HttpContext.RequestAborted);
-                    },
-                };
             });
 
         services.AddAuthorization(options =>

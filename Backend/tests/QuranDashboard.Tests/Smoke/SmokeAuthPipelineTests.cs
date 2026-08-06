@@ -21,8 +21,8 @@ public sealed class SmokeAuthPipelineTests(SmokeApiFixture fixture)
 
         using var response = await client.GetAsync(MePath);
 
-        // The challenge path is custom — OnChallenge calls HandleResponse() and
-        // UnauthorizedRejectionWriter writes the body — so a bare framework 401 must fail here.
+        // The authorization result handler owns the custom challenge envelope, so a bare framework 401
+        // must fail here.
         await ApiEnvelope.AssertFailureEnvelopeAsync(
             response, HttpStatusCode.Unauthorized, ApiMessages.Unauthorized);
     }
@@ -88,10 +88,8 @@ public sealed class SmokeAuthPipelineTests(SmokeApiFixture fixture)
             ownerResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         }
 
-        // RoleClaimsTransformation runs on every authenticated request and caches negatives too, but the
-        // owner's request cached its negative BEFORE the bootstrap row existed, and
-        // UserProvisioningService.CreateAsync evicts that entry right after the write — so the request
-        // alone leaves nothing behind. Priming here is what creates the entry that can leak.
+        // The resolver cache could only leak when explicitly primed: provisioning itself evicts its
+        // entry after writing the bootstrap row.
         (await ResolveRoleAsync(SmokePersonas.OwnerSub)).Should().Be(RoleNames.Owner);
 
         await fixture.ResetAsync();

@@ -24,3 +24,9 @@ provider checks pass. Configured users awaiting their verified interactive sign-
 already active Owner. Disabled configured users remain Disabled. The store writes append-only
 system-actor audit events with immutable before/after snapshots and provenance, then the
 Application use case evicts changed role-cache entries after commit.
+
+Request-scoped authorization reads live in `Persistence/Reads/Access/AuthorizationStateResolver.cs`.
+That resolver projects one local user by exact `LogtoSub`: status, the local Owner relation, and direct
+permission codes only for an active non-Owner. It never provisions users and never receives role or
+permission claims. The scoped instance memoizes its first subject/task, so multiple authorization
+requirements share the one database projection; a second distinct subject is an invariant failure.

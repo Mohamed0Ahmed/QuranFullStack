@@ -1,9 +1,11 @@
 # Authentication
 
 JWT bearer authentication wiring for `QuranDashboard.Api`. This folder owns registration of the
-bearer scheme, its options validation, role-claim enrichment, the current-user accessor, the named
-authorization policies, and the 401 failure envelope. Everything here is registered by
-`AddApiAuthentication`, called from `AddApiServices` in `../Extensions/ServiceCollectionExtensions.cs`.
+bearer scheme, its options validation, the current-user accessor, and the transitional named
+policies. The sibling `Authorization/` folder owns the requirement handlers, endpoint metadata,
+controlled authorization responses, and unsafe-endpoint validator; their registrations are wired by
+`AddApiAuthentication`, called from `AddApiServices` in
+`../Extensions/ServiceCollectionExtensions.cs`.
 
 ## JWT bearer configuration
 
@@ -17,41 +19,59 @@ authorization policies, and the 401 failure envelope. Everything here is registe
 - Startup validation: `JwtAuthenticationOptionsValidator` with `ValidateOnStart` fails fast unless
   `Authority` is an absolute `https` URI and `Audience` is non-blank.
 
-## Role enrichment
-
-`RoleClaimsTransformation` (`IClaimsTransformation`, scoped) runs on authenticated principals only. It
-loads the active role name via `IUserRoleResolver` keyed on the `sub` claim and, when one exists, adds a
-`ClaimTypes.Role` claim on a separate `ClaimsIdentity` marked with `RoleClaimsAuthenticationType`. It is
-idempotent off that marker identity (not off any token-borne role claim); there is no result caching in
-the transformation itself, so an un-marked authenticated principal re-queries the resolver.
-
 ## Current user
 
 `HttpContextCurrentUser` (`ICurrentUser`, scoped) exposes `Sub` from the request principal's `sub` claim
 and throws `InvalidOperationException` when it is absent — so it must be resolved only inside an
 authenticated request.
 
-## Authorization policies
+## Authorization core
+
+- `AuthorizationStateAccessEvaluator` receives the authenticated `sub` through `ICurrentUser`; neither
+  token role claims nor permission-looking token claims participate in authorization.
+- `IAuthorizationStateResolver` projects the one local user snapshot for that subject: status, local
+  Owner relation, and direct permission codes only for an active non-Owner. Its scoped implementation
+  memoizes that task and rejects a second subject in the same request scope.
+- `[RequirePermission(code)]` requires an exact known catalogue code unless the active local user is an
+  Owner. `[RequireOwner]` requires an active local Owner and never treats a direct permission grant as
+  equivalent.
+- `UnsafeEndpointMetadataValidator` checks unsafe route classification and the requirement handlers
+  repeat that check fail-closed. It is intentionally not registered for startup validation until Phase 5
+  annotates every existing unsafe endpoint atomically.
+
+`RoleClaimsTransformation` and `IUserRoleResolver` remain as transitional source/contracts for the
+earlier role/reconciliation work, but the transformation is no longer registered and this authorization
+path never consults either it or token-borne role claims.
+
+## Transitional named policies
 
 - `AuthorizationPolicyNames` exposes `Owner`/`Admin`/`Editor` constants whose values equal `RoleNames`
   (`Domain.Access`); policy name == seeded `roles.name`.
 - Three named policies are registered, each `RequireAuthenticatedUser().RequireRole(<role>)`.
 - No global fallback policy is configured.
 
-## Failed-auth response
+## Authorization responses
 
-`UnauthorizedRejectionWriter` (singleton) writes a `401` carrying the shared
-`ApiResponse<object>.Fail(ApiMessages.Unauthorized)` JSON envelope in place of the framework's empty 401.
-It is wired through `JwtBearerEvents.OnChallenge`, which suppresses the default response
-(`HandleResponse`) and delegates to the writer; the writer no-ops if the response has already started.
+`ApiAuthorizationMiddlewareResultHandler` is the sole challenge/forbid response owner. Its
+`AuthorizationRejectionWriter` writes the shared `ApiResponse<object>.Fail(...)` JSON envelope with
+`application/json`, leaves a started response untouched, and selects centralized `ApiMessages` values:
+
+- Challenge → `401` and `ApiMessages.Unauthorized`.
+- Forbidden local state → `403` for unprovisioned, inactive, missing-permission, or Owner-only access.
+- Authorization-state infrastructure failure → fail-closed `503` with
+  `ApiMessages.AuthorizationUnavailable`; the evaluator logs correlation data without database or
+  permission details.
+
+The JWT bearer event does not write a competing challenge body.
 
 ## Boundary / current phase
 
-- The named policies are registered for future admin surfaces but are **not applied to any endpoint** in
-  this phase, and there is no fallback policy. Authentication is therefore enforced only where a
-  controller opts in with `[Authorize]` (today only `api/access/me`; see `../Controllers/README.md`).
-- This folder owns auth wiring only. User provisioning and role resolution live in Application /
-  Infrastructure behind `ICurrentUser` and `IUserRoleResolver`.
+- The new requirement attributes are not applied to any controller in this phase, startup metadata
+  validation is not registered, and there is no fallback policy. Authentication is therefore enforced
+  only where a controller opts in with `[Authorize]` (today only `api/access/me`; see
+  `../Controllers/README.md`).
+- This folder owns API auth wiring. User provisioning and authorization-state resolution live behind
+  Application abstractions with Infrastructure implementations.
 
 ## Related
 

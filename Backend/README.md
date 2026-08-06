@@ -15,7 +15,8 @@ writes happen only through the import/generate CLI.
 - **Import/generate pipelines** — foundation, morphology (+ enriched), simple/full إعراب,
   mutashabihat, tafsirs, translations, navigation metadata, display-word rebuild.
 - **Access foundation** — normalized identity, the 19-code Abwab catalogue, direct-grant/audit
-  persistence, and the operator preflight CLI; endpoint enforcement is a later phase.
+  persistence, the operator preflight CLI, and the request-scoped database authorization core. Endpoint
+  metadata activation/enforcement remains a later phase.
 
 ## Layer map
 
