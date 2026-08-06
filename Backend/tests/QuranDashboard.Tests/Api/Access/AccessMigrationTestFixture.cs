@@ -1,41 +1,40 @@
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
+using QuranDashboard.Tests.TestSupport.Process;
+using AccessAdminProgram = QuranDashboard.AccessAdmin.Program;
 
 namespace QuranDashboard.Tests.Api.Access;
 
 public sealed class AccessMigrationTestFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    private PostgreSqlDatabaseLease? _databaseLease;
 
     public string ConnectionString { get; private set; } = string.Empty;
 
     public async Task InitializeAsync()
     {
-        await _container.StartAsync();
-        ConnectionString = _container.GetConnectionString();
+        _databaseLease = await PostgreSqlTestProcess.LeaseEmptyDatabaseAsync(nameof(AccessMigrationTestFixture));
+        ConnectionString = _databaseLease.ConnectionString;
     }
 
-    public Task DisposeAsync()
+    public async Task DisposeAsync()
     {
-        return _container.DisposeAsync().AsTask();
+        if (_databaseLease is not null)
+        {
+            await _databaseLease.DisposeAsync();
+            _databaseLease = null;
+        }
     }
 
     public async Task<AccessMigrationDatabase> CreateDatabaseAsync()
     {
-        var schemaName = $"access_migration_{Guid.NewGuid():N}";
-        await using var connection = new NpgsqlConnection(ConnectionString);
-        await connection.OpenAsync();
-        await using var command = new NpgsqlCommand($"CREATE SCHEMA {schemaName};", connection);
-        await command.ExecuteNonQueryAsync();
+        var database = _databaseLease ?? throw new InvalidOperationException(
+            $"{nameof(AccessMigrationTestFixture)} hands out migration schemas only after the collection has "
+            + "initialized its empty database lease.");
 
-        var connectionString = new NpgsqlConnectionStringBuilder(ConnectionString)
-        {
-            SearchPath = schemaName,
-        }.ConnectionString;
-
-        return new AccessMigrationDatabase(ConnectionString, connectionString, schemaName);
+        return new AccessMigrationDatabase(
+            await PostgreSqlSchemaLease.CreateAsync(database, nameof(AccessMigrationTestFixture)));
     }
 
     public async Task MigrateToAsync(QuranDashboardDbContext db, string migrationName)
@@ -44,19 +43,18 @@ public sealed class AccessMigrationTestFixture : IAsyncLifetime
             .Single(migration => migration.EndsWith($"_{migrationName}", StringComparison.Ordinal));
         await db.Database.GetService<IMigrator>().MigrateAsync(migrationId);
     }
-
-    public Task MigrateToHeadAsync(QuranDashboardDbContext db)
-    {
-        return db.Database.MigrateAsync();
-    }
 }
 
-public sealed class AccessMigrationDatabase(
-    string adminConnectionString,
-    string connectionString,
-    string schemaName) : IAsyncDisposable
+public sealed class AccessMigrationDatabase : IAsyncDisposable
 {
-    public string ConnectionString { get; } = connectionString;
+    private readonly PostgreSqlSchemaLease _schemaLease;
+
+    internal AccessMigrationDatabase(PostgreSqlSchemaLease schemaLease)
+    {
+        _schemaLease = schemaLease;
+    }
+
+    public string ConnectionString => _schemaLease.ConnectionString;
 
     public QuranDashboardDbContext CreateDbContext()
     {
@@ -66,16 +64,40 @@ public sealed class AccessMigrationDatabase(
                 .Options);
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        await using var connection = new NpgsqlConnection(adminConnectionString);
-        await connection.OpenAsync();
-        await using var command = new NpgsqlCommand($"DROP SCHEMA {schemaName} CASCADE;", connection);
-        await command.ExecuteNonQueryAsync();
+        return _schemaLease.DisposeAsync();
     }
+}
+
+internal static class AccessAdminInProcess
+{
+    internal static async Task<AccessAdminRun> RunAsync(
+        string connectionString,
+        params string[] args)
+    {
+        using var processState = ProcessGlobalStateScope.Enter(
+            environmentVariables: new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                [AccessAdminConnectionString.EnvironmentVariable] = connectionString,
+            },
+            captureConsole: true);
+
+        var exitCode = await AccessAdminProgram.Main(args);
+
+        return new AccessAdminRun(exitCode, processState.ConsoleOutput);
+    }
+}
+
+internal static class AccessAdminConnectionString
+{
+    internal const string EnvironmentVariable = "ConnectionStrings__QuranDashboardDb";
+
+    internal const string UnreachableDatabase =
+        "Host=127.0.0.1;Port=1;Database=absent;Username=absent;Password=absent;Timeout=2";
 }
 
 public sealed record AccessAdminRun(int ExitCode, string Output);
 
-[CollectionDefinition(nameof(AccessMigrationCollection), DisableParallelization = true)]
-public sealed class AccessMigrationCollection : ICollectionFixture<AccessMigrationTestFixture>;
+[CollectionDefinition(nameof(AccessProcessGlobalCollection), DisableParallelization = true)]
+public sealed class AccessProcessGlobalCollection : ICollectionFixture<AccessMigrationTestFixture>;

@@ -20,7 +20,7 @@ downgraded to non-unique, and a reordered or unpredicated index are all reported
 be valid and ready. Columns are compared on nullability, `format_type` (so `integer` → `bigint` or
 `varchar(128)` → `varchar(256)` is a violation) and identity generation.
 `AuthorizationSchemaRequirements` holds those expected definitions verbatim;
-`AccessMigrationPathTests` asserts a freshly migrated schema produces zero violations, so a
+`AccessSchemaDriftTests` asserts a freshly migrated schema produces zero violations, so a
 PostgreSQL rendering change fails a test rather than silently loosening the gate.
 
 Catalogue parity is over **active** canonical codes: a canonical row carrying `retired_at` is

@@ -89,7 +89,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
     {
         await using var scope = QueryProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.ExecuteSqlRawAsync("TRUNCATE users RESTART IDENTITY CASCADE;");
+        await db.Database.ExecuteSqlRawAsync(
+            "TRUNCATE users, permissions RESTART IDENTITY CASCADE;");
         ProfileSource.Reset();
         EvictRoleCache(OwnerSub);
     }

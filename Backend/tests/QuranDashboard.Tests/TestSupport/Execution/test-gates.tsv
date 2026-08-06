@@ -9,9 +9,11 @@ QuranDashboard.Tests.Abwab.CreateDoorHandlerTests	Abwab	Fast	TierB
 QuranDashboard.Tests.Api.Access.AbwabPermissionCatalogueTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.AccessAdminCommandTests	Access	Process	TierB
 QuranDashboard.Tests.Api.Access.AccessAuditEventPersistenceTests	Access	Database	TierB
+QuranDashboard.Tests.Api.Access.AccessCollectionResetContractTests	Access	Database	TierB	Execution
 QuranDashboard.Tests.Api.Access.AccessMeEndpointTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.AccessMigrationPathTests	Access	Migration	TierB
 QuranDashboard.Tests.Api.Access.AccessRolesTests	Access	Database	TierB
+QuranDashboard.Tests.Api.Access.AccessSchemaDriftTests	Access	Database	TierB	Schema
 QuranDashboard.Tests.Api.Access.AccessSchemaModelTests	Access	Fast	TierB	Schema
 QuranDashboard.Tests.Api.Access.AuthorizationPolicyRegistrationTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.CachedUserRoleResolverTests	Access	Database	TierB
@@ -248,3 +250,5 @@ QuranDashboard.Tests.TestSupport.Access.TestAccessPersonasContractTests	Access	F
 QuranDashboard.Tests.TestSupport.DependencyInjection.OwnedServiceProviderRegistryTests	ApiBehavior	Fast	TierB	Execution
 QuranDashboard.Tests.TestSupport.Execution.TestGateCatalogTests	ApiBehavior	Fast	TierB	Execution
 QuranDashboard.Tests.TestSupport.PostgreSql.PostgreSqlTestProcessContractTests	ApiBehavior	Database	TierB	Execution
+QuranDashboard.Tests.TestSupport.Process.ProcessExecutionTests	ApiBehavior	Fast	TierB	Execution
+QuranDashboard.Tests.TestSupport.Process.ProcessGlobalStateScopeTests	ApiBehavior	Fast	TierB	Execution

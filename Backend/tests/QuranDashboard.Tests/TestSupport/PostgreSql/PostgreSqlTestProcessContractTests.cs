@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using DiagnosticsProcess = System.Diagnostics.Process;
 
 namespace QuranDashboard.Tests.TestSupport.PostgreSql;
 
@@ -343,7 +344,7 @@ public sealed class PostgreSqlTestProcessContractTests
             $"contract-{Guid.NewGuid():N}-postgres.lock");
         Directory.CreateDirectory(Path.GetDirectoryName(lockPath)!);
 
-        using var holder = Process.Start(new ProcessStartInfo(FlockExecutable)
+        using var holder = DiagnosticsProcess.Start(new ProcessStartInfo(FlockExecutable)
         {
             ArgumentList = { "--exclusive", lockPath, "--command", "sleep 6" }
         })!;

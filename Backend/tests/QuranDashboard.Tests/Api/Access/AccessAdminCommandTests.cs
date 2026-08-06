@@ -1,47 +1,53 @@
 using System.Diagnostics;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
+using QuranDashboard.Tests.TestSupport.Process;
 using AccessAdminProgram = QuranDashboard.AccessAdmin.Program;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessMigrationCollection))]
-public sealed class AccessAdminCommandTests(AccessMigrationTestFixture fixture)
+[Collection(nameof(AccessProcessGlobalCollection))]
+public sealed class AccessAdminCommandTests
 {
     [Fact]
     public async Task IncompleteIdentityBackfillCommand_ReturnsUsageBeforeConstructingDatabaseServices()
     {
+        using var processState = ProcessGlobalStateScope.Enter(captureConsole: true);
+
         var exitCode = await AccessAdminProgram.Main(["identity", "backfill"]);
 
         exitCode.Should().Be(2);
+        processState.ConsoleOutput.Should().Contain("Usage:");
     }
 
     [Fact]
     public void CreateHost_LoadsTheToolConfigurationFromItsExecutableDirectory()
     {
-        var originalDirectory = Directory.GetCurrentDirectory();
         var testDirectory = Directory.CreateDirectory(
             Path.Combine(Path.GetTempPath(), $"access-admin-{Guid.NewGuid():N}"));
+        var processState = ProcessGlobalStateScope.Enter(currentDirectory: testDirectory.FullName);
 
         try
         {
-            Directory.SetCurrentDirectory(testDirectory.FullName);
             using var host = AccessAdminProgram.CreateHost([]);
-            var configuration = host.Services.GetRequiredService<IConfiguration>();
 
-            configuration.GetConnectionString("QuranDashboardDb").Should().NotBeNullOrWhiteSpace();
+            host.Services.GetRequiredService<IConfiguration>()
+                .GetConnectionString("QuranDashboardDb")
+                .Should().NotBeNullOrWhiteSpace();
         }
         finally
         {
-            Directory.SetCurrentDirectory(originalDirectory);
+            processState.Dispose();
             testDirectory.Delete();
         }
+
+        processState.RestoreFailures.Should().BeEmpty();
     }
 
     [Fact]
     public async Task Wrapper_RunsADocumentedCommandWithoutAnExplicitEnvironment()
     {
-        await using var database = await fixture.CreateDatabaseAsync();
-        await using var db = database.CreateDbContext();
-        await fixture.MigrateToHeadAsync(db);
+        await using var database = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
+            nameof(AccessAdminCommandTests));
 
         var run = await RunWrapperAsync(database.ConnectionString, "identity", "scan");
 
@@ -49,30 +55,38 @@ public sealed class AccessAdminCommandTests(AccessMigrationTestFixture fixture)
         run.Output.Should().Contain("users=0");
     }
 
-    private static async Task<AccessAdminRun> RunWrapperAsync(
+    [Fact]
+    public async Task Wrapper_UnreachableDatabase_PropagatesAControlledOperationalFailure()
+    {
+        var run = await RunWrapperAsync(
+            AccessAdminConnectionString.UnreachableDatabase,
+            "authorization",
+            "preflight");
+
+        run.ExitCode.Should().Be(4);
+        run.Output.Should().Contain("access_admin_failure=");
+        run.Output.Should().NotContain("   at ");
+    }
+
+    private static async Task<ProcessRunResult> RunWrapperAsync(
         string connectionString,
         params string[] args)
     {
-        var startInfo = new ProcessStartInfo("bash")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
+        var startInfo = new ProcessStartInfo("bash");
         startInfo.ArgumentList.Add(LocateWrapper());
         foreach (var argument in args)
         {
             startInfo.ArgumentList.Add(argument);
         }
 
-        startInfo.Environment["ConnectionStrings__QuranDashboardDb"] = connectionString;
+        startInfo.Environment[AccessAdminConnectionString.EnvironmentVariable] = connectionString;
         startInfo.Environment.Remove("DOTNET_ENVIRONMENT");
 
-        using var process = Process.Start(startInfo)!;
-        var standardOutput = await process.StandardOutput.ReadToEndAsync();
-        var standardError = await process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
+        var run = await ProcessExecution.RunAsync(startInfo);
 
-        return new AccessAdminRun(process.ExitCode, standardOutput + standardError);
+        run.TimedOut.Should().BeFalse();
+
+        return run;
     }
 
     private static string LocateWrapper()

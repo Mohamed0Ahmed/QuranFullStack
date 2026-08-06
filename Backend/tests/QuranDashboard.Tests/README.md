@@ -34,6 +34,14 @@ Folders are clustered by Quran domain/use case, not by project layer.
   `DependencyInjection/OwnedServiceProviderRegistry.cs` (disposes fixture-owned root
   `ServiceProvider`s in reverse creation order), `Execution/` (the `test-gates.tsv` /
   `test-resources.tsv` catalogs the `Backend/scripts/test-backend` lanes read),
+  `Process/` (`ProcessGlobalStateScope` applies and restores the current directory, named
+  environment variables, and `Console.Out`/`Console.Error` — restoring on every exit path,
+  including a scoped body that throws, a boundary that fails while entering, and a restore
+  step that itself fails, which it records in `RestoreFailures` instead of throwing from
+  `Dispose`; `ProcessExecution` runs a child process draining stdout and stderr
+  concurrently — a sequential drain deadlocks once either stream fills the pipe buffer —
+  with a two-minute default timeout that kills the entire process tree, waits for
+  termination, and still returns what was drained),
   `Logging/RecordingLoggerProvider.cs`, and `PostgreSql/` — the one shared
   `postgres:16-alpine` runtime, its migrated template, and the per-collection database leases
   the Access, explorer, FullI3rab, foundation Import, Mutashabihat, Navigation, Tafsirs,
@@ -41,8 +49,33 @@ Folders are clustered by Quran domain/use case, not by project layer.
   instead of starting their own container. The two FullI3rab collections lease separately — `FullI3rabImportTestFixture` and
   `FullI3rabSchemaFixture` never share one database — and so do the two WordsDisplay
   collections: `WordsDisplayTestFixture` (synthetic seed) and `DisplayWordsRealImportFixture`
-  (real foundation import) each take their own lease. The Access migration fixture and the
-  `Smoke/Data/` canonical fixture still build their own container.
+  (real foundation import) each take their own lease. `AccessMigrationTestFixture` leases an
+  **empty** database from the same runtime and hands each case its own `PostgreSqlSchemaLease`
+  (a unique schema plus `SearchPath`, dropped `CASCADE` on disposal): staged upgrades replay the
+  real migration chain from nothing, so the migrated template is forbidden to them and
+  `AccessMigrationPathTests` proves both halves — one case's migration history and tables never
+  appear in another case's schema, and the leased database's `public` schema stays relation-free,
+  which no head-template clone could be. Cases whose starting point *is* migration head — the live
+  schema-drift mutations, the fresh-head preflight acceptance, and the retired-permission refusals —
+  live in `AccessSchemaDriftTests`, which takes its own migrated clone per case. That class and
+  `AccessAdminCommandTests` — whose valid wrapper run also takes its own migrated clone — share only
+  the `DisableParallelization = true` `AccessProcessGlobalCollection` with the staged class, never
+  its empty-database fixture. Those three classes are the whole collection, and it is non-parallel
+  because together they mutate the current directory, the connection environment variable, and the
+  console streams. `AccessAdminCommandTests` owns the only two child-process launches under
+  `Api/Access/`:
+  a valid `identity scan` through `Backend/scripts/access-admin` and one unreachable-database
+  `authorization preflight` proving the wrapper propagates exit code 4 with no stack trace. Parsing,
+  executable-directory configuration, and every migration permutation stay in-process.
+  The `Smoke/Data/` canonical fixture is the last one that still builds its own container.
+- `AccessTestFixture.ResetAsync` is the whole `ResetPerTest` contract the `AccessCollection` row of
+  `TestSupport/Execution/test-resources.tsv` declares: it truncates `users` **and** `permissions`
+  with `RESTART IDENTITY CASCADE`, which reaches `user_permissions` and `access_audit_events`
+  through their foreign keys, and leaves the migration-seeded `roles` untouched — those four tables
+  are everything the collection mutates. `permissions` belongs in that list because
+  `PermissionCatalogueSynchronizerTests` proves the synchronizer never deletes an unknown code, so
+  the `future.example` row it writes would otherwise outlive the case that wrote it.
+  `AccessCollectionResetContractTests` fails if the truncation list ever narrows again.
 - `TranslationImportTestFixture` owns exactly one root `ServiceProvider` for its collection and
   reaches it through `CreateScope()`; every helper on it needs the collection, and throws without
   one. Writing a synthetic source package needs no database, so it lives in the disposable

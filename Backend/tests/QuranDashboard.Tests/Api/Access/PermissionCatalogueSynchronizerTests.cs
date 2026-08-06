@@ -9,7 +9,7 @@ public sealed class PermissionCatalogueSynchronizerTests(AccessTestFixture fixtu
     [Fact]
     public async Task SynchronizeAsync_InsertsAllKnownCodesAndIsIdempotent()
     {
-        await ClearPermissionsAsync();
+        await fixture.ResetAsync();
 
         PermissionCatalogueSyncResult first;
         using (var scope = fixture.ApiServices.CreateScope())
@@ -45,7 +45,7 @@ public sealed class PermissionCatalogueSynchronizerTests(AccessTestFixture fixtu
     [Fact]
     public async Task SynchronizeAsync_UpdatesMetadataAndReportsUnknownCodesWithoutDeletingThem()
     {
-        await ClearPermissionsAsync();
+        await fixture.ResetAsync();
         using (var scope = fixture.ApiServices.CreateScope())
         {
             await scope.ServiceProvider
@@ -78,14 +78,5 @@ public sealed class PermissionCatalogueSynchronizerTests(AccessTestFixture fixtu
         var readDb = readScope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         (await readDb.AccessPermissions.AsNoTracking().SingleAsync(permission => permission.Code == "future.example"))
             .Should().NotBeNull();
-    }
-
-    private async Task ClearPermissionsAsync()
-    {
-        await fixture.ResetAsync();
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.ExecuteSqlRawAsync(
-            "TRUNCATE user_permissions, access_audit_events, permissions RESTART IDENTITY CASCADE;");
     }
 }
