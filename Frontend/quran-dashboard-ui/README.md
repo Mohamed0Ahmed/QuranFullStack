@@ -54,8 +54,24 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
 - **Keep the `VITEST_MAX_FORKS` cap on `npm test`** — without it the run OOMs/freezes the
   machine. **`vitest.config.ts` is ignored by the Angular unit-test builder**, so the cap
   must be set the way `package.json` already sets it; do not "clean it up".
-- **jsdom lacks `matchMedia` / `ResizeObserver`** under the builder — guard them in
-  components and default to desktop.
+- **jsdom lacks `matchMedia` / `ResizeObserver` / `requestIdleCallback`** under the builder —
+  guard them in components and default to desktop.
+- **`src/test-setup.ts` owns an `afterEach` safety net** that runs after every spec's own
+  hooks: it unstubs Vitest-stubbed globals, restores real timers, restores spies, clears
+  `localStorage`/`sessionStorage`, removes `data-theme` from `<html>`, and clears the inline
+  `body` `overflow`. Specs therefore stub browser globals with `vi.stubGlobal`, never with a
+  direct `window.x = …` / `Object.defineProperty` assignment — a direct assignment survives a
+  test that throws and leaks into the next one. The net deliberately does **not** polyfill
+  `matchMedia`, reset `TestBed`, or wipe `body` children.
+- **Inside that `afterEach`, `vi.unstubAllGlobals()` must stay before `vi.useRealTimers()`.**
+  The first `useRealTimers`/`useFakeTimers` call builds the fake-timer clock and permanently
+  captures which timer APIs exist on `globalThis` at that moment; with the order swapped a
+  still-installed `requestIdleCallback` stub gets faked for the rest of the file, and
+  `src/app/core/navigation/idle-preload.strategy.spec.ts` loses its fallback branch.
+- **A spec that appends a fixture host to `document.body` removes it itself**, in a file-local
+  `afterEach` that calls `fixture.destroy()` first and `fixture.nativeElement.remove()` second
+  (see `src/app/shared/ui/context-menu/context-menu.component.spec.ts`) — Angular teardown
+  needs the host still attached.
 - **Browser E2E (opt-in):** `npm run e2e` (headless), `npm run e2e:headed`, `npm run e2e:ui`.
   Chromium only. It boots the Angular dev server *and* the backend `https` profile, so it needs
   mkcert certificates, a migrated local `quran_dashboard`, and a prior

@@ -119,19 +119,16 @@ describe('Entity detail overlay ayah continuity (B7/B8)', () => {
   let overlay: DetailOverlayHistoryService;
 
   beforeEach(() => {
-    // jsdom lacks matchMedia; stubbed BEFORE TestBed so the shell/pages can read it.
-    Object.defineProperty(window, 'matchMedia', {
-      configurable: true,
-      writable: true,
-      value: (query: string) => ({
-        matches: query === QD_BP_DESKTOP_MIN_QUERY,
-        media: query,
-        addEventListener: () => undefined,
-        removeEventListener: () => undefined,
-        addListener: () => undefined,
-        removeListener: () => undefined,
-      }),
-    });
+    // jsdom lacks matchMedia; stubbed BEFORE TestBed so the shell/pages can read it, and undone
+    // by the test-setup safety net even when a test throws.
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === QD_BP_DESKTOP_MIN_QUERY,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+    }));
 
     TestBed.configureTestingModule({
       providers: [

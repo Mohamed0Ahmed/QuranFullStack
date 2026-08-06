@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { CONTEXT_MENU_LABELS } from './context-menu.labels';
 import { QdContextMenuComponent } from './context-menu.component';
@@ -48,6 +48,13 @@ describe('QdContextMenuComponent', () => {
     fixture = TestBed.createComponent(HostComponent);
     document.body.appendChild(fixture.nativeElement);
     fixture.detectChanges();
+  });
+
+  // The host is appended to document.body by hand, so nothing else takes it back out: destroy
+  // first (Angular teardown needs the host still attached), then remove it.
+  afterEach(() => {
+    fixture?.destroy();
+    (fixture?.nativeElement as HTMLElement | undefined)?.remove();
   });
 
   // F-70: `role="menu"` with no accessible name announces as an unnamed menu.

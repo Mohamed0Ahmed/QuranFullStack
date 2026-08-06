@@ -57,20 +57,17 @@ describe('Entity detail overlay explorer invariant', () => {
   let httpMock: HttpTestingController;
 
   beforeEach(() => {
-    // jsdom lacks matchMedia; the roots page reads the desktop breakpoint (the
-    // side panel must render inline) and the theme service reads color-scheme.
-    Object.defineProperty(window, 'matchMedia', {
-      configurable: true,
-      writable: true,
-      value: (query: string) => ({
-        matches: query === QD_BP_DESKTOP_MIN_QUERY,
-        media: query,
-        addEventListener: () => undefined,
-        removeEventListener: () => undefined,
-        addListener: () => undefined,
-        removeListener: () => undefined,
-      }),
-    });
+    // jsdom lacks matchMedia; the roots page reads the desktop breakpoint (the side panel must
+    // render inline) and the theme service reads color-scheme. The test-setup safety net undoes
+    // this stub even when a test throws.
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === QD_BP_DESKTOP_MIN_QUERY,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+    }));
 
     TestBed.configureTestingModule({
       providers: [

@@ -128,6 +128,90 @@
             "setupFiles": [
               "src/test-setup.ts"
             ]
+          },
+          "configurations": {
+            "feature-abwab": {
+              "include": [
+                "src/app/features/abwab/**/*.spec.ts"
+              ]
+            },
+            "feature-auth": {
+              "include": [
+                "src/app/features/auth/**/*.spec.ts"
+              ]
+            },
+            "feature-dashboard": {
+              "include": [
+                "src/app/features/dashboard/**/*.spec.ts"
+              ]
+            },
+            "feature-mushaf": {
+              "include": [
+                "src/app/features/mushaf/**/*.spec.ts"
+              ]
+            },
+            "feature-words": {
+              "include": [
+                "src/app/features/words/**/*.spec.ts"
+              ]
+            },
+            "authorization": {
+              "include": [
+                "src/app/app.config.auth.spec.ts",
+                "src/app/app.routes.spec.ts",
+                "src/app/core/auth/**/*.spec.ts",
+                "src/app/core/data-access/secure-url.interceptor.spec.ts",
+                "src/app/features/auth/**/*.spec.ts",
+                "src/environments/environment-guard.spec.ts"
+              ]
+            },
+            "composition": {
+              "include": [
+                "src/app/**/*.component.spec.ts",
+                "src/app/**/*.directive.spec.ts",
+                "src/app/app.nested-layers.spec.ts",
+                "src/app/core/navigation/detail-overlay/detail-overlay-history.bootstrap.spec.ts",
+                "src/app/core/navigation/detail-overlay/detail-overlay-history.service.spec.ts",
+                "src/app/features/words/entity-detail-overlay/entity-detail-overlay-ayah-continuity.spec.ts",
+                "src/app/features/words/entity-detail-overlay/entity-detail-overlay-invariant.spec.ts"
+              ]
+            },
+            "shared": {
+              "include": [
+                "src/app/*.spec.ts",
+                "src/app/core/**/*.spec.ts",
+                "src/app/shared/**/*.spec.ts",
+                "src/environments/**/*.spec.ts"
+              ]
+            },
+            "fast": {
+              "include": [
+                "src/app/**/models/**/*.spec.ts",
+                "src/app/**/utils/**/*.spec.ts",
+                "src/app/**/data/**/*.spec.ts",
+                "src/app/**/*.model.spec.ts",
+                "src/app/**/*-url-sync.spec.ts",
+                "src/app/**/*-url-hydration.spec.ts",
+                "src/app/**/*-cache.spec.ts",
+                "src/app/**/*-display-text.spec.ts",
+                "src/app/**/*-ligature.spec.ts",
+                "src/app/core/navigation/detail-overlay/detail-overlay-url-codec.spec.ts",
+                "src/app/core/navigation/idle-preload.strategy.spec.ts",
+                "src/app/core/navigation/route-paths.spec.ts",
+                "src/app/features/abwab/components/abwab-tree/abwab-tree-keyboard.controller.spec.ts",
+                "src/app/features/abwab/state/abwab-tree.builder.spec.ts",
+                "src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-occurrence-preview.spec.ts",
+                "src/app/features/mushaf/state/mushaf-api-load.helpers.spec.ts",
+                "src/app/features/mushaf/state/mushaf-reader-session.spec.ts",
+                "src/app/features/words/state/unique-words-drilldown.controller.spec.ts",
+                "src/app/features/words/state/words-range-filters.spec.ts",
+                "src/app/shared/ui/context-menu/context-menu-placement.spec.ts",
+                "src/app/shared/ui/pagination/pagination-window.spec.ts",
+                "src/app/shared/ui/skeleton/grid-template-columns.spec.ts",
+                "src/app/shared/url/deep-link-href.spec.ts",
+                "src/environments/environment-guard.spec.ts"
+              ]
+            }
           }
         }
       }
