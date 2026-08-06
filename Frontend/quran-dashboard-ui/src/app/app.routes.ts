@@ -66,7 +66,8 @@ export const routes: Routes = [
   {
     path: SETTINGS_ACCESS_ROUTE_PATH.replace(/^\//, ''),
     canActivate: [ownerGuard],
-    loadComponent: loadPlaceholderPage,
+    loadChildren: () =>
+      import('./features/access-admin/access-admin.routes').then((m) => m.ACCESS_ADMIN_ROUTES),
   },
   ...placeholderRoutes,
   {

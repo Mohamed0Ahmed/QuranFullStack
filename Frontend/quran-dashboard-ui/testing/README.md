@@ -15,6 +15,7 @@ named configurations:
 
 | Configuration | Selects |
 |---|---|
+| `feature-access-admin` | `src/app/features/access-admin/**/*.spec.ts` |
 | `feature-abwab` | `src/app/features/abwab/**/*.spec.ts` |
 | `feature-auth` | `src/app/features/auth/**/*.spec.ts` |
 | `feature-dashboard` | `src/app/features/dashboard/**/*.spec.ts` |
@@ -25,7 +26,7 @@ named configurations:
 | `composition` | every `src/app/**/*.component.spec.ts` and `*.directive.spec.ts`, plus the named application/overlay compositions |
 | `fast` | pure model/util/data/state/cache/URL-codec specs, listed pattern by pattern rather than by folder |
 
-The first six are the **primary areas** and they partition the tree: every spec under `src/`
+The first seven are the **primary areas** and they partition the tree: every spec under `src/`
 belongs to exactly one of them. `authorization`, `composition`, and `fast` are deliberate
 cross-cuts that overlap the areas — that is their purpose, and the script checks them differently
 because of it.
@@ -38,6 +39,7 @@ Run all of these from `Frontend/quran-dashboard-ui/`.
 |---|---|
 | `npm test` | the full gate, and **the one place the run environment is set** |
 | `npm run test:fast` | `--configuration=fast` |
+| `npm run test:feature:access-admin` | `--configuration=feature-access-admin` |
 | `npm run test:feature:abwab` | `--configuration=feature-abwab` |
 | `npm run test:feature:auth` | `--configuration=feature-auth` |
 | `npm run test:feature:dashboard` | `--configuration=feature-dashboard` |
@@ -94,17 +96,17 @@ output rather than requested from the builder. Verified against `@angular/build`
 It reads `../angular.json` and the real file inventory — no Angular build, no test run — and
 fails with a named problem list. It proves:
 
-- **the configuration set exists**: every one of the nine names above is present and has a
+- **the configuration set exists**: every one of the ten names above is present and has a
   non-empty `include` array (`verify-test-gates.mjs:17-27, 139-157`);
 - **the full gate is total**: `options.include` selects every `src/**/*.spec.ts` in the tree
   (`:167-172`);
-- **the primary areas partition it**: each spec belongs to exactly one of `feature-abwab`,
-  `feature-auth`, `feature-dashboard`, `feature-mushaf`, `feature-words`, `shared` — zero is a
-  spec no area lane runs, two is a spec run twice (`:8-15, 174-181`);
+- **the primary areas partition it**: each spec belongs to exactly one of `feature-access-admin`,
+  `feature-abwab`, `feature-auth`, `feature-dashboard`, `feature-mushaf`, `feature-words`,
+  `shared` — zero is a spec no area lane runs, two is a spec run twice (`:8-15, 174-181`);
 - **the cross-cuts keep their membership**: every file matching a composition or authorization
   boundary pattern is actually selected by that configuration, and a boundary pattern that
   matches nothing fails rather than passing vacuously (`:29-46, 183-207`);
-- **no pattern is dead**: every `include` pattern in the full gate and in all nine
+- **no pattern is dead**: every `include` pattern in the full gate and in all ten
   configurations matches at least one spec, so a renamed folder is caught instead of silently
   narrowing a lane (`:213-217`);
 - **no pattern reaches `e2e/`**: no `include` pattern selects a file under `e2e/**/*.e2e.ts`

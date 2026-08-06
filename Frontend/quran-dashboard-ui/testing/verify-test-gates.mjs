@@ -6,6 +6,7 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const projectName = 'quran-dashboard-ui';
 
 const PRIMARY_AREA_CONFIGURATIONS = [
+  'feature-access-admin',
   'feature-abwab',
   'feature-auth',
   'feature-dashboard',
@@ -15,6 +16,7 @@ const PRIMARY_AREA_CONFIGURATIONS = [
 ];
 
 const REQUIRED_CONFIGURATIONS = [
+  'feature-access-admin',
   'feature-abwab',
   'feature-auth',
   'feature-dashboard',

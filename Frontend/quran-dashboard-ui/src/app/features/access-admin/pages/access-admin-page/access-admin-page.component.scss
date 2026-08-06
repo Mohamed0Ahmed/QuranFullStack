@@ -1,0 +1,119 @@
+.access-admin-page {
+  display: grid;
+  gap: var(--qd-space-5);
+  padding: var(--qd-space-5);
+}
+
+.access-admin-page__header h1,
+.access-admin-page__header p,
+.access-admin-page__section-header h2,
+.access-admin-page__section-header p {
+  margin: 0;
+}
+
+.access-admin-page__header h1,
+.access-admin-page__section-header h2 {
+  color: var(--qd-text);
+  font-weight: 700;
+}
+
+.access-admin-page__header > div > p:last-child {
+  margin-block-start: var(--qd-space-2);
+  color: var(--qd-text-muted);
+}
+
+.access-admin-page__eyebrow {
+  color: var(--qd-accent-text);
+  font-size: 0.875rem;
+}
+
+.access-admin-page__workspace,
+.access-admin-page__supporting {
+  display: grid;
+  gap: var(--qd-space-4);
+}
+
+.access-admin-page__workspace {
+  grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.7fr);
+  align-items: start;
+}
+
+.access-admin-page__users,
+.access-admin-page__detail,
+.access-admin-page__audit,
+.access-admin-page__reconciliation {
+  min-inline-size: 0;
+}
+
+.access-admin-page__supporting {
+  grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.8fr);
+  align-items: start;
+}
+
+.access-admin-page__section-header {
+  margin-block-end: var(--qd-space-4);
+}
+
+.access-admin-page__audit-filters {
+  display: grid;
+  gap: var(--qd-space-2);
+  margin-block-end: var(--qd-space-4);
+}
+
+.access-admin-page__audit-filters label {
+  color: var(--qd-text-muted);
+  font-size: 0.875rem;
+}
+
+.access-admin-page__audit-list,
+.access-admin-page__candidates {
+  display: grid;
+  gap: var(--qd-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.access-admin-page__audit-list li,
+.access-admin-page__candidates li {
+  display: grid;
+  gap: var(--qd-space-1);
+  padding: var(--qd-space-3);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  color: var(--qd-text-muted);
+}
+
+.access-admin-page__audit-list strong {
+  color: var(--qd-text);
+}
+
+.access-admin-page__reconciliation-list {
+  display: grid;
+  gap: var(--qd-space-2);
+  margin: 0 0 var(--qd-space-4);
+}
+
+.access-admin-page__reconciliation-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+  padding-block-end: var(--qd-space-2);
+  border-block-end: 1px solid var(--qd-border);
+}
+
+.access-admin-page__reconciliation-list dt {
+  color: var(--qd-text-muted);
+}
+
+.access-admin-page__reconciliation-list dd {
+  margin: 0;
+  color: var(--qd-text);
+}
+
+@media (max-width: 56rem) {
+  .access-admin-page__workspace,
+  .access-admin-page__supporting {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

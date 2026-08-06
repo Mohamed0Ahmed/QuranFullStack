@@ -130,6 +130,11 @@
             ]
           },
           "configurations": {
+            "feature-access-admin": {
+              "include": [
+                "src/app/features/access-admin/**/*.spec.ts"
+              ]
+            },
             "feature-abwab": {
               "include": [
                 "src/app/features/abwab/**/*.spec.ts"

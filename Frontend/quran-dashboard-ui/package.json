@@ -8,6 +8,7 @@
     "build": "ng build",
     "test": "VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2 timeout --signal=TERM --kill-after=30s 15m ng test",
     "test:fast": "npm test -- --configuration=fast",
+    "test:feature:access-admin": "npm test -- --configuration=feature-access-admin",
     "test:feature:abwab": "npm test -- --configuration=feature-abwab",
     "test:feature:auth": "npm test -- --configuration=feature-auth",
     "test:feature:dashboard": "npm test -- --configuration=feature-dashboard",

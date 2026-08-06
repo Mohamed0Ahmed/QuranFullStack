@@ -117,9 +117,10 @@ per-feature.
   sits before the `**` wildcard in `app.routes.ts`. The placeholder nav routes (e.g.
   `/tafsirs`) stay top-level and unguarded. `/abwab` (Abwab doors & sections, Slice B) is a
   real top-level lazy feature route, same unguarded posture — see
-  `../features/abwab/README.md`. `/settings/access` is a non-navigated lazy placeholder
-  guarded only by `ownerGuard`; it establishes the security-administration route boundary
-  without implementing an access-administration screen. No other route has a guard.
+  `../features/abwab/README.md`. `/settings/access` is a non-navigated lazy Owner
+  security-administration feature guarded only by `ownerGuard`; it keeps the administration
+  boundary out of normal navigation while allowing active Owners to manage access. No other route
+  has a guard.
 - Interceptor order matters (`secureUrlInterceptor`, then `authInterceptor()`, then
   `devLatencyInterceptor`); keep registration order in `app.config.ts`. `authInterceptor()`
   (from `angular-auth-oidc-client`) attaches the Logto Bearer token only to requests under

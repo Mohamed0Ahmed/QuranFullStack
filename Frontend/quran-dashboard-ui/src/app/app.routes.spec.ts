@@ -6,6 +6,7 @@ import { ownerGuard } from './core/auth/owner.guard';
 import { MUSHAF_ROUTES } from './features/mushaf/mushaf.routes';
 import { WORDS_ROUTES } from './features/words/words.routes';
 import { ABWAB_ROUTES } from './features/abwab/abwab.routes';
+import { ACCESS_ADMIN_ROUTES } from './features/access-admin/access-admin.routes';
 
 // Public-browse posture regression guard (Feature 033, Phase 2): asserts NO route carries an
 // activation guard. Pure config assertion — no router harness.
@@ -25,6 +26,7 @@ const STATIC_LAZY_ROUTE_ARRAYS: Readonly<Record<string, Routes>> = {
   mushaf: MUSHAF_ROUTES,
   words: WORDS_ROUTES,
   abwab: ABWAB_ROUTES,
+  'settings/access': ACCESS_ADMIN_ROUTES,
 };
 
 // Flattens the route tree, substituting the statically-imported arrays for lazy `loadChildren`
@@ -67,5 +69,6 @@ describe('app routes (public-browse posture)', () => {
     expect(allRoutes.find((route) => route.path === 'settings/access')?.canActivate).toEqual([
       ownerGuard,
     ]);
+    expect(allRoutes.find((route) => route.path === 'settings/access')?.loadChildren).toBeTypeOf('function');
   });
 });

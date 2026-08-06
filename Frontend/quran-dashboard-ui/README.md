@@ -12,6 +12,7 @@ Angular 20 (standalone components + Signals) frontend for the Quran Dashboard
 ```text
 src/app/core       app-wide: ApiResponse, interceptors, cache, layout shell, routes, theme  → core/README.md
 src/app/features
+  access-admin     Owner-only security administration                                 → access-admin/README.md
   words            Roots/Lemmas/Stems/WordTypes/Unique-Words explorers                       → words/README.md
   mushaf           page-by-page Mushaf reader + ayah/word study context                      → mushaf/README.md
   dashboard        home
@@ -51,7 +52,7 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
 
 ## Testing (read before running tests)
 
-**The lanes:** `npm run test:fast`, `test:feature:abwab|auth|dashboard|mushaf|words`,
+**The lanes:** `npm run test:fast`, `test:feature:access-admin|abwab|auth|dashboard|mushaf|words`,
 `test:authorization`, `test:composition`, `test:shared`, `test:full`, plus `typecheck:app`,
 `typecheck:spec`, `typecheck`, `build:verify`, `check:permission-catalogue`, and the composite `test:pre-pr`
 (`check:permission-catalogue` → `typecheck` → `build:verify` → `test:full`). `npm run test:gates` is the structural check on the

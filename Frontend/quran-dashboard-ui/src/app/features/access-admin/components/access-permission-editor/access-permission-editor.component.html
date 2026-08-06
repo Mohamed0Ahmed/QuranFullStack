@@ -1,0 +1,36 @@
+<section class="access-permission-editor" aria-label="الصلاحيات المباشرة">
+  @for (group of groups(); track group.key) {
+    <fieldset class="access-permission-editor__group">
+      <legend class="access-permission-editor__legend">{{ group.label }}</legend>
+      <label class="qd-check-row access-permission-editor__select-all">
+        <input
+          class="qd-checkbox"
+          type="checkbox"
+          [attr.data-testid]="'access-permission-group-' + group.key"
+          [checked]="isGroupSelected(group)"
+          [indeterminate]="isGroupPartiallySelected(group)"
+          [disabled]="disabled()"
+          (change)="changeGroup(group, $event)"
+        />
+        <span>تحديد جميع الصلاحيات في المجموعة</span>
+      </label>
+
+      <div class="access-permission-editor__codes">
+        @for (code of group.codes; track code) {
+          <label class="qd-check-row access-permission-editor__code">
+            <input
+              class="qd-checkbox"
+              type="checkbox"
+              [attr.data-testid]="'access-permission-' + code"
+              [checked]="isCodeSelected(code)"
+            [disabled]="disabled()"
+            (change)="changeCode(code, $event)"
+          />
+            <span>{{ labelFor(group, code) }}</span>
+            <span class="access-permission-editor__code-value" dir="ltr">{{ code }}</span>
+          </label>
+        }
+      </div>
+    </fieldset>
+  }
+</section>

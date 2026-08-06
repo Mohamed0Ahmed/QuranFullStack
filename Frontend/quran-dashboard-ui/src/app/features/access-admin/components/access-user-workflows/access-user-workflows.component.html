@@ -1,0 +1,122 @@
+@if (user(); as target) {
+  <section class="access-user-workflows" aria-label="إدارة حساب المستخدم">
+    <header class="access-user-workflows__header">
+      <div>
+        <p class="access-user-workflows__eyebrow">الحالة الحالية</p>
+        <h2>{{ target.displayName || target.email }}</h2>
+        <p class="access-user-workflows__meta"><span dir="ltr">{{ target.email }}</span> · الإصدار {{ target.version }}</p>
+      </div>
+      <span class="qd-badge" [class.qd-badge--accent]="target.isOwner">
+        {{ target.isOwner ? 'مالك' : target.status === 'active' ? 'نشط' : target.status === 'pending' ? 'معلّق' : 'معطّل' }}
+      </span>
+    </header>
+
+    @if (target.isOwner) {
+      <p class="access-user-workflows__notice">تُعرض عضوية المالك للمتابعة فقط ولا يمكن تعديلها من هذه الواجهة.</p>
+    } @else {
+      @if (canSelectPermissions()) {
+        <section class="access-user-workflows__section">
+          <h3>الصلاحيات المباشرة</h3>
+          <qd-access-permission-editor
+            [groups]="groups()"
+            [selectedCodes]="selectedCodes()"
+            [disabled]="busyAction() !== null"
+            (selectionChange)="permissionCodesChange.emit($event)"
+          />
+        </section>
+      }
+
+      @if (target.status === 'disabled') {
+        <p class="access-user-workflows__notice">إعادة التفعيل تبدأ بلا صلاحيات مباشرة سابقة.</p>
+      }
+
+      <div class="access-user-workflows__actions">
+        @if (target.status === 'pending') {
+          <button type="button" class="qd-btn qd-btn-primary" data-testid="access-request-accept" [disabled]="busyAction() !== null" (click)="requestAction('accept')">قبول وتفعيل</button>
+        }
+        @if (canReplacePermissions()) {
+          <button type="button" class="qd-btn qd-btn-primary" data-testid="access-request-permissions" [disabled]="busyAction() !== null" (click)="requestAction('permissions')">مراجعة تعديل الصلاحيات</button>
+          <button type="button" class="qd-btn qd-btn-secondary" data-testid="access-request-disable" [disabled]="busyAction() !== null" (click)="requestAction('disable')">تعطيل الحساب</button>
+        }
+        @if (target.status === 'disabled') {
+          <button type="button" class="qd-btn qd-btn-primary" data-testid="access-request-reactivate" [disabled]="busyAction() !== null" (click)="requestAction('reactivate')">إعادة التفعيل</button>
+        }
+      </div>
+
+      @if (pendingAction(); as action) {
+        <section class="access-user-workflows__confirmation" data-testid="access-action-confirmation" aria-label="تأكيد الإجراء">
+          <h3>تأكيد الإجراء</h3>
+          @if (action === 'disable') {
+            <p class="access-user-workflows__warning">سيؤدي التعطيل إلى إزالة جميع الصلاحيات المباشرة.</p>
+          }
+          @if (action === 'reactivate') {
+            <p class="access-user-workflows__notice">لن تُستعاد الصلاحيات السابقة عند إعادة التفعيل.</p>
+          }
+          @if (action === 'permissions' || action === 'accept') {
+            <div class="access-user-workflows__diff" aria-label="فرق الصلاحيات">
+              @if (permissionDiff().granted.length > 0) {
+                <div>
+                  <p class="access-user-workflows__diff-heading">الصلاحيات المضافة</p>
+                  <ul class="access-user-workflows__permission-list" aria-label="الصلاحيات المضافة">
+                    @for (code of permissionDiff().granted; track code) {
+                      <li><span>{{ permissionLabel(code) }}</span><code dir="ltr">{{ code }}</code></li>
+                    }
+                  </ul>
+                </div>
+              }
+              @if (permissionDiff().revoked.length > 0) {
+                <div>
+                  <p class="access-user-workflows__diff-heading">الصلاحيات الملغاة</p>
+                  <ul class="access-user-workflows__permission-list" aria-label="الصلاحيات الملغاة">
+                    @for (code of permissionDiff().revoked; track code) {
+                      <li><span>{{ permissionLabel(code) }}</span><code dir="ltr">{{ code }}</code></li>
+                    }
+                  </ul>
+                </div>
+              }
+              @if (permissionDiff().granted.length === 0 && permissionDiff().revoked.length === 0) {
+                <p>لا يوجد تغيير على الصلاحيات المباشرة.</p>
+              }
+            </div>
+          }
+          <label class="access-user-workflows__field" for="access-action-reason">سبب الإجراء</label>
+          <textarea id="access-action-reason" class="qd-input access-user-workflows__textarea" data-testid="access-action-reason" [value]="actionReason()" [disabled]="busyAction() !== null" (input)="updateActionReason($event)"></textarea>
+          <div class="access-user-workflows__actions">
+            <button type="button" class="qd-btn qd-btn-secondary" [disabled]="busyAction() !== null" (click)="cancelAction()">إلغاء</button>
+            <button type="button" class="qd-btn qd-btn-primary" data-testid="access-confirm-action" [disabled]="!actionReason().trim() || busyAction() !== null" (click)="confirmAction()">تأكيد</button>
+          </div>
+        </section>
+      }
+    }
+
+    <section class="access-user-workflows__section" aria-label="إعادة ربط المعرّف">
+      <h3>إعادة ربط معرّف الدخول</h3>
+      <p class="access-user-workflows__notice">تتطلب العملية إثبات هوية موثّقًا ولا تعتمد على البريد الإلكتروني وحده.</p>
+      <label class="access-user-workflows__field" for="access-relink-new-sub">معرّف الدخول الجديد</label>
+      <input id="access-relink-new-sub" class="qd-input" type="text" autocomplete="off" data-testid="access-relink-new-sub" [value]="newSub()" [disabled]="busyAction() !== null" (input)="updateNewSub($event)" />
+      <label class="access-user-workflows__field" for="access-relink-evidence">رمز إثبات الهوية</label>
+      <input id="access-relink-evidence" class="qd-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" data-testid="access-relink-evidence" [value]="evidenceToken()" [disabled]="busyAction() !== null" (input)="updateEvidenceToken($event)" />
+      <button type="button" class="qd-btn qd-btn-secondary" data-testid="access-relink-preview" [disabled]="!newSub().trim() || !evidenceToken().trim() || busyAction() !== null" (click)="requestRelinkPreview()">معاينة الربط</button>
+
+      @if (relinkPreview(); as preview) {
+        <section class="access-user-workflows__confirmation" data-testid="access-relink-confirmation" aria-label="تأكيد إعادة الربط">
+          <p>ستُعاد مطابقة المعرّف قبل التنفيذ.</p>
+          <dl class="access-user-workflows__relink-subjects">
+            <div><dt>المعرّف الحالي</dt><dd dir="ltr">{{ preview.oldSub }}</dd></div>
+            <div><dt>المعرّف الجديد</dt><dd dir="ltr">{{ preview.newSub }}</dd></div>
+          </dl>
+          <label class="access-user-workflows__field" for="access-relink-confirm-reason">سبب إعادة الربط</label>
+          <textarea id="access-relink-confirm-reason" class="qd-input access-user-workflows__textarea" data-testid="access-relink-confirm-reason" [value]="relinkReason()" [disabled]="busyAction() !== null" (input)="updateRelinkReason($event)"></textarea>
+          <label class="qd-check-row">
+            <input class="qd-checkbox" type="checkbox" data-testid="access-relink-confirmed" [checked]="relinkConfirmation()" [disabled]="busyAction() !== null" (change)="updateRelinkConfirmation($event)" />
+            <span>أؤكد إعادة الربط بعد مراجعة المعاينة.</span>
+          </label>
+          <div class="access-user-workflows__actions">
+            <button type="button" class="qd-btn qd-btn-secondary" data-testid="access-relink-cancel" [disabled]="busyAction() !== null" (click)="cancelRelink()">إلغاء إعادة الربط</button>
+            <button type="button" class="qd-btn qd-btn-primary" data-testid="access-relink-confirm" [disabled]="!relinkReason().trim() || !relinkConfirmation() || busyAction() !== null" (click)="confirmRelink()">تأكيد إعادة الربط</button>
+          </div>
+        </section>
+      }
+    </section>
+  </section>
+}
