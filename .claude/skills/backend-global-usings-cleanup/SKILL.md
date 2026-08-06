@@ -150,7 +150,9 @@ Never add these to a project's `GlobalUsings.cs`, regardless of count:
 ## Verification
 
 - `dotnet build` from `Backend/` — **0 warnings, 0 errors**.
-- Run `dotnet test` when the test project was touched.
+- When the test project was touched, run a lane rather than a bare `dotnet test`:
+  `Backend/scripts/test-backend fast --build` proves the project still compiles and runs, and
+  `TESTING_STRATEGY.md` §5 says which further lane the changed scope needs.
 - If build fails, check a removed local using was actually added globally before reverting.
 
 ## Output / Report

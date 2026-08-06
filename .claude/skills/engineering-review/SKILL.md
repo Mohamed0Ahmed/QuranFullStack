@@ -379,31 +379,42 @@ Keep this distinct from build/test verification below:
 - Any skipped verification is clearly stated. If build/test status is unknown, say
   unknown — do not assume success.
 - Judge verification *sufficiency* against `TESTING_STRATEGY.md` (workspace root),
-  the single source of truth for test selection tiers:
-  - verify the executed tier matches the changed scope and risk;
-  - do not demand a full or exhaustive suite when the strategy accepts focused
-    (Tier A/B) evidence for the change under review;
-  - a change hitting a Tier D trigger (`DataPipelines`, importer/data-generation
+  the single source of truth for test selection. Its execution-trigger matrix (§5) is
+  the authoritative changed-scope→lane mapping; read it there rather than from any
+  restatement, including this one:
+  - verify the executed **lane** matches the changed scope and risk. Backend lanes are
+    arguments to `Backend/scripts/test-backend` (§3); Frontend lanes are
+    `npm run test:*` scripts (§4). The former Tier A–E labels are superseded — only
+    `tier-b` survives, as the name of the Backend no-pipeline lane;
+  - do not demand a full or exhaustive suite when the matrix accepts a focused lane
+    for the change under review;
+  - a hand-written `--filter "FullyQualifiedName~…"` or `npm test -- --include=…` is
+    not a lane and is not reportable evidence for one (§1) — ask for the lane name;
+  - a change hitting a pipeline/canonical trigger (`DataPipelines`, importer/data-generation
     tools, pipeline tables/migrations, canonical resources, shared persistence
-    infrastructure) with no affected pipeline family run is a **BLOCKING** finding;
-  - required canonical tests that skipped because `resources/import-sources/` was
-    absent are missing evidence, not passing evidence (`TESTING_STRATEGY.md` §3
-    Tier E and §9);
+    infrastructure) with no `pipeline --feature <key>` / `canonical-data` run is a
+    **BLOCKING** finding;
+  - **missing canonical resources fail the lane; they do not skip it** (§3.4, §9). The
+    runner preflights and exits non-zero, printing `canonical data tier: ran | not
+    selected | discovery only | failed preflight`. A "canonical tests skipped, resources
+    absent" claim attributed to a runner lane is missing evidence, not passing evidence;
   - there is no CI (`TESTING_STRATEGY.md` §8) — never accept "CI is green" as
     evidence, and never assume a gate ran because a workflow would have run it;
-  - the route-parity/smoke gate is active (`QuranDashboard.Tests.Smoke`,
-    `TESTING_STRATEGY.md` §3 Tier A/C, §4, §5). For route, contract, auth, middleware,
-    or binding changes, expect the `Tests.Api.*` families plus a
-    `--filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."` run. **A change that
-    touched an API route, contract, auth, middleware, or binding without the Smoke
-    suite running is a BLOCKING finding**, as is a route added or changed without the
-    matching `SmokeRouteCatalog` entry in the same change
-    (`SmokeCoverageParityTests` fails otherwise — `TESTING_STRATEGY.md` §10);
-  - Smoke evidence MUST state whether the `Tests.Smoke.Data` tier ran or skipped.
-    "74 passed, 0 skipped" (dump staged) and "61 passed, data tier skipped" (dump
-    absent) are both acceptable; an unqualified "smoke passed" is not. A *stale* dump
-    fails loud rather than skipping, so a skip claim paired with a failure is not a
-    resources problem — read the message.
+  - the route-smoke gate is active (§6). For route, contract, auth, middleware,
+    or binding changes, expect the focused `Access` / `ApiBehavior` / `Middleware` /
+    `RateLimiting` / `Health` feature lanes for the touched families plus
+    `Backend/scripts/test-backend smoke --no-build`. **A change that touched an API
+    route, contract, auth, middleware, or binding without the `smoke` lane running is a
+    BLOCKING finding**, as is a route added or changed without the matching
+    `SmokeRouteCatalog` entry in the same change (`SmokeCoverageParityTests` fails
+    otherwise);
+  - the canonical Smoke **data** tier is a separate lane: `SmokeDataReadTests` is
+    `Kind=Canonical`, so `smoke` excludes it and `canonical-data` runs it (§6). Evidence
+    MUST name the lane it came from; an unqualified "smoke passed" is not enough. A
+    *stale or corrupt* dump fails loud rather than skipping — read the message rather
+    than treating a failure as a resources problem;
+  - a lane that shards (`canonical-data`, `pre-pr` — §3.3) MUST report both shard
+    results; either shard failing fails the lane.
 
   (Section numbers above refer to `TESTING_STRATEGY.md`, not this skill's own
   numbered output sections.)
@@ -511,10 +522,10 @@ changed, omit it. When present, report:
 
 ## 9. Verification Check
 
-Report build/test evidence if provided, and state the executed verification tier
-versus the tier `TESTING_STRATEGY.md` requires for the changed scope (sufficient /
-insufficient / stale). If no build/test was run, say so clearly. Skipped required
-canonical tests count as missing evidence.
+Report build/test evidence if provided, and state the executed lanes versus the lanes
+`TESTING_STRATEGY.md` §5 requires for the changed scope (sufficient / insufficient /
+stale). If no build/test was run, say so clearly. A canonical lane reported as skipped
+for absent resources counts as missing evidence — the runner fails that lane instead.
 
 ## Commit workflow reminder
 

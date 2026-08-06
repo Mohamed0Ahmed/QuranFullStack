@@ -101,8 +101,9 @@ this change.
 - **Acceptance criteria met?** Check the implementation against the acceptance criteria
   for the reviewed phase/story (in `spec.md`, and the manual steps in `quickstart.md`).
 - **Verification reported?** This project verifies by build (`dotnet build`,
-  `npm run build`) plus the manual `quickstart.md` checklist — there is no automated
-  test suite this phase. Report whatever build/manual evidence was provided.
+  `npm run build:verify`), the test lanes `TESTING_STRATEGY.md` §5 requires for the changed
+  scope (`Backend/scripts/test-backend …`, `npm run test:*`), and the manual `quickstart.md`
+  checklist. Report whatever build/lane/manual evidence was provided, by lane name.
 - **Verification skipped?** If build or manual verification was not run or not reported,
   say so plainly. Do not assume success; unknown is unknown.
 

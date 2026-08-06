@@ -86,7 +86,8 @@ Learn how the workspace declares dependencies before naming commands:
   make sweeping, unsafe, or major bumps and mix unrelated changes.
 - **Propose minimal safe bumps** — the smallest version that clears the advisory.
 - **Verify after any remediation:** `npm install` (or `npm ci` for a clean lockfile-faithful
-  install), `npm run build`, and the relevant tests.
+  install), `npm run build`, and the test lanes `TESTING_STRATEGY.md` §5 requires for the
+  changed scope (`npm run test:*`; `Backend/scripts/test-backend …` for NuGet bumps).
 
 ## Remediation principle: smallest safe change
 

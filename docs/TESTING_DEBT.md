@@ -44,12 +44,12 @@ are about the writer's own rules and the routes' status contract, not about what
 ## abwab-templates (branches `abwab-templates-a` / `abwab-templates-b`, 2026-07-29)
 
 Posture: **no new tests in the feature**, the second consecutive feature under it. Verification
-was the existing suites staying green (Frontend: 190 spec files / 2,158 tests, unchanged) plus a
+was the existing Frontend suite staying green, with no spec file added or removed, plus a
 manual pass over the feature's own interaction checklist. Nothing in this feature's evidence
 claims behavioral coverage.
 
 **One exception, added by the Slice B review-fix round:** `abwab-templates.facade.spec.ts`
-(3 cases, Frontend now **191 files / 2,161 tests**) pins the selected template's identity — a
+pins the selected template's identity — a
 failed switch shows no template rather than the previous one, and a failed refresh of the same
 template keeps it on screen. It exists because the round fixed a defect that let the copy modal
 preview one template while apply sent another; a correctness fix of that shape is not deferrable

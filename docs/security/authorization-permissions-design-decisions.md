@@ -667,7 +667,7 @@ I2 must be executed through anonymous public requests as well as any authenticat
 | Stale frontend permission | Backend `403` refreshes access, closes/disables stale write UI, and is never automatically retried. |
 | Handcrafted HTTP request | Direct calls that bypass frontend visibility receive the same Backend `401`/`403`; Backend enforcement is proven independently of browser UI. |
 
-Authorization changes require focused access/middleware tests and the Backend Smoke route gate; the evidence must say whether the smoke data tier ran or skipped (`TESTING_STRATEGY.md:176-207`, `TESTING_STRATEGY.md:279-294`, `TESTING_STRATEGY.md:534-540`). Frontend core/routing changes require focused tests followed by the full frontend suite and production build at the applicable tier; Playwright remains supplementary and cannot replace Backend route smoke (`TESTING_STRATEGY.md:140-170`, `TESTING_STRATEGY.md:266-271`, `TESTING_STRATEGY.md:371-409`).
+Authorization changes require the focused `access` / `feature Middleware` lanes and the Backend `smoke` lane; the evidence must name the lane it came from, since the canonical Smoke data tier is the separate `canonical-data` lane (`TESTING_STRATEGY.md` §3, §5, §6). Frontend core/routing changes require the focused `test:authorization` / feature lanes followed by `npm run test:pre-pr` at the review/pre-PR boundary (its §4, §5); Playwright remains supplementary and cannot replace the Backend `smoke` lane (its §11).
 
 `ux-slice-h` H1 remains conditional and becomes mandatory only if the implementation changes the navbar/nav model to add auth-gated entries (`docs/TESTING_DEBT.md:113-118`). Other debt rows retain their own triggers; authorization metadata alone does not make unrelated writer/UI debt due.
 

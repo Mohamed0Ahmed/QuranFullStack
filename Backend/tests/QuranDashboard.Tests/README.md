@@ -24,8 +24,10 @@ Folders are clustered by Quran domain/use case, not by project layer.
   bidirectionally locked to the live `EndpointDataSource` by `SmokeCoverageParityTests`,
   so **adding or changing an API route requires updating the catalog in the same change**
   or the suite fails by route name.
-  Three personas (anonymous / authenticated-unknown-sub / owner) run over the real
-  JwtBearer handler with RSA test tokens.
+  Every `SmokePersona` — the closed enum in `Smoke/SmokePersonas.cs`, swept through
+  `SmokePersonas.All` rather than a hand-kept list — runs over the real JwtBearer handler with
+  RSA test tokens. Adding a persona to the enum therefore widens the sweep; nothing has to be
+  updated alongside it.
 - `Smoke/Data/` — the data tier (`QuranDashboard.Tests.Smoke.Data`), which restores the
   canonical Quran dump so the seeded read routes are asserted against real data instead of
   an empty schema. See the dump note under *Related*.
@@ -42,7 +44,10 @@ Folders are clustered by Quran domain/use case, not by project layer.
   concurrently — a sequential drain deadlocks once either stream fills the pipe buffer —
   with a two-minute default timeout that kills the entire process tree, waits for
   termination, and still returns what was drained),
-  `Logging/RecordingLoggerProvider.cs`, and `PostgreSql/` — the one shared
+  `Logging/RecordingLoggerProvider.cs`, and `PostgreSql/` (**its own
+  `TestSupport/PostgreSql/README.md` owns the mechanics** — lease shapes, template eligibility,
+  the five cleanup labels, the cross-process lock, disposal order, and the external-database
+  prohibition) — the one shared
   `postgres:16-alpine` runtime, its migrated template, and the per-collection database leases
   the Access, explorer, FullI3rab, foundation Import, Mutashabihat, Navigation, Tafsirs,
   Translations, WordsDisplay, WordsMorphology, WordsSimpleI3rab, and route-smoke fixtures take
@@ -69,12 +74,8 @@ Folders are clustered by Quran domain/use case, not by project layer.
   executable-directory configuration, and every migration permutation stay in-process.
   `Smoke/Data/SmokeDataFixture` is the one fixture that cannot join that runtime, so it takes an
   **exclusive server lease** (`PostgreSqlTestProcess.LeaseExclusiveServerAsync`) instead: its own
-  `postgres:18-alpine` container, holding the same `CrossProcessPostgreSqlLock` the shared runtime
-  holds and carrying the same five cleanup labels, released only after the container is disposed.
-  Two project-owned PostgreSQL containers must never run at once, and three things enforce that
-  together — the lock across processes, `LeaseExclusiveServerAsync` refusing an exclusive server in
-  a process that already asked for the shared runtime, and `Backend/scripts/test-backend` running
-  any lane that selects `SmokeDataReadTests` alongside another class as two sequential invocations.
+  `postgres:18-alpine` container. Why it must, and what keeps the two majors from ever running at
+  once, is below and in `TestSupport/PostgreSql/README.md`.
 - `AccessTestFixture.ResetAsync` is the whole `ResetPerTest` contract the `AccessCollection` row of
   `TestSupport/Execution/test-resources.tsv` declares: it truncates `users` **and** `permissions`
   with `RESTART IDENTITY CASCADE`, which reaches `user_permissions` and `access_audit_events`
@@ -107,7 +108,7 @@ Folders are clustered by Quran domain/use case, not by project layer.
   reaches it through `CreateScope()`; every helper on it needs the collection, and throws without
   one. Writing a synthetic source package needs no database, so it lives in the disposable
   `TranslationSyntheticPackage` (temp dirs in, `Dispose()` deletes them) — the fixture owns one and
-  disposes it after releasing its lease, and the four `Kind=Fast` classes in `Quran/Translations/`
+  disposes it after releasing its lease, and the `Kind=Fast` classes in `Quran/Translations/`
   own their own, which is what keeps the container-free `fast` lane container-free.
 - `MorphologyImportTestFixture` serves plain cases from one root `ServiceProvider` and gives
   `CreateScope(configure)` its own extra root, because several cases replace singletons such as
@@ -118,8 +119,8 @@ Folders are clustered by Quran domain/use case, not by project layer.
   through `CreateScope()`, and builds one throwaway root per `RunGenerationAsync` call because
   each run needs its own `I3rabExpectedCounts` singleton and, for the tamper theories, its own
   `configure` overrides. That root is disposed inside the call — `GenerateI3rabResult` is a
-  record of primitives, so nothing survives it — which keeps ~20 generation runs from holding
-  ~20 live connection pools against one leased clone. `configure` must stay last: the tamper
+  record of primitives, so nothing survives it — which keeps every generation run from leaving a
+  live connection pool behind against one leased clone. `configure` must stay last: the tamper
   cases replace `II3rabAssembler` and `II3rabGenerationWriteProbe`, and last registration wins.
 
 ## Navigation conventions
@@ -159,17 +160,23 @@ Folders are clustered by Quran domain/use case, not by project layer.
 
 - Backend map: `../../README.md`
 - Report/evidence conventions: `../../report/README.md`
-- Which tests to run and when: `../../../TESTING_STRATEGY.md` — execution tiers A–E, the
-  dot-bounded namespace filters, and the pipeline triggers. Note §8: there is no CI, so
-  every tier is a local gate.
+- Which tests to run and when: `../../../TESTING_STRATEGY.md` — the Backend lanes of
+  `../../scripts/test-backend` (§3), the Frontend lanes (§4), and the execution-trigger matrix
+  (§5). Note §8: there is no CI, so every lane is a local gate that nothing verifies ran.
+- How the shared database runtime works: `TestSupport/PostgreSql/README.md`.
 - `resources/db-dumps/quran-canonical/` (`quran-canonical.dump` + `manifest.json`) is
   **produced by `../../scripts/create-smoke-dump` and consumed by `Smoke/Data/`**. It is a
   derived cache of the canonical import — never synthetic, never a substitute for the
-  staged sources under `resources/import-sources/`. The gate has two deliberately opposite
-  verdicts: **absent → the whole data tier skips** (an ordinary machine that never generated
-  it), **present but stale or corrupt → it throws loud** (sha256 mismatch against the
-  manifest, or a manifest migration id that is not this tree's head). A stale dump quietly
-  skipping is the one failure `Smoke/Data/SmokeDumpGate.cs` exists to make impossible.
+  staged sources under `resources/import-sources/`. **Under `../../scripts/test-backend` an
+  absent dump is a lane failure, not a skip:** the runner preflights the dump and its manifest
+  before anything starts and exits non-zero with `canonical data tier: failed preflight`
+  (`../../scripts/test-backend:501-519`). The in-test gate's own verdicts apply only to a run
+  started outside the runner — an IDE, a plain `dotnet test` — where they exist so nothing
+  starts a server it cannot use: **absent → that tier's cases skip**, **present but stale or
+  corrupt → it throws loud** (sha256 mismatch against the manifest, a manifest migration id that
+  is not this tree's head, or a producer major the restore image cannot read — all checked
+  before the container starts). A stale dump quietly skipping is the one failure
+  `Smoke/Data/SmokeDumpGate.cs` exists to make impossible.
   Regenerate with `Backend/scripts/create-smoke-dump --yes`; never hand-edit either file.
 
 ### Why `Smoke/Data/` runs postgres **18** while every other fixture runs **16**

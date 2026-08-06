@@ -51,9 +51,22 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
 
 ## Testing (read before running tests)
 
+**The lanes:** `npm run test:fast`, `test:feature:abwab|auth|dashboard|mushaf|words`,
+`test:authorization`, `test:composition`, `test:shared`, `test:full`, plus `typecheck:app`,
+`typecheck:spec`, `typecheck`, `build:verify`, and the composite `test:pre-pr`
+(`typecheck` → `build:verify` → `test:full`). `npm run test:gates` is the structural check on the
+lane definitions and is not part of `test:pre-pr` — run it whenever a spec is added, moved,
+renamed, or deleted, or an `include` pattern changes.
+
+**`testing/README.md` is the contract**: what each of the nine named `angular.json`
+configurations selects, what every command does, and what `test:gates` proves. Which lane to run
+and when is `../../TESTING_STRATEGY.md` §4 and §5.
+
 - **Keep the `VITEST_MAX_FORKS` cap on `npm test`** — without it the run OOMs/freezes the
-  machine. **`vitest.config.ts` is ignored by the Angular unit-test builder**, so the cap
-  must be set the way `package.json` already sets it; do not "clean it up".
+  machine. Every `test:*` lane delegates to `npm test`, so the cap and the run timeout live in
+  that one script; do not inline them per lane. **A `vitest.config.ts` would be ignored** — the
+  Angular unit-test builder starts Vitest with `config: false` — so the cap must stay where
+  `package.json` already sets it; do not "clean it up".
 - **jsdom lacks `matchMedia` / `ResizeObserver` / `requestIdleCallback`** under the builder —
   guard them in components and default to desktop.
 - **`src/test-setup.ts` owns an `afterEach` safety net** that runs after every spec's own
@@ -76,10 +89,12 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
   Chromium only. It boots the Angular dev server *and* the backend `https` profile, so it needs
   mkcert certificates, a migrated local `quran_dashboard`, and a prior
   `dotnet build Backend/QuranDashboard.sln`. Specs live in `e2e/` and MUST be named `*.e2e.ts` —
-  a `*.spec.ts` there would be collected by the Vitest builder. `npm run e2e` runs two Playwright
-  projects in sequence — `default` (2 workers) then the five Abwab specs at `--workers=1`, since
-  a `Global`-scope Abwab reorder resequences every live root and can race a second worker. See
-  `e2e/README.md`.
+  **not** because the Vitest gate would collect them (it globs with `cwd` at `src/` and cannot
+  see outside it) but because `playwright.config.ts` matches `/.*\.e2e\.ts$/`, so a `*.spec.ts`
+  there is run by nothing at all while looking like coverage. `npm run e2e` runs two Playwright
+  projects in sequence — `default` (2 workers), then every `abwab-*.e2e.ts` at `--workers=1`,
+  since a `Global`-scope Abwab reorder resequences every live root and can race a second worker.
+  See `e2e/README.md` and `testing/README.md`.
 
 ## Invariants
 

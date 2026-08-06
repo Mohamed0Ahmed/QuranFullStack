@@ -1126,7 +1126,7 @@ only the ids it handed out, since flows create doors through the UI too — and 
 the now-empty section. Teardown re-reads each door's version immediately before archiving it:
 every write resequences the scope, so archiving from one up-front snapshot succeeds once and
 then `409`s silently for the rest, which is what previously left live sandbox doors and
-undeleted sandbox sections behind. See `e2e/README.md` and `TESTING_STRATEGY.md` §6 for the
+undeleted sandbox sections behind. See `e2e/README.md` and `TESTING_STRATEGY.md` §11 for the
 residue that legitimately remains.
 
 ## Decisions that reversed mid-series

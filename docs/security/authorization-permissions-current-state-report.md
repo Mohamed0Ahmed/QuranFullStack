@@ -550,13 +550,21 @@ Writer-behavior debt rows 1, 2, 6, 7, F1/F2, G1/G2, and frontend workshop rows a
 
 Use data-driven matrices keyed by the section 5 route/permission pairs so every current endpoint is covered without copy-pasted tests.
 
-### 11.4 Required verification tiers when implemented
+### 11.4 Required verification lanes when implemented
 
-Authentication/authorization changes require focused `Tests.Api.Access`, adjacent middleware tests, and the Smoke suite during development; pre-PR requires Tier C plus Smoke (`TESTING_STRATEGY.md:176-207`, `TESTING_STRATEGY.md:279-294`, `TESTING_STRATEGY.md:534-540`). The smoke evidence must state whether its canonical data tier ran or skipped (`TESTING_STRATEGY.md:192-207`).
+Authentication/authorization changes require the `feature Access` lane plus the adjacent
+`feature Middleware` / `feature ApiBehavior` lanes during development, and the `smoke` lane;
+ordinary pre-PR is `access` + `smoke` + `tier-b` (`TESTING_STRATEGY.md` §3, §5, §6). Evidence must
+name the lane it came from — the canonical Smoke data tier is the separate `canonical-data` lane,
+where a missing resource fails the lane rather than skipping it (its §3.4).
 
-Frontend routing/core changes require focused auth/routing/Abwab specs during work, then full frontend tests and production build at Tier C (`TESTING_STRATEGY.md:140-170`, `TESTING_STRATEGY.md:371-409`). Browser E2E may add useful permission-persona evidence but remains opt-in and cannot substitute for Backend route smoke (`TESTING_STRATEGY.md:266-271`, `Frontend/quran-dashboard-ui/e2e/README.md:118-123`).
+Frontend routing/core changes require `npm run test:authorization` and `npm run test:feature:abwab`
+during work, then `npm run test:pre-pr` at the review/pre-PR boundary (its §4, §5). Browser E2E may
+add useful permission-persona evidence but remains opt-in and cannot substitute for the Backend
+`smoke` lane (its §11, `Frontend/quran-dashboard-ui/e2e/README.md`).
 
-There is no CI in the repository; every required gate is local and its exact output must be recorded (`TESTING_STRATEGY.md:471-485`).
+There is no CI in the repository; every required lane is local and its exact output must be
+recorded (its §8).
 
 ## 12. Risks and blockers
 

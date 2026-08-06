@@ -139,19 +139,23 @@ Before selecting or running tests, read:
 
 - `TESTING_STRATEGY.md` (workspace root)
 
-Use the tier required by the changed scope. Do not run full or slow data-pipeline suites
-after every phase unless the strategy's Tier D triggers require it. There is no CI
-(§8) — every tier is a local gate, and "CI is green" is never available as evidence.
+Use the lane required by the changed scope; its execution-trigger matrix (§5) is the one
+authoritative mapping. Do not run full or slow data-pipeline lanes after every phase unless
+their documented triggers require it. There is no CI (§8) — every lane is a local gate, and
+"CI is green" is never available as evidence. **Selection is by lane, never by hand-written
+filter or `--include` glob** (§1): a lane is reproducible, catalog-validated, and reportable
+by name.
 
 ### Backend tests
 
-Run from `Backend/`:
-
-- Build: `dotnet build QuranDashboard.sln`
-- Focused subset (normal per-phase tier): `dotnet test QuranDashboard.sln --filter "FullyQualifiedName~<ClassOrNamespace>"`
-- Full suite (`dotnet test QuranDashboard.sln`): only when `TESTING_STRATEGY.md` requires it (pipeline-triggered PRs, release).
-- For import/pipeline work, run the affected pipeline family filters from `TESTING_STRATEGY.md` §5 — they are dot-bounded, so keep the leading and trailing dots.
-- No route-parity/smoke gate exists in this tree. For route, contract, auth, middleware, or binding changes, run the `Tests.Api.*` families and say that none ran; the smoke tier is planned only (§13).
+- Build: `dotnet build Backend/QuranDashboard.sln`
+- Lanes: `Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|canonical-data --build|--no-build`
+- Narrowest first: `Backend/scripts/test-backend feature FEATURE_KEY|--class FULL_CLASS_NAME|--test FULL_METHOD_NAME --build|--no-build`
+- Import/pipeline work: `Backend/scripts/test-backend pipeline [--feature FEATURE_KEY] --build|--no-build`
+- Full Backend: `Backend/scripts/test-backend pre-pr` — only when `TESTING_STRATEGY.md` requires it (shared-infrastructure prerequisite, release/full-regression acceptance, explicit review trigger). It is **not** a single `dotnet test` invocation: it shards into two complementary runs (§3.3), and both shard results must be reported.
+- Build once, then use `--no-build`. Run `Backend/scripts/check-pending-model --no-build` alongside the `migration` lane when the EF model or schema is in scope.
+- **The route-smoke gate is active** (§6). For route, contract, auth, middleware, or model-binding changes run `Backend/scripts/test-backend smoke --no-build`, and add or update the matching `SmokeRouteCatalog` entry in the same change.
+- Never run two database-bearing Backend commands concurrently — one project-owned PostgreSQL container at a time — and confirm zero owned containers after exit.
 
 ### Frontend tests
 
@@ -160,23 +164,22 @@ Run from `Frontend/quran-dashboard-ui/`. This project uses Angular's
 spawns one worker process per CPU core, each loading jsdom plus the app, which
 exhausts memory and freezes/crashes the machine.**
 
-- **Always cap the worker pool** with `VITEST_MAX_FORKS=2` (and
-  `VITEST_MIN_FORKS=1`). This is the only effective lever: the builder starts
-  Vitest with `config: false` (so `vitest.config.ts` is ignored) and its schema
-  is `additionalProperties: false` (so pool options can't go in `angular.json`).
-- **Prefer `npm test`** — its script already applies the cap.
-- **`ng test` / `npx ng test` called directly BYPASS that cap** — so prefix the
-  env var yourself:
-
-  ```bash
-  VITEST_MAX_FORKS=2 npx ng test --no-watch --include='**/some.spec.ts'
-  ```
-
+- **Use the `npm run test:*` lanes** — `test:fast`, `test:feature:abwab|auth|dashboard|mushaf|words`,
+  `test:authorization`, `test:composition`, `test:shared`, `test:full`, `test:pre-pr`, plus
+  `typecheck`, `build:verify`, and `test:gates`. Every one delegates to `npm test`, which bakes
+  in `VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2` and a bounded timeout.
+- **Never re-derive a lane by hand.** `testing/verify-test-gates.mjs` validates only the
+  configurations declared in `angular.json`, so an ad-hoc `npm test -- --include=<glob>` is
+  neither validated nor reportable by name.
+- **`ng test` / `npx ng test` called directly BYPASS the cap** — the cap lives in the `test`
+  script, not in `angular.json`: the builder starts Vitest with `config: false` (so a
+  `vitest.config.ts` is ignored) and its schema is `additionalProperties: false` (so pool
+  options cannot go in `angular.json`). The `VITEST_MIN_FORKS` / `VITEST_MAX_FORKS` env vars
+  are the only lever.
 - **Do not raise the cap past ~3** on a typical dev machine, or the crash returns.
-- **Do not prepend `npm run build` to a test run.** `ng build` is a separate
-  production build; the test builder compiles its own bundle and ignores
-  `dist/`, so it only wastes time and memory. Run `npm run build` only when you
-  specifically need to verify the production build.
+- **Do not prepend a production build to a test run.** `ng build` is separate; the test builder
+  compiles its own bundle and ignores `dist/`. Use `npm run build:verify` when the production
+  build is the thing being gated.
 
 ### Always run
 

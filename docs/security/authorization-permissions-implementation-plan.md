@@ -597,7 +597,7 @@ attribute or future fallback convention from silently authenticating public cont
 GET tests for Abwab tree/templates must use anonymous clients and prove normal `ETag`/`304` behavior.
 
 Any route or metadata change must update `SmokeRouteCatalog` in the same change, as required by
-`TESTING_STRATEGY.md:520-540`.
+`TESTING_STRATEGY.md` §6.
 
 ## 10. Abwab endpoint protection rollout
 
@@ -1094,8 +1094,9 @@ Logto tokens. Ordering is newest first with `Id` as deterministic tie-breaker.
 ## 16. Testing strategy and debt payoff
 
 Tests are written before protection is activated. Selection follows `TESTING_STRATEGY.md`; route,
-contract, authentication, middleware, model-binding, and migration phases require the Backend Smoke
-gate, and evidence must state whether the data tier ran or skipped.
+contract, authentication, middleware, model-binding, and migration phases require the Backend
+`smoke` lane, and evidence must name the lane it came from — the canonical Smoke data tier is the
+separate `canonical-data` lane.
 
 ### Test families
 
@@ -1189,40 +1190,53 @@ copy modal, changes navigation, or touches an Abwab writer—the phase stops and
 debt becomes acceptance scope instead of being silently skipped. The feature-scoped Engineering
 Review checkpoints below do not claim to pay C4’s separate whole-repository review debt.
 
-### Verification commands by tier
+### Verification lanes used by the phases
 
-Focused commands used in phases:
+Selection is by lane, never by hand-written filter — see `TESTING_STRATEGY.md` §1, whose
+execution-trigger matrix (§5) is the authoritative changed-scope→lane mapping. This section
+only names the lanes this feature keeps reaching for.
+
+Backend lanes (`Backend/scripts/test-backend`, §3). Build the solution once, then use
+`--no-build`; the solution build is what puts the AccessAdmin and DataImporter outputs the
+runner's `--no-build` guard requires in place:
 
 ```sh
 dotnet build Backend/QuranDashboard.sln
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api.Access"
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api"
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Abwab"
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
+Backend/scripts/test-backend feature Access --no-build
+Backend/scripts/test-backend feature Abwab --no-build
+Backend/scripts/test-backend smoke --no-build
+Backend/scripts/test-backend tier-b --no-build
 ```
 
-Frontend focused and full gates:
+`QuranDashboard.Tests.Api.*` is not one lane: its classes carry the `Access`, `ApiBehavior`,
+`Health`, `Middleware`, and `RateLimiting` feature keys. Where a phase previously ran the whole
+`Tests.Api` namespace, run `feature Access` plus whichever of
+`feature ApiBehavior` / `feature Middleware` / `feature RateLimiting` / `feature Health` the
+change actually touches, and the `smoke` lane for route/contract composition.
+
+Frontend lanes (`npm run test:*`, §4):
 
 ```sh
 cd Frontend/quran-dashboard-ui
-npm test -- --include="src/app/core/auth/**/*.spec.ts"
-npm test -- --include="src/app/features/access-admin/**/*.spec.ts"
-npm test -- --include="src/app/features/abwab/**/*.spec.ts"
-npx tsc -p tsconfig.app.json --noEmit
-npx tsc -p tsconfig.spec.json --noEmit
-npm test
-npm run build
+npm run test:authorization      # app.config.auth, app.routes, core/auth, secure-url interceptor, features/auth, environment-guard
+npm run test:feature:abwab
+npm run typecheck               # typecheck:app && typecheck:spec
+npm run build:verify
+npm run test:pre-pr             # typecheck + build:verify + full suite
 ```
 
-Backend Tier B/C no-pipeline regression uses the exact strategy filter:
+**Owner administration UI (Phase 8) needs a lane that does not exist yet.** There is no
+`src/app/features/access-admin/` directory and no configuration selecting one, and
+`testing/verify-test-gates.mjs` requires every spec file to fall in exactly one primary area.
+So the change that creates that directory must, in the same change, add a
+`feature-access-admin` entry to `architect.test.configurations` in `angular.json`, add it to
+`PRIMARY_AREA_CONFIGURATIONS` in `testing/verify-test-gates.mjs`, add the matching
+`test:feature:access-admin` package script, and run `npm run test:gates`. Until then there is
+no command to cite.
 
-```sh
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab.&FullyQualifiedName!~QuranDashboard.Tests.Smoke."
-```
-
-`npm run e2e` is supplementary. Any generated migration changes the smoke dump’s migration manifest;
-regenerate with `Backend/scripts/create-smoke-dump --yes` before counting a smoke run as valid, per
-`TESTING_STRATEGY.md:176-207`.
+`npm run e2e` is supplementary. Any generated migration invalidates the smoke dump's migration
+manifest; regenerate with `Backend/scripts/create-smoke-dump --yes` in the same change before
+counting a smoke run as valid (`TESTING_STRATEGY.md` §3.4).
 
 ## 17. Safe phase decomposition
 
@@ -1273,14 +1287,15 @@ mutation, frontend behavior changes.
 
 ```sh
 dotnet build Backend/QuranDashboard.sln
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api.Access"
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
+Backend/scripts/test-backend feature Access --no-build
+Backend/scripts/test-backend smoke --no-build
 cd Frontend/quran-dashboard-ui
-npm test -- --include="src/app/core/auth/**/*.spec.ts"
+npm run test:authorization
 ```
 
-Smoke evidence must state data tier ran or skipped. Phase 1 changes test infrastructure, so also run
-the Tier B no-pipeline filter before completion.
+Smoke evidence must name the lane it came from; the canonical Smoke data tier is the separate
+`canonical-data` lane, not part of `smoke`. Phase 1 changes test infrastructure, so also run
+`Backend/scripts/test-backend tier-b --no-build` before completion.
 
 **Completion criteria:**
 
@@ -1348,12 +1363,12 @@ required/unique enforcement. No legacy cleanup/data-conversion migration is allo
 
 ```sh
 dotnet build Backend/QuranDashboard.sln
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api.Access"
+Backend/scripts/test-backend feature Access --no-build
 Backend/scripts/create-smoke-dump --yes
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
+Backend/scripts/test-backend smoke --no-build
 ```
 
-Then run the Tier B no-pipeline filter.
+Then run `Backend/scripts/test-backend tier-b --no-build`.
 
 **Completion criteria:**
 
@@ -1423,8 +1438,8 @@ and plan amendment, not an ad hoc migration.
 
 ```sh
 dotnet build Backend/QuranDashboard.sln
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api.Access"
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
+Backend/scripts/test-backend feature Access --no-build
+Backend/scripts/test-backend smoke --no-build
 ```
 
 Run tool dry-run/preflight against an isolated Testcontainers or disposable local database, never
@@ -1493,9 +1508,10 @@ class deletion.
 
 ```sh
 dotnet build Backend/QuranDashboard.sln
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api.Access"
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api"
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
+Backend/scripts/test-backend feature Access --no-build
+Backend/scripts/test-backend feature Middleware --no-build
+Backend/scripts/test-backend feature ApiBehavior --no-build
+Backend/scripts/test-backend smoke --no-build
 ```
 
 **Completion criteria:**
@@ -1555,13 +1571,15 @@ endpoint and no weakened authorization fallback may be introduced to bridge roll
 
 ```sh
 dotnet build Backend/QuranDashboard.sln
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api"
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Abwab"
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
+Backend/scripts/test-backend feature Access --no-build
+Backend/scripts/test-backend feature Middleware --no-build
+Backend/scripts/test-backend feature ApiBehavior --no-build
+Backend/scripts/test-backend feature Abwab --no-build
+Backend/scripts/test-backend smoke --no-build
 ```
 
-Run the Tier B no-pipeline filter and `Backend/scripts/check-api-contract` if authorization response
-metadata changes OpenAPI.
+Run `Backend/scripts/test-backend tier-b --no-build` and `Backend/scripts/check-api-contract` if
+authorization response metadata changes OpenAPI.
 
 **Completion criteria and activation gates:**
 
@@ -1633,9 +1651,10 @@ mutation; generic role management.
 
 ```sh
 dotnet build Backend/QuranDashboard.sln
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api.Access"
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api"
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
+Backend/scripts/test-backend feature Access --no-build
+Backend/scripts/test-backend feature Middleware --no-build
+Backend/scripts/test-backend feature ApiBehavior --no-build
+Backend/scripts/test-backend smoke --no-build
 Backend/scripts/check-api-contract
 ```
 
@@ -1690,14 +1709,11 @@ admission.
 
 ```sh
 dotnet build Backend/QuranDashboard.sln
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api.Access"
+Backend/scripts/test-backend feature Access --no-build
 Backend/scripts/check-api-contract
 cd Frontend/quran-dashboard-ui
-npm test -- --include="src/app/core/auth/**/*.spec.ts"
-npx tsc -p tsconfig.app.json --noEmit
-npx tsc -p tsconfig.spec.json --noEmit
-npm test
-npm run build
+npm run test:authorization
+npm run test:pre-pr
 ```
 
 Run Backend Smoke because auth and response contracts changed.
@@ -1752,13 +1768,15 @@ audit analytics; new modal/backdrop primitives.
 
 ```sh
 cd Frontend/quran-dashboard-ui
-npm test -- --include="src/app/core/auth/**/*.spec.ts"
-npm test -- --include="src/app/features/access-admin/**/*.spec.ts"
-npx tsc -p tsconfig.app.json --noEmit
-npx tsc -p tsconfig.spec.json --noEmit
-npm test
-npm run build
+npm run test:authorization
+npm run test:gates
+npm run test:pre-pr
 ```
+
+This phase creates `src/app/features/access-admin/`, which has no lane today. Before its specs
+count as evidence, add the `feature-access-admin` configuration and package script described in
+§16 — `npm run test:gates` fails on a spec file that belongs to no primary area, so the gap
+cannot pass silently. Then run that new lane alongside the two above.
 
 Run Backend API/Smoke contract tests as a compatibility gate even if Backend source is unchanged.
 
@@ -1813,12 +1831,9 @@ template-copy behavior change.
 
 ```sh
 cd Frontend/quran-dashboard-ui
-npm test -- --include="src/app/core/auth/**/*.spec.ts"
-npm test -- --include="src/app/features/abwab/**/*.spec.ts"
-npx tsc -p tsconfig.app.json --noEmit
-npx tsc -p tsconfig.spec.json --noEmit
-npm test
-npm run build
+npm run test:authorization
+npm run test:feature:abwab
+npm run test:pre-pr
 npm run e2e
 ```
 
@@ -1881,17 +1896,16 @@ not carry inferred grants.
 
 ```sh
 dotnet build Backend/QuranDashboard.sln
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api.Access"
+Backend/scripts/test-backend feature Access --no-build
 Backend/scripts/create-smoke-dump --yes
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
+Backend/scripts/test-backend smoke --no-build
 Backend/scripts/check-api-contract
 cd Frontend/quran-dashboard-ui
-npm test -- --include="src/app/core/auth/**/*.spec.ts"
-npm test
-npm run build
+npm run test:authorization
+npm run test:pre-pr
 ```
 
-Run Tier B no-pipeline after Backend build.
+Run `Backend/scripts/test-backend tier-b --no-build` after the Backend build.
 
 **Completion criteria:**
 
@@ -1920,7 +1934,8 @@ protected rollout sequence in §18.
 
 **In scope:**
 
-- Run Tier C plus all required focused/security/smoke/frontend gates and supplementary personas.
+- Run the pre-PR lanes (`Backend/scripts/test-backend pre-pr`, `npm run test:pre-pr`) plus all
+  required focused/security/smoke/frontend lanes and supplementary personas.
 - Execute production-read-only inventory and Owner/catalogue/route preflight.
 - Complete formal Engineering Review and close every blocking/major finding.
 - Update all living READMEs/contracts/testing ledger listed in §20.
@@ -1943,21 +1958,20 @@ architecture should appear here.
 
 ```sh
 dotnet build Backend/QuranDashboard.sln
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api"
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Abwab"
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab.&FullyQualifiedName!~QuranDashboard.Tests.Smoke."
+Backend/scripts/test-backend feature Access --no-build
+Backend/scripts/test-backend feature Abwab --no-build
+Backend/scripts/test-backend smoke --no-build
+Backend/scripts/test-backend tier-b --no-build
 Backend/scripts/check-api-contract
 cd Frontend/quran-dashboard-ui
-npx tsc -p tsconfig.app.json --noEmit
-npx tsc -p tsconfig.spec.json --noEmit
-npm test
-npm run build
+npm run test:pre-pr
 npm run e2e
 ```
 
-Tier D/E data-pipeline/canonical gates run only if their documented triggers or the actual release
-boundary require them. Smoke reporting always states data tier ran/skipped.
+The `pipeline` and `canonical-data` lanes run only if their documented triggers
+(`TESTING_STRATEGY.md` §5) or the actual release boundary require them. Smoke reporting always
+names the lane it came from; the canonical Smoke data tier belongs to `canonical-data`, where a
+missing resource fails the lane rather than skipping it.
 
 **Completion criteria:**
 
@@ -2341,7 +2355,7 @@ Likelihood and impact use `Low`, `Medium`, `High`, and `Critical`.
 | 8 | D03, D10–D14, D25 | Access-admin route/components/API concurrency |
 | 9 | D01, D09, D20–D21, D24 | Abwab component/page/path personas + Backend rerun |
 | 10 | D04, D06, D19, D28 | Inventory/conversion/migration/contract/full references |
-| 11 | All | Tier C, smoke, frontend build, supplementary E2E, normalized/reconciliation/activation preflight |
+| 11 | All | `pre-pr` lanes, smoke, frontend build, supplementary E2E, normalized/reconciliation/activation preflight |
 
 The matrices above provide four independent omission checks: design decision, route, permission, and
 phase/test. A change is not complete if it appears in one dimension but lacks the others.

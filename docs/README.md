@@ -12,8 +12,8 @@ Where things live now:
   changing an area. `docs/contracts/` indexes these READMEs and **defers to them — the README/code wins.**
 - **Feature plans** → `specs/<feature>/` hosts per-feature Spec-Kit planning (spec/plan/tasks/contracts) for **open features only**. Current contract index → `docs/contracts/`.
 - **How to work / how to write code** → `AGENTS.md` / `CLAUDE.md` / `.architecture/*`.
-- **Which tests to run and when** → `TESTING_STRATEGY.md` (workspace root) — execution tiers A–E, pipeline triggers, and the PR/release gates. Not a planning doc and not superseded by anything here.
-- **Which tests were deliberately not written** → `docs/TESTING_DEBT.md` — one row per skipped area, each naming the concrete change that pays it. Not a place to defer a tier `TESTING_STRATEGY.md` requires, and never a home for `SmokeRouteCatalog` parity entries (those are a build-level gate).
+- **Which tests to run and when** → `TESTING_STRATEGY.md` (workspace root) — the `Backend/scripts/test-backend` and `npm run test:*` lanes, the execution-trigger matrix, pipeline triggers, and the PR/release gates. Not a planning doc and not superseded by anything here.
+- **Which tests were deliberately not written** → `docs/TESTING_DEBT.md` — one row per skipped area, each naming the concrete change that pays it. Not a place to defer a lane `TESTING_STRATEGY.md` requires, and never a home for `SmokeRouteCatalog` parity entries (those are a build-level gate).
 - **Evidence / reference** (import verification, source hashes, provenance) → `Backend/report/`.
 - **A browsable HTTP API reference** → not committed. Generate it on demand from
   `Frontend/quran-dashboard-ui/` with `npm run docs:api`, which writes

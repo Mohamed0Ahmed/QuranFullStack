@@ -11,6 +11,9 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `qd-ui` | `npm run start:https` for the Angular dashboard |
 | `export-swagger` | Builds the API (Release) and writes the OpenAPI spec to `Frontend/quran-dashboard-ui/openapi/swagger.json` via the Swashbuckle CLI (`Backend/dotnet-tools.json` manifest); no running server or database needed |
 | `check-api-contract` | Runs `export-swagger`, regenerates the frontend API models (`npm run generate:api`), then fails with `git diff --exit-code` if either committed output is stale. It checks the spec and the generated client — the two things a caller breaks against — and deliberately not the browsable Redoc bundle, which is untracked and therefore invisible to `git diff` |
+| `test-backend <lane>` | **The only supported way to run Backend tests.** Selects a lane from the test catalog, builds once or refuses a stale `--no-build`, shards when two PostgreSQL majors would collide, and cleans up its own containers. See *Backend test commands* below |
+| `cleanup-test-runtime --run-id RUN_ID` | Removes the Docker resources of one `test-backend` run, selected by all five project test labels **and** that exact run ID. Never prunes |
+| `check-pending-model --build\|--no-build` | Reports whether the EF Core model has pending changes. Never adds and never applies a migration |
 | `create-smoke-dump` | Regenerates the canonical `quran_*` data dump the backend smoke data tier restores: `resources/db-dumps/quran-canonical/{quran-canonical.dump,manifest.json}` |
 | `wipe-abwab` | Empties the six `abwab_*` tables on a local database, leaving the canonical `quran_*` data intact |
 | `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project. EF tooling only — never hand-write a migration (`Backend/CLAUDE.md`) |
@@ -219,6 +222,86 @@ configuration or database failure the tool reports as `access_admin_failure=<typ
 trace.
 
 After the first successful build, use `qd-api` directly until backend code changes.
+
+## Backend test commands
+
+**Which lane to run and when is `../../TESTING_STRATEGY.md` §3 and §5.** This section is what
+the three scripts do; it deliberately does not repeat the selection policy.
+
+### `test-backend`
+
+```bash
+./scripts/test-backend --help
+```
+
+`--help` prints the authoritative usage and is the thing to trust when this file and the script
+disagree. The lanes are `fast`, `access`, `access-db`, `migration`, `process`, `smoke`,
+`tier-b`, `canonical-data`, `feature`, `pipeline`, and `pre-pr`; an unknown lane exits 2 with the
+usage text (`test-backend:72-78`).
+
+| Flag | Effect |
+|------|--------|
+| `--build` / `--no-build` | **Required, exactly one**, on every lane except `pre-pr` (`test-backend:144-155`). `--build` builds `QuranDashboard.sln` once, single-threaded. `--no-build` verifies the outputs the selection actually needs — the test assembly always, `QuranDashboard.AccessAdmin` for `Kind=Migration`/`Kind=Process`, `QuranDashboard.DataImporter` for `Gate=Pipeline`/`Kind=Canonical` — and names the missing path instead of running stale (`:299-326`) |
+| `--list-tests` | Discovery only. Starts no container, never shards, and additionally fails if a selected catalog class discovers no tests or discovery finds a class outside the selection (`:602-631`) |
+| `--results-dir PATH` | Passed through as `--results-directory`; a relative path resolves against your working directory, not the repo root (`:361-366`) |
+| `--feature KEY` | `pipeline` only — narrows the lane to one validated Pipeline feature; a non-Pipeline feature exits 2 |
+| `--class NAME` / `--test NAME` | `feature` only, as the two exact alternatives to a `FEATURE_KEY`. `--test` is additionally validated against VSTest discovery, so a typo'd method name fails before anything runs (`:328-359`) |
+
+`pre-pr` is the exception: executing it always builds, so it rejects `--no-build`; discovering it
+requires the exact form `pre-pr --list-tests --no-build` (`:144-152`).
+
+Selection comes from `../tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv`, whose
+header the script verifies before reading a row (`:168-178`). A `FEATURE_KEY` that no row carries
+exits 2 rather than running nothing (`:268-279`). The script prints its lane, the catalog path,
+every selected row, the expanded VSTest filter, and the resource kinds the selection needs —
+**that block is the evidence**; do not pipe a run into `tail`.
+
+Three behaviors are worth knowing before you read an unfamiliar failure:
+
+- **It can run twice.** A selection containing `QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests`
+  alongside any other class runs as two sequential `dotnet test` invocations — the shared
+  `postgres:16-alpine` classes, then that one class on its exclusive `postgres:18-alpine` server —
+  with a bounded wait in between until no labelled PostgreSQL container is running (`:388-408,
+  562-586`). That is `pre-pr` and `canonical-data`; `smoke` excludes the data tier and stays one
+  invocation. Shard exit statuses are combined (`:653-658`).
+- **A missing canonical resource fails the lane.** When the selection needs the foundation
+  sources, the enriched morphology artifact, or the dump plus manifest, the script checks for them
+  before starting anything and exits 1 with `canonical data tier: failed preflight` (`:476-519`).
+  It prints one of `ran` / `failed` / `not selected` / `discovery only` either way — quote that
+  line as the canonical skip accounting.
+- **It owns its cleanup.** Each run generates a 32-hex run ID, exports it as
+  `QURAN_DASHBOARD_TEST_RUN_ID`, unsets the five external-database overrides and their opt-in, and
+  installs an `EXIT` trap that calls `cleanup-test-runtime` for that ID (`:454-474`).
+
+Backend test processes **must not run concurrently** — the shared database runtime is guarded by
+a cross-process OS lock, so a second run waits rather than failing fast. See
+`../tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md`.
+
+### `cleanup-test-runtime`
+
+```bash
+./scripts/cleanup-test-runtime --run-id RUN_ID [--dry-run]
+```
+
+`test-backend` calls this itself; run it by hand only to clear a run that was killed. It selects
+Docker resources by the three fixed project labels, the presence of `host-pid`, and the **exact**
+run ID (`cleanup-test-runtime:69-83`) — so it can only ever reach containers this project
+labelled. It refuses a missing or non-32-hex run ID (`:51-57`), never prunes, never touches
+unlabelled resources or development volumes, and reports the Testcontainers reaper separately
+while leaving it running (`:101-106`). A container the test host already removed itself counts as
+cleaned, not as a failure (`:130-148`). `--dry-run` prints the candidates and removes nothing.
+
+### `check-pending-model`
+
+```bash
+./scripts/check-pending-model --build|--no-build
+```
+
+Wraps `dotnet ef migrations has-pending-model-changes` for `QuranDashboardDbContext` with the
+right project/startup pair and `DOTNET_ENVIRONMENT=Development` (`check-pending-model:53-59`). It
+**never adds and never applies a migration**; it is a separate command from every test lane, run
+alongside the `migration` lane whenever the EF model or schema is in scope. `--no-build` requires
+existing Infrastructure and Api output and names the missing path otherwise (`:41-46`).
 
 ## One-time setup (zsh)
 

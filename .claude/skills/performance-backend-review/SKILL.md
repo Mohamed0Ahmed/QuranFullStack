@@ -175,7 +175,10 @@ process large Quran source files; this is where import-time and memory cost conc
   expensive work.
 
 ### Backend test runtime
-- **Testcontainers startup cost** — containers spun up more often than necessary.
+- **Testcontainers startup cost** — a fixture starting its own container instead of leasing a
+  database from the shared, project-owned runtime
+  (`Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md`). Ordinary fixtures
+  lease; only the canonical Smoke data fixture takes an exclusive server, by decision.
 - **Real-source import repetition** — full imports/rebuilds re-run per test when a shared
   fixture would do.
 - **Shared fixture opportunities** — collection/class fixtures to amortize expensive setup.
