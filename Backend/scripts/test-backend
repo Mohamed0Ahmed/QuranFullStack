@@ -631,7 +631,44 @@ if [[ "${list_tests}" == true ]]; then
   exit 0
 fi
 
+# The shard split above is by class: one shard runs everything, or shard 2 runs the exclusive-PostgreSQL
+# class alone and shard 1 runs the rest. That is what makes per-shard canonical attribution possible.
+shard_runs_class() {
+  local shard_index="$1"
+  local class_name="$2"
+
+  if [[ "${#shard_filters[@]}" -eq 1 ]]; then
+    return 0
+  fi
+  if [[ "${shard_index}" -eq 1 ]]; then
+    [[ "${class_name}" == "${EXCLUSIVE_POSTGRES_CLASS}" ]]
+  else
+    [[ "${class_name}" != "${EXCLUSIVE_POSTGRES_CLASS}" ]]
+  fi
+}
+
+shard_carries_canonical() {
+  local shard_index="$1"
+  local index
+
+  for index in "${!selected_classes[@]}"; do
+    [[ "${selected_kinds[$index]}" == "Canonical" ]] || continue
+    if shard_runs_class "${shard_index}" "${selected_classes[$index]}"; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 test_status=0
+declare -a shard_statuses=()
+declare -a shard_executed=()
+for index in "${!shard_filters[@]}"; do
+  shard_statuses[$index]=0
+  shard_executed[$index]=false
+done
+
 for index in "${!shard_filters[@]}"; do
   if [[ "${index}" -gt 0 ]]; then
     if ! await_free_postgres_runtime; then
@@ -650,6 +687,9 @@ for index in "${!shard_filters[@]}"; do
   shard_status=$?
   set -e
 
+  shard_executed[$index]=true
+  shard_statuses[$index]="${shard_status}"
+
   if [[ "${#shard_filters[@]}" -gt 1 ]]; then
     echo "shard ${shard_labels[$index]}: exit ${shard_status}"
   fi
@@ -658,11 +698,35 @@ for index in "${!shard_filters[@]}"; do
   fi
 done
 
+# This line is the canonical tier's skip accounting (TESTING_STRATEGY.md 3.4), scoped to the shards that
+# actually carry Kind=Canonical classes: canonical classes are not confined to the exclusive shard - every
+# Quran.Import class is one, and they run on the shared runtime. "ran" therefore requires every
+# canonical-bearing shard to have both started AND exited zero; a shard that never started or came back
+# non-zero prints "failed", because an agent quoting "canonical data tier: ran" as its canonical evidence
+# must never be quoting a run whose canonical shard failed. The per-shard line below is the attribution the
+# combined status could not give: it names each canonical-bearing shard and its own exit code.
 if [[ "${list_tests}" == false && "${canonical_selected}" == true ]]; then
-  if [[ "${test_status}" -eq 0 ]]; then
+  canonical_shard_summary=""
+  canonical_ran=true
+  for index in "${!shard_filters[@]}"; do
+    shard_carries_canonical "${index}" || continue
+
+    if [[ "${shard_executed[$index]}" == true ]]; then
+      shard_report="${shard_labels[$index]} exit ${shard_statuses[$index]}"
+      [[ "${shard_statuses[$index]}" -eq 0 ]] || canonical_ran=false
+    else
+      shard_report="${shard_labels[$index]} did not run"
+      canonical_ran=false
+    fi
+    canonical_shard_summary="${canonical_shard_summary:+${canonical_shard_summary}; }${shard_report}"
+  done
+
+  if [[ "${canonical_ran}" == true ]]; then
     echo "canonical data tier: ran"
+    echo "canonical shard status: ${canonical_shard_summary}"
   else
     echo "canonical data tier: failed" >&2
+    echo "canonical shard status: ${canonical_shard_summary}" >&2
   fi
 fi
 

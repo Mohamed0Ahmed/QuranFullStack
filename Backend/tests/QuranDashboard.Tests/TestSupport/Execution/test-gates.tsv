@@ -249,6 +249,7 @@ QuranDashboard.Tests.TestSupport.Access.EmailIdentityContractTests	Access	Fast	T
 QuranDashboard.Tests.TestSupport.Access.TestAccessPersonasContractTests	Access	Fast	TierB
 QuranDashboard.Tests.TestSupport.DependencyInjection.OwnedServiceProviderRegistryTests	ApiBehavior	Fast	TierB	Execution
 QuranDashboard.Tests.TestSupport.Execution.TestGateCatalogTests	ApiBehavior	Fast	TierB	Execution
+QuranDashboard.Tests.TestSupport.PostgreSql.PostgreSqlDatabaseSlotContractTests	ApiBehavior	Database	TierB	Execution
 QuranDashboard.Tests.TestSupport.PostgreSql.PostgreSqlTestProcessContractTests	ApiBehavior	Database	TierB	Execution
 QuranDashboard.Tests.TestSupport.Process.ProcessExecutionTests	ApiBehavior	Fast	TierB	Execution
 QuranDashboard.Tests.TestSupport.Process.ProcessGlobalStateScopeTests	ApiBehavior	Fast	TierB	Execution

@@ -23,6 +23,12 @@ internal static class PostgreSqlTestProcess
         return server.AvailableDatabaseSlots;
     }
 
+    internal static async Task<int> ConfiguredDatabaseSlotsAsync(CancellationToken cancellationToken = default)
+    {
+        var server = await GetServerAsync(cancellationToken);
+        return server.ConfiguredDatabaseSlots;
+    }
+
     internal static async Task<PostgreSqlDatabaseLease> LeaseMigratedDatabaseAsync(
         string owner,
         CancellationToken cancellationToken = default)

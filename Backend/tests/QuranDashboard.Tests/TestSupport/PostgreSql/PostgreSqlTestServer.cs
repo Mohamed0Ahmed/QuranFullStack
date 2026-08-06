@@ -27,6 +27,7 @@ internal sealed class PostgreSqlTestServer : IAsyncDisposable
     {
         this.container = container;
         this.crossProcessLock = crossProcessLock;
+        ConfiguredDatabaseSlots = databaseParallelism;
         databaseSlots = new SemaphoreSlim(databaseParallelism, databaseParallelism);
         migratedTemplateLoader = new Lazy<Task<string>>(
             BuildMigratedTemplateAsync,
@@ -34,6 +35,8 @@ internal sealed class PostgreSqlTestServer : IAsyncDisposable
     }
 
     internal Guid ServerInstanceId { get; } = Guid.NewGuid();
+
+    internal int ConfiguredDatabaseSlots { get; }
 
     internal int AvailableDatabaseSlots => databaseSlots.CurrentCount;
 

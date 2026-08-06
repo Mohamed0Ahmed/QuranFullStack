@@ -31,15 +31,23 @@ public sealed class PostgreSqlTestProcessContractTests
 
             foreach (var lease in leases)
             {
-                (await ScalarAsync(lease.ConnectionString, "SELECT count(*) FROM \"__EFMigrationsHistory\""))
+                (await PostgreSqlContractProbe.ScalarAsync(
+                        lease.ConnectionString,
+                        "SELECT count(*) FROM \"__EFMigrationsHistory\""))
                     .Should().BeOfType<long>().Which.Should().BeGreaterThan(0);
             }
 
-            await ExecuteAsync(leases[0].ConnectionString, "CREATE TABLE lease_probe (id integer)");
+            await PostgreSqlContractProbe.ExecuteAsync(
+                leases[0].ConnectionString,
+                "CREATE TABLE lease_probe (id integer)");
 
-            (await ScalarAsync(leases[0].ConnectionString, "SELECT to_regclass('public.lease_probe') IS NOT NULL"))
+            (await PostgreSqlContractProbe.ScalarAsync(
+                    leases[0].ConnectionString,
+                    "SELECT to_regclass('public.lease_probe') IS NOT NULL"))
                 .Should().Be(true);
-            (await ScalarAsync(leases[1].ConnectionString, "SELECT to_regclass('public.lease_probe') IS NOT NULL"))
+            (await PostgreSqlContractProbe.ScalarAsync(
+                    leases[1].ConnectionString,
+                    "SELECT to_regclass('public.lease_probe') IS NOT NULL"))
                 .Should().Be(false);
         }
         finally
@@ -56,117 +64,25 @@ public sealed class PostgreSqlTestProcessContractTests
     {
         await using var lease = await PostgreSqlTestProcess.LeaseEmptyDatabaseAsync(Owner);
 
-        (await ScalarAsync(lease.ConnectionString, "SELECT to_regclass('public.\"__EFMigrationsHistory\"') IS NULL"))
+        (await PostgreSqlContractProbe.ScalarAsync(
+                lease.ConnectionString,
+                "SELECT to_regclass('public.\"__EFMigrationsHistory\"') IS NULL"))
             .Should().Be(true);
-    }
-
-    [Fact]
-    public async Task DatabaseSlots_MakeAnExtraLeaseWait_UntilOneIsReleased()
-    {
-        var held = new List<PostgreSqlDatabaseLease>();
-        try
-        {
-            while (await PostgreSqlTestProcess.AvailableDatabaseSlotsAsync() > 0)
-            {
-                held.Add(await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner));
-            }
-
-            held.Should().NotBeEmpty("draining the cap must take at least one slot");
-
-            var blocked = PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner);
-            var firstCompleted = await Task.WhenAny(blocked, Task.Delay(TimeSpan.FromSeconds(2)));
-            firstCompleted.Should().NotBeSameAs(blocked, "the exhausted slot cap must hold the extra lease back");
-
-            var released = held[^1];
-            held.RemoveAt(held.Count - 1);
-            await released.DisposeAsync();
-
-            held.Add(await blocked.WaitAsync(TimeSpan.FromMinutes(1)));
-        }
-        finally
-        {
-            foreach (var lease in held)
-            {
-                await lease.DisposeAsync();
-            }
-        }
-    }
-
-    [Fact]
-    public async Task CanceledCaller_IsRefused_AndLeavesTheRuntimeUsable()
-    {
-        var slotsBefore = await PostgreSqlTestProcess.AvailableDatabaseSlotsAsync();
-        using var canceled = new CancellationTokenSource();
-        await canceled.CancelAsync();
-
-        var lease = async () => await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner, canceled.Token);
-
-        await lease.Should().ThrowAsync<OperationCanceledException>();
-        (await PostgreSqlTestProcess.AvailableDatabaseSlotsAsync()).Should().Be(slotsBefore);
-
-        await using var survivor = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner);
-        (await ScalarAsync(survivor.ConnectionString, "SELECT 1")).Should().Be(1);
-    }
-
-    [Fact]
-    public async Task QueuedCaller_ThatIsCanceledWhileWaiting_LeavesTheSlotCountIntact()
-    {
-        var slotsBefore = await PostgreSqlTestProcess.AvailableDatabaseSlotsAsync();
-        var held = new List<PostgreSqlDatabaseLease>();
-        try
-        {
-            while (await PostgreSqlTestProcess.AvailableDatabaseSlotsAsync() > 0)
-            {
-                held.Add(await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner));
-            }
-
-            using var abandoned = new CancellationTokenSource();
-            var queued = PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner, abandoned.Token);
-            var firstCompleted = await Task.WhenAny(queued, Task.Delay(TimeSpan.FromSeconds(1)));
-            firstCompleted.Should().NotBeSameAs(queued, "the caller must be queued before it is canceled");
-
-            await abandoned.CancelAsync();
-            var awaitQueued = async () => await queued;
-            await awaitQueued.Should().ThrowAsync<OperationCanceledException>();
-        }
-        finally
-        {
-            foreach (var lease in held)
-            {
-                await lease.DisposeAsync();
-            }
-        }
-
-        (await PostgreSqlTestProcess.AvailableDatabaseSlotsAsync())
-            .Should().Be(slotsBefore, "a canceled waiter must not consume or leak a slot");
-    }
-
-    [Fact]
-    public async Task LeaseDisposal_DropsTheDatabase_AndIsIdempotent()
-    {
-        await using var maintenance = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner);
-        var slotsBefore = await PostgreSqlTestProcess.AvailableDatabaseSlotsAsync();
-
-        var lease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner);
-        var databaseName = lease.DatabaseName;
-        await lease.DisposeAsync();
-        await lease.DisposeAsync();
-
-        (await DatabaseExistsAsync(maintenance, databaseName)).Should().BeFalse();
-        (await PostgreSqlTestProcess.AvailableDatabaseSlotsAsync()).Should().Be(slotsBefore);
     }
 
     [Fact]
     public async Task LeaseDisposal_ClearsOnlyItsOwnConnectionPool()
     {
         await using var survivor = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner);
-        var pooledBackend = await ScalarAsync(survivor.ConnectionString, "SELECT pg_backend_pid()");
+        var pooledBackend = await PostgreSqlContractProbe.ScalarAsync(
+            survivor.ConnectionString,
+            "SELECT pg_backend_pid()");
 
         var released = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner);
-        await ExecuteAsync(released.ConnectionString, "SELECT 1");
+        await PostgreSqlContractProbe.ExecuteAsync(released.ConnectionString, "SELECT 1");
         await released.DisposeAsync();
 
-        (await ScalarAsync(survivor.ConnectionString, "SELECT pg_backend_pid()"))
+        (await PostgreSqlContractProbe.ScalarAsync(survivor.ConnectionString, "SELECT pg_backend_pid()"))
             .Should().Be(
                 pooledBackend,
                 "a lease clears only its own pool; clearing every pool would drop the physical connections "
@@ -177,7 +93,7 @@ public sealed class PostgreSqlTestProcessContractTests
     public async Task ExternalReadOnlyLease_LeavesItsDatabaseIntact_WhenDisposed()
     {
         await using var owned = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner);
-        await ExecuteAsync(
+        await PostgreSqlContractProbe.ExecuteAsync(
             owned.ConnectionString,
             "CREATE TABLE external_probe (id integer); INSERT INTO external_probe VALUES (7)");
 
@@ -186,7 +102,7 @@ public sealed class PostgreSqlTestProcessContractTests
         external.ServerInstanceId.Should().Be(Guid.Empty);
         await external.DisposeAsync();
 
-        (await ScalarAsync(owned.ConnectionString, "SELECT count(*) FROM external_probe"))
+        (await PostgreSqlContractProbe.ScalarAsync(owned.ConnectionString, "SELECT count(*) FROM external_probe"))
             .Should().Be(1L);
     }
 
@@ -267,18 +183,22 @@ public sealed class PostgreSqlTestProcessContractTests
         await using var database = await PostgreSqlTestProcess.LeaseEmptyDatabaseAsync(Owner);
         var schema = await PostgreSqlSchemaLease.CreateAsync(database, Owner);
 
-        await ExecuteAsync(schema.ConnectionString, "CREATE TABLE schema_probe (id integer)");
+        await PostgreSqlContractProbe.ExecuteAsync(
+            schema.ConnectionString,
+            "CREATE TABLE schema_probe (id integer)");
 
-        (await ScalarAsync(
+        (await PostgreSqlContractProbe.ScalarAsync(
                 database.ConnectionString,
                 $"SELECT to_regclass('{schema.SchemaName}.schema_probe') IS NOT NULL"))
             .Should().Be(true);
-        (await ScalarAsync(database.ConnectionString, "SELECT to_regclass('public.schema_probe') IS NULL"))
+        (await PostgreSqlContractProbe.ScalarAsync(
+                database.ConnectionString,
+                "SELECT to_regclass('public.schema_probe') IS NULL"))
             .Should().Be(true);
 
         await schema.DisposeAsync();
 
-        (await ScalarAsync(
+        (await PostgreSqlContractProbe.ScalarAsync(
                 database.ConnectionString,
                 $"SELECT count(*) FROM information_schema.schemata WHERE schema_name = '{schema.SchemaName}'"))
             .Should().Be(0L);
@@ -413,39 +333,5 @@ public sealed class PostgreSqlTestProcessContractTests
         }
 
         return false;
-    }
-
-    private static async Task<bool> DatabaseExistsAsync(PostgreSqlDatabaseLease lease, string databaseName)
-    {
-        var maintenanceConnectionString = new NpgsqlConnectionStringBuilder(lease.ConnectionString)
-        {
-            Database = "postgres",
-            Pooling = false
-        }.ConnectionString;
-
-        await using var connection = new NpgsqlConnection(maintenanceConnectionString);
-        await connection.OpenAsync();
-        await using var command = new NpgsqlCommand(
-            "SELECT count(*) FROM pg_database WHERE datname = @name",
-            connection);
-        command.Parameters.AddWithValue("name", databaseName);
-
-        return (long)(await command.ExecuteScalarAsync())! > 0;
-    }
-
-    private static async Task ExecuteAsync(string connectionString, string sql)
-    {
-        await using var connection = new NpgsqlConnection(connectionString);
-        await connection.OpenAsync();
-        await using var command = new NpgsqlCommand(sql, connection);
-        await command.ExecuteNonQueryAsync();
-    }
-
-    private static async Task<object?> ScalarAsync(string connectionString, string sql)
-    {
-        await using var connection = new NpgsqlConnection(connectionString);
-        await connection.OpenAsync();
-        await using var command = new NpgsqlCommand(sql, connection);
-        return await command.ExecuteScalarAsync();
     }
 }

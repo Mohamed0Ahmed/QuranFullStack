@@ -263,12 +263,18 @@ Three behaviors are worth knowing before you read an unfamiliar failure:
   `postgres:16-alpine` classes, then that one class on its exclusive `postgres:18-alpine` server —
   with a bounded wait in between until no labelled PostgreSQL container is running (`:388-408,
   562-586`). That is `pre-pr` and `canonical-data`; `smoke` excludes the data tier and stays one
-  invocation. Shard exit statuses are combined (`:653-658`).
+  invocation. Shard exit statuses are combined (`:693-698`).
 - **A missing canonical resource fails the lane.** When the selection needs the foundation
   sources, the enriched morphology artifact, or the dump plus manifest, the script checks for them
   before starting anything and exits 1 with `canonical data tier: failed preflight` (`:476-519`).
   It prints one of `ran` / `failed` / `not selected` / `discovery only` either way — quote that
-  line as the canonical skip accounting.
+  line as the canonical skip accounting. It is scoped to the shards that actually carry a
+  `Kind=Canonical` class, which is not only the exclusive one: every `Quran.Import` class is
+  canonical and runs on the shared runtime. `ran` means every canonical-bearing shard started
+  **and** exited zero; `failed` means one of them came back non-zero or never started because an
+  earlier shard stopped the lane (`:701-731`). A failure confined to a shard that carries no
+  canonical class no longer reports the tier as failed — that was the misattribution. Which
+  shard, and its own exit code, is on the `canonical shard status:` line printed beside it.
 - **It owns its cleanup.** Each run generates a 32-hex run ID, exports it as
   `QURAN_DASHBOARD_TEST_RUN_ID`, unsets the five external-database overrides and their opt-in, and
   installs an `EXIT` trap that calls `cleanup-test-runtime` for that ID (`:454-474`).
