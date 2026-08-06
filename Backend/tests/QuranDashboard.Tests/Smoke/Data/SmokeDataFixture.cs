@@ -2,6 +2,7 @@ using DotNet.Testcontainers.Configurations;
 using Microsoft.AspNetCore.Mvc.Testing;
 using QuranDashboard.Api.Controllers.System;
 using QuranDashboard.Tests.Api.Access;
+using QuranDashboard.Tests.Smoke;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Smoke.Data;
@@ -29,6 +30,7 @@ public sealed class SmokeDataFixture : IAsyncLifetime
     private static readonly string RestoreImage = $"postgres:{RestoreImageMajorVersion}-alpine";
 
     private readonly FakeExternalUserProfileSource _profileSource = new();
+    private readonly SmokeSqlCommandCapture _commandCapture = new();
 
     private ExclusivePostgreSqlLease? _serverLease;
     private WebApplicationFactory<HealthController>? _apiFactory;
@@ -70,7 +72,7 @@ public sealed class SmokeDataFixture : IAsyncLifetime
 
         await RestoreDumpAsync();
 
-        _apiFactory = SmokeApiHost.Build(ConnectionString, _profileSource);
+        _apiFactory = SmokeApiHost.Build(ConnectionString, _profileSource, _commandCapture);
     }
 
     // Ordered: the host and its pool first, then the container, and the cross-process lock last — the next

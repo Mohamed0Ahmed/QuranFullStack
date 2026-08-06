@@ -27,5 +27,6 @@ public sealed class SmokeAbwabTemplateReadTests(SmokeApiFixture fixture)
         await ApiEnvelope.AssertFailureEnvelopeAsync(
             response, HttpStatusCode.NotFound, ApiMessages.AbwabTemplateNotFound);
         response.Headers.ETag.Should().BeNull();
+        response.Headers.CacheControl.Should().BeNull();
     }
 }

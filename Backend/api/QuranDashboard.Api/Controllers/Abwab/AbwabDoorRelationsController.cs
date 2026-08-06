@@ -1,4 +1,6 @@
+using QuranDashboard.Api.Authorization.Metadata;
 using QuranDashboard.Application.Abstractions.Abwab.Responses;
+using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Application.Abwab.Commands.Relations.AddDoorRelations;
 using QuranDashboard.Application.Abwab.Commands.Relations.DeleteDoorRelation;
 using QuranDashboard.Application.Abwab.Queries.GetDoorRelations;
@@ -29,6 +31,7 @@ public sealed class AbwabDoorRelationsController(
     }
 
     [HttpPost("doors/{doorId:int}/relations")]
+    [RequirePermission(AbwabPermissions.Relations.Create)]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<AbwabDoorRelationDto>>>> AddForDoor(
         int doorId, [FromBody] AddDoorRelationsBody body, CancellationToken cancellationToken)
     {
@@ -60,6 +63,7 @@ public sealed class AbwabDoorRelationsController(
     }
 
     [HttpDelete("relations/{relationId:int}")]
+    [RequirePermission(AbwabPermissions.Relations.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<ActionResult<ApiResponse<object>>> Delete(
         int relationId, CancellationToken cancellationToken)

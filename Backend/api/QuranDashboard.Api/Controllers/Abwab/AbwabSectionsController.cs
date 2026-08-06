@@ -1,4 +1,6 @@
+using QuranDashboard.Api.Authorization.Metadata;
 using QuranDashboard.Application.Abstractions.Abwab.Responses;
+using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Application.Abwab.Commands.Sections.CreateSection;
 using QuranDashboard.Application.Abwab.Commands.Sections.RenameSection;
 using QuranDashboard.Application.Abwab.Commands.Sections.DeleteSection;
@@ -15,6 +17,7 @@ public sealed class AbwabSectionsController(
     ReorderSectionHandler reorderHandler) : ControllerBase
 {
     [HttpPost]
+    [RequirePermission(AbwabPermissions.Sections.Create)]
     public async Task<ActionResult<ApiResponse<AbwabSectionDto>>> Create(
         [FromBody] CreateSectionCommand command,
         CancellationToken cancellationToken)
@@ -35,6 +38,7 @@ public sealed class AbwabSectionsController(
     }
 
     [HttpPut("{id:int}")]
+    [RequirePermission(AbwabPermissions.Sections.Edit)]
     public async Task<ActionResult<ApiResponse<AbwabSectionDto>>> Rename(
         int id,
         [FromBody] RenameSectionBody body,
@@ -60,6 +64,7 @@ public sealed class AbwabSectionsController(
     }
 
     [HttpDelete("{id:int}")]
+    [RequirePermission(AbwabPermissions.Sections.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<ActionResult<ApiResponse<object>>> Delete(int id, CancellationToken cancellationToken)
     {
@@ -79,6 +84,7 @@ public sealed class AbwabSectionsController(
     }
 
     [HttpPost("{id:int}/order")]
+    [RequirePermission(AbwabPermissions.Sections.Reorder)]
     public async Task<ActionResult<ApiResponse<AbwabSectionDto>>> Reorder(
         int id, [FromBody] ReorderSectionBody body, CancellationToken cancellationToken)
     {

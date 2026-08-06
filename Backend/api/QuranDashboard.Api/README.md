@@ -53,15 +53,18 @@ It uses the standard `JwtBearer` handler to validate a Logto **access token** (n
 is **verified server-side through the already-validated OIDC claims**: matching `sub`, present
 `email`, and `email_verified=true`. Logto Management API `primaryEmail` is used only to match provider
 identity data and is never email-verification authority. A new user starts `Pending` with no role. This is the only endpoint that requires
-authentication — there is **no global fallback policy**, so every other endpoint stays anonymous.
+authentication without a granular permission requirement. The twenty-one Abwab write endpoints each carry
+an exact granular permission requirement; there is **no global fallback policy**, so public content GETs
+remain anonymous.
 
-The API now has a database-backed authorization core ready for explicit unsafe-route metadata:
+The API has a database-backed authorization core:
 `[RequirePermission(...)]` checks an active local user's exact direct grant, while an active local Owner
 bypasses that exact check; `[RequireOwner]` accepts only an active local Owner. Both resolve the `sub`
-through `ICurrentUser` and ignore token-borne role or permission claims. The unsafe-route validator and
-handler checks fail closed for missing, unknown, or conflicting metadata, but startup registration and
-all controller annotations are deliberately deferred to Phase 5. This does not change public `GET`
-endpoints or `/api/access/me`.
+through `ICurrentUser` and ignore token-borne role or permission claims. Every Abwab write has exactly one
+`[RequirePermission(...)]` matching the route's required catalogue code. `UnsafeEndpointMetadataValidator`
+runs immediately after controller mapping and refuses any unsafe endpoint with missing, unknown, or
+conflicting metadata; the requirement handlers repeat that validation fail-closed. This does not change
+public `GET` endpoints or `/api/access/me`, and production activation remains a separate deployment gate.
 
 ### Roles (Phase 2 — infrastructure only)
 
@@ -85,8 +88,8 @@ are enforced in code keyed by the role **name** (`RoleNames`); roles are never c
 - **Named policies registered, applied to nothing:** one policy per role
   (`AuthorizationPolicyNames.Owner`/`Admin`/`Editor`, each `RequireAuthenticatedUser().RequireRole(name)`)
   is registered ready for future admin surfaces. **No `[Authorize(Policy = …)]` is applied to any
-  endpoint**, and there is still no global fallback policy — the whole product remains publicly browsable.
-  New authorization metadata does not use these policies or transformed/token role claims.
+  endpoint**, and there is still no global fallback policy. Granular Abwab authorization metadata does not
+  use these policies or transformed/token role claims.
 
 ### Configuration (`Auth` section)
 

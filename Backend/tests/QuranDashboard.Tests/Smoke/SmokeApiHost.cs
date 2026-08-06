@@ -24,7 +24,8 @@ internal static class SmokeApiHost
 
     public static WebApplicationFactory<HealthController> Build(
         string connectionString,
-        FakeExternalUserProfileSource profileSource)
+        FakeExternalUserProfileSource profileSource,
+        SmokeSqlCommandCapture commandCapture)
     {
         return new WebApplicationFactory<HealthController>()
             .WithWebHostBuilder(builder =>
@@ -56,7 +57,8 @@ internal static class SmokeApiHost
                 {
                     services.RemoveAll<QuranDashboardDbContext>();
                     services.RemoveAll<DbContextOptions<QuranDashboardDbContext>>();
-                    services.AddDbContext<QuranDashboardDbContext>(options => options.UseNpgsql(connectionString));
+                    services.AddDbContext<QuranDashboardDbContext>(options =>
+                        options.UseNpgsql(connectionString).AddInterceptors(commandCapture));
 
                     // Replace the real Logto Management API boundary with the in-memory fake so no test
                     // ever calls out.

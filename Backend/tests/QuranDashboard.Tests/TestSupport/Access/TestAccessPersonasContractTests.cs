@@ -12,6 +12,7 @@ public sealed class TestAccessPersonasContractTests
     {
         TestAccessPersonas.All.Select(persona => persona.Key).Should().Equal(
             "Anonymous",
+            "InvalidToken",
             "AuthenticatedUnknown",
             "Pending",
             "Disabled",

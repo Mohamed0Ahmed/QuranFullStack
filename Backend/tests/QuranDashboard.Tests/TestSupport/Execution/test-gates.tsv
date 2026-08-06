@@ -243,7 +243,11 @@ QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesSecondaryFilterReadTests	Word
 QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesSubtypeReadTests	WordsWordTypes	Database	TierB
 QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesTableReadTests	WordsWordTypes	Database	TierB
 QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests	Smoke	Canonical	Smoke
+QuranDashboard.Tests.Smoke.SmokeAbwabConditionalReadTests	Smoke	Database	Smoke
+QuranDashboard.Tests.Smoke.SmokeAbwabRelationsTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeAbwabTemplateReadTests	Smoke	Database	Smoke
+QuranDashboard.Tests.Smoke.SmokeAbwabTemplateWriteTests	Smoke	Database	Smoke
+QuranDashboard.Tests.Smoke.SmokeAbwabWriteAuthorizationTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeAbwabWriteTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeAuthPipelineTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeBootGuardTests	Smoke	Database	Smoke

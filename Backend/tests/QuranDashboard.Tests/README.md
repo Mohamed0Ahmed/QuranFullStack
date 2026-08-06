@@ -27,10 +27,13 @@ Folders are clustered by Quran domain/use case, not by project layer.
   bidirectionally locked to the live `EndpointDataSource` by `SmokeCoverageParityTests`,
   so **adding or changing an API route requires updating the catalog in the same change**
   or the suite fails by route name.
-  Every `SmokePersona` — the closed enum in `Smoke/SmokePersonas.cs`, swept through
-  `SmokePersonas.All` rather than a hand-kept list — runs over the real JwtBearer handler with
-  RSA test tokens. Adding a persona to the enum therefore widens the sweep; nothing has to be
-  updated alongside it.
+  `SmokePersona` is the closed caller-state enum in `Smoke/SmokePersonas.cs`; its RSA test tokens run
+  through the real JwtBearer handler, and `TestAccessPersonasContractTests` pins the complete current
+  state set. The twenty-one Abwab writes use a data-driven authorization matrix for every current
+  persona: denied requests must leave Abwab rows and validators unchanged and issue no Abwab SQL, while
+  the exact direct grant and active Owner reach the existing domain outcome. Focused Abwab smoke tests
+  cover the four anonymous reads, the required relation/template status contracts, and conditional GET
+  match/mismatch behavior.
 - `Smoke/Data/` — the data tier (`QuranDashboard.Tests.Smoke.Data`), which restores the
   canonical Quran dump so the seeded read routes are asserted against real data instead of
   an empty schema. See the dump note under *Related*.

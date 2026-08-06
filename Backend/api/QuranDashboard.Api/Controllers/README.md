@@ -14,10 +14,10 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   direct-child and relation counts, per-section live-doors count, no paging),
   `api/abwab/doors/{doorId}/relations` (one door's visible relations, `404` for an unknown door,
   `200` with `[]` for a door with none), and `api/abwab/templates` + `api/abwab/templates/{templateId}`
-  (the admin-authored door templates and one template's flat node list). Twenty-five routes in all. All
-  routes are `Open` — this is the repository's first write surface, and it shipped to production still
-  unauthenticated; the 2026-08-04 abwab note in [`docs/TESTING_DEBT.md`](../../../../docs/TESTING_DEBT.md)
-  records that state and the feature that must close it. Optimistic
+  (the admin-authored door templates and one template's flat node list). Twenty-five routes in all. Each
+  write has exactly one `[RequirePermission]` with its route-specific Abwab catalogue code; an active
+  local Owner or an active local user with that exact direct grant can reach its handler. The four GETs
+  stay anonymous, and the tree/template reads retain their conditional-GET behavior. Optimistic
   concurrency is `uint xmin`, surfaced as `409` in the shared envelope. Section **delete** is the one
   door/section write that carries **no version token** — `DELETE api/abwab/sections/{id}` takes no
   body, because the server re-derives its only precondition (no live doors) itself. Its stale-version
@@ -68,9 +68,9 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 - `Access/` — `api/access/me`; the authenticated caller's provisioned user. Carries `[Authorize]`
   (authenticated-only) and get-or-create provisions the local user on first login (email verified
   server-side via the Logto Management API). The response includes `roleName` (null when no role);
-  the configured owner email is bootstrapped to `Owner`/`Active`. This is the only endpoint that
-  requires authentication — role-based named policies are registered but applied to nothing, so every
-  other route stays publicly browsable. See `../README.md` (Authentication / Roles).
+  the configured owner email is bootstrapped to `Owner`/`Active`. This is the only authenticated-only
+  endpoint; the Abwab write routes use granular permission metadata instead. Role-based named policies
+  are registered but applied to nothing. See `../README.md` (Authentication / Roles).
 - `Dashboard/` — `api/dashboard/info` for app/version/environment metadata.
 - `MushafReader/Ayahs/` — `api/mushaf/ayahs/{verseKey}/study`, `/similar-ayahs`, and `/mutashabihat`.
 - `MushafReader/Catalogs/` — `api/mushaf/surahs` and `api/mushaf/study-sources` catalogs.

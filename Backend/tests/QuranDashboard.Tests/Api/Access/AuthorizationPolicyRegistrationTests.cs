@@ -51,20 +51,20 @@ public sealed class AuthorizationPolicyRegistrationTests(AccessTestFixture fixtu
             "QuranDashboard.Api.Authorization.ApiAuthorizationMiddlewareResultHandler");
         fixture.ApiServices.GetServices<IClaimsTransformation>()
             .Should().NotContain(transformation => transformation is RoleClaimsTransformation);
-        fixture.ApiServices.GetService<UnsafeEndpointMetadataValidator>().Should().BeNull();
+        fixture.ApiServices.GetRequiredService<UnsafeEndpointMetadataValidator>().Should().NotBeNull();
     }
 
     [Fact]
-    public void UnsafeEndpointValidator_RejectsTheCurrentUnclassifiedWrites_WhenExplicitlyInvoked()
+    public void UnsafeEndpointValidator_AcceptsTheLiveClassifiedRoutes_WhenExplicitlyInvoked()
     {
         var endpoints = fixture.ApiServices.GetServices<EndpointDataSource>()
             .SelectMany(source => source.Endpoints)
             .ToArray();
 
-        var validate = () => new UnsafeEndpointMetadataValidator().Validate(endpoints);
+        var validator = fixture.ApiServices.GetRequiredService<UnsafeEndpointMetadataValidator>();
+        var validate = () => validator.Validate(endpoints);
 
         endpoints.Should().NotBeEmpty();
-        validate.Should().Throw<InvalidOperationException>()
-            .Which.Message.Should().Contain("has no permission or Owner classification");
+        validate.Should().NotThrow();
     }
 }

@@ -15,8 +15,10 @@ writes happen only through the import/generate CLI.
 - **Import/generate pipelines** — foundation, morphology (+ enriched), simple/full إعراب,
   mutashabihat, tafsirs, translations, navigation metadata, display-word rebuild.
 - **Access foundation** — normalized identity, the 19-code Abwab catalogue, direct-grant/audit
-  persistence, the operator preflight CLI, and the request-scoped database authorization core. Endpoint
-  metadata activation/enforcement remains a later phase.
+  persistence, the operator preflight CLI, the request-scoped database authorization core, exact permission
+  metadata on all twenty-one Abwab writes, and fail-closed unsafe-endpoint startup validation. Public GETs,
+  including all four Abwab reads and the tree/template conditional requests, remain anonymous; production
+  activation is a separate deployment gate.
 
 ## Layer map
 

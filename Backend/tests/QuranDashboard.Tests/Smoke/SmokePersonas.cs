@@ -7,6 +7,7 @@ using QuranDashboard.Tests.TestSupport.Access;
 internal enum SmokePersona
 {
     Anonymous,
+    InvalidToken,
     AuthenticatedUnknown,
     Pending,
     Disabled,

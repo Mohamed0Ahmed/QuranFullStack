@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using QuranDashboard.Api.Authorization;
 using QuranDashboard.Api.Authorization.Owner;
 using QuranDashboard.Api.Authorization.Permissions;
+using QuranDashboard.Api.Authorization.Validation;
 using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Domain.Access;
 
@@ -23,6 +24,7 @@ internal static class AuthenticationRegistration
         services.AddScoped<AuthorizationStateAccessEvaluator>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
         services.AddScoped<IAuthorizationHandler, OwnerAuthorizationHandler>();
+        services.AddSingleton<UnsafeEndpointMetadataValidator>();
         services.AddSingleton<AuthorizationRejectionWriter>();
         services.AddSingleton<IAuthorizationMiddlewareResultHandler, ApiAuthorizationMiddlewareResultHandler>();
 

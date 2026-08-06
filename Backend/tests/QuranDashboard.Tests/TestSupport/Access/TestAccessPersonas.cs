@@ -35,6 +35,7 @@ internal static class TestAccessPersonas
     public static IReadOnlyList<TestAccessPersona> All { get; } =
     [
         new("Anonymous", null, null, null, null, new Dictionary<string, object>()),
+        new("InvalidToken", "smoke-invalid-token", null, null, null, new Dictionary<string, object>()),
         new("AuthenticatedUnknown", "smoke-unknown", null, null, null, new Dictionary<string, object>()),
         new("Pending", "smoke-pending", UserStatus.Pending, null, null, new Dictionary<string, object>()),
         new("Disabled", "smoke-disabled", UserStatus.Disabled, null, null, new Dictionary<string, object>()),

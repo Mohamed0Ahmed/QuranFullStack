@@ -36,8 +36,8 @@ authenticated request.
   Owner. `[RequireOwner]` requires an active local Owner and never treats a direct permission grant as
   equivalent.
 - `UnsafeEndpointMetadataValidator` checks unsafe route classification and the requirement handlers
-  repeat that check fail-closed. It is intentionally not registered for startup validation until Phase 5
-  annotates every existing unsafe endpoint atomically.
+  repeat that check fail-closed. It is registered during API startup after controller mapping, and every
+  current Abwab write action carries exactly one matching `[RequirePermission]` classification.
 
 `RoleClaimsTransformation` and `IUserRoleResolver` remain as transitional source/contracts for the
 earlier role/reconciliation work, but the transformation is no longer registered and this authorization
@@ -66,10 +66,10 @@ The JWT bearer event does not write a competing challenge body.
 
 ## Boundary / current phase
 
-- The new requirement attributes are not applied to any controller in this phase, startup metadata
-  validation is not registered, and there is no fallback policy. Authentication is therefore enforced
-  only where a controller opts in with `[Authorize]` (today only `api/access/me`; see
-  `../Controllers/README.md`).
+- The twenty-one existing Abwab write actions have exact permission metadata and startup validates every
+  unsafe endpoint. There is no fallback policy: public GETs remain anonymous, while `api/access/me`
+  remains authenticated-only (see `../Controllers/README.md`). Production activation is an explicit
+  deployment decision, not an API fallback or temporary grant path.
 - This folder owns API auth wiring. User provisioning and authorization-state resolution live behind
   Application abstractions with Infrastructure implementations.
 
