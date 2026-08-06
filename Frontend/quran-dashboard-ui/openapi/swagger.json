@@ -6835,7 +6835,8 @@
         "required": [
           "displayName",
           "email",
-          "roleId",
+          "isOwner",
+          "permissions",
           "roleName",
           "status",
           "sub"
@@ -6855,10 +6856,14 @@
           "status": {
             "type": "string"
           },
-          "roleId": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
+          "isOwner": {
+            "type": "boolean"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "roleName": {
             "type": "string",

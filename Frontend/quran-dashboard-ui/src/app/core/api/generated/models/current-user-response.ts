@@ -4,7 +4,8 @@
 export interface CurrentUserResponse {
   displayName: string | null;
   email: string;
-  roleId: number | null;
+  isOwner: boolean;
+  permissions: Array<string>;
   roleName: string | null;
   status: string;
   sub: string;

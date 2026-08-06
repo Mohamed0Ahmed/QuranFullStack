@@ -1,4 +1,6 @@
 using System.Net.Http.Headers;
+using QuranDashboard.Application.Abstractions.Access;
+using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Tests.TestSupport.Http;
 
@@ -21,7 +23,7 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
     }
 
     [Fact]
-    public async Task OwnerEmail_FirstLogin_ProvisionsOwnerActive_AndMeReturnsRoleName()
+    public async Task OwnerEmail_FirstLogin_ProvisionsOwnerActive_AndMeReturnsOwnerAccessContract()
     {
         await fixture.ResetAsync();
         var ownerRoleId = await OwnerRoleIdAsync();
@@ -33,8 +35,10 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var data = await ApiEnvelope.ReadDataAsync(response);
         data.GetProperty("status").GetString().Should().Be("active");
+        data.GetProperty("isOwner").GetBoolean().Should().BeTrue();
+        data.GetProperty("permissions").GetArrayLength().Should().Be(0);
         data.GetProperty("roleName").GetString().Should().Be(RoleNames.Owner);
-        data.GetProperty("roleId").GetInt32().Should().Be(ownerRoleId);
+        data.TryGetProperty("roleId", out _).Should().BeFalse();
 
         var owner = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
         owner!.Status.Should().Be(UserStatus.Active);
@@ -100,6 +104,83 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
     }
 
     [Fact]
+    public async Task ActiveNonOwner_MeReturnsOnlyOrderedDirectPermissionCodes()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        var ownerId = await SeedActiveOwnerAsync();
+        const string sub = "access-me-direct-permissions";
+        var userId = await fixture.InsertUserAsync(new User
+        {
+            LogtoSub = sub,
+            Email = $"{sub}@example.test",
+            Status = UserStatus.Active,
+            CreatedAtUtc = DateTimeOffset.UtcNow,
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        });
+        await AddGrantsAsync(userId, ownerId, [AbwabPermissions.Sections.Edit, AbwabPermissions.Doors.Create]);
+        using var client = fixture.CreateApiClient();
+
+        using var response = await GetMeAsync(client, TestJwtTokens.Mint(sub));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var data = await ApiEnvelope.ReadDataAsync(response);
+        data.GetProperty("status").GetString().Should().Be("active");
+        data.GetProperty("isOwner").GetBoolean().Should().BeFalse();
+        data.GetProperty("permissions").EnumerateArray().Select(value => value.GetString())
+            .Should().Equal(AbwabPermissions.Doors.Create, AbwabPermissions.Sections.Edit);
+        data.GetProperty("roleName").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    public static TheoryData<string?> NonOwnerRoles => [null, RoleNames.Admin, RoleNames.Editor];
+
+    [Theory]
+    [MemberData(nameof(NonOwnerRoles))]
+    public async Task ActiveReadOnlyNonOwner_MeReturnsNoPermissionsOrTransitionalRole(string? roleName)
+    {
+        await fixture.ResetAsync();
+        var sub = $"access-me-read-only-{roleName ?? "none"}";
+        var roleId = roleName is null
+            ? (int?)null
+            : (await fixture.GetRolesAsync()).Single(role => role.Name == roleName).Id;
+        await fixture.InsertUserAsync(new User
+        {
+            LogtoSub = sub,
+            Email = $"{sub}@example.test",
+            RoleId = roleId,
+            Status = UserStatus.Active,
+            CreatedAtUtc = DateTimeOffset.UtcNow,
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        });
+        using var client = fixture.CreateApiClient();
+
+        using var response = await GetMeAsync(client, TestJwtTokens.Mint(sub));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var data = await ApiEnvelope.ReadDataAsync(response);
+        data.GetProperty("isOwner").GetBoolean().Should().BeFalse();
+        data.GetProperty("permissions").GetArrayLength().Should().Be(0);
+        data.GetProperty("roleName").ValueKind.Should().Be(JsonValueKind.Null);
+    }
+
+    [Fact]
+    public async Task DisabledOwner_MeRetainsOwnerIdentityButReturnsNoPermissions()
+    {
+        await fixture.ResetAsync();
+        const string sub = "smoke-disabled-owner";
+        await fixture.InsertPersonaAsync("DisabledOwner");
+        using var client = fixture.CreateApiClient();
+
+        using var response = await GetMeAsync(client, TestJwtTokens.Mint(sub));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var data = await ApiEnvelope.ReadDataAsync(response);
+        data.GetProperty("status").GetString().Should().Be("disabled");
+        data.GetProperty("isOwner").GetBoolean().Should().BeTrue();
+        data.GetProperty("permissions").GetArrayLength().Should().Be(0);
+    }
+
+    [Fact]
     public async Task PersonaFixture_CanSeedAStatusAndRoleWithoutGrantTables()
     {
         await fixture.ResetAsync();
@@ -114,6 +195,47 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
 
     private async Task<int> OwnerRoleIdAsync()
         => (await fixture.GetRolesAsync()).Single(r => r.Name == RoleNames.Owner).Id;
+
+    private async Task<int> SeedActiveOwnerAsync()
+    {
+        return await fixture.InsertUserAsync(new User
+        {
+            LogtoSub = AccessTestFixture.OwnerSub,
+            Email = AccessTestFixture.OwnerEmail,
+            RoleId = await OwnerRoleIdAsync(),
+            Status = UserStatus.Active,
+            CreatedAtUtc = DateTimeOffset.UtcNow,
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        });
+    }
+
+    private async Task SynchronizePermissionsAsync()
+    {
+        await using var scope = fixture.ApiServices.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<IPermissionCatalogueSynchronizer>()
+            .SynchronizeAsync(CancellationToken.None);
+    }
+
+    private async Task AddGrantsAsync(int targetUserId, int actorUserId, IReadOnlyList<string> permissionCodes)
+    {
+        await using var scope = fixture.QueryServices.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        var permissionIds = await db.AccessPermissions
+            .Where(permission => permissionCodes.Contains(permission.Code))
+            .ToDictionaryAsync(permission => permission.Code, permission => permission.Id);
+        foreach (var permissionCode in permissionCodes)
+        {
+            db.AccessUserPermissions.Add(new UserPermission
+            {
+                UserId = targetUserId,
+                PermissionId = permissionIds[permissionCode],
+                GrantedByUserId = actorUserId,
+                GrantedAtUtc = DateTimeOffset.UtcNow,
+            });
+        }
+
+        await db.SaveChangesAsync();
+    }
 
     private async Task<string?> ResolveRoleAsync(string sub)
     {

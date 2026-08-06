@@ -27,7 +27,8 @@ backfill between the staged migrations.
   `ExternalUserProfile` (`Email`, `UserName`, `DisplayName`). `primaryEmail` is provider
   identity/matching data only; it is never proof that the email is verified.
 - **`IUserProvisioningService`** — `GetOrCreateAsync(identity, ct)` returns a
-  `ProvisionedUser` (`Sub`, `Email`, `DisplayName`, `Status`, `RoleId`, `RoleName`).
+  `ProvisionedUser` (`Sub`, `Email`, `DisplayName`, `Status`, internal `RoleId`, `IsOwner`,
+  ordered direct `Permissions`, transitional `RoleName`).
 - **`IUserRoleResolver`** — `GetActiveRoleNameAsync(logtoSub, ct)` returns the active role
   name or `null`; `Evict(logtoSub)` drops a subject's cached result immediately.
 - **`IAuthorizationStateResolver`** — `ResolveAsync(logtoSub, ct)` returns an

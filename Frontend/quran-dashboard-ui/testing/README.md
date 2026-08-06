@@ -48,11 +48,12 @@ Run all of these from `Frontend/quran-dashboard-ui/`.
 | `npm run test:shared` | `--configuration=shared` |
 | `npm run test:full` | `npm test`, named so a broad run is legible in evidence |
 | `npm run test:gates` | `node testing/verify-test-gates.mjs` — this folder's script; no Angular build |
+| `npm run check:permission-catalogue` | compares the frontend typed permission codes to `Backend/.../AbwabPermissions.cs` |
 | `npm run typecheck:app` | `tsc -p tsconfig.app.json --noEmit` |
 | `npm run typecheck:spec` | `tsc -p tsconfig.spec.json --noEmit` |
 | `npm run typecheck` | both of the above, in order |
 | `npm run build:verify` | a timeout-bounded production `ng build` |
-| `npm run test:pre-pr` | `typecheck` → `build:verify` → `test:full` |
+| `npm run test:pre-pr` | `check:permission-catalogue` → `typecheck` → `build:verify` → `test:full` |
 
 `test:gates` is deliberately **not** part of `test:pre-pr`: it is a structural check on
 `../angular.json`, so it belongs with the change that edits the configurations, not with the run

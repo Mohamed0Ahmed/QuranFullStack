@@ -22,6 +22,7 @@ export const WORDS_ROUTE_PATH = navRoute('words');
 export const ABWAB_ROUTE_PATH = navRoute('abwab');
 
 export const CALLBACK_PATH = 'callback' as const;
+export const SETTINGS_ACCESS_ROUTE_PATH = '/settings/access' as const;
 
 export const WORDS_UNIQUE_MODE_SEGMENT = 'unique/:mode' as const;
 

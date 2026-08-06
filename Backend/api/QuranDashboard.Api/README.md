@@ -73,7 +73,8 @@ or `/api/access/me`, and production activation remains a separate deployment gat
 
 A fixed, seeded role set (`Owner` / `Admin` / `Editor`, seeded with Arabic display names via the
 `AddAccessRoles` migration) backs authorization; `Users.RoleId` is a nullable FK → `roles`. Capabilities
-are enforced in code keyed by the role **name** (`RoleNames`); roles are never created from the UI.
+are enforced from active direct grants, with a separate active-Owner bypass; `Admin` and `Editor` are
+transitional role data, not a capability source. Roles are never created from the UI.
 
 - **Owner bootstrap** (`OwnerBootstrap:Emails`): the normalized, validated desired Owner list is
   reconciled for additions only after a configured identity provisions through `/api/access/me` with
@@ -87,7 +88,10 @@ are enforced in code keyed by the role **name** (`RoleNames`); roles are never c
   user and rejects a second distinct `sub` in its request scope. The old role-claim transformation is
   no longer registered; `IUserRoleResolver` remains transitional for existing reconciliation/cache
   invalidation work and is not consulted by the new requirement handlers.
-- **`GET /api/access/me`** returns `roleName` (null when no role) alongside `roleId`/`status`.
+- **`GET /api/access/me`** returns `sub`, `email`, `displayName`, `status`, `isOwner`, ordered
+  active direct `permissions`, and transitional `roleName`; it does not expose `roleId`.
+  Owners, Pending users, and Disabled users receive an empty permission list. `isOwner` remains
+  true for a Disabled configured Owner while every authorization handler still fails closed on status.
 - **Named policies registered, applied to nothing:** one policy per role
   (`AuthorizationPolicyNames.Owner`/`Admin`/`Editor`, each `RequireAuthenticatedUser().RequireRole(name)`)
   is registered ready for future admin surfaces. **No `[Authorize(Policy = …)]` is applied to any

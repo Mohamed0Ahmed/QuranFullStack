@@ -210,7 +210,7 @@ test configurations live in `angular.json`.
 | Shared | app-shell, core, shared, and environment specs | `npm run test:shared` | core/shared/routing/app-shell/environment/global test setup changed | not a substitute for the affected feature lane |
 | Full suite | every `src/**/*.spec.ts` | `npm run test:full` (`npm test` is the same run) | when a broad Frontend gate is required on its own | not for Backend-only changes |
 | Type-check / build | leaf app and spec TypeScript projects; production bundle | `npm run typecheck:app`, `npm run typecheck:spec`, `npm run typecheck`, `npm run build:verify` | compilation, templates, routing, config, generated DTOs, or bundle-affecting work | never cite a root `npx tsc --noEmit`: the root `tsconfig.json` is `"files": []` plus project references and `--noEmit` does not follow references, so it type-checks nothing |
-| Pre-PR | `typecheck` → `build:verify` → `test:full`, in that order | `npm run test:pre-pr` | once before a PR that changed Frontend code; engineering review when Frontend is in scope | never for a Backend-only change with no generated/frontend contract diff |
+| Pre-PR | `check:permission-catalogue` → `typecheck` → `build:verify` → `test:full`, in that order | `npm run test:pre-pr` | once before a PR that changed Frontend code; engineering review when Frontend is in scope | never for a Backend-only change with no generated/frontend contract diff |
 | Gate self-check | asserts the named configurations still select what they claim | `npm run test:gates` | shared Frontend test/config infrastructure, `angular.json` test configurations, or spec-layout changes | — |
 
 `npm run test:gates` runs `testing/verify-test-gates.mjs`, not Vitest. **It is not part of

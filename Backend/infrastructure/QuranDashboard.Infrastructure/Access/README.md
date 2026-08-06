@@ -31,6 +31,11 @@ permission codes only for an active non-Owner. It never provisions users and nev
 permission claims. The scoped instance memoizes its first subject/task, so multiple authorization
 requirements share the one database projection; a second distinct subject is an invariant failure.
 
+`UserProvisioningService` separately projects the `/api/access/me` snapshot after provisioning:
+explicit `IsOwner`, ordered non-retired direct permission codes for active non-Owners only, and a
+bounded transitional `RoleName` of `Owner` or null. Its internal `RoleId` stays in the application
+record for reconciliation work and is never part of the public response.
+
 The Phase 6 administration implementation keeps EF projections in `Persistence/Reads/Access/` and writes
 in `Persistence/Writes/Access/`. `AccessUserMutationTransaction` starts the one transaction for a user
 transition, locks the acting Owner and target/grant rows, rechecks the acting Owner from the database, and

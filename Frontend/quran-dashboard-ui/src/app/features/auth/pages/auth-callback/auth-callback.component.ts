@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { take } from 'rxjs';
 
+import { AuthReturnLocationStore } from '../../../../core/auth/auth-return-location.store';
 import { CurrentUserStore } from '../../../../core/auth/current-user.store';
 import { DASHBOARD_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
@@ -20,6 +21,7 @@ type AuthCallbackStatus = 'pending' | 'error';
 export class AuthCallbackComponent implements OnInit {
   private readonly oidcSecurityService = inject(OidcSecurityService);
   private readonly currentUserStore = inject(CurrentUserStore);
+  private readonly authReturnLocationStore = inject(AuthReturnLocationStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
@@ -31,8 +33,8 @@ export class AuthCallbackComponent implements OnInit {
       .pipe(take(1), takeUntilDestroyed(this.destroyRef))
       .subscribe(({ isAuthenticated }) => {
         if (isAuthenticated) {
-          this.currentUserStore.load();
-          this.router.navigateByUrl(DASHBOARD_ROUTE_PATH);
+          void this.currentUserStore.ensureLoaded();
+          this.router.navigateByUrl(this.authReturnLocationStore.consume(DASHBOARD_ROUTE_PATH));
           return;
         }
 
@@ -43,6 +45,7 @@ export class AuthCallbackComponent implements OnInit {
           return;
         }
 
+        this.authReturnLocationStore.clear();
         this.router.navigateByUrl(DASHBOARD_ROUTE_PATH);
       });
   }

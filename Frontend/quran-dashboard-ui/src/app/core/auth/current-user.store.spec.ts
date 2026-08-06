@@ -6,9 +6,12 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
+import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { BehaviorSubject } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../data-access/api-response.model';
+import { CurrentUserResponse } from '../api/generated/models/current-user-response';
 import { CurrentUser } from './current-user.model';
 import { CurrentUserStore } from './current-user.store';
 
@@ -24,7 +27,8 @@ const CURRENT_USER: CurrentUser = {
   email: 'teacher@example.test',
   displayName: 'معلّم',
   status: 'pending',
-  roleId: null,
+  isOwner: false,
+  permissions: [],
   roleName: null,
 };
 
@@ -33,17 +37,24 @@ const OWNER_USER: CurrentUser = {
   email: 'owner@example.test',
   displayName: 'المالك',
   status: 'active',
-  roleId: 1,
+  isOwner: true,
+  permissions: [],
   roleName: 'Owner',
 };
 
 describe('CurrentUserStore.load', () => {
   let store: CurrentUserStore;
   let httpTesting: HttpTestingController;
+  let authentication: BehaviorSubject<{ isAuthenticated: boolean }>;
 
   beforeEach(() => {
+    authentication = new BehaviorSubject<{ isAuthenticated: boolean }>({ isAuthenticated: false });
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: OidcSecurityService, useValue: { isAuthenticated$: authentication } },
+      ],
     });
 
     store = TestBed.inject(CurrentUserStore);
@@ -52,6 +63,21 @@ describe('CurrentUserStore.load', () => {
 
   afterEach(() => {
     httpTesting.verify();
+  });
+
+  it('does not call /me while an anonymous public page initializes the store', () => {
+    expect(store.isAuthenticated()).toBe(false);
+    httpTesting.expectNone(ME_URL);
+  });
+
+  it('refreshes the access snapshot when an authenticated session is observed', async () => {
+    authentication.next({ isAuthenticated: true });
+    httpTesting.expectOne(ME_URL).flush({ isSuccess: true, message: 'تم', data: OWNER_USER });
+
+    await Promise.resolve();
+
+    expect(store.isAuthenticated()).toBe(true);
+    expect(store.currentUser()).toEqual(OWNER_USER);
   });
 
   it('populates currentUser from a successful envelope and clears any error', () => {
@@ -66,7 +92,7 @@ describe('CurrentUserStore.load', () => {
     expect(store.errorMessage()).toBeNull();
   });
 
-  it('maps a non-null roleName through from the envelope (the bootstrapped Owner)', () => {
+  it('retains the bounded Owner roleName only as transitional display data', () => {
     store.load();
 
     httpTesting
@@ -75,6 +101,8 @@ describe('CurrentUserStore.load', () => {
 
     expect(store.currentUser()).toEqual(OWNER_USER);
     expect(store.currentUser()?.roleName).toBe('Owner');
+    expect(store.permissions().size).toBe(0);
+    expect(store.can('abwab.template_nodes.delete')).toBe(true);
   });
 
   const failureCases: { name: string; flush: (req: TestRequest) => void; expected: string }[] = [
@@ -128,8 +156,65 @@ describe('CurrentUserStore.load', () => {
     expect(store.errorMessage()).toBe('انتهت الجلسة');
   });
 
+  it('authorizes an active non-owner only from the typed permission set', () => {
+    const editor: CurrentUser = {
+      ...CURRENT_USER,
+      status: 'active',
+      permissions: ['abwab.doors.edit'],
+    };
+
+    store.load();
+    httpTesting.expectOne(ME_URL).flush({ isSuccess: true, message: 'تم', data: editor });
+
+    expect(store.can('abwab.doors.edit')).toBe(true);
+    expect(store.can('abwab.doors.archive')).toBe(false);
+    expect(store.canAny(['abwab.doors.archive', 'abwab.doors.edit'])).toBe(true);
+  });
+
+  it('retains owner identity for a disabled Owner while failing closed for permissions', () => {
+    const disabledOwner: CurrentUser = { ...OWNER_USER, status: 'disabled' };
+
+    store.load();
+    httpTesting.expectOne(ME_URL).flush({ isSuccess: true, message: 'تم', data: disabledOwner });
+
+    expect(store.isOwner()).toBe(true);
+    expect(store.isActive()).toBe(false);
+    expect(store.can('abwab.doors.edit')).toBe(false);
+  });
+
+  it('normalizes legacy Admin and Editor role names to null without granting access', () => {
+    const legacyAdmin: CurrentUserResponse = {
+      ...CURRENT_USER,
+      status: 'active',
+      permissions: [],
+      roleName: 'Admin',
+    };
+
+    store.load();
+    httpTesting.expectOne(ME_URL).flush({ isSuccess: true, message: 'تم', data: legacyAdmin });
+
+    expect(store.currentUser()?.roleName).toBeNull();
+    expect(store.isOwner()).toBe(false);
+    expect(store.permissions().size).toBe(0);
+  });
+
+  it('fails closed when /me contains an unknown permission code', () => {
+    const malformed: CurrentUserResponse = {
+      ...CURRENT_USER,
+      status: 'active',
+      permissions: ['abwab.unknown.write'],
+    };
+
+    store.load();
+    httpTesting.expectOne(ME_URL).flush({ isSuccess: true, message: 'تم', data: malformed });
+
+    expect(store.currentUser()).toBeNull();
+    expect(store.permissions().size).toBe(0);
+    expect(store.loadState()).toBe('error');
+  });
+
   describe('ensureLoaded', () => {
-    it('resolves after a single request and populates currentUser (incl. roleName)', async () => {
+    it('resolves after a single request and populates the access snapshot', async () => {
       const settled = store.ensureLoaded();
       httpTesting
         .expectOne(ME_URL)
@@ -137,7 +222,7 @@ describe('CurrentUserStore.load', () => {
 
       await expect(settled).resolves.toBeUndefined();
       expect(store.currentUser()).toEqual(OWNER_USER);
-      expect(store.currentUser()?.roleName).toBe('Owner');
+      expect(store.isOwner()).toBe(true);
     });
 
     it('loads once and caches — a second call issues no further request', async () => {
@@ -207,5 +292,33 @@ describe('CurrentUserStore.load', () => {
 
       expect(store.currentUser()).toEqual(OWNER_USER);
     });
+  });
+
+  it('keeps a forced refresh result when an older request completes after it', async () => {
+    const first = store.ensureLoaded();
+    const refreshed = store.refresh();
+    const requests = httpTesting.match(ME_URL);
+
+    expect(requests).toHaveLength(2);
+    requests[1].flush({ isSuccess: true, message: 'تم', data: OWNER_USER });
+    requests[0].flush({ isSuccess: true, message: 'تم', data: CURRENT_USER });
+
+    await Promise.all([first, refreshed]);
+
+    expect(store.currentUser()).toEqual(OWNER_USER);
+    expect(store.isOwner()).toBe(true);
+  });
+
+  it('clears the snapshot and rejects a late response after logout', async () => {
+    const pending = store.ensureLoaded();
+    const request = httpTesting.expectOne(ME_URL);
+
+    store.clear();
+    request.flush({ isSuccess: true, message: 'تم', data: OWNER_USER });
+    await pending;
+
+    expect(store.currentUser()).toBeNull();
+    expect(store.permissions().size).toBe(0);
+    expect(store.loadState()).toBe('idle');
   });
 });

@@ -7,6 +7,8 @@ import { of } from 'rxjs';
 
 import { TopNavbarComponent } from './top-navbar.component';
 import { ScrollLockService } from '../../../shared/ui/modal-scroll-lock/scroll-lock.service';
+import { AuthReturnLocationStore } from '../../auth/auth-return-location.store';
+import { CurrentUserStore } from '../../auth/current-user.store';
 import { ThemeService } from '../../theme/theme.service';
 
 const DROPDOWN_KEYS = ['words', 'abwab', 'more'] as const;
@@ -19,6 +21,8 @@ describe('TopNavbarComponent', () => {
         provideRouter([{ path: '**', children: [] }]),
         provideLocationMocks(),
         { provide: ThemeService, useValue: { isDark$: of(false), toggle: vi.fn() } },
+        { provide: CurrentUserStore, useValue: { clear: vi.fn() } },
+        { provide: AuthReturnLocationStore, useValue: { clear: vi.fn() } },
         {
           provide: OidcSecurityService,
           useValue: {

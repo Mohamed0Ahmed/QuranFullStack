@@ -102,10 +102,32 @@ public sealed class UserProvisioningService(
         var user = await db.AccessUsers
             .AsNoTracking()
             .Include(candidate => candidate.Role)
+            .Include(candidate => candidate.UserPermissions)
+            .ThenInclude(grant => grant.Permission)
             .SingleAsync(candidate => candidate.LogtoSub == logtoSub, ct);
-        return Project(user, user.Role?.Name);
+        return Project(user);
     }
 
-    private static ProvisionedUser Project(User user, string? roleName)
-        => new(user.LogtoSub, user.Email, user.DisplayName, user.Status, user.RoleId, roleName);
+    private static ProvisionedUser Project(User user)
+    {
+        var isOwner = user.Role?.Name == RoleNames.Owner;
+        var permissions = user.Status == UserStatus.Active && !isOwner
+            ? user.UserPermissions
+                .Where(grant => grant.Permission.RetiredAtUtc is null)
+                .OrderBy(grant => grant.Permission.DisplayOrder)
+                .ThenBy(grant => grant.Permission.Code, StringComparer.Ordinal)
+                .Select(grant => grant.Permission.Code)
+                .ToArray()
+            : [];
+
+        return new ProvisionedUser(
+            user.LogtoSub,
+            user.Email,
+            user.DisplayName,
+            user.Status,
+            user.RoleId,
+            isOwner,
+            permissions,
+            isOwner ? RoleNames.Owner : null);
+    }
 }

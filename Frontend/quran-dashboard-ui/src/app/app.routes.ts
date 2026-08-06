@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
+import { ownerGuard } from './core/auth/owner.guard';
 import { NAV_ITEMS } from './core/navigation/nav-items';
-import { CALLBACK_PATH, navLabel } from './core/navigation/route-paths';
+import { CALLBACK_PATH, SETTINGS_ACCESS_ROUTE_PATH, navLabel } from './core/navigation/route-paths';
 
 const loadPlaceholderPage = () =>
   import('./shared/ui/placeholder-page/placeholder-page.component').then(
@@ -61,6 +62,11 @@ export const routes: Routes = [
       import('./features/auth/pages/auth-callback/auth-callback.component').then(
         (m) => m.AuthCallbackComponent,
       ),
+  },
+  {
+    path: SETTINGS_ACCESS_ROUTE_PATH.replace(/^\//, ''),
+    canActivate: [ownerGuard],
+    loadComponent: loadPlaceholderPage,
   },
   ...placeholderRoutes,
   {

@@ -53,8 +53,8 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
 
 **The lanes:** `npm run test:fast`, `test:feature:abwab|auth|dashboard|mushaf|words`,
 `test:authorization`, `test:composition`, `test:shared`, `test:full`, plus `typecheck:app`,
-`typecheck:spec`, `typecheck`, `build:verify`, and the composite `test:pre-pr`
-(`typecheck` → `build:verify` → `test:full`). `npm run test:gates` is the structural check on the
+`typecheck:spec`, `typecheck`, `build:verify`, `check:permission-catalogue`, and the composite `test:pre-pr`
+(`check:permission-catalogue` → `typecheck` → `build:verify` → `test:full`). `npm run test:gates` is the structural check on the
 lane definitions and is not part of `test:pre-pr` — run it whenever a spec is added, moved,
 renamed, or deleted, or an `include` pattern changes.
 

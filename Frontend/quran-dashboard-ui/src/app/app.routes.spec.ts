@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Route, Routes } from '@angular/router';
 
 import { routes } from './app.routes';
+import { ownerGuard } from './core/auth/owner.guard';
 import { MUSHAF_ROUTES } from './features/mushaf/mushaf.routes';
 import { WORDS_ROUTES } from './features/words/words.routes';
 import { ABWAB_ROUTES } from './features/abwab/abwab.routes';
@@ -55,13 +56,16 @@ function flattenRoutes(routeList: Routes): Route[] {
 }
 
 describe('app routes (public-browse posture)', () => {
-  it('declares no activation guard anywhere on the route tree', () => {
+  it('attaches the Owner guard only to the security-administration route', () => {
     const allRoutes = flattenRoutes(routes);
 
     const guardedPaths = allRoutes
       .filter((route) => GUARD_KEYS.some((key) => route[key] != null))
       .map((route) => route.path ?? '(pathless)');
 
-    expect(guardedPaths).toEqual([]);
+    expect(guardedPaths).toEqual(['settings/access']);
+    expect(allRoutes.find((route) => route.path === 'settings/access')?.canActivate).toEqual([
+      ownerGuard,
+    ]);
   });
 });

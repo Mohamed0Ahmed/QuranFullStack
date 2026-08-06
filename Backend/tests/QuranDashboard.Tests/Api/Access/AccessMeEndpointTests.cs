@@ -10,7 +10,7 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
     private const string MePath = "/api/access/me";
 
     [Fact]
-    public async Task ValidToken_FirstCall_ProvisionsPendingUserAndReturnsEnvelope()
+    public async Task ValidToken_FirstCall_ProvisionsPendingUserAndReturnsTargetContractEnvelope()
     {
         await fixture.ResetAsync();
         const string sub = "logto-user-first-login";
@@ -30,12 +30,15 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
         envelope.GetProperty("message").GetString().Should().Be(ApiMessages.CurrentUserLoaded);
 
         var data = envelope.GetProperty("data");
+        data.EnumerateObject().Select(property => property.Name).Should().BeEquivalentTo(
+            ["sub", "email", "displayName", "status", "isOwner", "permissions", "roleName"]);
         data.GetProperty("sub").GetString().Should().Be(sub);
         // The email is populated from the trusted identity-provider source, never from the caller.
         data.GetProperty("email").GetString().Should().Be(FakeExternalUserProfileSource.EmailFor(sub));
         data.GetProperty("displayName").GetString().Should().Be(FakeExternalUserProfileSource.DisplayNameFor(sub));
         data.GetProperty("status").GetString().Should().Be("pending");
-        data.GetProperty("roleId").ValueKind.Should().Be(JsonValueKind.Null);
+        data.GetProperty("isOwner").GetBoolean().Should().BeFalse();
+        data.GetProperty("permissions").GetArrayLength().Should().Be(0);
         data.GetProperty("roleName").ValueKind.Should().Be(JsonValueKind.Null);
 
         var users = await fixture.GetUsersAsync();
