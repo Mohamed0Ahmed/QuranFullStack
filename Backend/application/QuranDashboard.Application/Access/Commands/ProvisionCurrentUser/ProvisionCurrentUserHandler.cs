@@ -7,5 +7,5 @@ public sealed class ProvisionCurrentUserHandler(
     IUserProvisioningService provisioningService)
 {
     public Task<ProvisionedUser> HandleAsync(CancellationToken ct)
-        => provisioningService.GetOrCreateAsync(currentUser.Sub, ct);
+        => provisioningService.GetOrCreateAsync(currentUser.Identity, ct);
 }

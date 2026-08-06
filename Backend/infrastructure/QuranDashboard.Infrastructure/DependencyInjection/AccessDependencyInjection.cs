@@ -26,6 +26,8 @@ internal static class AccessDependencyInjection
 
         services.AddScoped<IUserProvisioningService, UserProvisioningService>();
         services.AddScoped<IUserRoleResolver, CachedUserRoleResolver>();
+        services.AddScoped<IOwnerBootstrapConfigurationSource, OwnerBootstrapConfigurationSource>();
+        services.AddScoped<IOwnerReconciliationStore, OwnerReconciliationStore>();
         services.AddScoped<IPermissionCatalogueSynchronizer, PermissionCatalogueSynchronizer>();
         services.AddHttpClient<IExternalUserProfileSource, LogtoManagementApiUserProfileSource>();
 

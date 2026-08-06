@@ -27,6 +27,10 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
     public static string OwnerEmail => FakeExternalUserProfileSource.EmailFor(OwnerSub);
 
+    public const string SecondOwnerSub = "logto-owner-second";
+
+    public static string SecondOwnerEmail => FakeExternalUserProfileSource.EmailFor(SecondOwnerSub);
+
     public async Task InitializeAsync()
     {
         _databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(AccessTestFixture));
@@ -168,8 +172,9 @@ public sealed class AccessTestFixture : IAsyncLifetime
                         // Required non-blank by the validator; inert otherwise, since the effective
                         // audience is pinned by TestJwtTokens.ConfigureOfflineValidation.
                         ["Auth:Audience"] = TestJwtTokens.TestAudience,
-                        // Enables the Owner-bootstrap path for OwnerSub only (its fake profile email).
-                        ["Auth:BootstrapOwnerEmail"] = OwnerEmail,
+                        // Supplies the two configured Owner identities used by the access fixtures.
+                        ["OwnerBootstrap:Emails:0"] = OwnerEmail,
+                        ["OwnerBootstrap:Emails:1"] = SecondOwnerEmail,
                         ["Cors:AllowedOrigins:0"] = "https://localhost",
                     }));
 

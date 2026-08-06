@@ -25,6 +25,8 @@ using QuranDashboard.Application.Abwab.Queries.GetTemplates;
 using QuranDashboard.Application.Abwab.Commands.Relations.AddDoorRelations;
 using QuranDashboard.Application.Abwab.Commands.Relations.DeleteDoorRelation;
 using QuranDashboard.Application.Access.Commands.ProvisionCurrentUser;
+using QuranDashboard.Application.Access.OwnerReconciliation;
+using QuranDashboard.Application.Abstractions.Access;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation.Validation;
 using QuranDashboard.Application.Quran.DataPipelines.Mutashabihat;
@@ -145,6 +147,7 @@ public static class DependencyInjection
         services.AddScoped<GetWordTypeSurahsHandler>();
 
         services.AddScoped<ProvisionCurrentUserHandler>();
+        services.AddOwnerReconciliation();
 
         services.AddScoped<CreateSectionHandler>();
         services.AddScoped<RenameSectionHandler>();
@@ -174,6 +177,12 @@ public static class DependencyInjection
         services.AddScoped<DeleteTemplateNodeHandler>();
         services.AddScoped<ApplyTemplateHandler>();
 
+        return services;
+    }
+
+    public static IServiceCollection AddOwnerReconciliation(this IServiceCollection services)
+    {
+        services.AddScoped<IOwnerReconciliationService, OwnerReconciliationService>();
         return services;
     }
 }

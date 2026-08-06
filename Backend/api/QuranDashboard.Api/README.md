@@ -48,9 +48,10 @@ It uses the standard `JwtBearer` handler to validate a Logto **access token** (n
   `Middleware/GlobalExceptionHandler.cs`, the only non-`500` that handler produces).
 
 `GET /api/access/me` carries `[Authorize]` (authenticated-only) and, on first login,
-**get-or-create provisions** the local user keyed by the Logto `sub`. The user's email is **verified
-server-side via the Logto Management API** (the inbound access token cannot call userinfo), never taken
-from the client; a new user starts `Pending` with no role. This is the only endpoint that requires
+**get-or-create provisions** the local user keyed by the Logto `sub`. Owner bootstrap email evidence
+is **verified server-side through the already-validated OIDC claims**: matching `sub`, present
+`email`, and `email_verified=true`. Logto Management API `primaryEmail` is used only to match provider
+identity data and is never email-verification authority. A new user starts `Pending` with no role. This is the only endpoint that requires
 authentication — there is **no global fallback policy**, so every other endpoint stays anonymous.
 
 ### Roles (Phase 2 — infrastructure only)
@@ -59,9 +60,13 @@ A fixed, seeded role set (`Owner` / `Admin` / `Editor`, seeded with Arabic displ
 `AddAccessRoles` migration) backs authorization; `Users.RoleId` is a nullable FK → `roles`. Capabilities
 are enforced in code keyed by the role **name** (`RoleNames`); roles are never created from the UI.
 
-- **Owner bootstrap** (`Auth:BootstrapOwnerEmail`): on first login, a user whose identity-verified email
-  equals this value is provisioned directly as `Owner`/`Active` instead of `Pending`/no-role; an existing
-  matching user below `Owner`/`Active` is upgraded (idempotent). An **empty** value disables bootstrap.
+- **Owner bootstrap** (`OwnerBootstrap:Emails`): the normalized, validated desired Owner list is
+  reconciled for additions only after a configured identity provisions through `/api/access/me` with
+  verified interactive OIDC email evidence. The operator tool can report
+  `AwaitingVerifiedSignIn`, remove safely resolved stale Owners, and clean Owner direct grants, but
+  cannot promote an Owner from M2M data. Each promotion revokes direct grants and appends audit
+  history in the same transaction. Empty, invalid, or duplicate normalized lists fail startup
+  validation; a Disabled configured user is never reactivated.
 - **Role loading:** `RoleClaimsTransformation` (`IClaimsTransformation`) loads the caller's active role
   into a `ClaimTypes.Role` claim, resolved by `sub` via a short-TTL (`30s`) cached `IUserRoleResolver`.
   It is idempotent (never duplicates the claim) and the role/status write path evicts the subject's cache
@@ -78,7 +83,6 @@ are enforced in code keyed by the role **name** (`RoleNames`); roles are never c
 |---|---|
 | `Authority` | Logto issuer, e.g. `https://<tenant>.logto.app/oidc`. Used for OIDC metadata/JWKS discovery. |
 | `Audience` | The exact Logto API resource indicator every access token must target. |
-| `BootstrapOwnerEmail` | Email bootstrapped to `Owner`/`Active` on login. **Empty disables bootstrap** (valid, no startup failure); a non-empty value is format-validated fail-fast. |
 | `ManagementApi:Endpoint` | Logto tenant endpoint, e.g. `https://<tenant>.logto.app`. |
 | `ManagementApi:Resource` | Management API resource indicator, typically `https://<tenant-id>.logto.app/api`. |
 | `ManagementApi:AppId` | Machine-to-machine application id for the client-credentials token. |
@@ -86,9 +90,9 @@ are enforced in code keyed by the role **name** (`RoleNames`); roles are never c
 
 `Authority`/`Audience` and the `ManagementApi` endpoint/resource ship as **placeholder values**
 (`REPLACE-WITH-YOUR-…`) in `appsettings*.json`; the deployment owner replaces them with real Logto
-tenant values. `BootstrapOwnerEmail` ships **empty** in `appsettings.json` (bootstrap disabled by
-default); production must supply the owner address via environment configuration
-(`Auth__BootstrapOwnerEmail`) to enable owner bootstrap. Invalid `Auth` values (blank `Authority`/
+tenant values. Production supplies one or more Owner identities as
+`OwnerBootstrap__Emails__0`, `OwnerBootstrap__Emails__1`, and so on. Their normalized values must
+be unique; an empty list fails startup validation. Invalid `Auth` values (blank `Authority`/
 `Audience`, or an `Authority` that is not an absolute `https` URI) **fail fast** at startup. The `ManagementApi` credentials are **not** validated at startup (the secret
 is legitimately absent on a fresh clone); they are validated on first use of `/api/access/me` with an
 actionable error naming any missing keys.

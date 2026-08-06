@@ -1,28 +1,56 @@
-using System.Net.Mail;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Extensions.Options;
+using QuranDashboard.Application.Abstractions.Access;
 
 namespace QuranDashboard.Infrastructure.Access;
 
 public sealed class OwnerBootstrapOptions
 {
-    public const string SectionName = "Auth";
+    public const string SectionName = "OwnerBootstrap";
 
-    public string BootstrapOwnerEmail { get; set; } = string.Empty;
+    public List<string> Emails { get; set; } = [];
+
+    public IReadOnlySet<string> NormalizedEmails { get; private set; } = new HashSet<string>(StringComparer.Ordinal);
+
+    public string ConfigurationFingerprint { get; private set; } = string.Empty;
+
+    internal void SetNormalizedEmails(IReadOnlySet<string> normalizedEmails)
+    {
+        NormalizedEmails = new HashSet<string>(normalizedEmails, StringComparer.Ordinal);
+        ConfigurationFingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+            string.Join('\n', NormalizedEmails.Order(StringComparer.Ordinal))))).ToLowerInvariant();
+    }
 }
 
-internal sealed class OwnerBootstrapOptionsValidator : IValidateOptions<OwnerBootstrapOptions>
+internal sealed class OwnerBootstrapOptionsValidator(
+    IEmailIdentityNormalizer emailIdentityNormalizer) : IValidateOptions<OwnerBootstrapOptions>
 {
     public ValidateOptionsResult Validate(string? name, OwnerBootstrapOptions options)
     {
-        if (string.IsNullOrWhiteSpace(options.BootstrapOwnerEmail))
+        var normalizedEmails = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var email in options.Emails)
         {
-            return ValidateOptionsResult.Success;
+            if (!emailIdentityNormalizer.TryNormalize(email, out var normalizedEmail))
+            {
+                return ValidateOptionsResult.Fail(
+                    $"{OwnerBootstrapOptions.SectionName}:{nameof(OwnerBootstrapOptions.Emails)} contains an invalid email address.");
+            }
+
+            if (!normalizedEmails.Add(normalizedEmail!))
+            {
+                return ValidateOptionsResult.Fail(
+                    $"{OwnerBootstrapOptions.SectionName}:{nameof(OwnerBootstrapOptions.Emails)} contains duplicate normalized email addresses.");
+            }
         }
 
-        return MailAddress.TryCreate(options.BootstrapOwnerEmail, out _)
-            ? ValidateOptionsResult.Success
-            : ValidateOptionsResult.Fail(
-                $"{OwnerBootstrapOptions.SectionName}:{nameof(OwnerBootstrapOptions.BootstrapOwnerEmail)} " +
-                "must be a valid email address when set.");
+        if (normalizedEmails.Count == 0)
+        {
+            return ValidateOptionsResult.Fail(
+                $"{OwnerBootstrapOptions.SectionName}:{nameof(OwnerBootstrapOptions.Emails)} must contain at least one email.");
+        }
+
+        options.SetNormalizedEmails(normalizedEmails);
+        return ValidateOptionsResult.Success;
     }
 }

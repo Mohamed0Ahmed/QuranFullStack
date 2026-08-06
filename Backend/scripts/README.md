@@ -18,7 +18,7 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `wipe-abwab` | Empties the six `abwab_*` tables on a local database, leaving the canonical `quran_*` data intact |
 | `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project. EF tooling only — never hand-write a migration (`Backend/CLAUDE.md`) |
 | `update-db` | `dotnet ef database update` — applies pending migrations to the configured database |
-| `access-admin` | Runs the Phase 2 normalized-identity scan/backfill, permission-catalogue sync, and schema/catalogue preflight tool |
+| `access-admin` | Runs normalized-identity scan/backfill, permission-catalogue sync, locked Owner reconciliation, and authorization preflight |
 | `clean-local-build` | Clears the NuGet caches, deletes every `bin`/`obj`, and restores the solution. Non-destructive to data |
 | **`drop-db --yes`** | **DESTRUCTIVE.** `dotnet ef database drop --force` — drops the configured database outright, all data lost |
 | **`reset-db --yes`** | **DESTRUCTIVE.** `drop-db --yes` followed by `update-db` — an empty database at migration head |
@@ -214,8 +214,11 @@ normalizer-backed backfill.
 `authorization preflight` additionally inspects the live Phase 2 schema — column types, nullability
 and identity generation, plus index and constraint definitions compared verbatim — before checking
 migration history, normalized identities, and the catalogue. Catalogue parity is over active codes:
-a canonical permission carrying `retired_at` fails as `catalogue_retired=`. The tool does not assign
-Owners or grants and does not run migrations itself.
+a canonical permission carrying `retired_at` fails as `catalogue_retired=`. The explicit
+Interactive OIDC sign-in alone can add a configured Owner after verified email evidence; the
+`owners reconcile --apply` command can only remove safely resolved Owners or revoke conflicting
+direct grants. It requires a reason and `--confirm-production` in Production. The tool does not run
+migrations itself.
 
 Exit codes are stable: `0` clean, `2` usage, `3` a reported preflight/catalogue failure, and `4` a
 configuration or database failure the tool reports as `access_admin_failure=<type>` without a stack

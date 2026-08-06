@@ -69,13 +69,21 @@ The adopted split is:
 | Concern | Authority | Contract |
 |---|---|---|
 | Login, logout, sessions, token issuance, JWT signature/issuer/audience, and `sub` | Logto | The API authenticates the Logto token. `sub` is preserved without inbound claim remapping (`Backend/api/QuranDashboard.Api/Authentication/AuthenticationRegistration.cs:29-48`, `Backend/api/QuranDashboard.Api/Authentication/HttpContextCurrentUser.cs:5-20`). |
-| Primary email identity and verification | Logto | The Backend obtains these through the server-side Logto integration. It never trusts a client-supplied email or verification flag (`Backend/infrastructure/QuranDashboard.Infrastructure/Access/LogtoManagementApiUserProfileSource.cs:22-47`, `Backend/application/QuranDashboard.Application.Abstractions/Security/IExternalUserProfileSource.cs:3-8`). |
+| Primary email identity matching | Logto Management API | Server-side `primaryEmail` identifies and matches the Logto account. It is not proof of verified ownership and cannot authorize Owner promotion (`Backend/infrastructure/QuranDashboard.Infrastructure/Access/LogtoManagementApiUserProfileSource.cs:22-40`, `Backend/application/QuranDashboard.Application.Abstractions/Security/IExternalUserProfileSource.cs:3-8`). |
+| Verified email ownership for Owner promotion | Validated interactive OIDC identity | Only the authenticated interactive flow may use matching token `sub`, present `email`, and `email_verified=true`; M2M data and client request data cannot supply or replace this evidence (`Backend/api/QuranDashboard.Api/Authentication/HttpContextCurrentUser.cs:5-24`, `Backend/application/QuranDashboard.Application.Abstractions/Security/ICurrentUser.cs:3-11`). |
 | Local user, `Pending`/`Active`/`Disabled`, Owner role reference, and direct permission grants | Application database | These are the only application-authorization inputs. |
-| Owner configuration | Environment configuration plus verified Logto identity | Configuration defines desired Owner membership; reconciliation writes the authoritative local Owner state. |
+| Owner configuration | Environment configuration plus verified interactive OIDC identity | Configuration defines eligible Owner identities. Each new Owner is promoted only during that identity’s verified interactive provisioning; operator reconciliation cannot add an Owner. |
 | Authorization decision | Application database | Token-borne role or permission claims are ignored. A token proves identity, not application authority. |
 | Public content access | Public endpoint contract | No local-user lookup is required to authorize a normal content GET. |
 
-`ICurrentUser` remains the narrow authenticated-identity boundary that exposes `sub` (`Backend/application/QuranDashboard.Application.Abstractions/Security/ICurrentUser.cs:3-6`). `IUserRoleResolver` and `RoleClaimsTransformation` must not become permission-authority paths. The current transformation already prevents a token role claim from bypassing its database role load, but the target authorization decision is made from one local access snapshot rather than transformed role claims (`Backend/api/QuranDashboard.Api/Authentication/RoleClaimsTransformation.cs:7-42`, `Backend/tests/QuranDashboard.Tests/Api/Access/RoleClaimsTransformationTests.cs:20-46`).
+`ICurrentUser` remains the narrow authenticated-identity boundary that exposes validated interactive
+`sub`, `email`, and `email_verified` evidence
+(`Backend/application/QuranDashboard.Application.Abstractions/Security/ICurrentUser.cs:3-11`).
+`IUserRoleResolver` and `RoleClaimsTransformation` must not become permission-authority paths. The
+current transformation already prevents a token role claim from bypassing its database role load,
+but the target authorization decision is made from one local access snapshot rather than transformed
+role claims (`Backend/api/QuranDashboard.Api/Authentication/RoleClaimsTransformation.cs:7-42`,
+`Backend/tests/QuranDashboard.Tests/Api/Access/RoleClaimsTransformationTests.cs:20-46`).
 
 Same-email/different-`sub` remains a conflict. Email is not a substitute identity key and never authorizes an automatic relink (`Backend/infrastructure/QuranDashboard.Infrastructure/Access/UserProvisioningService.cs:99-115`, `Backend/tests/QuranDashboard.Tests/Api/Access/AccessMeEndpointTests.cs:116-145`).
 
@@ -101,48 +109,73 @@ OwnerBootstrap__Emails__2
 
 Each configured value must be trimmed, parsed as a valid email address, normalized using one invariant case-insensitive comparison, and unique after normalization. Invalid or duplicate normalized entries fail configuration validation; they are not silently ignored.
 
-The current implementation accepts one optional `Auth:BootstrapOwnerEmail` and performs an ordinal case-insensitive comparison (`Backend/infrastructure/QuranDashboard.Infrastructure/Access/OwnerBootstrapOptions.cs:6-26`, `Backend/infrastructure/QuranDashboard.Infrastructure/Access/UserProvisioningService.cs:119-127`). Replacing that singular option with the validated list is a required implementation gap, not a remaining product decision.
+The validated list is bound by `OwnerBootstrapOptions`, normalized through the shared identity
+normalizer, rejected when empty/invalid/duplicated, and represented by a deterministic configuration
+fingerprint (`Backend/infrastructure/QuranDashboard.Infrastructure/Access/OwnerBootstrapOptions.cs:8-54`).
 
 ### 4.2 Source of Owner membership
 
 Owner membership requires all of:
 
 1. an email in the normalized configured Owner set;
-2. a Logto identity whose primary email matches that value;
-3. server-side confirmation that the Logto email identity is verified;
-4. a successfully reconciled local user whose `RoleId` references the one `Owner` role.
+2. a local user and Logto Management API identity with the matching `sub` and normalized primary
+   email;
+3. for a new promotion, the same authenticated interactive identity’s validated OIDC `sub`,
+   `email`, and `email_verified=true`;
+4. an `Active` local user whose `RoleId` references the one `Owner` role.
 
-The current Logto profile adapter derives `EmailVerified` from linked social/SSO identities rather than a direct verification property (`Backend/infrastructure/QuranDashboard.Infrastructure/Access/LogtoManagementApiUserProfileSource.cs:40-47`). Before Owner enforcement is activated, implementation planning must identify and verify the tenant-authoritative server-side verification signal. An unvalidated inference cannot satisfy the Owner-verification requirement.
+The Logto profile adapter intentionally exposes `primaryEmail` only as identity data. It does not
+derive or persist a verification flag. Configured candidates progressively bootstrap on their own
+first verified interactive sign-in; a candidate that has not signed in is
+`AwaitingVerifiedSignIn` and does not block another configured active Owner.
 
 Owner status must never be granted by:
 
 - a dashboard checkbox or normal user-management operation;
 - a direct permission grant;
 - a token role or permission claim;
-- email matching without server-side verification;
+- email matching without validated interactive OIDC verification;
 - a generic role-management endpoint.
 
 Owners carry no `UserPermissions` rows. Their unrestricted authority comes from the central active-Owner bypass.
 
 ### 4.3 Reconciliation
 
-Owner configuration is desired state. A dedicated, idempotent reconciliation operation applies it to application-database state. It is a trusted deployment/recovery operation, not a normal dashboard endpoint and not per-request authorization logic.
+Owner configuration is desired eligibility state. A dedicated, idempotent reconciliation operation
+compares it with application-database and provider identity state. It is a trusted
+deployment/recovery operation, not a normal dashboard endpoint and not per-request authorization
+logic. It may apply safe removals and Owner-grant cleanup, but it cannot add an Owner.
 
 The reconciliation contract is:
 
 1. validate and normalize the complete configured list;
-2. resolve each candidate through trusted Logto data and require verified matching identity;
-3. identify additions, removals, unresolved candidates, and unchanged Owners;
-4. reject any change that would leave enforcement without at least one verified, local, `Active` configured Owner;
-5. apply the accepted membership changes transactionally;
-6. append one audit event per effective Owner membership change, with system actor, target, before/after state, timestamp, and deployment/configuration metadata;
+2. acquire the dedicated transaction-scoped advisory lock, then reload configuration and all
+   database/provider identity inputs under that lock;
+3. classify configured non-Owners as `AwaitingVerifiedSignIn`, and identify safe removals, blocked
+   removals, grant cleanup, configured Disabled users, and unchanged Owners;
+4. reject any apply that would leave enforcement without at least one local `Active` configured
+   Owner;
+5. apply only accepted removals and invariant cleanup transactionally; never promote from Management
+   API data;
+6. append one audit event per effective Owner removal or grant cleanup, with system actor, target,
+   before/after state, timestamp, and deployment/configuration metadata;
 7. publish a success/failure result suitable for deployment preflight.
 
-A configured identity that has not yet produced a local user is unresolved and does not count toward the production Owner preflight. Provisioning that identity through `/api/access/me` may invoke the same guarded reconciliation rules after server verification; it must append the same audit evidence.
+A configured identity that has not yet produced a local Owner is awaiting verified sign-in and does
+not count toward the production Owner preflight. Provisioning that identity through
+`/api/access/me` may promote only that caller after validated interactive OIDC verification and the
+same serialized, transactional checks; it appends the same audit evidence.
 
-Adding a verified configured Owner may move a `Pending` user to `Active` and attach the Owner role. It must not reactivate a `Disabled` user. Removing an email from the configured set removes that user’s Owner role while preserving the user’s current status; because Owners have no direct grants, an active demoted user becomes write-disabled until an Owner explicitly grants permissions.
+Interactive promotion of a verified configured Owner may move a `Pending` user to `Active` and attach
+the Owner role. It must not reactivate a `Disabled` user. Removing an email from the configured set
+removes that user’s Owner role while preserving the user’s current status; because Owners have no
+direct grants, an active demoted user becomes write-disabled until an Owner explicitly grants
+permissions.
 
-There is no last-Owner deletion path. Production authorization enforcement must refuse activation when no verified local active configured Owner exists or when desired configuration and reconciled database membership are inconsistent.
+There is no last-Owner deletion path. Read-only status/preflight uses the same removal and
+last-Owner computation without mutation. Production authorization enforcement must refuse activation
+when no local active configured Owner exists or when a removal/invariant blocker remains; configured
+candidates awaiting their own verified sign-in do not block another configured active Owner.
 
 ## 5. Owner and non-owner authorization model
 
@@ -313,7 +346,10 @@ Only an active Owner may:
 
 These future security-administration endpoints use explicit Owner-only authorization. They do not use the 19 Abwab codes, and v1 does not define a delegatable `permissions.manage` permission.
 
-The user/permission administration model has no role selector. It cannot create roles, assign Owner, remove Owner, disable Owner, transfer Owner, or store “manage all” as authority. Owner membership remains exclusively configuration-reconciled.
+The user/permission administration model has no role selector. It cannot create roles, assign Owner,
+remove Owner, disable Owner, transfer Owner, or store “manage all” as authority. Owner eligibility
+comes from configuration, promotion from verified interactive provisioning, and safe removal from
+serialized operator reconciliation.
 
 ## 12. Logto `sub` relinking and Owner recovery
 
@@ -330,11 +366,14 @@ A future relink operation is Owner-only security administration and requires:
 1. an active Owner actor;
 2. explicit selection of the target local user;
 3. explicit entry/selection of the proposed new `sub`;
-4. server-side retrieval of that Logto subject;
-5. verified primary email matching the target’s normalized email;
-6. confirmation that the new `sub` is not linked to another local user;
-7. an explicit confirmation step that displays the target and old/new identity binding;
-8. one transaction that updates `Users.LogtoSub` and appends the audit event.
+4. server-side retrieval of that Logto subject for identity matching;
+5. separately designed validated interactive OIDC `sub`/`email`/`email_verified` evidence or a
+   future locally persisted verified-email attestation matching the target’s normalized email;
+6. confirmation that Management API `primaryEmail` is matching data only and is insufficient by
+   itself;
+7. confirmation that the new `sub` is not linked to another local user;
+8. an explicit confirmation step that displays the target and old/new identity binding;
+9. one transaction that updates `Users.LogtoSub` and appends the audit event.
 
 The target user’s grants remain tied to its local `UserId`; they become available to the new identity only after the relink transaction commits successfully. Failure leaves the old `sub`, grants, status, and Owner state unchanged.
 
@@ -344,7 +383,10 @@ The required audit event contains actor, target, old `sub`, new `sub`, verified 
 
 ### 12.3 Owner recovery
 
-Owner recovery does not depend on relinking an inaccessible Owner. An operator adds another verified Owner email to environment configuration, provisions/verifies that identity, and runs Owner reconciliation. Once the new local user is an `Active` Owner, it may perform Owner-only account recovery actions.
+Owner recovery does not depend on relinking an inaccessible Owner. An operator adds another email to
+environment configuration, and that identity becomes an `Active` Owner during its own first verified
+interactive `/api/access/me` provisioning. The CLI does not perform the promotion. The new Owner may
+then perform Owner-only account recovery actions.
 
 Removing an unavailable Owner from configuration is a separate reconciled and audited change and cannot reduce the active configured Owner count below one.
 
@@ -610,11 +652,14 @@ No global fallback policy is used to achieve fail-closed writes because that wou
 These are release invariants, not phase/task decomposition:
 
 1. Inventory all existing Owner/Admin/Editor users before role conversion.
-2. Preserve every intended Owner through the normalized environment list and verified reconciliation.
+2. Preserve every intended Owner through the normalized environment list and each identity’s verified
+   interactive provisioning; operator reconciliation cannot add one.
 3. Do not infer any direct permission from current Admin or Editor role names. Former Admin/Editor users become role-less with zero write grants until an Owner explicitly grants permissions.
 4. Add and seed the 19 immutable permission codes, current-grant storage, and append-only audit storage before enabling write enforcement.
 5. Convert every non-owner `RoleId` to null. Retain the single Owner role row for all reconciled Owners.
-6. Verify at least one configured, verified, local `Active` Owner and successful reconciliation before production enforcement starts.
+6. Verify at least one configured local `Active` Owner promoted through verified interactive OIDC
+   evidence and successful fail-closed reconciliation before production enforcement starts; other
+   configured candidates may remain awaiting verified sign-in.
 7. Keep `/api/access/me` backward-compatible only long enough for Backend/frontend rollout; `isOwner` and `permissions` are additive before legacy role fields are removed.
 8. Deploy Backend enforcement before, or atomically with, permission-aware frontend controls. A temporarily denied control is safer than a temporarily writable unauthenticated API.
 9. Preserve public content GET anonymity throughout rollout. Do not introduce the active-read fallback or public-route guard proposed in the earlier report.
@@ -657,8 +702,8 @@ I2 must be executed through anonymous public requests as well as any authenticat
 | Disable | Status change, current-grant removal, per-grant audit, and disable audit are atomic; the next write is denied. |
 | Reactivate | User is Active with zero grants; old permissions do not return. |
 | Grant/revoke | Change takes effect on the next request under request-scoped resolution. If any cross-request cache is introduced, multi-instance invalidation becomes mandatory. |
-| Multiple Owners | Several configured verified Owners share unrestricted active authority; removing one does not affect another; last-active-Owner removal fails. |
-| Owner reconciliation | Invalid/duplicate/unverified config fails; effective additions/removals are audited; a Disabled Owner remains denied. |
+| Multiple Owners | Several configured Owners progressively gain unrestricted active authority through their own verified interactive sign-ins; an awaiting candidate does not block another Owner; removing one does not affect another; last-active-Owner removal fails. |
+| Owner reconciliation | Invalid/duplicate config fails; verified interactive additions and CLI-safe removals/cleanup are audited; the CLI cannot promote; awaiting candidates do not block another configured active Owner; a Disabled Owner remains denied. |
 | Relink | Email-only collision fails; only active Owner can explicitly confirm; old/new `sub` is audited; permissions become usable only after successful commit. |
 | Audit immutability | Every required event is written with actor/target/before/after; ordinary update/delete paths do not exist. |
 | `401`/`403` envelope | Both statuses use the shared response shape and centralized Arabic messages; no bare framework body. |
@@ -696,7 +741,7 @@ Authorization changes require the focused `access` / `feature Middleware` lanes 
 |---|---|---|---|
 | Public content reads | [Report §§4–5](authorization-permissions-current-state-report.md#4-current-endpoint-protection-inventory) found all non-`/me` routes open but recommended future active reads. | `Backend/tests/QuranDashboard.Tests/Smoke/SmokeRouteCatalog.cs:117-359`; `Backend/api/QuranDashboard.Api/Controllers/Access/AccessController.cs:7-15`; `Backend/tests/QuranDashboard.Tests/Api/Access/AuthorizationPolicyRegistrationTests.cs:33-39` | Inspection fact retained; active-read recommendation superseded. Public content GETs remain anonymous. |
 | Logto/local boundary | [Report §2](authorization-permissions-current-state-report.md#2-current-authentication-architecture) | `Backend/api/QuranDashboard.Api/Authentication/AuthenticationRegistration.cs:10-48`; `Backend/api/QuranDashboard.Api/Authentication/HttpContextCurrentUser.cs:5-20`; `Backend/infrastructure/QuranDashboard.Infrastructure/Access/UserProvisioningService.cs:13-32` | Adopted, with token role/permission claims explicitly non-authoritative. |
-| Multiple Owners | [Report §§2.3, 8.2, 13](authorization-permissions-current-state-report.md#23-provisioning-and-identity-profile-behavior) identified singular bootstrap and left cardinality open. | `Backend/infrastructure/QuranDashboard.Infrastructure/Access/OwnerBootstrapOptions.cs:6-26`; `Backend/infrastructure/QuranDashboard.Infrastructure/Access/UserProvisioningService.cs:35-127`; `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Access/RoleConfiguration.cs:26-31` | Resolved: several Owners, one role row, normalized env list, verified identity, explicit reconciliation, last-active-Owner preflight. |
+| Multiple Owners | [Report §§2.3, 8.2, 13](authorization-permissions-current-state-report.md#23-provisioning-and-identity-profile-behavior) identified singular bootstrap and left cardinality open. | `Backend/infrastructure/QuranDashboard.Infrastructure/Access/OwnerBootstrapOptions.cs:8-54`; `Backend/api/QuranDashboard.Api/Authentication/HttpContextCurrentUser.cs:5-24`; `Backend/application/QuranDashboard.Application/Access/OwnerReconciliation/OwnerReconciliationService.cs` | Resolved: several Owners, one role row, normalized env list, verified interactive promotion, Management API identity matching only, CLI-safe reconciliation, and last-active-Owner preflight. |
 | Non-owner direct permissions | [Report §§6, 8](authorization-permissions-current-state-report.md#6-proposed-minimal-permission-catalogue) | `Backend/domain/QuranDashboard.Domain/Access/User.cs:12-18`; `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Access/UserConfiguration.cs:33-39`; `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/QuranDashboardDbContext.cs:53-54` | Adopted: nullable role only for Owner; 19 direct write grants; no non-owner roles. |
 | Current Abwab route map | [Report §5](authorization-permissions-current-state-report.md#5-complete-abwab-endpoint-permission-matrix) | Each controller/action is cited in section 8; route completeness is locked by `Backend/tests/QuranDashboard.Tests/Smoke/SmokeRouteCatalog.cs:224-359` and `Backend/tests/QuranDashboard.Tests/Smoke/SmokeCoverageParityTests.cs:10-35`. | All 25 routes retained; four reads changed to public target, 21 writes retain exact mapping. |
 | Composite actions | [Report §7](authorization-permissions-current-state-report.md#7-composite-action-decisions) | `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabDoorsWriter.cs:88-435`; `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabTemplatesWriter.cs:9-213`; `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabTemplateApplyWriter.cs:11-145` | Adopted unchanged: one user-visible permission per current composite action. |
@@ -705,7 +750,10 @@ Authorization changes require the focused `access` / `feature Middleware` lanes 
 | Testing debt | [Report §11](authorization-permissions-current-state-report.md#11-testing-debt-and-acceptance-matrix) | `docs/TESTING_DEBT.md:20-25`, `33-37`, `58-63`, `83-87`, `98-102`, `138-142` | Five mandatory rows retained; authorization personas corrected for public reads. |
 | Previously open questions | [Report §13](authorization-permissions-current-state-report.md#13-questions-that-genuinely-require-product-owner-decisions) | `Backend/domain/QuranDashboard.Domain/Access/UserStatus.cs:5-10`; `Backend/infrastructure/QuranDashboard.Infrastructure/Access/UserProvisioningService.cs:35-127`; `Backend/tests/QuranDashboard.Tests/Api/Access/AccessMeEndpointTests.cs:116-145` | All five resolved: multiple configured Owners, Owner-only administration, zero-grant reactivation, append-only audit, Owner-only explicit relink. |
 
-There are no unresolved product or architecture contradictions in this record. The current singular Owner option, Admin/Editor seeds/policies, role-oriented frontend model, absent permission/audit schema, absent `403` writer, and open Abwab writes are implementation gaps against the accepted target—not conflicting target decisions.
+There are no unresolved product or architecture contradictions in this record. Remaining
+Admin/Editor seeds/policies, the role-oriented frontend model, absent `403` writer, and open Abwab
+writes are later-phase implementation gaps against the accepted target—not conflicting target
+decisions.
 
 ## 23. Final readiness verdict
 

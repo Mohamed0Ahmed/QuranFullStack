@@ -41,7 +41,17 @@ internal static class TestAccessPersonas
         new("ReadOnly", "smoke-read-only", UserStatus.Active, null, null, new Dictionary<string, object>()),
         new("ExactPermission", "smoke-exact-permission", UserStatus.Active, null, "abwab.doors.create", new Dictionary<string, object>()),
         new("NeighboringPermission", "smoke-neighboring-permission", UserStatus.Active, null, "abwab.doors.edit", new Dictionary<string, object>()),
-        new("Owner", "smoke-owner", UserStatus.Active, RoleNames.Owner, null, new Dictionary<string, object>()),
+        new(
+            "Owner",
+            "smoke-owner",
+            UserStatus.Active,
+            RoleNames.Owner,
+            null,
+            new Dictionary<string, object>
+            {
+                ["email"] = "smoke-owner@example.test",
+                ["email_verified"] = true,
+            }),
         new("DisabledOwner", "smoke-disabled-owner", UserStatus.Disabled, RoleNames.Owner, null, new Dictionary<string, object>()),
         new(
             "ClaimSmuggling",

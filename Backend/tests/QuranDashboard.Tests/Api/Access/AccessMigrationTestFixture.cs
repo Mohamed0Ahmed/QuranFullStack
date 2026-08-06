@@ -80,6 +80,7 @@ internal static class AccessAdminInProcess
             environmentVariables: new Dictionary<string, string?>(StringComparer.Ordinal)
             {
                 [AccessAdminConnectionString.EnvironmentVariable] = connectionString,
+                ["OwnerBootstrap__Emails__0"] = "owner-preflight@example.test",
             },
             captureConsole: true);
 

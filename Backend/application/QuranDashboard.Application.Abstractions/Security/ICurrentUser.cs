@@ -2,5 +2,10 @@ namespace QuranDashboard.Application.Abstractions.Security;
 
 public interface ICurrentUser
 {
-    string Sub { get; }
+    AuthenticatedInteractiveIdentity Identity { get; }
 }
+
+public sealed record AuthenticatedInteractiveIdentity(
+    string Sub,
+    string? Email,
+    bool EmailVerified);

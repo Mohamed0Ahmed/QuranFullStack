@@ -54,8 +54,8 @@ The target closes that exposure with four mutually reinforcing controls:
 
 1. an additive access schema containing the canonical permission rows, current direct grants, and
    append-only audit history;
-2. validated multi-Owner configuration and explicit reconciliation against verified Logto
-   identities;
+2. validated multi-Owner configuration, verified interactive OIDC promotion, and explicit
+   reconciliation against Logto identity-matching data;
 3. request-scoped database authorization plus explicit known metadata on every unsafe endpoint;
 4. startup validation and route-parity tests that prevent a future `POST`, `PUT`, `PATCH`, or
    `DELETE` from being exposed without a classification.
@@ -76,10 +76,11 @@ particular, enforcement must never be activated before a verified local active O
 operational rollback must never restore the old anonymous-write Backend. Public GET availability is
 an acceptance invariant in every phase, not a final cleanup item.
 
-The unresolved authoritative Logto verified-primary-email signal is intentionally isolated: it does
-not block the immediately implementable Phase 1 test/contract work or Phase 2 normalized-email and
-additive-schema work. It does block Phase 3 acceptance and Phase 5 production activation because
-Owner membership cannot be trusted without it.
+Logto Management API `primaryEmail` is identity/matching data only. It is not proof of verified email
+ownership and never authorizes Owner promotion. Phase 3 accepts new Owners only during authenticated
+interactive provisioning when the validated OIDC identity supplies matching `sub`, `email`, and
+`email_verified=true`. The operator CLI reports configured candidates as
+`AwaitingVerifiedSignIn`; it may apply safe removals and invariant cleanup but cannot add an Owner.
 
 ## 2. Scope and non-goals
 
@@ -131,7 +132,7 @@ Owner membership cannot be trusted without it.
   retrieval are in scope.
 - Unrelated Backend/frontend performance work.
 - Testing-debt rows whose recorded triggers are not reached by this feature.
-- A Spec Kit, unrelated feature planning, or changes to the two authoritative source documents.
+- A Spec Kit, unrelated feature planning, or changes to the historical current-state report.
 
 ## 3. Current-to-target gap map
 
@@ -150,7 +151,7 @@ Owner membership cannot be trusted without it.
 | `/me` returns numeric `roleId` and `roleName` (`AccessController.cs:11-43`) | Add `isOwner` and direct permission codes; retire numeric ID; temporary `"Owner"|null` role name only | Access handler/DTO; OpenAPI; generated TS model; current-user store | Backend/frontend deployment order can break older clients; Owner permission array semantics must be explicit | Additive contract tests, generated contract check, Pending/Disabled/Owner/read-only cases |
 | Frontend `RoleName = Owner|Admin|Editor` and unattached `roleGuard` (`core/auth/current-user.model.ts`, `role.guard.ts`) | Reusable access state and active-Owner guard only for security administration | `core/auth`; app routes; new access-admin feature | A blanket route guard would violate public browsing; stale state can leave controls visible | Anonymous route tests; Owner-only guard tests; access-store refresh/concurrency tests |
 | Abwab API/controller/UI exposes generic writes with generic 401/403 transport failures | Every entry, event path, and submission checks its exact code; Backend remains authoritative | Abwab pages, overlay controllers, state controllers, components, data access | Hiding one button while leaving keyboard/context/modal dispatch reachable is insufficient | Component/page tests for all event paths, stale-403 refresh, direct Backend rejection |
-| Current Logto adapter infers verification from linked identities (`LogtoManagementApiUserProfileSource.cs:40-47`) | Tenant-authoritative verified primary-email evidence | Infrastructure Logto adapter and contract tests | A wrong signal can grant Owner to an unverified identity | Targeted tenant/API verification spike; recorded fixture; fail-closed unresolved cases |
+| Logto Management API `primaryEmail` is identity data without durable M2M verification authority | Verified interactive OIDC `sub`/`email`/`email_verified` evidence for Owner additions; provider primary email only matches identity | API authenticated provisioning, Application Owner use case, Infrastructure adapter, and contract tests | A wrong signal can grant Owner to an unverified identity | Verified/unverified/missing/mismatched OIDC claim fixtures; provider-match and unavailable-provider fail-closed tests |
 | No operator reconciliation surface | Trusted idempotent deployment/recovery operation, not a dashboard mutation; every apply caller uses one serialized service | New `Backend/tools/QuranDashboard.AccessAdmin/`; shared Application/Infrastructure service | Startup-only auto-mutation, duplicated mutation logic, or concurrent last-Owner decisions risk lockout and partial authority changes | Dry-run/preflight output tests, dedicated advisory-lock integration tests, transaction/audit tests, last-active-Owner races |
 | Phase 5 currently closes writes before application grant administration exists | Phase 5 implementation/staging activation is separable from production activation; production preferably activates only after Phase 6 is complete and reviewed | Release/deployment gates; AccessAdmin tool/application services; Phase 5–6 Backend packages | Early production activation makes active Owners the only writers until an approved audited grant mechanism exists; delayed activation leaves anonymous writes exposed | Explicit activation decision; Phase 5 readiness split; direct-write smoke; operator-grant or Phase 6 API proof; rollout audit |
 
@@ -165,12 +166,12 @@ gap to close: design-decisions §2 and §16 supersede it, so normal GET routes s
 
 | Component | Planned responsibility | Proposed location |
 |---|---|---|
-| Logto | Login, session, access-token issuance, `sub`, primary email identity, and the authoritative email-verification evidence used by server-side profile lookup | Existing tenant plus `Infrastructure/Access/LogtoManagementApiUserProfileSource.cs` |
-| `ICurrentUser` | Expose only the authenticated request’s raw `sub`; do not expose roles or permissions from claims | Existing `Application.Abstractions/Security/ICurrentUser.cs` and `Api/Authentication/HttpContextCurrentUser.cs` |
+| Logto | Login, session, access-token issuance, OIDC `sub`/`email`/`email_verified` evidence, and primary email identity matching data from Management API | Existing tenant plus API authentication and `Infrastructure/Access/LogtoManagementApiUserProfileSource.cs` |
+| `ICurrentUser` | Expose validated authenticated `sub`, `email`, and `email_verified`; do not expose roles or permissions from claims | Existing `Application.Abstractions/Security/ICurrentUser.cs` and `Api/Authentication/HttpContextCurrentUser.cs` |
 | `IEmailIdentityNormalizer` | Produce the sole canonical `NormalizedEmail` value for provisioning, Owner configuration/reconciliation, duplicate detection, and relink comparisons while preserving `Email` for display | `Application.Abstractions/Access/IEmailIdentityNormalizer.cs` with one Infrastructure/Application implementation used by all callers |
 | `AuthorizationState` | Immutable result containing local user ID, status, `isOwner`, and direct permission-code set | `Application.Abstractions/Security/AuthorizationState.cs` |
 | `IAuthorizationStateResolver` | Resolve by `sub` once per scoped lifetime; fail closed for no row or infrastructure failure; never provision | `Application.Abstractions/Security/IAuthorizationStateResolver.cs`; implementation under `Infrastructure/Persistence/Reads/Access/` |
-| Owner reconciliation service | Compare normalized configured desired state with verified local/Logto state; serialize every apply with one dedicated transaction-scoped database lock; recompute under that lock; apply additions/removals, Owner-promotion grant revocations, and audit atomically | `Application/Access/OwnerReconciliation/`; Infrastructure implementation/adapters under `Infrastructure/Access/` |
+| Owner reconciliation service | Promote only the verified interactive caller; use Management API identity matching for status/removal; serialize every apply with one dedicated transaction-scoped database lock; recompute under that lock; apply safe removals, grant cleanup, and audit atomically | `Application/Access/OwnerReconciliation/`; Infrastructure persistence/lock/provider adapters under `Infrastructure/Access/` |
 | Owner operator command | Run validate, dry-run, serialized reconcile, and production preflight without exposing an Owner mutation HTTP endpoint; if explicitly selected for early Phase 5 activation, expose individual grant/revoke commands only as thin callers over Phase 6 application services | New `Backend/tools/QuranDashboard.AccessAdmin/` project and README |
 | Canonical permission catalogue | Own constants and immutable code plus Arabic label, English description, group, order; expose lookup and validation | `Application.Abstractions/Security/Permissions/AbwabPermissionCatalogue.cs` |
 | Catalogue synchronizer | Insert missing known permissions, update display metadata, refuse duplicate/malformed state, and never repurpose/delete codes | `Infrastructure/Access/PermissionCatalogueSynchronizer.cs`, invoked by the operator/deployment tool |
@@ -280,8 +281,9 @@ into an authorization table. Numeric IDs are not part of any API contract.
 Do not infer grants in a migration. Before cleanup, the operator tool must:
 
 1. list every user with Owner/Admin/Editor role ID/name, status, normalized email, and `sub`;
-2. match intended Owners only through the validated configured list and verified Logto evidence;
-3. reconcile intended Owners to the single Owner row;
+2. match intended Owners through the validated configured list and Logto provider identity data;
+3. retain only Owners already promoted through verified interactive OIDC evidence and report
+   configured non-Owners as awaiting verified sign-in;
 4. set all former Admin/Editor `RoleId` values to null transactionally;
 5. leave those users with zero current grants;
 6. verify no non-configured user references Owner and no user references Admin/Editor;
@@ -333,46 +335,49 @@ reconciliation, relink validation, duplicate detection, and persistence of
 
 ### Verification prerequisite
 
-Before implementation of Owner grant/reconciliation is accepted, perform a targeted Logto tenant/API
-check to identify the authoritative server-side verified-primary-email signal. The current linked
-identity inference in `LogtoManagementApiUserProfileSource.cs:40-47` is not sufficient merely
-because it exists. Record the chosen Logto response field/endpoint in the nearest security README
-and pin verified, unverified, missing-email, mismatched-email, and unavailable-provider fixtures.
-Every unresolved or unverified result is fail-closed.
+The Logto Management API has no documented durable email-verification field available to this M2M
+client. Its `primaryEmail` is identity/matching data only and must never be treated as proof of email
+ownership. A new Owner may be promoted only during the authenticated interactive flow after the
+Backend has validated the Logto-issued OIDC identity and confirms matching `sub`, present `email`,
+`email_verified=true`, and a normalized configured address. Verification is not inferred or persisted
+from `primaryEmail`; a future CLI-only flow requires a separately designed locally persisted
+verified-email attestation. Pin verified, unverified, missing-email, mismatched-email, and
+unavailable-provider fixtures. Every unresolved or unverified result is fail-closed.
 
 ### Four distinct flows
 
 | Flow | Trigger and behavior | Owner mutation authority |
 |---|---|---|
-| Initial bootstrap | A configured identity calls authenticated `/api/access/me`; Backend fetches that exact `sub`, proves verified matching email, creates/reuses the local user, and applies guarded reconciliation. The event is audited. | Configuration plus verified Logto identity; no existing Owner required for the first valid Owner. |
-| Normal provisioning | `/api/access/me` stores the provider address as display `Email`, computes `NormalizedEmail` through the shared normalizer, and creates an ordinary verified-email identity as `Pending`, role-less, and grant-less. Existing normalized email with different `sub` remains `409` and is never relinked. | No Owner mutation unless the identity is configured and passes the bootstrap rules. |
-| Explicit reconciliation | Operator runs the idempotent tool in dry-run, then confirmed apply mode. It resolves configured candidates, computes additions/removals/unresolved entries, checks last-active-Owner safety, applies effective changes, and audits each. | Trusted deployment/recovery operation only; not a dashboard mutation endpoint. |
-| Emergency recovery | Operator adds another verified email to environment configuration, provisions that identity through `/me`, runs preflight/reconciliation, verifies it is Active Owner, then performs any Owner-only recovery. | Configuration remains the sole source. Existing inaccessible Owner need not be relinked first. |
+| Initial bootstrap | A configured identity calls authenticated `/api/access/me`; Backend validates OIDC signature, issuer, audience, expiry, `sub`, `email`, and `email_verified`, matches provider identity data, creates/reuses the local user, and promotes only that caller. The event is audited. | Configuration plus verified interactive OIDC identity; no existing Owner or other configured identity is required. |
+| Normal provisioning | `/api/access/me` stores provider identity email as display `Email`, computes `NormalizedEmail` through the shared normalizer, and creates an ordinary identity as `Pending`, role-less, and grant-less. Existing normalized email with different `sub` remains `409` and is never relinked. | No Owner mutation unless the identity is configured and passes the interactive bootstrap rules. |
+| Explicit reconciliation | Operator runs the idempotent tool in dry-run, then confirmed apply mode. It resolves provider identity matching, reports configured candidates without verified interactive evidence as `AwaitingVerifiedSignIn`, checks last-active-Owner safety, removes safely stale Owners, and cleans Owner direct grants. | Trusted deployment/recovery operation only; it cannot add an Owner. |
+| Emergency recovery | Operator adds another email to environment configuration, then that identity provisions through `/me` with verified interactive OIDC evidence before any Owner-only recovery. | Configuration remains the sole source. Existing inaccessible Owner need not be relinked first. |
 
 ### Reconciliation rules
 
-- An existing `Pending` configured user may become `Active` Owner after verified matching identity.
+- An existing `Pending` configured user may become `Active` Owner only after its own verified matching
+  interactive OIDC identity; other configured users awaiting login do not block it.
 - A configured `Disabled` user remains Disabled and does not bypass status. Reconciliation reports it
   as configured-but-inactive; recovery requires another configured Owner, not auto-reactivation.
-- A configured email with no local user is unresolved and does not count. It must provision through
-  `/api/access/me`.
+- A configured email with no local user is `AwaitingVerifiedSignIn` and does not count. It must
+  provision through `/api/access/me`.
 - Adding an Owner never creates direct grants. If an active non-owner already has direct grants,
   reconciliation must revoke and delete them as part of promotion rather than reject the valid
   configured Owner, leave the rows dormant, or merely ignore them.
 - Removing an email removes only the Owner role and preserves current status. An active demoted user
   becomes an active, role-less, zero-grant read-only user until an Owner grants permissions.
 - A removal that would leave zero verified local active configured Owners is rejected before writes.
-- Reconciliation re-fetches trusted Logto state and compares its normalized verified primary email
-  to `Users.NormalizedEmail`; it does not trust display `Email` or a prior audit event as current
-  verification.
+- Reconciliation re-fetches provider identity data and compares its normalized primary email to
+  `Users.NormalizedEmail`; it does not treat primary email, display `Email`, or a prior audit event
+  as verification. CLI reconciliation never adds a candidate.
 - Every reconciliation apply obtains one stable, dedicated PostgreSQL transaction-scoped advisory
   lock, or an explicitly equivalent database serialization mechanism, before deciding any
   membership mutation. This is a reconciliation-specific lock, not a general distributed-locking
   framework.
 - After acquiring the lock, the service reloads configured desired Owner state, current database
-  Owner membership, candidate user statuses, current direct grants, and the verified Logto evidence
-  required for each mutation. Last-active-Owner validation and every membership change occur under
-  that same lock and transaction.
+  Owner membership, candidate user statuses, current direct grants, and provider identity matching
+  data required for each safe mutation. Last-active-Owner validation and every membership change
+  occur under that same lock and transaction.
 - For Owner promotion, the transaction locks the target user and all current direct grants; appends
   one `PermissionRevoked` event per grant in canonical order with
   Owner-promotion/reconciliation reason; deletes all grants; attaches the sole Owner role; and
@@ -380,8 +385,9 @@ Every unresolved or unverified result is fail-closed.
 - Lock acquisition failure or timeout fails closed and commits no partial membership, grant, or
   audit change. A concurrent-state conflict is recomputed under the lock rather than applying a
   stale dry-run.
-- The result reports unchanged, added, removed, unresolved, configured-disabled, and rejected
-  candidates plus a non-secret configuration fingerprint.
+- The result reports unchanged, added, removed, awaiting-verified-sign-in, unresolved,
+  configured-disabled, direct-grant cleanup, and last-Owner-blocked candidates plus a non-secret
+  configuration fingerprint.
 - Startup validates configuration shape and unsafe endpoint metadata but does not silently reconcile
   database membership. Deployment readiness invokes the explicit preflight/tool and can block
   traffic activation.
@@ -390,7 +396,7 @@ Every unresolved or unverified result is fail-closed.
 
 Add `Backend/tools/QuranDashboard.AccessAdmin/` with narrowly scoped commands:
 
-- `owners validate` — configuration only;
+- `owners validate` — configuration validation plus read-only desired/current identity matching; candidates without verified interactive evidence report as `AwaitingVerifiedSignIn`;
 - `owners status` — read-only desired/current/verified comparison;
 - `owners reconcile --dry-run` — transaction-free change preview;
 - `owners reconcile --apply --reason <text>` — explicit mutation;
@@ -720,8 +726,8 @@ and none uses the 19 Abwab permissions as its own authorization.
 | `GET /api/access/users/{userId}/permissions` | Target status/isOwner/version plus current direct code set | Owners must return empty direct set and cannot be grant targets |
 | `PUT /api/access/users/{userId}/permissions` | Replace the complete current direct code set; body has known codes, expected user version, and reason | Locks/checks target, computes grant/revoke deltas, audits each, commits atomically; idempotent identical set emits no false events |
 | `GET /api/access/audit-events` | Owner-only keyset-paginated events with filters for target user, action, permission code, actor, and UTC range | Stable `(occurredAt desc,id desc)` cursor; bounded page size; snapshots are read-only |
-| `POST /api/access/users/{userId}/logto-sub/relink/preview` | Server fetches proposed `newSub`, verifies matching primary email, reports target and old/new binding plus validation result | No mutation/audit change event; rate-limit and do not expose Logto tokens/raw payload |
-| `POST /api/access/users/{userId}/logto-sub/relink/confirm` | Explicit confirmation body repeats expected target version, old/new `sub`, reason, and confirmation flag | Re-fetch/re-verify server-side; one transaction updates `LogtoSub` and emits `LogtoSubjectRelinked`; `409` if state changed |
+| `POST /api/access/users/{userId}/logto-sub/relink/preview` | Server fetches proposed `newSub` for identity matching and requires separately designed validated interactive OIDC evidence or a future locally persisted verification attestation before reporting a valid old/new binding | No mutation/audit change event; rate-limit and do not expose Logto tokens/raw payload |
+| `POST /api/access/users/{userId}/logto-sub/relink/confirm` | Explicit confirmation body repeats expected target version, old/new `sub`, reason, confirmation flag, and the required verification evidence | Re-fetch identity data and revalidate verification evidence server-side; one transaction updates `LogtoSub` and emits `LogtoSubjectRelinked`; `409` if state changed |
 | `GET /api/access/owner-reconciliation/status` | Read-only desired/current/unresolved/configured-disabled status and last reconciliation summary | Computes current comparison using trusted service; no mutation endpoint |
 
 `Pending → Active` is the accepted transition; there is no fourth “accepted but inactive” status in
@@ -768,15 +774,17 @@ state cannot diverge.
 - Ordinary user operations cannot target an Owner even if another Owner is acting.
 - Last-active-Owner checks exist only in reconciliation because no ordinary endpoint mutates Owner.
 - Relink never changes role, status, or grants.
-- The proposed `newSub` must be unlinked locally and have a currently verified primary email equal to
+- The proposed `newSub` must be unlinked locally. A future relink flow may accept it only with
+  separately designed, validated interactive OIDC `sub`/`email`/`email_verified` evidence equal to
   the target `Users.NormalizedEmail` after both values pass through the shared application
-  normalizer. Raw/display `Users.Email` and provider casing/whitespace are never compared for
-  identity. Email matching alone never performs the update.
+  normalizer. Management API `primaryEmail` is matching data only. Raw/display `Users.Email` and
+  provider casing/whitespace are never compared for identity. Email matching alone never performs
+  the update.
 - A different local user with the same normalized email is a fail-closed `409`/preflight error and
   requires explicit identity resolution. Relink never merges users or transfers authority to
   resolve a normalized collision.
-- Confirmation redoes verification; a stale preview cannot be replayed after target version,
-  old `sub`, new-sub ownership, config membership, or verification changes.
+- Confirmation redoes the interactive-evidence validation; a stale preview cannot be replayed
+  after target version, old `sub`, new-sub ownership, config membership, or evidence changes.
 - Relinking an Owner additionally requires that normalized email remain in successfully reconciled
   Owner configuration.
 - A failed confirm leaves old subject, grants, status, Owner state, and audit unchanged.
@@ -1304,7 +1312,7 @@ Smoke evidence must name the lane it came from; the canonical Smoke data tier is
 - The current route catalogue still matches live method/path pairs.
 - No production behavior, schema, or generated contract changed.
 - The Phase 2 normalized-email migration/backfill contract and collision cases are executable test
-  inputs; no verified-primary-email provider decision is required yet.
+  inputs, but no Owner-promotion verification path is exercised yet.
 
 **Engineering Review checkpoint:** Review test quality against `.claude/skills/test-guard/`,
 especially real entities/DTOs, data-driven variants, and genuine boundaries. Confirm no test-only
@@ -1402,14 +1410,15 @@ safe explicit reconciliation/recovery operation.
 
 **In scope:**
 
-- Validate the tenant-authoritative Logto verified-primary-email signal.
+- Use validated interactive OIDC email evidence for promotion; do not infer or persist verification from Management API `primaryEmail`.
 - Bind/validate `OwnerBootstrap:Emails` through the Phase 2 shared normalizer and compare only
   `Users.NormalizedEmail`.
 - Update provisioning to use the list and same guarded reconciliation rules.
 - Implement status/dry-run/apply/preflight Owner tool commands.
 - Serialize every apply with the dedicated transaction-scoped Owner-reconciliation advisory lock;
-  reload desired/config/database/verified state under the lock.
-- Apply Owner additions/removals transactionally with audit and last-active-Owner protection.
+  reload desired/config/database/provider identity matching under the lock.
+- Apply interactive Owner additions and CLI-safe removals transactionally with audit and
+  last-active-Owner protection.
 - Promote active non-owners with zero, one, or several grants by auditing/revoking every grant,
   deleting the grants, assigning Owner, and auditing `OwnerGrantedByReconciliation` atomically.
 - Update API/test configuration from `Auth:BootstrapOwnerEmail` to array values.
@@ -1448,8 +1457,8 @@ production during development.
 **Completion criteria:**
 
 - Array binding and normalization are deterministic and fail fast.
-- Several configured verified Owners coexist on one role row.
-- Pending configured user may become Active Owner; Disabled configured user remains denied.
+- Several configured Owners can coexist on one role row after their independent verified interactive sign-ins.
+- Pending configured user may become Active Owner only through verified interactive sign-in; Disabled configured user remains denied.
 - Add/remove events are audited; no-op is idempotent.
 - Owner promotion never leaves direct grants and does not reject a valid configured candidate merely
   because grants existed.
@@ -1457,17 +1466,17 @@ production during development.
   idempotent retry after lock release are fail-closed and deterministic.
 - Zero/last-active-Owner state blocks enforcement preflight.
 - Owner recovery through an added configured identity is proven.
-- The verified-email signal has repository evidence and tests.
+- Interactive verified-email evidence and the absence of M2M verification authority have repository evidence and tests.
 
 **Engineering Review checkpoint:** Security review the Logto evidence, configuration provenance,
 system actor audit, transaction/retry behavior, output redaction, and last-Owner race. This checkpoint
 must explicitly reject email-only trust.
 
-**Rollback/stop condition:** Phase 3 cannot be accepted if Logto verification remains an inference,
-any configured candidate is unresolved for the only intended Owner, reconciliation can
-auto-reactivate Disabled users, promotion can leave grants, or apply can mutate without the shared
-serialization boundary. Configuration rollback must be another explicit reconciled desired state,
-not a database role edit. This verified-email prerequisite does not block Phases 1–2.
+**Rollback/stop condition:** Phase 3 cannot be accepted if Management API email is treated as
+verification, reconciliation can auto-reactivate Disabled users, promotion can leave grants, or
+apply can mutate without the shared serialization boundary. Configuration rollback must be another
+explicit reconciled desired state, not a database role edit. This interactive-evidence prerequisite
+does not block Phases 1–2.
 
 ### Phase 4 — Backend authorization core and controlled responses
 
@@ -2025,12 +2034,14 @@ maintenance/deny mode while keeping public reads online.
 3. **Bootstrap and reconcile Owners**
    - Have each intended initial Owner authenticate through `/api/access/me` as needed.
    - Run `owners status` and dry-run.
-   - Apply reconciliation with explicit reason/deployment fingerprint through the shared service.
+   - Apply CLI-safe reconciliation with explicit reason/deployment fingerprint through the shared
+     service.
      Confirm it acquires the dedicated transaction-scoped advisory lock and recomputes configuration,
-     membership, status, grants, and verified Logto evidence under that lock.
-   - Verify at least one—and preferably two for recovery—configured, verified, local Active Owners;
-     several Owners are equally authoritative.
-   - Verify promotion of any granted non-owner emitted ordered per-grant
+     membership, status, grants, and Logto identity matching under that lock.
+   - Verify at least one—and preferably two for recovery—configured local Active Owners that were
+     promoted through their own verified interactive sign-ins; several Owners are equally
+     authoritative.
+   - Verify any interactive promotion of a granted non-owner emitted ordered per-grant
      `PermissionRevoked` events, deleted those grants, then emitted
      `OwnerGrantedByReconciliation` in the same transaction.
    - Verify audit events and zero Owner grant rows; any Owner grant row blocks rollout.
@@ -2041,8 +2052,9 @@ maintenance/deny mode while keeping public reads online.
    - Verify concurrent reconciliation apply behavior, last-Owner race refusal, lock timeout
      fail-closed behavior, and idempotent retry after lock release.
    - Verify the protected Backend can serve `/me`, Owner writes, and public reads in staging.
-   - The unresolved authoritative Logto verified-primary-email signal blocks this Owner preflight
-     and Phase 5 production activation, even though it did not block Phases 1–2.
+   - Management API `primaryEmail` never satisfies this preflight. Activation requires at least one
+     configured local Active Owner promoted through verified interactive OIDC evidence. Other
+     configured candidates awaiting their own verified sign-in do not block that Owner.
 
 5. **Choose and record the production activation gate**
    - Prefer completing and reviewing Phase 6 before activating Phase 5 enforcement in production.
@@ -2216,9 +2228,9 @@ Likelihood and impact use `Low`, `Medium`, `High`, and `Critical`.
 | Risk | Likelihood | Impact | Mitigation | Detection/verification | Rollback/response |
 |---|---|---:|---|---|---|
 | Production anonymous Abwab writes remain exposed during a long feature or while production activation waits for Phase 6 | High until activation | Critical | Prioritize Phase 5 implementation and Phase 6 Backend completion; prefer one reviewed activation release; track any delay explicitly; no partial controller rollout | Direct anonymous smoke for all 21 routes; live metadata parity; release-gate status | Block unsafe methods during deployment/delay where operationally possible; deploy protected build; never roll back open |
-| Owner lockout during config/removal/conversion or concurrent reconciliation | Medium | Critical | Multiple configured Owners; one dedicated transaction-scoped reconciliation lock; recompute after lock; last-active-Owner check; recovery identity | Preflight desired/current/verified owners; concurrent removal/addition and last-Owner race tests; active Owner API/write smoke | Add verified recovery email, provision/reconcile through the same locked service; do not DB-assign Owner |
+| Owner lockout during config/removal/conversion or concurrent reconciliation | Medium | Critical | Multiple configured Owners; one dedicated transaction-scoped reconciliation lock; recompute after lock; last-active-Owner check; recovery identity | Preflight desired/current/verified owners; concurrent removal/addition and last-Owner race tests; active Owner API/write smoke | Add a recovery email, complete that identity’s verified interactive provisioning through the same locked service, then reconcile safe cleanup; do not DB-assign Owner |
 | Enforcement deployed with zero valid Owner | Medium | Critical | Production preflight blocks traffic activation; empty/unresolved/Disabled do not count | Tool non-zero result; startup/deployment gate; DB/config reconciliation query | Abort activation; remain additive or deny writes until recovered |
-| Wrong/unverified Logto email signal grants Owner | Medium until remediated | Critical | Prove tenant-authoritative field/endpoint; server retrieval; fail closed | Verified/unverified/mismatch fixtures; tenant check; audit provenance | Phase 3 cannot be accepted and Phase 5 cannot activate in production; revoke only via corrected config reconciliation; incident review |
+| Management API identity data or unverified OIDC email grants Owner | Low after Phase 3 boundary | Critical | Restrict promotion to authenticated interactive provisioning with matching validated OIDC `sub`/`email`/`email_verified=true`; keep CLI read/removal-only for Owner membership | Verified/unverified/missing/mismatch fixtures; CLI no-promotion tests; audit provenance | Block activation, remove unsafe membership through serialized fail-closed reconciliation with last-Owner protection, and perform incident review |
 | Existing users collide after email normalization | Medium until preflight | Critical | Preserve display Email; compute candidates with one shared application normalizer; fail pre-DDL; unique `Users.NormalizedEmail`; no automatic merge/relink | Casing/whitespace vectors; full collision report; migration/backfill and unique-index integration tests | Abort Phase 2 migration; explicitly resolve identities with audit/review before retry |
 | Provisioning, Owner matching, or relink compares raw email or a divergent normalizer | Medium | Critical | One normalizer abstraction and required normalized column; prohibit raw identity comparisons | Unit vectors plus provisioning/Owner/relink collision tests; code review/search | Fail closed, stop rollout, repair comparison path; never transfer grants/Owner by email |
 | Owner promotion leaves direct grants, loses their history, or partially commits | Low/Medium | Critical | Serialized transaction locks user/grants, audits ordered revocations, deletes grants, assigns Owner, appends Owner event, commits once | Zero/one/many promotion tests; preflight Owner-grant violation; audit-failure fault injection; concurrent modification test | Roll back transaction automatically; block reconciliation until invariant restored through audited service |
@@ -2252,7 +2264,7 @@ Likelihood and impact use `Low`, `Medium`, `High`, and `Critical`.
 | D02 | `/api/access/me` remains authenticated | §§8–9, 12; Phases 1, 7 | Anonymous 401 plus authenticated provisioning tests |
 | D03 | Security administration reads/writes are active-Owner-only | §§4, 8–9, 11, 13; Phases 4, 6, 8 | Owner-only metadata/API persona tests |
 | D04 | Logto owns identity; application DB owns authorization; token claims never grant | §§4, 6, 8; Phases 3–4, 10 | Claim-smuggling and verified-profile tests |
-| D05 | Several Owners from normalized `OwnerBootstrap:Emails` and verified Logto identities | §§5–6; Phase 3 | Array/duplicate/multiple Owner/reconciliation tests against `Users.NormalizedEmail` |
+| D05 | Several Owners progressively bootstrap from normalized `OwnerBootstrap:Emails` through their own verified interactive OIDC identities; Management API data cannot promote | §§5–6; Phase 3 | Array/duplicate/multiple Owner/awaiting-sign-in/CLI-no-promotion tests against `Users.NormalizedEmail` |
 | D06 | Owner is only role; non-owners have nullable/null `RoleId` | §§2, 5, 10; Phases 2, 10 | Role inventory/schema/conversion tests |
 | D07 | Active Owner central bypass, no direct grants; Disabled Owner denied | §§4–8, 15; Phases 3–5 | Owner/Disabled Owner persona, promotion grant-revocation, and invariant tests |
 | D08 | Every administrative write needs authentication, Active local user, exact permission or Owner | §§8–10; Phases 4–6 | 21-route data-driven matrix |
@@ -2362,21 +2374,19 @@ phase/test. A change is not complete if it appears in one dimension but lacks th
 
 ## 23. Final plan verdict
 
-`READY_WITH_REMEDIATION`
+`READY_FOR_IMPLEMENTATION`
 
 There is no contradiction between the accepted design decisions and the current 21-route controller
-inventory, and no unresolved product decision is needed to begin Phases 1–2. Phase 1 test/contract
-preparation and Phase 2’s staged `Users.NormalizedEmail` plus additive access-schema work are ready
-to implement immediately.
+inventory, and no unresolved product decision blocks the phased implementation.
 
-One genuine prerequisite blocks Phase 3 acceptance and Phase 5 production activation: the
-tenant-authoritative server-side Logto signal for a verified primary email must be identified and
-proven. It does not block Phases 1–2 or Phase 5 implementation/staging verification. The current
-adapter’s linked-identity inference is explicitly insufficient without that validation
-(`LogtoManagementApiUserProfileSource.cs:40-47`; design-decisions §4.2). Production activation also
-requires a validated `OwnerBootstrap:Emails` list, successful serialized reconciliation, and at
-least one successfully provisioned, verified, local Active Owner; those are deployment preflights,
-not open product questions.
+Logto Management API does not provide durable email-verification authority to an M2M client. Phase
+3 therefore does not promote from Management API data: it requires validated interactive OIDC
+`sub`, `email`, and `email_verified=true` evidence. `primaryEmail` remains identity/matching data
+only, and no verification flag is inferred or persisted from it. A future CLI-only promotion flow
+requires a separately designed, locally persisted verified-email attestation. Production activation
+also requires a validated `OwnerBootstrap:Emails` list, successful serialized reconciliation, and
+at least one successfully provisioned local Active Owner promoted from verified interactive evidence;
+those are deployment preflights, not open product questions.
 
-Once that targeted remediation and the phase gates pass, the plan is ready to implement. No other
-blocking contradiction or missing route/permission decision was found.
+This verification boundary resolves the earlier remediation item. No other blocking contradiction
+or missing route/permission decision was found.

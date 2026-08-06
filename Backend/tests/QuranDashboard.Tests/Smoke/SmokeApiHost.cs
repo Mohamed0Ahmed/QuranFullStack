@@ -46,8 +46,8 @@ internal static class SmokeApiHost
                         // Required non-blank by the validator; inert otherwise, since the effective
                         // audience is pinned by TestJwtTokens.ConfigureOfflineValidation.
                         ["Auth:Audience"] = TestJwtTokens.TestAudience,
-                        // Enables the Owner-bootstrap path for OwnerSub only (its fake profile email).
-                        ["Auth:BootstrapOwnerEmail"] = FakeExternalUserProfileSource.EmailFor(SmokePersonas.OwnerSub),
+                        // Supplies the configured Owner identity used by the smoke personas.
+                        ["OwnerBootstrap:Emails:0"] = FakeExternalUserProfileSource.EmailFor(SmokePersonas.OwnerSub),
                         // AddApiServices throws when the allowed-origins list is empty.
                         ["Cors:AllowedOrigins:0"] = "https://localhost",
                     }));

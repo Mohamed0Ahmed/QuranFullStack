@@ -1,8 +1,8 @@
 # AccessAdmin CLI
 
-`QuranDashboard.AccessAdmin` is the Phase 2 operator boundary for normalized identity and the
-canonical permission catalogue. It uses the Application and Infrastructure services and never
-silently migrates the database, reconciles Owners, assigns grants, or exposes an HTTP mutation.
+`QuranDashboard.AccessAdmin` is the operator boundary for normalized identity, the canonical
+permission catalogue, and explicit Phase 3 Owner reconciliation. It uses the shared application
+and infrastructure services, never silently migrates the database, and exposes no HTTP mutation.
 
 ## Commands
 
@@ -11,7 +11,11 @@ silently migrates the database, reconciles Owners, assigns grants, or exposes an
 | `identity scan` | Read-only invalid and normalized-collision scan before the additive migration; once `normalized_email` exists, it also reports missing and mismatched values. |
 | `identity backfill --apply` | Writes `Users.NormalizedEmail` through the shared normalizer after a clean collision/validity check. |
 | `catalogue sync` | Inserts missing canonical permissions, updates display metadata, and reports unknown database codes and retired canonical codes without deleting or reactivating them. |
-| `authorization preflight` | Requires the live Phase 2 tables, columns, indexes, and constraints; no pending migrations; clean normalized identity data; and exact canonical database-code parity with no canonical code retired. |
+| `owners validate` | Validates `OwnerBootstrap:Emails`, then reports the same read-only reconciliation state as status. Candidates without verified interactive evidence are `AwaitingVerifiedSignIn`. |
+| `owners status` | Reports desired/current Owner reconciliation state without mutation. Configured users that have not supplied verified interactive evidence are `AwaitingVerifiedSignIn`. |
+| `owners reconcile --dry-run` | Reports the same read-only reconciliation delta; an apply always reacquires the lock and recomputes trusted state. |
+| `owners reconcile --apply --reason <text> [--confirm-production]` | Applies only safe removals and Owner direct-grant cleanup after resolved provider matching and last-active-Owner checks. It never promotes a new Owner. `--confirm-production` is required when the tool runs in Production. |
+| `authorization preflight` | Requires the live Phase 2 tables, columns, indexes, and constraints; no pending migrations; clean normalized identity data; exact canonical database-code parity with no canonical code retired; and reconciled ready Owner state. |
 
 Indexes and constraints are compared by their **actual PostgreSQL definition**
 (`pg_get_indexdef` / `pg_get_constraintdef`, whitespace-normalized), not by name, so a same-named
@@ -47,6 +51,21 @@ migration requires the completed backfill before it adds the required-column con
 index. The additive migration also creates the audit-document constraints. A failed scan or
 preflight returns non-zero and does not merge identities.
 
+After the Phase 2 foundation is live, validate and reconcile the configured Owner set before the
+preflight gate:
+
+```bash
+./scripts/access-admin owners validate
+./scripts/access-admin owners status
+./scripts/access-admin owners reconcile --dry-run
+./scripts/access-admin owners reconcile --apply --reason "initial Owner invariant cleanup"
+./scripts/access-admin authorization preflight
+```
+
+When `DOTNET_ENVIRONMENT=Production`, add `--confirm-production` to the apply command. A dry run
+does not reserve its outcome: apply always takes the advisory lock and reloads configuration,
+database rows, and provider evidence before it computes and commits its own delta.
+
 The executable loads its copied `appsettings.json` beside the compiled tool, then Development user
 secrets for this tool, then environment variables. Set `ConnectionStrings__QuranDashboardDb` to
 override the connection without changing files; the command works from any current directory. User
@@ -60,5 +79,11 @@ preflight/catalogue failure, and `4` a configuration or database failure, printe
 `access_admin_failure=<exception type>` with an operator hint and no stack trace or connection
 details.
 
-Owner reconciliation, grant administration, endpoint enforcement, and legacy-role conversion are
-later phases and are deliberately absent from this executable.
+The Logto profile source uses Management API `primaryEmail` only for current identity matching.
+There is no documented durable verified-email field for the M2M client, so the executable never
+promotes a user from Management API data. A configured user becomes Owner only during that user's
+authenticated interactive sign-in after Backend OIDC validation confirms matching `sub`, present
+normalized `email`, and `email_verified=true`. Provider unavailability returns stable exit `4` as
+`access_admin_failure=LogtoProviderUnavailable` without provider URLs, subjects, tokens, or response
+payloads. Direct-grant administration, endpoint enforcement, and legacy-role conversion remain later
+phases and are deliberately absent from this executable.

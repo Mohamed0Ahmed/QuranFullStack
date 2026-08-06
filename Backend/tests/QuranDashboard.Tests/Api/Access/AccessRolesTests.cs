@@ -25,7 +25,7 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
     {
         await fixture.ResetAsync();
         var ownerRoleId = await OwnerRoleIdAsync();
-        var token = TestJwtTokens.Mint(AccessTestFixture.OwnerSub);
+        var token = OwnerToken();
         using var client = fixture.CreateApiClient();
 
         using var response = await GetMeAsync(client, token);
@@ -45,7 +45,7 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
     public async Task OwnerEmail_SecondLogin_IsIdempotent_SingleRowUnchanged()
     {
         await fixture.ResetAsync();
-        var token = TestJwtTokens.Mint(AccessTestFixture.OwnerSub);
+        var token = OwnerToken();
         using var client = fixture.CreateApiClient();
 
         using var first = await GetMeAsync(client, token);
@@ -82,7 +82,7 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         // Prime the role cache to the negative result while the row is still Pending/no-role.
         (await ResolveRoleAsync(AccessTestFixture.OwnerSub)).Should().BeNull();
 
-        var token = TestJwtTokens.Mint(AccessTestFixture.OwnerSub);
+        var token = OwnerToken();
         using var client = fixture.CreateApiClient();
         using var response = await GetMeAsync(client, token);
 
@@ -128,4 +128,12 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return await client.SendAsync(request);
     }
+
+    private static string OwnerToken() => TestJwtTokens.Mint(
+        AccessTestFixture.OwnerSub,
+        additionalClaims: new Dictionary<string, object>
+        {
+            ["email"] = AccessTestFixture.OwnerEmail,
+            ["email_verified"] = true,
+        });
 }

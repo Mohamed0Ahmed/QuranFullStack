@@ -13,14 +13,14 @@ backfill between the staged migrations.
 
 ## What this folder defines
 
-- **`ICurrentUser`** — exposes `Sub`, the authenticated caller's Logto `sub` claim: the
-  stable identity key that joins a Logto account to its local `Users` row. Fail-closed:
-  accessing it outside an authenticated (`[Authorize]`) request throws.
+- **`ICurrentUser`** — exposes the authenticated caller's Logto `sub`, `email`, and
+  `email_verified` claims after the API has validated signature, issuer, audience, and expiry.
+  `sub` is the stable identity key that joins a Logto account to its local `Users` row.
+  Accessing it outside an authenticated (`[Authorize]`) request fails closed.
 - **`IExternalUserProfileSource`** — `GetProfileAsync(logtoSub, ct)` returns an
-  `ExternalUserProfile` (`Email`, `UserName`, `DisplayName`, `EmailVerified`). Its values
-  are **server-verified by the identity provider (Logto)** and must be treated as trusted —
-  never client-supplied.
-- **`IUserProvisioningService`** — `GetOrCreateAsync(logtoSub, ct)` returns a
+  `ExternalUserProfile` (`Email`, `UserName`, `DisplayName`). `primaryEmail` is provider
+  identity/matching data only; it is never proof that the email is verified.
+- **`IUserProvisioningService`** — `GetOrCreateAsync(identity, ct)` returns a
   `ProvisionedUser` (`Sub`, `Email`, `DisplayName`, `Status`, `RoleId`, `RoleName`).
 - **`IUserRoleResolver`** — `GetActiveRoleNameAsync(logtoSub, ct)` returns the active role
   name or `null`; `Evict(logtoSub)` drops a subject's cached result immediately.
@@ -31,17 +31,18 @@ backfill between the staged migrations.
 ## First-login provisioning contract
 
 - **Get-or-create keyed by Logto `sub`.** An existing subject is returned unchanged; a
-  first-time subject is created from the server-verified profile email.
+  first-time subject is created from the provider profile email used as local identity data.
 - **Fail-closed by default.** A newly created user starts `Pending` with **no role**
   (`RoleId` is a nullable FK); a role is granted only by later assignment. A user cannot be
-  provisioned without a server-verified email, and a client-supplied value is never
-  substituted.
-- **Owner bootstrap (sole exception).** A login whose email matches the configured
-  `Auth:BootstrapOwnerEmail` is provisioned (or promoted) to `Owner`/`Active` **only when the
-  IdP also reports the email as verified**; otherwise it is provisioned like any normal user
-  (`Pending`, no role) and can be promoted later once verified. A `Disabled` user is never
-  auto-revived or promoted by login. An empty `BootstrapOwnerEmail` disables bootstrap (a
-  valid config); a non-empty value is format-validated fail-fast at startup.
+  provisioned without provider email data, and a client-supplied value is never substituted.
+- **Owner bootstrap (sole exception).** A login whose normalized identity belongs to the validated
+  `OwnerBootstrap:Emails` desired set may become `Owner`/`Active` only in that authenticated
+  interactive request: the validated claims must have matching `sub`, a present normalized `email`,
+  and `email_verified=true`; the provider primary email is used only to match the local identity.
+  The M2M CLI cannot add Owners. Other configured identities may remain
+  `AwaitingVerifiedSignIn` without blocking a verified configured Owner. A `Disabled` user is never
+  auto-revived or promoted by login. Empty, invalid, and duplicate normalized owner lists fail
+  configuration validation.
 - **Email conflict.** `UserProvisioningEmailConflictException` is raised when provisioning
   collides on the **email** unique index (not `logto_sub`): a subject deleted and recreated
   in the IdP presents a brand-new `sub` carrying a server-verified email that already belongs
@@ -88,7 +89,10 @@ race-safely.)
 - `Infrastructure/Access/UserProvisioningService.cs` — the provisioning contract above,
   including the concurrent unique-index race handling.
 - `Infrastructure/Access/CachedUserRoleResolver.cs` — the caching/eviction contract.
-- `Infrastructure/Access/LogtoManagementApiUserProfileSource.cs` — resolves the
-  server-verified profile from the Logto Management API (M2M client-credentials token).
-- `Infrastructure/Access/OwnerBootstrapOptions.cs` — the `Auth:BootstrapOwnerEmail` option
-  (empty disables bootstrap; a non-empty value is format-validated fail-fast).
+- `Infrastructure/Access/LogtoManagementApiUserProfileSource.cs` — resolves primary-email identity
+  data from the Logto Management API (M2M client-credentials token), without asserting verification.
+- `Infrastructure/Access/OwnerBootstrapOptions.cs` — validates the normalized
+  `OwnerBootstrap:Emails` desired set.
+- `Application/Access/OwnerReconciliation/OwnerReconciliationService.cs` — owns the locked Owner
+  policy and orchestration. `Infrastructure/Access/OwnerReconciliationStore.cs` owns its EF
+  transaction, lock, and audit persistence adapter.

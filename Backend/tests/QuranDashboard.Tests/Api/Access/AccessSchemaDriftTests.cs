@@ -94,7 +94,7 @@ public sealed class AccessSchemaDriftTests
     }
 
     [Fact]
-    public async Task AuthorizationPreflight_AcceptsAFreshlyMigratedAndSynchronizedSchema()
+    public async Task AuthorizationPreflight_RejectsAnOtherwiseCleanSchemaWithoutResolvedOwnerConfiguration()
     {
         await using var database = await LeaseMigratedHeadDatabaseAsync();
         (await AccessAdminInProcess.RunAsync(database.ConnectionString, "catalogue", "sync"))
@@ -105,8 +105,9 @@ public sealed class AccessSchemaDriftTests
             "authorization",
             "preflight");
 
-        run.ExitCode.Should().Be(0);
+        run.ExitCode.Should().Be(3);
         run.Output.Should().Contain($"schema_violations={Environment.NewLine}");
+        run.Output.Should().Contain("owner_awaiting_verified_sign_in=1");
     }
 
     [Fact]

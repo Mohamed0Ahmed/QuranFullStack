@@ -20,8 +20,11 @@ QuranDashboard.Tests.Api.Access.AuthorizationPolicyRegistrationTests	Access	Data
 QuranDashboard.Tests.Api.Access.CachedUserRoleResolverTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.EmailIdentityNormalizerTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.EmailIdentityPreflightTests	Access	Database	TierB
+QuranDashboard.Tests.Api.Access.LogtoManagementApiUserProfileSourceTests	Access	Fast	TierB
+QuranDashboard.Tests.Api.Access.OwnerBootstrapOptionsTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.PermissionCatalogueSynchronizerTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.RoleClaimsTransformationTests	Access	Fast	TierB
+QuranDashboard.Tests.Api.Access.OwnerReconciliationServiceTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.UserPermissionPersistenceTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.UserProvisioningServiceTests	Access	Database	TierB
 QuranDashboard.Tests.Api.ApiBehavior.ModelBindingFailureTests	ApiBehavior	Fast	TierB
