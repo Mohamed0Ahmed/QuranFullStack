@@ -5,16 +5,6 @@ namespace QuranDashboard.Tests.TestSupport.Access;
 public sealed class EmailIdentityContractTests
 {
     [Fact]
-    public void Vectors_CoverValidInvalidAndNormalizedDuplicateCases()
-    {
-        EmailIdentityContractVectors.Valid.Should().OnlyContain(vector =>
-            !string.IsNullOrWhiteSpace(vector.ExpectedNormalized));
-        EmailIdentityContractVectors.Invalid.Should().OnlyContain(vector =>
-            vector.ExpectedNormalized == null);
-        EmailIdentityContractVectors.DuplicateNormalizedInputs.Should().OnlyContain(group => group.Count >= 2);
-    }
-
-    [Fact]
     public void ReadOnlyCollisionScan_ReportsEveryCandidateWithoutChoosingAWinner()
     {
         var users = new[]

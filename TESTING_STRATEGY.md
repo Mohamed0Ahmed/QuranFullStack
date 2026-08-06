@@ -300,11 +300,10 @@ All filters use **dot-bounded** namespace substrings. Naked substrings overlap:
 `Quran.WordsMorphologyEnriched` and `Quran.WordsMorphologyExplorers`. Always keep the
 leading and trailing dots as written; the enriched family MUST be listed explicitly.
 
-The same dot-bounding rule applies to the smoke namespace: the filter term MUST be
-`QuranDashboard.Tests.Smoke.` with the trailing dot. Two legacy classes named `*SmokeTests`
-(`Quran.WordsWordTypes.WordTypesFixtureSmokeTests` and
-`Quran.WordsMorphologyExplorers.MorphologyExplorersFixtureSmokeTests`) belong to their own
-families; a naked `Smoke` substring would sweep them into the wrong tier.
+The same dot-bounding rule applies to the smoke namespace: the filter term MUST be the
+fully qualified `QuranDashboard.Tests.Smoke.` with the trailing dot — never a naked
+`Smoke` — both in the inclusion filter and in the `&FullyQualifiedName!~` term the
+no-pipeline command carries, so each side resolves to exactly the route-smoke namespace.
 
 The namespaces that exist in this tree:
 

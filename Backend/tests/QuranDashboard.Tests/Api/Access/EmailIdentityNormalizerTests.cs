@@ -16,6 +16,10 @@ public sealed class EmailIdentityNormalizerTests
         EmailIdentityContractVectors.Invalid
             .Select(vector => new object[] { vector.Input });
 
+    public static IEnumerable<object[]> DuplicateNormalizedGroups =>
+        EmailIdentityContractVectors.DuplicateNormalizedInputs
+            .Select(group => new object[] { group.ToArray() });
+
     [Theory]
     [MemberData(nameof(ValidVectors))]
     public void ValidVector_NormalizesThroughOneSharedImplementation(string input, string expectedNormalized)
@@ -30,6 +34,16 @@ public sealed class EmailIdentityNormalizerTests
     {
         _normalizer.TryNormalize(input, out var normalized).Should().BeFalse();
         normalized.Should().BeNull();
+    }
+
+    [Theory]
+    [MemberData(nameof(DuplicateNormalizedGroups))]
+    public void DuplicateVectorGroup_NormalizesToOneSharedIdentity(string[] inputs)
+    {
+        var normalized = inputs.Select(input => _normalizer.Normalize(input)).ToArray();
+
+        normalized.Should().HaveCountGreaterThanOrEqualTo(2);
+        normalized.Distinct(StringComparer.Ordinal).Should().ContainSingle();
     }
 
     [Fact]
