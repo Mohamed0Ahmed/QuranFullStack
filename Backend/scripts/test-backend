@@ -12,6 +12,18 @@ ACCESS_ADMIN_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.AccessAdmin/bin/Debug/
 DATA_IMPORTER_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.DataImporter/bin/Debug/net10.0/QuranDashboard.DataImporter.dll"
 CALLER_DIR="$(pwd -P)"
 
+# The one test class whose fixture owns an exclusive postgres:18-alpine server instead of a database leased
+# from the shared postgres:16-alpine runtime. A lane that selects it together with any other class runs as
+# two sequential invocations so the two servers never exist at once. TestGateCatalog.ExclusivePostgreSqlClass
+# is the same name on the C# side, and the catalog check below fails the lane if this one ever goes stale.
+EXCLUSIVE_POSTGRES_CLASS="QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests"
+POSTGRES_CONTAINER_FILTERS=(
+  --filter "label=com.qurandashboard.test.owner=backend-tests"
+  --filter "label=com.qurandashboard.test.repository=quran-dashboard"
+  --filter "label=com.qurandashboard.test.kind=postgresql"
+)
+SHARD_HANDOVER_TIMEOUT_SECONDS=30
+
 usage() {
   cat <<'EOF'
 Usage:
@@ -183,9 +195,12 @@ feature_exists=false
 pipeline_feature_exists=false
 class_exists=false
 test_class_exists=false
+exclusive_class_cataloged=false
 
 while IFS=$'\t' read -r class_name feature kind gate concerns; do
   [[ -n "${class_name}" ]] || continue
+
+  [[ "${class_name}" == "${EXCLUSIVE_POSTGRES_CLASS}" ]] && exclusive_class_cataloged=true
 
   if [[ -n "${feature_selector}" && "${feature}" == "${feature_selector}" ]]; then
     feature_exists=true
@@ -264,6 +279,13 @@ if [[ -n "${test_selector}" && "${test_class_exists}" != true ]]; then
 fi
 if [[ "${#selected_classes[@]}" -eq 0 ]]; then
   fail_usage "The selector resolved to no catalog rows."
+fi
+if [[ "${exclusive_class_cataloged}" != true ]]; then
+  echo "ERROR: the exclusive-PostgreSQL test class is missing from the catalog: ${EXCLUSIVE_POSTGRES_CLASS}" >&2
+  echo "       This script names it to split lanes that would otherwise start postgres 16 and postgres 18" >&2
+  echo "       in one test process. Renaming or removing that class requires updating this script and" >&2
+  echo "       TestGateCatalog.ExclusivePostgreSqlClass together." >&2
+  exit 1
 fi
 
 if [[ "${build_mode}" == "build" ]]; then
@@ -353,6 +375,38 @@ elif [[ "${lane}" != "pre-pr" ]]; then
   done
 fi
 
+exclusive_selected=false
+for class_name in "${selected_classes[@]}"; do
+  [[ "${class_name}" == "${EXCLUSIVE_POSTGRES_CLASS}" ]] && exclusive_selected=true
+done
+
+declare -a shard_labels=()
+declare -a shard_filters=()
+
+# Discovery starts no container, so it stays one invocation and keeps the catalog/discovery parity check
+# below comparing one filter against the whole selected row set.
+if [[ "${list_tests}" == false && "${exclusive_selected}" == true && "${#selected_classes[@]}" -gt 1 ]]; then
+  shared_filter=""
+  if [[ "${lane}" == "pre-pr" ]]; then
+    # A negative term rather than an enumeration: the Full Backend gate discovers its own classes, so a
+    # class added without a catalog row still runs here and still fails TestGateCatalogTests.
+    shared_filter="FullyQualifiedName!~${EXCLUSIVE_POSTGRES_CLASS}."
+  else
+    for class_name in "${selected_classes[@]}"; do
+      [[ "${class_name}" == "${EXCLUSIVE_POSTGRES_CLASS}" ]] && continue
+      shared_filter="${shared_filter:+${shared_filter}|}(FullyQualifiedName~${class_name}.)"
+    done
+  fi
+
+  shard_labels+=("1/2 shared postgres:16-alpine runtime")
+  shard_filters+=("${shared_filter}")
+  shard_labels+=("2/2 exclusive postgres:18-alpine server")
+  shard_filters+=("(FullyQualifiedName~${EXCLUSIVE_POSTGRES_CLASS}.)")
+else
+  shard_labels+=("1/1")
+  shard_filters+=("${filter}")
+fi
+
 echo "lane: ${lane}"
 echo "catalog: ${CATALOG}"
 echo "selected catalog rows:"
@@ -364,7 +418,16 @@ for index in "${!selected_classes[@]}"; do
     "${selected_gates[$index]}" \
     "${selected_concerns[$index]}"
 done
-echo "expanded filter: ${filter:-<unfiltered>}"
+
+if [[ "${#shard_filters[@]}" -eq 1 ]]; then
+  echo "expanded filter: ${shard_filters[0]:-<unfiltered>}"
+else
+  echo "postgres ownership: ${EXCLUSIVE_POSTGRES_CLASS} owns an exclusive server, so this lane runs as two"
+  echo "  sequential invocations and never holds two database servers at once."
+  for index in "${!shard_filters[@]}"; do
+    echo "expanded filter (${shard_labels[$index]}): ${shard_filters[$index]:-<unfiltered>}"
+  done
+fi
 
 declare -A resource_kinds=()
 all_fast=true
@@ -467,26 +530,62 @@ if [[ "${all_fast}" == true ]]; then
   hang_timeout="5m"
 fi
 
-test_args=(
-  test
-  "${TEST_PROJECT}"
-  --no-build
-  --no-restore
-  --disable-build-servers
-  -m:1
-  -p:BuildInParallel=false
-  --blame-hang
-  --blame-hang-dump-type
-  none
-  --blame-hang-timeout
-  "${hang_timeout}"
-  -v
-  "${verbosity}"
-)
+build_test_args() {
+  local shard_filter="${1:-}"
 
-[[ -n "${filter}" ]] && test_args+=(--filter "${filter}")
-[[ "${list_tests}" == true ]] && test_args+=(--list-tests)
-[[ -n "${results_dir}" ]] && test_args+=(--results-directory "${results_dir}")
+  test_args=(
+    test
+    "${TEST_PROJECT}"
+    --no-build
+    --no-restore
+    --disable-build-servers
+    -m:1
+    -p:BuildInParallel=false
+    --blame-hang
+    --blame-hang-dump-type
+    none
+    --blame-hang-timeout
+    "${hang_timeout}"
+    -v
+    "${verbosity}"
+  )
+
+  [[ -n "${shard_filter}" ]] && test_args+=(--filter "${shard_filter}")
+  [[ "${list_tests}" == true ]] && test_args+=(--list-tests)
+  [[ -n "${results_dir}" ]] && test_args+=(--results-directory "${results_dir}")
+  return 0
+}
+
+# The previous shard's test host has exited, but Docker removes its container asynchronously. Waiting for
+# zero running project PostgreSQL containers is what makes "two servers never overlap" an observed fact
+# rather than an assumption; the reaper carries Testcontainers labels, not these, so it is never counted.
+await_free_postgres_runtime() {
+  command -v docker >/dev/null 2>&1 || return 0
+  docker info >/dev/null 2>&1 || return 0
+
+  local waited=0
+  local running
+  while true; do
+    running="$(docker ps -q "${POSTGRES_CONTAINER_FILTERS[@]}" 2>/dev/null || true)"
+    if [[ -z "${running}" ]]; then
+      echo "postgres runtime before next shard: free after ${waited}s"
+      return 0
+    fi
+    if [[ "${waited}" -ge "${SHARD_HANDOVER_TIMEOUT_SECONDS}" ]]; then
+      break
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  echo "ERROR: a project PostgreSQL container was still running ${waited}s after the previous shard exited." >&2
+  echo "       The next shard would start a second database server, so the lane stops here." >&2
+  docker ps --no-trunc --format '  {{.ID}}  {{.Image}}  {{.Status}}  {{.Names}}' \
+    "${POSTGRES_CONTAINER_FILTERS[@]}" >&2
+  return 1
+}
+
+build_test_args "${shard_filters[0]}"
 
 if [[ "${list_tests}" == true ]]; then
   set +e
@@ -532,10 +631,32 @@ if [[ "${list_tests}" == true ]]; then
   exit 0
 fi
 
-set +e
-dotnet "${test_args[@]}"
-test_status=$?
-set -e
+test_status=0
+for index in "${!shard_filters[@]}"; do
+  if [[ "${index}" -gt 0 ]]; then
+    if ! await_free_postgres_runtime; then
+      test_status=1
+      break
+    fi
+  fi
+
+  if [[ "${#shard_filters[@]}" -gt 1 ]]; then
+    echo "running shard ${shard_labels[$index]}"
+  fi
+
+  build_test_args "${shard_filters[$index]}"
+  set +e
+  dotnet "${test_args[@]}"
+  shard_status=$?
+  set -e
+
+  if [[ "${#shard_filters[@]}" -gt 1 ]]; then
+    echo "shard ${shard_labels[$index]}: exit ${shard_status}"
+  fi
+  if [[ "${shard_status}" -ne 0 && "${test_status}" -eq 0 ]]; then
+    test_status="${shard_status}"
+  fi
+done
 
 if [[ "${list_tests}" == false && "${canonical_selected}" == true ]]; then
   if [[ "${test_status}" -eq 0 ]]; then

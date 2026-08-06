@@ -1,3 +1,5 @@
+using DotNet.Testcontainers.Containers;
+
 namespace QuranDashboard.Tests.TestSupport.PostgreSql;
 
 internal sealed class ExclusivePostgreSqlLease : IAsyncDisposable
@@ -26,10 +28,16 @@ internal sealed class ExclusivePostgreSqlLease : IAsyncDisposable
 
     internal string ConnectionString => container.GetConnectionString();
 
+    internal Task<ExecResult> ExecAsync(IList<string> command, CancellationToken cancellationToken = default)
+    {
+        return container.ExecAsync(command, cancellationToken);
+    }
+
     internal static async Task<ExclusivePostgreSqlLease> AcquireAsync(
         string owner,
         string image,
         Action release,
+        Func<PostgreSqlBuilder, PostgreSqlBuilder>? configureContainer = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(owner);
@@ -42,6 +50,13 @@ internal sealed class ExclusivePostgreSqlLease : IAsyncDisposable
         try
         {
             var builder = new PostgreSqlBuilder().WithImage(image);
+            if (configureContainer is not null)
+            {
+                builder = configureContainer(builder);
+            }
+
+            // After the caller's configuration, never before: cleanup-test-runtime selects containers by all
+            // five labels, so a caller must not be able to overwrite one of them.
             foreach (var label in PostgreSqlResourceLabels.ForPostgreSql())
             {
                 builder = builder.WithLabel(label.Key, label.Value);

@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Mvc.Testing;
 using QuranDashboard.Api.Controllers.System;
+using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
@@ -85,38 +86,44 @@ public sealed class SmokeApiFixture : IAsyncLifetime
     // instances; only the singleton state is shared.
     public IServiceProvider ApiServices => Factory.Services;
 
-    // The persona subs are fixed across tests, so every one of them is evicted from the shared role
-    // cache as well: CachedUserRoleResolver holds a resolved role for 30 s and a TRUNCATE does not
-    // touch it, so a prior test's role would otherwise leak past the reset.
+    // The whole ResetPerTest contract the SmokeCollection row of TestSupport/Execution/test-resources.tsv
+    // declares, in one entry point: every table this collection mutates, restored before a case runs.
+    // users reaches user_permissions and access_audit_events by cascade; the six abwab tables are the
+    // write routes' surface. Two pieces of state a TRUNCATE cannot reach are restored with them — the
+    // shared role cache (CachedUserRoleResolver holds a resolved role for 30 s, the persona subs are
+    // fixed across tests, and a truncate does not touch it) and the abwab read caches (their generation
+    // counter moves on writes, never on raw SQL, so a truncated tree stays served from IMemoryCache).
     public async Task ResetAsync()
     {
         await using var scope = QueryProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.ExecuteSqlRawAsync("TRUNCATE users RESTART IDENTITY CASCADE;");
+        await db.Database.ExecuteSqlRawAsync(
+            "TRUNCATE users, abwab_sections, abwab_doors, abwab_door_aliases, abwab_door_relations, "
+            + "abwab_templates, abwab_template_nodes RESTART IDENTITY CASCADE;");
         ProfileSource.Reset();
 
         foreach (var sub in SmokePersonas.TokenBearingSubs)
         {
             EvictRoleCache(sub);
         }
-    }
 
-    // Separate from ResetAsync on purpose: that one truncates users only, and is depended on by
-    // SmokeAuthPipelineTests and the Api/Access tests for exactly that scope — widening it would change
-    // behavior for every existing caller. Abwab writes need their own tables reset, nothing else.
-    public async Task ResetAbwabAsync()
-    {
-        await using var scope = QueryProvider.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.ExecuteSqlRawAsync(
-            "TRUNCATE abwab_sections, abwab_doors, abwab_door_aliases, abwab_door_relations, "
-            + "abwab_templates, abwab_template_nodes RESTART IDENTITY CASCADE;");
+        InvalidateAbwabCaches();
     }
 
     private void EvictRoleCache(string logtoSub)
     {
         using var scope = ApiServices.CreateScope();
         scope.ServiceProvider.GetRequiredService<IUserRoleResolver>().Evict(logtoSub);
+    }
+
+    // Through the host's own services, never a second provider: the generation counter that decides
+    // whether a cached tree is stale is a singleton of the container serving the requests.
+    private void InvalidateAbwabCaches()
+    {
+        using var scope = ApiServices.CreateScope();
+        var caches = scope.ServiceProvider.GetRequiredService<IAbwabCacheInvalidator>();
+        caches.InvalidateTree();
+        caches.InvalidateTemplates();
     }
 
     // Reads via an independent DbContext, never the pipeline's own instance (test isolation).

@@ -63,6 +63,7 @@ internal static class PostgreSqlTestProcess
     internal static async Task<ExclusivePostgreSqlLease> LeaseExclusiveServerAsync(
         string owner,
         string image,
+        Func<PostgreSqlBuilder, PostgreSqlBuilder>? configureContainer = null,
         CancellationToken cancellationToken = default)
     {
         if (SharedServerRequested)
@@ -80,6 +81,7 @@ internal static class PostgreSqlTestProcess
                 owner,
                 image,
                 () => Interlocked.Decrement(ref exclusiveLeases),
+                configureContainer,
                 cancellationToken);
         }
         catch

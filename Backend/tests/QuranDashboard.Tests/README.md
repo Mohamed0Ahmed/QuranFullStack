@@ -67,7 +67,14 @@ Folders are clustered by Quran domain/use case, not by project layer.
   a valid `identity scan` through `Backend/scripts/access-admin` and one unreachable-database
   `authorization preflight` proving the wrapper propagates exit code 4 with no stack trace. Parsing,
   executable-directory configuration, and every migration permutation stay in-process.
-  The `Smoke/Data/` canonical fixture is the last one that still builds its own container.
+  `Smoke/Data/SmokeDataFixture` is the one fixture that cannot join that runtime, so it takes an
+  **exclusive server lease** (`PostgreSqlTestProcess.LeaseExclusiveServerAsync`) instead: its own
+  `postgres:18-alpine` container, holding the same `CrossProcessPostgreSqlLock` the shared runtime
+  holds and carrying the same five cleanup labels, released only after the container is disposed.
+  Two project-owned PostgreSQL containers must never run at once, and three things enforce that
+  together — the lock across processes, `LeaseExclusiveServerAsync` refusing an exclusive server in
+  a process that already asked for the shared runtime, and `Backend/scripts/test-backend` running
+  any lane that selects `SmokeDataReadTests` alongside another class as two sequential invocations.
 - `AccessTestFixture.ResetAsync` is the whole `ResetPerTest` contract the `AccessCollection` row of
   `TestSupport/Execution/test-resources.tsv` declares: it truncates `users` **and** `permissions`
   with `RESTART IDENTITY CASCADE`, which reaches `user_permissions` and `access_audit_events`
@@ -76,6 +83,26 @@ Folders are clustered by Quran domain/use case, not by project layer.
   `PermissionCatalogueSynchronizerTests` proves the synchronizer never deletes an unknown code, so
   the `future.example` row it writes would otherwise outlive the case that wrote it.
   `AccessCollectionResetContractTests` fails if the truncation list ever narrows again.
+- `SmokeApiFixture.ResetAsync` is the whole `ResetPerTest` contract the `SmokeCollection` row of that
+  catalog declares, and it is deliberately the collection's **only** restore entry point: it truncates
+  `users` and the six `abwab_*` tables with `RESTART IDENTITY CASCADE`, resets the fake profile source,
+  evicts every persona from the shared role cache, and invalidates the abwab read caches. That last
+  step is not housekeeping — raw SQL never moves `AbwabCacheGeneration`'s counter, so
+  `CachedAbwabTreeReader` keeps serving the truncated tree from `IMemoryCache` until something does.
+  Every case that reads or writes one of those tables calls it first, the two empty-schema sweeps
+  (`SmokeRoutePipelineTests`, `SmokePublicReadRegressionTests`) included: the write cases restore
+  *before* their case rather than after, so their rows outlive them, and the id-scoped abwab reads
+  derive 404 only while those tables are empty. `SmokeBootGuardTests` and `SmokeCoverageParityTests`
+  assert composition rather than data and call nothing. `SmokeCollectionResetContractTests` dirties
+  all seven tables, reads them back empty, and fails if the cache invalidation is dropped.
+- `AbwabSchemaTestCollection` is `UniqueKeyIsolation`: its cases share one database for the whole run
+  and do not restore it, so each creates uniquely keyed rows and asserts only its own keys.
+  `AbwabCollectionKeyIsolationTests` is that policy's regression — the representative write sequence
+  three times over with no restore between, read back through the production tree reader. Fixed keys
+  collide on the second write (section name is unique, door name is unique within
+  `(section, parent)`, both filtered to live rows), and a case that began asserting table totals
+  instead of its own keys fails the scoped reads. `AbwabTreeReadTests` is the one case that truncates
+  first, because "empty" is its subject; classes inside one collection never run concurrently.
 - `TranslationImportTestFixture` owns exactly one root `ServiceProvider` for its collection and
   reaches it through `CreateScope()`; every helper on it needs the collection, and throws without
   one. Writing a synthetic source package needs no database, so it lives in the disposable
@@ -149,10 +176,23 @@ Folders are clustered by Quran domain/use case, not by project layer.
 
 The dump is written by the host's `pg_dump`, which is **18.4**, and `pg_restore` refuses an
 archive whose header comes from a newer `pg_dump` than itself — a `postgres:16-alpine`
-restore fails with "unsupported version in file header". So `SmokeDataFixture` pins
-`postgres:18-alpine` while `SmokeApiFixture`, `AccessTestFixture`, and every pipeline
+restore fails with "unsupported version in file header" (measured: `pg_restore --list` on a
+16 client exits 1 with `unsupported version (1.16) in file header`). So `SmokeDataFixture`
+pins `postgres:18-alpine` while `SmokeApiFixture`, `AccessTestFixture`, and every pipeline
 fixture stay on `postgres:16-alpine`. `SmokeDumpGate` checks the manifest's `pgDumpVersion`
 against the restore image's major version *before* starting the container, so a producer
 upgrade (say to 19) reports the mismatch by name instead of failing mid-restore. Do not
 "fix" the divergence by downgrading the producer: the schema-owning fixtures and the
 restore fixture are independent choices, and the restore image must be ≥ the producer.
+
+Restoring the 18 archive onto a **16 server** with the host's 18 client does not close the
+gap either, and was measured rather than assumed: every `pg_restore` ≥ 17 emits
+`SET transaction_timeout = 0` in its fixed output state, PostgreSQL 16 rejects that unknown
+GUC, and the restore exits 1 (`unrecognized configuration parameter "transaction_timeout"`)
+with no client flag or server setting that suppresses it. The divergence is therefore
+structural, and the separation is at the **process** level: a lane that would run both
+majors runs as two sequential `dotnet test` invocations — every other class first on the
+shared 16 runtime, then exactly `SmokeDataReadTests` on the exclusive 18 server. Not one
+canonical assertion moves in either direction; `Backend/scripts/test-backend` builds the two
+filters from the catalog, and `TestGateCatalogTests` proves they never overlap and always
+add back up to the whole lane.

@@ -25,6 +25,10 @@ public sealed class SmokeRoutePipelineTests(SmokeApiFixture fixture)
     [MemberData(nameof(CataloguedPaths))]
     public async Task CataloguedRoute_AnswersItsDerivedStatus_InTheSharedEnvelope(string path)
     {
+        // DerivedStatus is what the route answers against a migrated-but-EMPTY schema, so the sweep's
+        // premise is a precondition of each case rather than a property of the run order: the write
+        // tests in this collection reset before their cases, not after, and leave rows behind.
+        await fixture.ResetAsync();
         var route = SmokeRouteCatalog.ByPath(path);
 
         using var client = fixture.CreateClient();

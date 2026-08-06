@@ -1,4 +1,5 @@
 FullyQualifiedClassName	Feature	Kind	Gate	Concerns
+QuranDashboard.Tests.Abwab.AbwabCollectionKeyIsolationTests	Abwab	Database	TierB
 QuranDashboard.Tests.Abwab.AbwabDoorWriteBehaviorTests	Abwab	Database	TierB
 QuranDashboard.Tests.Abwab.AbwabRelationWriteBehaviorTests	Abwab	Database	TierB
 QuranDashboard.Tests.Abwab.AbwabSchemaTests	Abwab	Database	TierB
@@ -240,6 +241,7 @@ QuranDashboard.Tests.Smoke.SmokeAbwabTemplateReadTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeAbwabWriteTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeAuthPipelineTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeBootGuardTests	Smoke	Database	Smoke
+QuranDashboard.Tests.Smoke.SmokeCollectionResetContractTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeCoverageParityTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokePublicReadRegressionTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeRouteAccessContractTests	Smoke	Fast	Smoke

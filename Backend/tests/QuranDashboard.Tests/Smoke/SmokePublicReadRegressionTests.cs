@@ -25,6 +25,9 @@ public sealed class SmokePublicReadRegressionTests(SmokeApiFixture fixture)
     [MemberData(nameof(PublicReadPaths))]
     public async Task PublicRead_WithoutToken_DoesNotChallenge(string path)
     {
+        // Three of these paths are id-scoped abwab reads whose DerivedStatus is 404 only while the abwab
+        // tables are empty, so the restore is this case's precondition, not housekeeping.
+        await fixture.ResetAsync();
         var route = SmokeRouteCatalog.Routes.Single(route =>
             route.Method == HttpMethod.Get && route.Path == path);
         using var client = fixture.CreateClientFor(SmokePersona.Anonymous);

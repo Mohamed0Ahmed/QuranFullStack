@@ -164,4 +164,46 @@ public sealed class TestGateCatalogTests
             .Should()
             .BeEquivalentTo(TestGateCatalog.DiscoverTestClasses());
     }
+
+    // The shards below select by class name, but what starts the exclusive postgres:18-alpine server is
+    // membership of SmokeDataCollection. A second class joining that collection would construct the
+    // exclusive fixture inside the shared-runtime shard; this names that mistake here instead of leaving it
+    // to a confusing "two containers must never run at once" throw at runtime.
+    [Fact]
+    public void ExclusivePostgreSqlClass_IsTheOnlyCanonicalClassOwningItsServer()
+    {
+        TestGateCatalog.DiscoverTestClasses()
+            .Should()
+            .Contain(TestGateCatalog.ExclusivePostgreSqlClass);
+
+        TestGateCatalog.SelectKind("Canonical")
+            .Should()
+            .Contain(TestGateCatalog.ExclusivePostgreSqlClass);
+
+        TestGateCatalog.DiscoverCollectedTestClasses()
+            .Where(testClass => testClass.CollectionName == nameof(Smoke.Data.SmokeDataCollection))
+            .Select(testClass => testClass.ClassName)
+            .Should()
+            .Equal(TestGateCatalog.ExclusivePostgreSqlClass);
+    }
+
+    // The two invocations Backend/scripts/test-backend runs for a lane that would otherwise start
+    // postgres:16-alpine and postgres:18-alpine in one process. Losing a class between them would silently
+    // drop coverage; sharing one would put both servers back in the same process.
+    [Theory]
+    [InlineData("canonical-data")]
+    [InlineData("pre-pr")]
+    public void PostgreSqlOwnershipShards_PartitionTheLaneTheyReplace(string lane)
+    {
+        var laneClasses = lane == "canonical-data"
+            ? TestGateCatalog.SelectKind("Canonical")
+            : TestGateCatalog.SelectFullBackend();
+
+        var shards = TestGateCatalog.ShardByPostgreSqlOwnership(laneClasses);
+
+        shards.SharedRuntime.Should().NotIntersectWith(shards.ExclusiveServer);
+        shards.SharedRuntime.Concat(shards.ExclusiveServer).Should().BeEquivalentTo(laneClasses);
+        shards.ExclusiveServer.Should().Equal(TestGateCatalog.ExclusivePostgreSqlClass);
+        shards.SharedRuntime.Should().NotBeEmpty();
+    }
 }

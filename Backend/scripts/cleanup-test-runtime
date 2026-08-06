@@ -6,6 +6,7 @@ REPOSITORY_LABEL="com.qurandashboard.test.repository=quran-dashboard"
 KIND_LABEL="com.qurandashboard.test.kind=postgresql"
 HOST_PID_LABEL="com.qurandashboard.test.host-pid"
 RUN_ID_LABEL="com.qurandashboard.test.run-id"
+REMOVAL_TIMEOUT_SECONDS=30
 
 usage() {
   cat <<'EOF'
@@ -109,21 +110,72 @@ if [[ "${dry_run}" == true ]]; then
   exit 0
 fi
 
+await_container_gone() {
+  local container="$1"
+  local waited=0
+
+  while [[ "${waited}" -lt "${REMOVAL_TIMEOUT_SECONDS}" ]]; do
+    docker container inspect "${container}" >/dev/null 2>&1 || return 0
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  return 1
+}
+
+# The test host removes its own containers first, through PostgreSqlTestProcess's AppDomain.ProcessExit
+# handler, and the daemon reports a removal it is already performing as an error. Gone is what this script
+# is for, so a container proven gone counts as cleaned; anything still present after the wait is a failure
+# and keeps the daemon's own message.
+remove_container() {
+  local container="$1"
+  local failure
+
+  if failure="$(docker rm --force --volumes "${container}" 2>&1 >/dev/null)"; then
+    removal_outcome="removed"
+    return 0
+  fi
+
+  if [[ "${failure}" == *"is already in progress"* || "${failure}" == *"No such container"* ]] \
+    && await_container_gone "${container}"; then
+    removal_outcome="already-removed"
+    return 0
+  fi
+
+  printf '%s\n' "${failure}" >&2
+  removal_outcome="failed"
+  return 1
+}
+
 cleanup_status=0
+removed_containers=0
+already_removed_containers=0
+removed_networks=0
+removal_outcome=""
 
 for container in "${containers[@]}"; do
-  if ! docker rm --force --volumes "${container}" >/dev/null; then
+  if remove_container "${container}"; then
+    if [[ "${removal_outcome}" == "removed" ]]; then
+      removed_containers=$((removed_containers + 1))
+    else
+      already_removed_containers=$((already_removed_containers + 1))
+      echo "cleanup: container ${container} was already removed by its test host."
+    fi
+  else
     echo "ERROR: removing container ${container} failed." >&2
     cleanup_status=1
   fi
 done
 
 for network in "${networks[@]}"; do
-  if ! docker network rm "${network}" >/dev/null; then
+  if docker network rm "${network}" >/dev/null; then
+    removed_networks=$((removed_networks + 1))
+  else
     echo "ERROR: removing network ${network} failed." >&2
     cleanup_status=1
   fi
 done
 
-echo "cleanup: removed ${#containers[@]} container(s) and ${#networks[@]} network(s)."
+printf 'cleanup: removed %d container(s) and %d network(s); %d container(s) were already removed by their test host.\n' \
+  "${removed_containers}" "${removed_networks}" "${already_removed_containers}"
 exit "${cleanup_status}"

@@ -47,6 +47,13 @@ internal static class TestGateCatalog
         ["ImmutableSeed", "ResetPerTest", "UniqueKeyIsolation", "FreshLeasePerCase"],
         StringComparer.Ordinal);
 
+    // The one class whose fixture owns an exclusive PostgreSQL server instead of a database leased from the
+    // shared runtime. Backend/scripts/test-backend splits any lane that selects it alongside shared-runtime
+    // classes into two sequential invocations, so the two server majors never run at once. The name is a
+    // constant here and a string in that script; ExclusivePostgreSqlClass_IsADiscoveredTestClass and the
+    // script's own catalog check are what stop the two from drifting apart in silence.
+    internal const string ExclusivePostgreSqlClass = "QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests";
+
     internal static IReadOnlyList<string> PipelineClassPrefixes { get; } =
     [
         "QuranDashboard.Tests.Quran.FullI3rab.",
@@ -150,6 +157,29 @@ internal static class TestGateCatalog
             .Select(entry => entry.ClassName)
             .Order(StringComparer.Ordinal)
             .ToArray();
+    }
+
+    internal static IReadOnlyList<string> SelectKind(string kind)
+    {
+        if (!AllowedKinds.Contains(kind))
+        {
+            throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown execution kind.");
+        }
+
+        return GateEntries
+            .Where(entry => entry.Kind == kind)
+            .Select(entry => entry.ClassName)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    internal static PostgreSqlOwnershipShards ShardByPostgreSqlOwnership(IEnumerable<string> classNames)
+    {
+        var classes = classNames.Order(StringComparer.Ordinal).ToArray();
+
+        return new PostgreSqlOwnershipShards(
+            classes.Where(className => className != ExclusivePostgreSqlClass).ToArray(),
+            classes.Where(className => className == ExclusivePostgreSqlClass).ToArray());
     }
 
     private static IReadOnlyList<Type> DiscoverTestTypes()
@@ -260,6 +290,10 @@ internal static class TestGateCatalog
             .ToArray();
     }
 }
+
+internal sealed record PostgreSqlOwnershipShards(
+    IReadOnlyList<string> SharedRuntime,
+    IReadOnlyList<string> ExclusiveServer);
 
 internal sealed record TestGateEntry(
     string ClassName,
