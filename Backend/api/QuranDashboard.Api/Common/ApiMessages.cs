@@ -114,6 +114,30 @@ public static class ApiMessages
 
     public const string CurrentUserLoaded = "تم تحميل بيانات المستخدم الحالي";
 
+    public const string AccessAdministrationUsersLoaded = "تم تحميل المستخدمين";
+    public const string AccessAdministrationUserLoaded = "تم تحميل بيانات المستخدم";
+    public const string AccessAdministrationUserAccepted = "تم قبول المستخدم";
+    public const string AccessAdministrationUserDisabled = "تم تعطيل المستخدم";
+    public const string AccessAdministrationUserReactivated = "تمت إعادة تفعيل المستخدم";
+    public const string AccessAdministrationPermissionCatalogueLoaded = "تم تحميل كتالوج الصلاحيات";
+    public const string AccessAdministrationPermissionsLoaded = "تم تحميل صلاحيات المستخدم";
+    public const string AccessAdministrationPermissionsReplaced = "تم تحديث صلاحيات المستخدم";
+    public const string AccessAdministrationAuditEventsLoaded = "تم تحميل سجل تدقيق الوصول";
+    public const string AccessAdministrationRelinkPreviewLoaded = "تم التحقق من معاينة ربط الهوية";
+    public const string AccessAdministrationRelinkConfirmed = "تم تحديث معرّف الهوية";
+    public const string AccessAdministrationOwnerReconciliationLoaded = "تم تحميل حالة مطابقة المالكين";
+    public const string AccessAdministrationInvalidRequest = "طلب إدارة الوصول غير صالح";
+    public const string AccessAdministrationUserNotFound = "المستخدم غير موجود";
+    public const string AccessAdministrationOwnerTargetForbidden = "لا يمكن تنفيذ هذه العملية على مالك";
+    public const string AccessAdministrationInvalidTransition = "انتقال حالة المستخدم غير صالح";
+    public const string AccessAdministrationStaleVersion = "تم تعديل المستخدم من عملية أخرى، يرجى التحديث والمحاولة مرة أخرى";
+    public const string AccessAdministrationInvalidPermissionCodes = "رموز الصلاحيات غير صالحة";
+    public const string AccessAdministrationSubjectAlreadyLinked = "معرّف الهوية مرتبط بالفعل بمستخدم آخر";
+    public const string AccessAdministrationNormalizedEmailCollision = "تعارضت هوية البريد الإلكتروني الموحّدة";
+    public const string AccessAdministrationInvalidRelinkEvidence = "تعذّر التحقق من دليل ربط الهوية";
+    public const string AccessAdministrationOwnerRelinkNotReconciled = "لا يمكن ربط هوية المالك قبل اكتمال المطابقة";
+    public const string AccessAdministrationRelinkConfirmationRequired = "يلزم تأكيد عملية ربط الهوية";
+
     public const string AbwabSectionCreated = "تم إنشاء القسم";
     public const string AbwabSectionRenamed = "تم تعديل اسم القسم";
     public const string AbwabSectionInvalidName = "اسم القسم غير صالح";

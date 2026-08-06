@@ -68,9 +68,17 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 - `Access/` — `api/access/me`; the authenticated caller's provisioned user. Carries `[Authorize]`
   (authenticated-only) and get-or-create provisions the local user on first login (email verified
   server-side via the Logto Management API). The response includes `roleName` (null when no role);
-  the configured owner email is bootstrapped to `Owner`/`Active`. This is the only authenticated-only
-  endpoint; the Abwab write routes use granular permission metadata instead. Role-based named policies
-  are registered but applied to nothing. See `../README.md` (Authentication / Roles).
+  the configured owner email is bootstrapped to `Owner`/`Active`. It remains the only generic
+  authenticated-only endpoint. The Owner-only administration family is split into focused controllers:
+  `api/access/users` (list/detail/accept/disable/reactivate),
+  `api/access/users/{userId}/permissions` (read/replace direct grants), `api/access/permissions`,
+  `api/access/audit-events`, `api/access/users/{userId}/logto-sub/relink/{preview|confirm}`, and
+  `api/access/owner-reconciliation/status`. Every one carries exactly one `[RequireOwner]`; none mutates
+  Owner membership or configuration. `GET api/access/users` uses one-based offset paging: `page` is 1
+  through `Int32.MaxValue`, `pageSize` is 1 through 100 (default 25), and a valid page at or after the
+  filtered `totalCount` returns `200` with an empty `items` collection. Invalid page bounds return the
+  shared `400` envelope. The Abwab write routes use granular permission metadata instead.
+  Role-based named policies are registered but applied to nothing. See `../README.md` (Authentication / Roles).
 - `Dashboard/` — `api/dashboard/info` for app/version/environment metadata.
 - `MushafReader/Ayahs/` — `api/mushaf/ayahs/{verseKey}/study`, `/similar-ayahs`, and `/mutashabihat`.
 - `MushafReader/Catalogs/` — `api/mushaf/surahs` and `api/mushaf/study-sources` catalogs.
@@ -151,15 +159,10 @@ be a bulk-writes controller, because the bulk pair is the only subset with its o
   `Frontend/quran-dashboard-ui/src/app/core/api/generated/` (models-only consumption).
   `Backend/scripts/check-api-contract` detects stale generated output. A static human-browsable
   reference can be built on demand with `npm run docs:api`; it is not committed.
-- Typed non-200 response schemas (`[ProducesResponseType]` for 400/404/500) are a recorded
-  follow-up. Until they land, **the exported spec documents no error codes at all** — there are
-  no XML `<response>` tags either, since no controller in the tree carries XML docs (see above).
-  This file and the nearest area README are the only description of a route's failure statuses.
-  All error bodies use the shared `ApiResponse<T>` envelope. The five Abwab DELETE actions are the
-  one place `[ProducesResponseType]` already exists: each declares its `204` success
-  (`Abwab/AbwabDoorsController.cs:182`), so the spec documents the no-body `204` they actually send
-  rather than the inferred `200`-with-`ObjectApiResponse` they never did; their error codes stay
-  undocumented like everyone else's.
+- `GET api/access/users` declares its invalid-query `400`, and its exported parameter schemas publish
+  the same page and page-size bounds as the route. Typed non-200 response schemas remain a broader
+  follow-up; all error bodies use the shared `ApiResponse<T>` envelope. The five Abwab DELETE actions
+  declare their `204` success so the spec documents the no-body result they actually send.
 
 ## Related
 

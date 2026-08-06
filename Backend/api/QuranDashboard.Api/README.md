@@ -52,10 +52,12 @@ It uses the standard `JwtBearer` handler to validate a Logto **access token** (n
 **get-or-create provisions** the local user keyed by the Logto `sub`. Owner bootstrap email evidence
 is **verified server-side through the already-validated OIDC claims**: matching `sub`, present
 `email`, and `email_verified=true`. Logto Management API `primaryEmail` is used only to match provider
-identity data and is never email-verification authority. A new user starts `Pending` with no role. This is the only endpoint that requires
-authentication without a granular permission requirement. The twenty-one Abwab write endpoints each carry
-an exact granular permission requirement; there is **no global fallback policy**, so public content GETs
-remain anonymous.
+identity data and is never email-verification authority. A new user starts `Pending` with no role.
+`/api/access/me` is the only generic authenticated-only endpoint. The twelve administration routes for
+users, direct grants, audit history, relink preview/confirm, catalogue, and reconciliation status carry
+`[RequireOwner]`; they never accept a direct permission as equivalent and never mutate Owner membership or
+Owner configuration. The twenty-one Abwab write endpoints each carry an exact granular permission
+requirement; there is **no global fallback policy**, so public content GETs remain anonymous.
 
 The API has a database-backed authorization core:
 `[RequirePermission(...)]` checks an active local user's exact direct grant, while an active local Owner
@@ -63,8 +65,9 @@ bypasses that exact check; `[RequireOwner]` accepts only an active local Owner. 
 through `ICurrentUser` and ignore token-borne role or permission claims. Every Abwab write has exactly one
 `[RequirePermission(...)]` matching the route's required catalogue code. `UnsafeEndpointMetadataValidator`
 runs immediately after controller mapping and refuses any unsafe endpoint with missing, unknown, or
-conflicting metadata; the requirement handlers repeat that validation fail-closed. This does not change
-public `GET` endpoints or `/api/access/me`, and production activation remains a separate deployment gate.
+conflicting metadata; the requirement handlers repeat that validation fail-closed. It also validates the
+Owner-only classification of security-administration writes. This does not change public `GET` endpoints
+or `/api/access/me`, and production activation remains a separate deployment gate.
 
 ### Roles (Phase 2 — infrastructure only)
 

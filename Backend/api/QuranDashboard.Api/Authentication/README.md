@@ -35,6 +35,10 @@ authenticated request.
 - `[RequirePermission(code)]` requires an exact known catalogue code unless the active local user is an
   Owner. `[RequireOwner]` requires an active local Owner and never treats a direct permission grant as
   equivalent.
+- `JwtInteractiveIdentityEvidenceValidator` validates the separate bearer token supplied to a Logto-subject
+  relink operation with the same configured `JwtBearer` scheme. It returns only validated `sub`, `email`,
+  and `email_verified` evidence to the Application layer; raw evidence tokens are neither returned nor
+  persisted. `HttpContextAccessRequestContext` supplies the request trace identifier for audit metadata.
 - `UnsafeEndpointMetadataValidator` checks unsafe route classification and the requirement handlers
   repeat that check fail-closed. It is registered during API startup after controller mapping, and every
   current Abwab write action carries exactly one matching `[RequirePermission]` classification.
@@ -67,9 +71,10 @@ The JWT bearer event does not write a competing challenge body.
 ## Boundary / current phase
 
 - The twenty-one existing Abwab write actions have exact permission metadata and startup validates every
-  unsafe endpoint. There is no fallback policy: public GETs remain anonymous, while `api/access/me`
-  remains authenticated-only (see `../Controllers/README.md`). Production activation is an explicit
-  deployment decision, not an API fallback or temporary grant path.
+  unsafe endpoint. The twelve access-administration routes use exact `[RequireOwner]` metadata; normal
+  direct grants never satisfy them. There is no fallback policy: public GETs remain anonymous, while
+  `api/access/me` remains authenticated-only (see `../Controllers/README.md`). Production activation is an
+  explicit deployment decision, not an API fallback or temporary grant path.
 - This folder owns API auth wiring. User provisioning and authorization-state resolution live behind
   Application abstractions with Infrastructure implementations.
 

@@ -9,7 +9,7 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `qd-build` | `dotnet build QuranDashboard.sln` for backend changes |
 | `qd-api` | `dotnet run --launch-profile https --no-build`; opens Swagger when the API is ready |
 | `qd-ui` | `npm run start:https` for the Angular dashboard |
-| `export-swagger` | Builds the API (Release) and writes the OpenAPI spec to `Frontend/quran-dashboard-ui/openapi/swagger.json` via the Swashbuckle CLI (`Backend/dotnet-tools.json` manifest); no running server or database needed |
+| `export-swagger` | Builds the API (Release) without build servers, defaults the Swagger host to `Development` for startup-option validation, and writes the OpenAPI spec to `Frontend/quran-dashboard-ui/openapi/swagger.json` via the Swashbuckle CLI (`Backend/dotnet-tools.json` manifest); no running server or database needed |
 | `check-api-contract` | Runs `export-swagger`, regenerates the frontend API models (`npm run generate:api`), then fails with `git diff --exit-code` if either committed output is stale. It checks the spec and the generated client — the two things a caller breaks against — and deliberately not the browsable Redoc bundle, which is untracked and therefore invisible to `git diff` |
 | `test-backend <lane>` | **The only supported way to run Backend tests.** Selects a lane from the test catalog, builds once or refuses a stale `--no-build`, shards when two PostgreSQL majors would collide, and cleans up its own containers. See *Backend test commands* below |
 | `cleanup-test-runtime --run-id RUN_ID` | Removes the Docker resources of one `test-backend` run, selected by all five project test labels **and** that exact run ID. Never prunes |

@@ -9,6 +9,7 @@ QuranDashboard.Tests.Abwab.AddDoorRelationsHandlerTests	Abwab	Fast	TierB
 QuranDashboard.Tests.Abwab.CreateDoorHandlerTests	Abwab	Fast	TierB
 QuranDashboard.Tests.Api.Access.AbwabPermissionCatalogueTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.AccessAdminCommandTests	Access	Process	TierB
+QuranDashboard.Tests.Api.Access.AccessAdministrationEndpointTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.AccessAuditEventPersistenceTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.AccessCollectionResetContractTests	Access	Database	TierB	Execution
 QuranDashboard.Tests.Api.Access.AccessMeEndpointTests	Access	Database	TierB
@@ -25,6 +26,7 @@ QuranDashboard.Tests.Api.Access.CachedUserRoleResolverTests	Access	Database	Tier
 QuranDashboard.Tests.Api.Access.EmailIdentityNormalizerTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.EmailIdentityPreflightTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.LogtoManagementApiUserProfileSourceTests	Access	Fast	TierB
+QuranDashboard.Tests.Api.Access.LogtoSubjectRelinkEndpointTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.OwnerBootstrapOptionsTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.PermissionCatalogueSynchronizerTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.RoleClaimsTransformationTests	Access	Fast	TierB
@@ -244,6 +246,7 @@ QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesSubtypeReadTests	WordsWordTyp
 QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesTableReadTests	WordsWordTypes	Database	TierB
 QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests	Smoke	Canonical	Smoke
 QuranDashboard.Tests.Smoke.SmokeAbwabConditionalReadTests	Smoke	Database	Smoke
+QuranDashboard.Tests.Smoke.SmokeAccessAdministrationAuthorizationTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeAbwabRelationsTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeAbwabTemplateReadTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeAbwabTemplateWriteTests	Smoke	Database	Smoke

@@ -20,6 +20,8 @@ internal static class AuthenticationRegistration
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+        services.AddScoped<IAccessRequestContext, HttpContextAccessRequestContext>();
+        services.AddScoped<IInteractiveIdentityEvidenceValidator, JwtInteractiveIdentityEvidenceValidator>();
         services.AddScoped<AuthorizationFailureState>();
         services.AddScoped<AuthorizationStateAccessEvaluator>();
         services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();

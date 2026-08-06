@@ -30,3 +30,21 @@ That resolver projects one local user by exact `LogtoSub`: status, the local Own
 permission codes only for an active non-Owner. It never provisions users and never receives role or
 permission claims. The scoped instance memoizes its first subject/task, so multiple authorization
 requirements share the one database projection; a second distinct subject is an invariant failure.
+
+The Phase 6 administration implementation keeps EF projections in `Persistence/Reads/Access/` and writes
+in `Persistence/Writes/Access/`. `AccessUserMutationTransaction` starts the one transaction for a user
+transition, locks the acting Owner and target/grant rows, rechecks the acting Owner from the database, and
+checks the target `xmin` version before mutation. `AccessAuditAppender` adds immutable audit rows to that
+same DbContext without saving independently. The transaction saves and commits once, then evicts the
+changed subject from the transitional role cache. `EfLogtoSubjectRelinkService` revalidates both the
+interactive evidence and Logto Management profile email through the shared normalizer before it changes
+only `LogtoSub`; its Owner path also requires current reconciliation status.
+
+`IAccessRequestContext` has an Infrastructure default backed by the ambient activity trace, so non-HTTP
+composition roots such as AccessAdmin remain able to construct the shared audit writer. The API replaces
+that default with its HTTP request trace implementation; a non-HTTP operation without an ambient activity
+stores no correlation identifier rather than fabricating an HTTP context.
+
+The shared relink service also receives a fail-closed non-HTTP interactive-evidence validator. AccessAdmin
+does not offer relinking, so it cannot manufacture interactive evidence; the API replaces the default with
+the JWT-backed validator for its Owner-only relink endpoints.

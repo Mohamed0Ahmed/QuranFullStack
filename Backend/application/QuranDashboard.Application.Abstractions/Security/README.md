@@ -18,6 +18,11 @@ backfill between the staged migrations.
   `email_verified` claims after the API has validated signature, issuer, audience, and expiry.
   `sub` is the stable identity key that joins a Logto account to its local `Users` row.
   Accessing it outside an authenticated (`[Authorize]`) request fails closed.
+- **`IInteractiveIdentityEvidenceValidator`** — validates a separately supplied interactive OIDC bearer
+  token for the confirmed Logto-subject relink flow and returns only the validated `sub`, `email`, and
+  `email_verified` identity facts. The contract never retains or returns the raw token.
+- **`IAccessRequestContext`** — supplies a request correlation identifier to the access-audit appender;
+  it is deliberately not an authorization or identity source.
 - **`IExternalUserProfileSource`** — `GetProfileAsync(logtoSub, ct)` returns an
   `ExternalUserProfile` (`Email`, `UserName`, `DisplayName`). `primaryEmail` is provider
   identity/matching data only; it is never proof that the email is verified.

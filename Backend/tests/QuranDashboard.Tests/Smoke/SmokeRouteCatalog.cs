@@ -239,6 +239,60 @@ internal static class SmokeRouteCatalog
         new("api/health", "/api/health", HttpStatusCode.OK),
         new("api/dashboard/info", "/api/dashboard/info", HttpStatusCode.OK),
         new("api/access/me", "/api/access/me", HttpStatusCode.Unauthorized, SmokeRouteAccess.AuthenticatedOnly),
+        new("api/access/users", "/api/access/users", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}", "/api/access/users/1", HttpStatusCode.NotFound, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/accept", "/api/access/users/1/accept", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/disable", "/api/access/users/1/disable", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/reactivate", "/api/access/users/1/reactivate", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/access/permissions", "/api/access/permissions", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/permissions", "/api/access/users/1/permissions", HttpStatusCode.NotFound, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/permissions", "/api/access/users/1/permissions", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Put,
+            ParityOnly = true,
+        },
+        new("api/access/audit-events", "/api/access/audit-events", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/logto-sub/relink/preview", "/api/access/users/1/logto-sub/relink/preview", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/logto-sub/relink/confirm", "/api/access/users/1/logto-sub/relink/confirm", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/access/owner-reconciliation/status", "/api/access/owner-reconciliation/status", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
 
         // api/abwab/sections — AbwabSectionsController. ParityOnly: these write, so the generic sweep
         // (which sends no body and shares the migrated-but-empty schema across every other case) must

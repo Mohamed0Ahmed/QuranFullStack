@@ -7,8 +7,8 @@ Folders are clustered by Quran domain/use case, not by project layer.
 
 - `Api/Middleware/` — HTTP-boundary tests for global exception handling.
 - `Api/Access/` — first-login provisioning, Owner reconciliation, permission catalogues, scoped
-  authorization state, requirement handlers, controlled denial envelopes, and authorization metadata
-  validation.
+  authorization state, requirement handlers, controlled denial envelopes, authorization metadata
+  validation, and real-PostgreSQL Owner administration transition/relink/audit atomicity coverage.
 - `Quran/Import/` — foundation import, validation, reconstruction, and source-staging checks.
 - `Quran/MushafReader/` — page reader, ayah study, similar ayahs, mutashabihat, catalogs,
   word analysis, and cache behavior.
@@ -33,7 +33,8 @@ Folders are clustered by Quran domain/use case, not by project layer.
   persona: denied requests must leave Abwab rows and validators unchanged and issue no Abwab SQL, while
   the exact direct grant and active Owner reach the existing domain outcome. Focused Abwab smoke tests
   cover the four anonymous reads, the required relation/template status contracts, and conditional GET
-  match/mismatch behavior.
+  match/mismatch behavior. The twelve Owner-only access-administration routes are catalogued and dispatched
+  under anonymous and active direct-grant personas so only an active local Owner can reach their actions.
 - `Smoke/Data/` — the data tier (`QuranDashboard.Tests.Smoke.Data`), which restores the
   canonical Quran dump so the seeded read routes are asserted against real data instead of
   an empty schema. See the dump note under *Related*.
