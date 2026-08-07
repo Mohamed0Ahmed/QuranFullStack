@@ -19,10 +19,10 @@ const USER: AccessUserSummary = {
 
 const QUERY: AccessUserListQuery = { page: 1, pageSize: 25 };
 
-function setup(): ComponentFixture<AccessUserListComponent> {
+function setup(users: readonly AccessUserSummary[] = [USER]): ComponentFixture<AccessUserListComponent> {
   TestBed.configureTestingModule({ imports: [AccessUserListComponent] });
   const fixture = TestBed.createComponent(AccessUserListComponent);
-  fixture.componentRef.setInput('users', [USER]);
+  fixture.componentRef.setInput('users', users);
   fixture.componentRef.setInput('selectedUserId', null);
   fixture.componentRef.setInput('query', QUERY);
   fixture.componentRef.setInput('page', 1);
@@ -70,5 +70,28 @@ describe('AccessUserListComponent', () => {
     element(fixture, 'access-user-17').click();
 
     expect(selected).toEqual([17]);
+  });
+
+  it.each([
+    ['an active Owner', { ...USER, status: 'active' as const, isOwner: true }, ['مالك', 'نشط']],
+    ['a pending Owner', { ...USER, isOwner: true }, ['مالك', 'معلّق']],
+    [
+      'a disabled Owner',
+      {
+        ...USER,
+        status: 'disabled' as const,
+        isOwner: true,
+        id: 18,
+        email: 'disabled@example.test',
+      },
+      ['مالك', 'معطّل'],
+    ],
+  ])('renders membership and lifecycle independently for %s', (_scenario, user, expectedLabels) => {
+    const fixture = setup([user]);
+    const labels = Array.from(element(fixture, `access-user-${user.id}`).querySelectorAll('.qd-badge')).map(
+      (badge) => badge.textContent?.trim(),
+    );
+
+    expect(labels).toEqual(expectedLabels);
   });
 });

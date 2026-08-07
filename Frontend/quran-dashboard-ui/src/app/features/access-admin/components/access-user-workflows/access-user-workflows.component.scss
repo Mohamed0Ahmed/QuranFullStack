@@ -35,6 +35,13 @@
   font-size: 0.875rem;
 }
 
+.access-user-workflows__badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--qd-space-1);
+}
+
 .access-user-workflows__meta,
 .access-user-workflows__notice {
   color: var(--qd-text-muted);

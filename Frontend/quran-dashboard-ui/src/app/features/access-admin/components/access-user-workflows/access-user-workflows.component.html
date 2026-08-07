@@ -6,9 +6,12 @@
         <h2>{{ target.displayName || target.email }}</h2>
         <p class="access-user-workflows__meta"><span dir="ltr">{{ target.email }}</span> · الإصدار {{ target.version }}</p>
       </div>
-      <span class="qd-badge" [class.qd-badge--accent]="target.isOwner">
-        {{ target.isOwner ? 'مالك' : target.status === 'active' ? 'نشط' : target.status === 'pending' ? 'معلّق' : 'معطّل' }}
-      </span>
+      <div class="access-user-workflows__badges">
+        @if (target.isOwner) {
+          <span class="qd-badge qd-badge--accent">مالك</span>
+        }
+        <span class="qd-badge">{{ statusLabel(target.status) }}</span>
+      </div>
     </header>
 
     @if (target.isOwner) {

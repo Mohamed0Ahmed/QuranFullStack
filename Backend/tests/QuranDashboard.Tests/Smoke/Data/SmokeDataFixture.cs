@@ -10,7 +10,7 @@ namespace QuranDashboard.Tests.Smoke.Data;
 // The same Testing-environment host as the pipeline tier (SmokeApiHost), over a server seeded with the
 // canonical dump instead of an empty schema. Its own server, never SmokeApiFixture's: the pipeline
 // sweep's expectations are derived against a migrated-but-EMPTY schema, so seeding the database it reads
-// would invalidate all 48 of them.
+// would invalidate them.
 //
 // The server is an EXCLUSIVE lease, taken through PostgreSqlTestProcess so it holds the same
 // CrossProcessPostgreSqlLock the shared postgres:16-alpine runtime holds. Two project-owned PostgreSQL

@@ -33,7 +33,8 @@ public sealed class AuthorizationStateResolver(QuranDashboardDbContext db) : IAu
                 user.Role != null && user.Role.Name == RoleNames.Owner,
                 user.UserPermissions
                     .Where(grant => user.Status == UserStatus.Active
-                                    && (user.Role == null || user.Role.Name != RoleNames.Owner))
+                                    && (user.Role == null || user.Role.Name != RoleNames.Owner)
+                                    && grant.Permission.RetiredAtUtc == null)
                     .Select(grant => grant.Permission.Code)
                     .ToArray()))
             .SingleOrDefaultAsync(cancellationToken);

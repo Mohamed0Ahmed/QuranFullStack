@@ -91,6 +91,31 @@ public sealed class AuthorizationStateResolverTests(AccessTestFixture fixture)
         state.PermissionCodes.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task ResolveAsync_ExcludesRetiredDirectPermissions_FromAnActiveNonOwner()
+    {
+        await fixture.ResetAsync();
+        const string sub = "authorization-state-retired-permission";
+        await SynchronizePermissionsAsync();
+        var userId = await fixture.InsertUserAsync(new User
+        {
+            LogtoSub = sub,
+            Email = "authorization-state-retired-permission@example.test",
+            Status = UserStatus.Active,
+            CreatedAtUtc = DateTimeOffset.UtcNow,
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        });
+        await GrantAsync(userId, AbwabPermissions.Doors.Create);
+        await RetirePermissionAsync(AbwabPermissions.Doors.Create);
+
+        await using var scope = fixture.ApiServices.CreateAsyncScope();
+        var state = await scope.ServiceProvider.GetRequiredService<IAuthorizationStateResolver>()
+            .ResolveAsync(sub, CancellationToken.None);
+
+        state.Should().NotBeNull();
+        state!.PermissionCodes.Should().BeEmpty();
+    }
+
     private async Task SynchronizePermissionsAsync()
     {
         await using var scope = fixture.ApiServices.CreateAsyncScope();
@@ -114,5 +139,13 @@ public sealed class AuthorizationStateResolverTests(AccessTestFixture fixture)
             GrantedAtUtc = DateTimeOffset.UtcNow,
         });
         await db.SaveChangesAsync();
+    }
+
+    private async Task RetirePermissionAsync(string permissionCode)
+    {
+        await using var scope = fixture.QueryServices.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE permissions SET retired_at = {DateTimeOffset.UtcNow} WHERE code = {permissionCode};");
     }
 }

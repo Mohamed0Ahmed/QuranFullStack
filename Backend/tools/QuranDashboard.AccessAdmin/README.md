@@ -111,11 +111,18 @@ write freeze:
 7. Apply the generated cleanup migration through the deployment process, then rerun
    `authorization preflight` for a fully clean result.
 
-**UNMET operational precondition in this environment:** the conversion and generated cleanup migration
-have been validated only with Testcontainers from an empty database through the current migration and
-cleanup. That is not a production-like rehearsal. Before this migration is applied to any real or shared
-database, an operator must rehearse the sequence above against a production-like copy and retain the
-before/after inventory artifact. Never use this tool or migration workflow to fabricate that rehearsal.
+For a clean database created from the current migration head, there is no populated legacy
+authorization state to convert and no conversion rehearsal is required. If a release instead upgrades
+a populated database that carries legacy Admin/Editor identities, an operator must rehearse the
+sequence above against a production-like copy and retain the before/after inventory artifact before
+applying the cleanup migration. Never use this tool or migration workflow to fabricate rehearsal
+evidence.
+
+Before real authorization users, grants, or audit history exist, an explicitly disposable
+development or pre-release database may be dropped and recreated from the current migration head.
+Once real authorization data exists, never use a destructive authorization `Down` migration or table
+drop as rollback. Keep unsafe routes protected and use a schema-compatible code rollback, a
+data-preserving restore, or repair forward.
 
 The executable loads its copied `appsettings.json` beside the compiled tool, then Development user
 secrets for this tool, then environment variables. Set `ConnectionStrings__QuranDashboardDb` to

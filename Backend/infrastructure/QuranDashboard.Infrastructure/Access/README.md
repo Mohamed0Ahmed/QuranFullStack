@@ -27,8 +27,8 @@ Application use case returns only after the transaction commits.
 
 Request-scoped authorization reads live in `Persistence/Reads/Access/AuthorizationStateResolver.cs`.
 That resolver projects one local user by exact `LogtoSub`: status, the local Owner relation, and direct
-permission codes only for an active non-Owner. It never provisions users and never receives role or
-permission claims. The scoped instance memoizes its first subject/task, so multiple authorization
+non-retired permission codes only for an active non-Owner. It never provisions users and never receives
+role or permission claims. The scoped instance memoizes its first subject/task, so multiple authorization
 requirements share the one database projection; a second distinct subject is an invariant failure.
 
 `UserProvisioningService` separately projects the `/api/access/me` snapshot after provisioning:
@@ -39,6 +39,8 @@ in `Persistence/Writes/Access/`. `AccessUserMutationTransaction` starts the one 
 transition, locks the acting Owner and target/grant rows, rechecks the acting Owner from the database, and
 checks the target `xmin` version before mutation. `AccessAuditAppender` adds immutable audit rows to that
 same DbContext without saving independently. The transaction saves and commits once.
+`EfAccessAuditReader` identifies the latest Owner-reconciliation summary from metadata provenance
+`operation=owner-reconciliation`, so a newer system event from legacy-role conversion cannot mask it.
 `EfLogtoSubjectRelinkService` revalidates both the
 interactive evidence and Logto Management profile email through the shared normalizer before it changes
 only `LogtoSub`; its Owner path also requires current reconciliation status.

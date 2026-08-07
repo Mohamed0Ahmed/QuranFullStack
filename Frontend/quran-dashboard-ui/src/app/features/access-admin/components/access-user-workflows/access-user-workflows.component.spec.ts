@@ -206,6 +206,20 @@ describe('AccessUserWorkflowsComponent', () => {
     expect(fixture.nativeElement.querySelector('select')).toBeNull();
   });
 
+  it.each([
+    ['active', 'نشط'],
+    ['pending', 'معلّق'],
+    ['disabled', 'معطّل'],
+  ] as const)('shows Owner membership alongside the %s lifecycle status', (status, statusLabel) => {
+    const fixture = setup({ ...USER, isOwner: true, status, permissionCodes: [] });
+    const badges = fixture.nativeElement.querySelectorAll(
+      '.access-user-workflows__header .qd-badge',
+    ) as NodeListOf<HTMLElement>;
+    const labels = Array.from(badges, (badge) => badge.textContent?.trim());
+
+    expect(labels).toEqual(['مالك', statusLabel]);
+  });
+
   it('cancels an inline confirmation when the selected target changes', () => {
     const fixture = setup();
 

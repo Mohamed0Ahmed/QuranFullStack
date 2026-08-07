@@ -242,6 +242,12 @@ append-only audit services as Phase 6.
   protected rollback artifact is available, keep administrative unsafe methods denied at the
   platform/edge while public GETs remain available, then repair forward.
 
+Before real authorization users, grants, or audit history exist, an explicitly disposable
+development or pre-release database may be dropped and recreated from the current migration head.
+That reset is not a production rollback strategy. Once real authorization data exists, never run a
+destructive authorization `Down` migration or drop its tables to roll back. Keep unsafe routes
+protected and use a schema-compatible code rollback, a data-preserving restore, or repair forward.
+
 ### Legacy Admin/Editor cleanup
 
 The Phase 10 operator sequence is deliberately separate from `update-db`: first run
@@ -257,10 +263,11 @@ The cleanup migration deletes only the Admin and Editor seeds. `users.role_id` r
 restrictive foreign key is the safety gate: PostgreSQL rejects the migration if conversion left any user
 referencing either role; it does not cascade.
 
-**UNMET operational precondition in this environment:** Testcontainers validates empty → current →
-cleanup only. It does not replace a production-like rehearsal. Before the cleanup migration is applied to
-any real or shared database, an operator must run and retain the inventory/convert/reinventory sequence
-against a production-like copy. Do not apply migrations to create or simulate that rehearsal here.
+For a clean database created from the current migration head, there is no populated legacy
+authorization state to convert and no conversion rehearsal is required. If a release instead upgrades
+a populated database that carries legacy Admin/Editor identities, rehearse and retain the
+inventory/convert/reinventory sequence against a production-like copy before applying the cleanup
+migration. Do not use migrations to fabricate rehearsal evidence.
 
 Exit codes are stable: `0` clean, `2` usage, `3` a reported preflight/catalogue failure, and `4` a
 configuration or database failure the tool reports as `access_admin_failure=<type>` without a stack

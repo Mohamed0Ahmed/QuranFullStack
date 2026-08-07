@@ -1,13 +1,10 @@
 import { EnvironmentProviders } from '@angular/core';
 import { provideAuth } from 'angular-auth-oidc-client';
 
-export interface AccessMeContractFixture {
-  sub: string;
-  email: string;
-  displayName: string | null;
+import type { CurrentUserResponse } from '../api/generated/models/current-user-response';
+
+export interface AccessMeContractFixture extends CurrentUserResponse {
   status: 'pending' | 'active' | 'disabled';
-  isOwner: boolean;
-  permissions: readonly string[];
 }
 
 interface AccessMeContractFixtures {

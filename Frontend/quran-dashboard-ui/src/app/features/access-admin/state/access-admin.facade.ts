@@ -72,6 +72,7 @@ export class AccessAdminFacade {
   private usersRequestVersion = 0;
   private selectedUserRequestVersion = 0;
   private auditRequestVersion = 0;
+  private relinkPreviewRequestVersion = 0;
 
   readonly canAccess = computed(() => this.currentUserStore.isActive() && this.currentUserStore.isOwner());
   readonly users = computed(() => this.usersState()?.items ?? []);
@@ -190,8 +191,7 @@ export class AccessAdminFacade {
     const requestVersion = ++this.selectedUserRequestVersion;
     this.selectedUserLoadingState.set(true);
     this.selectedUserErrorState.set(null);
-    this.relinkPreviewState.set(null);
-    this.relinkEvidenceTokenState.set(null);
+    this.invalidateRelinkPreviewRequest();
     try {
       const [detailResponse, permissionsResponse] = await Promise.all([
         firstValueFrom(this.api.getUser(userId)),
@@ -298,6 +298,8 @@ export class AccessAdminFacade {
       return 'invalid';
     }
 
+    const requestVersion = ++this.relinkPreviewRequestVersion;
+    const targetUserId = user.id;
     this.busyActionState.set('relink-preview');
     this.mutationMessageState.set(null);
     this.relinkPreviewState.set(null);
@@ -309,6 +311,9 @@ export class AccessAdminFacade {
           evidenceToken: request.evidenceToken.trim(),
         }),
       );
+      if (!this.isCurrentRelinkPreviewRequest(requestVersion, targetUserId)) {
+        return 'invalid';
+      }
       if (!response.isSuccess || !response.data) {
         this.mutationMessageState.set(response.message ?? AccessAdminFacade.writeErrorMessage);
         return 'invalid';
@@ -317,9 +322,14 @@ export class AccessAdminFacade {
       this.relinkEvidenceTokenState.set(request.evidenceToken.trim());
       return 'success';
     } catch (error) {
+      if (!this.isCurrentRelinkPreviewRequest(requestVersion, targetUserId)) {
+        return 'invalid';
+      }
       return this.handleMutationError(error);
     } finally {
-      this.busyActionState.set(null);
+      if (requestVersion === this.relinkPreviewRequestVersion && this.busyActionState() === 'relink-preview') {
+        this.busyActionState.set(null);
+      }
     }
   }
 
@@ -348,8 +358,7 @@ export class AccessAdminFacade {
     if (this.busyActionState()) {
       return;
     }
-    this.relinkPreviewState.set(null);
-    this.relinkEvidenceTokenState.set(null);
+    this.invalidateRelinkPreviewRequest();
   }
 
   async updateAuditQuery(query: Partial<AccessAuditQuery>): Promise<void> {
@@ -487,6 +496,22 @@ export class AccessAdminFacade {
     return this.canSelectPermissions() && user?.status === 'active';
   }
 
+  private isCurrentRelinkPreviewRequest(requestVersion: number, targetUserId: number): boolean {
+    return (
+      requestVersion === this.relinkPreviewRequestVersion &&
+      this.selectedUserState()?.id === targetUserId
+    );
+  }
+
+  private invalidateRelinkPreviewRequest(): void {
+    this.relinkPreviewRequestVersion += 1;
+    this.relinkPreviewState.set(null);
+    this.relinkEvidenceTokenState.set(null);
+    if (this.busyActionState() === 'relink-preview') {
+      this.busyActionState.set(null);
+    }
+  }
+
   private clearProtectedState(message: string | null): void {
     this.usersState.set(null);
     this.selectedUserState.set(null);
@@ -494,8 +519,7 @@ export class AccessAdminFacade {
     this.selectedPermissionCodesState.set(new Set());
     this.auditState.set(null);
     this.reconciliationState.set(null);
-    this.relinkPreviewState.set(null);
-    this.relinkEvidenceTokenState.set(null);
+    this.invalidateRelinkPreviewRequest();
     this.mutationMessageState.set(message);
   }
 }

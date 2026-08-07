@@ -93,6 +93,16 @@ export class AccessUserWorkflowsComponent {
     return permissionLabelFor(this.groups(), code);
   }
 
+  protected statusLabel(status: string): string {
+    if (status === 'active') {
+      return 'نشط';
+    }
+    if (status === 'pending') {
+      return 'معلّق';
+    }
+    return 'معطّل';
+  }
+
   protected updateNewSub(event: Event): void {
     this.newSub.set((event.target as HTMLInputElement).value);
   }

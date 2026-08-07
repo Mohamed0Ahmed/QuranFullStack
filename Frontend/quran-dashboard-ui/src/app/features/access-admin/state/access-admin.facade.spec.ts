@@ -1,42 +1,31 @@
-import { describe, expect, it, vi } from 'vitest';
-import { TestBed, getTestBed } from '@angular/core/testing';
-import { HttpErrorResponse } from '@angular/common/http';
-import { signal } from '@angular/core';
-import { of, throwError } from 'rxjs';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { NEVER } from 'rxjs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CurrentUserStore } from '../../../core/auth/current-user.store';
-import { WriteAuthFailureCoordinator } from '../../../core/auth/write-auth-failure.coordinator';
+import { environment } from '../../../../environments/environment';
 import { AccessUserDetail } from '../../../core/api/generated/models/access-user-detail';
 import { AccessUserPermissions } from '../../../core/api/generated/models/access-user-permissions';
+import { AccessUserSummary } from '../../../core/api/generated/models/access-user-summary';
+import { CurrentUserResponse } from '../../../core/api/generated/models/current-user-response';
 import { PermissionCatalogueItem } from '../../../core/api/generated/models/permission-catalogue-item';
+import { CurrentUserStore } from '../../../core/auth/current-user.store';
 import { AccessAdminApi } from '../data-access/access-admin.api';
 import { AccessAdminFacade } from './access-admin.facade';
 
-function user(version: number, permissionCodes: string[] = []): AccessUserDetail {
-  return {
-    id: 17,
-    sub: 'subject-17',
-    email: 'member@example.test',
-    normalizedEmail: 'member@example.test',
-    userName: null,
-    displayName: 'عضو',
-    title: null,
-    status: 'active',
-    isOwner: false,
-    permissionCodes,
-    createdAtUtc: '2026-01-01T00:00:00Z',
-    updatedAtUtc: '2026-01-01T00:00:00Z',
-    version,
-  };
-}
+const ACCESS_BASE_URL = `${environment.apiBaseUrl}/api/access`;
 
-function permissions(version: number, permissionCodes: string[] = []): AccessUserPermissions {
-  return { userId: 17, status: 'active', isOwner: false, version, permissionCodes };
-}
-
-function success<T>(data: T) {
-  return { isSuccess: true, message: 'تم', data };
-}
+const OWNER: CurrentUserResponse = {
+  sub: 'owner-subject',
+  email: 'owner@example.test',
+  displayName: 'المالك',
+  status: 'active',
+  isOwner: true,
+  permissions: [],
+};
 
 const CATALOGUE: PermissionCatalogueItem[] = [
   {
@@ -59,160 +48,279 @@ const CATALOGUE: PermissionCatalogueItem[] = [
   },
 ];
 
-function setup(isActive: boolean, isOwner: boolean) {
-  getTestBed().resetTestingModule();
-  const access = { isActive: signal(isActive), isOwner: signal(isOwner) };
-  const api = {
-    listUsers: vi.fn(() => of(success({ items: [], page: 1, pageSize: 25, totalCount: 0 }))),
-    getUser: vi.fn(() => of(success(user(1)))),
-    getUserPermissions: vi.fn(() => of(success(permissions(1)))),
-    getPermissionCatalogue: vi.fn(() => of(success(CATALOGUE))),
-    listAuditEvents: vi.fn(() => of(success({ items: [], nextCursor: null }))),
-    getOwnerReconciliationStatus: vi.fn(() => of(success({
-      canApply: false,
-      candidates: [],
-      configurationFingerprint: 'fingerprint',
-      isReady: true,
-      lastReconciliation: null,
-    }))),
-    acceptUser: vi.fn(),
-    disableUser: vi.fn(),
-    reactivateUser: vi.fn(),
-    replacePermissions: vi.fn(),
-    previewRelink: vi.fn(),
-    confirmRelink: vi.fn(),
+function user(
+  version: number,
+  permissionCodes: string[] = [],
+  overrides: Partial<AccessUserDetail> = {},
+): AccessUserDetail {
+  return {
+    id: 17,
+    sub: 'subject-17',
+    email: 'member@example.test',
+    normalizedEmail: 'member@example.test',
+    userName: null,
+    displayName: 'عضو',
+    title: null,
+    status: 'active',
+    isOwner: false,
+    permissionCodes,
+    createdAtUtc: '2026-01-01T00:00:00Z',
+    updatedAtUtc: '2026-01-01T00:00:00Z',
+    version,
+    ...overrides,
   };
-  const handleAuthFailure = vi.fn().mockResolvedValue(null);
+}
 
-  TestBed.configureTestingModule({
-    providers: [
-      AccessAdminFacade,
-      { provide: AccessAdminApi, useValue: api },
-      {
-        provide: CurrentUserStore,
-        useValue: { isActive: access.isActive, isOwner: access.isOwner },
-      },
-      { provide: WriteAuthFailureCoordinator, useValue: { handle: handleAuthFailure } },
-    ],
-  });
+function permissions(
+  version: number,
+  permissionCodes: string[] = [],
+  overrides: Partial<AccessUserPermissions> = {},
+): AccessUserPermissions {
+  return {
+    userId: 17,
+    status: 'active',
+    isOwner: false,
+    version,
+    permissionCodes,
+    ...overrides,
+  };
+}
 
-  return { facade: TestBed.inject(AccessAdminFacade), api, handleAuthFailure, access };
+function summary(detail: AccessUserDetail): AccessUserSummary {
+  return {
+    id: detail.id,
+    email: detail.email,
+    displayName: detail.displayName,
+    status: detail.status,
+    isOwner: detail.isOwner,
+    permissionCount: detail.permissionCodes.length,
+    createdAtUtc: detail.createdAtUtc,
+    updatedAtUtc: detail.updatedAtUtc,
+    version: detail.version,
+  };
+}
+
+function success<T>(data: T) {
+  return { isSuccess: true, message: 'تم', data };
 }
 
 describe('AccessAdminFacade', () => {
+  let facade: AccessAdminFacade;
+  let currentUserStore: CurrentUserStore;
+  let httpTesting: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        AccessAdminFacade,
+        AccessAdminApi,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: OidcSecurityService,
+          useValue: {
+            isAuthenticated$: NEVER,
+            authorize: vi.fn(),
+          },
+        },
+      ],
+    });
+
+    facade = TestBed.inject(AccessAdminFacade);
+    currentUserStore = TestBed.inject(CurrentUserStore);
+    httpTesting = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpTesting.verify();
+  });
+
+  async function loadCurrentUser(currentUser: CurrentUserResponse): Promise<void> {
+    const load = currentUserStore.refresh();
+    httpTesting.expectOne(`${ACCESS_BASE_URL}/me`).flush(success(currentUser));
+    await load;
+  }
+
+  async function loadCatalogue(): Promise<void> {
+    const load = facade.loadPermissionCatalogue();
+    httpTesting.expectOne(`${ACCESS_BASE_URL}/permissions`).flush(success(CATALOGUE));
+    await load;
+  }
+
+  async function selectTarget(
+    detail: AccessUserDetail,
+    permissionSnapshot: AccessUserPermissions,
+  ): Promise<void> {
+    const selection = facade.selectUser(detail.id);
+    httpTesting.expectOne(`${ACCESS_BASE_URL}/users/${detail.id}`).flush(success(detail));
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/users/${detail.id}/permissions`)
+      .flush(success(permissionSnapshot));
+    await selection;
+  }
+
+  async function flushMutationRefresh(
+    detail: AccessUserDetail,
+    permissionSnapshot: AccessUserPermissions,
+  ): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    httpTesting.expectOne(`${ACCESS_BASE_URL}/users/${detail.id}`).flush(success(detail));
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/users/${detail.id}/permissions`)
+      .flush(success(permissionSnapshot));
+    httpTesting
+      .expectOne((request) => request.url === `${ACCESS_BASE_URL}/users`)
+      .flush(success({ items: [summary(detail)], page: 1, pageSize: 25, totalCount: 1 }));
+    httpTesting
+      .expectOne((request) => request.url === `${ACCESS_BASE_URL}/audit-events`)
+      .flush(success({ items: [], nextCursor: null }));
+  }
+
   it.each([
-    ['a pending account', false, false],
-    ['a disabled Owner', false, true],
-    ['an active non-owner', true, false],
-  ])('does not call security-admin APIs for %s', async (_name, isActive, isOwner) => {
-    const { facade, api } = setup(isActive, isOwner);
+    [
+      'a pending account',
+      { ...OWNER, status: 'pending', isOwner: false } satisfies CurrentUserResponse,
+    ],
+    [
+      'a disabled Owner',
+      { ...OWNER, status: 'disabled' } satisfies CurrentUserResponse,
+    ],
+    [
+      'an active non-owner',
+      { ...OWNER, isOwner: false } satisfies CurrentUserResponse,
+    ],
+  ])('does not request security-admin resources for %s', async (_scenario, currentUser) => {
+    await loadCurrentUser(currentUser);
 
     await facade.load();
 
-    expect(api.listUsers).not.toHaveBeenCalled();
-    expect(api.getPermissionCatalogue).not.toHaveBeenCalled();
-    expect(api.listAuditEvents).not.toHaveBeenCalled();
-    expect(api.getOwnerReconciliationStatus).not.toHaveBeenCalled();
+    expect(facade.canAccess()).toBe(false);
+    httpTesting.expectNone((request) => request.url === `${ACCESS_BASE_URL}/users`);
+    httpTesting.expectNone(`${ACCESS_BASE_URL}/permissions`);
+    httpTesting.expectNone((request) => request.url === `${ACCESS_BASE_URL}/audit-events`);
+    httpTesting.expectNone(`${ACCESS_BASE_URL}/owner-reconciliation/status`);
   });
 
-  it('refreshes the target state after a version conflict without retrying or retaining the attempted grants', async () => {
-    const { facade, api } = setup(true, true);
-    api.getUser
-      .mockReturnValueOnce(of(success(user(1, ['abwab.doors.create']))))
-      .mockReturnValueOnce(of(success(user(2, ['abwab.doors.edit']))));
-    api.getUserPermissions
-      .mockReturnValueOnce(of(success(permissions(1, ['abwab.doors.create']))))
-      .mockReturnValueOnce(of(success(permissions(2, ['abwab.doors.edit']))));
-    api.replacePermissions.mockReturnValue(
-      throwError(
-        () =>
-          new HttpErrorResponse({
-            status: 409,
-            error: { isSuccess: false, message: 'تغيرت بيانات المستخدم', data: null },
-          }),
-      ),
+  it('refreshes the target state after a version conflict without retrying or retaining attempted grants', async () => {
+    await loadCurrentUser(OWNER);
+    await loadCatalogue();
+    await selectTarget(
+      user(1, ['abwab.doors.create']),
+      permissions(1, ['abwab.doors.create']),
+    );
+    facade.setSelectedPermissionCodes(
+      new Set(['abwab.doors.create', 'abwab.sections.create']),
     );
 
-    await facade.loadPermissionCatalogue();
-    await facade.selectUser(17);
-    facade.setSelectedPermissionCodes(new Set(['abwab.doors.create', 'abwab.sections.create']));
-
-    await expect(facade.replaceSelectedPermissions('تحديث الصلاحيات')).resolves.toBe('conflict');
-
-    expect(api.replacePermissions).toHaveBeenCalledTimes(1);
-    expect(api.replacePermissions).toHaveBeenCalledWith(17, {
+    const replacement = facade.replaceSelectedPermissions('تحديث الصلاحيات');
+    const request = httpTesting.expectOne(`${ACCESS_BASE_URL}/users/17/permissions`);
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({
       expectedVersion: 1,
       permissionCodes: ['abwab.doors.create'],
       reason: 'تحديث الصلاحيات',
     });
-    expect(api.getUser).toHaveBeenCalledTimes(2);
-    expect(api.getUserPermissions).toHaveBeenCalledTimes(2);
+    request.flush(
+      { isSuccess: false, message: 'تغيرت بيانات المستخدم', data: null },
+      { status: 409, statusText: 'Conflict' },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/users/17`)
+      .flush(success(user(2, ['abwab.doors.edit'])));
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/users/17/permissions`)
+      .flush(success(permissions(2, ['abwab.doors.edit'])));
+
+    await expect(replacement).resolves.toBe('conflict');
     expect(facade.selectedUser()?.version).toBe(2);
     expect([...facade.selectedPermissionCodes()]).toEqual(['abwab.doors.edit']);
+    httpTesting.expectNone(`${ACCESS_BASE_URL}/users/17/permissions`);
   });
 
   it('keeps fetched individual grants while the permission catalogue is still loading', async () => {
-    const { facade, api } = setup(true, true);
-    api.getUserPermissions.mockReturnValue(of(success(permissions(1, ['abwab.doors.create']))));
-
-    await facade.selectUser(17);
+    await loadCurrentUser(OWNER);
+    await selectTarget(
+      user(1, ['abwab.doors.create']),
+      permissions(1, ['abwab.doors.create']),
+    );
 
     expect([...facade.selectedPermissionCodes()]).toEqual(['abwab.doors.create']);
 
-    await facade.loadPermissionCatalogue();
+    await loadCatalogue();
 
     expect([...facade.selectedPermissionCodes()]).toEqual(['abwab.doors.create']);
   });
 
   it('submits only current individual permission codes when accepting a pending user', async () => {
-    const { facade, api } = setup(true, true);
-    const pendingUser = { ...user(1), status: 'pending' as const };
-    const pendingPermissions = { ...permissions(1), status: 'pending' as const };
-    api.getUser.mockReturnValue(of(success(pendingUser)));
-    api.getUserPermissions.mockReturnValue(of(success(pendingPermissions)));
-    api.acceptUser.mockReturnValue(of(success({ ...pendingUser, status: 'active' as const, version: 2 })));
-
-    await facade.loadPermissionCatalogue();
-    await facade.selectUser(17);
+    await loadCurrentUser(OWNER);
+    await loadCatalogue();
+    const pendingUser = user(1, [], { status: 'pending' });
+    await selectTarget(
+      pendingUser,
+      permissions(1, [], { status: 'pending' }),
+    );
     facade.setSelectedPermissionCodes(
-      new Set(['abwab.doors.create', 'abwab.doors.edit', 'abwab.doors.manage-all']),
+      new Set([
+        'abwab.doors.create',
+        'abwab.doors.edit',
+        'abwab.doors.manage-all',
+      ]),
     );
 
-    await expect(facade.acceptSelectedUser('قبول الحساب')).resolves.toBe('success');
-
-    expect(api.acceptUser).toHaveBeenCalledWith(17, {
+    const acceptance = facade.acceptSelectedUser('قبول الحساب');
+    const request = httpTesting.expectOne(`${ACCESS_BASE_URL}/users/17/accept`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
       expectedVersion: 1,
       permissionCodes: ['abwab.doors.create', 'abwab.doors.edit'],
       reason: 'قبول الحساب',
     });
+    const activeUser = user(2, ['abwab.doors.create', 'abwab.doors.edit']);
+    const activePermissions = permissions(2, ['abwab.doors.create', 'abwab.doors.edit']);
+    request.flush(success(activeUser));
+    await flushMutationRefresh(activeUser, activePermissions);
+
+    await expect(acceptance).resolves.toBe('success');
+    expect(facade.selectedUser()?.status).toBe('active');
+    expect([...facade.selectedPermissionCodes()]).toEqual([
+      'abwab.doors.create',
+      'abwab.doors.edit',
+    ]);
   });
 
-  it('keeps the preview evidence for a separate relink confirmation request', async () => {
-    const { facade, api } = setup(true, true);
-    api.previewRelink.mockReturnValue(
-      of(
-        success({
-          userId: 17,
-          oldSub: 'subject-17',
-          newSub: 'replacement-subject',
-          version: 4,
-          isOwner: false,
-        }),
-      ),
+  it('keeps preview evidence for the separate relink confirmation HTTP request', async () => {
+    await loadCurrentUser(OWNER);
+    await selectTarget(user(1), permissions(1));
+
+    const preview = facade.previewSelectedUserRelink({
+      newSub: 'replacement-subject',
+      evidenceToken: 'verified-evidence',
+    });
+    const previewRequest = httpTesting.expectOne(
+      `${ACCESS_BASE_URL}/users/17/logto-sub/relink/preview`,
     );
-    api.confirmRelink.mockReturnValue(of(success(user(5))));
-
-    await facade.selectUser(17);
-
-    await expect(
-      facade.previewSelectedUserRelink({
+    expect(previewRequest.request.body).toEqual({
+      newSub: 'replacement-subject',
+      evidenceToken: 'verified-evidence',
+    });
+    previewRequest.flush(
+      success({
+        userId: 17,
+        oldSub: 'subject-17',
         newSub: 'replacement-subject',
-        evidenceToken: 'verified-evidence',
+        version: 4,
+        isOwner: false,
       }),
-    ).resolves.toBe('success');
-    await expect(facade.confirmSelectedUserRelink('تصحيح معرّف الدخول')).resolves.toBe('success');
+    );
+    await expect(preview).resolves.toBe('success');
 
-    expect(api.confirmRelink).toHaveBeenCalledWith(17, {
+    const confirmation = facade.confirmSelectedUserRelink('تصحيح معرّف الدخول');
+    const confirmRequest = httpTesting.expectOne(
+      `${ACCESS_BASE_URL}/users/17/logto-sub/relink/confirm`,
+    );
+    expect(confirmRequest.request.body).toEqual({
       expectedVersion: 4,
       oldSub: 'subject-17',
       newSub: 'replacement-subject',
@@ -220,12 +328,63 @@ describe('AccessAdminFacade', () => {
       reason: 'تصحيح معرّف الدخول',
       confirmed: true,
     });
+    const relinkedUser = user(5, [], { sub: 'replacement-subject' });
+    confirmRequest.flush(success(relinkedUser));
+    await flushMutationRefresh(relinkedUser, permissions(5));
+
+    await expect(confirmation).resolves.toBe('success');
+    expect(facade.relinkPreview()).toBeNull();
+    expect(facade.selectedUser()?.sub).toBe('replacement-subject');
+  });
+
+  it('does not publish a relink preview after a different target is selected', async () => {
+    await loadCurrentUser(OWNER);
+    await selectTarget(user(1), permissions(1));
+
+    const preview = facade.previewSelectedUserRelink({
+      newSub: 'replacement-subject',
+      evidenceToken: 'verified-evidence',
+    });
+    const deferredPreview = httpTesting.expectOne(
+      `${ACCESS_BASE_URL}/users/17/logto-sub/relink/preview`,
+    );
+
+    const secondUser = user(2, [], {
+      id: 18,
+      sub: 'subject-18',
+      email: 'second@example.test',
+      normalizedEmail: 'second@example.test',
+    });
+    await selectTarget(secondUser, permissions(2, [], { userId: 18 }));
+
+    deferredPreview.flush(
+      success({
+        userId: 17,
+        oldSub: 'subject-17',
+        newSub: 'replacement-subject',
+        version: 4,
+        isOwner: false,
+      }),
+    );
+    await preview;
+
+    expect(facade.selectedUser()?.id).toBe(18);
+    expect(facade.relinkPreview()).toBeNull();
+    await expect(facade.confirmSelectedUserRelink('تصحيح معرّف الدخول')).resolves.toBe('invalid');
+    httpTesting.expectNone(`${ACCESS_BASE_URL}/users/18/logto-sub/relink/confirm`);
   });
 
   it('clears retained relink evidence when the preview is canceled', async () => {
-    const { facade, api } = setup(true, true);
-    api.previewRelink.mockReturnValue(
-      of(
+    await loadCurrentUser(OWNER);
+    await selectTarget(user(1), permissions(1));
+
+    const preview = facade.previewSelectedUserRelink({
+      newSub: 'replacement-subject',
+      evidenceToken: 'verified-evidence',
+    });
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/users/17/logto-sub/relink/preview`)
+      .flush(
         success({
           userId: 17,
           oldSub: 'subject-17',
@@ -233,43 +392,39 @@ describe('AccessAdminFacade', () => {
           version: 4,
           isOwner: false,
         }),
-      ),
-    );
-
-    await facade.selectUser(17);
-    await facade.previewSelectedUserRelink({
-      newSub: 'replacement-subject',
-      evidenceToken: 'verified-evidence',
-    });
+      );
+    await preview;
 
     facade.cancelSelectedUserRelink();
 
-    await expect(facade.confirmSelectedUserRelink('إلغاء المعاينة')).resolves.toBe('invalid');
     expect(facade.relinkPreview()).toBeNull();
-    expect(api.confirmRelink).not.toHaveBeenCalled();
+    await expect(facade.confirmSelectedUserRelink('إلغاء المعاينة')).resolves.toBe('invalid');
+    httpTesting.expectNone(`${ACCESS_BASE_URL}/users/17/logto-sub/relink/confirm`);
   });
 
-  it('does not preview a relink after the Owner access state becomes stale', async () => {
-    const { facade, api, access } = setup(true, true);
-
-    await facade.selectUser(17);
-    access.isOwner.set(false);
+  it('does not preview a relink after the Owner access snapshot becomes stale', async () => {
+    await loadCurrentUser(OWNER);
+    await selectTarget(user(1), permissions(1));
+    await loadCurrentUser({ ...OWNER, isOwner: false });
 
     await expect(
-      facade.previewSelectedUserRelink({ newSub: 'replacement-subject', evidenceToken: 'evidence' }),
+      facade.previewSelectedUserRelink({
+        newSub: 'replacement-subject',
+        evidenceToken: 'evidence',
+      }),
     ).resolves.toBe('invalid');
 
-    expect(api.previewRelink).not.toHaveBeenCalled();
+    expect(facade.canAccess()).toBe(false);
+    httpTesting.expectNone(`${ACCESS_BASE_URL}/users/17/logto-sub/relink/preview`);
   });
 
   it('does not submit a permission replacement without a confirmation reason', async () => {
-    const { facade, api } = setup(true, true);
-
-    await facade.loadPermissionCatalogue();
-    await facade.selectUser(17);
+    await loadCurrentUser(OWNER);
+    await loadCatalogue();
+    await selectTarget(user(1), permissions(1));
 
     await expect(facade.replaceSelectedPermissions('   ')).resolves.toBe('invalid');
 
-    expect(api.replacePermissions).not.toHaveBeenCalled();
+    httpTesting.expectNone(`${ACCESS_BASE_URL}/users/17/permissions`);
   });
 });

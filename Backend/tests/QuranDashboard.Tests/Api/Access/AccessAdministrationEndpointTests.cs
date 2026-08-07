@@ -186,6 +186,143 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     }
 
     [Fact]
+    public async Task ConcurrentOwners_CompetingStatusAndGrantMutations_CommitOneOutcomeAndRejectTheOtherAsStale()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        var firstOwnerId = await SeedActiveOwnerAsync();
+        var secondOwnerId = await SeedActiveOwnerAsync(
+            AccessTestFixture.SecondOwnerSub,
+            AccessTestFixture.SecondOwnerEmail);
+        const string targetSub = "access-admin-concurrent-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        await using var gateConnection = new NpgsqlConnection(fixture.ConnectionString);
+        await gateConnection.OpenAsync();
+        await using var gateTransaction = await gateConnection.BeginTransactionAsync();
+        await using (var gateCommand = new NpgsqlCommand(
+            "SELECT id FROM users WHERE id = @target_id FOR UPDATE;",
+            gateConnection,
+            gateTransaction))
+        {
+            gateCommand.Parameters.AddWithValue("target_id", targetId);
+            await gateCommand.ExecuteScalarAsync();
+        }
+
+        await using var firstScope = fixture.ApiServices.CreateAsyncScope();
+        await using var secondScope = fixture.ApiServices.CreateAsyncScope();
+
+        var disableTask = firstScope.ServiceProvider.GetRequiredService<IAccessUserMutationService>()
+            .DisableAsync(
+                AccessTestFixture.OwnerSub,
+                new DisableAccessUserCommand(
+                    targetId,
+                    target.Version,
+                    "Disable the account from the first Owner."),
+                CancellationToken.None);
+        var replaceTask = secondScope.ServiceProvider.GetRequiredService<IAccessUserMutationService>()
+            .ReplacePermissionsAsync(
+                AccessTestFixture.SecondOwnerSub,
+                new ReplaceUserPermissionsCommand(
+                    targetId,
+                    target.Version,
+                    [AbwabPermissions.Doors.Create],
+                    "Grant access from the second Owner."),
+                CancellationToken.None);
+
+        var observedWaiters = 0;
+        try
+        {
+            observedWaiters = await WaitForAccessMutationLockWaitersAsync(2);
+        }
+        finally
+        {
+            await gateTransaction.CommitAsync();
+        }
+
+        await Task.WhenAll(disableTask, replaceTask);
+        var disableResult = await disableTask;
+        var replaceResult = await replaceTask;
+
+        observedWaiters.Should().BeGreaterThanOrEqualTo(2);
+        new[] { disableResult.IsSuccess, replaceResult.IsSuccess }.Count(success => success)
+            .Should().Be(1);
+        new[] { disableResult.Failure, replaceResult.Failure }
+            .Count(failure => failure == AccessOperationFailure.StaleVersion)
+            .Should().Be(1);
+
+        var persisted = (await fixture.GetUserBySubAsync(targetSub))!;
+        var audit = await GetAuditEventsAsync(targetId);
+        if (disableResult.IsSuccess)
+        {
+            persisted.Status.Should().Be(UserStatus.Disabled);
+            (await GetGrantCodesAsync(targetId)).Should().BeEmpty();
+            audit.Select(eventItem => eventItem.ActionType).Should().Equal(AccessAuditActionType.UserDisabled);
+            audit.Should().OnlyContain(eventItem => eventItem.ActorUserId == firstOwnerId);
+        }
+        else
+        {
+            persisted.Status.Should().Be(UserStatus.Active);
+            (await GetGrantCodesAsync(targetId)).Should().Equal(AbwabPermissions.Doors.Create);
+            audit.Select(eventItem => eventItem.ActionType).Should().Equal(AccessAuditActionType.PermissionGranted);
+            audit.Should().OnlyContain(eventItem => eventItem.ActorUserId == secondOwnerId);
+        }
+    }
+
+    [Fact]
+    public async Task Mutation_ActorDeownedWhileWaitingForItsTransactionLock_IsRejectedWithoutTargetOrAuditChanges()
+    {
+        await fixture.ResetAsync();
+        var actorId = await SeedActiveOwnerAsync();
+        await SeedActiveOwnerAsync(
+            AccessTestFixture.SecondOwnerSub,
+            AccessTestFixture.SecondOwnerEmail);
+        const string targetSub = "access-admin-deowned-actor-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var deownershipTransaction = await connection.BeginTransactionAsync();
+        await using (var command = new NpgsqlCommand(
+            "UPDATE users SET role_id = NULL, updated_at = now() WHERE id = @actor_id;",
+            connection,
+            deownershipTransaction))
+        {
+            command.Parameters.AddWithValue("actor_id", actorId);
+            await command.ExecuteNonQueryAsync();
+        }
+
+        await using var mutationScope = fixture.ApiServices.CreateAsyncScope();
+        var mutation = mutationScope.ServiceProvider.GetRequiredService<IAccessUserMutationService>()
+            .DisableAsync(
+                AccessTestFixture.OwnerSub,
+                new DisableAccessUserCommand(
+                    targetId,
+                    target.Version,
+                    "This mutation must lose authority before its transaction proceeds."),
+                CancellationToken.None);
+
+        var observedWaiters = 0;
+        try
+        {
+            observedWaiters = await WaitForAccessMutationLockWaitersAsync(1);
+        }
+        finally
+        {
+            await deownershipTransaction.CommitAsync();
+        }
+
+        var result = await mutation;
+
+        observedWaiters.Should().BeGreaterThanOrEqualTo(1);
+        result.Failure.Should().Be(AccessOperationFailure.ActorNoLongerOwner);
+        var persisted = (await fixture.GetUserBySubAsync(targetSub))!;
+        persisted.Status.Should().Be(UserStatus.Active);
+        persisted.Version.Should().Be(target.Version);
+        (await GetAuditEventsAsync(targetId)).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task ReplacePermissions_RejectsUnknownRetiredDuplicateAndGroupLikeCodes()
     {
         await fixture.ResetAsync();
@@ -456,13 +593,18 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             ApiMessages.AccessAdministrationInvalidRequest);
     }
 
-    private async Task<int> SeedActiveOwnerAsync()
+    private Task<int> SeedActiveOwnerAsync()
+    {
+        return SeedActiveOwnerAsync(AccessTestFixture.OwnerSub, AccessTestFixture.OwnerEmail);
+    }
+
+    private async Task<int> SeedActiveOwnerAsync(string sub, string email)
     {
         var ownerRoleId = (await fixture.GetRolesAsync()).Single(role => role.Name == RoleNames.Owner).Id;
         return await fixture.InsertUserAsync(new User
         {
-            LogtoSub = AccessTestFixture.OwnerSub,
-            Email = AccessTestFixture.OwnerEmail,
+            LogtoSub = sub,
+            Email = email,
             RoleId = ownerRoleId,
             Status = UserStatus.Active,
             CreatedAtUtc = DateTimeOffset.UtcNow,
@@ -537,6 +679,41 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await db.Database.ExecuteSqlInterpolatedAsync(
             $"UPDATE permissions SET retired_at = {DateTimeOffset.UtcNow} WHERE code = {permissionCode};");
+    }
+
+    private async Task<int> WaitForAccessMutationLockWaitersAsync(int expectedCount)
+    {
+        await using var observerConnection = new NpgsqlConnection(fixture.ConnectionString);
+        await observerConnection.OpenAsync();
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
+        var highestObservedCount = 0;
+        do
+        {
+            await using var command = new NpgsqlCommand(
+                """
+                SELECT count(*)::integer
+                FROM pg_stat_activity
+                WHERE datname = current_database()
+                  AND pid <> pg_backend_pid()
+                  AND state = 'active'
+                  AND wait_event_type = 'Lock'
+                  AND query LIKE '%SELECT id FROM users WHERE logto_sub =%'
+                  AND query LIKE '%ORDER BY id FOR UPDATE%'
+                """,
+                observerConnection);
+            highestObservedCount = Math.Max(
+                highestObservedCount,
+                Convert.ToInt32(await command.ExecuteScalarAsync()));
+            if (highestObservedCount >= expectedCount)
+            {
+                return highestObservedCount;
+            }
+
+            await Task.Delay(25);
+        }
+        while (DateTimeOffset.UtcNow < deadline);
+
+        return highestObservedCount;
     }
 
     private async Task<IReadOnlyList<AccessAuditEvent>> GetAuditEventsAsync(int targetUserId)

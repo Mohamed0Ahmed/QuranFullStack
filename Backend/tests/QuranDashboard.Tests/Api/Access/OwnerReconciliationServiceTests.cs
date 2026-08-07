@@ -188,6 +188,44 @@ public sealed class OwnerReconciliationServiceTests(AccessTestFixture fixture)
     }
 
     [Fact]
+    public async Task GetStatusAsync_DisabledConfiguredOwnerWithDirectGrants_RequiresOperatorCleanupWithoutReactivation()
+    {
+        await fixture.ResetAsync();
+        var activeOwnerId = await SeedConfiguredOwnerAsync(
+            AccessTestFixture.SecondOwnerSub,
+            UserStatus.Active,
+            owner: true);
+        var disabledOwnerId = await SeedConfiguredOwnerAsync(
+            AccessTestFixture.OwnerSub,
+            UserStatus.Disabled,
+            owner: true);
+        await SeedDirectGrantAsync(disabledOwnerId, activeOwnerId);
+
+        using (var scope = fixture.ApiServices.CreateScope())
+        {
+            var reconciliation = scope.ServiceProvider.GetRequiredService<IOwnerReconciliationService>();
+            var status = await reconciliation.GetStatusAsync(CancellationToken.None);
+
+            status.IsReady.Should().BeFalse();
+            status.Candidates.Should().Contain(candidate => candidate.UserId == disabledOwnerId
+                && candidate.State == OwnerReconciliationCandidateState.OwnerHasDirectGrants);
+            (await reconciliation.ReconcileAsync(
+                "Remove the disabled Owner's direct grant.",
+                CancellationToken.None)).IsReady.Should().BeTrue();
+        }
+
+        var disabledOwner = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
+        disabledOwner!.Status.Should().Be(UserStatus.Disabled);
+        disabledOwner.RoleId.Should().NotBeNull();
+        await using var queryScope = fixture.QueryServices.CreateAsyncScope();
+        var db = queryScope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        (await db.AccessUserPermissions.CountAsync(grant => grant.UserId == disabledOwnerId)).Should().Be(0);
+        (await db.AccessAuditEvents.Where(eventItem => eventItem.TargetUserId == disabledOwnerId)
+            .Select(eventItem => eventItem.ActionType).ToListAsync())
+            .Should().Equal(AccessAuditActionType.PermissionRevoked);
+    }
+
+    [Fact]
     public async Task ReconcileInteractiveSignInAsync_AuditInsertFailure_RollsBackPromotionAndGrantRevocation()
     {
         await fixture.ResetAsync();

@@ -8,6 +8,24 @@ public sealed class AccessSchemaDriftTests
 {
     public static IEnumerable<object[]> SchemaMutations =>
     [
+        ["DROP TABLE roles CASCADE;", "missing_table=roles"],
+        ["ALTER TABLE users DROP COLUMN logto_sub;", "missing_column=users.logto_sub"],
+        ["ALTER TABLE users DROP COLUMN role_id;", "missing_column=users.role_id"],
+        [
+            """
+            DROP INDEX "IX_users_logto_sub";
+            CREATE INDEX "IX_users_logto_sub" ON users USING btree (logto_sub);
+            """,
+            "invalid_index=users.IX_users_logto_sub"
+        ],
+        [
+            """
+            ALTER TABLE users DROP CONSTRAINT "FK_users_roles_role_id";
+            ALTER TABLE users ADD CONSTRAINT "FK_users_roles_role_id"
+                FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE;
+            """,
+            "invalid_constraint=users.FK_users_roles_role_id"
+        ],
         ["ALTER TABLE users ALTER COLUMN normalized_email DROP NOT NULL;", "invalid_nullability=users.normalized_email"],
         ["DROP INDEX \"IX_users_normalized_email\";", "missing_index=users.IX_users_normalized_email"],
         ["ALTER TABLE permissions DROP CONSTRAINT ck_permissions_code_format;", "missing_constraint=permissions.ck_permissions_code_format"],

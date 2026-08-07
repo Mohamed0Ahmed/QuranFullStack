@@ -72,6 +72,12 @@ public sealed class EfAccessAuditReader(QuranDashboardDbContext db) : IAccessAud
         CancellationToken cancellationToken)
     {
         var eventItem = await db.AccessAuditEvents
+            .FromSqlRaw(
+                """
+                SELECT *
+                FROM access_audit_events
+                WHERE metadata -> 'provenance' ->> 'operation' = 'owner-reconciliation'
+                """)
             .AsNoTracking()
             .Where(item => item.ActorType == AccessAuditActorType.System)
             .OrderByDescending(item => item.OccurredAtUtc)

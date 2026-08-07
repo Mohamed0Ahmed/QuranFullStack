@@ -71,9 +71,6 @@ export class AccessUserListComponent {
   }
 
   protected statusLabel(user: AccessUserSummary): string {
-    if (user.isOwner) {
-      return 'مالك';
-    }
     if (user.status === 'active') {
       return 'نشط';
     }

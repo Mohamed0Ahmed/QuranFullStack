@@ -10,9 +10,11 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { BehaviorSubject } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-import { ApiResponse } from '../data-access/api-response.model';
-import { CurrentUserResponse } from '../api/generated/models/current-user-response';
-import { CurrentUser } from './current-user.model';
+import type { ApiResponse } from '../data-access/api-response.model';
+import type { CurrentUserResponse } from '../api/generated/models/current-user-response';
+import { ACCESS_ME_CONTRACT_FIXTURES } from './auth.testing';
+import type { AccessMeContractFixture } from './auth.testing';
+import type { CurrentUser } from './current-user.model';
 import { CurrentUserStore } from './current-user.store';
 
 // `CurrentUserStore.load()` (Feature 033, Phase 1) must NEVER throw — an envelope- or HTTP-level
@@ -22,23 +24,83 @@ import { CurrentUserStore } from './current-user.store';
 const ME_URL = `${environment.apiBaseUrl}/api/access/me`;
 const FALLBACK_MESSAGE = 'تعذر تحميل بيانات المستخدم الحالي.';
 
-const CURRENT_USER: CurrentUser = {
-  sub: 'logto-subject-1',
-  email: 'teacher@example.test',
-  displayName: 'معلّم',
-  status: 'pending',
-  isOwner: false,
-  permissions: [],
-};
+interface AccessDecisionCase {
+  name: string;
+  fixture: AccessMeContractFixture;
+  expectedUser: CurrentUser;
+  canCreateDoor: boolean;
+  canArchiveDoor: boolean;
+}
 
-const OWNER_USER: CurrentUser = {
-  sub: 'logto-subject-owner',
-  email: 'owner@example.test',
-  displayName: 'المالك',
-  status: 'active',
-  isOwner: true,
-  permissions: [],
-};
+const ACCESS_DECISION_CASES = [
+  {
+    name: 'pending',
+    fixture: ACCESS_ME_CONTRACT_FIXTURES.pending,
+    expectedUser: {
+      sub: 'test-pending',
+      email: 'pending@example.test',
+      displayName: null,
+      status: 'pending',
+      isOwner: false,
+      permissions: [],
+    },
+    canCreateDoor: false,
+    canArchiveDoor: false,
+  },
+  {
+    name: 'read-only',
+    fixture: ACCESS_ME_CONTRACT_FIXTURES.readOnly,
+    expectedUser: {
+      sub: 'test-read-only',
+      email: 'read-only@example.test',
+      displayName: 'Read only',
+      status: 'active',
+      isOwner: false,
+      permissions: [],
+    },
+    canCreateDoor: false,
+    canArchiveDoor: false,
+  },
+  {
+    name: 'exact-permission',
+    fixture: ACCESS_ME_CONTRACT_FIXTURES.exactPermission,
+    expectedUser: {
+      sub: 'test-exact-permission',
+      email: 'exact@example.test',
+      displayName: 'Exact permission',
+      status: 'active',
+      isOwner: false,
+      permissions: ['abwab.doors.create'],
+    },
+    canCreateDoor: true,
+    canArchiveDoor: false,
+  },
+  {
+    name: 'Owner',
+    fixture: ACCESS_ME_CONTRACT_FIXTURES.owner,
+    expectedUser: {
+      sub: 'test-owner',
+      email: 'owner@example.test',
+      displayName: 'Owner',
+      status: 'active',
+      isOwner: true,
+      permissions: [],
+    },
+    canCreateDoor: true,
+    canArchiveDoor: true,
+  },
+] satisfies readonly AccessDecisionCase[];
+
+function flushCurrentUser(
+  httpTesting: HttpTestingController,
+  fixture: AccessMeContractFixture,
+): void {
+  httpTesting.expectOne(ME_URL).flush({
+    isSuccess: true,
+    message: 'تم',
+    data: fixture,
+  } satisfies ApiResponse<AccessMeContractFixture>);
+}
 
 describe('CurrentUserStore.load', () => {
   let store: CurrentUserStore;
@@ -70,34 +132,45 @@ describe('CurrentUserStore.load', () => {
 
   it('refreshes the access snapshot when an authenticated session is observed', async () => {
     authentication.next({ isAuthenticated: true });
-    httpTesting.expectOne(ME_URL).flush({ isSuccess: true, message: 'تم', data: OWNER_USER });
+    flushCurrentUser(httpTesting, ACCESS_ME_CONTRACT_FIXTURES.owner);
 
     await Promise.resolve();
 
     expect(store.isAuthenticated()).toBe(true);
-    expect(store.currentUser()).toEqual(OWNER_USER);
+    expect(store.currentUser()?.sub).toBe('test-owner');
   });
 
-  it('populates currentUser from a successful envelope and clears any error', () => {
+  it.each(ACCESS_DECISION_CASES)(
+    '$name /me fixture drives the complete snapshot and access decision',
+    ({ fixture, expectedUser, canCreateDoor, canArchiveDoor }) => {
+      store.load();
+      flushCurrentUser(httpTesting, fixture);
+
+      expect(store.currentUser()).toEqual(expectedUser);
+      expect([...store.permissions()]).toEqual(expectedUser.permissions);
+      expect(store.isActive()).toBe(expectedUser.status === 'active');
+      expect(store.isOwner()).toBe(expectedUser.isOwner);
+      expect(store.can('abwab.doors.create')).toBe(canCreateDoor);
+      expect(store.can('abwab.doors.archive')).toBe(canArchiveDoor);
+      expect(store.canAny(['abwab.doors.archive', 'abwab.doors.create'])).toBe(
+        canArchiveDoor || canCreateDoor,
+      );
+      expect(store.errorMessage()).toBeNull();
+    },
+  );
+
+  it('clears a previously loaded user when a later load fails', () => {
     store.load();
+    flushCurrentUser(httpTesting, ACCESS_ME_CONTRACT_FIXTURES.pending);
+    expect(store.currentUser()?.sub).toBe('test-pending');
 
-    const response: ApiResponse<CurrentUser> = { isSuccess: true, message: 'تم', data: CURRENT_USER };
-    httpTesting.expectOne(ME_URL).flush(response);
-
-    expect(store.currentUser()).toEqual(CURRENT_USER);
-    expect(store.errorMessage()).toBeNull();
-  });
-
-  it('authorizes an active Owner without direct permissions', () => {
     store.load();
-
     httpTesting
       .expectOne(ME_URL)
-      .flush({ isSuccess: true, message: 'تم', data: OWNER_USER } satisfies ApiResponse<CurrentUser>);
+      .flush({ isSuccess: false, message: 'انتهت الجلسة', data: null });
 
-    expect(store.currentUser()).toEqual(OWNER_USER);
-    expect(store.permissions().size).toBe(0);
-    expect(store.can('abwab.template_nodes.delete')).toBe(true);
+    expect(store.currentUser()).toBeNull();
+    expect(store.errorMessage()).toBe('انتهت الجلسة');
   });
 
   const failureCases: { name: string; flush: (req: TestRequest) => void; expected: string }[] = [
@@ -139,38 +212,14 @@ describe('CurrentUserStore.load', () => {
     },
   );
 
-  it('clears a previously loaded user when a later load fails', () => {
-    store.load();
-    httpTesting.expectOne(ME_URL).flush({ isSuccess: true, message: 'تم', data: CURRENT_USER });
-    expect(store.currentUser()).toEqual(CURRENT_USER);
-
-    store.load();
-    httpTesting.expectOne(ME_URL).flush({ isSuccess: false, message: 'انتهت الجلسة', data: null });
-
-    expect(store.currentUser()).toBeNull();
-    expect(store.errorMessage()).toBe('انتهت الجلسة');
-  });
-
-  it('authorizes an active non-owner only from the typed permission set', () => {
-    const editor: CurrentUser = {
-      ...CURRENT_USER,
-      status: 'active',
-      permissions: ['abwab.doors.edit'],
+  it('retains owner identity for a disabled Owner while failing closed for permissions', () => {
+    const disabledOwner: AccessMeContractFixture = {
+      ...ACCESS_ME_CONTRACT_FIXTURES.owner,
+      status: 'disabled',
     };
 
     store.load();
-    httpTesting.expectOne(ME_URL).flush({ isSuccess: true, message: 'تم', data: editor });
-
-    expect(store.can('abwab.doors.edit')).toBe(true);
-    expect(store.can('abwab.doors.archive')).toBe(false);
-    expect(store.canAny(['abwab.doors.archive', 'abwab.doors.edit'])).toBe(true);
-  });
-
-  it('retains owner identity for a disabled Owner while failing closed for permissions', () => {
-    const disabledOwner: CurrentUser = { ...OWNER_USER, status: 'disabled' };
-
-    store.load();
-    httpTesting.expectOne(ME_URL).flush({ isSuccess: true, message: 'تم', data: disabledOwner });
+    flushCurrentUser(httpTesting, disabledOwner);
 
     expect(store.isOwner()).toBe(true);
     expect(store.isActive()).toBe(false);
@@ -179,7 +228,7 @@ describe('CurrentUserStore.load', () => {
 
   it('fails closed when /me contains an unknown permission code', () => {
     const malformed: CurrentUserResponse = {
-      ...CURRENT_USER,
+      ...ACCESS_ME_CONTRACT_FIXTURES.pending,
       status: 'active',
       permissions: ['abwab.unknown.write'],
     };
@@ -195,24 +244,22 @@ describe('CurrentUserStore.load', () => {
   describe('ensureLoaded', () => {
     it('resolves after a single request and populates the access snapshot', async () => {
       const settled = store.ensureLoaded();
-      httpTesting
-        .expectOne(ME_URL)
-        .flush({ isSuccess: true, message: 'تم', data: OWNER_USER } satisfies ApiResponse<CurrentUser>);
+      flushCurrentUser(httpTesting, ACCESS_ME_CONTRACT_FIXTURES.owner);
 
       await expect(settled).resolves.toBeUndefined();
-      expect(store.currentUser()).toEqual(OWNER_USER);
+      expect(store.currentUser()?.sub).toBe('test-owner');
       expect(store.isOwner()).toBe(true);
     });
 
     it('loads once and caches — a second call issues no further request', async () => {
       const first = store.ensureLoaded();
-      httpTesting.expectOne(ME_URL).flush({ isSuccess: true, message: 'تم', data: CURRENT_USER });
+      flushCurrentUser(httpTesting, ACCESS_ME_CONTRACT_FIXTURES.pending);
       await first;
 
       await store.ensureLoaded();
 
       httpTesting.expectNone(ME_URL);
-      expect(store.currentUser()).toEqual(CURRENT_USER);
+      expect(store.currentUser()?.sub).toBe('test-pending');
     });
 
     it('never rejects on failure — it resolves with a calm Arabic message and a null user', async () => {
@@ -250,12 +297,10 @@ describe('CurrentUserStore.load', () => {
         expect(store.errorMessage()).not.toBeNull();
 
         const second = store.ensureLoaded();
-        httpTesting
-          .expectOne(ME_URL)
-          .flush({ isSuccess: true, message: 'تم', data: OWNER_USER } satisfies ApiResponse<CurrentUser>);
+        flushCurrentUser(httpTesting, ACCESS_ME_CONTRACT_FIXTURES.owner);
         await second;
 
-        expect(store.currentUser()).toEqual(OWNER_USER);
+        expect(store.currentUser()?.sub).toBe('test-owner');
         expect(store.errorMessage()).toBeNull();
       },
     );
@@ -266,10 +311,10 @@ describe('CurrentUserStore.load', () => {
 
       // expectOne asserts a single in-flight request; it throws if load() and ensureLoaded()
       // each fired their own GET.
-      httpTesting.expectOne(ME_URL).flush({ isSuccess: true, message: 'تم', data: OWNER_USER });
+      flushCurrentUser(httpTesting, ACCESS_ME_CONTRACT_FIXTURES.owner);
       await guarded;
 
-      expect(store.currentUser()).toEqual(OWNER_USER);
+      expect(store.currentUser()?.sub).toBe('test-owner');
     });
   });
 
@@ -279,12 +324,20 @@ describe('CurrentUserStore.load', () => {
     const requests = httpTesting.match(ME_URL);
 
     expect(requests).toHaveLength(2);
-    requests[1].flush({ isSuccess: true, message: 'تم', data: OWNER_USER });
-    requests[0].flush({ isSuccess: true, message: 'تم', data: CURRENT_USER });
+    requests[1].flush({
+      isSuccess: true,
+      message: 'تم',
+      data: ACCESS_ME_CONTRACT_FIXTURES.owner,
+    });
+    requests[0].flush({
+      isSuccess: true,
+      message: 'تم',
+      data: ACCESS_ME_CONTRACT_FIXTURES.pending,
+    });
 
     await Promise.all([first, refreshed]);
 
-    expect(store.currentUser()).toEqual(OWNER_USER);
+    expect(store.currentUser()?.sub).toBe('test-owner');
     expect(store.isOwner()).toBe(true);
   });
 
@@ -293,7 +346,11 @@ describe('CurrentUserStore.load', () => {
     const request = httpTesting.expectOne(ME_URL);
 
     store.clear();
-    request.flush({ isSuccess: true, message: 'تم', data: OWNER_USER });
+    request.flush({
+      isSuccess: true,
+      message: 'تم',
+      data: ACCESS_ME_CONTRACT_FIXTURES.owner,
+    });
     await pending;
 
     expect(store.currentUser()).toBeNull();

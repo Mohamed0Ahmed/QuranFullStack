@@ -1,8 +1,9 @@
 # Quran Dashboard Backend
 
 .NET 10 / ASP.NET Core / EF Core / PostgreSQL backend for the Quran Dashboard
-(المنهج القرآني). Clean Architecture. **Read-only** over curated Quran data at the API;
-writes happen only through the import/generate CLI.
+(المنهج القرآني). Clean Architecture. The API is read-heavy over curated Quran data and
+also exposes permission-protected Abwab writes plus Owner-only access administration;
+bulk import and generation writes remain CLI-only.
 
 > HOW to work here (rules): `.architecture/BACKEND_STRUCTURE.md`,
 > `.architecture/CLEAN_ARCHITECTURE.md`, `.architecture/API_GUIDELINES.md`,

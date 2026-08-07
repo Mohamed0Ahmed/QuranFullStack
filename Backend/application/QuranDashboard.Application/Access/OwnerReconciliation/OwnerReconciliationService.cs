@@ -100,7 +100,9 @@ public sealed class OwnerReconciliationService(
                 evaluations.Add(new OwnerCandidateEvaluation(
                     configuredEmail,
                     user,
-                    OwnerReconciliationCandidateState.ConfiguredDisabled));
+                    user.IsOwner && user.DirectGrants.Count > 0
+                        ? OwnerReconciliationCandidateState.OwnerHasDirectGrants
+                        : OwnerReconciliationCandidateState.ConfiguredDisabled));
                 continue;
             }
 

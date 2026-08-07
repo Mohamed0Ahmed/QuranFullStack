@@ -45,7 +45,12 @@
         >
           <span class="access-user-list__name">{{ user.displayName || user.email }}</span>
           <span class="access-user-list__email" dir="ltr">{{ user.email }}</span>
-          <span class="qd-badge">{{ statusLabel(user) }}</span>
+          <span class="access-user-list__badges">
+            @if (user.isOwner) {
+              <span class="qd-badge qd-badge--accent">مالك</span>
+            }
+            <span class="qd-badge">{{ statusLabel(user) }}</span>
+          </span>
         </button>
       }
     </div>

@@ -1,5 +1,6 @@
-using QuranDashboard.Domain.Access;
+using QuranDashboard.Application.Abstractions.Access;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
+using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Tests.Api.Access;
 
@@ -130,6 +131,54 @@ public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture)
         }
     }
 
+    [Fact]
+    public async Task GetLatestOwnerReconciliationAsync_IgnoresNewerSystemEventsFromOtherOperations()
+    {
+        await fixture.ResetAsync();
+        var targetId = await fixture.InsertPersonaAsync("ReadOnly");
+        var ownerReconciliationAt = DateTimeOffset.UtcNow.AddMinutes(-2);
+        var legacyConversionAt = ownerReconciliationAt.AddMinutes(1);
+
+        await using (var scope = fixture.QueryServices.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+            db.AccessAuditEvents.AddRange(
+                CreateAuditEvent(
+                    targetId,
+                    metadata: new AccessAuditMetadata(
+                        1,
+                        provenance: new Dictionary<string, string>
+                        {
+                            ["operation"] = "owner-reconciliation",
+                        }),
+                    occurredAtUtc: ownerReconciliationAt,
+                    actionType: AccessAuditActionType.OwnerGrantedByReconciliation,
+                    reason: "Owner reconciliation completed."),
+                CreateAuditEvent(
+                    targetId,
+                    metadata: new AccessAuditMetadata(
+                        1,
+                        provenance: new Dictionary<string, string>
+                        {
+                            ["operation"] = "legacy-role-conversion",
+                        }),
+                    occurredAtUtc: legacyConversionAt,
+                    actionType: AccessAuditActionType.LegacyRoleRemoved,
+                    reason: "Legacy role conversion completed."));
+            await db.SaveChangesAsync();
+        }
+
+        await using var readScope = fixture.ApiServices.CreateAsyncScope();
+        var summary = await readScope.ServiceProvider.GetRequiredService<IAccessAuditReader>()
+            .GetLatestOwnerReconciliationAsync(CancellationToken.None);
+
+        summary.Should().NotBeNull();
+        summary!.ActionType.Should().Be(nameof(AccessAuditActionType.OwnerGrantedByReconciliation));
+        summary.TargetUserId.Should().Be(targetId);
+        summary.Reason.Should().Be("Owner reconciliation completed.");
+        summary.OccurredAtUtc.Should().BeCloseTo(ownerReconciliationAt, TimeSpan.FromMilliseconds(1));
+    }
+
     [Theory]
     [InlineData("{}")]
     [InlineData("{\"schemaVersion\":0}")]
@@ -191,11 +240,14 @@ public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture)
     private static AccessAuditEvent CreateAuditEvent(
         int targetUserId,
         string actorSnapshotJson = "{\"actor\":\"system\"}",
-        AccessAuditMetadata? metadata = null)
+        AccessAuditMetadata? metadata = null,
+        DateTimeOffset? occurredAtUtc = null,
+        AccessAuditActionType actionType = AccessAuditActionType.UserAccepted,
+        string reason = "test")
     {
         return new AccessAuditEvent(
-            DateTimeOffset.UtcNow,
-            AccessAuditActionType.UserAccepted,
+            occurredAtUtc ?? DateTimeOffset.UtcNow,
+            actionType,
             AccessAuditActorType.System,
             null,
             targetUserId,
@@ -204,7 +256,7 @@ public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture)
             null,
             null,
             "{\"status\":\"pending\"}",
-            "test",
+            reason,
             metadata ?? new AccessAuditMetadata(1));
     }
 }

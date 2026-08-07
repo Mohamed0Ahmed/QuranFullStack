@@ -81,7 +81,11 @@
   font-size: 0.8125rem;
 }
 
-.access-user-list__item .qd-badge {
+.access-user-list__badges {
   grid-row: span 2;
   grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--qd-space-1);
 }

@@ -4,6 +4,7 @@ internal static class AuthorizationSchemaRequirements
 {
     internal static readonly IReadOnlyList<string> Tables =
     [
+        "roles",
         "users",
         "permissions",
         "user_permissions",
@@ -15,7 +16,9 @@ internal static class AuthorizationSchemaRequirements
 
     internal static readonly IReadOnlyList<AuthorizationSchemaColumnRequirement> Columns =
     [
+        new("users", "logto_sub", false, "text", NoIdentity),
         new("users", "normalized_email", false, "text", NoIdentity),
+        new("users", "role_id", true, "integer", NoIdentity),
         new("users", "status", false, "integer", NoIdentity),
         new("permissions", "id", false, "integer", IdentityByDefault),
         new("permissions", "code", false, "character varying(128)", NoIdentity),
@@ -46,6 +49,9 @@ internal static class AuthorizationSchemaRequirements
     [
         new("users", "PK_users", """
             PRIMARY KEY (id)
+            """),
+        new("users", "FK_users_roles_role_id", """
+            FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT
             """),
         new("permissions", "PK_permissions", """
             PRIMARY KEY (id)
@@ -93,6 +99,9 @@ internal static class AuthorizationSchemaRequirements
     [
         new("users", "PK_users", """
             CREATE UNIQUE INDEX "PK_users" ON users USING btree (id)
+            """),
+        new("users", "IX_users_logto_sub", """
+            CREATE UNIQUE INDEX "IX_users_logto_sub" ON users USING btree (logto_sub)
             """),
         new("users", "IX_users_normalized_email", """
             CREATE UNIQUE INDEX "IX_users_normalized_email" ON users USING btree (normalized_email)

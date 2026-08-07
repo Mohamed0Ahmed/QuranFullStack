@@ -250,6 +250,83 @@ public sealed class LogtoSubjectRelinkEndpointTests(AccessTestFixture fixture)
     }
 
     [Fact]
+    public async Task ConcurrentOwners_RelinkingTheSameTargetToTheSameSubject_CommitsOnceAndRejectsTheOtherAsStale()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        var firstOwnerId = await SeedActiveOwnerAsync();
+        var secondOwnerId = await SeedActiveOwnerAsync(
+            AccessTestFixture.SecondOwnerSub,
+            AccessTestFixture.SecondOwnerEmail);
+        const string targetSub = "access-admin-concurrent-relink-target";
+        const string newSub = "access-admin-concurrent-relink-replacement";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
+        await AddGrantAsync(targetId, firstOwnerId, AbwabPermissions.Doors.Create);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        fixture.ProfileSource.ReturnEmailFor(newSub, target.Email);
+        var evidenceToken = EvidenceToken(newSub, target.Email, emailVerified: true);
+        var profileBlock = fixture.ProfileSource.BlockNextProfileFor(newSub);
+        using var firstClient = CreateOwnerClient();
+        using var secondClient = CreateOwnerClient(AccessTestFixture.SecondOwnerSub);
+
+        var firstRequest = firstClient.PostAsJsonAsync(
+            $"/api/access/users/{targetId}/logto-sub/relink/confirm",
+            new
+            {
+                expectedVersion = target.Version,
+                oldSub = targetSub,
+                newSub,
+                reason = "Relink the target from the first Owner.",
+                confirmed = true,
+                evidenceToken,
+            });
+        var secondRequest = secondClient.PostAsJsonAsync(
+            $"/api/access/users/{targetId}/logto-sub/relink/confirm",
+            new
+            {
+                expectedVersion = target.Version,
+                oldSub = targetSub,
+                newSub,
+                reason = "Relink the target from the second Owner.",
+                confirmed = true,
+                evidenceToken,
+            });
+
+        await profileBlock.WaitUntilEnteredAsync();
+        profileBlock.Release();
+        var responses = await Task.WhenAll(firstRequest, secondRequest);
+        try
+        {
+            responses.Select(response => response.StatusCode).Should().BeEquivalentTo(
+                [HttpStatusCode.OK, HttpStatusCode.Conflict]);
+            var conflict = responses.Single(response => response.StatusCode == HttpStatusCode.Conflict);
+            await ApiEnvelope.AssertFailureEnvelopeAsync(
+                conflict,
+                HttpStatusCode.Conflict,
+                ApiMessages.AccessAdministrationStaleVersion);
+
+            var persisted = (await fixture.GetUserBySubAsync(newSub))!;
+            persisted.Id.Should().Be(targetId);
+            persisted.Status.Should().Be(UserStatus.Active);
+            persisted.RoleId.Should().BeNull();
+            (await GetGrantCodesAsync(targetId)).Should().Equal(AbwabPermissions.Doors.Create);
+            var audit = (await GetAuditEventsAsync(targetId)).Should().ContainSingle().Subject;
+            audit.ActionType.Should().Be(AccessAuditActionType.LogtoSubjectRelinked);
+            audit.ActorUserId.Should().Be(
+                responses[0].StatusCode == HttpStatusCode.OK
+                    ? firstOwnerId
+                    : secondOwnerId);
+        }
+        finally
+        {
+            foreach (var response in responses)
+            {
+                response.Dispose();
+            }
+        }
+    }
+
+    [Fact]
     public async Task OwnerRelink_RequiresTheConfiguredOwnerToBeSuccessfullyReconciled()
     {
         await fixture.ResetAsync();
@@ -276,13 +353,18 @@ public sealed class LogtoSubjectRelinkEndpointTests(AccessTestFixture fixture)
         (await GetAuditEventsAsync(ownerId)).Should().BeEmpty();
     }
 
-    private async Task<int> SeedActiveOwnerAsync()
+    private Task<int> SeedActiveOwnerAsync()
+    {
+        return SeedActiveOwnerAsync(AccessTestFixture.OwnerSub, AccessTestFixture.OwnerEmail);
+    }
+
+    private async Task<int> SeedActiveOwnerAsync(string sub, string email)
     {
         var ownerRoleId = (await fixture.GetRolesAsync()).Single(role => role.Name == RoleNames.Owner).Id;
         return await fixture.InsertUserAsync(new User
         {
-            LogtoSub = AccessTestFixture.OwnerSub,
-            Email = AccessTestFixture.OwnerEmail,
+            LogtoSub = sub,
+            Email = email,
             RoleId = ownerRoleId,
             Status = UserStatus.Active,
             CreatedAtUtc = DateTimeOffset.UtcNow,
@@ -290,12 +372,12 @@ public sealed class LogtoSubjectRelinkEndpointTests(AccessTestFixture fixture)
         });
     }
 
-    private HttpClient CreateOwnerClient()
+    private HttpClient CreateOwnerClient(string ownerSub = AccessTestFixture.OwnerSub)
     {
         var client = fixture.CreateApiClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer",
-            TestJwtTokens.Mint(AccessTestFixture.OwnerSub));
+            TestJwtTokens.Mint(ownerSub));
         return client;
     }
 
