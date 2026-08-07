@@ -15,7 +15,7 @@ writes happen only through the import/generate CLI.
 - **Import/generate pipelines** — foundation, morphology (+ enriched), simple/full إعراب,
   mutashabihat, tafsirs, translations, navigation metadata, display-word rebuild.
 - **Access foundation** — normalized identity, the 19-code Abwab catalogue, direct-grant/audit
-  persistence, the operator preflight CLI, the request-scoped database authorization core, exact permission
+  persistence, the operator conversion/preflight CLI, the request-scoped database authorization core, exact permission
   metadata on all twenty-one Abwab writes, and fail-closed unsafe-endpoint startup validation. Active Owners
   can administer non-Owner users, direct grants, audit history, and verified Logto-subject relinks through
   transactional Backend APIs; Owner membership/configuration remains reconciliation-only. Public GETs,
@@ -36,7 +36,7 @@ infrastructure/QuranDashboard.Infrastructure
   Persistence/{Configurations,Migrations,QuranDashboardDbContext.cs}
 shared/QuranDashboard.Shared           Result/Error primitives
 tools/QuranDashboard.DataImporter      import/generate CLI                    → see its README
-tools/QuranDashboard.AccessAdmin       access preflight CLI                    → see its README
+tools/QuranDashboard.AccessAdmin       access conversion/preflight CLI         → see its README
 tests/QuranDashboard.Tests
 scripts/                               dev CLI shortcuts                      → see its README
 ```

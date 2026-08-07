@@ -8,8 +8,7 @@ public sealed class OwnerReconciliationService(
     IOwnerReconciliationStore store,
     IOwnerBootstrapConfigurationSource configurationSource,
     IExternalUserProfileSource profileSource,
-    IEmailIdentityNormalizer emailIdentityNormalizer,
-    IUserRoleResolver roleResolver) : IOwnerReconciliationService
+    IEmailIdentityNormalizer emailIdentityNormalizer) : IOwnerReconciliationService
 {
     private const int MaximumReasonLength = 1024;
 
@@ -69,10 +68,6 @@ public sealed class OwnerReconciliationService(
 
         await lease.ApplyAsync(mutation, cancellationToken);
         await lease.CommitAsync(cancellationToken);
-        foreach (var changedUser in plan.ChangedUsers)
-        {
-            roleResolver.Evict(changedUser.LogtoSub);
-        }
 
         return ToResult(plan, applied: true);
     }
@@ -384,12 +379,6 @@ public sealed class OwnerReconciliationService(
     {
         public bool HasChanges => Additions.Count > 0 || Removals.Count > 0 || GrantCleanup.Count > 0;
 
-        public IReadOnlyList<OwnerReconciliationUser> ChangedUsers => Additions
-            .Concat(Removals)
-            .Concat(GrantCleanup)
-            .Select(candidate => candidate.User!)
-            .DistinctBy(user => user.Id)
-            .ToArray();
     }
 
     private enum ReconciliationMode

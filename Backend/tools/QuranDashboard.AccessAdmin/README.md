@@ -1,8 +1,9 @@
 # AccessAdmin CLI
 
 `QuranDashboard.AccessAdmin` is the operator boundary for normalized identity, the canonical
-permission catalogue, and explicit Phase 3 Owner reconciliation. It uses the shared application
-and infrastructure services, never silently migrates the database, and exposes no HTTP mutation.
+permission catalogue, explicit Owner reconciliation, and legacy Admin/Editor conversion. It uses the
+shared application and infrastructure services, never silently migrates the database, and exposes no
+HTTP mutation.
 
 ## Commands
 
@@ -15,7 +16,9 @@ and infrastructure services, never silently migrates the database, and exposes n
 | `owners status` | Reports desired/current Owner reconciliation state without mutation. Configured users that have not supplied verified interactive evidence are `AwaitingVerifiedSignIn`. |
 | `owners reconcile --dry-run` | Reports the same read-only reconciliation delta; an apply always reacquires the lock and recomputes trusted state. |
 | `owners reconcile --apply --reason <text> [--confirm-production]` | Applies only safe removals and Owner direct-grant cleanup after resolved provider matching and last-active-Owner checks. It never promotes a new Owner. `--confirm-production` is required when the tool runs in Production. |
-| `authorization preflight` | Requires the live Phase 2 tables, columns, indexes, and constraints; no pending migrations; clean normalized identity data; exact canonical database-code parity with no canonical code retired; and reconciled ready Owner state. |
+| `legacy-roles inventory` | Read-only inventory of every role-bearing Owner/Admin/Editor user: ID, role ID/name, status, normalized email, `sub`, and direct-grant count. It also reports Owner reconciliation and conversion-preflight violations. |
+| `legacy-roles convert --apply [--confirm-production]` | Rechecks and locks the inventory, then clears only zero-grant Admin/Editor relations in one transaction and appends an audit event per user. It never derives permissions from a removed role and refuses on any conversion preflight violation. `--confirm-production` is required when the tool runs in Production. |
+| `authorization preflight` | Requires the live Phase 2 tables, columns, indexes, and constraints; no pending migrations; clean normalized identity data; exact canonical database-code parity with no canonical code retired; reconciled ready Owner state; and no Admin/Editor reference. |
 
 Indexes and constraints are compared by their **actual PostgreSQL definition**
 (`pg_get_indexdef` / `pg_get_constraintdef`, whitespace-normalized), not by name, so a same-named
@@ -66,6 +69,38 @@ When `DOTNET_ENVIRONMENT=Production`, add `--confirm-production` to the apply co
 does not reserve its outcome: apply always takes the advisory lock and reloads configuration,
 database rows, and provider evidence before it computes and commits its own delta.
 
+## Legacy conversion before cleanup
+
+The cleanup migration deletes only the seeded Admin and Editor rows. The existing restrictive
+`users.role_id` foreign key is intentional: if any user still references either row, PostgreSQL rejects
+the migration rather than cascading or changing a user.
+
+Before an operator applies that migration, perform and retain this sequence under the short access-admin
+write freeze:
+
+1. Run `legacy-roles inventory` and retain its non-secret per-user output and counts.
+2. Confirm the intended Owner set through the configured normalized emails and current Logto provider
+   identity matching reported by the command; only previously verified interactive-OIDC promotions remain
+   Owners, while configured users without that evidence remain `AwaitingVerifiedSignIn`.
+3. Resolve every inventory/preflight violation. In particular, a former Admin/Editor user with a direct
+   grant is refused; remove that explicit grant through the normal audited administration path before
+   conversion rather than preserving or inferring anything from the removed role.
+4. Run `legacy-roles convert --apply` (add `--confirm-production` in Production). It locks and rereads
+   the rows, clears former Admin/Editor `RoleId` values transactionally, writes no grants, and records
+   one audit event per converted user.
+5. Run `legacy-roles inventory` again and retain the before/after counts and identifiers. It must show
+   no Admin/Editor reference.
+6. Run `authorization preflight`; before the cleanup migration it is expected to remain non-zero for the
+   pending migration, but it must not report a legacy-role reference or conversion-preflight violation.
+7. Apply the generated cleanup migration through the deployment process, then rerun
+   `authorization preflight` for a fully clean result.
+
+**UNMET operational precondition in this environment:** the conversion and generated cleanup migration
+have been validated only with Testcontainers from an empty database through the current migration and
+cleanup. That is not a production-like rehearsal. Before this migration is applied to any real or shared
+database, an operator must rehearse the sequence above against a production-like copy and retain the
+before/after inventory artifact. Never use this tool or migration workflow to fabricate that rehearsal.
+
 The executable loads its copied `appsettings.json` beside the compiled tool, then Development user
 secrets for this tool, then environment variables. Set `ConnectionStrings__QuranDashboardDb` to
 override the connection without changing files; the command works from any current directory. User
@@ -85,5 +120,5 @@ promotes a user from Management API data. A configured user becomes Owner only d
 authenticated interactive sign-in after Backend OIDC validation confirms matching `sub`, present
 normalized `email`, and `email_verified=true`. Provider unavailability returns stable exit `4` as
 `access_admin_failure=LogtoProviderUnavailable` without provider URLs, subjects, tokens, or response
-payloads. Direct-grant administration, endpoint enforcement, and legacy-role conversion remain later
-phases and are deliberately absent from this executable.
+payloads. Direct-grant administration and endpoint enforcement are handled elsewhere; this executable
+does not expose endpoint or direct-grant mutation.

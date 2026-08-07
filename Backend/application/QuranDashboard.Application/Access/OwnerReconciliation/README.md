@@ -11,5 +11,4 @@ grants after the last-active-Owner check passes. Configured users waiting for th
 interactive sign-in are reported as `AwaitingVerifiedSignIn` and do not block another active Owner.
 
 The use case creates immutable role, grant, audit, and provenance decisions. The infrastructure
-lease persists them atomically under the dedicated PostgreSQL advisory lock, and this use case
-evicts affected role-cache entries only after commit.
+lease persists them atomically under the dedicated PostgreSQL advisory lock.

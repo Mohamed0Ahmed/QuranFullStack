@@ -76,12 +76,37 @@ internal static class AccessAdminInProcess
         string connectionString,
         params string[] args)
     {
-        using var processState = ProcessGlobalStateScope.Enter(
-            environmentVariables: new Dictionary<string, string?>(StringComparer.Ordinal)
+        return await RunCoreAsync(connectionString, null, args);
+    }
+
+    internal static async Task<AccessAdminRun> RunAsync(
+        string connectionString,
+        IReadOnlyDictionary<string, string?> additionalEnvironmentVariables,
+        params string[] args)
+    {
+        return await RunCoreAsync(connectionString, additionalEnvironmentVariables, args);
+    }
+
+    private static async Task<AccessAdminRun> RunCoreAsync(
+        string connectionString,
+        IReadOnlyDictionary<string, string?>? additionalEnvironmentVariables,
+        params string[] args)
+    {
+        var environmentVariables = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            [AccessAdminConnectionString.EnvironmentVariable] = connectionString,
+            ["OwnerBootstrap__Emails__0"] = "owner-preflight@example.test",
+        };
+        if (additionalEnvironmentVariables is not null)
+        {
+            foreach (var environmentVariable in additionalEnvironmentVariables)
             {
-                [AccessAdminConnectionString.EnvironmentVariable] = connectionString,
-                ["OwnerBootstrap__Emails__0"] = "owner-preflight@example.test",
-            },
+                environmentVariables[environmentVariable.Key] = environmentVariable.Value;
+            }
+        }
+
+        using var processState = ProcessGlobalStateScope.Enter(
+            environmentVariables: environmentVariables,
             captureConsole: true);
 
         var exitCode = await AccessAdminProgram.Main(args);

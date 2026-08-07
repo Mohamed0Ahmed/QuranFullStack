@@ -97,8 +97,6 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             CancellationToken.None);
 
         result.Status.Should().Be(UserStatus.Pending);
-        result.RoleId.Should().BeNull();
-        result.RoleName.Should().BeNull();
 
         var persisted = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
         persisted!.Status.Should().Be(UserStatus.Pending);
@@ -117,7 +115,6 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             CancellationToken.None);
 
         result.Status.Should().Be(UserStatus.Active);
-        result.RoleName.Should().Be(RoleNames.Owner);
 
         var persisted = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
         persisted!.Status.Should().Be(UserStatus.Active);
@@ -146,7 +143,6 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             CancellationToken.None);
 
         result.Status.Should().Be(UserStatus.Active);
-        result.RoleName.Should().Be(RoleNames.Owner);
     }
 
     [Fact]
@@ -163,7 +159,7 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             CancellationToken.None);
         var status = await reconciliation.GetStatusAsync(CancellationToken.None);
 
-        promoted.RoleName.Should().Be(RoleNames.Owner);
+        promoted.Status.Should().Be(UserStatus.Active);
         status.IsReady.Should().BeTrue();
         status.Candidates.Should().Contain(candidate => candidate.NormalizedEmail == AccessTestFixture.SecondOwnerEmail.ToUpperInvariant()
             && candidate.State == OwnerReconciliationCandidateState.AwaitingVerifiedSignIn);
@@ -292,7 +288,6 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             CancellationToken.None);
 
         result.Status.Should().Be(UserStatus.Disabled);
-        result.RoleId.Should().BeNull();
 
         var persisted = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
         persisted!.Status.Should().Be(UserStatus.Disabled);
@@ -312,7 +307,6 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             CancellationToken.None);
 
         result.Status.Should().Be(UserStatus.Pending);
-        result.RoleId.Should().BeNull();
     }
 
     [Fact]
@@ -328,7 +322,6 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             CancellationToken.None);
 
         result.Status.Should().Be(UserStatus.Pending);
-        result.RoleId.Should().BeNull();
     }
 
     private static AuthenticatedInteractiveIdentity Identity(string sub, string? email, bool verified)

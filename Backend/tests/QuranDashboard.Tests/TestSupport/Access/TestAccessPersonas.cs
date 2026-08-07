@@ -6,15 +6,20 @@ internal sealed record TestAccessPersona(
     string Key,
     string? Sub,
     UserStatus? Status,
-    string? RoleName,
+    bool IsOwner,
     string? PermissionCode,
     IReadOnlyDictionary<string, object> TokenClaims)
 {
-    public User BuildUser(int? roleId = null, DateTimeOffset? now = null)
+    public User BuildUser(int? ownerRoleId = null, DateTimeOffset? now = null)
     {
         if (Sub is null || Status is null)
         {
             throw new InvalidOperationException($"Persona '{Key}' does not describe a local user.");
+        }
+
+        if (IsOwner != (ownerRoleId is not null))
+        {
+            throw new InvalidOperationException($"Persona '{Key}' has inconsistent Owner state.");
         }
 
         var timestamp = now ?? DateTimeOffset.UtcNow;
@@ -22,7 +27,7 @@ internal sealed record TestAccessPersona(
         {
             LogtoSub = Sub,
             Email = $"{Sub}@example.test",
-            RoleId = roleId,
+            RoleId = ownerRoleId,
             Status = Status.Value,
             CreatedAtUtc = timestamp,
             UpdatedAtUtc = timestamp,
@@ -34,31 +39,31 @@ internal static class TestAccessPersonas
 {
     public static IReadOnlyList<TestAccessPersona> All { get; } =
     [
-        new("Anonymous", null, null, null, null, new Dictionary<string, object>()),
-        new("InvalidToken", "smoke-invalid-token", null, null, null, new Dictionary<string, object>()),
-        new("AuthenticatedUnknown", "smoke-unknown", null, null, null, new Dictionary<string, object>()),
-        new("Pending", "smoke-pending", UserStatus.Pending, null, null, new Dictionary<string, object>()),
-        new("Disabled", "smoke-disabled", UserStatus.Disabled, null, null, new Dictionary<string, object>()),
-        new("ReadOnly", "smoke-read-only", UserStatus.Active, null, null, new Dictionary<string, object>()),
-        new("ExactPermission", "smoke-exact-permission", UserStatus.Active, null, "abwab.doors.create", new Dictionary<string, object>()),
-        new("NeighboringPermission", "smoke-neighboring-permission", UserStatus.Active, null, "abwab.doors.edit", new Dictionary<string, object>()),
+        new("Anonymous", null, null, false, null, new Dictionary<string, object>()),
+        new("InvalidToken", "smoke-invalid-token", null, false, null, new Dictionary<string, object>()),
+        new("AuthenticatedUnknown", "smoke-unknown", null, false, null, new Dictionary<string, object>()),
+        new("Pending", "smoke-pending", UserStatus.Pending, false, null, new Dictionary<string, object>()),
+        new("Disabled", "smoke-disabled", UserStatus.Disabled, false, null, new Dictionary<string, object>()),
+        new("ReadOnly", "smoke-read-only", UserStatus.Active, false, null, new Dictionary<string, object>()),
+        new("ExactPermission", "smoke-exact-permission", UserStatus.Active, false, "abwab.doors.create", new Dictionary<string, object>()),
+        new("NeighboringPermission", "smoke-neighboring-permission", UserStatus.Active, false, "abwab.doors.edit", new Dictionary<string, object>()),
         new(
             "Owner",
             "smoke-owner",
             UserStatus.Active,
-            RoleNames.Owner,
+            true,
             null,
             new Dictionary<string, object>
             {
                 ["email"] = "smoke-owner@example.test",
                 ["email_verified"] = true,
             }),
-        new("DisabledOwner", "smoke-disabled-owner", UserStatus.Disabled, RoleNames.Owner, null, new Dictionary<string, object>()),
+        new("DisabledOwner", "smoke-disabled-owner", UserStatus.Disabled, true, null, new Dictionary<string, object>()),
         new(
             "ClaimSmuggling",
             "smoke-claim-smuggling",
             UserStatus.Active,
-            null,
+            false,
             null,
             new Dictionary<string, object>
             {

@@ -34,7 +34,7 @@ public sealed class TestAccessPersonasContractTests
         var persona = TestAccessPersonas.For("ClaimSmuggling");
 
         persona.Status.Should().Be(UserStatus.Active);
-        persona.RoleName.Should().BeNull();
+        persona.IsOwner.Should().BeFalse();
         persona.PermissionCode.Should().BeNull();
         persona.TokenClaims.Should().ContainKeys("role", "permission");
     }
@@ -49,14 +49,14 @@ public sealed class TestAccessPersonasContractTests
         payload.GetClaim("role")!.ToString().Should().Contain(RoleNames.Owner);
         payload.GetClaim("permission")!.ToString().Should().Contain("abwab.doors.create");
         persona.Status.Should().Be(UserStatus.Active);
-        persona.RoleName.Should().BeNull();
+        persona.IsOwner.Should().BeFalse();
     }
 
     [Fact]
     public void LocalPersonaBuilder_PreservesStatusRoleAndIdentityInputs()
     {
         var persona = TestAccessPersonas.For("DisabledOwner");
-        var user = persona.BuildUser(roleId: 1, now: DateTimeOffset.Parse("2026-08-05T00:00:00Z"));
+        var user = persona.BuildUser(ownerRoleId: 1, now: DateTimeOffset.Parse("2026-08-05T00:00:00Z"));
 
         user.LogtoSub.Should().Be(persona.Sub);
         user.Email.Should().Be("smoke-disabled-owner@example.test");

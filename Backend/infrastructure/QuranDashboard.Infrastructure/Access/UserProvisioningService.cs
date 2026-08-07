@@ -125,9 +125,7 @@ public sealed class UserProvisioningService(
             user.Email,
             user.DisplayName,
             user.Status,
-            user.RoleId,
             isOwner,
-            permissions,
-            isOwner ? RoleNames.Owner : null);
+            permissions);
     }
 }

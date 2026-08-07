@@ -18,7 +18,7 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `wipe-abwab` | Empties the six `abwab_*` tables on a local database, leaving the canonical `quran_*` data intact |
 | `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project. EF tooling only — never hand-write a migration (`Backend/CLAUDE.md`) |
 | `update-db` | `dotnet ef database update` — applies pending migrations to the configured database |
-| `access-admin` | Runs normalized-identity scan/backfill, permission-catalogue sync, locked Owner reconciliation, and authorization preflight |
+| `access-admin` | Runs normalized-identity scan/backfill, permission-catalogue sync, Owner reconciliation, legacy-role inventory/conversion, and authorization preflight |
 | `clean-local-build` | Clears the NuGet caches, deletes every `bin`/`obj`, and restores the solution. Non-destructive to data |
 | **`drop-db --yes`** | **DESTRUCTIVE.** `dotnet ef database drop --force` — drops the configured database outright, all data lost |
 | **`reset-db --yes`** | **DESTRUCTIVE.** `drop-db --yes` followed by `update-db` — an empty database at migration head |
@@ -219,6 +219,26 @@ Interactive OIDC sign-in alone can add a configured Owner after verified email e
 `owners reconcile --apply` command can only remove safely resolved Owners or revoke conflicting
 direct grants. It requires a reason and `--confirm-production` in Production. The tool does not run
 migrations itself.
+
+### Legacy Admin/Editor cleanup
+
+The Phase 10 operator sequence is deliberately separate from `update-db`: first run
+`./scripts/access-admin legacy-roles inventory`, resolve every reported violation and verify the
+configured/verified Owner state, then run `./scripts/access-admin legacy-roles convert --apply` under the
+short access-admin write freeze. The converter locks and rereads the role-bearing users, refuses a former
+Admin/Editor user with any direct grant, clears only the legacy `RoleId`, writes no inferred grant, and
+emits audit events. Run the inventory again, retain the before/after non-secret output, and confirm that
+`authorization preflight` reports no legacy-role reference before the generated cleanup migration is
+deployed. It stays non-zero before that deployment because the migration is pending.
+
+The cleanup migration deletes only the Admin and Editor seeds. `users.role_id` remains nullable and its
+restrictive foreign key is the safety gate: PostgreSQL rejects the migration if conversion left any user
+referencing either role; it does not cascade.
+
+**UNMET operational precondition in this environment:** Testcontainers validates empty → current →
+cleanup only. It does not replace a production-like rehearsal. Before the cleanup migration is applied to
+any real or shared database, an operator must run and retain the inventory/convert/reinventory sequence
+against a production-like copy. Do not apply migrations to create or simulate that rehearsal here.
 
 Exit codes are stable: `0` clean, `2` usage, `3` a reported preflight/catalogue failure, and `4` a
 configuration or database failure the tool reports as `access_admin_failure=<type>` without a stack

@@ -1,7 +1,7 @@
 # Access application handlers
 
-This folder owns application use cases for first-login provisioning, Owner reconciliation, and the
-Owner-only administration surface. HTTP controllers bind requests and map outcomes; these handlers
+This folder owns application use cases for first-login provisioning, Owner reconciliation, legacy-role
+conversion, and the Owner-only administration surface. HTTP controllers bind requests and map outcomes; these handlers
 validate request-level inputs and call the abstractions in
 `QuranDashboard.Application.Abstractions/Access/`.
 
@@ -18,6 +18,11 @@ once. A failed audit append therefore leaves the target and grants unchanged.
 User-list paging follows the public `AccessUserPaging` contract. The reader calculates offsets in `long`,
 returns the same successful paged shape with no items when an offset is at or after `totalCount`, and only
 converts an offset after proving it is within the result count.
+
+`LegacyRoleConversionService` is an operator-only use case. It inventories every role-bearing user,
+requires a ready Owner reconciliation state and zero direct grants for every former Admin/Editor user,
+then clears only those legacy role relations in one persistence lease. It neither derives nor preserves
+permissions from the removed role.
 
 ## Related
 

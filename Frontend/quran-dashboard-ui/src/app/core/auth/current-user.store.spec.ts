@@ -29,7 +29,6 @@ const CURRENT_USER: CurrentUser = {
   status: 'pending',
   isOwner: false,
   permissions: [],
-  roleName: null,
 };
 
 const OWNER_USER: CurrentUser = {
@@ -39,7 +38,6 @@ const OWNER_USER: CurrentUser = {
   status: 'active',
   isOwner: true,
   permissions: [],
-  roleName: 'Owner',
 };
 
 describe('CurrentUserStore.load', () => {
@@ -86,13 +84,11 @@ describe('CurrentUserStore.load', () => {
     const response: ApiResponse<CurrentUser> = { isSuccess: true, message: 'تم', data: CURRENT_USER };
     httpTesting.expectOne(ME_URL).flush(response);
 
-    // CURRENT_USER carries `roleName: null` — the pending, role-less default.
     expect(store.currentUser()).toEqual(CURRENT_USER);
-    expect(store.currentUser()?.roleName).toBeNull();
     expect(store.errorMessage()).toBeNull();
   });
 
-  it('retains the bounded Owner roleName only as transitional display data', () => {
+  it('authorizes an active Owner without direct permissions', () => {
     store.load();
 
     httpTesting
@@ -100,7 +96,6 @@ describe('CurrentUserStore.load', () => {
       .flush({ isSuccess: true, message: 'تم', data: OWNER_USER } satisfies ApiResponse<CurrentUser>);
 
     expect(store.currentUser()).toEqual(OWNER_USER);
-    expect(store.currentUser()?.roleName).toBe('Owner');
     expect(store.permissions().size).toBe(0);
     expect(store.can('abwab.template_nodes.delete')).toBe(true);
   });
@@ -180,22 +175,6 @@ describe('CurrentUserStore.load', () => {
     expect(store.isOwner()).toBe(true);
     expect(store.isActive()).toBe(false);
     expect(store.can('abwab.doors.edit')).toBe(false);
-  });
-
-  it('normalizes legacy Admin and Editor role names to null without granting access', () => {
-    const legacyAdmin: CurrentUserResponse = {
-      ...CURRENT_USER,
-      status: 'active',
-      permissions: [],
-      roleName: 'Admin',
-    };
-
-    store.load();
-    httpTesting.expectOne(ME_URL).flush({ isSuccess: true, message: 'تم', data: legacyAdmin });
-
-    expect(store.currentUser()?.roleName).toBeNull();
-    expect(store.isOwner()).toBe(false);
-    expect(store.permissions().size).toBe(0);
   });
 
   it('fails closed when /me contains an unknown permission code', () => {

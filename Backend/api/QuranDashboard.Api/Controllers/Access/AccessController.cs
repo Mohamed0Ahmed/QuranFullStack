@@ -20,8 +20,7 @@ public sealed class AccessController(ProvisionCurrentUserHandler provisionCurren
             user.DisplayName,
             MapStatus(user.Status),
             user.IsOwner,
-            user.Permissions,
-            user.RoleName);
+            user.Permissions);
 
         return Ok(ApiResponse<CurrentUserResponse>.Ok(data, ApiMessages.CurrentUserLoaded));
     }
@@ -41,5 +40,4 @@ public sealed record CurrentUserResponse(
     string? DisplayName,
     string Status,
     bool IsOwner,
-    IReadOnlyList<string> Permissions,
-    string? RoleName);
+    IReadOnlyList<string> Permissions);

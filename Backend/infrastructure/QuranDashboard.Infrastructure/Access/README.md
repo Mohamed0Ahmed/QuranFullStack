@@ -1,8 +1,8 @@
 # Access infrastructure
 
 This folder owns server-side access integrations: normalized email configuration, first-login
-provisioning, the Logto Management API profile source, permission-catalogue synchronization, and
-the explicit Owner reconciliation transaction.
+provisioning, the Logto Management API profile source, permission-catalogue synchronization, explicit
+Owner reconciliation, and legacy-role conversion persistence.
 
 `LogtoManagementApiUserProfileSource` reads `primaryEmail` from Logto `GET /api/users/{sub}` as
 identity/matching data only. The Management API has no documented durable email-verification field
@@ -23,7 +23,7 @@ resolved unconfigured Owners or clean existing Owner direct grants after last-ac
 provider checks pass. Configured users awaiting their verified interactive sign-in do not block an
 already active Owner. Disabled configured users remain Disabled. The store writes append-only
 system-actor audit events with immutable before/after snapshots and provenance, then the
-Application use case evicts changed role-cache entries after commit.
+Application use case returns only after the transaction commits.
 
 Request-scoped authorization reads live in `Persistence/Reads/Access/AuthorizationStateResolver.cs`.
 That resolver projects one local user by exact `LogtoSub`: status, the local Owner relation, and direct
@@ -32,18 +32,22 @@ permission claims. The scoped instance memoizes its first subject/task, so multi
 requirements share the one database projection; a second distinct subject is an invariant failure.
 
 `UserProvisioningService` separately projects the `/api/access/me` snapshot after provisioning:
-explicit `IsOwner`, ordered non-retired direct permission codes for active non-Owners only, and a
-bounded transitional `RoleName` of `Owner` or null. Its internal `RoleId` stays in the application
-record for reconciliation work and is never part of the public response.
+explicit `IsOwner` and ordered non-retired direct permission codes for active non-Owners only.
 
 The Phase 6 administration implementation keeps EF projections in `Persistence/Reads/Access/` and writes
 in `Persistence/Writes/Access/`. `AccessUserMutationTransaction` starts the one transaction for a user
 transition, locks the acting Owner and target/grant rows, rechecks the acting Owner from the database, and
 checks the target `xmin` version before mutation. `AccessAuditAppender` adds immutable audit rows to that
-same DbContext without saving independently. The transaction saves and commits once, then evicts the
-changed subject from the transitional role cache. `EfLogtoSubjectRelinkService` revalidates both the
+same DbContext without saving independently. The transaction saves and commits once.
+`EfLogtoSubjectRelinkService` revalidates both the
 interactive evidence and Logto Management profile email through the shared normalizer before it changes
 only `LogtoSub`; its Owner path also requires current reconciliation status.
+
+`LegacyRoleConversionStore` locks role rows, role-bearing users, and their direct grants in one database
+transaction. It rejects a role mismatch or direct grant after preflight, clears only Admin/Editor
+relations, and appends one system audit event per converted user. The generated cleanup migration deletes
+the two obsolete seed rows; the existing restrictive `users.role_id` foreign key makes that migration fail
+if conversion was skipped.
 
 `IAccessRequestContext` has an Infrastructure default backed by the ambient activity trace, so non-HTTP
 composition roots such as AccessAdmin remain able to construct the shared audit writer. The API replaces

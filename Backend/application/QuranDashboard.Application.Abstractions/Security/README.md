@@ -1,7 +1,7 @@
 # Security (Access Abstractions)
 
-This folder defines the **contracts** for first-login user provisioning, transitional role
-resolution, and request-scoped authorization state. It contains only abstractions and their DTOs;
+This folder defines the **contracts** for first-login user provisioning and request-scoped
+authorization state. It contains only abstractions and their DTOs;
 the concrete behavior lives in the Application and Infrastructure layers (see **Implementations**
 below).
 
@@ -27,10 +27,8 @@ backfill between the staged migrations.
   `ExternalUserProfile` (`Email`, `UserName`, `DisplayName`). `primaryEmail` is provider
   identity/matching data only; it is never proof that the email is verified.
 - **`IUserProvisioningService`** — `GetOrCreateAsync(identity, ct)` returns a
-  `ProvisionedUser` (`Sub`, `Email`, `DisplayName`, `Status`, internal `RoleId`, `IsOwner`,
-  ordered direct `Permissions`, transitional `RoleName`).
-- **`IUserRoleResolver`** — `GetActiveRoleNameAsync(logtoSub, ct)` returns the active role
-  name or `null`; `Evict(logtoSub)` drops a subject's cached result immediately.
+  `ProvisionedUser` (`Sub`, `Email`, `DisplayName`, `Status`, `IsOwner`, ordered direct
+  `Permissions`).
 - **`IAuthorizationStateResolver`** — `ResolveAsync(logtoSub, ct)` returns an
   `AuthorizationState` or `null` for an unknown local subject. Its state contains the local user id,
   status, Owner flag, and direct permission-code set.
@@ -60,16 +58,6 @@ backfill between the staged migrations.
   in the IdP presents a brand-new `sub` carrying a server-verified email that already belongs
   to an existing local user.
 
-## Transitional role-resolution / caching contract
-
-This contract remains for existing reconciliation/cache-invalidation work. New API authorization does
-not use it or transformed role claims. Implementations cache results — **including negative ones** —
-behind a short TTL so a role-less caller does not hit the database on every existing consumer, and must
-expose immediate invalidation via `Evict`, which the role/status write path calls so a change is seen
-without waiting for the TTL. A `null` result means no active role: no user, user not `Active`, or no
-role assigned. (`CachedUserRoleResolver` uses a 30-second TTL and cancellation change tokens so an
-`Evict` on any request invalidates the shared cache immediately and race-safely.)
-
 ## Request-scoped authorization-state contract
 
 `IAuthorizationStateResolver` receives only the authenticated `sub` supplied by `ICurrentUser`. It
@@ -82,7 +70,7 @@ and has no need for direct grants.
 ## Domain facts (from `Domain/Access`)
 
 - `UserStatus`: `Pending = 1`, `Active = 2`, `Disabled = 3` (values pinned explicitly).
-- `RoleNames`: `Owner`, `Admin`, `Editor` (seeded `roles.name` values that auth policies match).
+- `RoleNames`: `Owner`, the sole seeded `roles.name` value.
 - `AccessAuditMetadata` is the audit envelope and the only construction path for an
   `AccessAuditEvent`'s metadata: `SchemaVersion` is an `int` rejected below `1`, `CorrelationId` is
   null or non-blank, and `Provenance` is a copied ordinal string map. The version invariant is a
@@ -109,7 +97,6 @@ and has no need for direct grants.
   `ICurrentUser.Sub` into `IUserProvisioningService.GetOrCreateAsync`.
 - `Infrastructure/Access/UserProvisioningService.cs` — the provisioning contract above,
   including the concurrent unique-index race handling.
-- `Infrastructure/Access/CachedUserRoleResolver.cs` — the caching/eviction contract.
 - `Infrastructure/Persistence/Reads/Access/AuthorizationStateResolver.cs` — the scoped local
   authorization-state projection and memoization contract.
 - `Infrastructure/Access/LogtoManagementApiUserProfileSource.cs` — resolves primary-email identity

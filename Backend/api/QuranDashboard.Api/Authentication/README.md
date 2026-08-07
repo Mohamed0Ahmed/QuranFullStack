@@ -1,8 +1,8 @@
 # Authentication
 
 JWT bearer authentication wiring for `QuranDashboard.Api`. This folder owns registration of the
-bearer scheme, its options validation, the current-user accessor, and the transitional named
-policies. The sibling `Authorization/` folder owns the requirement handlers, endpoint metadata,
+bearer scheme, its options validation, the current-user accessor, and authorization registration.
+The sibling `Authorization/` folder owns the requirement handlers, endpoint metadata,
 controlled authorization responses, and unsafe-endpoint validator; their registrations are wired by
 `AddApiAuthentication`, called from `AddApiServices` in
 `../Extensions/ServiceCollectionExtensions.cs`.
@@ -43,16 +43,8 @@ authenticated request.
   repeat that check fail-closed. It is registered during API startup after controller mapping, and every
   current Abwab write action carries exactly one matching `[RequirePermission]` classification.
 
-`RoleClaimsTransformation` and `IUserRoleResolver` remain as transitional source/contracts for the
-earlier role/reconciliation work, but the transformation is no longer registered and this authorization
-path never consults either it or token-borne role claims.
-
-## Transitional named policies
-
-- `AuthorizationPolicyNames` exposes `Owner`/`Admin`/`Editor` constants whose values equal `RoleNames`
-  (`Domain.Access`); policy name == seeded `roles.name`.
-- Three named policies are registered, each `RequireAuthenticatedUser().RequireRole(<role>)`.
-- No global fallback policy is configured.
+No role-claim transformation, role resolver, or named role policy is registered. There is no global
+fallback policy.
 
 ## Authorization responses
 

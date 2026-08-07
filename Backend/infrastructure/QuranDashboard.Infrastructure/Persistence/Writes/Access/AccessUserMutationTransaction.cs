@@ -1,13 +1,10 @@
 using QuranDashboard.Application.Abstractions.Access;
-using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Infrastructure.Access;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Access;
 
-internal sealed class AccessUserMutationTransaction(
-    QuranDashboardDbContext db,
-    IUserRoleResolver roleResolver)
+internal sealed class AccessUserMutationTransaction(QuranDashboardDbContext db)
 {
     public async Task<AccessOperationResult<T>> ExecuteAsync<T>(
         string actorSub,
@@ -46,7 +43,6 @@ internal sealed class AccessUserMutationTransaction(
         }
 
         db.Entry(target).Property(user => user.Version).OriginalValue = expectedVersion;
-        var oldTargetSub = target.LogtoSub;
         var failure = await mutateAsync(new AccessUserMutationSession(actor, target));
         if (failure is not null)
         {
@@ -75,8 +71,6 @@ internal sealed class AccessUserMutationTransaction(
             throw;
         }
 
-        roleResolver.Evict(oldTargetSub);
-        roleResolver.Evict(target.LogtoSub);
         return AccessOperationResult<T>.Success(project(target));
     }
 

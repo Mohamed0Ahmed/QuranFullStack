@@ -6,7 +6,6 @@ export interface CurrentUserResponse {
   email: string;
   isOwner: boolean;
   permissions: Array<string>;
-  roleName: string | null;
   status: string;
   sub: string;
 }

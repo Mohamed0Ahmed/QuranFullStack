@@ -28,10 +28,10 @@ internal static class AccessDependencyInjection
         services.AddMemoryCache();
 
         services.AddScoped<IUserProvisioningService, UserProvisioningService>();
-        services.AddScoped<IUserRoleResolver, CachedUserRoleResolver>();
         services.AddScoped<IAuthorizationStateResolver, AuthorizationStateResolver>();
         services.AddScoped<IOwnerBootstrapConfigurationSource, OwnerBootstrapConfigurationSource>();
         services.AddScoped<IOwnerReconciliationStore, OwnerReconciliationStore>();
+        services.AddScoped<ILegacyRoleConversionStore, LegacyRoleConversionStore>();
         services.AddScoped<IPermissionCatalogueSynchronizer, PermissionCatalogueSynchronizer>();
         services.AddScoped<IAccessUserReader, EfAccessUserReader>();
         services.AddScoped<IPermissionCatalogueReader, EfPermissionCatalogueReader>();

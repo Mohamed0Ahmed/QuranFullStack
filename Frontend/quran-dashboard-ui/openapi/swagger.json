@@ -6837,7 +6837,6 @@
           "email",
           "isOwner",
           "permissions",
-          "roleName",
           "status",
           "sub"
         ],
@@ -6864,10 +6863,6 @@
             "items": {
               "type": "string"
             }
-          },
-          "roleName": {
-            "type": "string",
-            "nullable": true
           }
         },
         "additionalProperties": false

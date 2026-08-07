@@ -107,19 +107,8 @@ public sealed class SmokeApiFixture : IAsyncLifetime
         return client;
     }
 
-    // The host's own container, not a parallel one: a scope taken here shares the host's singletons —
-    // the IMemoryCache CachedUserRoleResolver writes through, so an Evict from a test invalidates what
-    // the request pipeline cached. Scoped services (DbContext, IUserRoleResolver) are still fresh
-    // instances; only the singleton state is shared.
     public IServiceProvider ApiServices => Factory.Services;
 
-    // The whole ResetPerTest contract the SmokeCollection row of TestSupport/Execution/test-resources.tsv
-    // declares, in one entry point: every table this collection mutates, restored before a case runs.
-    // users reaches user_permissions and access_audit_events by cascade; the six abwab tables are the
-    // write routes' surface. Two pieces of state a TRUNCATE cannot reach are restored with them — the
-    // shared role cache (CachedUserRoleResolver holds a resolved role for 30 s, the persona subs are
-    // fixed across tests, and a truncate does not touch it) and the abwab read caches (their generation
-    // counter moves on writes, never on raw SQL, so a truncated tree stays served from IMemoryCache).
     public async Task ResetAsync()
     {
         await using var scope = QueryProvider.CreateAsyncScope();
@@ -128,19 +117,7 @@ public sealed class SmokeApiFixture : IAsyncLifetime
             "TRUNCATE users, abwab_sections, abwab_doors, abwab_door_aliases, abwab_door_relations, "
             + "abwab_templates, abwab_template_nodes RESTART IDENTITY CASCADE;");
         ProfileSource.Reset();
-
-        foreach (var sub in SmokePersonas.TokenBearingSubs)
-        {
-            EvictRoleCache(sub);
-        }
-
         InvalidateAbwabCaches();
-    }
-
-    private void EvictRoleCache(string logtoSub)
-    {
-        using var scope = ApiServices.CreateScope();
-        scope.ServiceProvider.GetRequiredService<IUserRoleResolver>().Evict(logtoSub);
     }
 
     // Through the host's own services, never a second provider: the generation counter that decides
@@ -174,15 +151,17 @@ public sealed class SmokeApiFixture : IAsyncLifetime
         await using var scope = QueryProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var normalizer = scope.ServiceProvider.GetRequiredService<IEmailIdentityNormalizer>();
-        var roleIds = await db.AccessRoles.AsNoTracking()
-            .ToDictionaryAsync(role => role.Name, role => role.Id);
+        var ownerRoleId = await db.AccessRoles.AsNoTracking()
+            .Where(role => role.Name == RoleNames.Owner)
+            .Select(role => role.Id)
+            .SingleAsync();
         var users = new Dictionary<SmokePersona, User>();
 
         foreach (var persona in SmokePersonas.All.Where(persona => persona is not (
                      SmokePersona.Anonymous or SmokePersona.InvalidToken or SmokePersona.AuthenticatedUnknown)))
         {
             var definition = SmokePersonas.DefinitionFor(persona);
-            var roleId = definition.RoleName is null ? (int?)null : roleIds[definition.RoleName];
+            int? roleId = definition.IsOwner ? ownerRoleId : null;
             var user = definition.BuildUser(roleId);
             user.NormalizedEmail = normalizer.Normalize(user.Email);
             users.Add(persona, user);

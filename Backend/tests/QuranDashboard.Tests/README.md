@@ -94,7 +94,7 @@ Folders are clustered by Quran domain/use case, not by project layer.
 - `SmokeApiFixture.ResetAsync` is the whole `ResetPerTest` contract the `SmokeCollection` row of that
   catalog declares, and it is deliberately the collection's **only** restore entry point: it truncates
   `users` and the six `abwab_*` tables with `RESTART IDENTITY CASCADE`, resets the fake profile source,
-  evicts every persona from the shared role cache, and invalidates the abwab read caches. That last
+  and invalidates the abwab read caches. That last
   step is not housekeeping — raw SQL never moves `AbwabCacheGeneration`'s counter, so
   `CachedAbwabTreeReader` keeps serving the truncated tree from `IMemoryCache` until something does.
   Every case that reads or writes one of those tables calls it first, the two empty-schema sweeps

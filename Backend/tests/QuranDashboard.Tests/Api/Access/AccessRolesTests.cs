@@ -1,5 +1,4 @@
 using System.Net.Http.Headers;
-using QuranDashboard.Application.Abstractions.Access;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Tests.TestSupport.Http;
@@ -12,14 +11,12 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
     private const string MePath = "/api/access/me";
 
     [Fact]
-    public async Task Roles_AreSeeded_AsTheFixedSet_WithArabicDisplayNames()
+    public async Task Roles_SeedOnlyOwner_WithArabicDisplayName()
     {
         var roles = await fixture.GetRolesAsync();
 
         roles.Select(r => (r.Id, r.Name, r.DisplayName)).Should().Equal(
-            (1, RoleNames.Owner, "المالك"),
-            (2, RoleNames.Admin, "المشرف"),
-            (3, RoleNames.Editor, "المحرر"));
+            (1, RoleNames.Owner, "المالك"));
     }
 
     [Fact]
@@ -37,8 +34,6 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         data.GetProperty("status").GetString().Should().Be("active");
         data.GetProperty("isOwner").GetBoolean().Should().BeTrue();
         data.GetProperty("permissions").GetArrayLength().Should().Be(0);
-        data.GetProperty("roleName").GetString().Should().Be(RoleNames.Owner);
-        data.TryGetProperty("roleId", out _).Should().BeFalse();
 
         var owner = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
         owner!.Status.Should().Be(UserStatus.Active);
@@ -60,7 +55,6 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         first.StatusCode.Should().Be(HttpStatusCode.OK);
         second.StatusCode.Should().Be(HttpStatusCode.OK);
         (await fixture.GetUsersAsync()).Should().ContainSingle();
-        // The already-Owner/Active row is returned untouched on the repeat login (no re-write).
         afterSecond!.Id.Should().Be(afterFirst!.Id);
         afterSecond.RoleId.Should().Be(afterFirst.RoleId);
         afterSecond.Status.Should().Be(UserStatus.Active);
@@ -68,7 +62,7 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
     }
 
     [Fact]
-    public async Task ExistingOwnerEmailUser_PendingNoRole_IsUpgraded_AndCacheEvictedImmediately()
+    public async Task ExistingOwnerEmailUser_PendingNoRole_IsUpgraded()
     {
         await fixture.ResetAsync();
         var now = DateTimeOffset.UtcNow;
@@ -83,9 +77,6 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
             UpdatedAtUtc = now,
         });
 
-        // Prime the role cache to the negative result while the row is still Pending/no-role.
-        (await ResolveRoleAsync(AccessTestFixture.OwnerSub)).Should().BeNull();
-
         var token = OwnerToken();
         using var client = fixture.CreateApiClient();
         using var response = await GetMeAsync(client, token);
@@ -93,14 +84,11 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var data = await ApiEnvelope.ReadDataAsync(response);
         data.GetProperty("status").GetString().Should().Be("active");
-        data.GetProperty("roleName").GetString().Should().Be(RoleNames.Owner);
 
         var upgraded = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
         upgraded!.Status.Should().Be(UserStatus.Active);
         upgraded.RoleId.Should().Be(await OwnerRoleIdAsync());
 
-        // Eviction (not the TTL) makes the new role visible on the very next resolve.
-        (await ResolveRoleAsync(AccessTestFixture.OwnerSub)).Should().Be(RoleNames.Owner);
     }
 
     [Fact]
@@ -129,38 +117,6 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         data.GetProperty("isOwner").GetBoolean().Should().BeFalse();
         data.GetProperty("permissions").EnumerateArray().Select(value => value.GetString())
             .Should().Equal(AbwabPermissions.Doors.Create, AbwabPermissions.Sections.Edit);
-        data.GetProperty("roleName").ValueKind.Should().Be(JsonValueKind.Null);
-    }
-
-    public static TheoryData<string?> NonOwnerRoles => [null, RoleNames.Admin, RoleNames.Editor];
-
-    [Theory]
-    [MemberData(nameof(NonOwnerRoles))]
-    public async Task ActiveReadOnlyNonOwner_MeReturnsNoPermissionsOrTransitionalRole(string? roleName)
-    {
-        await fixture.ResetAsync();
-        var sub = $"access-me-read-only-{roleName ?? "none"}";
-        var roleId = roleName is null
-            ? (int?)null
-            : (await fixture.GetRolesAsync()).Single(role => role.Name == roleName).Id;
-        await fixture.InsertUserAsync(new User
-        {
-            LogtoSub = sub,
-            Email = $"{sub}@example.test",
-            RoleId = roleId,
-            Status = UserStatus.Active,
-            CreatedAtUtc = DateTimeOffset.UtcNow,
-            UpdatedAtUtc = DateTimeOffset.UtcNow,
-        });
-        using var client = fixture.CreateApiClient();
-
-        using var response = await GetMeAsync(client, TestJwtTokens.Mint(sub));
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var data = await ApiEnvelope.ReadDataAsync(response);
-        data.GetProperty("isOwner").GetBoolean().Should().BeFalse();
-        data.GetProperty("permissions").GetArrayLength().Should().Be(0);
-        data.GetProperty("roleName").ValueKind.Should().Be(JsonValueKind.Null);
     }
 
     [Fact]
@@ -235,13 +191,6 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         }
 
         await db.SaveChangesAsync();
-    }
-
-    private async Task<string?> ResolveRoleAsync(string sub)
-    {
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
-        var resolver = scope.ServiceProvider.GetRequiredService<IUserRoleResolver>();
-        return await resolver.GetActiveRoleNameAsync(sub, CancellationToken.None);
     }
 
     private static async Task<HttpResponseMessage> GetMeAsync(HttpClient client, string token)

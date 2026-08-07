@@ -5,7 +5,6 @@ using QuranDashboard.Api.Authorization.Owner;
 using QuranDashboard.Api.Authorization.Permissions;
 using QuranDashboard.Api.Authorization.Validation;
 using QuranDashboard.Application.Abstractions.Security;
-using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Api.Authentication;
 
@@ -42,15 +41,7 @@ internal static class AuthenticationRegistration
                 options.MapInboundClaims = false;
             });
 
-        services.AddAuthorization(options =>
-        {
-            options.AddPolicy(AuthorizationPolicyNames.Owner, policy =>
-                policy.RequireAuthenticatedUser().RequireRole(RoleNames.Owner));
-            options.AddPolicy(AuthorizationPolicyNames.Admin, policy =>
-                policy.RequireAuthenticatedUser().RequireRole(RoleNames.Admin));
-            options.AddPolicy(AuthorizationPolicyNames.Editor, policy =>
-                policy.RequireAuthenticatedUser().RequireRole(RoleNames.Editor));
-        });
+        services.AddAuthorization();
 
         return services;
     }

@@ -68,8 +68,8 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
 - `Access/` — `api/access/me`; the authenticated caller's provisioned user. Carries `[Authorize]`
   (authenticated-only) and get-or-create provisions the local user on first login (email verified
   server-side via validated OIDC identity evidence). The response is `sub`, `email`, `displayName`,
-  `status`, `isOwner`, ordered direct `permissions`, and transitional `roleName`; `roleId` is not
-  public. Owners, Pending users, and Disabled users receive no direct permission codes. The configured
+  `status`, `isOwner`, and ordered direct `permissions`. Owners, Pending users, and Disabled users receive
+  no direct permission codes. The configured
   owner email is bootstrapped to `Owner`/`Active`. It remains the only generic
   authenticated-only endpoint. The Owner-only administration family is split into focused controllers:
   `api/access/users` (list/detail/accept/disable/reactivate),
@@ -80,7 +80,7 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   through `Int32.MaxValue`, `pageSize` is 1 through 100 (default 25), and a valid page at or after the
   filtered `totalCount` returns `200` with an empty `items` collection. Invalid page bounds return the
   shared `400` envelope. The Abwab write routes use granular permission metadata instead.
-  Role-based named policies are registered but applied to nothing. See `../README.md` (Authentication / Roles).
+  See `../README.md` (Authentication / Owner role).
 - `Dashboard/` — `api/dashboard/info` for app/version/environment metadata.
 - `MushafReader/Ayahs/` — `api/mushaf/ayahs/{verseKey}/study`, `/similar-ayahs`, and `/mutashabihat`.
 - `MushafReader/Catalogs/` — `api/mushaf/surahs` and `api/mushaf/study-sources` catalogs.

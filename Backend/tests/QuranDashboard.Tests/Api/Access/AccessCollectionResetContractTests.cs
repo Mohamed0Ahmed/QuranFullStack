@@ -23,7 +23,7 @@ public sealed class AccessCollectionResetContractTests(AccessTestFixture fixture
         await using var scope = fixture.QueryServices.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         (await db.AccessRoles.AsNoTracking().Select(role => role.Name).ToListAsync())
-            .Should().Equal(RoleNames.Owner, RoleNames.Admin, RoleNames.Editor);
+            .Should().Equal(RoleNames.Owner);
     }
 
     [Fact]

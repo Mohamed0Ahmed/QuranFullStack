@@ -33,6 +33,8 @@ internal static class Program
         OwnerStatus,
         OwnerDryRun,
         OwnerApply,
+        LegacyRoleInventory,
+        LegacyRoleConvert,
     }
 
     internal static async Task<int> Main(string[] args)
@@ -60,6 +62,10 @@ internal static class Program
                 AccessAdminCommand.OwnerApply => await ApplyOwnerReconciliationAsync(
                     scope.ServiceProvider,
                     request.Reason!,
+                    request.ConfirmsProduction),
+                AccessAdminCommand.LegacyRoleInventory => await InventoryLegacyRolesAsync(scope.ServiceProvider),
+                AccessAdminCommand.LegacyRoleConvert => await ConvertLegacyRolesAsync(
+                    scope.ServiceProvider,
                     request.ConfirmsProduction),
                 _ => throw new InvalidOperationException("Unknown AccessAdmin command."),
             };
@@ -147,9 +153,10 @@ internal static class Program
             .ToArray();
 
         PrintIdentityResult(identity);
-        var owners = await services.GetRequiredService<IOwnerReconciliationService>()
-            .GetStatusAsync(CancellationToken.None);
-        PrintOwnerResult(owners);
+        var legacyRoles = await services.GetRequiredService<ILegacyRoleConversionService>()
+            .InventoryAsync(CancellationToken.None);
+        PrintOwnerResult(legacyRoles.OwnerReconciliation);
+        PrintLegacyRoleResult(legacyRoles);
         Console.WriteLine($"pending_migrations={string.Join(',', pendingMigrations)}");
         Console.WriteLine($"catalogue_missing={string.Join(',', missingCodes)}");
         Console.WriteLine($"catalogue_unknown={string.Join(',', unknownCodes)}");
@@ -160,7 +167,8 @@ internal static class Program
             || missingCodes.Length > 0
             || unknownCodes.Length > 0
             || retiredCodes.Length > 0
-            || !owners.IsReady
+            || !legacyRoles.CanConvert
+            || legacyRoles.HasAdminOrEditorReferences
             ? PreflightFailureExitCode
             : SuccessExitCode;
     }
@@ -210,6 +218,31 @@ internal static class Program
         return result.IsReady ? SuccessExitCode : PreflightFailureExitCode;
     }
 
+    private static async Task<int> InventoryLegacyRolesAsync(IServiceProvider services)
+    {
+        var result = await services.GetRequiredService<ILegacyRoleConversionService>()
+            .InventoryAsync(CancellationToken.None);
+        PrintOwnerResult(result.OwnerReconciliation);
+        PrintLegacyRoleResult(result);
+        return result.CanConvert ? SuccessExitCode : PreflightFailureExitCode;
+    }
+
+    private static async Task<int> ConvertLegacyRolesAsync(
+        IServiceProvider services,
+        bool confirmsProduction)
+    {
+        if (services.GetRequiredService<IHostEnvironment>().IsProduction() && !confirmsProduction)
+        {
+            return UsageFailure();
+        }
+
+        var result = await services.GetRequiredService<ILegacyRoleConversionService>()
+            .ConvertAsync(CancellationToken.None);
+        PrintOwnerResult(result.OwnerReconciliation);
+        PrintLegacyRoleResult(result);
+        return result.CanConvert ? SuccessExitCode : PreflightFailureExitCode;
+    }
+
     private static void PrintIdentityResult(EmailIdentityScanResult result)
     {
         Console.WriteLine($"users={result.UserCount}");
@@ -241,6 +274,24 @@ internal static class Program
         Console.WriteLine($"owner_ready={result.IsReady.ToString().ToLowerInvariant()}");
     }
 
+    private static void PrintLegacyRoleResult(LegacyRoleConversionResult result)
+    {
+        Console.WriteLine($"legacy_role_owner_users={result.OwnerUsers.Count}");
+        Console.WriteLine($"legacy_role_admin_users={result.AdminUsers.Count}");
+        Console.WriteLine($"legacy_role_editor_users={result.EditorUsers.Count}");
+        Console.WriteLine($"legacy_role_preflight_violations={string.Join(',', result.PreflightViolations)}");
+        Console.WriteLine($"legacy_role_can_convert={result.CanConvert.ToString().ToLowerInvariant()}");
+        Console.WriteLine($"legacy_role_applied={result.Applied.ToString().ToLowerInvariant()}");
+
+        foreach (var user in result.Users.OrderBy(user => user.Id))
+        {
+            Console.WriteLine(
+                $"legacy_role_user=id={user.Id};role_id={user.RoleId};role_name={user.RoleName};" +
+                $"status={user.Status};normalized_email={user.NormalizedEmail};sub={user.LogtoSub};" +
+                $"direct_grant_count={user.DirectGrantCount}");
+        }
+    }
+
     private static AccessAdminRequest? ParseCommand(string[] args)
     {
         return args switch
@@ -257,6 +308,10 @@ internal static class Program
             ["owners", "reconcile", "--apply", "--reason", var reason, "--confirm-production"]
                 when !string.IsNullOrWhiteSpace(reason)
                 => new AccessAdminRequest(AccessAdminCommand.OwnerApply, reason, true),
+            ["legacy-roles", "inventory"] => new AccessAdminRequest(AccessAdminCommand.LegacyRoleInventory),
+            ["legacy-roles", "convert", "--apply"] => new AccessAdminRequest(AccessAdminCommand.LegacyRoleConvert),
+            ["legacy-roles", "convert", "--apply", "--confirm-production"]
+                => new AccessAdminRequest(AccessAdminCommand.LegacyRoleConvert, null, true),
             _ => null,
         };
     }
@@ -322,6 +377,8 @@ internal static class Program
         Console.Error.WriteLine("  QuranDashboard.AccessAdmin owners status");
         Console.Error.WriteLine("  QuranDashboard.AccessAdmin owners reconcile --dry-run");
         Console.Error.WriteLine("  QuranDashboard.AccessAdmin owners reconcile --apply --reason <text> [--confirm-production]");
+        Console.Error.WriteLine("  QuranDashboard.AccessAdmin legacy-roles inventory");
+        Console.Error.WriteLine("  QuranDashboard.AccessAdmin legacy-roles convert --apply [--confirm-production]");
     }
 
     private sealed record AccessAdminRequest(

@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Routing;
@@ -12,26 +11,22 @@ namespace QuranDashboard.Tests.Api.Access;
 [Collection(nameof(AccessCollection))]
 public sealed class AuthorizationPolicyRegistrationTests(AccessTestFixture fixture)
 {
-    public static TheoryData<string> PolicyNames =>
+    public static TheoryData<string> LegacyRolePolicyNames =>
     [
-        AuthorizationPolicyNames.Owner,
-        AuthorizationPolicyNames.Admin,
-        AuthorizationPolicyNames.Editor,
+        "Owner",
+        "Admin",
+        "Editor",
     ];
 
     [Theory]
-    [MemberData(nameof(PolicyNames))]
-    public async Task NamedRolePolicy_IsResolvable_AndRequiresThatRole(string policyName)
+    [MemberData(nameof(LegacyRolePolicyNames))]
+    public async Task LegacyRolePolicy_IsNotRegistered(string policyName)
     {
         var provider = fixture.ApiServices.GetRequiredService<IAuthorizationPolicyProvider>();
 
         var policy = await provider.GetPolicyAsync(policyName);
 
-        policy.Should().NotBeNull();
-        policy!.Requirements.Should().Contain(r => r is DenyAnonymousAuthorizationRequirement);
-        policy.Requirements.OfType<RolesAuthorizationRequirement>()
-            .SelectMany(requirement => requirement.AllowedRoles)
-            .Should().ContainSingle().Which.Should().Be(policyName);
+        policy.Should().BeNull();
     }
 
     [Fact]
@@ -43,14 +38,16 @@ public sealed class AuthorizationPolicyRegistrationTests(AccessTestFixture fixtu
     }
 
     [Fact]
-    public void AuthorizationCore_UsesTheControlledResultHandler_WithoutRoleClaimTransformation()
+    public void AuthorizationCore_UsesTheControlledResultHandler_WithoutClaimsTransformation()
     {
         var resultHandler = fixture.ApiServices.GetRequiredService<IAuthorizationMiddlewareResultHandler>();
 
         resultHandler.GetType().FullName.Should().Be(
             "QuranDashboard.Api.Authorization.ApiAuthorizationMiddlewareResultHandler");
         fixture.ApiServices.GetServices<IClaimsTransformation>()
-            .Should().NotContain(transformation => transformation is RoleClaimsTransformation);
+            .Should().ContainSingle()
+            .Which.GetType().FullName.Should().Be(
+                "Microsoft.AspNetCore.Authentication.NoopClaimsTransformation");
         fixture.ApiServices.GetRequiredService<UnsafeEndpointMetadataValidator>().Should().NotBeNull();
     }
 

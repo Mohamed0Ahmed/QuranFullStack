@@ -113,8 +113,7 @@ public sealed class OwnerReconciliationServiceTests(AccessTestFixture fixture)
             store,
             configurationSource,
             scope.ServiceProvider.GetRequiredService<IExternalUserProfileSource>(),
-            scope.ServiceProvider.GetRequiredService<IEmailIdentityNormalizer>(),
-            scope.ServiceProvider.GetRequiredService<IUserRoleResolver>());
+            scope.ServiceProvider.GetRequiredService<IEmailIdentityNormalizer>());
 
         var result = await reconciliation.ReconcileInteractiveSignInAsync(
             Identity(AccessTestFixture.OwnerSub),

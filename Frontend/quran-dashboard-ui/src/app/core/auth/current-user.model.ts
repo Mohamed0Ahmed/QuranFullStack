@@ -2,7 +2,6 @@ import { CurrentUserResponse } from '../api/generated/models/current-user-respon
 import { PermissionCode, isPermissionCode } from './permission-code';
 
 export type CurrentUserStatus = 'pending' | 'active' | 'disabled';
-export type TransitionalRoleName = 'Owner' | null;
 
 export interface CurrentUser {
   sub: string;
@@ -11,7 +10,6 @@ export interface CurrentUser {
   status: CurrentUserStatus;
   isOwner: boolean;
   permissions: readonly PermissionCode[];
-  roleName: TransitionalRoleName;
 }
 
 export type CurrentUserDto = CurrentUserResponse;
@@ -41,6 +39,5 @@ export function toCurrentUser(response: CurrentUserResponse): CurrentUser | null
     status,
     isOwner: response.isOwner,
     permissions,
-    roleName: response.roleName === 'Owner' ? 'Owner' : null,
   };
 }

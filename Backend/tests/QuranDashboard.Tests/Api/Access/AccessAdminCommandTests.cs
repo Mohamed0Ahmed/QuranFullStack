@@ -105,6 +105,24 @@ public sealed class AccessAdminCommandTests
     }
 
     [Fact]
+    public async Task LegacyRoleConvert_InProductionWithoutExplicitConfirmation_ReturnsUsageBeforeConstructingDatabaseServices()
+    {
+        using var processState = ProcessGlobalStateScope.Enter(
+            environmentVariables: new Dictionary<string, string?>
+            {
+                ["DOTNET_ENVIRONMENT"] = "Production",
+                ["OwnerBootstrap__Emails__0"] = "owner@example.test",
+                [AccessAdminConnectionString.EnvironmentVariable] = AccessAdminConnectionString.UnreachableDatabase,
+            },
+            captureConsole: true);
+
+        var exitCode = await AccessAdminProgram.Main(["legacy-roles", "convert", "--apply"]);
+
+        exitCode.Should().Be(2);
+        processState.ConsoleOutput.Should().Contain("Usage:");
+    }
+
+    [Fact]
     public void CreateHost_LoadsTheToolConfigurationFromItsExecutableDirectory()
     {
         var testDirectory = Directory.CreateDirectory(

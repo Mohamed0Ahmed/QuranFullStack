@@ -11,4 +11,5 @@ public enum AccessAuditActionType
     LogtoSubjectRelinked = 7,
     OwnerGrantedByReconciliation = 8,
     OwnerRemovedByReconciliation = 9,
+    LegacyRoleRemoved = 10,
 }

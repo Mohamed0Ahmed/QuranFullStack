@@ -87,8 +87,6 @@ public sealed class AccessTestFixture : IAsyncLifetime
         });
     }
 
-    // Resolving here shares the host's singletons (notably the one IMemoryCache the request pipeline uses),
-    // so the cache primed/evicted through the pipeline is the same instance a test observes.
     public IServiceProvider ApiServices => Factory.Services;
 
     public IServiceProvider QueryServices => QueryProvider;
@@ -106,8 +104,6 @@ public sealed class AccessTestFixture : IAsyncLifetime
         }
     }
 
-    // The owner sub is fixed across tests (only its email triggers bootstrap), so its entry in the shared
-    // role cache is evicted too — otherwise a prior test's cached role would leak past the truncation.
     public async Task ResetAsync()
     {
         await using var scope = QueryProvider.CreateAsyncScope();
@@ -115,13 +111,6 @@ public sealed class AccessTestFixture : IAsyncLifetime
         await db.Database.ExecuteSqlRawAsync(
             "TRUNCATE users, permissions RESTART IDENTITY CASCADE;");
         ProfileSource.Reset();
-        EvictRoleCache(OwnerSub);
-    }
-
-    public void EvictRoleCache(string logtoSub)
-    {
-        using var scope = ApiServices.CreateScope();
-        scope.ServiceProvider.GetRequiredService<IUserRoleResolver>().Evict(logtoSub);
     }
 
     // Reads via an independent DbContext, never the pipeline's own instance (test isolation).
@@ -164,9 +153,9 @@ public sealed class AccessTestFixture : IAsyncLifetime
     public async Task<int> InsertPersonaAsync(string key)
     {
         var persona = TestAccessPersonas.For(key);
-        var roleId = persona.RoleName is null
-            ? (int?)null
-            : (await GetRolesAsync()).Single(role => role.Name == persona.RoleName).Id;
+        int? roleId = persona.IsOwner
+            ? (await GetRolesAsync()).Single(role => role.Name == RoleNames.Owner).Id
+            : null;
 
         return await InsertUserAsync(persona.BuildUser(roleId));
     }

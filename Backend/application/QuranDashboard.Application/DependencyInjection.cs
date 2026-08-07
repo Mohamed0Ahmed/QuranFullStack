@@ -31,6 +31,7 @@ using QuranDashboard.Application.Access.Commands.ReactivateAccessUser;
 using QuranDashboard.Application.Access.Commands.ReplaceUserPermissions;
 using QuranDashboard.Application.Access.Commands.PreviewLogtoSubjectRelink;
 using QuranDashboard.Application.Access.Commands.ConfirmLogtoSubjectRelink;
+using QuranDashboard.Application.Access.LegacyRoleConversion;
 using QuranDashboard.Application.Access.OwnerReconciliation;
 using QuranDashboard.Application.Access.Queries.ListAccessUsers;
 using QuranDashboard.Application.Access.Queries.GetAccessUser;
@@ -207,6 +208,7 @@ public static class DependencyInjection
     public static IServiceCollection AddOwnerReconciliation(this IServiceCollection services)
     {
         services.AddScoped<IOwnerReconciliationService, OwnerReconciliationService>();
+        services.AddScoped<ILegacyRoleConversionService, LegacyRoleConversionService>();
         return services;
     }
 }

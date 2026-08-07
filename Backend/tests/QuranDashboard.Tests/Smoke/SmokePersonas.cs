@@ -26,9 +26,6 @@ internal static class SmokePersonas
 
     public static IReadOnlyList<SmokePersona> All { get; } = Enum.GetValues<SmokePersona>();
 
-    public static IReadOnlyList<string> TokenBearingSubs { get; } =
-        All.Select(SubFor).OfType<string>().ToArray();
-
     public static TestAccessPersona DefinitionFor(SmokePersona persona) =>
         TestAccessPersonas.For(persona.ToString());
 

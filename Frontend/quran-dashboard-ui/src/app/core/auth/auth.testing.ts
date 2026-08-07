@@ -8,7 +8,6 @@ export interface AccessMeContractFixture {
   status: 'pending' | 'active' | 'disabled';
   isOwner: boolean;
   permissions: readonly string[];
-  roleName: 'Owner' | null;
 }
 
 interface AccessMeContractFixtures {
@@ -26,7 +25,6 @@ export const ACCESS_ME_CONTRACT_FIXTURES: AccessMeContractFixtures = {
     status: 'pending',
     isOwner: false,
     permissions: [],
-    roleName: null,
   },
   readOnly: {
     sub: 'test-read-only',
@@ -35,7 +33,6 @@ export const ACCESS_ME_CONTRACT_FIXTURES: AccessMeContractFixtures = {
     status: 'active',
     isOwner: false,
     permissions: [],
-    roleName: null,
   },
   exactPermission: {
     sub: 'test-exact-permission',
@@ -44,7 +41,6 @@ export const ACCESS_ME_CONTRACT_FIXTURES: AccessMeContractFixtures = {
     status: 'active',
     isOwner: false,
     permissions: ['abwab.doors.create'],
-    roleName: null,
   },
   owner: {
     sub: 'test-owner',
@@ -53,7 +49,6 @@ export const ACCESS_ME_CONTRACT_FIXTURES: AccessMeContractFixtures = {
     status: 'active',
     isOwner: true,
     permissions: [],
-    roleName: 'Owner',
   },
 };
 

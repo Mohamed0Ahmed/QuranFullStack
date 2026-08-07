@@ -69,12 +69,11 @@ conflicting metadata; the requirement handlers repeat that validation fail-close
 Owner-only classification of security-administration writes. This does not change public `GET` endpoints
 or `/api/access/me`, and production activation remains a separate deployment gate.
 
-### Roles (Phase 2 — infrastructure only)
+### Owner role
 
-A fixed, seeded role set (`Owner` / `Admin` / `Editor`, seeded with Arabic display names via the
-`AddAccessRoles` migration) backs authorization; `Users.RoleId` is a nullable FK → `roles`. Capabilities
-are enforced from active direct grants, with a separate active-Owner bypass; `Admin` and `Editor` are
-transitional role data, not a capability source. Roles are never created from the UI.
+Only the seeded `Owner` role remains. `Users.RoleId` is a nullable FK to `roles`, used exclusively for
+the local Owner relation; capabilities are enforced from active direct grants with a separate active-Owner
+bypass. Roles are never created from the UI.
 
 - **Owner bootstrap** (`OwnerBootstrap:Emails`): the normalized, validated desired Owner list is
   reconciled for additions only after a configured identity provisions through `/api/access/me` with
@@ -85,18 +84,14 @@ transitional role data, not a capability source. Roles are never created from th
   validation; a Disabled configured user is never reactivated.
 - **Authorization state:** a scoped `IAuthorizationStateResolver` projects status, the local Owner
   relation, and active non-Owner direct grant codes once per protected request. It never provisions a
-  user and rejects a second distinct `sub` in its request scope. The old role-claim transformation is
-  no longer registered; `IUserRoleResolver` remains transitional for existing reconciliation/cache
-  invalidation work and is not consulted by the new requirement handlers.
+  user and rejects a second distinct `sub` in its request scope. No role-claim transformation or role
+  resolver participates in authorization.
 - **`GET /api/access/me`** returns `sub`, `email`, `displayName`, `status`, `isOwner`, ordered
-  active direct `permissions`, and transitional `roleName`; it does not expose `roleId`.
+  active direct `permissions`.
   Owners, Pending users, and Disabled users receive an empty permission list. `isOwner` remains
   true for a Disabled configured Owner while every authorization handler still fails closed on status.
-- **Named policies registered, applied to nothing:** one policy per role
-  (`AuthorizationPolicyNames.Owner`/`Admin`/`Editor`, each `RequireAuthenticatedUser().RequireRole(name)`)
-  is registered ready for future admin surfaces. **No `[Authorize(Policy = …)]` is applied to any
-  endpoint**, and there is still no global fallback policy. Granular Abwab authorization metadata does not
-  use these policies or transformed/token role claims.
+- **No named role policies:** authorization uses the exact permission and Owner requirements above; there
+  is no global fallback policy. Granular Abwab authorization metadata does not use token role claims.
 
 ### Configuration (`Auth` section)
 

@@ -43,8 +43,7 @@ per-feature.
     to the backend source; no authorization decision uses a role name.
   - `current-user.model.ts` — normalizes the generated `/me` wire DTO to the bounded UI
     snapshot: `sub`, `email`, `displayName`, `status`, `isOwner`, ordered direct
-    `permissions`, and transitional `roleName` (`'Owner' | null`). `roleId` is absent.
-    Legacy `Admin` and `Editor` values normalize to `null` and cannot authorize anything.
+    `permissions`. No role ID or role name crosses this contract.
   - `current-user.store.ts` — access snapshot signals (`currentUser`, `permissions`,
     `loadState`, `errorMessage`, `isAuthenticated`, `authStateKnown`, `isActive`, `isOwner`) and `can`/`canAny`.
     A Logto session observation refreshes the snapshot asynchronously, never blocking public render. Concurrent

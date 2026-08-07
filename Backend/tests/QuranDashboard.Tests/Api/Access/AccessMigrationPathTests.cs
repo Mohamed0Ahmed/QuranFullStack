@@ -1,3 +1,8 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using QuranDashboard.Application.Access.LegacyRoleConversion;
+using QuranDashboard.Application.Access.OwnerReconciliation;
+using QuranDashboard.Application.Abstractions.Access;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Infrastructure.Access;
 
@@ -68,6 +73,167 @@ public sealed class AccessMigrationPathTests(AccessMigrationTestFixture fixture)
     }
 
     [Fact]
+    public async Task LegacyRoleConversion_LeavesFormerAdminAndEditorRoleLessWithoutDirectGrants_ThenPermitsCleanup()
+    {
+        await using var database = await fixture.CreateDatabaseAsync();
+        await using var db = database.CreateDbContext();
+        await fixture.MigrateToAsync(db, "RequireNormalizedEmail");
+        var ownerId = await InsertRoleBoundUserAsync(db, "legacy-owner", "legacy-owner@example.test", 1, UserStatus.Active);
+        var adminId = await InsertRoleBoundUserAsync(db, "legacy-admin", "legacy-admin@example.test", 2, UserStatus.Active);
+        var editorId = await InsertRoleBoundUserAsync(db, "legacy-editor", "legacy-editor@example.test", 3, UserStatus.Active);
+        var conversion = CreateLegacyRoleConversionService(db, "legacy-owner@example.test");
+
+        var inventory = await conversion.InventoryAsync(CancellationToken.None);
+
+        inventory.CanConvert.Should().BeTrue();
+        inventory.OwnerUsers.Select(user => user.Id).Should().Equal(ownerId);
+        inventory.AdminUsers.Select(user => user.Id).Should().Equal(adminId);
+        inventory.EditorUsers.Select(user => user.Id).Should().Equal(editorId);
+        inventory.AdminOrEditorUsers.Should().OnlyContain(user => user.DirectGrantCount == 0);
+
+        var conversionResult = await conversion.ConvertAsync(CancellationToken.None);
+
+        conversionResult.Applied.Should().BeTrue();
+        conversionResult.CanConvert.Should().BeTrue();
+        conversionResult.HasAdminOrEditorReferences.Should().BeFalse();
+        db.ChangeTracker.Clear();
+        var formerRoleIds = await db.AccessUsers
+            .Where(user => user.Id == adminId || user.Id == editorId)
+            .OrderBy(user => user.Id)
+            .Select(user => user.RoleId)
+            .ToListAsync();
+        formerRoleIds.Should().HaveCount(2);
+        formerRoleIds.Should().OnlyContain(roleId => roleId == null);
+        (await db.AccessUserPermissions
+            .CountAsync(grant => grant.UserId == adminId || grant.UserId == editorId))
+            .Should().Be(0);
+        (await db.AccessAuditEvents
+            .Where(eventItem => eventItem.TargetUserId == adminId || eventItem.TargetUserId == editorId)
+            .Select(eventItem => eventItem.ActionType)
+            .ToListAsync())
+            .Should().BeEquivalentTo(
+                [AccessAuditActionType.LegacyRoleRemoved, AccessAuditActionType.LegacyRoleRemoved]);
+
+        await fixture.MigrateToAsync(db, "RemoveLegacyAdminEditorRoles");
+
+        (await db.AccessRoles.AsNoTracking().Select(role => role.Name).ToListAsync())
+            .Should().Equal(RoleNames.Owner);
+    }
+
+    [Fact]
+    public async Task LegacyRoleConvertCommand_WithAReadyOwner_ConvertsFormerAdminAndEditor()
+    {
+        await using var database = await fixture.CreateDatabaseAsync();
+        await using var db = database.CreateDbContext();
+        await fixture.MigrateToAsync(db, "RequireNormalizedEmail");
+        await InsertRoleBoundUserAsync(db, "legacy-owner", "legacy-owner@example.test", 1, UserStatus.Active);
+        var adminId = await InsertRoleBoundUserAsync(db, "legacy-admin", "legacy-admin@example.test", 2, UserStatus.Active);
+        var editorId = await InsertRoleBoundUserAsync(db, "legacy-editor", "legacy-editor@example.test", 3, UserStatus.Active);
+        await using var managementApi = await LogtoManagementApiStub.StartAsync("legacy-owner@example.test");
+
+        var run = await AccessAdminInProcess.RunAsync(
+            database.ConnectionString,
+            new Dictionary<string, string?>
+            {
+                ["DOTNET_ENVIRONMENT"] = "Development",
+                ["OwnerBootstrap__Emails__0"] = "legacy-owner@example.test",
+                ["Auth__ManagementApi__Endpoint"] = managementApi.Endpoint.AbsoluteUri,
+                ["Auth__ManagementApi__Resource"] = "https://tenant.example/api",
+                ["Auth__ManagementApi__AppId"] = "test-app-id",
+                ["Auth__ManagementApi__AppSecret"] = "test-app-secret",
+            },
+            "legacy-roles",
+            "convert",
+            "--apply");
+
+        run.ExitCode.Should().Be(0);
+        run.Output.Should().Contain("legacy_role_applied=true");
+        db.ChangeTracker.Clear();
+        var formerRoleIds = await db.AccessUsers
+            .Where(user => user.Id == adminId || user.Id == editorId)
+            .OrderBy(user => user.Id)
+            .Select(user => user.RoleId)
+            .ToListAsync();
+        formerRoleIds.Should().HaveCount(2);
+        formerRoleIds.Should().OnlyContain(roleId => roleId == null);
+        (await db.AccessUserPermissions
+            .CountAsync(grant => grant.UserId == adminId || grant.UserId == editorId))
+            .Should().Be(0);
+        (await db.AccessAuditEvents
+            .Where(eventItem => eventItem.TargetUserId == adminId || eventItem.TargetUserId == editorId)
+            .Select(eventItem => eventItem.ActionType)
+            .ToListAsync())
+            .Should().BeEquivalentTo(
+                [AccessAuditActionType.LegacyRoleRemoved, AccessAuditActionType.LegacyRoleRemoved]);
+    }
+
+    [Fact]
+    public async Task LegacyRoleConversion_RefusesToConvertAFormerRoleUserWithDirectGrants()
+    {
+        await using var database = await fixture.CreateDatabaseAsync();
+        await using var db = database.CreateDbContext();
+        await fixture.MigrateToAsync(db, "RequireNormalizedEmail");
+        var ownerId = await InsertRoleBoundUserAsync(db, "legacy-owner", "legacy-owner@example.test", 1, UserStatus.Active);
+        var adminId = await InsertRoleBoundUserAsync(db, "legacy-admin", "legacy-admin@example.test", 2, UserStatus.Active);
+        var permission = new Permission("legacy.roles.audit", "فحص الدور", "Legacy role conversion test", 1);
+        db.AccessPermissions.Add(permission);
+        await db.SaveChangesAsync();
+        db.AccessUserPermissions.Add(new UserPermission
+        {
+            UserId = adminId,
+            PermissionId = permission.Id,
+            GrantedByUserId = ownerId,
+            GrantedAtUtc = DateTimeOffset.UtcNow,
+        });
+        await db.SaveChangesAsync();
+        var conversion = CreateLegacyRoleConversionService(db, "legacy-owner@example.test");
+
+        var result = await conversion.ConvertAsync(CancellationToken.None);
+
+        result.Applied.Should().BeFalse();
+        result.CanConvert.Should().BeFalse();
+        result.PreflightViolations.Should().Contain($"legacy_role_grant_user_ids={adminId}");
+        db.ChangeTracker.Clear();
+        (await db.AccessUsers.Where(user => user.Id == adminId).Select(user => user.RoleId).SingleAsync())
+            .Should().Be(2);
+        (await db.AccessUserPermissions.CountAsync(grant => grant.UserId == adminId)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task CleanupMigration_RejectsAnyRemainingAdminOrEditorReference()
+    {
+        await using var database = await fixture.CreateDatabaseAsync();
+        await using var db = database.CreateDbContext();
+        await fixture.MigrateToAsync(db, "RequireNormalizedEmail");
+        var adminId = await InsertRoleBoundUserAsync(db, "legacy-admin", "legacy-admin@example.test", 2, UserStatus.Active);
+
+        var preflight = await AccessAdminInProcess.RunAsync(database.ConnectionString, "authorization", "preflight");
+        var convert = await AccessAdminInProcess.RunAsync(
+            database.ConnectionString,
+            "legacy-roles",
+            "convert",
+            "--apply",
+            "--confirm-production");
+
+        preflight.ExitCode.Should().Be(3);
+        preflight.Output.Should().Contain("legacy_role_admin_users=1");
+        preflight.Output.Should().Contain("legacy_role_can_convert=false");
+        convert.ExitCode.Should().Be(3);
+        convert.Output.Should().Contain("legacy_role_admin_users=1");
+        convert.Output.Should().Contain("legacy_role_applied=false");
+
+        var applyCleanup = () => fixture.MigrateToAsync(db, "RemoveLegacyAdminEditorRoles");
+
+        var exception = await applyCleanup.Should().ThrowAsync<PostgresException>();
+        exception.Which.SqlState.Should().Be(PostgresErrorCodes.ForeignKeyViolation);
+        db.ChangeTracker.Clear();
+        (await db.AccessUsers.Where(user => user.Id == adminId).Select(user => user.RoleId).SingleAsync())
+            .Should().Be(2);
+        (await db.AccessRoles.Where(role => role.Id == 2).Select(role => role.Name).SingleAsync())
+            .Should().Be("Admin");
+    }
+
+    [Fact]
     public async Task StagedMigrationSchemas_KeepOneCasesHistoryAndTablesOutOfAnother()
     {
         await using var migratedCase = await fixture.CreateDatabaseAsync();
@@ -112,6 +278,45 @@ public sealed class AccessMigrationPathTests(AccessMigrationTestFixture fixture)
             INSERT INTO users (logto_sub, email, status, created_at, updated_at)
             VALUES ({logtoSub}, {email}, {(int)UserStatus.Pending}, {DateTimeOffset.UtcNow}, {DateTimeOffset.UtcNow});
             """);
+    }
+
+    private static async Task<int> InsertRoleBoundUserAsync(
+        QuranDashboardDbContext db,
+        string logtoSub,
+        string email,
+        int roleId,
+        UserStatus status)
+    {
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO users (logto_sub, email, normalized_email, role_id, status, created_at, updated_at)
+            VALUES ({logtoSub}, {email}, {email.ToUpperInvariant()}, {roleId}, {(int)status}, {DateTimeOffset.UtcNow}, {DateTimeOffset.UtcNow});
+            """);
+        return await db.AccessUsers
+            .Where(user => user.LogtoSub == logtoSub)
+            .Select(user => user.Id)
+            .SingleAsync();
+    }
+
+    private static ILegacyRoleConversionService CreateLegacyRoleConversionService(
+        QuranDashboardDbContext db,
+        string ownerEmail)
+    {
+        var ownerReconciliation = new OwnerReconciliationService(
+            new OwnerReconciliationStore(db),
+            new StaticOwnerBootstrapConfigurationSource(new OwnerBootstrapConfiguration(
+                new HashSet<string>(StringComparer.Ordinal) { ownerEmail.ToUpperInvariant() },
+                "legacy-role-conversion-test")),
+            new FakeExternalUserProfileSource(),
+            new EmailIdentityNormalizer());
+        return new LegacyRoleConversionService(
+            new LegacyRoleConversionStore(db),
+            ownerReconciliation);
+    }
+
+    private sealed class StaticOwnerBootstrapConfigurationSource(
+        OwnerBootstrapConfiguration configuration) : IOwnerBootstrapConfigurationSource
+    {
+        public OwnerBootstrapConfiguration GetCurrent() => configuration;
     }
 
     private static async Task AssertNormalizedEmailConstraintAsync(QuranDashboardDbContext db)
@@ -248,5 +453,34 @@ public sealed class AccessMigrationPathTests(AccessMigrationTestFixture fixture)
         }
 
         return exists;
+    }
+
+    private sealed class LogtoManagementApiStub(WebApplication application, Uri endpoint) : IAsyncDisposable
+    {
+        public Uri Endpoint { get; } = endpoint;
+
+        public static async Task<LogtoManagementApiStub> StartAsync(string ownerEmail)
+        {
+            var builder = WebApplication.CreateSlimBuilder();
+            builder.Logging.ClearProviders();
+            builder.WebHost.ConfigureKestrel(options => options.Listen(IPAddress.Loopback, 0));
+            var application = builder.Build();
+            application.MapPost("/oidc/token", () => new { access_token = "test-token", expires_in = 300 });
+            application.MapGet("/api/users/{logtoSub}", () => new
+            {
+                primaryEmail = ownerEmail,
+                username = "owner",
+                name = "Owner",
+            });
+            await application.StartAsync();
+
+            return new LogtoManagementApiStub(application, new Uri(application.Urls.Single()));
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await application.StopAsync();
+            await application.DisposeAsync();
+        }
     }
 }

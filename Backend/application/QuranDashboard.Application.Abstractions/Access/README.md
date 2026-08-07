@@ -23,6 +23,11 @@ cursor, newest first by `(occurredAtUtc, id)`.
 revalidates the proposed subject and identity evidence, uses the target version, and never changes the
 target's role, status, or direct grants.
 
+`ILegacyRoleConversionService` is the operator boundary for the final Admin/Editor cleanup. Its inventory
+returns each role-bearing user's ID, role ID/name, status, normalized email, `sub`, and direct-grant count.
+Its conversion lease rereads and locks that state, refuses any preflight violation, clears only former
+Admin/Editor `RoleId` values, and writes no inferred grants.
+
 ## Related
 
 - Handler layer: `../../QuranDashboard.Application/Access/README.md`

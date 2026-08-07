@@ -31,7 +31,7 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
 
         var data = envelope.GetProperty("data");
         data.EnumerateObject().Select(property => property.Name).Should().BeEquivalentTo(
-            ["sub", "email", "displayName", "status", "isOwner", "permissions", "roleName"]);
+            ["sub", "email", "displayName", "status", "isOwner", "permissions"]);
         data.GetProperty("sub").GetString().Should().Be(sub);
         // The email is populated from the trusted identity-provider source, never from the caller.
         data.GetProperty("email").GetString().Should().Be(FakeExternalUserProfileSource.EmailFor(sub));
@@ -39,7 +39,6 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
         data.GetProperty("status").GetString().Should().Be("pending");
         data.GetProperty("isOwner").GetBoolean().Should().BeFalse();
         data.GetProperty("permissions").GetArrayLength().Should().Be(0);
-        data.GetProperty("roleName").ValueKind.Should().Be(JsonValueKind.Null);
 
         var users = await fixture.GetUsersAsync();
         users.Should().ContainSingle();
@@ -149,8 +148,6 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
 
     public static TheoryData<string> PublicRoutes =>
     [
-        // The health check and a real browse endpoint both answer WITHOUT an Authorization header:
-        // named role policies are registered but applied to nothing, and there is no fallback policy.
         "/api/health",
         "/api/dashboard/info",
     ];
