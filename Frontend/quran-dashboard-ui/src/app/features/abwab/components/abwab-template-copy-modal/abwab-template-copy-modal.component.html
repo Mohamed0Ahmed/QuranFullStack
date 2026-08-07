@@ -59,7 +59,7 @@
           <button
             type="button"
             class="qd-btn qd-btn-primary"
-            [disabled]="!hasElements() || pickedIds().size === 0 || applyBusy()"
+            [disabled]="!canApply() || !hasElements() || pickedIds().size === 0 || applyBusy()"
             data-testid="abwab-template-copy-modal-confirm"
             (click)="confirm()"
           >

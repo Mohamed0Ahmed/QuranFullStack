@@ -101,6 +101,8 @@ function render(options: RenderOptions = {}) {
   fixture.componentRef.setInput('refetchRelations', refetchRelations);
   fixture.componentRef.setInput('addRelations', addRelations);
   fixture.componentRef.setInput('deleteRelation', deleteRelation);
+  fixture.componentRef.setInput('canCreateRelation', true);
+  fixture.componentRef.setInput('canDeleteRelation', true);
   fixture.detectChanges();
 
   const root = fixture.nativeElement as HTMLElement;
@@ -124,6 +126,39 @@ function render(options: RenderOptions = {}) {
 }
 
 describe('AbwabRelationsModalComponent', () => {
+  it('keeps relation reading and reveal available while hiding add and delete for a view-only visitor', () => {
+    const { fixture, root, el, addRelations, deleteRelation } = render({
+      relations: [relation(10, 2, 'الصبر', 'similarity')],
+    });
+    fixture.componentRef.setInput('canCreateRelation', false);
+    fixture.componentRef.setInput('canDeleteRelation', false);
+    fixture.detectChanges();
+    const revealed: number[] = [];
+    fixture.componentInstance.revealRequested.subscribe((id) => revealed.push(id));
+
+    expect(root.querySelector('[data-testid="abwab-relations-modal-add"]')).toBeNull();
+    expect(root.querySelector('[data-testid="abwab-relations-modal-type-similarity"]')).toBeNull();
+    expect(root.querySelector('[data-testid="qd-chip-remove"]')).toBeNull();
+    expect(root.textContent).toContain('الصبر');
+
+    const chip = root.querySelector<HTMLElement>('[data-testid="qd-chip"]')!;
+    chip.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    fixture.detectChanges();
+
+    const internals = fixture.componentInstance as unknown as {
+      add(): void;
+      remove(relation: AbwabRelationVm): void;
+      confirmRemove(): void;
+    };
+    internals.add();
+    internals.remove(relation(10, 2, 'الصبر', 'similarity'));
+    internals.confirmRemove();
+
+    expect(revealed).toEqual([2]);
+    expect(addRelations).not.toHaveBeenCalled();
+    expect(deleteRelation).not.toHaveBeenCalled();
+  });
+
   describe('the four display groups', () => {
     it('renders one group per non-empty display key, ordered, with the global count', () => {
       const { root, el } = render({

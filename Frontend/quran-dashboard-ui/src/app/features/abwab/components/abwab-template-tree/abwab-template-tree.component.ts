@@ -27,6 +27,10 @@ export class AbwabTemplateTreeComponent {
 
   readonly root = input<AbwabTemplateNodeVm | null>(null);
   readonly ariaLabel = input('');
+  readonly canCreateNode = input(false);
+  readonly canReorderNode = input(false);
+  readonly canShowRootContextMenu = input(false);
+  readonly canShowNodeContextMenu = input(false);
 
   readonly addChildRequested = output<number>();
   readonly menuRequested = output<AbwabTemplateNodeMenuRequest>();
@@ -55,6 +59,19 @@ export class AbwabTemplateTreeComponent {
       walk(root);
     }
     return rows;
+  });
+
+  private readonly nodesById = computed(() => {
+    const result = new Map<number, AbwabTemplateNodeVm>();
+    const walk = (node: AbwabTemplateNodeVm): void => {
+      result.set(node.id, node);
+      node.children.forEach(walk);
+    };
+    const root = this.root();
+    if (root) {
+      walk(root);
+    }
+    return result;
   });
 
   protected get addChildPlaceholder(): string { return ABWAB_LABELS.templateAddChildPlaceholder; }
@@ -86,15 +103,24 @@ export class AbwabTemplateTreeComponent {
   }
 
   protected onAddChildClick(nodeId: number): void {
+    if (!this.canCreateNode()) {
+      return;
+    }
     this.addChildRequested.emit(nodeId);
   }
 
   protected onMoreClick(event: MouseEvent, nodeId: number): void {
+    if (!this.canShowContextMenuFor(nodeId)) {
+      return;
+    }
     this.menuRequested.emit({ nodeId, x: event.clientX, y: event.clientY });
   }
 
   protected onRowContextMenu(event: MouseEvent, nodeId: number): void {
     event.preventDefault();
+    if (!this.canShowContextMenuFor(nodeId)) {
+      return;
+    }
     this.menuRequested.emit({ nodeId, x: event.clientX, y: event.clientY });
   }
 
@@ -103,6 +129,9 @@ export class AbwabTemplateTreeComponent {
       return;
     }
     event.preventDefault();
+    if (!this.canShowContextMenuFor(nodeId)) {
+      return;
+    }
     const rect = this.rowElement(nodeId)?.getBoundingClientRect();
     const anchorX = this.resolveDirection() === 'rtl' ? rect?.right : rect?.left;
     this.menuRequested.emit({ nodeId, x: anchorX ?? 0, y: rect?.bottom ?? 0 });
@@ -114,13 +143,19 @@ export class AbwabTemplateTreeComponent {
     );
   }
 
+  protected canShowContextMenuFor(nodeId: number): boolean {
+    return this.nodesById().get(nodeId)?.parentNodeId === null
+      ? this.canShowRootContextMenu()
+      : this.canShowNodeContextMenu();
+  }
+
   private resolveDirection(): 'ltr' | 'rtl' {
     const dirHost = this.elementRef.nativeElement.closest('[dir]');
     return dirHost?.getAttribute('dir') === 'rtl' ? 'rtl' : 'ltr';
   }
 
   protected onOrderClick(node: AbwabTemplateNodeVm): void {
-    if (node.parentNodeId === null) {
+    if (!this.canReorderNode() || node.parentNodeId === null) {
       return;
     }
     this.editingOrderId.set(node.id);
@@ -134,6 +169,10 @@ export class AbwabTemplateTreeComponent {
   }
 
   protected onOrderKeydown(event: KeyboardEvent, nodeId: number): void {
+    if (!this.canReorderNode()) {
+      this.cancelOrderEdit(nodeId);
+      return;
+    }
     if (event.key === 'Enter') {
       this.commitOrderEdit(nodeId, event.target);
       this.focusOrderChip(nodeId);
@@ -159,7 +198,7 @@ export class AbwabTemplateTreeComponent {
   }
 
   protected commitOrderEdit(nodeId: number, target: EventTarget | null): void {
-    if (this.editingOrderId() !== nodeId) {
+    if (!this.canReorderNode() || this.editingOrderId() !== nodeId) {
       return;
     }
     this.editingOrderId.set(null);
@@ -176,6 +215,9 @@ export class AbwabTemplateTreeComponent {
 
   protected onQuickAddEnter(event: Event): void {
     event.preventDefault();
+    if (!this.canCreateNode()) {
+      return;
+    }
     const name = this.quickAddDraft().trim();
     if (!name) {
       return;

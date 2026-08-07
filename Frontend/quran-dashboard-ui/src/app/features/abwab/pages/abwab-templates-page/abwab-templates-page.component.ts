@@ -4,24 +4,20 @@ import {
   ElementRef,
   OnInit,
   computed,
+  effect,
   inject,
   signal,
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Observable, of } from 'rxjs';
 
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 import { AbwabTemplatesPageDeleteController } from './abwab-templates-page-delete.controller';
 import { AbwabTemplatesFacade } from '../../state/abwab-templates.facade';
 import { AbwabTemplatesController } from '../../state/abwab-templates.controller';
 import { AbwabSnapshotFacade } from '../../state/abwab-snapshot.facade';
-import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
-import {
-  AbwabAuthoringFields,
-  collectAbwabTemplateNodes,
-  toAuthoringFields,
-} from '../../models/abwab-templates.models';
+import { AbwabPermissionsController } from '../../state/abwab-permissions.controller';
+import { AbwabTemplatesOverlaysController } from '../../state/abwab-templates-overlays.controller';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabAnnouncerComponent } from '../../components/abwab-announcer/abwab-announcer.component';
 import {
@@ -30,16 +26,11 @@ import {
 } from '../../components/abwab-template-tree/abwab-template-tree.component';
 import { AbwabTemplateNodeModalComponent } from '../../components/abwab-template-node-modal/abwab-template-node-modal.component';
 import { AbwabTemplateCopyModalComponent } from '../../components/abwab-template-copy-modal/abwab-template-copy-modal.component';
-import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
-
-type AbwabNodeModalState =
-  | { readonly mode: 'add'; readonly parentNodeId: number }
-  | { readonly mode: 'edit'; readonly nodeId: number };
 
 @Component({
   selector: 'qd-abwab-templates-page',
@@ -59,75 +50,48 @@ type AbwabNodeModalState =
   templateUrl: './abwab-templates-page.component.html',
   styleUrl: './abwab-templates-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [AbwabTemplatesPageDeleteController],
+  providers: [AbwabTemplatesPageDeleteController, AbwabPermissionsController, AbwabTemplatesOverlaysController],
 })
 export class AbwabTemplatesPageComponent implements OnInit {
   protected readonly facade = inject(AbwabTemplatesFacade);
   protected readonly controller = inject(AbwabTemplatesController);
+  protected readonly permissions = inject(AbwabPermissionsController);
+  protected readonly overlays = inject(AbwabTemplatesOverlaysController);
   private readonly doorsFacade = inject(AbwabSnapshotFacade);
 
   protected readonly doorsRoutePath = `/${ABWAB_ROUTE_PATH}`;
 
   protected readonly namingTemplate = signal(false);
   protected readonly newTemplateName = signal('');
-  protected readonly nodeModal = signal<AbwabNodeModalState | null>(null);
-  protected readonly contextMenuNodeId = signal<number | null>(null);
-  protected readonly contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
-  protected readonly deletingNodeId = signal<number | null>(null);
   private readonly templateDelete = inject(AbwabTemplatesPageDeleteController);
   protected readonly confirmingTemplateDelete = this.templateDelete.confirming;
   protected readonly templateDeleteBusy = this.templateDelete.busy;
   protected readonly templateDeleteError = this.templateDelete.error;
-  protected readonly nodeDeleteBusy = signal(false);
-  protected readonly nodeDeleteError = signal<string | null>(null);
-  protected readonly copyModalOpen = signal(false);
+  protected readonly nodeModalOpen = this.overlays.nodeModalOpen;
+  protected readonly nodeModalFields = this.overlays.nodeModalFields;
+  protected readonly nodeModalIsEdit = this.overlays.nodeModalIsEdit;
+  protected readonly nodeModalIsRoot = this.overlays.nodeModalIsRoot;
+  protected readonly nodeModalContextName = this.overlays.nodeModalContextName;
+  protected readonly canNodeModalSubmit = this.overlays.canNodeModalSubmit;
+  protected readonly canRootTemplateTreeContextMenu = this.overlays.canRootTemplateTreeContextMenu;
+  protected readonly canNodeTemplateTreeContextMenu = this.overlays.canNodeTemplateTreeContextMenu;
+  protected readonly deletingNodeName = this.overlays.deletingNodeName;
+  protected readonly contextMenuIsRoot = this.overlays.contextMenuIsRoot;
+  protected readonly contextMenuNodeId = this.overlays.contextMenuNodeId;
+  protected readonly contextMenuPosition = this.overlays.contextMenuPosition;
+  protected readonly nodeDeleteBusy = this.overlays.nodeDeleteBusy;
+  protected readonly nodeDeleteError = this.overlays.nodeDeleteError;
+  protected readonly copyModalOpen = this.overlays.copyModalOpen;
+  protected readonly submitNode = this.overlays.submitNode;
+  protected readonly applyTemplate = this.overlays.applyTemplate;
 
   private readonly headerFallbackFocus = viewChild<ElementRef<HTMLAnchorElement>>('headerFallbackFocus');
-  private readonly overlayFromContextMenu = signal(false);
 
   protected readonly liveRoots = computed(() => this.doorsFacade.snapshot()?.liveRoots ?? []);
   protected readonly doorsLoading = computed(() => this.doorsFacade.isLoading() && !this.doorsFacade.snapshot());
   protected readonly doorsError = computed(() =>
     this.doorsFacade.snapshot() ? null : this.doorsFacade.errorMessage(),
   );
-
-  private readonly nodesById = computed(() => collectAbwabTemplateNodes(this.facade.selectedTemplate()?.root ?? null));
-
-  protected readonly nodeModalOpen = computed(() => this.nodeModal() !== null);
-  protected readonly nodeModalIsEdit = computed(() => this.nodeModal()?.mode === 'edit');
-
-  protected readonly nodeModalFields = computed<AbwabAuthoringFields | null>(() => {
-    const state = this.nodeModal();
-    if (state?.mode !== 'edit') {
-      return null;
-    }
-    const node = this.nodesById().get(state.nodeId);
-    return node ? toAuthoringFields(node) : null;
-  });
-
-  protected readonly nodeModalIsRoot = computed(() => {
-    const state = this.nodeModal();
-    return state?.mode === 'edit' && this.nodesById().get(state.nodeId)?.parentNodeId === null;
-  });
-
-  protected readonly nodeModalContextName = computed(() => {
-    const state = this.nodeModal();
-    if (!state) {
-      return null;
-    }
-    const nodeId = state.mode === 'edit' ? state.nodeId : state.parentNodeId;
-    return this.nodesById().get(nodeId)?.name ?? null;
-  });
-
-  protected readonly deletingNodeName = computed(() => {
-    const nodeId = this.deletingNodeId();
-    return nodeId === null ? null : (this.nodesById().get(nodeId)?.name ?? null);
-  });
-
-  protected readonly contextMenuIsRoot = computed(() => {
-    const nodeId = this.contextMenuNodeId();
-    return nodeId !== null && this.nodesById().get(nodeId)?.parentNodeId === null;
-  });
 
   protected get pageTitle(): string { return ABWAB_LABELS.templatesPageTitle; }
   protected get pageSubtitle(): string { return ABWAB_LABELS.templatesPageSubtitle; }
@@ -162,6 +126,18 @@ export class AbwabTemplatesPageComponent implements OnInit {
     return ABWAB_LABELS.templateNodeDeleteConfirm(nodeName);
   }
 
+  constructor() {
+    effect(() => {
+      if (!this.permissions.canCreateTemplate()) {
+        this.namingTemplate.set(false);
+        this.newTemplateName.set('');
+      }
+      if (!this.permissions.canDeleteTemplate()) {
+        this.confirmingTemplateDelete.set(false);
+      }
+    });
+  }
+
   ngOnInit(): void {
     this.facade.loadList();
   }
@@ -172,6 +148,9 @@ export class AbwabTemplatesPageComponent implements OnInit {
   }
 
   protected startNamingTemplate(): void {
+    if (!this.permissions.canCreateTemplate()) {
+      return;
+    }
     this.namingTemplate.set(true);
     this.newTemplateName.set('');
   }
@@ -183,7 +162,7 @@ export class AbwabTemplatesPageComponent implements OnInit {
   protected createTemplate(event: Event): void {
     event.preventDefault();
     const name = this.newTemplateName().trim();
-    if (!name) {
+    if (!this.permissions.canCreateTemplate() || !name) {
       return;
     }
     this.controller.createTemplate(name).subscribe((outcome) => {
@@ -204,177 +183,102 @@ export class AbwabTemplatesPageComponent implements OnInit {
   }
 
   protected editRoot(): void {
-    const rootId = this.facade.selectedTemplate()?.root?.id;
-    if (rootId !== undefined) {
-      this.nodeModal.set({ mode: 'edit', nodeId: rootId });
-    }
+    this.overlays.editRoot();
   }
 
   protected onAddChildRequested(parentNodeId: number): void {
-    this.closeContextMenu();
-    this.nodeModal.set({ mode: 'add', parentNodeId });
+    this.overlays.onAddChildRequested(parentNodeId);
   }
 
   protected onEditRequested(nodeId: number): void {
-    this.closeContextMenu();
-    this.nodeModal.set({ mode: 'edit', nodeId });
+    this.overlays.onEditRequested(nodeId);
   }
 
   protected closeNodeModal(): void {
-    const fromContextMenu = this.consumeContextMenuOrigin();
-    this.nodeModal.set(null);
-    if (fromContextMenu) {
-      this.focusHeaderFallback();
-    }
+    this.overlays.closeNodeModal(() => this.focusHeaderFallback());
   }
 
-  protected readonly submitNode = (fields: AbwabAuthoringFields): Observable<AbwabWriteOutcome<unknown>> => {
-    const state = this.nodeModal();
-    if (state?.mode === 'edit') {
-      return this.controller.editNode(state.nodeId, fields);
-    }
-    const template = this.facade.selectedTemplate();
-    if (state === null || template === null) {
-      return of<AbwabWriteOutcome<unknown>>({ kind: 'invalid', message: ABWAB_LABELS.writeInvalidFallback });
-    }
-    return this.controller.addNode(template.id, state.parentNodeId, fields);
-  };
-
   protected onQuickAddRequested(name: string): void {
-    const template = this.facade.selectedTemplate();
-    const rootId = template?.root?.id;
-    if (!template || rootId === undefined) {
-      return;
-    }
-    this.controller
-      .addNode(template.id, rootId, { name, description: '', representativeAyahText: '', aliases: [] })
-      .subscribe();
+    this.overlays.onQuickAddRequested(name);
   }
 
   protected onOrderCommitted(event: { nodeId: number; position: number }): void {
-    this.controller.reorderNode(event.nodeId, event.position).subscribe();
+    this.overlays.onOrderCommitted(event);
   }
 
   protected onMenuRequested(request: AbwabTemplateNodeMenuRequest): void {
-    this.contextMenuPosition.set({ x: request.x, y: request.y });
-    this.contextMenuNodeId.set(request.nodeId);
+    this.overlays.onMenuRequested(request);
   }
 
   protected closeContextMenu(): void {
-    this.contextMenuNodeId.set(null);
+    this.overlays.closeContextMenu();
   }
 
   protected requestNodeDelete(): void {
-    const nodeId = this.contextMenuNodeId();
-    this.closeContextMenu();
-    if (nodeId !== null) {
-      this.nodeDeleteError.set(null);
-      this.nodeDeleteBusy.set(false);
-      this.deletingNodeId.set(nodeId);
-      this.overlayFromContextMenu.set(true);
-    }
+    this.overlays.requestNodeDelete();
   }
 
   protected confirmNodeDelete(): void {
-    const nodeId = this.deletingNodeId();
-    if (nodeId === null || this.nodeDeleteBusy()) {
-      return;
-    }
-    this.nodeDeleteBusy.set(true);
-    this.nodeDeleteError.set(null);
-    this.controller.deleteNode(nodeId).subscribe((outcome) => {
-      this.nodeDeleteBusy.set(false);
-      if (outcome.kind === 'success') {
-        this.consumeContextMenuOrigin();
-        this.deletingNodeId.set(null);
-        this.focusHeaderFallback();
-        return;
-      }
-      this.nodeDeleteError.set(outcome.message);
-    });
+    this.overlays.confirmNodeDelete(() => this.focusHeaderFallback());
   }
 
   protected cancelNodeDelete(): void {
-    if (this.nodeDeleteBusy()) {
-      return;
-    }
-    this.consumeContextMenuOrigin();
-    this.deletingNodeId.set(null);
-    this.nodeDeleteError.set(null);
-    this.focusHeaderFallback();
+    this.overlays.cancelNodeDelete(() => this.focusHeaderFallback());
   }
 
   protected requestTemplateDelete(): void {
-    this.closeContextMenu();
+    if (!this.permissions.canDeleteTemplate()) {
+      return;
+    }
+    this.overlays.closeContextMenu();
     this.templateDelete.request();
   }
 
   protected ctxDeleteTemplate(): void {
+    if (!this.permissions.canDeleteTemplate() || !this.contextMenuIsRoot()) {
+      return;
+    }
+
     this.requestTemplateDelete();
-    this.overlayFromContextMenu.set(true);
+    this.overlays.markContextMenuOrigin();
   }
 
   protected confirmTemplateDelete(): void {
+    if (!this.permissions.canDeleteTemplate()) {
+      return;
+    }
     this.templateDelete.confirm(() => {
-      this.consumeContextMenuOrigin();
+      this.overlays.consumeContextMenuOrigin();
       this.focusHeaderFallback();
     });
   }
 
   protected cancelTemplateDelete(): void {
     this.templateDelete.cancel(() => {
-      if (this.consumeContextMenuOrigin()) {
+      if (this.overlays.consumeContextMenuOrigin()) {
         this.focusHeaderFallback();
       }
     });
   }
 
   protected openCopyModal(): void {
-    this.doorsFacade.load();
-    this.copyModalOpen.set(true);
+    this.overlays.openCopyModal(() => this.doorsFacade.load());
   }
 
   protected closeCopyModal(): void {
-    this.copyModalOpen.set(false);
+    this.overlays.closeCopyModal();
   }
 
   protected retryDoorsLoad(): void {
     this.doorsFacade.load();
   }
 
-  protected readonly applyTemplate = (
-    targetDoorIds: readonly number[],
-  ): Observable<AbwabWriteOutcome<AbwabDoorDto[] | null>> => {
-    const template = this.facade.selectedTemplate();
-    if (template === null) {
-      return of<AbwabWriteOutcome<AbwabDoorDto[] | null>>({
-        kind: 'invalid',
-        message: ABWAB_LABELS.writeInvalidFallback,
-      });
-    }
-    return this.controller.applyTemplate(template.id, targetDoorIds);
-  };
-
   protected ctxEdit(): void {
-    const nodeId = this.contextMenuNodeId();
-    if (nodeId !== null) {
-      this.onEditRequested(nodeId);
-      this.overlayFromContextMenu.set(true);
-    }
+    this.overlays.ctxEdit();
   }
 
   protected ctxAddChild(): void {
-    const nodeId = this.contextMenuNodeId();
-    if (nodeId !== null) {
-      this.onAddChildRequested(nodeId);
-      this.overlayFromContextMenu.set(true);
-    }
-  }
-
-  private consumeContextMenuOrigin(): boolean {
-    const fromContextMenu = this.overlayFromContextMenu();
-    this.overlayFromContextMenu.set(false);
-    return fromContextMenu;
+    this.overlays.ctxAddChild();
   }
 
   private focusHeaderFallback(): void {
@@ -382,11 +286,7 @@ export class AbwabTemplatesPageComponent implements OnInit {
   }
 
   private closeOverlays(): void {
-    this.overlayFromContextMenu.set(false);
-    this.nodeModal.set(null);
-    this.contextMenuNodeId.set(null);
-    this.deletingNodeId.set(null);
+    this.overlays.closeOverlays();
     this.confirmingTemplateDelete.set(false);
-    this.copyModalOpen.set(false);
   }
 }

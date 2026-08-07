@@ -21,6 +21,7 @@ export class AbwabDoorRestoreModalComponent {
   readonly door = input<AbwabNode | null>(null);
   readonly sections = input<readonly AbwabTreeSectionDto[]>([]);
   readonly ancestors = input<readonly AbwabNode[]>([]);
+  readonly canRestoreDoor = input(false);
 
   readonly closed = output<void>();
   readonly restored = output<void>();
@@ -48,7 +49,7 @@ export class AbwabDoorRestoreModalComponent {
   );
 
   protected readonly confirmDisabled = computed(
-    () => this.destinationRequired() && this.chosenSectionId() === null,
+    () => !this.canRestoreDoor() || (this.destinationRequired() && this.chosenSectionId() === null),
   );
 
   protected readonly sectionInvalid = computed(() => this.sectionTouched() && this.confirmDisabled());
@@ -64,6 +65,7 @@ export class AbwabDoorRestoreModalComponent {
   protected get retiredHint(): string { return ABWAB_LABELS.restoreModalRetiredHint; }
   protected get noSectionsHint(): string { return ABWAB_LABELS.restoreModalNoSectionsHint; }
   protected get childHint(): string { return ABWAB_LABELS.restoreModalChildHint; }
+  protected get permissionHint(): string { return ABWAB_LABELS.restorePermissionHint; }
 
   private readonly doorSubjectId = computed(() => this.door()?.id ?? null);
 
@@ -89,7 +91,7 @@ export class AbwabDoorRestoreModalComponent {
 
   protected confirm(): void {
     const door = this.door();
-    if (!door || this.confirmDisabled()) {
+    if (!this.canRestoreDoor() || !door || this.confirmDisabled()) {
       return;
     }
 

@@ -1,14 +1,16 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { of } from 'rxjs';
 
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabSelectionStore } from './abwab-selection.store';
-import { AbwabWriteController } from './abwab-write.controller';
+import { AbwabWriteController, abwabPermissionDenied } from './abwab-write.controller';
 import { AbwabSectionsController } from './abwab-sections.controller';
 import { AbwabRelationsController } from './abwab-relations.controller';
 import { AbwabNode, AbwabRelationDirectionKind, AbwabRelationKind } from '../models/abwab.models';
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
 import { ABWAB_LABELS } from '../models/abwab.labels';
 import { AbwabMoveDestination } from '../models/abwab.models';
+import { AbwabPermissionsController } from './abwab-permissions.controller';
 
 type ContextActionCallback = (doorId: number) => void;
 
@@ -21,6 +23,7 @@ export class AbwabPageOverlaysController {
   private readonly writeController = inject(AbwabWriteController);
   private readonly sectionsController = inject(AbwabSectionsController);
   private readonly relationsController = inject(AbwabRelationsController);
+  private readonly permissions = inject(AbwabPermissionsController);
 
   private readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
 
@@ -50,6 +53,9 @@ export class AbwabPageOverlaysController {
   readonly modalParentName = signal<string | null>(null);
 
   openCreateRoot(): void {
+    if (!this.permissions.canCreateDoor()) {
+      return;
+    }
     this.modalDoor.set(null);
     this.modalParentId.set(null);
     this.modalParentName.set(null);
@@ -57,6 +63,9 @@ export class AbwabPageOverlaysController {
   }
 
   openCreateChild(): void {
+    if (!this.permissions.canCreateDoor()) {
+      return;
+    }
     const door = this.selectedDoor();
     if (!door) {
       return;
@@ -68,6 +77,9 @@ export class AbwabPageOverlaysController {
   }
 
   openEdit(): void {
+    if (!this.permissions.canEditDoor()) {
+      return;
+    }
     const door = this.selectedDoor();
     if (!door) {
       return;
@@ -93,13 +105,13 @@ export class AbwabPageOverlaysController {
   readonly archiveCameFromContextMenu = this.archiveFromContextMenu.asReadonly();
 
   requestArchive(): void {
-    if (this.selectedDoor()) {
+    if (this.permissions.canArchiveDoor() && this.selectedDoor()) {
       this.openArchiveConfirm('single');
     }
   }
 
   requestBulkArchive(): void {
-    if (this.selection.bulkCount() > 0) {
+    if (this.permissions.canArchiveDoor() && this.selection.bulkCount() > 0) {
       this.openArchiveConfirm('bulk');
     }
   }
@@ -115,7 +127,10 @@ export class AbwabPageOverlaysController {
 
   confirmArchive(onSuccess: () => void): void {
     const door = this.selectedDoor();
-    if (!door || this.archiveBusy()) {
+    if (!this.permissions.canArchiveDoor() || !door || this.archiveBusy()) {
+      if (!this.permissions.canArchiveDoor()) {
+        this.closeArchiveConfirm();
+      }
       return;
     }
     this.beginArchiveWrite();
@@ -132,7 +147,10 @@ export class AbwabPageOverlaysController {
   }
 
   confirmBulkArchive(onSuccess: () => void): void {
-    if (this.archiveBusy()) {
+    if (!this.permissions.canArchiveDoor() || this.archiveBusy()) {
+      if (!this.permissions.canArchiveDoor()) {
+        this.closeArchiveConfirm();
+      }
       return;
     }
     this.beginArchiveWrite();
@@ -209,6 +227,9 @@ export class AbwabPageOverlaysController {
   });
 
   openMovePicker(): void {
+    if (!this.permissions.canMoveDoor()) {
+      return;
+    }
     const door = this.selectedDoor();
     if (!door) {
       return;
@@ -218,6 +239,9 @@ export class AbwabPageOverlaysController {
   }
 
   openBulkMovePicker(): void {
+    if (!this.permissions.canMoveDoor()) {
+      return;
+    }
     const ids = Array.from(this.selection.bulkSet().keys());
     if (ids.length === 0) {
       return;
@@ -232,6 +256,9 @@ export class AbwabPageOverlaysController {
 
   confirmMove(destination: AbwabMoveDestination): void {
     this.movePickerOpen.set(false);
+    if (!this.permissions.canMoveDoor()) {
+      return;
+    }
     const ids = this.moveDoorIds();
     if (ids.length === 1) {
       const node = this.byId().get(ids[0]);
@@ -277,7 +304,7 @@ export class AbwabPageOverlaysController {
   });
 
   openRestoreModal(id: number): void {
-    if (!this.byId().has(id)) {
+    if (!this.permissions.canRestoreDoor() || !this.byId().has(id)) {
       return;
     }
     this.restoreDoorId.set(id);
@@ -290,6 +317,9 @@ export class AbwabPageOverlaysController {
   readonly sectionsModalOpen = signal(false);
 
   openSectionsModal(): void {
+    if (!this.permissions.canManageSections()) {
+      return;
+    }
     this.sectionsModalOpen.set(true);
   }
 
@@ -297,12 +327,20 @@ export class AbwabPageOverlaysController {
     this.sectionsModalOpen.set(false);
   }
 
-  readonly createSection = (name: string) => this.sectionsController.createSection(name);
+  readonly createSection = (name: string) =>
+    this.permissions.canCreateSection()
+      ? this.sectionsController.createSection(name)
+      : of(abwabPermissionDenied());
   readonly renameSection = (id: number, name: string, version: number) =>
-    this.sectionsController.renameSection(id, name, version);
-  readonly deleteSection = (id: number) => this.sectionsController.deleteSection(id);
+    this.permissions.canEditSection()
+      ? this.sectionsController.renameSection(id, name, version)
+      : of(abwabPermissionDenied());
+  readonly deleteSection = (id: number) =>
+    this.permissions.canDeleteSection() ? this.sectionsController.deleteSection(id) : of(abwabPermissionDenied());
   readonly reorderSection = (id: number, position: number, version: number) =>
-    this.sectionsController.reorderSection(id, position, version);
+    this.permissions.canReorderSection()
+      ? this.sectionsController.reorderSection(id, position, version)
+      : of(abwabPermissionDenied());
 
   readonly relationsModalOpen = signal(false);
   readonly relationsAnchorPickMode = signal(false);
@@ -339,7 +377,7 @@ export class AbwabPageOverlaysController {
   }
 
   openBulkRelations(): void {
-    if (this.selection.bulkCount() === 0) {
+    if (!this.permissions.canCreateRelation() || this.selection.bulkCount() === 0) {
       return;
     }
     this.relationsAnchorPickMode.set(true);
@@ -358,8 +396,12 @@ export class AbwabPageOverlaysController {
     kind: AbwabRelationKind,
     direction: AbwabRelationDirectionKind | null,
     targetDoorIds: readonly number[],
-  ) => this.relationsController.addRelations(anchorDoorId, kind, direction, targetDoorIds);
-  readonly deleteRelation = (relationId: number) => this.relationsController.deleteRelation(relationId);
+  ) =>
+    this.permissions.canCreateRelation()
+      ? this.relationsController.addRelations(anchorDoorId, kind, direction, targetDoorIds)
+      : of(abwabPermissionDenied());
+  readonly deleteRelation = (relationId: number) =>
+    this.permissions.canDeleteRelation() ? this.relationsController.deleteRelation(relationId) : of(abwabPermissionDenied());
 
   readonly contextMenuDoorId = signal<number | null>(null);
   readonly contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -374,6 +416,27 @@ export class AbwabPageOverlaysController {
 
   closeContextMenu(): void {
     this.contextMenuDoorId.set(null);
+  }
+
+  closeUnavailableWriteState(): void {
+    if (this.modalOpen() && (this.modalDoor() === null ? !this.permissions.canCreateDoor() : !this.permissions.canEditDoor())) {
+      this.closeModal();
+    }
+    if (!this.permissions.canMoveDoor()) {
+      this.closeMovePicker();
+    }
+    if (!this.permissions.canRestoreDoor()) {
+      this.closeRestoreModal();
+    }
+    if (!this.permissions.canManageSections()) {
+      this.closeSectionsModal();
+    }
+    if (!this.permissions.canArchiveDoor()) {
+      this.closeArchiveConfirm();
+    }
+    if (!this.permissions.canUseBulkMode()) {
+      this.selection.setBulkMode(false);
+    }
   }
 
   ctxEdit(onActed?: ContextActionCallback): void {

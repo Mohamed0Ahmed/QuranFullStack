@@ -91,6 +91,8 @@ export class AbwabRelationsModalComponent {
     ) => Observable<AbwabWriteOutcome<AbwabDoorRelationDto[]>>
   >();
   readonly deleteRelation = input.required<(relationId: number) => Observable<AbwabWriteOutcome<unknown>>>();
+  readonly canCreateRelation = input(false);
+  readonly canDeleteRelation = input(false);
 
   readonly closed = output<void>();
   readonly revealRequested = output<number>();
@@ -252,6 +254,16 @@ export class AbwabRelationsModalComponent {
         setTimeout(() => this.picker()?.focusSearch());
       });
     });
+
+    effect(() => {
+      if (!this.canCreateRelation()) {
+        this.resetDraft();
+      }
+      if (!this.canDeleteRelation()) {
+        this.pendingDelete.set(null);
+        this.deleteError.set(null);
+      }
+    });
   }
 
   protected pickType(kind: AbwabRelationKind): void {
@@ -283,7 +295,7 @@ export class AbwabRelationsModalComponent {
     const anchorPick = this.anchorPickMode();
     const anchorId = anchorPick ? (picked[0] ?? null) : this.anchorDoorId();
     const targetIds = anchorPick ? this.bulkTargets().map((target) => target.id) : picked;
-    if (anchorId === null || targetIds.length === 0) {
+    if (!this.canCreateRelation() || anchorId === null || targetIds.length === 0) {
       return;
     }
     const direction = this.type() === 'comprehensiveness' ? this.direction() : null;
@@ -303,6 +315,9 @@ export class AbwabRelationsModalComponent {
   }
 
   protected remove(relation: AbwabRelationVm): void {
+    if (!this.canDeleteRelation()) {
+      return;
+    }
     this.pendingDelete.set(relation);
     this.deleteError.set(null);
   }
@@ -317,7 +332,7 @@ export class AbwabRelationsModalComponent {
 
   protected confirmRemove(): void {
     const relation = this.pendingDelete();
-    if (relation === null || this.deleteBusy()) {
+    if (!this.canDeleteRelation() || relation === null || this.deleteBusy()) {
       return;
     }
     const anchorId = this.anchorDoorId();

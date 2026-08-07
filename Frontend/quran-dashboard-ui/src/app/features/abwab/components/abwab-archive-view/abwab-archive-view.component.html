@@ -32,13 +32,17 @@
         <button
           type="button"
           class="abwab-archive-view__restore"
-          [disabled]="node.depth > 0"
+          [disabled]="restoreDisabled(node)"
+          [attr.aria-describedby]="!canRestoreDoor() ? restorePermissionHintId(node.id) : null"
           [attr.data-testid]="'abwab-archive-restore-' + node.id"
           [attr.tabindex]="-1"
           (click)="onRestoreClick(node.id)"
         >
           {{ restoreLabel }}
         </button>
+        @if (!canRestoreDoor()) {
+          <span class="qd-sr-only" [id]="restorePermissionHintId(node.id)">{{ restorePermissionHint }}</span>
+        }
         @if (node.depth > 0) {
           <span class="abwab-archive-view__hint" [attr.data-testid]="'abwab-archive-restore-hint-' + node.id">
             {{ restoreParentFirstHint }}

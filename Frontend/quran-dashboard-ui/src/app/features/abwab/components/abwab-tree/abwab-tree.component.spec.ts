@@ -41,6 +41,8 @@ function render(overrides: Record<string, unknown> = {}) {
   const fixture = TestBed.createComponent(AbwabTreeComponent);
   fixture.componentRef.setInput('roots', SAMPLE.liveRoots);
   fixture.componentRef.setInput('ariaLabel', 'شجرة الأبواب');
+  fixture.componentRef.setInput('canCreateDoor', true);
+  fixture.componentRef.setInput('canReorderDoor', true);
   for (const [key, value] of Object.entries(overrides)) {
     fixture.componentRef.setInput(key, value);
   }
@@ -49,6 +51,33 @@ function render(overrides: Record<string, unknown> = {}) {
 }
 
 describe('AbwabTreeComponent', () => {
+  describe('Phase 9 permission-aware controls', () => {
+    it('keeps the read tree and relations menu available while create and reorder dispatches are inert', () => {
+      const fixture = render({ canCreateDoor: false, canReorderDoor: false });
+      const root = fixture.nativeElement as HTMLElement;
+      const added: number[] = [];
+      const reordered: unknown[] = [];
+      fixture.componentInstance.addChildRequested.subscribe((id) => added.push(id));
+      fixture.componentInstance.orderCommitted.subscribe((event) => reordered.push(event));
+
+      expect(root.querySelector('[data-testid="abwab-tree-add-child-1"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-tree-more-1"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="abwab-tree-order-1"]')?.tagName).toBe('SPAN');
+
+      const internals = fixture.componentInstance as unknown as {
+        onAddChildClick(event: Event, id: number): void;
+        onOrderClick(event: Event, id: number): void;
+        commitOrderEdit(id: number, target: EventTarget | null): void;
+      };
+      internals.onAddChildClick(new Event('click'), 1);
+      internals.onOrderClick(new Event('click'), 1);
+      internals.commitOrderEdit(1, { value: '2' } as HTMLInputElement);
+
+      expect(added).toEqual([]);
+      expect(reordered).toEqual([]);
+    });
+  });
+
   it('M5 — renders role="tree"/treeitem with aria-level, aria-expanded (branches only), aria-selected', () => {
     const fixture = render({ selectedId: 1 });
     const root = fixture.nativeElement as HTMLElement;

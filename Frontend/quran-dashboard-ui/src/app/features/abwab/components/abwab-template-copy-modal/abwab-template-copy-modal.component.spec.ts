@@ -61,6 +61,7 @@ function render(options: RenderOptions = {}) {
   fixture.componentRef.setInput('doorsLoading', options.doorsLoading ?? false);
   fixture.componentRef.setInput('doorsError', options.doorsError ?? null);
   fixture.componentRef.setInput('applyTemplate', applyTemplate);
+  fixture.componentRef.setInput('canApply', true);
   fixture.detectChanges();
 
   const root = fixture.nativeElement as HTMLElement;
@@ -80,6 +81,18 @@ function render(options: RenderOptions = {}) {
 }
 
 describe('AbwabTemplateCopyModalComponent', () => {
+  it('disables and rejects a stale template apply without its exact permission', () => {
+    const { fixture, el, click, applyTemplate } = render();
+    fixture.componentRef.setInput('canApply', false);
+    fixture.detectChanges();
+
+    click('abwab-template-copy-modal-pick-1');
+    expect((el('abwab-template-copy-modal-confirm') as HTMLButtonElement).disabled).toBe(true);
+    (fixture.componentInstance as unknown as { confirm(): void }).confirm();
+
+    expect(applyTemplate).not.toHaveBeenCalled();
+  });
+
   describe('picker search', () => {
     it('keeps a parent whose descendant matches and expands it to reveal the match', () => {
       const { el, search } = render();

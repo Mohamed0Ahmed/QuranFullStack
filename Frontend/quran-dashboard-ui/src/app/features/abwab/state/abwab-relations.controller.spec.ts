@@ -10,6 +10,8 @@ import { AbwabSelectionStore } from './abwab-selection.store';
 import { AbwabApi } from '../data-access/abwab.api';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AbwabDoorRelationDto } from '../../../core/api/generated/models/abwab-door-relation-dto';
+import { CurrentUserStore } from '../../../core/auth/current-user.store';
+import { WriteAuthFailureCoordinator } from '../../../core/auth/write-auth-failure.coordinator';
 
 const DOOR = {
   id: 1,
@@ -85,6 +87,8 @@ function setup(options: { readonly etag?: string | null } = {}) {
       AbwabSnapshotFacade,
       AbwabWriteController,
       AbwabSelectionStore,
+      { provide: CurrentUserStore, useValue: { can: () => true } },
+      { provide: WriteAuthFailureCoordinator, useValue: { handle: async () => null } },
       { provide: AbwabApi, useValue: api },
     ],
   });

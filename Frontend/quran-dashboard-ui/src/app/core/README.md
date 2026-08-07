@@ -38,15 +38,15 @@ per-feature.
     HTTP interceptor, so public reads retain ordinary error handling.
   - `access.api.ts` — `AccessApi.getMe()` → `GET /api/access/me`, returning the raw
     `ApiResponse<CurrentUserResponse>` envelope (thin, like `system.api.ts`).
-  - `permission-code.ts` — the TypeScript union of the server's direct Abwab permission
-    codes. `npm run check:permission-catalogue` compares it to the backend source; no
-    authorization decision uses a role name.
+  - `permission-code.ts` — the canonical named shape and ordered TypeScript union of the
+    server's direct Abwab permission codes. `npm run check:permission-catalogue` compares it
+    to the backend source; no authorization decision uses a role name.
   - `current-user.model.ts` — normalizes the generated `/me` wire DTO to the bounded UI
     snapshot: `sub`, `email`, `displayName`, `status`, `isOwner`, ordered direct
     `permissions`, and transitional `roleName` (`'Owner' | null`). `roleId` is absent.
     Legacy `Admin` and `Editor` values normalize to `null` and cannot authorize anything.
   - `current-user.store.ts` — access snapshot signals (`currentUser`, `permissions`,
-    `loadState`, `errorMessage`, `isAuthenticated`, `isActive`, `isOwner`) and `can`/`canAny`.
+    `loadState`, `errorMessage`, `isAuthenticated`, `authStateKnown`, `isActive`, `isOwner`) and `can`/`canAny`.
     A Logto session observation refreshes the snapshot asynchronously, never blocking public render. Concurrent
     `ensureLoaded()` calls share one request; `refresh()` supersedes stale results; `clear()`
     invalidates pending work, snapshot, and permissions for logout. Unknown, loading, and

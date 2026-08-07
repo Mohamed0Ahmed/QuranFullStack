@@ -21,6 +21,7 @@ export class AbwabArchiveViewComponent {
 
   readonly roots = input<readonly AbwabNode[]>([]);
   readonly ariaLabel = input('');
+  readonly canRestoreDoor = input(false);
 
   readonly restoreRequested = output<number>();
 
@@ -29,6 +30,7 @@ export class AbwabArchiveViewComponent {
 
   protected get restoreLabel(): string { return ABWAB_LABELS.restoreButton; }
   protected get restoreParentFirstHint(): string { return ABWAB_LABELS.restoreParentFirstHint; }
+  protected get restorePermissionHint(): string { return ABWAB_LABELS.restorePermissionHint; }
 
   protected readonly nodesById = computed(() => {
     const map = new Map<number, AbwabNode>();
@@ -71,6 +73,10 @@ export class AbwabArchiveViewComponent {
   }
 
   protected onRestoreClick(id: number): void {
+    const node = this.nodesById().get(id);
+    if (!this.canRestoreDoor() || !node || node.depth > 0) {
+      return;
+    }
     this.restoreRequested.emit(id);
   }
 
@@ -117,10 +123,18 @@ export class AbwabArchiveViewComponent {
 
   private requestRestoreIfAllowed(id: number): void {
     const node = this.nodesById().get(id);
-    if (!node || node.depth > 0) {
+    if (!this.canRestoreDoor() || !node || node.depth > 0) {
       return;
     }
     this.restoreRequested.emit(id);
+  }
+
+  protected restoreDisabled(node: AbwabNode): boolean {
+    return node.depth > 0 || !this.canRestoreDoor();
+  }
+
+  protected restorePermissionHintId(id: number): string {
+    return `abwab-archive-restore-permission-${id}`;
   }
 
   private setExpanded(id: number, expanded: boolean): void {

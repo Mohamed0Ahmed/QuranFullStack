@@ -23,6 +23,7 @@ export class CurrentUserStore {
   private readonly permissionsSignal = signal<ReadonlySet<PermissionCode>>(new Set());
   private readonly loadStateSignal = signal<CurrentUserLoadState>('idle');
   private readonly isAuthenticatedSignal = signal(false);
+  private readonly authStateKnownSignal = signal(this.oidcSecurityService === undefined);
   private pendingLoad: Promise<void> | null = null;
   private requestVersion = 0;
 
@@ -31,6 +32,7 @@ export class CurrentUserStore {
   readonly permissions = this.permissionsSignal.asReadonly();
   readonly loadState = this.loadStateSignal.asReadonly();
   readonly isAuthenticated = this.isAuthenticatedSignal.asReadonly();
+  readonly authStateKnown = this.authStateKnownSignal.asReadonly();
   readonly isActive = computed(() => this.currentUserSignal()?.status === 'active');
   readonly isOwner = computed(() => this.currentUserSignal()?.isOwner === true);
 
@@ -38,6 +40,7 @@ export class CurrentUserStore {
     this.oidcSecurityService?.isAuthenticated$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(({ isAuthenticated }) => {
+        this.authStateKnownSignal.set(true);
         this.isAuthenticatedSignal.set(isAuthenticated);
         if (isAuthenticated) {
           void this.refresh();

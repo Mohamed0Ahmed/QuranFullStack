@@ -19,6 +19,17 @@ counting relation GETs on a passive `request` listener, never by network idle.
 layout engine: jsdom reports zero-sized rects, so inline-start extension and both flips are
 browser-only truths.
 
+`abwab-permissions.e2e.ts` is the anonymous Phase 9 supplement: it proves that public Abwab and
+template navigation remain available while write controls and a URL-restored create overlay do not,
+then sends a handcrafted anonymous write directly to the Backend and expects its `401` envelope.
+It does not create a sandbox because denial must leave no data behind.
+
+Unsafe Abwab routes now require a real authorized persona. The older Abwab sandbox fixture still
+seeds its local database through anonymous API writes, so those write-oriented specs receive
+`401` until an approved E2E authentication/bootstrap mechanism is supplied. Do not weaken Backend
+enforcement or fake client authorization to make that fixture pass; the anonymous Phase 9
+supplement remains the valid public-read/browser check in the meantime.
+
 `abwab-tree-row-budget.e2e.ts`, like the one below it, measures rather than drives: it pins the
 tree row's height budget, which needs a real layout engine.
 

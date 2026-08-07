@@ -180,6 +180,7 @@ export const ABWAB_LABELS = {
   archiveNoSearchMatchesMessage: 'لا يوجد باب مؤرشف مطابق لبحثك.',
   restoreButton: 'استرجاع',
   restoreParentFirstHint: 'استرجع الأب أولًا',
+  restorePermissionHint: 'لا تملك صلاحية استرجاع الأبواب المؤرشفة.',
   restoreAnnouncement: 'استُرجع الباب',
   restoreModalTitle: 'استرجاع الباب',
   restoreModalSectionLabel: 'القسم بعد الاسترجاع',
@@ -277,7 +278,7 @@ export const ABWAB_LABELS = {
 
   templatesButton: 'القوالب',
   templatesPageTitle: 'قوالب الأبواب',
-  templatesPageSubtitle: 'هياكل جاهزة تُنسخ داخل أي باب — للمشرفين فقط، لا تظهر للزوار.',
+  templatesPageSubtitle: 'هياكل جاهزة قابلة للعرض؛ تتاح أدوات النسخ والتحرير لأصحاب الصلاحية فقط.',
   backToDoorsButton: '↩ العودة للأبواب',
 
   newTemplateButton: '+ قالب جديد',
@@ -355,5 +356,6 @@ export const ABWAB_LABELS = {
 
   writeConflictFallback: 'حدث تعارض أثناء الحفظ. يرجى تحديث البيانات والمحاولة مرة أخرى.',
   writeInvalidFallback: 'تعذر تنفيذ العملية. تحقق من البيانات وحاول مرة أخرى.',
+  writePermissionDenied: 'لا تملك الصلاحية اللازمة لإتمام هذا الإجراء.',
   writeTransportFallback: 'تعذر الاتصال بالخادم. حاول مرة أخرى.',
 } as const;

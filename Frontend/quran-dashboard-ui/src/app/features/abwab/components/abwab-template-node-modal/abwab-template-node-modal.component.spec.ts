@@ -13,6 +13,7 @@ function render() {
   const submitNode = vi.fn().mockReturnValue(of({ kind: 'success', data: null }));
   fixture.componentRef.setInput('open', true);
   fixture.componentRef.setInput('submitNode', submitNode);
+  fixture.componentRef.setInput('canSubmit', true);
   fixture.detectChanges();
   return { fixture, submitNode, root: fixture.nativeElement as HTMLElement };
 }
@@ -34,6 +35,18 @@ function setName(fixture: ReturnType<typeof render>['fixture'], value: string): 
 }
 
 describe('AbwabTemplateNodeModalComponent', () => {
+  it('disables and rejects a stale node submission without its exact permission', () => {
+    const { fixture, submitNode, root } = render();
+    fixture.componentRef.setInput('canSubmit', false);
+    fixture.detectChanges();
+    setName(fixture, 'عقدة جديدة');
+
+    expect((root.querySelector('[data-testid="abwab-template-node-modal-save"]') as HTMLButtonElement).disabled).toBe(true);
+    (fixture.componentInstance as unknown as { submit(): void }).submit();
+
+    expect(submitNode).not.toHaveBeenCalled();
+  });
+
   describe('Escape (F-49) — it answers the topmost surface, and is never a dead key', () => {
     it('closes on Escape when nothing was edited', () => {
       const { fixture } = render();

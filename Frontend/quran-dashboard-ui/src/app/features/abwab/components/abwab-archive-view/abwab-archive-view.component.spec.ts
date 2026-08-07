@@ -3,6 +3,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 
 import { AbwabArchiveViewComponent } from './abwab-archive-view.component';
 import { AbwabNode } from '../../models/abwab.models';
+import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 function node(overrides: Partial<AbwabNode> & { id: number; name: string }): AbwabNode {
   return {
@@ -37,6 +38,7 @@ function render(overrides: Record<string, unknown> = {}) {
   const fixture = TestBed.createComponent(AbwabArchiveViewComponent);
   fixture.componentRef.setInput('roots', ROOTS);
   fixture.componentRef.setInput('ariaLabel', 'شجرة الأبواب المؤرشفة');
+  fixture.componentRef.setInput('canRestoreDoor', true);
   for (const [key, value] of Object.entries(overrides)) {
     fixture.componentRef.setInput(key, value);
   }
@@ -45,6 +47,24 @@ function render(overrides: Record<string, unknown> = {}) {
 }
 
 describe('AbwabArchiveViewComponent', () => {
+  it('keeps archived hierarchy visible but exposes restore as a disabled explained control without permission', () => {
+    const fixture = render({ canRestoreDoor: false });
+    const root = fixture.nativeElement as HTMLElement;
+    const restored: number[] = [];
+    fixture.componentInstance.restoreRequested.subscribe((id) => restored.push(id));
+    const button = root.querySelector<HTMLButtonElement>('[data-testid="abwab-archive-restore-1"]')!;
+
+    expect(root.querySelector('[data-testid="abwab-archive-row-1"]')).toBeTruthy();
+    expect(button.disabled).toBe(true);
+    expect(button.getAttribute('aria-describedby')).toBeTruthy();
+    expect(root.querySelector('#abwab-archive-restore-permission-1')?.textContent).toContain(
+      ABWAB_LABELS.restorePermissionHint,
+    );
+
+    (fixture.componentInstance as unknown as { onRestoreClick(id: number): void }).onRestoreClick(1);
+    expect(restored).toEqual([]);
+  });
+
   describe('M20 — renders archived doors in their hierarchy', () => {
     it('renders role="tree" with a treeitem row per archived door, nested by aria-level', () => {
       const root = render().nativeElement as HTMLElement;

@@ -37,6 +37,7 @@ export class AbwabMovePickerComponent {
   readonly excludedIds = input<ReadonlySet<number>>(new Set());
   readonly movedSectionIds = input<readonly number[]>([]);
   readonly titleText = input('');
+  readonly canConfirm = input(false);
 
   readonly closed = output<void>();
   readonly confirmed = output<AbwabMoveDestination>();
@@ -160,6 +161,9 @@ export class AbwabMovePickerComponent {
   }
 
   protected confirm(): void {
+    if (!this.canConfirm()) {
+      return;
+    }
     const targetSectionId = this.pickedSectionId();
     if (targetSectionId === null) {
       return;

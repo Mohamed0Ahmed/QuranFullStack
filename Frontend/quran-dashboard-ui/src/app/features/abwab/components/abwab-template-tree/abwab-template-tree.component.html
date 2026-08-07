@@ -7,6 +7,7 @@
       [attr.aria-level]="row.node.depth + 1"
       [style.--abwab-template-tree-depth]="row.node.depth"
       [attr.data-testid]="'abwab-template-tree-row-' + row.node.id"
+      [attr.tabindex]="canShowContextMenuFor(row.node.id) ? 0 : null"
       (contextmenu)="onRowContextMenu($event, row.node.id)"
       (keydown)="onRowKeydown($event, row.node.id)"
     >
@@ -28,7 +29,7 @@
 
       @if (row.node.parentNodeId === null) {
         <span class="abwab-template-tree__marker" data-testid="abwab-template-tree-root-marker" aria-hidden="true">◆</span>
-      } @else if (editingOrderId() === row.node.id) {
+      } @else if (canReorderNode() && editingOrderId() === row.node.id) {
         <input
           type="number"
           min="1"
@@ -38,7 +39,7 @@
           (keydown)="onOrderKeydown($event, row.node.id)"
           (blur)="cancelOrderEdit(row.node.id)"
         />
-      } @else {
+      } @else if (canReorderNode()) {
         <button
           type="button"
           class="abwab-template-tree__order"
@@ -48,36 +49,49 @@
         >
           {{ row.node.orderValue }}
         </button>
+      } @else {
+        <span
+          class="abwab-template-tree__order qd-chip qd-chip--pill qd-chip--static"
+          [attr.data-testid]="'abwab-template-tree-order-' + row.node.id"
+        >
+          {{ row.node.orderValue }}
+        </span>
       }
 
       <span class="abwab-template-tree__name qd-truncate" [title]="row.node.name">{{ row.node.name }}</span>
 
-      <span class="abwab-template-tree__actions">
-        <button
-          type="button"
-          class="abwab-template-tree__act"
-          [attr.aria-label]="addChildAriaLabel(row.node.name)"
-          [attr.data-testid]="'abwab-template-tree-add-child-' + row.node.id"
-          (click)="onAddChildClick(row.node.id)"
-        >
-          <span aria-hidden="true">＋</span>
-        </button>
-        <button
-          type="button"
-          class="abwab-template-tree__act"
-          [attr.aria-label]="menuAriaLabel(row.node.name)"
-          [attr.data-testid]="'abwab-template-tree-more-' + row.node.id"
-          [attr.tabindex]="-1"
-          (click)="onMoreClick($event, row.node.id)"
-        >
-          <span aria-hidden="true">⋯</span>
-        </button>
-      </span>
+      @if (canCreateNode() || canShowContextMenuFor(row.node.id)) {
+        <span class="abwab-template-tree__actions">
+          @if (canCreateNode()) {
+            <button
+              type="button"
+              class="abwab-template-tree__act"
+              [attr.aria-label]="addChildAriaLabel(row.node.name)"
+              [attr.data-testid]="'abwab-template-tree-add-child-' + row.node.id"
+              (click)="onAddChildClick(row.node.id)"
+            >
+              <span aria-hidden="true">＋</span>
+            </button>
+          }
+          @if (canShowContextMenuFor(row.node.id)) {
+            <button
+              type="button"
+              class="abwab-template-tree__act"
+              [attr.aria-label]="menuAriaLabel(row.node.name)"
+              [attr.data-testid]="'abwab-template-tree-more-' + row.node.id"
+              [attr.tabindex]="-1"
+              (click)="onMoreClick($event, row.node.id)"
+            >
+              <span aria-hidden="true">⋯</span>
+            </button>
+          }
+        </span>
+      }
     </div>
   }
 </div>
 
-@if (root()) {
+@if (root() && canCreateNode()) {
   <div class="abwab-template-tree__add-row">
     <span class="abwab-template-tree__add-marker" aria-hidden="true">＋</span>
     <input

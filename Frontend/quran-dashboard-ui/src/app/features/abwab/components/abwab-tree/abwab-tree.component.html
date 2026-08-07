@@ -59,28 +59,37 @@
           }
         </button>
 
-        @if (editingId() === node.id) {
-          <input
-            type="number"
-            min="1"
-            class="abwab-tree__order-input"
-            [value]="displayOrder(node)"
-            [attr.data-testid]="'abwab-tree-order-input-' + node.id"
-            (click)="$event.stopPropagation()"
-            (keydown)="onOrderKeydown($event, node.id)"
-            (blur)="cancelOrderEdit(node.id)"
-          />
+        @if (canReorderDoor()) {
+          @if (editingId() === node.id) {
+            <input
+              type="number"
+              min="1"
+              class="abwab-tree__order-input"
+              [value]="displayOrder(node)"
+              [attr.data-testid]="'abwab-tree-order-input-' + node.id"
+              (click)="$event.stopPropagation()"
+              (keydown)="onOrderKeydown($event, node.id)"
+              (blur)="cancelOrderEdit(node.id)"
+            />
+          } @else {
+            <button
+              type="button"
+              class="abwab-tree__order qd-chip qd-chip--pill"
+              [attr.aria-label]="orderEditAriaLabel(node)"
+              [attr.data-testid]="'abwab-tree-order-' + node.id"
+              [attr.tabindex]="rovingId() === node.id ? 0 : -1"
+              (click)="onOrderClick($event, node.id)"
+            >
+              {{ displayOrder(node) }}
+            </button>
+          }
         } @else {
-          <button
-            type="button"
-            class="abwab-tree__order qd-chip qd-chip--pill"
-            [attr.aria-label]="orderEditAriaLabel(node)"
+          <span
+            class="abwab-tree__order qd-chip qd-chip--pill qd-chip--static"
             [attr.data-testid]="'abwab-tree-order-' + node.id"
-            [attr.tabindex]="rovingId() === node.id ? 0 : -1"
-            (click)="onOrderClick($event, node.id)"
           >
             {{ displayOrder(node) }}
-          </button>
+          </span>
         }
 
         <span class="abwab-tree__name qd-truncate" [title]="node.name">{{ node.name }}</span>
@@ -137,16 +146,18 @@
 
         @if (!bulkMode()) {
           <span class="abwab-tree__actions">
-            <button
-              type="button"
-              class="abwab-tree__act"
-              [attr.aria-label]="addChildAriaLabel(node.name)"
-              [attr.data-testid]="'abwab-tree-add-child-' + node.id"
-              [attr.tabindex]="-1"
-              (click)="onAddChildClick($event, node.id)"
-            >
-              <span aria-hidden="true">＋</span>
-            </button>
+            @if (canCreateDoor()) {
+              <button
+                type="button"
+                class="abwab-tree__act"
+                [attr.aria-label]="addChildAriaLabel(node.name)"
+                [attr.data-testid]="'abwab-tree-add-child-' + node.id"
+                [attr.tabindex]="-1"
+                (click)="onAddChildClick($event, node.id)"
+              >
+                <span aria-hidden="true">＋</span>
+              </button>
+            }
             <button
               type="button"
               class="abwab-tree__act"

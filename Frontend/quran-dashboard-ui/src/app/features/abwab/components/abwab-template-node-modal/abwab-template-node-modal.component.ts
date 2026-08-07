@@ -24,6 +24,7 @@ export class AbwabTemplateNodeModalComponent {
   readonly isEdit = input(false);
   readonly contextName = input<string | null>(null);
   readonly isRoot = input(false);
+  readonly canSubmit = input(false);
   readonly submitNode = input.required<(fields: AbwabAuthoringFields) => Observable<AbwabWriteOutcome<unknown>>>();
 
   readonly closed = output<void>();
@@ -98,7 +99,7 @@ export class AbwabTemplateNodeModalComponent {
 
   protected submit(): void {
     const fields = this.fieldsForm()?.current();
-    if (!fields || this.saveBusy()) {
+    if (!this.canSubmit() || !fields || this.saveBusy()) {
       return;
     }
     if (!fields.name.trim()) {

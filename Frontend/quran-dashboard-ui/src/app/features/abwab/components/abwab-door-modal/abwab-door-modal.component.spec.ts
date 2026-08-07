@@ -30,6 +30,7 @@ function render(overrides: Record<string, unknown> = {}, controllerStub: Partial
   });
   const fixture = TestBed.createComponent(AbwabDoorModalComponent);
   fixture.componentRef.setInput('open', true);
+  fixture.componentRef.setInput('canSave', true);
   for (const [key, value] of Object.entries(overrides)) {
     fixture.componentRef.setInput(key, value);
   }
@@ -84,6 +85,18 @@ function clickSave(fixture: ReturnType<typeof render>): void {
 }
 
 describe('AbwabDoorModalComponent', () => {
+  it('disables and rejects a stale programmatic submit without the matching door permission', () => {
+    const createDoor = vi.fn();
+    const fixture = render({ activeSectionId: 1, canSave: false }, { createDoor });
+    const root = fixture.nativeElement as HTMLElement;
+    setName(fixture, 'باب جديد');
+
+    expect((root.querySelector('[data-testid="abwab-door-modal-save"]') as HTMLButtonElement).disabled).toBe(true);
+    (fixture.componentInstance as unknown as { submit(): void }).submit();
+
+    expect(createDoor).not.toHaveBeenCalled();
+  });
+
   describe('M10 — create under a parent sends parentId and never sends the active section id', () => {
     it('nulls sectionId when a parentId is present, even though a section tab is active', () => {
       let captured: CreateDoorCommand | null = null;

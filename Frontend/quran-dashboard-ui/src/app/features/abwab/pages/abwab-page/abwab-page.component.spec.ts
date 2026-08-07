@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
@@ -12,6 +13,9 @@ import { AbwabTreeDoorDto } from '../../../../core/api/generated/models/abwab-tr
 import { AbwabTreeDto } from '../../../../core/api/generated/models/abwab-tree-dto';
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { CurrentUserStore } from '../../../../core/auth/current-user.store';
+import { WriteAuthFailureCoordinator } from '../../../../core/auth/write-auth-failure.coordinator';
+import { PermissionCode } from '../../../../core/auth/permission-code';
 
 function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string }): AbwabTreeDoorDto {
   return {
@@ -53,6 +57,37 @@ const TREE: AbwabTreeDto = {
   version: 'v1',
 };
 
+function allowedAccessProviders() {
+  return [
+    {
+      provide: CurrentUserStore,
+      useValue: {
+        can: () => true,
+        canAny: () => true,
+        authStateKnown: () => true,
+        isAuthenticated: () => true,
+        loadState: () => 'ready',
+      },
+    },
+    { provide: WriteAuthFailureCoordinator, useValue: { handle: async () => null } },
+  ];
+}
+
+function controlledAccessProviders(granted: ReturnType<typeof signal<ReadonlySet<PermissionCode>>>, authenticated = true) {
+  return [
+    {
+      provide: CurrentUserStore,
+      useValue: {
+        can: (permission: PermissionCode) => granted().has(permission),
+        canAny: (permissions: readonly PermissionCode[]) => permissions.some((permission) => granted().has(permission)),
+        authStateKnown: () => true,
+        isAuthenticated: () => authenticated,
+        loadState: () => 'ready',
+      },
+    },
+  ];
+}
+
 describe('AbwabPageComponent', () => {
   let router: Router;
   let archiveDoor: ReturnType<typeof vi.fn>;
@@ -83,6 +118,7 @@ describe('AbwabPageComponent', () => {
             moveDoor,
           },
         },
+        ...allowedAccessProviders(),
         { provide: ActivatedRoute, useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } } },
       ],
     }).compileComponents();
@@ -128,6 +164,95 @@ describe('AbwabPageComponent', () => {
     expect(root.querySelector('qd-abwab-tree')).toBeTruthy();
     expect(root.querySelector('qd-abwab-side-panel')).toBeTruthy();
     expect(root.querySelector('qd-abwab-announcer')).toBeTruthy();
+  });
+
+  it('preserves anonymous reads while stripping only an unauthorized URL-restored write overlay', async () => {
+    const granted = signal<ReadonlySet<PermissionCode>>(new Set());
+    getTestBed().resetTestingModule();
+    queryParamMap$.next(convertToParamMap({ section: '1', q: 'العلم', modal: 'create' }));
+    await TestBed.configureTestingModule({
+      imports: [AbwabPageComponent],
+      providers: [
+        provideRouter([]),
+        ...controlledAccessProviders(granted, false),
+        { provide: WriteAuthFailureCoordinator, useValue: { handle: async () => null } },
+        {
+          provide: AbwabApi,
+          useValue: {
+            getTree: vi.fn().mockReturnValue(treeResponse(TREE)),
+            getDoorRelations: vi.fn().mockReturnValue(of(ok([]))),
+          },
+        },
+        { provide: ActivatedRoute, useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } } },
+      ],
+    }).compileComponents();
+    const localRouter = TestBed.inject(Router);
+    vi.spyOn(localRouter, 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(AbwabPageComponent);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="abwab-tree-row-1"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="abwab-page-templates"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="abwab-page-add-root"]')).toBeNull();
+    expect(root.querySelector('[data-testid="abwab-page-manage-sections"]')).toBeNull();
+    expect(root.querySelector('[data-testid="abwab-side-panel-bulk-toggle"]')).toBeNull();
+    expect(root.querySelector('[data-testid="abwab-tree-add-child-1"]')).toBeNull();
+    expect(root.querySelector('[data-testid="abwab-tree-order-1"]')?.tagName).toBe('SPAN');
+    expect(root.querySelector('[data-testid="abwab-door-modal"]')).toBeNull();
+    expect(localRouter.navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({ queryParams: { modal: null }, queryParamsHandling: 'merge', replaceUrl: true }),
+    );
+
+    (root.querySelector('[data-testid="abwab-tree-flag-rel-1"]') as HTMLElement).click();
+    fixture.detectChanges();
+    expect(root.querySelector('[data-testid="abwab-relations-modal"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="abwab-relations-modal-add"]')).toBeNull();
+  });
+
+  it('refreshes access after a 403, does not retry, and disables the stale archive confirmation', async () => {
+    const granted = signal<ReadonlySet<PermissionCode>>(new Set(['abwab.doors.archive']));
+    const archiveAttempt = vi.fn().mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 403, error: { isSuccess: false, message: 'ممنوع', data: null } })),
+    );
+    const refreshAfterForbidden = vi.fn().mockImplementation(async () => {
+      granted.set(new Set());
+      return { kind: 'forbidden', message: 'ممنوع' };
+    });
+    getTestBed().resetTestingModule();
+    queryParamMap$.next(convertToParamMap({}));
+    await TestBed.configureTestingModule({
+      imports: [AbwabPageComponent],
+      providers: [
+        provideRouter([]),
+        ...controlledAccessProviders(granted),
+        { provide: WriteAuthFailureCoordinator, useValue: { handle: refreshAfterForbidden } },
+        {
+          provide: AbwabApi,
+          useValue: { getTree: vi.fn().mockReturnValue(treeResponse(TREE)), archiveDoor: archiveAttempt },
+        },
+        { provide: ActivatedRoute, useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } } },
+      ],
+    }).compileComponents();
+    const localRouter = TestBed.inject(Router);
+    vi.spyOn(localRouter, 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(AbwabPageComponent);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    selectRow(fixture, 1);
+    click(root, 'abwab-side-panel-op-archive');
+    fixture.detectChanges();
+    click(root, 'abwab-page-archive-confirm-confirm');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(archiveAttempt).toHaveBeenCalledTimes(1);
+    expect(refreshAfterForbidden).toHaveBeenCalledTimes(1);
+    expect(root.querySelector('[data-testid="abwab-side-panel-op-archive"]')).toBeNull();
+    const confirm = root.querySelector('[data-testid="abwab-page-archive-confirm-confirm"]') as HTMLButtonElement | null;
+    expect(confirm === null || confirm.disabled).toBe(true);
   });
 
   describe('M31 — archived doors are unreachable from the live tree and tabs', () => {
@@ -612,6 +737,7 @@ describe('AbwabPageComponent', () => {
         imports: [AbwabPageComponent],
         providers: [
           provideRouter([]),
+          ...allowedAccessProviders(),
           { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(treeResponse(nested)) } },
           {
             provide: ActivatedRoute,
@@ -649,6 +775,7 @@ describe('AbwabPageComponent', () => {
         imports: [AbwabPageComponent],
         providers: [
           provideRouter([]),
+          ...allowedAccessProviders(),
           {
             provide: AbwabApi,
             useValue: { getTree: vi.fn().mockReturnValue(treeResponse(TREE)), archiveDoor, bulkArchiveDoors },
@@ -775,6 +902,7 @@ describe('AbwabPageComponent', () => {
         imports: [AbwabPageComponent],
         providers: [
           provideRouter([]),
+          ...allowedAccessProviders(),
           { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(treeResponse(TWO_SECTIONS)), archiveDoor } },
           { provide: ActivatedRoute, useValue: { queryParamMap: queryParamMap$, snapshot: { queryParamMap: convertToParamMap({}) } } },
         ],
@@ -971,6 +1099,7 @@ describe('AbwabPageComponent', () => {
         imports: [AbwabPageComponent],
         providers: [
           provideRouter([]),
+          ...allowedAccessProviders(),
           { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(treeResponse(noArchive)) } },
           {
             provide: ActivatedRoute,
@@ -997,6 +1126,7 @@ describe('AbwabPageComponent', () => {
         imports: [AbwabPageComponent],
         providers: [
           provideRouter([]),
+          ...allowedAccessProviders(),
           {
             provide: AbwabApi,
             useValue: { getTree: vi.fn().mockReturnValue(treeResponse(TREE)), archiveDoor, bulkMoveDoors },
@@ -1134,6 +1264,7 @@ describe('AbwabPageComponent', () => {
         imports: [AbwabPageComponent],
         providers: [
           provideRouter([]),
+          ...allowedAccessProviders(),
           { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(treeResponse(REVEAL_TREE)) } },
           {
             provide: ActivatedRoute,
@@ -1323,6 +1454,7 @@ describe('AbwabPageComponent', () => {
         imports: [AbwabPageComponent],
         providers: [
           provideRouter([]),
+          ...allowedAccessProviders(),
           {
             provide: AbwabApi,
             useValue: {
@@ -1461,6 +1593,7 @@ describe('AbwabPageComponent', () => {
         imports: [AbwabPageComponent],
         providers: [
           provideRouter([]),
+          ...allowedAccessProviders(),
           {
             provide: AbwabApi,
             useValue: { getTree: vi.fn().mockReturnValue(treeResponse(TREE)), createDoor },
@@ -1939,6 +2072,7 @@ describe('AbwabPageComponent', () => {
         imports: [AbwabPageComponent],
         providers: [
           provideRouter([]),
+          ...allowedAccessProviders(),
           { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(pending) } },
           {
             provide: ActivatedRoute,
@@ -1962,6 +2096,7 @@ describe('AbwabPageComponent', () => {
         imports: [AbwabPageComponent],
         providers: [
           provideRouter([]),
+          ...allowedAccessProviders(),
           { provide: AbwabApi, useValue: { getTree: vi.fn().mockReturnValue(treeResponse(empty)) } },
           {
             provide: ActivatedRoute,

@@ -47,6 +47,7 @@ function render(overrides: Record<string, unknown> = {}) {
   fixture.componentRef.setInput('sections', SECTIONS);
   fixture.componentRef.setInput('liveRoots', LIVE_ROOTS);
   fixture.componentRef.setInput('titleText', 'نقل «الأصل»');
+  fixture.componentRef.setInput('canConfirm', true);
   for (const [key, value] of Object.entries(overrides)) {
     fixture.componentRef.setInput(key, value);
   }
@@ -55,6 +56,18 @@ function render(overrides: Record<string, unknown> = {}) {
 }
 
 describe('AbwabMovePickerComponent — M30', () => {
+  it('renders a disabled confirmation and rejects stale confirmation without move permission', () => {
+    const fixture = render({ canConfirm: false, movedSectionIds: [1] });
+    const root = fixture.nativeElement as HTMLElement;
+    const confirmed: unknown[] = [];
+    fixture.componentInstance.confirmed.subscribe((destination) => confirmed.push(destination));
+
+    expect((root.querySelector('[data-testid="abwab-move-picker-confirm"]') as HTMLButtonElement).disabled).toBe(true);
+    (fixture.componentInstance as unknown as { confirm(): void }).confirm();
+
+    expect(confirmed).toEqual([]);
+  });
+
   // No «بلا قسم» cell: every door belongs to a section, so "no section" is not a destination and
   // offering it would only produce a 400.
   it('the strip lists the real sections and nothing else, all of them at once', () => {
