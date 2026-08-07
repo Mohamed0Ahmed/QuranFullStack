@@ -37,14 +37,18 @@ per-feature.
     an access snapshot refresh so the caller can re-evaluate its capability. It is not an
     HTTP interceptor, so public reads retain ordinary error handling.
   - `access.api.ts` — `AccessApi.getMe()` → `GET /api/access/me`, returning the raw
-    `ApiResponse<CurrentUserResponse>` envelope (thin, like `system.api.ts`).
+    `ApiResponse<CurrentUserResponse>` envelope (thin, like `system.api.ts`). For this interactive
+    provisioning call only, it adds the raw signed Logto ID token as
+    `X-Interactive-Identity-Evidence`; it never parses identity claims in the browser.
   - `permission-code.ts` — the canonical named shape and ordered TypeScript union of the
     server's direct Abwab permission codes. `npm run check:permission-catalogue` compares it
     to the backend source; no authorization decision uses a role name.
   - `current-user.model.ts` — normalizes the generated `/me` wire DTO to the bounded UI
     snapshot: `sub`, `email`, `displayName`, `status`, `isOwner`, ordered direct
     `permissions`. No role ID or role name crosses this contract.
-  - `current-user.store.ts` — access snapshot signals (`currentUser`, `permissions`,
+  - `current-user.store.ts` — obtains the raw ID token from the OIDC client before `/api/access/me`
+    while the normal auth interceptor continues to attach the API resource access token as
+    `Authorization: Bearer`. It owns access snapshot signals (`currentUser`, `permissions`,
     `loadState`, `errorMessage`, `isAuthenticated`, `authStateKnown`, `isActive`, `isOwner`) and `can`/`canAny`.
     A Logto session observation refreshes the snapshot asynchronously, never blocking public render. Concurrent
     `ensureLoaded()` calls share one request; `refresh()` supersedes stale results; `clear()`
@@ -124,6 +128,9 @@ per-feature.
   `devLatencyInterceptor`); keep registration order in `app.config.ts`. `authInterceptor()`
   (from `angular-auth-oidc-client`) attaches the Logto Bearer token only to requests under
   `apiBaseUrl` via the `secureRoutes` config, and must run after `secureUrlInterceptor`.
+- Both Development and production Logto configuration request the `email` OIDC scope. The production
+  environment guard rejects a build that omits it, because verified email is supplied only through
+  the signed ID-token evidence path.
 
 ## Related
 

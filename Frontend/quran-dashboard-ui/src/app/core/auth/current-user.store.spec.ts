@@ -7,7 +7,7 @@ import {
 } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import type { ApiResponse } from '../data-access/api-response.model';
@@ -23,6 +23,7 @@ import { CurrentUserStore } from './current-user.store';
 // is exercised end to end.
 const ME_URL = `${environment.apiBaseUrl}/api/access/me`;
 const FALLBACK_MESSAGE = 'تعذر تحميل بيانات المستخدم الحالي.';
+const IDENTITY_EVIDENCE = 'signed.id.token';
 
 interface AccessDecisionCase {
   name: string;
@@ -113,7 +114,13 @@ describe('CurrentUserStore.load', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: OidcSecurityService, useValue: { isAuthenticated$: authentication } },
+        {
+          provide: OidcSecurityService,
+          useValue: {
+            isAuthenticated$: authentication,
+            getIdToken: () => of(IDENTITY_EVIDENCE),
+          },
+        },
       ],
     });
 
@@ -132,12 +139,21 @@ describe('CurrentUserStore.load', () => {
 
   it('refreshes the access snapshot when an authenticated session is observed', async () => {
     authentication.next({ isAuthenticated: true });
-    flushCurrentUser(httpTesting, ACCESS_ME_CONTRACT_FIXTURES.owner);
+    const request = httpTesting.expectOne(ME_URL);
+    expect(request.request.headers.get('X-Interactive-Identity-Evidence')).toBe(
+      IDENTITY_EVIDENCE,
+    );
+    request.flush({
+      isSuccess: true,
+      message: 'تم',
+      data: ACCESS_ME_CONTRACT_FIXTURES.owner,
+    });
 
     await Promise.resolve();
 
     expect(store.isAuthenticated()).toBe(true);
     expect(store.currentUser()?.sub).toBe('test-owner');
+    expect(store.can('abwab.doors.create')).toBe(true);
   });
 
   it.each(ACCESS_DECISION_CASES)(

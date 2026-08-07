@@ -11,7 +11,7 @@ export const environment: Environment = {
     appId: 'osfceu3so056z6r762sjs',
     redirectUri: 'https://localhost:4200/callback',
     postLogoutRedirectUri: 'https://localhost:4200/',
-    scope: '',
+    scope: 'email',
     resource: 'https://quranfullstack-production.up.railway.app',
   },
 };

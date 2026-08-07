@@ -17,10 +17,7 @@ public sealed class HttpContextCurrentUser(IHttpContextAccessor httpContextAcces
                     "inside an authenticated request (behind [Authorize]).");
             }
 
-            var email = principal!.FindFirst("email")?.Value;
-            var emailVerified = bool.TryParse(principal.FindFirst("email_verified")?.Value, out var verified)
-                && verified;
-            return new AuthenticatedInteractiveIdentity(sub, email, emailVerified);
+            return new AuthenticatedInteractiveIdentity(sub, null, false);
         }
     }
 }

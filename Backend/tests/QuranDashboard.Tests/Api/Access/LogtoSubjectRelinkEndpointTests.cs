@@ -449,11 +449,8 @@ public sealed class LogtoSubjectRelinkEndpointTests(AccessTestFixture fixture)
             .ToListAsync();
     }
 
-    private static string EvidenceToken(string sub, string email, bool emailVerified) => TestJwtTokens.Mint(
+    private static string EvidenceToken(string sub, string email, bool emailVerified) => TestJwtTokens.MintIdentityToken(
         sub,
-        additionalClaims: new Dictionary<string, object>
-        {
-            ["email"] = email,
-            ["email_verified"] = emailVerified,
-        });
+        email,
+        emailVerified);
 }

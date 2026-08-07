@@ -37,9 +37,24 @@ describe('assertProductionAuthConfigured', () => {
   });
 
   it('does not throw when production ships real Logto config', () => {
-    const env = environment({});
+    const env = environment({
+      logto: {
+        endpoint: 'https://tenant.logto.app',
+        appId: 'app-id',
+        redirectUri: 'https://example.test/callback',
+        postLogoutRedirectUri: 'https://example.test',
+        scope: 'email',
+        resource: 'https://example.test/api',
+      },
+    });
 
     expect(() => assertProductionAuthConfigured(env)).not.toThrow();
+  });
+
+  it('throws when production omits the email scope required for verified identity evidence', () => {
+    const env = environment({});
+
+    expect(() => assertProductionAuthConfigured(env)).toThrowError(/email scope/i);
   });
 
   it('does not throw in development even with placeholder Logto config', () => {

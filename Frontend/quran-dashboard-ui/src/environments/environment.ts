@@ -10,7 +10,7 @@ export const environment: Environment = {
     appId: 'osfceu3so056z6r762sjs',
     redirectUri: 'https://manhag-qurany-ui.vercel.app/callback',
     postLogoutRedirectUri: 'https://manhag-qurany-ui.vercel.app/',
-    scope: '',
+    scope: 'email',
     resource: 'https://quranfullstack-production.up.railway.app',
   },
 };

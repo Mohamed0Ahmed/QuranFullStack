@@ -6,5 +6,6 @@ internal sealed class UnavailableInteractiveIdentityEvidenceValidator : IInterac
 {
     public Task<AuthenticatedInteractiveIdentity?> ValidateAsync(
         string evidenceToken,
+        string expectedSubject,
         CancellationToken cancellationToken) => Task.FromResult<AuthenticatedInteractiveIdentity?>(null);
 }

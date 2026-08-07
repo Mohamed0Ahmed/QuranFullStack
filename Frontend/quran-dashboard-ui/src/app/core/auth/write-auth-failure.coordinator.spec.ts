@@ -47,7 +47,11 @@ describe('WriteAuthFailureCoordinator', () => {
         { provide: Router, useValue: { url: CURRENT_ROUTE } },
         {
           provide: OidcSecurityService,
-          useValue: { isAuthenticated$: of({ isAuthenticated: false }), authorize },
+          useValue: {
+            isAuthenticated$: of({ isAuthenticated: false }),
+            getIdToken: () => of('signed.id.token'),
+            authorize,
+          },
         },
       ],
     });

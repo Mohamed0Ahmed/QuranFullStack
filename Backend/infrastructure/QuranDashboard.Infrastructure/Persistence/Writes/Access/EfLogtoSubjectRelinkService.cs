@@ -105,7 +105,7 @@ internal sealed class EfLogtoSubjectRelinkService(
             return AccessOperationFailure.InvalidRequest;
         }
 
-        var evidence = await evidenceValidator.ValidateAsync(evidenceToken, cancellationToken);
+        var evidence = await evidenceValidator.ValidateAsync(evidenceToken, newSub, cancellationToken);
         if (evidence is null
             || !evidence.EmailVerified
             || !string.Equals(evidence.Sub, newSub, StringComparison.Ordinal)

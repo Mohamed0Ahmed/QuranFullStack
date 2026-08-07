@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
+using QuranDashboard.Api.Authentication;
 using QuranDashboard.Api.RateLimiting;
 
 namespace QuranDashboard.Tests.Smoke;
@@ -43,12 +44,14 @@ public sealed class SmokeBootGuardTests(SmokeApiFixture fixture)
     }
 
     [Fact]
-    public async Task AuthenticationSchemes_AreExactlyBearer()
+    public async Task AuthenticationSchemes_SeparateApiAccessFromInteractiveIdentityEvidence()
     {
         var schemes = await fixture.ApiServices.GetRequiredService<IAuthenticationSchemeProvider>()
             .GetAllSchemesAsync();
 
-        schemes.Select(scheme => scheme.Name).Should().Equal(JwtBearerDefaults.AuthenticationScheme);
+        schemes.Select(scheme => scheme.Name).Should().Equal(
+            JwtBearerDefaults.AuthenticationScheme,
+            InteractiveIdentityEvidenceAuthentication.Scheme);
     }
 
     [Fact]

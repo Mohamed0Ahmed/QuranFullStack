@@ -15,4 +15,8 @@ export function assertProductionAuthConfigured(env: Environment): void {
         'Set real values in src/environments/environment.ts before deploying.',
     );
   }
+
+  if (!env.logto.scope.split(/\s+/).includes('email')) {
+    throw new Error('Production Logto config must request the email scope.');
+  }
 }

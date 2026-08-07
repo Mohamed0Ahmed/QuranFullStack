@@ -9,10 +9,13 @@ namespace QuranDashboard.Api.Controllers.Access;
 [Authorize]
 public sealed class AccessController(ProvisionCurrentUserHandler provisionCurrentUserHandler) : ControllerBase
 {
+    private const string InteractiveIdentityEvidenceHeader = "X-Interactive-Identity-Evidence";
+
     [HttpGet("me")]
     public async Task<ActionResult<ApiResponse<CurrentUserResponse>>> GetCurrentUser(CancellationToken cancellationToken)
     {
-        var user = await provisionCurrentUserHandler.HandleAsync(cancellationToken);
+        var identityEvidenceToken = Request.Headers[InteractiveIdentityEvidenceHeader].ToString();
+        var user = await provisionCurrentUserHandler.HandleAsync(identityEvidenceToken, cancellationToken);
 
         var data = new CurrentUserResponse(
             user.Sub,

@@ -10,20 +10,24 @@ controlled authorization responses, and unsafe-endpoint validator; their registr
 ## JWT bearer configuration
 
 - Options bind from the `Auth` configuration section (`JwtAuthenticationOptions.SectionName`) and expose
-  `Authority` and `Audience`.
+  `Authority`, the API-resource `Audience`, and the SPA `InteractiveClientId`.
 - `Authority` sets `options.Authority`; `Audience` sets `TokenValidationParameters.ValidAudience`. No
   explicit issuer is configured, so issuer validation follows the JwtBearer default derived from the
   authority's OIDC metadata.
+- The default `Bearer` scheme validates only API resource access tokens against `Audience`.
+  `LogtoIdTokenEvidence` is a separate named JwtBearer scheme for signed interactive ID-token evidence
+  and validates its audience against `InteractiveClientId`. It never replaces the default scheme.
 - `MapInboundClaims = false` keeps raw claim types, so the identity key stays the literal `sub`. Logto
   issues RFC 9068 `at+jwt` access tokens, whose default inbound claim map would otherwise rename `sub`.
 - Startup validation: `JwtAuthenticationOptionsValidator` with `ValidateOnStart` fails fast unless
-  `Authority` is an absolute `https` URI and `Audience` is non-blank.
+  `Authority` is an absolute `https` URI and both audience values are non-blank.
 
 ## Current user
 
-`HttpContextCurrentUser` (`ICurrentUser`, scoped) exposes `Sub` from the request principal's `sub` claim
-and throws `InvalidOperationException` when it is absent — so it must be resolved only inside an
-authenticated request.
+`HttpContextCurrentUser` (`ICurrentUser`, scoped) exposes only `Sub` from the API access-token
+principal's `sub` claim and throws `InvalidOperationException` when it is absent — so it must be
+resolved only inside an authenticated request. Email identity facts are never accepted from that
+principal.
 
 ## Authorization core
 
@@ -35,10 +39,15 @@ authenticated request.
 - `[RequirePermission(code)]` requires an exact known catalogue code unless the active local user is an
   Owner. `[RequireOwner]` requires an active local Owner and never treats a direct permission grant as
   equivalent.
-- `JwtInteractiveIdentityEvidenceValidator` validates the separate bearer token supplied to a Logto-subject
-  relink operation with the same configured `JwtBearer` scheme. It returns only validated `sub`, `email`,
-  and `email_verified` evidence to the Application layer; raw evidence tokens are neither returned nor
-  persisted. `HttpContextAccessRequestContext` supplies the request trace identifier for audit metadata.
+- `JwtInteractiveIdentityEvidenceValidator` validates the signed ID token supplied separately for
+  `/api/access/me` provisioning and Logto-subject relink operations. The named scheme validates
+  signature, issuer, lifetime, and SPA-client audience; the validator additionally requires a present
+  `sub`, a present `email`, `email_verified=true`, and exact equality between the evidence `sub` and the
+  expected subject supplied by the Application layer. For `/api/access/me`, that expected subject is the
+  authenticated API access-token `sub`. For relink, it is the requested replacement `newSub`; the acting
+  Owner's API access token remains the bearer credential and authorization identity. The validator
+  returns only validated identity facts; raw evidence tokens are neither returned nor persisted.
+  `HttpContextAccessRequestContext` supplies the request trace identifier for audit metadata.
 - `UnsafeEndpointMetadataValidator` checks unsafe route classification and the requirement handlers
   repeat that check fail-closed. It is registered during API startup after controller mapping, and every
   current Abwab write action carries exactly one matching `[RequirePermission]` classification.

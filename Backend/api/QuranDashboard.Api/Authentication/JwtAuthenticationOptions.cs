@@ -7,6 +7,8 @@ public sealed class JwtAuthenticationOptions
     public string Authority { get; set; } = string.Empty;
 
     public string Audience { get; set; } = string.Empty;
+
+    public string InteractiveClientId { get; set; } = string.Empty;
 }
 
 internal sealed class JwtAuthenticationOptionsValidator : IValidateOptions<JwtAuthenticationOptions>
@@ -25,6 +27,11 @@ internal sealed class JwtAuthenticationOptionsValidator : IValidateOptions<JwtAu
         if (string.IsNullOrWhiteSpace(options.Audience))
         {
             failures.Add($"{JwtAuthenticationOptions.SectionName}:{nameof(JwtAuthenticationOptions.Audience)} must not be blank.");
+        }
+
+        if (string.IsNullOrWhiteSpace(options.InteractiveClientId))
+        {
+            failures.Add($"{JwtAuthenticationOptions.SectionName}:{nameof(JwtAuthenticationOptions.InteractiveClientId)} must not be blank.");
         }
 
         return failures.Count > 0

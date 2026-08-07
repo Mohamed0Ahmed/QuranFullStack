@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
-import { NEVER } from 'rxjs';
+import { NEVER, of } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { environment } from '../../../../environments/environment';
@@ -121,6 +121,7 @@ describe('AccessAdminFacade', () => {
           provide: OidcSecurityService,
           useValue: {
             isAuthenticated$: NEVER,
+            getIdToken: () => of('signed.id.token'),
             authorize: vi.fn(),
           },
         },

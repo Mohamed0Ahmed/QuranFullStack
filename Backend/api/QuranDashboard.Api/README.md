@@ -49,8 +49,10 @@ It uses the standard `JwtBearer` handler to validate a Logto **access token** (n
   `Middleware/GlobalExceptionHandler.cs`, the only non-`500` that handler produces).
 
 `GET /api/access/me` carries `[Authorize]` (authenticated-only) and, on first login,
-**get-or-create provisions** the local user keyed by the Logto `sub`. Owner bootstrap email evidence
-is **verified server-side through the already-validated OIDC claims**: matching `sub`, present
+**get-or-create provisions** the local user keyed by the API access token's Logto `sub`. The SPA keeps
+that API resource token in `Authorization` and supplies the raw signed Logto ID token separately in
+`X-Interactive-Identity-Evidence`. A dedicated named JwtBearer scheme validates the ID-token signature,
+issuer, lifetime, and SPA-client audience before the Backend accepts its matching `sub`, present
 `email`, and `email_verified=true`. Logto Management API `primaryEmail` is used only to match provider
 identity data and is never email-verification authority. A new user starts `Pending` with no role.
 `/api/access/me` is the only generic authenticated-only endpoint. The twelve administration routes for
@@ -107,17 +109,19 @@ actions remain outside the executable and the API process.
 |---|---|
 | `Authority` | Logto issuer, e.g. `https://<tenant>.logto.app/oidc`. Used for OIDC metadata/JWKS discovery. |
 | `Audience` | The exact Logto API resource indicator every access token must target. |
+| `InteractiveClientId` | The exact Logto SPA application id every interactive ID-token evidence token must target. |
 | `ManagementApi:Endpoint` | Logto tenant endpoint, e.g. `https://<tenant>.logto.app`. |
 | `ManagementApi:Resource` | Management API resource indicator, typically `https://<tenant-id>.logto.app/api`. |
 | `ManagementApi:AppId` | Machine-to-machine application id for the client-credentials token. |
 | `ManagementApi:AppSecret` | Machine-to-machine application secret. **Secret — never commit; set via user-secrets/env.** |
 
-`Authority`/`Audience` and the `ManagementApi` endpoint/resource ship as **placeholder values**
-(`REPLACE-WITH-YOUR-…`) in `appsettings*.json`; the deployment owner replaces them with real Logto
-tenant values. Production supplies one or more Owner identities as
+`Authority`/`Audience`, `InteractiveClientId`, and the `ManagementApi` endpoint/resource ship as
+**placeholder values** (`REPLACE-WITH-YOUR-…`) in base configuration; the deployment owner replaces
+them with real Logto tenant values. Production supplies one or more Owner identities as
 `OwnerBootstrap__Emails__0`, `OwnerBootstrap__Emails__1`, and so on. Their normalized values must
-be unique; an empty list fails startup validation. Invalid `Auth` values (blank `Authority`/
-`Audience`, or an `Authority` that is not an absolute `https` URI) **fail fast** at startup. The `ManagementApi` credentials are **not** validated at startup (the secret
+be unique; an empty list fails startup validation. Invalid `Auth` values (blank `Authority`,
+`Audience`, or `InteractiveClientId`, or an `Authority` that is not an absolute `https` URI)
+**fail fast** at startup. The `ManagementApi` credentials are **not** validated at startup (the secret
 is legitimately absent on a fresh clone); they are validated on first use of `/api/access/me` with an
 actionable error naming any missing keys.
 

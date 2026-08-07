@@ -24,10 +24,12 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
     {
         await fixture.ResetAsync();
         var ownerRoleId = await OwnerRoleIdAsync();
-        var token = OwnerToken();
         using var client = fixture.CreateApiClient();
 
-        using var response = await GetMeAsync(client, token);
+        using var response = await GetMeAsync(
+            client,
+            OwnerAccessToken(),
+            OwnerIdentityToken());
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var data = await ApiEnvelope.ReadDataAsync(response);
@@ -44,12 +46,11 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
     public async Task OwnerEmail_SecondLogin_IsIdempotent_SingleRowUnchanged()
     {
         await fixture.ResetAsync();
-        var token = OwnerToken();
         using var client = fixture.CreateApiClient();
 
-        using var first = await GetMeAsync(client, token);
+        using var first = await GetMeAsync(client, OwnerAccessToken(), OwnerIdentityToken());
         var afterFirst = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
-        using var second = await GetMeAsync(client, token);
+        using var second = await GetMeAsync(client, OwnerAccessToken(), OwnerIdentityToken());
         var afterSecond = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
 
         first.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -77,9 +78,11 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
             UpdatedAtUtc = now,
         });
 
-        var token = OwnerToken();
         using var client = fixture.CreateApiClient();
-        using var response = await GetMeAsync(client, token);
+        using var response = await GetMeAsync(
+            client,
+            OwnerAccessToken(),
+            OwnerIdentityToken());
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var data = await ApiEnvelope.ReadDataAsync(response);
@@ -89,6 +92,69 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         upgraded!.Status.Should().Be(UserStatus.Active);
         upgraded.RoleId.Should().Be(await OwnerRoleIdAsync());
 
+    }
+
+    [Fact]
+    public async Task AccessTokenEmailClaims_WithoutIdentityEvidence_DoesNotPromoteConfiguredOwner()
+    {
+        await fixture.ResetAsync();
+        var accessTokenWithIdentityClaims = TestJwtTokens.Mint(
+            AccessTestFixture.OwnerSub,
+            additionalClaims: new Dictionary<string, object>
+            {
+                ["email"] = AccessTestFixture.OwnerEmail,
+                ["email_verified"] = true,
+            });
+        using var client = fixture.CreateApiClient();
+
+        using var response = await GetMeAsync(client, accessTokenWithIdentityClaims);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var data = await ApiEnvelope.ReadDataAsync(response);
+        data.GetProperty("status").GetString().Should().Be("pending");
+        data.GetProperty("isOwner").GetBoolean().Should().BeFalse();
+
+        var user = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
+        user!.Status.Should().Be(UserStatus.Pending);
+        user.RoleId.Should().BeNull();
+    }
+
+    public static TheoryData<string> InvalidIdentityEvidenceCases =>
+    [
+        "missing-evidence",
+        "missing-email",
+        "missing-email-verified",
+        "false-email-verified",
+        "malformed-email-verified",
+        "mismatched-email",
+        "mismatched-sub",
+        "wrong-audience",
+        "wrong-issuer",
+        "expired",
+        "invalid-signature",
+        "malformed-token",
+    ];
+
+    [Theory]
+    [MemberData(nameof(InvalidIdentityEvidenceCases))]
+    public async Task InvalidIdentityEvidence_LeavesConfiguredOwnerPending(string caseName)
+    {
+        await fixture.ResetAsync();
+        using var client = fixture.CreateApiClient();
+
+        using var response = await GetMeAsync(
+            client,
+            OwnerAccessToken(),
+            IdentityEvidenceFor(caseName));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var data = await ApiEnvelope.ReadDataAsync(response);
+        data.GetProperty("status").GetString().Should().Be("pending");
+        data.GetProperty("isOwner").GetBoolean().Should().BeFalse();
+
+        var user = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
+        user!.Status.Should().Be(UserStatus.Pending);
+        user.RoleId.Should().BeNull();
     }
 
     [Fact]
@@ -193,18 +259,82 @@ public sealed class AccessRolesTests(AccessTestFixture fixture)
         await db.SaveChangesAsync();
     }
 
-    private static async Task<HttpResponseMessage> GetMeAsync(HttpClient client, string token)
+    private static async Task<HttpResponseMessage> GetMeAsync(
+        HttpClient client,
+        string accessToken,
+        string? identityEvidence = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, MePath);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        if (identityEvidence is not null)
+        {
+            request.Headers.Add("X-Interactive-Identity-Evidence", identityEvidence);
+        }
+
         return await client.SendAsync(request);
     }
 
-    private static string OwnerToken() => TestJwtTokens.Mint(
+    private static string OwnerAccessToken() => TestJwtTokens.Mint(AccessTestFixture.OwnerSub);
+
+    private static string OwnerIdentityToken() => TestJwtTokens.MintIdentityToken(
         AccessTestFixture.OwnerSub,
-        additionalClaims: new Dictionary<string, object>
-        {
-            ["email"] = AccessTestFixture.OwnerEmail,
-            ["email_verified"] = true,
-        });
+        AccessTestFixture.OwnerEmail,
+        true);
+
+    private static string? IdentityEvidenceFor(string caseName) => caseName switch
+    {
+        "missing-evidence" => null,
+        "missing-email" => TestJwtTokens.Mint(
+            AccessTestFixture.OwnerSub,
+            audience: TestJwtTokens.TestClientId,
+            additionalClaims: new Dictionary<string, object>
+            {
+                ["email_verified"] = true,
+            }),
+        "missing-email-verified" => TestJwtTokens.Mint(
+            AccessTestFixture.OwnerSub,
+            audience: TestJwtTokens.TestClientId,
+            additionalClaims: new Dictionary<string, object>
+            {
+                ["email"] = AccessTestFixture.OwnerEmail,
+            }),
+        "false-email-verified" => TestJwtTokens.MintIdentityToken(
+            AccessTestFixture.OwnerSub,
+            AccessTestFixture.OwnerEmail,
+            false),
+        "malformed-email-verified" => TestJwtTokens.MintIdentityToken(
+            AccessTestFixture.OwnerSub,
+            AccessTestFixture.OwnerEmail,
+            "not-a-boolean"),
+        "mismatched-email" => TestJwtTokens.MintIdentityToken(
+            AccessTestFixture.OwnerSub,
+            "different-owner@example.test",
+            true),
+        "mismatched-sub" => TestJwtTokens.MintIdentityToken(
+            "different-owner-sub",
+            AccessTestFixture.OwnerEmail,
+            true),
+        "wrong-audience" => TestJwtTokens.MintIdentityToken(
+            AccessTestFixture.OwnerSub,
+            AccessTestFixture.OwnerEmail,
+            true,
+            audience: "different-spa-client"),
+        "wrong-issuer" => TestJwtTokens.MintIdentityToken(
+            AccessTestFixture.OwnerSub,
+            AccessTestFixture.OwnerEmail,
+            true,
+            issuer: "https://different-issuer.example/oidc"),
+        "expired" => TestJwtTokens.MintIdentityToken(
+            AccessTestFixture.OwnerSub,
+            AccessTestFixture.OwnerEmail,
+            true,
+            expires: DateTime.UtcNow.AddMinutes(-5)),
+        "invalid-signature" => TestJwtTokens.MintIdentityToken(
+            AccessTestFixture.OwnerSub,
+            AccessTestFixture.OwnerEmail,
+            true,
+            signingKey: TestJwtTokens.DifferentKey),
+        "malformed-token" => "this.is.not-a-valid-id-token",
+        _ => throw new InvalidOperationException($"Unhandled identity evidence case '{caseName}'."),
+    };
 }

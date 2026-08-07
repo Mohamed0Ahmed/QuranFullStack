@@ -39,6 +39,13 @@ internal static class AuthenticationRegistration
                 options.TokenValidationParameters.ValidAudience = authOptions.Audience;
 
                 options.MapInboundClaims = false;
+            })
+            .AddJwtBearer(InteractiveIdentityEvidenceAuthentication.Scheme, options =>
+            {
+                options.Authority = authOptions.Authority;
+                options.TokenValidationParameters.ValidAudience = authOptions.InteractiveClientId;
+
+                options.MapInboundClaims = false;
             });
 
         services.AddAuthorization();

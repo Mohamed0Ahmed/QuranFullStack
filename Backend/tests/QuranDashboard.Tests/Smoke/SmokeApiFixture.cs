@@ -89,6 +89,16 @@ public sealed class SmokeApiFixture : IAsyncLifetime
                 new AuthenticationHeaderValue(
                     "Bearer",
                     TestJwtTokens.Mint(sub, additionalClaims: SmokePersonas.ClaimsFor(persona)));
+
+            if (persona is SmokePersona.Owner)
+            {
+                client.DefaultRequestHeaders.Add(
+                    "X-Interactive-Identity-Evidence",
+                    TestJwtTokens.MintIdentityToken(
+                        sub,
+                        FakeExternalUserProfileSource.EmailFor(sub),
+                        true));
+            }
         }
 
         return client;

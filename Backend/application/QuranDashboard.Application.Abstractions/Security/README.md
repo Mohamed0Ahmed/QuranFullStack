@@ -14,13 +14,17 @@ backfill between the staged migrations.
 
 ## What this folder defines
 
-- **`ICurrentUser`** — exposes the authenticated caller's Logto `sub`, `email`, and
-  `email_verified` claims after the API has validated signature, issuer, audience, and expiry.
-  `sub` is the stable identity key that joins a Logto account to its local `Users` row.
-  Accessing it outside an authenticated (`[Authorize]`) request fails closed.
-- **`IInteractiveIdentityEvidenceValidator`** — validates a separately supplied interactive OIDC bearer
-  token for the confirmed Logto-subject relink flow and returns only the validated `sub`, `email`, and
-  `email_verified` identity facts. The contract never retains or returns the raw token.
+- **`ICurrentUser`** — exposes the authenticated caller's Logto `sub` from the API resource access
+  token. `sub` is the stable identity key that joins a Logto account to its local `Users` row.
+  Email claims on that access-token principal are deliberately ignored. Accessing the identity outside
+  an authenticated (`[Authorize]`) request fails closed.
+- **`IInteractiveIdentityEvidenceValidator`** — validates a separately supplied signed Logto ID token
+  for interactive provisioning and confirmed Logto-subject relink flows. The caller supplies the
+  flow's expected subject, and validation succeeds only when the evidence subject matches it and the
+  token supplies a present email with `email_verified=true`. Provisioning uses the already-authenticated
+  API access-token subject. Relink uses the requested replacement `newSub`; the acting Owner's API
+  access-token subject remains the authorization identity. The contract returns only validated identity
+  facts and never retains or returns the raw token.
 - **`IAccessRequestContext`** — supplies a request correlation identifier to the access-audit appender;
   it is deliberately not an authorization or identity source.
 - **`IExternalUserProfileSource`** — `GetProfileAsync(logtoSub, ct)` returns an
@@ -95,8 +99,9 @@ decision resolves its state from the local database through the scoped resolver.
 
 ## Implementations (outside this folder)
 
-- `Application/Access/Commands/ProvisionCurrentUser/ProvisionCurrentUserHandler.cs` — wires
-  `ICurrentUser.Sub` into `IUserProvisioningService.GetOrCreateAsync`.
+- `Application/Access/Commands/ProvisionCurrentUser/ProvisionCurrentUserHandler.cs` — validates the
+  separately supplied ID-token evidence against `ICurrentUser.Sub`, then passes either that validated
+  identity or a fail-closed subject-only identity into `IUserProvisioningService.GetOrCreateAsync`.
 - `Infrastructure/Access/UserProvisioningService.cs` — the provisioning contract above,
   including the concurrent unique-index race handling.
 - `Infrastructure/Persistence/Reads/Access/AuthorizationStateResolver.cs` — the scoped local

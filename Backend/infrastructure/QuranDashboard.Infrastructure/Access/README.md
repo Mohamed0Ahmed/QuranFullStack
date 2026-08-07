@@ -12,8 +12,8 @@ for this M2M client, so this source never represents primary email as verificati
 the shared `IEmailIdentityNormalizer`; empty, invalid, and duplicate normalized sets are rejected.
 The reconciliation store compares that set, `Users.NormalizedEmail`, and freshly retrieved Logto
 profile identity data. It never compares raw display email values. The Application reconciliation
-use case can promote only the authenticated caller whose already-validated OIDC identity has the
-matching `sub`, a present normalized `email`, and `email_verified=true`.
+use case can promote only the authenticated caller whose separately validated ID-token identity has
+the same `sub` as the API access token, a present normalized `email`, and `email_verified=true`.
 
 Every apply opens one transaction, obtains the dedicated PostgreSQL transaction-scoped advisory
 lock, reloads its inputs, and then either commits all membership/grant/audit changes or none.

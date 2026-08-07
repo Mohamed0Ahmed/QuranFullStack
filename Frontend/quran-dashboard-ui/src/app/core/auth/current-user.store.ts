@@ -2,6 +2,7 @@ import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core'
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { defaultIfEmpty, of, switchMap, take } from 'rxjs';
 
 import { ApiResponse } from '../data-access/api-response.model';
 import { AccessApi } from './access.api';
@@ -104,42 +105,51 @@ export class CurrentUserStore {
   private fetchIntoSignals(requestVersion: number): Promise<void> {
     const fallbackMessage = CurrentUserStore.fallbackMessage;
 
-    return new Promise<void>((resolve) => {
-      this.accessApi.getMe().subscribe({
-        next: (response) => {
-          if (requestVersion !== this.requestVersion) {
-            resolve();
-            return;
-          }
+    const identityEvidenceToken = this.oidcSecurityService?.getIdToken() ?? of('');
 
-          const currentUser = response.isSuccess && response.data ? toCurrentUser(response.data) : null;
-          if (currentUser) {
-            this.currentUserSignal.set(currentUser);
-            this.permissionsSignal.set(new Set(currentUser.permissions));
-            this.errorMessageSignal.set(null);
-            this.loadStateSignal.set('ready');
-          } else {
+    return new Promise<void>((resolve) => {
+      identityEvidenceToken
+        .pipe(
+          take(1),
+          defaultIfEmpty(''),
+          switchMap((identityEvidenceToken) => this.accessApi.getMe(identityEvidenceToken)),
+        )
+        .subscribe({
+          next: (response) => {
+            if (requestVersion !== this.requestVersion) {
+              resolve();
+              return;
+            }
+
+            const currentUser =
+              response.isSuccess && response.data ? toCurrentUser(response.data) : null;
+            if (currentUser) {
+              this.currentUserSignal.set(currentUser);
+              this.permissionsSignal.set(new Set(currentUser.permissions));
+              this.errorMessageSignal.set(null);
+              this.loadStateSignal.set('ready');
+            } else {
+              this.currentUserSignal.set(null);
+              this.permissionsSignal.set(new Set());
+              this.errorMessageSignal.set(response.message ?? fallbackMessage);
+              this.loadStateSignal.set('error');
+            }
+
+            resolve();
+          },
+          error: (error: unknown) => {
+            if (requestVersion !== this.requestVersion) {
+              resolve();
+              return;
+            }
+
             this.currentUserSignal.set(null);
             this.permissionsSignal.set(new Set());
-            this.errorMessageSignal.set(response.message ?? fallbackMessage);
+            this.errorMessageSignal.set(this.resolveErrorMessage(error, fallbackMessage));
             this.loadStateSignal.set('error');
-          }
-
-          resolve();
-        },
-        error: (error: unknown) => {
-          if (requestVersion !== this.requestVersion) {
             resolve();
-            return;
-          }
-
-          this.currentUserSignal.set(null);
-          this.permissionsSignal.set(new Set());
-          this.errorMessageSignal.set(this.resolveErrorMessage(error, fallbackMessage));
-          this.loadStateSignal.set('error');
-          resolve();
-        },
-      });
+          },
+        });
     });
   }
 

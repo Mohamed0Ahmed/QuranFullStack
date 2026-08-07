@@ -67,7 +67,11 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   contract artifacts" below for what that means for the exported spec).
 - `Access/` — `api/access/me`; the authenticated caller's provisioned user. Carries `[Authorize]`
   (authenticated-only) and get-or-create provisions the local user on first login from provider
-  identity data. Matching verified interactive OIDC email evidence is required only for Owner bootstrap.
+  identity data. The normal `Authorization` bearer remains the API resource access token.
+  `X-Interactive-Identity-Evidence` may carry the raw signed Logto ID token for this interactive call;
+  the Backend validates it independently and binds its `sub` to the access-token `sub`. Matching
+  verified email from that evidence is required only for Owner bootstrap. Missing or invalid evidence
+  leaves a configured user Pending rather than trusting access-token or client-parsed email claims.
   The response is `sub`, `email`, `displayName`,
   `status`, `isOwner`, and ordered direct `permissions`. Owners, Pending users, and Disabled users receive
   no direct permission codes. The configured

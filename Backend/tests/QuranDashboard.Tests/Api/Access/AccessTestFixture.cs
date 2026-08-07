@@ -180,6 +180,7 @@ public sealed class AccessTestFixture : IAsyncLifetime
                         // Required non-blank by the validator; inert otherwise, since the effective
                         // audience is pinned by TestJwtTokens.ConfigureOfflineValidation.
                         ["Auth:Audience"] = TestJwtTokens.TestAudience,
+                        ["Auth:InteractiveClientId"] = TestJwtTokens.TestClientId,
                         // Supplies the two configured Owner identities used by the access fixtures.
                         ["OwnerBootstrap:Emails:0"] = OwnerEmail,
                         ["OwnerBootstrap:Emails:1"] = SecondOwnerEmail,

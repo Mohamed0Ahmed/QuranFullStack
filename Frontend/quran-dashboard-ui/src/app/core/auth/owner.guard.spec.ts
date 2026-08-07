@@ -5,7 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import type { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { UrlTree, provideRouter } from '@angular/router';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import type { ApiResponse } from '../data-access/api-response.model';
@@ -55,7 +55,11 @@ describe('ownerGuard', () => {
         provideHttpClientTesting(),
         {
           provide: OidcSecurityService,
-          useValue: { isAuthenticated$: authentication, authorize },
+          useValue: {
+            isAuthenticated$: authentication,
+            getIdToken: () => of('signed.id.token'),
+            authorize,
+          },
         },
       ],
     });

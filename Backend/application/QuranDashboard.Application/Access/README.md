@@ -5,6 +5,13 @@ conversion, and the Owner-only administration surface. HTTP controllers bind req
 validate request-level inputs and call the abstractions in
 `QuranDashboard.Application.Abstractions/Access/`.
 
+`ProvisionCurrentUserHandler` keeps API authentication and interactive identity evidence separate.
+It binds the signed ID-token evidence to the already-authenticated API access-token subject through
+`IInteractiveIdentityEvidenceValidator`, and only a validated identity can carry verified email into
+the existing provisioning and Owner-reconciliation path. Missing or invalid evidence falls back to a
+subject-only identity, so normal provisioning remains Pending and never promotes from access-token
+email claims.
+
 The administration handlers cover user listing/detail, Pending acceptance, disable/reactivate,
 catalogue and direct-grant reads/replacement, audit retrieval, Logto subject relink preview/confirm,
 and reconciliation status. They do not expose a generic status setter, role mutation, or Owner
