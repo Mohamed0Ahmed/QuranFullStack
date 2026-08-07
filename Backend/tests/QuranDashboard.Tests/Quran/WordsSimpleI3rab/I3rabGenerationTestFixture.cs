@@ -6,6 +6,8 @@ using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Domain.Quran.Words.Morphology;
 using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
+using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsSimpleI3rab;
 
@@ -20,48 +22,43 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
 
     public static I3rabExpectedCounts BihamdikaWordCompositionCounts { get; } = new(SegmentCount: 3, ReadableWordCount: 1, NullFormCount: 0);
 
-    private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    private readonly OwnedServiceProviderRegistry ownedProviders = new();
+
+    private PostgreSqlDatabaseLease? databaseLease;
+    private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        await postgresContainer.StartAsync();
+        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
+            nameof(I3rabGenerationTestFixture));
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await dbContext.Database.MigrateAsync();
+        try
+        {
+            rootProvider = ownedProviders.Own(
+                BuildServiceProvider(databaseLease.ConnectionString, expectedCounts: null, configure: null));
+        }
+        catch
+        {
+            await DisposeAsync();
+            throw;
+        }
     }
 
     public async Task DisposeAsync()
     {
-        await postgresContainer.DisposeAsync();
+        rootProvider = null;
+        await ownedProviders.DisposeAsync();
+
+        if (databaseLease is not null)
+        {
+            await databaseLease.DisposeAsync();
+            databaseLease = null;
+        }
     }
 
-    public ServiceProvider CreateServiceProvider(
-        I3rabExpectedCounts? expectedCounts = null,
-        Action<IServiceCollection>? configure = null)
+    public AsyncServiceScope CreateScope()
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:QuranDashboardDb"] = postgresContainer.GetConnectionString()
-            })
-            .Build();
-
-        var services = new ServiceCollection()
-            .AddSingleton<IConfiguration>(configuration)
-            .AddApplication()
-            .AddInfrastructure(configuration);
-
-        if (expectedCounts is not null)
-        {
-            services.AddSingleton(expectedCounts);
-        }
-
-        configure?.Invoke(services);
-
-        return services.BuildServiceProvider();
+        return InitializedRootProvider.CreateAsyncScope();
     }
 
     public async Task<GenerateI3rabResult> RunGenerationAsync(
@@ -71,14 +68,15 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
         Action<IServiceCollection>? configure = null)
     {
         reportOutDir ??= Path.Combine(Path.GetTempPath(), $"simple-i3rab-report-{Guid.NewGuid():N}");
-        await using var scope = CreateServiceProvider(expectedCounts, configure).CreateAsyncScope();
+        await using var runProvider = BuildServiceProvider(LeasedConnectionString, expectedCounts, configure);
+        await using var scope = runProvider.CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<GenerateI3rabHandler>();
         return await handler.HandleAsync(new GenerateI3rabCommand(force, reportOutDir), CancellationToken.None);
     }
 
     public async Task<I3rabSourceSafetySnapshot> CaptureSourceSafetySnapshotAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var segmentFingerprint = await dbContext.Database
@@ -107,7 +105,7 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
 
     public async Task<I3rabCommittedStateSnapshot> CaptureCommittedStateAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var segmentStates = await dbContext.WordMorphologySegments.AsNoTracking()
@@ -137,7 +135,7 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
 
     public async Task<int> CountPopulatedI3rabSegmentsAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return await dbContext.WordMorphologySegments.AsNoTracking()
@@ -148,7 +146,7 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
 
     public async Task ResetToWordsOnlyAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await SeedFoundationInContextAsync(dbContext);
         await SeedPosTagsAsync(dbContext);
@@ -162,7 +160,7 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
     {
         await ResetToWordsOnlyAsync();
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         dbContext.WordMorphologies.AddRange(
@@ -187,7 +185,7 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
     {
         await ResetToWordsOnlyAsync();
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         dbContext.WordMorphologies.AddRange(
@@ -210,7 +208,7 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
 
     public async Task ResetToBihamdikaWordCompositionAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         await SeedFoundationInContextAsync(dbContext);
@@ -236,7 +234,7 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
     {
         await ResetToWordsOnlyAsync();
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         await dbContext.QuranWords.ExecuteDeleteAsync();
@@ -253,6 +251,43 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
             CreateSegment(2, 2, "1:1:2", 1, "STEM", "ACC", string.Empty, lemma: null));
 
         await dbContext.SaveChangesAsync();
+    }
+
+    private ServiceProvider InitializedRootProvider =>
+        rootProvider ?? throw new InvalidOperationException(
+            $"{nameof(I3rabGenerationTestFixture)} has not been initialized. Use it through the "
+            + $"[{nameof(I3rabGenerationTestCollection)}] collection fixture.");
+
+    private string LeasedConnectionString =>
+        databaseLease?.ConnectionString ?? throw new InvalidOperationException(
+            $"{nameof(I3rabGenerationTestFixture)} holds no database lease. Use it through the "
+            + $"[{nameof(I3rabGenerationTestCollection)}] collection fixture.");
+
+    private static ServiceProvider BuildServiceProvider(
+        string connectionString,
+        I3rabExpectedCounts? expectedCounts,
+        Action<IServiceCollection>? configure)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:QuranDashboardDb"] = connectionString
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddApplication()
+            .AddInfrastructure(configuration);
+
+        if (expectedCounts is not null)
+        {
+            services.AddSingleton(expectedCounts);
+        }
+
+        configure?.Invoke(services);
+
+        return services.BuildServiceProvider();
     }
 
     private static async Task ClearMorphologyDataAsync(QuranDashboardDbContext dbContext)

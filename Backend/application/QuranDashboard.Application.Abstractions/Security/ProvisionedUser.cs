@@ -7,5 +7,5 @@ public sealed record ProvisionedUser(
     string Email,
     string? DisplayName,
     UserStatus Status,
-    int? RoleId,
-    string? RoleName);
+    bool IsOwner,
+    IReadOnlyList<string> Permissions);

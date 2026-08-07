@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 
@@ -57,6 +57,7 @@ function render(
   const fixture = TestBed.createComponent(AbwabDoorRestoreModalComponent);
   fixture.componentRef.setInput('door', door);
   fixture.componentRef.setInput('sections', SECTIONS);
+  fixture.componentRef.setInput('canRestoreDoor', true);
   for (const [key, value] of Object.entries(overrides)) {
     fixture.componentRef.setInput(key, value);
   }
@@ -81,6 +82,20 @@ function pick(fixture: ReturnType<typeof render>, sectionId: number): void {
 }
 
 describe('AbwabDoorRestoreModalComponent', () => {
+  it('keeps the restore modal understandable but refuses confirmation without restore permission', () => {
+    const restoreDoor = vi.fn();
+    const fixture = render(nodesFrom([doorDto({ id: 3, name: 'باب مؤرشف', sectionId: 2 })]).get(3)!, { canRestoreDoor: false }, {
+      restoreDoor,
+    });
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(confirmButton(fixture).disabled).toBe(true);
+    expect(root.textContent).toContain(ABWAB_LABELS.restorePermissionHint);
+    (fixture.componentInstance as unknown as { confirm(): void }).confirm();
+
+    expect(restoreDoor).not.toHaveBeenCalled();
+  });
+
   it('renders nothing until a door is given', () => {
     const fixture = render(null);
 

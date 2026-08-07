@@ -6,47 +6,59 @@ using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
+using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
 
 public sealed class MorphologyImportTestFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    private readonly OwnedServiceProviderRegistry ownedProviders = new();
+
+    private PostgreSqlDatabaseLease? databaseLease;
+    private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        await postgresContainer.StartAsync();
+        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
+            nameof(MorphologyImportTestFixture));
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await dbContext.Database.MigrateAsync();
+        try
+        {
+            rootProvider = ownedProviders.Own(
+                BuildServiceProvider(databaseLease.ConnectionString, configure: null));
+        }
+        catch
+        {
+            await DisposeAsync();
+            throw;
+        }
     }
 
     public async Task DisposeAsync()
     {
-        await postgresContainer.DisposeAsync();
+        rootProvider = null;
+        await ownedProviders.DisposeAsync();
+
+        if (databaseLease is not null)
+        {
+            await databaseLease.DisposeAsync();
+            databaseLease = null;
+        }
     }
 
-    public ServiceProvider CreateServiceProvider(Action<IServiceCollection>? configure = null)
+    public AsyncServiceScope CreateScope()
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:QuranDashboardDb"] = postgresContainer.GetConnectionString()
-            })
-            .Build();
+        return InitializedRootProvider.CreateAsyncScope();
+    }
 
-        var services = new ServiceCollection()
-            .AddSingleton<IConfiguration>(configuration)
-            .AddApplication()
-            .AddInfrastructure(configuration)
-            .AddMorphologyImportServices();
+    public AsyncServiceScope CreateScope(Action<IServiceCollection> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
 
-        configure?.Invoke(services);
-
-        return services.BuildServiceProvider();
+        return ownedProviders
+            .Own(BuildServiceProvider(LeasedConnectionString, configure))
+            .CreateAsyncScope();
     }
 
     public async Task<ImportMorphologyResult> RunImportAsync(
@@ -56,7 +68,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
         string? reportOutDir = null)
     {
         reportOutDir ??= Path.Combine(Path.GetTempPath(), $"morph-report-{Guid.NewGuid():N}");
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
         var readableCount = expectedReadableWords ?? GetReadableWordCount();
 
@@ -69,7 +81,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
     {
         await TruncateAllAsync();
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var surah = new Surah
@@ -453,7 +465,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
 
     public async Task TruncateMorphologyTablesAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """
@@ -471,7 +483,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
 
     public async Task TruncateAllAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """
@@ -498,14 +510,14 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
 
     public int GetReadableWordCount()
     {
-        using var scope = CreateServiceProvider().CreateScope();
+        using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         return dbContext.QuranWords.Count(w => !w.IsAyahMarker);
     }
 
     public async Task<TableSnapshot> CaptureTableSnapshotAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return new TableSnapshot(
@@ -577,7 +589,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
 
     public async Task<IReadOnlyList<LemmaAnalysisRow>> QueryLemmaAnalysesByTextAsync(string lemmaText)
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return await dbContext.Database.SqlQueryRaw<LemmaAnalysisRow>(
@@ -594,7 +606,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
 
     public async Task<SmallYehStemIdentitySnapshot> QuerySmallYehStemIdentityRowsAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var stems = await dbContext.Database.SqlQueryRaw<string>(
@@ -656,6 +668,38 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
         await PatchCorpusSegmentsAsync(tempDir, "1:1:1", badSegments);
 
         return tempDir;
+    }
+
+    private ServiceProvider InitializedRootProvider =>
+        rootProvider ?? throw UninitializedFixture();
+
+    private string LeasedConnectionString =>
+        databaseLease?.ConnectionString ?? throw UninitializedFixture();
+
+    private static InvalidOperationException UninitializedFixture() => new(
+        $"{nameof(MorphologyImportTestFixture)} holds no database. Every helper needs the "
+        + $"[{nameof(MorphologyImportTestCollection)}] collection fixture.");
+
+    private static ServiceProvider BuildServiceProvider(
+        string connectionString,
+        Action<IServiceCollection>? configure)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:QuranDashboardDb"] = connectionString
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddApplication()
+            .AddInfrastructure(configuration)
+            .AddMorphologyImportServices();
+
+        configure?.Invoke(services);
+
+        return services.BuildServiceProvider();
     }
 
     private static async Task<string> ComputeTableContentHashAsync(

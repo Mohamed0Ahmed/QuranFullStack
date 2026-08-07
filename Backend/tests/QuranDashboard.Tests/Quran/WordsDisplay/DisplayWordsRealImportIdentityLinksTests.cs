@@ -15,7 +15,7 @@ public sealed class DisplayWordsRealImportIdentityLinksTests
     [CanonicalImportSourceFact]
     public async Task CanonicalImportRebuild_PopulatesExpectedCountsAndIdentityLinks()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         (await dbContext.QuranWords.CountAsync())
@@ -51,7 +51,7 @@ public sealed class DisplayWordsRealImportIdentityLinksTests
         string wordKeyImlaeiSimple,
         int expectedOccurrences)
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var uniqueRow = await dbContext.QuranWordsUniqueSimple
@@ -64,7 +64,7 @@ public sealed class DisplayWordsRealImportIdentityLinksTests
     [CanonicalImportSourceFact]
     public async Task CanonicalImportRebuild_RahmanIdentityKeepsRepresentativeUthmaniDisplay()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var rahmanIdentity = await dbContext.QuranWordsUniqueSimple
@@ -87,7 +87,7 @@ public sealed class DisplayWordsRealImportIdentityLinksTests
     [CanonicalImportSourceFact]
     public async Task CanonicalImportRebuild_AlYasinRemainsSingleMultiTokenIdentity()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var alYasin = await dbContext.QuranWordsUniqueSimple
@@ -100,7 +100,7 @@ public sealed class DisplayWordsRealImportIdentityLinksTests
     [CanonicalImportSourceFact]
     public async Task CanonicalImportRebuild_Location55212KeepsDairaImlaeiKey()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var daira = await dbContext.QuranWords
@@ -120,7 +120,7 @@ public sealed class DisplayWordsRealImportIdentityLinksTests
     [CanonicalImportSourceFact]
     public async Task CanonicalImportRebuild_AssignsDeterministicUniqueIdsEqualToFirstQuranWordId()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var tashkeelViolations = await dbContext.QuranWordsUniqueTashkeel

@@ -4,7 +4,9 @@
 the same change** (`../../tests/QuranDashboard.Tests/Smoke/SmokeRouteCatalog.cs`). The catalog
 is bidirectionally locked to the live `EndpointDataSource`, so an uncatalogued route — or a
 catalog entry whose route no longer exists — fails `SmokeCoverageParityTests` by route name.
-See `TESTING_STRATEGY.md` §3 Tier A/C and §10.
+Run it with `../../scripts/test-backend smoke --no-build` after any route, contract, auth,
+middleware, model-binding, startup, DI, or configuration change. See
+`../../../TESTING_STRATEGY.md` §6 and §10.
 
 ## Connection String Setup
 
@@ -39,36 +41,65 @@ It uses the standard `JwtBearer` handler to validate a Logto **access token** (n
   survives unchanged.
 - A missing/invalid token yields `401 Unauthorized` with the shared `ApiResponse` failure
   envelope (`isSuccess:false`, Arabic `message`, `errors:[]`) instead of the framework's default
-  empty body.
+  empty body. `ApiAuthorizationMiddlewareResultHandler` owns that challenge body and every future
+  authorization forbid body, so the JWT bearer handler does not write a competing response.
 - `GET api/access/me` provisions the caller on first sight, so it carries one status the other
   authenticated paths do not: an email already registered to a different `sub` is a
   `409 Conflict` in the same failure envelope (`UserProvisioningEmailConflictException` →
   `Middleware/GlobalExceptionHandler.cs`, the only non-`500` that handler produces).
 
 `GET /api/access/me` carries `[Authorize]` (authenticated-only) and, on first login,
-**get-or-create provisions** the local user keyed by the Logto `sub`. The user's email is **verified
-server-side via the Logto Management API** (the inbound access token cannot call userinfo), never taken
-from the client; a new user starts `Pending` with no role. This is the only endpoint that requires
-authentication — there is **no global fallback policy**, so every other endpoint stays anonymous.
+**get-or-create provisions** the local user keyed by the Logto `sub`. Owner bootstrap email evidence
+is **verified server-side through the already-validated OIDC claims**: matching `sub`, present
+`email`, and `email_verified=true`. Logto Management API `primaryEmail` is used only to match provider
+identity data and is never email-verification authority. A new user starts `Pending` with no role.
+`/api/access/me` is the only generic authenticated-only endpoint. The twelve administration routes for
+users, direct grants, audit history, relink preview/confirm, catalogue, and reconciliation status carry
+`[RequireOwner]`; they never accept a direct permission as equivalent and never mutate Owner membership or
+Owner configuration. The twenty-one Abwab write endpoints each carry an exact granular permission
+requirement; there is **no global fallback policy**, so public content GETs remain anonymous.
 
-### Roles (Phase 2 — infrastructure only)
+The API has a database-backed authorization core:
+`[RequirePermission(...)]` checks an active local user's exact direct grant, while an active local Owner
+bypasses that exact check; `[RequireOwner]` accepts only an active local Owner. Both resolve the `sub`
+through `ICurrentUser` and ignore token-borne role or permission claims. Every Abwab write has exactly one
+`[RequirePermission(...)]` matching the route's required catalogue code. `UnsafeEndpointMetadataValidator`
+runs immediately after controller mapping and refuses any unsafe endpoint with missing, unknown, or
+conflicting metadata; the requirement handlers repeat that validation fail-closed. It also validates the
+Owner-only classification of security-administration writes. This does not change public `GET` endpoints
+or `/api/access/me`, and production activation remains a separate deployment gate.
 
-A fixed, seeded role set (`Owner` / `Admin` / `Editor`, seeded with Arabic display names via the
-`AddAccessRoles` migration) backs authorization; `Users.RoleId` is a nullable FK → `roles`. Capabilities
-are enforced in code keyed by the role **name** (`RoleNames`); roles are never created from the UI.
+### Owner role
 
-- **Owner bootstrap** (`Auth:BootstrapOwnerEmail`): on first login, a user whose identity-verified email
-  equals this value is provisioned directly as `Owner`/`Active` instead of `Pending`/no-role; an existing
-  matching user below `Owner`/`Active` is upgraded (idempotent). An **empty** value disables bootstrap.
-- **Role loading:** `RoleClaimsTransformation` (`IClaimsTransformation`) loads the caller's active role
-  into a `ClaimTypes.Role` claim, resolved by `sub` via a short-TTL (`30s`) cached `IUserRoleResolver`.
-  It is idempotent (never duplicates the claim) and the role/status write path evicts the subject's cache
-  entry so a change is observed immediately, not after the TTL.
-- **`GET /api/access/me`** returns `roleName` (null when no role) alongside `roleId`/`status`.
-- **Named policies registered, applied to nothing:** one policy per role
-  (`AuthorizationPolicyNames.Owner`/`Admin`/`Editor`, each `RequireAuthenticatedUser().RequireRole(name)`)
-  is registered ready for future admin surfaces. **No `[Authorize(Policy = …)]` is applied to any
-  endpoint**, and there is still no global fallback policy — the whole product remains publicly browsable.
+Only the seeded `Owner` role remains. `Users.RoleId` is a nullable FK to `roles`, used exclusively for
+the local Owner relation; capabilities are enforced from active direct grants with a separate active-Owner
+bypass. `Admin` and `Editor` have no remaining role, policy, or claim-based authorization path. Roles are
+never created from the UI.
+
+- **Owner bootstrap** (`OwnerBootstrap:Emails`): the normalized, validated desired Owner list is
+  reconciled for additions only after a configured identity provisions through `/api/access/me` with
+  verified interactive OIDC email evidence. The operator tool can report
+  `AwaitingVerifiedSignIn`, remove safely resolved stale Owners, and clean Owner direct grants, but
+  cannot promote an Owner from M2M data. Each promotion revokes direct grants and appends audit
+  history in the same transaction. Empty, invalid, or duplicate normalized lists fail startup
+  validation; a Disabled configured user is never reactivated.
+- **Normalized identity:** `Users.NormalizedEmail` is the required, unique comparison key for local
+  email identity. Provisioning normalizes provider email before persistence and rejects a
+  collision rather than merging or relinking users.
+- **Authorization state:** a scoped `IAuthorizationStateResolver` projects status, the local Owner
+  relation, and active non-Owner direct grant codes once per protected request. It never provisions a
+  user and rejects a second distinct `sub` in its request scope. No role-claim transformation or role
+  resolver participates in authorization.
+- **`GET /api/access/me`** returns `sub`, `email`, `displayName`, `status`, `isOwner`, ordered
+  active direct `permissions`.
+  Owners, Pending users, and Disabled users receive an empty permission list. `isOwner` remains
+  true for a Disabled configured Owner while every authorization handler still fails closed on status.
+- **No named role policies:** authorization uses the exact permission and Owner requirements above; there
+  is no global fallback policy. Granular Abwab authorization metadata does not use token role claims.
+
+`authorization preflight` is a readiness gate for the already-deployed schema and authorization
+data. A clean result neither deploys an artifact nor activates authorization; those operational
+actions remain outside the executable and the API process.
 
 ### Configuration (`Auth` section)
 
@@ -76,7 +107,6 @@ are enforced in code keyed by the role **name** (`RoleNames`); roles are never c
 |---|---|
 | `Authority` | Logto issuer, e.g. `https://<tenant>.logto.app/oidc`. Used for OIDC metadata/JWKS discovery. |
 | `Audience` | The exact Logto API resource indicator every access token must target. |
-| `BootstrapOwnerEmail` | Email bootstrapped to `Owner`/`Active` on login. **Empty disables bootstrap** (valid, no startup failure); a non-empty value is format-validated fail-fast. |
 | `ManagementApi:Endpoint` | Logto tenant endpoint, e.g. `https://<tenant>.logto.app`. |
 | `ManagementApi:Resource` | Management API resource indicator, typically `https://<tenant-id>.logto.app/api`. |
 | `ManagementApi:AppId` | Machine-to-machine application id for the client-credentials token. |
@@ -84,9 +114,9 @@ are enforced in code keyed by the role **name** (`RoleNames`); roles are never c
 
 `Authority`/`Audience` and the `ManagementApi` endpoint/resource ship as **placeholder values**
 (`REPLACE-WITH-YOUR-…`) in `appsettings*.json`; the deployment owner replaces them with real Logto
-tenant values. `BootstrapOwnerEmail` ships **empty** in `appsettings.json` (bootstrap disabled by
-default); production must supply the owner address via environment configuration
-(`Auth__BootstrapOwnerEmail`) to enable owner bootstrap. Invalid `Auth` values (blank `Authority`/
+tenant values. Production supplies one or more Owner identities as
+`OwnerBootstrap__Emails__0`, `OwnerBootstrap__Emails__1`, and so on. Their normalized values must
+be unique; an empty list fails startup validation. Invalid `Auth` values (blank `Authority`/
 `Audience`, or an `Authority` that is not an absolute `https` URI) **fail fast** at startup. The `ManagementApi` credentials are **not** validated at startup (the secret
 is legitimately absent on a fresh clone); they are validated on first use of `/api/access/me` with an
 actionable error naming any missing keys.

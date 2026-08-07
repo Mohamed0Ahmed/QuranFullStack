@@ -60,7 +60,7 @@
             <button
               type="button"
               class="qd-btn qd-btn-primary"
-              [disabled]="saveBusy()"
+              [disabled]="saveBusy() || !canSubmit()"
               data-testid="abwab-template-node-modal-save"
               (click)="submit()"
             >

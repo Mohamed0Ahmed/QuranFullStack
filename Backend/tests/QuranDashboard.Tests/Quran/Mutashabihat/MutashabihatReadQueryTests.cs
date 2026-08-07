@@ -85,8 +85,7 @@ public sealed class MutashabihatReadQueryTests(MutashabihatImportTestFixture fix
         var result = await fixture.RunImportAsync(sourcePath, expectedCounts: ReadQueryExpectedCounts);
         result.ExitCode.Should().Be(ImportMutashabihatResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider(services => services.AddMutashabihatImportServices())
-            .CreateAsyncScope();
+        await using var scope = fixture.CreateImportScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var connection = await OpenConnectionAsync(dbContext);
 
@@ -128,7 +127,7 @@ public sealed class MutashabihatReadQueryTests(MutashabihatImportTestFixture fix
         var result = await fixture.RunImportAsync(sourcePath, expectedCounts: ReadQueryExpectedCounts);
         result.ExitCode.Should().Be(ImportMutashabihatResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var connection = await OpenConnectionAsync(dbContext);
 

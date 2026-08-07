@@ -28,7 +28,7 @@ public sealed class NavigationRollbackTests(NavigationImportTestFixture fixture)
         var snapshot = await fixture.CaptureNavigationSnapshotAsync();
         snapshot.Should().Be(new NavigationTableSnapshot(0, 0, 0, 0, 0));
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var ayahs = await dbContext.QuranAyahs.AsNoTracking().OrderBy(ayah => ayah.Id).ToListAsync();
         ayahs.Should().OnlyContain(ayah =>

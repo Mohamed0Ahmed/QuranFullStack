@@ -14,7 +14,7 @@ public sealed class ForceReloadTests
         this.fixture = fixture;
     }
 
-    [Fact]
+    [FoundationImportSourceFact]
     public async Task ForceReRun_ProducesTableStateIdenticalToFirstImport()
     {
         var handler = await fixture.CreateHandlerAsync();
@@ -41,7 +41,7 @@ public sealed class ForceReloadTests
 
     private async Task<ImportSnapshot> CaptureSnapshotAsync()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var sampleWord = await dbContext.QuranWords

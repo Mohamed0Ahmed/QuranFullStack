@@ -10,20 +10,18 @@ series that followed rewrote search, reveal, the move picker, the confirms and t
 this file is the current record of all of it, so read it rather than reconstructing the order
 the pieces arrived in.
 
-**The routes are `Open` (no auth), and every write route in this feature is unauthenticated.**
-The requirement stands: **do not** include this feature in a `dev → main` release until write
-protection lands.
+**Read access is public; write access is protected by the Backend.** The four Abwab reads and
+their routes remain available without authentication. The twenty-one write endpoints require the
+exact typed permission defined by the Backend. The frontend reads the Phase 7 access store only to
+shape UX: each write affordance receives a capability boolean, page/controller handlers recheck it,
+and the write controllers make the final frontend check before issuing a request. None of those
+checks authorizes a request; a handcrafted write still receives the Backend's own denial.
 
-> **Status note — 2026-08-04.** The requirement above was not met before release, and this note
-> records that state; it does not waive the requirement and it authorises nothing further.
-> Abwab merged to `main` in PR #63 (`bc61bdaa`) and was deployed by the redeploy commit
-> `b666cb38`, with the production schema at migration 24. Write protection did **not** land:
-> `Backend/api/.../Extensions/WebApplicationExtensions.cs` configures no fallback policy and
-> `api/access/me` remains the only `[Authorize]` endpoint
-> (`Backend/api/QuranDashboard.Api/Authentication/README.md`), so the Abwab write routes are
-> currently reachable anonymously in production. Rate limiting is per-IP and ships disabled, so
-> it is not a substitute. Closing this is the next feature; until it closes, nothing here may be
-> read as permission to ship further write surface unprotected.
+When a write receives `401`, the shared coordinator starts the login flow once and never retries
+the mutation. When it receives `403`, it refreshes access, then the page closes or disables stale
+write state without retrying. Anonymous and read-only visitors keep the tree, cards, archive,
+relations reading, template list/detail, and template-tree rendering. Archive restore remains a
+disabled, explained control for visitors without restore permission so the hierarchy stays legible.
 
 ## What this feature does
 
@@ -40,24 +38,27 @@ nine), four of them reads.
 ## Render chain & key pieces
 
 - `pages/abwab-page/` — the route shell: parses all seven URL keys into state, composes
-  every child below, and delegates all overlay/dialog orchestration to
-  `state/abwab-page-overlays.controller.ts` and `state/abwab-modal-url.controller.ts`.
-  **Its TS sits over the 400-line hard threshold** and is kept there knowingly: two
-  extractions have already come out of it (the overlay state, then the `modal` key's
-  machinery), and what remains is a route shell's own work — one `queryParamMap`
-  subscription, two settle-gated effects, the label getters the TDZ rule mandates, and one
-  thin handler per output of every child it composes (`abwab-page.component.ts`'s own
-  `imports` array is the list — do not restate its length here). **The next seam, when the
-  file next has to grow**, is the reveal-in-tree machinery (the target/
-  sequence/mark signals, the hold timer and `onRevealRequested`) moving to a page-scoped
-  `abwab-reveal.controller.ts` on the same precedent — deliberately not done inside a
-  feature slice, because it would rewrite behavior pinned since Slice D for no user-visible
-  gain.
+  every child below, and delegates overlay/dialog state to
+  `state/abwab-page-overlays.controller.ts`, URL-modal reconciliation to
+  `state/abwab-modal-url.controller.ts`, reveal state to
+  `state/abwab-reveal.controller.ts`, and user-event/URL-write orchestration to
+  `state/abwab-page-interactions.controller.ts`. **Its TS sits at 375 lines, below the
+  400-line hard threshold but above the 300-line soft threshold.** Four cohesive extractions
+  now leave only route synchronization, derived render state, label getters required by the TDZ
+  rule, host-only focus handoff, and the thin wrappers that supply that host focus. The reveal
+  controller owns its target/sequence/mark signals, hold timer, URL handoff, and scroll; the page
+  continues to feed settled URL state into it so the existing cross-section and cards-view
+  behavior stays intact.
 - `state/abwab-modal-url.controller.ts` — the page-side machinery for the
   seventh key: which overlay the URL currently owns (kind **and** subject), whether a
   parsed key may be acted on (the live-door guard), and the two halves of reconciliation.
   Same boundary as the overlays controller — **no `Router`/`ActivatedRoute`**; the page
-  feeds URL values in and writes every key itself. Page-provided, not root.
+  feeds URL values in while the interactions controller writes keys. Page-provided, not root.
+- `state/abwab-page-interactions.controller.ts` — the page-provided event orchestrator for
+  toolbar, tree, side-panel, context-menu, modal, archive, restore, and URL actions. It keeps
+  the existing permission rechecks, controller dispatches, URL merge/replace semantics, and
+  focus callbacks intact while keeping those event paths out of the route shell. **Its TS sits
+  at 373 lines, below the 400-line state-service soft threshold.**
 - `components/abwab-modal-restore/` — the retained overlay's restore control: the label
   naming the overlay and the hairline-joined discard X. Presentational, page-driven; it
   reads no URL and owns no state beyond its own focus entry point.
@@ -69,10 +70,10 @@ nine), four of them reads.
   (`FRONTEND_STRUCTURE.md`'s Large Page Split guidance) — it holds state/orchestration
   only, no template of its own. **Provided by `AbwabPageComponent`, not
   `providedIn: 'root'`** — see the Gotchas below.
-  **It now sits at 416 lines, just over the 400-line soft threshold for state services**,
+  **It now sits at 479 lines, just over the 400-line soft threshold for state services**,
   and is kept there deliberately: it is one flat family of overlay signals with their
   open/close handlers and no branching logic, so a split would divide by overlay count
-  rather than by responsibility and leave the page wiring two controllers instead of one.
+  rather than by responsibility.
   **The trigger that forces the split** is the same one the templates workshop carries —
   crossing the 600-line hard threshold, or an overlay arriving that owns URL state of its
   own, at which point the URL-backed overlays move to their own controller beside
@@ -221,7 +222,8 @@ nine), four of them reads.
 - `components/abwab-side-panel/` — active door + single-door operations (add child,
   edit, move, relations, archive) plus bulk mode: the toggle, its `.on` state (tint +
   accent-text + hairline, **not** a solid fill — the first allowed-green fix), and the bulk bar
-  (count, names, bulk move/relations/archive/clear). **No** protection entry. No reorder button — the tree's own inline number editor is
+  (count, names, bulk move/relations/archive/clear). Each write action is rendered only for its
+  exact capability; relations reading remains available without a relation-write capability. No reorder button — the tree's own inline number editor is
   the one reorder affordance; a second control doing the same thing would be redundant.
   This panel is the second of the contract's three add-child paths; the tree row's own
   `＋` and the row menu are the other two.
@@ -344,26 +346,18 @@ nine), four of them reads.
   and one all-or-nothing apply. Takes the doors tree and the apply function as inputs.
 - `pages/abwab-templates-page/` — the `/abwab/templates` shell: the template list with
   «+ قالب جديد», the editor panel, the node/template actions, the row context menu, and
-  the two confirms. It owns the overlay state itself (page-scoped) while the caches stay
-  root-scoped. **Its TS crossed the 400-line hard threshold during the review-fix work
-  and was split at once**: the template-delete confirm flow (its confirming/busy/error
-  signals and the F-92 guard semantics) moved to the component-provided
-  `abwab-templates-page-delete.controller.ts`, the `abwab-page-overlays.controller.ts`
-  idiom one page over, bringing the component back under the hard line while staying
-  over the 300 soft line — deliberately: ~22 of those lines are the one-line label
-  getters the TDZ rule mandates (its SCSS dropped back under the 200-line threshold once
-  Slice A phase 6 moved the row context menu's markup/styling onto the shared
-  `qd-context-menu`), and the page carries no URL state at all (unlike `abwab-page`,
-  whose seven URL keys were half of what forced its overlay controller out). The page
-  now has a spec of its own (`abwab-templates-page.component.spec.ts`), which is what
-  made that extraction a pinned refactor. **The trigger that forces the next split** is a
-  sixth overlay, a URL-state contract arriving on this route, or crossing the 400-line
-  hard threshold — at which point the overlay signals and their handlers move to a
-  page-scoped `abwab-templates-overlays.controller.ts` on the `abwab-page` precedent.
+  the two confirms. Caches stay root-scoped while overlay state is page-scoped. The
+  template-delete confirm flow (its confirming/busy/error signals and the F-92 guard
+  semantics) remains in the component-provided `abwab-templates-page-delete.controller.ts`.
+  The node modal, context menu, node-delete confirm, copy-modal state, and their guarded
+  handlers live in the page-provided `state/abwab-templates-overlays.controller.ts`.
+  That extraction brings the shell to 292 lines, below the 300-line soft threshold, without
+  giving this route URL state or changing its selected-template/cache boundary. The page's
+  own spec (`abwab-templates-page.component.spec.ts`) pins the resulting behavior.
 - `components/abwab-relations-modal/` — the door's relations: four display groups
   (تشابه · تضاد · «أبواب أكثر شمولية» · «أبواب أقل شمولية», empty ones dropped), the type
   segment, the direction pill with its live preview, and an expandable/searchable door
-  picker that adds N targets in **one** call. **Its TS sits at 381 lines, over the
+  picker that adds N targets in **one** call. **Its TS sits at 396 lines, over the
   300-line soft threshold** — deliberately: one dialog owns display, authoring and the
   nested delete confirm, and splitting the confirm out would separate the trap-yield
   logic from the trap it yields. The hard threshold (400) is the trigger; the split,
@@ -502,9 +496,10 @@ nine), four of them reads.
 derived from `door=` plus the snapshot, which is also why a plain `-closed` **follows** a
 later selection. `create` and `sections` are door-independent. Restoring is stricter still
 than parsing: a door-dependent kind also needs its door to be **live**, since `byId` holds
-archived nodes and the `door=` effect checks presence only. A key that fails any of these is
-inert — nothing opens, no restore control renders, and (per the fail-closed convention below)
-the URL is not rewritten.
+archived nodes and the `door=` effect checks presence only. A dead or invalid key is inert and is
+not rewritten. A write key that is otherwise valid but lacks the now-resolved permission is
+different: only the `modal` key is stripped, preserving the public page and every other query
+key. The relations modal is read-only-capable and therefore remains restorable for every visitor.
 
 **The one exception: `relations-<id>-closed` (ux-slice-l).** A reveal points `door=` at the
 target while the overlay it just closed still belongs to the *source*, so for that one state
@@ -981,15 +976,13 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **Labels use the TDZ getter pattern**, same as `features/words/README.md`: read
   `abwab.labels.ts` consts via component **getters**, never `readonly` field
   initialisers, or they resolve to `undefined` in the bundled test build.
-- **Zero dead controls, and now no exception.** Nothing for protection or the «الأبواب
-  الرئيسية» tab, anywhere in this feature. Relations became real controls with
+- **No misleading write controls.** Nothing for protection or the «الأبواب
+  الرئيسية» tab appears anywhere in this feature. Relations became real controls with
   `abwab-relations`, and **templates became real with `abwab-templates`**: «القوالب» in the
-  doors header routes to a workshop backed by nine live endpoints, so the rule holds by the
-  entry existing rather than by its absence. The tree's relations flag used to be the one
-  deliberate non-control — a chip with no tab stop and no handler. It is a button now
-  (Slice D), so what the rule protects is stated positively instead: **every affordance that
-  looks pressable is**, and the only things this feature renders as inert are pure data: the
-  row's count badges.
+  doors header routes to a publicly readable workshop backed by nine endpoints. Write controls
+  appear only with their exact capability; row and section order values become read-only data
+  otherwise. The sole disabled write-shaped control is archive restore without its permission,
+  and it carries an accessible Arabic explanation rather than implying that it can succeed.
 - **Relations get no entry point and no flag in the archive view — derived, not decided.** Every
   archived door's visible relation count is always 0 (the backend hides a relation whose endpoint
   is archived, `Reads/Abwab/README.md`), so a flag there would be permanently absent and a menu
@@ -1061,15 +1054,16 @@ in scope, which is exactly what §6.2's M22 cell forbids.
 - **The template tree renders a list, not `role="tree"`.** `AbwabTreeComponent` earns that
   role with a full RTL-mirrored keyboard model (`abwab-tree-keyboard.controller.ts`); claiming
   the role without the arrow-key model would promise a navigation contract the workshop does
-  not implement. `aria-level` still conveys depth and every control is a real tab stop.
+  not implement. `aria-level` still conveys depth and every keyboard affordance has a real focus target.
   Reusing `AbwabTreeComponent` itself was rejected up front, not discovered mid-work: it is
   typed on `AbwabNode` and carries selection/bulk/roving-tabindex/URL concerns this page has
   none of, plus a spec suite pinned to that behavior. **ux-slice-g adds a third row-menu path —
   `ContextMenu`/`Shift+F10`, alongside `⋯` and right-click** — without moving this line: the row
-  `<div>` itself catches the key as it bubbles from whichever of the row's own controls (chevron
-  / `＋` / `⋯`) has focus, so no row becomes a tab stop and no arrow-key navigation is added.
-  Adding a menu key is not the same contract as arrow-key navigation between rows, so the role
-  stays unclaimed.
+  `<div>` itself catches the key. A row with an authorized root or node context menu is its own
+  `tabindex="0"` target, so a leaf whose only capability is edit or delete still reaches the
+  row-anchored keyboard menu; read-only rows do not become tab stops. `⋯` remains mouse-only at
+  `tabindex="-1"`, and no arrow-key navigation is added. Adding a menu key is not the same
+  contract as arrow-key navigation between rows, so the role stays unclaimed.
 - **The M10/M33 `sectionId` defense-in-depth stays in the door modal's shell**, not in the
   extracted `abwab-door-fields-form`. The form has no concept of a section and must not
   acquire one; the shell is the layer that decides *whether* a section applies. The shell now
@@ -1126,7 +1120,7 @@ only the ids it handed out, since flows create doors through the UI too — and 
 the now-empty section. Teardown re-reads each door's version immediately before archiving it:
 every write resequences the scope, so archiving from one up-front snapshot succeeds once and
 then `409`s silently for the rest, which is what previously left live sandbox doors and
-undeleted sandbox sections behind. See `e2e/README.md` and `TESTING_STRATEGY.md` §6 for the
+undeleted sandbox sections behind. See `e2e/README.md` and `TESTING_STRATEGY.md` §11 for the
 residue that legitimately remains.
 
 ## Decisions that reversed mid-series

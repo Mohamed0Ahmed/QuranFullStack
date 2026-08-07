@@ -41,7 +41,7 @@ public sealed class DisplayWordsSourceUntouchedTests
 
     private async Task<SourceCounts> ReadSourceCountsAsync()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return new SourceCounts(
@@ -52,7 +52,7 @@ public sealed class DisplayWordsSourceUntouchedTests
 
     private async Task<IReadOnlyList<SourceWordColumns>> ReadSourceWordColumnsAsync()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return await dbContext.QuranWords

@@ -13,7 +13,7 @@ public sealed class ValidationReportTests
         this.fixture = fixture;
     }
 
-    [Fact]
+    [FoundationImportSourceFact]
     public async Task ValidSource_WritesPassWithWarningsReportForAyah37130()
     {
         var reportDir = Path.Combine(Path.GetTempPath(), $"quran-import-report-{Guid.NewGuid():N}");

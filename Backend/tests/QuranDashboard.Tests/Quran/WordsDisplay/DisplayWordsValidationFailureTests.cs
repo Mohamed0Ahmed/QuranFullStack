@@ -31,7 +31,7 @@ public sealed class DisplayWordsValidationFailureTests
         result.ExitCode.Should().Be(RebuildDisplayWordsResult.FailureExitCode);
         result.ReportOutDir.Should().Be(reportDir);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         (await dbContext.QuranWordsOrderedTashkeel.CountAsync()).Should().Be(0);

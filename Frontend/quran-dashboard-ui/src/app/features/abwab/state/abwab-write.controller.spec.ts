@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { Observable, map, of, throwError } from 'rxjs';
@@ -16,6 +16,9 @@ import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { BulkMoveDoorsCommand } from '../../../core/api/generated/models/bulk-move-doors-command';
 import { ReorderDoorBody } from '../../../core/api/generated/models/reorder-door-body';
 import { ReorderSectionBody } from '../../../core/api/generated/models/reorder-section-body';
+import { CurrentUserStore } from '../../../core/auth/current-user.store';
+import { WriteAuthFailureCoordinator } from '../../../core/auth/write-auth-failure.coordinator';
+import { PERMISSION_CODES, PermissionCode } from '../../../core/auth/permission-code';
 
 function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string }): AbwabTreeDoorDto {
   return {
@@ -76,13 +79,21 @@ interface FakeApi {
   deleteRelation?: () => Observable<ApiResponse<unknown>>;
 }
 
-function setup(fakeApi: FakeApi) {
+function setup(
+  fakeApi: FakeApi,
+  options: {
+    readonly permissions?: readonly PermissionCode[];
+    readonly handleAuthFailure?: (error: unknown) => Promise<{ kind: 'unauthorized' | 'forbidden'; message: string | null } | null>;
+  } = {},
+) {
   getTestBed().resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       AbwabWriteController,
       AbwabSnapshotFacade,
       AbwabSelectionStore,
+      { provide: CurrentUserStore, useValue: { can: (permission: PermissionCode) => (options.permissions ?? PERMISSION_CODES).includes(permission) } },
+      { provide: WriteAuthFailureCoordinator, useValue: { handle: options.handleAuthFailure ?? (async () => null) } },
       // getTree observes the whole response now; the fakes stay envelope-shaped and are wrapped
       // headerless here, so no test below sends or stores a validator.
       {
@@ -102,6 +113,60 @@ function setup(fakeApi: FakeApi) {
 }
 
 describe('AbwabWriteController', () => {
+  describe('Phase 9 last-dispatch permission guard', () => {
+    const deniedCases: readonly {
+      readonly name: string;
+      readonly request: (controller: AbwabWriteController) => Observable<unknown>;
+      readonly fake: (call: ReturnType<typeof vi.fn>) => FakeApi;
+    }[] = [
+      { name: 'section create', request: (controller) => controller.createSection({ name: 'قسم' }), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), createSection: call }) },
+      { name: 'section rename', request: (controller) => controller.renameSection(1, { name: 'قسم', version: 1 }), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), renameSection: call }) },
+      { name: 'section delete', request: (controller) => controller.deleteSection(1), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), deleteSection: call }) },
+      { name: 'section reorder', request: (controller) => controller.reorderSection(1, { position: 2, version: 1 }), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), reorderSection: call }) },
+      { name: 'door create', request: (controller) => controller.createDoor({ name: 'باب', description: null, representativeAyahText: null, aliases: [], parentId: null, sectionId: 1 }), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), createDoor: call }) },
+      { name: 'door edit', request: (controller) => controller.updateDoor(1, { name: 'باب', description: null, representativeAyahText: null, aliases: [], version: 1 }), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), updateDoor: call }) },
+      { name: 'door move', request: (controller) => controller.moveDoor(1, { targetParentId: null, targetSectionId: 1, version: 1 }), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), moveDoor: call }) },
+      { name: 'door reorder', request: (controller) => controller.reorderDoor(1, { position: 2, scope: 1, version: 1 }), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), reorderDoor: call }) },
+      { name: 'door archive', request: (controller) => controller.archiveDoor(1, 1), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), archiveDoor: call }) },
+      { name: 'door restore', request: (controller) => controller.restoreDoor(1, { version: 1 }), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), restoreDoor: call }) },
+      { name: 'bulk move', request: (controller) => controller.bulkMoveDoors(null, 1), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), bulkMoveDoors: call }) },
+      { name: 'bulk archive', request: (controller) => controller.bulkArchiveDoors(), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), bulkArchiveDoors: call }) },
+      { name: 'relation add', request: (controller) => controller.addDoorRelations(1, { type: 1, direction: null, targetDoorIds: [2] }), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), addDoorRelations: call }) },
+      { name: 'relation delete', request: (controller) => controller.deleteRelation(1), fake: (call) => ({ getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), deleteRelation: call }) },
+    ];
+
+    it.each(deniedCases)('does not dispatch $name for a read-only visitor', ({ request, fake }) => {
+      const apiCall = vi.fn();
+      const { controller } = setup(fake(apiCall), { permissions: [] });
+      let outcome: unknown;
+
+      request(controller).subscribe((value) => (outcome = value));
+
+      expect(apiCall).not.toHaveBeenCalled();
+      expect(outcome).toEqual({ kind: 'forbidden', message: ABWAB_LABELS.writePermissionDenied });
+    });
+
+    it('refreshes through the auth coordinator on a 403 without retrying the mutation', async () => {
+      const createDoor = vi.fn().mockReturnValue(throwError(() => httpError(403, 'ممنوع')));
+      const handleAuthFailure = vi.fn().mockResolvedValue({ kind: 'forbidden', message: 'ممنوع' });
+      const { controller } = setup(
+        { getTree: () => of(ok({ doors: [], sections: [], version: 'v' })), createDoor },
+        { permissions: ['abwab.doors.create'], handleAuthFailure },
+      );
+      let outcome: unknown;
+
+      controller
+        .createDoor({ name: 'باب', description: null, representativeAyahText: null, aliases: [], parentId: null, sectionId: 1 })
+        .subscribe((value) => (outcome = value));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(createDoor).toHaveBeenCalledTimes(1);
+      expect(handleAuthFailure).toHaveBeenCalledTimes(1);
+      expect(outcome).toEqual({ kind: 'forbidden', message: 'ممنوع' });
+    });
+  });
+
   describe('M14 — a 409 keeps input, keeps valid context, clears the invalidated selection, shows the message, never auto-retries', () => {
     it('reports the conflict outcome and clears only the door that was under conflict', () => {
       const { controller, selection } = setup({

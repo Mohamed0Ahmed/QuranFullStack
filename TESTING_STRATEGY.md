@@ -2,9 +2,11 @@
 
 ## 1. Purpose and authority
 
-This file is the single source of truth for **test selection, verification depth, test
-execution tiers, slow data-pipeline triggers, and the phase / milestone / PR / release
-gates** across the whole monorepo (Backend + Frontend).
+This file is the single source of truth for **test selection, verification depth, execution
+lanes, slow data-pipeline triggers, and the phase / milestone / review / PR / release
+gates** across the whole monorepo (Backend + Frontend). The six entrypoints (`AGENTS.md`,
+`CLAUDE.md`, and their Backend and Frontend counterparts) carry the short policy and defer
+here; the commands and the trigger matrix live in this file and nowhere else.
 
 When any other instruction file, skill, README, or workflow conflicts with this
 strategy about *which tests to run and when*, **this strategy controls test selection**
@@ -12,43 +14,35 @@ strategy about *which tests to run and when*, **this strategy controls test sele
 its own scope. Test *quality* rules (test-guard, CODING_PRINCIPLES) and Quranic data
 safety rules are unaffected and always apply.
 
-**This document does not carry test counts.** It used to, and they drifted: the figures here
-stated 1,843 backend tests and 191 files / 2,161 frontend tests while the suites actually ran
-1,862 and 199 / 2,525. A count written in prose is wrong the moment the next test lands, and
-nothing in this repo re-checks it — there is no CI (§8). So the rule is:
+**This document carries no test counts and no durations.** It used to carry counts, and they
+drifted: a number written in prose is wrong the moment the next test lands, and nothing in this
+repo re-checks it — there is no CI (§8). So the rule is:
 
-> **Never record a test count, file count, or pass total in this file, in a README, or in a
-> commit message as a standing fact. Run the command and read the number.** A count belongs in
-> evidence for a specific run, dated and attached to that run — never in prose that outlives it.
+> **Never record a test count, file count, pass total, or measured duration in this file, in a
+> README, or in a commit message as a standing fact. Run the command and read the number.** A
+> figure belongs in evidence for a specific run, dated and attached to that run — never in prose
+> that outlives it.
 
-The commands that produce each current number are in §5 (Backend) and §6 (Frontend). Every
-`dotnet test` line prints `Passed! - Failed: N, Passed: N, Skipped: N, Total: N`; `npm test`
-prints `Test Files` and `Tests`. That output is the number; this file is not.
+Every `dotnet test` run prints `Passed! - Failed: N, Passed: N, Skipped: N, Total: N`; the
+Angular test builder prints `Test Files` and `Tests`. That output is the number; this file is
+not. Any runtime guidance you find here or in a plan is order-of-magnitude selection guidance,
+never an assertion of fact.
+
+**Selection is by lane, not by hand-written filter.** Backend lanes are arguments to
+`Backend/scripts/test-backend`, which resolves each lane against the class catalog at
+`Backend/tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv` and builds the
+`--filter` itself. Frontend lanes are `npm run test:*` scripts backed by named Angular test
+configurations in `Frontend/quran-dashboard-ui/angular.json`. Do not hand-write a
+`FullyQualifiedName` filter or an ad-hoc `--include` glob as a gate: a lane is reproducible,
+catalog-validated, and reportable by name, and a hand-written filter is none of those.
+
+**Tier vocabulary.** The former Tier A–E labels are superseded by the lanes in §3 and §4 and
+the trigger matrix in §5. One survives as a name: `tier-b` is the Backend no-pipeline
+milestone lane.
 
 Baselines are taken on a developer machine with Docker up, `resources/import-sources/` staged,
 and the canonical dump at `resources/db-dumps/quran-canonical/` present and regenerated against
-this tree's migration head. A stale dump fails loud rather than skipping (§3 Tier A/C).
-
-**The partition identity is a rule, not a number.** The no-pipeline filter, the all-pipeline
-filter, and the smoke filter MUST partition the Backend suite losslessly: run all three plus the
-unfiltered suite and confirm the three totals sum to the full total, with no family falling
-outside all three and none counted twice. Re-verify whenever a namespace is added — a new
-top-level namespace lands in the no-pipeline set by default, a new *pipeline* family must be
-added to both pipeline filters, and anything under `QuranDashboard.Tests.Smoke.` must be a
-genuine route-smoke test. This identity is what catches an accidental namespace collision with
-the two legacy `*SmokeTests` classes that live in other families.
-
-**A no-new-tests posture is a legitimate finding, and the way to record it is a dated evidence
-line in `docs/TESTING_DEBT.md`, not a frozen count here.** Several features (`abwab-relations`,
-`abwab-templates`) shipped deliberately without new tests; their uncovered areas and paying
-triggers are recorded there. Note that routes catalogued **`ParityOnly`** satisfy
-`SmokeCoverageParityTests` — two `[Fact]`s over the whole catalog, not a per-route theory —
-without adding a dispatched case, so adding routes does not necessarily move the smoke total.
-
-Durations quoted anywhere in this file are indicative order-of-magnitude guidance for choosing a
-tier, never assertions of fact. The zero-skip property holds only when the staged canonical
-resources *and* the canonical dump are present; without them the canonical families and the
-data-smoke rows self-skip (§3 Tier D, §3 Tier E).
+this tree's migration head.
 
 ## 2. Core principles
 
@@ -57,370 +51,349 @@ data-smoke rows self-skip (§3 Tier D, §3 Tier E).
   PR, or release gate.
 - Test scope MUST match the changed scope and its risk. Running an unrelated broad
   suite is not a substitute for the focused tests that cover the change.
-- Full Backend or Frontend suites are NOT automatically required after every phase.
+- Broad lanes run **once**, at a milestone, engineering-review, or pre-PR boundary — not
+  after individual edits. Full Backend or Frontend suites are NOT automatically required
+  after every phase.
 - Slow tests are preserved, not deleted: pipeline and acceptance tests MUST remain in
-  the repository and in their gates even though they run less frequently.
+  the repository and in their lanes even though they run less frequently.
 - Quran data-safety checks MUST NOT be silently weakened, skipped, or rescheduled out
-  of their gates.
+  of their lanes.
 - A failed or unexpectedly skipped required test MUST NOT be counted as passing
   evidence.
-- An existing test failure MUST be reported as a failure. Narrowing a filter to make a
+- An existing test failure MUST be reported as a failure. Narrowing a selection to make a
   run pass MUST NOT be used to hide it.
-- Agents MUST record the actual commands they ran and the actual outcomes they
+- Agents MUST record the actual lane and command they ran and the actual outcomes they
   observed (pass/fail/skip counts), not inferred or remembered results.
+- Deleting a test requires documented obsolete/redundant proof and named replacement
+  coverage.
 
-## 3. Verification tiers
+## 3. Backend lanes — `Backend/scripts/test-backend`
 
-### Tier A — Focused development / per-phase
+`Backend/scripts/test-backend --help` prints the authoritative usage. Every focused lane below
+**requires** exactly one of `--build` or `--no-build`, and every lane accepts `--list-tests`
+(discovery only — it starts no container and never shards) and `--results-dir PATH`. `pre-pr`
+has its own flag rules; see the note under the table.
 
-Run during implementation and at ordinary phase completion.
+| Lane | What it selects from the catalog | Command | Run when | Must not run when |
+| --- | --- | --- | --- | --- |
+| `fast` | every `Kind=Fast` class, including fast logic that lives in Pipeline namespaces | `Backend/scripts/test-backend fast --no-build` | small logic iterations; fast regression after test-only logic changes | never for a case that needs a collection fixture, canonical artifact, migration, or child process — those are not `Kind=Fast` |
+| `feature` | one validated `Feature` value, or one exact class/method | `Backend/scripts/test-backend feature Access --no-build`, `feature --class FULL_CLASS_NAME`, `feature --test FULL_METHOD_NAME` | implementation and coherent feature-slice completion | never as a substitute for separately triggered Smoke or canonical evidence |
+| `access` | every `Feature=Access` class | `Backend/scripts/test-backend access --no-build` | authorization slice completion and formal review | never to pull in Pipeline, canonical data, or Frontend tests |
+| `access-db` | `Feature=Access` classes that are `Kind=Database` or carry `Schema` in `Concerns` | `Backend/scripts/test-backend access-db --no-build` | Access persistence, constraint, EF model, catalogue, grant, or audit-storage change | does not cover the CLI wrapper or the staged migration upgrade |
+| `migration` | every `Kind=Migration` class | `Backend/scripts/test-backend migration --no-build` | migration, EF model, backfill, collision/refusal, or schema-guard work | never after unrelated UI or ordinary service edits |
+| `process` | every `Kind=Process` class | `Backend/scripts/test-backend process --no-build` | wrapper, exit-code, executable-directory configuration, or operator-boundary change | never to duplicate lower-level migration/service permutations as child processes |
+| `smoke` | `Gate=Smoke` excluding `Kind=Canonical` — the route/composition classes, not the data tier | `Backend/scripts/test-backend smoke --no-build` | route, contract, auth, middleware, model binding, startup, DI, configuration, or shared `DbContext` composition change; formal review (§6) | not after every edit |
+| `tier-b` | every `Gate=TierB` class | `Backend/scripts/test-backend tier-b --no-build` | feature milestone, engineering review, ordinary Backend pre-PR | never widened with Pipeline or Smoke merely to look broader |
+| `pipeline` | `Gate=Pipeline` excluding `Kind=Canonical`, optionally narrowed by `--feature` | `Backend/scripts/test-backend pipeline --feature Translations --no-build`; omit `--feature` only for a shared-pipeline trigger | importer, manifest handling, pipeline entity/schema, shared pipeline, or reachable persistence change | never for isolated authorization, general API, caching, or Frontend-only changes |
+| `canonical-data` | every `Kind=Canonical` class | `Backend/scripts/test-backend canonical-data --no-build` | canonical source, manifest/hash, dump, Quran schema/persistence, shared pipeline, or release acceptance | never for isolated authorization/UI work; missing required resources are a gate failure, not a skip (§3.4) |
+| `pre-pr` | every catalog row — the full Backend suite, run exactly once | `Backend/scripts/test-backend pre-pr` | shared-infrastructure prerequisite, release/full-regression acceptance, or an explicit formal-review trigger | never after individual edits; ordinary isolated authorization pre-PR is `access` + `smoke` + `tier-b` and excludes Pipeline/canonical |
 
-Required:
+`pre-pr` is the one lane with different flag rules: executing it **always builds once**, so it
+rejects `--no-build` and needs no `--build`; discovering it requires the exact form
+`pre-pr --list-tests --no-build`.
 
-- tests added or changed by the current work;
-- focused regression tests for the affected feature or subsystem;
-- directly affected API, persistence, authorization, or UI contract tests;
-- an affected build/compile check when the changed scope requires one (§7).
+`pre-pr` is deliberately not composed from `fast + access + tier-b + pipeline + smoke +
+canonical-data`. Those lanes overlap, so a composed run would repeat tests, rebuild fixtures,
+and make the measurement meaningless.
 
-The command MUST be derived from the files and behavior actually changed. The examples
-below are validated against the namespaces that exist in this tree — they are examples,
-not universal commands for unrelated future features.
+### 3.1 The catalog is the selection contract
 
-```bash
-# Focused namespace (fastest; any area):
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
-  --no-build \
-  --filter "FullyQualifiedName~QuranDashboard.Tests.Api.RateLimiting"
+Two tab-separated catalogs under `Backend/tests/QuranDashboard.Tests/TestSupport/Execution/`
+define what the lanes mean:
 
-# Whole API slice — Access, ApiBehavior, Health, Middleware, RateLimiting (seconds):
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
-  --no-build \
-  --filter "FullyQualifiedName~QuranDashboard.Tests.Api"
+- `test-gates.tsv` — one row per test class: `FullyQualifiedClassName`, `Feature`, `Kind`,
+  `Gate`, `Concerns`. The valid `feature` lane keys are exactly the distinct `Feature` values;
+  an unknown key fails usage rather than running nothing.
+- `test-resources.tsv` — one row per xUnit collection: `CollectionName`, `ResourceClassName`,
+  `ParallelPolicy`, `StatePolicy`.
 
-# One explorer read-model family (seconds):
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
-  --no-build \
-  --filter "FullyQualifiedName~QuranDashboard.Tests.Quran.WordsWordTypes"
+`TestGateCatalogTests` is what makes the catalogs trustworthy, and it is a required test rather
+than bookkeeping: it proves every discovered test class has exactly one catalog entry, that the
+primary gates partition every discovered class, that the full-Backend selection uses every
+discovered class, that `Kind=Fast` classes use no resource collection, that Smoke classes map
+to the Smoke gate with only the data tier canonical, that collection resources match the
+compiled collection definitions, and that the two PostgreSQL ownership shards (§3.3) partition
+the lane they replace. **Adding a test class therefore requires adding its catalog row in the
+same change** — otherwise that test runs in no lane and `TestGateCatalogTests` fails by name.
 
-# Route smoke tier (~1 min; boots Testcontainers) — REQUIRED at Tier A when the phase touched an API
-# route, a request/response contract, authentication/authorization, middleware, or binding:
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
-  --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
+### 3.2 Build, output, and hang timeouts
 
-# Frontend words feature (~2 min):
-cd Frontend/quran-dashboard-ui
-npm test -- --include="src/app/features/words/**/*.spec.ts"
-```
+- `--build` builds `Backend/QuranDashboard.sln` once, single-threaded, before testing.
+- `--no-build` requires the existing test assembly; lanes that select `Kind=Migration` or
+  `Kind=Process` additionally require built `QuranDashboard.AccessAdmin` output, and lanes that
+  select `Gate=Pipeline` or `Kind=Canonical` require built `QuranDashboard.DataImporter`
+  output. A missing output is an explicit error naming the path, not a silent stale run.
+- Build once for a code state, then use `--no-build` for every subsequent lane against it.
+- The runner applies its own hang timeout — shorter for an all-`Fast` selection, longer
+  otherwise. Do not override it, and do not pipe a run into `tail`: the output *is* the
+  evidence.
 
-The complete Backend or Frontend suite MUST NOT be demanded for an ordinary phase.
+### 3.3 One database server at a time, and the two-shard lanes
 
-### Tier B — Feature milestone / user-story completion
+Every database-bearing fixture leases from **one shared `postgres:16-alpine` runtime** guarded
+by a cross-process OS lock (`TestSupport/PostgreSql/CrossProcessPostgreSqlLock.cs`), so two
+Backend test processes MUST NOT run concurrently — including one in an IDE alongside one in a
+terminal.
 
-Run after a vertical slice, a substantial User Story, or a related group of phases.
+The single exception is `QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests`, whose fixture
+takes an **exclusive `postgres:18-alpine` server** because the canonical dump is written by an
+18 `pg_dump` that a 16 `pg_restore` refuses (the measured reasoning is in
+`Backend/tests/QuranDashboard.Tests/README.md`). To keep the two majors from ever running at
+once, `Backend/scripts/test-backend` splits **any lane that selects that class alongside at
+least one other class into two sequential `dotnet test` invocations**: shard 1 on the shared 16
+runtime, shard 2 on the exclusive 18 server, with a bounded wait in between for the previous
+container to disappear. In practice:
 
-Backend broad regression — the **no-pipeline** run:
+- `pre-pr` runs as **two complementary, non-overlapping shards**. Any claim that the full
+  Backend suite is a single invocation is false.
+- `canonical-data` runs as **two shards** as well, for the same reason.
+- `smoke` runs as **one** invocation — the lane excludes `Kind=Canonical`, so it never selects
+  the data tier.
 
-```bash
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
-  --no-build \
-  --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab.&FullyQualifiedName!~QuranDashboard.Tests.Smoke."
-```
+The runner prints its shard labels and expanded filters; report them. Shard exit statuses are
+combined, so a lane fails if either shard fails.
 
-Coverage statement (be accurate about this): **the filter above is the definition — it is
-subtractive, so it keeps every namespace under `QuranDashboard.Tests.` that no `!~` term
-names.** Do not maintain a second list of kept families here; it drifts the moment a namespace
-is added. To see what a run actually covers, read the `!~` terms above against
-`Backend/tests/QuranDashboard.Tests/` (`grep -rn "^namespace" Backend/tests/QuranDashboard.Tests/ | sort -u`).
-It excludes the pipeline namespaces **completely —
-including the fast unit tests that live inside them** — and it excludes
-`QuranDashboard.Tests.Smoke.`, which has its own gate below. It is a fast broad
-regression tier, not full coverage; the excluded families run under the Tier A/C route gate
-and the Tier D/E gates.
+Each run exports a unique run ID, labels its Docker resources with it, and calls
+`Backend/scripts/cleanup-test-runtime --run-id RUN_ID` on exit — which removes only resources
+carrying all five project test labels *and* that run ID, and never prunes. **Confirm zero
+project-owned containers after a run** and report the cleanup state; the same script can be run
+by hand with `--dry-run` first.
 
-Frontend at a milestone:
+### 3.4 Canonical resources fail the lane; they do not silently skip
 
-- run all specs for the changed feature plus adjacent shared areas
-  (`--include` globs);
-- run the complete Frontend suite (`npm test`, ~2.9 min) when the milestone completes
-  a full feature integration or touches broad shared frontend infrastructure
-  (`core/`, `shared/`, routing, app shell, theming).
+When a lane selects a canonical class, the runner **preflights the resource it needs before
+starting anything** and exits non-zero when it is missing:
 
-### Tier C — Ordinary final feature / pre-PR gate
+- every `Quran.Import.*` class and `DisplayWordsRealImportIdentityLinksTests` require
+  `resources/import-sources/quran-foundation/`;
+- `EnrichedMorphologyArtifactTests` requires the staged enriched morphology artifact;
+- `SmokeDataReadTests` requires both `resources/db-dumps/quran-canonical/quran-canonical.dump`
+  and its `manifest.json`.
 
-For an ordinary feature PR whose changes do NOT trigger Tier D:
+The runner prints `canonical data tier: ran`, `failed`, `not selected`, `discovery only`, or
+`failed preflight`. Quote that line — it is the skip accounting for the canonical tier.
 
-- Backend build;
-- Backend Tier B no-pipeline regression;
-- Frontend production build — when Frontend code changed;
-- complete Frontend test suite — when Frontend code changed;
-- any additional focused suites required by changed shared infrastructure.
+The in-test source gates (`Quran/Import/FoundationImportSourceGate.cs`,
+`Quran/WordsDisplay/CanonicalImportSourceTestGate.cs`, `Smoke/Data/SmokeDumpGate.cs`) still
+self-skip when the resources are absent, because a run started **outside** the runner — an IDE,
+a plain `dotnet test` — must not start a server it cannot use. That fallback is not the gate.
+**A canonical claim is only evidence when it came from the runner, whose preflight makes
+"absent" impossible rather than invisible.**
 
-```bash
-dotnet build Backend/QuranDashboard.sln
+A dump that is *present* but corrupt or stale throws loud instead of skipping: `SmokeDumpGate`
+checks the archive's sha256 against the manifest, the manifest's migration id against this
+tree's head, and the producer's major version against the restore image — all before the
+container starts. **Any migration invalidates the dump. Regenerate it with
+`Backend/scripts/create-smoke-dump --yes` in the same change**, never at the next run's
+expense; this has bitten repeatedly.
 
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
-  --no-build \
-  --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab.&FullyQualifiedName!~QuranDashboard.Tests.Smoke."
-```
+### 3.5 The EF pending-model check
 
-```bash
-cd Frontend/quran-dashboard-ui
-npm run build
-npm test
-```
+`Backend/scripts/check-pending-model --build|--no-build` reports whether the EF Core model has
+pending changes. It never adds and never applies a migration. Run it alongside the `migration`
+lane whenever the EF model or schema is in scope — it is a separate command, not part of any
+test lane.
 
-Backend-only change → the Frontend commands are NOT required (and vice versa), unless
-an API contract or shared integration risk justifies them. Do not pad the gate with
-irrelevant commands.
+## 4. Frontend lanes — `npm run test:*`
 
-**Route gate.** A change touching `Backend/api/` routes, request/response contracts,
-authentication/authorization, middleware, or model binding REQUIRES the Smoke suite
-(`QuranDashboard.Tests.Smoke.`), in addition to the `Tests.Api.*` families and the focused
-tests for the changed endpoints:
+Run these from `Frontend/quran-dashboard-ui/`. Each `test:*` lane delegates to the `test`
+script, which owns the two-fork Vitest cap (`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`) and the
+run timeout; a direct `ng test` invocation bypasses both and is not a lane. The named Angular
+test configurations live in `angular.json`.
 
-```bash
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
-  --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
-```
+| Lane | What it selects | Command | Run when | Must not run when |
+| --- | --- | --- | --- | --- |
+| Fast / unit | the pure model/utility/data/state/cache/helper specs in the `fast` configuration | `npm run test:fast` | pure state, mapping, codec, cache, URL, or validation work | do not assume it avoids Angular bundle startup; do not add a TestBed/component spec to it |
+| Feature-focused | one feature configuration | `npm run test:feature:abwab` \| `:auth` \| `:dashboard` \| `:mushaf` \| `:words` | feature implementation and coherent feature-slice completion | do not run unrelated feature directories |
+| Authorization | the cross-cutting auth/config/route/security specs | `npm run test:authorization` | Frontend auth fixtures/contracts, token handling, callback, secure-origin behavior, route posture, or production auth config changed | a Backend-only authorization change needs no Frontend test unless a Frontend or generated contract changed |
+| Composition | every component/directive spec plus the named application/overlay compositions | `npm run test:composition` | shared component harness, Angular rendering, overlay composition, or broad component infrastructure changed | not after pure Backend or pure utility changes; this is jsdom, not a browser — never call it E2E |
+| Shared | app-shell, core, shared, and environment specs | `npm run test:shared` | core/shared/routing/app-shell/environment/global test setup changed | not a substitute for the affected feature lane |
+| Full suite | every `src/**/*.spec.ts` | `npm run test:full` (`npm test` is the same run) | when a broad Frontend gate is required on its own | not for Backend-only changes |
+| Type-check / build | leaf app and spec TypeScript projects; production bundle | `npm run typecheck:app`, `npm run typecheck:spec`, `npm run typecheck`, `npm run build:verify` | compilation, templates, routing, config, generated DTOs, or bundle-affecting work | never cite a root `npx tsc --noEmit`: the root `tsconfig.json` is `"files": []` plus project references and `--noEmit` does not follow references, so it type-checks nothing |
+| Pre-PR | `check:permission-catalogue` → `typecheck` → `build:verify` → `test:full`, in that order | `npm run test:pre-pr` | once before a PR that changed Frontend code; engineering review when Frontend is in scope | never for a Backend-only change with no generated/frontend contract diff |
+| Gate self-check | asserts the named configurations still select what they claim | `npm run test:gates` | shared Frontend test/config infrastructure, `angular.json` test configurations, or spec-layout changes | — |
 
-It boots the real API composition (`WebApplicationFactory<HealthController>` under
-`ASPNETCORE_ENVIRONMENT=Testing`, Testcontainers PostgreSQL) and drives every registered
-route through routing, authorization, model binding, and serialization; a bidirectional
-`EndpointDataSource` parity gate fails by name when a registered route has no
-`SmokeRouteCatalog` entry, or a catalog entry no longer matches a route.
+`npm run test:gates` runs `testing/verify-test-gates.mjs`, not Vitest. **It is not part of
+`test:pre-pr`** — when you change the configurations or move specs between areas, run it as its
+own step and report it separately.
 
-The evidence MUST state **whether the data tier ran or skipped**. `Tests.Smoke.Data`
-restores the canonical Quran dump from `resources/db-dumps/quran-canonical/` and self-skips
-when that dump is absent, so the tier has two legitimate totals: the full one with the dump
-staged, and that total minus the `QuranDashboard.Tests.Smoke.Data` tests without it. Read both
-from the run; do not carry either here.
+No Frontend lane requires PostgreSQL, EF migrations, Backend startup, Docker, or importer
+processes.
 
-A present dump that is corrupt or stale — sha256 or migration-head mismatch — fails loud rather
-than skipping. This has bitten repeatedly: `AddAbwabGlobalOrderValue` and then
-`AddAbwabDoorRelations` each moved the migration head and the dump had to be regenerated
-(`Backend/scripts/create-smoke-dump --yes`) before any smoke run counted as evidence.
-**Any migration invalidates the dump — regenerate it in the same change, never at the next
-run's expense.**
+**Backend-only rule.** Run no Frontend tests for a Backend-only change when no file under
+`Frontend/quran-dashboard-ui/`, no committed OpenAPI document, and no generated Frontend API
+contract changed. If a Backend contract change regenerates Frontend DTOs or changes Frontend
+auth fixtures/models, run the focused Frontend contract/authorization lane and the required
+type-check; run `test:pre-pr` only because Frontend files then changed, not merely because the
+Backend changed.
 
-Evidence must be qualified: "N passed, 0 skipped, data tier ran" and "N passed, data tier
-skipped" are both valid; an unqualified "smoke passed" is not, and neither is a bare number
-with no statement of which of the two it is.
+## 5. Execution-trigger matrix
 
-### Tier D — Slow pipeline / canonical acceptance (trigger-based)
+| Changed scope | During implementation | Slice/phase completion | Formal engineering review | Pre-PR | Explicitly excluded |
+| --- | --- | --- | --- | --- | --- |
+| Pure Backend logic | Exact method/class, then `fast` | Feature lane + build once if required | Feature lane + Tier B | Tier B once | Smoke, Pipeline, canonical, Frontend |
+| Access service/contract | Exact Access class, `--no-build` | `access`; Smoke only if composition/contract affected | `access` + `smoke` + Tier B | Access + triggered Smoke + Tier B once | Pipeline, canonical, full Frontend |
+| Access schema/persistence | Exact class or `access-db` | `access-db` + relevant Access | Access + migration if schema in scope + Smoke + Tier B | Access + migration + Smoke + Tier B | Pipeline/canonical unless shared Quran persistence changed |
+| Migration upgrade | Exact migration case, then `migration` | `migration` once | Migration + Access + Smoke + Tier B + pending-model check | Same reviewed gates once | Head template for migration cases |
+| AccessAdmin wrapper | Exact process case | `process` | Process + Access + Smoke + Tier B | Same reviewed gates once | Extra process E2E duplicates |
+| API route/auth/middleware/binding/DI | Exact API family | API family + route `smoke` | Focused family + Smoke + Tier B | Smoke + Tier B once | Canonical Smoke Data unless independently triggered |
+| One importer/pipeline family | Exact Fast class, then `pipeline --feature FEATURE_KEY` | Named Pipeline feature | Named feature + Tier B; Smoke only for API composition | Named feature + Tier B once | Other Pipeline features and canonical unless source/shared trigger |
+| Shared pipeline/Quran persistence | Representative feature first | `pipeline` for all affected classes | Tier B + full Pipeline + required schema checks | Tier B + Pipeline once | Frontend unless files/contracts changed |
+| Canonical source/manifest/hash/dump | Exact canonical class | `canonical-data` | Pipeline + canonical + Smoke, zero unexpected skips | Full Backend `pre-pr` once for release/canonical acceptance | No source synthesis or skipped release evidence |
+| Shared Backend test/runtime infrastructure | Exact contract + one pilot feature | Each converted feature only | Access + Smoke + Tier B + representative Pipeline | Full Backend `pre-pr` once | Repeated full runs during conversion |
+| Frontend pure utility/state | Exact spec or `test:fast` | Feature lane | Focused lane + `test:pre-pr` once | Reuse unchanged review evidence | All Backend |
+| Frontend feature component | Exact spec, then feature | Feature lane | Feature/composition as affected + `test:pre-pr` once | Reuse unchanged review evidence | Unrelated Backend/Pipeline |
+| Frontend auth/security | Exact spec, then authorization | `test:authorization` | Authorization + `test:pre-pr` once | Reuse unchanged review evidence | Backend suites unless Backend also changed |
+| Shared Frontend test/config infrastructure | Exact affected specs + `test:gates` | Fast/authorization/one feature | Focused lanes + `test:pre-pr` once | Reuse unchanged review evidence | E2E unless browser-flow behavior changed |
+| Backend-only, no generated/frontend diff | Backend lane only | Backend lane only | Backend gates only | Backend pre-PR only | Every Frontend test/build |
 
-The ten pipeline families:
+Formal-review evidence and pre-PR evidence are the same final-state run when the tree and
+environment have not changed. Do not rerun an unchanged broad gate merely to rename the
+milestone.
 
-```text
-Quran.Import            Quran.WordsDisplay      Quran.WordsMorphology
-Quran.WordsMorphologyEnriched                   Quran.WordsSimpleI3rab
-Quran.Mutashabihat      Quran.Navigation        Quran.Tafsirs
-Quran.Translations      Quran.FullI3rab
-```
+## 6. The route-smoke gate
 
-Tier D is REQUIRED when the change touches any of:
-
-- Quran `DataPipelines` code (importers, generation, rebuild);
-- importer/data-generation tools (`tools/QuranDashboard.DataImporter`);
-- pipeline readers, validators, assemblers, writers, report writers, or
-  refusal/force/re-run behavior;
-- canonical source packages under `resources/import-sources/`;
-- morphology or enriched-morphology artifacts;
-- pipeline-specific entities, EF mappings, tables, migrations, or database contracts;
-- shared model-wide DbContext configuration, conventions, interceptors,
-  transactions, migrations, or persistence infrastructure that can affect Quran
-  pipeline tables or execution;
-- PostgreSQL bulk-copy or transaction infrastructure the pipelines use;
-- package/framework upgrades capable of affecting these paths (EF Core, Npgsql,
-  Testcontainers, .NET runtime).
-
-Rules:
-
-- When only one pipeline is affected, run its focused family first
-  (`--filter "FullyQualifiedName~.Quran.Translations."`).
-- Before merging a pipeline-triggered PR, run either the **full Backend suite** or
-  the **no-pipeline run plus every affected pipeline family**, according to actual
-  risk (shared persistence changes → full suite).
-- Tier D MUST NOT be demanded for an unrelated API, authentication, caching, or
-  frontend-only change.
-- Adding or changing entities, DbSets, mappings, or migrations that are isolated from
-  Quran pipeline tables and shared persistence behavior does not trigger Tier D.
-- Canonical-source tests self-skip when `resources/import-sources/` is absent. A Tier D
-  run whose required canonical tests skipped is incomplete — run it where the staged
-  resources exist.
-
-### Tier E — Release / staged canonical gate
-
-Run on a machine where `resources/import-sources/` (including the enriched
-morphology artifact) is staged:
-
-- full Backend suite;
-- full Frontend suite;
-- Backend + Frontend production builds;
-- canonical-source acceptance (Quran.Import canonical tests, WordsDisplay
-  real-import tests) and enriched-artifact acceptance when applicable;
-- the Smoke suite **with the canonical dump staged** at
-  `resources/db-dumps/quran-canonical/` — zero unexplained skips, exactly as for the
-  canonical families. A release run whose data-smoke rows skipped is incomplete: stage the
-  dump (`Backend/scripts/create-smoke-dump`) and re-run.
-
-A browser E2E layer exists (`Frontend/quran-dashboard-ui/playwright.config.ts` + `e2e/`,
-chromium only, `npm run e2e`). It is an **opt-in local gate, not part of any required tier**:
-it is not required for Tier C and not required for this release gate, which remains the full
-Backend and Frontend suites plus both production builds. Promoting it into a required tier is a
-separate decision, to be made only after it has proven stable across several runs. An E2E run
-MAY be reported as supplementary evidence, and MUST then state that it is supplementary.
-
-The release gate MUST verify that required canonical tests did not silently skip:
-check the run summary's `Skipped:` count and account for every skipped test. **A
-command that exits 0 while required canonical tests were skipped (e.g. because
-`resources/import-sources/` was absent) is NOT valid release evidence.** No automated
-pipeline provides this gate — see §8.
-
-## 4. Change-to-tier decision matrix
-
-| Change type | Minimum phase tier | Pre-PR tier | Pipeline tests required? |
-| --- | --- | --- | --- |
-| API Backend only (`Tests.Api.*`), touching no route, contract, auth, middleware, or binding | A | C | No |
-| Frontend feature only (any one directory under `src/app/features/`) | A | C | No |
-| Shared API/auth infrastructure | A + adjacent `Api.Access` / `Api.Middleware` tests + Smoke | C + Smoke | Only if pipeline execution paths are affected |
-| Explorer/read-model change (MushafReader, Words*) | Focused explorer family | B/C | No, unless shared pipeline persistence changed |
-| EF migration affecting only non-pipeline tables | A + affected migration/schema tests | C | No |
-| EF migration affecting Quran pipeline tables | Affected pipeline families | C + D | Yes |
-| Importer/DataPipeline code change | Focused pipeline family | D (+ C for the rest) | Yes |
-| Canonical resource/artifact change | Relevant acceptance family | D/E | Yes |
-| Model-wide `QuranDashboardDbContext` / shared persistence change that can affect pipeline tables or execution | B | C + D | Yes |
-| API endpoint added/changed, or auth/middleware/binding/contract change | A + `Tests.Api.*` + Smoke | C + `Tests.Api.*` + Smoke | No. State whether the data tier ran or skipped (§3 Tier A/C) |
-| Release candidate (`dev → main`) | — | E | Yes (staged resources, zero unexplained skips) |
-| Frontend routing, app shell, or a public browse surface (optional extra confidence) | A | C (E2E optional, never a blocker) | No |
-
-## 5. Backend command catalog (validated)
-
-All filters use **dot-bounded** namespace substrings. Naked substrings overlap:
-`Quran.Words` also matches `Quran.WordsDisplay`; `Quran.WordsMorphology` also matches
-`Quran.WordsMorphologyEnriched` and `Quran.WordsMorphologyExplorers`. Always keep the
-leading and trailing dots as written; the enriched family MUST be listed explicitly.
-
-The same dot-bounding rule applies to the smoke namespace: the filter term MUST be
-`QuranDashboard.Tests.Smoke.` with the trailing dot. Two legacy classes named `*SmokeTests`
-(`Quran.WordsWordTypes.WordTypesFixtureSmokeTests` and
-`Quran.WordsMorphologyExplorers.MorphologyExplorersFixtureSmokeTests`) belong to their own
-families; a naked `Smoke` substring would sweep them into the wrong tier.
-
-The namespaces that exist in this tree:
-
-```text
-Tests.Abwab               Tests.Api.Access          Tests.Api.ApiBehavior
-Tests.Api.Health          Tests.Api.Middleware      Tests.Api.RateLimiting
-Tests.TestSupport.Logging Tests.Quran.FullI3rab     Tests.Quran.Import
-Tests.Quran.MushafReader  Tests.Quran.Mutashabihat  Tests.Quran.Navigation
-Tests.Quran.Tafsirs       Tests.Quran.Translations  Tests.Quran.Words
-Tests.Quran.WordsDisplay  Tests.Quran.WordsMorphology
-Tests.Quran.WordsMorphologyEnriched                 Tests.Quran.WordsMorphologyExplorers
-Tests.Quran.WordsRoots    Tests.Quran.WordsSimpleI3rab
-Tests.Quran.WordsWordTypes
-Tests.Smoke               Tests.Smoke.Data
-```
+**A change touching `Backend/api/` routes, request/response contracts,
+authentication/authorization, middleware, or model binding REQUIRES the `smoke` lane**, in
+addition to the focused tests for the changed endpoints:
 
 ```bash
-# Focused namespace (any area):
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
-  --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api.RateLimiting"
-
-# Whole API slice (seconds):
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
-  --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Api"
-
-# Broad no-pipeline regression (~30 s; excludes the ten pipeline namespaces
-# and the smoke namespace entirely):
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
-  --no-build \
-  --filter "FullyQualifiedName!~.Quran.Import.&FullyQualifiedName!~.Quran.WordsDisplay.&FullyQualifiedName!~.Quran.WordsMorphology.&FullyQualifiedName!~.Quran.WordsMorphologyEnriched.&FullyQualifiedName!~.Quran.WordsSimpleI3rab.&FullyQualifiedName!~.Quran.Mutashabihat.&FullyQualifiedName!~.Quran.Navigation.&FullyQualifiedName!~.Quran.Tafsirs.&FullyQualifiedName!~.Quran.Translations.&FullyQualifiedName!~.Quran.FullI3rab.&FullyQualifiedName!~QuranDashboard.Tests.Smoke."
-
-# Route smoke tier (~1 min; boots the real API composition over Testcontainers):
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
-  --no-build --filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."
-
-# Full Backend suite (several minutes):
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj --no-build
-
-# One pipeline family (example — Translations):
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
-  --no-build --filter "FullyQualifiedName~.Quran.Translations."
-
-# All ten pipeline families (several minutes):
-dotnet test Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj \
-  --no-build \
-  --filter "FullyQualifiedName~.Quran.Import.|FullyQualifiedName~.Quran.WordsDisplay.|FullyQualifiedName~.Quran.WordsMorphology.|FullyQualifiedName~.Quran.WordsMorphologyEnriched.|FullyQualifiedName~.Quran.WordsSimpleI3rab.|FullyQualifiedName~.Quran.Mutashabihat.|FullyQualifiedName~.Quran.Navigation.|FullyQualifiedName~.Quran.Tafsirs.|FullyQualifiedName~.Quran.Translations.|FullyQualifiedName~.Quran.FullI3rab."
+Backend/scripts/test-backend smoke --no-build
 ```
 
-`--no-build` requires a preceding `dotnet build Backend/QuranDashboard.sln` for the
-current code state (§7).
+It boots the real API composition — `SmokeApiHost` builds `WebApplicationFactory<HealthController>`
+in the `Testing` environment over a migrated-but-empty database leased from the shared
+PostgreSQL runtime — and drives every registered route through routing, authorization, model
+binding, and serialization for every persona in `SmokePersonas.All`, against the real JWT
+bearer pipeline with offline token validation.
 
-**Partition check — run it, do not read it here.** The no-pipeline filter, the all-pipeline
-filter, and the smoke filter MUST partition the suite losslessly: their three totals sum to the
-unfiltered total, no family falls outside all three, none is counted twice. Verify by running
-all four and summing; a remainder term may stand in for the pipeline run **only** when the other
-three were measured against the same tree in the same session.
+`SmokeCoverageParityTests` locks `SmokeRouteCatalog` bidirectionally to the live
+`EndpointDataSource`: a registered route with no catalog entry fails by name, and a catalog
+entry whose route no longer exists fails by name too. **Adding or changing an API route
+requires adding or updating the matching `SmokeRouteCatalog` entry in the same change.** This
+is not optional bookkeeping — it is the reason the gate can be trusted.
 
-Re-verify whenever a namespace is added: a new top-level namespace lands in the no-pipeline set
-by default, a new *pipeline* family must be added to both pipeline filters, and anything landing
-under `QuranDashboard.Tests.Smoke.` must be a genuine route-smoke test — the identity is what
-catches an accidental namespace collision with the two legacy `*SmokeTests` classes that live in
-other families.
+The data tier is a **separate lane**. `QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests`
+restores the canonical dump so the seeded read routes are asserted against real data, and it is
+`Kind=Canonical`: the `smoke` lane excludes it, and `canonical-data` and `pre-pr` include it as
+their exclusive-PostgreSQL shard (§3.3). Evidence must therefore say **which lane ran**: "`smoke`
+passed, N tests" and "`canonical-data` passed, canonical data tier: ran" are both valid; an
+unqualified "smoke passed" is not.
 
-## 6. Frontend command catalog
+## 7. Build requirements
 
-The Vitest fork cap (`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`) is baked into the
-`npm test` script and MUST be preserved; direct `ng test` invocations MUST prefix the
-env vars themselves. The cap is owned by `Frontend/quran-dashboard-ui/package.json`
-(the `test` script) and documented in `Frontend/quran-dashboard-ui/README.md`. Nothing
-enforces it automatically — there is no CI gate (§8), so preserving it is a review
-obligation.
+- Backend compilation-affecting changes REQUIRE one `--build` lane run (or
+  `dotnet build Backend/QuranDashboard.sln`) before any `--no-build` lane against that state.
+  Build once, then reuse it.
+- Frontend template, routing, configuration, or bundle-affecting changes REQUIRE
+  `npm run build:verify` before final PR completion. Do not prepend a build to ordinary test
+  runs — the test builder compiles its own bundle.
+- Before final PR completion, every changed application MUST build.
+- Builds MUST be run **after the latest fix, not before it**: a previously successful
+  build is stale evidence once any relevant code or configuration changes.
+
+## 8. Continuous integration — none in this tree
+
+**There is no CI. `.github/workflows/` does not exist**, so no workflow runs builds,
+tests, contract guards, or fork-cap assertions on push or pull request.
+
+Consequences that every gate above depends on:
+
+- Every lane is a **local, human-or-agent-executed** gate. Nothing verifies that it ran.
+  Evidence is the recorded command output, and only that.
+- No automated check blocks a PR. "CI is green" is never available as evidence here and
+  MUST NOT be claimed.
+- Preserving the Vitest two-fork cap and the Backend hang timeouts is a review obligation,
+  because nothing enforces them.
+- Because the only runs happen on developer machines that *do* have
+  `resources/import-sources/` staged, the canonical lanes genuinely execute — and through
+  the runner, an unstaged machine fails the lane rather than skipping it (§3.4).
+
+If a CI workflow is added later, this section MUST be rewritten to describe what it
+actually runs, and any lane that starts relying on it MUST say so explicitly.
+
+## 9. Failure and skip handling
+
+- Any required test failure blocks completion of the lane's gate.
+- Unexpectedly skipped tests MUST be listed and explained in the evidence.
+- Missing canonical resources fail the lane at preflight (§3.4). A canonical claim backed by a
+  run that never had the resources is not evidence.
+- A lane that shards MUST report both shard results; either shard failing fails the lane.
+- Selections MUST NOT be narrowed to route around a failing test. If a pre-existing
+  failure is discovered, report it as such — separately from the change's own
+  results — and do not absorb or hide it.
+- Environment failures (Docker down, missing resources, OOM, a stranded container from a
+  previous run) MUST be reported separately from product failures, and the affected lane
+  re-run once resolved.
+- No success claim without fresh command output observed in the current session.
+
+## 10. Responsibilities by workflow
+
+**Implementer** — selects the narrowest meaningful lane from the changed scope; runs focused
+lanes during implementation; reports the exact lane, command, reason, result, skips, and
+cleanup state; MUST NOT substitute an unrelated broad lane for missing focused coverage.
+
+**Implementer, catalog obligations** — adding a test class requires its `test-gates.tsv` row in
+the same change (§3.1); **adding or changing an API route requires the matching
+`SmokeRouteCatalog` entry in the same change** (§6); adding a migration requires regenerating
+the canonical dump in the same change (§3.4).
+
+**Phase orchestrator** — derives final verification from this strategy; ordinary phases run the
+narrow lanes; escalates to `tier-b` at milestones and to `pipeline`/`canonical-data` only when
+§5 triggers fire; MUST NOT run broad or pipeline lanes automatically for every phase.
+
+**Reviewer** (`engineering-review`) — verifies the executed lanes match the changed
+risk; MUST NOT demand broad lanes when §5 accepts focused evidence; MUST block when a
+pipeline/canonical trigger existed but its lane was not run; **MUST block when the change
+touched an API route, contract, auth, middleware, or binding and the `smoke` lane did not
+run**, and when a route changed without the matching `SmokeRouteCatalog` update; treats a
+canonical preflight failure as missing evidence. The formal reviewer owns the final broad
+review gates.
+
+**Pre-PR workflow** — applies the Pre-PR column of §5; adds pipeline/canonical lanes only when
+triggered. For route, contract, auth, middleware, or binding changes it MUST run the `smoke`
+lane and record its result.
+
+**Release workflow** — runs the full Backend `pre-pr` lane (two shards), `canonical-data`, and
+the Frontend `test:pre-pr` lane on a machine with `resources/import-sources/` and the canonical
+dump staged, and accounts for every skipped test.
+
+## 11. Browser E2E — opt-in, never a required gate
+
+A browser E2E layer exists: `Frontend/quran-dashboard-ui/playwright.config.ts` + `e2e/`,
+chromium only, two sequential projects — `default` (2 workers) then `abwab` (1 worker).
 
 ```bash
 cd Frontend/quran-dashboard-ui
-
-# Focused spec file:
-npm test -- --include="src/app/features/words/data-access/*.spec.ts"
-
-# Focused feature glob (~2 min):
-npm test -- --include="src/app/features/words/**/*.spec.ts"
-
-# Full Frontend suite (several minutes):
-npm test
-
-# Type-check. The ONLY valid targets are the leaf configs — the root tsconfig.json is
-# "files": [] plus project references, and --noEmit does not follow references, so a root
-# `npx tsc --noEmit` exits 0 having type-checked NOTHING. Never cite a root run as a gate.
-npx tsc -p tsconfig.app.json --noEmit
-npx tsc -p tsconfig.spec.json --noEmit
-
-# Production build (separate from tests — the test builder ignores dist/):
-npm run build
-
-# Browser E2E — opt-in, chromium only, boots both servers (see e2e/README.md).
-# Two sequential Playwright projects: `default` (2 workers) then `abwab` (1 worker).
-# The abwab project MUST stay at 1 worker — a Global-scope Abwab reorder resequences
-# every live root and can race a second worker's write (e2e/README.md):
-npm run e2e                                   # headless (both projects, the gate)
+npm run e2e                                   # headless, both projects
 npm run e2e:headed                            # visible browser
 npm run e2e:ui                                # Playwright UI mode
-npx playwright test e2e/mushaf-reader.e2e.ts  # one flow file, any worker count
+npx playwright test e2e/mushaf-reader.e2e.ts  # one flow file
 ```
 
-A frontend feature is one directory under `src/app/features/` — `ls src/app/features/` is the
-list, and a Tier A glob is `src/app/features/<name>/**/*.spec.ts`. Shared code lives in
-`src/app/core/` and `src/app/shared/`, with app-shell specs at `src/app/*.spec.ts`.
+It is an **opt-in local gate, not part of any required lane**: it is not required pre-PR and
+not required for release, and an E2E run MAY be reported only as supplementary evidence, which
+it MUST then be labelled as. It is **not** the backend route-smoke gate (§6) and never
+substitutes for it. Promoting it into a required lane is a separate decision, to be made only
+after it has proven stable across several runs. Specs are named `*.e2e.ts`, and that is not
+cosmetic: the Angular unit-test builder globs its `include` patterns with `cwd` at the project's
+`sourceRoot` (`src`), so no `angular.json` pattern can reach `e2e/` at all, while
+`playwright.config.ts` matches only `/.*\.e2e\.ts$/` — so a `*.spec.ts` placed under `e2e/` is
+run by **nothing** while looking like coverage. See
+`Frontend/quran-dashboard-ui/testing/README.md`.
 
-The E2E suite boots the Angular dev server **and** the backend `https` launch profile
+The suite boots the Angular dev server **and** the backend `https` launch profile
 (`ASPNETCORE_ENVIRONMENT=Development`), so it reads the real local `quran_dashboard` database.
+It requires `dotnet build Backend/QuranDashboard.sln` beforehand (the backend boots with
+`--no-build`) and mkcert certificates in the frontend project root.
+
 Every flow is read-only and every count assertion is loose, **with one named, deliberate
-exception**: the eight Abwab specs (`abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`,
-`abwab-archive.e2e.ts`, `abwab-url-and-a11y.e2e.ts` added in Slice B2,
-plus `abwab-global-order.e2e.ts` added by
-`abwab-global-order`, `abwab-tree-row-budget.e2e.ts`, `abwab-slice-j-widths.e2e.ts`, and
-`abwab-relations.e2e.ts` added by slice K) write against the local dev DB through a per-test sandbox section created
-over the API (`e2e/fixtures/abwab.ts`), not the seeded/canonical data.
+exception**: the Abwab specs (`abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`,
+`abwab-archive.e2e.ts`, `abwab-url-and-a11y.e2e.ts` added in Slice B2, plus
+`abwab-global-order.e2e.ts` added by `abwab-global-order`, `abwab-tree-row-budget.e2e.ts`,
+`abwab-slice-j-widths.e2e.ts`, and `abwab-relations.e2e.ts` added by slice K) write against the
+local dev DB through a per-test sandbox section created over the API (`e2e/fixtures/abwab.ts`),
+not the seeded/canonical data.
 **This knowingly overrides the precondition above** — it does not move the suite onto an
 isolated database first, because no such database exists yet for this suite. The sandbox is the
 mitigation: each test's section name embeds the worker index and a timestamp so parallel workers
@@ -440,7 +413,7 @@ live destination section, since the one it belonged to is gone. What must **not*
 is any live `e2e-sandbox-*` door or any `e2e-sandbox-*` section — either one is a teardown bug, not
 accepted residue, and `GET /api/abwab/tree` is how you check. This is tolerable on a local,
 disposable dev database with loose, id-scoped assertions.
-**The eight Abwab specs run in their own single-worker Playwright project, not the default
+**The Abwab specs run in their own single-worker Playwright project, not the default
 2-worker one.** A `Global`-scope reorder (`abwab-global-order.e2e.ts`) resequences the whole
 live-root set across the database, not just the acting test's own sandbox, so two Abwab specs in
 different workers can race the same rows — measured directly: at 2 workers this produced a
@@ -451,104 +424,11 @@ date — it is the one place they are recorded, so do not restate a figure here.
 **The precondition above is reinstated** — future write flows for other features again require an
 isolated e2e database first — the moment this suite runs anywhere the accumulating archived
 residue is not acceptable, or the sandbox-per-test mitigation stops being sufficient (e.g. a
-future flow that cannot be scoped to ids it created itself). It requires
-`dotnet build Backend/QuranDashboard.sln` beforehand (the backend boots with `--no-build`) and
-mkcert certificates in the frontend project root. It is **not** the backend route-smoke tier
-(§3 Tier A/C, §5) and does not substitute for it: the smoke tier is a required gate for
-route/contract/auth changes, the E2E layer is not.
-
-## 7. Build requirements
-
-- Backend compilation-affecting changes REQUIRE `dotnet build Backend/QuranDashboard.sln`
-  before any `--no-build` test run against that state.
-- Frontend template, routing, configuration, or bundle-affecting changes REQUIRE
-  `npm run build` before final PR completion. Do not prepend `npm run build` to
-  ordinary test runs — the test builder compiles its own bundle.
-- Before final PR completion, every changed application MUST build.
-- Builds MUST be run **after the latest fix, not before it**: a previously successful
-  build is stale evidence once any relevant code or configuration changes.
-
-## 8. Continuous integration — none in this tree
-
-**There is no CI. `.github/workflows/` does not exist**, so no workflow runs builds,
-tests, contract guards, or fork-cap assertions on push or pull request.
-
-Consequences that every gate above depends on:
-
-- Every tier in §3 is a **local, human-or-agent-executed** gate. Nothing verifies that
-  it ran. Evidence is the recorded command output, and only that.
-- No automated check blocks a PR. "CI is green" is never available as evidence here and
-  MUST NOT be claimed.
-- Because the only runs happen on developer machines that *do* have
-  `resources/import-sources/` staged, the canonical families genuinely execute rather
-  than self-skipping — the opposite of the usual CI-clone hazard. The `Skipped:`
-  accounting in §3 Tier E still applies: check it, do not assume it.
-
-If a CI workflow is added later, this section MUST be rewritten to describe what it
-actually runs, and any tier that starts relying on it MUST say so explicitly.
-
-## 9. Failure and skip handling
-
-- Any required test failure blocks completion of the tier's gate.
-- Unexpectedly skipped tests MUST be listed and explained in the evidence.
-- Required canonical tests that skip because resources are missing FAIL the release
-  gate (§3 Tier E).
-- Filters MUST NOT be narrowed to route around a failing test. If a pre-existing
-  failure is discovered, report it as such — separately from the change's own
-  results — and do not absorb or hide it.
-- Environment failures (Docker down, missing resources, OOM) MUST be reported
-  separately from product failures, and the affected tier re-run once resolved.
-- No success claim without fresh command output observed in the current session.
-
-## 10. Responsibilities by workflow
-
-**Implementer** — selects Tier A from the changed scope; runs focused tests during
-implementation; reports exact commands and outputs; MUST NOT substitute an unrelated
-broad suite for missing focused coverage.
-
-**Implementer, route obligation** — anyone **adding or changing an API route MUST add or
-update the matching `SmokeRouteCatalog` entry in the same change**, because
-`SmokeCoverageParityTests` fails otherwise. The catalog is bidirectionally locked to the
-live `EndpointDataSource`: a new uncatalogued route fails by name, and a catalog entry
-whose route no longer exists fails by name too. This is not optional bookkeeping — it is
-the reason the gate can be trusted.
-
-**Phase orchestrator** — derives final verification from this strategy; ordinary phases
-run Tier A; escalates to Tier B at milestones and to Tier D when changed paths hit §3
-Tier D triggers; MUST NOT run full pipeline suites automatically for every phase.
-
-**Reviewer** (`engineering-review`) — verifies the executed tier matches the changed
-risk; MUST NOT demand full suites when this strategy accepts focused evidence; MUST
-block when a Tier D trigger existed but its tests were not run; **MUST block when the
-change touched an API route, contract, auth, middleware, or binding and the Smoke suite
-did not run**, and when a route changed without the matching `SmokeRouteCatalog` update;
-treats skipped required canonical tests as missing evidence.
-
-**Pre-PR workflow** — applies Tier C; adds Tier D only when triggered. For route,
-contract, auth, middleware, or binding changes it MUST run the Smoke suite and record its
-result, stating whether the data tier ran or skipped (§3 Tier A/C).
-
-**Release workflow** — applies Tier E and verifies canonical tests actually ran (no
-unexplained skips).
-
-## 11. Scope examples
-
-| Change | Tier(s) | Command family |
-| --- | --- | --- |
-| Rate-limiting policy change (rate limiting is middleware — §3 Tier C route gate applies) | A → C | `~Tests.Api.RateLimiting` during work; `~Tests.Api` + `~QuranDashboard.Tests.Smoke.` at phase end; no-pipeline + Smoke pre-PR |
-| Authentication / authorization change | A → C | `~Tests.Api.Access` + `~Tests.Api.Middleware` + `~QuranDashboard.Tests.Smoke.`; no-pipeline pre-PR |
-| API route added/removed, or a request/response contract change | A → C | `~QuranDashboard.Tests.Smoke.` with the matching `SmokeRouteCatalog` entry updated in the same change, plus `~Tests.Api`; no-pipeline + Smoke pre-PR, evidence naming whether the data tier ran or skipped |
-| Angular words-explorer component change | A → C | `--include="src/app/features/words/**/*.spec.ts"`; full `npm test` + `npm run build` pre-PR |
-| Word-types read-model change | A → B | `~Tests.Quran.WordsWordTypes` during work; no-pipeline at milestone |
-| Mushaf reader change | A → C | `~Tests.Quran.MushafReader` + `--include="src/app/features/mushaf/**/*.spec.ts"` |
-| Translation importer change | D | `~.Quran.Translations.` first; no-pipeline + affected families (or full suite) pre-PR |
-| Model-wide `QuranDashboardDbContext` persistence change that can affect pipeline tables or execution | B → C + D | no-pipeline first, then full Backend suite pre-PR |
-| Enriched morphology artifact replacement | D/E | `~.Quran.WordsMorphologyEnriched.` on a machine with the staged artifact; verify zero skips |
+future flow that cannot be scoped to ids it created itself).
 
 ## 12. Deferred optimizations
 
 Test implementation and fixture optimizations are separate, explicitly-requested work
 — not part of applying this strategy: sharing the enriched-morphology artifact load,
-safely reducing repeated canonical imports, introducing test traits/categories to
-replace namespace filters, and optional test consolidation. Do not perform them as a
-side effect of running or reviewing tests.
+safely reducing repeated canonical imports, and optional further test consolidation. Do not
+perform them as a side effect of running or reviewing tests.

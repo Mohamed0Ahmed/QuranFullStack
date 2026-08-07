@@ -23,7 +23,7 @@ public sealed class TranslationExcludedSourceTests(TranslationImportTestFixture 
 
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         (await dbContext.TranslationSources.AsNoTracking()
             .AnyAsync(s => s.SourceKey == "en-excluded-wbw"))
@@ -45,7 +45,7 @@ public sealed class TranslationExcludedSourceTests(TranslationImportTestFixture 
 
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         (await dbContext.TranslationSources.AsNoTracking()
             .AnyAsync(s => s.SourceKey == "en-excluded-empty"))
@@ -67,7 +67,7 @@ public sealed class TranslationExcludedSourceTests(TranslationImportTestFixture 
 
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         (await dbContext.TranslationSources.AsNoTracking()
             .AnyAsync(s => s.SourceKey == "en-excluded-dup"))

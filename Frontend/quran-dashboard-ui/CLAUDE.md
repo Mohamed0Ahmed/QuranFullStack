@@ -19,23 +19,23 @@ read and follow:
 
 ## Frontend Test Selection
 
-Before selecting or running Frontend tests, read:
+Read `../../TESTING_STRATEGY.md` and `testing/README.md`, inspect the changed scope, then
+use the `npm run test:*` commands. Start with one spec or the narrowest fast, feature, or
+authorization lane. The full Frontend suite and production build run once at
+engineering-review/pre-PR boundaries when Frontend files changed; Backend-only work with
+no generated/frontend contract diff requires no Frontend test.
 
-- `../../TESTING_STRATEGY.md` (workspace root)
+Preserve the two-fork Vitest cap and configured timeouts. Keep output visible, never pipe
+to `tail`, and report the exact lane, command, reason, result, and skips. The formal
+reviewer owns the final full Frontend gate; there is no CI fallback. Deleting a test requires documented
+obsolete/redundant proof and named replacement coverage.
 
-Use the tier required by the changed scope: focused `--include` globs for ordinary phases
-(Tier A), the full Frontend suite at milestones that complete a feature integration or
-touch `core/`, `shared/`, routing, the app shell, or theming (Tier B), and the full suite
-plus `npm run build` before a PR that changed Frontend code (Tier C). The validated
-commands are in §6.
-
-- Preserve the Vitest fork cap (`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2`) baked into the
-  `npm test` script; direct `ng test` calls must prefix it themselves. Nothing enforces it
-  automatically — there is no CI (§8), so it is a review obligation.
-- A browser E2E layer exists: Playwright (chromium only) at `playwright.config.ts` + `e2e/`,
-  run with `npm run e2e`. It is opt-in and is NOT a required gate — never cite it in place of
-  the Vitest suite or a build, and never let an E2E run substitute for Tier C evidence. Specs
-  are named `*.e2e.ts`; a `*.spec.ts` under `e2e/` would be swallowed by the Vitest glob.
+A browser E2E layer exists: Playwright (chromium only) at `playwright.config.ts` + `e2e/`,
+run with `npm run e2e`. It is opt-in and is NOT a required gate — never cite it in place of
+the Vitest lanes or a build, and never let an E2E run substitute for pre-PR evidence. Specs
+are named `*.e2e.ts`. That is not cosmetic: the Vitest gate globs with `cwd` at `src/` and cannot
+see `e2e/` at all, and `playwright.config.ts` matches only `/.*\.e2e\.ts$/` — so a `*.spec.ts`
+placed there is run by nothing while looking like coverage.
 
 ## Frontend Local READMEs
 

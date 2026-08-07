@@ -59,7 +59,7 @@ public sealed class TafsirForceRebuildTests(TafsirImportTestFixture fixture)
         var tafsirAfterForce = await CaptureTafsirContentFingerprintAsync(fixture);
         tafsirAfterForce.Should().NotBe(tafsirBeforeForce);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var leaderEntry = await dbContext.TafsirEntries
@@ -107,7 +107,7 @@ public sealed class TafsirForceRebuildTests(TafsirImportTestFixture fixture)
 
     private static async Task<string> CaptureTafsirContentFingerprintAsync(TafsirImportTestFixture fixture)
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var rows = await dbContext.TafsirEntries

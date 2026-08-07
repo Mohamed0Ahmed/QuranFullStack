@@ -36,7 +36,7 @@ public sealed class NavigationSourceSafetyTests(NavigationImportTestFixture fixt
         var textAfter = await CaptureAyahTextSnapshotAsync();
         textAfter.Should().Equal(textBefore);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var juzJson = await File.ReadAllTextAsync(Path.Combine(packageDir, "sources/quran-metadata-juz.json"));
@@ -84,7 +84,7 @@ public sealed class NavigationSourceSafetyTests(NavigationImportTestFixture fixt
 
     private async Task<IReadOnlyList<(int Id, string TextUthmani)>> CaptureAyahTextSnapshotAsync()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return await dbContext.QuranAyahs

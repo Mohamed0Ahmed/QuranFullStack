@@ -6,17 +6,17 @@ using QuranDashboard.Tests.TestSupport.Http;
 namespace QuranDashboard.Tests.Smoke;
 
 // Dedicated coverage for the write routes SmokeRoutePipelineTests deliberately skips (ParityOnly) —
-// see SmokeRouteCatalog. Every test resets Abwab tables at the START, not just cleanup: a test that
-// fails mid-way would otherwise poison whichever test runs next, which is what actually makes the
-// "run the smoke filter twice" verification meaningful.
+// see SmokeRouteCatalog. Every test calls the collection's single restore at the START, not just
+// cleanup: a test that fails mid-way would otherwise poison whichever test runs next, which is what
+// actually makes the "run the smoke filter twice" verification meaningful.
 [Collection(nameof(SmokeCollection))]
 public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
 {
     [Fact]
     public async Task CreateSection_WithValidName_ReturnsCreatedWithEnvelope()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var response = await client.PostAsJsonAsync("/api/abwab/sections", new { name = "القسم الأول" });
 
@@ -30,8 +30,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [InlineData("{}")]
     public async Task CreateSection_WithNullOrMissingName_ReturnsBadRequestInFailureEnvelope(string body)
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
         using var content = new StringContent(body, Encoding.UTF8, "application/json");
 
         using var response = await client.PostAsync("/api/abwab/sections", content);
@@ -42,8 +42,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task CreateSection_WithBlankName_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var response = await client.PostAsJsonAsync("/api/abwab/sections", new { name = "   " });
 
@@ -53,8 +53,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task CreateSection_WithDuplicateName_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var first = await client.PostAsJsonAsync("/api/abwab/sections", new { name = "أبواب العقيدة" });
         first.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -67,8 +67,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RenameSection_WithCorrectVersion_ReturnsOkWithUpdatedName()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, version) = await CreateSectionAsync(client, "قسم قابل لإعادة التسمية");
 
@@ -82,8 +82,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RenameSection_WithUnknownId_ReturnsNotFound()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var response = await client.PutAsJsonAsync("/api/abwab/sections/999999", new { name = "لا يوجد", version = 0u });
 
@@ -93,8 +93,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RenameSection_WithStaleVersion_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, staleVersion) = await CreateSectionAsync(client, "قسم للتحديث المتزامن");
         using var firstRename = await client.PutAsJsonAsync($"/api/abwab/sections/{id}", new { name = "تحديث أول", version = staleVersion });
@@ -108,8 +108,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RenameSection_ToAnotherSectionsName_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (_, _) = await CreateSectionAsync(client, "الاسم المحجوز");
         var (id, version) = await CreateSectionAsync(client, "اسم آخر");
@@ -122,8 +122,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RenameSection_WithNullName_ReturnsBadRequestBindingLevel()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, version) = await CreateSectionAsync(client, "قسم لفحص الربط");
         using var content = new StringContent(
@@ -137,8 +137,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task DeleteSection_WithNoLiveDoors_ReturnsNoContentAndNoBody()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, _) = await CreateSectionAsync(client, "قسم فارغ للحذف");
 
@@ -151,8 +151,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task DeleteSection_WithUnknownId_ReturnsNotFound()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var response = await client.DeleteAsync("/api/abwab/sections/999999");
 
@@ -162,8 +162,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task DeleteSection_WithLiveDoors_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, _) = await CreateSectionAsync(client, "قسم يحوي بابًا حيًا");
         await CreateDoorAsync(client, "باب حي", sectionId: id);
@@ -173,13 +173,72 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
         await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabSectionHasLiveDoors);
     }
 
+    [Fact]
+    public async Task ReorderSection_WithValidPosition_ReturnsOkWithTheNewOrder()
+    {
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
+
+        await CreateSectionAsync(client, "__smoke_section_first__");
+        var (id, version) = await CreateSectionAsync(client, "__smoke_section_second__");
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/sections/{id}/order", new { position = 1, version });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
+        envelope.GetProperty("data").GetProperty("orderValue").GetInt32().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ReorderSection_WithOutOfRangePosition_ReturnsBadRequest()
+    {
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
+
+        var (id, version) = await CreateSectionAsync(client, "__smoke_section_invalid_position__");
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/sections/{id}/order", new { position = 2, version });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            response,
+            HttpStatusCode.BadRequest,
+            ApiMessages.AbwabSectionInvalidPosition);
+    }
+
+    [Fact]
+    public async Task ReorderSection_WithUnknownId_ReturnsNotFound()
+    {
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
+
+        using var response = await client.PostAsJsonAsync("/api/abwab/sections/999999/order", new { position = 1, version = 0u });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.NotFound, ApiMessages.AbwabSectionNotFound);
+    }
+
+    [Fact]
+    public async Task ReorderSection_WithStaleVersion_ReturnsConflict()
+    {
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
+
+        await CreateSectionAsync(client, "__smoke_section_stale_first__");
+        var (id, staleVersion) = await CreateSectionAsync(client, "__smoke_section_stale_second__");
+        using var first = await client.PostAsJsonAsync($"/api/abwab/sections/{id}/order", new { position = 1, version = staleVersion });
+        first.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var response = await client.PostAsJsonAsync($"/api/abwab/sections/{id}/order", new { position = 2, version = staleVersion });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Conflict, ApiMessages.AbwabSectionStaleVersion);
+    }
+
     // ---- Doors ----
 
     [Fact]
     public async Task CreateDoor_WithValidData_ReturnsCreatedWithAliases()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var sectionId = await DefaultSectionIdAsync(client);
 
@@ -197,8 +256,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task CreateDoor_WithNullName_ReturnsBadRequestBindingLevel()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
         using var content = new StringContent("{\"name\": null}", Encoding.UTF8, "application/json");
 
         using var response = await client.PostAsync("/api/abwab/doors", content);
@@ -209,8 +268,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task CreateDoor_WithUnknownParent_ReturnsNotFound()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var response = await client.PostAsJsonAsync("/api/abwab/doors", new { name = "باب يتيم", parentId = 999999 });
 
@@ -223,8 +282,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task CreateDoor_UnderAnArchivedParent_ReturnsNotFound()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (parentId, parentVersion) = await CreateDoorAsync(client, "أب يُؤرشف قبل إضافة ابنه");
         using var archiveResponse = await SendWithBodyAsync(
@@ -240,8 +299,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task CreateDoor_WithUnknownSection_ReturnsNotFound()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var response = await client.PostAsJsonAsync("/api/abwab/doors", new { name = "باب بلا قسم", sectionId = 999999 });
 
@@ -251,8 +310,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task CreateDoor_UnderAParentInAnotherSection_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (parentSectionId, _) = await CreateSectionAsync(client, "قسم الأب");
         var (otherSectionId, _) = await CreateSectionAsync(client, "قسم مخالف");
@@ -270,8 +329,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task CreateDoor_RootWithoutSection_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var response = await client.PostAsJsonAsync("/api/abwab/doors",
             new { sectionId = (int?)null, parentId = (int?)null, name = "جذر بلا قسم", aliases = Array.Empty<string>() });
@@ -284,8 +343,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task CreateDoor_UnderAParentWithNoSectionStated_InheritsTheParentsSection()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (sectionId, _) = await CreateSectionAsync(client, "قسم يُورَّث للابن");
         var (parentId, _) = await CreateDoorAsync(client, "أب يورّث قسمه", sectionId: sectionId);
@@ -301,8 +360,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task CreateDoor_WithDuplicateNameAtRoot_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         await CreateDoorAsync(client, "باب مكرر");
 
@@ -315,8 +374,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task EditDoor_RoundTripsVersionAcrossTwoConsecutiveEdits()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, version) = await CreateDoorAsync(client, "باب قابل للتعديل");
 
@@ -337,8 +396,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task EditDoor_WithUnknownId_ReturnsNotFound()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var response = await client.PutAsJsonAsync("/api/abwab/doors/999999",
             new { name = "لا يوجد", description = (string?)null, representativeAyahText = (string?)null, aliases = Array.Empty<string>(), version = 0u });
@@ -349,8 +408,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task EditDoor_WithStaleVersion_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, staleVersion) = await CreateDoorAsync(client, "باب لتعديل متزامن");
         using var firstEdit = await client.PutAsJsonAsync($"/api/abwab/doors/{id}",
@@ -366,8 +425,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task EditDoor_WithNullName_ReturnsBadRequestBindingLevel()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, version) = await CreateDoorAsync(client, "باب لفحص الربط");
         using var content = new StringContent(
@@ -381,8 +440,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task EditDoor_ReplacesAliasesWholesale()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, version) = await CreateDoorAsync(client, "باب له اسماء بديلة", aliases: ["قديم١", "قديم٢"]);
 
@@ -397,8 +456,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task MoveDoor_UnderAnotherSectionsDoor_InheritsThatSection()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (sectionId, _) = await CreateSectionAsync(client, "قسم الوجهة");
         var (targetParentId, _) = await CreateDoorAsync(client, "باب في القسم", sectionId: sectionId);
@@ -416,8 +475,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task MoveDoor_IntoOwnDescendant_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (parentId, parentVersion) = await CreateDoorAsync(client, "الباب الأب");
         var (childId, _) = await CreateDoorAsync(client, "الباب الابن", parentId: parentId);
@@ -431,8 +490,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task MoveDoor_ToRootWithoutSection_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, version) = await CreateDoorAsync(client, "باب يُنقل إلى الجذر بلا قسم");
 
@@ -446,8 +505,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task MoveDoor_WithUnknownId_ReturnsNotFound()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var response = await client.PostAsJsonAsync("/api/abwab/doors/999999/move",
             new { targetParentId = (int?)null, targetSectionId = (int?)null, version = 0u });
@@ -458,8 +517,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task MoveDoor_WithStaleVersion_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (sectionId, _) = await CreateSectionAsync(client, "قسم لنقل متزامن");
         var (id, _) = await CreateDoorAsync(client, "باب لنقل متزامن");
@@ -473,8 +532,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task MoveDoor_WithNullVersion_ReturnsBadRequestBindingLevel()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, _) = await CreateDoorAsync(client, "باب لفحص ربط النقل");
         using var content = new StringContent(
@@ -488,8 +547,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task ReorderDoor_ToValidPosition_ResequencesSiblings()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (firstId, _) = await CreateDoorAsync(client, "الأول");
         var (secondId, secondVersion) = await CreateDoorAsync(client, "الثاني");
@@ -508,8 +567,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task ReorderDoor_OutOfRange_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, version) = await CreateDoorAsync(client, "باب وحيد");
 
@@ -522,8 +581,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task ReorderDoor_WithGlobalScope_ToValidPosition_ReturnsOk()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (firstId, _) = await CreateDoorAsync(client, "الأول عالميًا");
         var (secondId, secondVersion) = await CreateDoorAsync(client, "الثاني عالميًا");
@@ -545,8 +604,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task ReorderDoor_WithGlobalScope_OutOfRange_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, version) = await CreateDoorAsync(client, "باب وحيد عالميًا");
 
@@ -559,8 +618,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task ReorderDoor_WithGlobalScope_OnNestedDoor_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (parentId, _) = await CreateDoorAsync(client, "أب لباب يرفض الترتيب العام");
         var (childId, childVersion) = await CreateDoorAsync(client, "ابن يرفض الترتيب العام", parentId: parentId);
@@ -574,8 +633,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task ReorderDoor_WithMissingScope_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, version) = await CreateDoorAsync(client, "باب بلا نطاق ترتيب");
 
@@ -589,8 +648,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task ReorderDoor_WithUnknownScope_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, version) = await CreateDoorAsync(client, "باب لنطاق ترتيب غير معروف");
 
@@ -605,8 +664,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task MoveDoor_IntoAScopeHoldingThatName_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (sectionId, _) = await CreateSectionAsync(client, "قسم يحمل الاسم مسبقًا");
         await CreateDoorAsync(client, "باب الإيمان", sectionId: sectionId);
@@ -621,8 +680,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task ReorderDoor_WithNullVersion_ReturnsBadRequestBindingLevel()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, _) = await CreateDoorAsync(client, "باب لفحص ربط الترتيب");
         using var content = new StringContent(
@@ -636,8 +695,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task ReorderDoor_WithUnknownId_ReturnsNotFound()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var response = await client.PostAsJsonAsync("/api/abwab/doors/999999/order",
             new { position = 1, scope = AbwabReorderScope.Section, version = 0u });
@@ -648,8 +707,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task ReorderDoor_WithStaleVersion_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, _) = await CreateDoorAsync(client, "باب لإعادة ترتيب قسمي متزامنة");
 
@@ -662,8 +721,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task ReorderDoor_WithGlobalScope_AndStaleVersion_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, _) = await CreateDoorAsync(client, "باب لإعادة ترتيب عام متزامنة");
 
@@ -676,8 +735,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task BulkMoveDoors_MovesBothDoorsAndResequencesDestination()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (targetSectionId, _) = await CreateSectionAsync(client, "قسم وجهة النقل الجماعي");
         var (existingId, _) = await CreateDoorAsync(client, "باب موجود مسبقًا في الوجهة", sectionId: targetSectionId);
@@ -708,8 +767,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task BulkMoveDoors_WithNullElement_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
         using var content = new StringContent(
             "{\"doors\":[null],\"targetSectionId\":null,\"targetParentId\":null}", Encoding.UTF8, "application/json");
 
@@ -721,8 +780,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task BulkMoveDoors_WithOneStaleVersion_FailsWholeBatch()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (firstId, firstVersion) = await CreateDoorAsync(client, "أول باب دفعي");
         var (secondId, _) = await CreateDoorAsync(client, "ثاني باب دفعي");
@@ -746,8 +805,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task BulkMoveDoors_ToRootWithoutSection_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, version) = await CreateDoorAsync(client, "باب لنقل جماعي إلى الجذر بلا قسم");
 
@@ -765,8 +824,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task BulkMoveDoors_WithUnknownDoorId_ReturnsNotFound()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         // A real destination section: the bulk path resolves the target before it loads the doors, so a
         // null one would be refused for the wrong reason and this would stop testing the unknown id.
@@ -785,8 +844,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task BulkMoveDoors_IntoAScopeHoldingOneOfTheirNames_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (sectionId, _) = await CreateSectionAsync(client, "قسم وجهة يحمل اسمًا مكررًا");
         await CreateDoorAsync(client, "باب التوحيد", sectionId: sectionId);
@@ -813,8 +872,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task BulkArchiveDoors_ArchivesSubtreeAndResequencesSiblings()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (parentId, parentVersion) = await CreateDoorAsync(client, "أب للأرشفة الجماعية");
         var (childId, _) = await CreateDoorAsync(client, "ابن للأرشفة الجماعية", parentId: parentId);
@@ -834,8 +893,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task BulkArchiveDoors_WithNullElement_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
         using var content = new StringContent("{\"doors\":[null]}", Encoding.UTF8, "application/json");
 
         using var response = await client.PostAsync("/api/abwab/doors/bulk-archive", content);
@@ -846,8 +905,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task BulkArchiveDoors_WithUnknownDoorId_ReturnsNotFound()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var response = await client.PostAsJsonAsync("/api/abwab/doors/bulk-archive",
             new { doors = new object[] { new { doorId = 999999, version = 0u } } });
@@ -858,8 +917,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task BulkArchiveDoors_WithStaleVersion_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, _) = await CreateDoorAsync(client, "باب لأرشفة جماعية متزامنة");
 
@@ -872,8 +931,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task DeleteDoor_ArchivesSubtree_ReturnsNoContent()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (parentId, parentVersion) = await CreateDoorAsync(client, "أب للحذف");
         var (childId, _) = await CreateDoorAsync(client, "ابن يُؤرشف تلقائيًا", parentId: parentId);
@@ -890,8 +949,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task DeleteDoor_WithStaleVersion_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, _) = await CreateDoorAsync(client, "باب لحذف متزامن");
 
@@ -903,8 +962,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task DeleteDoor_WithNullVersion_ReturnsBadRequestBindingLevel()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, _) = await CreateDoorAsync(client, "باب لفحص ربط الحذف");
         var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/abwab/doors/{id}")
@@ -920,8 +979,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task DeleteDoor_WithUnknownId_ReturnsNotFound()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var response = await SendWithBodyAsync(client, HttpMethod.Delete, "/api/abwab/doors/999999", new { version = 0u });
 
@@ -931,8 +990,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RestoreDoor_RestoresWholeArchivedSubtree()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (parentId, parentVersion) = await CreateDoorAsync(client, "أب للاستعادة");
         var (childId, _) = await CreateDoorAsync(client, "ابن يُستعاد معه", parentId: parentId);
@@ -950,8 +1009,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RestoreDoor_WhileParentStillArchived_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (parentId, parentVersion) = await CreateDoorAsync(client, "أب يبقى مؤرشفًا");
         var (childId, _) = await CreateDoorAsync(client, "ابن يحاول الاستعادة منفردًا", parentId: parentId);
@@ -967,8 +1026,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RestoreDoor_WithStaleVersion_ReturnsConflict()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, version) = await CreateDoorAsync(client, "باب لاستعادة متزامنة");
         using var deleteResponse = await SendWithBodyAsync(client, HttpMethod.Delete, $"/api/abwab/doors/{id}", new { version });
@@ -982,8 +1041,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RestoreDoor_AfterArchive_ReturnsDoorToAContiguousScope()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         await CreateDoorAsync(client, "الأول");
         var (secondId, secondVersion) = await CreateDoorAsync(client, "الثاني");
@@ -1006,8 +1065,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RestoreDoor_RootWhoseSectionRetired_WithoutDestination_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (sectionId, _) = await CreateSectionAsync(client, "قسم يُؤرشف بعد بابه");
         var (doorId, doorVersion) = await CreateDoorAsync(client, "باب في قسم متقاعد", sectionId: sectionId);
@@ -1029,8 +1088,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RestoreDoor_WithDestinationSection_RestoresIntoIt()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (retiredSectionId, _) = await CreateSectionAsync(client, "قسم يُتقاعد قبل الاسترجاع");
         var (destinationSectionId, _) = await CreateSectionAsync(client, "قسم وجهة الاسترجاع");
@@ -1055,8 +1114,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RestoreDoor_IntoALiveSection_KeepsTheSection()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (sectionId, _) = await CreateSectionAsync(client, "قسم يبقى حيًّا بعد الاستعادة");
         var (doorId, doorVersion) = await CreateDoorAsync(client, "باب يعود إلى قسمه", sectionId: sectionId);
@@ -1077,8 +1136,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RestoreDoor_Child_WithConflictingSection_ReturnsBadRequest()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (parentSectionId, _) = await CreateSectionAsync(client, "قسم الأب للاسترجاع المتعارض");
         var (otherSectionId, _) = await CreateSectionAsync(client, "قسم مخالف للاسترجاع المتعارض");
@@ -1100,8 +1159,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RestoreDoor_WithNullVersion_ReturnsBadRequestBindingLevel()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (id, _) = await CreateDoorAsync(client, "باب لفحص ربط الاستعادة");
         using var content = new StringContent("{\"version\": null}", Encoding.UTF8, "application/json");
@@ -1114,8 +1173,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task RestoreDoor_WithUnknownId_ReturnsNotFound()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         using var response = await client.PostAsJsonAsync("/api/abwab/doors/999999/restore", new { version = 0u });
 
@@ -1127,8 +1186,8 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
     [Fact]
     public async Task GetAbwabTree_AfterWritesThroughRealEndpoints_ReflectsArchivedFlagAndCounts()
     {
-        await fixture.ResetAbwabAsync();
-        using var client = fixture.CreateClient();
+        await fixture.ResetAsync();
+        using var client = await fixture.CreateActiveOwnerClientAsync();
 
         var (sectionId, _) = await CreateSectionAsync(client, "قسم شجرة القراءة");
         var (parentId, _) = await CreateDoorAsync(client, "أب لقراءة الشجرة", sectionId: sectionId);
@@ -1177,7 +1236,7 @@ public sealed class SmokeAbwabWriteTests(SmokeApiFixture fixture)
 
     // Every root door names a section now, so a test that does not care which one gets this. ONE per test,
     // not one per door: a per-door section would scatter siblings across scopes and quietly break every
-    // ordering and per-section-count assertion here. ResetAbwabAsync truncates between tests, so the first
+    // ordering and per-section-count assertion here. ResetAsync truncates between tests, so the first
     // root create of each test makes it and the rest find it.
     private const string DefaultSectionName = "قسم الاختبار الافتراضي";
 

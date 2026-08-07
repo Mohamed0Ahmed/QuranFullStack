@@ -16,7 +16,7 @@ public sealed class MorphologyVerbFeatureTests(MorphologyImportTestFixture fixtu
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var verbRow = await dbContext.WordMorphologies
@@ -76,7 +76,7 @@ public sealed class MorphologyVerbFeatureTests(MorphologyImportTestFixture fixtu
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var verbRow = await dbContext.WordMorphologies
@@ -125,7 +125,7 @@ public sealed class MorphologyVerbFeatureTests(MorphologyImportTestFixture fixtu
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var verbRow = await dbContext.WordMorphologies
@@ -175,7 +175,7 @@ public sealed class MorphologyVerbFeatureTests(MorphologyImportTestFixture fixtu
 
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var row = await dbContext.WordMorphologies

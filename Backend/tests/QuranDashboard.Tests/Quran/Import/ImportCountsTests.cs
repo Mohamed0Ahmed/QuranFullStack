@@ -13,7 +13,7 @@ public sealed class ImportCountsTests
         this.fixture = fixture;
     }
 
-    [Fact]
+    [FoundationImportSourceFact]
     public async Task ImportIntoEmptyDatabase_PersistsExpectedCounts()
     {
         var handler = await fixture.CreateHandlerAsync();
@@ -32,7 +32,7 @@ public sealed class ImportCountsTests
         result.Totals.AyahMarkers.Should().Be(6_236);
         result.Totals.ReadableWords.Should().Be(77_432);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         (await dbContext.QuranSurahs.CountAsync()).Should().Be(114);

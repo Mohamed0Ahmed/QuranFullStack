@@ -1,5 +1,6 @@
 
 import 'zone.js/testing';
+import { afterEach, vi } from 'vitest';
 
 // jsdom gives every element a zero-size box, so the CDK's focusable check rejects every
 // `[cdkFocusInitial]` target and warns once per modal open — 60 warnings across the abwab suite
@@ -13,3 +14,13 @@ console.warn = (...args: unknown[]): void => {
   }
   passThroughWarn(...args);
 };
+
+afterEach(() => {
+  vi.unstubAllGlobals(); // before the timer call: the first one freezes which timers sinon fakes
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+  localStorage.clear();
+  sessionStorage.clear();
+  document.documentElement.removeAttribute('data-theme');
+  document.body.style.overflow = '';
+});

@@ -71,20 +71,15 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
   let service: DetailOverlayHistoryService;
 
   beforeEach(() => {
-    // jsdom lacks matchMedia; the app shell's theme service reads it on init.
-    if (typeof window.matchMedia !== 'function') {
-      Object.defineProperty(window, 'matchMedia', {
-        configurable: true,
-        writable: true,
-        value: () => ({
-          matches: false,
-          addEventListener: () => undefined,
-          removeEventListener: () => undefined,
-          addListener: () => undefined,
-          removeListener: () => undefined,
-        }),
-      });
-    }
+    // jsdom lacks matchMedia; the app shell's theme service reads it on init. The test-setup
+    // safety net undoes this stub even when a test throws.
+    vi.stubGlobal('matchMedia', () => ({
+      matches: false,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+    }));
 
     TestBed.configureTestingModule({
       providers: [

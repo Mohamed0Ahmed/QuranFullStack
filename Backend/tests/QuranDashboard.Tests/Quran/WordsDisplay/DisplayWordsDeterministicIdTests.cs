@@ -58,7 +58,7 @@ public sealed class DisplayWordsDeterministicIdTests : IDisposable
 
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var tashkeelViolations = await dbContext.QuranWordsUniqueTashkeel
@@ -112,7 +112,7 @@ public sealed class DisplayWordsDeterministicIdTests : IDisposable
 
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var tashkeelRows = await dbContext.QuranWordsUniqueTashkeel.AsNoTracking().ToListAsync();
@@ -140,7 +140,7 @@ public sealed class DisplayWordsDeterministicIdTests : IDisposable
 
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var readableWords = await dbContext.QuranWords
@@ -205,7 +205,7 @@ public sealed class DisplayWordsDeterministicIdTests : IDisposable
 
     private async Task<DeterministicIdMapping> CaptureIdMappingAsync()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var tashkeel = await dbContext.QuranWordsUniqueTashkeel

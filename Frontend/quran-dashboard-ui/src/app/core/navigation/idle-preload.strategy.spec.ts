@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { of } from 'rxjs';
 
 import { IdlePreloadStrategy } from './idle-preload.strategy';
@@ -8,17 +8,12 @@ type IdleCallback = () => void;
 const flushMicrotasks = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 describe('IdlePreloadStrategy', () => {
-  afterEach(() => {
-    delete (globalThis as { requestIdleCallback?: unknown }).requestIdleCallback;
-    vi.useRealTimers();
-  });
-
   it('defers the chunk load until the idle callback fires', async () => {
     let idleCallback: IdleCallback | undefined;
-    (globalThis as { requestIdleCallback?: unknown }).requestIdleCallback = (cb: IdleCallback) => {
+    vi.stubGlobal('requestIdleCallback', (cb: IdleCallback) => {
       idleCallback = cb;
       return 1;
-    };
+    });
 
     const load = vi.fn(() => of('chunk'));
     const emitted: unknown[] = [];
@@ -33,6 +28,8 @@ describe('IdlePreloadStrategy', () => {
     expect(emitted).toEqual(['chunk']);
   });
 
+  // jsdom never defines requestIdleCallback, and the test-setup safety net unstubs the one
+  // the previous test installs even if that test throws — so this fallback branch is reachable.
   it('falls back to a delayed load when requestIdleCallback is unavailable', async () => {
     vi.useFakeTimers();
 

@@ -8,7 +8,7 @@ using QuranDashboard.Tests.Api.Access;
 namespace QuranDashboard.Tests.Smoke;
 
 // The one Testing-environment composition, shared by the empty-schema fixture and the dump-seeded one.
-// The two tiers own separate containers on purpose, but they must not own separate host wiring: if they
+// The two tiers own separate databases on purpose, but they must not own separate host wiring: if they
 // did, a route answering differently between them could mean a difference in configuration rather than
 // the difference in data the data tier is there to measure.
 internal static class SmokeApiHost
@@ -24,7 +24,8 @@ internal static class SmokeApiHost
 
     public static WebApplicationFactory<HealthController> Build(
         string connectionString,
-        FakeExternalUserProfileSource profileSource)
+        FakeExternalUserProfileSource profileSource,
+        SmokeSqlCommandCapture commandCapture)
     {
         return new WebApplicationFactory<HealthController>()
             .WithWebHostBuilder(builder =>
@@ -46,8 +47,8 @@ internal static class SmokeApiHost
                         // Required non-blank by the validator; inert otherwise, since the effective
                         // audience is pinned by TestJwtTokens.ConfigureOfflineValidation.
                         ["Auth:Audience"] = TestJwtTokens.TestAudience,
-                        // Enables the Owner-bootstrap path for OwnerSub only (its fake profile email).
-                        ["Auth:BootstrapOwnerEmail"] = FakeExternalUserProfileSource.EmailFor(SmokePersonas.OwnerSub),
+                        // Supplies the configured Owner identity used by the smoke personas.
+                        ["OwnerBootstrap:Emails:0"] = FakeExternalUserProfileSource.EmailFor(SmokePersonas.OwnerSub),
                         // AddApiServices throws when the allowed-origins list is empty.
                         ["Cors:AllowedOrigins:0"] = "https://localhost",
                     }));
@@ -56,7 +57,8 @@ internal static class SmokeApiHost
                 {
                     services.RemoveAll<QuranDashboardDbContext>();
                     services.RemoveAll<DbContextOptions<QuranDashboardDbContext>>();
-                    services.AddDbContext<QuranDashboardDbContext>(options => options.UseNpgsql(connectionString));
+                    services.AddDbContext<QuranDashboardDbContext>(options =>
+                        options.UseNpgsql(connectionString).AddInterceptors(commandCapture));
 
                     // Replace the real Logto Management API boundary with the in-memory fake so no test
                     // ever calls out.

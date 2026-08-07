@@ -14,7 +14,7 @@ public sealed class ImportReconstructionTests
         this.fixture = fixture;
     }
 
-    [Fact]
+    [FoundationImportSourceFact]
     public async Task ImportIntoEmptyDatabase_ResolvesSampleWordAndPageOneLayout()
     {
         var handler = await fixture.CreateHandlerAsync();
@@ -25,7 +25,7 @@ public sealed class ImportReconstructionTests
 
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var sampleWord = await dbContext.QuranWords

@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabPageOverlaysController } from './abwab-page-overlays.controller';
 import { AbwabModalKind, AbwabModalState, isDoorDependentAbwabModalKind } from '../models/abwab.models';
+import { AbwabPermissionsController } from './abwab-permissions.controller';
 
 export const DOOR_MODAL_KINDS: readonly AbwabModalKind[] = ['create', 'child', 'edit'];
 
@@ -15,11 +16,17 @@ interface OpenedModal {
 export class AbwabModalUrlController {
   private readonly facade = inject(AbwabSnapshotFacade);
   private readonly overlays = inject(AbwabPageOverlaysController);
+  private readonly permissions = inject(AbwabPermissionsController);
 
   private readonly modalSignal = signal<AbwabModalState | null>(null);
   private readonly doorSignal = signal<number | null>(null);
 
   readonly modal = this.modalSignal.asReadonly();
+
+  readonly unauthorizedWriteModal = computed<AbwabModalState | null>(() => {
+    const modal = this.modalSignal();
+    return modal !== null && !this.permissions.canOpenModal(modal.kind) ? modal : null;
+  });
 
   private opened: OpenedModal | null = null;
 
@@ -99,7 +106,20 @@ export class AbwabModalUrlController {
     this.opened = null;
   }
 
+  clearUnauthorizedWriteModal(): void {
+    const modal = this.unauthorizedWriteModal();
+    if (modal === null) {
+      return;
+    }
+    this.closeOverlayFor(modal.kind);
+    this.opened = null;
+    this.modalSignal.set(null);
+  }
+
   private canOpen(kind: AbwabModalKind): boolean {
+    if (!this.permissions.canOpenModal(kind)) {
+      return false;
+    }
     if (!isDoorDependentAbwabModalKind(kind)) {
       return this.facade.snapshot() !== null;
     }

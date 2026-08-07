@@ -55,7 +55,7 @@
             </button>
           }
 
-          @if (namingTemplate()) {
+          @if (permissions.canCreateTemplate() && namingTemplate()) {
             <form class="abwab-templates-page__new" (submit)="createTemplate($event)">
               <label class="qd-sr-only" for="abwab-templates-page-new-name">{{ newTemplateNameLabel }}</label>
               <input
@@ -68,7 +68,7 @@
                 (keydown.escape)="cancelNamingTemplate()"
               />
             </form>
-          } @else {
+          } @else if (permissions.canCreateTemplate()) {
             <button
               type="button"
               class="abwab-templates-page__add"
@@ -115,43 +115,54 @@
                 </span>
               </h2>
               <div class="abwab-templates-page__editor-actions">
-                <button
-                  type="button"
-                  class="qd-btn qd-btn-primary"
-                  data-testid="abwab-templates-page-copy"
-                  (click)="openCopyModal()"
-                >
-                  {{ copyToDoorsLabel }}
-                </button>
-                <button
-                  type="button"
-                  class="qd-btn"
-                  data-testid="abwab-templates-page-edit-template"
-                  (click)="editRoot()"
-                >
-                  {{ editTemplateLabel }}
-                </button>
-                <button
-                  type="button"
-                  class="qd-btn"
-                  data-testid="abwab-templates-page-delete-template"
-                  (click)="requestTemplateDelete()"
-                >
-                  {{ deleteTemplateLabel }}
-                </button>
+                @if (permissions.canApplyTemplate()) {
+                  <button
+                    type="button"
+                    class="qd-btn qd-btn-primary"
+                    data-testid="abwab-templates-page-copy"
+                    (click)="openCopyModal()"
+                  >
+                    {{ copyToDoorsLabel }}
+                  </button>
+                }
+                @if (permissions.canEditTemplateNode()) {
+                  <button
+                    type="button"
+                    class="qd-btn"
+                    data-testid="abwab-templates-page-edit-template"
+                    (click)="editRoot()"
+                  >
+                    {{ editTemplateLabel }}
+                  </button>
+                }
+                @if (permissions.canDeleteTemplate()) {
+                  <button
+                    type="button"
+                    class="qd-btn"
+                    data-testid="abwab-templates-page-delete-template"
+                    (click)="requestTemplateDelete()"
+                  >
+                    {{ deleteTemplateLabel }}
+                  </button>
+                }
               </div>
             </div>
 
             <qd-abwab-template-tree
               [root]="template.root"
               [ariaLabel]="templateTreeAriaLabel"
+              [canCreateNode]="permissions.canCreateTemplateNode()"
+              [canReorderNode]="permissions.canReorderTemplateNode()"
+              [canShowRootContextMenu]="canRootTemplateTreeContextMenu()"
+              [canShowNodeContextMenu]="canNodeTemplateTreeContextMenu()"
               (addChildRequested)="onAddChildRequested($event)"
               (menuRequested)="onMenuRequested($event)"
               (orderCommitted)="onOrderCommitted($event)"
               (quickAddRequested)="onQuickAddRequested($event)"
             />
 
-            <qd-confirm-dialog
+            @if (permissions.canDeleteTemplate()) {
+              <qd-confirm-dialog
               testIdPrefix="abwab-templates-page-delete-template-confirm"
               [open]="confirmingTemplateDelete()"
               [titleText]="templateDeleteConfirmTitle"
@@ -166,10 +177,12 @@
               @if (templateDeleteError(); as message) {
                 <qd-state variant="error" [message]="message" data-testid="abwab-templates-page-delete-template-confirm-error" />
               }
-            </qd-confirm-dialog>
+              </qd-confirm-dialog>
+            }
 
             @let deletingName = deletingNodeName();
-            <qd-confirm-dialog
+            @if (permissions.canDeleteTemplateNode()) {
+              <qd-confirm-dialog
               testIdPrefix="abwab-templates-page-delete-node-confirm"
               [open]="!!deletingName"
               [titleText]="templateNodeDeleteConfirmTitle"
@@ -184,7 +197,8 @@
               @if (nodeDeleteError(); as message) {
                 <qd-state variant="error" [message]="message" data-testid="abwab-templates-page-delete-node-confirm-error" />
               }
-            </qd-confirm-dialog>
+              </qd-confirm-dialog>
+            }
           }
         </div>
       </div>
@@ -198,6 +212,7 @@
   [isEdit]="nodeModalIsEdit()"
   [isRoot]="nodeModalIsRoot()"
   [contextName]="nodeModalContextName()"
+  [canSubmit]="canNodeModalSubmit()"
   [submitNode]="submitNode"
   (closed)="closeNodeModal()"
 />
@@ -209,6 +224,7 @@
   [liveRoots]="liveRoots()"
   [doorsLoading]="doorsLoading()"
   [doorsError]="doorsError()"
+  [canApply]="permissions.canApplyTemplate()"
   [applyTemplate]="applyTemplate"
   (closed)="closeCopyModal()"
   (retryDoors)="retryDoorsLoad()"
@@ -221,13 +237,17 @@
     backdropTestId="abwab-templates-page-ctx-backdrop"
     (dismissed)="closeContextMenu()"
   >
-    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-templates-page-ctx-edit" (click)="ctxEdit()">
-      {{ nodeEditOpLabel }}
-    </button>
-    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-templates-page-ctx-add-child" (click)="ctxAddChild()">
-      {{ nodeAddChildOpLabel }}
-    </button>
-    @if (contextMenuIsRoot()) {
+    @if (permissions.canEditTemplateNode()) {
+      <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-templates-page-ctx-edit" (click)="ctxEdit()">
+        {{ nodeEditOpLabel }}
+      </button>
+    }
+    @if (permissions.canCreateTemplateNode()) {
+      <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-templates-page-ctx-add-child" (click)="ctxAddChild()">
+        {{ nodeAddChildOpLabel }}
+      </button>
+    }
+    @if (contextMenuIsRoot() && permissions.canDeleteTemplate()) {
       <button
         type="button"
         role="menuitem"
@@ -237,7 +257,7 @@
       >
         {{ deleteTemplateLabel }}
       </button>
-    } @else {
+    } @else if (!contextMenuIsRoot() && permissions.canDeleteTemplateNode()) {
       <button
         type="button"
         role="menuitem"

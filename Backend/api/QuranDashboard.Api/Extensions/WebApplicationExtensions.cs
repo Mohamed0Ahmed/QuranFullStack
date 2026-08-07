@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Routing;
+using QuranDashboard.Api.Authorization.Validation;
+
 namespace QuranDashboard.Api.Extensions;
 
 public static class WebApplicationExtensions
@@ -18,14 +21,12 @@ public static class WebApplicationExtensions
 
         app.UseHttpsRedirection();
         app.UseCors("AngularDev");
-        // The limiter keys per-client-IP, not per-user, so it belongs pre-auth — unauthenticated
-        // traffic is rate-limited before it ever reaches authentication, and no per-user claim
-        // keying is needed. It still sits after CORS so preflight OPTIONS is handled by CORS and a
-        // 429 rejection carries CORS headers.
         app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
+        app.Services.GetRequiredService<UnsafeEndpointMetadataValidator>()
+            .Validate(app.Services.GetServices<EndpointDataSource>().SelectMany(source => source.Endpoints));
 
         return app;
     }

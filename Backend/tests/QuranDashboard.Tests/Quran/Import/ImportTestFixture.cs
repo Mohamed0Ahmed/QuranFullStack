@@ -1,58 +1,53 @@
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
+using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Import;
 
 public sealed class ImportTestFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private ServiceProvider? _rootProvider;
+    private PostgreSqlDatabaseLease? databaseLease;
+    private ServiceProvider? rootProvider;
 
-    public string SourceRoot { get; private set; } = string.Empty;
+    public string SourceRoot => FoundationImportSourceGate.SourceRoot;
 
     public async Task InitializeAsync()
     {
-        await postgresContainer.StartAsync();
-
-        SourceRoot = Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory,
-            "..", "..", "..", "..", "..", "..",
-            "resources", "import-sources", "quran-foundation"));
-
-        if (!Directory.Exists(SourceRoot))
+        if (FoundationImportSourceGate.IsMissing)
         {
-            throw new DirectoryNotFoundException($"Import source staging tree was not found: {SourceRoot}");
+            return;
         }
 
-        _rootProvider = BuildServiceProvider();
+        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(ImportTestFixture));
 
-        await using var scope = _rootProvider.CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await dbContext.Database.MigrateAsync();
+        try
+        {
+            rootProvider = ownedProviders.Own(BuildServiceProvider(databaseLease.ConnectionString));
+        }
+        catch
+        {
+            await DisposeAsync();
+            throw;
+        }
     }
 
     public async Task DisposeAsync()
     {
-        if (_rootProvider is not null)
-        {
-            await _rootProvider.DisposeAsync();
-            _rootProvider = null;
-        }
+        rootProvider = null;
+        await ownedProviders.DisposeAsync();
 
-        await postgresContainer.DisposeAsync();
+        if (databaseLease is not null)
+        {
+            await databaseLease.DisposeAsync();
+            databaseLease = null;
+        }
     }
 
-    public ServiceProvider CreateServiceProvider()
+    public AsyncServiceScope CreateScope()
     {
-        if (_rootProvider is null)
-        {
-            throw new InvalidOperationException(
-                $"{nameof(ImportTestFixture)} has not been initialized. Ensure it is used as a shared fixture (ICollectionFixture / collection fixture).");
-        }
-
-        return _rootProvider;
+        return InitializedRootProvider.CreateAsyncScope();
     }
 
     public async Task<ImportQuranFoundationHandler> CreateHandlerAsync()
@@ -63,23 +58,29 @@ public sealed class ImportTestFixture : IAsyncLifetime
 
     public ImportQuranFoundationHandler CreateHandlerWithoutTruncate()
     {
-        return CreateServiceProvider().GetRequiredService<ImportQuranFoundationHandler>();
+        return InitializedRootProvider.GetRequiredService<ImportQuranFoundationHandler>();
     }
 
     public async Task TruncateQuranTablesAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             "TRUNCATE quran_words, quran_mushaf_lines, quran_mushaf_pages, quran_ayahs, quran_surahs RESTART IDENTITY CASCADE;");
     }
 
-    private ServiceProvider BuildServiceProvider()
+    private ServiceProvider InitializedRootProvider =>
+        rootProvider ?? throw new InvalidOperationException(
+            $"{nameof(ImportTestFixture)} holds no database. Use it as a collection fixture, and mark every case "
+            + $"that reaches the database with [{nameof(FoundationImportSourceFactAttribute)}] so it skips when "
+            + $"{FoundationImportSourceGate.SourceRoot} is absent.");
+
+    private static ServiceProvider BuildServiceProvider(string connectionString)
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:QuranDashboardDb"] = postgresContainer.GetConnectionString()
+                ["ConnectionStrings:QuranDashboardDb"] = connectionString
             })
             .Build();
 

@@ -1,4 +1,6 @@
+using QuranDashboard.Api.Authorization.Metadata;
 using QuranDashboard.Application.Abstractions.Abwab.Responses;
+using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Application.Abwab.Commands.Doors.CreateDoor;
 using QuranDashboard.Application.Abwab.Commands.Doors.EditDoor;
 using QuranDashboard.Application.Abwab.Commands.Doors.MoveDoor;
@@ -23,6 +25,7 @@ public sealed class AbwabDoorsController(
     RestoreDoorHandler restoreHandler) : ControllerBase
 {
     [HttpPost]
+    [RequirePermission(AbwabPermissions.Doors.Create)]
     public async Task<ActionResult<ApiResponse<AbwabDoorDto>>> Create(
         [FromBody] CreateDoorCommand command, CancellationToken cancellationToken)
     {
@@ -51,6 +54,7 @@ public sealed class AbwabDoorsController(
     }
 
     [HttpPut("{id:int}")]
+    [RequirePermission(AbwabPermissions.Doors.Edit)]
     public async Task<ActionResult<ApiResponse<AbwabDoorDto>>> Edit(
         int id, [FromBody] EditDoorBody body, CancellationToken cancellationToken)
     {
@@ -75,6 +79,7 @@ public sealed class AbwabDoorsController(
     }
 
     [HttpPost("{id:int}/move")]
+    [RequirePermission(AbwabPermissions.Doors.Move)]
     public async Task<ActionResult<ApiResponse<AbwabDoorDto>>> Move(
         int id, [FromBody] MoveDoorBody body, CancellationToken cancellationToken)
     {
@@ -104,6 +109,7 @@ public sealed class AbwabDoorsController(
     }
 
     [HttpPost("{id:int}/order")]
+    [RequirePermission(AbwabPermissions.Doors.Reorder)]
     public async Task<ActionResult<ApiResponse<AbwabDoorDto>>> Reorder(
         int id, [FromBody] ReorderDoorBody body, CancellationToken cancellationToken)
     {
@@ -129,6 +135,7 @@ public sealed class AbwabDoorsController(
     }
 
     [HttpPost("bulk-move")]
+    [RequirePermission(AbwabPermissions.Doors.Move)]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<AbwabDoorDto>>>> BulkMove(
         [FromBody] BulkMoveDoorsCommand command, CancellationToken cancellationToken)
     {
@@ -159,6 +166,7 @@ public sealed class AbwabDoorsController(
     }
 
     [HttpPost("bulk-archive")]
+    [RequirePermission(AbwabPermissions.Doors.Archive)]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<int>>>> BulkArchive(
         [FromBody] BulkArchiveDoorsCommand command, CancellationToken cancellationToken)
     {
@@ -179,6 +187,7 @@ public sealed class AbwabDoorsController(
     }
 
     [HttpDelete("{id:int}")]
+    [RequirePermission(AbwabPermissions.Doors.Archive)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<ActionResult<ApiResponse<object>>> Delete(
         int id, [FromBody] DeleteDoorBody body, CancellationToken cancellationToken)
@@ -197,6 +206,7 @@ public sealed class AbwabDoorsController(
     }
 
     [HttpPost("{id:int}/restore")]
+    [RequirePermission(AbwabPermissions.Doors.Restore)]
     public async Task<ActionResult<ApiResponse<AbwabDoorDto>>> Restore(
         int id, [FromBody] RestoreDoorBody body, CancellationToken cancellationToken)
     {

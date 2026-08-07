@@ -138,7 +138,7 @@ public sealed class MorphologyRefusalForceTests(MorphologyImportTestFixture fixt
 
         try
         {
-            await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+            await using var scope = fixture.CreateScope();
             var handler = scope.ServiceProvider.GetRequiredService<ImportMorphologyHandler>();
             var result = await handler.HandleAsync(
                 new ImportMorphologyCommand(sourcePath, false, readableCount, reportDir),

@@ -29,7 +29,7 @@ public sealed class DisplayWordsOrderingTests
 
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var orderedRows = await dbContext.QuranWordsOrderedTashkeel

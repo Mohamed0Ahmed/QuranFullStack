@@ -12,7 +12,7 @@ public sealed class SmokeAbwabTemplateReadTests(SmokeApiFixture fixture)
     [Fact]
     public async Task GetTemplate_UnknownIdWithCraftedIfNoneMatch_ReturnsNotFoundWithoutValidator()
     {
-        await fixture.ResetAbwabAsync();
+        await fixture.ResetAsync();
         using var client = fixture.CreateClient();
 
         using var list = await client.GetAsync("/api/abwab/templates");
@@ -27,5 +27,6 @@ public sealed class SmokeAbwabTemplateReadTests(SmokeApiFixture fixture)
         await ApiEnvelope.AssertFailureEnvelopeAsync(
             response, HttpStatusCode.NotFound, ApiMessages.AbwabTemplateNotFound);
         response.Headers.ETag.Should().BeNull();
+        response.Headers.CacheControl.Should().BeNull();
     }
 }

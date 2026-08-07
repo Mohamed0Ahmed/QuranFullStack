@@ -11,6 +11,9 @@ import { AbwabTemplateDto } from '../../../core/api/generated/models/abwab-templ
 import { AbwabTemplateSummaryDto } from '../../../core/api/generated/models/abwab-template-summary-dto';
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
+import { CurrentUserStore } from '../../../core/auth/current-user.store';
+import { WriteAuthFailureCoordinator } from '../../../core/auth/write-auth-failure.coordinator';
+import { PERMISSION_CODES, PermissionCode } from '../../../core/auth/permission-code';
 
 function ok<T>(data: T): ApiResponse<T> {
   return { isSuccess: true, message: 'تم', data };
@@ -25,15 +28,27 @@ const CREATED_TEMPLATE: AbwabTemplateDto = { id: 1, name: 'قالب الأخلا
 interface FakeApi {
   createTemplate?: () => Observable<ApiResponse<AbwabTemplateDto>>;
   deleteTemplate?: () => Observable<ApiResponse<unknown> | null>;
+  addNode?: () => Observable<ApiResponse<unknown>>;
+  editNode?: () => Observable<ApiResponse<unknown>>;
+  reorderNode?: () => Observable<ApiResponse<unknown>>;
+  deleteNode?: () => Observable<ApiResponse<unknown>>;
   applyTemplate?: () => Observable<ApiResponse<AbwabDoorDto[]>>;
 }
 
-function setup(fakeApi: FakeApi) {
+function setup(
+  fakeApi: FakeApi,
+  options: {
+    readonly permissions?: readonly PermissionCode[];
+    readonly handleAuthFailure?: (error: unknown) => Promise<{ kind: 'unauthorized' | 'forbidden'; message: string | null } | null>;
+  } = {},
+) {
   getTestBed().resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       AbwabTemplatesController,
       AbwabTemplatesFacade,
+      { provide: CurrentUserStore, useValue: { can: (permission: PermissionCode) => (options.permissions ?? PERMISSION_CODES).includes(permission) } },
+      { provide: WriteAuthFailureCoordinator, useValue: { handle: options.handleAuthFailure ?? (async () => null) } },
       {
         provide: AbwabTemplatesApi,
         useValue: {
@@ -48,6 +63,52 @@ function setup(fakeApi: FakeApi) {
 }
 
 describe('AbwabTemplatesController', () => {
+  describe('Phase 9 last-dispatch permission guard', () => {
+    const fields = { name: 'عقدة', description: '', representativeAyahText: '', aliases: [] };
+    const deniedCases: readonly {
+      readonly name: string;
+      readonly request: (controller: AbwabTemplatesController) => Observable<unknown>;
+      readonly fake: (call: ReturnType<typeof vi.fn>) => FakeApi;
+    }[] = [
+      { name: 'template create', request: (controller) => controller.createTemplate('قالب'), fake: (call) => ({ createTemplate: call }) },
+      { name: 'template delete', request: (controller) => controller.deleteTemplate(1), fake: (call) => ({ deleteTemplate: call }) },
+      { name: 'template node create', request: (controller) => controller.addNode(1, 2, fields), fake: (call) => ({ addNode: call }) },
+      { name: 'template node edit', request: (controller) => controller.editNode(2, fields), fake: (call) => ({ editNode: call }) },
+      { name: 'template node reorder', request: (controller) => controller.reorderNode(2, 3), fake: (call) => ({ reorderNode: call }) },
+      { name: 'template node delete', request: (controller) => controller.deleteNode(2), fake: (call) => ({ deleteNode: call }) },
+      { name: 'template apply', request: (controller) => controller.applyTemplate(1, [2]), fake: (call) => ({ applyTemplate: call }) },
+    ];
+
+    it.each(deniedCases)('does not dispatch $name for a read-only visitor', ({ request, fake }) => {
+      const apiCall = vi.fn();
+      const { controller } = setup(fake(apiCall), { permissions: [] });
+      let outcome: unknown;
+
+      request(controller).subscribe((value) => (outcome = value));
+
+      expect(apiCall).not.toHaveBeenCalled();
+      expect(outcome).toEqual({ kind: 'forbidden', message: ABWAB_LABELS.writePermissionDenied });
+    });
+
+    it('refreshes through the auth coordinator on a 403 without retrying template apply', async () => {
+      const applyTemplate = vi.fn().mockReturnValue(throwError(() => httpError(403, 'ممنوع')));
+      const handleAuthFailure = vi.fn().mockResolvedValue({ kind: 'forbidden', message: 'ممنوع' });
+      const { controller } = setup(
+        { applyTemplate },
+        { permissions: ['abwab.templates.apply'], handleAuthFailure },
+      );
+      let outcome: unknown;
+
+      controller.applyTemplate(1, [2]).subscribe((value) => (outcome = value));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(applyTemplate).toHaveBeenCalledTimes(1);
+      expect(handleAuthFailure).toHaveBeenCalledTimes(1);
+      expect(outcome).toEqual({ kind: 'forbidden', message: 'ممنوع' });
+    });
+  });
+
   // F-51, applied to the templates half. Same contract as AbwabWriteController: a failure
   // reaches exactly ONE live region, and both sides are pinned so neither a double
   // announcement nor a silenced failure can pass.

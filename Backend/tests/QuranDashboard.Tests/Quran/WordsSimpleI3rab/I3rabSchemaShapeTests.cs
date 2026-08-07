@@ -28,7 +28,7 @@ public sealed class I3rabSchemaShapeTests(I3rabGenerationTestFixture fixture)
         await fixture.ResetToCompleteMorphologyAsync();
         await fixture.RunGenerationAsync(I3rabGenerationTestFixture.CompleteMorphologyCounts);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var connection = dbContext.Database.GetDbConnection();

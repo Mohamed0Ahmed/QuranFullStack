@@ -3,6 +3,8 @@ using QuranDashboard.Application.Quran.DataPipelines.Translations;
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
+using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Translations;
 
@@ -10,61 +12,52 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
 {
     private const int SyntheticSurahNumber = TranslationSyntheticSeed.SyntheticSurahNumber;
 
-    private readonly List<string> tempDirs = new();
+    private readonly TranslationSyntheticPackage packages = new();
+    private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    private PostgreSqlDatabaseLease? databaseLease;
+    private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        await postgresContainer.StartAsync();
+        databaseLease =
+            await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(TranslationImportTestFixture));
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await dbContext.Database.MigrateAsync();
+        try
+        {
+            rootProvider = ownedProviders.Own(BuildServiceProvider(databaseLease.ConnectionString));
+        }
+        catch
+        {
+            await DisposeAsync();
+            throw;
+        }
     }
 
     public async Task DisposeAsync()
     {
-        foreach (var dir in tempDirs)
+        rootProvider = null;
+        await ownedProviders.DisposeAsync();
+
+        if (databaseLease is not null)
         {
-            try
-            {
-                Directory.Delete(dir, recursive: true);
-            }
-            catch (IOException)
-            {
-            }
+            await databaseLease.DisposeAsync();
+            databaseLease = null;
         }
 
-        await postgresContainer.DisposeAsync();
+        packages.Dispose();
     }
 
-    public ServiceProvider CreateServiceProvider(Action<IServiceCollection>? configure = null)
+    public AsyncServiceScope CreateScope()
     {
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["ConnectionStrings:QuranDashboardDb"] = postgresContainer.GetConnectionString()
-            })
-            .Build();
-
-        var services = new ServiceCollection()
-            .AddSingleton<IConfiguration>(configuration)
-            .AddApplication()
-            .AddInfrastructure(configuration);
-
-        configure?.Invoke(services);
-
-        return services.BuildServiceProvider();
+        return InitializedRootProvider.CreateAsyncScope();
     }
 
     public async Task SeedSyntheticAyahsAsync(params (int Id, string VerseKey)[] ayahs)
     {
         await TruncateFoundationAsync();
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         dbContext.QuranSurahs.Add(new Surah
@@ -113,7 +106,7 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
 
     public async Task TruncateTranslationTablesAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """
@@ -126,7 +119,7 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
 
     public async Task<TranslationTableSnapshot> CaptureTranslationTableSnapshotAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return new TranslationTableSnapshot(
@@ -136,7 +129,7 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
 
     public async Task TruncateFoundationAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """
@@ -148,174 +141,13 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
             """);
     }
 
-    public async Task<string> WriteSyntheticPackageAsync(
+    public Task<string> WriteSyntheticPackageAsync(
         IReadOnlyList<SyntheticTranslationSourceSpec>? sources = null,
         IReadOnlyList<string>? excludedSourceKeys = null,
         string manifestType = TranslationSyntheticSeed.ManifestType,
         bool isFinalImportManifest = true,
-        string excludedCategory = "wordByWord")
-    {
-        var sourceSpecs = sources ?? TranslationSyntheticSeed.DefaultSources;
-        var excluded = excludedSourceKeys ?? Array.Empty<string>();
-
-        var packageDir = Path.Combine(Path.GetTempPath(), $"quran-translations-{Guid.NewGuid():N}");
-        tempDirs.Add(packageDir);
-        Directory.CreateDirectory(packageDir);
-        Directory.CreateDirectory(Path.Combine(packageDir, "sources"));
-
-        await File.WriteAllTextAsync(
-            Path.Combine(packageDir, "README.md"),
-            "Synthetic translation source package for tests. Source-safe; not for import into production.");
-        await File.WriteAllTextAsync(
-            Path.Combine(packageDir, "package-report.md"),
-            "# Synthetic translation package report\n\nGenerated by TranslationImportTestFixture for tests.");
-
-        var sourceRecords = new List<object>();
-        var displayRecords = new List<object>();
-
-        var simpleCount = 0;
-        var withFootnotesCount = 0;
-
-        foreach (var spec in sourceSpecs)
-        {
-            var packageFile = $"sources/{spec.SourceKey}.json";
-            var fullPath = Path.Combine(packageDir, packageFile);
-            var entries = spec.Entries.ToDictionary(
-                pair => pair.Key,
-                pair => (object)new { t = pair.Value });
-
-            await WriteJsonAsync(fullPath, entries);
-
-            var fileBytes = await File.ReadAllBytesAsync(fullPath);
-            var sha256 = Convert.ToHexString(SHA256.HashData(fileBytes));
-            var fileSize = fileBytes.LongLength;
-            var classifiedType = ClassifyTranslationType(spec);
-
-            if (classifiedType == "simple")
-            {
-                simpleCount++;
-            }
-            else
-            {
-                withFootnotesCount++;
-            }
-
-            sourceRecords.Add(new
-            {
-                sourceKey = spec.SourceKey,
-                packageFile,
-                languageCode = spec.LanguageCode,
-                translationType = classifiedType,
-                contentCoverageCount = spec.ContentCoverageCount,
-                fileSizeBytes = fileSize,
-                sha256
-            });
-
-            displayRecords.Add(new
-            {
-                sourceKey = spec.SourceKey,
-                packageFile,
-                sourceFileOriginal = $"/synthetic/provenance/{spec.SourceKey}.json",
-                languageCode = spec.LanguageCode,
-                languageNameEn = spec.LanguageNameEn,
-                languageNameAr = spec.LanguageNameAr,
-                nativeName = spec.NativeName,
-                direction = spec.Direction,
-                translationType = spec.TranslationType,
-                translatorKey = spec.TranslatorKey,
-                displayNameEn = spec.DisplayNameEn,
-                displayNameAr = spec.DisplayNameAr,
-                translatorNameEn = spec.TranslatorNameEn,
-                translatorNameAr = spec.TranslatorNameAr,
-                metadataStatus = "final_display_ready"
-            });
-        }
-
-        var languages = sourceSpecs.Select(spec => spec.LanguageCode).Distinct().ToList();
-        var mappingCount = sourceSpecs.Sum(spec => spec.Entries.Count);
-        var contentCoverageCount = sourceSpecs.Max(spec => spec.ContentCoverageCount);
-
-        var manifest = new
-        {
-            manifestType,
-            isFinalImportManifest,
-            createdAtUtc = "2026-06-15T00:00:00Z",
-            sourceRoot = "sources",
-            sourceCount = sourceSpecs.Count,
-            typeCounts = new
-            {
-                simple = simpleCount,
-                with_footnotes = withFootnotesCount
-            },
-            languageCount = languages.Count,
-            approvedAyahMappingCount = mappingCount,
-            contentCoverageCount,
-            excludedCounts = new
-            {
-                wordByWord = excludedCategory == "wordByWord" ? excluded.Count : 0,
-                emptyText = excludedCategory == "emptyText" ? excluded.Count : 0,
-                unattributedNearDuplicate = excludedCategory == "unattributedNearDuplicate" ? excluded.Count : 0,
-                total = excluded.Count
-            },
-            selectionRules = new
-            {
-                resourceKind = "translation",
-                levels = new[] { "ayah" },
-                includedTypes = new[] { "simple", "with_footnotes" },
-                excludedTypes = new[] { "word_by_word" },
-                requireExact6236KeySet = true,
-                requireNonEmptyText = true,
-                classifyByContentNotFolder = true,
-                preserveTextExactly = true
-            },
-            licenseWarning =
-                "License/provenance is unknown for all sources; synthetic test package, not for publishing.",
-            languages = languages.Select(code => new
-            {
-                code,
-                nameEn = $"TEST_LANG_{code}",
-                nameAr = $"لغة-اختبار-{code}",
-                nativeName = $"TEST_NATIVE_{code}",
-                direction = sourceSpecs.First(spec => spec.LanguageCode == code).Direction
-            }),
-            sources = sourceRecords,
-            excludedSourceSummary = new Dictionary<string, string[]>
-            {
-                [excludedCategory] = excluded.Select(key => $"excluded/{key}.json").ToArray()
-            }
-        };
-
-        await WriteJsonAsync(Path.Combine(packageDir, "manifest.json"), manifest);
-
-        var displayMetadata = new
-        {
-            metadataType = "quran-translation-source-display-metadata",
-            status = "final",
-            sourceCount = sourceSpecs.Count,
-            sourceOfTruthManifest = "manifest.json",
-            displayContract = new
-            {
-                required = new[]
-                {
-                    "displayNameEn",
-                    "displayNameAr",
-                    "languageCode",
-                    "languageNameEn",
-                    "languageNameAr",
-                    "nativeName",
-                    "direction",
-                    "translationType",
-                    "sourceKey",
-                    "packageFile"
-                }
-            },
-            records = displayRecords
-        };
-
-        await WriteJsonAsync(Path.Combine(packageDir, "source-display-metadata.json"), displayMetadata);
-
-        return packageDir;
-    }
+        string excludedCategory = "wordByWord") =>
+        packages.WriteAsync(sources, excludedSourceKeys, manifestType, isFinalImportManifest, excludedCategory);
 
     public async Task<ImportTranslationsResult> RunImportAsync(
         string packageDir,
@@ -324,27 +156,33 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
         bool force = false)
     {
         reportOutDir ??= Path.Combine(Path.GetTempPath(), $"translation-report-default-{Guid.NewGuid():N}");
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<ImportTranslationsHandler>();
         return await handler.HandleAsync(
             new ImportTranslationsCommand(packageDir, force, expectedCounts, reportOutDir),
             CancellationToken.None);
     }
 
-    private static async Task WriteJsonAsync(string path, object data)
-    {
-        var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
-        await File.WriteAllTextAsync(path, json);
-    }
+    private ServiceProvider InitializedRootProvider =>
+        rootProvider ?? throw new InvalidOperationException(
+            $"{nameof(TranslationImportTestFixture)} holds no database. Every helper on it needs the "
+            + $"[{nameof(TranslationImportTestCollection)}] collection fixture, which runs "
+            + $"{nameof(InitializeAsync)} first.");
 
-    private static string ClassifyTranslationType(SyntheticTranslationSourceSpec spec)
+    private static ServiceProvider BuildServiceProvider(string connectionString)
     {
-        var hasInlineFootnotes = spec.Entries.Values
-            .Any(text => text.Contains("[[", StringComparison.Ordinal));
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:QuranDashboardDb"] = connectionString
+            })
+            .Build();
 
-        return spec.TranslationType == "simple" && hasInlineFootnotes
-            ? "with_footnotes"
-            : spec.TranslationType;
+        return new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddApplication()
+            .AddInfrastructure(configuration)
+            .BuildServiceProvider();
     }
 }
 

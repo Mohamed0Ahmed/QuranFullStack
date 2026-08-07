@@ -37,14 +37,7 @@ public sealed class LogtoManagementApiUserProfileSource(
             ?? throw new InvalidOperationException(
                 $"The Logto Management API returned an empty body for user '{logtoSub}'.");
 
-        // decision 3: Logto's Management API GET /api/users/{id} has no "email verified" field. Logto
-        // only ever syncs primaryEmail from a verified social or enterprise-SSO source, so the presence
-        // of at least one linked identity of either kind is treated as proof the primary email is
-        // IdP-verified. No linked identity (a password-only account) => fail closed, unverified.
-        var emailVerified = !string.IsNullOrWhiteSpace(user.PrimaryEmail)
-            && ((user.Identities?.Count > 0) || (user.SsoIdentities?.Length > 0));
-
-        return new ExternalUserProfile(user.PrimaryEmail, user.Username, user.Name, emailVerified);
+        return new ExternalUserProfile(user.PrimaryEmail, user.Username, user.Name);
     }
 
     private async Task<string> GetManagementTokenAsync(CancellationToken ct)
@@ -141,7 +134,5 @@ public sealed class LogtoManagementApiUserProfileSource(
     private sealed record LogtoUserResponse(
         [property: JsonPropertyName("primaryEmail")] string? PrimaryEmail,
         [property: JsonPropertyName("username")] string? Username,
-        [property: JsonPropertyName("name")] string? Name,
-        [property: JsonPropertyName("identities")] Dictionary<string, JsonElement>? Identities,
-        [property: JsonPropertyName("ssoIdentities")] JsonElement[]? SsoIdentities);
+        [property: JsonPropertyName("name")] string? Name);
 }

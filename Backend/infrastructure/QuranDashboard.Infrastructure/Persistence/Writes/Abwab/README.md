@@ -323,9 +323,9 @@ incidentally.
 - **Template deletion is soft and touches one row — but its nodes stop being addressable.** Both
   reads filter by the template's own `deleted_at`, so cascading into node rows would write rows
   nothing looks at. The three node writes keyed by `nodeId` alone (edit, reorder, delete) still join
-  that flag and answer `404` once the template is gone: `/api/abwab` ships without authentication, so
-  a node id is enough to reach a write, and a write that succeeded where the read answers `404` would
-  be an asymmetry with no caller. Node deletion, by
+  that flag and answer `404` once the template is gone: exact permission authorization admits the
+  request, while the node lookup still determines whether its target is live. A write that succeeded
+  where the read answers `404` would be an asymmetry with no valid target. Node deletion, by
   contrast, **does** claim the node's subtree — a template child has no meaning without its parent —
   and resequences the remaining siblings. The root refuses deletion and reordering alike: deleting the
   template is the way, and a single root has no siblings to order among.

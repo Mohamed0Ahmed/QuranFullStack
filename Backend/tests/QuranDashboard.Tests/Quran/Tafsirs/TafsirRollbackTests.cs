@@ -96,7 +96,7 @@ public sealed class TafsirRollbackTests(TafsirImportTestFixture fixture)
 
     private static async Task<string> CaptureTafsirContentFingerprintAsync(TafsirImportTestFixture fixture)
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var rows = await dbContext.TafsirEntries

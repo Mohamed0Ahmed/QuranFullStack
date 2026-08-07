@@ -11,6 +11,8 @@ using QuranDashboard.Domain.Quran.Translations;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Navigation;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Navigation;
+using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Navigation;
 
@@ -19,21 +21,42 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
     private const int SyntheticSurahNumber = NavigationSyntheticSeed.SyntheticSurahNumber;
 
     private readonly List<string> tempDirs = new();
+    private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private readonly PostgreSqlContainer postgresContainer = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    private PostgreSqlDatabaseLease? databaseLease;
+    private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        await postgresContainer.StartAsync();
+        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
+            nameof(NavigationImportTestFixture));
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await dbContext.Database.MigrateAsync();
+        try
+        {
+            rootProvider = ownedProviders.Own(BuildServiceProvider(configure: null));
+        }
+        catch
+        {
+            await DisposeAsync();
+            throw;
+        }
     }
 
     public async Task DisposeAsync()
+    {
+        rootProvider = null;
+        await ownedProviders.DisposeAsync();
+
+        if (databaseLease is not null)
+        {
+            await databaseLease.DisposeAsync();
+            databaseLease = null;
+        }
+
+        DeleteTempDirs();
+    }
+
+    private void DeleteTempDirs()
     {
         foreach (var dir in tempDirs)
         {
@@ -44,17 +67,34 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
             catch (IOException)
             {
             }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
 
-        await postgresContainer.DisposeAsync();
+        tempDirs.Clear();
     }
 
-    public ServiceProvider CreateServiceProvider(Action<IServiceCollection>? configure = null)
+    public AsyncServiceScope CreateScope() => Initialized(rootProvider).CreateAsyncScope();
+
+    public ServiceProvider CreateCallerDisposedServiceProvider(Action<IServiceCollection> configure)
     {
+        ArgumentNullException.ThrowIfNull(configure);
+
+        return BuildServiceProvider(configure);
+    }
+
+    private ServiceProvider BuildServiceProvider(Action<IServiceCollection>? configure)
+    {
+        var connectionString = databaseLease?.ConnectionString
+            ?? throw new InvalidOperationException(
+                $"{nameof(NavigationImportTestFixture)} holds no database lease. Use it as a collection fixture "
+                + $"through [Collection(nameof({nameof(NavigationImportTestCollection)}))].");
+
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:QuranDashboardDb"] = postgresContainer.GetConnectionString()
+                ["ConnectionStrings:QuranDashboardDb"] = connectionString
             })
             .Build();
 
@@ -68,11 +108,16 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
         return services.BuildServiceProvider();
     }
 
+    private static ServiceProvider Initialized(ServiceProvider? provider) =>
+        provider ?? throw new InvalidOperationException(
+            $"{nameof(NavigationImportTestFixture)} has not been initialized. Use it as a collection fixture "
+            + $"through [Collection(nameof({nameof(NavigationImportTestCollection)}))].");
+
     public async Task SeedSyntheticAyahsAsync(params (int Id, string VerseKey)[] ayahs)
     {
         await TruncateFoundationAsync();
 
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         dbContext.QuranSurahs.Add(new Surah
@@ -121,14 +166,14 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
 
     public async Task TruncateNavigationTablesAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(NavigationMetadataSql.ClearNavigationData);
     }
 
     public async Task TruncateFoundationAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """
@@ -155,7 +200,7 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
         bool force = false)
     {
         reportOutDir ??= Path.Combine(Path.GetTempPath(), $"navigation-report-{Guid.NewGuid():N}");
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var handler = scope.ServiceProvider.GetRequiredService<ImportNavigationMetadataHandler>();
         return await handler.HandleAsync(
             new ImportNavigationMetadataCommand(packageDir, force, expectedCounts, reportOutDir),
@@ -170,7 +215,7 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
     {
         reportOutDir ??= Path.Combine(Path.GetTempPath(), $"navigation-report-{Guid.NewGuid():N}");
 
-        await using var scope = CreateServiceProvider(services =>
+        await using var provider = BuildServiceProvider(services =>
         {
             services.AddScoped<INavigationMetadataImportSource>(sp =>
                 new TamperingNavigationImportSource(
@@ -178,7 +223,9 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
                         sp.GetRequiredService<NavigationManifestReader>(),
                         sp.GetRequiredService<JsonNavigationDatasetReader>()),
                     tamper));
-        }).CreateAsyncScope();
+        });
+
+        await using var scope = provider.CreateAsyncScope();
 
         var handler = scope.ServiceProvider.GetRequiredService<ImportNavigationMetadataHandler>();
         return await handler.HandleAsync(
@@ -188,7 +235,7 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
 
     public async Task<NavigationTableSnapshot> CaptureNavigationSnapshotAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return new NavigationTableSnapshot(
@@ -202,7 +249,7 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
 
     public async Task SeedIsolationCompanionDataAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         dbContext.QuranMushafLines.Add(new MushafLine
@@ -337,7 +384,7 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
 
     public async Task<NavigationIsolationBaseline> CaptureIsolationBaselineAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return new NavigationIsolationBaseline(
@@ -376,7 +423,7 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
 
     public async Task<NavigationDataSnapshot> CaptureNavigationDataSnapshotAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return new NavigationDataSnapshot(
@@ -392,7 +439,7 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
 
     public async Task SeedOrphanedAyahNavigationColumnsAsync()
     {
-        await using var scope = CreateServiceProvider().CreateAsyncScope();
+        await using var scope = CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """

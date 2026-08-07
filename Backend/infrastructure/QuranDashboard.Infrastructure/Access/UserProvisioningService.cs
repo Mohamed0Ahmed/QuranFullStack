@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Options;
+using QuranDashboard.Application.Abstractions.Access;
 using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Domain.Access;
 
@@ -7,18 +7,25 @@ namespace QuranDashboard.Infrastructure.Access;
 public sealed class UserProvisioningService(
     QuranDashboardDbContext db,
     IExternalUserProfileSource profileSource,
-    IUserRoleResolver roleResolver,
-    IOptions<OwnerBootstrapOptions> bootstrapOptions) : IUserProvisioningService
+    IOwnerReconciliationService ownerReconciliationService,
+    IOwnerBootstrapConfigurationSource bootstrapConfigurationSource,
+    IEmailIdentityNormalizer emailIdentityNormalizer) : IUserProvisioningService
 {
-    public async Task<ProvisionedUser> GetOrCreateAsync(string logtoSub, CancellationToken ct)
+    public async Task<ProvisionedUser> GetOrCreateAsync(AuthenticatedInteractiveIdentity identity, CancellationToken ct)
     {
+        var logtoSub = identity.Sub;
         var existing = await db.AccessUsers
             .AsNoTracking()
             .Include(u => u.Role)
             .SingleOrDefaultAsync(u => u.LogtoSub == logtoSub, ct);
         if (existing is not null)
         {
-            return await ReconcileExistingAsync(existing, logtoSub, ct);
+            if (bootstrapConfigurationSource.GetCurrent().NormalizedEmails.Contains(existing.NormalizedEmail))
+            {
+                await ownerReconciliationService.ReconcileInteractiveSignInAsync(identity, ct);
+            }
+
+            return await LoadProvisionedUserAsync(logtoSub, ct);
         }
 
         var profile = await profileSource.GetProfileAsync(logtoSub, ct);
@@ -26,62 +33,40 @@ public sealed class UserProvisioningService(
         {
             throw new InvalidOperationException(
                 $"Logto returned no primary email for subject '{logtoSub}'; a user cannot be provisioned " +
-                "without a server-verified email, and a client-supplied value must never be substituted.");
+                "without provider identity data, and a client-supplied value must never be substituted.");
         }
 
-        return await CreateAsync(logtoSub, profile, ct);
+        var user = await CreateAsync(logtoSub, profile, ct);
+        if (bootstrapConfigurationSource.GetCurrent().NormalizedEmails.Contains(user.NormalizedEmail))
+        {
+            await ownerReconciliationService.ReconcileInteractiveSignInAsync(identity, ct);
+        }
+
+        return await LoadProvisionedUserAsync(logtoSub, ct);
     }
 
-    private async Task<ProvisionedUser> ReconcileExistingAsync(User existing, string logtoSub, CancellationToken ct)
+    private async Task<User> CreateAsync(string logtoSub, ExternalUserProfile profile, CancellationToken ct)
     {
-        if (!IsConfiguredOwner(existing.Email))
+        var normalizedEmail = emailIdentityNormalizer.Normalize(profile.Email!);
+        var normalizedCollision = await db.AccessUsers
+            .AsNoTracking()
+            .SingleOrDefaultAsync(user => user.NormalizedEmail == normalizedEmail, ct);
+        if (normalizedCollision is not null && normalizedCollision.LogtoSub != logtoSub)
         {
-            return Project(existing, existing.Role?.Name);
+            throw new UserProvisioningEmailConflictException(profile.Email!);
         }
-
-        if (existing.Status == UserStatus.Disabled)
-        {
-            return Project(existing, existing.Role?.Name);
-        }
-
-        var ownerRole = await GetOwnerRoleAsync(ct);
-        if (ownerRole is null || (existing.RoleId == ownerRole.Id && existing.Status == UserStatus.Active))
-        {
-            return Project(existing, existing.Role?.Name);
-        }
-
-        var profile = await profileSource.GetProfileAsync(logtoSub, ct);
-        if (!profile.EmailVerified)
-        {
-            return Project(existing, existing.Role?.Name);
-        }
-
-        var tracked = await db.AccessUsers.SingleAsync(u => u.Id == existing.Id, ct);
-        tracked.RoleId = ownerRole.Id;
-        tracked.Status = UserStatus.Active;
-        tracked.UpdatedAtUtc = DateTimeOffset.UtcNow;
-        await db.SaveChangesAsync(ct);
-
-        roleResolver.Evict(logtoSub);
-        return Project(tracked, ownerRole.Name);
-    }
-
-    private async Task<ProvisionedUser> CreateAsync(string logtoSub, ExternalUserProfile profile, CancellationToken ct)
-    {
-        var ownerRole = IsConfiguredOwner(profile.Email!) && profile.EmailVerified
-            ? await GetOwnerRoleAsync(ct)
-            : null;
 
         var now = DateTimeOffset.UtcNow;
         var user = new User
         {
             LogtoSub = logtoSub,
             Email = profile.Email!,
+            NormalizedEmail = normalizedEmail,
             UserName = profile.UserName,
             DisplayName = profile.DisplayName,
             Title = null,
-            RoleId = ownerRole?.Id,
-            Status = ownerRole is not null ? UserStatus.Active : UserStatus.Pending,
+            RoleId = null,
+            Status = UserStatus.Pending,
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
         };
@@ -90,11 +75,7 @@ public sealed class UserProvisioningService(
         try
         {
             await db.SaveChangesAsync(ct);
-            if (ownerRole is not null)
-            {
-                roleResolver.Evict(logtoSub);
-            }
-            return Project(user, ownerRole?.Name);
+            return user;
         }
         catch (DbUpdateException ex)
         {
@@ -112,20 +93,39 @@ public sealed class UserProvisioningService(
 
                 throw;
             }
-            return Project(winner, winner.Role?.Name);
+            return winner;
         }
     }
 
-    private bool IsConfiguredOwner(string email)
+    private async Task<ProvisionedUser> LoadProvisionedUserAsync(string logtoSub, CancellationToken ct)
     {
-        var ownerEmail = bootstrapOptions.Value.BootstrapOwnerEmail;
-        return !string.IsNullOrWhiteSpace(ownerEmail)
-            && string.Equals(email, ownerEmail, StringComparison.OrdinalIgnoreCase);
+        var user = await db.AccessUsers
+            .AsNoTracking()
+            .Include(candidate => candidate.Role)
+            .Include(candidate => candidate.UserPermissions)
+            .ThenInclude(grant => grant.Permission)
+            .SingleAsync(candidate => candidate.LogtoSub == logtoSub, ct);
+        return Project(user);
     }
 
-    private Task<Role?> GetOwnerRoleAsync(CancellationToken ct)
-        => db.AccessRoles.AsNoTracking().SingleOrDefaultAsync(r => r.Name == RoleNames.Owner, ct);
+    private static ProvisionedUser Project(User user)
+    {
+        var isOwner = user.Role?.Name == RoleNames.Owner;
+        var permissions = user.Status == UserStatus.Active && !isOwner
+            ? user.UserPermissions
+                .Where(grant => grant.Permission.RetiredAtUtc is null)
+                .OrderBy(grant => grant.Permission.DisplayOrder)
+                .ThenBy(grant => grant.Permission.Code, StringComparer.Ordinal)
+                .Select(grant => grant.Permission.Code)
+                .ToArray()
+            : [];
 
-    private static ProvisionedUser Project(User user, string? roleName)
-        => new(user.LogtoSub, user.Email, user.DisplayName, user.Status, user.RoleId, roleName);
+        return new ProvisionedUser(
+            user.LogtoSub,
+            user.Email,
+            user.DisplayName,
+            user.Status,
+            isOwner,
+            permissions);
+    }
 }

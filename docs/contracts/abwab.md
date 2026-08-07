@@ -12,6 +12,7 @@ page does **not** restate routes, DTO fields, refusal statuses, or cache rules.
 - Write models (writers, transactions, exception translation) → [`Persistence/Writes/Abwab/README.md`](../../Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/README.md)
 - Read models (tree snapshot, relations, templates, conditional GET) → [`Persistence/Reads/Abwab/README.md`](../../Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md)
 - HTTP endpoints and failure statuses → [`Controllers/Abwab/`](../../Backend/api/QuranDashboard.Api/Controllers/Abwab/), [`Controllers/README.md`](../../Backend/api/QuranDashboard.Api/Controllers/README.md) and [http-api.md](./http-api.md)
+- Write-access classification → [security-access.md](./security-access.md)
 
 **Precedence:** backend code + the writes/reads READMEs win for the API contract; the
 frontend README wins for URL-state and page behaviour.

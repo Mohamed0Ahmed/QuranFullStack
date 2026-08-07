@@ -9,12 +9,16 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `qd-build` | `dotnet build QuranDashboard.sln` for backend changes |
 | `qd-api` | `dotnet run --launch-profile https --no-build`; opens Swagger when the API is ready |
 | `qd-ui` | `npm run start:https` for the Angular dashboard |
-| `export-swagger` | Builds the API (Release) and writes the OpenAPI spec to `Frontend/quran-dashboard-ui/openapi/swagger.json` via the Swashbuckle CLI (`Backend/dotnet-tools.json` manifest); no running server or database needed |
+| `export-swagger` | Builds the API (Release) without build servers, defaults the Swagger host to `Development` for startup-option validation, and writes the OpenAPI spec to `Frontend/quran-dashboard-ui/openapi/swagger.json` via the Swashbuckle CLI (`Backend/dotnet-tools.json` manifest); no running server or database needed |
 | `check-api-contract` | Runs `export-swagger`, regenerates the frontend API models (`npm run generate:api`), then fails with `git diff --exit-code` if either committed output is stale. It checks the spec and the generated client — the two things a caller breaks against — and deliberately not the browsable Redoc bundle, which is untracked and therefore invisible to `git diff` |
+| `test-backend <lane>` | **The only supported way to run Backend tests.** Selects a lane from the test catalog, builds once or refuses a stale `--no-build`, shards when two PostgreSQL majors would collide, and cleans up its own containers. See *Backend test commands* below |
+| `cleanup-test-runtime --run-id RUN_ID` | Removes the Docker resources of one `test-backend` run, selected by all five project test labels **and** that exact run ID. Never prunes |
+| `check-pending-model --build\|--no-build` | Reports whether the EF Core model has pending changes. Never adds and never applies a migration |
 | `create-smoke-dump` | Regenerates the canonical `quran_*` data dump the backend smoke data tier restores: `resources/db-dumps/quran-canonical/{quran-canonical.dump,manifest.json}` |
 | `wipe-abwab` | Empties the six `abwab_*` tables on a local database, leaving the canonical `quran_*` data intact |
 | `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project. EF tooling only — never hand-write a migration (`Backend/CLAUDE.md`) |
 | `update-db` | `dotnet ef database update` — applies pending migrations to the configured database |
+| `access-admin` | Runs normalized-identity scan/backfill, permission-catalogue sync, Owner reconciliation, legacy-role inventory/conversion, and authorization preflight |
 | `clean-local-build` | Clears the NuGet caches, deletes every `bin`/`obj`, and restores the solution. Non-destructive to data |
 | **`drop-db --yes`** | **DESTRUCTIVE.** `dotnet ef database drop --force` — drops the configured database outright, all data lost |
 | **`reset-db --yes`** | **DESTRUCTIVE.** `drop-db --yes` followed by `update-db` — an empty database at migration head |
@@ -180,7 +184,182 @@ qd-api
 qd-ui
 ```
 
+### `access-admin`
+
+`access-admin` runs the already-built `tools/QuranDashboard.AccessAdmin/` and anchors its copied
+tool configuration, so it can be invoked from any directory. Run `qd-build` after backend code
+changes before using it. The wrapper defaults `DOTNET_ENVIRONMENT` to `Development` without
+overriding a value the caller already exported, so the tool's Development user secrets load on the
+documented local path. The connection source is the tool's `appsettings.json`, then those user
+secrets, then `ConnectionStrings__QuranDashboardDb` as the final override.
+
+From `Backend/`, the staged Phase 2 deployment order is:
+
+```bash
+./scripts/access-admin identity scan
+dotnet ef database update --migration AddAuthorizationAccessFoundation --project infrastructure/QuranDashboard.Infrastructure --startup-project api/QuranDashboard.Api --context QuranDashboardDbContext
+./scripts/access-admin identity scan
+./scripts/access-admin identity backfill --apply
+./scripts/access-admin identity scan
+dotnet ef database update --migration RequireNormalizedEmail --project infrastructure/QuranDashboard.Infrastructure --startup-project api/QuranDashboard.Api --context QuranDashboardDbContext
+./scripts/access-admin catalogue sync
+./scripts/access-admin authorization preflight
+```
+
+The first scan runs before any Phase 2 DDL and reads only legacy `users.id` and `users.email`; a
+collision exits non-zero without mutation. The additive migration intentionally leaves
+`normalized_email` nullable and without its unique index while creating the access tables and audit
+document constraints. The final identity migration succeeds only after the explicit
+normalizer-backed backfill.
+`authorization preflight` additionally inspects the live Phase 2 schema — column types, nullability
+and identity generation, plus index and constraint definitions compared verbatim — before checking
+migration history, normalized identities, and the catalogue. Catalogue parity is over active codes:
+a canonical permission carrying `retired_at` fails as `catalogue_retired=`. The explicit
+Interactive OIDC sign-in alone can add a configured Owner after verified email evidence; the
+`owners reconcile --apply` command can only remove safely resolved Owners or revoke conflicting
+direct grants. It requires a reason and `--confirm-production` in Production. The tool does not run
+migrations itself. A clean `authorization preflight` result is readiness evidence only: it neither
+deploys an artifact nor activates authorization.
+
+### Authorization activation and rollback (prospective)
+
+**This is a future runbook, not a completed rollout.** Authorization enforcement has not been
+activated in production, and this repository contains no production or production-like activation
+or rollout evidence.
+
+Before an approved production activation, record the chosen gate: the preferred path is a reviewed
+Phase 5 enforcement and Phase 6 administration release together. An earlier Phase 5-only path
+requires explicit acceptance of a temporary Owner-only write period or a verified trusted operator
+command that uses the same active-Owner authorization, validation, transaction, grant-delta, and
+append-only audit services as Phase 6.
+
+- Backend enforcement must be live before, or atomically with, frontend permission-aware controls.
+- During a rolling or mixed-version deployment, deny unsafe methods at the edge or place
+  administrative writes in maintenance/deny mode until no open Backend instance can serve them.
+  Keep public GETs online.
+- A frontend rollback may be independent, but never roll the Backend back to an open-write build.
+  Roll Backend code back only to a schema-compatible build that protects every unsafe route. If no
+  protected rollback artifact is available, keep administrative unsafe methods denied at the
+  platform/edge while public GETs remain available, then repair forward.
+
+Before real authorization users, grants, or audit history exist, an explicitly disposable
+development or pre-release database may be dropped and recreated from the current migration head.
+That reset is not a production rollback strategy. Once real authorization data exists, never run a
+destructive authorization `Down` migration or drop its tables to roll back. Keep unsafe routes
+protected and use a schema-compatible code rollback, a data-preserving restore, or repair forward.
+
+### Legacy Admin/Editor cleanup
+
+The Phase 10 operator sequence is deliberately separate from `update-db`: first run
+`./scripts/access-admin legacy-roles inventory`, resolve every reported violation and verify the
+configured/verified Owner state, then run `./scripts/access-admin legacy-roles convert --apply` under the
+short access-admin write freeze. The converter locks and rereads the role-bearing users, refuses a former
+Admin/Editor user with any direct grant, clears only the legacy `RoleId`, writes no inferred grant, and
+emits audit events. Run the inventory again, retain the before/after non-secret output, and confirm that
+`authorization preflight` reports no legacy-role reference before the generated cleanup migration is
+deployed. It stays non-zero before that deployment because the migration is pending.
+
+The cleanup migration deletes only the Admin and Editor seeds. `users.role_id` remains nullable and its
+restrictive foreign key is the safety gate: PostgreSQL rejects the migration if conversion left any user
+referencing either role; it does not cascade.
+
+For a clean database created from the current migration head, there is no populated legacy
+authorization state to convert and no conversion rehearsal is required. If a release instead upgrades
+a populated database that carries legacy Admin/Editor identities, rehearse and retain the
+inventory/convert/reinventory sequence against a production-like copy before applying the cleanup
+migration. Do not use migrations to fabricate rehearsal evidence.
+
+Exit codes are stable: `0` clean, `2` usage, `3` a reported preflight/catalogue failure, and `4` a
+configuration or database failure the tool reports as `access_admin_failure=<type>` without a stack
+trace.
+
 After the first successful build, use `qd-api` directly until backend code changes.
+
+## Backend test commands
+
+**Which lane to run and when is `../../TESTING_STRATEGY.md` §3 and §5.** This section is what
+the three scripts do; it deliberately does not repeat the selection policy.
+
+### `test-backend`
+
+```bash
+./scripts/test-backend --help
+```
+
+`--help` prints the authoritative usage and is the thing to trust when this file and the script
+disagree. The lanes are `fast`, `access`, `access-db`, `migration`, `process`, `smoke`,
+`tier-b`, `canonical-data`, `feature`, `pipeline`, and `pre-pr`; an unknown lane exits 2 with the
+usage text (`test-backend:72-78`).
+
+| Flag | Effect |
+|------|--------|
+| `--build` / `--no-build` | **Required, exactly one**, on every lane except `pre-pr` (`test-backend:144-155`). `--build` builds `QuranDashboard.sln` once, single-threaded. `--no-build` verifies the outputs the selection actually needs — the test assembly always, `QuranDashboard.AccessAdmin` for `Kind=Migration`/`Kind=Process`, `QuranDashboard.DataImporter` for `Gate=Pipeline`/`Kind=Canonical` — and names the missing path instead of running stale (`:299-326`) |
+| `--list-tests` | Discovery only. Starts no container, never shards, and additionally fails if a selected catalog class discovers no tests or discovery finds a class outside the selection (`:602-631`) |
+| `--results-dir PATH` | Passed through as `--results-directory`; a relative path resolves against your working directory, not the repo root (`:361-366`). **It does not produce a TRX file.** The script registers no VSTest logger — `:536-555` is the whole argument list — so the directory receives the blame-hang output and nothing machine-readable. When you need parseable results, prefix the invocation with `VSTestLogger=trx`, which MSBuild reads as a property; the script itself needs no change |
+| `--feature KEY` | `pipeline` only — narrows the lane to one validated Pipeline feature; a non-Pipeline feature exits 2 |
+| `--class NAME` / `--test NAME` | `feature` only, as the two exact alternatives to a `FEATURE_KEY`. `--test` is additionally validated against VSTest discovery, so a typo'd method name fails before anything runs (`:328-359`) |
+
+`pre-pr` is the exception: executing it always builds, so it rejects `--no-build`; discovering it
+requires the exact form `pre-pr --list-tests --no-build` (`:144-152`).
+
+Selection comes from `../tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv`, whose
+header the script verifies before reading a row (`:168-178`). A `FEATURE_KEY` that no row carries
+exits 2 rather than running nothing (`:268-279`). The script prints its lane, the catalog path,
+every selected row, the expanded VSTest filter, and the resource kinds the selection needs —
+**that block is the evidence**; do not pipe a run into `tail`.
+
+Three behaviors are worth knowing before you read an unfamiliar failure:
+
+- **It can run twice.** A selection containing `QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests`
+  alongside any other class runs as two sequential `dotnet test` invocations — the shared
+  `postgres:16-alpine` classes, then that one class on its exclusive `postgres:18-alpine` server —
+  with a bounded wait in between until no labelled PostgreSQL container is running (`:388-408,
+  562-586`). That is `pre-pr` and `canonical-data`; `smoke` excludes the data tier and stays one
+  invocation. Shard exit statuses are combined (`:693-698`).
+- **A missing canonical resource fails the lane.** When the selection needs the foundation
+  sources, the enriched morphology artifact, or the dump plus manifest, the script checks for them
+  before starting anything and exits 1 with `canonical data tier: failed preflight` (`:476-519`).
+  It prints one of `ran` / `failed` / `not selected` / `discovery only` either way — quote that
+  line as the canonical skip accounting. It is scoped to the shards that actually carry a
+  `Kind=Canonical` class, which is not only the exclusive one: every `Quran.Import` class is
+  canonical and runs on the shared runtime. `ran` means every canonical-bearing shard started
+  **and** exited zero; `failed` means one of them came back non-zero or never started because an
+  earlier shard stopped the lane (`:701-731`). A failure confined to a shard that carries no
+  canonical class no longer reports the tier as failed — that was the misattribution. Which
+  shard, and its own exit code, is on the `canonical shard status:` line printed beside it.
+- **It owns its cleanup.** Each run generates a 32-hex run ID, exports it as
+  `QURAN_DASHBOARD_TEST_RUN_ID`, unsets the five external-database overrides and their opt-in, and
+  installs an `EXIT` trap that calls `cleanup-test-runtime` for that ID (`:454-474`).
+
+Backend test processes **must not run concurrently** — the shared database runtime is guarded by
+a cross-process OS lock, so a second run waits rather than failing fast. See
+`../tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md`.
+
+### `cleanup-test-runtime`
+
+```bash
+./scripts/cleanup-test-runtime --run-id RUN_ID [--dry-run]
+```
+
+`test-backend` calls this itself; run it by hand only to clear a run that was killed. It selects
+Docker resources by the three fixed project labels, the presence of `host-pid`, and the **exact**
+run ID (`cleanup-test-runtime:69-83`) — so it can only ever reach containers this project
+labelled. It refuses a missing or non-32-hex run ID (`:51-57`), never prunes, never touches
+unlabelled resources or development volumes, and reports the Testcontainers reaper separately
+while leaving it running (`:101-106`). A container the test host already removed itself counts as
+cleaned, not as a failure (`:130-148`). `--dry-run` prints the candidates and removes nothing.
+
+### `check-pending-model`
+
+```bash
+./scripts/check-pending-model --build|--no-build
+```
+
+Wraps `dotnet ef migrations has-pending-model-changes` for `QuranDashboardDbContext` with the
+right project/startup pair and `DOTNET_ENVIRONMENT=Development` (`check-pending-model:53-59`). It
+**never adds and never applies a migration**; it is a separate command from every test lane, run
+alongside the `migration` lane whenever the EF model or schema is in scope. `--no-build` requires
+existing Infrastructure and Api output and names the missing path otherwise (`:41-46`).
 
 ## One-time setup (zsh)
 

@@ -38,7 +38,7 @@ public sealed class DisplayWordsRebuildTests
         result.Totals.UniqueSimpleRows.Should().Be(DisplayWordsSyntheticSeed.UniqueSimpleCount);
         result.Totals.ReadableWords.Should().Be(DisplayWordsSyntheticSeed.ReadableWordCount);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         (await dbContext.QuranWordsOrderedTashkeel.CountAsync()).Should().Be(DisplayWordsSyntheticSeed.ReadableWordCount);
@@ -73,7 +73,7 @@ public sealed class DisplayWordsRebuildTests
 
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         (await dbContext.QuranWords.CountAsync(word => word.IsAyahMarker)).Should().Be(1);

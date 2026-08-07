@@ -1,0 +1,144 @@
+<section class="access-admin-page qd-page-frame" aria-labelledby="access-admin-page-title">
+  <header class="access-admin-page__header">
+    <div>
+      <p class="access-admin-page__eyebrow">إدارة الأمان</p>
+      <h1 id="access-admin-page-title" class="qd-page-title">إدارة الوصول</h1>
+      <p>متابعة الحسابات والصلاحيات المباشرة وسجل التغييرات بعناية.</p>
+    </div>
+  </header>
+
+  @if (!facade.canAccess()) {
+    <qd-state variant="error" message="لا تملك صلاحية إدارة الوصول." />
+  } @else {
+    <section class="access-admin-page__workspace">
+      <aside class="qd-card access-admin-page__users">
+        <qd-access-user-list
+          [users]="facade.users()"
+          [selectedUserId]="facade.selectedUser()?.id ?? null"
+          [query]="facade.userQuery()"
+          [page]="facade.userPage()"
+          [pageSize]="facade.userPageSize()"
+          [totalCount]="facade.userTotalCount()"
+          [loading]="facade.usersLoading()"
+          [error]="facade.usersError()"
+          (filtersChange)="updateUsers($event)"
+          (userSelected)="selectUser($event)"
+          (pageChange)="updateUserPage($event)"
+        />
+      </aside>
+
+      <section class="qd-card qd-card--feature access-admin-page__detail" aria-label="تفاصيل المستخدم">
+        @if (facade.catalogueLoading() || facade.selectedUserLoading()) {
+          <qd-state variant="loading" message="جارٍ تحميل التفاصيل…" />
+        } @else if (facade.catalogueError(); as catalogueError) {
+          <qd-state variant="error" [message]="catalogueError" />
+        } @else if (facade.selectedUserError(); as userError) {
+          <qd-state variant="error" [message]="userError" />
+        } @else if (facade.selectedUser(); as user) {
+          @if (facade.mutationMessage(); as message) {
+            <qd-state variant="error" [message]="message" />
+          }
+          <qd-access-user-workflows
+            [user]="user"
+            [groups]="facade.permissionGroups()"
+            [selectedCodes]="facade.selectedPermissionCodes()"
+            [permissionDiff]="facade.permissionDiff()"
+            [busyAction]="facade.busyAction()"
+            [relinkPreview]="facade.relinkPreview()"
+            [resetToken]="workflowResetToken()"
+            (permissionCodesChange)="updatePermissionCodes($event)"
+            (actionConfirmed)="confirmAction($event)"
+            (relinkPreviewRequested)="previewRelink($event)"
+            (relinkConfirmed)="confirmRelink($event)"
+            (relinkCancelled)="cancelRelink()"
+          />
+        } @else {
+          <qd-state variant="empty" message="اختر مستخدمًا لعرض تفاصيل الوصول الخاصة به." />
+        }
+      </section>
+    </section>
+
+    <section class="access-admin-page__supporting">
+      <section class="qd-card access-admin-page__audit" aria-label="سجل الوصول">
+        <header class="access-admin-page__section-header">
+          <div>
+            <p class="access-admin-page__eyebrow">قراءة فقط</p>
+            <h2>سجل الوصول</h2>
+          </div>
+        </header>
+        <form class="access-admin-page__audit-filters" novalidate (submit)="applyAuditFilters($event)">
+          <label for="access-audit-target">معرّف المستخدم</label>
+          <input id="access-audit-target" class="qd-input" type="number" inputmode="numeric" [value]="auditTargetUserId()" (input)="updateAuditTargetUserId($event)" />
+          <label for="access-audit-actor">معرّف منفّذ الإجراء</label>
+          <input id="access-audit-actor" class="qd-input" type="number" min="1" inputmode="numeric" data-testid="access-audit-actor" [value]="auditActorUserId()" (input)="updateAuditActorUserId($event)" />
+          <label for="access-audit-action">نوع الحدث</label>
+          <input id="access-audit-action" class="qd-input" type="text" [value]="auditActionType()" (input)="updateAuditActionType($event)" />
+          <label for="access-audit-permission">الصلاحية</label>
+          <select id="access-audit-permission" class="qd-select" [value]="auditPermissionCode()" (change)="updateAuditPermissionCode($event)">
+            <option value="">كل الصلاحيات</option>
+            @for (group of facade.permissionGroups(); track group.key) {
+              <optgroup [label]="group.label">
+                @for (code of group.codes; track code) {
+                  <option [value]="code">{{ code }}</option>
+                }
+              </optgroup>
+            }
+          </select>
+          <button type="submit" class="qd-btn qd-btn-secondary">تطبيق المرشحات</button>
+        </form>
+        @if (facade.auditLoading()) {
+          <qd-state variant="loading" message="جارٍ تحميل السجل…" />
+        } @else if (facade.auditError(); as auditError) {
+          <qd-state variant="error" [message]="auditError" />
+        } @else if (facade.auditEvents().length === 0) {
+          <qd-state variant="empty" message="لا توجد أحداث مطابقة." />
+        } @else {
+          <ol class="access-admin-page__audit-list">
+            @for (event of facade.auditEvents(); track event.id) {
+              <li>
+                <strong>{{ event.actionType }}</strong>
+                <span>المستخدم {{ event.targetUserId }} · {{ event.occurredAtUtc }}</span>
+                <span>المنفّذ: {{ auditActorTypeLabel(event.actorType) }}</span>
+                <span>معرّف المستخدم المنفّذ: @if (event.actorUserId !== null) { <bdi dir="ltr">{{ event.actorUserId }}</bdi> } @else { غير متاح }</span>
+                @if (event.permissionCode; as code) {
+                  <span dir="ltr">{{ code }}</span>
+                }
+                @if (event.reason; as reason) {
+                  <span>{{ reason }}</span>
+                }
+              </li>
+            }
+          </ol>
+          @if (facade.auditNextCursor()) {
+            <button type="button" class="qd-btn qd-btn-secondary" [disabled]="facade.auditLoading()" (click)="loadNextAuditPage()">تحميل المزيد</button>
+          }
+        }
+      </section>
+
+      <section class="qd-card access-admin-page__reconciliation" aria-label="حالة مطابقة المالكين">
+        <header class="access-admin-page__section-header">
+          <div>
+            <p class="access-admin-page__eyebrow">قراءة فقط</p>
+            <h2>حالة مطابقة المالكين</h2>
+          </div>
+        </header>
+        @if (facade.reconciliationError(); as reconciliationError) {
+          <qd-state variant="error" [message]="reconciliationError" />
+        } @else if (facade.reconciliationStatus(); as status) {
+          <dl class="access-admin-page__reconciliation-list">
+            <div><dt>الحالة</dt><dd>{{ status.isReady ? 'جاهزة' : 'غير جاهزة' }}</dd></div>
+            <div><dt>قابلة للتطبيق</dt><dd>{{ status.canApply ? 'نعم' : 'لا' }}</dd></div>
+            <div><dt>بصمة الإعداد</dt><dd dir="ltr">{{ status.configurationFingerprint }}</dd></div>
+          </dl>
+          <ul class="access-admin-page__candidates">
+            @for (candidate of status.candidates; track candidate.normalizedEmail) {
+              <li><span dir="ltr">{{ candidate.normalizedEmail }}</span> — {{ candidate.state }}</li>
+            }
+          </ul>
+        } @else {
+          <qd-state variant="loading" message="جارٍ تحميل حالة المطابقة…" />
+        }
+      </section>
+    </section>
+  }
+</section>

@@ -1,11 +1,28 @@
+using QuranDashboard.Application.Abstractions.Security.Permissions;
+
 namespace QuranDashboard.Tests.Smoke;
 
 // What a route requires of its caller, not who the caller is — SmokePersona is the caller side, and
 // naming both ends "Anonymous" would put two different meanings on one word in one namespace.
-internal enum SmokeRouteAccess
+internal enum SmokeRouteAccessKind
 {
-    Open,
-    RequiresAuthentication,
+    Public,
+    AuthenticatedOnly,
+    Permission,
+    OwnerOnly,
+}
+
+internal sealed record SmokeRouteAccess(SmokeRouteAccessKind Kind, string? PermissionCode = null)
+{
+    public static SmokeRouteAccess Public { get; } = new(SmokeRouteAccessKind.Public);
+    public static SmokeRouteAccess AuthenticatedOnly { get; } = new(SmokeRouteAccessKind.AuthenticatedOnly);
+    public static SmokeRouteAccess OwnerOnly { get; } = new(SmokeRouteAccessKind.OwnerOnly);
+
+    public static SmokeRouteAccess Permission(string code)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
+        return new(SmokeRouteAccessKind.Permission, code);
+    }
 }
 
 // What "answered with real data" means for one route. Four payload shapes sit behind the shared envelope:
@@ -68,8 +85,10 @@ internal sealed record SmokeRoute(
     string Template,
     string Path,
     HttpStatusCode DerivedStatus,
-    SmokeRouteAccess Access = SmokeRouteAccess.Open)
+    SmokeRouteAccess? Access = null)
 {
+    public SmokeRouteAccess Access { get; init; } = Access ?? SmokeRouteAccess.Public;
+
     public SmokeSeededExpectation? Seeded { get; init; }
 
     // Defaults to GET so all pre-existing entries stay untouched. A write route sets this explicitly.
@@ -219,7 +238,61 @@ internal static class SmokeRouteCatalog
         // evidence; access/me is the tree's only [Authorize] endpoint (AccessController class level).
         new("api/health", "/api/health", HttpStatusCode.OK),
         new("api/dashboard/info", "/api/dashboard/info", HttpStatusCode.OK),
-        new("api/access/me", "/api/access/me", HttpStatusCode.Unauthorized, SmokeRouteAccess.RequiresAuthentication),
+        new("api/access/me", "/api/access/me", HttpStatusCode.Unauthorized, SmokeRouteAccess.AuthenticatedOnly),
+        new("api/access/users", "/api/access/users", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}", "/api/access/users/1", HttpStatusCode.NotFound, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/accept", "/api/access/users/1/accept", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/disable", "/api/access/users/1/disable", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/reactivate", "/api/access/users/1/reactivate", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/access/permissions", "/api/access/permissions", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/permissions", "/api/access/users/1/permissions", HttpStatusCode.NotFound, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/permissions", "/api/access/users/1/permissions", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Put,
+            ParityOnly = true,
+        },
+        new("api/access/audit-events", "/api/access/audit-events", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/logto-sub/relink/preview", "/api/access/users/1/logto-sub/relink/preview", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/access/users/{userId:int}/logto-sub/relink/confirm", "/api/access/users/1/logto-sub/relink/confirm", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/access/owner-reconciliation/status", "/api/access/owner-reconciliation/status", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
 
         // api/abwab/sections — AbwabSectionsController. ParityOnly: these write, so the generic sweep
         // (which sends no body and shares the migrated-but-empty schema across every other case) must
@@ -227,33 +300,47 @@ internal static class SmokeRouteCatalog
         // documents what a well-formed call answers against that empty schema, for reference only.
         new("api/abwab/sections", "/api/abwab/sections", HttpStatusCode.Created)
         {
-            Method = HttpMethod.Post, ParityOnly = true,
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Sections.Create),
+            ParityOnly = true,
         },
         new("api/abwab/sections/{id:int}", "/api/abwab/sections/1", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Put, ParityOnly = true,
+            Method = HttpMethod.Put,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Sections.Edit),
+            ParityOnly = true,
         },
         new("api/abwab/sections/{id:int}", "/api/abwab/sections/1", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Delete, ParityOnly = true,
+            Method = HttpMethod.Delete,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Sections.Delete),
+            ParityOnly = true,
         },
         new("api/abwab/sections/{id:int}/order", "/api/abwab/sections/1/order", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Post, ParityOnly = true,
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Sections.Reorder),
+            ParityOnly = true,
         },
 
         // api/abwab/doors — AbwabDoorsController. Same ParityOnly rationale as sections above.
         new("api/abwab/doors", "/api/abwab/doors", HttpStatusCode.Created)
         {
-            Method = HttpMethod.Post, ParityOnly = true,
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Doors.Create),
+            ParityOnly = true,
         },
         new("api/abwab/doors/{id:int}", "/api/abwab/doors/1", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Put, ParityOnly = true,
+            Method = HttpMethod.Put,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Doors.Edit),
+            ParityOnly = true,
         },
         new("api/abwab/doors/{id:int}/move", "/api/abwab/doors/1/move", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Post, ParityOnly = true,
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Doors.Move),
+            ParityOnly = true,
         },
         // abwab-global-order: the body gained a required Scope (Section | Global). DerivedStatus is
         // unchanged at 404 — ParityOnly routes are never dispatched by the sweep (SmokeRoutePipelineTests
@@ -262,23 +349,33 @@ internal static class SmokeRouteCatalog
         // way, so the derived status stays 404, not 400 — confirmed, not assumed (plan §7 T208).
         new("api/abwab/doors/{id:int}/order", "/api/abwab/doors/1/order", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Post, ParityOnly = true,
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Doors.Reorder),
+            ParityOnly = true,
         },
         new("api/abwab/doors/bulk-move", "/api/abwab/doors/bulk-move", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Post, ParityOnly = true,
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Doors.Move),
+            ParityOnly = true,
         },
         new("api/abwab/doors/bulk-archive", "/api/abwab/doors/bulk-archive", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Post, ParityOnly = true,
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Doors.Archive),
+            ParityOnly = true,
         },
         new("api/abwab/doors/{id:int}", "/api/abwab/doors/1", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Delete, ParityOnly = true,
+            Method = HttpMethod.Delete,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Doors.Archive),
+            ParityOnly = true,
         },
         new("api/abwab/doors/{id:int}/restore", "/api/abwab/doors/1/restore", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Post, ParityOnly = true,
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Doors.Restore),
+            ParityOnly = true,
         },
 
         // api/abwab/doors/{doorId:int}/relations and api/abwab/relations/{relationId:int} —
@@ -292,11 +389,15 @@ internal static class SmokeRouteCatalog
         },
         new("api/abwab/doors/{doorId:int}/relations", "/api/abwab/doors/1/relations", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Post, ParityOnly = true,
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Relations.Create),
+            ParityOnly = true,
         },
         new("api/abwab/relations/{relationId:int}", "/api/abwab/relations/1", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Delete, ParityOnly = true,
+            Method = HttpMethod.Delete,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Relations.Delete),
+            ParityOnly = true,
         },
 
         // abwab-relations: the response contract gained AbwabTreeDoorDto.RelationCount. DerivedStatus is
@@ -327,11 +428,15 @@ internal static class SmokeRouteCatalog
         },
         new("api/abwab/templates", "/api/abwab/templates", HttpStatusCode.Created)
         {
-            Method = HttpMethod.Post, ParityOnly = true,
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Templates.Create),
+            ParityOnly = true,
         },
         new("api/abwab/templates/{templateId:int}", "/api/abwab/templates/1", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Delete, ParityOnly = true,
+            Method = HttpMethod.Delete,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Templates.Delete),
+            ParityOnly = true,
         },
 
         // api/abwab/templates/{templateId:int}/nodes and api/abwab/template-nodes/{nodeId:int} —
@@ -339,23 +444,33 @@ internal static class SmokeRouteCatalog
         // write, so the generic sweep must not dispatch them.
         new("api/abwab/templates/{templateId:int}/nodes", "/api/abwab/templates/1/nodes", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Post, ParityOnly = true,
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.TemplateNodes.Create),
+            ParityOnly = true,
         },
         new("api/abwab/template-nodes/{nodeId:int}", "/api/abwab/template-nodes/1", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Put, ParityOnly = true,
+            Method = HttpMethod.Put,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.TemplateNodes.Edit),
+            ParityOnly = true,
         },
         new("api/abwab/template-nodes/{nodeId:int}/order", "/api/abwab/template-nodes/1/order", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Post, ParityOnly = true,
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.TemplateNodes.Reorder),
+            ParityOnly = true,
         },
         new("api/abwab/template-nodes/{nodeId:int}", "/api/abwab/template-nodes/1", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Delete, ParityOnly = true,
+            Method = HttpMethod.Delete,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.TemplateNodes.Delete),
+            ParityOnly = true,
         },
         new("api/abwab/templates/{templateId:int}/apply", "/api/abwab/templates/1/apply", HttpStatusCode.NotFound)
         {
-            Method = HttpMethod.Post, ParityOnly = true,
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Templates.Apply),
+            ParityOnly = true,
         },
     ];
 

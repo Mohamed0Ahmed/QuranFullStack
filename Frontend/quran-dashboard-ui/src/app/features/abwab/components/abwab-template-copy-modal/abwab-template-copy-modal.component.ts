@@ -27,6 +27,7 @@ export class AbwabTemplateCopyModalComponent {
   readonly liveRoots = input<readonly AbwabNode[]>([]);
   readonly doorsLoading = input(false);
   readonly doorsError = input<string | null>(null);
+  readonly canApply = input(false);
   readonly applyTemplate = input.required<
     (targetDoorIds: readonly number[]) => Observable<AbwabWriteOutcome<AbwabDoorDto[] | null>>
   >();
@@ -108,7 +109,7 @@ export class AbwabTemplateCopyModalComponent {
 
   protected confirm(): void {
     const targets = Array.from(this.pickedIds());
-    if (targets.length === 0 || this.applyBusy()) {
+    if (!this.canApply() || targets.length === 0 || this.applyBusy()) {
       return;
     }
     this.applyBusy.set(true);

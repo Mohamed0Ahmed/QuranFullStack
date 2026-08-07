@@ -2,77 +2,70 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using QuranDashboard.Api.Controllers.Words;
+using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsWordTypes;
 
 public sealed class WordTypesTestFixture : IAsyncLifetime
 {
-    private const string RealDbConnectionEnvKey = "WORD_TYPES_REAL_DB_CONNECTION";
     private const string SeedResourceSuffix = "word-types-explorer-seed.sql";
 
-    private readonly PostgreSqlContainer? _container;
+    private readonly OwnedServiceProviderRegistry _ownedProviders = new();
     private readonly object _apiFactoryLock = new();
+    private PostgreSqlDatabaseLease? _databaseLease;
     private WebApplicationFactory<WordTypeGroupedDetailsController>? _apiFactory;
     private ServiceProvider? _rootProvider;
 
     public RecordingLoggerProvider LoggingProvider { get; } = new();
 
-    public WordTypesTestFixture()
-    {
-        var realDb = Environment.GetEnvironmentVariable(RealDbConnectionEnvKey);
-        if (!string.IsNullOrWhiteSpace(realDb))
-        {
-            ConnectionString = realDb;
-            IsRealDb = true;
-            return;
-        }
-
-        _container = new PostgreSqlBuilder()
-            .WithImage("postgres:16-alpine")
-            .Build();
-        IsRealDb = false;
-    }
-
     public string ConnectionString { get; private set; } = string.Empty;
-
-    public bool IsRealDb { get; }
 
     public async Task InitializeAsync()
     {
-        if (_container is not null)
+        var seedSql = await ReadEmbeddedSeedScriptAsync();
+
+        _databaseLease =
+            ExternalReadOnlyDatabaseOptIn.TryLease(ExternalReadOnlyDatabaseOptIn.WordTypesConnectionVariable)
+            ?? await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(WordTypesTestFixture));
+
+        ConnectionString = _databaseLease.ConnectionString;
+
+        try
         {
-            await _container.StartAsync();
-            ConnectionString = _container.GetConnectionString();
+            _rootProvider = _ownedProviders.Own(BuildServiceProvider());
+
+            if (_databaseLease.IsExternal)
+            {
+                return;
+            }
+
+            await using var scope = _rootProvider.CreateAsyncScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+            await SeedSliceAsync(dbContext, seedSql);
         }
-
-        _rootProvider = BuildServiceProvider();
-
-        await using var scope = _rootProvider.CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-
-        if (IsRealDb)
+        catch
         {
-            return;
+            await DisposeAsync();
+            throw;
         }
-
-        await dbContext.Database.EnsureCreatedAsync();
-        await SeedSliceAsync(dbContext);
     }
 
     public async Task DisposeAsync()
     {
-        _apiFactory?.Dispose();
-        _apiFactory = null;
-
-        if (_rootProvider is not null)
+        if (_apiFactory is not null)
         {
-            await _rootProvider.DisposeAsync();
-            _rootProvider = null;
+            await _apiFactory.DisposeAsync();
+            _apiFactory = null;
         }
 
-        if (_container is not null)
+        _rootProvider = null;
+        await _ownedProviders.DisposeAsync();
+
+        if (_databaseLease is not null)
         {
-            await _container.DisposeAsync();
+            await _databaseLease.DisposeAsync();
+            _databaseLease = null;
         }
     }
 
@@ -134,9 +127,8 @@ public sealed class WordTypesTestFixture : IAsyncLifetime
             .BuildServiceProvider();
     }
 
-    private static async Task SeedSliceAsync(QuranDashboardDbContext dbContext)
+    private static async Task SeedSliceAsync(QuranDashboardDbContext dbContext, string sql)
     {
-        var sql = await ReadEmbeddedSeedScriptAsync();
         var connection = dbContext.Database.GetDbConnection();
         if (connection.State != ConnectionState.Open)
         {

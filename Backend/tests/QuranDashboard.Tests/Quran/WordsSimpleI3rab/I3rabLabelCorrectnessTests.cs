@@ -20,7 +20,7 @@ public sealed class I3rabLabelCorrectnessTests(I3rabGenerationTestFixture fixtur
         var result = await fixture.RunGenerationAsync(I3rabGenerationTestFixture.CompleteMorphologyCounts);
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var pairs = await dbContext.WordMorphologySegments.AsNoTracking()

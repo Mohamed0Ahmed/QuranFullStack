@@ -16,6 +16,12 @@ export class AbwabSidePanelComponent {
   readonly bulkCount = input(0);
   readonly bulkNames = input<readonly string[]>([]);
   readonly archiveViewActive = input(false);
+  readonly canCreateDoor = input(false);
+  readonly canEditDoor = input(false);
+  readonly canMoveDoor = input(false);
+  readonly canArchiveDoor = input(false);
+  readonly canUseBulkMode = input(false);
+  readonly canCreateRelation = input(false);
 
   readonly addChildRequested = output<void>();
   readonly editRequested = output<void>();
@@ -46,6 +52,9 @@ export class AbwabSidePanelComponent {
   protected get bulkClearLabel(): string { return ABWAB_LABELS.bulkClear; }
 
   protected toggleBulkMode(): void {
+    if (!this.canUseBulkMode()) {
+      return;
+    }
     this.bulkModeToggled.emit(!this.bulkMode());
   }
 }

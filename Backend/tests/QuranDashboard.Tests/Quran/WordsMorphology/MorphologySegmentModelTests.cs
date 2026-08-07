@@ -8,7 +8,7 @@ public sealed class MorphologySegmentModelTests(MorphologyImportTestFixture fixt
     [Fact]
     public void Segment_dimension_columns_are_nullable_and_indexed_including_stem_id()
     {
-        using var scope = fixture.CreateServiceProvider().CreateScope();
+        using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var entity = dbContext.Model.FindEntityType(typeof(WordMorphologySegment));
 
@@ -41,7 +41,7 @@ public sealed class MorphologySegmentModelTests(MorphologyImportTestFixture fixt
     [Fact]
     public void Segment_dimension_foreign_keys_target_lemmas_roots_and_stems_with_restrict_delete()
     {
-        using var scope = fixture.CreateServiceProvider().CreateScope();
+        using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var entity = dbContext.Model.FindEntityType(typeof(WordMorphologySegment));
 

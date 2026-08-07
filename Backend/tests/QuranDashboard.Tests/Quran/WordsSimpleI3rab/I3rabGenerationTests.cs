@@ -72,7 +72,7 @@ public sealed class I3rabGenerationTests(I3rabGenerationTestFixture fixture)
         var reportJson = await File.ReadAllTextAsync(Path.Combine(reportDir, "simple-i3rab-generation-report.json"));
         reportJson.Should().Contain("\"verdict\": \"PASS\"");
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var segments = await dbContext.WordMorphologySegments.AsNoTracking()
@@ -104,7 +104,7 @@ public sealed class I3rabGenerationTests(I3rabGenerationTestFixture fixture)
 
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var labelsByPos = await dbContext.WordMorphologySegments.AsNoTracking()

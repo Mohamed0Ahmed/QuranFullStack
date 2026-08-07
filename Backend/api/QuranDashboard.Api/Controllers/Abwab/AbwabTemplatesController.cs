@@ -1,5 +1,7 @@
+using QuranDashboard.Api.Authorization.Metadata;
 using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Application.Abstractions.Abwab.Responses;
+using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Application.Abwab.Commands.Templates.ApplyTemplate;
 using QuranDashboard.Application.Abwab.Commands.Templates.CreateTemplate;
 using QuranDashboard.Application.Abwab.Commands.Templates.DeleteTemplate;
@@ -60,6 +62,7 @@ public sealed class AbwabTemplatesController(
     }
 
     [HttpPost("templates")]
+    [RequirePermission(AbwabPermissions.Templates.Create)]
     public async Task<ActionResult<ApiResponse<AbwabTemplateDto>>> Create(
         [FromBody] CreateTemplateBody body, CancellationToken cancellationToken)
     {
@@ -79,6 +82,7 @@ public sealed class AbwabTemplatesController(
     }
 
     [HttpDelete("templates/{templateId:int}")]
+    [RequirePermission(AbwabPermissions.Templates.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<ActionResult<ApiResponse<object>>> Delete(
         int templateId, CancellationToken cancellationToken)
@@ -96,6 +100,7 @@ public sealed class AbwabTemplatesController(
     }
 
     [HttpPost("templates/{templateId:int}/apply")]
+    [RequirePermission(AbwabPermissions.Templates.Apply)]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<AbwabDoorDto>>>> Apply(
         int templateId, [FromBody] ApplyTemplateBody body, CancellationToken cancellationToken)
     {

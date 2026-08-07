@@ -24,23 +24,32 @@ per-feature.
     types with UI narrowing).
 - `caching/api-response-cache.ts` — shared response cache (feature caches build on the
   same idea; keep the key strategy consistent).
-- `auth/` — Logto authentication + roles (Feature 033):
-  - `role.guard.ts` — `roleGuard(requiredRole)` factory (a functional `CanActivateFn`).
-    Not authenticated → `authorize()` (Logto redirect) and block; authenticated → await
-    `CurrentUserStore.ensureLoaded()`, then activate iff `status === 'active'` and
-    `roleName === requiredRole`, else redirect to `/`. **Attached to nothing in Phase 2**
-    (public browse, roles infrastructure only, decision record §G1/§I4) — the hook a
-    future admin feature wires onto its admin routes. Supersedes the Phase-1 `authGuard`.
+- `auth/` — Logto authentication and access foundation:
+  - `owner.guard.ts` — `ownerGuard` is the sole route guard. It is attached only to
+    `/settings/access`: anonymous visitors enter Logto with that internal URL saved; an
+    authenticated visitor loads `/api/access/me` and must be both active and `isOwner`.
+    Every public route remains unguarded and never waits for `/api/access/me`.
+  - `auth-return-location.store.ts` — stores one safe internal return URL across the Logto
+    redirect; the callback consumes it only after successful authentication, retains it through
+    an error/retry, and logout clears it.
+  - `write-auth-failure.coordinator.ts` — an opt-in foundation for future administrative
+    writes only: a `401` starts one login flow without retrying the write, and a `403` forces
+    an access snapshot refresh so the caller can re-evaluate its capability. It is not an
+    HTTP interceptor, so public reads retain ordinary error handling.
   - `access.api.ts` — `AccessApi.getMe()` → `GET /api/access/me`, returning the raw
-    `ApiResponse<CurrentUserDto>` envelope (thin, like `system.api.ts`).
-  - `current-user.model.ts` — `CurrentUser` (== `CurrentUserDto`; the backend `me`
-    contract: `sub`, `email`, `displayName`, `status`, `roleId`, `roleName`). `roleName`
-    is `null` until the account holds a role (the bootstrapped Owner is `active` /
-    `roleName: 'Owner'`).
-  - `current-user.store.ts` — `CurrentUserStore`: minimal signal store (`currentUser`,
-    `errorMessage`); `load()` is fired post-callback (fresh each call) and never crashes
-    the flow; `ensureLoaded()` is the awaitable, load-once path (single cached
-    `GET /api/access/me`) the `roleGuard` uses.
+    `ApiResponse<CurrentUserResponse>` envelope (thin, like `system.api.ts`).
+  - `permission-code.ts` — the canonical named shape and ordered TypeScript union of the
+    server's direct Abwab permission codes. `npm run check:permission-catalogue` compares it
+    to the backend source; no authorization decision uses a role name.
+  - `current-user.model.ts` — normalizes the generated `/me` wire DTO to the bounded UI
+    snapshot: `sub`, `email`, `displayName`, `status`, `isOwner`, ordered direct
+    `permissions`. No role ID or role name crosses this contract.
+  - `current-user.store.ts` — access snapshot signals (`currentUser`, `permissions`,
+    `loadState`, `errorMessage`, `isAuthenticated`, `authStateKnown`, `isActive`, `isOwner`) and `can`/`canAny`.
+    A Logto session observation refreshes the snapshot asynchronously, never blocking public render. Concurrent
+    `ensureLoaded()` calls share one request; `refresh()` supersedes stale results; `clear()`
+    invalidates pending work, snapshot, and permissions for logout. Unknown, loading, and
+    error state fail closed.
 - `layout/` — `app-shell`, `top-navbar`, `footer`, `shell-layout.model.ts`, and
   `nav-progress/` — the router navigation progress bar (`qd-nav-progress`): the 2px
   accent hairline the shell shows while a lazy route's chunk downloads (200ms
@@ -100,16 +109,17 @@ per-feature.
   in features.
 - **Route strings live in `route-paths.ts`** — reference the constants, don't hardcode paths
   in components/routes.
-- **Public-browse route tree (Feature 033, Phase 2)** — `/dashboard` is one **unguarded**
+- **Public-browse route tree** — `/dashboard` is one **unguarded**
   parent with `''` (home), `mushaf`, and `words` children; the whole app is browsable
   anonymously (the Phase-1 blanket `authGuard` was removed, decision record §G1). URLs are
   unchanged. `/callback` (`CALLBACK_PATH`, the `features/auth/` landing page) is public and
   sits before the `**` wildcard in `app.routes.ts`. The placeholder nav routes (e.g.
   `/tafsirs`) stay top-level and unguarded. `/abwab` (Abwab doors & sections, Slice B) is a
   real top-level lazy feature route, same unguarded posture — see
-  `../features/abwab/README.md`. Nothing is protected in this phase: the reusable
-  `roleGuard` exists but is attached to no route — a future admin feature wires it onto its
-  own admin routes.
+  `../features/abwab/README.md`. `/settings/access` is a non-navigated lazy Owner
+  security-administration feature guarded only by `ownerGuard`; it keeps the administration
+  boundary out of normal navigation while allowing active Owners to manage access. No other route
+  has a guard.
 - Interceptor order matters (`secureUrlInterceptor`, then `authInterceptor()`, then
   `devLatencyInterceptor`); keep registration order in `app.config.ts`. `authInterceptor()`
   (from `angular-auth-oidc-client`) attaches the Logto Bearer token only to requests under

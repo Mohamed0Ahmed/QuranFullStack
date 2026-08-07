@@ -1,18 +1,19 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using QuranDashboard.Application.Abstractions.Access;
 using QuranDashboard.Api.Controllers.Access;
 using QuranDashboard.Domain.Access;
+using QuranDashboard.Infrastructure.Access;
+using QuranDashboard.Tests.TestSupport.Access;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Api.Access;
 
 public sealed class AccessTestFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
-
     private readonly object _apiFactoryLock = new();
+    private PostgreSqlDatabaseLease? _databaseLease;
     private WebApplicationFactory<AccessController>? _apiFactory;
     private ServiceProvider? _queryProvider;
 
@@ -26,22 +27,25 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
     public static string OwnerEmail => FakeExternalUserProfileSource.EmailFor(OwnerSub);
 
+    public const string SecondOwnerSub = "logto-owner-second";
+
+    public static string SecondOwnerEmail => FakeExternalUserProfileSource.EmailFor(SecondOwnerSub);
+
     public async Task InitializeAsync()
     {
-        await _container.StartAsync();
-        ConnectionString = _container.GetConnectionString();
+        _databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(AccessTestFixture));
+        ConnectionString = _databaseLease.ConnectionString;
 
         _queryProvider = BuildQueryProvider();
-
-        await using var scope = _queryProvider.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.MigrateAsync();
     }
 
     public async Task DisposeAsync()
     {
-        _apiFactory?.Dispose();
-        _apiFactory = null;
+        if (_apiFactory is not null)
+        {
+            await _apiFactory.DisposeAsync();
+            _apiFactory = null;
+        }
 
         if (_queryProvider is not null)
         {
@@ -49,20 +53,43 @@ public sealed class AccessTestFixture : IAsyncLifetime
             _queryProvider = null;
         }
 
-        await _container.DisposeAsync();
+        if (_databaseLease is not null)
+        {
+            await _databaseLease.DisposeAsync();
+            _databaseLease = null;
+        }
     }
 
     public HttpClient CreateApiClient()
     {
-        return Factory.CreateClient(new WebApplicationFactoryClientOptions
+        return CreateApiClient(Factory);
+    }
+
+    public HttpClient CreateApiClient(WebApplicationFactory<AccessController> factory)
+    {
+        return factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             BaseAddress = new Uri("https://localhost"),
         });
     }
 
-    // Resolving here shares the host's singletons (notably the one IMemoryCache the request pipeline uses),
-    // so the cache primed/evicted through the pipeline is the same instance a test observes.
+    public WebApplicationFactory<AccessController> CreateAuthorizationPipelineFactory(
+        Action<IServiceCollection>? configureServices = null)
+    {
+        return Factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureTestServices(services =>
+            {
+                services.AddControllers().AddApplicationPart(typeof(AuthorizationPipelineProbeController).Assembly);
+                services.AddSingleton<AuthorizationPipelineProbe>();
+                configureServices?.Invoke(services);
+            });
+        });
+    }
+
     public IServiceProvider ApiServices => Factory.Services;
+
+    public IServiceProvider QueryServices => QueryProvider;
 
     private WebApplicationFactory<AccessController> Factory
     {
@@ -77,21 +104,13 @@ public sealed class AccessTestFixture : IAsyncLifetime
         }
     }
 
-    // The owner sub is fixed across tests (only its email triggers bootstrap), so its entry in the shared
-    // role cache is evicted too — otherwise a prior test's cached role would leak past the truncation.
     public async Task ResetAsync()
     {
         await using var scope = QueryProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.ExecuteSqlRawAsync("TRUNCATE users RESTART IDENTITY CASCADE;");
+        await db.Database.ExecuteSqlRawAsync(
+            "TRUNCATE users, permissions RESTART IDENTITY CASCADE;");
         ProfileSource.Reset();
-        EvictRoleCache(OwnerSub);
-    }
-
-    public void EvictRoleCache(string logtoSub)
-    {
-        using var scope = ApiServices.CreateScope();
-        scope.ServiceProvider.GetRequiredService<IUserRoleResolver>().Evict(logtoSub);
     }
 
     // Reads via an independent DbContext, never the pipeline's own instance (test isolation).
@@ -120,9 +139,25 @@ public sealed class AccessTestFixture : IAsyncLifetime
     {
         await using var scope = QueryProvider.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        var normalizer = scope.ServiceProvider.GetRequiredService<IEmailIdentityNormalizer>();
+        if (string.IsNullOrWhiteSpace(user.NormalizedEmail))
+        {
+            user.NormalizedEmail = normalizer.Normalize(user.Email);
+        }
+
         db.AccessUsers.Add(user);
         await db.SaveChangesAsync();
         return user.Id;
+    }
+
+    public async Task<int> InsertPersonaAsync(string key)
+    {
+        var persona = TestAccessPersonas.For(key);
+        int? roleId = persona.IsOwner
+            ? (await GetRolesAsync()).Single(role => role.Name == RoleNames.Owner).Id
+            : null;
+
+        return await InsertUserAsync(persona.BuildUser(roleId));
     }
 
     private ServiceProvider QueryProvider => _queryProvider
@@ -145,8 +180,9 @@ public sealed class AccessTestFixture : IAsyncLifetime
                         // Required non-blank by the validator; inert otherwise, since the effective
                         // audience is pinned by TestJwtTokens.ConfigureOfflineValidation.
                         ["Auth:Audience"] = TestJwtTokens.TestAudience,
-                        // Enables the Owner-bootstrap path for OwnerSub only (its fake profile email).
-                        ["Auth:BootstrapOwnerEmail"] = OwnerEmail,
+                        // Supplies the two configured Owner identities used by the access fixtures.
+                        ["OwnerBootstrap:Emails:0"] = OwnerEmail,
+                        ["OwnerBootstrap:Emails:1"] = SecondOwnerEmail,
                         ["Cors:AllowedOrigins:0"] = "https://localhost",
                     }));
 
@@ -170,6 +206,7 @@ public sealed class AccessTestFixture : IAsyncLifetime
     {
         return new ServiceCollection()
             .AddDbContext<QuranDashboardDbContext>(options => options.UseNpgsql(ConnectionString))
+            .AddSingleton<IEmailIdentityNormalizer, EmailIdentityNormalizer>()
             .BuildServiceProvider();
     }
 }

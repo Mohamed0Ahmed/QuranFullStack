@@ -2,11 +2,11 @@
 -- Lemmas & Stems Explorer — representative content slice (fixture seed, T018)
 -- Feature 016 · read-only · deterministic · offline
 -- ----------------------------------------------------------------------
--- Loaded by MorphologyExplorersTestFixture into a fresh Testcontainers
--- Postgres instance AFTER EnsureCreatedAsync. Covers only the rows the
--- Feature 016 lemma/stem list/summary/words/ayahs/surahs/relationships tests
--- assert on; it is intentionally NOT the full DB and NOT the developer's
--- local DB. Canonical Quranic Uthmani ayah text is used verbatim (reused from
+-- Loaded by MorphologyExplorersTestFixture into its own isolated database on the
+-- shared Testcontainers Postgres runtime, cloned from the migrated template.
+-- Covers only the rows the Feature 016 lemma/stem list/summary/words/ayahs/
+-- surahs/relationships tests assert on; it is intentionally NOT the full DB and
+-- NOT the developer's local DB. Canonical Quranic Uthmani ayah text is used verbatim (reused from
 -- the Feature 015 Roots seed for the same surah/ayah rows); individual word
 -- display forms are real Arabic words used as morphology display text — no
 -- Quran text is invented or altered.

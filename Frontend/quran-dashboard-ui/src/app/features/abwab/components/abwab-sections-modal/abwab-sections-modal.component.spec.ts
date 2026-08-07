@@ -56,11 +56,48 @@ function render(handlers: {
   fixture.componentRef.setInput('renameSection', renameSection);
   fixture.componentRef.setInput('deleteSection', deleteSection);
   fixture.componentRef.setInput('reorderSection', reorderSection);
+  fixture.componentRef.setInput('canCreateSection', true);
+  fixture.componentRef.setInput('canEditSection', true);
+  fixture.componentRef.setInput('canReorderSection', true);
+  fixture.componentRef.setInput('canDeleteSection', true);
   fixture.detectChanges();
   return { fixture, createSection, renameSection, deleteSection, reorderSection };
 }
 
 describe('AbwabSectionsModalComponent', () => {
+  it('renders each unavailable section action read-only and rejects stale create, rename, reorder, and delete calls', () => {
+    const { fixture, createSection, renameSection, reorderSection, deleteSection } = render();
+    fixture.componentRef.setInput('canCreateSection', false);
+    fixture.componentRef.setInput('canEditSection', false);
+    fixture.componentRef.setInput('canReorderSection', false);
+    fixture.componentRef.setInput('canDeleteSection', false);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="abwab-sections-modal-name-input"]')).toBeNull();
+    expect(root.querySelector('[data-testid="abwab-sections-modal-rename-1"]')).toBeNull();
+    expect(root.querySelector('[data-testid="abwab-sections-modal-delete-1"]')).toBeNull();
+    expect(root.querySelector('[data-testid="abwab-sections-modal-order-1"]')?.tagName).toBe('SPAN');
+
+    const internals = fixture.componentInstance as unknown as {
+      add(): void;
+      startRename(section: AbwabTreeSectionDto): void;
+      commitOrderEdit(id: number, target: EventTarget | null): void;
+      requestRemove(id: number): void;
+      confirmRemove(): void;
+    };
+    internals.add();
+    internals.startRename(SECTIONS[0]);
+    internals.commitOrderEdit(1, { value: '2' } as HTMLInputElement);
+    internals.requestRemove(1);
+    internals.confirmRemove();
+
+    expect(createSection).not.toHaveBeenCalled();
+    expect(renameSection).not.toHaveBeenCalled();
+    expect(reorderSection).not.toHaveBeenCalled();
+    expect(deleteSection).not.toHaveBeenCalled();
+  });
+
   it('lists existing sections', () => {
     const { fixture } = render();
     const root = fixture.nativeElement as HTMLElement;

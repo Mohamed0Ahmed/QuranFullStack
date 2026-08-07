@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { Route, Routes } from '@angular/router';
 
 import { routes } from './app.routes';
+import { ownerGuard } from './core/auth/owner.guard';
 import { MUSHAF_ROUTES } from './features/mushaf/mushaf.routes';
 import { WORDS_ROUTES } from './features/words/words.routes';
 import { ABWAB_ROUTES } from './features/abwab/abwab.routes';
+import { ACCESS_ADMIN_ROUTES } from './features/access-admin/access-admin.routes';
 
 // Public-browse posture regression guard (Feature 033, Phase 2): asserts NO route carries an
 // activation guard. Pure config assertion — no router harness.
@@ -24,6 +26,7 @@ const STATIC_LAZY_ROUTE_ARRAYS: Readonly<Record<string, Routes>> = {
   mushaf: MUSHAF_ROUTES,
   words: WORDS_ROUTES,
   abwab: ABWAB_ROUTES,
+  'settings/access': ACCESS_ADMIN_ROUTES,
 };
 
 // Flattens the route tree, substituting the statically-imported arrays for lazy `loadChildren`
@@ -55,13 +58,17 @@ function flattenRoutes(routeList: Routes): Route[] {
 }
 
 describe('app routes (public-browse posture)', () => {
-  it('declares no activation guard anywhere on the route tree', () => {
+  it('attaches the Owner guard only to the security-administration route', () => {
     const allRoutes = flattenRoutes(routes);
 
     const guardedPaths = allRoutes
       .filter((route) => GUARD_KEYS.some((key) => route[key] != null))
       .map((route) => route.path ?? '(pathless)');
 
-    expect(guardedPaths).toEqual([]);
+    expect(guardedPaths).toEqual(['settings/access']);
+    expect(allRoutes.find((route) => route.path === 'settings/access')?.canActivate).toEqual([
+      ownerGuard,
+    ]);
+    expect(allRoutes.find((route) => route.path === 'settings/access')?.loadChildren).toBeTypeOf('function');
   });
 });

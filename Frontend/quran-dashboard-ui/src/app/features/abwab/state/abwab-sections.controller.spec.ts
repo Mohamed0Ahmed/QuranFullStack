@@ -12,6 +12,8 @@ import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AbwabTreeDto } from '../../../core/api/generated/models/abwab-tree-dto';
 import { AbwabSectionDto } from '../../../core/api/generated/models/abwab-section-dto';
 import { AbwabTreeSectionDto } from '../../../core/api/generated/models/abwab-tree-section-dto';
+import { CurrentUserStore } from '../../../core/auth/current-user.store';
+import { WriteAuthFailureCoordinator } from '../../../core/auth/write-auth-failure.coordinator';
 
 function ok<T>(data: T): ApiResponse<T> {
   return { isSuccess: true, message: 'تم', data };
@@ -32,6 +34,8 @@ function setup(fakeApi: Partial<Record<keyof AbwabApi, (...args: unknown[]) => u
       AbwabWriteController,
       AbwabSnapshotFacade,
       AbwabSelectionStore,
+      { provide: CurrentUserStore, useValue: { can: () => true } },
+      { provide: WriteAuthFailureCoordinator, useValue: { handle: async () => null } },
       // getTree observes the whole response now; the fakes stay envelope-shaped and are wrapped
       // headerless here, so no test below sends or stores a validator.
       {

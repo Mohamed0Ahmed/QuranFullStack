@@ -21,46 +21,54 @@
   <div class="qd-card abwab-side-panel__box">
     <h4>{{ operationsHeading }}</h4>
     <div class="abwab-side-panel__ops">
-      <button
-        type="button"
-        class="abwab-side-panel__op abwab-side-panel__op--toggle"
-        [class.abwab-side-panel__op--on]="bulkMode()"
-        data-testid="abwab-side-panel-bulk-toggle"
-        [disabled]="archiveViewActive()"
-        (click)="toggleBulkMode()"
-      >
-        {{ bulkToggleLabel }}
-      </button>
+      @if (canUseBulkMode()) {
+        <button
+          type="button"
+          class="abwab-side-panel__op abwab-side-panel__op--toggle"
+          [class.abwab-side-panel__op--on]="bulkMode()"
+          data-testid="abwab-side-panel-bulk-toggle"
+          [disabled]="archiveViewActive()"
+          (click)="toggleBulkMode()"
+        >
+          {{ bulkToggleLabel }}
+        </button>
+      }
 
       <hr class="abwab-side-panel__sep" />
 
-      <button
-        type="button"
-        class="abwab-side-panel__op"
-        data-testid="abwab-side-panel-op-add-child"
-        [disabled]="selectedDoor() === null || bulkMode()"
-        (click)="addChildRequested.emit()"
-      >
-        {{ addChildLabel }}
-      </button>
-      <button
-        type="button"
-        class="abwab-side-panel__op"
-        data-testid="abwab-side-panel-op-edit"
-        [disabled]="selectedDoor() === null || bulkMode()"
-        (click)="editRequested.emit()"
-      >
-        {{ editLabel }}
-      </button>
-      <button
-        type="button"
-        class="abwab-side-panel__op"
-        data-testid="abwab-side-panel-op-move"
-        [disabled]="selectedDoor() === null || bulkMode()"
-        (click)="moveRequested.emit()"
-      >
-        {{ moveLabel }}
-      </button>
+      @if (canCreateDoor()) {
+        <button
+          type="button"
+          class="abwab-side-panel__op"
+          data-testid="abwab-side-panel-op-add-child"
+          [disabled]="selectedDoor() === null || bulkMode()"
+          (click)="addChildRequested.emit()"
+        >
+          {{ addChildLabel }}
+        </button>
+      }
+      @if (canEditDoor()) {
+        <button
+          type="button"
+          class="abwab-side-panel__op"
+          data-testid="abwab-side-panel-op-edit"
+          [disabled]="selectedDoor() === null || bulkMode()"
+          (click)="editRequested.emit()"
+        >
+          {{ editLabel }}
+        </button>
+      }
+      @if (canMoveDoor()) {
+        <button
+          type="button"
+          class="abwab-side-panel__op"
+          data-testid="abwab-side-panel-op-move"
+          [disabled]="selectedDoor() === null || bulkMode()"
+          (click)="moveRequested.emit()"
+        >
+          {{ moveLabel }}
+        </button>
+      }
       <button
         type="button"
         class="abwab-side-panel__op"
@@ -70,15 +78,17 @@
       >
         {{ relationsLabel }}
       </button>
-      <button
-        type="button"
-        class="abwab-side-panel__op abwab-side-panel__op--danger"
-        data-testid="abwab-side-panel-op-archive"
-        [disabled]="selectedDoor() === null || bulkMode()"
-        (click)="archiveRequested.emit()"
-      >
-        {{ archiveLabel }}
-      </button>
+      @if (canArchiveDoor()) {
+        <button
+          type="button"
+          class="abwab-side-panel__op abwab-side-panel__op--danger"
+          data-testid="abwab-side-panel-op-archive"
+          [disabled]="selectedDoor() === null || bulkMode()"
+          (click)="archiveRequested.emit()"
+        >
+          {{ archiveLabel }}
+        </button>
+      }
     </div>
   </div>
 
@@ -91,25 +101,31 @@
         {{ bulkNames().join('، ') || '—' }}
       </div>
       <div class="abwab-side-panel__bulk-actions">
-        <button type="button" class="abwab-side-panel__op" data-testid="abwab-side-panel-bulk-move" (click)="bulkMoveRequested.emit()">
-          {{ bulkMoveAllLabel }}
-        </button>
-        <button
-          type="button"
-          class="abwab-side-panel__op"
-          data-testid="abwab-side-panel-bulk-relations"
-          (click)="bulkRelationsRequested.emit()"
-        >
-          {{ bulkRelationsLabel }}
-        </button>
-        <button
-          type="button"
-          class="abwab-side-panel__op abwab-side-panel__op--danger"
-          data-testid="abwab-side-panel-bulk-archive"
-          (click)="bulkArchiveRequested.emit()"
-        >
-          {{ bulkArchiveAllLabel }}
-        </button>
+        @if (canMoveDoor()) {
+          <button type="button" class="abwab-side-panel__op" data-testid="abwab-side-panel-bulk-move" (click)="bulkMoveRequested.emit()">
+            {{ bulkMoveAllLabel }}
+          </button>
+        }
+        @if (canCreateRelation()) {
+          <button
+            type="button"
+            class="abwab-side-panel__op"
+            data-testid="abwab-side-panel-bulk-relations"
+            (click)="bulkRelationsRequested.emit()"
+          >
+            {{ bulkRelationsLabel }}
+          </button>
+        }
+        @if (canArchiveDoor()) {
+          <button
+            type="button"
+            class="abwab-side-panel__op abwab-side-panel__op--danger"
+            data-testid="abwab-side-panel-bulk-archive"
+            (click)="bulkArchiveRequested.emit()"
+          >
+            {{ bulkArchiveAllLabel }}
+          </button>
+        }
         <button type="button" class="abwab-side-panel__op" data-testid="abwab-side-panel-bulk-clear" (click)="bulkClearRequested.emit()">
           {{ bulkClearLabel }}
         </button>

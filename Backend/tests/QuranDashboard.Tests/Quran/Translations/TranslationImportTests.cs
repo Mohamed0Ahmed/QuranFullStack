@@ -30,7 +30,7 @@ public sealed class TranslationImportTests(TranslationImportTestFixture fixture)
         result.Totals.AyahMappingRows.Should().Be(TranslationInvariants.ExpectedAyahsPerSource);
         result.Totals.DistinctAyahs.Should().Be(TranslationInvariants.ExpectedAyahsPerSource);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var sources = await dbContext.TranslationSources.AsNoTracking().ToListAsync();

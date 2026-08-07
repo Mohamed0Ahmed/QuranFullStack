@@ -21,6 +21,10 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasColumnName("email");
 
+        builder.Property(u => u.NormalizedEmail)
+            .IsRequired()
+            .HasColumnName("normalized_email");
+
         builder.Property(u => u.UserName)
             .HasColumnName("user_name");
 
@@ -29,6 +33,10 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.Title)
             .HasColumnName("title");
+
+        builder.Property(u => u.Version)
+            .IsRowVersion()
+            .HasColumnName("xmin");
 
         builder.Property(u => u.RoleId)
             .HasColumnName("role_id");
@@ -52,5 +60,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasIndex(u => u.LogtoSub).IsUnique();
         builder.HasIndex(u => u.Email).IsUnique();
+        builder.HasIndex(u => u.NormalizedEmail).IsUnique();
+        builder.HasIndex(u => new { u.Status, u.Id });
     }
 }

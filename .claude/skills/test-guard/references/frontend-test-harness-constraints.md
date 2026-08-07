@@ -9,18 +9,29 @@ differently from both a plain Vitest project and a real browser.
 
 ## Running focused Angular specs
 
-Run a focused subset with the deliberate worker cap in front of the Angular CLI:
+Run a named lane. `TESTING_STRATEGY.md` §4 lists them; each is an `npm run test:*` script that
+delegates to `npm test -- --configuration=<name>`, and `npm test` bakes in the worker cap:
 
 ```
-VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2 npx ng test --include=<path-or-pattern>
+npm run test:fast
+npm run test:feature:abwab      # …:auth, …:dashboard, …:mushaf, …:words
+npm run test:authorization
+npm run test:composition
+npm run test:shared
+npm run test:full
 ```
 
-- `npm test` already bakes the same cap into its script, so `npm test -- --include=<pattern>`
-  is equivalent when you prefer the npm entry point.
+- **A lane, not a glob.** The configurations live in `angular.json` and are validated by
+  `testing/verify-test-gates.mjs` (`npm run test:gates`), which checks that every spec file
+  falls in exactly one primary area and that no include pattern is dead. An ad-hoc
+  `npm test -- --include=<glob>` is neither validated nor reportable by name, so it is not
+  acceptable as gate evidence.
 - **Do not use `--run`** for Angular CLI test invocations in this project. The Angular
   `@angular/build:unit-test` builder drives Vitest itself; `--run` is a raw-Vitest flag
-  and is not the supported way to invoke a one-shot run here — rely on `--include=` to
-  scope instead.
+  and is not the supported way to invoke a one-shot run here.
+- Invoking `ng test` / `npx ng test` directly bypasses the cap, because the cap is in the
+  `test` npm script, not in `angular.json`. If you must, prefix it yourself:
+  `VITEST_MIN_FORKS=1 VITEST_MAX_FORKS=2 npx ng test --configuration=<name>`.
 
 **Why the fork cap is not optional:** the builder starts Vitest with `config: false`, so a
 `vitest.config.ts` is ignored and `angular.json` cannot carry `poolOptions`
@@ -34,7 +45,7 @@ cap on every `ng test` invocation; raising it much past `2`–`3` risks re-OOMin
 
 The full suite is heavier than a focused run. If a full run through LeanCTX / `ctx_shell`
 times out or the tool reports a hang, **do not declare the tests failing on that basis**.
-Retry outside LeanCTX, or split into focused `--include=` suites, before concluding
+Retry outside LeanCTX, or split into the narrower named lanes, before concluding
 anything. A harness timeout is a runner/memory-pressure signal, not a test result.
 
 ## jsdom is not a real browser
@@ -88,8 +99,8 @@ fixed, so treat a proposal to "simplify" them as a regression risk, not cleanup.
   keep the guards and the desktop-default so responsive and virtual-scroll components stay
   testable.
 
-Verify a suspected regression in these areas with a focused, capped run, e.g.:
+Verify a suspected regression in these areas with the narrowest lane covering them, e.g.:
 
 ```
-VITEST_MAX_FORKS=2 npm test -- --include="src/app/features/words/**/*.spec.ts"
+npm run test:feature:words
 ```

@@ -16,7 +16,7 @@ public sealed class FullI3rabSourceUnchangedTests(FullI3rabImportTestFixture fix
         var packageDir = await packages.WriteAsync();
         var expectedCounts = new FullI3rabExpectedCounts(Sources: 1, AyahsPerSource: 3);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var importSource = scope.ServiceProvider.GetRequiredService<IFullI3rabImportSource>();
         var writer = scope.ServiceProvider.GetRequiredService<IFullI3rabImportWriter>();
 

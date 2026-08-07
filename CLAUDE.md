@@ -219,34 +219,22 @@ Notes:
 - `engineering-review` remains the formal post-implementation review skill.
 - `test-guard` is only for test-code quality.
 
-### Test selection
+### Scope-aware test execution
 
-Before selecting or running tests, read:
+Before selecting tests, inspect the changed files and read `TESTING_STRATEGY.md` plus the
+nearest test README. Run the narrowest meaningful gate first. For Backend compilation
+changes, build once, then use `Backend/scripts/test-backend --no-build`. Broad gates run once at
+milestone, engineering-review, or pre-PR boundaries—not after individual edits.
+Pipeline/canonical gates run only for their documented triggers, and Backend-only work does
+not require Frontend tests.
 
-- `TESTING_STRATEGY.md`
-
-It is the single source of truth for which tests to run and when (§1). Use the tier
-required by the changed scope — Tier A focused per-phase, Tier B no-pipeline milestone
-regression, Tier C ordinary pre-PR, Tier D pipeline-triggered, Tier E release/canonical
-acceptance (§3), with the change-to-tier matrix in §4 and the validated command catalogs
-in §5 (Backend) and §6 (Frontend). Do not run the full Backend suite or the slow Quran
-data-pipeline families after every phase unless the strategy's Tier D triggers require it.
-
-Two facts the strategy fixes that agents get wrong here:
-
-- **There is no CI** (§8). Every tier is a local gate that nothing verifies ran; "CI is
-  green" is never available as evidence.
-- **The route-parity/smoke gate is active** (`QuranDashboard.Tests.Smoke`, §3 Tier A/C, §5).
-  Any change touching `Backend/api/` routes, request/response contracts, auth, middleware,
-  or model binding MUST run it, and the evidence MUST say whether the data tier ran or
-  skipped. Adding or changing a route also requires the matching `SmokeRouteCatalog` entry
-  in the same change (§10). The namespace **is** excluded from the fast Tier B/C
-  no-pipeline filter — `&FullyQualifiedName!~QuranDashboard.Tests.Smoke.` belongs there.
-
-A third fact: a browser E2E layer exists (`Frontend/quran-dashboard-ui/e2e/`,
-`npm run e2e`), but it is **opt-in and not a required tier** — do not present an E2E run as a
-Tier C or release gate, and do not confuse it with the backend route-smoke tier, which is
-required for route/contract/auth changes.
+Keep long output visible; never pipe it into `tail`. Use the configured hang timeouts, do
+not run concurrent PostgreSQL test processes, and leave no Testcontainers running. Report
+the exact gate, command, reason, result, skips, and cleanup state; there is no CI fallback.
+The formal reviewer owns
+final broad review gates. Deleting a test requires documented obsolete/redundant proof and
+named replacement coverage. Commands and the trigger matrix live in
+`TESTING_STRATEGY.md`.
 
 ## Design Context
 

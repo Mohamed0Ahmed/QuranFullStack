@@ -16,7 +16,7 @@ public sealed class ImlaeiCleanKeyImportTests
         this.fixture = fixture;
     }
 
-    [Fact]
+    [FoundationImportSourceFact]
     public async Task Import_BindsCleanImlaeiKeyAndPreservesRawImlaeiText()
     {
         var handler = await fixture.CreateHandlerAsync();
@@ -27,7 +27,7 @@ public sealed class ImlaeiCleanKeyImportTests
 
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         (await dbContext.QuranWords.CountAsync(word => word.WordKeyImlaeiSimple == ""))

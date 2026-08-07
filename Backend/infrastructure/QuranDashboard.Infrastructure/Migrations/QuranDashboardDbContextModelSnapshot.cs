@@ -476,6 +476,144 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.ToTable("abwab_template_nodes", (string)null);
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Access.AccessAuditEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ActionType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("action_type");
+
+                    b.Property<string>("ActorSnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("actor_snapshot");
+
+                    b.Property<string>("ActorType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("actor_type");
+
+                    b.Property<int?>("ActorUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<string>("AfterStateJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("after_state");
+
+                    b.Property<string>("BeforeStateJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("before_state");
+
+                    b.Property<string>("Metadata")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("metadata");
+
+                    b.Property<DateTimeOffset>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("PermissionCode")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("permission_code");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("TargetSnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("target_snapshot");
+
+                    b.Property<int>("TargetUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorUserId");
+
+                    b.HasIndex("PermissionCode")
+                        .HasFilter("permission_code IS NOT NULL");
+
+                    b.HasIndex("ActionType", "OccurredAtUtc")
+                        .IsDescending(false, true);
+
+                    b.HasIndex("OccurredAtUtc", "Id")
+                        .IsDescending();
+
+                    b.HasIndex("TargetUserId", "OccurredAtUtc", "Id")
+                        .IsDescending(false, true, true);
+
+                    b.ToTable("access_audit_events", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_access_audit_events_documents_are_objects", "jsonb_typeof(actor_snapshot) = 'object'\nAND jsonb_typeof(target_snapshot) = 'object'\nAND (before_state IS NULL OR jsonb_typeof(before_state) = 'object')\nAND (after_state IS NULL OR jsonb_typeof(after_state) = 'object')");
+
+                            t.HasCheckConstraint("ck_access_audit_events_metadata_schema_version", "jsonb_typeof(metadata) = 'object'\nAND jsonb_exists(metadata, 'schemaVersion')\nAND jsonb_typeof(metadata -> 'schemaVersion') = 'number'\nAND (metadata ->> 'schemaVersion') ~ '^[1-9][0-9]*$'\nAND (metadata ->> 'schemaVersion')::numeric <= 2147483647");
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Access.Permission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ArabicLabel")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("arabic_label");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("code");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("display_order");
+
+                    b.Property<string>("EnglishDescription")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("english_description");
+
+                    b.Property<DateTimeOffset?>("RetiredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("retired_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("DisplayOrder");
+
+                    b.ToTable("permissions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_permissions_code_format", "code ~ '^[a-z0-9]+(\\.[a-z0-9_]+)+$'");
+                        });
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Access.Role", b =>
                 {
                     b.Property<int>("Id")
@@ -510,18 +648,6 @@ namespace QuranDashboard.Infrastructure.Migrations
                             Id = 1,
                             DisplayName = "المالك",
                             Name = "Owner"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            DisplayName = "المشرف",
-                            Name = "Admin"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            DisplayName = "المحرر",
-                            Name = "Editor"
                         });
                 });
 
@@ -552,6 +678,11 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("logto_sub");
 
+                    b.Property<string>("NormalizedEmail")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("normalized_email");
+
                     b.Property<int?>("RoleId")
                         .HasColumnType("integer")
                         .HasColumnName("role_id");
@@ -572,6 +703,12 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("user_name");
 
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
@@ -580,9 +717,43 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.HasIndex("LogtoSub")
                         .IsUnique();
 
+                    b.HasIndex("NormalizedEmail")
+                        .IsUnique();
+
                     b.HasIndex("RoleId");
 
+                    b.HasIndex("Status", "Id");
+
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Access.UserPermission", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("PermissionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("permission_id");
+
+                    b.Property<DateTimeOffset>("GrantedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("granted_at");
+
+                    b.Property<int>("GrantedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("granted_by_user_id");
+
+                    b.HasKey("UserId", "PermissionId");
+
+                    b.HasIndex("GrantedByUserId");
+
+                    b.HasIndex("PermissionId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("user_permissions", (string)null);
                 });
 
             modelBuilder.Entity("QuranDashboard.Domain.Quran.Ayahs.Ayah", b =>
@@ -2727,6 +2898,24 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Access.AccessAuditEvent", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Access.User", "ActorUser")
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("QuranDashboard.Domain.Access.User", "TargetUser")
+                        .WithMany()
+                        .HasForeignKey("TargetUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ActorUser");
+
+                    b.Navigation("TargetUser");
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Access.User", b =>
                 {
                     b.HasOne("QuranDashboard.Domain.Access.Role", "Role")
@@ -2735,6 +2924,33 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Access.UserPermission", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Access.User", "GrantedByUser")
+                        .WithMany("GrantedUserPermissions")
+                        .HasForeignKey("GrantedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Access.Permission", "Permission")
+                        .WithMany("UserPermissions")
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Access.User", "User")
+                        .WithMany("UserPermissions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("GrantedByUser");
+
+                    b.Navigation("Permission");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("QuranDashboard.Domain.Quran.Ayahs.Ayah", b =>
@@ -3143,6 +3359,18 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.Navigation("Ayah");
 
                     b.Navigation("Page");
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Access.Permission", b =>
+                {
+                    b.Navigation("UserPermissions");
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Access.User", b =>
+                {
+                    b.Navigation("GrantedUserPermissions");
+
+                    b.Navigation("UserPermissions");
                 });
 #pragma warning restore 612, 618
         }

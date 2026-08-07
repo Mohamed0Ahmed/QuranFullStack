@@ -31,8 +31,7 @@ public sealed class MutashabihatImportTests(MutashabihatImportTestFixture fixtur
         result.Totals.LinkRows.Should().Be(1);
         result.Totals.DistinctSimilarSources.Should().Be(1);
 
-        await using var scope = fixture.CreateServiceProvider(services => services.AddMutashabihatImportServices())
-            .CreateAsyncScope();
+        await using var scope = fixture.CreateImportScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var groups = await dbContext.MutashabihatGroups.AsNoTracking().ToListAsync();
@@ -84,8 +83,7 @@ public sealed class MutashabihatImportTests(MutashabihatImportTestFixture fixtur
 
         result.ExitCode.Should().Be(ImportMutashabihatResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider(services => services.AddMutashabihatImportServices())
-            .CreateAsyncScope();
+        await using var scope = fixture.CreateImportScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var group = await dbContext.MutashabihatGroups.AsNoTracking().SingleAsync();
@@ -123,8 +121,7 @@ public sealed class MutashabihatImportTests(MutashabihatImportTestFixture fixtur
 
         result.ExitCode.Should().Be(ImportMutashabihatResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider(services => services.AddMutashabihatImportServices())
-            .CreateAsyncScope();
+        await using var scope = fixture.CreateImportScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var group = await dbContext.MutashabihatGroups.AsNoTracking().SingleAsync();
@@ -163,8 +160,7 @@ public sealed class MutashabihatImportTests(MutashabihatImportTestFixture fixtur
 
         result.ExitCode.Should().Be(ImportMutashabihatResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider(services => services.AddMutashabihatImportServices())
-            .CreateAsyncScope();
+        await using var scope = fixture.CreateImportScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var link = await dbContext.SimilarAyahLinks.AsNoTracking().SingleAsync();

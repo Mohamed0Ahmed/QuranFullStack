@@ -1,0 +1,91 @@
+.access-user-list {
+  display: grid;
+  gap: var(--qd-space-4);
+}
+
+.access-user-list__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+}
+
+.access-user-list__header h2,
+.access-user-list__eyebrow {
+  margin: 0;
+}
+
+.access-user-list__header h2 {
+  color: var(--qd-text);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.access-user-list__eyebrow {
+  color: var(--qd-accent-text);
+  font-size: 0.875rem;
+}
+
+.access-user-list__count {
+  color: var(--qd-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.access-user-list__filters {
+  display: grid;
+  gap: var(--qd-space-2);
+}
+
+.access-user-list__field {
+  color: var(--qd-text-muted);
+  font-size: 0.875rem;
+}
+
+.access-user-list__items {
+  display: grid;
+  gap: var(--qd-space-2);
+}
+
+.access-user-list__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--qd-space-1) var(--qd-space-3);
+  align-items: center;
+  padding: var(--qd-space-3);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-surface);
+}
+
+.access-user-list__item--selected {
+  border-inline-start: 2px solid var(--qd-accent);
+  background: var(--qd-selected-bg);
+}
+
+.access-user-list__name,
+.access-user-list__email {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.access-user-list__name {
+  color: var(--qd-text);
+  font-weight: 700;
+}
+
+.access-user-list__email {
+  color: var(--qd-text-muted);
+  font-size: 0.8125rem;
+}
+
+.access-user-list__badges {
+  grid-row: span 2;
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--qd-space-1);
+}

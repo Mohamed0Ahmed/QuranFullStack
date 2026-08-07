@@ -45,6 +45,8 @@ export class AbwabTreeComponent {
   readonly expandSeedIds = input<ReadonlySet<number>>(new Set());
   readonly matchedIds = input<ReadonlySet<number>>(new Set());
   readonly revealedId = input<number | null>(null);
+  readonly canCreateDoor = input(false);
+  readonly canReorderDoor = input(false);
 
   readonly selected = output<number>();
   readonly bulkToggled = output<number>();
@@ -182,6 +184,9 @@ export class AbwabTreeComponent {
 
   protected onAddChildClick(event: Event, id: number): void {
     event.stopPropagation();
+    if (!this.canCreateDoor()) {
+      return;
+    }
     this.manualFocusId.set(id);
     this.selected.emit(id);
     this.addChildRequested.emit(id);
@@ -223,6 +228,9 @@ export class AbwabTreeComponent {
 
   protected onOrderClick(event: Event, id: number): void {
     event.stopPropagation();
+    if (!this.canReorderDoor()) {
+      return;
+    }
     this.editingId.set(id);
     setTimeout(() => this.orderInput(id)?.focus());
   }
@@ -243,6 +251,10 @@ export class AbwabTreeComponent {
 
   protected onOrderKeydown(event: KeyboardEvent, id: number): void {
     event.stopPropagation();
+    if (!this.canReorderDoor()) {
+      this.cancelOrderEdit(id);
+      return;
+    }
     if (event.key === 'Enter') {
       this.commitOrderEdit(id, event.target);
       this.focusOrderChip(id);
@@ -260,7 +272,7 @@ export class AbwabTreeComponent {
   }
 
   protected commitOrderEdit(id: number, target: EventTarget | null): void {
-    if (this.editingId() !== id) {
+    if (!this.canReorderDoor() || this.editingId() !== id) {
       return;
     }
     this.editingId.set(null);

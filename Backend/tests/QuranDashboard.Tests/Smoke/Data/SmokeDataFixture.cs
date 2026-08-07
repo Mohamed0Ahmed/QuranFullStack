@@ -2,13 +2,22 @@ using DotNet.Testcontainers.Configurations;
 using Microsoft.AspNetCore.Mvc.Testing;
 using QuranDashboard.Api.Controllers.System;
 using QuranDashboard.Tests.Api.Access;
+using QuranDashboard.Tests.Smoke;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Smoke.Data;
 
-// The same Testing-environment host as the pipeline tier (SmokeApiHost), over a container seeded with the
-// canonical dump instead of an empty schema. Its own container, never SmokeApiFixture's: the pipeline
-// sweep's expectations are derived against a migrated-but-EMPTY schema, so seeding the container it reads
-// would invalidate all 48 of them.
+// The same Testing-environment host as the pipeline tier (SmokeApiHost), over a server seeded with the
+// canonical dump instead of an empty schema. Its own server, never SmokeApiFixture's: the pipeline
+// sweep's expectations are derived against a migrated-but-EMPTY schema, so seeding the database it reads
+// would invalidate them.
+//
+// The server is an EXCLUSIVE lease, taken through PostgreSqlTestProcess so it holds the same
+// CrossProcessPostgreSqlLock the shared postgres:16-alpine runtime holds. Two project-owned PostgreSQL
+// containers must never run at once, and this is the one fixture that cannot join the shared runtime, so
+// the lock is what makes "exclusive" true across processes and LeaseExclusiveServerAsync is what makes it
+// true within one. Backend/scripts/test-backend completes the guarantee by running any lane that selects
+// both this class and a shared-runtime class as two sequential invocations.
 public sealed class SmokeDataFixture : IAsyncLifetime
 {
     private const string DumpMountPath = "/dump";
@@ -21,8 +30,9 @@ public sealed class SmokeDataFixture : IAsyncLifetime
     private static readonly string RestoreImage = $"postgres:{RestoreImageMajorVersion}-alpine";
 
     private readonly FakeExternalUserProfileSource _profileSource = new();
+    private readonly SmokeSqlCommandCapture _commandCapture = new();
 
-    private PostgreSqlContainer? _container;
+    private ExclusivePostgreSqlLease? _serverLease;
     private WebApplicationFactory<HealthController>? _apiFactory;
     private SmokeDumpManifest? _manifest;
 
@@ -39,13 +49,17 @@ public sealed class SmokeDataFixture : IAsyncLifetime
             return;
         }
 
-        // Before any container work, so a stale dump — or one this image cannot restore — costs a hash
-        // rather than a two-minute pull, start and mid-restore failure.
+        // Before the lock and any container work, so a stale dump — or one this image cannot restore —
+        // costs a hash rather than a two-minute pull, start and mid-restore failure.
         _manifest = SmokeDumpGate.VerifyAndRead(RestoreImageMajorVersion);
 
-        _container = BuildContainer();
-        await _container.StartAsync();
-        ConnectionString = _container.GetConnectionString();
+        _serverLease = await PostgreSqlTestProcess.LeaseExclusiveServerAsync(
+            nameof(SmokeDataFixture),
+            RestoreImage,
+            // Bind-mounted read-only rather than copied in: the archive is ~350 MB, and copying streams
+            // every byte through the Docker API before the restore can begin.
+            builder => builder.WithBindMount(SmokeDumpGate.DumpDirectory, DumpMountPath, AccessMode.ReadOnly));
+        ConnectionString = _serverLease.ConnectionString;
 
         // The dump is data-only, so the schema it lands in is this tree's migrations, applied first.
         var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
@@ -58,18 +72,22 @@ public sealed class SmokeDataFixture : IAsyncLifetime
 
         await RestoreDumpAsync();
 
-        _apiFactory = SmokeApiHost.Build(ConnectionString, _profileSource);
+        _apiFactory = SmokeApiHost.Build(ConnectionString, _profileSource, _commandCapture);
     }
 
+    // Ordered: the host and its pool first, then the container, and the cross-process lock last — the next
+    // test process may not start a PostgreSQL container until this one is gone. Only this fixture's own
+    // pool is cleared; ClearAllPools would reach collections that are still running.
     public async Task DisposeAsync()
     {
         _apiFactory?.Dispose();
         _apiFactory = null;
 
-        if (_container is not null)
+        if (_serverLease is not null)
         {
-            await _container.DisposeAsync();
-            _container = null;
+            NpgsqlConnection.ClearPool(new NpgsqlConnection(ConnectionString));
+            await _serverLease.DisposeAsync();
+            _serverLease = null;
         }
     }
 
@@ -105,16 +123,6 @@ public sealed class SmokeDataFixture : IAsyncLifetime
         ?? throw new InvalidOperationException(
             $"{nameof(SmokeDataFixture)} has not been initialized. Ensure it is used as an ICollectionFixture.");
 
-    private static PostgreSqlContainer BuildContainer()
-    {
-        return new PostgreSqlBuilder()
-            .WithImage(RestoreImage)
-            // Bind-mounted read-only rather than copied in: the archive is ~350 MB, and copying streams
-            // every byte through the Docker API before the restore can begin.
-            .WithBindMount(SmokeDumpGate.DumpDirectory, DumpMountPath, AccessMode.ReadOnly)
-            .Build();
-    }
-
     private async Task RestoreDumpAsync()
     {
         var connection = new NpgsqlConnectionStringBuilder(ConnectionString);
@@ -129,10 +137,10 @@ public sealed class SmokeDataFixture : IAsyncLifetime
         // one case this cannot see, an archive that exits zero having applied less than all of itself.
         // --disable-triggers is what lets the data land with the migrated foreign keys already in place;
         // it works because the container's postgres user is a superuser.
-        var result = await _container!.ExecAsync([
+        var result = await _serverLease!.ExecAsync([
             "pg_restore",
-            "--username", connection.Username,
-            "--dbname", connection.Database,
+            "--username", connection.Username!,
+            "--dbname", connection.Database!,
             "--data-only",
             "--disable-triggers",
             "--jobs", "4",

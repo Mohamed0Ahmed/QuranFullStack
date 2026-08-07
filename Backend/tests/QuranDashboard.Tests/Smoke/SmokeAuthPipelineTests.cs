@@ -21,8 +21,8 @@ public sealed class SmokeAuthPipelineTests(SmokeApiFixture fixture)
 
         using var response = await client.GetAsync(MePath);
 
-        // The challenge path is custom — OnChallenge calls HandleResponse() and
-        // UnauthorizedRejectionWriter writes the body — so a bare framework 401 must fail here.
+        // The authorization result handler owns the custom challenge envelope, so a bare framework 401
+        // must fail here.
         await ApiEnvelope.AssertFailureEnvelopeAsync(
             response, HttpStatusCode.Unauthorized, ApiMessages.Unauthorized);
     }
@@ -38,7 +38,6 @@ public sealed class SmokeAuthPipelineTests(SmokeApiFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var data = await ApiEnvelope.ReadDataAsync(response);
         data.GetProperty("status").GetString().Should().Be("pending");
-        data.GetProperty("roleName").ValueKind.Should().Be(JsonValueKind.Null);
 
         var persisted = await fixture.GetUserBySubAsync(SmokePersonas.UnknownSub);
         persisted.Should().NotBeNull();
@@ -59,7 +58,7 @@ public sealed class SmokeAuthPipelineTests(SmokeApiFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var data = await ApiEnvelope.ReadDataAsync(response);
         data.GetProperty("status").GetString().Should().Be("active");
-        data.GetProperty("roleName").GetString().Should().Be(RoleNames.Owner);
+        data.GetProperty("isOwner").GetBoolean().Should().BeTrue();
     }
 
     // Two Facts rather than a Theory: the only thing that varies is one Mint argument, so naming each
@@ -74,33 +73,6 @@ public sealed class SmokeAuthPipelineTests(SmokeApiFixture fixture)
         AssertTokenRejectedAsync(
             TestJwtTokens.Mint(SmokePersonas.UnknownSub, expires: DateTime.UtcNow.AddMinutes(-5)));
 
-    // A fixture self-test, not an API guarantee: the subject is SmokeApiFixture.ResetAsync and the
-    // assertion is on the harness's shared role cache. It reaches through ApiServices because the owner's
-    // own /me response is re-derived by provisioning and looks identical whether or not a stale role
-    // survived, so no HTTP assertion can observe the leak.
-    [Fact]
-    public async Task ResetAsync_EvictsTheSharedRoleCache_SoNoTestInheritsAPriorRole()
-    {
-        await fixture.ResetAsync();
-        using (var ownerClient = fixture.CreateClientFor(SmokePersona.Owner))
-        {
-            using var ownerResponse = await ownerClient.GetAsync(MePath);
-            ownerResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        }
-
-        // RoleClaimsTransformation runs on every authenticated request and caches negatives too, but the
-        // owner's request cached its negative BEFORE the bootstrap row existed, and
-        // UserProvisioningService.CreateAsync evicts that entry right after the write — so the request
-        // alone leaves nothing behind. Priming here is what creates the entry that can leak.
-        (await ResolveRoleAsync(SmokePersonas.OwnerSub)).Should().Be(RoleNames.Owner);
-
-        await fixture.ResetAsync();
-
-        // Assumes the primed entry has not aged past CachedUserRoleResolver's 30 s TTL — if it ever did,
-        // this guard would start passing vacuously rather than flaking.
-        (await ResolveRoleAsync(SmokePersonas.OwnerSub)).Should().BeNull();
-    }
-
     private async Task AssertTokenRejectedAsync(string token)
     {
         using var client = fixture.CreateClient();
@@ -113,10 +85,4 @@ public sealed class SmokeAuthPipelineTests(SmokeApiFixture fixture)
             response, HttpStatusCode.Unauthorized, ApiMessages.Unauthorized);
     }
 
-    private async Task<string?> ResolveRoleAsync(string logtoSub)
-    {
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
-        var resolver = scope.ServiceProvider.GetRequiredService<IUserRoleResolver>();
-        return await resolver.GetActiveRoleNameAsync(logtoSub, CancellationToken.None);
-    }
 }

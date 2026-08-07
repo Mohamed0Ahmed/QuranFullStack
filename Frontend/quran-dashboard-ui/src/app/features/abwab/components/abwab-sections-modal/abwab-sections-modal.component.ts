@@ -48,6 +48,10 @@ export class AbwabSectionsModalComponent {
   readonly reorderSection = input.required<
     (id: number, position: number, version: number) => Observable<AbwabWriteOutcome<AbwabSectionDto>>
   >();
+  readonly canCreateSection = input(false);
+  readonly canEditSection = input(false);
+  readonly canReorderSection = input(false);
+  readonly canDeleteSection = input(false);
 
   readonly closed = output<void>();
 
@@ -122,6 +126,23 @@ export class AbwabSectionsModalComponent {
       this.pendingOrderFocusId.set(null);
       this.focusOrderButton(id);
     });
+
+    effect(() => {
+      if (!this.canCreateSection()) {
+        this.newSectionName.set('');
+      }
+      if (!this.canEditSection()) {
+        this.editingId.set(null);
+        this.editingName.set('');
+      }
+      if (!this.canReorderSection()) {
+        this.editingOrderId.set(null);
+      }
+      if (!this.canDeleteSection()) {
+        this.deleteConfirmId.set(null);
+        this.deleteError.set(null);
+      }
+    });
   }
 
   private resetDraft(): void {
@@ -145,7 +166,7 @@ export class AbwabSectionsModalComponent {
 
   protected add(): void {
     const name = this.newSectionName().trim();
-    if (!name || this.addBusy()) {
+    if (!this.canCreateSection() || !name || this.addBusy()) {
       return;
     }
     this.addBusy.set(true);
@@ -161,6 +182,9 @@ export class AbwabSectionsModalComponent {
   }
 
   protected startRename(section: AbwabTreeSectionDto): void {
+    if (!this.canEditSection()) {
+      return;
+    }
     this.editingId.set(section.id);
     this.editingName.set(section.name);
     this.errorMessage.set(null);
@@ -173,7 +197,7 @@ export class AbwabSectionsModalComponent {
   protected saveRename(id: number): void {
     const current = this.sections().find((section) => section.id === id);
     const name = this.editingName().trim();
-    if (!current || !name) {
+    if (!this.canEditSection() || !current || !name) {
       return;
     }
     this.renameSection()(id, name, current.version).subscribe((outcome) => {
@@ -187,6 +211,9 @@ export class AbwabSectionsModalComponent {
   }
 
   protected requestRemove(id: number): void {
+    if (!this.canDeleteSection()) {
+      return;
+    }
     this.deleteConfirmId.set(id);
     this.deleteError.set(null);
     this.deleteBusy.set(false);
@@ -202,7 +229,7 @@ export class AbwabSectionsModalComponent {
 
   protected confirmRemove(): void {
     const id = this.deleteConfirmId();
-    if (id === null || this.deleteBusy()) {
+    if (!this.canDeleteSection() || id === null || this.deleteBusy()) {
       return;
     }
     this.deleteBusy.set(true);
@@ -220,6 +247,9 @@ export class AbwabSectionsModalComponent {
 
   protected startOrderEdit(section: AbwabTreeSectionDto, event: Event): void {
     event.stopPropagation();
+    if (!this.canReorderSection()) {
+      return;
+    }
     this.editingOrderId.set(section.id);
     this.errorMessage.set(null);
     afterNextRender(() => this.orderInput()?.nativeElement.focus(), { injector: this.injector });
@@ -227,6 +257,10 @@ export class AbwabSectionsModalComponent {
 
   protected onOrderKeydown(event: KeyboardEvent, id: number): void {
     event.stopPropagation();
+    if (!this.canReorderSection()) {
+      this.cancelOrderEdit(id);
+      return;
+    }
     if (event.key === 'Enter') {
       this.commitOrderEdit(id, event.target);
     } else if (event.key === 'Escape') {
@@ -239,11 +273,13 @@ export class AbwabSectionsModalComponent {
       return;
     }
     this.editingOrderId.set(null);
-    this.focusOrderButton(id);
+    if (this.canReorderSection()) {
+      this.focusOrderButton(id);
+    }
   }
 
   protected commitOrderEdit(id: number, target: EventTarget | null): void {
-    if (this.editingOrderId() !== id) {
+    if (!this.canReorderSection() || this.editingOrderId() !== id) {
       return;
     }
     this.editingOrderId.set(null);

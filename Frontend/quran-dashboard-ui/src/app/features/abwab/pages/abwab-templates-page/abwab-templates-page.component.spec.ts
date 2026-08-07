@@ -11,6 +11,10 @@ import { AbwabTemplateDto } from '../../../../core/api/generated/models/abwab-te
 import { AbwabTemplateSummaryDto } from '../../../../core/api/generated/models/abwab-template-summary-dto';
 import { ApiResponse } from '../../../../core/data-access/api-response.model';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { ABWAB_WRITE_PERMISSIONS } from '../../state/abwab-permissions.controller';
+import { CurrentUserStore } from '../../../../core/auth/current-user.store';
+import { WriteAuthFailureCoordinator } from '../../../../core/auth/write-auth-failure.coordinator';
+import { PERMISSION_CODES, PermissionCode } from '../../../../core/auth/permission-code';
 
 const SUMMARY: AbwabTemplateSummaryDto = { id: 1, name: 'قالب الأبواب', nodeCount: 2 };
 
@@ -56,7 +60,7 @@ describe('AbwabTemplatesPageComponent', () => {
   let getTemplates: ReturnType<typeof vi.fn>;
   let deleteTemplate: ReturnType<typeof vi.fn>;
 
-  async function render(): Promise<ComponentFixture<AbwabTemplatesPageComponent>> {
+  async function render(permissions: readonly PermissionCode[] = PERMISSION_CODES): Promise<ComponentFixture<AbwabTemplatesPageComponent>> {
     getTestBed().resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [AbwabTemplatesPageComponent],
@@ -70,6 +74,17 @@ describe('AbwabTemplatesPageComponent', () => {
             deleteTemplate,
           },
         },
+        {
+          provide: CurrentUserStore,
+          useValue: {
+            can: (permission: PermissionCode) => permissions.includes(permission),
+            canAny: (codes: readonly PermissionCode[]) => codes.some((permission) => permissions.includes(permission)),
+            authStateKnown: () => true,
+            isAuthenticated: () => true,
+            loadState: () => 'ready',
+          },
+        },
+        { provide: WriteAuthFailureCoordinator, useValue: { handle: async () => null } },
         { provide: AbwabApi, useValue: { getTree: () => of(new HttpResponse({ body: ok(null) })) } },
       ],
     }).compileComponents();
@@ -100,6 +115,72 @@ describe('AbwabTemplatesPageComponent', () => {
       fixture.detectChanges();
       expect(getTemplates).toHaveBeenCalledTimes(2);
     });
+  });
+
+  it('keeps template list and tree public while hiding every template and template-node write path', async () => {
+    const fixture = await render([]);
+
+    click(fixture, 'abwab-templates-page-item-1');
+
+    expect(element(fixture, 'abwab-templates-page-add')).toBeNull();
+    expect(element(fixture, 'abwab-templates-page-copy')).toBeNull();
+    expect(element(fixture, 'abwab-templates-page-edit-template')).toBeNull();
+    expect(element(fixture, 'abwab-templates-page-delete-template')).toBeNull();
+    expect(element(fixture, 'abwab-template-tree-row-10')).toBeTruthy();
+    expect(element(fixture, 'abwab-template-tree-add-child-11')).toBeNull();
+    expect(element(fixture, 'abwab-template-tree-more-11')).toBeNull();
+    expect(element(fixture, 'abwab-template-tree-order-11')?.tagName).toBe('SPAN');
+
+    const chevron = element(fixture, 'abwab-template-tree-chevron-10') as HTMLButtonElement;
+    chevron.focus();
+    expect(document.activeElement).toBe(chevron);
+    chevron.dispatchEvent(new KeyboardEvent('keydown', { key: 'ContextMenu', bubbles: true }));
+    chevron.dispatchEvent(new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true }));
+    fixture.detectChanges();
+    expect(element(fixture, 'abwab-templates-page-context-menu')).toBeNull();
+
+    const internals = fixture.componentInstance as unknown as {
+      startNamingTemplate(): void;
+      onAddChildRequested(nodeId: number): void;
+      onEditRequested(nodeId: number): void;
+      onOrderCommitted(event: { nodeId: number; position: number }): void;
+      openCopyModal(): void;
+    };
+    internals.startNamingTemplate();
+    internals.onAddChildRequested(10);
+    internals.onEditRequested(11);
+    internals.onOrderCommitted({ nodeId: 11, position: 2 });
+    internals.openCopyModal();
+    fixture.detectChanges();
+
+    expect(element(fixture, 'abwab-templates-page-new-name')).toBeNull();
+    expect(element(fixture, 'abwab-template-node-modal')).toBeNull();
+    expect(element(fixture, 'abwab-template-copy-modal')).toBeNull();
+  });
+
+  it.each([
+    { name: 'edit-only', permission: ABWAB_WRITE_PERMISSIONS.editTemplateNode, actionTestId: 'abwab-templates-page-ctx-edit' },
+    { name: 'delete-only', permission: ABWAB_WRITE_PERMISSIONS.deleteTemplateNode, actionTestId: 'abwab-templates-page-ctx-delete-node' },
+  ])('opens the child context menu from a focused row for the $name persona', async ({ permission, actionTestId }) => {
+    const fixture = await render([permission]);
+    click(fixture, 'abwab-templates-page-item-1');
+
+    const row = element(fixture, 'abwab-template-tree-row-11') as HTMLElement;
+    row.getBoundingClientRect = () => ({ left: 120, right: 480, bottom: 64 }) as DOMRect;
+    expect(row.getAttribute('tabindex')).toBe('0');
+    row.focus();
+    expect(document.activeElement).toBe(row);
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ContextMenu', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(element(fixture, 'abwab-templates-page-context-menu')).not.toBeNull();
+    expect(element(fixture, actionTestId)).not.toBeNull();
+
+    row.focus();
+    expect(document.activeElement).toBe(row);
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true }));
+    fixture.detectChanges();
+    expect(element(fixture, 'abwab-templates-page-context-menu')).not.toBeNull();
   });
 
   describe('template-delete confirm', () => {

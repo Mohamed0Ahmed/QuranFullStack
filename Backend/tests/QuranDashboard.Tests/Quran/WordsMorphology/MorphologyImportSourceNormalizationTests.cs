@@ -23,10 +23,10 @@ public sealed class MorphologyImportSourceNormalizationTests(MorphologyImportTes
         lemmas["28:50:10"] = ">aDal~";
         await fixture.PatchQulLemmaMapAsync(sourcePath, lemmas);
 
-        await using var scope = fixture.CreateServiceProvider(services =>
+        await using var scope = fixture.CreateScope(services =>
         {
             services.AddSingleton<IWordLemmaNormalizationReader>(new FakeWordLemmaNormalizationReader());
-        }).CreateAsyncScope();
+        });
 
         var importSource = scope.ServiceProvider.GetRequiredService<MorphologyImportSource>();
         var source = await importSource.LoadAsync(sourcePath, CancellationToken.None);
@@ -47,7 +47,7 @@ public sealed class MorphologyImportSourceNormalizationTests(MorphologyImportTes
 
     private async Task AddReadableWordAsync(string location, int id, string textUthmani)
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboard.Infrastructure.Persistence.QuranDashboardDbContext>();
 
         dbContext.QuranWords.Add(new QuranWord

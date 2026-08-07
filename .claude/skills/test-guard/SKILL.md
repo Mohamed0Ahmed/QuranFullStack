@@ -109,38 +109,44 @@ Not all violations are equal. Use judgment:
 - **Sacred:** Rule 6 — never delete, always allow
 - **Worth noting:** Rule 9 — test architecture; flag it, but don't block small changes on it
 
-## Verification tiers and evidence sufficiency
+## Execution lanes and evidence sufficiency
 
 This skill judges *how* tests are written. When the request also puts test **evidence**
 in front of you (a phase hand-off, a pre-PR package, a review report), judge sufficiency
 against the workspace policy — do not invent your own bar:
 
 1. Read `TESTING_STRATEGY.md` (workspace root) — the single source of truth for test
-   selection and execution tiers (§1).
-2. Derive the required tier from the changed paths and risk: Tier A focused
-   per-phase; Tier B no-pipeline milestone regression; Tier C ordinary pre-PR;
-   Tier D pipeline-triggered slow suites; Tier E release/canonical acceptance (§3).
-   The change-to-tier matrix is §4.
+   selection and execution lanes (§1).
+2. Derive the required lane from the changed paths and risk using the execution-trigger
+   matrix (§5). Backend lanes are arguments to `Backend/scripts/test-backend` (§3);
+   Frontend lanes are `npm run test:*` scripts (§4). The former Tier A–E labels are
+   superseded; only `tier-b` survives, as the name of the Backend no-pipeline lane.
 3. Compare executed vs required and say sufficient / insufficient / stale. Evidence
    produced before the last code change is stale (§2).
-4. Treat a required canonical test that skipped for missing `resources/import-sources/`
-   as missing evidence, never as a pass (§9).
+4. A hand-written `--filter "FullyQualifiedName~…"` or `npm test -- --include=…` is not a
+   lane and is not reportable evidence for one (§1). Ask for the lane name.
 
 Three tree-specific facts that change the verdict (section numbers refer to
 `TESTING_STRATEGY.md`):
 
 - **No CI exists** (§8). "CI is green" is not available as evidence here.
-- **The route-parity/smoke gate is active** (`QuranDashboard.Tests.Smoke`, §3 Tier A/C, §5).
-  When the test changes under review touch API routes, request/response contracts, auth,
-  middleware, or binding, ask for a
-  `--filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."` run and for evidence that
-  says whether the `Tests.Smoke.Data` tier ran or skipped. A new or changed route also
-  needs its `SmokeRouteCatalog` entry in the same change (§10).
-- **The browser E2E layer is opt-in, never a required tier** (§3 Tier E, §6). An E2E run
-  may be offered as supplementary evidence and must say so; it does not substitute for the
-  smoke tier or for any required tier.
+- **The route-smoke gate is active** (§6). When the test changes under review touch API
+  routes, request/response contracts, auth, middleware, or binding, ask for a
+  `Backend/scripts/test-backend smoke --no-build` run. A new or changed route also needs
+  its `SmokeRouteCatalog` entry in the same change. The canonical Smoke **data** tier is a
+  *separate lane* — `SmokeDataReadTests` is `Kind=Canonical`, so `smoke` excludes it and
+  `canonical-data` runs it. Evidence must say which lane ran; an unqualified "smoke passed"
+  is not enough.
+- **Missing canonical resources fail the lane, they do not skip it** (§3.4, §9). The runner
+  preflights and exits non-zero, printing `canonical data tier: ran | not selected |
+  discovery only | failed preflight`. A canonical claim of "skipped, resources absent" from
+  a runner lane is not a resources problem — it means the run did not come from the runner,
+  and it is not evidence.
+- **The browser E2E layer is opt-in, never a required gate** (§11). An E2E run may be
+  offered as supplementary evidence and must say so; it does not substitute for the `smoke`
+  lane or for any required lane.
 
-Selecting the tier is not this skill's call to override — `engineering-review` owns the
+Selecting the lane is not this skill's call to override — `engineering-review` owns the
 final verification verdict. Report the mismatch; don't block on it alone.
 
 ## References

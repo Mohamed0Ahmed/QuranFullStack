@@ -16,7 +16,7 @@ public sealed class MorphologyPosResolutionTests(MorphologyImportTestFixture fix
         var result = await fixture.RunImportAsync(sourcePath, expectedReadableWords: readableCount);
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var posTags = await dbContext.PosTags.AsNoTracking().ToListAsync();
@@ -43,7 +43,7 @@ public sealed class MorphologyPosResolutionTests(MorphologyImportTestFixture fix
         var result = await fixture.RunImportAsync(sourcePath, expectedReadableWords: readableCount);
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var unknownHeadPos = await dbContext.Database.SqlQueryRaw<int>(
@@ -67,7 +67,7 @@ public sealed class MorphologyPosResolutionTests(MorphologyImportTestFixture fix
         var result = await fixture.RunImportAsync(sourcePath, expectedReadableWords: readableCount);
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var unknownSegmentPos = await dbContext.Database.SqlQueryRaw<int>(
@@ -91,7 +91,7 @@ public sealed class MorphologyPosResolutionTests(MorphologyImportTestFixture fix
         var result = await fixture.RunImportAsync(sourcePath, expectedReadableWords: readableCount);
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var categoryGroups = await dbContext.Database.SqlQueryRaw<CategoryCount>(
@@ -117,7 +117,7 @@ public sealed class MorphologyPosResolutionTests(MorphologyImportTestFixture fix
         var result = await fixture.RunImportAsync(sourcePath, expectedReadableWords: readableCount);
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var tenseGroups = await dbContext.Database.SqlQueryRaw<TenseVoiceCount>(
@@ -142,7 +142,7 @@ public sealed class MorphologyPosResolutionTests(MorphologyImportTestFixture fix
         var result = await fixture.RunImportAsync(sourcePath, expectedReadableWords: readableCount);
         result.ExitCode.Should().Be(ImportMorphologyResult.SuccessExitCode);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var caseGroups = await dbContext.Database.SqlQueryRaw<CaseCount>(
@@ -198,7 +198,7 @@ public sealed class MorphologyPosResolutionTests(MorphologyImportTestFixture fix
         check!.Passed.Should().BeFalse();
         check.Observed.Should().Contain("ZZZ");
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         (await dbContext.WordMorphologies.AsNoTracking().AnyAsync())
             .Should().BeFalse("a failed POS-resolution gate must roll back without persisting morphology rows");

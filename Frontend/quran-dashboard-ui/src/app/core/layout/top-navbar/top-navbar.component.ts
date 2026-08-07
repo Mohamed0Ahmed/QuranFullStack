@@ -8,6 +8,8 @@ import { NAV_MENU } from '../../navigation/nav-menu';
 import { DASHBOARD_ROUTE_PATH } from '../../navigation/route-paths';
 import { ThemeService } from '../../theme/theme.service';
 import { ScrollLockService } from '../../../shared/ui/modal-scroll-lock/scroll-lock.service';
+import { AuthReturnLocationStore } from '../../auth/auth-return-location.store';
+import { CurrentUserStore } from '../../auth/current-user.store';
 
 const GROUP_ONLY_ROUTE = '';
 
@@ -32,6 +34,8 @@ export class TopNavbarComponent {
   private readonly elementRef = inject(ElementRef);
   private readonly themeService = inject(ThemeService);
   private readonly oidcSecurityService = inject(OidcSecurityService);
+  private readonly currentUserStore = inject(CurrentUserStore);
+  private readonly authReturnLocationStore = inject(AuthReturnLocationStore);
   private readonly scrollLock = inject(ScrollLockService);
   protected readonly locked = this.scrollLock.isLocked;
 
@@ -158,6 +162,8 @@ export class TopNavbarComponent {
   }
 
   signOut(): void {
+    this.currentUserStore.clear();
+    this.authReturnLocationStore.clear();
     this.oidcSecurityService.logoff().subscribe();
   }
 

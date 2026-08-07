@@ -15,6 +15,10 @@
         <qd-state variant="error" [message]="error" data-testid="abwab-door-restore-modal-error" />
       }
 
+      @if (!canRestoreDoor()) {
+        <p class="abwab-door-restore-modal__hint" data-testid="abwab-door-restore-modal-permission-hint">{{ permissionHint }}</p>
+      }
+
       <p class="abwab-door-restore-modal__name" data-testid="abwab-door-restore-modal-name">{{ node.name }}</p>
       @if (pathText(); as path) {
         <p class="abwab-door-restore-modal__path" data-testid="abwab-door-restore-modal-path">{{ path }}</p>

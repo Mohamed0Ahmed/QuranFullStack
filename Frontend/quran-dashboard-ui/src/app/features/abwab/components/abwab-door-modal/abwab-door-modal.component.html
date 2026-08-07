@@ -80,7 +80,7 @@
             <button
               type="button"
               class="qd-btn qd-btn-primary"
-              [disabled]="saveBusy()"
+              [disabled]="saveBusy() || !canSave()"
               data-testid="abwab-door-modal-save"
               (click)="submit()"
             >

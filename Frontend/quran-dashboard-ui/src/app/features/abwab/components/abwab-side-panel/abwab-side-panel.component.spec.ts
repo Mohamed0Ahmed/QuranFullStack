@@ -21,6 +21,12 @@ function render(overrides: Record<string, unknown> = {}) {
   getTestBed().resetTestingModule();
   TestBed.configureTestingModule({ imports: [AbwabSidePanelComponent] });
   const fixture = TestBed.createComponent(AbwabSidePanelComponent);
+  fixture.componentRef.setInput('canCreateDoor', true);
+  fixture.componentRef.setInput('canEditDoor', true);
+  fixture.componentRef.setInput('canMoveDoor', true);
+  fixture.componentRef.setInput('canArchiveDoor', true);
+  fixture.componentRef.setInput('canUseBulkMode', true);
+  fixture.componentRef.setInput('canCreateRelation', true);
   for (const [key, value] of Object.entries(overrides)) {
     fixture.componentRef.setInput(key, value);
   }
@@ -29,6 +35,31 @@ function render(overrides: Record<string, unknown> = {}) {
 }
 
 describe('AbwabSidePanelComponent', () => {
+  it('keeps relations readable while hiding every write and bulk control for a read-only visitor', () => {
+    const fixture = render({
+      selectedDoor: DOOR,
+      canCreateDoor: false,
+      canEditDoor: false,
+      canMoveDoor: false,
+      canArchiveDoor: false,
+      canUseBulkMode: false,
+      canCreateRelation: false,
+    });
+    const root = fixture.nativeElement as HTMLElement;
+    const toggled: boolean[] = [];
+    fixture.componentInstance.bulkModeToggled.subscribe((value) => toggled.push(value));
+
+    expect(root.querySelector('[data-testid="abwab-side-panel-op-relations"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="abwab-side-panel-op-add-child"]')).toBeNull();
+    expect(root.querySelector('[data-testid="abwab-side-panel-op-edit"]')).toBeNull();
+    expect(root.querySelector('[data-testid="abwab-side-panel-op-move"]')).toBeNull();
+    expect(root.querySelector('[data-testid="abwab-side-panel-op-archive"]')).toBeNull();
+    expect(root.querySelector('[data-testid="abwab-side-panel-bulk-toggle"]')).toBeNull();
+
+    (fixture.componentInstance as unknown as { toggleBulkMode(): void }).toggleBulkMode();
+    expect(toggled).toEqual([]);
+  });
+
   it('shows the empty hint and disables operations when nothing is selected', () => {
     const fixture = render({ selectedDoor: null });
     const root = fixture.nativeElement as HTMLElement;

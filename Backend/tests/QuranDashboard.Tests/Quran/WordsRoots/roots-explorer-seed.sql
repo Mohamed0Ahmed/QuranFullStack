@@ -2,11 +2,11 @@
 -- Roots Explorer — representative content slice (fixture seed, T013)
 -- Feature 015 · read-only · deterministic · offline
 -- ----------------------------------------------------------------------
--- Loaded by RootsExplorerTestFixture into a fresh Testcontainers Postgres
--- instance AFTER EnsureCreatedAsync. Covers only the rows the Roots Explorer
--- list/summary/words/ayahs/surahs/lemmas/stems tests assert on; it is
--- intentionally NOT the full DB and NOT the developer's local DB. Canonical
--- Quranic Uthmani text is used verbatim — no text is invented or altered.
+-- Loaded by RootsExplorerTestFixture into its own isolated database on the shared
+-- Testcontainers Postgres runtime, cloned from the migrated template. Covers only
+-- the rows the Roots Explorer list/summary/words/ayahs/surahs/lemmas/stems tests
+-- assert on; it is intentionally NOT the full DB and NOT the developer's local DB.
+-- Canonical Quranic Uthmani text is used verbatim — no text is invented or altered.
 --
 -- Coverage goals (per T013):
 --   (a) A high-frequency root — many ayahs + many surahs.

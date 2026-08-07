@@ -76,27 +76,25 @@ describe('App nested layers on mobile (drawer under global overlay)', () => {
   let overlay: DetailOverlayHistoryService;
 
   beforeEach(() => {
-    // jsdom lacks matchMedia/ResizeObserver; stubbed BEFORE TestBed. No media
-    // query matches: the explorer renders its detail as a mobile drawer.
-    Object.defineProperty(window, 'matchMedia', {
-      configurable: true,
-      writable: true,
-      value: (query: string) => ({
-        matches: false,
-        media: query,
-        addEventListener: () => undefined,
-        removeEventListener: () => undefined,
-        addListener: () => undefined,
-        removeListener: () => undefined,
-      }),
-    });
-    if (typeof globalThis.ResizeObserver === 'undefined') {
-      globalThis.ResizeObserver = class {
+    // jsdom lacks matchMedia/ResizeObserver; stubbed BEFORE TestBed, and undone by the
+    // test-setup safety net even when a test throws. No media query matches: the explorer
+    // renders its detail as a mobile drawer.
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+    }));
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
         observe(): void {}
         unobserve(): void {}
         disconnect(): void {}
-      } as unknown as typeof ResizeObserver;
-    }
+      },
+    );
 
     document.body.style.overflow = '';
 

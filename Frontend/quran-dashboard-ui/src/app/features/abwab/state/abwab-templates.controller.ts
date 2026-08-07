@@ -1,15 +1,25 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { Observable, catchError, map, of } from 'rxjs';
+import { Injectable, Injector, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable, catchError, from, map, of } from 'rxjs';
 
 import { AbwabTemplatesApi } from '../data-access/abwab-templates.api';
 import { AbwabTemplatesFacade } from './abwab-templates.facade';
-import { AbwabWriteOutcome, toAbwabWriteFailure } from './abwab-write.controller';
+import {
+  AbwabWriteFailureOutcome,
+  AbwabWriteOutcome,
+  abwabPermissionDenied,
+  toAbwabWriteFailure,
+} from './abwab-write.controller';
 import { ABWAB_LABELS } from '../models/abwab.labels';
 import { AbwabAuthoringFields } from '../models/abwab-templates.models';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AbwabTemplateDto } from '../../../core/api/generated/models/abwab-template-dto';
 import { AbwabTemplateNodeDto } from '../../../core/api/generated/models/abwab-template-node-dto';
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
+import { CurrentUserStore } from '../../../core/auth/current-user.store';
+import { WriteAuthFailureCoordinator } from '../../../core/auth/write-auth-failure.coordinator';
+import { PermissionCode } from '../../../core/auth/permission-code';
+import { ABWAB_WRITE_PERMISSIONS } from './abwab-permissions.controller';
 
 type AbwabTemplatesRefresh = 'list' | 'selected' | 'both' | 'none';
 
@@ -23,20 +33,26 @@ interface AbwabTemplatesWriteOptions {
 export class AbwabTemplatesController {
   private readonly api = inject(AbwabTemplatesApi);
   private readonly facade = inject(AbwabTemplatesFacade);
+  private readonly currentUserStore = inject(CurrentUserStore);
+  private readonly injector = inject(Injector);
 
   private readonly announcementState = signal<string | null>(null);
   readonly announcement = this.announcementState.asReadonly();
 
   createTemplate(name: string): Observable<AbwabWriteOutcome<AbwabTemplateDto | null>> {
-    return this.dispatch(this.api.createTemplate({ name, description: null, representativeAyahText: null, aliases: [] }), {
+    return this.dispatch(
+      ABWAB_WRITE_PERMISSIONS.createTemplate,
+      () => this.api.createTemplate({ name, description: null, representativeAyahText: null, aliases: [] }),
+      {
       refresh: 'list',
       successAnnouncement: ABWAB_LABELS.templateCreatedAnnouncement,
       announceFailure: true,
-    });
+      },
+    );
   }
 
   deleteTemplate(templateId: number): Observable<AbwabWriteOutcome<unknown>> {
-    return this.dispatch(this.api.deleteTemplate(templateId), {
+    return this.dispatch(ABWAB_WRITE_PERMISSIONS.deleteTemplate, () => this.api.deleteTemplate(templateId), {
       refresh: 'list',
       successAnnouncement: ABWAB_LABELS.templateDeletedAnnouncement,
       announceFailure: true,
@@ -48,41 +64,59 @@ export class AbwabTemplatesController {
     parentNodeId: number | null,
     fields: AbwabAuthoringFields,
   ): Observable<AbwabWriteOutcome<AbwabTemplateNodeDto | null>> {
-    return this.dispatch(this.api.addNode(templateId, { parentNodeId, ...toWireFields(fields) }), {
+    return this.dispatch(
+      ABWAB_WRITE_PERMISSIONS.createTemplateNode,
+      () => this.api.addNode(templateId, { parentNodeId, ...toWireFields(fields) }),
+      {
+      refresh: 'both',
+      announceFailure: true,
+      },
+    );
+  }
+
+  editNode(nodeId: number, fields: AbwabAuthoringFields): Observable<AbwabWriteOutcome<AbwabTemplateNodeDto | null>> {
+    return this.dispatch(ABWAB_WRITE_PERMISSIONS.editTemplateNode, () => this.api.editNode(nodeId, toWireFields(fields)), {
       refresh: 'both',
       announceFailure: true,
     });
   }
 
-  editNode(nodeId: number, fields: AbwabAuthoringFields): Observable<AbwabWriteOutcome<AbwabTemplateNodeDto | null>> {
-    return this.dispatch(this.api.editNode(nodeId, toWireFields(fields)), { refresh: 'both', announceFailure: true });
-  }
-
   reorderNode(nodeId: number, position: number): Observable<AbwabWriteOutcome<AbwabTemplateNodeDto | null>> {
-    return this.dispatch(this.api.reorderNode(nodeId, { position }), { refresh: 'selected', announceFailure: true });
+    return this.dispatch(ABWAB_WRITE_PERMISSIONS.reorderTemplateNode, () => this.api.reorderNode(nodeId, { position }), {
+      refresh: 'selected',
+      announceFailure: true,
+    });
   }
 
   deleteNode(nodeId: number): Observable<AbwabWriteOutcome<unknown>> {
-    return this.dispatch(this.api.deleteNode(nodeId), { refresh: 'both', announceFailure: true });
+    return this.dispatch(ABWAB_WRITE_PERMISSIONS.deleteTemplateNode, () => this.api.deleteNode(nodeId), {
+      refresh: 'both',
+      announceFailure: true,
+    });
   }
 
   applyTemplate(
     templateId: number,
     targetDoorIds: readonly number[],
   ): Observable<AbwabWriteOutcome<AbwabDoorDto[] | null>> {
-    return this.dispatch(this.api.applyTemplate(templateId, { targetDoorIds: [...targetDoorIds] }), {
+    return this.dispatch(ABWAB_WRITE_PERMISSIONS.applyTemplate, () => this.api.applyTemplate(templateId, { targetDoorIds: [...targetDoorIds] }), {
       refresh: 'none',
       successAnnouncement: ABWAB_LABELS.templateAppliedAnnouncement(targetDoorIds.length),
     });
   }
 
   private dispatch<T>(
-    request$: Observable<ApiResponse<T> | null>,
+    permission: PermissionCode,
+    request: () => Observable<ApiResponse<T> | null>,
     options: AbwabTemplatesWriteOptions,
   ): Observable<AbwabWriteOutcome<T | null>> {
-    return request$.pipe(
+    if (!this.currentUserStore.can(permission)) {
+      return of(this.handlePermissionDenied<T | null>(options));
+    }
+
+    return request().pipe(
       map((response) => this.handleSuccess(response, options)),
-      catchError((err: unknown) => of(this.handleFailure<T | null>(err, options))),
+      catchError((err: unknown) => this.toFailureOutcome(err).pipe(map((outcome) => this.handleFailure<T | null>(outcome, options)))),
     );
   }
 
@@ -101,10 +135,31 @@ export class AbwabTemplatesController {
     return { kind: 'invalid', message };
   }
 
-  private handleFailure<T>(err: unknown, options: AbwabTemplatesWriteOptions): AbwabWriteOutcome<T> {
-    const outcome = toAbwabWriteFailure(err);
+  private handleFailure<T>(outcome: AbwabWriteFailureOutcome, options: AbwabTemplatesWriteOptions): AbwabWriteOutcome<T> {
     this.announcementState.set(options.announceFailure ? outcome.message : null);
     return outcome;
+  }
+
+  private handlePermissionDenied<T>(options: AbwabTemplatesWriteOptions): AbwabWriteOutcome<T> {
+    const outcome = abwabPermissionDenied();
+    this.announcementState.set(options.announceFailure ? outcome.message : null);
+    return outcome;
+  }
+
+  private toFailureOutcome(err: unknown): Observable<AbwabWriteFailureOutcome> {
+    if (!(err instanceof HttpErrorResponse) || (err.status !== 401 && err.status !== 403)) {
+      return of(toAbwabWriteFailure(err));
+    }
+    return from(this.injector.get(WriteAuthFailureCoordinator).handle(err)).pipe(
+      map((authFailure) =>
+        authFailure === null
+          ? toAbwabWriteFailure(err)
+          : {
+              kind: authFailure.kind,
+              message: authFailure.message ?? ABWAB_LABELS.writePermissionDenied,
+            },
+      ),
+    );
   }
 
   private applyRefresh(refresh: AbwabTemplatesRefresh): void {

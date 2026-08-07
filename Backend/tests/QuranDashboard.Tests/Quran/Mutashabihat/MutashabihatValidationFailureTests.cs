@@ -133,13 +133,14 @@ public sealed class MutashabihatValidationFailureTests(MutashabihatImportTestFix
         await fixture.SeedSyntheticWordsAsync();
         var sourcePath = await fixture.WriteSyntheticSourceFolderAsync();
 
-        await using var scope = fixture.CreateServiceProvider(services =>
+        await using var provider = fixture.CreateCallerDisposedServiceProvider(services =>
         {
             services.AddMutashabihatImportServices();
             services.AddScoped<SourceChangedAfterLoadMutashabihatImportSource>();
             services.AddScoped<IMutashabihatImportSource>(sp =>
                 sp.GetRequiredService<SourceChangedAfterLoadMutashabihatImportSource>());
-        }).CreateAsyncScope();
+        });
+        await using var scope = provider.CreateAsyncScope();
 
         var reportOutDir = Path.Combine(Path.GetTempPath(), $"mutashabihat-report-{Guid.NewGuid():N}");
         var handler = scope.ServiceProvider.GetRequiredService<ImportMutashabihatHandler>();

@@ -63,7 +63,7 @@ public sealed class TranslationRefusalForceTests(TranslationImportTestFixture fi
             firstReportDir);
         firstResult.Succeeded.Should().BeTrue(firstResult.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var foundationBefore = await dbContext.QuranAyahs

@@ -28,6 +28,7 @@ export class AbwabDoorModalComponent {
   readonly parentName = input<string | null>(null);
   readonly activeSectionId = input<number | null>(null);
   readonly sections = input<readonly AbwabTreeSectionDto[]>([]);
+  readonly canSave = input(false);
 
   readonly closed = output<void>();
   readonly saved = output<AbwabDoorDto | null>();
@@ -135,7 +136,7 @@ export class AbwabDoorModalComponent {
 
   protected submit(): void {
     const fields = this.fieldsForm()?.current();
-    if (!fields || this.saveBusy()) {
+    if (!this.canSave() || !fields || this.saveBusy()) {
       return;
     }
     const name = fields.name.trim();

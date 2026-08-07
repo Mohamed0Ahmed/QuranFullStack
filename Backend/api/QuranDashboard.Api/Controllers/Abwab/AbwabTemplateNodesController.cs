@@ -1,4 +1,6 @@
+using QuranDashboard.Api.Authorization.Metadata;
 using QuranDashboard.Application.Abstractions.Abwab.Responses;
+using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Application.Abwab.Commands.Templates.AddTemplateNode;
 using QuranDashboard.Application.Abwab.Commands.Templates.DeleteTemplateNode;
 using QuranDashboard.Application.Abwab.Commands.Templates.EditTemplateNode;
@@ -15,6 +17,7 @@ public sealed class AbwabTemplateNodesController(
     DeleteTemplateNodeHandler deleteNodeHandler) : ControllerBase
 {
     [HttpPost("templates/{templateId:int}/nodes")]
+    [RequirePermission(AbwabPermissions.TemplateNodes.Create)]
     public async Task<ActionResult<ApiResponse<AbwabTemplateNodeDto>>> Add(
         int templateId, [FromBody] AddTemplateNodeBody body, CancellationToken cancellationToken)
     {
@@ -43,6 +46,7 @@ public sealed class AbwabTemplateNodesController(
     }
 
     [HttpPut("template-nodes/{nodeId:int}")]
+    [RequirePermission(AbwabPermissions.TemplateNodes.Edit)]
     public async Task<ActionResult<ApiResponse<AbwabTemplateNodeDto>>> Edit(
         int nodeId, [FromBody] EditTemplateNodeBody body, CancellationToken cancellationToken)
     {
@@ -65,6 +69,7 @@ public sealed class AbwabTemplateNodesController(
     }
 
     [HttpPost("template-nodes/{nodeId:int}/order")]
+    [RequirePermission(AbwabPermissions.TemplateNodes.Reorder)]
     public async Task<ActionResult<ApiResponse<AbwabTemplateNodeDto>>> Reorder(
         int nodeId, [FromBody] ReorderTemplateNodeBody body, CancellationToken cancellationToken)
     {
@@ -86,6 +91,7 @@ public sealed class AbwabTemplateNodesController(
     }
 
     [HttpDelete("template-nodes/{nodeId:int}")]
+    [RequirePermission(AbwabPermissions.TemplateNodes.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<ActionResult<ApiResponse<object>>> Delete(
         int nodeId, CancellationToken cancellationToken)

@@ -28,7 +28,7 @@ public sealed class DisplayWordsIdentityLinksTests
 
         result.Succeeded.Should().BeTrue(result.Message);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         (await dbContext.QuranWordsOrderedTashkeel.CountAsync())
@@ -97,7 +97,7 @@ public sealed class DisplayWordsIdentityLinksTests
 
     private async Task<IReadOnlyList<WordLinkProjection>> CaptureLinkSnapshotAsync()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return await dbContext.QuranWords

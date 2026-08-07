@@ -28,7 +28,7 @@ public sealed class NavigationImportTests(NavigationImportTestFixture fixture)
         result.Totals.Sajda.Should().Be(2);
         result.Totals.AyahsTagged.Should().Be(6);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         (await dbContext.QuranJuzs.CountAsync()).Should().Be(2);

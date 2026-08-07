@@ -63,7 +63,7 @@ public sealed class FullI3rabForceRebuildTests(FullI3rabImportTestFixture fixtur
         var contentAfterForce = await CaptureFullI3rabContentFingerprintAsync(fixture);
         contentAfterForce.Should().NotBe(contentBeforeForce);
 
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var leaderEntry = await dbContext.FullI3rabEntries
@@ -113,7 +113,7 @@ public sealed class FullI3rabForceRebuildTests(FullI3rabImportTestFixture fixtur
 
     private static async Task<string> CaptureFullI3rabContentFingerprintAsync(FullI3rabImportTestFixture fixture)
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var rows = await dbContext.FullI3rabEntries

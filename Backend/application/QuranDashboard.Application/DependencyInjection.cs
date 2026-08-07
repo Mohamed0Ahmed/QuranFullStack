@@ -25,6 +25,21 @@ using QuranDashboard.Application.Abwab.Queries.GetTemplates;
 using QuranDashboard.Application.Abwab.Commands.Relations.AddDoorRelations;
 using QuranDashboard.Application.Abwab.Commands.Relations.DeleteDoorRelation;
 using QuranDashboard.Application.Access.Commands.ProvisionCurrentUser;
+using QuranDashboard.Application.Access.Commands.AcceptAccessUser;
+using QuranDashboard.Application.Access.Commands.DisableAccessUser;
+using QuranDashboard.Application.Access.Commands.ReactivateAccessUser;
+using QuranDashboard.Application.Access.Commands.ReplaceUserPermissions;
+using QuranDashboard.Application.Access.Commands.PreviewLogtoSubjectRelink;
+using QuranDashboard.Application.Access.Commands.ConfirmLogtoSubjectRelink;
+using QuranDashboard.Application.Access.LegacyRoleConversion;
+using QuranDashboard.Application.Access.OwnerReconciliation;
+using QuranDashboard.Application.Access.Queries.ListAccessUsers;
+using QuranDashboard.Application.Access.Queries.GetAccessUser;
+using QuranDashboard.Application.Access.Queries.GetPermissionCatalogue;
+using QuranDashboard.Application.Access.Queries.GetUserPermissions;
+using QuranDashboard.Application.Access.Queries.ListAccessAuditEvents;
+using QuranDashboard.Application.Access.Queries.GetOwnerReconciliationStatus;
+using QuranDashboard.Application.Abstractions.Access;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 using QuranDashboard.Application.Quran.DataPipelines.Foundation.Validation;
 using QuranDashboard.Application.Quran.DataPipelines.Mutashabihat;
@@ -145,6 +160,19 @@ public static class DependencyInjection
         services.AddScoped<GetWordTypeSurahsHandler>();
 
         services.AddScoped<ProvisionCurrentUserHandler>();
+        services.AddScoped<ListAccessUsersHandler>();
+        services.AddScoped<GetAccessUserHandler>();
+        services.AddScoped<AcceptAccessUserHandler>();
+        services.AddScoped<DisableAccessUserHandler>();
+        services.AddScoped<ReactivateAccessUserHandler>();
+        services.AddScoped<GetPermissionCatalogueHandler>();
+        services.AddScoped<GetUserPermissionsHandler>();
+        services.AddScoped<ReplaceUserPermissionsHandler>();
+        services.AddScoped<ListAccessAuditEventsHandler>();
+        services.AddScoped<PreviewLogtoSubjectRelinkHandler>();
+        services.AddScoped<ConfirmLogtoSubjectRelinkHandler>();
+        services.AddScoped<GetOwnerReconciliationStatusHandler>();
+        services.AddOwnerReconciliation();
 
         services.AddScoped<CreateSectionHandler>();
         services.AddScoped<RenameSectionHandler>();
@@ -174,6 +202,13 @@ public static class DependencyInjection
         services.AddScoped<DeleteTemplateNodeHandler>();
         services.AddScoped<ApplyTemplateHandler>();
 
+        return services;
+    }
+
+    public static IServiceCollection AddOwnerReconciliation(this IServiceCollection services)
+    {
+        services.AddScoped<IOwnerReconciliationService, OwnerReconciliationService>();
+        services.AddScoped<ILegacyRoleConversionService, LegacyRoleConversionService>();
         return services;
     }
 }

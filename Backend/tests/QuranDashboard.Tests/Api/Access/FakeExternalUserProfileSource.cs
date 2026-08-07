@@ -6,7 +6,8 @@ public sealed class FakeExternalUserProfileSource : IExternalUserProfileSource
 {
     private readonly ConcurrentDictionary<string, int> _callsBySub = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, string> _emailOverridesBySub = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, bool> _unverifiedSubs = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, bool> _unavailableSubs = new(StringComparer.Ordinal);
+    private ProfileBlock? _profileBlock;
     private int _totalCalls;
     private volatile string? _blankEmailSub;
 
@@ -24,31 +25,68 @@ public sealed class FakeExternalUserProfileSource : IExternalUserProfileSource
 
     public void ReturnEmailFor(string sub, string email) => _emailOverridesBySub[sub] = email;
 
-    public void ReturnUnverifiedFor(string sub) => _unverifiedSubs[sub] = true;
+    public void ReturnUnavailableFor(string sub) => _unavailableSubs[sub] = true;
+
+    public ProfileBlock BlockNextProfileFor(string sub)
+    {
+        var profileBlock = new ProfileBlock(sub);
+        if (Interlocked.CompareExchange(ref _profileBlock, profileBlock, null) is not null)
+        {
+            throw new InvalidOperationException("A profile block is already active.");
+        }
+
+        return profileBlock;
+    }
 
     public void Reset()
     {
         _callsBySub.Clear();
         _emailOverridesBySub.Clear();
-        _unverifiedSubs.Clear();
+        _unavailableSubs.Clear();
+        Interlocked.Exchange(ref _profileBlock, null)?.Release();
         Interlocked.Exchange(ref _totalCalls, 0);
         _blankEmailSub = null;
     }
 
-    public Task<ExternalUserProfile> GetProfileAsync(string logtoSub, CancellationToken ct)
+    public async Task<ExternalUserProfile> GetProfileAsync(string logtoSub, CancellationToken ct)
     {
         Interlocked.Increment(ref _totalCalls);
         _callsBySub.AddOrUpdate(logtoSub, 1, (_, existing) => existing + 1);
+
+        if (_unavailableSubs.ContainsKey(logtoSub))
+        {
+            throw new HttpRequestException("Logto provider is unavailable.");
+        }
+
+        var profileBlock = Volatile.Read(ref _profileBlock);
+        if (profileBlock is not null && string.Equals(profileBlock.Sub, logtoSub, StringComparison.Ordinal))
+        {
+            profileBlock.Enter();
+            await profileBlock.WaitForReleaseAsync(ct);
+            Interlocked.CompareExchange(ref _profileBlock, null, profileBlock);
+        }
 
         var email = string.Equals(logtoSub, _blankEmailSub, StringComparison.Ordinal)
             ? null
             : _emailOverridesBySub.GetValueOrDefault(logtoSub, EmailFor(logtoSub));
 
-        // decision 3: a blank email can never be "verified" — verification is a property of a specific
-        // email address, and there is none here.
-        var emailVerified = !string.IsNullOrWhiteSpace(email) && !_unverifiedSubs.ContainsKey(logtoSub);
+        return new ExternalUserProfile(email, UserNameFor(logtoSub), DisplayNameFor(logtoSub));
+    }
 
-        return Task.FromResult(
-            new ExternalUserProfile(email, UserNameFor(logtoSub), DisplayNameFor(logtoSub), emailVerified));
+    public sealed class ProfileBlock(string sub)
+    {
+        private readonly TaskCompletionSource entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource released = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public string Sub { get; } = sub;
+
+        public Task WaitUntilEnteredAsync() => entered.Task;
+
+        public void Enter() => entered.TrySetResult();
+
+        public void Release() => released.TrySetResult();
+
+        public Task WaitForReleaseAsync(CancellationToken cancellationToken)
+            => released.Task.WaitAsync(cancellationToken);
     }
 }

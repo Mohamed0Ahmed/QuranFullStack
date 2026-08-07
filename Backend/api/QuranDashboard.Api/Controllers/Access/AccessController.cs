@@ -19,8 +19,8 @@ public sealed class AccessController(ProvisionCurrentUserHandler provisionCurren
             user.Email,
             user.DisplayName,
             MapStatus(user.Status),
-            user.RoleId,
-            user.RoleName);
+            user.IsOwner,
+            user.Permissions);
 
         return Ok(ApiResponse<CurrentUserResponse>.Ok(data, ApiMessages.CurrentUserLoaded));
     }
@@ -39,5 +39,5 @@ public sealed record CurrentUserResponse(
     string Email,
     string? DisplayName,
     string Status,
-    int? RoleId,
-    string? RoleName);
+    bool IsOwner,
+    IReadOnlyList<string> Permissions);

@@ -36,6 +36,10 @@ function render() {
   const fixture = TestBed.createComponent(AbwabTemplateTreeComponent);
   fixture.componentRef.setInput('root', SAMPLE.root);
   fixture.componentRef.setInput('ariaLabel', 'شجرة القالب');
+  fixture.componentRef.setInput('canCreateNode', true);
+  fixture.componentRef.setInput('canReorderNode', true);
+  fixture.componentRef.setInput('canShowRootContextMenu', true);
+  fixture.componentRef.setInput('canShowNodeContextMenu', true);
   fixture.detectChanges();
   return fixture;
 }
@@ -50,6 +54,54 @@ function openOrderEditor(fixture: ReturnType<typeof render>, nodeId: number): HT
 }
 
 describe('AbwabTemplateTreeComponent', () => {
+  describe('Phase 9 permission-aware controls', () => {
+    it('renders a read-only tree and rejects plus, context-menu, quick-add, and reorder dispatches', () => {
+      const fixture = render();
+      fixture.componentRef.setInput('canCreateNode', false);
+      fixture.componentRef.setInput('canReorderNode', false);
+      fixture.componentRef.setInput('canShowRootContextMenu', false);
+      fixture.componentRef.setInput('canShowNodeContextMenu', false);
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+      const added: number[] = [];
+      const menus: unknown[] = [];
+      const reordered: unknown[] = [];
+      const quickAdds: string[] = [];
+      fixture.componentInstance.addChildRequested.subscribe((id) => added.push(id));
+      fixture.componentInstance.menuRequested.subscribe((event) => menus.push(event));
+      fixture.componentInstance.orderCommitted.subscribe((event) => reordered.push(event));
+      fixture.componentInstance.quickAddRequested.subscribe((name) => quickAdds.push(name));
+
+      expect(root.querySelector('[data-testid="abwab-template-tree-add-child-2"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-template-tree-more-2"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-template-tree-quick-add"]')).toBeNull();
+      expect(root.querySelector('[data-testid="abwab-template-tree-order-2"]')?.tagName).toBe('SPAN');
+      expect(root.querySelector('[data-testid="abwab-template-tree-row-2"]')?.getAttribute('tabindex')).toBeNull();
+
+      const chevron = root.querySelector('[data-testid="abwab-template-tree-chevron-1"]') as HTMLButtonElement;
+      chevron.focus();
+      expect(document.activeElement).toBe(chevron);
+      chevron.dispatchEvent(new KeyboardEvent('keydown', { key: 'ContextMenu', bubbles: true }));
+      chevron.dispatchEvent(new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true }));
+
+      const internals = fixture.componentInstance as unknown as {
+        onAddChildClick(nodeId: number): void;
+        onMoreClick(event: MouseEvent, nodeId: number): void;
+        onOrderClick(node: { id: number; parentNodeId: number | null }): void;
+        onQuickAddEnter(event: Event): void;
+      };
+      internals.onAddChildClick(2);
+      internals.onMoreClick(new MouseEvent('click'), 2);
+      internals.onOrderClick({ id: 2, parentNodeId: 1 });
+      internals.onQuickAddEnter(new Event('submit'));
+
+      expect(added).toEqual([]);
+      expect(menus).toEqual([]);
+      expect(reordered).toEqual([]);
+      expect(quickAdds).toEqual([]);
+    });
+  });
+
   describe('inline order editor — Enter is the only commit', () => {
     it('commits a new position on Enter', () => {
       const fixture = render();
@@ -168,8 +220,13 @@ describe('AbwabTemplateTreeComponent', () => {
       expect(more.every((el) => el.getAttribute('tabindex') === '-1')).toBe(true);
     });
 
-    it('still opens the menu from the keyboard, anchored on the row rather than the viewport origin', () => {
+    it('opens the exact-permission node menu from its focused row, anchored away from the viewport origin', () => {
       const fixture = render();
+      fixture.componentRef.setInput('canCreateNode', false);
+      fixture.componentRef.setInput('canReorderNode', false);
+      fixture.componentRef.setInput('canShowRootContextMenu', false);
+      fixture.componentRef.setInput('canShowNodeContextMenu', true);
+      fixture.detectChanges();
       const requests: Array<{ nodeId: number; x: number; y: number }> = [];
       fixture.componentInstance.menuRequested.subscribe(
         (request: { nodeId: number; x: number; y: number }) => requests.push(request),
@@ -178,9 +235,16 @@ describe('AbwabTemplateTreeComponent', () => {
       const root = fixture.nativeElement as HTMLElement;
       const row = root.querySelector('[data-testid="abwab-template-tree-row-2"]') as HTMLElement;
       row.getBoundingClientRect = () => ({ left: 120, right: 480, bottom: 64 }) as DOMRect;
+      expect(row.getAttribute('tabindex')).toBe('0');
+      row.focus();
+      expect(document.activeElement).toBe(row);
       row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ContextMenu', bubbles: true }));
+      row.dispatchEvent(new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true }));
 
-      expect(requests).toEqual([{ nodeId: 2, x: 120, y: 64 }]);
+      expect(requests).toEqual([
+        { nodeId: 2, x: 120, y: 64 },
+        { nodeId: 2, x: 120, y: 64 },
+      ]);
     });
   });
 });

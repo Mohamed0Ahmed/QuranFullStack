@@ -1,8 +1,9 @@
 # Quran Dashboard Backend
 
 .NET 10 / ASP.NET Core / EF Core / PostgreSQL backend for the Quran Dashboard
-(المنهج القرآني). Clean Architecture. **Read-only** over curated Quran data at the API;
-writes happen only through the import/generate CLI.
+(المنهج القرآني). Clean Architecture. The API is read-heavy over curated Quran data and
+also exposes permission-protected Abwab writes plus Owner-only access administration;
+bulk import and generation writes remain CLI-only.
 
 > HOW to work here (rules): `.architecture/BACKEND_STRUCTURE.md`,
 > `.architecture/CLEAN_ARCHITECTURE.md`, `.architecture/API_GUIDELINES.md`,
@@ -14,6 +15,13 @@ writes happen only through the import/generate CLI.
 - **Words explorers** — Roots, Lemmas, Stems, WordTypes, Unique Words (read-only).
 - **Import/generate pipelines** — foundation, morphology (+ enriched), simple/full إعراب,
   mutashabihat, tafsirs, translations, navigation metadata, display-word rebuild.
+- **Access foundation** — normalized identity, the 19-code Abwab catalogue, direct-grant/audit
+  persistence, the operator conversion/preflight CLI, the request-scoped database authorization core, exact permission
+  metadata on all twenty-one Abwab writes, and fail-closed unsafe-endpoint startup validation. Active Owners
+  can administer non-Owner users, direct grants, audit history, and verified Logto-subject relinks through
+  transactional Backend APIs; Owner membership/configuration remains reconciliation-only. Public GETs,
+  including all four Abwab reads and the tree/template conditional requests, remain anonymous; production
+  activation is a separate deployment gate.
 
 ## Layer map
 
@@ -29,6 +37,7 @@ infrastructure/QuranDashboard.Infrastructure
   Persistence/{Configurations,Migrations,QuranDashboardDbContext.cs}
 shared/QuranDashboard.Shared           Result/Error primitives
 tools/QuranDashboard.DataImporter      import/generate CLI                    → see its README
+tools/QuranDashboard.AccessAdmin       access conversion/preflight CLI         → see its README
 tests/QuranDashboard.Tests
 scripts/                               dev CLI shortcuts                      → see its README
 ```
@@ -41,6 +50,7 @@ scripts/                               dev CLI shortcuts                      �
 - `infrastructure/.../Persistence/DataPipelines/Quran/README.md`
 - `infrastructure/.../Persistence/Reads/Quran/Words/README.md`
 - `tools/QuranDashboard.DataImporter/README.md`
+- `tools/QuranDashboard.AccessAdmin/README.md`
 - `report/README.md` (report locations + filename conventions)
 
 ## Build / run

@@ -20,30 +20,34 @@
           class="qd-btn"
           [class.abwab-page__header-btn--active]="archiveParam()"
           data-testid="abwab-page-archive-toggle"
-          (click)="onArchiveToggle()"
+          (click)="interactions.onArchiveToggle(archiveParam())"
         >
           {{ archiveButtonLabel }}
         </button>
-        <button
-          type="button"
-          class="qd-btn"
-          data-testid="abwab-page-manage-sections"
-          (click)="onSectionsRequested()"
-        >
-          {{ manageSectionsLabel }}
-        </button>
+        @if (permissions.canManageSections()) {
+          <button
+            type="button"
+            class="qd-btn"
+            data-testid="abwab-page-manage-sections"
+            (click)="interactions.onSectionsRequested()"
+          >
+            {{ manageSectionsLabel }}
+          </button>
+        }
         @if (!archiveParam()) {
           <a class="qd-btn" [routerLink]="templatesRoutePath" data-testid="abwab-page-templates">
             {{ templatesLabel }}
           </a>
-          <button
-            type="button"
-            class="qd-btn qd-btn-primary"
-            data-testid="abwab-page-add-root"
-            (click)="onCreateRootRequested()"
-          >
-            {{ addRootLabel }}
-          </button>
+          @if (permissions.canCreateDoor()) {
+            <button
+              type="button"
+              class="qd-btn qd-btn-primary"
+              data-testid="abwab-page-add-root"
+              (click)="interactions.onCreateRootRequested()"
+            >
+              {{ addRootLabel }}
+            </button>
+          }
         }
       </div>
     </header>
@@ -76,9 +80,9 @@
       [hideSectionControls]="archiveParam()"
       [rootCountBySectionId]="rootCountBySectionId()"
       [totalRootCount]="totalRootCount()"
-      (sectionChanged)="onSectionChanged($event)"
-      (viewChanged)="onViewChanged($event)"
-      (searchQueryChanged)="onSearchQueryChanged($event)"
+      (sectionChanged)="interactions.onSectionChanged($event)"
+      (viewChanged)="interactions.onViewChanged($event)"
+      (searchQueryChanged)="interactions.onSearchQueryChanged($event)"
     />
 
     @if (facade.isLoading() && !facade.snapshot()) {
@@ -123,7 +127,8 @@
                 <qd-abwab-archive-view
                   [roots]="displayArchivedRoots()"
                   [ariaLabel]="archiveTreeAriaLabel"
-                  (restoreRequested)="onRestoreRequested($event)"
+                  [canRestoreDoor]="permissions.canRestoreDoor()"
+                  (restoreRequested)="interactions.onRestoreRequested($event)"
                 />
               }
             </div>
@@ -139,10 +144,10 @@
                 [selectedId]="selection.selectedDoorId()"
                 [bulkMode]="selection.bulkMode()"
                 [bulkSelectedIds]="bulkSelectedIds()"
-                (selected)="onTreeSelected($event)"
-                (bulkToggled)="onBulkToggled($event)"
-                (drilled)="onCardDrilled($event)"
-                (crumbSelected)="onCardCrumbSelected($event)"
+                (selected)="interactions.onTreeSelected($event)"
+                (bulkToggled)="interactions.onBulkToggled($event)"
+                (drilled)="interactions.onCardDrilled($event)"
+                (crumbSelected)="interactions.onCardCrumbSelected($event)"
               />
             </div>
           } @else {
@@ -160,22 +165,26 @@
                   [matchedIds]="treeMatchedIds()"
                   [expandSeedIds]="expandSeedIds()"
                   [revealedId]="revealedId()"
-                  (selected)="onTreeSelected($event)"
-                  (bulkToggled)="onBulkToggled($event)"
-                  (addChildRequested)="onTreeAddChildRequested($event)"
-                  (menuRequested)="onMenuRequested($event)"
-                  (orderCommitted)="onOrderCommitted($event)"
-                  (relationsRequested)="onRelationsRequested($event)"
+                  [canCreateDoor]="permissions.canCreateDoor()"
+                  [canReorderDoor]="permissions.canReorderDoor()"
+                  (selected)="interactions.onTreeSelected($event)"
+                  (bulkToggled)="interactions.onBulkToggled($event)"
+                  (addChildRequested)="interactions.onTreeAddChildRequested($event)"
+                  (menuRequested)="interactions.onMenuRequested($event)"
+                  (orderCommitted)="interactions.onOrderCommitted($event)"
+                  (relationsRequested)="interactions.onRelationsRequested($event)"
                 />
               }
-              <button
-                type="button"
-                class="abwab-page__add-ghost"
-                data-testid="abwab-page-add-root-ghost"
-                (click)="onCreateRootRequested()"
-              >
-                {{ addRootGhostLabel }}
-              </button>
+              @if (permissions.canCreateDoor()) {
+                <button
+                  type="button"
+                  class="abwab-page__add-ghost"
+                  data-testid="abwab-page-add-root-ghost"
+                  (click)="interactions.onCreateRootRequested()"
+                >
+                  {{ addRootGhostLabel }}
+                </button>
+              }
             </div>
           }
         </div>
@@ -186,17 +195,23 @@
             [bulkCount]="selection.bulkCount()"
             [bulkNames]="bulkNames()"
             [archiveViewActive]="archiveParam()"
-            (addChildRequested)="onAddChildRequested()"
-            (editRequested)="onEditRequested()"
-            (moveRequested)="onMoveRequested()"
-            (relationsRequested)="onRelationsOpenRequested()"
+            [canCreateDoor]="permissions.canCreateDoor()"
+            [canEditDoor]="permissions.canEditDoor()"
+            [canMoveDoor]="permissions.canMoveDoor()"
+            [canArchiveDoor]="permissions.canArchiveDoor()"
+            [canUseBulkMode]="permissions.canUseBulkMode()"
+            [canCreateRelation]="permissions.canCreateRelation()"
+            (addChildRequested)="interactions.onAddChildRequested()"
+            (editRequested)="interactions.onEditRequested()"
+            (moveRequested)="interactions.onMoveRequested()"
+            (relationsRequested)="interactions.onRelationsOpenRequested()"
             (archiveRequested)="overlays.requestArchive()"
-            (clearRequested)="onClearSelection()"
-            (bulkModeToggled)="onBulkModeToggled($event)"
+            (clearRequested)="interactions.onClearSelection()"
+            (bulkModeToggled)="interactions.onBulkModeToggled($event)"
             (bulkMoveRequested)="overlays.openBulkMovePicker()"
             (bulkRelationsRequested)="overlays.openBulkRelations()"
             (bulkArchiveRequested)="overlays.requestBulkArchive()"
-            (bulkClearRequested)="onBulkClearRequested()"
+            (bulkClearRequested)="interactions.onBulkClearRequested()"
           />
         </aside>
       </div>
@@ -211,7 +226,8 @@
   [parentName]="overlays.modalParentName()"
   [activeSectionId]="activeSectionId()"
   [sections]="sections()"
-  (saved)="onDoorModalSaved()"
+  [canSave]="canDoorModalSave()"
+  (saved)="interactions.onDoorModalSaved()"
   (closed)="onDoorModalClosed()"
 />
 
@@ -222,14 +238,16 @@
   [excludedIds]="overlays.moveExcludedIds()"
   [movedSectionIds]="overlays.moveSectionIds()"
   [titleText]="overlays.moveTitleText()"
+  [canConfirm]="permissions.canMoveDoor()"
   (closed)="onMovePickerClosed()"
-  (confirmed)="onMoveConfirmed($event)"
+  (confirmed)="interactions.onMoveConfirmed($event)"
 />
 
 <qd-abwab-door-restore-modal
   [door]="overlays.restoreTarget()"
   [ancestors]="overlays.restoreAncestors()"
   [sections]="sections()"
+  [canRestoreDoor]="permissions.canRestoreDoor()"
   (closed)="overlays.closeRestoreModal()"
   (restored)="onDoorRestored()"
 />
@@ -246,6 +264,8 @@
   [refetchRelations]="overlays.refetchRelations"
   [addRelations]="overlays.addRelations"
   [deleteRelation]="overlays.deleteRelation"
+  [canCreateRelation]="permissions.canCreateRelation()"
+  [canDeleteRelation]="permissions.canDeleteRelation()"
   (closed)="onRelationsModalClosed()"
   (revealRequested)="onRevealRequested($event)"
 />
@@ -257,6 +277,10 @@
   [renameSection]="overlays.renameSection"
   [deleteSection]="overlays.deleteSection"
   [reorderSection]="overlays.reorderSection"
+  [canCreateSection]="permissions.canCreateSection()"
+  [canEditSection]="permissions.canEditSection()"
+  [canReorderSection]="permissions.canReorderSection()"
+  [canDeleteSection]="permissions.canDeleteSection()"
   (closed)="onSectionsModalClosed()"
 />
 
@@ -268,6 +292,7 @@
   [cancelLabel]="cancelLabel"
   tone="danger"
   [busy]="overlays.archiveBusy()"
+  [confirmDisabled]="!permissions.canArchiveDoor()"
   (confirmed)="confirmArchiveAndClearUrl()"
   (cancelled)="onArchiveConfirmCancelled()"
 >
@@ -285,8 +310,9 @@
   [cancelLabel]="cancelLabel"
   tone="danger"
   [busy]="overlays.archiveBusy()"
+  [confirmDisabled]="!permissions.canArchiveDoor()"
   (confirmed)="onBulkArchiveConfirmed()"
-  (cancelled)="onBulkArchiveConfirmCancelled()"
+  (cancelled)="interactions.onBulkArchiveConfirmCancelled()"
 >
   <p>{{ overlays.bulkArchiveConfirmMessage() }}</p>
   @if (overlays.archiveError(); as message) {
@@ -301,12 +327,20 @@
     backdropTestId="abwab-page-ctx-backdrop"
     (dismissed)="overlays.closeContextMenu()"
   >
-    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-edit" (click)="onCtxEdit()">{{ editOpLabel }}</button>
-    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-add-child" (click)="onCtxAddChild()">{{ addChildOpLabel }}</button>
-    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-move" (click)="onCtxMove()">{{ moveOpLabel }}</button>
-    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-relations" (click)="onCtxRelations()">{{ relationsOpLabel }}</button>
-    <button type="button" role="menuitem" class="qd-context-menu__item qd-context-menu__item--danger" data-testid="abwab-page-ctx-archive" (click)="overlays.ctxArchive()">
-      {{ archiveLabel }}
-    </button>
+    @if (permissions.canEditDoor()) {
+      <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-edit" (click)="interactions.onCtxEdit()">{{ editOpLabel }}</button>
+    }
+    @if (permissions.canCreateDoor()) {
+      <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-add-child" (click)="interactions.onCtxAddChild()">{{ addChildOpLabel }}</button>
+    }
+    @if (permissions.canMoveDoor()) {
+      <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-move" (click)="interactions.onCtxMove()">{{ moveOpLabel }}</button>
+    }
+    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-relations" (click)="interactions.onCtxRelations()">{{ relationsOpLabel }}</button>
+    @if (permissions.canArchiveDoor()) {
+      <button type="button" role="menuitem" class="qd-context-menu__item qd-context-menu__item--danger" data-testid="abwab-page-ctx-archive" (click)="overlays.ctxArchive()">
+        {{ archiveLabel }}
+      </button>
+    }
   </qd-context-menu>
 }

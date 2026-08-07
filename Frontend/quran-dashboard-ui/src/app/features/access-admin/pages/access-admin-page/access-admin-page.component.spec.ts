@@ -1,0 +1,548 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { OidcSecurityService } from 'angular-auth-oidc-client';
+import { NEVER } from 'rxjs';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { environment } from '../../../../../environments/environment';
+import { AccessAuditEventItem } from '../../../../core/api/generated/models/access-audit-event-item';
+import { AccessUserDetail } from '../../../../core/api/generated/models/access-user-detail';
+import { AccessUserPermissions } from '../../../../core/api/generated/models/access-user-permissions';
+import { AccessUserSummary } from '../../../../core/api/generated/models/access-user-summary';
+import { CurrentUserResponse } from '../../../../core/api/generated/models/current-user-response';
+import { PermissionCatalogueItem } from '../../../../core/api/generated/models/permission-catalogue-item';
+import { CurrentUserStore } from '../../../../core/auth/current-user.store';
+import { AccessAdminApi } from '../../data-access/access-admin.api';
+import { AccessAdminPageComponent } from './access-admin-page.component';
+
+const ACCESS_BASE_URL = `${environment.apiBaseUrl}/api/access`;
+const REASON = 'سبب إداري موثق';
+
+const OWNER: CurrentUserResponse = {
+  sub: 'owner-subject',
+  email: 'owner@example.test',
+  displayName: 'المالك',
+  status: 'active',
+  isOwner: true,
+  permissions: [],
+};
+
+const CATALOGUE: PermissionCatalogueItem[] = [
+  {
+    code: 'abwab.doors.create',
+    arabicLabel: 'إضافة باب',
+    englishDescription: 'Create a door.',
+    groupKey: 'doors',
+    groupLabel: 'الأبواب',
+    groupDisplayOrder: 1,
+    displayOrder: 1,
+  },
+  {
+    code: 'abwab.doors.edit',
+    arabicLabel: 'تعديل باب',
+    englishDescription: 'Edit a door.',
+    groupKey: 'doors',
+    groupLabel: 'الأبواب',
+    groupDisplayOrder: 1,
+    displayOrder: 2,
+  },
+];
+
+const AUDIT_EVENTS: readonly AccessAuditEventItem[] = [
+  {
+    id: 1,
+    occurredAtUtc: '2026-08-07T10:00:00Z',
+    actionType: 'PermissionGranted',
+    actorType: 'User',
+    actorUserId: 9,
+    targetUserId: 17,
+    actorSnapshot: {},
+    targetSnapshot: {},
+    permissionCode: 'abwab.doors.edit',
+    beforeState: {},
+    afterState: {},
+    reason: 'تكليف مراجعة',
+    metadata: {},
+  },
+  {
+    id: 2,
+    occurredAtUtc: '2026-08-07T09:00:00Z',
+    actionType: 'OwnerReconciled',
+    actorType: 'System',
+    actorUserId: null,
+    targetUserId: 17,
+    actorSnapshot: {},
+    targetSnapshot: {},
+    permissionCode: null,
+    beforeState: {},
+    afterState: {},
+    reason: null,
+    metadata: {},
+  },
+];
+
+function user(
+  status: 'pending' | 'active' | 'disabled',
+  version = 4,
+  permissionCodes: string[] = [],
+  overrides: Partial<AccessUserDetail> = {},
+): AccessUserDetail {
+  return {
+    id: 17,
+    sub: 'subject-17',
+    email: 'member@example.test',
+    normalizedEmail: 'member@example.test',
+    userName: null,
+    displayName: 'عضو',
+    title: null,
+    status,
+    isOwner: false,
+    permissionCodes,
+    createdAtUtc: '2026-01-01T00:00:00Z',
+    updatedAtUtc: '2026-01-01T00:00:00Z',
+    version,
+    ...overrides,
+  };
+}
+
+function permissions(detail: AccessUserDetail): AccessUserPermissions {
+  return {
+    userId: detail.id,
+    status: detail.status,
+    isOwner: detail.isOwner,
+    version: detail.version,
+    permissionCodes: detail.permissionCodes,
+  };
+}
+
+function summary(detail: AccessUserDetail): AccessUserSummary {
+  return {
+    id: detail.id,
+    email: detail.email,
+    displayName: detail.displayName,
+    status: detail.status,
+    isOwner: detail.isOwner,
+    permissionCount: detail.permissionCodes.length,
+    createdAtUtc: detail.createdAtUtc,
+    updatedAtUtc: detail.updatedAtUtc,
+    version: detail.version,
+  };
+}
+
+function success<T>(data: T) {
+  return { isSuccess: true, message: 'تم', data };
+}
+
+function element(
+  fixture: ComponentFixture<AccessAdminPageComponent>,
+  testId: string,
+): HTMLElement {
+  const found = fixture.nativeElement.querySelector(
+    `[data-testid="${testId}"]`,
+  ) as HTMLElement | null;
+  if (!found) {
+    throw new Error(`Missing ${testId}`);
+  }
+  return found;
+}
+
+describe('AccessAdminPageComponent', () => {
+  let currentUserStore: CurrentUserStore;
+  let httpTesting: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [AccessAdminPageComponent],
+      providers: [
+        AccessAdminApi,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: OidcSecurityService,
+          useValue: {
+            isAuthenticated$: NEVER,
+            authorize: vi.fn(),
+          },
+        },
+      ],
+    });
+
+    currentUserStore = TestBed.inject(CurrentUserStore);
+    httpTesting = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpTesting.verify();
+  });
+
+  async function loadOwner(): Promise<void> {
+    const load = currentUserStore.refresh();
+    httpTesting.expectOne(`${ACCESS_BASE_URL}/me`).flush(success(OWNER));
+    await load;
+  }
+
+  async function renderPage(
+    listedUser: AccessUserDetail,
+  ): Promise<ComponentFixture<AccessAdminPageComponent>> {
+    await loadOwner();
+    const fixture = TestBed.createComponent(AccessAdminPageComponent);
+    fixture.detectChanges();
+
+    httpTesting
+      .expectOne((request) => request.url === `${ACCESS_BASE_URL}/users`)
+      .flush(
+        success({
+          items: [summary(listedUser)],
+          page: 1,
+          pageSize: 25,
+          totalCount: 1,
+        }),
+      );
+    httpTesting.expectOne(`${ACCESS_BASE_URL}/permissions`).flush(success(CATALOGUE));
+    httpTesting
+      .expectOne((request) => request.url === `${ACCESS_BASE_URL}/audit-events`)
+      .flush(success({ items: AUDIT_EVENTS, nextCursor: null }));
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/owner-reconciliation/status`)
+      .flush(
+        success({
+          canApply: false,
+          candidates: [],
+          configurationFingerprint: 'fingerprint',
+          isReady: true,
+          lastReconciliation: null,
+        }),
+      );
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  async function selectUser(
+    fixture: ComponentFixture<AccessAdminPageComponent>,
+    detail: AccessUserDetail,
+  ): Promise<void> {
+    element(fixture, `access-user-${detail.id}`).click();
+    httpTesting.expectOne(`${ACCESS_BASE_URL}/users/${detail.id}`).flush(success(detail));
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/users/${detail.id}/permissions`)
+      .flush(success(permissions(detail)));
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  function confirmAction(
+    fixture: ComponentFixture<AccessAdminPageComponent>,
+    requestButtonTestId: string,
+  ): void {
+    element(fixture, requestButtonTestId).click();
+    fixture.detectChanges();
+    const reason = element(fixture, 'access-action-reason') as HTMLTextAreaElement;
+    reason.value = REASON;
+    reason.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    element(fixture, 'access-confirm-action').click();
+  }
+
+  async function flushMutationRefresh(
+    fixture: ComponentFixture<AccessAdminPageComponent>,
+    detail: AccessUserDetail,
+  ): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    httpTesting.expectOne(`${ACCESS_BASE_URL}/users/${detail.id}`).flush(success(detail));
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/users/${detail.id}/permissions`)
+      .flush(success(permissions(detail)));
+    httpTesting
+      .expectOne((request) => request.url === `${ACCESS_BASE_URL}/users`)
+      .flush(
+        success({
+          items: [summary(detail)],
+          page: 1,
+          pageSize: 25,
+          totalCount: 1,
+        }),
+      );
+    httpTesting
+      .expectOne((request) => request.url === `${ACCESS_BASE_URL}/audit-events`)
+      .flush(success({ items: AUDIT_EVENTS, nextCursor: null }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  it.each([
+    {
+      name: 'accept',
+      initialStatus: 'pending' as const,
+      requestButton: 'access-request-accept',
+      endpoint: 'accept',
+      finalStatus: 'active' as const,
+      expectedBody: {
+        expectedVersion: 4,
+        permissionCodes: [],
+        reason: REASON,
+      },
+      expectedLabel: 'نشط',
+    },
+    {
+      name: 'disable',
+      initialStatus: 'active' as const,
+      requestButton: 'access-request-disable',
+      endpoint: 'disable',
+      finalStatus: 'disabled' as const,
+      expectedBody: {
+        expectedVersion: 4,
+        reason: REASON,
+      },
+      expectedLabel: 'معطّل',
+    },
+    {
+      name: 'reactivate',
+      initialStatus: 'disabled' as const,
+      requestButton: 'access-request-reactivate',
+      endpoint: 'reactivate',
+      finalStatus: 'active' as const,
+      expectedBody: {
+        expectedVersion: 4,
+        reason: REASON,
+      },
+      expectedLabel: 'نشط',
+    },
+  ])(
+    'sends $name through its HTTP boundary and renders the refreshed lifecycle',
+    async ({
+      initialStatus,
+      requestButton,
+      endpoint,
+      finalStatus,
+      expectedBody,
+      expectedLabel,
+    }) => {
+      const initialUser = user(initialStatus);
+      const fixture = await renderPage(initialUser);
+      await selectUser(fixture, initialUser);
+
+      confirmAction(fixture, requestButton);
+
+      const request = httpTesting.expectOne(
+        `${ACCESS_BASE_URL}/users/17/${endpoint}`,
+      );
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual(expectedBody);
+      const refreshedUser = user(finalStatus, 5);
+      request.flush(success(refreshedUser));
+      await flushMutationRefresh(fixture, refreshedUser);
+
+      const labels = Array.from(
+        fixture.nativeElement.querySelectorAll(
+          '.access-user-workflows__header .qd-badge',
+        ) as NodeListOf<HTMLElement>,
+        (badge) => badge.textContent?.trim(),
+      );
+      expect(labels).toEqual([expectedLabel]);
+      expect(
+        fixture.nativeElement.querySelector('[data-testid="access-action-confirmation"]'),
+      ).toBeNull();
+    },
+  );
+
+  it('submits the user-edited individual permissions and renders the refreshed selection', async () => {
+    const initialUser = user('active', 4, ['abwab.doors.create']);
+    const fixture = await renderPage(initialUser);
+    await selectUser(fixture, initialUser);
+    const editPermission = element(
+      fixture,
+      'access-permission-abwab.doors.edit',
+    ) as HTMLInputElement;
+    editPermission.checked = true;
+    editPermission.dispatchEvent(new Event('change'));
+
+    confirmAction(fixture, 'access-request-permissions');
+
+    const request = httpTesting.expectOne(`${ACCESS_BASE_URL}/users/17/permissions`);
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({
+      expectedVersion: 4,
+      permissionCodes: ['abwab.doors.create', 'abwab.doors.edit'],
+      reason: REASON,
+    });
+    const refreshedUser = user('active', 5, [
+      'abwab.doors.create',
+      'abwab.doors.edit',
+    ]);
+    request.flush(success(permissions(refreshedUser)));
+    await flushMutationRefresh(fixture, refreshedUser);
+
+    expect(
+      (
+        element(
+          fixture,
+          'access-permission-abwab.doors.edit',
+        ) as HTMLInputElement
+      ).checked,
+    ).toBe(true);
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="access-action-confirmation"]'),
+    ).toBeNull();
+  });
+
+  it('renders relink preview and confirms it through distinct HTTP requests', async () => {
+    const initialUser = user('active');
+    const fixture = await renderPage(initialUser);
+    await selectUser(fixture, initialUser);
+    const newSub = element(fixture, 'access-relink-new-sub') as HTMLInputElement;
+    newSub.value = 'replacement-subject';
+    newSub.dispatchEvent(new Event('input'));
+    const evidence = element(fixture, 'access-relink-evidence') as HTMLInputElement;
+    evidence.value = 'verified-evidence';
+    evidence.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    element(fixture, 'access-relink-preview').click();
+
+    const previewRequest = httpTesting.expectOne(
+      `${ACCESS_BASE_URL}/users/17/logto-sub/relink/preview`,
+    );
+    expect(previewRequest.request.body).toEqual({
+      newSub: 'replacement-subject',
+      evidenceToken: 'verified-evidence',
+    });
+    previewRequest.flush(
+      success({
+        userId: 17,
+        oldSub: 'subject-17',
+        newSub: 'replacement-subject',
+        version: 4,
+        isOwner: false,
+      }),
+    );
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(evidence.value).toBe('');
+    expect(element(fixture, 'access-relink-confirmation').textContent).toContain(
+      'replacement-subject',
+    );
+    const reason = element(
+      fixture,
+      'access-relink-confirm-reason',
+    ) as HTMLTextAreaElement;
+    reason.value = 'تصحيح المعرّف';
+    reason.dispatchEvent(new Event('input'));
+    const confirmed = element(
+      fixture,
+      'access-relink-confirmed',
+    ) as HTMLInputElement;
+    confirmed.checked = true;
+    confirmed.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    element(fixture, 'access-relink-confirm').click();
+
+    const confirmRequest = httpTesting.expectOne(
+      `${ACCESS_BASE_URL}/users/17/logto-sub/relink/confirm`,
+    );
+    expect(confirmRequest.request.body).toEqual({
+      expectedVersion: 4,
+      oldSub: 'subject-17',
+      newSub: 'replacement-subject',
+      evidenceToken: 'verified-evidence',
+      reason: 'تصحيح المعرّف',
+      confirmed: true,
+    });
+    const refreshedUser = user('active', 5, [], {
+      sub: 'replacement-subject',
+    });
+    confirmRequest.flush(success(refreshedUser));
+    await flushMutationRefresh(fixture, refreshedUser);
+
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="access-relink-confirmation"]'),
+    ).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('الإصدار 5');
+  });
+
+  it('removes a canceled relink preview without issuing confirmation', async () => {
+    const initialUser = user('active');
+    const fixture = await renderPage(initialUser);
+    await selectUser(fixture, initialUser);
+    const newSub = element(fixture, 'access-relink-new-sub') as HTMLInputElement;
+    newSub.value = 'replacement-subject';
+    newSub.dispatchEvent(new Event('input'));
+    const evidence = element(fixture, 'access-relink-evidence') as HTMLInputElement;
+    evidence.value = 'verified-evidence';
+    evidence.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    element(fixture, 'access-relink-preview').click();
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/users/17/logto-sub/relink/preview`)
+      .flush(
+        success({
+          userId: 17,
+          oldSub: 'subject-17',
+          newSub: 'replacement-subject',
+          version: 4,
+          isOwner: false,
+        }),
+      );
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    element(fixture, 'access-relink-cancel').click();
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="access-relink-confirmation"]'),
+    ).toBeNull();
+    expect(newSub.value).toBe('');
+    expect(evidence.value).toBe('');
+    httpTesting.expectNone(`${ACCESS_BASE_URL}/users/17/logto-sub/relink/confirm`);
+  });
+
+  it('renders actor attribution and applies the actor filter through HTTP', async () => {
+    const fixture = await renderPage(user('active'));
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.textContent).toContain('المنفّذ: مستخدم');
+    expect(root.textContent).toContain('معرّف المستخدم المنفّذ: 9');
+    expect(root.textContent).toContain('المنفّذ: النظام');
+    expect(root.textContent).toMatch(/معرّف المستخدم المنفّذ:\s*غير متاح/);
+
+    const actor = element(fixture, 'access-audit-actor') as HTMLInputElement;
+    actor.value = '9';
+    actor.dispatchEvent(new Event('input'));
+    root
+      .querySelector('.access-admin-page__audit-filters')
+      ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+    const request = httpTesting.expectOne(
+      (candidate) => candidate.url === `${ACCESS_BASE_URL}/audit-events`,
+    );
+    expect(request.request.params.get('actorUserId')).toBe('9');
+    expect(request.request.params.has('targetUserId')).toBe(false);
+    request.flush(
+      success({
+        items: [{ ...AUDIT_EVENTS[0], id: 3, reason: 'نتيجة المرشح' }],
+        nextCursor: null,
+      }),
+    );
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(root.textContent).toContain('نتيجة المرشح');
+  });
+
+  it('uses a labelled section instead of a nested main landmark', async () => {
+    const fixture = await renderPage(user('active'));
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.firstElementChild?.tagName).toBe('SECTION');
+    expect(root.firstElementChild?.getAttribute('aria-labelledby')).toBe(
+      'access-admin-page-title',
+    );
+    expect(root.querySelector('main')).toBeNull();
+  });
+});

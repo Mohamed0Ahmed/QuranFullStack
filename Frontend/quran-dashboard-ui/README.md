@@ -12,6 +12,7 @@ Angular 20 (standalone components + Signals) frontend for the Quran Dashboard
 ```text
 src/app/core       app-wide: ApiResponse, interceptors, cache, layout shell, routes, theme  → core/README.md
 src/app/features
+  access-admin     Owner-only security administration                                 → access-admin/README.md
   words            Roots/Lemmas/Stems/WordTypes/Unique-Words explorers                       → words/README.md
   mushaf           page-by-page Mushaf reader + ayah/word study context                      → mushaf/README.md
   dashboard        home
@@ -51,19 +52,56 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
 
 ## Testing (read before running tests)
 
+**The lanes:** `npm run test:fast`, `test:feature:access-admin|abwab|auth|dashboard|mushaf|words`,
+`test:authorization`, `test:composition`, `test:shared`, `test:full`, plus `typecheck:app`,
+`typecheck:spec`, `typecheck`, `build:verify`, `check:permission-catalogue`, and the composite `test:pre-pr`
+(`check:permission-catalogue` → `typecheck` → `build:verify` → `test:full`). `npm run test:gates` is the structural check on the
+lane definitions and is not part of `test:pre-pr` — run it whenever a spec is added, moved,
+renamed, or deleted, or an `include` pattern changes.
+
+**`testing/README.md` is the contract**: what each of the nine named `angular.json`
+configurations selects, what every command does, and what `test:gates` proves. Which lane to run
+and when is `../../TESTING_STRATEGY.md` §4 and §5.
+
 - **Keep the `VITEST_MAX_FORKS` cap on `npm test`** — without it the run OOMs/freezes the
-  machine. **`vitest.config.ts` is ignored by the Angular unit-test builder**, so the cap
-  must be set the way `package.json` already sets it; do not "clean it up".
-- **jsdom lacks `matchMedia` / `ResizeObserver`** under the builder — guard them in
-  components and default to desktop.
+  machine. Every `test:*` lane delegates to `npm test`, so the cap and the run timeout live in
+  that one script; do not inline them per lane. **A `vitest.config.ts` would be ignored** — the
+  Angular unit-test builder starts Vitest with `config: false` — so the cap must stay where
+  `package.json` already sets it; do not "clean it up".
+- **jsdom lacks `matchMedia` / `ResizeObserver` / `requestIdleCallback`** under the builder —
+  guard them in components and default to desktop.
+- **`src/test-setup.ts` owns an `afterEach` safety net** that runs after every spec's own
+  hooks: it unstubs Vitest-stubbed globals, restores real timers, restores spies, clears
+  `localStorage`/`sessionStorage`, removes `data-theme` from `<html>`, and clears the inline
+  `body` `overflow`. Specs therefore stub browser globals with `vi.stubGlobal`, never with a
+  direct `window.x = …` / `Object.defineProperty` assignment — a direct assignment survives a
+  test that throws and leaks into the next one. The net deliberately does **not** polyfill
+  `matchMedia`, reset `TestBed`, or wipe `body` children.
+- **Inside that `afterEach`, `vi.unstubAllGlobals()` must stay before `vi.useRealTimers()`.**
+  The first `useRealTimers`/`useFakeTimers` call builds the fake-timer clock and permanently
+  captures which timer APIs exist on `globalThis` at that moment; with the order swapped a
+  still-installed `requestIdleCallback` stub gets faked for the rest of the file, and
+  `src/app/core/navigation/idle-preload.strategy.spec.ts` loses its fallback branch.
+- **The `console.warn` filter in `src/test-setup.ts` is a plain assignment on purpose**
+  (`src/test-setup.ts:10-15`): it swallows jsdom's unfixable `[cdkFocusInitial]` warning and
+  delegates every other warning to the captured original. Rewriting it as
+  `vi.spyOn(console, 'warn')` would put it under the `vi.restoreAllMocks()` on line 21, which
+  removes it after the first test of every file and brings the noise back. It is the one global
+  the safety net deliberately does not restore — not a leak.
+- **A spec that appends a fixture host to `document.body` removes it itself**, in a file-local
+  `afterEach` that calls `fixture.destroy()` first and `fixture.nativeElement.remove()` second
+  (see `src/app/shared/ui/context-menu/context-menu.component.spec.ts`) — Angular teardown
+  needs the host still attached.
 - **Browser E2E (opt-in):** `npm run e2e` (headless), `npm run e2e:headed`, `npm run e2e:ui`.
   Chromium only. It boots the Angular dev server *and* the backend `https` profile, so it needs
   mkcert certificates, a migrated local `quran_dashboard`, and a prior
   `dotnet build Backend/QuranDashboard.sln`. Specs live in `e2e/` and MUST be named `*.e2e.ts` —
-  a `*.spec.ts` there would be collected by the Vitest builder. `npm run e2e` runs two Playwright
-  projects in sequence — `default` (2 workers) then the five Abwab specs at `--workers=1`, since
-  a `Global`-scope Abwab reorder resequences every live root and can race a second worker. See
-  `e2e/README.md`.
+  **not** because the Vitest gate would collect them (it globs with `cwd` at `src/` and cannot
+  see outside it) but because `playwright.config.ts` matches `/.*\.e2e\.ts$/`, so a `*.spec.ts`
+  there is run by nothing at all while looking like coverage. `npm run e2e` runs two Playwright
+  projects in sequence — `default` (2 workers), then every `abwab-*.e2e.ts` at `--workers=1`,
+  since a `Global`-scope Abwab reorder resequences every live root and can race a second worker.
+  See `e2e/README.md` and `testing/README.md`.
 
 ## Invariants
 

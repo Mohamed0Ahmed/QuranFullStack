@@ -4,11 +4,12 @@ namespace QuranDashboard.Api.Authentication;
 
 public sealed class HttpContextCurrentUser(IHttpContextAccessor httpContextAccessor) : ICurrentUser
 {
-    public string Sub
+    public AuthenticatedInteractiveIdentity Identity
     {
         get
         {
-            var sub = httpContextAccessor.HttpContext?.User.FindFirst("sub")?.Value;
+            var principal = httpContextAccessor.HttpContext?.User;
+            var sub = principal?.FindFirst("sub")?.Value;
             if (string.IsNullOrEmpty(sub))
             {
                 throw new InvalidOperationException(
@@ -16,7 +17,10 @@ public sealed class HttpContextCurrentUser(IHttpContextAccessor httpContextAcces
                     "inside an authenticated request (behind [Authorize]).");
             }
 
-            return sub;
+            var email = principal!.FindFirst("email")?.Value;
+            var emailVerified = bool.TryParse(principal.FindFirst("email_verified")?.Value, out var verified)
+                && verified;
+            return new AuthenticatedInteractiveIdentity(sub, email, emailVerified);
         }
     }
 }

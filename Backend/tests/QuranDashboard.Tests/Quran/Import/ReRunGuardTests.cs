@@ -14,7 +14,7 @@ public sealed class ReRunGuardTests
         this.fixture = fixture;
     }
 
-    [Fact]
+    [FoundationImportSourceFact]
     public async Task ReRunWithoutForce_OnPopulatedTables_RefusesAndChangesNothing()
     {
         var handler = await fixture.CreateHandlerAsync();
@@ -42,7 +42,7 @@ public sealed class ReRunGuardTests
 
     private async Task<ImportTableCounts> ReadTableCountsAsync()
     {
-        await using var scope = fixture.CreateServiceProvider().CreateAsyncScope();
+        await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         return new ImportTableCounts(

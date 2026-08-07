@@ -12,13 +12,19 @@ echo "Restoring local tools..."
 dotnet tool restore
 
 echo "Building API (Release)..."
-dotnet build api/QuranDashboard.Api/QuranDashboard.Api.csproj -c Release
+dotnet build api/QuranDashboard.Api/QuranDashboard.Api.csproj \
+  -c Release \
+  --disable-build-servers \
+  -m:1 \
+  -p:BuildInParallel=false \
+  -v minimal
 
 echo "Exporting OpenAPI spec..."
 mkdir -p "$(dirname "$OUTPUT")"
 # Run from the publish output so the host's content root contains appsettings.json;
 # generation only builds the DI container and never opens a database connection.
 cd api/QuranDashboard.Api/bin/Release/net10.0
-dotnet swagger tofile --output "$OUTPUT" QuranDashboard.Api.dll v1
+ASPNETCORE_ENVIRONMENT="${ASPNETCORE_ENVIRONMENT:-Development}" \
+  dotnet swagger tofile --output "$OUTPUT" QuranDashboard.Api.dll v1
 
 echo "Wrote $OUTPUT"

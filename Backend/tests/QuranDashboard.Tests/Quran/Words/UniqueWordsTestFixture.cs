@@ -1,81 +1,72 @@
+using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
+
 namespace QuranDashboard.Tests.Quran.Words;
 
 public sealed class UniqueWordsTestFixture : IAsyncLifetime
 {
-    private const string RealDbConnectionEnvKey = "UNIQUE_WORDS_REAL_DB_CONNECTION";
     private const string SeedResourceSuffix = "unique-words-seed.sql";
 
-    private readonly PostgreSqlContainer? _container;
-    private ServiceProvider? _rootProvider;
+    private readonly OwnedServiceProviderRegistry ownedProviders = new();
+
+    private PostgreSqlDatabaseLease? databaseLease;
+    private ServiceProvider? rootProvider;
 
     public RecordingLoggerProvider LoggingProvider { get; } = new();
 
-    public UniqueWordsTestFixture()
-    {
-        var realDb = Environment.GetEnvironmentVariable(RealDbConnectionEnvKey);
-        if (!string.IsNullOrWhiteSpace(realDb))
-        {
-            ConnectionString = realDb;
-            IsRealDb = true;
-            return;
-        }
-
-        _container = new PostgreSqlBuilder()
-            .WithImage("postgres:16-alpine")
-            .Build();
-        IsRealDb = false;
-    }
-
     public string ConnectionString { get; private set; } = string.Empty;
-
-    public bool IsRealDb { get; }
 
     public async Task InitializeAsync()
     {
-        if (_container is not null)
+        var seedSql = await ReadEmbeddedSeedScriptAsync();
+
+        databaseLease =
+            ExternalReadOnlyDatabaseOptIn.TryLease(ExternalReadOnlyDatabaseOptIn.UniqueWordsConnectionVariable)
+            ?? await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(UniqueWordsTestFixture));
+
+        ConnectionString = databaseLease.ConnectionString;
+
+        try
         {
-            await _container.StartAsync();
-            ConnectionString = _container.GetConnectionString();
+            rootProvider = ownedProviders.Own(BuildServiceProvider());
+
+            if (databaseLease.IsExternal)
+            {
+                return;
+            }
+
+            await using var scope = rootProvider.CreateAsyncScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+            await SeedSliceAsync(dbContext, seedSql);
         }
-
-        _rootProvider = BuildServiceProvider();
-
-        await using var scope = _rootProvider.CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-
-        if (IsRealDb)
+        catch
         {
-
-            return;
+            await DisposeAsync();
+            throw;
         }
-
-        await dbContext.Database.EnsureCreatedAsync();
-        await SeedSliceAsync(dbContext);
     }
 
     public async Task DisposeAsync()
     {
-        if (_rootProvider is not null)
-        {
-            await _rootProvider.DisposeAsync();
-            _rootProvider = null;
-        }
+        rootProvider = null;
+        await ownedProviders.DisposeAsync();
 
-        if (_container is not null)
+        if (databaseLease is not null)
         {
-            await _container.DisposeAsync();
+            await databaseLease.DisposeAsync();
+            databaseLease = null;
         }
     }
 
     public AsyncServiceScope CreateScope()
     {
-        if (_rootProvider is null)
+        if (rootProvider is null)
         {
             throw new InvalidOperationException(
                 $"{nameof(UniqueWordsTestFixture)} has not been initialized. Ensure it is used as a shared fixture (IClassFixture / collection fixture).");
         }
 
-        return _rootProvider.CreateAsyncScope();
+        return rootProvider.CreateAsyncScope();
     }
 
     private ServiceProvider BuildServiceProvider()
@@ -96,10 +87,8 @@ public sealed class UniqueWordsTestFixture : IAsyncLifetime
             .BuildServiceProvider();
     }
 
-    private static async Task SeedSliceAsync(QuranDashboardDbContext dbContext)
+    private static async Task SeedSliceAsync(QuranDashboardDbContext dbContext, string sql)
     {
-        var sql = await ReadEmbeddedSeedScriptAsync();
-
         var connection = dbContext.Database.GetDbConnection();
         if (connection.State != ConnectionState.Open)
         {

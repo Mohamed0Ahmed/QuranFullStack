@@ -2,11 +2,11 @@
 -- Unique Words Explorer — representative content slice (fixture seed, US2)
 -- Feature 014 · read-only · deterministic · offline
 -- ----------------------------------------------------------------------
--- Loaded by UniqueWordsTestFixture into a fresh Testcontainers Postgres
--- instance AFTER EnsureCreatedAsync. Covers only the rows the Unique Words
--- list/search/sort/paging/validation tests assert on; it is intentionally
--- NOT the full DB. Canonical Quranic Uthmani text is used verbatim — no
--- text is invented or altered.
+-- Loaded by UniqueWordsTestFixture into its own isolated database on the shared
+-- Testcontainers Postgres runtime, cloned from the migrated template. Covers only
+-- the rows the Unique Words list/search/sort/paging/validation tests assert on; it
+-- is intentionally NOT the full DB. Canonical Quranic Uthmani text is used
+-- verbatim — no text is invented or altered.
 --
 -- Surah set: 1, 2, 3, 114 (only those referenced by first-occurrence rows).
 --

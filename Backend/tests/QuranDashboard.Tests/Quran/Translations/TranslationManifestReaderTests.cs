@@ -3,15 +3,17 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Translations;
 
 namespace QuranDashboard.Tests.Quran.Translations;
 
-public sealed class TranslationManifestReaderTests
+public sealed class TranslationManifestReaderTests : IDisposable
 {
     private readonly TranslationManifestReader reader = new();
-    private readonly TranslationImportTestFixture fixture = new();
+    private readonly TranslationSyntheticPackage packages = new();
+
+    public void Dispose() => packages.Dispose();
 
     [Fact]
     public async Task ReadAsync_parses_final_manifest_contract_fields()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync(
+        var packageDir = await packages.WriteAsync(
             sources: TranslationSyntheticSeed.DefaultSources,
             excludedSourceKeys: ["en-excluded-test"]);
 
@@ -55,7 +57,7 @@ public sealed class TranslationManifestReaderTests
     [Fact]
     public async Task ReadAsync_enforces_production_counts_when_expected_counts_are_production()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
 
         var act = () => reader.ReadAsync(
             packageDir,
@@ -83,7 +85,7 @@ public sealed class TranslationManifestReaderTests
     [Fact]
     public async Task ReadAsync_validates_type_counts_for_multi_source_package()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync(
+        var packageDir = await packages.WriteAsync(
             sources: TranslationSyntheticSeed.IntegrationSources);
 
         var manifest = await reader.ReadAsync(
@@ -99,7 +101,7 @@ public sealed class TranslationManifestReaderTests
     [Fact]
     public async Task CaptureDigestsAsync_records_file_size_and_sha256_for_approved_sources()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
         var manifest = await reader.ReadAsync(
             packageDir,
             CancellationToken.None,
@@ -123,7 +125,7 @@ public sealed class TranslationManifestReaderTests
     [Fact]
     public async Task VerifyDigestsUnchangedAsync_returns_true_when_package_is_unchanged()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
         var before = await reader.CapturePackageDigestsAsync(packageDir, CancellationToken.None);
 
         var unchanged = await reader.VerifyDigestsUnchangedAsync(packageDir, before, CancellationToken.None);

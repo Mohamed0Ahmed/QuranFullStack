@@ -15,26 +15,20 @@ Before adding or changing logging, exception handling, diagnostics, DataPipeline
 
 ## Backend Test Selection
 
-Before selecting or running Backend tests, read:
+Read `../TESTING_STRATEGY.md` and
+`tests/QuranDashboard.Tests/README.md`, inspect the changed scope, then use
+`scripts/test-backend`. Start with an exact method/class or the narrowest feature/Access
+lane. Build once, use `--no-build` afterward, and run Smoke, Tier B, Pipeline, canonical,
+and pre-PR gates only at their documented triggers. Pipeline/canonical tests never run for
+isolated authorization work.
 
-- `../TESTING_STRATEGY.md` (workspace root)
-
-Use the tier required by the changed scope (§3, §4). Do not run the full Backend suite or
-the slow Quran data-pipeline families after every phase unless a Tier D trigger fires —
-`DataPipelines` code, importer tools, canonical packages under `resources/import-sources/`,
-pipeline entities/migrations, or shared persistence that can reach pipeline tables. The
-validated `dotnet test` filters live in §5; the ten pipeline namespaces are dot-bounded, so
-keep the leading and trailing dots and list the enriched morphology family explicitly.
-
-- There is no CI (§8) — every tier is a local gate, and "CI is green" is never evidence.
-- The route-parity/smoke gate is active: `QuranDashboard.Tests.Smoke` (§3 Tier A/C, §4, §5).
-  Route, contract, auth, middleware, or binding changes MUST run
-  `--filter "FullyQualifiedName~QuranDashboard.Tests.Smoke."` alongside the `Tests.Api.*`
-  families, and the evidence MUST state whether the `Tests.Smoke.Data` tier ran or skipped
-  (it self-skips when `resources/db-dumps/quran-canonical/` is absent; a stale dump fails
-  loud). Adding or changing a route requires the matching `SmokeRouteCatalog` entry in the
-  same change — `SmokeCoverageParityTests` fails otherwise (§10). The namespace is excluded
-  from the Tier B/C no-pipeline filter via `&FullyQualifiedName!~QuranDashboard.Tests.Smoke.`.
+Do not run database-bearing Backend commands concurrently: the shared runtime and OS lock
+permit only one project-owned PostgreSQL database container at a time. Keep output visible,
+never pipe to `tail`, retain the hang timeout, and confirm zero owned containers after
+exit. Report the exact lane, command, reason, result, skips, and cleanup state; there is no
+CI fallback.
+The formal reviewer owns final broad review gates; test deletion requires documented
+replacement coverage.
 
 ## Backend Local READMEs
 
