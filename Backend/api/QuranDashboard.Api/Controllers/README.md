@@ -66,8 +66,9 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   carries `///` XML docs (root `CLAUDE.md` comment policy — see "Generated
   contract artifacts" below for what that means for the exported spec).
 - `Access/` — `api/access/me`; the authenticated caller's provisioned user. Carries `[Authorize]`
-  (authenticated-only) and get-or-create provisions the local user on first login (email verified
-  server-side via validated OIDC identity evidence). The response is `sub`, `email`, `displayName`,
+  (authenticated-only) and get-or-create provisions the local user on first login from provider
+  identity data. Matching verified interactive OIDC email evidence is required only for Owner bootstrap.
+  The response is `sub`, `email`, `displayName`,
   `status`, `isOwner`, and ordered direct `permissions`. Owners, Pending users, and Disabled users receive
   no direct permission codes. The configured
   owner email is bootstrapped to `Owner`/`Active`. It remains the only generic

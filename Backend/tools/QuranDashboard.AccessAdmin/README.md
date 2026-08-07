@@ -69,6 +69,22 @@ When `DOTNET_ENVIRONMENT=Production`, add `--confirm-production` to the apply co
 does not reserve its outcome: apply always takes the advisory lock and reloads configuration,
 database rows, and provider evidence before it computes and commits its own delta.
 
+Owner reconciliation has one serialized mutation boundary. It records any direct-grant revocation
+before the Owner-grant audit event in the same committed mutation, and it leaves a configured
+identity `AwaitingVerifiedSignIn` until that person completes verified interactive OIDC sign-in.
+
+## Owner recovery
+
+Recovery from an inaccessible Owner starts by adding another email to `OwnerBootstrap:Emails`; do
+not relink or remove the inaccessible Owner as part of that first step. The person who controls the
+newly configured email must complete their **own** verified interactive `/api/access/me` sign-in.
+Only that matching `sub`, normalized email, and `email_verified=true` evidence can promote the new
+identity to an Active Owner. The AccessAdmin CLI cannot promote anyone.
+
+After the new Owner can act, any removal of the inaccessible Owner is a separate reconciliation
+change. It is audited and remains subject to last-active-Owner protection, so it cannot reduce the
+configured active Owner count below one.
+
 ## Legacy conversion before cleanup
 
 The cleanup migration deletes only the seeded Admin and Editor rows. The existing restrictive

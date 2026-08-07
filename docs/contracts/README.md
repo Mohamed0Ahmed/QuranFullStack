@@ -24,6 +24,7 @@ after merge. Merged features 001–019 are historical and **not** scanned routin
 - [Words explorers — reads, identity, counts](./words-explorers.md)
 - [Mushaf reader](./mushaf-reader.md)
 - [Abwab — gates tree, relations, templates](./abwab.md)
+- [Security access — identity and authorization](./security-access.md)
 - [Import pipelines & CLI verbs](./import-pipelines.md)
 - [Frontend shell — navigation, tokens, URL-state](./frontend-shell.md)
 

@@ -243,6 +243,18 @@ message rules. `Backend/AGENTS.md` and `Backend/CLAUDE.md` point here.
 - Admin-only behavior must not be exposed as public endpoints later without
   authorization.
 
+### Authorization classification
+
+- Every `POST`, `PUT`, `PATCH`, and `DELETE` controller action must carry exactly one known
+  `[RequirePermission(...)]` or `[RequireOwner]` requirement. Bare `[Authorize]`, an unknown
+  permission code, conflicting authorization metadata, and an anonymous unsafe action are invalid.
+  Startup metadata validation and route-smoke parity tests enforce that classification.
+- Public content `GET`s remain the exception. `GET /api/access/me` is authenticated-only, and every
+  access-administration endpoint, including security `GET`s, is Owner-only.
+- One centralized authorization rejection writer owns the shared `ApiResponse` failure envelope:
+  challenge is `401`, an active caller lacking the required access is `403`, and authorization-state
+  infrastructure failure is `503`.
+
 ## 12. Health Checks and Diagnostics
 
 - Health endpoints should be minimal.

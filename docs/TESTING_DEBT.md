@@ -116,18 +116,27 @@ fixture, and pattern all exist, so the marginal cost is a fraction of H1-H3.
 
 ## ux-slice-i (branch `ux-slice-i`, 2026-08-02)
 
-Posture: **no new test suites**, rush-period decision (plan §4.1-8). Every existing suite ran
-before merge, including the route-smoke tier — required here because response semantics changed on
-three existing routes. No `SmokeRouteCatalog` entry was owed: no route was added, and the smoke
-client sends no `If-None-Match`, so every catalogued expectation still holds. That second clause is
-the load-bearing one and it is checkable today — grep the smoke client for a conditional-request
-header and find none.
+Posture at the time: **no new test suites**, rush-period decision (plan §4.1-8). Every existing
+suite ran before merge, including the route-smoke tier — required here because response semantics
+changed on three existing routes. No `SmokeRouteCatalog` entry was owed: no route was added, and
+the smoke client then sent no `If-None-Match`, so every catalogued expectation still held.
 
-Stated plainly: this is the series' highest-risk correctness work — the backend's first
-invalidation machinery and the frontend's first conditional request — and the posture gives the
-**new** behavior zero automated coverage. It was signed off on a browser walk whose record has since
-been swept; what remains is the smoke tier's "unconditional requests still answer as catalogued"
-guarantee, which by construction never exercises the new path.
+That posture left the series' highest-risk correctness work — the backend's first invalidation
+machinery and the frontend's first conditional request — signed off on a browser walk whose record
+has since been swept.
+
+**The conditional-request half is no longer uncovered.** Authorization Phase 5 paid row I2 across
+two Smoke classes, both catalogued in the Smoke lane
+(`TestSupport/Execution/test-gates.tsv:246` and `:249`):
+
+- `SmokeAbwabConditionalReadTests` drives the matching validator to a bodiless `304` and asserts it
+  issues no database command (`:33`), the non-matching validator to a fresh `200` (`:53`), and the
+  same pair on template detail (`:67`, `:88`);
+- `SmokeAbwabTemplateReadTests` drives an unknown id carrying a crafted `If-None-Match` to a `404`
+  that returns no validator (`:13`).
+
+Row I2 and the F-34 cross-reference were deleted when those tests landed. The rows that remain below
+are the parts those classes do not reach.
 
 | # | Uncovered area | Where | Pays it |
 |---|---|---|---|
@@ -218,10 +227,10 @@ right, and it applied to two more.
 - **F-13** (relations canonical pair, broader-door direction, derived dormancy) is already rows 1
   **and 2** of *abwab-relations* above — the derived-dormancy leg is row 2. **F-14** (apply copies
   children never root, the `(target, child)` collision key, the empty-root `400`) is already row 7
-  of *abwab-templates*. **F-34** (the ETag/generation/`304` mechanism) is already rows **I1 and
-  I2** of *ux-slice-i* — the generation lifecycle is I1, the conditional-GET contract I2. All stay
-  unpaid under their existing rows and their existing triggers; duplicating them here would inflate the ledger
-  and split each obligation across two triggers.
+  of *abwab-templates*. **F-34** (the ETag/generation/`304` mechanism) now remains only under row
+  **I1** of *ux-slice-i*: the generation lifecycle remains unpaid under its existing trigger. The
+  conditional-GET contract was paid by the Phase 5 route-smoke suite, so I2 was deleted. Duplicating
+  I1 here would inflate the ledger and split its obligation across two triggers.
 
 | # | Uncovered area | Where | Pays it |
 |---|---|---|---|

@@ -9,7 +9,8 @@ parameters, or payloads.
 ## Authoritative sources
 
 - Route families overview → [`Controllers/README.md`](../../Backend/api/QuranDashboard.Api/Controllers/README.md) ("Route families" section)
-- Controllers (actual routes) → [`Controllers/`](../../Backend/api/QuranDashboard.Api/Controllers/) — `Abwab/`, `Words/`, `MushafReader/`, `Dashboard/`, `System/`
+- Controllers (actual routes) → [`Controllers/`](../../Backend/api/QuranDashboard.Api/Controllers/) — `Abwab/`, `Words/`, `MushafReader/`, `Dashboard/`, `System/`, `Access/`
+- Authentication and authorization boundary → [`Authentication/README.md`](../../Backend/api/QuranDashboard.Api/Authentication/README.md)
 - API boundary rules (verbs, status codes, response shape) → [`API_GUIDELINES.md`](../../Backend/.architecture/API_GUIDELINES.md)
 - API project overview → [`api/QuranDashboard.Api/README.md`](../../Backend/api/QuranDashboard.Api/README.md)
 - Response envelope → [response-envelope.md](./response-envelope.md)

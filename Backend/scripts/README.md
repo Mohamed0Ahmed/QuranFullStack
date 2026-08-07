@@ -218,7 +218,29 @@ a canonical permission carrying `retired_at` fails as `catalogue_retired=`. The 
 Interactive OIDC sign-in alone can add a configured Owner after verified email evidence; the
 `owners reconcile --apply` command can only remove safely resolved Owners or revoke conflicting
 direct grants. It requires a reason and `--confirm-production` in Production. The tool does not run
-migrations itself.
+migrations itself. A clean `authorization preflight` result is readiness evidence only: it neither
+deploys an artifact nor activates authorization.
+
+### Authorization activation and rollback (prospective)
+
+**This is a future runbook, not a completed rollout.** Authorization enforcement has not been
+activated in production, and this repository contains no production or production-like activation
+or rollout evidence.
+
+Before an approved production activation, record the chosen gate: the preferred path is a reviewed
+Phase 5 enforcement and Phase 6 administration release together. An earlier Phase 5-only path
+requires explicit acceptance of a temporary Owner-only write period or a verified trusted operator
+command that uses the same active-Owner authorization, validation, transaction, grant-delta, and
+append-only audit services as Phase 6.
+
+- Backend enforcement must be live before, or atomically with, frontend permission-aware controls.
+- During a rolling or mixed-version deployment, deny unsafe methods at the edge or place
+  administrative writes in maintenance/deny mode until no open Backend instance can serve them.
+  Keep public GETs online.
+- A frontend rollback may be independent, but never roll the Backend back to an open-write build.
+  Roll Backend code back only to a schema-compatible build that protects every unsafe route. If no
+  protected rollback artifact is available, keep administrative unsafe methods denied at the
+  platform/edge while public GETs remain available, then repair forward.
 
 ### Legacy Admin/Editor cleanup
 

@@ -8,9 +8,11 @@ the navbar and is reached through the guarded route only.
 - Lists and filters local access users, then shows an individual account's status and version.
 - Lets an active Owner accept Pending users, disable Active non-Owners, and reactivate Disabled
   non-Owners. Disable explains that it removes every direct grant; reactivate begins with none.
-- Presents server-catalogued permissions by group. A group selection expands into individual
-  `PermissionCode` values; every individual value can still be unchecked. Requests never contain a
-  group or a select-all value.
+- Presents server-catalogued permissions by group. Select-all is group-local: a partial group is
+  indeterminate, selecting it adds that group's individual `PermissionCode` values, and clearing it
+  removes only that group. Every individual value can still be unchecked. Requests contain the
+  flattened known codes only, never a group or select-all sentinel; a later code is not silently
+  granted to existing selections.
 - Requires an inline reason/diff confirmation for grant/status changes. Every changed permission
   is shown by its Arabic label and stable code before confirmation. There is no feature modal or
   backdrop.

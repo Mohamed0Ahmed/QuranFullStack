@@ -53,10 +53,9 @@ backfill between the staged migrations.
   `AwaitingVerifiedSignIn` without blocking a verified configured Owner. A `Disabled` user is never
   auto-revived or promoted by login. Empty, invalid, and duplicate normalized owner lists fail
   configuration validation.
-- **Email conflict.** `UserProvisioningEmailConflictException` is raised when provisioning
-  collides on the **email** unique index (not `logto_sub`): a subject deleted and recreated
-  in the IdP presents a brand-new `sub` carrying a server-verified email that already belongs
-  to an existing local user.
+- **Email conflict.** `UserProvisioningEmailConflictException` is raised when provisioning a new
+  subject collides with an existing local email identity, including the canonical normalized-email
+  comparison. Provisioning does not merge or relink users.
 
 ## Request-scoped authorization-state contract
 
@@ -66,6 +65,9 @@ claims. A scoped implementation memoizes the task for that subject, returns unkn
 `null`, and treats a second distinct subject in the same scope as an invariant failure. Direct
 permission codes are present only for an active non-Owner; an active Owner is represented by `IsOwner`
 and has no need for direct grants.
+
+There is no cached role resolver or token-claim transformation in this boundary. Every authorization
+decision resolves its state from the local database through the scoped resolver.
 
 ## Domain facts (from `Domain/Access`)
 

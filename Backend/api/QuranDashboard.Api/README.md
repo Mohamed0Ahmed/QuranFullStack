@@ -73,7 +73,8 @@ or `/api/access/me`, and production activation remains a separate deployment gat
 
 Only the seeded `Owner` role remains. `Users.RoleId` is a nullable FK to `roles`, used exclusively for
 the local Owner relation; capabilities are enforced from active direct grants with a separate active-Owner
-bypass. Roles are never created from the UI.
+bypass. `Admin` and `Editor` have no remaining role, policy, or claim-based authorization path. Roles are
+never created from the UI.
 
 - **Owner bootstrap** (`OwnerBootstrap:Emails`): the normalized, validated desired Owner list is
   reconciled for additions only after a configured identity provisions through `/api/access/me` with
@@ -82,6 +83,9 @@ bypass. Roles are never created from the UI.
   cannot promote an Owner from M2M data. Each promotion revokes direct grants and appends audit
   history in the same transaction. Empty, invalid, or duplicate normalized lists fail startup
   validation; a Disabled configured user is never reactivated.
+- **Normalized identity:** `Users.NormalizedEmail` is the required, unique comparison key for local
+  email identity. Provisioning normalizes provider email before persistence and rejects a
+  collision rather than merging or relinking users.
 - **Authorization state:** a scoped `IAuthorizationStateResolver` projects status, the local Owner
   relation, and active non-Owner direct grant codes once per protected request. It never provisions a
   user and rejects a second distinct `sub` in its request scope. No role-claim transformation or role
@@ -92,6 +96,10 @@ bypass. Roles are never created from the UI.
   true for a Disabled configured Owner while every authorization handler still fails closed on status.
 - **No named role policies:** authorization uses the exact permission and Owner requirements above; there
   is no global fallback policy. Granular Abwab authorization metadata does not use token role claims.
+
+`authorization preflight` is a readiness gate for the already-deployed schema and authorization
+data. A clean result neither deploys an artifact nor activates authorization; those operational
+actions remain outside the executable and the API process.
 
 ### Configuration (`Auth` section)
 
