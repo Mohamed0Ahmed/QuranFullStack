@@ -1,0 +1,4817 @@
+{
+ "meta": {
+  "generated": "2026-08-08",
+  "repo_head": "72792ba9",
+  "author": "report 09 (api-surface-payload-audit)",
+  "sources": [
+   "data/endpoint-inventory-backend.json",
+   "data/endpoint-consumers-frontend.json",
+   "Frontend/quran-dashboard-ui/openapi/swagger.json",
+   "author spot-verification of readers/templates cited inline"
+  ],
+  "taxonomies": {
+   "endpoint": [
+    "KEEP",
+    "SHRINK_RESPONSE",
+    "MERGE_CANDIDATE",
+    "SPLIT_OR_LAZY_LOAD",
+    "DELETE_OR_DEPRECATE_CANDIDATE",
+    "INTERNAL_ADMIN",
+    "NEEDS_MEASUREMENT"
+   ],
+   "field": [
+    "USED",
+    "UNUSED_CANDIDATE",
+    "EXPENSIVE_USED",
+    "EXPENSIVE_UNUSED_CANDIDATE",
+    "CONTRACT_REQUIRED",
+    "UNKNOWN_CONSUMER"
+   ]
+  },
+  "envelope_note": "Every operation returns ApiResponse<T>{isSuccess,message,data,errors}; envelope fields are CONTRACT_REQUIRED globally and omitted from per-endpoint field_flags.",
+  "field_flag_scope": "Fields of every payload model transitively reachable from the 200-response schema, named Model.field. Wrapper/envelope and paged-result shells are excluded. Statuses come from data/endpoint-consumers-frontend.json with author-verified upgrades (see upgraded evidence strings).",
+  "classification_totals": {
+   "KEEP": 70,
+   "SHRINK_RESPONSE": 3,
+   "INTERNAL_ADMIN": 10,
+   "DELETE_OR_DEPRECATE_CANDIDATE": 2
+  },
+  "field_flag_totals": {
+   "USED": 514,
+   "UNKNOWN_CONSUMER": 206,
+   "UNUSED_CANDIDATE": 54,
+   "EXPENSIVE_USED": 4,
+   "EXPENSIVE_UNUSED_CANDIDATE": 10
+  },
+  "field_flag_totals_note": "field_flag totals count Model.field once per endpoint that returns the model, so shared models are counted repeatedly. Unique field counts across the 143 analyzed payload models are 460 USED / 54 UNUSED_CANDIDATE / 157 UNKNOWN_CONSUMER (data/endpoint-consumers-frontend.json models.totals), of which this author upgraded 10 flags to EXPENSIVE_UNUSED_CANDIDATE, 4 to EXPENSIVE_USED, 1 UNKNOWN-evidence USED (OwnerReconciliationStatus.candidates) confirmed USED, and 1 false USED (AccessAuditEventItem.metadata) reclassified as EXPENSIVE_UNUSED_CANDIDATE after re-verification."
+ },
+ "endpoints": [
+  {
+   "method": "GET",
+   "route": "/api/abwab/doors/{doorId}/relations",
+   "tag": "AbwabDoorRelations",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabDoorRelationDto.direction",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorRelationDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorRelationDto.otherDoorId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorRelationDto.otherDoorName",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorRelationDto.type",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabDoorRelationsController.cs:18 (AbwabDoorRelationsController.GetForDoor)",
+    "Backend/application/QuranDashboard.Application/Abwab/Queries/GetDoorRelations/GetDoorRelationsHandler.cs:12 (GetDoorRelationsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/EfAbwabRelationsReader.cs:7 (EfAbwabRelationsReader : IAbwabRelationsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:95"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/abwab/doors/{doorId}/relations",
+   "tag": "AbwabDoorRelations",
+   "auth": "permission:AbwabPermissions.Relations.Create",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabDoorRelationDto.direction",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorRelationDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorRelationDto.otherDoorId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorRelationDto.otherDoorName",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorRelationDto.type",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabDoorRelationsController.cs:35 (AbwabDoorRelationsController.AddForDoor)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Relations/AddDoorRelations/AddDoorRelationsHandler.cs:13 (AddDoorRelationsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabRelationsWriter.cs:7 (EfAbwabRelationsWriter : IAbwabRelationsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:99"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "route": "/api/abwab/relations/{relationId}",
+   "tag": "AbwabDoorRelations",
+   "auth": "permission:AbwabPermissions.Relations.Delete",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabDoorRelationsController.cs:68 (AbwabDoorRelationsController.Delete)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Relations/DeleteDoorRelation/DeleteDoorRelationHandler.cs:12 (DeleteDoorRelationHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabRelationsWriter.cs:7 (EfAbwabRelationsWriter : IAbwabRelationsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:103"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/abwab/doors",
+   "tag": "AbwabDoors",
+   "auth": "permission:AbwabPermissions.Doors.Create",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabDoorDto.aliases",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.description",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.globalOrderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.parentId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.representativeAyahText",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.sectionId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabDoorsController.cs:29 (AbwabDoorsController.Create)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Doors/CreateDoor/CreateDoorHandler.cs:12 (CreateDoorHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabDoorsWriter.cs:7 (EfAbwabDoorsWriter : IAbwabDoorsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:63"
+   ]
+  },
+  {
+   "method": "PUT",
+   "route": "/api/abwab/doors/{id}",
+   "tag": "AbwabDoors",
+   "auth": "permission:AbwabPermissions.Doors.Edit",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabDoorDto.aliases",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.description",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.globalOrderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.parentId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.representativeAyahText",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.sectionId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabDoorsController.cs:58 (AbwabDoorsController.Edit)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Doors/EditDoor/EditDoorHandler.cs:12 (EditDoorHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabDoorsWriter.cs:7 (EfAbwabDoorsWriter : IAbwabDoorsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:67"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "route": "/api/abwab/doors/{id}",
+   "tag": "AbwabDoors",
+   "auth": "permission:AbwabPermissions.Doors.Archive",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabDoorsController.cs:192 (AbwabDoorsController.Delete)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Doors/DeleteDoor/DeleteDoorHandler.cs:12 (DeleteDoorHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabDoorsWriter.cs:7 (EfAbwabDoorsWriter : IAbwabDoorsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:87"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/abwab/doors/{id}/move",
+   "tag": "AbwabDoors",
+   "auth": "permission:AbwabPermissions.Doors.Move",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabDoorDto.aliases",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.description",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.globalOrderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.parentId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.representativeAyahText",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.sectionId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabDoorsController.cs:83 (AbwabDoorsController.Move)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Doors/MoveDoor/MoveDoorHandler.cs:12 (MoveDoorHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabDoorsWriter.cs:7 (EfAbwabDoorsWriter : IAbwabDoorsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:71"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/abwab/doors/{id}/order",
+   "tag": "AbwabDoors",
+   "auth": "permission:AbwabPermissions.Doors.Reorder",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabDoorDto.aliases",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.description",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.globalOrderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.parentId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.representativeAyahText",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.sectionId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabDoorsController.cs:113 (AbwabDoorsController.Reorder)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Doors/ReorderDoor/ReorderDoorHandler.cs:12 (ReorderDoorHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabDoorsWriter.cs:7 (EfAbwabDoorsWriter : IAbwabDoorsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:75"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/abwab/doors/bulk-move",
+   "tag": "AbwabDoors",
+   "auth": "permission:AbwabPermissions.Doors.Move",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabDoorDto.aliases",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.description",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.globalOrderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.parentId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.representativeAyahText",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.sectionId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabDoorsController.cs:139 (AbwabDoorsController.BulkMove)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Doors/BulkMoveDoors/BulkMoveDoorsHandler.cs:12 (BulkMoveDoorsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabDoorsWriter.cs:7 (EfAbwabDoorsWriter : IAbwabDoorsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:79"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/abwab/doors/bulk-archive",
+   "tag": "AbwabDoors",
+   "auth": "permission:AbwabPermissions.Doors.Archive",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabDoorsController.cs:170 (AbwabDoorsController.BulkArchive)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Doors/BulkArchiveDoors/BulkArchiveDoorsHandler.cs:12 (BulkArchiveDoorsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabDoorsWriter.cs:7 (EfAbwabDoorsWriter : IAbwabDoorsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:83"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/abwab/doors/{id}/restore",
+   "tag": "AbwabDoors",
+   "auth": "permission:AbwabPermissions.Doors.Restore",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabDoorDto.aliases",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.description",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.globalOrderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.parentId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.representativeAyahText",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.sectionId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabDoorsController.cs:210 (AbwabDoorsController.Restore)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Doors/RestoreDoor/RestoreDoorHandler.cs:12 (RestoreDoorHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabDoorsWriter.cs:7 (EfAbwabDoorsWriter : IAbwabDoorsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:91"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/abwab/sections",
+   "tag": "AbwabSections",
+   "auth": "permission:AbwabPermissions.Sections.Create",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabSectionDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabSectionDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabSectionDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabSectionDto.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabSectionsController.cs:21 (AbwabSectionsController.Create)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Sections/CreateSection/CreateSectionHandler.cs:12 (CreateSectionHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabSectionsWriter.cs:7 (EfAbwabSectionsWriter : IAbwabSectionsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:47"
+   ]
+  },
+  {
+   "method": "PUT",
+   "route": "/api/abwab/sections/{id}",
+   "tag": "AbwabSections",
+   "auth": "permission:AbwabPermissions.Sections.Edit",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabSectionDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabSectionDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabSectionDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabSectionDto.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabSectionsController.cs:42 (AbwabSectionsController.Rename)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Sections/RenameSection/RenameSectionHandler.cs:12 (RenameSectionHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabSectionsWriter.cs:7 (EfAbwabSectionsWriter : IAbwabSectionsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:51"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "route": "/api/abwab/sections/{id}",
+   "tag": "AbwabSections",
+   "auth": "permission:AbwabPermissions.Sections.Delete",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabSectionsController.cs:69 (AbwabSectionsController.Delete)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Sections/DeleteSection/DeleteSectionHandler.cs:12 (DeleteSectionHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabSectionsWriter.cs:7 (EfAbwabSectionsWriter : IAbwabSectionsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:55"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/abwab/sections/{id}/order",
+   "tag": "AbwabSections",
+   "auth": "permission:AbwabPermissions.Sections.Reorder",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabSectionDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabSectionDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabSectionDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabSectionDto.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabSectionsController.cs:88 (AbwabSectionsController.Reorder)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Sections/ReorderSection/ReorderSectionHandler.cs:12 (ReorderSectionHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabSectionsWriter.cs:7 (EfAbwabSectionsWriter : IAbwabSectionsWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:59"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/abwab/templates/{templateId}/nodes",
+   "tag": "AbwabTemplateNodes",
+   "auth": "permission:AbwabPermissions.TemplateNodes.Create",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabTemplateNodeDto.aliases",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.description",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.parentNodeId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.representativeAyahText",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabTemplateNodesController.cs:21 (AbwabTemplateNodesController.Add)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Templates/AddTemplateNode/AddTemplateNodeHandler.cs:12 (AddTemplateNodeHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabTemplatesWriter.cs:7 (EfAbwabTemplatesWriter : IAbwabTemplatesWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab-templates.api.ts:50"
+   ]
+  },
+  {
+   "method": "PUT",
+   "route": "/api/abwab/template-nodes/{nodeId}",
+   "tag": "AbwabTemplateNodes",
+   "auth": "permission:AbwabPermissions.TemplateNodes.Edit",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabTemplateNodeDto.aliases",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.description",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.parentNodeId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.representativeAyahText",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabTemplateNodesController.cs:50 (AbwabTemplateNodesController.Edit)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Templates/EditTemplateNode/EditTemplateNodeHandler.cs:12 (EditTemplateNodeHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabTemplatesWriter.cs:7 (EfAbwabTemplatesWriter : IAbwabTemplatesWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab-templates.api.ts:54"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "route": "/api/abwab/template-nodes/{nodeId}",
+   "tag": "AbwabTemplateNodes",
+   "auth": "permission:AbwabPermissions.TemplateNodes.Delete",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabTemplateNodesController.cs:96 (AbwabTemplateNodesController.Delete)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Templates/DeleteTemplateNode/DeleteTemplateNodeHandler.cs:12 (DeleteTemplateNodeHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabTemplatesWriter.cs:7 (EfAbwabTemplatesWriter : IAbwabTemplatesWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab-templates.api.ts:62"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/abwab/template-nodes/{nodeId}/order",
+   "tag": "AbwabTemplateNodes",
+   "auth": "permission:AbwabPermissions.TemplateNodes.Reorder",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabTemplateNodeDto.aliases",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.description",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.parentNodeId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.representativeAyahText",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabTemplateNodesController.cs:73 (AbwabTemplateNodesController.Reorder)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Templates/ReorderTemplateNode/ReorderTemplateNodeHandler.cs:12 (ReorderTemplateNodeHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabTemplatesWriter.cs:7 (EfAbwabTemplatesWriter : IAbwabTemplatesWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab-templates.api.ts:58"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/abwab/templates",
+   "tag": "AbwabTemplates",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabTemplateSummaryDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateSummaryDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateSummaryDto.nodeCount",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabTemplatesController.cs:24 (AbwabTemplatesController.GetAll)",
+    "Backend/application/QuranDashboard.Application/Abwab/Queries/GetTemplates/GetTemplatesHandler.cs:12 (GetTemplatesHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/EfAbwabTemplatesReader.cs:6 (EfAbwabTemplatesReader : IAbwabTemplatesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab-templates.api.ts:24"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/abwab/templates",
+   "tag": "AbwabTemplates",
+   "auth": "permission:AbwabPermissions.Templates.Create",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabTemplateDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateDto.nodes",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.aliases",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.description",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.parentNodeId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.representativeAyahText",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabTemplatesController.cs:66 (AbwabTemplatesController.Create)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Templates/CreateTemplate/CreateTemplateHandler.cs:12 (CreateTemplateHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabTemplatesWriter.cs:7 (EfAbwabTemplatesWriter : IAbwabTemplatesWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab-templates.api.ts:38"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/abwab/templates/{templateId}",
+   "tag": "AbwabTemplates",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabTemplateDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateDto.nodes",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.aliases",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.description",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.parentNodeId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTemplateNodeDto.representativeAyahText",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabTemplatesController.cs:46 (AbwabTemplatesController.Get)",
+    "Backend/application/QuranDashboard.Application/Abwab/Queries/GetTemplate/GetTemplateHandler.cs:12 (GetTemplateHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/EfAbwabTemplatesReader.cs:6 (EfAbwabTemplatesReader : IAbwabTemplatesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab-templates.api.ts:31"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "route": "/api/abwab/templates/{templateId}",
+   "tag": "AbwabTemplates",
+   "auth": "permission:AbwabPermissions.Templates.Delete",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabTemplatesController.cs:87 (AbwabTemplatesController.Delete)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Templates/DeleteTemplate/DeleteTemplateHandler.cs:12 (DeleteTemplateHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabTemplatesWriter.cs:7 (EfAbwabTemplatesWriter : IAbwabTemplatesWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab-templates.api.ts:42"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/abwab/templates/{templateId}/apply",
+   "tag": "AbwabTemplates",
+   "auth": "permission:AbwabPermissions.Templates.Apply",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabDoorDto.aliases",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.description",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.globalOrderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabDoorDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.parentId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.representativeAyahText",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.sectionId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabDoorDto.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabTemplatesController.cs:104 (AbwabTemplatesController.Apply)",
+    "Backend/application/QuranDashboard.Application/Abwab/Commands/Templates/ApplyTemplate/ApplyTemplateHandler.cs:12 (ApplyTemplateHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabTemplateApplyWriter.cs:7 (EfAbwabTemplateApplyWriter : IAbwabTemplateApplyWriter)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab-templates.api.ts:46"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/abwab/tree",
+   "tag": "AbwabTree",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AbwabTreeDoorDto.aliases",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTreeDoorDto.description",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTreeDoorDto.directChildCount",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AbwabTreeDoorDto.globalOrderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTreeDoorDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTreeDoorDto.isArchived",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTreeDoorDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTreeDoorDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTreeDoorDto.parentId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTreeDoorDto.relationCount",
+     "class": "EXPENSIVE_USED",
+     "note": "rendered in tree flags (abwab-tree.component.html:132-142); costs a full live-relations pair scan per uncached tree load (EfAbwabTreeReader.cs:61-77)"
+    },
+    {
+     "field": "AbwabTreeDoorDto.representativeAyahText",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTreeDoorDto.sectionId",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTreeDoorDto.sectionRetired",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTreeDoorDto.version",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTreeDto.doors",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTreeDto.sections",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTreeDto.version",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTreeSectionDto.doorsInScopeCount",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTreeSectionDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTreeSectionDto.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AbwabTreeSectionDto.orderValue",
+     "class": "USED"
+    },
+    {
+     "field": "AbwabTreeSectionDto.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": null,
+    "high_end_bytes": null,
+    "confidence": "NEEDS_MEASUREMENT"
+   },
+   "recommendation": "Keep; optional field-level cleanup of AbwabTreeDoorDto.directChildCount (DTO-only / serialization-only — no query-shape change proven).",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Abwab/AbwabTreeController.cs:14 (AbwabTreeController.Get)",
+    "Backend/application/QuranDashboard.Application/Abwab/Queries/GetAbwabTree/GetAbwabTreeHandler.cs:12 (GetAbwabTreeHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/EfAbwabTreeReader.cs:6 (EfAbwabTreeReader : IAbwabTreeReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.ts:40"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/access/me",
+   "tag": "Access",
+   "auth": "authenticated",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "CurrentUserResponse.displayName",
+     "class": "USED"
+    },
+    {
+     "field": "CurrentUserResponse.email",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "CurrentUserResponse.isOwner",
+     "class": "USED"
+    },
+    {
+     "field": "CurrentUserResponse.permissions",
+     "class": "USED"
+    },
+    {
+     "field": "CurrentUserResponse.status",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "CurrentUserResponse.sub",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Access/AccessController.cs:15 (AccessController.GetCurrentUser)",
+    "Backend/application/QuranDashboard.Application/Access/Commands/ProvisionCurrentUser/ProvisionCurrentUserHandler.cs:10 (ProvisionCurrentUserHandler)",
+    "non-EF: HttpContextCurrentUser @ Backend/api/QuranDashboard.Api/Authentication/HttpContextCurrentUser.cs:5 (ICurrentUser)",
+    "Frontend/quran-dashboard-ui/src/app/core/auth/access.api.ts:21"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/access/audit-events",
+   "tag": "AccessAuditEvents",
+   "auth": "owner",
+   "frontend_status": "USED",
+   "classification": "SHRINK_RESPONSE",
+   "field_flags": [
+    {
+     "field": "AccessAuditEventItem.actionType",
+     "class": "USED"
+    },
+    {
+     "field": "AccessAuditEventItem.actorDisplayName",
+     "class": "USED"
+    },
+    {
+     "field": "AccessAuditEventItem.actorEmail",
+     "class": "USED"
+    },
+    {
+     "field": "AccessAuditEventItem.actorSnapshot",
+     "class": "EXPENSIVE_UNUSED_CANDIDATE",
+     "note": "jsonb column fetched via entity materialization, JsonDocument.Parse per row, serialized, never rendered (EfAccessAuditReader.cs:110; grep of access-admin production code: 0 hits)"
+    },
+    {
+     "field": "AccessAuditEventItem.actorType",
+     "class": "USED"
+    },
+    {
+     "field": "AccessAuditEventItem.actorUserId",
+     "class": "USED"
+    },
+    {
+     "field": "AccessAuditEventItem.afterState",
+     "class": "EXPENSIVE_UNUSED_CANDIDATE",
+     "note": "jsonb column fetched, parsed per row, serialized, never rendered (EfAccessAuditReader.cs:114)"
+    },
+    {
+     "field": "AccessAuditEventItem.beforeState",
+     "class": "EXPENSIVE_UNUSED_CANDIDATE",
+     "note": "jsonb column fetched, parsed per row, serialized, never rendered (EfAccessAuditReader.cs:113)"
+    },
+    {
+     "field": "AccessAuditEventItem.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessAuditEventItem.metadata",
+     "class": "EXPENSIVE_UNUSED_CANDIDATE",
+     "note": "inventory said USED but its evidence was a mushaf mock (generic-name false positive); author re-grep of access-admin production code found 0 hits; jsonb value-converted + re-serialized per row (EfAccessAuditReader.cs:116)"
+    },
+    {
+     "field": "AccessAuditEventItem.occurredAtUtc",
+     "class": "USED"
+    },
+    {
+     "field": "AccessAuditEventItem.permissionCode",
+     "class": "USED"
+    },
+    {
+     "field": "AccessAuditEventItem.reason",
+     "class": "USED",
+     "note": "inventory left this UNKNOWN_CONSUMER (generic name), but the sole consumer template renders it: access-audit-log.component.html:75"
+    },
+    {
+     "field": "AccessAuditEventItem.targetDisplayName",
+     "class": "USED"
+    },
+    {
+     "field": "AccessAuditEventItem.targetEmail",
+     "class": "USED"
+    },
+    {
+     "field": "AccessAuditEventItem.targetSnapshot",
+     "class": "EXPENSIVE_UNUSED_CANDIDATE",
+     "note": "jsonb column fetched, parsed per row, serialized, never rendered (EfAccessAuditReader.cs:111)"
+    },
+    {
+     "field": "AccessAuditEventItem.targetUserId",
+     "class": "USED"
+    },
+    {
+     "field": "AccessAuditEventPage.items",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessAuditEventPage.nextCursor",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 20000,
+    "high_end_bytes": 150000,
+    "confidence": "NEEDS_MEASUREMENT"
+   },
+   "recommendation": "FLAGSHIP: 5 of 17 item fields (actorSnapshot, targetSnapshot, beforeState, afterState, metadata) are jsonb documents fetched via full entity materialization, JsonDocument.Parse-d per row, serialized into every page, and never rendered by the only consumer (access-audit-log component renders actionType/time/actor/target/permissionCode/reason). Audit STORAGE is untouched — this is response projection only. Alternative shape: SPLIT_OR_LAZY_LOAD via a per-event detail fetch if the UI ever needs diffs. Requires §29 audit-area risk analysis before any change.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Access/AccessAuditEventsController.cs:13 (AccessAuditEventsController.List)",
+    "Backend/application/QuranDashboard.Application/Access/Queries/ListAccessAuditEvents/ListAccessAuditEventsHandler.cs:8 (ListAccessAuditEventsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Access/EfAccessAuditReader.cs:6 (EfAccessAuditReader : IAccessAuditReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/access-admin/data-access/access-admin.api.ts:70"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/access/users/{userId}/logto-sub/relink/preview",
+   "tag": "AccessLogtoSubjectRelink",
+   "auth": "owner",
+   "frontend_status": "USED",
+   "classification": "INTERNAL_ADMIN",
+   "field_flags": [
+    {
+     "field": "LogtoSubjectRelinkPreview.isOwner",
+     "class": "USED"
+    },
+    {
+     "field": "LogtoSubjectRelinkPreview.newSub",
+     "class": "USED"
+    },
+    {
+     "field": "LogtoSubjectRelinkPreview.oldSub",
+     "class": "USED"
+    },
+    {
+     "field": "LogtoSubjectRelinkPreview.userId",
+     "class": "USED"
+    },
+    {
+     "field": "LogtoSubjectRelinkPreview.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Owner-gated admin surface; keep. No response-shape change indicated.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Access/AccessLogtoSubjectRelinkController.cs:16 (AccessLogtoSubjectRelinkController.Preview)",
+    "Backend/application/QuranDashboard.Application/Access/Commands/PreviewLogtoSubjectRelink/PreviewLogtoSubjectRelinkHandler.cs:7 (PreviewLogtoSubjectRelinkHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Access/EfLogtoSubjectRelinkService.cs:8 (EfLogtoSubjectRelinkService : ILogtoSubjectRelinkService)",
+    "Frontend/quran-dashboard-ui/src/app/features/access-admin/data-access/access-admin.api.ts:79"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/access/users/{userId}/logto-sub/relink/confirm",
+   "tag": "AccessLogtoSubjectRelink",
+   "auth": "owner",
+   "frontend_status": "USED",
+   "classification": "INTERNAL_ADMIN",
+   "field_flags": [
+    {
+     "field": "AccessUserDetail.createdAtUtc",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.displayName",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.email",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.isOwner",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.normalizedEmail",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.permissionCodes",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.status",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.sub",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.title",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.updatedAtUtc",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.userName",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Owner-gated admin surface; keep. No response-shape change indicated.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Access/AccessLogtoSubjectRelinkController.cs:28 (AccessLogtoSubjectRelinkController.Confirm)",
+    "Backend/application/QuranDashboard.Application/Access/Commands/ConfirmLogtoSubjectRelink/ConfirmLogtoSubjectRelinkHandler.cs:10 (ConfirmLogtoSubjectRelinkHandler)",
+    "non-EF: HttpContextCurrentUser @ Backend/api/QuranDashboard.Api/Authentication/HttpContextCurrentUser.cs:5 (ICurrentUser)",
+    "Frontend/quran-dashboard-ui/src/app/features/access-admin/data-access/access-admin.api.ts:89"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/access/owner-reconciliation/status",
+   "tag": "AccessOwnerReconciliation",
+   "auth": "owner",
+   "frontend_status": "USED",
+   "classification": "SHRINK_RESPONSE",
+   "field_flags": [
+    {
+     "field": "AccessOwnerReconciliationSummary.actionType",
+     "class": "USED"
+    },
+    {
+     "field": "AccessOwnerReconciliationSummary.occurredAtUtc",
+     "class": "USED"
+    },
+    {
+     "field": "AccessOwnerReconciliationSummary.reason",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessOwnerReconciliationSummary.targetUserId",
+     "class": "USED"
+    },
+    {
+     "field": "OwnerReconciliationStatus.canApply",
+     "class": "USED"
+    },
+    {
+     "field": "OwnerReconciliationStatus.candidates",
+     "class": "USED",
+     "note": "two of the inventory's three evidence lines are generic-name cross-matches, but its third is the real consumer: access-admin-page.component.html:97 iterates status.candidates (author-verified)"
+    },
+    {
+     "field": "OwnerReconciliationStatus.configurationFingerprint",
+     "class": "USED"
+    },
+    {
+     "field": "OwnerReconciliationStatus.isReady",
+     "class": "USED"
+    },
+    {
+     "field": "OwnerReconciliationStatus.lastReconciliation",
+     "class": "EXPENSIVE_UNUSED_CANDIDATE",
+     "note": "sole consumer of GetLatestOwnerReconciliationAsync raw-SQL jsonb scan (EfAccessAuditReader.cs:78-89); never rendered — removal deletes one query per admin page load"
+    },
+    {
+     "field": "OwnerReconciliationStatusCandidate.normalizedEmail",
+     "class": "USED"
+    },
+    {
+     "field": "OwnerReconciliationStatusCandidate.state",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "OwnerReconciliationStatusCandidate.userId",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "lastReconciliation is never rendered and is the sole consumer of a raw-SQL jsonb-metadata scan over access_audit_events with no supporting index (EfAccessAuditReader.cs:78-89). Dropping the field removes one query per admin page load (query-cost class 4). candidates IS rendered — keep it.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Access/AccessOwnerReconciliationController.cs:13 (AccessOwnerReconciliationController.Get)",
+    "Backend/application/QuranDashboard.Application/Access/Queries/GetOwnerReconciliationStatus/GetOwnerReconciliationStatusHandler.cs:9 (GetOwnerReconciliationStatusHandler)",
+    "non-EF: OwnerReconciliationService @ Backend/application/QuranDashboard.Application/Access/OwnerReconciliation/OwnerReconciliationService.cs:7 (IOwnerReconciliationService)",
+    "Frontend/quran-dashboard-ui/src/app/features/access-admin/data-access/access-admin.api.ts:96"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/access/permissions",
+   "tag": "AccessPermissions",
+   "auth": "owner",
+   "frontend_status": "USED",
+   "classification": "INTERNAL_ADMIN",
+   "field_flags": [
+    {
+     "field": "PermissionCatalogueItem.arabicLabel",
+     "class": "USED"
+    },
+    {
+     "field": "PermissionCatalogueItem.code",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "PermissionCatalogueItem.displayOrder",
+     "class": "USED"
+    },
+    {
+     "field": "PermissionCatalogueItem.englishDescription",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "PermissionCatalogueItem.groupDisplayOrder",
+     "class": "USED"
+    },
+    {
+     "field": "PermissionCatalogueItem.groupKey",
+     "class": "USED"
+    },
+    {
+     "field": "PermissionCatalogueItem.groupLabel",
+     "class": "USED"
+    },
+    {
+     "field": "PermissionCatalogueResponse.assignmentReady",
+     "class": "USED"
+    },
+    {
+     "field": "PermissionCatalogueResponse.items",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Owner-gated admin surface; keep. No response-shape change indicated.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Access/AccessPermissionsController.cs:13 (AccessPermissionsController.Get)",
+    "Backend/application/QuranDashboard.Application/Access/Queries/GetPermissionCatalogue/GetPermissionCatalogueHandler.cs:7 (GetPermissionCatalogueHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Access/EfPermissionCatalogueReader.cs:6 (EfPermissionCatalogueReader : IPermissionCatalogueReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/access-admin/data-access/access-admin.api.ts:55"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/access/users/{userId}/permissions",
+   "tag": "AccessUserPermissions",
+   "auth": "owner",
+   "frontend_status": "USED",
+   "classification": "INTERNAL_ADMIN",
+   "field_flags": [
+    {
+     "field": "AccessUserPermissions.isOwner",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserPermissions.permissionCodes",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserPermissions.status",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserPermissions.userId",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserPermissions.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 1500,
+    "high_end_bytes": 4000,
+    "confidence": "LIKELY"
+   },
+   "recommendation": "Owner-gated admin surface; keep. No response-shape change indicated.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Access/AccessUserPermissionsController.cs:16 (AccessUserPermissionsController.Get)",
+    "Backend/application/QuranDashboard.Application/Access/Queries/GetUserPermissions/GetUserPermissionsHandler.cs:7 (GetUserPermissionsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Access/EfAccessUserReader.cs:7 (EfAccessUserReader : IAccessUserReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/access-admin/data-access/access-admin.api.ts:59"
+   ]
+  },
+  {
+   "method": "PUT",
+   "route": "/api/access/users/{userId}/permissions",
+   "tag": "AccessUserPermissions",
+   "auth": "owner",
+   "frontend_status": "USED",
+   "classification": "INTERNAL_ADMIN",
+   "field_flags": [
+    {
+     "field": "AccessUserPermissions.isOwner",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserPermissions.permissionCodes",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserPermissions.status",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserPermissions.userId",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserPermissions.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Owner-gated admin surface; keep. No response-shape change indicated.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Access/AccessUserPermissionsController.cs:25 (AccessUserPermissionsController.Replace)",
+    "Backend/application/QuranDashboard.Application/Access/Commands/ReplaceUserPermissions/ReplaceUserPermissionsHandler.cs:10 (ReplaceUserPermissionsHandler)",
+    "non-EF: HttpContextCurrentUser @ Backend/api/QuranDashboard.Api/Authentication/HttpContextCurrentUser.cs:5 (ICurrentUser)",
+    "Frontend/quran-dashboard-ui/src/app/features/access-admin/data-access/access-admin.api.ts:66"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/access/users",
+   "tag": "AccessUsers",
+   "auth": "owner",
+   "frontend_status": "USED",
+   "classification": "INTERNAL_ADMIN",
+   "field_flags": [
+    {
+     "field": "AccessUserSummary.createdAtUtc",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserSummary.displayName",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserSummary.email",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserSummary.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserSummary.isOwner",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserSummary.permissionCount",
+     "class": "EXPENSIVE_UNUSED_CANDIDATE",
+     "note": "correlated COUNT subquery per row (EfAccessUserReader.cs:52-54); never rendered"
+    },
+    {
+     "field": "AccessUserSummary.status",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserSummary.updatedAtUtc",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserSummary.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 8000,
+    "high_end_bytes": 30000,
+    "confidence": "LIKELY"
+   },
+   "recommendation": "Owner-gated admin surface; keep. Field-level shrink available: permissionCount (correlated COUNT subquery, unrendered) plus createdAtUtc/updatedAtUtc (unrendered scalars) — small absolute cost on a small user table.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Access/AccessUsersController.cs:25 (AccessUsersController.List)",
+    "Backend/application/QuranDashboard.Application/Access/Queries/ListAccessUsers/ListAccessUsersHandler.cs:9 (ListAccessUsersHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Access/EfAccessUserReader.cs:7 (EfAccessUserReader : IAccessUserReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/access-admin/data-access/access-admin.api.ts:33"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/access/users/{userId}",
+   "tag": "AccessUsers",
+   "auth": "owner",
+   "frontend_status": "USED",
+   "classification": "INTERNAL_ADMIN",
+   "field_flags": [
+    {
+     "field": "AccessUserDetail.createdAtUtc",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.displayName",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.email",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.isOwner",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.normalizedEmail",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.permissionCodes",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.status",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.sub",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.title",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.updatedAtUtc",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.userName",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Owner-gated admin surface; keep. userName/createdAtUtc/updatedAtUtc unrendered (DTO-only shrink, trivial).",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Access/AccessUsersController.cs:42 (AccessUsersController.Get)",
+    "Backend/application/QuranDashboard.Application/Access/Queries/GetAccessUser/GetAccessUserHandler.cs:7 (GetAccessUserHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Access/EfAccessUserReader.cs:7 (EfAccessUserReader : IAccessUserReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/access-admin/data-access/access-admin.api.ts:39"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/access/users/{userId}/accept",
+   "tag": "AccessUsers",
+   "auth": "owner",
+   "frontend_status": "USED",
+   "classification": "INTERNAL_ADMIN",
+   "field_flags": [
+    {
+     "field": "AccessUserDetail.createdAtUtc",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.displayName",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.email",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.isOwner",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.normalizedEmail",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.permissionCodes",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.status",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.sub",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.title",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.updatedAtUtc",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.userName",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Owner-gated admin surface; keep. No response-shape change indicated.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Access/AccessUsersController.cs:51 (AccessUsersController.Accept)",
+    "Backend/application/QuranDashboard.Application/Access/Commands/AcceptAccessUser/AcceptAccessUserHandler.cs:10 (AcceptAccessUserHandler)",
+    "non-EF: HttpContextCurrentUser @ Backend/api/QuranDashboard.Api/Authentication/HttpContextCurrentUser.cs:5 (ICurrentUser)",
+    "Frontend/quran-dashboard-ui/src/app/features/access-admin/data-access/access-admin.api.ts:43"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/access/users/{userId}/disable",
+   "tag": "AccessUsers",
+   "auth": "owner",
+   "frontend_status": "USED",
+   "classification": "INTERNAL_ADMIN",
+   "field_flags": [
+    {
+     "field": "AccessUserDetail.createdAtUtc",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.displayName",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.email",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.isOwner",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.normalizedEmail",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.permissionCodes",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.status",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.sub",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.title",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.updatedAtUtc",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.userName",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Owner-gated admin surface; keep. No response-shape change indicated.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Access/AccessUsersController.cs:63 (AccessUsersController.Disable)",
+    "Backend/application/QuranDashboard.Application/Access/Commands/DisableAccessUser/DisableAccessUserHandler.cs:10 (DisableAccessUserHandler)",
+    "non-EF: HttpContextCurrentUser @ Backend/api/QuranDashboard.Api/Authentication/HttpContextCurrentUser.cs:5 (ICurrentUser)",
+    "Frontend/quran-dashboard-ui/src/app/features/access-admin/data-access/access-admin.api.ts:47"
+   ]
+  },
+  {
+   "method": "POST",
+   "route": "/api/access/users/{userId}/reactivate",
+   "tag": "AccessUsers",
+   "auth": "owner",
+   "frontend_status": "USED",
+   "classification": "INTERNAL_ADMIN",
+   "field_flags": [
+    {
+     "field": "AccessUserDetail.createdAtUtc",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.displayName",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.email",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.isOwner",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.normalizedEmail",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.permissionCodes",
+     "class": "USED"
+    },
+    {
+     "field": "AccessUserDetail.status",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.sub",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.title",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AccessUserDetail.updatedAtUtc",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.userName",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AccessUserDetail.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Owner-gated admin surface; keep. No response-shape change indicated.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Access/AccessUsersController.cs:75 (AccessUsersController.Reactivate)",
+    "Backend/application/QuranDashboard.Application/Access/Commands/ReactivateAccessUser/ReactivateAccessUserHandler.cs:10 (ReactivateAccessUserHandler)",
+    "non-EF: HttpContextCurrentUser @ Backend/api/QuranDashboard.Api/Authentication/HttpContextCurrentUser.cs:5 (ICurrentUser)",
+    "Frontend/quran-dashboard-ui/src/app/features/access-admin/data-access/access-admin.api.ts:51"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/dashboard/info",
+   "tag": "Dashboard",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AppInfoData.appName",
+     "class": "USED"
+    },
+    {
+     "field": "AppInfoData.environment",
+     "class": "USED"
+    },
+    {
+     "field": "AppInfoData.version",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Dashboard/DashboardController.cs:10 (DashboardController.GetInfo)",
+    "Frontend/quran-dashboard-ui/src/app/core/data-access/system.api.ts:27"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/health",
+   "tag": "Health",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "HealthCheckItem.name",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "HealthCheckItem.status",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "HealthReportData.checks",
+     "class": "USED"
+    },
+    {
+     "field": "HealthReportData.status",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/System/HealthController.cs:10 (HealthController.Get)",
+    "Frontend/quran-dashboard-ui/src/app/core/data-access/system.api.ts:47"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/lemmas",
+   "tag": "Lemmas",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "LemmaListItemDto.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaListItemDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "LemmaListItemDto.lemmaText",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaListItemDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaListItemDto.rootId",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "LemmaListItemDto.rootText",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaListItemDto.simpleWordsCount",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaListItemDto.stemsCount",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaListItemDto.surahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaListItemDto.tashkeelWordsCount",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 250000,
+    "high_end_bytes": 350000,
+    "confidence": "LIKELY"
+   },
+   "recommendation": "Frontend deliberately requests pageSize=1000 (words models constants) and renders via cdk-virtual-scroll with a per-query session cache — the large page is a design choice, not accidental over-fetch. All fields are consumed. The dominant payload cost is the default System.Text.Json non-ASCII escaping (\\uXXXX, 6 bytes per Arabic char; no AddJsonOptions anywhere in Backend/api) with no response-compression middleware — an encoder/compression finding, not a field-removal finding.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/LemmasController.cs:29 (LemmasController.Get)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Lemmas/Queries/GetLemmasPage/GetLemmasPageHandler.cs:17 (GetLemmasPageHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Lemmas/EfLemmasReader.cs:8 (EfLemmasReader : ILemmasReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/lemmas.api.ts:50"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/lemmas/{id}",
+   "tag": "Lemmas",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "LemmaSummaryDto.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaSummaryDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "LemmaSummaryDto.lemmaText",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaSummaryDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaSummaryDto.rootId",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "LemmaSummaryDto.rootText",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaSummaryDto.simpleWordsCount",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaSummaryDto.stemsCount",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaSummaryDto.surahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaSummaryDto.tashkeelWordsCount",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaSummaryDto.typeDistribution",
+     "class": "USED"
+    },
+    {
+     "field": "TypeSummaryDto.arabicLabel",
+     "class": "USED"
+    },
+    {
+     "field": "TypeSummaryDto.code",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "TypeSummaryDto.occurrencesCount",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/LemmasController.cs:80 (LemmasController.GetSummary)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Lemmas/Queries/GetLemmaSummary/GetLemmaSummaryHandler.cs:12 (GetLemmaSummaryHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Lemmas/EfLemmasReader.cs:8 (EfLemmasReader : ILemmasReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/lemmas.api.ts:57"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/lemmas/{id}/words/{wordKind}",
+   "tag": "Lemmas",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "LemmaWordItemDto.displayText",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaWordItemDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaWordItemDto.uniqueWordId",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/LemmasController.cs:101 (LemmasController.GetWords)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Lemmas/Queries/GetLemmaWords/GetLemmaWordsHandler.cs:17 (GetLemmaWordsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Lemmas/EfLemmasReader.cs:8 (EfLemmasReader : ILemmasReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/lemmas.api.ts:69"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/lemmas/{id}/ayahs",
+   "tag": "Lemmas",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "LemmaAyahMatchDto.ayahId",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaAyahMatchDto.pageNumber",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaAyahMatchDto.surahNameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaAyahMatchDto.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaAyahMatchDto.words",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "LemmaAyahWordDto.isMatched",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaAyahWordDto.textUthmani",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/LemmasController.cs:133 (LemmasController.GetAyahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Lemmas/Queries/GetLemmaAyahs/GetLemmaAyahsHandler.cs:17 (GetLemmaAyahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Lemmas/EfLemmasReader.cs:8 (EfLemmasReader : ILemmasReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/lemmas.api.ts:85"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/lemmas/{id}/surahs",
+   "tag": "Lemmas",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "LemmaSurahItemDto.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaSurahItemDto.occurrencesInSurah",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaSurahItemDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaSurahsResponse.surahs",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/LemmasController.cs:166 (LemmasController.GetSurahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Lemmas/Queries/GetLemmaMentionedSurahs/GetLemmaMentionedSurahsHandler.cs:14 (GetLemmaMentionedSurahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Lemmas/EfLemmasReader.cs:8 (EfLemmasReader : ILemmasReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/lemmas.api.ts:92"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/lemmas/{id}/missing-surahs",
+   "tag": "Lemmas",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "LemmaMissingSurahsResponse.surahs",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "MissingSurahItemDto.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "MissingSurahItemDto.surahNumber",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/LemmasController.cs:187 (LemmasController.GetMissingSurahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Lemmas/Queries/GetLemmaMissingSurahs/GetLemmaMissingSurahsHandler.cs:14 (GetLemmaMissingSurahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Lemmas/EfLemmasReader.cs:8 (EfLemmasReader : ILemmasReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/lemmas.api.ts:98"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/lemmas/{id}/stems",
+   "tag": "Lemmas",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "LemmaStemItemDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaStemItemDto.stemId",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaStemItemDto.stemText",
+     "class": "USED"
+    },
+    {
+     "field": "LemmaStemsResponse.stems",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/LemmasController.cs:208 (LemmasController.GetStems)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Lemmas/Queries/GetLemmaStems/GetLemmaStemsHandler.cs:12 (GetLemmaStemsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Lemmas/EfLemmasReader.cs:8 (EfLemmasReader : ILemmasReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/lemmas.api.ts:104"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/mushaf/ayahs/{verseKey}/mutashabihat",
+   "tag": "MushafAyahMutashabihat",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AyahMutashabihatResponse.groupCount",
+     "class": "USED"
+    },
+    {
+     "field": "AyahMutashabihatResponse.groups",
+     "class": "USED"
+    },
+    {
+     "field": "AyahMutashabihatResponse.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatGroupDto.distinctAyahCount",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatGroupDto.distinctSurahCount",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatGroupDto.groupKey",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatGroupDto.occurrenceCount",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatGroupDto.occurrences",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "MutashabihatGroupDto.phraseTextUthmani",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatGroupDto.representativeVerseKey",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatGroupDto.representativeWordFrom",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatGroupDto.representativeWordTo",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatGroupDto.selectedOccurrences",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "MutashabihatGroupDto.sourceGroupId",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "MutashabihatOccurrenceDto.ayahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatOccurrenceDto.isRepresentative",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "MutashabihatOccurrenceDto.isSelectedAyah",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatOccurrenceDto.pageNumber",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatOccurrenceDto.phraseTextUthmani",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatOccurrenceDto.surahNameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatOccurrenceDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatOccurrenceDto.textUthmani",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatOccurrenceDto.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatOccurrenceDto.wordFrom",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatOccurrenceDto.wordTo",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "MutashabihatSelectedOccurrenceDto.isRepresentative",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "MutashabihatSelectedOccurrenceDto.phraseTextUthmani",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatSelectedOccurrenceDto.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatSelectedOccurrenceDto.wordFrom",
+     "class": "USED"
+    },
+    {
+     "field": "MutashabihatSelectedOccurrenceDto.wordTo",
+     "class": "UNUSED_CANDIDATE"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 10000,
+    "high_end_bytes": 100000,
+    "confidence": "NEEDS_MEASUREMENT"
+   },
+   "recommendation": "Keep; optional field-level cleanup of MutashabihatGroupDto.selectedOccurrences, MutashabihatGroupDto.sourceGroupId, MutashabihatOccurrenceDto.isRepresentative, MutashabihatOccurrenceDto.wordTo, MutashabihatSelectedOccurrenceDto.isRepresentative, MutashabihatSelectedOccurrenceDto.wordTo (DTO-only / serialization-only — no query-shape change proven).",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/MushafReader/Ayahs/MushafAyahMutashabihatController.cs:11 (MushafAyahMutashabihatController.GetAyahMutashabihat)",
+    "Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetAyahMutashabihat/GetAyahMutashabihatHandler.cs:8 (GetAyahMutashabihatHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/EfAyahMutashabihatReader.cs:8 (EfAyahMutashabihatReader : IAyahMutashabihatReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/mushaf/data-access/mushaf-ayah-mutashabihat.api.ts:15"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/mushaf/ayahs/{verseKey}/similar-ayahs",
+   "tag": "MushafAyahSimilarities",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "SimilarAyahItemDto.ayahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "SimilarAyahItemDto.coverage",
+     "class": "USED"
+    },
+    {
+     "field": "SimilarAyahItemDto.hasReverseLink",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "SimilarAyahItemDto.hizbNumber",
+     "class": "USED"
+    },
+    {
+     "field": "SimilarAyahItemDto.juzNumber",
+     "class": "USED"
+    },
+    {
+     "field": "SimilarAyahItemDto.matchedWordsCount",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "SimilarAyahItemDto.pageNumber",
+     "class": "USED"
+    },
+    {
+     "field": "SimilarAyahItemDto.relationshipDirection",
+     "class": "USED"
+    },
+    {
+     "field": "SimilarAyahItemDto.rubNumber",
+     "class": "USED"
+    },
+    {
+     "field": "SimilarAyahItemDto.score",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "SimilarAyahItemDto.surahNameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "SimilarAyahItemDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "SimilarAyahItemDto.targetVerseKey",
+     "class": "USED"
+    },
+    {
+     "field": "SimilarAyahItemDto.textUthmani",
+     "class": "USED"
+    },
+    {
+     "field": "SimilarAyahsResponse.count",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "SimilarAyahsResponse.items",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "SimilarAyahsResponse.verseKey",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 5000,
+    "high_end_bytes": 50000,
+    "confidence": "NEEDS_MEASUREMENT"
+   },
+   "recommendation": "Keep; optional field-level cleanup of SimilarAyahItemDto.hasReverseLink, SimilarAyahItemDto.matchedWordsCount, SimilarAyahItemDto.score (DTO-only / serialization-only — no query-shape change proven).",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/MushafReader/Ayahs/MushafAyahSimilaritiesController.cs:11 (MushafAyahSimilaritiesController.GetSimilarAyahs)",
+    "Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetSimilarAyahs/GetSimilarAyahsHandler.cs:8 (GetSimilarAyahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/EfAyahSimilaritiesReader.cs:7 (EfAyahSimilaritiesReader : IAyahSimilaritiesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/mushaf/data-access/mushaf-similar-ayahs.api.ts:15"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/mushaf/ayahs/{verseKey}/study",
+   "tag": "MushafAyahStudy",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AyahCoreDto.ayahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "AyahCoreDto.hizbNumber",
+     "class": "USED"
+    },
+    {
+     "field": "AyahCoreDto.juzNumber",
+     "class": "USED"
+    },
+    {
+     "field": "AyahCoreDto.pageFrom",
+     "class": "USED"
+    },
+    {
+     "field": "AyahCoreDto.pageTo",
+     "class": "USED"
+    },
+    {
+     "field": "AyahCoreDto.rubNumber",
+     "class": "USED"
+    },
+    {
+     "field": "AyahCoreDto.sajda",
+     "class": "USED"
+    },
+    {
+     "field": "AyahCoreDto.surahNameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "AyahCoreDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "AyahCoreDto.textUthmani",
+     "class": "USED"
+    },
+    {
+     "field": "AyahCoreDto.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "AyahCoreDto.wordsCount",
+     "class": "USED"
+    },
+    {
+     "field": "AyahStudyResponse.ayah",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "AyahStudyResponse.fullI3rab",
+     "class": "USED"
+    },
+    {
+     "field": "AyahStudyResponse.selectedSources",
+     "class": "USED"
+    },
+    {
+     "field": "AyahStudyResponse.similaritySummary",
+     "class": "USED"
+    },
+    {
+     "field": "AyahStudyResponse.tafsir",
+     "class": "USED"
+    },
+    {
+     "field": "AyahStudyResponse.translation",
+     "class": "USED"
+    },
+    {
+     "field": "FullI3RabEntryDto.isGroupLeader",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "FullI3RabEntryDto.shortNameAr",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "FullI3RabEntryDto.sourceLeaderVerseKey",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "SajdaDto.sajdahNumber",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "SajdaDto.sajdahType",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "SajdaDto.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "SelectedSourcesDto.fullI3rabSource",
+     "class": "USED"
+    },
+    {
+     "field": "SelectedSourcesDto.tafsirSource",
+     "class": "USED"
+    },
+    {
+     "field": "SelectedSourcesDto.translationSource",
+     "class": "USED"
+    },
+    {
+     "field": "SimilaritySummaryDto.mutashabihatGroupCount",
+     "class": "USED"
+    },
+    {
+     "field": "SimilaritySummaryDto.mutashabihatOccurrenceCount",
+     "class": "USED"
+    },
+    {
+     "field": "SimilaritySummaryDto.similarAyahCount",
+     "class": "USED"
+    },
+    {
+     "field": "TafsirEntryDto.coveredAyahCount",
+     "class": "USED"
+    },
+    {
+     "field": "TafsirEntryDto.coveredAyahKeys",
+     "class": "USED"
+    },
+    {
+     "field": "TafsirEntryDto.direction",
+     "class": "USED"
+    },
+    {
+     "field": "TafsirEntryDto.displayNameAr",
+     "class": "USED"
+    },
+    {
+     "field": "TafsirEntryDto.isGroupLeader",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "TafsirEntryDto.languageCode",
+     "class": "USED"
+    },
+    {
+     "field": "TafsirEntryDto.shortNameAr",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "TafsirEntryDto.sourceKey",
+     "class": "USED"
+    },
+    {
+     "field": "TafsirEntryDto.sourceLeaderVerseKey",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "TafsirEntryDto.sourceValueKind",
+     "class": "USED"
+    },
+    {
+     "field": "TafsirEntryDto.tafsirKind",
+     "class": "USED"
+    },
+    {
+     "field": "TafsirEntryDto.text",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "TranslationEntryDto.containsHtmlMarkup",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "TranslationEntryDto.direction",
+     "class": "USED"
+    },
+    {
+     "field": "TranslationEntryDto.displayNameAr",
+     "class": "USED"
+    },
+    {
+     "field": "TranslationEntryDto.displayNameEn",
+     "class": "USED"
+    },
+    {
+     "field": "TranslationEntryDto.languageCode",
+     "class": "USED"
+    },
+    {
+     "field": "TranslationEntryDto.sourceKey",
+     "class": "USED"
+    },
+    {
+     "field": "TranslationEntryDto.text",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "TranslationEntryDto.translationType",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 20000,
+    "high_end_bytes": 200000,
+    "confidence": "NEEDS_MEASUREMENT"
+   },
+   "recommendation": "Keep; optional field-level cleanup of FullI3RabEntryDto.isGroupLeader, FullI3RabEntryDto.shortNameAr, FullI3RabEntryDto.sourceLeaderVerseKey, SajdaDto.sajdahNumber, SajdaDto.sajdahType, TafsirEntryDto.isGroupLeader, TafsirEntryDto.shortNameAr, TafsirEntryDto.sourceLeaderVerseKey, TranslationEntryDto.containsHtmlMarkup (DTO-only / serialization-only — no query-shape change proven).",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/MushafReader/Ayahs/MushafAyahStudyController.cs:11 (MushafAyahStudyController.GetStudy)",
+    "Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetAyahStudy/GetAyahStudyHandler.cs:10 (GetAyahStudyHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/EfAyahStudyReader.cs:9 (EfAyahStudyReader : IAyahStudyReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/mushaf/data-access/mushaf-ayah-study.api.ts:34"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/mushaf/pages/{pageNumber}",
+   "tag": "MushafPages",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AyahRange.firstVerseKey",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "AyahRange.lastVerseKey",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "MushafLineDto.isCentered",
+     "class": "USED"
+    },
+    {
+     "field": "MushafLineDto.lineNumber",
+     "class": "USED"
+    },
+    {
+     "field": "MushafLineDto.lineType",
+     "class": "USED"
+    },
+    {
+     "field": "MushafLineDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "MushafLineDto.words",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "MushafPageResponse.ayahRange",
+     "class": "USED"
+    },
+    {
+     "field": "MushafPageResponse.lines",
+     "class": "USED"
+    },
+    {
+     "field": "MushafPageResponse.markers",
+     "class": "USED"
+    },
+    {
+     "field": "MushafPageResponse.navigation",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "MushafPageResponse.nextPageNumber",
+     "class": "USED"
+    },
+    {
+     "field": "MushafPageResponse.pageNumber",
+     "class": "USED"
+    },
+    {
+     "field": "MushafPageResponse.previousPageNumber",
+     "class": "USED"
+    },
+    {
+     "field": "MushafPageResponse.surahs",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "MushafWordDto.isAyahMarker",
+     "class": "USED"
+    },
+    {
+     "field": "MushafWordDto.lineWordOrder",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "MushafWordDto.textUthmani",
+     "class": "USED"
+    },
+    {
+     "field": "MushafWordDto.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "MushafWordDto.wordLocation",
+     "class": "USED"
+    },
+    {
+     "field": "MushafWordDto.wordNumber",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "PageMarkerDto.lineNumber",
+     "class": "USED"
+    },
+    {
+     "field": "PageMarkerDto.markerNumber",
+     "class": "USED"
+    },
+    {
+     "field": "PageMarkerDto.markerType",
+     "class": "USED"
+    },
+    {
+     "field": "PageMarkerDto.sajdahType",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "PageMarkerDto.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "PageMarkerDto.wordLocation",
+     "class": "USED"
+    },
+    {
+     "field": "PageNavigationSummary.hizbNumbers",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "PageNavigationSummary.juzNumbers",
+     "class": "USED"
+    },
+    {
+     "field": "PageNavigationSummary.rubNumbers",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "SurahOnPage.firstAyahOnPage",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "SurahOnPage.lastAyahOnPage",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "SurahOnPage.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "SurahOnPage.surahNumber",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 35000,
+    "high_end_bytes": 80000,
+    "confidence": "LIKELY"
+   },
+   "recommendation": "Keep; optional field-level cleanup of AyahRange.firstVerseKey, AyahRange.lastVerseKey, MushafWordDto.lineWordOrder, MushafWordDto.wordNumber, PageMarkerDto.sajdahType, PageNavigationSummary.hizbNumbers, PageNavigationSummary.rubNumbers, SurahOnPage.firstAyahOnPage, SurahOnPage.lastAyahOnPage (DTO-only / serialization-only — no query-shape change proven).",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/MushafReader/Pages/MushafPagesController.cs:12 (MushafPagesController.Get)",
+    "Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetMushafPage/GetMushafPageHandler.cs:11 (GetMushafPageHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/EfMushafPageReader.cs:8 (EfMushafPageReader : IMushafPageReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/mushaf/data-access/mushaf-pages.api.ts:15"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/mushaf/study-sources",
+   "tag": "MushafStudySourceCatalog",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "MushafStudySourceCatalogResponse.fullI3rabSources",
+     "class": "USED"
+    },
+    {
+     "field": "MushafStudySourceCatalogResponse.tafsirSources",
+     "class": "USED"
+    },
+    {
+     "field": "MushafStudySourceCatalogResponse.translationSources",
+     "class": "USED"
+    },
+    {
+     "field": "StudySourceCatalogItem.direction",
+     "class": "USED"
+    },
+    {
+     "field": "StudySourceCatalogItem.displayNameAr",
+     "class": "USED"
+    },
+    {
+     "field": "StudySourceCatalogItem.displayNameEn",
+     "class": "USED"
+    },
+    {
+     "field": "StudySourceCatalogItem.languageCode",
+     "class": "USED"
+    },
+    {
+     "field": "StudySourceCatalogItem.languageNameAr",
+     "class": "USED"
+    },
+    {
+     "field": "StudySourceCatalogItem.sourceKey",
+     "class": "USED"
+    },
+    {
+     "field": "StudySourceCatalogItem.tafsirKind",
+     "class": "USED"
+    },
+    {
+     "field": "StudySourceCatalogItem.translationType",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/MushafReader/Catalogs/MushafStudySourceCatalogController.cs:11 (MushafStudySourceCatalogController.Get)",
+    "Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetMushafStudySourceCatalog/GetMushafStudySourceCatalogHandler.cs:8 (GetMushafStudySourceCatalogHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/EfMushafStudySourceCatalogReader.cs:6 (EfMushafStudySourceCatalogReader : IMushafStudySourceCatalogReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/mushaf/data-access/mushaf-study-sources.api.ts:15"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/mushaf/surahs",
+   "tag": "MushafSurahCatalog",
+   "auth": "anonymous",
+   "frontend_status": "UNUSED_CANDIDATE",
+   "classification": "DELETE_OR_DEPRECATE_CANDIDATE",
+   "field_flags": [
+    {
+     "field": "MushafSurahCatalogItem.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "MushafSurahCatalogItem.startPageNumber",
+     "class": "USED"
+    },
+    {
+     "field": "MushafSurahCatalogItem.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "MushafSurahCatalogResponse.surahs",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 18000,
+    "high_end_bytes": 25000,
+    "confidence": "LIKELY"
+   },
+   "recommendation": "No frontend wrapper or call anywhere in src/e2e/testing/scripts; the surah-jump picker reads a build-time static catalog instead (mushaf-surah-juz-catalog.json, 838 lines; mushaf-reader.facade.ts:384). No Backend/tools or Backend/scripts consumer found by author grep. Out-of-repo consumers cannot be excluded (NEEDS_MEASUREMENT); smallest safe step is deprecation marking + access-log observation, not deletion. Removing the chain deletes ~125 backend LOC (controller 16 + query 3 + handler 15 + reader 51 + cached reader 23 + response DTO 9 + interface 8), 3 swagger schemas (839 bytes) and 2+ generated model files.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/MushafReader/Catalogs/MushafSurahCatalogController.cs:11 (MushafSurahCatalogController.Get)",
+    "Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetMushafSurahCatalog/GetMushafSurahCatalogHandler.cs:8 (GetMushafSurahCatalogHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/EfMushafSurahCatalogReader.cs:6 (EfMushafSurahCatalogReader : IMushafSurahCatalogReader)"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/mushaf/words/{wordLocation}/analysis",
+   "tag": "MushafWordAnalysis",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "SHRINK_RESPONSE",
+   "field_flags": [
+    {
+     "field": "LocalizedLabel.ar",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "LocalizedLabel.en",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "RenderedSegmentDto.displayTextStatus",
+     "class": "USED"
+    },
+    {
+     "field": "RenderedSegmentDto.i3rabRuleFamily",
+     "class": "EXPENSIVE_UNUSED_CANDIDATE",
+     "note": "only output of the QuranI3rabRules LEFT JOIN (EfWordAnalysisReader.cs:163); never rendered"
+    },
+    {
+     "field": "RenderedSegmentDto.i3rabRuleId",
+     "class": "EXPENSIVE_UNUSED_CANDIDATE",
+     "note": "with i3rabRuleFamily+i3rabRuleSignature it is the only output of the QuranI3rabRules LEFT JOIN (EfWordAnalysisReader.cs:148-150); never rendered"
+    },
+    {
+     "field": "RenderedSegmentDto.i3rabRuleSignature",
+     "class": "EXPENSIVE_UNUSED_CANDIDATE",
+     "note": "only output of the QuranI3rabRules LEFT JOIN (EfWordAnalysisReader.cs:162); never rendered"
+    },
+    {
+     "field": "RenderedSegmentDto.i3rabStatus",
+     "class": "USED"
+    },
+    {
+     "field": "RenderedSegmentDto.segmentColorSlot",
+     "class": "USED"
+    },
+    {
+     "field": "RenderedSegmentDto.segmentDisplayText",
+     "class": "USED"
+    },
+    {
+     "field": "RenderedSegmentDto.segmentFeatures",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "RenderedSegmentDto.segmentI3rabArabic",
+     "class": "USED"
+    },
+    {
+     "field": "RenderedSegmentDto.segmentKind",
+     "class": "USED"
+    },
+    {
+     "field": "RenderedSegmentDto.segmentLocation",
+     "class": "USED"
+    },
+    {
+     "field": "RenderedSegmentDto.segmentNumber",
+     "class": "USED"
+    },
+    {
+     "field": "RenderedSegmentDto.segmentPos",
+     "class": "USED"
+    },
+    {
+     "field": "RenderedSegmentDto.segmentPosLabel",
+     "class": "USED"
+    },
+    {
+     "field": "SegmentFeaturesDto.json",
+     "class": "USED"
+    },
+    {
+     "field": "SegmentFeaturesDto.raw",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "UniqueSimpleWordCountSummary.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueSimpleWordCountSummary.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "UniqueSimpleWordCountSummary.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueSimpleWordCountSummary.surahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueSimpleWordCountSummary.wordKeyImlaeiSimple",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "UniqueWordCountSummary.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordCountSummary.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "UniqueWordCountSummary.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordCountSummary.surahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordAnalysisResponse.identity",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordAnalysisResponse.morphology",
+     "class": "USED"
+    },
+    {
+     "field": "WordAnalysisResponse.renderedWordSegments",
+     "class": "USED"
+    },
+    {
+     "field": "WordAnalysisResponse.word",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordCountSummary.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordCountSummary.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordCountSummary.surahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordIdentityDto.orderedSimple",
+     "class": "USED"
+    },
+    {
+     "field": "WordIdentityDto.orderedTashkeel",
+     "class": "USED"
+    },
+    {
+     "field": "WordIdentityDto.uniqueSimple",
+     "class": "USED"
+    },
+    {
+     "field": "WordIdentityDto.uniqueTashkeel",
+     "class": "USED"
+    },
+    {
+     "field": "WordMorphologyDto.caseFeature",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "WordMorphologyDto.headPos",
+     "class": "USED"
+    },
+    {
+     "field": "WordMorphologyDto.headPosLabel",
+     "class": "USED"
+    },
+    {
+     "field": "WordMorphologyDto.isVerb",
+     "class": "USED"
+    },
+    {
+     "field": "WordMorphologyDto.lemma",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordMorphologyDto.root",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordMorphologyDto.stem",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordMorphologyDto.verbTense",
+     "class": "USED"
+    },
+    {
+     "field": "WordMorphologyDto.verbVoice",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "WordMorphologyLemma.buckwalter",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "WordMorphologyLemma.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordMorphologyLemma.text",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordMorphologyRoot.buckwalter",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "WordMorphologyRoot.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordMorphologyRoot.text",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordMorphologyStem.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordMorphologyStem.text",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordOccurrenceDto.ayahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordOccurrenceDto.lineNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordOccurrenceDto.lineWordOrder",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "WordOccurrenceDto.pageNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordOccurrenceDto.qpcGlyph",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "WordOccurrenceDto.quranWordId",
+     "class": "USED"
+    },
+    {
+     "field": "WordOccurrenceDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordOccurrenceDto.textImlaeiSimple",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "WordOccurrenceDto.textUthmani",
+     "class": "USED"
+    },
+    {
+     "field": "WordOccurrenceDto.textUthmaniSimple",
+     "class": "UNUSED_CANDIDATE"
+    },
+    {
+     "field": "WordOccurrenceDto.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "WordOccurrenceDto.wordLocation",
+     "class": "USED"
+    },
+    {
+     "field": "WordOccurrenceDto.wordNumber",
+     "class": "UNUSED_CANDIDATE"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 4000,
+    "high_end_bytes": 15000,
+    "confidence": "LIKELY"
+   },
+   "recommendation": "RenderedSegmentDto.i3rabRuleId/Family/Signature are the only outputs of the QuranI3rabRules LEFT JOIN (EfWordAnalysisReader.cs:148-163) and are never rendered — dropping all three removes the join (query-cost class 3). segmentFeatures (SegmentFeaturesDto) is generated-but-dead; WordMorphology* buckwalter/caseFeature/verbVoice and 5 WordOccurrenceDto fields are also unrendered (DTO-only). Single-word payload, so byte win is small; the join removal is the real win.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/MushafReader/Words/MushafWordAnalysisController.cs:11 (MushafWordAnalysisController.GetAnalysis)",
+    "Backend/application/QuranDashboard.Application/Quran/MushafReader/Queries/GetWordAnalysis/GetWordAnalysisHandler.cs:8 (GetWordAnalysisHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/EfWordAnalysisReader.cs:7 (EfWordAnalysisReader : IWordAnalysisReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/mushaf/data-access/mushaf-word-analysis.api.ts:15"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/roots",
+   "tag": "Roots",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "RootListItemDto.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootListItemDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "RootListItemDto.lemmasCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootListItemDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootListItemDto.rootText",
+     "class": "USED"
+    },
+    {
+     "field": "RootListItemDto.simpleWordsCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootListItemDto.stemsCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootListItemDto.surahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootListItemDto.tashkeelWordsCount",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 250000,
+    "high_end_bytes": 350000,
+    "confidence": "LIKELY"
+   },
+   "recommendation": "Frontend deliberately requests pageSize=1000 (words models constants) and renders via cdk-virtual-scroll with a per-query session cache — the large page is a design choice, not accidental over-fetch. All fields are consumed. The dominant payload cost is the default System.Text.Json non-ASCII escaping (\\uXXXX, 6 bytes per Arabic char; no AddJsonOptions anywhere in Backend/api) with no response-compression middleware — an encoder/compression finding, not a field-removal finding.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/RootsController.cs:31 (RootsController.Get)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Roots/Queries/GetRootsPage/GetRootsPageHandler.cs:18 (GetRootsPageHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Roots/EfRootsReader.cs:8 (EfRootsReader : IRootsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/roots.api.ts:46"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/roots/{id}",
+   "tag": "Roots",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "RootSummaryDto.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootSummaryDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "RootSummaryDto.lemmasCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootSummaryDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootSummaryDto.rootText",
+     "class": "USED"
+    },
+    {
+     "field": "RootSummaryDto.simpleWordsCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootSummaryDto.stemsCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootSummaryDto.surahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootSummaryDto.tashkeelWordsCount",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/RootsController.Details.cs:15 (RootsController.GetSummary)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Roots/Queries/GetRootSummary/GetRootSummaryHandler.cs:12 (GetRootSummaryHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Roots/EfRootsReader.cs:8 (EfRootsReader : IRootsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/roots.api.ts:53"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/roots/{id}/ayahs",
+   "tag": "Roots",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "RootAyahMatchDto.ayahId",
+     "class": "USED"
+    },
+    {
+     "field": "RootAyahMatchDto.pageNumber",
+     "class": "USED"
+    },
+    {
+     "field": "RootAyahMatchDto.surahNameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "RootAyahMatchDto.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "RootAyahMatchDto.words",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "RootAyahWordDto.isMatched",
+     "class": "USED"
+    },
+    {
+     "field": "RootAyahWordDto.textUthmani",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/RootsController.Details.cs:36 (RootsController.GetAyahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Roots/Queries/GetRootAyahs/GetRootAyahsHandler.cs:17 (GetRootAyahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Roots/EfRootsReader.cs:8 (EfRootsReader : IRootsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/roots.api.ts:77"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/roots/{id}/words/{wordKind}",
+   "tag": "Roots",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "RootWordItemDto.displayText",
+     "class": "USED"
+    },
+    {
+     "field": "RootWordItemDto.kind",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "RootWordItemDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootWordItemDto.uniqueWordId",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/RootsController.Details.cs:64 (RootsController.GetWords)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Roots/Queries/GetRootWords/GetRootWordsHandler.cs:17 (GetRootWordsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Roots/EfRootsReader.cs:8 (EfRootsReader : IRootsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/roots.api.ts:65"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/roots/{id}/surahs",
+   "tag": "Roots",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "RootSurahItemDto.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "RootSurahItemDto.occurrencesInSurah",
+     "class": "USED"
+    },
+    {
+     "field": "RootSurahItemDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "RootSurahsResponse.surahs",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/RootsController.Details.cs:96 (RootsController.GetSurahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Roots/Queries/GetRootMentionedSurahs/GetRootMentionedSurahsHandler.cs:14 (GetRootMentionedSurahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Roots/EfRootsReader.cs:8 (EfRootsReader : IRootsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/roots.api.ts:84"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/roots/{id}/missing-surahs",
+   "tag": "Roots",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "MissingSurahItemDto.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "MissingSurahItemDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "RootMissingSurahsResponse.surahs",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/RootsController.Details.cs:117 (RootsController.GetMissingSurahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Roots/Queries/GetRootMissingSurahs/GetRootMissingSurahsHandler.cs:14 (GetRootMissingSurahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Roots/EfRootsReader.cs:8 (EfRootsReader : IRootsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/roots.api.ts:90"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/roots/{id}/lemmas",
+   "tag": "Roots",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "RootLemmaItemDto.lemmaId",
+     "class": "USED"
+    },
+    {
+     "field": "RootLemmaItemDto.lemmaText",
+     "class": "USED"
+    },
+    {
+     "field": "RootLemmaItemDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootLemmasResponse.lemmas",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/RootsController.Details.cs:138 (RootsController.GetLemmas)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Roots/Queries/GetRootLemmas/GetRootLemmasHandler.cs:13 (GetRootLemmasHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Roots/EfRootsReader.cs:8 (EfRootsReader : IRootsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/roots.api.ts:96"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/roots/{id}/stems",
+   "tag": "Roots",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "RootStemItemDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "RootStemItemDto.stemId",
+     "class": "USED"
+    },
+    {
+     "field": "RootStemItemDto.stemText",
+     "class": "USED"
+    },
+    {
+     "field": "RootStemsResponse.stems",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/RootsController.Details.cs:159 (RootsController.GetStems)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Roots/Queries/GetRootStems/GetRootStemsHandler.cs:13 (GetRootStemsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Roots/EfRootsReader.cs:8 (EfRootsReader : IRootsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/roots.api.ts:102"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/stems",
+   "tag": "Stems",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "StemListItemDto.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "StemListItemDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "StemListItemDto.lemmaId",
+     "class": "USED"
+    },
+    {
+     "field": "StemListItemDto.lemmaText",
+     "class": "USED"
+    },
+    {
+     "field": "StemListItemDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "StemListItemDto.rootId",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "StemListItemDto.rootText",
+     "class": "USED"
+    },
+    {
+     "field": "StemListItemDto.simpleWordsCount",
+     "class": "USED"
+    },
+    {
+     "field": "StemListItemDto.stemText",
+     "class": "USED"
+    },
+    {
+     "field": "StemListItemDto.surahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "StemListItemDto.tashkeelWordsCount",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 250000,
+    "high_end_bytes": 350000,
+    "confidence": "LIKELY"
+   },
+   "recommendation": "Frontend deliberately requests pageSize=1000 (words models constants) and renders via cdk-virtual-scroll with a per-query session cache — the large page is a design choice, not accidental over-fetch. All fields are consumed. The dominant payload cost is the default System.Text.Json non-ASCII escaping (\\uXXXX, 6 bytes per Arabic char; no AddJsonOptions anywhere in Backend/api) with no response-compression middleware — an encoder/compression finding, not a field-removal finding.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/StemsController.cs:29 (StemsController.Get)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Stems/Queries/GetStemsPage/GetStemsPageHandler.cs:17 (GetStemsPageHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Stems/EfStemsReader.cs:8 (EfStemsReader : IStemsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/stems.api.ts:51"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/stems/{id}",
+   "tag": "Stems",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "StemSummaryDto.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "StemSummaryDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "StemSummaryDto.lemmaId",
+     "class": "USED"
+    },
+    {
+     "field": "StemSummaryDto.lemmaText",
+     "class": "USED"
+    },
+    {
+     "field": "StemSummaryDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "StemSummaryDto.rootId",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "StemSummaryDto.rootText",
+     "class": "USED"
+    },
+    {
+     "field": "StemSummaryDto.simpleWordsCount",
+     "class": "USED"
+    },
+    {
+     "field": "StemSummaryDto.stemText",
+     "class": "USED"
+    },
+    {
+     "field": "StemSummaryDto.surahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "StemSummaryDto.tashkeelWordsCount",
+     "class": "USED"
+    },
+    {
+     "field": "StemSummaryDto.typeDistribution",
+     "class": "USED"
+    },
+    {
+     "field": "TypeSummaryDto.arabicLabel",
+     "class": "USED"
+    },
+    {
+     "field": "TypeSummaryDto.code",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "TypeSummaryDto.occurrencesCount",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/StemsController.cs:78 (StemsController.GetSummary)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Stems/Queries/GetStemSummary/GetStemSummaryHandler.cs:12 (GetStemSummaryHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Stems/EfStemsReader.cs:8 (EfStemsReader : IStemsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/stems.api.ts:58"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/stems/{id}/words/{wordKind}",
+   "tag": "Stems",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "StemWordItemDto.displayText",
+     "class": "USED"
+    },
+    {
+     "field": "StemWordItemDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "StemWordItemDto.uniqueWordId",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/StemsController.cs:99 (StemsController.GetWords)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Stems/Queries/GetStemWords/GetStemWordsHandler.cs:17 (GetStemWordsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Stems/EfStemsReader.cs:8 (EfStemsReader : IStemsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/stems.api.ts:70"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/stems/{id}/ayahs",
+   "tag": "Stems",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "StemAyahMatchDto.ayahId",
+     "class": "USED"
+    },
+    {
+     "field": "StemAyahMatchDto.pageNumber",
+     "class": "USED"
+    },
+    {
+     "field": "StemAyahMatchDto.surahNameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "StemAyahMatchDto.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "StemAyahMatchDto.words",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "StemAyahWordDto.isMatched",
+     "class": "USED"
+    },
+    {
+     "field": "StemAyahWordDto.textUthmani",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/StemsController.cs:131 (StemsController.GetAyahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Stems/Queries/GetStemAyahs/GetStemAyahsHandler.cs:17 (GetStemAyahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Stems/EfStemsReader.cs:8 (EfStemsReader : IStemsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/stems.api.ts:86"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/stems/{id}/surahs",
+   "tag": "Stems",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "StemSurahItemDto.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "StemSurahItemDto.occurrencesInSurah",
+     "class": "USED"
+    },
+    {
+     "field": "StemSurahItemDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "StemSurahsResponse.surahs",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/StemsController.cs:161 (StemsController.GetSurahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Stems/Queries/GetStemMentionedSurahs/GetStemMentionedSurahsHandler.cs:14 (GetStemMentionedSurahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Stems/EfStemsReader.cs:8 (EfStemsReader : IStemsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/stems.api.ts:93"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/stems/{id}/missing-surahs",
+   "tag": "Stems",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "MissingSurahItemDto.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "MissingSurahItemDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "StemMissingSurahsResponse.surahs",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/StemsController.cs:182 (StemsController.GetMissingSurahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Stems/Queries/GetStemMissingSurahs/GetStemMissingSurahsHandler.cs:14 (GetStemMissingSurahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Stems/EfStemsReader.cs:8 (EfStemsReader : IStemsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/stems.api.ts:99"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/stems/{id}/lemmas",
+   "tag": "Stems",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "StemLemmaItemDto.lemmaId",
+     "class": "USED"
+    },
+    {
+     "field": "StemLemmaItemDto.lemmaText",
+     "class": "USED"
+    },
+    {
+     "field": "StemLemmaItemDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "StemLemmasResponse.lemmas",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/StemsController.cs:203 (StemsController.GetLemmas)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Stems/Queries/GetStemLemmas/GetStemLemmasHandler.cs:12 (GetStemLemmasHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Stems/EfStemsReader.cs:8 (EfStemsReader : IStemsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/stems.api.ts:105"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/unique/{kind}",
+   "tag": "UniqueWords",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "UniqueWordListItemDto.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordListItemDto.displayText",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordListItemDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "UniqueWordListItemDto.kind",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "UniqueWordListItemDto.missingSurahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordListItemDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordListItemDto.primaryWordTypeBroadArabicLabel",
+     "class": "EXPENSIVE_USED",
+     "note": "rendered; same extra query as primaryWordTypeCode"
+    },
+    {
+     "field": "UniqueWordListItemDto.primaryWordTypeCode",
+     "class": "EXPENSIVE_USED",
+     "note": "rendered; requires LoadPrimaryWordTypesAsync extra query per page (EfUniqueWordsReader.cs:42-44)"
+    },
+    {
+     "field": "UniqueWordListItemDto.rootId",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "UniqueWordListItemDto.rootText",
+     "class": "EXPENSIVE_USED",
+     "note": "rendered; requires LoadPrimaryRootsAsync extra query per page (EfUniqueWordsReader.cs:44)"
+    },
+    {
+     "field": "UniqueWordListItemDto.surahsCount",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 280000,
+    "high_end_bytes": 400000,
+    "confidence": "LIKELY"
+   },
+   "recommendation": "Frontend deliberately requests pageSize=1000 (words models constants) and renders via cdk-virtual-scroll with a per-query session cache — the large page is a design choice, not accidental over-fetch. All fields are consumed. The dominant payload cost is the default System.Text.Json non-ASCII escaping (\\uXXXX, 6 bytes per Arabic char; no AddJsonOptions anywhere in Backend/api) with no response-compression middleware — an encoder/compression finding, not a field-removal finding.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/UniqueWordsController.cs:25 (UniqueWordsController.Get)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordsPage/GetUniqueWordsPageHandler.cs:19 (GetUniqueWordsPageHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs:8 (EfUniqueWordsReader : IUniqueWordsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/unique-words.api.ts:50"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/unique/{kind}/{id}",
+   "tag": "UniqueWords",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "UniqueWordSummaryDto.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordSummaryDto.displayText",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordSummaryDto.id",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "UniqueWordSummaryDto.kind",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "UniqueWordSummaryDto.missingSurahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordSummaryDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordSummaryDto.surahsCount",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/UniqueWordsController.cs:72 (UniqueWordsController.GetSummary)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordSummary/GetUniqueWordSummaryHandler.cs:12 (GetUniqueWordSummaryHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs:8 (EfUniqueWordsReader : IUniqueWordsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/unique-words.api.ts:69"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/unique/{kind}/{id}/surahs",
+   "tag": "UniqueWords",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "UniqueWordSurahItemDto.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordSurahItemDto.occurrencesInSurah",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordSurahItemDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordSurahsResponse.surahs",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/UniqueWordsController.cs:96 (UniqueWordsController.GetSurahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordSurahs/GetUniqueWordSurahsHandler.cs:12 (GetUniqueWordSurahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs:8 (EfUniqueWordsReader : IUniqueWordsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/unique-words.api.ts:60"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/unique/{kind}/{id}/missing-surahs",
+   "tag": "UniqueWords",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "MissingSurahItemDto.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "MissingSurahItemDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordMissingSurahsResponse.surahs",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/UniqueWordsController.cs:120 (UniqueWordsController.GetMissingSurahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordMissingSurahs/GetUniqueWordMissingSurahsHandler.cs:12 (GetUniqueWordMissingSurahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs:8 (EfUniqueWordsReader : IUniqueWordsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/unique-words.api.ts:78"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/unique/{kind}/{id}/ayahs",
+   "tag": "UniqueWords",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AyahWordForHighlightDto.isAyahMarker",
+     "class": "USED"
+    },
+    {
+     "field": "AyahWordForHighlightDto.quranWordId",
+     "class": "USED"
+    },
+    {
+     "field": "AyahWordForHighlightDto.textUthmani",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordAyahMatchDto.ayahId",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordAyahMatchDto.ayahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordAyahMatchDto.matchedQuranWordIds",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordAyahMatchDto.pageNumber",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordAyahMatchDto.surahNameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordAyahMatchDto.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "UniqueWordAyahMatchDto.words",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/UniqueWordsController.cs:144 (UniqueWordsController.GetAyahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/Queries/GetUniqueWordAyahs/GetUniqueWordAyahsHandler.cs:16 (GetUniqueWordAyahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs:8 (EfUniqueWordsReader : IUniqueWordsReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/unique-words.api.ts:90"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/word-types/table/{kind}/{dimensionId}",
+   "tag": "WordTypeGroupedDetails",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "WordTypeGroupedSummaryDto.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedSummaryDto.dimensionId",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedSummaryDto.displayText",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedSummaryDto.kind",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeGroupedSummaryDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedSummaryDto.surahsCount",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/WordTypeGroupedDetailsController.cs:21 (WordTypeGroupedDetailsController.GetSummary)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeGroupedSummary/GetWordTypeGroupedSummaryHandler.cs:12 (GetWordTypeGroupedSummaryHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs:8 (EfWordTypesReader : IWordTypesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/word-types.api.ts:157"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/word-types/table/{kind}/{dimensionId}/words",
+   "tag": "WordTypeGroupedDetails",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "WordTypeGroupedMemberWordDto.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.broadLabel",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.case",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.caseOrFeature",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.contextCode",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.displayText",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.lemmaText",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.rootText",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.stemText",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.surahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.tashkeelWordId",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.tense",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.typeCode",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.typeLabel",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeGroupedMemberWordDto.voice",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeLabelDto.ar",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/WordTypeGroupedDetailsController.cs:52 (WordTypeGroupedDetailsController.GetWords)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeGroupedWords/GetWordTypeGroupedWordsHandler.cs:12 (GetWordTypeGroupedWordsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs:8 (EfWordTypesReader : IWordTypesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/word-types.api.ts:171"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/word-types/table/{kind}/{dimensionId}/ayahs",
+   "tag": "WordTypeGroupedDetails",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AyahWordForHighlightDto.isAyahMarker",
+     "class": "USED"
+    },
+    {
+     "field": "AyahWordForHighlightDto.quranWordId",
+     "class": "USED"
+    },
+    {
+     "field": "AyahWordForHighlightDto.textUthmani",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.ayahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.matchedWordIds",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.matchedWordPositions",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.pageNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.words",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/WordTypeGroupedDetailsController.cs:89 (WordTypeGroupedDetailsController.GetAyahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeGroupedAyahs/GetWordTypeGroupedAyahsHandler.cs:12 (GetWordTypeGroupedAyahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs:8 (EfWordTypesReader : IWordTypesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/word-types.api.ts:186"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/word-types/table/{kind}/{dimensionId}/surahs",
+   "tag": "WordTypeGroupedDetails",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "WordTypeMissingSurahDto.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeMissingSurahDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSurahOccurrenceDto.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSurahOccurrenceDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSurahOccurrenceDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSurahsResponse.missingSurahs",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSurahsResponse.surahs",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/WordTypeGroupedDetailsController.cs:126 (WordTypeGroupedDetailsController.GetSurahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeGroupedSurahs/GetWordTypeGroupedSurahsHandler.cs:12 (GetWordTypeGroupedSurahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs:8 (EfWordTypesReader : IWordTypesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/word-types.api.ts:193"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/word-types/tree",
+   "tag": "WordTypes",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "WordTypeChildNodeDto.childCode",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeChildNodeDto.code",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeChildNodeDto.count",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeChildNodeDto.label",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeFilterOptionDto.code",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeFilterOptionDto.label",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeLabelDto.ar",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeSecondaryFilterDto.kind",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeSecondaryFilterDto.options",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeSecondaryFilterDto.voiceOptions",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeTreeDto.mainTypes",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeTreeNodeDto.children",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeTreeNodeDto.code",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeTreeNodeDto.count",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeTreeNodeDto.label",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeTreeNodeDto.secondaryFilter",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 8000,
+    "high_end_bytes": 20000,
+    "confidence": "NEEDS_MEASUREMENT"
+   },
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/WordTypesController.cs:28 (WordTypesController.GetTree)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeTree/GetWordTypeTreeHandler.cs:12 (GetWordTypeTreeHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs:8 (EfWordTypesReader : IWordTypesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/word-types.api.ts:55"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/word-types/words",
+   "tag": "WordTypes",
+   "auth": "anonymous",
+   "frontend_status": "UNUSED_CANDIDATE",
+   "classification": "DELETE_OR_DEPRECATE_CANDIDATE",
+   "field_flags": [
+    {
+     "field": "WordTypeLabelDto.ar",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeRowDto.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeRowDto.broadLabel",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeRowDto.caseOrFeature",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeRowDto.contextCode",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeRowDto.displayText",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeRowDto.lemmaText",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeRowDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeRowDto.rootText",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeRowDto.stemText",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeRowDto.surahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeRowDto.tashkeelWordId",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeRowDto.typeCode",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeRowDto.typeLabel",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 400000,
+    "high_end_bytes": 550000,
+    "confidence": "LIKELY"
+   },
+   "recommendation": "Wrapper WordTypesApi.getRows has zero production callers (3 spec-file callers only); the explorer uses GET /api/words/word-types/table, whose Words view internally reuses the same EF reader method (EfWordTypesReader.cs:119), so the reader itself stays. Removal surface: controller action ~33 LOC (WordTypesController.cs:40-72), GetWordTypeRowsQuery 15 + GetWordTypeRowsHandler 86 LOC, frontend getRows wrapper + WordTypesCacheKeys.rows factory + 3 spec tests, 3 swagger schemas (1,700 bytes). No tool/script consumer found by author grep; out-of-repo consumers unmeasured.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/WordTypesController.cs:41 (WordTypesController.GetRows)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeRows/GetWordTypeRowsHandler.cs:13 (GetWordTypeRowsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs:8 (EfWordTypesReader : IWordTypesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/word-types.api.ts:88"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/word-types/table",
+   "tag": "WordTypes",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "WordTypeLabelDto.ar",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeTableRowDto.kind",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": {
+    "typical_bytes": 350000,
+    "high_end_bytes": 500000,
+    "confidence": "LIKELY"
+   },
+   "recommendation": "Frontend deliberately requests pageSize=1000 (words models constants) and renders via cdk-virtual-scroll with a per-query session cache — the large page is a design choice, not accidental over-fetch. All fields are consumed. The dominant payload cost is the default System.Text.Json non-ASCII escaping (\\uXXXX, 6 bytes per Arabic char; no AddJsonOptions anywhere in Backend/api) with no response-compression middleware — an encoder/compression finding, not a field-removal finding.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/WordTypesController.cs:75 (WordTypesController.GetTable)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeTable/GetWordTypeTableHandler.cs:12 (GetWordTypeTableHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs:8 (EfWordTypesReader : IWordTypesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/word-types.api.ts:123"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/word-types/scope-counts",
+   "tag": "WordTypes",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "WordTypeScopeCountsDto.lemmasCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeScopeCountsDto.rootsCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeScopeCountsDto.stemsCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeScopeCountsDto.wordsCount",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/WordTypesController.cs:112 (WordTypesController.GetScopeCounts)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeScopeCounts/GetWordTypeScopeCountsHandler.cs:12 (GetWordTypeScopeCountsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs:8 (EfWordTypesReader : IWordTypesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/word-types.api.ts:153"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/word-types/words/{tashkeelWordId}",
+   "tag": "WordTypes",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "WordTypeLabelDto.ar",
+     "class": "UNKNOWN_CONSUMER"
+    },
+    {
+     "field": "WordTypeSummaryDto.ayahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSummaryDto.broadLabel",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSummaryDto.caseOrFeature",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSummaryDto.contextCode",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSummaryDto.displayText",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSummaryDto.lemmaText",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSummaryDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSummaryDto.rootText",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSummaryDto.stemText",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSummaryDto.surahsCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSummaryDto.tashkeelWordId",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSummaryDto.typeLabel",
+     "class": "USED"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/WordTypesController.Details.cs:11 (WordTypesController.GetSummary)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeSummary/GetWordTypeSummaryHandler.cs:13 (GetWordTypeSummaryHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs:8 (EfWordTypesReader : IWordTypesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/word-types.api.ts:199"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/word-types/words/{tashkeelWordId}/ayahs",
+   "tag": "WordTypes",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "AyahWordForHighlightDto.isAyahMarker",
+     "class": "USED"
+    },
+    {
+     "field": "AyahWordForHighlightDto.quranWordId",
+     "class": "USED"
+    },
+    {
+     "field": "AyahWordForHighlightDto.textUthmani",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.ayahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.matchedWordIds",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.matchedWordPositions",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.pageNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.verseKey",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeAyahMatchDto.words",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/WordTypesController.Details.cs:36 (WordTypesController.GetAyahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeAyahs/GetWordTypeAyahsHandler.cs:13 (GetWordTypeAyahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs:8 (EfWordTypesReader : IWordTypesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/word-types.api.ts:211"
+   ]
+  },
+  {
+   "method": "GET",
+   "route": "/api/words/word-types/words/{tashkeelWordId}/surahs",
+   "tag": "WordTypes",
+   "auth": "anonymous",
+   "frontend_status": "USED",
+   "classification": "KEEP",
+   "field_flags": [
+    {
+     "field": "WordTypeMissingSurahDto.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeMissingSurahDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSurahOccurrenceDto.nameArabic",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSurahOccurrenceDto.occurrencesCount",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSurahOccurrenceDto.surahNumber",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSurahsResponse.missingSurahs",
+     "class": "USED"
+    },
+    {
+     "field": "WordTypeSurahsResponse.surahs",
+     "class": "UNKNOWN_CONSUMER"
+    }
+   ],
+   "payload_estimate": null,
+   "recommendation": "Keep as-is.",
+   "evidence": [
+    "Backend/api/QuranDashboard.Api/Controllers/Words/WordTypesController.Details.cs:65 (WordTypesController.GetSurahs)",
+    "Backend/application/QuranDashboard.Application/Quran/Words/WordTypes/Queries/GetWordTypeSurahs/GetWordTypeSurahsHandler.cs:13 (GetWordTypeSurahsHandler)",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/WordTypes/EfWordTypesReader.cs:8 (EfWordTypesReader : IWordTypesReader)",
+    "Frontend/quran-dashboard-ui/src/app/features/words/data-access/word-types.api.ts:218"
+   ]
+  }
+ ]
+}

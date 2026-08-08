@@ -1,0 +1,706 @@
+{
+ "meta": {
+  "task": "Git-history + lifecycle evidence",
+  "repo": "/projects/Dashboard/App",
+  "branch": "dev",
+  "head": "72792ba9 Merge access catalogue readiness feature",
+  "generated": "2026-08-08",
+  "method": "read-only git log/show/ls-tree archaeology; monorepo history includes two git-subtree imports on 2026-07-10 (Backend: 258a8d1b, Frontend: 6e023081) whose pre-import commits carry unprefixed paths, measured via the imported parents dc9fd9c1 (Backend) and 0f4cedc3 (Frontend)",
+  "token_estimate_rule": "bytes/4"
+ },
+ "agents_claude_history": {
+  "root_pair": {
+   "files": [
+    "AGENTS.md",
+    "CLAUDE.md"
+   ],
+   "created": {
+    "commit": "babb51c9",
+    "date": "2026-06-06",
+    "subject": "chore: initialize spec kit and agent tooling",
+    "created_identical": true
+   },
+   "which_came_first": "same commit — both files were created byte-identical in babb51c9 (2026-06-06); neither predates the other",
+   "current_state": "byte-identical (md5 b5b98283…, 14915 bytes each = ~3729 tokens duplicated)",
+   "commit_counts": {
+    "AGENTS.md": 42,
+    "CLAUDE.md": 64,
+    "note": "no-follow counts; CLAUDE.md is edited ~50% more often, AGENTS.md is periodically re-synced to it"
+   },
+   "identity_transitions": [
+    {
+     "state": "SAME",
+     "commit": "babb51c9",
+     "date": "2026-06-06",
+     "subject": "chore: initialize spec kit and agent tooling"
+    },
+    {
+     "state": "DIFF",
+     "commit": "398803d2",
+     "date": "2026-06-06",
+     "subject": "chore: add impeccable product and design context"
+    },
+    {
+     "state": "SAME",
+     "commit": "f5abff7a",
+     "date": "2026-07-27",
+     "subject": "docs: planning-artifact lifecycle rule + cleanup of closed-feature folders"
+    },
+    {
+     "state": "DIFF",
+     "commit": "d0631a14",
+     "date": "2026-07-28",
+     "subject": "feat(e2e): wire the browser E2E layer into the testing strategy and instruction files"
+    },
+    {
+     "state": "SAME",
+     "commit": "1aa2ead1",
+     "date": "2026-07-28",
+     "subject": "docs(smoke): activate the route-smoke tier across the testing strategy"
+    },
+    {
+     "state": "DIFF",
+     "commit": "041f4935",
+     "date": "2026-07-29",
+     "subject": "feat(abwab): doors page foundation — state, data-access, tree, modal"
+    },
+    {
+     "state": "SAME",
+     "commit": "ebddf2a5",
+     "date": "2026-08-04",
+     "subject": "docs(abwab): close the three HIGH contradictions and re-key the abwab smoke debt — identical ever since"
+    }
+   ],
+   "drift_pattern": "3 documented drift→resync cycles in 2 months; drift happens because CLAUDE.md gets edited alone, then a later commit notices and re-mirrors",
+   "confidence": "CONFIRMED"
+  },
+  "backend_pair": {
+   "files": [
+    "Backend/AGENTS.md",
+    "Backend/CLAUDE.md"
+   ],
+   "created": {
+    "commit": "fe542351",
+    "date": "2026-06-06",
+    "subject": "Add backend project instruction files",
+    "note": "created together in the pre-monorepo Backend repo (parent line dc9fd9c1)"
+   },
+   "imported": {
+    "commit": "258a8d1b",
+    "date": "2026-07-10",
+    "subject": "chore(repo): import Backend history (git-subtree-dir: Backend)"
+   },
+   "current_state": "byte-identical (md5 9d25a864…, 7335 bytes each = ~1834 tokens duplicated)",
+   "identity_transitions": [
+    {
+     "state": "SAME",
+     "commit": "258a8d1b",
+     "date": "2026-07-10",
+     "subject": "identical at import and in all 9 monorepo commits touching the pair"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  "frontend_pair": {
+   "files": [
+    "Frontend/quran-dashboard-ui/AGENTS.md",
+    "Frontend/quran-dashboard-ui/CLAUDE.md"
+   ],
+   "created": {
+    "commit": "6b2c2084",
+    "date": "2026-06-06",
+    "subject": "Add frontend project instruction files",
+    "note": "created together in the pre-monorepo Frontend repo (parent line 0f4cedc3)"
+   },
+   "imported": {
+    "commit": "6e023081",
+    "date": "2026-07-10",
+    "subject": "chore(repo): import Frontend history"
+   },
+   "current_state": "NEVER byte-identical in monorepo history (DIFF at import and in all 6 pair commits), but the entire diff is one line: the H1 title ('# Frontend Agent Guide' vs '# Frontend Project Instructions'); 4016 vs 4025 bytes",
+   "confidence": "CONFIRMED"
+  },
+  "sync_intent_commits": [
+   {
+    "commit": "f5abff7a",
+    "date": "2026-07-27",
+    "evidence": "commit body: rule text 'added to CLAUDE.md §Workspace Path Conventions (mirrored byte-identical into AGENTS.md)' and 'Verified: … root and Backend CLAUDE.md/AGENTS.md pairs byte-identical'"
+   },
+   {
+    "commit": "ebddf2a5",
+    "date": "2026-08-04",
+    "evidence": "commit body: 'The two files are mirrors; they are byte-identical again' (finding F02: AGENTS.md still named abwab-doors-a open while CLAUDE.md said None)"
+   },
+   {
+    "commit": "f5abff7a",
+    "date": "2026-07-27",
+    "evidence": "same commit removed .opencode/ (15 tracked command files): 'this is a Claude-only workspace and stale duplicate instruction copies are exactly the hazard this rule exists to kill'"
+   }
+  ],
+  "interpretation": "The mirror policy is explicit and enforced by hand. Root-pair drift has recurred 3 times; each resync required a dedicated audit finding or sweep. Frontend pair was left one title-line apart, so it never registers as 'identical' by hash even though it is a mirror in substance.",
+  "interpretation_confidence": "CONFIRMED"
+ },
+ "cursor_codex": {
+  "cursor_rule": {
+   "path": ".cursor/rules/always-read-agents.mdc",
+   "size_bytes": 9387,
+   "created": {
+    "commit": "200cff9b",
+    "date": "2026-06-08",
+    "subject": "Update Backend pointer; mark Quran foundation phase 4 (US2) complete"
+   },
+   "history": [
+    {
+     "commit": "200cff9b",
+     "date": "2026-06-08"
+    },
+    {
+     "commit": "058fa245",
+     "date": "2026-06-20",
+     "subject": "Update Frontend submodule and document capped Vitest test runs."
+    },
+    {
+     "commit": "658e30c3",
+     "date": "2026-07-10",
+     "subject": "docs(repo): adopt monorepo workflows"
+    },
+    {
+     "commit": "ad898826",
+     "date": "2026-07-28",
+     "subject": "docs: wire TESTING_STRATEGY.md back into the instruction paths"
+    },
+    {
+     "commit": "9ed3a5d8",
+     "date": "2026-08-06",
+     "subject": "docs: codify scope-aware test execution"
+    }
+   ],
+   "status": "actively maintained (last touched 2026-08-06, two days before HEAD); it is a third full copy of the instruction routing plus its own test/commit/verification rules, and states 'Do not rely on CLAUDE.md … CLAUDE.md is for Claude-specific behavior'",
+   "confidence": "CONFIRMED"
+  },
+  "codex_dir": {
+   "path": ".codex/",
+   "tracked": false,
+   "evidence": "git ls-tree -r HEAD -- .codex → empty; git log -- .codex → no commits; directory exists on disk, empty (mtime Aug 7)",
+   "classification": "untracked empty local directory, almost certainly auto-created by the Codex CLI on launch; git has never tracked anything there",
+   "confidence": "LIKELY (tool-created; tracked-status CONFIRMED)"
+  },
+  "codex_commits": [
+   {
+    "commit": "6c944e8d",
+    "date": "2026-06-11",
+    "subject": "Add project-local Codex skills",
+    "note": "added Codex-facing skill copies under .agents/skills/**/agents/openai.yaml — NOT under .codex/"
+   },
+   {
+    "commit": "872f0adf",
+    "date": "2026-07-15",
+    "subject": "fix(words): address Codex + CodeRabbit review on #29",
+    "note": "Codex used as a PR reviewer"
+   },
+   {
+    "commit": "f5abff7a",
+    "date": "2026-07-27",
+    "subject": "removed .opencode/ declaring 'this is a Claude-only workspace'",
+    "note": ".agents/ (Codex-facing) and .cursor/ survived that declaration"
+   }
+  ],
+  "confidence": "CONFIRMED"
+ },
+ "ui_style_system": {
+  "path": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+  "current_size": {
+   "lines": 1658,
+   "bytes": 103970,
+   "approx_tokens": 25993
+  },
+  "created": {
+   "commit": "7892b9bf",
+   "date": "2026-06-06",
+   "subject": "Add UI style system and update instruction files",
+   "initial_lines": 333,
+   "note": "in the pre-monorepo Frontend repo"
+  },
+  "total_commits_touching": 46,
+  "total_insertions": 2250,
+  "total_deletions": 432,
+  "numstat_caveat": "insertion totals double-count 2 merge commits (26dcab9e PR #32 and fef39610 release #33 show the same 238/78 diff); cumulative estimate 1818 vs actual 1658 lines — trajectory shape is reliable, absolute tail is ~10% inflated",
+  "top5_growth_commits": [
+   {
+    "hash": "7892b9bf",
+    "date": "2026-06-06",
+    "subject": "Add UI style system and update instruction files",
+    "ins": 333,
+    "dels": 0
+   },
+   {
+    "hash": "26dcab9e",
+    "date": "2026-07-17",
+    "subject": "Flat-green light restyle + explorer/overlay polish (029/030) + words explainers (031) (#32)",
+    "ins": 238,
+    "dels": 78
+   },
+   {
+    "hash": "fef39610",
+    "date": "2026-07-18",
+    "subject": "Release dev → main: flat-green restyle + explorers/overlay polish (029/030) + words explainers (031) (#33)",
+    "ins": 238,
+    "dels": 78
+   },
+   {
+    "hash": "bbceed27",
+    "date": "2026-07-15",
+    "subject": "feat(styles): color-doctrine tokens + UI_STYLE_SYSTEM §16/§17",
+    "ins": 187,
+    "dels": 12
+   },
+   {
+    "hash": "cf2197f1",
+    "date": "2026-06-20",
+    "subject": "Document Real Pages navy + gold + parchment visual identity adoption.",
+    "ins": 177,
+    "dels": 16
+   }
+  ],
+  "line_trajectory": [
+   {
+    "date": "2026-06-06",
+    "approx_lines": 333
+   },
+   {
+    "date": "2026-07-18",
+    "approx_lines": 1016
+   },
+   {
+    "date": "2026-07-30",
+    "approx_lines": 1139
+   },
+   {
+    "date": "2026-07-30",
+    "approx_lines": 1252
+   },
+   {
+    "date": "2026-08-01",
+    "approx_lines": 1508
+   },
+   {
+    "date": "2026-08-02",
+    "approx_lines": 1571
+   },
+   {
+    "date": "2026-08-02",
+    "approx_lines": 1745
+   },
+   {
+    "date": "2026-08-04",
+    "approx_lines": 1818
+   }
+  ],
+  "growth_shape": "333 lines at birth (2026-06-06) → ~1016 by 2026-07-18 → 1658 at HEAD; growth is dozens of small per-feature/per-slice appends (July 30 – Aug 4 alone: ~20 commits adding 5–121 lines each, subjects citing 'Slice A phase 7', 'ux-slice-b2', qd-confirm-dialog, qd-context-menu, qd-tabs …)",
+  "historical_narrative_evidence": {
+   "superseded_section_retained": "§15 'Prototype-Derived Implementation Contract (Navy + Gold + Parchment — superseded)' spans lines 399–573 (~174 lines kept after being superseded)",
+   "evidence": [
+    "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md:399",
+    "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md:573",
+    "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md:690"
+   ],
+   "append_pattern": "§17 'Component contracts' (line 690 → EOF, ~968 lines = 58% of the file) accretes one contract block per shipped primitive; git log shows each shipped primitive/slice appending its own block in its feature commit",
+   "verdict": "history CONFIRMS the per-feature-append hypothesis: the file is grown in-feature, section by section, and at least one superseded era (§15) is retained in place"
+  },
+  "confidence": "CONFIRMED"
+ },
+ "testing_debt": {
+  "path": "docs/TESTING_DEBT.md",
+  "created": {
+   "commit": "27798ca8",
+   "date": "2026-07-29",
+   "subject": "docs(abwab): document the relations read/write paths, record the testing debt, re-measure the tiers",
+   "initial_lines": 36
+  },
+  "current_size": {
+   "lines": 302,
+   "table_rows": 33,
+   "sections": 14
+  },
+  "total_commits_touching": 32,
+  "commits_by_month": {
+   "2026-07": 4,
+   "2026-08": 28
+  },
+  "churn": {
+   "total_insertions": 397,
+   "total_deletions": 95,
+   "table_rows_added_ever": 74,
+   "table_rows_removed_ever": 41,
+   "sections_added_ever": 14,
+   "sections_removed_ever": 0,
+   "note": "row counts from +/- diff lines matching '| ' data rows across the full patch history (approximate; row edits count as one add + one remove)"
+  },
+  "growth_pattern": "created 10 days before HEAD and touched in 32 commits since (~3/day); rows ARE being paid back (41 removed, e.g. b9acdd45 2026-08-06 'pay mandatory smoke debt' −11 rows; the Phase-5 Abwab smoke payoff header documents deleting paid rows), but net balance climbs (+33 rows) and sections have only ever been added (14 added, 0 removed)",
+  "confidence": "CONFIRMED"
+ },
+ "report_leftovers": {
+  "folders": [
+   "Backend/report/feature-008-quran-translations-foundation",
+   "Backend/report/feature-009-quran-navigation-metadata-foundation"
+  ],
+  "created": {
+   "commit": "c4855bd5",
+   "date": "2026-07-11",
+   "subject": "docs: add planning and import reports",
+   "note": "added to the monorepo the day after the subtree imports"
+  },
+  "features_merged": {
+   "feature_008": [
+    {
+     "commit": "fd08c03e",
+     "date": "2026-06-16",
+     "subject": "Merge pull request #4 from Mohamed0Ahmed/008-quran-translations-foundation"
+    },
+    {
+     "commit": "8528d370",
+     "date": "2026-06-16",
+     "subject": "Merge pull request #9 (same branch)"
+    }
+   ],
+   "feature_009": [
+    {
+     "commit": "dd106e57",
+     "date": "2026-06-16",
+     "subject": "Merge pull request #5 from Mohamed0Ahmed/009-quran-navigation-metadata-foundation"
+    },
+    {
+     "commit": "ea72cd07",
+     "date": "2026-06-16",
+     "subject": "Merge pull request #10 (same branch)"
+    }
+   ]
+  },
+  "forgotten_deletion": false,
+  "verdict": "NOT a forgotten deletion — deliberately retained, three independent pieces of evidence",
+  "evidence": [
+   "commit f5abff7a (2026-07-27) body: 'Kept as permanent evidence: the translation and navigation-metadata import reports. They are the sole record of source verification, exclusions, and per-source hashes, and DataImporterDefaults.cs hardcodes both directories as the importers' default output targets.'",
+   "Backend/tools/QuranDashboard.DataImporter/Import/DefaultPaths/DataImporterDefaults.cs:23",
+   "Backend/tools/QuranDashboard.DataImporter/Import/DefaultPaths/DataImporterDefaults.cs:71",
+   "Backend/tests/QuranDashboard.Tests/Quran/Navigation/NavigationSourcePathTests.cs:75",
+   "Backend/report/README.md:47 — charters them as 'the only surviving record of source verification…', tied to docs/TESTING_DEBT.md row C5: 'when it lands, these files go'"
+  ],
+  "contrast_deletion_commit": {
+   "commit": "1bf46b00",
+   "date": "2026-08-08",
+   "subject": "docs(access): remove feature 034 planning artifacts",
+   "note": "normal features do get their deletion commit; 008/009 are a chartered standing exception with a named expiry trigger (TESTING_DEBT row C5)"
+  },
+  "confidence": "CONFIRMED"
+ },
+ "lifecycle_health": {
+  "policy_adopted": {
+   "commit": "f5abff7a",
+   "date": "2026-07-27",
+   "note": "N-2 buffer lifecycle adopted; deleted 16 specs folders (001-019, 026), 10 docs feature folders (021-031), 1 report folder in one sweep"
+  },
+  "policy_tightened": {
+   "commit": "ae66c4da",
+   "date": "2026-08-04",
+   "subject": "docs: a feature deletes its own planning artifacts before it merges",
+   "note": "buffer removed → immediate per-feature deletion; deferred sweep executed in 0d339472 the same day"
+  },
+  "deletion_commits": [
+   {
+    "commit": "4b2fd406",
+    "date": "2026-07-04",
+    "files_deleted": 128,
+    "subject": "docs: README context architecture + report purge; bump submodule pointers"
+   },
+   {
+    "commit": "ad9613b3",
+    "date": "2026-07-14",
+    "files_deleted": 54,
+    "subject": "docs(contracts): add docs/contracts thin index; remove merged 001–019 specs contracts"
+   },
+   {
+    "commit": "f5abff7a",
+    "date": "2026-07-27",
+    "files_deleted": 138,
+    "subject": "docs: planning-artifact lifecycle rule + cleanup of closed-feature folders"
+   },
+   {
+    "commit": "8f501828",
+    "date": "2026-07-29",
+    "files_deleted": 1,
+    "subject": "chore: close abwab-global-order — sweep smoke-harness planning artifacts"
+   },
+   {
+    "commit": "f917f15b",
+    "date": "2026-07-29",
+    "files_deleted": 1,
+    "subject": "test(abwab): add the global/section order independence e2e flow … close out the feature's docs"
+   },
+   {
+    "commit": "a675286d",
+    "date": "2026-08-04",
+    "files_deleted": 40,
+    "subject": "docs: delete the artifacts that competed with the READMEs"
+   },
+   {
+    "commit": "0d339472",
+    "date": "2026-08-04",
+    "files_deleted": 33,
+    "subject": "docs: execute the deferred planning-artifact lifecycle sweep"
+   },
+   {
+    "commit": "73b72d54",
+    "date": "2026-08-04",
+    "files_deleted": 1,
+    "subject": "docs: retire Backend/report/database — a skill pointer was keeping it alive"
+   },
+   {
+    "commit": "e217c341",
+    "date": "2026-08-04",
+    "files_deleted": 1,
+    "subject": "docs: delete the Railway plan too — Backend/README.md is the deployment record"
+   },
+   {
+    "commit": "fdcc8ede",
+    "date": "2026-08-05",
+    "files_deleted": 2,
+    "subject": "docs(abwab): fold what only the reviews knew, then delete them"
+   },
+   {
+    "commit": "6e140759",
+    "date": "2026-08-06",
+    "files_deleted": 3,
+    "subject": "docs: fold the test-runtime facts worth keeping, then delete its artifacts"
+   },
+   {
+    "commit": "7f52b4f4",
+    "date": "2026-08-07",
+    "files_deleted": 3,
+    "subject": "docs(access): remove completed authorization lifecycle artifacts"
+   },
+   {
+    "commit": "1bf46b00",
+    "date": "2026-08-08",
+    "files_deleted": 4,
+    "subject": "docs(access): remove feature 034 planning artifacts"
+   }
+  ],
+  "current_tree_state": "specs/ contains only README.md; zero docs/feature-* folders remain; Backend/report/ contains only README.md plus the two chartered import-report folders (008/009)",
+  "verdict": "lifecycle RUNS as written — after a bulk catch-up era (2026-07-27 and 2026-08-04 sweeps, 138+ and 73 files), deletions became small and per-feature (1–4 files) and have landed on 07-29, 08-04, 08-05, 08-06, 08-07 and 08-08; the last four features each got their own deletion commit within a day of closing",
+  "confidence": "CONFIRMED"
+ },
+ "settings_bak": {
+  "path": ".claude/settings.local.json.bak",
+  "size_bytes": 456,
+  "created": {
+   "commit": "ae4871d2",
+   "date": "2026-06-26",
+   "subject": "add lean-ctx integration",
+   "only_commit": true
+  },
+  "context": "ae4871d2 added a 'lean-ctx' tool integration: .claude/settings.local.json.bak, AGENTS.md.bak, .cursorrules, .cursor/rules/lean-ctx.mdc, LEAN-CTX.md (258 insertions) — the .bak files are backups the tool made before rewriting configs, committed by accident-of-scope",
+  "cleanup": "1a9a3ef8 (2026-07-10) 'Remove lean-ctx tooling from workspace docs' deleted AGENTS.md.bak, .cursorrules, LEAN-CTX.md and .cursor/rules/lean-ctx.mdc — but MISSED .claude/settings.local.json.bak, which has sat untouched for 43 days",
+  "content_note": "stale permission allowlist including direct 'npx ng test --include=…' invocations that current instruction files forbid as lane bypasses; the live .claude/settings.local.json (540 B) is untracked",
+  "classification": "stale noise — survivor of an incomplete lean-ctx removal, not an intentional reference",
+  "confidence": "CONFIRMED"
+ },
+ "growth": {
+  "method": "5–6 sample commits evenly spaced across all commits touching each path (pre-2026-07-10 points measured on the imported subtree parents dc9fd9c1/0f4cedc3 at unprefixed paths); sizes from git ls-tree -r -l (blob bytes); LOC ≈ bytes ÷ HEAD bytes-per-line ratio",
+  "loc_estimation_ratios": {
+   "backend_tests_bytes_per_line": 43.43,
+   "frontend_specs_bytes_per_line": 39.91,
+   "scss_bytes_per_line": 22.27,
+   "head_backend_tests": {
+    "bytes": 2423887,
+    "lines": 55808
+   },
+   "head_frontend_specs": {
+    "bytes": 2160857,
+    "lines": 54145
+   },
+   "head_all_scss": {
+    "bytes": 230429,
+    "lines": 10346
+   }
+  },
+  "tests": {
+   "backend_tests_cs": [
+    {
+     "files": 0,
+     "bytes": 0,
+     "date": "2026-06-08",
+     "commit": "756dc6b4",
+     "approx_loc": 0
+    },
+    {
+     "files": 98,
+     "bytes": 554421,
+     "date": "2026-06-15",
+     "commit": "8d2a9b0c",
+     "approx_loc": 12765
+    },
+    {
+     "files": 175,
+     "bytes": 949018,
+     "date": "2026-06-25",
+     "commit": "0e308958",
+     "approx_loc": 21850
+    },
+    {
+     "files": 214,
+     "bytes": 1350419,
+     "date": "2026-07-10",
+     "commit": "5c6d6f43",
+     "approx_loc": 31092
+    },
+    {
+     "files": 282,
+     "bytes": 1900936,
+     "date": "2026-07-29",
+     "commit": "294dbcf9",
+     "approx_loc": 43767
+    },
+    {
+     "files": 347,
+     "bytes": 2423887,
+     "date": "2026-08-08",
+     "commit": "72792ba9",
+     "approx_loc": 55808
+    }
+   ],
+   "frontend_spec_ts": [
+    {
+     "files": 0,
+     "bytes": 0,
+     "date": "2026-06-06",
+     "commit": "bd98f94c",
+     "e2e_files": 0,
+     "e2e_bytes": 0,
+     "approx_loc": 0
+    },
+    {
+     "files": 74,
+     "bytes": 426792,
+     "date": "2026-06-25",
+     "commit": "669fb9db",
+     "e2e_files": 0,
+     "e2e_bytes": 0,
+     "approx_loc": 10694
+    },
+    {
+     "files": 110,
+     "bytes": 769332,
+     "date": "2026-07-14",
+     "commit": "8852d5bc",
+     "e2e_files": 0,
+     "e2e_bytes": 0,
+     "approx_loc": 19277
+    },
+    {
+     "files": 191,
+     "bytes": 1588724,
+     "date": "2026-07-30",
+     "commit": "028788d6",
+     "e2e_files": 17,
+     "e2e_bytes": 61849,
+     "approx_loc": 39809
+    },
+    {
+     "files": 195,
+     "bytes": 1751622,
+     "date": "2026-08-02",
+     "commit": "a7a2a7bb",
+     "e2e_files": 18,
+     "e2e_bytes": 73020,
+     "approx_loc": 43891
+    },
+    {
+     "files": 223,
+     "bytes": 2160857,
+     "date": "2026-08-08",
+     "commit": "72792ba9",
+     "e2e_files": 21,
+     "e2e_bytes": 94818,
+     "approx_loc": 54145
+    }
+   ],
+   "summary": "Backend test code: 0 → ~12.8k LOC in week one (by 2026-06-15) → ~31k LOC at monorepo import (07-10) → ~55.8k LOC / 347 files at HEAD; roughly linear at ~870 LOC/day over 9 weeks, no plateau. Frontend specs mirror it: 0 → ~19.3k (07-14) → ~54.1k LOC / 223 spec files + 21 e2e files (94.8 KB) at HEAD.",
+   "confidence": "CONFIRMED (curve), LOC values LIKELY (byte-ratio estimate)"
+  },
+  "styles": {
+   "curve": [
+    {
+     "date": "2026-06-06",
+     "commit": "bd98f94c",
+     "global_styles_files": 1,
+     "global_styles_bytes": 156,
+     "component_scss_files": 0,
+     "component_scss_bytes": 0,
+     "approx_global_loc": 7,
+     "approx_component_loc": 0
+    },
+    {
+     "date": "2026-06-25",
+     "commit": "669fb9db",
+     "global_styles_files": 12,
+     "global_styles_bytes": 31210,
+     "component_scss_files": 52,
+     "component_scss_bytes": 90321,
+     "approx_global_loc": 1401,
+     "approx_component_loc": 4055
+    },
+    {
+     "date": "2026-07-14",
+     "commit": "8852d5bc",
+     "global_styles_files": 12,
+     "global_styles_bytes": 50730,
+     "component_scss_files": 65,
+     "component_scss_bytes": 86325,
+     "approx_global_loc": 2278,
+     "approx_component_loc": 3876
+    },
+    {
+     "date": "2026-07-30",
+     "commit": "028788d6",
+     "global_styles_files": 13,
+     "global_styles_bytes": 76363,
+     "component_scss_files": 95,
+     "component_scss_bytes": 166071,
+     "approx_global_loc": 3429,
+     "approx_component_loc": 7456
+    },
+    {
+     "date": "2026-08-02",
+     "commit": "a7a2a7bb",
+     "global_styles_files": 13,
+     "global_styles_bytes": 82427,
+     "component_scss_files": 99,
+     "component_scss_bytes": 174666,
+     "approx_global_loc": 3701,
+     "approx_component_loc": 7842
+    },
+    {
+     "date": "2026-08-08",
+     "commit": "72792ba9",
+     "global_styles_files": 13,
+     "global_styles_bytes": 58553,
+     "component_scss_files": 108,
+     "component_scss_bytes": 171876,
+     "approx_global_loc": 2629,
+     "approx_component_loc": 7717
+    }
+   ],
+   "summary": "Global styles (src/styles/ + styles.scss): 156 B at scaffold → 31.2 KB/12 files by 06-25 → peaked ~82.4 KB on 08-02 → fell to 58.6 KB/13 files (~2.6k LOC) at HEAD — a real ~29% shrink in the final week (comment purge + words-explorer partial cleanups). Component SCSS keeps climbing: 52 files/90 KB (06-25) → 108 files/171.9 KB (~7.7k LOC) at HEAD; component styles now outweigh global styles ~3:1 by bytes.",
+   "confidence": "CONFIRMED (curve), LOC values LIKELY (byte-ratio estimate)"
+  }
+ },
+ "notes": [
+  "Monorepo history begins 2026-06-06 ('chore: scaffold fullstack workspace'); Backend and Frontend were separate repos tracked as submodules until git-subtree imports on 2026-07-10 (258a8d1b, 6e023081). All pre-import per-file history lives on the imported parent lines (dc9fd9c1, 0f4cedc3) at unprefixed paths — plain `git log -- Backend/…` silently misses it.",
+  "Total repo lifespan is only ~9 weeks (2026-06-06 → 2026-08-08); every 'growth curve' here is a two-month curve, and the documentation-hygiene regime (lifecycle rule, comment ban, mirror verification) all dates from the last 2 of those weeks (07-27 onward).",
+  "The 6-file AGENTS/CLAUDE duplication costs ~26.3 KB of tracked bytes of which ~22.3 KB (root 14915 + Backend 7335) is byte-identical mirror content maintained by hand; drift between root mirrors has recurred 3 times and each resync needed an audit finding to notice.",
+  "git log --follow on the root AGENTS.md/CLAUDE.md crosses rename detection into the Backend copies (inflating counts to 65/90); no-follow counts (42/64) are the honest per-path numbers and are what agents_claude_history reports.",
+  "UI_STYLE_SYSTEM.md numstat totals double-count one PR-merge + release-merge pair (26dcab9e/fef39610); trajectory tail is ~10% above the file's true 1658 lines.",
+  "TESTING_DEBT row-churn counts treat an edited row as one add plus one remove; 74 added / 41 removed brackets the true creation/payback rate rather than measuring it exactly.",
+  ".codex/ is invisible to git (untracked, empty); any claim about 'when it appeared' can only come from filesystem mtime (Aug 7), not history — UNKNOWN origin date."
+ ]
+}

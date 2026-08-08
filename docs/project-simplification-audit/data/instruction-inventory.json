@@ -1,0 +1,3000 @@
+{
+ "meta": {
+  "generated": "2026-08-08",
+  "repo": "/projects/Dashboard/App",
+  "branch": "dev",
+  "head": "72792ba9",
+  "token_estimate_rule": "bytes/4",
+  "scan_exclusions": [
+   "node_modules",
+   "dist",
+   ".git",
+   "bin",
+   "obj",
+   ".idea",
+   "playwright-report",
+   "test-results",
+   ".playwright-mcp",
+   "resources"
+  ]
+ },
+ "files": [
+  {
+   "path": "AGENTS.md",
+   "exists": true,
+   "bytes": 14915,
+   "loc": 264,
+   "approx_tokens": 3729,
+   "sha1": "457bdc00b0fdae29e19c38bcf102a57169f3b34e",
+   "role": "root-agent-entrypoint (non-Claude agents)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-06"
+  },
+  {
+   "path": "CLAUDE.md",
+   "exists": true,
+   "bytes": 14915,
+   "loc": 264,
+   "approx_tokens": 3729,
+   "sha1": "457bdc00b0fdae29e19c38bcf102a57169f3b34e",
+   "role": "root-harness-autoloaded (Claude entrypoint, workspace law)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-06"
+  },
+  {
+   "path": "CODING_PRINCIPLES.md",
+   "exists": true,
+   "bytes": 5190,
+   "loc": 129,
+   "approx_tokens": 1298,
+   "sha1": "6623c9fb6e9647fe1a7b94583a881be92fb65842",
+   "role": "workspace-law (coding principles, mandatory pre-implementation read)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-04"
+  },
+  {
+   "path": "TESTING_STRATEGY.md",
+   "exists": true,
+   "bytes": 33427,
+   "loc": 434,
+   "approx_tokens": 8357,
+   "sha1": "330545ed5b904da469afecbc11407e33e3465875",
+   "role": "testing-law (lane matrix, gates)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "PRODUCT.md",
+   "exists": true,
+   "bytes": 6577,
+   "loc": 129,
+   "approx_tokens": 1644,
+   "sha1": "4e957196bfa98a08dc08575b371edd07185a527e",
+   "role": "product-context (pre-UI-work read)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-04"
+  },
+  {
+   "path": "DESIGN.md",
+   "exists": true,
+   "bytes": 18868,
+   "loc": 306,
+   "approx_tokens": 4717,
+   "sha1": "387b891d0d879ebbb5bfc798b5b953196b30df24",
+   "role": "design-context (pre-UI-work read)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-04"
+  },
+  {
+   "path": "SKILLS_AND_ARCHITECTURE_GUIDE.md",
+   "exists": true,
+   "bytes": 42729,
+   "loc": 393,
+   "approx_tokens": 10682,
+   "sha1": "9351a5a91a6a364d739a4af5f13e15f4885ac814",
+   "role": "skills-and-architecture-guide (meta doc)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-06"
+  },
+  {
+   "path": "docs/README.md",
+   "exists": true,
+   "bytes": 3192,
+   "loc": 41,
+   "approx_tokens": 798,
+   "sha1": "4558083138ca6950dec6a94a723eed9dd1cd8bdf",
+   "role": "docs-index",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-06"
+  },
+  {
+   "path": "docs/TESTING_DEBT.md",
+   "exists": true,
+   "bytes": 41767,
+   "loc": 302,
+   "approx_tokens": 10442,
+   "sha1": "e16d88c4b42dc55b20803cc3f415832165234931",
+   "role": "testing-debt-ledger (live agenda)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "docs/contracts/README.md",
+   "exists": true,
+   "bytes": 1556,
+   "loc": 34,
+   "approx_tokens": 389,
+   "sha1": "db4b8357b79a1e27ef86d1504641616c451be760",
+   "role": "contract-index-root",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-07"
+  },
+  {
+   "path": "docs/contracts/abwab.md",
+   "exists": true,
+   "bytes": 1472,
+   "loc": 18,
+   "approx_tokens": 368,
+   "sha1": "c92ec3cc6272202d7cbe874237a52c03e70c5c25",
+   "role": "contract-pointer",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-07"
+  },
+  {
+   "path": "docs/contracts/frontend-shell.md",
+   "exists": true,
+   "bytes": 899,
+   "loc": 16,
+   "approx_tokens": 225,
+   "sha1": "e85816912d9521031787f4a0898cdf65a0b8af8f",
+   "role": "contract-pointer",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-14"
+  },
+  {
+   "path": "docs/contracts/http-api.md",
+   "exists": true,
+   "bytes": 1950,
+   "loc": 22,
+   "approx_tokens": 488,
+   "sha1": "d401b5a22938deeabc1b56d389c8c6df1ff259b0",
+   "role": "contract-pointer",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-07"
+  },
+  {
+   "path": "docs/contracts/import-pipelines.md",
+   "exists": true,
+   "bytes": 1601,
+   "loc": 19,
+   "approx_tokens": 400,
+   "sha1": "fa3a9149de3c2357c322ca7aaa82182b2957fbfd",
+   "role": "contract-pointer",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-14"
+  },
+  {
+   "path": "docs/contracts/mushaf-reader.md",
+   "exists": true,
+   "bytes": 823,
+   "loc": 14,
+   "approx_tokens": 206,
+   "sha1": "947cd2a03983f9b21b381505e317736e26dab13b",
+   "role": "contract-pointer",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-14"
+  },
+  {
+   "path": "docs/contracts/response-envelope.md",
+   "exists": true,
+   "bytes": 1028,
+   "loc": 16,
+   "approx_tokens": 257,
+   "sha1": "e5f3121e9e075dc0a41b88d3ab53acc56ca5e79a",
+   "role": "contract-pointer",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-14"
+  },
+  {
+   "path": "docs/contracts/security-access.md",
+   "exists": true,
+   "bytes": 3088,
+   "loc": 38,
+   "approx_tokens": 772,
+   "sha1": "3b66dbd66cad0ab799e018b1f5099988f0c28cdf",
+   "role": "contract-pointer",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "docs/contracts/words-explorers.md",
+   "exists": true,
+   "bytes": 1017,
+   "loc": 15,
+   "approx_tokens": 254,
+   "sha1": "0a8fbbbee92bf21c992a6657bdc28fa95fd8eefb",
+   "role": "contract-pointer",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-14"
+  },
+  {
+   "path": "Backend/AGENTS.md",
+   "exists": true,
+   "bytes": 7335,
+   "loc": 114,
+   "approx_tokens": 1834,
+   "sha1": "9336224f962c32ee016ee848eb9fae22222efd60",
+   "role": "backend-agent-entrypoint (non-Claude)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-06"
+  },
+  {
+   "path": "Backend/CLAUDE.md",
+   "exists": true,
+   "bytes": 7335,
+   "loc": 114,
+   "approx_tokens": 1834,
+   "sha1": "9336224f962c32ee016ee848eb9fae22222efd60",
+   "role": "backend-harness-autoloaded-on-backend-work (Claude entrypoint)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-06"
+  },
+  {
+   "path": "Backend/README.md",
+   "exists": true,
+   "bytes": 6742,
+   "loc": 115,
+   "approx_tokens": 1686,
+   "sha1": "6b1c7ced554213c6b924ca18f2d6669b0e90e1d9",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-07"
+  },
+  {
+   "path": "Backend/.architecture/API_GUIDELINES.md",
+   "exists": true,
+   "bytes": 13462,
+   "loc": 322,
+   "approx_tokens": 3366,
+   "sha1": "bb8192903a9e245f304eb97f62b7281ff4968801",
+   "role": "backend-architecture-doc (ApiResponse contract)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-07"
+  },
+  {
+   "path": "Backend/.architecture/BACKEND_STRUCTURE.md",
+   "exists": true,
+   "bytes": 11903,
+   "loc": 506,
+   "approx_tokens": 2976,
+   "sha1": "a196971326736a558313f52303b581e68d27fd21",
+   "role": "backend-architecture-doc (structure/foldering)",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-28"
+  },
+  {
+   "path": "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+   "exists": true,
+   "bytes": 9953,
+   "loc": 424,
+   "approx_tokens": 2488,
+   "sha1": "996419ecca49600511fa8325c87b29ace112b2ad",
+   "role": "backend-architecture-doc (layering)",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-10"
+  },
+  {
+   "path": "Backend/.architecture/LOGGING_GUIDELINES.md",
+   "exists": true,
+   "bytes": 4243,
+   "loc": 92,
+   "approx_tokens": 1061,
+   "sha1": "1a8908f8ee58ad65095148975bba36c8fa9f7a86",
+   "role": "backend-architecture-doc (logging)",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-10"
+  },
+  {
+   "path": "Backend/scripts/README.md",
+   "exists": true,
+   "bytes": 26229,
+   "loc": 444,
+   "approx_tokens": 6557,
+   "sha1": "2d2b290f8fc1b09a7224c655d8b7e3ef4c177e50",
+   "role": "backend-scripts-doc (test runner lanes)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-07"
+  },
+  {
+   "path": "Backend/api/QuranDashboard.Api/README.md",
+   "exists": true,
+   "bytes": 12930,
+   "loc": 194,
+   "approx_tokens": 3232,
+   "sha1": "6c2ce770fdc2414b2eb7c52a6fa4435b9265d6bd",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "Backend/api/QuranDashboard.Api/Authentication/README.md",
+   "exists": true,
+   "bytes": 5736,
+   "loc": 88,
+   "approx_tokens": 1434,
+   "sha1": "5935761971ce4c33f777b3102ef811d7079a0554",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-07"
+  },
+  {
+   "path": "Backend/api/QuranDashboard.Api/Controllers/README.md",
+   "exists": true,
+   "bytes": 14898,
+   "loc": 184,
+   "approx_tokens": 3724,
+   "sha1": "293edf19e0e9d562fd932a5a1c9e1fe87f139409",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "Backend/api/QuranDashboard.Api/RateLimiting/README.md",
+   "exists": true,
+   "bytes": 3036,
+   "loc": 58,
+   "approx_tokens": 759,
+   "sha1": "e7e8e5a6da45763a03cc60e9f4942080ae1252a7",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-19"
+  },
+  {
+   "path": "Backend/application/QuranDashboard.Application.Abstractions/Access/README.md",
+   "exists": true,
+   "bytes": 2272,
+   "loc": 35,
+   "approx_tokens": 568,
+   "sha1": "b5978f814d96809a51e590aa37ae25ac914b67c7",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-07"
+  },
+  {
+   "path": "Backend/application/QuranDashboard.Application.Abstractions/Security/README.md",
+   "exists": true,
+   "bytes": 8279,
+   "loc": 115,
+   "approx_tokens": 2070,
+   "sha1": "18415f9438fd354cbe2593f902d2ed498f1d8845",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-07"
+  },
+  {
+   "path": "Backend/application/QuranDashboard.Application/Access/README.md",
+   "exists": true,
+   "bytes": 3123,
+   "loc": 46,
+   "approx_tokens": 781,
+   "sha1": "abcc2981487795dc7d9faeb1845ba98ca06ce0d7",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "Backend/application/QuranDashboard.Application/Access/OwnerReconciliation/README.md",
+   "exists": true,
+   "bytes": 1177,
+   "loc": 16,
+   "approx_tokens": 294,
+   "sha1": "7d57b3d0fd4b66683bef7b64cef2f6bd57aff896",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-07"
+  },
+  {
+   "path": "Backend/infrastructure/QuranDashboard.Infrastructure/Access/README.md",
+   "exists": true,
+   "bytes": 9088,
+   "loc": 111,
+   "approx_tokens": 2272,
+   "sha1": "406ef9dbbe18fd283fcc7ce775ebc461e4131bf3",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/README.md",
+   "exists": true,
+   "bytes": 2128,
+   "loc": 43,
+   "approx_tokens": 532,
+   "sha1": "cb45c40c0fb4faef3bcfb6d5e9c4ea82dddad99b",
+   "role": "backend-area-readme (import pipelines)",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-10"
+  },
+  {
+   "path": "Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/Foundation/README.md",
+   "exists": true,
+   "bytes": 2162,
+   "loc": 37,
+   "approx_tokens": 540,
+   "sha1": "e1963fdd5a1138e00e248cd8d120808e8e7105af",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-04"
+  },
+  {
+   "path": "Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/Words/MorphologyImporting/README.md",
+   "exists": true,
+   "bytes": 3693,
+   "loc": 61,
+   "approx_tokens": 923,
+   "sha1": "e3d2f52398740f3b2056b3f5d0ab587d2bd853be",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-04"
+  },
+  {
+   "path": "Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/Words/SimpleI3rabGeneration/README.md",
+   "exists": true,
+   "bytes": 1844,
+   "loc": 35,
+   "approx_tokens": 461,
+   "sha1": "b88d266087834484e179e73679f7f7115dba383e",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-10"
+  },
+  {
+   "path": "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/README.md",
+   "exists": true,
+   "bytes": 2123,
+   "loc": 43,
+   "approx_tokens": 531,
+   "sha1": "76627a94a13b1b26aa2aa61c0541a2afe6583583",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-04"
+  },
+  {
+   "path": "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md",
+   "exists": true,
+   "bytes": 17452,
+   "loc": 212,
+   "approx_tokens": 4363,
+   "sha1": "39a318c2ccd8a7b7c3420e5ab6c0d4a88b159231",
+   "role": "backend-area-readme (abwab reads)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-04"
+  },
+  {
+   "path": "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/MushafReader/README.md",
+   "exists": true,
+   "bytes": 2312,
+   "loc": 41,
+   "approx_tokens": 578,
+   "sha1": "a745d9f9e9b8ced38622d6c4a023c41f68b20fcf",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-10"
+  },
+  {
+   "path": "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/README.md",
+   "exists": true,
+   "bytes": 19774,
+   "loc": 220,
+   "approx_tokens": 4944,
+   "sha1": "8fabed2dc5c92af38b59d2371779468336d09670",
+   "role": "backend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-27"
+  },
+  {
+   "path": "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/README.md",
+   "exists": true,
+   "bytes": 31236,
+   "loc": 357,
+   "approx_tokens": 7809,
+   "sha1": "6361a667906a83c0d50c68a83c9d9543f73acb7f",
+   "role": "backend-area-readme (abwab writes)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-07"
+  },
+  {
+   "path": "Backend/report/README.md",
+   "exists": true,
+   "bytes": 4246,
+   "loc": 65,
+   "approx_tokens": 1062,
+   "sha1": "232ea5731d6b1d597bab54abc722a3bd0db51b32",
+   "role": "backend-report-conventions",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-04"
+  },
+  {
+   "path": "Backend/tests/QuranDashboard.Tests/README.md",
+   "exists": true,
+   "bytes": 19724,
+   "loc": 238,
+   "approx_tokens": 4931,
+   "sha1": "544b602bcce44b36725c0114ea7e5adb13901db2",
+   "role": "backend-test-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md",
+   "exists": true,
+   "bytes": 14283,
+   "loc": 233,
+   "approx_tokens": 3571,
+   "sha1": "9ad0e7be7dbba07cda404965ced3c721c72dadc0",
+   "role": "backend-test-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-06"
+  },
+  {
+   "path": "Backend/tools/QuranDashboard.AccessAdmin/README.md",
+   "exists": true,
+   "bytes": 11687,
+   "loc": 155,
+   "approx_tokens": 2922,
+   "sha1": "a30091f095c8bc2ebde4e69dab5bddbcae013fac",
+   "role": "backend-tool-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "Backend/tools/QuranDashboard.DataImporter/README.md",
+   "exists": true,
+   "bytes": 2737,
+   "loc": 50,
+   "approx_tokens": 684,
+   "sha1": "5a64c2587793241058dda708e489fb7d7f7edbbc",
+   "role": "backend-tool-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-04"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/AGENTS.md",
+   "exists": true,
+   "bytes": 4016,
+   "loc": 79,
+   "approx_tokens": 1004,
+   "sha1": "5ff1987cb43c36b31b2a5edaf2e4848f144ddff1",
+   "role": "frontend-agent-entrypoint (non-Claude)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-06"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/CLAUDE.md",
+   "exists": true,
+   "bytes": 4025,
+   "loc": 79,
+   "approx_tokens": 1006,
+   "sha1": "9f55507f80beab84add5267a0a67bdeaa6b5b3a5",
+   "role": "frontend-harness-autoloaded-on-frontend-work (Claude entrypoint)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-06"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/README.md",
+   "exists": true,
+   "bytes": 7541,
+   "loc": 112,
+   "approx_tokens": 1885,
+   "sha1": "f9cee33c7936834f9f75b5e55ad79d1808eb935f",
+   "role": "frontend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md",
+   "exists": true,
+   "bytes": 11920,
+   "loc": 366,
+   "approx_tokens": 2980,
+   "sha1": "bb40350317002a4ccbaf737c4d649b6df43b43e5",
+   "role": "frontend-architecture-doc",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-02"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+   "exists": true,
+   "bytes": 18929,
+   "loc": 628,
+   "approx_tokens": 4732,
+   "sha1": "935ac3c81165c1784b6c00a68289c6d7c586c701",
+   "role": "frontend-architecture-doc",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-10"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+   "exists": true,
+   "bytes": 103970,
+   "loc": 1658,
+   "approx_tokens": 25992,
+   "sha1": "07bb5c9611b5d831990276eaa79c40c7b4dd7e35",
+   "role": "frontend-architecture-doc (style system, largest doc)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-04"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/styles/README.md",
+   "exists": true,
+   "bytes": 9367,
+   "loc": 136,
+   "approx_tokens": 2342,
+   "sha1": "d1e5e6294ab1cd07725663ba60f85021c852d1f1",
+   "role": "frontend-area-readme (styles)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-05"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/README.md",
+   "exists": true,
+   "bytes": 11396,
+   "loc": 151,
+   "approx_tokens": 2849,
+   "sha1": "e69ca00fd3c9c054a7cff693888f665d3ac04bde",
+   "role": "frontend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/navigation/detail-overlay/README.md",
+   "exists": true,
+   "bytes": 4318,
+   "loc": 63,
+   "approx_tokens": 1080,
+   "sha1": "a33cf9b15955ce5eed06a3686e5863e1642ba2fb",
+   "role": "frontend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-19"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/README.md",
+   "exists": true,
+   "bytes": 97772,
+   "loc": 1178,
+   "approx_tokens": 24443,
+   "sha1": "41e40eca0850bec8aba1fe7b94a1380b34453681",
+   "role": "frontend-area-readme (abwab feature)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/README.md",
+   "exists": true,
+   "bytes": 42594,
+   "loc": 519,
+   "approx_tokens": 10648,
+   "sha1": "9f31aa5f4da14d47f442e21f561d5f7e416f743a",
+   "role": "frontend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/README.md",
+   "exists": true,
+   "bytes": 12607,
+   "loc": 165,
+   "approx_tokens": 3152,
+   "sha1": "9fd3c85d37d8bafae745cbf08457f55e36e1e19f",
+   "role": "frontend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-04"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/README.md",
+   "exists": true,
+   "bytes": 37786,
+   "loc": 426,
+   "approx_tokens": 9446,
+   "sha1": "8bc53a97b4087dcde00a54cd5220aa4077552667",
+   "role": "frontend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-30"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/README.md",
+   "exists": true,
+   "bytes": 10599,
+   "loc": 137,
+   "approx_tokens": 2650,
+   "sha1": "2f73daeed2d87f598f99ad505f6e852fa56111ee",
+   "role": "frontend-area-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-04"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/e2e/README.md",
+   "exists": true,
+   "bytes": 10239,
+   "loc": 138,
+   "approx_tokens": 2560,
+   "sha1": "ba446a3906f61ac737207b763b8285ac6e924a94",
+   "role": "frontend-test-readme (e2e)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-07"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/testing/README.md",
+   "exists": true,
+   "bytes": 8784,
+   "loc": 138,
+   "approx_tokens": 2196,
+   "sha1": "a8303d22bf1eb62c26134978572499addc066da8",
+   "role": "frontend-test-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-08"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/public/fonts/mushaf/README.md",
+   "exists": true,
+   "bytes": 695,
+   "loc": 12,
+   "approx_tokens": 174,
+   "sha1": "ed31dd8d91be23efea2fc52827300ef365c9ccbf",
+   "role": "frontend-asset-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-10"
+  },
+  {
+   "path": "specs/README.md",
+   "exists": true,
+   "bytes": 2555,
+   "loc": 42,
+   "approx_tokens": 639,
+   "sha1": "93bb4fa982e7d42c9848dd06bb19031e0cc56ed0",
+   "role": "speckit-workspace-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-04"
+  },
+  {
+   "path": ".specify/extensions/git/README.md",
+   "exists": true,
+   "bytes": 4341,
+   "loc": 100,
+   "approx_tokens": 1085,
+   "sha1": "ee00738f8f772a089035abdd140bf6b3cc71b583",
+   "role": "speckit-extension-readme",
+   "git_tracked": true,
+   "last_commit_date": "2026-06-06"
+  },
+  {
+   "path": ".specify/extensions.yml",
+   "exists": true,
+   "bytes": 4184,
+   "loc": 148,
+   "approx_tokens": 1046,
+   "sha1": "c0ba6a10e97c8f974f5a8dfee411368d85adb8ee",
+   "role": "speckit-config",
+   "git_tracked": true,
+   "last_commit_date": "2026-06-06"
+  },
+  {
+   "path": ".specify/feature.json",
+   "exists": true,
+   "bytes": 30,
+   "loc": 3,
+   "approx_tokens": 8,
+   "sha1": "160e0157c751ddc183d935b694180a4eb8080cfa",
+   "role": "speckit-config (active feature pointer)",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-27"
+  },
+  {
+   "path": ".specify/init-options.json",
+   "exists": true,
+   "bytes": 171,
+   "loc": 9,
+   "approx_tokens": 43,
+   "sha1": "d98f7f59bf6b986b039951ffe75340fe846c2cde",
+   "role": "speckit-config",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-27"
+  },
+  {
+   "path": ".specify/integration.json",
+   "exists": true,
+   "bytes": 276,
+   "loc": 15,
+   "approx_tokens": 69,
+   "sha1": "57414551d04c62d320d1f9729fb0aef8b8da87aa",
+   "role": "speckit-config",
+   "git_tracked": true,
+   "last_commit_date": "2026-07-27"
+  },
+  {
+   "path": ".cursor/rules/always-read-agents.mdc",
+   "exists": true,
+   "bytes": 9387,
+   "loc": 201,
+   "approx_tokens": 2347,
+   "sha1": "705a0cbc563fab95ceca4132d350f1dfa4685882",
+   "role": "cursor-rule (alwaysApply:true)",
+   "git_tracked": true,
+   "last_commit_date": "2026-08-06"
+  },
+  {
+   "path": ".claude/settings.local.json.bak",
+   "exists": true,
+   "bytes": 456,
+   "loc": 11,
+   "approx_tokens": 114,
+   "sha1": "e3daddd627f81310d39c637b7ecce76b12fcdb31",
+   "role": "claude-local-settings-backup (tracked)",
+   "git_tracked": true,
+   "last_commit_date": "2026-06-26"
+  }
+ ],
+ "duplication": {
+  "root_agents_vs_claude": {
+   "files": [
+    "AGENTS.md",
+    "CLAUDE.md"
+   ],
+   "sha1": "457bdc00b0fdae29e19c38bcf102a57169f3b34e",
+   "bytes_each": 14915,
+   "byte_identical": true,
+   "last_commit_both": "2026-08-06 (9ed3a5d8) — pairs are updated in lockstep in the same commits",
+   "confidence": "CONFIRMED"
+  },
+  "backend_agents_vs_claude": {
+   "files": [
+    "Backend/AGENTS.md",
+    "Backend/CLAUDE.md"
+   ],
+   "sha1": "9336224f962c32ee016ee848eb9fae22222efd60",
+   "bytes_each": 7335,
+   "byte_identical": true,
+   "last_commit_both": "2026-08-06 (9ed3a5d8)",
+   "confidence": "CONFIRMED"
+  },
+  "frontend_agents_vs_claude": {
+   "identical": false,
+   "byte_sizes": {
+    "AGENTS.md": 4016,
+    "CLAUDE.md": 4025
+   },
+   "word_level_diff": "Exactly one difference, in the H1 title (line 1): 'Frontend Agent Guide' (AGENTS.md) vs 'Frontend Project Instructions' (CLAUDE.md). All remaining content is word-identical (verified with git diff --no-index --word-diff).",
+   "confidence": "CONFIRMED"
+  },
+  "agents_skills_vs_claude_skills": {
+   "finding": "All 19 .agents/skills/*/SKILL.md differ from .claude/skills counterparts. The 10 non-speckit skills are small pointer stubs (655-2,066 bytes) that route non-Claude agents to the canonical .claude/skills body ('Pointer for non-Claude agents. Canonical ... instructions live at .claude/skills/...'). The 9 speckit-* skills are near-full parallel copies (10,571 vs 12,262 bytes for speckit-implement, etc.), installed by spec-kit's codex integration (.specify/integrations/codex.manifest.json).",
+   "confidence": "CONFIRMED"
+  },
+  "note": "Root AGENTS.md (byte-identical to CLAUDE.md) routes Backend work to Backend/CLAUDE.md and Frontend work to Frontend/quran-dashboard-ui/CLAUDE.md (AGENTS.md:11,15) — non-Claude agents are routed INTO the CLAUDE chain, while .cursor/rules/always-read-agents.mdc:41 tells Cursor NOT to rely on CLAUDE.md. Both statements are simultaneously in force."
+ },
+ "routing_edges": [
+  {
+   "from": "CLAUDE.md",
+   "to": "Backend/CLAUDE.md",
+   "condition": "backend-work",
+   "evidence": "CLAUDE.md:11"
+  },
+  {
+   "from": "AGENTS.md",
+   "to": "Backend/CLAUDE.md",
+   "condition": "backend-work",
+   "evidence": "AGENTS.md:11 (byte-identical file)"
+  },
+  {
+   "from": "CLAUDE.md",
+   "to": "Frontend/quran-dashboard-ui/CLAUDE.md",
+   "condition": "frontend-work",
+   "evidence": "CLAUDE.md:15"
+  },
+  {
+   "from": "AGENTS.md",
+   "to": "Frontend/quran-dashboard-ui/CLAUDE.md",
+   "condition": "frontend-work",
+   "evidence": "AGENTS.md:15 (byte-identical file)"
+  },
+  {
+   "from": "CLAUDE.md",
+   "to": "docs/contracts/README.md",
+   "condition": "contract-lookup",
+   "evidence": "CLAUDE.md:48"
+  },
+  {
+   "from": "AGENTS.md",
+   "to": "docs/contracts/README.md",
+   "condition": "contract-lookup",
+   "evidence": "AGENTS.md:48 (byte-identical file)"
+  },
+  {
+   "from": "CLAUDE.md",
+   "to": "docs/TESTING_DEBT.md",
+   "condition": "planning-artifact-lifecycle",
+   "evidence": "CLAUDE.md:72"
+  },
+  {
+   "from": "AGENTS.md",
+   "to": "docs/TESTING_DEBT.md",
+   "condition": "planning-artifact-lifecycle",
+   "evidence": "AGENTS.md:72 (byte-identical file)"
+  },
+  {
+   "from": "CLAUDE.md",
+   "to": "<nearest README.md>",
+   "condition": "always (before modifying any folder)",
+   "evidence": "CLAUDE.md:90-93"
+  },
+  {
+   "from": "AGENTS.md",
+   "to": "<nearest README.md>",
+   "condition": "always (before modifying any folder)",
+   "evidence": "AGENTS.md:90-93 (byte-identical file)"
+  },
+  {
+   "from": "CLAUDE.md",
+   "to": "CODING_PRINCIPLES.md",
+   "condition": "always (before any implementation)",
+   "evidence": "CLAUDE.md:109"
+  },
+  {
+   "from": "AGENTS.md",
+   "to": "CODING_PRINCIPLES.md",
+   "condition": "always (before any implementation)",
+   "evidence": "AGENTS.md:109 (byte-identical file)"
+  },
+  {
+   "from": "CLAUDE.md",
+   "to": ".claude/skills/engineering-review/references/clean-code-guard/",
+   "condition": "delivery-self-check",
+   "evidence": "CLAUDE.md:181"
+  },
+  {
+   "from": "AGENTS.md",
+   "to": ".claude/skills/engineering-review/references/clean-code-guard/",
+   "condition": "delivery-self-check",
+   "evidence": "AGENTS.md:181 (byte-identical file)"
+  },
+  {
+   "from": "CLAUDE.md",
+   "to": "Backend/.architecture/API_GUIDELINES.md",
+   "condition": "authority-reference (API boundary)",
+   "evidence": "CLAUDE.md:197"
+  },
+  {
+   "from": "AGENTS.md",
+   "to": "Backend/.architecture/API_GUIDELINES.md",
+   "condition": "authority-reference (API boundary)",
+   "evidence": "AGENTS.md:197 (byte-identical file)"
+  },
+  {
+   "from": "CLAUDE.md",
+   "to": ".claude/skills/test-guard/",
+   "condition": "test-code-work",
+   "evidence": "CLAUDE.md:214"
+  },
+  {
+   "from": "AGENTS.md",
+   "to": ".claude/skills/test-guard/",
+   "condition": "test-code-work",
+   "evidence": "AGENTS.md:214 (byte-identical file)"
+  },
+  {
+   "from": "CLAUDE.md",
+   "to": "TESTING_STRATEGY.md",
+   "condition": "testing (before selecting tests)",
+   "evidence": "CLAUDE.md:224"
+  },
+  {
+   "from": "AGENTS.md",
+   "to": "TESTING_STRATEGY.md",
+   "condition": "testing (before selecting tests)",
+   "evidence": "AGENTS.md:224 (byte-identical file)"
+  },
+  {
+   "from": "CLAUDE.md",
+   "to": "<nearest test README>",
+   "condition": "testing",
+   "evidence": "CLAUDE.md:224-225"
+  },
+  {
+   "from": "AGENTS.md",
+   "to": "<nearest test README>",
+   "condition": "testing",
+   "evidence": "AGENTS.md:224-225 (byte-identical file)"
+  },
+  {
+   "from": "CLAUDE.md",
+   "to": "PRODUCT.md",
+   "condition": "ui-work",
+   "evidence": "CLAUDE.md:245"
+  },
+  {
+   "from": "AGENTS.md",
+   "to": "PRODUCT.md",
+   "condition": "ui-work",
+   "evidence": "AGENTS.md:245 (byte-identical file)"
+  },
+  {
+   "from": "CLAUDE.md",
+   "to": "DESIGN.md",
+   "condition": "ui-work",
+   "evidence": "CLAUDE.md:245"
+  },
+  {
+   "from": "AGENTS.md",
+   "to": "DESIGN.md",
+   "condition": "ui-work",
+   "evidence": "AGENTS.md:245 (byte-identical file)"
+  },
+  {
+   "from": "Backend/CLAUDE.md",
+   "to": "Backend/.architecture/BACKEND_STRUCTURE.md",
+   "condition": "backend-structural-change",
+   "evidence": "Backend/CLAUDE.md:5"
+  },
+  {
+   "from": "Backend/AGENTS.md",
+   "to": "Backend/.architecture/BACKEND_STRUCTURE.md",
+   "condition": "backend-structural-change",
+   "evidence": "Backend/AGENTS.md:5 (byte-identical file)"
+  },
+  {
+   "from": "Backend/CLAUDE.md",
+   "to": "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+   "condition": "backend-structural-change",
+   "evidence": "Backend/CLAUDE.md:6"
+  },
+  {
+   "from": "Backend/AGENTS.md",
+   "to": "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+   "condition": "backend-structural-change",
+   "evidence": "Backend/AGENTS.md:6 (byte-identical file)"
+  },
+  {
+   "from": "Backend/CLAUDE.md",
+   "to": "Backend/.architecture/API_GUIDELINES.md",
+   "condition": "api-change",
+   "evidence": "Backend/CLAUDE.md:10"
+  },
+  {
+   "from": "Backend/AGENTS.md",
+   "to": "Backend/.architecture/API_GUIDELINES.md",
+   "condition": "api-change",
+   "evidence": "Backend/AGENTS.md:10 (byte-identical file)"
+  },
+  {
+   "from": "Backend/CLAUDE.md",
+   "to": "Backend/.architecture/LOGGING_GUIDELINES.md",
+   "condition": "logging-observability-change",
+   "evidence": "Backend/CLAUDE.md:14"
+  },
+  {
+   "from": "Backend/AGENTS.md",
+   "to": "Backend/.architecture/LOGGING_GUIDELINES.md",
+   "condition": "logging-observability-change",
+   "evidence": "Backend/AGENTS.md:14 (byte-identical file)"
+  },
+  {
+   "from": "Backend/CLAUDE.md",
+   "to": "TESTING_STRATEGY.md",
+   "condition": "testing",
+   "evidence": "Backend/CLAUDE.md:18"
+  },
+  {
+   "from": "Backend/AGENTS.md",
+   "to": "TESTING_STRATEGY.md",
+   "condition": "testing",
+   "evidence": "Backend/AGENTS.md:18 (byte-identical file)"
+  },
+  {
+   "from": "Backend/CLAUDE.md",
+   "to": "Backend/tests/QuranDashboard.Tests/README.md",
+   "condition": "testing",
+   "evidence": "Backend/CLAUDE.md:19"
+  },
+  {
+   "from": "Backend/AGENTS.md",
+   "to": "Backend/tests/QuranDashboard.Tests/README.md",
+   "condition": "testing",
+   "evidence": "Backend/AGENTS.md:19 (byte-identical file)"
+  },
+  {
+   "from": "Backend/CLAUDE.md",
+   "to": "<nearest Backend README.md>",
+   "condition": "backend-area-work (4 examples listed)",
+   "evidence": "Backend/CLAUDE.md:35-39"
+  },
+  {
+   "from": "Backend/AGENTS.md",
+   "to": "<nearest Backend README.md>",
+   "condition": "backend-area-work (4 examples listed)",
+   "evidence": "Backend/AGENTS.md:35-39 (byte-identical file)"
+  },
+  {
+   "from": "Backend/CLAUDE.md",
+   "to": "docs/contracts/README.md",
+   "condition": "contract-lookup",
+   "evidence": "Backend/CLAUDE.md:39"
+  },
+  {
+   "from": "Backend/AGENTS.md",
+   "to": "docs/contracts/README.md",
+   "condition": "contract-lookup",
+   "evidence": "Backend/AGENTS.md:39 (byte-identical file)"
+  },
+  {
+   "from": "Backend/CLAUDE.md",
+   "to": "Backend/report/README.md",
+   "condition": "report-writing",
+   "evidence": "Backend/CLAUDE.md:56"
+  },
+  {
+   "from": "Backend/AGENTS.md",
+   "to": "Backend/report/README.md",
+   "condition": "report-writing",
+   "evidence": "Backend/AGENTS.md:56 (byte-identical file)"
+  },
+  {
+   "from": "Backend/CLAUDE.md",
+   "to": "specs/<feature>/",
+   "condition": "active-feature-work",
+   "evidence": "Backend/CLAUDE.md:69-70"
+  },
+  {
+   "from": "Backend/AGENTS.md",
+   "to": "specs/<feature>/",
+   "condition": "active-feature-work",
+   "evidence": "Backend/AGENTS.md:69-70 (byte-identical file)"
+  },
+  {
+   "from": "Backend/CLAUDE.md",
+   "to": "CLAUDE.md",
+   "condition": "comment-policy (canonical rule pointer)",
+   "evidence": "Backend/CLAUDE.md:75"
+  },
+  {
+   "from": "Backend/AGENTS.md",
+   "to": "CLAUDE.md",
+   "condition": "comment-policy (canonical rule pointer)",
+   "evidence": "Backend/AGENTS.md:75 (byte-identical file)"
+  },
+  {
+   "from": "Backend/CLAUDE.md",
+   "to": "Backend/.architecture/API_GUIDELINES.md",
+   "condition": "response-messages-localization",
+   "evidence": "Backend/CLAUDE.md:106"
+  },
+  {
+   "from": "Backend/AGENTS.md",
+   "to": "Backend/.architecture/API_GUIDELINES.md",
+   "condition": "response-messages-localization",
+   "evidence": "Backend/AGENTS.md:106 (byte-identical file)"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/CLAUDE.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+   "condition": "ui-style-change (any visual/theme/shared-pattern change)",
+   "evidence": "Frontend/quran-dashboard-ui/CLAUDE.md:9"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/AGENTS.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+   "condition": "ui-style-change (any visual/theme/shared-pattern change)",
+   "evidence": "Frontend/quran-dashboard-ui/AGENTS.md:9 (near-identical file, title-only diff)"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/CLAUDE.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+   "condition": "frontend-structural-change",
+   "evidence": "Frontend/quran-dashboard-ui/CLAUDE.md:18"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/AGENTS.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+   "condition": "frontend-structural-change",
+   "evidence": "Frontend/quran-dashboard-ui/AGENTS.md:18 (near-identical file, title-only diff)"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/CLAUDE.md",
+   "to": "TESTING_STRATEGY.md",
+   "condition": "testing",
+   "evidence": "Frontend/quran-dashboard-ui/CLAUDE.md:22"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/AGENTS.md",
+   "to": "TESTING_STRATEGY.md",
+   "condition": "testing",
+   "evidence": "Frontend/quran-dashboard-ui/AGENTS.md:22 (near-identical file, title-only diff)"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/CLAUDE.md",
+   "to": "Frontend/quran-dashboard-ui/testing/README.md",
+   "condition": "testing",
+   "evidence": "Frontend/quran-dashboard-ui/CLAUDE.md:22"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/AGENTS.md",
+   "to": "Frontend/quran-dashboard-ui/testing/README.md",
+   "condition": "testing",
+   "evidence": "Frontend/quran-dashboard-ui/AGENTS.md:22 (near-identical file, title-only diff)"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/CLAUDE.md",
+   "to": "<nearest Frontend README.md>",
+   "condition": "frontend-area-work (3 examples listed)",
+   "evidence": "Frontend/quran-dashboard-ui/CLAUDE.md:42-44"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/AGENTS.md",
+   "to": "<nearest Frontend README.md>",
+   "condition": "frontend-area-work (3 examples listed)",
+   "evidence": "Frontend/quran-dashboard-ui/AGENTS.md:42-44 (near-identical file, title-only diff)"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/CLAUDE.md",
+   "to": "docs/contracts/frontend-shell.md|words-explorers.md|mushaf-reader.md",
+   "condition": "contract-lookup",
+   "evidence": "Frontend/quran-dashboard-ui/CLAUDE.md:44"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/AGENTS.md",
+   "to": "docs/contracts/frontend-shell.md|words-explorers.md|mushaf-reader.md",
+   "condition": "contract-lookup",
+   "evidence": "Frontend/quran-dashboard-ui/AGENTS.md:44 (near-identical file, title-only diff)"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/CLAUDE.md",
+   "to": "CLAUDE.md",
+   "condition": "comment-policy (canonical rule pointer)",
+   "evidence": "Frontend/quran-dashboard-ui/CLAUDE.md:53"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/AGENTS.md",
+   "to": "CLAUDE.md",
+   "condition": "comment-policy (canonical rule pointer)",
+   "evidence": "Frontend/quran-dashboard-ui/AGENTS.md:53 (near-identical file, title-only diff)"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/CLAUDE.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md",
+   "condition": "api-integration-change",
+   "evidence": "Frontend/quran-dashboard-ui/CLAUDE.md:74"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/AGENTS.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md",
+   "condition": "api-integration-change",
+   "evidence": "Frontend/quran-dashboard-ui/AGENTS.md:74 (near-identical file, title-only diff)"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/CLAUDE.md",
+   "to": "PRODUCT.md",
+   "condition": "ui-work (product context)",
+   "evidence": "Frontend/quran-dashboard-ui/CLAUDE.md:78"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/AGENTS.md",
+   "to": "PRODUCT.md",
+   "condition": "ui-work (product context)",
+   "evidence": "Frontend/quran-dashboard-ui/AGENTS.md:78 (near-identical file, title-only diff)"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/CLAUDE.md",
+   "to": "DESIGN.md",
+   "condition": "ui-work (visual context)",
+   "evidence": "Frontend/quran-dashboard-ui/CLAUDE.md:79"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/AGENTS.md",
+   "to": "DESIGN.md",
+   "condition": "ui-work (visual context)",
+   "evidence": "Frontend/quran-dashboard-ui/AGENTS.md:79 (near-identical file, title-only diff)"
+  },
+  {
+   "from": "CODING_PRINCIPLES.md",
+   "to": "CLAUDE.md",
+   "condition": "comment-policy (canonical rule pointer)",
+   "evidence": "CODING_PRINCIPLES.md:22"
+  },
+  {
+   "from": "CODING_PRINCIPLES.md",
+   "to": ".claude/skills/engineering-review/references/clean-code-guard/",
+   "condition": "delivery-self-check",
+   "evidence": "CODING_PRINCIPLES.md:27"
+  },
+  {
+   "from": "CODING_PRINCIPLES.md",
+   "to": "Backend/.architecture/API_GUIDELINES.md",
+   "condition": "authority-reference",
+   "evidence": "CODING_PRINCIPLES.md:37"
+  },
+  {
+   "from": "CODING_PRINCIPLES.md",
+   "to": ".claude/skills/test-guard/",
+   "condition": "test-code-work",
+   "evidence": "CODING_PRINCIPLES.md:97-98"
+  },
+  {
+   "from": "TESTING_STRATEGY.md",
+   "to": "Backend/tests/QuranDashboard.Tests/README.md",
+   "condition": "testing (backend runner detail)",
+   "evidence": "TESTING_STRATEGY.md:141"
+  },
+  {
+   "from": "TESTING_STRATEGY.md",
+   "to": "Frontend/quran-dashboard-ui/testing/README.md",
+   "condition": "testing (frontend harness detail)",
+   "evidence": "TESTING_STRATEGY.md:383"
+  },
+  {
+   "from": "TESTING_STRATEGY.md",
+   "to": "Frontend/quran-dashboard-ui/e2e/README.md",
+   "condition": "e2e-work",
+   "evidence": "TESTING_STRATEGY.md:421"
+  },
+  {
+   "from": "Backend/README.md",
+   "to": "Backend/.architecture/BACKEND_STRUCTURE.md|CLEAN_ARCHITECTURE.md|API_GUIDELINES.md|LOGGING_GUIDELINES.md",
+   "condition": "backend-work",
+   "evidence": "Backend/README.md:8-10"
+  },
+  {
+   "from": "Backend/README.md",
+   "to": "7 area READMEs (DataPipelines, Persistence, tools, report)",
+   "condition": "backend-area-work",
+   "evidence": "Backend/README.md:47-54"
+  },
+  {
+   "from": "Backend/README.md",
+   "to": "Backend/api/QuranDashboard.Api/README.md",
+   "condition": "api-work",
+   "evidence": "Backend/README.md:64"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/README.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md|UI_STYLE_SYSTEM.md|API_INTEGRATION_GUIDELINES.md",
+   "condition": "frontend-work",
+   "evidence": "Frontend/quran-dashboard-ui/README.md:6-7"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/README.md",
+   "to": "PRODUCT.md|DESIGN.md",
+   "condition": "ui-work",
+   "evidence": "Frontend/quran-dashboard-ui/README.md:8"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/README.md",
+   "to": "Backend/scripts/README.md",
+   "condition": "api-regeneration",
+   "evidence": "Frontend/quran-dashboard-ui/README.md:31"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/README.md",
+   "to": "Frontend/quran-dashboard-ui/testing/README.md",
+   "condition": "testing",
+   "evidence": "Frontend/quran-dashboard-ui/README.md:63"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/README.md",
+   "to": "TESTING_STRATEGY.md",
+   "condition": "testing",
+   "evidence": "Frontend/quran-dashboard-ui/README.md:65"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/README.md",
+   "to": "Frontend/quran-dashboard-ui/e2e/README.md",
+   "condition": "e2e-work",
+   "evidence": "Frontend/quran-dashboard-ui/README.md:105"
+  },
+  {
+   "from": "PRODUCT.md",
+   "to": "DESIGN.md",
+   "condition": "ui-work",
+   "evidence": "PRODUCT.md:42"
+  },
+  {
+   "from": "PRODUCT.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+   "condition": "ui-work",
+   "evidence": "PRODUCT.md:44"
+  },
+  {
+   "from": "DESIGN.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+   "condition": "ui-work",
+   "evidence": "DESIGN.md:166"
+  },
+  {
+   "from": "Backend/.architecture/API_GUIDELINES.md",
+   "to": "Backend/.architecture/BACKEND_STRUCTURE.md",
+   "condition": "backend-work",
+   "evidence": "Backend/.architecture/API_GUIDELINES.md:29"
+  },
+  {
+   "from": "Backend/.architecture/API_GUIDELINES.md",
+   "to": "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+   "condition": "backend-work",
+   "evidence": "Backend/.architecture/API_GUIDELINES.md:30"
+  },
+  {
+   "from": "Backend/.architecture/API_GUIDELINES.md",
+   "to": "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md",
+   "condition": "abwab-reads",
+   "evidence": "Backend/.architecture/API_GUIDELINES.md:171"
+  },
+  {
+   "from": "Backend/.architecture/BACKEND_STRUCTURE.md",
+   "to": "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+   "condition": "backend-work",
+   "evidence": "Backend/.architecture/BACKEND_STRUCTURE.md:17"
+  },
+  {
+   "from": "Backend/.architecture/BACKEND_STRUCTURE.md",
+   "to": "Backend/.architecture/API_GUIDELINES.md",
+   "condition": "api-change",
+   "evidence": "Backend/.architecture/BACKEND_STRUCTURE.md:19"
+  },
+  {
+   "from": "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+   "to": "Backend/.architecture/BACKEND_STRUCTURE.md",
+   "condition": "backend-work",
+   "evidence": "Backend/.architecture/CLEAN_ARCHITECTURE.md:27"
+  },
+  {
+   "from": "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+   "to": "Backend/.architecture/API_GUIDELINES.md",
+   "condition": "api-change",
+   "evidence": "Backend/.architecture/CLEAN_ARCHITECTURE.md:29"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+   "condition": "frontend-work",
+   "evidence": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md:25"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+   "condition": "ui-work",
+   "evidence": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md:27"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md",
+   "to": "Backend/.architecture/API_GUIDELINES.md",
+   "condition": "api-contract-reference",
+   "evidence": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md:29"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md",
+   "to": "PRODUCT.md|DESIGN.md",
+   "condition": "ui-work",
+   "evidence": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md:32"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+   "condition": "ui-work",
+   "evidence": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md:18"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+   "to": "PRODUCT.md",
+   "condition": "ui-work",
+   "evidence": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md:22"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+   "to": "DESIGN.md",
+   "condition": "ui-work",
+   "evidence": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md:23"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+   "to": "PRODUCT.md",
+   "condition": "ui-work",
+   "evidence": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md:39"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+   "to": "DESIGN.md",
+   "condition": "ui-work",
+   "evidence": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md:40"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+   "to": "Frontend/quran-dashboard-ui/src/styles/README.md",
+   "condition": "styles-work",
+   "evidence": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md:101"
+  },
+  {
+   "from": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+   "to": "src/app/shared/README.md|features/abwab/README.md|features/words/README.md",
+   "condition": "feature-ui-work",
+   "evidence": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md:880,903,1610"
+  },
+  {
+   "from": "docs/README.md",
+   "to": "docs/contracts/",
+   "condition": "contract-lookup",
+   "evidence": "docs/README.md:5"
+  },
+  {
+   "from": "docs/README.md",
+   "to": "TESTING_STRATEGY.md",
+   "condition": "testing",
+   "evidence": "docs/README.md:15"
+  },
+  {
+   "from": "docs/README.md",
+   "to": "docs/TESTING_DEBT.md",
+   "condition": "testing-debt",
+   "evidence": "docs/README.md:16"
+  },
+  {
+   "from": "docs/README.md",
+   "to": "Backend/scripts/README.md",
+   "condition": "scripts-work",
+   "evidence": "docs/README.md:22"
+  },
+  {
+   "from": "docs/contracts/README.md",
+   "to": "specs/README.md",
+   "condition": "spec-kit-routing",
+   "evidence": "docs/contracts/README.md:18"
+  },
+  {
+   "from": "docs/contracts/README.md",
+   "to": "docs/README.md",
+   "condition": "docs-navigation",
+   "evidence": "docs/contracts/README.md:33"
+  },
+  {
+   "from": ".cursor/rules/always-read-agents.mdc",
+   "to": "AGENTS.md",
+   "condition": "always (Cursor)",
+   "evidence": ".cursor/rules/always-read-agents.mdc:11"
+  },
+  {
+   "from": ".cursor/rules/always-read-agents.mdc",
+   "to": "CODING_PRINCIPLES.md",
+   "condition": "always (Cursor)",
+   "evidence": ".cursor/rules/always-read-agents.mdc:12"
+  },
+  {
+   "from": ".cursor/rules/always-read-agents.mdc",
+   "to": "Backend/AGENTS.md",
+   "condition": "backend-work",
+   "evidence": ".cursor/rules/always-read-agents.mdc:16"
+  },
+  {
+   "from": ".cursor/rules/always-read-agents.mdc",
+   "to": "Backend/.architecture/BACKEND_STRUCTURE.md",
+   "condition": "backend-work",
+   "evidence": ".cursor/rules/always-read-agents.mdc:17"
+  },
+  {
+   "from": ".cursor/rules/always-read-agents.mdc",
+   "to": "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+   "condition": "backend-work",
+   "evidence": ".cursor/rules/always-read-agents.mdc:18"
+  },
+  {
+   "from": ".cursor/rules/always-read-agents.mdc",
+   "to": "Backend/.architecture/API_GUIDELINES.md",
+   "condition": "api-change",
+   "evidence": ".cursor/rules/always-read-agents.mdc:21"
+  },
+  {
+   "from": ".cursor/rules/always-read-agents.mdc",
+   "to": "Frontend/quran-dashboard-ui/AGENTS.md",
+   "condition": "frontend-work",
+   "evidence": ".cursor/rules/always-read-agents.mdc:25"
+  },
+  {
+   "from": ".cursor/rules/always-read-agents.mdc",
+   "to": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+   "condition": "frontend-work",
+   "evidence": ".cursor/rules/always-read-agents.mdc:26"
+  },
+  {
+   "from": ".cursor/rules/always-read-agents.mdc",
+   "to": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+   "condition": "frontend-work (unconditional for ANY frontend task)",
+   "evidence": ".cursor/rules/always-read-agents.mdc:27"
+  },
+  {
+   "from": ".cursor/rules/always-read-agents.mdc",
+   "to": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md",
+   "condition": "frontend-work",
+   "evidence": ".cursor/rules/always-read-agents.mdc:28"
+  },
+  {
+   "from": ".cursor/rules/always-read-agents.mdc",
+   "to": "specs/<feature>/spec.md|plan.md|tasks.md|data-model.md|quickstart.md|contracts/",
+   "condition": "spec-kit-work",
+   "evidence": ".cursor/rules/always-read-agents.mdc:31-37"
+  },
+  {
+   "from": ".cursor/rules/always-read-agents.mdc",
+   "to": "TESTING_STRATEGY.md",
+   "condition": "testing",
+   "evidence": ".cursor/rules/always-read-agents.mdc:140"
+  },
+  {
+   "from": ".cursor/rules/always-read-agents.mdc",
+   "to": "CLAUDE.md",
+   "condition": "ANTI-EDGE: 'Do not rely on CLAUDE.md unless the user explicitly asks'",
+   "evidence": ".cursor/rules/always-read-agents.mdc:41"
+  },
+  {
+   "from": ".claude/skills/engineering-review/SKILL.md",
+   "to": "CODING_PRINCIPLES.md",
+   "condition": "review",
+   "evidence": ".claude/skills/engineering-review/SKILL.md:52"
+  },
+  {
+   "from": ".claude/skills/engineering-review/SKILL.md",
+   "to": "TESTING_STRATEGY.md",
+   "condition": "review (test sufficiency)",
+   "evidence": ".claude/skills/engineering-review/SKILL.md:53"
+  },
+  {
+   "from": ".claude/skills/engineering-review/SKILL.md",
+   "to": ".claude/skills/engineering-review/references/clean-code-guard/*.md (7 files)",
+   "condition": "review",
+   "evidence": ".claude/skills/engineering-review/SKILL.md:61-67"
+  },
+  {
+   "from": ".claude/skills/engineering-review/SKILL.md",
+   "to": ".claude/skills/test-guard/SKILL.md + references/dotnet.md|jest.md|frontend-test-harness-constraints.md",
+   "condition": "review (MANDATORY when tests in diff)",
+   "evidence": ".claude/skills/engineering-review/SKILL.md:75-85"
+  },
+  {
+   "from": ".claude/skills/engineering-review/SKILL.md",
+   "to": "Backend/.architecture/BACKEND_STRUCTURE.md|CLEAN_ARCHITECTURE.md|API_GUIDELINES.md",
+   "condition": "review (backend diff)",
+   "evidence": ".claude/skills/engineering-review/SKILL.md:98-100"
+  },
+  {
+   "from": ".claude/skills/engineering-review/SKILL.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md|UI_STYLE_SYSTEM.md|API_INTEGRATION_GUIDELINES.md",
+   "condition": "review (frontend diff)",
+   "evidence": ".claude/skills/engineering-review/SKILL.md:106-109"
+  },
+  {
+   "from": ".claude/skills/engineering-review/SKILL.md",
+   "to": "PRODUCT.md|DESIGN.md",
+   "condition": "review (UI/product decisions)",
+   "evidence": ".claude/skills/engineering-review/SKILL.md:114"
+  },
+  {
+   "from": ".claude/skills/engineering-review/SKILL.md",
+   "to": ".claude/skills/engineering-review/SPEC_KIT_IMPLEMENTATION_REVIEW.md",
+   "condition": "review (Spec Kit change)",
+   "evidence": ".claude/skills/engineering-review/SKILL.md:134"
+  },
+  {
+   "from": ".claude/skills/engineering-review/SKILL.md",
+   "to": "specs/<feature>/contracts/",
+   "condition": "review (Spec Kit change)",
+   "evidence": ".claude/skills/engineering-review/SKILL.md:139"
+  },
+  {
+   "from": ".claude/skills/engineering-review/SKILL.md",
+   "to": ".claude/skills/engineering-review/references/quran-data-safety.md",
+   "condition": "review (Quranic data in diff)",
+   "evidence": ".claude/skills/engineering-review/SKILL.md:325"
+  },
+  {
+   "from": ".claude/skills/performance-backend-review/SKILL.md",
+   "to": ".claude/skills/engineering-review/references/quran-data-safety.md",
+   "condition": "perf-review",
+   "evidence": ".claude/skills/performance-backend-review/SKILL.md:89"
+  },
+  {
+   "from": ".claude/skills/performance-backend-review/SKILL.md",
+   "to": "Backend/.architecture/BACKEND_STRUCTURE.md|CLEAN_ARCHITECTURE.md|API_GUIDELINES.md",
+   "condition": "perf-review",
+   "evidence": ".claude/skills/performance-backend-review/SKILL.md:105-106"
+  },
+  {
+   "from": ".claude/skills/performance-backend-review/SKILL.md",
+   "to": "Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md",
+   "condition": "perf-review (test cost)",
+   "evidence": ".claude/skills/performance-backend-review/SKILL.md:180"
+  },
+  {
+   "from": ".claude/skills/performance-angular-review/SKILL.md",
+   "to": ".claude/skills/engineering-review/references/quran-data-safety.md",
+   "condition": "perf-review",
+   "evidence": ".claude/skills/performance-angular-review/SKILL.md:107"
+  },
+  {
+   "from": ".claude/skills/performance-angular-review/SKILL.md",
+   "to": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md|UI_STYLE_SYSTEM.md|API_INTEGRATION_GUIDELINES.md",
+   "condition": "perf-review",
+   "evidence": ".claude/skills/performance-angular-review/SKILL.md:124-128"
+  },
+  {
+   "from": ".claude/skills/performance-angular-review/SKILL.md",
+   "to": ".claude/skills/test-guard/references/frontend-test-harness-constraints.md",
+   "condition": "perf-review (test cost)",
+   "evidence": ".claude/skills/performance-angular-review/SKILL.md:134"
+  },
+  {
+   "from": ".claude/skills/test-guard/SKILL.md",
+   "to": ".claude/skills/test-guard/references/dotnet.md|jest.md",
+   "condition": "test-code-work (per stack)",
+   "evidence": ".claude/skills/test-guard/SKILL.md:31-32"
+  },
+  {
+   "from": ".claude/skills/test-guard/SKILL.md",
+   "to": ".claude/skills/test-guard/references/llm-app-testing.md",
+   "condition": "test-code-work (LLM apps only)",
+   "evidence": ".claude/skills/test-guard/SKILL.md:33"
+  },
+  {
+   "from": "SKILLS_AND_ARCHITECTURE_GUIDE.md",
+   "to": "CODING_PRINCIPLES.md|PRODUCT.md|DESIGN.md|AGENTS.md|CLAUDE.md",
+   "condition": "meta-index (not on any task path)",
+   "evidence": "SKILLS_AND_ARCHITECTURE_GUIDE.md:46-51"
+  },
+  {
+   "from": "SKILLS_AND_ARCHITECTURE_GUIDE.md",
+   "to": "Backend/.architecture/* and Frontend .architecture/* and skill references",
+   "condition": "meta-index (not on any task path)",
+   "evidence": "SKILLS_AND_ARCHITECTURE_GUIDE.md:104-130"
+  }
+ ],
+ "task_traces": [
+  {
+   "trace": "tiny-backend-bug-fix",
+   "description": "One-line logic fix in an existing backend handler (no files added/moved, no API-shape change), verified with the narrowest test lane.",
+   "entry_files": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md"
+   ],
+   "always_loaded_harness": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md"
+   ],
+   "instructed_reads_mandatory": [
+    "CODING_PRINCIPLES.md",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md",
+    "TESTING_STRATEGY.md",
+    "Backend/tests/QuranDashboard.Tests/README.md"
+   ],
+   "skill_bodies_mandatory": [],
+   "conditional_reads": [
+    "Backend/.architecture/BACKEND_STRUCTURE.md",
+    "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+    "Backend/scripts/README.md"
+   ],
+   "skill_bodies_conditional": [
+    ".claude/skills/engineering-review/references/clean-code-guard/naming-and-functions.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/comments-and-formatting.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/solid.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/dry-kiss-yagni.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/ai-failure-modes.md"
+   ],
+   "nearest_readmes_in_trace": [
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md (representative nearest README)",
+    "Backend/tests/QuranDashboard.Tests/README.md"
+   ],
+   "architecture_docs_in_trace": [
+    "Backend/.architecture/BACKEND_STRUCTURE.md (conditional)",
+    "Backend/.architecture/CLEAN_ARCHITECTURE.md (conditional)"
+   ],
+   "mandatory_total": {
+    "files": 6,
+    "bytes": 98043,
+    "approx_tokens": 24511,
+    "unsized_paths": []
+   },
+   "with_conditional_total": {
+    "files": 14,
+    "bytes": 192423,
+    "approx_tokens": 48106,
+    "unsized_paths": []
+   },
+   "notes": [
+    "Nearest README is dynamic; Reads/Abwab README used as representative (CLAUDE.md:90-93, Backend/CLAUDE.md:35-39).",
+    "TESTING_STRATEGY.md (33,427 B) + tests README are instructed before selecting tests (CLAUDE.md:224, Backend/CLAUDE.md:18-19) and dominate the mandatory read cost of a tiny fix.",
+    "Architecture docs trigger only on add/move/API/logging changes (Backend/CLAUDE.md:3-14), so a pure bug fix can skip them — LIKELY, wording is trigger-based.",
+    "clean-code-guard self-check pack (5 focus files, 52,295 B) is instructed 'before delivering implementation code' (CLAUDE.md:178-186); counted conditional because the self-check names focus areas, not a mandatory full read — NEEDS_MEASUREMENT."
+   ]
+  },
+  {
+   "trace": "tiny-frontend-ui-fix",
+   "description": "Small visual fix in an existing component (spacing/color), no structure change.",
+   "entry_files": [
+    "CLAUDE.md",
+    "Frontend/quran-dashboard-ui/CLAUDE.md"
+   ],
+   "always_loaded_harness": [
+    "CLAUDE.md",
+    "Frontend/quran-dashboard-ui/CLAUDE.md"
+   ],
+   "instructed_reads_mandatory": [
+    "CODING_PRINCIPLES.md",
+    "PRODUCT.md",
+    "DESIGN.md",
+    "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/README.md",
+    "TESTING_STRATEGY.md",
+    "Frontend/quran-dashboard-ui/testing/README.md"
+   ],
+   "skill_bodies_mandatory": [],
+   "conditional_reads": [
+    "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+    "Frontend/quran-dashboard-ui/src/styles/README.md"
+   ],
+   "skill_bodies_conditional": [
+    ".claude/skills/engineering-review/references/clean-code-guard/naming-and-functions.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/comments-and-formatting.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/solid.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/dry-kiss-yagni.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/ai-failure-modes.md"
+   ],
+   "nearest_readmes_in_trace": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/README.md (representative nearest README)",
+    "Frontend/quran-dashboard-ui/testing/README.md"
+   ],
+   "architecture_docs_in_trace": [
+    "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md (mandatory for any visual change per Frontend/quran-dashboard-ui/CLAUDE.md:3-9)"
+   ],
+   "mandatory_total": {
+    "files": 9,
+    "bytes": 293528,
+    "approx_tokens": 73382,
+    "unsized_paths": []
+   },
+   "with_conditional_total": {
+    "files": 16,
+    "bytes": 368119,
+    "approx_tokens": 92030,
+    "unsized_paths": []
+   },
+   "notes": [
+    "UI_STYLE_SYSTEM.md alone is 103,970 B (~26k tokens) — 55% of this trace's mandatory bytes; its read trigger 'component visual styles' (Frontend CLAUDE.md:5-9) matches even a one-line color fix. CONFIRMED trigger wording, cost CONFIRMED.",
+    "PRODUCT.md + DESIGN.md instructed for UI work 'when product/design context is relevant' (CLAUDE.md:245-248) — borderline; counted mandatory. LIKELY.",
+    "Total mandatory ~189KB (~47k tokens) before touching code — the heaviest of the two 'tiny' traces."
+   ]
+  },
+  {
+   "trace": "new-backend-read-endpoint",
+   "description": "Add a new GET endpoint: controller + query + DTO (files added, API surface changed).",
+   "entry_files": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md"
+   ],
+   "always_loaded_harness": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md"
+   ],
+   "instructed_reads_mandatory": [
+    "CODING_PRINCIPLES.md",
+    "Backend/.architecture/BACKEND_STRUCTURE.md",
+    "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+    "Backend/.architecture/API_GUIDELINES.md",
+    "Backend/api/QuranDashboard.Api/Controllers/README.md",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md",
+    "TESTING_STRATEGY.md",
+    "Backend/tests/QuranDashboard.Tests/README.md"
+   ],
+   "skill_bodies_mandatory": [],
+   "conditional_reads": [
+    "Backend/.architecture/LOGGING_GUIDELINES.md",
+    "docs/contracts/http-api.md",
+    "docs/contracts/response-envelope.md",
+    "Backend/scripts/README.md"
+   ],
+   "skill_bodies_conditional": [
+    ".claude/skills/engineering-review/references/clean-code-guard/naming-and-functions.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/comments-and-formatting.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/solid.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/dry-kiss-yagni.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/ai-failure-modes.md"
+   ],
+   "nearest_readmes_in_trace": [
+    "Backend/api/QuranDashboard.Api/Controllers/README.md",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md (representative)",
+    "Backend/tests/QuranDashboard.Tests/README.md"
+   ],
+   "architecture_docs_in_trace": [
+    "Backend/.architecture/BACKEND_STRUCTURE.md",
+    "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+    "Backend/.architecture/API_GUIDELINES.md"
+   ],
+   "mandatory_total": {
+    "files": 10,
+    "bytes": 148259,
+    "approx_tokens": 37065,
+    "unsized_paths": []
+   },
+   "with_conditional_total": {
+    "files": 19,
+    "bytes": 228004,
+    "approx_tokens": 57001,
+    "unsized_paths": []
+   },
+   "notes": [
+    "All three structural/API architecture docs are mandatory: files are added (Backend/CLAUDE.md:3-6) and API surface changes (Backend/CLAUDE.md:8-10). CONFIRMED.",
+    "Route-smoke gate (TESTING_STRATEGY.md §6) requires smoke lane + SmokeRouteCatalog entry for route changes — inside TESTING_STRATEGY.md, already counted."
+   ]
+  },
+  {
+   "trace": "authorization-change",
+   "description": "Change to access/permission behavior in Backend Access area (no pipeline/canonical lanes).",
+   "entry_files": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md"
+   ],
+   "always_loaded_harness": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md"
+   ],
+   "instructed_reads_mandatory": [
+    "CODING_PRINCIPLES.md",
+    "Backend/application/QuranDashboard.Application/Access/README.md",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Access/README.md",
+    "Backend/api/QuranDashboard.Api/Authentication/README.md",
+    "TESTING_STRATEGY.md",
+    "Backend/tests/QuranDashboard.Tests/README.md"
+   ],
+   "skill_bodies_mandatory": [],
+   "conditional_reads": [
+    "docs/contracts/security-access.md",
+    "Backend/application/QuranDashboard.Application.Abstractions/Access/README.md",
+    "Backend/application/QuranDashboard.Application.Abstractions/Security/README.md",
+    "Backend/.architecture/API_GUIDELINES.md",
+    "Frontend/quran-dashboard-ui/src/app/features/access-admin/README.md"
+   ],
+   "skill_bodies_conditional": [
+    ".claude/skills/engineering-review/references/clean-code-guard/naming-and-functions.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/comments-and-formatting.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/solid.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/dry-kiss-yagni.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/ai-failure-modes.md"
+   ],
+   "nearest_readmes_in_trace": [
+    "Backend/application/QuranDashboard.Application/Access/README.md",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Access/README.md",
+    "Backend/api/QuranDashboard.Api/Authentication/README.md",
+    "Backend/tests/QuranDashboard.Tests/README.md"
+   ],
+   "architecture_docs_in_trace": [
+    "Backend/.architecture/API_GUIDELINES.md (conditional — only if response shapes change)"
+   ],
+   "mandatory_total": {
+    "files": 8,
+    "bytes": 98538,
+    "approx_tokens": 24634,
+    "unsized_paths": []
+   },
+   "with_conditional_total": {
+    "files": 18,
+    "bytes": 214528,
+    "approx_tokens": 53632,
+    "unsized_paths": []
+   },
+   "notes": [
+    "The Access area has 5 READMEs across layers (api/Authentication, Application/Access, Application/Access/OwnerReconciliation, Application.Abstractions/Access, Application.Abstractions/Security, Infrastructure/Access) — the 'nearest README' rule fans out across all touched layers. 3 counted mandatory as the typical touched set. LIKELY.",
+    "Backend/CLAUDE.md:22-23: pipeline/canonical tests never run for isolated authorization work — bounds the testing read to access lanes."
+   ]
+  },
+  {
+   "trace": "abwab-change",
+   "description": "Cross-stack Abwab behavior change (backend read/write + frontend abwab feature).",
+   "entry_files": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md",
+    "Frontend/quran-dashboard-ui/CLAUDE.md"
+   ],
+   "always_loaded_harness": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md",
+    "Frontend/quran-dashboard-ui/CLAUDE.md"
+   ],
+   "instructed_reads_mandatory": [
+    "CODING_PRINCIPLES.md",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/README.md",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/README.md",
+    "TESTING_STRATEGY.md",
+    "Backend/tests/QuranDashboard.Tests/README.md",
+    "Frontend/quran-dashboard-ui/testing/README.md"
+   ],
+   "skill_bodies_mandatory": [],
+   "conditional_reads": [
+    "docs/contracts/abwab.md",
+    "Backend/.architecture/API_GUIDELINES.md",
+    "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md",
+    "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+    "PRODUCT.md",
+    "DESIGN.md"
+   ],
+   "skill_bodies_conditional": [
+    ".claude/skills/engineering-review/references/clean-code-guard/naming-and-functions.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/comments-and-formatting.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/solid.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/dry-kiss-yagni.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/ai-failure-modes.md"
+   ],
+   "nearest_readmes_in_trace": [
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/README.md",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/README.md",
+    "Backend/tests/QuranDashboard.Tests/README.md",
+    "Frontend/quran-dashboard-ui/testing/README.md"
+   ],
+   "architecture_docs_in_trace": [
+    "Backend/.architecture/API_GUIDELINES.md (conditional)",
+    "Frontend .architecture docs (conditional)"
+   ],
+   "mandatory_total": {
+    "files": 10,
+    "bytes": 239860,
+    "approx_tokens": 59965,
+    "unsized_paths": []
+   },
+   "with_conditional_total": {
+    "files": 21,
+    "bytes": 442424,
+    "approx_tokens": 110606,
+    "unsized_paths": []
+   },
+   "notes": [
+    "Cross-stack: both project CLAUDE files auto-load, both test READMEs instructed — 3 entry files before any task-specific read.",
+    "If the change is UI-visible, UI_STYLE_SYSTEM.md (+104KB) and PRODUCT/DESIGN join, nearly doubling the trace."
+   ]
+  },
+  {
+   "trace": "approved-plan-phase-implementation",
+   "description": "Implement one approved phase of an active Spec Kit feature (backend-focused).",
+   "entry_files": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md",
+    ".claude/skills/speckit-implement/SKILL.md"
+   ],
+   "always_loaded_harness": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md"
+   ],
+   "instructed_reads_mandatory": [
+    "CODING_PRINCIPLES.md",
+    "specs/<feature>/spec.md",
+    "specs/<feature>/plan.md",
+    "specs/<feature>/tasks.md",
+    "specs/<feature>/contracts/",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md",
+    "TESTING_STRATEGY.md",
+    "Backend/tests/QuranDashboard.Tests/README.md"
+   ],
+   "skill_bodies_mandatory": [
+    ".claude/skills/speckit-implement/SKILL.md"
+   ],
+   "conditional_reads": [
+    "Backend/.architecture/BACKEND_STRUCTURE.md",
+    "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+    "Backend/.architecture/API_GUIDELINES.md"
+   ],
+   "skill_bodies_conditional": [
+    ".claude/skills/engineering-review/references/clean-code-guard/naming-and-functions.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/comments-and-formatting.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/solid.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/dry-kiss-yagni.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/ai-failure-modes.md"
+   ],
+   "nearest_readmes_in_trace": [
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md (representative)",
+    "Backend/tests/QuranDashboard.Tests/README.md"
+   ],
+   "architecture_docs_in_trace": [
+    "Backend/.architecture/* as triggered by the phase's file changes"
+   ],
+   "mandatory_total": {
+    "files": 11,
+    "bytes": 110305,
+    "approx_tokens": 27576,
+    "unsized_paths": [
+     "specs/<feature>/spec.md",
+     "specs/<feature>/plan.md",
+     "specs/<feature>/tasks.md",
+     "specs/<feature>/contracts/"
+    ]
+   },
+   "with_conditional_total": {
+    "files": 19,
+    "bytes": 191918,
+    "approx_tokens": 47980,
+    "unsized_paths": [
+     "specs/<feature>/spec.md",
+     "specs/<feature>/plan.md",
+     "specs/<feature>/tasks.md",
+     "specs/<feature>/contracts/"
+    ]
+   },
+   "notes": [
+    "No active feature exists at HEAD 72792ba9 (root CLAUDE.md 'Active Spec Kit Feature: None', specs/ contains only README.md) — spec/plan/tasks/contracts sizes are UNKNOWN and excluded from byte totals; historical features put this at tens of KB. NEEDS_MEASUREMENT.",
+    "speckit-implement skill body (12,262 B) loads as the workflow driver.",
+    "Architecture docs almost always trigger in a phase (files are added), moved to conditional only because phase content varies. LIKELY-mandatory in practice."
+   ]
+  },
+  {
+   "trace": "engineering-review",
+   "description": "Formal engineering-review of a backend diff that includes test changes.",
+   "entry_files": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md",
+    ".claude/skills/engineering-review/SKILL.md"
+   ],
+   "always_loaded_harness": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md"
+   ],
+   "instructed_reads_mandatory": [
+    "CODING_PRINCIPLES.md",
+    "TESTING_STRATEGY.md",
+    "Backend/.architecture/BACKEND_STRUCTURE.md",
+    "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md"
+   ],
+   "skill_bodies_mandatory": [
+    ".claude/skills/engineering-review/SKILL.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/naming-and-functions.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/comments-and-formatting.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/solid.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/dry-kiss-yagni.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/ai-failure-modes.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/review-checklist.md",
+    ".claude/skills/engineering-review/references/quran-data-safety.md",
+    ".claude/skills/test-guard/SKILL.md",
+    ".claude/skills/test-guard/references/dotnet.md"
+   ],
+   "conditional_reads": [
+    "Backend/.architecture/API_GUIDELINES.md",
+    "docs/contracts/http-api.md",
+    "PRODUCT.md",
+    "DESIGN.md"
+   ],
+   "skill_bodies_conditional": [
+    ".claude/skills/engineering-review/SPEC_KIT_IMPLEMENTATION_REVIEW.md",
+    ".claude/skills/engineering-review/references/clean-code-guard/sources.md",
+    ".claude/skills/test-guard/references/llm-app-testing.md"
+   ],
+   "nearest_readmes_in_trace": [
+    "Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md (representative)"
+   ],
+   "architecture_docs_in_trace": [
+    "Backend/.architecture/BACKEND_STRUCTURE.md",
+    "Backend/.architecture/CLEAN_ARCHITECTURE.md"
+   ],
+   "mandatory_total": {
+    "files": 17,
+    "bytes": 206417,
+    "approx_tokens": 51604,
+    "unsized_paths": []
+   },
+   "with_conditional_total": {
+    "files": 24,
+    "bytes": 260782,
+    "approx_tokens": 65196,
+    "unsized_paths": []
+   },
+   "notes": [
+    "Heaviest trace: skill body 26,670 B + 6 clean-code-guard refs (54,174 B) + quran-data-safety + test-guard SKILL + dotnet ref (SKILL.md:61-66, :75-85 makes test-guard MANDATORY when tests are in the diff). CONFIRMED.",
+    "sources.md read only when a finding is contested (SKILL.md:67); SPEC_KIT_IMPLEMENTATION_REVIEW.md only for Spec Kit changes (SKILL.md:134).",
+    "A frontend review swaps in frontend arch docs incl. UI_STYLE_SYSTEM.md (+103,970 B) and jest/frontend-harness refs."
+   ]
+  },
+  {
+   "trace": "performance-review-backend",
+   "description": "Explicit performance-backend-review of changed backend scope.",
+   "entry_files": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md",
+    ".claude/skills/performance-backend-review/SKILL.md"
+   ],
+   "always_loaded_harness": [
+    "CLAUDE.md",
+    "Backend/CLAUDE.md"
+   ],
+   "instructed_reads_mandatory": [
+    "Backend/.architecture/BACKEND_STRUCTURE.md",
+    "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+    "Backend/.architecture/API_GUIDELINES.md"
+   ],
+   "skill_bodies_mandatory": [
+    ".claude/skills/performance-backend-review/SKILL.md"
+   ],
+   "conditional_reads": [
+    "TESTING_STRATEGY.md",
+    ".claude/skills/engineering-review/references/quran-data-safety.md",
+    "Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md"
+   ],
+   "skill_bodies_conditional": [],
+   "nearest_readmes_in_trace": [
+    "Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md (conditional, test-perf findings)"
+   ],
+   "architecture_docs_in_trace": [
+    "Backend/.architecture/BACKEND_STRUCTURE.md",
+    "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+    "Backend/.architecture/API_GUIDELINES.md"
+   ],
+   "mandatory_total": {
+    "files": 6,
+    "bytes": 73044,
+    "approx_tokens": 18261,
+    "unsized_paths": []
+   },
+   "with_conditional_total": {
+    "files": 9,
+    "bytes": 123878,
+    "approx_tokens": 30970,
+    "unsized_paths": []
+   },
+   "notes": [
+    "Skill instructs all three arch docs (performance-backend-review/SKILL.md:105-106). quran-data-safety at :89, PostgreSql README at :180 are conditional.",
+    "Angular variant: performance-angular-review SKILL (18,989 B) + FRONTEND_STRUCTURE + UI_STYLE_SYSTEM (103,970 B) + API_INTEGRATION_GUIDELINES + frontend-test-harness-constraints (SKILL.md:124-134) → mandatory ~186KB vs backend's ~97KB."
+   ]
+  }
+ ],
+ "cursor_codex": {
+  "cursor": {
+   "file": ".cursor/rules/always-read-agents.mdc",
+   "bytes": 9387,
+   "approx_tokens": 2347,
+   "always_apply": true,
+   "git_tracked": true,
+   "last_commit": "2026-08-06 (9ed3a5d8 'docs: codify scope-aware test execution')",
+   "commit_history": [
+    "2026-06-08 200cff9b",
+    "2026-06-20 058fa245",
+    "2026-07-10 658e30c3",
+    "2026-07-28 ad898826",
+    "2026-08-06 9ed3a5d8"
+   ],
+   "content_summary": "alwaysApply:true rule: read AGENTS.md + CODING_PRINCIPLES.md always; Backend work adds Backend/AGENTS.md + BACKEND_STRUCTURE + CLEAN_ARCHITECTURE (+API_GUIDELINES for API work); Frontend work adds Frontend AGENTS.md + FRONTEND_STRUCTURE + UI_STYLE_SYSTEM + API_INTEGRATION_GUIDELINES unconditionally; Spec Kit work adds spec/plan/tasks/data-model/quickstart/contracts. Line 41: 'Do not rely on CLAUDE.md unless the user explicitly asks. CLAUDE.md is for Claude-specific behavior.' Also restates: phase discipline, contract matching, file-size thresholds, Quranic data safety, commit workflow, full test-lane matrix (Backend lanes + Vitest fork cap), delivery-report checklist.",
+   "classification": "maintained-in-sync — LIKELY active support. The rule file was updated 2 days before the audit baseline (2026-08-06) in the same doc-sweep commits that touch AGENTS/CLAUDE, across 5 commits spanning 2026-06-08 to 2026-08-06. Whether the Cursor editor itself is still used cannot be determined from the repo: UNKNOWN (no Cursor-generated commits identifiable).",
+   "cursor_frontend_mandatory_chain_bytes": "For ANY frontend task Cursor mandates AGENTS.md (14,915) + CODING_PRINCIPLES.md (5,190) + Frontend AGENTS.md (4,016) + FRONTEND_STRUCTURE.md (18,929) + UI_STYLE_SYSTEM.md (103,970) + API_INTEGRATION_GUIDELINES.md (11,920) + the .mdc itself (9,387) = 168,327 bytes (~42,082 tokens) before code. CONFIRMED from .mdc:10-28."
+  },
+  "codex": {
+   "dot_codex_dir": {
+    "exists": true,
+    "empty": true,
+    "git_tracked": false,
+    "git_history": "none — no commit has ever touched .codex",
+    "mtime": "2026-08-07 13:27 (one day before audit) — an empty untracked directory with a fresh mtime suggests a Codex CLI ran recently and created it. LIKELY recent Codex CLI invocation; cannot confirm from repo alone."
+   },
+   "speckit_codex_integration": {
+    "manifest": ".specify/integrations/codex.manifest.json (installed_at 2026-06-06, version 0.8.3, registers .agents/skills/speckit-*/SKILL.md hashes)",
+    "current_state": ".specify/integration.json lists installed_integrations:['claude'] and default_integration:'claude' only; .specify/init-options.json says ai:'claude'. The codex spec-kit integration is superseded/stale even though its manifest and the .agents/skills speckit copies remain. CONFIRMED from file contents."
+   },
+   "agents_md_files": "AGENTS.md entrypoints (root/Backend/Frontend) are the designated non-Claude entry and are actively maintained in lockstep with CLAUDE.md (same commits, 2026-08-06). CONFIRMED.",
+   "classification": "Codex spec-kit integration: historical/stale (CONFIRMED). Codex CLI usage: LIKELY recent-but-light (empty .codex mtime 2026-08-07, zero tracked artifacts). AGENTS.md chain: active workflow support (CONFIRMED, maintained in lockstep)."
+  }
+ },
+ "duplicated_rules": [
+  {
+   "rule": "comment-policy-comments-forbidden-by-default",
+   "canonical": "CLAUDE.md:113-176 (section declares itself canonical; all other copies defer)",
+   "stated_in": [
+    {
+     "file": "CLAUDE.md",
+     "section_or_line": "113-176 'Comments are forbidden by default' (canonical)"
+    },
+    {
+     "file": "AGENTS.md",
+     "section_or_line": "113-176 (byte-identical copy)"
+    },
+    {
+     "file": "CODING_PRINCIPLES.md",
+     "section_or_line": "22-29 (defers to CLAUDE.md)"
+    },
+    {
+     "file": "Backend/CLAUDE.md",
+     "section_or_line": "73-88 'Backend Comment Policy' (C# detail, defers to root)"
+    },
+    {
+     "file": "Backend/AGENTS.md",
+     "section_or_line": "73-88 (byte-identical copy)"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/CLAUDE.md",
+     "section_or_line": "51-65 'Frontend Comment Policy' (Angular detail, defers to root)"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/AGENTS.md",
+     "section_or_line": "51-65 (near-identical copy)"
+    },
+    {
+     "file": ".claude/skills/engineering-review/SKILL.md",
+     "section_or_line": "~156-157 + review checklist mentions"
+    },
+    {
+     "file": ".claude/skills/engineering-review/references/clean-code-guard/comments-and-formatting.md",
+     "section_or_line": "whole file (annotated that root CLAUDE.md wins)"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "branching-dev-gitflow-never-pr-main",
+   "stated_in": [
+    {
+     "file": "CLAUDE.md",
+     "section_or_line": "21-37 'Branching workflow'"
+    },
+    {
+     "file": "AGENTS.md",
+     "section_or_line": "21-37 (byte-identical copy)"
+    },
+    {
+     "file": ".claude/skills/commit-workflow/SKILL.md",
+     "section_or_line": "push/PR rules restated"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "planning-artifact-lifecycle-deletion-commit",
+   "stated_in": [
+    {
+     "file": "CLAUDE.md",
+     "section_or_line": "51-88 (lifecycle + deletion-commit rule)"
+    },
+    {
+     "file": "AGENTS.md",
+     "section_or_line": "51-88 (byte-identical copy)"
+    },
+    {
+     "file": "Backend/CLAUDE.md",
+     "section_or_line": "66-71 'Planning and Spec Kit separation' (restates + points to root)"
+    },
+    {
+     "file": "Backend/AGENTS.md",
+     "section_or_line": "66-71 (byte-identical copy)"
+    },
+    {
+     "file": "docs/README.md",
+     "section_or_line": "29-35 (restates lifecycle)"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "nearest-readme-first",
+   "stated_in": [
+    {
+     "file": "CLAUDE.md",
+     "section_or_line": "89-103 'Local README Context'"
+    },
+    {
+     "file": "AGENTS.md",
+     "section_or_line": "89-103 (byte-identical copy)"
+    },
+    {
+     "file": "Backend/CLAUDE.md",
+     "section_or_line": "33-45 'Backend Local READMEs'"
+    },
+    {
+     "file": "Backend/AGENTS.md",
+     "section_or_line": "33-45 (byte-identical copy)"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/CLAUDE.md",
+     "section_or_line": "40-49 'Frontend Local READMEs'"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/AGENTS.md",
+     "section_or_line": "40-49 (near-identical copy)"
+    },
+    {
+     "file": "docs/README.md",
+     "section_or_line": "9-13"
+    },
+    {
+     "file": "docs/contracts/README.md",
+     "section_or_line": "13-15"
+    },
+    {
+     "file": "SKILLS_AND_ARCHITECTURE_GUIDE.md",
+     "section_or_line": "README-routing mentions"
+    },
+    {
+     "file": ".claude/skills/engineering-review/SKILL.md",
+     "section_or_line": "139 (implemented truth = code + nearest README)"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "separate-scss-html-files-by-default",
+   "stated_in": [
+    {
+     "file": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+     "section_or_line": "40-41, 67-69"
+    },
+    {
+     "file": ".claude/skills/engineering-review/SKILL.md",
+     "section_or_line": "253"
+    },
+    {
+     "file": ".cursor/rules/always-read-agents.mdc",
+     "section_or_line": "86 ('Do not put large HTML templates inline in TypeScript')"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "qd-prefixed-reusable-classes",
+   "stated_in": [
+    {
+     "file": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+     "section_or_line": "multiple (canonical vocabulary; 216 tokens `--qd-*`)"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/src/styles/README.md",
+     "section_or_line": "multiple"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+     "section_or_line": "qd-* mentions"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md",
+     "section_or_line": "qd-* mentions"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/README.md",
+     "section_or_line": "qd-* mentions"
+    },
+    {
+     "file": "DESIGN.md",
+     "section_or_line": "qd-* mentions"
+    },
+    {
+     "file": ".cursor/rules/always-read-agents.mdc",
+     "section_or_line": "87"
+    },
+    {
+     "file": ".claude/skills/engineering-review/SKILL.md",
+     "section_or_line": "UI review items"
+    },
+    {
+     "file": "SKILLS_AND_ARCHITECTURE_GUIDE.md",
+     "section_or_line": "style-system summary"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "tailwind-supports-not-replaces-design-system",
+   "stated_in": [
+    {
+     "file": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+     "section_or_line": "254-266 '6. Tailwind Usage' (canonical)"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/src/styles/README.md",
+     "section_or_line": "94 (layer order)"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "file-size-thresholds",
+   "stated_in": [
+    {
+     "file": "Backend/.architecture/BACKEND_STRUCTURE.md",
+     "section_or_line": "soft/hard threshold section"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+     "section_or_line": "threshold section"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md",
+     "section_or_line": "threshold mentions"
+    },
+    {
+     "file": ".cursor/rules/always-read-agents.mdc",
+     "section_or_line": "64-87 'File size and responsibility rules'"
+    },
+    {
+     "file": ".claude/skills/engineering-review/SKILL.md",
+     "section_or_line": "threshold checks"
+    },
+    {
+     "file": ".claude/skills/backend-structure-review/SKILL.md",
+     "section_or_line": "threshold checks"
+    },
+    {
+     "file": "SKILLS_AND_ARCHITECTURE_GUIDE.md",
+     "section_or_line": "threshold summary"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "test-gate-selection-narrowest-lane-first",
+   "stated_in": [
+    {
+     "file": "TESTING_STRATEGY.md",
+     "section_or_line": "whole doc (canonical; §5 execution-trigger matrix)"
+    },
+    {
+     "file": "CLAUDE.md",
+     "section_or_line": "222-237 'Scope-aware test execution'"
+    },
+    {
+     "file": "AGENTS.md",
+     "section_or_line": "222-237 (byte-identical copy)"
+    },
+    {
+     "file": "Backend/CLAUDE.md",
+     "section_or_line": "16-31 'Backend Test Selection'"
+    },
+    {
+     "file": "Backend/AGENTS.md",
+     "section_or_line": "16-31 (byte-identical copy)"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/CLAUDE.md",
+     "section_or_line": "20-38 'Frontend Test Selection'"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/AGENTS.md",
+     "section_or_line": "20-38 (near-identical copy)"
+    },
+    {
+     "file": "Backend/tests/QuranDashboard.Tests/README.md",
+     "section_or_line": "lane guidance"
+    },
+    {
+     "file": ".cursor/rules/always-read-agents.mdc",
+     "section_or_line": "134-188 'Verification' (full lane matrix restated)"
+    },
+    {
+     "file": "docs/README.md",
+     "section_or_line": "15-16"
+    },
+    {
+     "file": "SKILLS_AND_ARCHITECTURE_GUIDE.md",
+     "section_or_line": "test-execution summary"
+    },
+    {
+     "file": ".claude/skills/engineering-review/SKILL.md",
+     "section_or_line": "53 + test-sufficiency checks"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "apiresponse-envelope-contract",
+   "stated_in": [
+    {
+     "file": "Backend/.architecture/API_GUIDELINES.md",
+     "section_or_line": "canonical contract"
+    },
+    {
+     "file": "docs/contracts/response-envelope.md",
+     "section_or_line": "pointer"
+    },
+    {
+     "file": "docs/contracts/http-api.md",
+     "section_or_line": "pointer"
+    },
+    {
+     "file": "CLAUDE.md",
+     "section_or_line": "196-197 (authority note)"
+    },
+    {
+     "file": "AGENTS.md",
+     "section_or_line": "196-197 (byte-identical copy)"
+    },
+    {
+     "file": "CODING_PRINCIPLES.md",
+     "section_or_line": "37"
+    },
+    {
+     "file": "Backend/CLAUDE.md",
+     "section_or_line": "101-115 'Backend Response Messages and Localization'"
+    },
+    {
+     "file": "Backend/AGENTS.md",
+     "section_or_line": "101-115 (byte-identical copy)"
+    },
+    {
+     "file": "Backend/README.md",
+     "section_or_line": "ApiResponse mentions"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md",
+     "section_or_line": "ApiResponse<T> handling"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/CLAUDE.md",
+     "section_or_line": "67-74"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/AGENTS.md",
+     "section_or_line": "67-74 (near-identical copy)"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/README.md",
+     "section_or_line": "ApiResponse mentions"
+    },
+    {
+     "file": ".cursor/rules/always-read-agents.mdc",
+     "section_or_line": "20"
+    },
+    {
+     "file": ".claude/skills/engineering-review/SKILL.md",
+     "section_or_line": "100, 175"
+    },
+    {
+     "file": ".claude/skills/test-guard/SKILL.md",
+     "section_or_line": "envelope test guidance"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "rtl-arabic-first-scholarly-calm-register",
+   "stated_in": [
+    {
+     "file": "CLAUDE.md",
+     "section_or_line": "239-254 'Design Context'"
+    },
+    {
+     "file": "AGENTS.md",
+     "section_or_line": "239-254 (byte-identical copy)"
+    },
+    {
+     "file": "PRODUCT.md",
+     "section_or_line": "whole doc (canonical product register)"
+    },
+    {
+     "file": "DESIGN.md",
+     "section_or_line": "whole doc (canonical visual direction)"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+     "section_or_line": "RTL/Arabic-first sections"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+     "section_or_line": "RTL mentions"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/README.md",
+     "section_or_line": "RTL mentions"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/src/styles/README.md",
+     "section_or_line": "RTL mentions"
+    },
+    {
+     "file": "CODING_PRINCIPLES.md",
+     "section_or_line": "111-119 'UI and Product Consistency'"
+    },
+    {
+     "file": ".claude/skills/engineering-review/SKILL.md",
+     "section_or_line": "UI review items"
+    },
+    {
+     "file": "SKILLS_AND_ARCHITECTURE_GUIDE.md",
+     "section_or_line": "design summary"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "quranic-data-safety-never-invent",
+   "stated_in": [
+    {
+     "file": "CODING_PRINCIPLES.md",
+     "section_or_line": "102-110 '10. Quranic Data Safety'"
+    },
+    {
+     "file": ".claude/skills/engineering-review/references/quran-data-safety.md",
+     "section_or_line": "whole file (shared reference)"
+    },
+    {
+     "file": ".cursor/rules/always-read-agents.mdc",
+     "section_or_line": "89-117 'Quranic data safety' (full restatement)"
+    },
+    {
+     "file": "CLAUDE.md",
+     "section_or_line": "210 (test-data bullet 'Quranic test data remains source-safe')"
+    },
+    {
+     "file": "AGENTS.md",
+     "section_or_line": "210 (byte-identical copy)"
+    },
+    {
+     "file": "Backend/.architecture/CLEAN_ARCHITECTURE.md",
+     "section_or_line": "safety mentions"
+    },
+    {
+     "file": "Backend/.architecture/LOGGING_GUIDELINES.md",
+     "section_or_line": "safety mentions"
+    },
+    {
+     "file": "Backend/scripts/README.md",
+     "section_or_line": "safety mentions"
+    },
+    {
+     "file": "Backend/tests/QuranDashboard.Tests/README.md",
+     "section_or_line": "source-safe test data"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md",
+     "section_or_line": "safety mentions"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md",
+     "section_or_line": "safety mentions"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md",
+     "section_or_line": "safety mentions"
+    },
+    {
+     "file": ".claude/skills/engineering-review/SKILL.md",
+     "section_or_line": "325 + review items"
+    },
+    {
+     "file": ".claude/skills/test-guard/SKILL.md",
+     "section_or_line": "source-safe rule"
+    },
+    {
+     "file": ".claude/skills/backend-structure-review/SKILL.md",
+     "section_or_line": "safety check"
+    },
+    {
+     "file": "SKILLS_AND_ARCHITECTURE_GUIDE.md",
+     "section_or_line": "safety summary"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "review-routing-engineering-review-is-formal-reviewer",
+   "stated_in": [
+    {
+     "file": "CLAUDE.md",
+     "section_or_line": "190-199, 216-220, 236-237 (three restatements in one file)"
+    },
+    {
+     "file": "AGENTS.md",
+     "section_or_line": "same lines (byte-identical copy)"
+    },
+    {
+     "file": "CODING_PRINCIPLES.md",
+     "section_or_line": "review-routing notes"
+    },
+    {
+     "file": "TESTING_STRATEGY.md",
+     "section_or_line": "§10 responsibilities (formal reviewer owns broad gates)"
+    },
+    {
+     "file": "Backend/CLAUDE.md",
+     "section_or_line": "30-31"
+    },
+    {
+     "file": "Backend/AGENTS.md",
+     "section_or_line": "30-31 (byte-identical copy)"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/CLAUDE.md",
+     "section_or_line": "29-31"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/AGENTS.md",
+     "section_or_line": "29-31 (near-identical copy)"
+    },
+    {
+     "file": ".claude/skills/engineering-review/SKILL.md",
+     "section_or_line": "scope/boundary section"
+    },
+    {
+     "file": ".claude/skills/test-guard/SKILL.md",
+     "section_or_line": "boundary note"
+    },
+    {
+     "file": ".claude/skills/backend-structure-review/SKILL.md",
+     "section_or_line": "boundary note"
+    },
+    {
+     "file": "SKILLS_AND_ARCHITECTURE_GUIDE.md",
+     "section_or_line": "skill routing matrix"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "spec-kit-routing-and-artifact-locations",
+   "stated_in": [
+    {
+     "file": "CLAUDE.md",
+     "section_or_line": "38-88 'Workspace Path Conventions' + 256-260 'Active Spec Kit Feature'"
+    },
+    {
+     "file": "AGENTS.md",
+     "section_or_line": "same lines (byte-identical copy)"
+    },
+    {
+     "file": "Backend/CLAUDE.md",
+     "section_or_line": "66-71"
+    },
+    {
+     "file": "Backend/AGENTS.md",
+     "section_or_line": "66-71 (byte-identical copy)"
+    },
+    {
+     "file": "docs/README.md",
+     "section_or_line": "13, 24-40"
+    },
+    {
+     "file": "docs/contracts/README.md",
+     "section_or_line": "15-18"
+    },
+    {
+     "file": ".cursor/rules/always-read-agents.mdc",
+     "section_or_line": "30-52 (Spec Kit reading list + phase discipline)"
+    },
+    {
+     "file": ".claude/skills/engineering-review/SKILL.md",
+     "section_or_line": "134-139"
+    },
+    {
+     "file": "SKILLS_AND_ARCHITECTURE_GUIDE.md",
+     "section_or_line": "spec-kit skill routing"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "vitest-two-fork-cap",
+   "stated_in": [
+    {
+     "file": "TESTING_STRATEGY.md",
+     "section_or_line": "§4 Frontend lanes (canonical)"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/CLAUDE.md",
+     "section_or_line": "28 ('Preserve the two-fork Vitest cap')"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/AGENTS.md",
+     "section_or_line": "28 (near-identical copy)"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/README.md",
+     "section_or_line": "test-command section"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/testing/README.md",
+     "section_or_line": "harness constraints"
+    },
+    {
+     "file": ".cursor/rules/always-read-agents.mdc",
+     "section_or_line": "162-182 (full mechanism restated: env vars, config:false, cap<=3)"
+    },
+    {
+     "file": ".claude/skills/test-guard/SKILL.md",
+     "section_or_line": "harness references"
+    },
+    {
+     "file": ".claude/skills/engineering-review/SKILL.md",
+     "section_or_line": "test-run judgment"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "single-postgres-container-no-concurrent-db-commands",
+   "stated_in": [
+    {
+     "file": "TESTING_STRATEGY.md",
+     "section_or_line": "§3.3 (canonical)"
+    },
+    {
+     "file": "CLAUDE.md",
+     "section_or_line": "231-232"
+    },
+    {
+     "file": "AGENTS.md",
+     "section_or_line": "231-232 (byte-identical copy)"
+    },
+    {
+     "file": "Backend/CLAUDE.md",
+     "section_or_line": "25-29"
+    },
+    {
+     "file": "Backend/AGENTS.md",
+     "section_or_line": "25-29 (byte-identical copy)"
+    },
+    {
+     "file": ".cursor/rules/always-read-agents.mdc",
+     "section_or_line": "158"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  },
+  {
+   "rule": "no-ci-fallback-every-gate-is-local",
+   "stated_in": [
+    {
+     "file": "TESTING_STRATEGY.md",
+     "section_or_line": "§8 'Continuous integration — none in this tree' (canonical)"
+    },
+    {
+     "file": "CLAUDE.md",
+     "section_or_line": "234-235"
+    },
+    {
+     "file": "AGENTS.md",
+     "section_or_line": "234-235 (byte-identical copy)"
+    },
+    {
+     "file": "Backend/CLAUDE.md",
+     "section_or_line": "28-29"
+    },
+    {
+     "file": "Backend/AGENTS.md",
+     "section_or_line": "28-29 (byte-identical copy)"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/CLAUDE.md",
+     "section_or_line": "30-31"
+    },
+    {
+     "file": "Frontend/quran-dashboard-ui/AGENTS.md",
+     "section_or_line": "30-31 (near-identical copy)"
+    },
+    {
+     "file": ".cursor/rules/always-read-agents.mdc",
+     "section_or_line": "143-144"
+    },
+    {
+     "file": "Backend/tests/QuranDashboard.Tests/README.md",
+     "section_or_line": "no-CI note"
+    },
+    {
+     "file": "SKILLS_AND_ARCHITECTURE_GUIDE.md",
+     "section_or_line": "no-CI note"
+    },
+    {
+     "file": ".claude/skills/engineering-review/SKILL.md",
+     "section_or_line": "evidence rules"
+    }
+   ],
+   "confidence": "CONFIRMED"
+  }
+ ],
+ "notes": [
+  "Token estimates are bytes/4 throughout, per the audit contract.",
+  "Total inventory: 74 files, 896,114 bytes, ~224,028 approx tokens (instruction/context surface an agent may be routed to; excludes skill bodies except where listed in SKILL_SIZES for traces, and excludes specs/<feature> planning artifacts since no feature is active).",
+  "Claude Code harness auto-load behavior: root CLAUDE.md loads into every session; Backend/CLAUDE.md and Frontend/quran-dashboard-ui/CLAUDE.md auto-load when files under those directories are touched. AGENTS.md files are NOT loaded by the Claude harness — they exist for non-Claude agents (Cursor/Codex), yet are byte-identical to the CLAUDE files and maintained in lockstep. CONFIRMED (sha1 + git log).",
+  "Outside-repo always-loaded context for Claude (not counted in file totals): ~/.claude/CLAUDE.md (user global) and the auto-memory MEMORY.md — visible in this audit session's own system prompt. CONFIRMED for this environment.",
+  "The single largest instructed read is Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md at 103,970 bytes (~25,993 tokens): mandatory for ANY visual change per Frontend/quran-dashboard-ui/CLAUDE.md:3-9, and unconditionally mandatory for ANY frontend task under Cursor rules (.cursor/rules/always-read-agents.mdc:27).",
+  "TESTING_STRATEGY.md (33,427 B) is instructed before selecting tests on every trace that runs tests — it appears in all 8 traces' mandatory or conditional sets.",
+  "The 8 task traces use representative nearest READMEs (Abwab area) where the rule is dynamic; per-trace notes flag this. Byte totals are static-file sums; actual agent reads may be partial (Read tool offsets) — trace totals are upper bounds for full reads. NEEDS_MEASUREMENT for actual runtime read behavior.",
+  "specs/<feature>/ artifacts are unsized in the phase-implementation trace: no active feature at HEAD 72792ba9 (root CLAUDE.md 'Active Spec Kit Feature: None'; specs/ contains only README.md, 'git status' shows only the audit folder untracked). CONFIRMED.",
+  ".claude/settings.local.json.bak (456 B) is git-tracked while .claude/settings.local.json (540 B) is untracked local config — the .bak is the only tracked settings artifact and contains stale permission allowlist entries (e.g. direct 'npx ng test --include=...' invocations that the current instruction files forbid as lane bypasses). CONFIRMED from file content.",
+  ".codex/ is an empty untracked directory (mtime 2026-08-07); brief's statement 'it is empty' verified.",
+  "Routing edges from AGENTS.md files are emitted explicitly with '(byte-identical file)' evidence tags because those files exist independently even though their content duplicates the CLAUDE files.",
+  "SKILLS_AND_ARCHITECTURE_GUIDE.md (42,729 B) is referenced by no entrypoint instruction file on any task path found in this scan (root CLAUDE.md lists it only as long-lived law at line 81; nothing instructs reading it before work) — it is a meta-index reachable only by name. LIKELY dead weight on task paths; flagged for the synthesis phase.",
+  "docs/TESTING_DEBT.md (41,767 B) is on no mandatory task-trace path; it is an agenda ledger read when planning the next feature. CONFIRMED from instruction texts scanned.",
+  "Feature READMEs have grown to architecture-doc scale — the 'nearest README' cost is no longer small: Frontend/quran-dashboard-ui/src/app/features/abwab/README.md 97,772 B (~24,443 tokens), features/access-admin/README.md 42,594 B, features/words/README.md 37,786 B, Backend Persistence/Writes/Abwab/README.md 31,236 B. The frontend abwab README alone is second only to UI_STYLE_SYSTEM.md in the whole instruction inventory. CONFIRMED (byte counts).",
+  "Top-5 largest inventory files: UI_STYLE_SYSTEM.md 103,970; features/abwab/README.md 97,772; SKILLS_AND_ARCHITECTURE_GUIDE.md 42,729; features/access-admin/README.md 42,594; docs/TESTING_DEBT.md 41,767."
+ ]
+}

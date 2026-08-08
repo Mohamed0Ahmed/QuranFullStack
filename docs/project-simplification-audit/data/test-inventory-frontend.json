@@ -1,0 +1,4920 @@
+{
+ "meta": {
+  "generated": "2026-08-08",
+  "repo_head": "72792ba9",
+  "scope": "Frontend/quran-dashboard-ui/src/**/*.spec.ts + Frontend/quran-dashboard-ui/e2e/**",
+  "method": "static analysis (python3 regex over file contents); no tests were executed",
+  "token_estimate_rule": "bytes/4"
+ },
+ "totals": {
+  "spec_files": 223,
+  "loc": 54145,
+  "cases": 2459,
+  "describes": 548,
+  "approx_tokens": 540214,
+  "testbed_files": 150,
+  "testbed_total_refs": 1000,
+  "case_count_method": "static count of it(/test( call sites incl. .each/.skip; a parameterized call site counts once, so runtime case count is higher"
+ },
+ "by_area": [
+  {
+   "area": "features/words",
+   "spec_files": 92,
+   "loc": 24207,
+   "cases": 1120,
+   "describes": 215,
+   "testbed_files": 63,
+   "approx_tokens": 240782
+  },
+  {
+   "area": "features/abwab",
+   "spec_files": 32,
+   "loc": 11675,
+   "cases": 628,
+   "describes": 182,
+   "testbed_files": 26,
+   "approx_tokens": 131928
+  },
+  {
+   "area": "features/mushaf",
+   "spec_files": 42,
+   "loc": 8751,
+   "cases": 297,
+   "describes": 70,
+   "testbed_files": 21,
+   "approx_tokens": 77094
+  },
+  {
+   "area": "features/access-admin",
+   "spec_files": 14,
+   "loc": 3819,
+   "cases": 142,
+   "describes": 23,
+   "testbed_files": 11,
+   "approx_tokens": 36374
+  },
+  {
+   "area": "core",
+   "spec_files": 20,
+   "loc": 3141,
+   "cases": 135,
+   "describes": 28,
+   "testbed_files": 13,
+   "approx_tokens": 28168
+  },
+  {
+   "area": "shared",
+   "spec_files": 17,
+   "loc": 1847,
+   "cases": 114,
+   "describes": 23,
+   "testbed_files": 13,
+   "approx_tokens": 18744
+  },
+  {
+   "area": "app-root",
+   "spec_files": 3,
+   "loc": 358,
+   "cases": 8,
+   "describes": 3,
+   "testbed_files": 1,
+   "approx_tokens": 3506
+  },
+  {
+   "area": "features/auth",
+   "spec_files": 1,
+   "loc": 140,
+   "cases": 6,
+   "describes": 1,
+   "testbed_files": 1,
+   "approx_tokens": 1425
+  },
+  {
+   "area": "features/dashboard",
+   "spec_files": 1,
+   "loc": 132,
+   "cases": 5,
+   "describes": 2,
+   "testbed_files": 1,
+   "approx_tokens": 1478
+  },
+  {
+   "area": "environments",
+   "spec_files": 1,
+   "loc": 75,
+   "cases": 4,
+   "describes": 1,
+   "testbed_files": 0,
+   "approx_tokens": 635
+  }
+ ],
+ "by_lane": [
+  {
+   "lane": "feature-access-admin",
+   "kind": "primary-area",
+   "spec_files": 14,
+   "loc": 3819,
+   "cases": 142
+  },
+  {
+   "lane": "feature-abwab",
+   "kind": "primary-area",
+   "spec_files": 32,
+   "loc": 11675,
+   "cases": 628
+  },
+  {
+   "lane": "feature-auth",
+   "kind": "primary-area",
+   "spec_files": 1,
+   "loc": 140,
+   "cases": 6
+  },
+  {
+   "lane": "feature-dashboard",
+   "kind": "primary-area",
+   "spec_files": 1,
+   "loc": 132,
+   "cases": 5
+  },
+  {
+   "lane": "feature-mushaf",
+   "kind": "primary-area",
+   "spec_files": 42,
+   "loc": 8751,
+   "cases": 297
+  },
+  {
+   "lane": "feature-words",
+   "kind": "primary-area",
+   "spec_files": 92,
+   "loc": 24207,
+   "cases": 1120
+  },
+  {
+   "lane": "shared",
+   "kind": "primary-area",
+   "spec_files": 41,
+   "loc": 5421,
+   "cases": 261
+  },
+  {
+   "lane": "authorization",
+   "kind": "cross-cut",
+   "spec_files": 11,
+   "loc": 1329,
+   "cases": 54
+  },
+  {
+   "lane": "composition",
+   "kind": "cross-cut",
+   "spec_files": 105,
+   "loc": 32516,
+   "cases": 1404
+  },
+  {
+   "lane": "fast",
+   "kind": "cross-cut",
+   "spec_files": 61,
+   "loc": 6737,
+   "cases": 535
+  }
+ ],
+ "lane_partition": {
+  "primary_areas": [
+   "feature-access-admin",
+   "feature-abwab",
+   "feature-auth",
+   "feature-dashboard",
+   "feature-mushaf",
+   "feature-words",
+   "shared"
+  ],
+  "cross_cuts": [
+   "authorization",
+   "composition",
+   "fast"
+  ],
+  "full_gate_selects_all_specs": true,
+  "specs_in_no_primary_lane": [],
+  "specs_in_multiple_primary_lanes": [],
+  "specs_not_in_full_gate": [],
+  "specs_in_no_lane_at_all": [],
+  "crosscut_overlap_is_by_design": true,
+  "composition_and_fast_both_select": [],
+  "authorization_overlap_with_primary": {
+   "shared": 10,
+   "feature-auth": 1
+  },
+  "verification": "reimplemented globToRegExp of testing/verify-test-gates.mjs:58-73 in python; full gate=223/223, every spec in exactly 1 of 7 primary areas",
+  "confidence": "CONFIRMED",
+  "evidence": [
+   "Frontend/quran-dashboard-ui/angular.json:119-221",
+   "Frontend/quran-dashboard-ui/testing/verify-test-gates.mjs:8-29",
+   "Frontend/quran-dashboard-ui/testing/verify-test-gates.mjs:174-183",
+   "Frontend/quran-dashboard-ui/package.json:9-32"
+  ]
+ },
+ "by_category": {
+  "component-rendering": {
+   "spec_files": 103,
+   "loc": 31797,
+   "cases": 1378,
+   "confidence_mix": {
+    "LIKELY": 3,
+    "CONFIRMED": 100
+   },
+   "classification_method": "path/filename convention + content heuristic (see notes)"
+  },
+  "facade-store-state": {
+   "spec_files": 38,
+   "loc": 11840,
+   "cases": 412,
+   "confidence_mix": {
+    "CONFIRMED": 38
+   },
+   "classification_method": "path/filename convention + content heuristic (see notes)"
+  },
+  "route-guard-url": {
+   "spec_files": 18,
+   "loc": 4335,
+   "cases": 323,
+   "confidence_mix": {
+    "CONFIRMED": 18
+   },
+   "classification_method": "path/filename convention + content heuristic (see notes)"
+  },
+  "api-boundary": {
+   "spec_files": 10,
+   "loc": 2004,
+   "cases": 96,
+   "confidence_mix": {
+    "CONFIRMED": 10
+   },
+   "classification_method": "path/filename convention + content heuristic (see notes)"
+  },
+  "pipe-util": {
+   "spec_files": 30,
+   "loc": 1823,
+   "cases": 142,
+   "confidence_mix": {
+    "CONFIRMED": 30
+   },
+   "classification_method": "path/filename convention + content heuristic (see notes)"
+  },
+  "other": {
+   "spec_files": 15,
+   "loc": 1235,
+   "cases": 68,
+   "confidence_mix": {
+    "LIKELY": 15
+   },
+   "classification_method": "path/filename convention + content heuristic (see notes)"
+  },
+  "authorization": {
+   "spec_files": 9,
+   "loc": 1111,
+   "cases": 40,
+   "confidence_mix": {
+    "CONFIRMED": 7,
+    "LIKELY": 2
+   },
+   "classification_method": "path/filename convention + content heuristic (see notes)"
+  }
+ },
+ "markup_heavy": [
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-page/abwab-page.component.spec.ts",
+   "loc": 2148,
+   "cases": 104,
+   "markup_assertions_total": 370,
+   "breakdown": {
+    "querySelector": 235,
+    "textContent": 33,
+    "innerHTML": 0,
+    "DebugElement": 1,
+    "nativeElement": 101
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/word-types-explorer-page/word-types-explorer-page.component.spec.ts",
+   "loc": 1644,
+   "cases": 64,
+   "markup_assertions_total": 223,
+   "breakdown": {
+    "querySelector": 115,
+    "textContent": 18,
+    "innerHTML": 0,
+    "DebugElement": 1,
+    "nativeElement": 89
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-move-picker/abwab-move-picker.component.spec.ts",
+   "loc": 597,
+   "cases": 39,
+   "markup_assertions_total": 157,
+   "breakdown": {
+    "querySelector": 95,
+    "textContent": 9,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 53
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree.component.spec.ts",
+   "loc": 837,
+   "cases": 50,
+   "markup_assertions_total": 153,
+   "breakdown": {
+    "querySelector": 92,
+    "textContent": 13,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 48
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-sections-modal/abwab-sections-modal.component.spec.ts",
+   "loc": 564,
+   "cases": 28,
+   "markup_assertions_total": 103,
+   "breakdown": {
+    "querySelector": 60,
+    "textContent": 5,
+    "innerHTML": 0,
+    "DebugElement": 4,
+    "nativeElement": 34
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-types-table/word-types-table.component.spec.ts",
+   "loc": 598,
+   "cases": 26,
+   "markup_assertions_total": 93,
+   "breakdown": {
+    "querySelector": 46,
+    "textContent": 20,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 27
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-word-section/selected-word-section.component.spec.ts",
+   "loc": 653,
+   "cases": 21,
+   "markup_assertions_total": 92,
+   "breakdown": {
+    "querySelector": 61,
+    "textContent": 9,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 22
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts",
+   "loc": 1246,
+   "cases": 34,
+   "markup_assertions_total": 88,
+   "breakdown": {
+    "querySelector": 57,
+    "textContent": 4,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 27
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts",
+   "loc": 1169,
+   "cases": 41,
+   "markup_assertions_total": 88,
+   "breakdown": {
+    "querySelector": 53,
+    "textContent": 2,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 33
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts",
+   "loc": 1134,
+   "cases": 40,
+   "markup_assertions_total": 84,
+   "breakdown": {
+    "querySelector": 51,
+    "textContent": 2,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 31
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.spec.ts",
+   "loc": 666,
+   "cases": 22,
+   "markup_assertions_total": 79,
+   "breakdown": {
+    "querySelector": 52,
+    "textContent": 8,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 19
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts",
+   "loc": 368,
+   "cases": 23,
+   "markup_assertions_total": 79,
+   "breakdown": {
+    "querySelector": 45,
+    "textContent": 11,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 23
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.spec.ts",
+   "loc": 370,
+   "cases": 19,
+   "markup_assertions_total": 78,
+   "breakdown": {
+    "querySelector": 45,
+    "textContent": 14,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 19
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/pages/access-admin-page/access-admin-page.component.spec.ts",
+   "loc": 1344,
+   "cases": 40,
+   "markup_assertions_total": 73,
+   "breakdown": {
+    "querySelector": 20,
+    "textContent": 43,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 10
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.spec.ts",
+   "loc": 468,
+   "cases": 22,
+   "markup_assertions_total": 67,
+   "breakdown": {
+    "querySelector": 37,
+    "textContent": 8,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 22
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-cards/abwab-cards.component.spec.ts",
+   "loc": 296,
+   "cases": 22,
+   "markup_assertions_total": 64,
+   "breakdown": {
+    "querySelector": 33,
+    "textContent": 9,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 22
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+   "loc": 358,
+   "cases": 19,
+   "markup_assertions_total": 60,
+   "breakdown": {
+    "querySelector": 34,
+    "textContent": 7,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 19
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts",
+   "loc": 344,
+   "cases": 18,
+   "markup_assertions_total": 59,
+   "breakdown": {
+    "querySelector": 34,
+    "textContent": 7,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 18
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-modal/abwab-door-modal.component.spec.ts",
+   "loc": 445,
+   "cases": 22,
+   "markup_assertions_total": 58,
+   "breakdown": {
+    "querySelector": 31,
+    "textContent": 5,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 22
+   },
+   "confidence": "CONFIRMED"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.spec.ts",
+   "loc": 510,
+   "cases": 16,
+   "markup_assertions_total": 57,
+   "breakdown": {
+    "querySelector": 44,
+    "textContent": 12,
+    "innerHTML": 0,
+    "DebugElement": 0,
+    "nativeElement": 1
+   },
+   "confidence": "CONFIRMED"
+  }
+ ],
+ "repeated_variants": [
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "intercepts an unmodified click in-app and leaves a modifier click to the browser",
+   "count": 7,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-stems-list/lemma-stems-list.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-words-list/lemma-words-list.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/root-lemmas-list/root-lemmas-list.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/root-stems-list/root-stems-list.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/root-words-list/root-words-list.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-lemmas-list/stem-lemmas-list.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "file",
+   "normalized_title_pattern": "yields an error result ...",
+   "count": 6,
+   "confidence": "LIKELY",
+   "file": "Frontend/quran-dashboard-ui/src/app/features/words/data-access/words-association-options.service.spec.ts",
+   "sample_titles": [
+    "yields an error result (not a silent empty list) on a backend isSuccess:false tree response",
+    "yields an error result (not a silent empty list) on a transport error, without throwing",
+    "yields an error result (not an empty list) on a backend isSuccess:false response"
+   ],
+   "data_driven_candidate": true
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "keeps the pagination slot rendered while loading and once loaded",
+   "count": 5,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/ayah-matches-list/ayah-matches-list.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-words-list/lemma-words-list.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/root-words-list/root-words-list.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-words-list/stem-words-list.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-grouped-words-list/word-type-grouped-words-list.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "re-drives its own controller from a frame input change (url sync loop)",
+   "count": 5,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/lemma-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/root-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/stem-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/unique-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/word-type-detail-overlay-adapter.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "never touches the page facade singleton state",
+   "count": 5,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/lemma-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/root-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/stem-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/unique-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/word-type-detail-overlay-adapter.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "has no desktop sort dropdown: the only select sits in the ≤#px fallback wrapper",
+   "count": 5,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/word-types-explorer-page/word-types-explorer-page.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "drives the same url contract from the fallback select",
+   "count": 5,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/word-types-explorer-page/word-types-explorer-page.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "recovers from a summary transport error and loads the same identity on retry",
+   "count": 5,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-drilldown.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.controller.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "parses the canonical token <q> verbatim",
+   "count": 5,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "canonicalizes the legacy alias <q> to <q>",
+   "count": 5,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "round-trips a suffixed token through build",
+   "count": 5,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "file",
+   "normalized_title_pattern": "count %i reads correctly ...",
+   "count": 4,
+   "confidence": "LIKELY",
+   "file": "Frontend/quran-dashboard-ui/src/app/features/abwab/models/abwab.labels.spec.ts",
+   "sample_titles": [
+    "count %i reads correctly in both the archive confirm and the move title",
+    "count %i reads correctly in the bulk bar",
+    "count %i reads correctly"
+   ],
+   "data_driven_candidate": false
+  },
+  {
+   "scope": "file",
+   "normalized_title_pattern": "ignores the previous lemma ...",
+   "count": 4,
+   "confidence": "LIKELY",
+   "file": "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.controller.spec.ts",
+   "sample_titles": [
+    "ignores the previous lemma detail response while the new lemma summary is pending",
+    "ignores the previous lemma detail response after the new lemma summary succeeds",
+    "ignores the previous lemma detail response after the new lemma summary 404s"
+   ],
+   "data_driven_candidate": false
+  },
+  {
+   "scope": "file",
+   "normalized_title_pattern": "ignores the previous root ...",
+   "count": 4,
+   "confidence": "LIKELY",
+   "file": "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-detail.controller.spec.ts",
+   "sample_titles": [
+    "ignores the previous root detail response while the new root summary is pending",
+    "ignores the previous root detail response after the new root summary succeeds",
+    "ignores the previous root detail response after the new root summary 404s"
+   ],
+   "data_driven_candidate": false
+  },
+  {
+   "scope": "file",
+   "normalized_title_pattern": "ignores the previous stem ...",
+   "count": 4,
+   "confidence": "LIKELY",
+   "file": "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.controller.spec.ts",
+   "sample_titles": [
+    "ignores the previous stem detail response while the new stem summary is pending",
+    "ignores the previous stem detail response after the new stem summary succeeds",
+    "ignores the previous stem detail response after the new stem summary 404s"
+   ],
+   "data_driven_candidate": false
+  },
+  {
+   "scope": "file",
+   "normalized_title_pattern": "ignores the previous word ...",
+   "count": 4,
+   "confidence": "LIKELY",
+   "file": "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-drilldown.controller.spec.ts",
+   "sample_titles": [
+    "ignores the previous word drilldown response while the new word summary is pending",
+    "ignores the previous word drilldown response after the new word summary succeeds",
+    "ignores the previous word drilldown response after the new word summary 404s"
+   ],
+   "data_driven_candidate": false
+  },
+  {
+   "scope": "file",
+   "normalized_title_pattern": "ignores the previous identity ...",
+   "count": 4,
+   "confidence": "LIKELY",
+   "file": "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.controller.spec.ts",
+   "sample_titles": [
+    "ignores the previous identity detail response while the new identity summary is pending",
+    "ignores the previous identity detail response after the new identity summary succeeds",
+    "ignores the previous identity detail response after the new identity summary 404s"
+   ],
+   "data_driven_candidate": false
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "renders a sort button on every allowlisted column and none anywhere else",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "cycles the text column alpha the other way: natural asc → desc → release",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "carries aria-sort only on the active column, and drops it on release",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "renders the direction glyph as an aria-hidden span, and none when inactive",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/word-types-table/word-types-table.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "names the column and the next cycle state in the arabic aria-label",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "renders the error state inside the table shell, replacing the body",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "renders the no-results state inside the table shell, replacing the body",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "shows the skeleton body and no state box while loading",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "renders the body and no state box on success",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "renders the panel content frameless: no dialog chrome, no close, no panel header",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/lemma-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/root-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/stem-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/word-type-detail-overlay-adapter.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "shows the headline result count equal to the list totalcount (us#)",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "serializes a count-range chip to the url and resets the page (us#)",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "hides the headline result count when the list read fails (us#)",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "offers the default order plus every sortable column in both directions",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "navigates { sort: token, page: null } when a header cycle step is emitted",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "navigates { sort: null, page: null } when the cycle releases",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "releases the param when the fallback select picks the default order",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "short-circuits a re-apply of the complete identical state",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.controller.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "cancels a stale summary response so it cannot overwrite a newer identity",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.controller.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "maps a # summary response to the distinct notfound state",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.controller.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "maps a transport failure to the distinct error state",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.controller.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "recovers from a detail transport error by reloading the view without re-reading the summary",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.controller.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "is a no-op without a selected identity",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.controller.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.controller.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "applies documented defaults when params are absent",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "reads list state (search/sort/page) verbatim when valid",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "builds only the provided fields so merge preserves the rest",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "skips undefined fields so merge preserves the rest",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "omits absent query params when only the route is needed",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "has no active ranges for a pre-feature url (backward compat)",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "parses active ranges from their url keys",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "drops malformed ranges fail-closed while the page still parses",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "fails closed to the default on the unsupported token <q>",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "removes the param on release, so the default order stays param-free",
+   "count": 4,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "dismisses the discard strip on escape and keeps the modal open",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/abwab",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-modal/abwab-door-modal.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-sections-modal/abwab-sections-modal.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-node-modal/abwab-template-node-modal.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "keeps the actions out of the scrolling body",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/abwab",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-move-picker/abwab-move-picker.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-relations-modal/abwab-relations-modal.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-copy-modal/abwab-template-copy-modal.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "marks the active tab selected with roving tabindex and labels the panel",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/root-details-panel/root-details-panel.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "moves selection forward in rtl reading order on arrowleft",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/root-details-panel/root-details-panel.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "renders the tabpanel surface as a flex column for nested list viewports",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/root-details-panel/root-details-panel.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "renders the empty-selection state with header, disabled tabs, and empty message",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/root-details-panel/root-details-panel.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "renders controlled not-found content without detail tabs",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/root-details-panel/root-details-panel.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "renders an overlay entity link mirroring the old $wordview deep link",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-words-list/lemma-words-list.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/root-words-list/root-words-list.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-words-list/stem-words-list.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "marks the selected row with aria-selected",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "cycles a count column: natural desc → asc → release",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "publishes the loaded entity title and ayah count to the shared store and clears them on destroy",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/lemma-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/root-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/stem-detail-overlay-adapter.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "routes a view tab change through replacetopframe with setview reset semantics",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/lemma-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/root-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/stem-detail-overlay-adapter.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "routes a word-view sub-tab change through replacetopframe with page reset",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/lemma-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/root-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/stem-detail-overlay-adapter.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "routes a surah sub-tab change through replacetopframe keeping the page",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/lemma-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/root-detail-overlay-adapter.component.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/stem-detail-overlay-adapter.component.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "re-issues the summary load on rebind to the same url state after a mid-flight unbind",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.facade.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.facade.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.facade.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "preserves a valid explicit active column for ayahs restore",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "honors wordview only when view=words",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "honors surahview only when view=surahs",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "honors detailpage only for paginated views (ayahs/words)",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "round-trips parse -> build for list + selection + sub-view state",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "clears only the selection keys, preserving list context (search/sort/page)",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  },
+  {
+   "scope": "feature",
+   "normalized_title_pattern": "is absent for a pre-feature url (backward compat)",
+   "count": 3,
+   "confidence": "LIKELY",
+   "area": "features/words",
+   "files": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts"
+   ],
+   "data_driven_candidate": false,
+   "note": "same normalized it() title in N sibling spec files - shared-behavior harness candidate"
+  }
+ ],
+ "implementation_pinned": [
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-page/abwab-page.component.spec.ts",
+   "internal_surface_casts": 18,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-page/abwab-page.component.spec.ts:157 | return (router.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls.length;",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-page/abwab-page.component.spec.ts:926 | (fixture.componentInstance as unknown as { onRevealRequested(doorId: number): void }).onRevealRequested(2);",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-page/abwab-page.component.spec.ts:928 | const calls = (router.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls;",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-page/abwab-page.component.spec.ts:1292 | const calls = (revealRouter.navigate as unknown as { mock: { calls: unknown[][] } }).mock.calls;"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts",
+   "internal_surface_casts": 0,
+   "private_bracket_invocations": 10,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts:259 | fixture.componentInstance['onPrimaryRootChange']({ id: 701, label: 'ع ل م' });",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts:266 | fixture.componentInstance['onPrimaryLemmaChange']({ id: 502, label: 'عِلْم' });",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts:284 | fixture.componentInstance['onRootSearch']('غير موجود');",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts:533 | component['onRowSelected'](listRow(500));"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts",
+   "internal_surface_casts": 0,
+   "private_bracket_invocations": 9,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts:240 | fixture.componentInstance['onRootFilterChange']({ id: 701, label: 'ع ل م' });",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts:459 | component['onRowSelected'](listRow(500));",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts:477 | component['onCountOpened']({ lemma: listRow(500), view: 'words', wordView: 'tashkeel' });",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts:496 | component['onWordViewChange']('tashkeel');"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts",
+   "internal_surface_casts": 0,
+   "private_bracket_invocations": 8,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts:333 | component['onCountOpened']({ root: listRow(10), view: 'ayahs' });",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts:363 | component['onCountOpened']({ root: listRow(10), view: 'words', wordView: 'tashkeel' });",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts:381 | component['onCountOpened']({ root: listRow(10), view: 'words', wordView: 'simple' });",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts:397 | component['onClearSelection']();"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts",
+   "internal_surface_casts": 0,
+   "private_bracket_invocations": 4,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts:215 | fixture.componentInstance['onPrimaryTypeChange']({ id: 'PN', label: 'اسم علم' });",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts:229 | fixture.componentInstance['onPrimaryRootChange']({ id: 5001, label: 'ك ل م' });",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts:244 | fixture.componentInstance['onDrilldownOpen']({ word: item(1), column: 'surahs', view: 'surahs', source: 'keybo",
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts:245 | fixture.componentInstance['onDrilldownOpen']({ word: item(1), column: 'missing', view: 'missing', source: 'key"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-templates-page/abwab-templates-page.component.spec.ts",
+   "internal_surface_casts": 2,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-templates-page/abwab-templates-page.component.spec.ts:47 | return fixture.componentInstance as unknown as TemplateDeleteInternals;",
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-templates-page/abwab-templates-page.component.spec.ts:142 | const internals = fixture.componentInstance as unknown as {"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-types-table/word-types-table.component.spec.ts",
+   "internal_surface_casts": 2,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/word-types-table/word-types-table.component.spec.ts:98 | const instance = fixture.componentInstance as unknown as {",
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/word-types-table/word-types-table.component.spec.ts:396 | const focusStatistic = (fixture.componentInstance as unknown as {"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-archive-view/abwab-archive-view.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-archive-view/abwab-archive-view.component.spec.ts:64 | (fixture.componentInstance as unknown as { onRestoreClick(id: number): void }).onRestoreClick(1);"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-modal/abwab-door-modal.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-modal/abwab-door-modal.component.spec.ts:95 | (fixture.componentInstance as unknown as { submit(): void }).submit();"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-restore-modal/abwab-door-restore-modal.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 6,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-restore-modal/abwab-door-restore-modal.component.spec.ts:94 | (fixture.componentInstance as unknown as { confirm(): void }).confirm();"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-move-picker/abwab-move-picker.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-move-picker/abwab-move-picker.component.spec.ts:66 | (fixture.componentInstance as unknown as { confirm(): void }).confirm();"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-relations-modal/abwab-relations-modal.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-relations-modal/abwab-relations-modal.component.spec.ts:148 | const internals = fixture.componentInstance as unknown as {"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-sections-modal/abwab-sections-modal.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-sections-modal/abwab-sections-modal.component.spec.ts:82 | const internals = fixture.componentInstance as unknown as {"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-side-panel/abwab-side-panel.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-side-panel/abwab-side-panel.component.spec.ts:59 | (fixture.componentInstance as unknown as { toggleBulkMode(): void }).toggleBulkMode();"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-copy-modal/abwab-template-copy-modal.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-copy-modal/abwab-template-copy-modal.component.spec.ts:91 | (fixture.componentInstance as unknown as { confirm(): void }).confirm();"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-node-modal/abwab-template-node-modal.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-node-modal/abwab-template-node-modal.component.spec.ts:45 | (fixture.componentInstance as unknown as { submit(): void }).submit();"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-tree/abwab-template-tree.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-tree/abwab-template-tree.component.spec.ts:87 | const internals = fixture.componentInstance as unknown as {"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree.component.spec.ts:67 | const internals = fixture.componentInstance as unknown as {"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/pages/mushaf-reader-page/mushaf-reader-page.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/mushaf/pages/mushaf-reader-page/mushaf-reader-page.component.spec.ts:304 | (fixture.componentInstance as unknown as { onDocumentKeydown(e: KeyboardEvent): void }).onDocumentKeydown(even"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/utils/word-type-detail-frame.adapter.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/mushaf/utils/word-type-detail-frame.adapter.spec.ts:88 | ['missing id', undefined as unknown as number],"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts:45 | (fixture.componentRef as unknown as { setInput: (k: string, v: unknown) => void }).setInput(key, value);"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.spec.ts:44 | (fixture.componentRef as unknown as { setInput: (k: string, v: unknown) => void }).setInput(key, value);"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts:43 | (fixture.componentRef as unknown as { setInput: (k: string, v: unknown) => void }).setInput(key, value);"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts:42 | (fixture.componentRef as any).setInput(key, value);"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.spec.ts:15 | const output = (component as unknown as {"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/word-types-explorer-page/word-types-explorer-page.component.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/pages/word-types-explorer-page/word-types-explorer-page.component.spec.ts:542 | const table = fixture.debugElement.query(By.directive(WordTypesTableComponent)).componentInstance as unknown a"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.controller.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 1,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.controller.spec.ts:95 | const controller = new LemmasDetailController(api as unknown as LemmasApi, cache, viewLoader);"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-detail.controller.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 1,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-detail.controller.spec.ts:62 | const controller = new RootsDetailController(api as unknown as RootsApi, cache, viewLoader);"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.controller.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 1,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.controller.spec.ts:78 | const controller = new StemsDetailController(api as unknown as StemsApi, cache, viewLoader);"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-drilldown.controller.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 0,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-drilldown.controller.spec.ts:65 | api as unknown as UniqueWordsApi,"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.controller.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 1,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.controller.spec.ts:90 | const controller = new WordTypesDetailController(api as unknown as WordTypesApi, cache, viewLoader);"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.facade.spec.ts",
+   "internal_surface_casts": 1,
+   "private_bracket_invocations": 0,
+   "mock_construction_casts_excluded": 1,
+   "evidence": [
+    "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.facade.spec.ts:283 | expect((state.selection as unknown as Record<string, number>)[idField]).toBe(dimensionId);"
+   ],
+   "confidence": "LIKELY",
+   "pattern": "spec drives protected/private component methods directly (component['onX'](...) or componentInstance as unknown as {onX})"
+  }
+ ],
+ "accessibility": {
+  "unit_cases_with_a11y_in_title": 173,
+  "unit_files_with_aria_role_assertions": 71,
+  "unit_aria_role_assertion_occurrences": 472,
+  "e2e_dedicated_a11y_tests": 1,
+  "e2e_a11y_evidence": "Frontend/quran-dashboard-ui/e2e/abwab-url-and-a11y.e2e.ts:180",
+  "method": "title regex (aria|a11y|accessib|keyboard|focus|role|tabindex|rtl) + assertion regex (aria-*, getAttribute('role'), tabindex)",
+  "confidence": "LIKELY",
+  "caveat": "title regex includes keyboard/focus-management tests; genuine WCAG-style assertions are the 472 aria/role occurrences across 71 files"
+ },
+ "per_file": [
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/app.config.auth.spec.ts",
+   "loc": 13,
+   "cases": 2,
+   "describes": 1,
+   "area": "app-root",
+   "category": "authorization",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/app.nested-layers.spec.ts",
+   "loc": 271,
+   "cases": 4,
+   "describes": 1,
+   "area": "app-root",
+   "category": "component-rendering",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 7,
+   "markup_assertions": 9,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/app.routes.spec.ts",
+   "loc": 74,
+   "cases": 2,
+   "describes": 1,
+   "area": "app-root",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/auth/auth-bearer-token.spec.ts",
+   "loc": 196,
+   "cases": 3,
+   "describes": 2,
+   "area": "core",
+   "category": "authorization",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 8,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/auth/auth-return-location.store.spec.ts",
+   "loc": 27,
+   "cases": 2,
+   "describes": 1,
+   "area": "core",
+   "category": "authorization",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/auth/current-user.store.spec.ts",
+   "loc": 376,
+   "cases": 14,
+   "describes": 2,
+   "area": "core",
+   "category": "authorization",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/auth/owner.guard.spec.ts",
+   "loc": 110,
+   "cases": 3,
+   "describes": 1,
+   "area": "core",
+   "category": "authorization",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/auth/permission-code.spec.ts",
+   "loc": 42,
+   "cases": 4,
+   "describes": 1,
+   "area": "core",
+   "category": "authorization",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/auth/write-auth-failure.coordinator.spec.ts",
+   "loc": 127,
+   "cases": 3,
+   "describes": 1,
+   "area": "core",
+   "category": "authorization",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 6,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/caching/api-response-cache.spec.ts",
+   "loc": 121,
+   "cases": 7,
+   "describes": 1,
+   "area": "core",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/data-access/dev-latency.interceptor.spec.ts",
+   "loc": 47,
+   "cases": 1,
+   "describes": 1,
+   "area": "core",
+   "category": "api-boundary",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/data-access/secure-url.interceptor.spec.ts",
+   "loc": 149,
+   "cases": 11,
+   "describes": 2,
+   "area": "core",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/data-access/system.api.spec.ts",
+   "loc": 79,
+   "cases": 3,
+   "describes": 1,
+   "area": "core",
+   "category": "api-boundary",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/layout/nav-progress/nav-progress.component.spec.ts",
+   "loc": 187,
+   "cases": 9,
+   "describes": 1,
+   "area": "core",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 8,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/layout/shell-layout.model.spec.ts",
+   "loc": 14,
+   "cases": 2,
+   "describes": 1,
+   "area": "core",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/top-navbar.component.spec.ts",
+   "loc": 298,
+   "cases": 12,
+   "describes": 1,
+   "area": "core",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 17,
+   "a11y_titled_cases": 4
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/navigation/detail-overlay/detail-overlay-ayah-link.directive.spec.ts",
+   "loc": 180,
+   "cases": 8,
+   "describes": 1,
+   "area": "core",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 6,
+   "markup_assertions": 3,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/navigation/detail-overlay/detail-overlay-history.bootstrap.spec.ts",
+   "loc": 133,
+   "cases": 2,
+   "describes": 1,
+   "area": "core",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 6,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/navigation/detail-overlay/detail-overlay-history.service.spec.ts",
+   "loc": 586,
+   "cases": 24,
+   "describes": 2,
+   "area": "core",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 5,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/navigation/detail-overlay/detail-overlay-link.directive.spec.ts",
+   "loc": 167,
+   "cases": 7,
+   "describes": 1,
+   "area": "core",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 6,
+   "markup_assertions": 3,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/navigation/detail-overlay/detail-overlay-url-codec.spec.ts",
+   "loc": 226,
+   "cases": 15,
+   "describes": 5,
+   "area": "core",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/navigation/idle-preload.strategy.spec.ts",
+   "loc": 47,
+   "cases": 2,
+   "describes": 1,
+   "area": "core",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/core/navigation/route-paths.spec.ts",
+   "loc": 29,
+   "cases": 3,
+   "describes": 1,
+   "area": "core",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/abwab.routes.spec.ts",
+   "loc": 44,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/abwab",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 2,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-announcer/abwab-announcer.component.spec.ts",
+   "loc": 34,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 5,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-archive-view/abwab-archive-view.component.spec.ts",
+   "loc": 234,
+   "cases": 15,
+   "describes": 6,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 51,
+   "a11y_titled_cases": 4
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-cards/abwab-cards.component.spec.ts",
+   "loc": 296,
+   "cases": 22,
+   "describes": 8,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 64,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-modal/abwab-door-modal.component.spec.ts",
+   "loc": 445,
+   "cases": 22,
+   "describes": 8,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 58,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-picker/abwab-door-picker.component.spec.ts",
+   "loc": 232,
+   "cases": 17,
+   "describes": 3,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 11,
+   "a11y_titled_cases": 4
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-restore-modal/abwab-door-restore-modal.component.spec.ts",
+   "loc": 303,
+   "cases": 15,
+   "describes": 4,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 9,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-move-picker/abwab-move-picker.component.spec.ts",
+   "loc": 597,
+   "cases": 39,
+   "describes": 6,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 157,
+   "a11y_titled_cases": 2
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-relations-modal/abwab-relations-modal.component.spec.ts",
+   "loc": 799,
+   "cases": 41,
+   "describes": 11,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 55,
+   "a11y_titled_cases": 5
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-sections-modal/abwab-sections-modal.component.spec.ts",
+   "loc": 564,
+   "cases": 28,
+   "describes": 5,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 103,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-side-panel/abwab-side-panel.component.spec.ts",
+   "loc": 207,
+   "cases": 12,
+   "describes": 2,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 45,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-copy-modal/abwab-template-copy-modal.component.spec.ts",
+   "loc": 331,
+   "cases": 17,
+   "describes": 6,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 19,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-node-modal/abwab-template-node-modal.component.spec.ts",
+   "loc": 160,
+   "cases": 8,
+   "describes": 3,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 14,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-tree/abwab-template-tree.component.spec.ts",
+   "loc": 250,
+   "cases": 10,
+   "describes": 5,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 31,
+   "a11y_titled_cases": 5
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-toolbar/abwab-toolbar.component.spec.ts",
+   "loc": 251,
+   "cases": 16,
+   "describes": 6,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 52,
+   "a11y_titled_cases": 2
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree-keyboard.controller.spec.ts",
+   "loc": 210,
+   "cases": 14,
+   "describes": 4,
+   "area": "features/abwab",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 6
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree.component.spec.ts",
+   "loc": 837,
+   "cases": 50,
+   "describes": 14,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 153,
+   "a11y_titled_cases": 15
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab.api.spec.ts",
+   "loc": 255,
+   "cases": 17,
+   "describes": 1,
+   "area": "features/abwab",
+   "category": "api-boundary",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/models/abwab.labels.spec.ts",
+   "loc": 184,
+   "cases": 19,
+   "describes": 7,
+   "area": "features/abwab",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/models/abwab.models.spec.ts",
+   "loc": 88,
+   "cases": 8,
+   "describes": 4,
+   "area": "features/abwab",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-page/abwab-page.component.spec.ts",
+   "loc": 2148,
+   "cases": 104,
+   "describes": 26,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 42,
+   "markup_assertions": 370,
+   "a11y_titled_cases": 5
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-templates-page/abwab-templates-page.component.spec.ts",
+   "loc": 277,
+   "cases": 8,
+   "describes": 4,
+   "area": "features/abwab",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 6,
+   "a11y_titled_cases": 4
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-permissions.controller.spec.ts",
+   "loc": 136,
+   "cases": 5,
+   "describes": 1,
+   "area": "features/abwab",
+   "category": "authorization",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 3,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-relations.controller.spec.ts",
+   "loc": 308,
+   "cases": 12,
+   "describes": 2,
+   "area": "features/abwab",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-sections.controller.spec.ts",
+   "loc": 142,
+   "cases": 5,
+   "describes": 3,
+   "area": "features/abwab",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-selection.store.spec.ts",
+   "loc": 180,
+   "cases": 11,
+   "describes": 3,
+   "area": "features/abwab",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-snapshot.facade.spec.ts",
+   "loc": 261,
+   "cases": 12,
+   "describes": 3,
+   "area": "features/abwab",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 7,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-templates.controller.spec.ts",
+   "loc": 182,
+   "cases": 8,
+   "describes": 4,
+   "area": "features/abwab",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-templates.facade.spec.ts",
+   "loc": 223,
+   "cases": 8,
+   "describes": 3,
+   "area": "features/abwab",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-tree.builder.spec.ts",
+   "loc": 407,
+   "cases": 23,
+   "describes": 7,
+   "area": "features/abwab",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-url-sync.spec.ts",
+   "loc": 213,
+   "cases": 25,
+   "describes": 5,
+   "area": "features/abwab",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-write.controller.spec.ts",
+   "loc": 877,
+   "cases": 33,
+   "describes": 16,
+   "area": "features/abwab",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/access-admin-unsaved-changes.guard.spec.ts",
+   "loc": 39,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/access-admin",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/access-admin.routes.spec.ts",
+   "loc": 25,
+   "cases": 3,
+   "describes": 1,
+   "area": "features/access-admin",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-advanced-security/access-advanced-security.component.spec.ts",
+   "loc": 226,
+   "cases": 10,
+   "describes": 1,
+   "area": "features/access-admin",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 29,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-audit-log/access-audit-log.component.spec.ts",
+   "loc": 342,
+   "cases": 12,
+   "describes": 1,
+   "area": "features/access-admin",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 33,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-change-review/access-change-review.component.spec.ts",
+   "loc": 207,
+   "cases": 12,
+   "describes": 1,
+   "area": "features/access-admin",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 20,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-lifecycle-actions/access-lifecycle-actions.component.spec.ts",
+   "loc": 127,
+   "cases": 6,
+   "describes": 1,
+   "area": "features/access-admin",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 10,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-permission-editor/access-permission-editor.component.spec.ts",
+   "loc": 106,
+   "cases": 4,
+   "describes": 1,
+   "area": "features/access-admin",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 9,
+   "markup_assertions": 5,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-user-list/access-user-list.component.spec.ts",
+   "loc": 143,
+   "cases": 7,
+   "describes": 1,
+   "area": "features/access-admin",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 14,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-user-picker/access-user-picker.component.spec.ts",
+   "loc": 133,
+   "cases": 6,
+   "describes": 1,
+   "area": "features/access-admin",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 13,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-user-summary-card/access-user-summary-card.component.spec.ts",
+   "loc": 119,
+   "cases": 7,
+   "describes": 1,
+   "area": "features/access-admin",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 16,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/data-access/access-admin.api.spec.ts",
+   "loc": 167,
+   "cases": 7,
+   "describes": 1,
+   "area": "features/access-admin",
+   "category": "api-boundary",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/models/access-admin-permissions.spec.ts",
+   "loc": 84,
+   "cases": 4,
+   "describes": 1,
+   "area": "features/access-admin",
+   "category": "authorization",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/pages/access-admin-page/access-admin-page.component.spec.ts",
+   "loc": 1344,
+   "cases": 40,
+   "describes": 10,
+   "area": "features/access-admin",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 9,
+   "markup_assertions": 73,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/state/access-admin.facade.spec.ts",
+   "loc": 757,
+   "cases": 22,
+   "describes": 1,
+   "area": "features/access-admin",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/auth/pages/auth-callback/auth-callback.component.spec.ts",
+   "loc": 140,
+   "cases": 6,
+   "describes": 1,
+   "area": "features/auth",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 7,
+   "markup_assertions": 2,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/dashboard/pages/dashboard-home/dashboard-home.component.spec.ts",
+   "loc": 132,
+   "cases": 5,
+   "describes": 2,
+   "area": "features/dashboard",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 10,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-header-navigation/mushaf-header-navigation.component.spec.ts",
+   "loc": 60,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 12,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-line/mushaf-basmallah-display-text.spec.ts",
+   "loc": 9,
+   "cases": 1,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-line/mushaf-common-ligature.spec.ts",
+   "loc": 13,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-line/mushaf-juz-number-ligature.spec.ts",
+   "loc": 15,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-line/mushaf-line.component.spec.ts",
+   "loc": 151,
+   "cases": 7,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 10,
+   "markup_assertions": 34,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-line/mushaf-surah-name-ligature.spec.ts",
+   "loc": 20,
+   "cases": 3,
+   "describes": 2,
+   "area": "features/mushaf",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-page-view/mushaf-page-view.component.spec.ts",
+   "loc": 184,
+   "cases": 9,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 34,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-word/mushaf-word-display-text.spec.ts",
+   "loc": 32,
+   "cases": 4,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-word/mushaf-word.component.spec.ts",
+   "loc": 189,
+   "cases": 12,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 13,
+   "markup_assertions": 23,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.spec.ts",
+   "loc": 510,
+   "cases": 16,
+   "describes": 2,
+   "area": "features/mushaf",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 18,
+   "markup_assertions": 57,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-occurrence-preview.spec.ts",
+   "loc": 45,
+   "cases": 3,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.spec.ts",
+   "loc": 666,
+   "cases": 22,
+   "describes": 4,
+   "area": "features/mushaf",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 23,
+   "markup_assertions": 79,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-word-section/selected-word-section.component.spec.ts",
+   "loc": 653,
+   "cases": 21,
+   "describes": 2,
+   "area": "features/mushaf",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 26,
+   "markup_assertions": 92,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/similar-ayahs-card/similar-ayahs-card.component.spec.ts",
+   "loc": 227,
+   "cases": 11,
+   "describes": 2,
+   "area": "features/mushaf",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 13,
+   "markup_assertions": 22,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/source-selector/source-selector.component.spec.ts",
+   "loc": 302,
+   "cases": 12,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 2,
+   "markup_assertions": 44,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/surah-jump-picker/surah-jump-picker.component.spec.ts",
+   "loc": 163,
+   "cases": 8,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 9,
+   "markup_assertions": 37,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/word-morphology-summary/word-morphology-summary.component.spec.ts",
+   "loc": 228,
+   "cases": 5,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 9,
+   "markup_assertions": 20,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/data/mushaf-surah-juz-catalog.spec.ts",
+   "loc": 71,
+   "cases": 7,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/pages/mushaf-reader-page/mushaf-reader-page.component.spec.ts",
+   "loc": 384,
+   "cases": 4,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 13,
+   "markup_assertions": 5,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-api-load.helpers.spec.ts",
+   "loc": 178,
+   "cases": 12,
+   "describes": 3,
+   "area": "features/mushaf",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader-session.spec.ts",
+   "loc": 180,
+   "cases": 9,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.ayah-study.spec.ts",
+   "loc": 383,
+   "cases": 7,
+   "describes": 4,
+   "area": "features/mushaf",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 14,
+   "markup_assertions": 8,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.lifecycle.spec.ts",
+   "loc": 451,
+   "cases": 8,
+   "describes": 2,
+   "area": "features/mushaf",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.mutashabihat.spec.ts",
+   "loc": 222,
+   "cases": 3,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.similar-ayahs.spec.ts",
+   "loc": 230,
+   "cases": 4,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.spec.ts",
+   "loc": 688,
+   "cases": 13,
+   "describes": 8,
+   "area": "features/mushaf",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 31,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.study-source-catalog.spec.ts",
+   "loc": 114,
+   "cases": 3,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.url-sync.spec.ts",
+   "loc": 1041,
+   "cases": 29,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 7,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 3
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.word-analysis.spec.ts",
+   "loc": 383,
+   "cases": 8,
+   "describes": 4,
+   "area": "features/mushaf",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 11,
+   "markup_assertions": 55,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-study-source-catalog.store.spec.ts",
+   "loc": 126,
+   "cases": 4,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-url-hydration.spec.ts",
+   "loc": 81,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-url-sync.spec.ts",
+   "loc": 174,
+   "cases": 10,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/utils/arabic-search-normalize.spec.ts",
+   "loc": 21,
+   "cases": 3,
+   "describes": 2,
+   "area": "features/mushaf",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/utils/morphology-display.labels.spec.ts",
+   "loc": 17,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/utils/mushaf-location-keys.spec.ts",
+   "loc": 16,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/utils/mushaf-verse-key-display.spec.ts",
+   "loc": 25,
+   "cases": 4,
+   "describes": 2,
+   "area": "features/mushaf",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/utils/segment-uthmani-slices.spec.ts",
+   "loc": 133,
+   "cases": 4,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/utils/segment-word-highlights.spec.ts",
+   "loc": 67,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 1,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/utils/study-source-catalog.groups.spec.ts",
+   "loc": 71,
+   "cases": 4,
+   "describes": 4,
+   "area": "features/mushaf",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/utils/study-source-catalog.labels.spec.ts",
+   "loc": 48,
+   "cases": 3,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/utils/surah-jump-catalog.helpers.spec.ts",
+   "loc": 42,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/utils/word-type-detail-frame.adapter.spec.ts",
+   "loc": 138,
+   "cases": 8,
+   "describes": 1,
+   "area": "features/mushaf",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/ayah-matches-list/ayah-matches-list.component.spec.ts",
+   "loc": 195,
+   "cases": 6,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 10,
+   "markup_assertions": 19,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/explorer-association-filter/explorer-association-filter.component.spec.ts",
+   "loc": 379,
+   "cases": 22,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 56,
+   "a11y_titled_cases": 8
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/explorer-count-range-filter/explorer-count-range-filter.component.spec.ts",
+   "loc": 288,
+   "cases": 16,
+   "describes": 4,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 27,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/explorer-search-row/explorer-search-row.component.spec.ts",
+   "loc": 110,
+   "cases": 5,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 9,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/highlighted-ayah/highlighted-ayah.component.spec.ts",
+   "loc": 46,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 4,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-ayah-type-filters/lemma-ayah-type-filters.component.spec.ts",
+   "loc": 130,
+   "cases": 7,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 9,
+   "markup_assertions": 23,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.spec.ts",
+   "loc": 235,
+   "cases": 12,
+   "describes": 2,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 9,
+   "markup_assertions": 36,
+   "a11y_titled_cases": 3
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-stems-list/lemma-stems-list.component.spec.ts",
+   "loc": 70,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 6,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-words-list/lemma-words-list.component.spec.ts",
+   "loc": 150,
+   "cases": 5,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 8,
+   "markup_assertions": 17,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.spec.ts",
+   "loc": 358,
+   "cases": 19,
+   "describes": 3,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 60,
+   "a11y_titled_cases": 5
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/root-details-panel/root-details-panel.component.spec.ts",
+   "loc": 180,
+   "cases": 8,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 7,
+   "markup_assertions": 31,
+   "a11y_titled_cases": 2
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/root-lemmas-list/root-lemmas-list.component.spec.ts",
+   "loc": 63,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 5,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/root-stems-list/root-stems-list.component.spec.ts",
+   "loc": 63,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 5,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/root-words-list/root-words-list.component.spec.ts",
+   "loc": 121,
+   "cases": 4,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 7,
+   "markup_assertions": 13,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.spec.ts",
+   "loc": 468,
+   "cases": 22,
+   "describes": 3,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 67,
+   "a11y_titled_cases": 8
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-ayah-type-filters/stem-ayah-type-filters.component.spec.ts",
+   "loc": 130,
+   "cases": 7,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 9,
+   "markup_assertions": 23,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.spec.ts",
+   "loc": 243,
+   "cases": 12,
+   "describes": 2,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 9,
+   "markup_assertions": 38,
+   "a11y_titled_cases": 3
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-lemmas-list/stem-lemmas-list.component.spec.ts",
+   "loc": 72,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 8,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-words-list/stem-words-list.component.spec.ts",
+   "loc": 150,
+   "cases": 5,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 8,
+   "markup_assertions": 17,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.spec.ts",
+   "loc": 344,
+   "cases": 18,
+   "describes": 3,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 59,
+   "a11y_titled_cases": 5
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/type-distribution-list/type-distribution-list.component.spec.ts",
+   "loc": 44,
+   "cases": 1,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 9,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.spec.ts",
+   "loc": 368,
+   "cases": 23,
+   "describes": 3,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 79,
+   "a11y_titled_cases": 5
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-count-chip/word-count-chip.component.spec.ts",
+   "loc": 59,
+   "cases": 4,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 14,
+   "a11y_titled_cases": 2
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-drilldown-modal/word-drilldown-modal.component.spec.ts",
+   "loc": 243,
+   "cases": 11,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 39,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-section-card/word-section-card.component.spec.ts",
+   "loc": 64,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 13,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-details-panel/word-type-details-panel.component.spec.ts",
+   "loc": 249,
+   "cases": 11,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 35,
+   "a11y_titled_cases": 3
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.spec.ts",
+   "loc": 370,
+   "cases": 19,
+   "describes": 4,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 21,
+   "markup_assertions": 78,
+   "a11y_titled_cases": 2
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-grouped-words-list/word-type-grouped-words-list.component.spec.ts",
+   "loc": 115,
+   "cases": 5,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 21,
+   "a11y_titled_cases": 2
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-scope-counts/word-type-scope-counts.component.spec.ts",
+   "loc": 171,
+   "cases": 9,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 39,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-table-view-tabs/word-type-table-view-tabs.component.spec.ts",
+   "loc": 92,
+   "cases": 3,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 10,
+   "a11y_titled_cases": 2
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-types-presence-filter/word-types-presence-filter.component.spec.ts",
+   "loc": 86,
+   "cases": 4,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 17,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-types-table/word-types-table.component.spec.ts",
+   "loc": 598,
+   "cases": 26,
+   "describes": 2,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 24,
+   "markup_assertions": 93,
+   "a11y_titled_cases": 2
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/words-explainer/words-explainer.component.spec.ts",
+   "loc": 101,
+   "cases": 6,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 2,
+   "markup_assertions": 26,
+   "a11y_titled_cases": 2
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/data-access/lemmas.api.spec.ts",
+   "loc": 202,
+   "cases": 12,
+   "describes": 1,
+   "area": "features/words",
+   "category": "api-boundary",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/data-access/roots.api.spec.ts",
+   "loc": 190,
+   "cases": 11,
+   "describes": 1,
+   "area": "features/words",
+   "category": "api-boundary",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/data-access/stems.api.spec.ts",
+   "loc": 206,
+   "cases": 12,
+   "describes": 1,
+   "area": "features/words",
+   "category": "api-boundary",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/data-access/unique-words.api.spec.ts",
+   "loc": 206,
+   "cases": 10,
+   "describes": 2,
+   "area": "features/words",
+   "category": "api-boundary",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/data-access/word-types.api.spec.ts",
+   "loc": 306,
+   "cases": 11,
+   "describes": 1,
+   "area": "features/words",
+   "category": "api-boundary",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/data-access/words-association-options.service.spec.ts",
+   "loc": 346,
+   "cases": 12,
+   "describes": 3,
+   "area": "features/words",
+   "category": "api-boundary",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 8,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/lemma-detail-overlay-adapter.component.spec.ts",
+   "loc": 324,
+   "cases": 12,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 29,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/root-detail-overlay-adapter.component.spec.ts",
+   "loc": 238,
+   "cases": 8,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 22,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/stem-detail-overlay-adapter.component.spec.ts",
+   "loc": 325,
+   "cases": 12,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 29,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/unique-detail-overlay-adapter.component.spec.ts",
+   "loc": 219,
+   "cases": 8,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 6,
+   "markup_assertions": 22,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/word-type-detail-overlay-adapter.component.spec.ts",
+   "loc": 269,
+   "cases": 9,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 27,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/entity-detail-overlay-ayah-continuity.spec.ts",
+   "loc": 360,
+   "cases": 1,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 8,
+   "markup_assertions": 7,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/entity-detail-overlay-host.component.spec.ts",
+   "loc": 472,
+   "cases": 12,
+   "describes": 2,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 10,
+   "markup_assertions": 52,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/entity-detail-overlay-invariant.spec.ts",
+   "loc": 188,
+   "cases": 1,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 6,
+   "markup_assertions": 7,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/models/explorer-sort.spec.ts",
+   "loc": 149,
+   "cases": 17,
+   "describes": 7,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/models/words-explainer.content.spec.ts",
+   "loc": 97,
+   "cases": 7,
+   "describes": 1,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/models/words-filter-presets.spec.ts",
+   "loc": 152,
+   "cases": 19,
+   "describes": 7,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.spec.ts",
+   "loc": 1134,
+   "cases": 40,
+   "describes": 4,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 31,
+   "markup_assertions": 84,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.spec.ts",
+   "loc": 1246,
+   "cases": 34,
+   "describes": 8,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 45,
+   "markup_assertions": 88,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.spec.ts",
+   "loc": 1169,
+   "cases": 41,
+   "describes": 4,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 30,
+   "markup_assertions": 88,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.spec.ts",
+   "loc": 344,
+   "cases": 26,
+   "describes": 2,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 7,
+   "markup_assertions": 41,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/word-types-explorer-page/word-types-explorer-page.component.spec.ts",
+   "loc": 1644,
+   "cases": 64,
+   "describes": 2,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 28,
+   "markup_assertions": 223,
+   "a11y_titled_cases": 2
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.spec.ts",
+   "loc": 83,
+   "cases": 4,
+   "describes": 1,
+   "area": "features/words",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 19,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.controller.spec.ts",
+   "loc": 416,
+   "cases": 16,
+   "describes": 4,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-detail.facade.spec.ts",
+   "loc": 75,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/lemmas-url-sync.spec.ts",
+   "loc": 383,
+   "cases": 43,
+   "describes": 13,
+   "area": "features/words",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-detail.controller.spec.ts",
+   "loc": 333,
+   "cases": 14,
+   "describes": 4,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/roots-url-sync.spec.ts",
+   "loc": 289,
+   "cases": 29,
+   "describes": 6,
+   "area": "features/words",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.controller.spec.ts",
+   "loc": 414,
+   "cases": 16,
+   "describes": 4,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 9,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-detail.facade.spec.ts",
+   "loc": 75,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/stems-url-sync.spec.ts",
+   "loc": 406,
+   "cases": 44,
+   "describes": 14,
+   "area": "features/words",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-drilldown.controller.spec.ts",
+   "loc": 256,
+   "cases": 8,
+   "describes": 3,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words-url-sync.spec.ts",
+   "loc": 270,
+   "cases": 30,
+   "describes": 7,
+   "area": "features/words",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words.facade.drilldown.spec.ts",
+   "loc": 330,
+   "cases": 10,
+   "describes": 1,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words.facade.list.spec.ts",
+   "loc": 288,
+   "cases": 15,
+   "describes": 2,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words.facade.restore.spec.ts",
+   "loc": 395,
+   "cases": 13,
+   "describes": 1,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words.facade.unbind.spec.ts",
+   "loc": 226,
+   "cases": 5,
+   "describes": 1,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-cache.spec.ts",
+   "loc": 157,
+   "cases": 13,
+   "describes": 6,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail-view.loader.spec.ts",
+   "loc": 217,
+   "cases": 6,
+   "describes": 1,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.controller.spec.ts",
+   "loc": 479,
+   "cases": 18,
+   "describes": 4,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-detail.facade.spec.ts",
+   "loc": 611,
+   "cases": 15,
+   "describes": 1,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-explorer.facade.spec.ts",
+   "loc": 793,
+   "cases": 26,
+   "describes": 2,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 6,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/word-types-url-sync.spec.ts",
+   "loc": 725,
+   "cases": 61,
+   "describes": 17,
+   "area": "features/words",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/words-explainer-preference.spec.ts",
+   "loc": 96,
+   "cases": 6,
+   "describes": 1,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/state/words-range-filters.spec.ts",
+   "loc": 67,
+   "cases": 6,
+   "describes": 1,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/utils/explorer-count-active.spec.ts",
+   "loc": 91,
+   "cases": 6,
+   "describes": 1,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/utils/explorer-keyboard-nav.scheduler.spec.ts",
+   "loc": 44,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/utils/explorer-row-keydown.spec.ts",
+   "loc": 17,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/utils/explorer-table-column-nav.spec.ts",
+   "loc": 32,
+   "cases": 3,
+   "describes": 1,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/utils/explorer-table-focus-controller.spec.ts",
+   "loc": 110,
+   "cases": 2,
+   "describes": 1,
+   "area": "features/words",
+   "category": "facade-store-state",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/utils/explorer-table-scroll.spec.ts",
+   "loc": 56,
+   "cases": 3,
+   "describes": 1,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/utils/lemma-ayah-match.mapper.spec.ts",
+   "loc": 31,
+   "cases": 1,
+   "describes": 1,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/utils/root-ayah-match.mapper.spec.ts",
+   "loc": 31,
+   "cases": 1,
+   "describes": 1,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/utils/stem-ayah-match.mapper.spec.ts",
+   "loc": 31,
+   "cases": 1,
+   "describes": 1,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/utils/unique-words-display.mapper.spec.ts",
+   "loc": 49,
+   "cases": 3,
+   "describes": 1,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/utils/unique-words-surahs.spec.ts",
+   "loc": 33,
+   "cases": 3,
+   "describes": 1,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/utils/verse-key.spec.ts",
+   "loc": 9,
+   "cases": 1,
+   "describes": 1,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/utils/word-type-ayah-match.mapper.spec.ts",
+   "loc": 34,
+   "cases": 1,
+   "describes": 1,
+   "area": "features/words",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/features/words/words.routes.spec.ts",
+   "loc": 114,
+   "cases": 8,
+   "describes": 3,
+   "area": "features/words",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 7,
+   "markup_assertions": 2,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/ayah-card/ayah-card.component.spec.ts",
+   "loc": 51,
+   "cases": 2,
+   "describes": 1,
+   "area": "shared",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 2,
+   "markup_assertions": 11,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/chip/chip.component.spec.ts",
+   "loc": 255,
+   "cases": 14,
+   "describes": 3,
+   "area": "shared",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 41,
+   "a11y_titled_cases": 2
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/confirm-dialog/confirm-dialog.component.spec.ts",
+   "loc": 184,
+   "cases": 13,
+   "describes": 2,
+   "area": "shared",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 7,
+   "markup_assertions": 12,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/context-menu/context-menu-placement.spec.ts",
+   "loc": 29,
+   "cases": 4,
+   "describes": 1,
+   "area": "shared",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 2
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/context-menu/context-menu.component.spec.ts",
+   "loc": 115,
+   "cases": 5,
+   "describes": 1,
+   "area": "shared",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 4,
+   "a11y_titled_cases": 3
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/detail-modal-shell/detail-modal-shell.component.spec.ts",
+   "loc": 289,
+   "cases": 15,
+   "describes": 3,
+   "area": "shared",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 46,
+   "a11y_titled_cases": 6
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component.spec.ts",
+   "loc": 106,
+   "cases": 7,
+   "describes": 1,
+   "area": "shared",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 4,
+   "markup_assertions": 22,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/modal-scroll-lock/scroll-lock.service.spec.ts",
+   "loc": 68,
+   "cases": 4,
+   "describes": 1,
+   "area": "shared",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 2,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/pagination/pagination-window.spec.ts",
+   "loc": 25,
+   "cases": 5,
+   "describes": 1,
+   "area": "shared",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/pagination/pagination.component.spec.ts",
+   "loc": 125,
+   "cases": 8,
+   "describes": 1,
+   "area": "shared",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 24,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/result-count/explorer-result-count.component.spec.ts",
+   "loc": 102,
+   "cases": 5,
+   "describes": 1,
+   "area": "shared",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 24,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/safe-html/safe-html.pipe.spec.ts",
+   "loc": 32,
+   "cases": 2,
+   "describes": 1,
+   "area": "shared",
+   "category": "pipe-util",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 5,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/skeleton/grid-template-columns.spec.ts",
+   "loc": 17,
+   "cases": 1,
+   "describes": 1,
+   "area": "shared",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/skeleton/skeleton-rows.component.spec.ts",
+   "loc": 69,
+   "cases": 4,
+   "describes": 1,
+   "area": "shared",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 12,
+   "a11y_titled_cases": 1
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/state/state.component.spec.ts",
+   "loc": 164,
+   "cases": 13,
+   "describes": 2,
+   "area": "shared",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 39,
+   "a11y_titled_cases": 5
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/tabs/tabs.component.spec.ts",
+   "loc": 163,
+   "cases": 8,
+   "describes": 1,
+   "area": "shared",
+   "category": "component-rendering",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 3,
+   "markup_assertions": 20,
+   "a11y_titled_cases": 5
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/app/shared/url/deep-link-href.spec.ts",
+   "loc": 53,
+   "cases": 4,
+   "describes": 1,
+   "area": "shared",
+   "category": "route-guard-url",
+   "category_confidence": "CONFIRMED",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  },
+  {
+   "path": "Frontend/quran-dashboard-ui/src/environments/environment-guard.spec.ts",
+   "loc": 75,
+   "cases": 4,
+   "describes": 1,
+   "area": "environments",
+   "category": "other",
+   "category_confidence": "LIKELY",
+   "testbed_refs": 0,
+   "markup_assertions": 0,
+   "a11y_titled_cases": 0
+  }
+ ],
+ "e2e": {
+  "files": 17,
+  "loc": 1601,
+  "approx_tokens": 19854,
+  "cases": 61,
+  "cases_note": "static test( call sites; several files wrap test() in for-loops over viewports/themes (abwab-slice-j-widths.e2e.ts, abwab-tree-row-budget.e2e.ts, words-explorers.e2e.ts), so the runtime count is higher - NEEDS_MEASUREMENT",
+  "fixtures": {
+   "files": [
+    "Frontend/quran-dashboard-ui/e2e/fixtures/abwab.ts",
+    "Frontend/quran-dashboard-ui/e2e/fixtures/app-test.ts",
+    "Frontend/quran-dashboard-ui/e2e/fixtures/logto.ts",
+    "Frontend/quran-dashboard-ui/e2e/fixtures/mushaf.ts"
+   ],
+   "loc": 360
+  },
+  "projects": [
+   {
+    "name": "default",
+    "selection": "testIgnore /abwab-.*\\.e2e\\.ts$/",
+    "workers": 2,
+    "evidence": "Frontend/quran-dashboard-ui/playwright.config.ts:37"
+   },
+   {
+    "name": "abwab",
+    "selection": "testMatch /abwab-.*\\.e2e\\.ts$/",
+    "workers": "1 (via npm run e2e)",
+    "evidence": "Frontend/quran-dashboard-ui/playwright.config.ts:38, Frontend/quran-dashboard-ui/package.json:29"
+   }
+  ],
+  "runtime": "boots both dev servers (Angular https + backend dotnet run) via webServer; chromium only; opt-in, never a required gate (Frontend/quran-dashboard-ui/playwright.config.ts:40-57, Frontend/quran-dashboard-ui/CLAUDE.md)",
+  "files_detail": [
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/abwab-archive.e2e.ts",
+    "loc": 151,
+    "static_test_calls": 4,
+    "journey": "archive/restore lifecycle incl. disabled restore under archived parent and deleted-section destination"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/abwab-global-order.e2e.ts",
+    "loc": 60,
+    "static_test_calls": 1,
+    "journey": "global vs section reorder isolation"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/abwab-operations.e2e.ts",
+    "loc": 227,
+    "static_test_calls": 6,
+    "journey": "inline reorder, single/bulk move, bulk archive, row context menu and hover actions"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/abwab-permissions.e2e.ts",
+    "loc": 28,
+    "static_test_calls": 2,
+    "journey": "anonymous read-only posture; forbidden handcrafted write"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/abwab-relations.e2e.ts",
+    "loc": 194,
+    "static_test_calls": 4,
+    "journey": "relation lifecycle across archive/restore, read caching, reload retention"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/abwab-slice-j-widths.e2e.ts",
+    "loc": 85,
+    "static_test_calls": 3,
+    "journey": "visual width budgets (52rem/42rem) and destructive-confirm theming"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/abwab-structure.e2e.ts",
+    "loc": 144,
+    "static_test_calls": 4,
+    "journey": "section rename/delete rules, door creation with aliases, edit + dirty guard"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/abwab-tree-row-budget.e2e.ts",
+    "loc": 87,
+    "static_test_calls": 1,
+    "journey": "tree row height budget across widths and themes"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/abwab-url-and-a11y.e2e.ts",
+    "loc": 245,
+    "static_test_calls": 9,
+    "journey": "URL state reload/Back-Forward survival, fail-closed params, modal deep links, tree a11y (roles, roving tabindex, RTL arrows)"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/dashboard-home.e2e.ts",
+    "loc": 26,
+    "static_test_calls": 3,
+    "journey": "home renders Arabic RTL themed shell; root redirect"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/mushaf-ayah-study.e2e.ts",
+    "loc": 89,
+    "static_test_calls": 7,
+    "journey": "ayah study tabs: tafsir/translation/i3rab/similar/mutashabihat + source-to-URL"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/mushaf-reader.e2e.ts",
+    "loc": 70,
+    "static_test_calls": 5,
+    "journey": "reader paging, deep link hydration, surah jump, Uthmani/Amiri font rendering"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/mushaf-word-analysis.e2e.ts",
+    "loc": 13,
+    "static_test_calls": 1,
+    "journey": "word morphology summary and identity links"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/placeholder-routes.e2e.ts",
+    "loc": 14,
+    "static_test_calls": 2,
+    "journey": "placeholder sections and unknown-route fallback"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/shell-nav.e2e.ts",
+    "loc": 34,
+    "static_test_calls": 3,
+    "journey": "navbar/dropdown navigation to mushaf, words hub, placeholders"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/words-explorers.e2e.ts",
+    "loc": 110,
+    "static_test_calls": 4,
+    "journey": "explorer search-to-detail journeys (roots/lemmas/stems/word-types/unique-words) + tashkeel redirect"
+   },
+   {
+    "path": "Frontend/quran-dashboard-ui/e2e/words-hub.e2e.ts",
+    "loc": 24,
+    "static_test_calls": 2,
+    "journey": "words hub cards render and open explorers"
+   }
+  ],
+  "journeys": [
+   "URL state reload/Back-Forward survival, fail-closed params, modal deep links, tree a11y (roles, roving tabindex, RTL arrows)",
+   "anonymous read-only posture; forbidden handcrafted write",
+   "archive/restore lifecycle incl. disabled restore under archived parent and deleted-section destination",
+   "ayah study tabs: tafsir/translation/i3rab/similar/mutashabihat + source-to-URL",
+   "explorer search-to-detail journeys (roots/lemmas/stems/word-types/unique-words) + tashkeel redirect",
+   "global vs section reorder isolation",
+   "home renders Arabic RTL themed shell; root redirect",
+   "inline reorder, single/bulk move, bulk archive, row context menu and hover actions",
+   "navbar/dropdown navigation to mushaf, words hub, placeholders",
+   "placeholder sections and unknown-route fallback",
+   "reader paging, deep link hydration, surah jump, Uthmani/Amiri font rendering",
+   "relation lifecycle across archive/restore, read caching, reload retention",
+   "section rename/delete rules, door creation with aliases, edit + dirty guard",
+   "tree row height budget across widths and themes",
+   "visual width budgets (52rem/42rem) and destructive-confirm theming",
+   "word morphology summary and identity links",
+   "words hub cards render and open explorers"
+  ],
+  "overlap_candidates": [
+   {
+    "behavior": "invalid abwab URL query/modal params fail closed to documented defaults",
+    "e2e": [
+     "Frontend/quran-dashboard-ui/e2e/abwab-url-and-a11y.e2e.ts:57",
+     "Frontend/quran-dashboard-ui/e2e/abwab-url-and-a11y.e2e.ts:69"
+    ],
+    "unit": [
+     "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-url-sync.spec.ts:11",
+     "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-url-sync.spec.ts:31",
+     "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-url-sync.spec.ts:35",
+     "Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-url-sync.spec.ts:73"
+    ],
+    "confidence": "LIKELY"
+   },
+   {
+    "behavior": "abwab tree a11y: roving tabindex single tab stop, RTL-mirrored arrow semantics",
+    "e2e": [
+     "Frontend/quran-dashboard-ui/e2e/abwab-url-and-a11y.e2e.ts:180"
+    ],
+    "unit": [
+     "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree.component.spec.ts:99",
+     "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree.component.spec.ts:242",
+     "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree-keyboard.controller.spec.ts:105"
+    ],
+    "confidence": "LIKELY"
+   },
+   {
+    "behavior": "anonymous visitors keep abwab reads while unauthorized write overlays are stripped",
+    "e2e": [
+     "Frontend/quran-dashboard-ui/e2e/abwab-permissions.e2e.ts:5"
+    ],
+    "unit": [
+     "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-page/abwab-page.component.spec.ts:169"
+    ],
+    "confidence": "LIKELY"
+   },
+   {
+    "behavior": "mushaf page deep link hydrates reader state",
+    "e2e": [
+     "Frontend/quran-dashboard-ui/e2e/mushaf-reader.e2e.ts:30"
+    ],
+    "unit": [
+     "Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader.facade.url-sync.spec.ts:170"
+    ],
+    "confidence": "LIKELY"
+   },
+   {
+    "behavior": "unique-words route redirects/normalizes to tashkeel default mode",
+    "e2e": [
+     "Frontend/quran-dashboard-ui/e2e/words-explorers.e2e.ts:106"
+    ],
+    "unit": [
+     "Frontend/quran-dashboard-ui/src/app/features/words/words.routes.spec.ts:41",
+     "Frontend/quran-dashboard-ui/src/app/features/words/state/unique-words.facade.list.spec.ts:275"
+    ],
+    "confidence": "LIKELY"
+   },
+   {
+    "behavior": "words hub renders title and explorer cards",
+    "e2e": [
+     "Frontend/quran-dashboard-ui/e2e/words-hub.e2e.ts:6"
+    ],
+    "unit": [
+     "Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.spec.ts:36",
+     "Frontend/quran-dashboard-ui/src/app/features/words/words.routes.spec.ts:30"
+    ],
+    "confidence": "LIKELY"
+   }
+  ]
+ },
+ "notes": [
+  "Lane definitions live only in angular.json architect.test configurations (Frontend/quran-dashboard-ui/angular.json:119-221); the @angular/build:unit-test builder starts Vitest with config:false so a vitest.config.ts would be ignored (Frontend/quran-dashboard-ui/testing/README.md:73-78). CONFIRMED",
+  "The 7 primary lanes (feature-* + shared) partition all 223 specs exactly: 0 specs in no primary lane, 0 in multiple, and the full gate selects all 223. Verified by reimplementing verify-test-gates.mjs glob logic in python. CONFIRMED",
+  "authorization/composition/fast are deliberate cross-cuts that overlap the primary areas (testing/README.md:29-32); composition selects 105 specs (47%), fast 61 (27%), authorization 11.",
+  "A *.spec.ts placed under e2e/ is executed by nothing: Vitest globs with cwd=src, Playwright matches only *.e2e.ts (Frontend/quran-dashboard-ui/testing/README.md:120-135). CONFIRMED",
+  "Category classification is path/filename-convention driven with content fallback; component-rendering (103 files, 31797 LOC, 59% of spec LOC) dominates. Files named *.component.spec.ts are CONFIRMED; heuristic assignments tagged LIKELY per file in per_file[].",
+  "features/words alone holds 92 spec files / 24207 LOC / 1120 cases (45% of spec LOC); its five explorer pages (roots/lemmas/stems/word-types/unique-words) repeat near-identical suites - see repeated_variants scope=feature clusters with count 4-5.",
+  "implementation_pinned lists specs invoking protected/private component methods via component['onX'](...) or 'as unknown as {onX}' casts; object-literal mock-construction casts (as unknown as Partial<T>) were counted separately and excluded. All LIKELY - each evidence line was pattern-matched, not manually reviewed.",
+  "abwab-page.component.spec.ts is both the largest spec (2148 LOC, 104 cases) and the most markup-selector-heavy (370 assertions incl. 235 querySelector).",
+  "Static case counts undercount runtime cases: it.each/test-in-loop call sites count once (e.g. abwab.labels.spec.ts 'count %i', e2e width/theme loops).",
+  "E2E requires a live backend + database (webServer boots dotnet run against /api/health which 503s without DB) - runtime cost and true case counts NEEDS_MEASUREMENT in Phase 1b.",
+  "No jasmine/karma remnants: runner is Vitest via @angular/build:unit-test with jsdom (Frontend/quran-dashboard-ui/package.json:73,79)."
+ ]
+}

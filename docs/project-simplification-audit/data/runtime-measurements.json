@@ -1,0 +1,441 @@
+{
+  "measured_at": "2026-08-08",
+  "head_commit": "72792ba9",
+  "branch": "dev",
+  "environment": {
+    "cpu": "Intel Core i7-6820HQ @ 2.70GHz, 8 threads",
+    "ram_gb": 14,
+    "docker": "29.7.1",
+    "dotnet": "10.0.110",
+    "node": "v20.20.2",
+    "npm": "10.8.2",
+    "load_conditions": "solo — no concurrent audit workload; lanes run strictly sequentially"
+  },
+  "backend": {
+    "build_cold_s": 34.6,
+    "build_incremental_s": 6.7,
+    "build_notes": "build_cold_s is an as-found first build (bin/obj from a same-day prior build were present; read-only audit forbids deleting them), so a true cold build is somewhat slower.",
+    "lanes": [
+      {
+        "lane": "fast",
+        "wall_s": 7.5,
+        "exit_code": 0,
+        "tests_passed": 559,
+        "failed": 0,
+        "skipped": 0,
+        "classes": 69,
+        "notes": "",
+        "slowest": [
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessSchemaModelTests.AccessModel_ContainsOnlyThePlannedPermissionGrantAndAuditEntities",
+            "s": 3.05
+          },
+          {
+            "test": "QuranDashboard.Tests.TestSupport.Process.ProcessExecutionTests.RunAsync_TimesOut_TerminatesTheWholeProcessTree_AndKeepsWhatWasDrained",
+            "s": 2.24
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Health.HealthEndpointTests.Healthy_Returns200_WithHealthyEnvelopeAndChecks",
+            "s": 1.61
+          },
+          {
+            "test": "QuranDashboard.Tests.TestSupport.Execution.TestGateCatalogTests.PrimaryGates_PartitionEveryDiscoveredTestClass",
+            "s": 1.44
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.ApiBehavior.ModelBindingFailureTests.MalformedTypedQueryParam_Returns400_WithApiResponseEnvelope",
+            "s": 1.2
+          }
+        ]
+      },
+      {
+        "lane": "access",
+        "wall_s": 61.3,
+        "exit_code": 0,
+        "tests_passed": 249,
+        "failed": 0,
+        "skipped": 0,
+        "classes": 28,
+        "notes": "",
+        "slowest": [
+          {
+            "test": "QuranDashboard.Tests.Api.Access.LogtoSubjectRelinkEndpointTests.PreviewThenConfirm_WithValidEvidence_PreservesTheTargetAuthority",
+            "s": 4.51
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessAdminCommandTests.OwnerDryRun_WithAnUnprovisionedConfiguredIdentity_ReportsAwaitingVerifiedSignIn",
+            "s": 3.54
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessAdminCommandTests.Wrapper_RunsADocumentedCommandWithoutAnExplicitEnvironment",
+            "s": 2.91
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.PermissionCatalogueStartupSyncTests.StartupSync_RepeatedOnASecondHostBoot_LeavesTheCatalogueUnchanged",
+            "s": 2.54
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessAdminCommandTests.Wrapper_UnreachableDatabase_PropagatesAControlledOperationalFailure",
+            "s": 2.47
+          }
+        ]
+      },
+      {
+        "lane": "access-db",
+        "wall_s": 43.0,
+        "exit_code": 0,
+        "tests_passed": 193,
+        "failed": 0,
+        "skipped": 0,
+        "classes": 19,
+        "notes": "",
+        "slowest": [
+          {
+            "test": "QuranDashboard.Tests.Api.Access.LogtoSubjectRelinkEndpointTests.PreviewThenConfirm_WithValidEvidence_PreservesTheTargetAuthority",
+            "s": 3.92
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.PermissionCatalogueStartupSyncTests.DisabledStartupSync_OnAnEmptyTable_ServesTheCanonicalCatalogueAsNotAssignable",
+            "s": 3.13
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.PermissionCatalogueStartupSyncTests.StartupSync_RepeatedOnASecondHostBoot_LeavesTheCatalogueUnchanged",
+            "s": 2.43
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessSchemaModelTests.AccessModel_ContainsOnlyThePlannedPermissionGrantAndAuditEntities",
+            "s": 1.75
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AuthorizationPipelineTests.PermissionEndpoint_ActiveUserWithoutExactGrant_Returns403EnvelopeWithoutInvokingAction",
+            "s": 1.64
+          }
+        ]
+      },
+      {
+        "lane": "migration",
+        "wall_s": 21.9,
+        "exit_code": 0,
+        "tests_passed": 9,
+        "failed": 0,
+        "skipped": 0,
+        "classes": 1,
+        "notes": "",
+        "slowest": [
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessMigrationPathTests.CurrentDatabase_CollidingLegacyIdentities_StopBeforeTheAdditiveMigrationWithoutMutation",
+            "s": 4.23
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessMigrationPathTests.LegacyRoleConversion_LeavesFormerAdminAndEditorRoleLessWithoutDirectGrants_ThenPermitsCleanup",
+            "s": 2.35
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessMigrationPathTests.CurrentDatabase_CleanLegacyIdentities_MigrateThroughTheStagedAccessSchema",
+            "s": 1.8
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessMigrationPathTests.CurrentDatabase_FinalMigration_RejectsUnbackfilledLegacyRows",
+            "s": 1.54
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessMigrationPathTests.LegacyRoleConvertCommand_WithAReadyOwner_ConvertsFormerAdminAndEditor",
+            "s": 1.5
+          }
+        ]
+      },
+      {
+        "lane": "process",
+        "wall_s": 21.4,
+        "exit_code": 0,
+        "tests_passed": 10,
+        "failed": 0,
+        "skipped": 0,
+        "classes": 1,
+        "notes": "",
+        "slowest": [
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessAdminCommandTests.OwnerValidationCommand_WithNormalizedUniqueEmails_ReportsAwaitingVerifiedSignIn",
+            "s": 4.75
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessAdminCommandTests.OwnerDryRun_WithAnUnprovisionedConfiguredIdentity_ReportsAwaitingVerifiedSignIn",
+            "s": 3.84
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessAdminCommandTests.Wrapper_RunsADocumentedCommandWithoutAnExplicitEnvironment",
+            "s": 2.85
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessAdminCommandTests.Wrapper_UnreachableDatabase_PropagatesAControlledOperationalFailure",
+            "s": 2.56
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessAdminCommandTests.OwnerStatus_WhenTheManagementProviderIsUnavailable_ReturnsASafeOperationalFailure",
+            "s": 0.49
+          }
+        ]
+      },
+      {
+        "lane": "smoke",
+        "wall_s": 72.6,
+        "exit_code": 0,
+        "tests_passed": 256,
+        "failed": 0,
+        "skipped": 0,
+        "classes": 15,
+        "notes": "",
+        "slowest": [
+          {
+            "test": "QuranDashboard.Tests.Smoke.SmokeAuthPipelineTests.OwnerSub_IsBootstrappedActiveOwner",
+            "s": 5.77
+          },
+          {
+            "test": "QuranDashboard.Tests.Smoke.SmokePublicReadRegressionTests.PublicAbwabRead_WithAnInactiveToken_DoesNotBecomeForbidden(personaName: \"Disabled\", path: \"/api/abwab/tree\")",
+            "s": 3.99
+          },
+          {
+            "test": "QuranDashboard.Tests.Smoke.SmokePublicReadRegressionTests.PublicAbwabRead_WithAnInactiveToken_DoesNotBecomeForbidden(personaName: \"Disabled\", path: \"/api/abwab/templates\")",
+            "s": 2.7
+          },
+          {
+            "test": "QuranDashboard.Tests.Smoke.SmokeAbwabWriteTests.BulkArchiveDoors_WithStaleVersion_ReturnsConflict",
+            "s": 2.62
+          },
+          {
+            "test": "QuranDashboard.Tests.Smoke.SmokePublicReadRegressionTests.PublicAbwabRead_WithAnInactiveToken_DoesNotBecomeForbidden(personaName: \"Pending\", path: \"/api/abwab/templates\")",
+            "s": 2.61
+          }
+        ]
+      },
+      {
+        "lane": "tier-b",
+        "wall_s": 65.9,
+        "exit_code": 0,
+        "tests_passed": 1372,
+        "failed": 0,
+        "skipped": 0,
+        "classes": 130,
+        "notes": "",
+        "slowest": [
+          {
+            "test": "QuranDashboard.Tests.TestSupport.PostgreSql.PostgreSqlTestProcessContractTests.SchemaLease_IsolatesItsObjects_AndDropsThemOnDisposal",
+            "s": 9.66
+          },
+          {
+            "test": "QuranDashboard.Tests.TestSupport.PostgreSql.PostgreSqlTestProcessContractTests.CrossProcessLock_WaitsForAnotherHoldingProcess_ThenAcquires",
+            "s": 6.02
+          },
+          {
+            "test": "QuranDashboard.Tests.TestSupport.PostgreSql.PostgreSqlTestProcessContractTests.ConcurrentMigratedLeases_ShareOneServer_AndIsolateTheirData",
+            "s": 4.41
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessAdminCommandTests.OwnerDryRun_WithAnUnprovisionedConfiguredIdentity_ReportsAwaitingVerifiedSignIn",
+            "s": 3.67
+          },
+          {
+            "test": "QuranDashboard.Tests.Api.Access.AccessAdminCommandTests.Wrapper_RunsADocumentedCommandWithoutAnExplicitEnvironment",
+            "s": 2.96
+          }
+        ]
+      },
+      {
+        "lane": "pipeline",
+        "wall_s": 64.1,
+        "exit_code": 0,
+        "tests_passed": 583,
+        "failed": 0,
+        "skipped": 0,
+        "classes": 113,
+        "notes": "",
+        "slowest": [
+          {
+            "test": "QuranDashboard.Tests.Quran.Translations.TranslationSourceSafetyTests.Success_reports_do_not_include_translation_body_text_or_arabic_quran_ayah_text",
+            "s": 5.85
+          },
+          {
+            "test": "QuranDashboard.Tests.Quran.Translations.TranslationSourceSafetyTests.Refusal_reports_do_not_include_translation_body_text_or_arabic_quran_ayah_text",
+            "s": 5.17
+          },
+          {
+            "test": "QuranDashboard.Tests.Quran.Translations.TranslationSourceSafetyTests.Validation_failure_reports_do_not_include_translation_body_text_or_arabic_quran_ayah_text",
+            "s": 4.57
+          },
+          {
+            "test": "QuranDashboard.Tests.Quran.Translations.TranslationRollbackTests.Previous_accepted_data_remains_when_replacement_fails_validation",
+            "s": 3.85
+          },
+          {
+            "test": "QuranDashboard.Tests.Quran.Translations.TranslationRefusalForceTests.Forced_replacement_rebuilds_translation_tables_and_preserves_foundation_rows",
+            "s": 2.69
+          }
+        ]
+      }
+    ],
+    "lanes_total_wall_s": 357.7,
+    "db_parallelism": 4,
+    "not_measured": [
+      {
+        "lane": "pre-pr",
+        "reason": "never run per audit protocol: it re-executes the already-measured shards (all 268 catalog classes) in a two-shard invocation plus one solution build",
+        "estimate_s": 307.0,
+        "estimate_basis": "test-backend pre-pr builds the solution once (~7-35s incremental-to-warm) then runs ALL 268 catalog classes in two shards; approximated as fast+smoke+tier-b+pipeline lane walls (210.1s, overlapping supersets of the rest) + one build + the exclusive postgres:18 SmokeDataReadTests shard (~60s allowance, unmeasured). Rough order: 5-7 min."
+      },
+      {
+        "lane": "canonical-data",
+        "reason": "not in the measurement plan; preflight resources (quran-foundation sources, enriched-morphology artifact, canonical dump + manifest) are all staged locally, so it would run, incl. real DataImporter imports and the exclusive postgres:18 restore shard",
+        "estimate_s": null,
+        "estimate_basis": "no measured shard covers the Canonical classes; unestimated rather than guessed"
+      }
+    ]
+  },
+  "frontend": {
+    "gates": [
+      {
+        "gate": "typecheck",
+        "wall_s": 14.6,
+        "exit_code": 0
+      },
+      {
+        "gate": "build:verify",
+        "wall_s": 18.3,
+        "exit_code": 0,
+        "notes": "3 warning-level budget overruns; see failures_observed"
+      },
+      {
+        "gate": "test:fast",
+        "wall_s": 72.5,
+        "exit_code": 0,
+        "test_files": 61,
+        "tests_passed": 810,
+        "vitest_reported_duration_s": 46.8
+      },
+      {
+        "gate": "test:feature:words",
+        "wall_s": 114.3,
+        "exit_code": 0,
+        "test_files": 92,
+        "tests_passed": 1379,
+        "vitest_reported_duration_s": 89.91
+      },
+      {
+        "gate": "test:full",
+        "wall_s": 232.2,
+        "exit_code": 0,
+        "test_files": 223,
+        "tests_passed": 2964,
+        "vitest_reported_duration_s": 207.5
+      }
+    ],
+    "slowest_specs": [
+      {
+        "file": "spec-app-features-abwab-pages-abwab-page-abwab-page.component.spec.js",
+        "s": 5.86
+      },
+      {
+        "file": "spec-app-features-words-pages-word-types-explorer-page-word-types-explorer-page.component.spec.js",
+        "s": 4.96
+      },
+      {
+        "file": "spec-app-features-words-pages-stems-explorer-page-stems-explorer-page.component.spec.js",
+        "s": 2.58
+      },
+      {
+        "file": "spec-app-features-words-pages-lemmas-explorer-page-lemmas-explorer-page.component.spec.js",
+        "s": 2.48
+      },
+      {
+        "file": "spec-app-features-access-admin-pages-access-admin-page-access-admin-page.component.spec.js",
+        "s": 2.22
+      },
+      {
+        "file": "spec-app-features-words-pages-roots-explorer-page-roots-explorer-page.component.spec.js",
+        "s": 2.15
+      },
+      {
+        "file": "spec-app-features-words-entity-detail-overlay-entity-detail-overlay-ayah-continuity.spec.js",
+        "s": 1.91
+      },
+      {
+        "file": "spec-app-app.nested-layers.spec.js",
+        "s": 1.86
+      },
+      {
+        "file": "spec-app-features-words-entity-detail-overlay-entity-detail-overlay-host.component.spec.js",
+        "s": 1.8
+      },
+      {
+        "file": "spec-app-features-words-pages-unique-words-page-unique-words-page.component.spec.js",
+        "s": 1.77
+      },
+      {
+        "file": "spec-app-features-abwab-components-abwab-relations-modal-abwab-relations-modal.component.spec.js",
+        "s": 1.59
+      },
+      {
+        "file": "spec-app-core-navigation-detail-overlay-detail-overlay-history.service.spec.js",
+        "s": 1.31
+      },
+      {
+        "file": "spec-app-features-words-components-word-types-table-word-types-table.component.spec.js",
+        "s": 1.06
+      },
+      {
+        "file": "spec-app-features-abwab-components-abwab-move-picker-abwab-move-picker.component.spec.js",
+        "s": 1.06
+      },
+      {
+        "file": "spec-app-core-layout-top-navbar-top-navbar.component.spec.js",
+        "s": 1.01
+      }
+    ],
+    "not_measured": [
+      {
+        "gate": "test:pre-pr",
+        "reason": "composite of measured gates",
+        "estimate_s": null,
+        "estimate_basis": "check scripts + typecheck + build:verify + test:full"
+      }
+    ]
+  },
+  "e2e": {
+    "status": "NEEDS_MEASUREMENT",
+    "reason": "requires live DB + dual servers; out of read-only audit scope"
+  },
+  "failures_observed": [
+    {
+      "lane": "frontend/build:verify",
+      "severity": "warning",
+      "message": "bundle initial exceeded maximum budget. Budget 500.00 kB was not met by 98.75 kB with a total of 598.75 kB."
+    },
+    {
+      "lane": "frontend/build:verify",
+      "severity": "warning",
+      "message": "src/app/features/mushaf/components/selected-word-section/selected-word-section.component.scss exceeded maximum budget. Budget 4.00 kB was not met by 649 bytes with a total of 4.65 kB."
+    },
+    {
+      "lane": "frontend/build:verify",
+      "severity": "warning",
+      "message": "src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss exceeded maximum budget. Budget 4.00 kB was not met by 1.85 kB with a total of 5.85 kB."
+    }
+  ],
+  "cleanup": {
+    "ran_cleanup_script": true,
+    "cleanup_run_id": "ed13d919e98b49898ce995b98b032c96",
+    "cleanup_result": "cleanup containers: none; cleanup networks: none; resource reaper: not running; removed 0",
+    "leftover_containers": [],
+    "docker_ps_a_after": "empty — zero containers of any kind"
+  },
+  "caveats": [
+    "build_cold_s is not a from-scratch build: bin/obj and the NuGet cache were warm from a prior same-day build; a clean build (clean-local-build) was out of scope for a read-only audit.",
+    "Each test-backend lane includes ~10-15s of fixed dotnet-test/VSTest startup and per-run container provisioning; lane wall times are not additive test cost.",
+    "Backend lanes ran with the script's default QURAN_DASHBOARD_TEST_DB_PARALLELISM=4 and a per-run postgres:16-alpine Testcontainer.",
+    "TRX logging (VSTestLogger=trx) was enabled for per-test durations; overhead is negligible but nonzero.",
+    "Frontend wall times include ng-test/vitest bootstrap; the vitest-reported Duration is lower than wall clock.",
+    "Vitest per-file durations are for compiled *.spec.js bundle files (the Angular vitest builder), mapping 1:1 to source spec files by name.",
+    "Lane overlap: tier-b (130 classes) is a superset gate that re-runs most access/smoke/pipeline-adjacent classes; summing lane walls double-counts tests.",
+    "pre-pr estimate basis: one test-backend --build solution build plus a two-shard run over all 268 classes; see backend.not_measured.",
+    "Single measurement run per lane; no variance data."
+  ]
+}

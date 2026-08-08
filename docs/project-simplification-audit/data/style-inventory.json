@@ -1,0 +1,1763 @@
+{
+  "meta": {
+    "generated": "2026-08-08",
+    "head": "72792ba9",
+    "scope": "Frontend/quran-dashboard-ui/src",
+    "loc_method": "physical lines (splitlines); nonblank_loc also recorded per file",
+    "thresholds_source": "Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md:110-112 — component SCSS: ideal <150, soft review 200, hard review 300"
+  },
+  "totals": {
+    "scss_file_count": 121,
+    "total_scss_loc": 10346,
+    "global_scss_loc": 2481,
+    "component_scss_loc": 7865,
+    "global_file_count": 13,
+    "component_file_count": 108,
+    "approx_tokens_total_bytes_div_4": 57607,
+    "per_feature_component_scss": {
+      "words": {
+        "files": 43,
+        "loc": 2751
+      },
+      "mushaf": {
+        "files": 21,
+        "loc": 2029
+      },
+      "abwab": {
+        "files": 19,
+        "loc": 1780
+      },
+      "access-admin": {
+        "files": 8,
+        "loc": 482
+      },
+      "shared": {
+        "files": 12,
+        "loc": 432
+      },
+      "core": {
+        "files": 3,
+        "loc": 337
+      },
+      "dashboard": {
+        "files": 1,
+        "loc": 44
+      },
+      "auth": {
+        "files": 1,
+        "loc": 10
+      }
+    },
+    "confidence": "CONFIRMED"
+  },
+  "global_files": [
+    {
+      "path": "Frontend/quran-dashboard-ui/src/styles/_components.scss",
+      "loc": 746,
+      "nonblank_loc": 637,
+      "bytes": 16630
+    },
+    {
+      "path": "Frontend/quran-dashboard-ui/src/styles/_explorer-detail-lists.scss",
+      "loc": 407,
+      "nonblank_loc": 344,
+      "bytes": 8028
+    },
+    {
+      "path": "Frontend/quran-dashboard-ui/src/styles/_explorer-tables.scss",
+      "loc": 299,
+      "nonblank_loc": 257,
+      "bytes": 7428
+    },
+    {
+      "path": "Frontend/quran-dashboard-ui/src/styles/_words-explorer-layout.scss",
+      "loc": 225,
+      "nonblank_loc": 189,
+      "bytes": 4697
+    },
+    {
+      "path": "Frontend/quran-dashboard-ui/src/styles/_words-explainer.scss",
+      "loc": 160,
+      "nonblank_loc": 138,
+      "bytes": 3443
+    },
+    {
+      "path": "Frontend/quran-dashboard-ui/src/styles/_tokens.scss",
+      "loc": 154,
+      "nonblank_loc": 127,
+      "bytes": 6089
+    },
+    {
+      "path": "Frontend/quran-dashboard-ui/src/styles/_typography.scss",
+      "loc": 126,
+      "nonblank_loc": 111,
+      "bytes": 3129
+    },
+    {
+      "path": "Frontend/quran-dashboard-ui/src/styles/_forms.scss",
+      "loc": 101,
+      "nonblank_loc": 90,
+      "bytes": 2389
+    },
+    {
+      "path": "Frontend/quran-dashboard-ui/src/styles/_layout.scss",
+      "loc": 86,
+      "nonblank_loc": 75,
+      "bytes": 1718
+    },
+    {
+      "path": "Frontend/quran-dashboard-ui/src/styles/_themes.scss",
+      "loc": 72,
+      "nonblank_loc": 58,
+      "bytes": 2891
+    },
+    {
+      "path": "Frontend/quran-dashboard-ui/src/styles/_utilities.scss",
+      "loc": 63,
+      "nonblank_loc": 51,
+      "bytes": 810
+    },
+    {
+      "path": "Frontend/quran-dashboard-ui/src/styles.scss",
+      "loc": 38,
+      "nonblank_loc": 34,
+      "bytes": 1188
+    },
+    {
+      "path": "Frontend/quran-dashboard-ui/src/styles/_breakpoints.scss",
+      "loc": 4,
+      "nonblank_loc": 4,
+      "bytes": 113
+    }
+  ],
+  "component_files": {
+    "stats": {
+      "count": 108,
+      "min": 1,
+      "median": 52.5,
+      "mean": 72.8,
+      "max": 306,
+      "total_loc": 7865
+    },
+    "histogram": {
+      "0": 0,
+      "1-10": 24,
+      "11-50": 29,
+      "51-150": 38,
+      "151-300": 16,
+      ">300": 1
+    },
+    "empty_or_nearly_empty_lte10": [
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/full-i3rab-card/full-i3rab-card.component.scss",
+        "loc": 1,
+        "nonblank_loc": 1,
+        "bytes": 29
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/tafsir-card/tafsir-card.component.scss",
+        "loc": 1,
+        "nonblank_loc": 1,
+        "bytes": 29
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/translation-card/translation-card.component.scss",
+        "loc": 1,
+        "nonblank_loc": 1,
+        "bytes": 29
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/explorer-search-row/explorer-search-row.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 282
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-stems-list/lemma-stems-list.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-words-list/lemma-words-list.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/missing-surahs-list/missing-surahs-list.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/root-lemmas-list/root-lemmas-list.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/root-stems-list/root-stems-list.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/root-words-list/root-words-list.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-lemmas-list/stem-lemmas-list.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-words-list/stem-words-list.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/surah-occurrences-list/surah-occurrences-list.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/type-distribution-list/type-distribution-list.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-tabs/unique-words-tabs.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/roots-explorer-page/roots-explorer-page.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/words/pages/stems-explorer-page/stems-explorer-page.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/chip/chip.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 35
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/placeholder-page/placeholder-page.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/tabs/tabs.component.scss",
+        "loc": 3,
+        "nonblank_loc": 3,
+        "bytes": 28
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-lifecycle-actions/access-lifecycle-actions.component.scss",
+        "loc": 10,
+        "nonblank_loc": 9,
+        "bytes": 175
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/features/auth/pages/auth-callback/auth-callback.component.scss",
+        "loc": 10,
+        "nonblank_loc": 9,
+        "bytes": 150
+      },
+      {
+        "path": "Frontend/quran-dashboard-ui/src/app/shared/ui/ayah-card/ayah-card.component.scss",
+        "loc": 10,
+        "nonblank_loc": 10,
+        "bytes": 261
+      }
+    ],
+    "over_threshold": {
+      "over_150_ideal": [
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss",
+          "loc": 306,
+          "nonblank_loc": 269,
+          "bytes": 9024
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-word-section/selected-word-section.component.scss",
+          "loc": 280,
+          "nonblank_loc": 243,
+          "bytes": 6756
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.scss",
+          "loc": 267,
+          "nonblank_loc": 229,
+          "bytes": 6164
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/word-types-table/word-types-table.component.scss",
+          "loc": 237,
+          "nonblank_loc": 197,
+          "bytes": 5263
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree.component.scss",
+          "loc": 235,
+          "nonblank_loc": 199,
+          "bytes": 4706
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/top-navbar.component.scss",
+          "loc": 231,
+          "nonblank_loc": 195,
+          "bytes": 4063
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/source-selector/source-selector.component.scss",
+          "loc": 211,
+          "nonblank_loc": 187,
+          "bytes": 4678
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.scss",
+          "loc": 210,
+          "nonblank_loc": 177,
+          "bytes": 4436
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/explorer-count-range-filter/explorer-count-range-filter.component.scss",
+          "loc": 187,
+          "nonblank_loc": 157,
+          "bytes": 4102
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.scss",
+          "loc": 186,
+          "nonblank_loc": 157,
+          "bytes": 4254
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.scss",
+          "loc": 181,
+          "nonblank_loc": 158,
+          "bytes": 4160
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-templates-page/abwab-templates-page.component.scss",
+          "loc": 167,
+          "nonblank_loc": 141,
+          "bytes": 3391
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/surah-jump-picker/surah-jump-picker.component.scss",
+          "loc": 166,
+          "nonblank_loc": 147,
+          "bytes": 4089
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/access-admin/pages/access-admin-page/access-admin-page.component.scss",
+          "loc": 163,
+          "nonblank_loc": 136,
+          "bytes": 3064
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/explorer-association-filter/explorer-association-filter.component.scss",
+          "loc": 159,
+          "nonblank_loc": 138,
+          "bytes": 3403
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-relations-modal/abwab-relations-modal.component.scss",
+          "loc": 158,
+          "nonblank_loc": 133,
+          "bytes": 3375
+        },
+        {
+          "path": "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.scss",
+          "loc": 156,
+          "nonblank_loc": 131,
+          "bytes": 3452
+        }
+      ],
+      "over_200_soft": [
+        "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss",
+        "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-word-section/selected-word-section.component.scss",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.scss",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/word-types-table/word-types-table.component.scss",
+        "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree.component.scss",
+        "Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/top-navbar.component.scss",
+        "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/source-selector/source-selector.component.scss",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.scss"
+      ],
+      "over_300_hard": [
+        "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss"
+      ]
+    },
+    "confidence": "CONFIRMED"
+  },
+  "tailwind": {
+    "installed": "tailwindcss ^3.4.19 (Frontend/quran-dashboard-ui/package.json:77), wired via postcss.config.js:3; content glob ./src/**/*.{html,ts} (tailwind.config.js); empty theme.extend, no plugins",
+    "directives": "src/styles.scss:13-15 — '@tailwind base; @tailwind components; @tailwind utilities;' placed AFTER all 11 @use imports",
+    "matcher": "all static class=\"...\" attribute tokens (multi-line aware) + [class.x] bindings in src *.html; variant prefixes (sm:/hover:/dark:/rtl:...) and leading '-' stripped; token counts as Tailwind if it matches ~90 exact utilities or ~95 known prefixes AND is not defined as a class in project SCSS; interpolated {{...}} tokens excluded",
+    "matcher_limits": "misses [ngClass] object keys (3 occurrences repo-wide), [class] bindings (2), classes composed in TS; prefix list is not the full Tailwind namespace. Cross-checked with exact-token grep for flex/grid/hidden/block/relative/absolute/truncate/rounded/border/container and (gap|p|px|m|w|h|text|items|justify|bg|shadow|z)-<value> patterns: zero matches",
+    "total_tailwind_utility_tokens": 0,
+    "total_class_tokens_scanned": 3101,
+    "custom_class_tokens": 3101,
+    "qd_prefixed_class_tokens": 1584,
+    "other_custom_class_tokens": 1517,
+    "html_files_total": 115,
+    "html_files_using_tailwind": 0,
+    "html_files_without_tailwind": 115,
+    "tailwind_share_of_class_tokens": 0.0,
+    "apply_directive_uses_in_scss": 0,
+    "finding": "Tailwind is installed and its directives are compiled into the bundle, but ZERO Tailwind utility tokens exist in any template and zero @apply in any SCSS — 100% of styling is custom qd-*/BEM classes",
+    "confidence": "CONFIRMED (matcher corroborated by independent exact-token grep and 0 @apply)"
+  },
+  "qd_classes": {
+    "element_selectors_excluded": [
+      "qd-abwab-announcer",
+      "qd-abwab-archive-view",
+      "qd-abwab-cards",
+      "qd-abwab-door-fields-form",
+      "qd-abwab-door-modal",
+      "qd-abwab-door-picker",
+      "qd-abwab-door-restore-modal",
+      "qd-abwab-modal-restore",
+      "qd-abwab-move-picker",
+      "qd-abwab-page",
+      "qd-abwab-relations-modal",
+      "qd-abwab-sections-modal",
+      "qd-abwab-side-panel",
+      "qd-abwab-template-copy-modal",
+      "qd-abwab-template-node-modal",
+      "qd-abwab-template-tree",
+      "qd-abwab-templates-page",
+      "qd-abwab-toolbar",
+      "qd-abwab-tree",
+      "qd-access-admin-page",
+      "qd-access-advanced-security",
+      "qd-access-audit-log",
+      "qd-access-change-review",
+      "qd-access-lifecycle-actions",
+      "qd-access-permission-editor",
+      "qd-access-user-list",
+      "qd-access-user-picker",
+      "qd-access-user-summary-card",
+      "qd-app-shell",
+      "qd-auth-callback",
+      "qd-ayah-matches-list",
+      "qd-chip",
+      "qd-confirm-dialog",
+      "qd-context-menu",
+      "qd-dashboard-home",
+      "qd-detail-modal-shell",
+      "qd-entity-detail-overlay-host",
+      "qd-explorer-association-filter",
+      "qd-explorer-count-range-filter",
+      "qd-explorer-search-row",
+      "qd-footer",
+      "qd-full-i3rab-card",
+      "qd-highlighted-ayah",
+      "qd-lemma-ayah-type-filters",
+      "qd-lemma-detail-overlay-adapter",
+      "qd-lemma-details-panel",
+      "qd-lemma-stems-list",
+      "qd-lemma-words-list",
+      "qd-lemmas-explorer-page",
+      "qd-lemmas-table",
+      "qd-missing-surahs-list",
+      "qd-mushaf-header-navigation",
+      "qd-mushaf-line",
+      "qd-mushaf-marker",
+      "qd-mushaf-page-area",
+      "qd-mushaf-page-view",
+      "qd-mushaf-reader-page",
+      "qd-mushaf-word",
+      "qd-mutashabihat-groups-card",
+      "qd-nav-progress",
+      "qd-pagination",
+      "qd-placeholder-page",
+      "qd-root-detail-overlay-adapter",
+      "qd-root-details-panel",
+      "qd-root-lemmas-list",
+      "qd-root-stems-list",
+      "qd-root-words-list",
+      "qd-roots-explorer-page",
+      "qd-roots-table",
+      "qd-segment-data-rows",
+      "qd-segment-rendered-word",
+      "qd-selected-ayah-section",
+      "qd-selected-word-section",
+      "qd-similar-ayahs-card",
+      "qd-skeleton-rows",
+      "qd-source-selector",
+      "qd-state",
+      "qd-stem-ayah-type-filters",
+      "qd-stem-detail-overlay-adapter",
+      "qd-stem-details-panel",
+      "qd-stem-lemmas-list",
+      "qd-stem-words-list",
+      "qd-stems-explorer-page",
+      "qd-stems-table",
+      "qd-study-context-section",
+      "qd-surah-jump-picker",
+      "qd-surah-occurrences-list",
+      "qd-tabs",
+      "qd-tafsir-card",
+      "qd-test-host",
+      "qd-test-legacy-alias-host",
+      "qd-test-projection-host",
+      "qd-test-tabs-host",
+      "qd-top-navbar",
+      "qd-translation-card",
+      "qd-type-distribution-list",
+      "qd-unique-detail-overlay-adapter",
+      "qd-unique-words-page",
+      "qd-unique-words-table",
+      "qd-unique-words-tabs",
+      "qd-word-count-chip",
+      "qd-word-drilldown-modal",
+      "qd-word-morphology-summary",
+      "qd-word-section-card",
+      "qd-word-type-detail-overlay-adapter",
+      "qd-word-type-details-panel",
+      "qd-word-type-filter",
+      "qd-word-type-grouped-words-list",
+      "qd-word-type-scope-counts",
+      "qd-word-type-table-view-tabs",
+      "qd-word-types-explorer-page",
+      "qd-word-types-presence-filter",
+      "qd-word-types-table",
+      "qd-words-explainer",
+      "qd-words-hub-page"
+    ],
+    "distinct_qd_classes_defined_in_scss": 186,
+    "distinct_qd_classes_used_html_ts": 169,
+    "defined_but_unused": [
+      "qd-card--bordered",
+      "qd-card--feature",
+      "qd-explorer-controls",
+      "qd-flex",
+      "qd-flex-col",
+      "qd-gap-3",
+      "qd-gap-4",
+      "qd-items-center",
+      "qd-justify-between",
+      "qd-mb-4",
+      "qd-mt-4",
+      "qd-section-title",
+      "qd-skeleton--w-25",
+      "qd-text-center"
+    ],
+    "defined_but_unused_evidence": {
+      "qd-card--bordered": "Frontend/quran-dashboard-ui/src/styles/_components.scss:39",
+      "qd-card--feature": "Frontend/quran-dashboard-ui/src/styles/_components.scss:41",
+      "qd-explorer-controls": "Frontend/quran-dashboard-ui/src/styles/_words-explorer-layout.scss:52",
+      "qd-flex": "Frontend/quran-dashboard-ui/src/styles/_utilities.scss:13",
+      "qd-flex-col": "Frontend/quran-dashboard-ui/src/styles/_utilities.scss:17",
+      "qd-gap-3": "Frontend/quran-dashboard-ui/src/styles/_utilities.scss:34",
+      "qd-gap-4": "Frontend/quran-dashboard-ui/src/styles/_utilities.scss:38",
+      "qd-items-center": "Frontend/quran-dashboard-ui/src/styles/_utilities.scss:22",
+      "qd-justify-between": "Frontend/quran-dashboard-ui/src/styles/_utilities.scss:26",
+      "qd-mb-4": "Frontend/quran-dashboard-ui/src/styles/_utilities.scss:50",
+      "qd-mt-4": "Frontend/quran-dashboard-ui/src/styles/_utilities.scss:46",
+      "qd-section-title": "Frontend/quran-dashboard-ui/src/styles/_typography.scss:88",
+      "qd-skeleton--w-25": "Frontend/quran-dashboard-ui/src/styles/_components.scss:688",
+      "qd-text-center": "Frontend/quran-dashboard-ui/src/styles/_utilities.scss:42"
+    },
+    "possibly_dynamic_matches": [],
+    "used_but_undefined": [
+      {
+        "class": "qd-ayah-card",
+        "evidence": "Frontend/quran-dashboard-ui/src/app/shared/ui/ayah-card/ayah-card.component.ts:9",
+        "uses": 1
+      },
+      {
+        "class": "qd-chip__label",
+        "evidence": "Frontend/quran-dashboard-ui/src/app/shared/ui/chip/chip.component.html:7",
+        "uses": 2
+      },
+      {
+        "class": "qd-explorer-mobile-meta",
+        "evidence": "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.html:265",
+        "uses": 3
+      },
+      {
+        "class": "qd-explorer-mobile-meta-label",
+        "evidence": "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.html:266",
+        "uses": 3
+      },
+      {
+        "class": "qd-pagination__nav--next",
+        "evidence": "Frontend/quran-dashboard-ui/src/app/shared/ui/pagination/pagination.component.html:84",
+        "uses": 1
+      },
+      {
+        "class": "qd-pagination__nav--prev",
+        "evidence": "Frontend/quran-dashboard-ui/src/app/shared/ui/pagination/pagination.component.html:6",
+        "uses": 1
+      }
+    ],
+    "used_but_undefined_notes": [
+      "qd-ayah-card: applied via host: { class: 'qd-ayah-card' } (src/app/shared/ui/ayah-card/ayah-card.component.ts:9) and styled through :host in its own SCSS — not a defect",
+      "qd-chip__label, qd-pagination__nav--prev/--next, qd-explorer-mobile-meta(-label): real class tokens in templates with no matching SCSS selector — structural/state hooks without styles"
+    ],
+    "per_class_usage_count": {
+      "qd-skeleton": 109,
+      "qd-btn": 103,
+      "qd-explorer-table__cell": 80,
+      "qd-is-selected": 69,
+      "qd-skeleton--text": 67,
+      "qd-sr-only": 55,
+      "qd-empty-state": 49,
+      "qd-badge": 47,
+      "qd-card": 40,
+      "qd-btn-ghost": 39,
+      "qd-btn-secondary": 39,
+      "qd-interactive-surface": 37,
+      "qd-text-muted": 33,
+      "qd-skeleton--rounded-md": 29,
+      "qd-truncate": 23,
+      "qd-detail-list__row": 23,
+      "qd-explorer-mobile-stat": 22,
+      "qd-detail-list__row-number": 20,
+      "qd-explorer-table__header-cell": 20,
+      "qd-explorer-mobile-stat--action": 18,
+      "qd-input": 17,
+      "qd-error-state": 17,
+      "qd-card-title": 16,
+      "qd-detail-list__text": 16,
+      "qd-btn-primary": 15,
+      "qd-explorer-table__body": 15,
+      "qd-explorer-table__row": 14,
+      "qd-container": 13,
+      "qd-modal-backdrop": 13,
+      "qd-modal": 13,
+      "qd-text-meta": 12,
+      "qd-page-title": 12,
+      "qd-explorer-table__cell--row-number": 12,
+      "qd-explorer-subtabs": 12,
+      "qd-explainer-word": 12,
+      "qd-chip--pill": 11,
+      "qd-page": 11,
+      "qd-explainer-note": 11,
+      "qd-page-header": 10,
+      "qd-select": 10,
+      "qd-detail-list__header": 10,
+      "qd-detail-list__row--loading": 10,
+      "qd-context-menu__item": 9,
+      "qd-detail-list__loading-number": 9,
+      "qd-skeleton--w-75": 8,
+      "qd-detail-list__loading-badge": 8,
+      "qd-explorer-table-mobile-stats": 8,
+      "qd-modal__head": 7,
+      "qd-modal__body": 7,
+      "qd-modal__foot": 7,
+      "qd-card--hover": 7,
+      "qd-skeleton--w-50": 7,
+      "qd-explorer-table__header-cell--numeric": 7,
+      "qd-checkbox": 6,
+      "qd-modal--fixed": 6,
+      "qd-chip__count": 6,
+      "qd-explorer-table-mobile-stats--grid-12": 6,
+      "qd-explorer-table__sort-button": 6,
+      "qd-chip--static": 5,
+      "qd-card--quiet": 5,
+      "qd-detail-list__pagination-slot": 5,
+      "qd-explorer-table": 5,
+      "qd-explorer-table__header": 5,
+      "qd-explorer-table__header-row": 5,
+      "qd-explorer-table__header-cell--row-number": 5,
+      "qd-explorer-table__header-gutter": 5,
+      "qd-explorer-table__body--loading": 5,
+      "qd-explorer-table__sort-label": 5,
+      "qd-explorer-table__sort-glyph": 5,
+      "qd-is-sorted": 5,
+      "qd-explorer-frame": 5,
+      "qd-explainer-example": 5,
+      "qd-explainer-example__label": 5,
+      "qd-explorer-sort-fallback": 5,
+      "qd-explorer-layout": 5,
+      "qd-explorer-layout__table": 5,
+      "qd-explorer-layout__panel": 5,
+      "qd-check-row": 4,
+      "qd-tabs__tab": 4,
+      "qd-detail-list__row--flat": 4,
+      "qd-explainer-h3": 4,
+      "qd-explorer-controls-secondary": 4,
+      "qd-explainer-type": 4,
+      "qd-explainer-type__name": 4,
+      "qd-explainer-type__examples": 4,
+      "qd-scroll-stable": 3,
+      "qd-modal--wide": 3,
+      "qd-page-frame": 3,
+      "qd-context-menu__item--danger": 3,
+      "qd-badge--accent": 3,
+      "qd-skeleton--w-90": 3,
+      "qd-detail-list__count": 3,
+      "qd-explorer-mobile-stat--occurrences": 3,
+      "qd-detail-list__viewport": 3,
+      "qd-explorer-mobile-meta": 3,
+      "qd-explorer-mobile-meta-label": 3,
+      "qd-explainer-deriv": 3,
+      "qd-explorer__sort": 3,
+      "qd-state__message": 3,
+      "qd-state--reserve": 3,
+      "qd-state__message--visible": 3,
+      "qd-shell-main--page-scroll": 2,
+      "qd-tabs__count": 2,
+      "qd-tabs__count--empty": 2,
+      "qd-skeleton-group": 2,
+      "qd-explorer-table-mobile-stats--flex": 2,
+      "qd-explainer-mini": 2,
+      "qd-explainer-mini__title": 2,
+      "qd-explainer-mini__desc": 2,
+      "qd-chip__label": 2,
+      "qd-chip--disabled": 2,
+      "qd-pagination__nav": 2,
+      "qd-pagination__nav-icon": 2,
+      "qd-pagination__nav-text": 2,
+      "qd-shell": 1,
+      "qd-shell-viewport": 1,
+      "qd-footer-inner": 1,
+      "qd-nav-progress--done": 1,
+      "qd-navbar": 1,
+      "qd-gap-2": 1,
+      "qd-card--mini": 1,
+      "qd-explorer-search-row__main": 1,
+      "qd-explorer-mobile-stat--occurrences-static": 1,
+      "qd-explorer-table__row--loading": 1,
+      "qd-explainer": 1,
+      "qd-explainer__kicker": 1,
+      "qd-explainer__ordinal": 1,
+      "qd-explainer__eyebrow": 1,
+      "qd-explainer__toggle": 1,
+      "qd-explainer__tagline": 1,
+      "qd-explainer__body": 1,
+      "qd-explainer__body-text": 1,
+      "qd-explainer-benefit": 1,
+      "qd-explainer-benefit__label": 1,
+      "qd-explainer-benefit__text": 1,
+      "qd-explainer-seg": 1,
+      "qd-explainer-two": 1,
+      "qd-explainer-types": 1,
+      "qd-explorer__search": 1,
+      "qd-explorer-layout__tabs-slot": 1,
+      "qd-explorer-layout__pagination-slot": 1,
+      "qd-chip__label--clickable": 1,
+      "qd-chip__remove": 1,
+      "qd-confirm-dialog__foot": 1,
+      "qd-confirm-dialog__confirm--danger": 1,
+      "qd-context-menu__backdrop": 1,
+      "qd-context-menu--measuring": 1,
+      "qd-skeleton--block": 1,
+      "qd-pagination__controls": 1,
+      "qd-pagination__nav--prev": 1,
+      "qd-pagination__pages": 1,
+      "qd-pagination__page": 1,
+      "qd-pagination__jump": 1,
+      "qd-pagination__jump-input": 1,
+      "qd-pagination__jump-submit": 1,
+      "qd-pagination__nav--next": 1,
+      "qd-pagination__jump-error": 1,
+      "qd-btn-soft": 1,
+      "qd-text": 1,
+      "qd-skeleton-rows__row": 1,
+      "qd-loading-state": 1,
+      "qd-state__action": 1,
+      "qd-state--reserve-empty": 1,
+      "qd-tabs--vertical": 1,
+      "qd-tabs--grid": 1,
+      "qd-selected-ayah-section--embedded": 1,
+      "qd-selected-word-section--embedded": 1,
+      "qd-ayah-card": 1,
+      "qd-panel-skeleton--panel-shape": 1
+    },
+    "dynamic_prefix_tokens_excluded": {
+      "qd-segment-slot": [
+        "Frontend/quran-dashboard-ui/src/app/features/mushaf/utils/segment-word-highlights.ts:6"
+      ],
+      "qd-confirm-dialog-title": [
+        "Frontend/quran-dashboard-ui/src/app/shared/ui/confirm-dialog/confirm-dialog.component.ts:29"
+      ],
+      "qd-detail-modal-title": [
+        "Frontend/quran-dashboard-ui/src/app/shared/ui/detail-modal-shell/detail-modal-shell.component.ts:47"
+      ],
+      "qd-detail-modal-count": [
+        "Frontend/quran-dashboard-ui/src/app/shared/ui/detail-modal-shell/detail-modal-shell.component.ts:48"
+      ]
+    },
+    "method": "defined = class selectors in all SCSS with one-level &-nesting expansion; used = qd-* class-attribute tokens in HTML + qd-* tokens in non-spec .ts string literals, excluding component element selectors, var(--...) references, storage-key lines, and template-literal dynamic prefixes (listed separately)",
+    "confidence": "LIKELY (regex+brace-stack parser, not a real SCSS AST; deep multi-level & chains may be missed)"
+  },
+  "tokens": {
+    "distinct_qd_custom_properties_defined": 114,
+    "qd_custom_properties": [
+      "--qd-accent",
+      "--qd-accent-fg",
+      "--qd-accent-hover",
+      "--qd-accent-soft",
+      "--qd-accent-text",
+      "--qd-accent-tint",
+      "--qd-ayah-card-bg",
+      "--qd-ayah-content-min-height",
+      "--qd-ayah-study-min-height",
+      "--qd-bg",
+      "--qd-border",
+      "--qd-border-accent",
+      "--qd-border-strong",
+      "--qd-btn-border-width",
+      "--qd-btn-font-size",
+      "--qd-btn-line-height",
+      "--qd-btn-padding-block",
+      "--qd-checkbox-size",
+      "--qd-chrome-bg",
+      "--qd-control-block-size",
+      "--qd-danger",
+      "--qd-danger-tint",
+      "--qd-explorer-chrome-block-size",
+      "--qd-explorer-detail-bg",
+      "--qd-explorer-detail-border",
+      "--qd-explorer-detail-card",
+      "--qd-explorer-detail-header-bg",
+      "--qd-explorer-detail-surface",
+      "--qd-explorer-table-body-height",
+      "--qd-explorer-table-card-height",
+      "--qd-explorer-table-header-bg",
+      "--qd-explorer-table-header-fg",
+      "--qd-explorer-table-header-height",
+      "--qd-explorer-table-scrollbar-gutter",
+      "--qd-explorer-view-tabs-height",
+      "--qd-floating-shadow",
+      "--qd-focus-ring",
+      "--qd-font-mushaf-common",
+      "--qd-font-mushaf-surah-name",
+      "--qd-font-mushaf-surah-name-v2",
+      "--qd-font-quran",
+      "--qd-font-quran-ayah-marker",
+      "--qd-footer-accent",
+      "--qd-footer-accent-hover",
+      "--qd-footer-bg",
+      "--qd-footer-bg-2",
+      "--qd-footer-border",
+      "--qd-footer-muted",
+      "--qd-footer-text",
+      "--qd-mushaf-ayah-marker-color",
+      "--qd-mushaf-ayah-marker-font-size",
+      "--qd-mushaf-panel-height",
+      "--qd-mushaf-sticky-top",
+      "--qd-mushaf-surah-header-frame-width",
+      "--qd-mushaf-text-column-width",
+      "--qd-mushaf-word-hover-bg",
+      "--qd-mushaf-word-selection-bg",
+      "--qd-mushaf-word-selection-indicator",
+      "--qd-mushaf-word-selection-ring",
+      "--qd-name-min-inline-size",
+      "--qd-navbar-block-size",
+      "--qd-overlay",
+      "--qd-pagination-margin-block-start",
+      "--qd-pagination-slot-block-size",
+      "--qd-primary",
+      "--qd-primary-fg",
+      "--qd-primary-hover",
+      "--qd-radius-lg",
+      "--qd-radius-md",
+      "--qd-radius-pill",
+      "--qd-radius-sm",
+      "--qd-ring",
+      "--qd-section-bg",
+      "--qd-segment-card-min-height",
+      "--qd-segment-cat-1",
+      "--qd-segment-cat-2",
+      "--qd-segment-cat-3",
+      "--qd-segment-cat-4",
+      "--qd-segment-cat-5",
+      "--qd-segment-cat-6",
+      "--qd-selected-ayah-baseline-block-size",
+      "--qd-selected-bg",
+      "--qd-selected-word-baseline-block-size",
+      "--qd-shadow",
+      "--qd-shadow-lg",
+      "--qd-shadow-sm",
+      "--qd-skeleton-h",
+      "--qd-skeleton-w",
+      "--qd-space-1",
+      "--qd-space-2",
+      "--qd-space-3",
+      "--qd-space-4",
+      "--qd-space-5",
+      "--qd-space-6",
+      "--qd-success",
+      "--qd-success-tint",
+      "--qd-surface",
+      "--qd-surface-hover",
+      "--qd-surface-recessed",
+      "--qd-t-base",
+      "--qd-t-fast",
+      "--qd-text",
+      "--qd-text-muted",
+      "--qd-warning",
+      "--qd-warning-tint",
+      "--qd-z-floating",
+      "--qd-z-menu",
+      "--qd-z-menu-backdrop",
+      "--qd-z-mobile-nav",
+      "--qd-z-modal",
+      "--qd-z-modal-backdrop",
+      "--qd-z-nav-progress",
+      "--qd-z-popover",
+      "--qd-z-sticky"
+    ],
+    "distinct_other_custom_properties_defined": 11,
+    "other_custom_properties": [
+      "--abwab-tree-count-col",
+      "--explorer-detail-modal-block-size",
+      "--highlighted-ayah-font-size",
+      "--highlighted-ayah-line-height",
+      "--highlighted-ayah-matched-border-width",
+      "--lemmas-table-scrollbar-gutter",
+      "--roots-table-scrollbar-gutter",
+      "--segment-accent",
+      "--stems-table-scrollbar-gutter",
+      "--unique-words-table-scrollbar-gutter",
+      "--word-types-table-scrollbar-gutter"
+    ],
+    "var_usage_in_global_scss": 469,
+    "var_usage_in_component_scss": 1349,
+    "top_15_used_tokens": [
+      [
+        "--qd-space-2",
+        252
+      ],
+      [
+        "--qd-space-3",
+        174
+      ],
+      [
+        "--qd-space-1",
+        141
+      ],
+      [
+        "--qd-text-muted",
+        135
+      ],
+      [
+        "--qd-border",
+        105
+      ],
+      [
+        "--qd-text",
+        93
+      ],
+      [
+        "--qd-radius-sm",
+        86
+      ],
+      [
+        "--qd-surface",
+        68
+      ],
+      [
+        "--qd-space-4",
+        57
+      ],
+      [
+        "--qd-t-fast",
+        55
+      ],
+      [
+        "--qd-accent-text",
+        55
+      ],
+      [
+        "--qd-focus-ring",
+        55
+      ],
+      [
+        "--qd-radius-md",
+        51
+      ],
+      [
+        "--qd-accent",
+        42
+      ],
+      [
+        "--qd-section-bg",
+        40
+      ]
+    ],
+    "definition_evidence_sample": {
+      "--qd-accent": "Frontend/quran-dashboard-ui/src/styles/_themes.scss:29",
+      "--qd-accent-fg": "Frontend/quran-dashboard-ui/src/styles/_themes.scss:34",
+      "--qd-accent-hover": "Frontend/quran-dashboard-ui/src/styles/_themes.scss:30",
+      "--qd-accent-soft": "Frontend/quran-dashboard-ui/src/styles/_themes.scss:31",
+      "--qd-accent-text": "Frontend/quran-dashboard-ui/src/styles/_themes.scss:33",
+      "--qd-accent-tint": "Frontend/quran-dashboard-ui/src/styles/_themes.scss:32",
+      "--qd-ayah-card-bg": "Frontend/quran-dashboard-ui/src/styles/_themes.scss:8",
+      "--qd-ayah-content-min-height": "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss:23"
+    },
+    "confidence": "CONFIRMED"
+  },
+  "hardcoded": {
+    "method": "regex per line, // comment lines skipped: hex = #[0-9a-fA-F]{3,8}; px font sizes = font-size declaration lines containing Npx; magic px spacing = count of nonzero Npx values on lines starting with margin*/padding*/gap/row-gap/column-gap/top/right/bottom/left/inset* declarations. rgba()/hsl()/oklch() literals NOT counted as hardcoded colors",
+    "global": {
+      "hex_colors": 0,
+      "px_font_sizes": 0,
+      "magic_px_spacing": 9,
+      "hex_evidence": [],
+      "font_evidence": [],
+      "spacing_evidence": [
+        "Frontend/quran-dashboard-ui/src/styles/_explorer-detail-lists.scss:3",
+        "Frontend/quran-dashboard-ui/src/styles/_explorer-detail-lists.scss:22",
+        "Frontend/quran-dashboard-ui/src/styles/_explorer-detail-lists.scss:32",
+        "Frontend/quran-dashboard-ui/src/styles/_explorer-tables.scss:44",
+        "Frontend/quran-dashboard-ui/src/styles/_utilities.scss:6"
+      ]
+    },
+    "component": {
+      "hex_colors": 0,
+      "px_font_sizes": 0,
+      "magic_px_spacing": 8,
+      "hex_evidence": [],
+      "font_evidence": [],
+      "spacing_evidence": [
+        "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-templates-page/abwab-templates-page.component.scss:139",
+        "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-user-picker/access-user-picker.component.scss:35",
+        "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-header-navigation/mushaf-header-navigation.component.scss:81",
+        "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-line/mushaf-line.component.scss:56",
+        "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/source-selector/source-selector.component.scss:161",
+        "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/surah-jump-picker/surah-jump-picker.component.scss:11"
+      ]
+    },
+    "confidence": "LIKELY (regex-based; multi-line declarations and shorthand-embedded colors uncounted)"
+  },
+  "repeated_blocks": {
+    "method": "declaration lines normalized to prop:value; consecutive-declaration runs per rule block; full runs (>=3 decls) and sliding 3-decl windows hashed across all SCSS; reported when present in >=3 distinct files; full-block matches listed first, their sub-windows deduped",
+    "top_20": [
+      {
+        "declarations": [
+          "display:flex",
+          "flex-wrap:wrap",
+          "gap:var(--qd-space-2)"
+        ],
+        "file_count": 7,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-relations-modal/abwab-relations-modal.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-advanced-security/access-advanced-security.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-change-review/access-change-review.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-lifecycle-actions/access-lifecycle-actions.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/access-admin/pages/access-admin-page/access-admin-page.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/dashboard/pages/dashboard-home/dashboard-home.component.scss",
+          "Frontend/quran-dashboard-ui/src/styles/_explorer-detail-lists.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "display:flex",
+          "flex-direction:column",
+          "gap:var(--qd-space-3)"
+        ],
+        "file_count": 6,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-side-panel/abwab-side-panel.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-word-section/selected-word-section.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/ayah-matches-list/ayah-matches-list.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/words-explainer/words-explainer.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "display:flex",
+          "flex-direction:column",
+          "gap:var(--qd-space-2)"
+        ],
+        "file_count": 6,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-word-section/selected-word-section.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/source-selector/source-selector.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/explorer-count-range-filter/explorer-count-range-filter.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-section-card/word-section-card.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-grouped-words-list/word-type-grouped-words-list.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "display:flex",
+          "align-items:center",
+          "justify-content:center"
+        ],
+        "file_count": 6,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-word-section/selected-word-section.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-types-table/word-types-table.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "display:flex",
+          "align-items:baseline",
+          "justify-content:space-between",
+          "gap:var(--qd-space-3)"
+        ],
+        "file_count": 5,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-advanced-security/access-advanced-security.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-audit-log/access-audit-log.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-change-review/access-change-review.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-user-list/access-user-list.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/access-admin/pages/access-admin-page/access-admin-page.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "display:flex",
+          "flex-direction:column",
+          "block-size:100%",
+          "min-block-size:0"
+        ],
+        "file_count": 5,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/root-details-panel/root-details-panel.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-drilldown-modal/word-drilldown-modal.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-details-panel/word-type-details-panel.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "display:flex",
+          "flex-direction:column",
+          "block-size:100%",
+          "box-sizing:border-box"
+        ],
+        "file_count": 5,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.responsive.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-types-table/word-types-table.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "flex-shrink:0",
+          "block-size:var(--qd-explorer-table-header-height, 2.75rem)",
+          "min-block-size:unset"
+        ],
+        "file_count": 5,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.responsive.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-types-table/word-types-table.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "display:block",
+          "width:100%",
+          "padding:var(--qd-space-1)",
+          "border:1px solid transparent",
+          "border-radius:var(--qd-radius-sm)",
+          "background:transparent",
+          "text-align:start",
+          "overflow:hidden"
+        ],
+        "file_count": 4,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "display:flex",
+          "flex-direction:column",
+          "flex:1 1 auto",
+          "min-block-size:0",
+          "overflow:hidden"
+        ],
+        "file_count": 4,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/root-details-panel/root-details-panel.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-details-panel/word-type-details-panel.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "grid-column:1",
+          "grid-row:1",
+          "padding:0",
+          "align-self:center",
+          "justify-self:start"
+        ],
+        "file_count": 4,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.responsive.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "display:flex",
+          "align-items:center",
+          "gap:var(--qd-space-2)"
+        ],
+        "file_count": 4,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/top-navbar.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-relations-modal/abwab-relations-modal.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/ayah-matches-list/ayah-matches-list.component.scss",
+          "Frontend/quran-dashboard-ui/src/styles/_forms.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "outline:2px solid var(--qd-focus-ring)",
+          "outline-offset:-2px",
+          "border-radius:var(--qd-radius-sm)"
+        ],
+        "file_count": 4,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/root-details-panel/root-details-panel.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/stem-details-panel/stem-details-panel.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-details-panel/word-type-details-panel.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "padding:0",
+          "width:100%",
+          "text-align:center"
+        ],
+        "file_count": 4,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.responsive.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "display:inline-flex",
+          "align-items:center",
+          "justify-content:center",
+          "inline-size:1.25rem",
+          "block-size:1.25rem",
+          "flex:none",
+          "border:none",
+          "background:transparent",
+          "color:var(--qd-text-muted)",
+          "cursor:pointer"
+        ],
+        "file_count": 3,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-archive-view/abwab-archive-view.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-tree/abwab-template-tree.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "inline-size:100%",
+          "border:1px solid var(--qd-border)",
+          "border-radius:var(--qd-radius-sm)",
+          "padding:var(--qd-space-2) var(--qd-space-3)",
+          "background:var(--qd-surface)",
+          "color:var(--qd-text)",
+          "font-family:inherit",
+          "font-size:0.85rem"
+        ],
+        "file_count": 3,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-fields-form/abwab-door-fields-form.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-modal/abwab-door-modal.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-restore-modal/abwab-door-restore-modal.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "display:block",
+          "font-size:0.75rem",
+          "color:var(--qd-text-muted)",
+          "margin-block-end:var(--qd-space-1)",
+          "font-weight:700"
+        ],
+        "file_count": 3,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-fields-form/abwab-door-fields-form.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-modal/abwab-door-modal.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-restore-modal/abwab-door-restore-modal.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "border:1px solid var(--qd-border-accent)",
+          "background:var(--qd-selected-bg)",
+          "border-radius:var(--qd-radius-md)",
+          "padding:var(--qd-space-3)"
+        ],
+        "file_count": 3,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-modal/abwab-door-modal.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-sections-modal/abwab-sections-modal.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-node-modal/abwab-template-node-modal.component.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "outline:2px solid var(--qd-focus-ring)",
+          "outline-offset:2px",
+          "box-shadow:var(--qd-ring)"
+        ],
+        "file_count": 3,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-modal-restore/abwab-modal-restore.component.scss",
+          "Frontend/quran-dashboard-ui/src/styles/_components.scss",
+          "Frontend/quran-dashboard-ui/src/styles/_forms.scss"
+        ],
+        "kind": "full-block"
+      },
+      {
+        "declarations": [
+          "background:var(--qd-selected-bg)",
+          "border-color:var(--qd-border-accent)",
+          "color:var(--qd-accent-text)"
+        ],
+        "file_count": 3,
+        "files": [
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/explorer-count-range-filter/explorer-count-range-filter.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-count-chip/word-count-chip.component.scss",
+          "Frontend/quran-dashboard-ui/src/styles/_components.scss"
+        ],
+        "kind": "full-block"
+      }
+    ],
+    "total_repeated_groups_in_3plus_files": 76,
+    "pattern_selector_spread": {
+      "button": {
+        "files_with_matching_selectors": 6,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/core/layout/footer/footer.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-toolbar/abwab-toolbar.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-page/abwab-page.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-header-navigation/mushaf-header-navigation.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-filter/word-type-filter.component.scss",
+          "Frontend/quran-dashboard-ui/src/styles/_components.scss"
+        ]
+      },
+      "card": {
+        "files_with_matching_selectors": 13,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-cards/abwab-cards.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-page/abwab-page.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/dashboard/pages/dashboard-home/dashboard-home.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/_study-card.shared.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mutashabihat-groups-card/mutashabihat-groups-card.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/similar-ayahs-card/similar-ayahs-card.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/ayah-matches-list/ayah-matches-list.component.scss"
+        ]
+      },
+      "input": {
+        "files_with_matching_selectors": 6,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-tree/abwab-template-tree.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-user-picker/access-user-picker.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/explorer-count-range-filter/explorer-count-range-filter.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/shared/ui/pagination/pagination.component.scss",
+          "Frontend/quran-dashboard-ui/src/styles/_forms.scss"
+        ]
+      },
+      "modal": {
+        "files_with_matching_selectors": 11,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-modal/abwab-door-modal.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-restore-modal/abwab-door-restore-modal.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-modal-restore/abwab-modal-restore.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-relations-modal/abwab-relations-modal.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-sections-modal/abwab-sections-modal.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-copy-modal/abwab-template-copy-modal.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-template-node-modal/abwab-template-node-modal.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-drilldown-modal/word-drilldown-modal.component.scss"
+        ]
+      },
+      "table": {
+        "files_with_matching_selectors": 10,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.responsive.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-table-view-tabs/word-type-table-view-tabs.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-types-table/word-types-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/styles/_explorer-tables.scss"
+        ]
+      }
+    },
+    "media_queries_most_repeated": [
+      {
+        "query": "(max-width: bp.$qd-bp-tablet-max)",
+        "occurrences": 21,
+        "file_count": 15,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-page/abwab-page.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-templates-page/abwab-templates-page.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/access-admin/pages/access-admin-page/access-admin-page.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-word-section/selected-word-section.component.scss"
+        ]
+      },
+      {
+        "query": "(prefers-reduced-motion: reduce)",
+        "occurrences": 16,
+        "file_count": 14,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/core/layout/nav-progress/nav-progress.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/top-navbar.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-tree/abwab-tree.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/surah-jump-picker/surah-jump-picker.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/explorer-association-filter/explorer-association-filter.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-details-panel/word-type-details-panel.component.scss"
+        ]
+      },
+      {
+        "query": "(min-width: bp.$qd-bp-desktop-min)",
+        "occurrences": 10,
+        "file_count": 9,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-audit-log/access-audit-log.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/access-admin/pages/access-admin-page/access-admin-page.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/roots-table/roots-table.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/stems-table/stems-table.component.responsive.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.scss"
+        ]
+      },
+      {
+        "query": "(max-width: bp.$qd-bp-phone-max)",
+        "occurrences": 9,
+        "file_count": 7,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-ayah-section/selected-ayah-section.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/word-type-table-view-tabs/word-type-table-view-tabs.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/shared/ui/detail-modal-shell/detail-modal-shell.component.scss",
+          "Frontend/quran-dashboard-ui/src/styles/_components.scss",
+          "Frontend/quran-dashboard-ui/src/styles/_tokens.scss",
+          "Frontend/quran-dashboard-ui/src/styles/_words-explainer.scss"
+        ]
+      },
+      {
+        "query": "(max-width: 767px)",
+        "occurrences": 5,
+        "file_count": 5,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/top-navbar.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-word-section/selected-word-section.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/word-morphology-summary/word-morphology-summary.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/components/explorer-count-range-filter/explorer-count-range-filter.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/shared/ui/pagination/pagination.component.scss"
+        ]
+      },
+      {
+        "query": "(max-width: 1023px)",
+        "occurrences": 4,
+        "file_count": 4,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-page-area/mushaf-page-area.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-page-view/mushaf-page-view.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/study-context-section/study-context-section.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/pages/mushaf-reader-page/mushaf-reader-page.component.scss"
+        ]
+      },
+      {
+        "query": "(max-width: 420px)",
+        "occurrences": 3,
+        "file_count": 3,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/top-navbar.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/dashboard/pages/dashboard-home/dashboard-home.component.scss",
+          "Frontend/quran-dashboard-ui/src/styles/_layout.scss"
+        ]
+      },
+      {
+        "query": "(min-width: 1024px)",
+        "occurrences": 3,
+        "file_count": 3,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/study-context-section/study-context-section.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/pages/mushaf-reader-page/mushaf-reader-page.component.scss",
+          "Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.scss"
+        ]
+      },
+      {
+        "query": "(max-width: 360px)",
+        "occurrences": 1,
+        "file_count": 1,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/top-navbar.component.scss"
+        ]
+      },
+      {
+        "query": "(min-width: 768px) and (max-width: 1023px)",
+        "occurrences": 1,
+        "file_count": 1,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-page-area/mushaf-page-area.component.scss"
+        ]
+      },
+      {
+        "query": "(hover: hover)",
+        "occurrences": 1,
+        "file_count": 1,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-word/mushaf-word.component.scss"
+        ]
+      },
+      {
+        "query": "(min-width: 640px)",
+        "occurrences": 1,
+        "file_count": 1,
+        "sample_files": [
+          "Frontend/quran-dashboard-ui/src/app/features/words/pages/words-hub-page/words-hub-page.component.scss"
+        ]
+      }
+    ],
+    "confidence": "LIKELY (textual normalization; reordered declarations or different token spellings of the same style not detected)"
+  },
+  "single_feature_globals": [
+    {
+      "partial": "Frontend/quran-dashboard-ui/src/styles/_words-explorer-layout.scss",
+      "loc": 225,
+      "classes_owned_by_partial": 18,
+      "classes_referenced_but_defined_elsewhere": [
+        "qd-page-header",
+        "qd-select"
+      ],
+      "owned_class_usage_by_feature": {
+        "words": 59
+      },
+      "all_class_token_usage_by_feature": {
+        "words": 70,
+        "access-admin": 4,
+        "abwab": 2,
+        "dashboard": 1,
+        "shared": 1,
+        "mushaf": 1
+      },
+      "single_feature_by_owned_classes": true,
+      "dominant_feature": "words",
+      "cross_feature_owned_class_uses": {},
+      "evidence_samples": [
+        "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.html:59 (.qd-explorer-controls-secondary)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.html:94 (.qd-explorer-layout)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/pages/word-types-explorer-page/word-types-explorer-page.component.html:149 (.qd-explorer-layout__pagination-slot)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.html:124 (.qd-explorer-layout__panel)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.html:95 (.qd-explorer-layout__table)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/pages/word-types-explorer-page/word-types-explorer-page.component.html:116 (.qd-explorer-layout__tabs-slot)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/explorer-search-row/explorer-search-row.component.html:1 (.qd-explorer-search-row__main)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.html:62 (.qd-explorer-sort-fallback)"
+      ],
+      "method": "owned = classes whose selector starts a rule at line start in this partial; referenced = appear only inside descendant/compound selectors (defined or contextually styled elsewhere). Usage counted as exact class-attribute tokens in src *.html plus qd-* string tokens in non-spec .ts",
+      "confidence": "CONFIRMED"
+    },
+    {
+      "partial": "Frontend/quran-dashboard-ui/src/styles/_words-explainer.scss",
+      "loc": 160,
+      "classes_owned_by_partial": 18,
+      "classes_referenced_but_defined_elsewhere": [
+        "word"
+      ],
+      "owned_class_usage_by_feature": {
+        "words": 64
+      },
+      "all_class_token_usage_by_feature": {
+        "words": 64
+      },
+      "single_feature_by_owned_classes": true,
+      "dominant_feature": "words",
+      "cross_feature_owned_class_uses": {},
+      "evidence_samples": [
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/words-explainer/words-explainer.component.html:30 (.qd-explainer-benefit)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/words-explainer/words-explainer.component.html:31 (.qd-explainer-benefit__label)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/words-explainer/words-explainer.component.html:32 (.qd-explainer-benefit__text)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.html:16 (.qd-explainer-deriv)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.html:14 (.qd-explainer-example)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.html:15 (.qd-explainer-example__label)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/pages/lemmas-explorer-page/lemmas-explorer-page.component.html:13 (.qd-explainer-h3)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/pages/unique-words-page/unique-words-page.component.html:15 (.qd-explainer-mini)"
+      ],
+      "method": "owned = classes whose selector starts a rule at line start in this partial; referenced = appear only inside descendant/compound selectors (defined or contextually styled elsewhere). Usage counted as exact class-attribute tokens in src *.html plus qd-* string tokens in non-spec .ts",
+      "confidence": "CONFIRMED"
+    },
+    {
+      "partial": "Frontend/quran-dashboard-ui/src/styles/_explorer-tables.scss",
+      "loc": 299,
+      "classes_owned_by_partial": 23,
+      "classes_referenced_but_defined_elsewhere": [
+        "qd-is-selected",
+        "qd-is-sorted",
+        "qd-skeleton"
+      ],
+      "owned_class_usage_by_feature": {
+        "words": 255
+      },
+      "all_class_token_usage_by_feature": {
+        "words": 399,
+        "mushaf": 25,
+        "shared": 13,
+        "access-admin": 1
+      },
+      "single_feature_by_owned_classes": true,
+      "dominant_feature": "words",
+      "cross_feature_owned_class_uses": {},
+      "evidence_samples": [
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.html:201 (.qd-explorer-mobile-stat)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.html:212 (.qd-explorer-mobile-stat--action)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.html:201 (.qd-explorer-mobile-stat--occurrences)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.html:285 (.qd-explorer-mobile-stat--occurrences-static)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.html:2 (.qd-explorer-table)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.html:51 (.qd-explorer-table-mobile-stats)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/unique-words-table/unique-words-table.component.html:67 (.qd-explorer-table-mobile-stats--flex)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/lemmas-table/lemmas-table.component.html:51 (.qd-explorer-table-mobile-stats--grid-12)"
+      ],
+      "method": "owned = classes whose selector starts a rule at line start in this partial; referenced = appear only inside descendant/compound selectors (defined or contextually styled elsewhere). Usage counted as exact class-attribute tokens in src *.html plus qd-* string tokens in non-spec .ts",
+      "confidence": "CONFIRMED"
+    },
+    {
+      "partial": "Frontend/quran-dashboard-ui/src/styles/_explorer-detail-lists.scss",
+      "loc": 407,
+      "classes_owned_by_partial": 92,
+      "classes_referenced_but_defined_elsewhere": [],
+      "owned_class_usage_by_feature": {
+        "words": 216,
+        "access-admin": 4
+      },
+      "all_class_token_usage_by_feature": {
+        "words": 216,
+        "access-admin": 4
+      },
+      "single_feature_by_owned_classes": false,
+      "dominant_feature": "words",
+      "cross_feature_owned_class_uses": {
+        "explorer-detail-panel__body": {
+          "features": {
+            "access-admin": 1
+          },
+          "evidence": [
+            "Frontend/quran-dashboard-ui/src/app/features/access-admin/pages/access-admin-page/access-admin-page.component.html:159",
+            "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.html:33"
+          ]
+        },
+        "qd-detail-list__row": {
+          "features": {
+            "access-admin": 3
+          },
+          "evidence": [
+            "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-audit-log/access-audit-log.component.html:67",
+            "Frontend/quran-dashboard-ui/src/app/features/access-admin/components/access-user-picker/access-user-picker.component.html:50"
+          ]
+        }
+      },
+      "evidence_samples": [
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/ayah-matches-list/ayah-matches-list.component.html:1 (.ayah-matches-list)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/ayah-matches-list/ayah-matches-list.component.html:15 (.ayah-matches-list__meta)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/ayah-matches-list/ayah-matches-list.component.html:11 (.ayah-matches-list__meta-row)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/ayah-matches-list/ayah-matches-list.component.html:3 (.ayah-matches-list__viewport)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-details-panel/lemma-details-panel.component.html:100 (.explorer-detail-modal)",
+        "Frontend/quran-dashboard-ui/src/app/features/access-admin/pages/access-admin-page/access-admin-page.component.html:159 (.explorer-detail-panel__body)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-stems-list/lemma-stems-list.component.html:9 (.lemma-stems-list)",
+        "Frontend/quran-dashboard-ui/src/app/features/words/components/lemma-stems-list/lemma-stems-list.component.html:1 (.lemma-stems-list-shell)"
+      ],
+      "method": "owned = classes whose selector starts a rule at line start in this partial; referenced = appear only inside descendant/compound selectors (defined or contextually styled elsewhere). Usage counted as exact class-attribute tokens in src *.html plus qd-* string tokens in non-spec .ts",
+      "confidence": "CONFIRMED"
+    }
+  ],
+  "styles_scss": {
+    "import_order_lines_1_15": [
+      "@use 'styles/tokens';",
+      "@use 'styles/themes';",
+      "@use 'styles/typography';",
+      "@use 'styles/layout';",
+      "@use 'styles/components';",
+      "@use 'styles/words-explorer-layout';",
+      "@use 'styles/words-explainer';",
+      "@use 'styles/explorer-tables';",
+      "@use 'styles/explorer-detail-lists';",
+      "@use 'styles/forms';",
+      "@use 'styles/utilities';",
+      "",
+      "@tailwind base;",
+      "@tailwind components;",
+      "@tailwind utilities;"
+    ],
+    "tailwind_directives_position": "lines 13-15, after all @use imports (src/styles.scss:13)"
+  },
+  "notes": [
+    "Tailwind is dead weight at runtime configuration level: installed, PostCSS-wired, directives compiled, content glob scans src, yet 0 utility usages and 0 @apply anywhere (CONFIRMED)",
+    "Component selector prefix is 'qd' (angular.json:43), so qd-* element selectors were excluded from qd-class analysis; 115 element selectors found",
+    "styles.scss places @tailwind base AFTER all custom @use partials, so Tailwind preflight (base reset) overrides custom global styles in source order — moot only while zero utilities are used (src/styles.scss:1-15)",
+    "_utilities.scss defines a parallel utility vocabulary (qd-flex, qd-gap-3, qd-items-center, qd-mb-4...) duplicating what Tailwind would provide; most of these are in the defined-but-unused list",
+    "The 4 explorer/words global partials total 1091 LOC promoted into src/styles/; 3 of 4 serve ONLY the words feature by owned-class usage, the 4th (_explorer-detail-lists) is words + 4 access-admin tokens",
+    "Cross-feature token counts against _explorer-tables/_words-explorer-layout come solely from classes those partials reference but do not own (qd-skeleton defined at Frontend/quran-dashboard-ui/src/styles/_components.scss:671, qd-page-header at styles/_layout.scss:74, qd-select at styles/_forms.scss:30)",
+    "LOC = physical lines including blanks/comments, matching how FRONTEND_STRUCTURE.md thresholds are expressed"
+  ]
+}
