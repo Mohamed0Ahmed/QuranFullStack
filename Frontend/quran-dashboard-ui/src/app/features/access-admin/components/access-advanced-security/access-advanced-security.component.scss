@@ -1,6 +1,7 @@
 .access-advanced-security {
   display: grid;
   gap: var(--qd-space-4);
+  min-inline-size: 0;
 }
 
 .access-advanced-security__header {
@@ -8,49 +9,16 @@
   gap: var(--qd-space-1);
 }
 
-.access-advanced-security__header h2,
-.access-advanced-security__panel h3 {
-  margin: 0;
-  color: var(--qd-text);
-  font-size: 1.05rem;
-  font-weight: 700;
-}
-
-.access-advanced-security__eyebrow,
-.access-advanced-security__intro,
-.access-advanced-security__notice,
-.access-advanced-security__confirmation p,
-.access-advanced-security__subjects {
-  margin: 0;
-}
-
-.access-advanced-security__eyebrow {
-  color: var(--qd-accent-text);
-  font-size: 0.875rem;
-}
-
-.access-advanced-security__intro,
-.access-advanced-security__notice {
-  color: var(--qd-text-muted);
-}
-
 .access-advanced-security__panel,
 .access-advanced-security__confirmation {
   display: grid;
   gap: var(--qd-space-3);
-  padding: var(--qd-space-4);
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-md);
-  background: var(--qd-surface);
-}
-
-.access-advanced-security__confirmation {
-  background: var(--qd-section-bg);
 }
 
 .access-advanced-security__subjects {
   display: grid;
   gap: var(--qd-space-2);
+  margin: 0;
 }
 
 .access-advanced-security__subjects div {
@@ -65,8 +33,8 @@
 }
 
 .access-advanced-security__subjects dd {
-  margin: 0;
   color: var(--qd-text);
+  overflow-wrap: anywhere;
 }
 
 .access-advanced-security__field {

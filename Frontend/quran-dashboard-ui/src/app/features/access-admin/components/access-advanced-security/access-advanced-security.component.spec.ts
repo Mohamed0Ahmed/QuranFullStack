@@ -75,7 +75,16 @@ describe('AccessAdvancedSecurityComponent', () => {
     expect(text).toContain('الأمان المتقدم');
     expect(text).toContain('ليست جزءًا من تحرير الصلاحيات');
     expect(text).toContain('member@example.test');
-    expect(fixture.nativeElement.querySelector('qd-access-permission-editor')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid^="access-permission-"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="access-request-permissions"]')).toBeNull();
+  });
+
+  it('carries no accent eyebrow above its heading', () => {
+    const fixture = setup();
+    const heading = fixture.nativeElement.querySelector('#access-advanced-security-title') as HTMLElement;
+
+    expect(heading.textContent?.trim()).toBe('الأمان المتقدم');
+    expect(heading.parentElement?.firstElementChild).toBe(heading);
   });
 
   it('offers identity recovery for an Owner account without claiming it is uneditable', () => {

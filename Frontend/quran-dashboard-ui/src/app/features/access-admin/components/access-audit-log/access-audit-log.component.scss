@@ -1,0 +1,57 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+.access-audit-log {
+  display: grid;
+  gap: var(--qd-space-4);
+}
+
+.access-audit-log__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+}
+
+.access-audit-log__filters {
+  display: grid;
+  gap: var(--qd-space-2);
+}
+
+.access-audit-log__list {
+  display: grid;
+  gap: var(--qd-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.access-audit-log__list li {
+  display: grid;
+  gap: var(--qd-space-1);
+  padding: var(--qd-space-3);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-surface);
+  color: var(--qd-text-muted);
+}
+
+.access-audit-log__list strong {
+  color: var(--qd-text);
+}
+
+@media (min-width: bp.$qd-bp-desktop-min) {
+  .access-audit-log__filters {
+    grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--qd-space-3);
+  }
+
+  .access-audit-log__filters button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .access-audit-log__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

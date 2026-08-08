@@ -1,16 +1,37 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 
-import { isPermissionCode } from '../../../../core/auth/permission-code';
+import { AccessUserDetail } from '../../../../core/api/generated/models/access-user-detail';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
+import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { AccessAdvancedSecurityComponent } from '../../components/access-advanced-security/access-advanced-security.component';
-import { AccessUserListComponent } from '../../components/access-user-list/access-user-list.component';
 import {
-  AccessUserWorkflowConfirmation,
-  AccessUserWorkflowsComponent,
-} from '../../components/access-user-workflows/access-user-workflows.component';
+  AccessAuditFilters,
+  AccessAuditLogComponent,
+} from '../../components/access-audit-log/access-audit-log.component';
+import { AccessChangeReviewComponent } from '../../components/access-change-review/access-change-review.component';
+import { AccessLifecycleActionsComponent } from '../../components/access-lifecycle-actions/access-lifecycle-actions.component';
+import { AccessPermissionEditorComponent } from '../../components/access-permission-editor/access-permission-editor.component';
+import { AccessUserListComponent } from '../../components/access-user-list/access-user-list.component';
+import { AccessUserSummaryCardComponent } from '../../components/access-user-summary-card/access-user-summary-card.component';
 import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
-import { AccessUserListFilters } from '../../models/access-admin.models';
+import {
+  AccessUserListFilters,
+  AccessUserLifecycleAction,
+  AccessUserWorkflowAction,
+  acceptGrantsPermissions,
+  canReplaceUserPermissions,
+  canSelectUserPermissions,
+} from '../../models/access-admin.models';
+import {
+  ACCESS_ADMIN_TAB_KEYS,
+  AccessAdminTab,
+  DEFAULT_ACCESS_ADMIN_TAB,
+  parseAccessAdminTab,
+} from '../../models/access-admin-tabs';
 import { AccessAdminFacade, AccessAdminMutationOutcome } from '../../state/access-admin.facade';
 
 @Component({
@@ -18,10 +39,16 @@ import { AccessAdminFacade, AccessAdminMutationOutcome } from '../../state/acces
   standalone: true,
   imports: [
     AccessAdvancedSecurityComponent,
+    AccessAuditLogComponent,
+    AccessChangeReviewComponent,
+    AccessLifecycleActionsComponent,
+    AccessPermissionEditorComponent,
     AccessUserListComponent,
-    AccessUserWorkflowsComponent,
+    AccessUserSummaryCardComponent,
     ConfirmDialogComponent,
     QdStateComponent,
+    QdTabDirective,
+    QdTabsComponent,
   ],
   templateUrl: './access-admin-page.component.html',
   styleUrl: './access-admin-page.component.scss',
@@ -30,14 +57,19 @@ import { AccessAdminFacade, AccessAdminMutationOutcome } from '../../state/acces
 })
 export class AccessAdminPageComponent {
   protected readonly facade = inject(AccessAdminFacade);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
+  protected readonly activeTab = signal<AccessAdminTab>(DEFAULT_ACCESS_ADMIN_TAB);
   protected readonly workflowResetToken = signal(0);
   protected readonly userSwitchAwaitingDiscard = signal<number | null>(null);
-  protected readonly auditTargetUserId = signal('');
-  protected readonly auditActorUserId = signal('');
-  protected readonly auditActionType = signal('');
-  protected readonly auditPermissionCode = signal('');
+  protected readonly pendingAction = signal<AccessUserWorkflowAction | null>(null);
 
   constructor() {
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed())
+      .subscribe((params) => this.showTab(parseAccessAdminTab(params.get('tab'))));
+
     effect(() => {
       if (this.facade.canAccess()) {
         untracked(() => void this.facade.load());
@@ -49,8 +81,43 @@ export class AccessAdminPageComponent {
     return ACCESS_ADMIN_LABELS;
   }
 
+  protected get tabKeys(): readonly AccessAdminTab[] {
+    return ACCESS_ADMIN_TAB_KEYS;
+  }
+
   hasUnsavedChanges(): boolean {
     return this.facade.isDirty();
+  }
+
+  protected selectTab(tab: AccessAdminTab): void {
+    if (tab === this.activeTab()) {
+      return;
+    }
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: tab === DEFAULT_ACCESS_ADMIN_TAB ? null : tab },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  private showTab(tab: AccessAdminTab): void {
+    if (tab === this.activeTab()) {
+      return;
+    }
+    this.activeTab.set(tab);
+    this.facade.clearMutationMessage();
+  }
+
+  protected canSelectPermissions(user: AccessUserDetail): boolean {
+    return canSelectUserPermissions(user);
+  }
+
+  protected canReplacePermissions(user: AccessUserDetail): boolean {
+    return canReplaceUserPermissions(user, this.facade.canAssignPermissions());
+  }
+
+  protected acceptWouldGrantPermissions(): boolean {
+    return acceptGrantsPermissions(this.facade.canAssignPermissions(), this.facade.permissionDiff());
   }
 
   protected selectUser(userId: number): void {
@@ -58,6 +125,7 @@ export class AccessAdminPageComponent {
       this.userSwitchAwaitingDiscard.set(userId);
       return;
     }
+    this.pendingAction.set(null);
     void this.facade.selectUser(userId);
   }
 
@@ -67,6 +135,7 @@ export class AccessAdminPageComponent {
     if (userId === null) {
       return;
     }
+    this.pendingAction.set(null);
     this.facade.discardDraft();
     void this.facade.selectUser(userId);
   }
@@ -95,8 +164,23 @@ export class AccessAdminPageComponent {
     void this.facade.loadPermissionCatalogue();
   }
 
-  protected confirmAction(action: AccessUserWorkflowConfirmation): void {
-    void this.runAction(action);
+  protected requestLifecycleAction(kind: AccessUserLifecycleAction): void {
+    this.pendingAction.set(kind);
+  }
+
+  protected requestPermissionSave(): void {
+    if (this.facade.busyAction()) {
+      return;
+    }
+    this.pendingAction.set('permissions');
+  }
+
+  protected cancelPendingAction(): void {
+    this.pendingAction.set(null);
+  }
+
+  protected confirmPendingAction(reason: string): void {
+    void this.runAction(reason);
   }
 
   protected previewRelink(request: { newSub: string; evidenceToken: string }): void {
@@ -112,50 +196,27 @@ export class AccessAdminPageComponent {
     this.workflowResetToken.update((value) => value + 1);
   }
 
-  protected updateAuditTargetUserId(event: Event): void {
-    this.auditTargetUserId.set((event.target as HTMLInputElement).value);
-  }
-
-  protected updateAuditActorUserId(event: Event): void {
-    this.auditActorUserId.set((event.target as HTMLInputElement).value);
-  }
-
-  protected updateAuditActionType(event: Event): void {
-    this.auditActionType.set((event.target as HTMLInputElement).value);
-  }
-
-  protected updateAuditPermissionCode(event: Event): void {
-    this.auditPermissionCode.set((event.target as HTMLSelectElement).value);
-  }
-
-  protected applyAuditFilters(event: Event): void {
-    event.preventDefault();
-    const permissionCode = this.auditPermissionCode();
-    void this.facade.updateAuditQuery({
-      targetUserId: positiveUserId(this.auditTargetUserId()),
-      actorUserId: positiveUserId(this.auditActorUserId()),
-      actionType: this.auditActionType().trim() || undefined,
-      permissionCode: isPermissionCode(permissionCode) ? permissionCode : undefined,
-    });
-  }
-
-  protected auditActorTypeLabel(actorType: string): string {
-    return actorType === 'User' ? 'مستخدم' : actorType === 'System' ? 'النظام' : actorType;
+  protected applyAuditFilters(filters: AccessAuditFilters): void {
+    void this.facade.updateAuditQuery(filters);
   }
 
   protected loadNextAuditPage(): void {
     void this.facade.loadNextAuditPage();
   }
 
-  private async runAction(action: AccessUserWorkflowConfirmation): Promise<void> {
+  private async runAction(reason: string): Promise<void> {
+    const kind = this.pendingAction();
+    if (!kind) {
+      return;
+    }
     const outcome =
-      action.kind === 'accept'
-        ? await this.facade.acceptSelectedUser(action.reason)
-        : action.kind === 'disable'
-          ? await this.facade.disableSelectedUser(action.reason)
-          : action.kind === 'reactivate'
-            ? await this.facade.reactivateSelectedUser(action.reason)
-            : await this.facade.replaceSelectedPermissions(action.reason);
+      kind === 'accept'
+        ? await this.facade.acceptSelectedUser(reason)
+        : kind === 'disable'
+          ? await this.facade.disableSelectedUser(reason)
+          : kind === 'reactivate'
+            ? await this.facade.reactivateSelectedUser(reason)
+            : await this.facade.replaceSelectedPermissions(reason);
     this.resetWorkflowAfter(outcome);
   }
 
@@ -165,12 +226,8 @@ export class AccessAdminPageComponent {
 
   private resetWorkflowAfter(outcome: AccessAdminMutationOutcome): void {
     if (outcome === 'success' || outcome === 'conflict' || outcome === 'forbidden' || outcome === 'unauthorized') {
+      this.pendingAction.set(null);
       this.workflowResetToken.update((value) => value + 1);
     }
   }
-}
-
-function positiveUserId(value: string): number | undefined {
-  const userId = Number.parseInt(value.trim(), 10);
-  return Number.isSafeInteger(userId) && userId > 0 ? userId : undefined;
 }

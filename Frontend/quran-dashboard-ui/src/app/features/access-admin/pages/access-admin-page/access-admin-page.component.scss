@@ -1,98 +1,104 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .access-admin-page {
-  display: grid;
-  gap: var(--qd-space-5);
-  padding: var(--qd-space-5);
-}
-
-.access-admin-page__header h1,
-.access-admin-page__header p,
-.access-admin-page__section-header h2,
-.access-admin-page__section-header p {
-  margin: 0;
-}
-
-.access-admin-page__header h1,
-.access-admin-page__section-header h2 {
-  color: var(--qd-text);
-  font-weight: 700;
-}
-
-.access-admin-page__header > div > p:last-child {
-  margin-block-start: var(--qd-space-2);
-  color: var(--qd-text-muted);
-}
-
-.access-admin-page__eyebrow {
-  color: var(--qd-accent-text);
-  font-size: 0.875rem;
-}
-
-.access-admin-page__workspace,
-.access-admin-page__supporting {
-  display: grid;
   gap: var(--qd-space-4);
+  min-block-size: calc(100dvh - var(--qd-navbar-block-size));
+}
+
+.access-admin-page__header {
+  display: grid;
+  gap: var(--qd-space-2);
+}
+
+.access-admin-page__tabs {
+  align-self: start;
+}
+
+.access-admin-page__layout {
+  display: flex;
+  flex: 1;
+  min-block-size: 0;
+  gap: var(--qd-space-4);
+  align-items: flex-start;
+}
+
+.access-admin-page__users {
+  flex: none;
+  inline-size: 20rem;
+  min-inline-size: 0;
+  position: sticky;
+  inset-block-start: calc(var(--qd-navbar-block-size) + var(--qd-space-4));
 }
 
 .access-admin-page__workspace {
-  grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.7fr);
-  align-items: start;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-inline-size: 0;
+  align-self: stretch;
 }
 
-.access-admin-page__users,
-.access-admin-page__detail,
-.access-admin-page__audit,
-.access-admin-page__reconciliation,
-.access-admin-page__advanced {
+.access-admin-page__detail {
+  flex: 1;
+  min-block-size: 0;
   min-inline-size: 0;
 }
 
-.access-admin-page__supporting {
-  grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.8fr);
-  align-items: start;
+.access-admin-page__detail-body {
+  gap: var(--qd-space-4);
+}
+
+.access-admin-page__section {
+  display: grid;
+  gap: var(--qd-space-3);
 }
 
 .access-admin-page__section-header {
-  margin-block-end: var(--qd-space-4);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
 }
 
-.access-admin-page__audit-filters {
-  display: grid;
+.access-admin-page__diff-summary {
+  color: var(--qd-accent-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.access-admin-page__draft-bar {
+  position: sticky;
+  inset-block-end: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+  background: var(--qd-section-bg);
+}
+
+.access-admin-page__draft-actions {
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--qd-space-2);
-  margin-block-end: var(--qd-space-4);
 }
 
-.access-admin-page__audit-filters label {
-  color: var(--qd-text-muted);
-  font-size: 0.875rem;
-}
-
-.access-admin-page__audit-list,
-.access-admin-page__candidates {
+.access-admin-page__security {
   display: grid;
-  gap: var(--qd-space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  gap: var(--qd-space-4);
+  align-items: start;
 }
 
-.access-admin-page__audit-list li,
-.access-admin-page__candidates li {
+.access-admin-page__reconciliation {
   display: grid;
-  gap: var(--qd-space-1);
-  padding: var(--qd-space-3);
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-sm);
-  color: var(--qd-text-muted);
-}
-
-.access-admin-page__audit-list strong {
-  color: var(--qd-text);
+  gap: var(--qd-space-3);
+  min-inline-size: 0;
 }
 
 .access-admin-page__reconciliation-list {
   display: grid;
   gap: var(--qd-space-2);
-  margin: 0 0 var(--qd-space-4);
+  margin: 0;
 }
 
 .access-admin-page__reconciliation-list div {
@@ -108,13 +114,44 @@
 }
 
 .access-admin-page__reconciliation-list dd {
-  margin: 0;
   color: var(--qd-text);
+  overflow-wrap: anywhere;
 }
 
-@media (max-width: 56rem) {
-  .access-admin-page__workspace,
-  .access-admin-page__supporting {
-    grid-template-columns: minmax(0, 1fr);
+.access-admin-page__candidates {
+  display: grid;
+  gap: var(--qd-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.access-admin-page__candidates li {
+  display: grid;
+  gap: var(--qd-space-1);
+  padding: var(--qd-space-3);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  color: var(--qd-text-muted);
+}
+
+@media (min-width: bp.$qd-bp-desktop-min) {
+  .access-admin-page__security {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+
+  .access-admin-page__security > qd-state {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .access-admin-page__layout {
+    flex-direction: column;
+  }
+
+  .access-admin-page__users {
+    inline-size: 100%;
+    position: static;
   }
 }

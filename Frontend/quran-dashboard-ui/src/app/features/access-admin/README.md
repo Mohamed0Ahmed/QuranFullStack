@@ -5,7 +5,7 @@ the navbar and is reached through the guarded route only.
 
 ## What it does
 
-- Lists and filters local access users, then shows an individual account's status and version. The
+- Lists and filters local access users, then shows an individual account's identity and status. The
   «الاسم أو البريد» box is free text submitted with the filter form: the backend matches it as a
   substring of the account's email or stored name, ignoring letter case for Arabic and for ASCII, so a
   partial token finds the account instead of answering `400`, and only a term longer than 128
@@ -16,13 +16,17 @@ the navbar and is reached through the guarded route only.
   the way `displayName || email` did.
 - Lets an active Owner accept Pending users, disable Active non-Owners, and reactivate Disabled
   non-Owners. Disable explains that it removes every direct grant; reactivate begins with none.
-  Those lifecycle controls live in their own «إجراءات الحساب» region, never in the row that carries
-  the permission save — see *Per-status semantics* below.
-- Presents server-catalogued permissions by group. Select-all is group-local: a partial group is
-  indeterminate, selecting it adds that group's individual `PermissionCode` values, and clearing it
-  removes only that group. Every individual value can still be unchecked. Requests contain the
-  flattened known codes only, never a group or select-all sentinel; a later code is not silently
-  granted to existing selections.
+  Those lifecycle controls live in their own «إجراءات الحساب» region
+  (`components/access-lifecycle-actions/`), never in the row that carries the permission save — see
+  *Per-status semantics* below. That region renders nothing at all for an Owner target, so the
+  guard in `AccessLifecycleActionsComponent` and the page's own Owner branch cannot disagree.
+- Presents server-catalogued permissions by group, in a responsive 2–3 column grid. Select-all is
+  group-local and labelled «تحديد الكل»: a partial group is indeterminate, selecting it adds that
+  group's individual `PermissionCode` values, and clearing it removes only that group. Every
+  individual value can still be unchecked. Requests contain the flattened known codes only, never a
+  group or select-all sentinel; a later code is not silently granted to existing selections. The raw
+  `abwab.*` code is carried on each row's `[title]` rather than printed beside its Arabic label — it
+  stays visible where it earns its place, in the confirmation diff.
 - Fails closed when permission assignment is not available — see *Permission-assignment failure
   model* below.
 - Treats permission editing as a draft with an honest exit — see *Permission draft, revert and
@@ -30,14 +34,61 @@ the navbar and is reached through the guarded route only.
 - Requires an inline reason/diff confirmation for grant/status changes. Every changed permission
   is shown by its Arabic label and stable code before confirmation. There is only one modal in
   the feature: the unsaved-changes confirmation described below.
-- Recovers a lost login identity through Logto-subject relink, presented as a secondary
-  الأمان المتقدم region outside the permission workspace — see *Advanced Security* below. The flow
+- Recovers a lost login identity through Logto-subject relink, presented in its own
+  الأمان المتقدم section outside the permission workspace — see *Advanced Security* below. The flow
   is unchanged: preview first, then a separate explicit confirmation; the UI submits a new subject
   plus masked verification evidence, clears that evidence after preview/cancellation/completion,
   and has no email-only relink path.
 - Displays basic keyset-paginated audit history with actor type and actor ID attribution, plus
-  target, actor, action, and permission filters, and owner-reconciliation status as read-only
-  data.
+  target, actor, action, and permission filters, in its own سجل الوصول section
+  (`components/access-audit-log/`); owner-reconciliation status is read-only data beside identity
+  recovery — see *Layout and URL state* below.
+
+## Layout and URL state
+
+The page is a desktop-first master/detail workspace on the shipped dashboard system: no new token,
+colour or primitive exists for it. The root composes `.qd-container.qd-page-frame` and adds only a
+`gap` and a viewport `min-block-size` of its own, so the frame's deliberate `padding-block-end`
+reserve survives. Three sections sit behind `qd-tabs`, the only tablist primitive in the app:
+
+| Tab | `?tab=` | Contents |
+|---|---|---|
+| مساحة العمل | *(absent — the default)* | sticky 20rem user-list aside + the selected-user panel |
+| سجل الوصول | `audit` | `qd-access-audit-log` |
+| الأمان المتقدم | `security` | `qd-access-advanced-security` + owner reconciliation |
+
+`?tab=` is a **closed enum** parsed by `models/access-admin-tabs.ts`; anything else falls back to the
+workspace, so a stale or hand-edited link cannot render a blank page. Choosing the default section
+writes `tab: null`, which removes the parameter rather than spelling out the default. The tabs are
+`<button>`s that navigate — `qdTab` supplies `role="tab"`, `aria-selected` and the roving tabindex,
+and each panel carries `role="tabpanel"` labelled by its tab.
+
+**A query param, not a child route, and no user deep-link at all.** `FRONTEND_STRUCTURE.md` requires
+this to be written down. A child route would break `access-admin.routes.spec.ts` and orphan the
+`title` on the single route in `access-admin.routes.ts`, and these are view modes over one Owner-only
+screen rather than destinations anyone links to. The selected **user** is deliberately *not* in the
+URL: `AccessUserSummary` carries no slug and no `sub` (`sub` exists only on `AccessUserDetail`, i.e.
+only after selection), `AccessAdminApi.userListParams` has no filter that could resolve a handle back
+to an account, the numeric id is a technical identifier that must never appear in a visible URL, and
+the email is PII. A deep link would therefore need a new backend contract to carry an opaque handle,
+and that handle would still be an identifier. Selection stays in memory, which is also why switching
+users needs its own confirmation (below) — the router cannot see it.
+
+The selected-user panel composes `.explorer-detail-panel` with `.explorer-panel-header` (rendered by
+`qd-access-user-summary-card`, whose host *is* the header) and `.explorer-detail-panel__body` as the
+panel's only scroller. That header is what gives the primary work surface a real visible heading; it
+carries the account name, the email marked `dir="ltr"`, and the membership/lifecycle badges. It does
+**not** carry the `xmin` version: optimistic concurrency stays in state and out of view, along with
+every other technical identifier outside the audit rows.
+
+A list row composes the shared `.qd-is-selected` state and reserves its 2px accent thread on the
+unselected row as a transparent border, so selecting one causes no 1px shift. Names and emails
+compose `.qd-truncate` with the mandatory `[title]`, and each row button sits inside its own
+`role="listitem"`. The truncation classes, both `[title]`s and the per-row `role="listitem"` are
+asserted by `access-user-list.component.spec.ts`. **The no-shift thread is not asserted anywhere**:
+it is a resolved border width, which jsdom does not compute, so it rests on
+`access-user-list.component.scss` alone until a browser check exists — recorded as row **AC2** in
+`docs/TESTING_DEBT.md`.
 
 ## Permission-assignment failure model
 
@@ -133,8 +184,9 @@ the bar carrying the only discard control is hidden while assignment is unavaila
   and every successful mutation calls `refreshAfterMutation`, which re-selects the user and makes
   `AccessPermissionDraftStore.adopt` overwrite the draft with the stored grants. Moving the panel
   removed the confusion of a live identity form sitting mid-edit; it did not remove the overwrite.
-  The gate reads `AccessAdminFacade.isDirty` through the panel's `hasUnsavedPermissions` input,
-  which is the same predicate the draft bar and the diff summary render from. It holds back **both**
+  The gate reads `AccessAdminFacade.isDirty` through the panel's `hasUnsavedPermissions` input —
+  the same signal the draft bar and the diff summary render from, so the three cannot disagree about
+  whether a draft exists. It holds back **both**
   relink steps, not just the entry point: preview and confirm each carry it in their `disabled`
   expression and each re-check it in `requestRelinkPreview()`/`confirmRelink()`. Gating the preview
   alone would leave the sequence *preview → edit a permission → confirm* open, and the confirm is the
@@ -170,7 +222,12 @@ different commit for each one.
   stating that disabling stops access and removes every direct permission for good — disable
   snapshots the grants, emits one revoke event each, and deletes the rows; reactivate restores none
   of them. The two controls never share a row. There is no danger button class in the style system,
-  so weight comes from placement and from the warning copy, not from a red button.
+  so weight comes from placement and from the copy, not from a red button.
+  **`--qd-danger` is reserved for the confirmation**, and that is a rule, not a preference: the
+  at-rest line under «إجراءات الحساب» is `.qd-text-muted`, because it describes a destructive action
+  nobody has chosen yet and every healthy Active account would otherwise carry permanent red text.
+  The red sentence appears once the operator asks to disable, in `access-change-review`, where it is
+  about a decision actually in front of them.
 - **Disabled.** No editor renders, because the backend rejects a replace on a non-Active user. The
   region says the account holds no direct permissions and that none can be assigned before
   reactivation, and repeats that reactivation starts from none.
@@ -185,7 +242,8 @@ different commit for each one.
 ## Advanced Security
 
 `components/access-advanced-security/` hosts Logto-subject relink as identity recovery, in its own
-recessive `.qd-card--quiet` region below the workspace rather than inside the selected-user panel.
+first-class الأمان المتقدم tab rather than inside the selected-user panel. A tab, not a hidden menu:
+a real identity incident is exactly when the recovery path has to be findable.
 The move is a placement decision, not a capability change — `ConfirmCoreAsync` has no Owner guard and
 no status guard, and `ValidateBindingAsync` routes an Owner target to
 `ValidateOwnerConfigurationAsync`, which permits the relink when the Owner's configured email
@@ -198,8 +256,9 @@ An Owner target additionally gets that precondition in the copy, not only in thi
 normalized email is in the configured owner set **and** owner reconciliation reports a candidate for
 that user in state `Unchanged`, an Owner relink can otherwise fail at confirm for a reason the panel
 never named. `access-relink-owner-precondition` states both halves and renders only when
-`target.isOwner`; the reconciliation panel lower on the page prints each candidate's raw state, so
-`Unchanged` is a value the operator can actually match.
+`target.isOwner`; the owner-reconciliation panel beside it **in the same tab** prints each
+candidate's raw state, so `Unchanged` is a value the operator can actually match without leaving the
+section that will refuse the confirmation.
 
 The component owns only the relink form state. It takes the selected user, the preview, the busy
 action and the dirty-draft gate as inputs and emits preview/confirm/cancel; the facade still owns
@@ -208,28 +267,56 @@ empty state instead of a form, since relink targets one account.
 
 ## State regions and announcement
 
-The mutation message is the one `qd-state` on this page rendered **unconditionally**: it sits
-directly in the detail card, above the `@if` chain, carrying `[reserve]="true"` and an empty message
-whenever there is nothing to say. That shape is what makes it announce. A success or `409` recovery
+The mutation message is the one `qd-state` on this page rendered **unconditionally within its
+section**: it sits at the top of the workspace panel's scroller, above that panel's `@if` chain, and
+again at the top of the security panel, carrying `[reserve]="true"` and an empty message whenever
+there is nothing to say. That shape is what makes it announce. **It is written twice because the two
+panels are mutually exclusive and both of them mutate** — the workspace commits accept/disable/
+reactivate/replace, and الأمان المتقدم commits relink. A single instance hoisted above the tab
+switch would put roughly 6.5rem of permanently blank space under the tablist on every section
+including the read-only audit one; one instance inside whichever mutating panel is mounted keeps the
+contract without that. Only ever one is in the DOM, so the tone-suffixed
+`access-mutation-message-*` testid stays unambiguous. A success or `409` recovery
 notice renders `role="status"`, and a live region created together with its text is generally not
 read out; because this element already exists and is empty, the later text insertion is what the
-screen reader announces. `runMutation` clears the message before every write, so the region is
-always empty again before the next text lands. The severity routing survives the shape — `error`
-renders the `error` variant (`role="alert"`, which announces on insertion), success and the `409`
-notice render the quieter `empty` variant.
+screen reader announces. That shape is pinned per panel by the page spec — the
+`access-mutation-message-none` region is asserted present, `role="status"`, `[reserve]`d and empty
+before any write runs, in the workspace panel and in the security panel — so wrapping either one in
+an `@if` fails a test rather than silently ending the announcement. `runMutation` clears the message
+before every write, so the region is always empty again before the next text lands. The severity
+routing survives the shape — `error` renders the `error` variant (`role="alert"`, which announces on
+insertion), success and the `409` notice render the quieter `empty` variant.
+
+The message is also cleared **on a section change**, so «تم حفظ التغيير» earned by a permission save
+in the workspace does not reappear at the top of الأمان المتقدم as though that panel had just
+written something. The clear hangs off the `?tab=` subscription (`AccessAdminPageComponent.showTab`)
+rather than off the tablist click, so a browser history move between sections clears it too.
 
 Because that region outlives the detail pane's own load/error branches, the message channel carries
 mutation outcomes and nothing else. The permission-denied text is rendered from `canAccess()`
 directly, one branch higher; `load()` does not also copy it into the message, which would survive an
 access state that has since changed.
 
-That announcement is bought with vertical space, and the cost is real: the region is rendered even
-with nothing to say, so the top of the detail card carries roughly **6.5rem** of permanently blank
-space — `.qd-empty-state` contributes `padding: var(--qd-space-6)` on both block edges (2 × 2rem)
-and `[reserve]` holds `min-block-size: var(--qd-control-block-size)` (≈ 2.53rem) for the message
-line. There is no padding modifier on the state primitive today, so the only way to shrink it is a
-change to the shared `qd-state` styles; that is layout work and belongs with the page redesign, not
-with a behaviour change. It is recorded here rather than left to be rediscovered.
+That announcement is bought with vertical space, and the cost is real and **unpaid**: the region is
+rendered even with nothing to say, so each mutating panel carries roughly **6.5rem** of permanently
+blank space at its top — `.qd-empty-state` contributes `padding: var(--qd-space-6)` on both block
+edges (2 × 2rem) and `[reserve]` holds `min-block-size: var(--qd-control-block-size)` (≈ 2.53rem)
+for the message line. The redesign did **not** shrink it — a choice, not an impossibility. There is
+no padding modifier on the state primitive, and `.qd-state--reserve-empty` is bound only on the
+`error` variant (`state.component.html:20`), where its one rule drops the danger tint
+(`styles/_components.scss:373`). Two levers therefore exist, and only one of them is barred:
+
+- **Barred.** A consumer-side override of the shared `qd-state` styles from this call-site, which
+  `UI_STYLE_SYSTEM.md` §17 forbids a call-site from taking on its own.
+- **Not barred, and not taken.** Binding that same existing modifier on the `empty` case and adding
+  a padding rule beside the error one. That edits a shipped primitive without inventing a token, a
+  colour or a primitive, so §6's locked visual language would not have stopped it. It was out of
+  **this phase's** scope: `.qd-empty-state` is shared by every state region in the app
+  (`styles/_components.scss:561-568`), so shrinking it is a system-wide change owned by the style
+  system, not a side effect of one page's redesign — and this phase changed no shared style.
+
+Moving the region into the panel's scroller at least means the blank band scrolls away instead of
+pinning the top of the page. It is recorded here rather than left to be rediscovered.
 
 Every other state on this page sits inside an `@if`/`@else if` branch, where `[reserve]` would
 reserve nothing — the flag holds space only in a region that is always rendered. Load and error
@@ -249,8 +336,15 @@ min-block-size on the panes themselves, which is layout work and has not been do
   error mapping stays in one place. The facade re-exports its signals, so the store is an internal
   seam and no consumer outside this folder sees it.
 - `models/access-admin.labels.ts` holds the Arabic copy that TypeScript needs (dialog and
-  `window.confirm` wording, the diff-summary label builder). Template-only copy stays in the
-  templates. **The page component reads it through a getter, not a class field**
+  `window.confirm` wording, the diff-summary label builder, the tab and lifecycle-status label
+  builders). Template-only copy stays in the templates. `userStatus` names the three modelled states
+  and reads anything else as «حالة غير معروفة» rather than as «معطّل»: the generated
+  `AccessUserDetail.status` and `AccessUserSummary.status` are both plain `string`, so a state this
+  page does not model is reachable, and the row and the workspace header would otherwise both tell
+  the operator an account is disabled when the page in fact does not know what it is.
+  `models/access-admin-tabs.ts` holds the tab **keys** and their parser, separately from the copy —
+  the keys are a URL contract and must stay stable while the Arabic labels are free to change.
+  **The page component reads the labels through a getter, not a class field**
   (`access-admin-page.component.ts` `get labels()`), matching how `abwab-page.component.ts` exposes
   `ABWAB_LABELS`. This is load-bearing, not style: with `protected readonly labels =
   ACCESS_ADMIN_LABELS` every test in the page spec fails on a cache-cleared build with «Cannot read
@@ -268,12 +362,31 @@ min-block-size on the panes themselves, which is layout work and has not been do
   upgrade rather than inherit it: delete `.angular/cache` and `node_modules/.vite`, revert the getter
   to `protected readonly labels = ACCESS_ADMIN_LABELS`, and run the feature lane below — if the page
   spec passes, the mechanism no longer holds here and the getter can go.
-- `components/` renders feature UI and emits interactions. It does not call HTTP directly.
-  `access-user-workflows` derives its own dirty predicate (`hasUnsavedPermissions()`) from the
-  `permissionDiff` and `canAssignPermissions` inputs instead of taking a separate `isDirty` input,
-  so the bar and the summary cannot disagree with the diff rendered beside them.
-  `access-advanced-security` renders no diff, so it takes the facade's `isDirty` as an input — the
-  same computed those two are derived from.
+- `components/` renders feature UI and emits interactions. None of them calls HTTP, and none of them
+  injects the facade — the page passes signals down and turns every output back into a facade call:
+  - `access-user-list` — filter form, rows, `qd-result-count`, `qd-pagination`, `qd-state`;
+  - `access-user-summary-card` — the detail panel's `.explorer-panel-header`;
+  - `access-permission-editor` — the grouped checkbox grid;
+  - `access-lifecycle-actions` — «إجراءات الحساب» and its per-status commit;
+  - `access-change-review` — the diff, the mandatory reason, and confirm/cancel; it owns the reason
+    text and drops it whenever the pending action changes. **Which action is pending is the page's
+    state, and the page closes the review explicitly** — on a user switch (both the direct one and
+    the one behind the discard confirmation) and on a settled write (`success`/`409`/`401`/`403`,
+    the same outcomes that bump the relink form's reset token). A failed write leaves the review
+    open with the reason intact, so a retry does not start from a blank textarea;
+  - `access-audit-log` — the audit filters and rows;
+  - `access-advanced-security` — the relink form.
+  The dirty predicate is **not** re-derived per component any more: the draft bar, the `+N / −M`
+  summary and `access-advanced-security`'s `hasUnsavedPermissions` input all read
+  `AccessAdminFacade.isDirty`, the single computed on the draft store, so they cannot disagree with
+  the diff rendered beside them. The predicates that *are* shared —
+  `canSelectUserPermissions`, `canReplaceUserPermissions`, `acceptGrantsPermissions` — live as pure
+  functions in `models/access-admin.models.ts` rather than being copied into each consumer.
+  **That includes the facade**, the consumer where it matters most: `canSelectPermissions` and
+  `canReplaceSelectedPermissions` compose those same functions instead of re-encoding "not Owner and
+  status ∈ {pending, active}" beside the write they gate. A change to which statuses may hold
+  permissions therefore cannot move the rendered editor without moving the `PUT` gate with it. The
+  facade adds only what is its own to add: the Owner access snapshot and catalogue readiness.
 - Owner membership, role editing, group grants, and navbar changes are out of scope.
 
 ## Testing

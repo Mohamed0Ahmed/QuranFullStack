@@ -1,23 +1,25 @@
-<section class="access-user-list" aria-label="قائمة المستخدمين">
+<section class="access-user-list" aria-labelledby="access-user-list-title">
   <header class="access-user-list__header">
-    <div>
-      <p class="access-user-list__eyebrow">إدارة الوصول</p>
-      <h2>المستخدمون</h2>
-    </div>
-    <span class="access-user-list__count">{{ totalCount() }}</span>
+    <h2 id="access-user-list-title" class="qd-card-title">المستخدمون</h2>
+    <qd-result-count
+      labelPrefix="عدد الحسابات"
+      [count]="totalCount()"
+      [loading]="loading()"
+      [hasError]="error() !== null"
+    />
   </header>
 
   <form class="access-user-list__filters" data-testid="access-users-filter-form" novalidate (submit)="applyFilters($event)">
-    <label class="access-user-list__field" for="access-users-search">الاسم أو البريد</label>
+    <label class="qd-text-meta" for="access-users-search">الاسم أو البريد</label>
     <input id="access-users-search" class="qd-input" type="search" data-testid="access-users-search" [value]="search()" (input)="updateSearch($event)" />
-    <label class="access-user-list__field" for="access-users-status">الحالة</label>
+    <label class="qd-text-meta" for="access-users-status">الحالة</label>
     <select id="access-users-status" class="qd-select" data-testid="access-users-status" [value]="status()" (change)="updateStatus($event)">
       <option value="all">كل الحالات</option>
       <option value="pending">معلّق</option>
       <option value="active">نشط</option>
       <option value="disabled">معطّل</option>
     </select>
-    <label class="access-user-list__field" for="access-users-owner">العضوية</label>
+    <label class="qd-text-meta" for="access-users-owner">العضوية</label>
     <select id="access-users-owner" class="qd-select" data-testid="access-users-owner" [value]="owner()" (change)="updateOwner($event)">
       <option value="all">كل الحسابات</option>
       <option value="owner">المالكون</option>
@@ -35,23 +37,25 @@
   } @else {
     <div class="access-user-list__items" role="list">
       @for (user of users(); track user.id) {
-        <button
-          type="button"
-          class="access-user-list__item qd-interactive-surface"
-          [class.access-user-list__item--selected]="selectedUserId() === user.id"
-          [attr.aria-current]="selectedUserId() === user.id ? 'true' : null"
-          [attr.data-testid]="'access-user-' + user.id"
-          (click)="userSelected.emit(user.id)"
-        >
-          <span class="access-user-list__name">{{ nameLabel(user) }}</span>
-          <span class="access-user-list__email" dir="ltr">{{ user.email }}</span>
-          <span class="access-user-list__badges">
-            @if (user.isOwner) {
-              <span class="qd-badge qd-badge--accent">مالك</span>
-            }
-            <span class="qd-badge">{{ statusLabel(user) }}</span>
-          </span>
-        </button>
+        <div role="listitem" class="access-user-list__row">
+          <button
+            type="button"
+            class="access-user-list__item qd-interactive-surface"
+            [class.qd-is-selected]="selectedUserId() === user.id"
+            [attr.aria-current]="selectedUserId() === user.id ? 'true' : null"
+            [attr.data-testid]="'access-user-' + user.id"
+            (click)="userSelected.emit(user.id)"
+          >
+            <span class="access-user-list__name qd-truncate" [title]="nameLabel(user)">{{ nameLabel(user) }}</span>
+            <span class="access-user-list__email qd-text-meta qd-truncate" dir="ltr" [title]="user.email">{{ user.email }}</span>
+            <span class="access-user-list__badges">
+              @if (user.isOwner) {
+                <span class="qd-badge qd-badge--accent">مالك</span>
+              }
+              <span class="qd-badge">{{ statusLabel(user) }}</span>
+            </span>
+          </button>
+        </div>
       }
     </div>
   }

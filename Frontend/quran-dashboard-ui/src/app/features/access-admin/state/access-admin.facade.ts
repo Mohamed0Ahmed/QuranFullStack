@@ -16,6 +16,8 @@ import {
   AccessAuditQuery,
   AccessRelinkPreviewRequest,
   AccessUserListQuery,
+  canReplaceUserPermissions,
+  canSelectUserPermissions,
 } from '../models/access-admin.models';
 import { AccessPermissionDraftStore } from './access-permission-draft.store';
 
@@ -229,6 +231,10 @@ export class AccessAdminFacade {
 
   discardDraft(): void {
     this.draft.discard();
+  }
+
+  clearMutationMessage(): void {
+    this.mutationMessageState.set(null);
   }
 
   async acceptSelectedUser(reason: string): Promise<AccessAdminMutationOutcome> {
@@ -511,19 +517,18 @@ export class AccessAdminFacade {
   }
 
   private canSelectPermissions(): boolean {
-    const user = this.selectedUserState();
     return (
       this.canAccess() &&
       this.canAssignPermissions() &&
-      user !== null &&
-      !user.isOwner &&
-      (user.status === 'pending' || user.status === 'active')
+      canSelectUserPermissions(this.selectedUserState())
     );
   }
 
   private canReplaceSelectedPermissions(): boolean {
-    const user = this.selectedUserState();
-    return this.canSelectPermissions() && user?.status === 'active';
+    return (
+      this.canAccess() &&
+      canReplaceUserPermissions(this.selectedUserState(), this.canAssignPermissions())
+    );
   }
 
   private isCurrentRelinkPreviewRequest(requestVersion: number, targetUserId: number): boolean {

@@ -84,4 +84,23 @@ describe('AccessPermissionEditorComponent', () => {
 
     expect(emitted).toEqual([['abwab.doors.create']]);
   });
+
+  it('carries each raw code on its row title instead of beside the Arabic label', () => {
+    TestBed.configureTestingModule({ imports: [AccessPermissionEditorComponent] });
+    const fixture = TestBed.createComponent(AccessPermissionEditorComponent);
+    fixture.componentRef.setInput('groups', GROUPS);
+    fixture.componentRef.setInput('selectedCodes', new Set<PermissionCode>());
+    fixture.componentRef.setInput('disabled', false);
+    fixture.detectChanges();
+
+    const rows = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.access-permission-editor__code'),
+    );
+
+    expect(rows.map((row) => row.getAttribute('title'))).toEqual([
+      'abwab.doors.create',
+      'abwab.doors.edit',
+    ]);
+    expect(rows.map((row) => row.textContent?.trim())).toEqual(['إضافة باب', 'تعديل باب']);
+  });
 });

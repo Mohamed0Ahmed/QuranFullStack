@@ -12,22 +12,21 @@
           [disabled]="disabled()"
           (change)="changeGroup(group, $event)"
         />
-        <span>تحديد جميع الصلاحيات في المجموعة</span>
+        <span>تحديد الكل</span>
       </label>
 
       <div class="access-permission-editor__codes">
         @for (code of group.codes; track code) {
-          <label class="qd-check-row access-permission-editor__code">
+          <label class="qd-check-row access-permission-editor__code" [title]="code">
             <input
               class="qd-checkbox"
               type="checkbox"
               [attr.data-testid]="'access-permission-' + code"
               [checked]="isCodeSelected(code)"
-            [disabled]="disabled()"
-            (change)="changeCode(code, $event)"
-          />
+              [disabled]="disabled()"
+              (change)="changeCode(code, $event)"
+            />
             <span>{{ labelFor(group, code) }}</span>
-            <span class="access-permission-editor__code-value" dir="ltr">{{ code }}</span>
           </label>
         }
       </div>

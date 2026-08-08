@@ -1,0 +1,80 @@
+@if (action(); as pending) {
+  <section
+    class="qd-card qd-card--quiet access-change-review"
+    data-testid="access-action-confirmation"
+    aria-labelledby="access-change-review-title"
+  >
+    <h3 id="access-change-review-title" class="qd-card-title">تأكيد الإجراء</h3>
+    @if (pending === 'disable') {
+      <p class="access-change-review__warning" data-testid="access-disable-warning">
+        سيؤدي التعطيل إلى إزالة جميع الصلاحيات المباشرة.
+      </p>
+    }
+    @if (pending === 'reactivate') {
+      <p class="qd-text-muted">لن تُستعاد الصلاحيات السابقة عند إعادة التفعيل.</p>
+    }
+    @if (pending === 'accept') {
+      @if (showsPermissionDiff()) {
+        <p class="qd-text-muted" data-testid="access-accept-with-permissions">
+          تُمنح الصلاحيات التالية فور تفعيل الحساب.
+        </p>
+      } @else {
+        <p class="qd-text-muted" data-testid="access-accept-without-permissions">
+          سيُفعَّل الحساب دون إسناد صلاحيات مباشرة.
+        </p>
+      }
+    }
+    @if (showsPermissionDiff()) {
+      <div class="access-change-review__diff" aria-label="فرق الصلاحيات">
+        @if (permissionDiff().granted.length > 0) {
+          <div>
+            <p class="access-change-review__diff-heading">الصلاحيات المضافة</p>
+            <ul class="access-change-review__permission-list" aria-label="الصلاحيات المضافة">
+              @for (code of permissionDiff().granted; track code) {
+                <li><span>{{ permissionLabel(code) }}</span><code dir="ltr">{{ code }}</code></li>
+              }
+            </ul>
+          </div>
+        }
+        @if (permissionDiff().revoked.length > 0) {
+          <div>
+            <p class="access-change-review__diff-heading">الصلاحيات الملغاة</p>
+            <ul class="access-change-review__permission-list" aria-label="الصلاحيات الملغاة">
+              @for (code of permissionDiff().revoked; track code) {
+                <li><span>{{ permissionLabel(code) }}</span><code dir="ltr">{{ code }}</code></li>
+              }
+            </ul>
+          </div>
+        }
+        @if (permissionDiff().granted.length === 0 && permissionDiff().revoked.length === 0) {
+          <p class="qd-text-muted">لا يوجد تغيير على الصلاحيات المباشرة.</p>
+        }
+      </div>
+    }
+    <label class="access-change-review__field" for="access-action-reason">سبب الإجراء</label>
+    <textarea
+      id="access-action-reason"
+      class="qd-input access-change-review__textarea"
+      data-testid="access-action-reason"
+      [value]="reason()"
+      [disabled]="busyAction() !== null"
+      (input)="updateReason($event)"
+    ></textarea>
+    <div class="access-change-review__actions">
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary"
+        data-testid="access-cancel-action"
+        [disabled]="busyAction() !== null"
+        (click)="cancel()"
+      >إلغاء</button>
+      <button
+        type="button"
+        class="qd-btn qd-btn-primary"
+        data-testid="access-confirm-action"
+        [disabled]="!reason().trim() || busyAction() !== null || isNoOpPermissionSave()"
+        (click)="confirm()"
+      >تأكيد</button>
+    </div>
+  </section>
+}

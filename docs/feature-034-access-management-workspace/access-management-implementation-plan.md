@@ -632,8 +632,10 @@ types them as `{}`.
 asserts the literal string `'معرّف المستخدم المنفّذ: 9'`); assert no numeric-ID text and no numeric
 filter inputs remain; assert the reconciliation panel offers no apply affordance; extend
 `access-admin.routes.spec.ts:5-12` to assert no route carries a `:param`. **Keep
-`access-user-workflows.component.spec.ts:84-100`** — permission *codes* stay visible in the diff; do
-not over-apply the no-IDs rule.
+`access-change-review.component.spec.ts:115-125`** — permission *codes* stay visible in the diff; do
+not over-apply the no-IDs rule. *(Corrected during Phase 6: this assertion lived at
+`access-user-workflows.component.spec.ts:84-100` until Phase 6 dissolved that component per §1.2's
+nine-node tree.)*
 
 **Docs.** `features/access-admin/README.md:22-24` currently promises "actor ID attribution" — update
 it, and record that `canApply` is diagnostic.

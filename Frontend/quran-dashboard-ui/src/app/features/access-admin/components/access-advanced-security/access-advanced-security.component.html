@@ -1,26 +1,25 @@
-<section class="access-advanced-security" aria-label="الأمان المتقدم">
+<section class="qd-card access-advanced-security" aria-labelledby="access-advanced-security-title">
   <header class="access-advanced-security__header">
-    <p class="access-advanced-security__eyebrow">استعادة الهوية</p>
-    <h2>الأمان المتقدم</h2>
-    <p class="access-advanced-security__intro">
+    <h2 id="access-advanced-security-title" class="qd-card-title">الأمان المتقدم</h2>
+    <p class="qd-text-muted">
       إجراءات استعادة الوصول عند تغيّر معرّف الدخول لدى مزوّد الهوية. ليست جزءًا من تحرير الصلاحيات ولا تغيّر أي صلاحية.
     </p>
   </header>
 
   @if (user(); as target) {
-    <section class="access-advanced-security__panel" aria-label="إعادة ربط معرّف الدخول">
-      <h3>إعادة ربط معرّف الدخول</h3>
-      <p class="access-advanced-security__notice">الحساب المحدد: <span dir="ltr">{{ target.email }}</span></p>
-      <p class="access-advanced-security__notice">
+    <section class="access-advanced-security__panel" aria-labelledby="access-relink-title">
+      <h3 id="access-relink-title" class="qd-card-title">إعادة ربط معرّف الدخول</h3>
+      <p class="qd-text-muted">الحساب المحدد: <span dir="ltr">{{ target.email }}</span></p>
+      <p class="qd-text-muted">
         تُعيد ربط الحساب بمعرّف دخول جديد لاستعادة الوصول. تتطلب إثبات هوية موثّقًا ولا تعتمد على البريد الإلكتروني وحده، وتنطبق على الحساب المحدد أيًّا كان دوره بما في ذلك حساب المالك.
       </p>
       @if (target.isOwner) {
-        <p class="access-advanced-security__notice" data-testid="access-relink-owner-precondition">
+        <p class="qd-text-muted" data-testid="access-relink-owner-precondition">
           ولحساب المالك شرط إضافي: أن يكون بريده ضمن إعدادات المالكين وأن تكون حالته في مطابقة المالكين <span dir="ltr">Unchanged</span>، وإلا رُفض التأكيد.
         </p>
       }
       @if (hasUnsavedPermissions()) {
-        <p class="access-advanced-security__notice" data-testid="access-relink-blocked">
+        <p class="qd-text-muted" data-testid="access-relink-blocked">
           احفظ تعديلات الصلاحيات أو تجاهلها قبل إعادة ربط المعرّف.
         </p>
       }
@@ -31,8 +30,8 @@
       <button type="button" class="qd-btn qd-btn-secondary" data-testid="access-relink-preview" [disabled]="!newSub().trim() || !evidenceToken().trim() || busyAction() !== null || hasUnsavedPermissions()" (click)="requestRelinkPreview()">معاينة الربط</button>
 
       @if (relinkPreview(); as preview) {
-        <section class="access-advanced-security__confirmation" data-testid="access-relink-confirmation" aria-label="تأكيد إعادة الربط">
-          <p>ستُعاد مطابقة المعرّف قبل التنفيذ.</p>
+        <section class="qd-card qd-card--quiet access-advanced-security__confirmation" data-testid="access-relink-confirmation" aria-label="تأكيد إعادة الربط">
+          <p class="qd-text-muted">ستُعاد مطابقة المعرّف قبل التنفيذ.</p>
           <dl class="access-advanced-security__subjects">
             <div><dt>المعرّف الحالي</dt><dd dir="ltr">{{ preview.oldSub }}</dd></div>
             <div><dt>المعرّف الجديد</dt><dd dir="ltr">{{ preview.newSub }}</dd></div>

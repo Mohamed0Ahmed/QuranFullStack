@@ -1,0 +1,54 @@
+.access-change-review {
+  display: grid;
+  gap: var(--qd-space-3);
+}
+
+.access-change-review__warning {
+  color: var(--qd-danger);
+}
+
+.access-change-review__diff {
+  display: grid;
+  gap: var(--qd-space-3);
+  color: var(--qd-text-muted);
+}
+
+.access-change-review__diff-heading {
+  color: var(--qd-text);
+  font-weight: 700;
+}
+
+.access-change-review__permission-list {
+  display: grid;
+  gap: var(--qd-space-1);
+  margin: var(--qd-space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.access-change-review__permission-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+}
+
+.access-change-review__permission-list code {
+  color: var(--qd-text);
+}
+
+.access-change-review__field {
+  color: var(--qd-text);
+  font-weight: 700;
+}
+
+.access-change-review__textarea {
+  min-block-size: 6rem;
+  resize: vertical;
+}
+
+.access-change-review__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+}

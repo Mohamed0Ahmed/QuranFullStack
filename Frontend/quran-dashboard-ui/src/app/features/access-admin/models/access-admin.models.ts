@@ -45,6 +45,33 @@ export function hasPermissionChanges(diff: AccessPermissionDiff): boolean {
   return diff.granted.length > 0 || diff.revoked.length > 0;
 }
 
+export type AccessUserLifecycleAction = 'accept' | 'disable' | 'reactivate';
+
+export type AccessUserWorkflowAction = AccessUserLifecycleAction | 'permissions';
+
+export interface AccessUserPermissionTarget {
+  readonly isOwner: boolean;
+  readonly status: string;
+}
+
+export function canSelectUserPermissions(user: AccessUserPermissionTarget | null): boolean {
+  return user !== null && !user.isOwner && (user.status === 'pending' || user.status === 'active');
+}
+
+export function canReplaceUserPermissions(
+  user: AccessUserPermissionTarget | null,
+  canAssignPermissions: boolean,
+): boolean {
+  return canSelectUserPermissions(user) && user?.status === 'active' && canAssignPermissions;
+}
+
+export function acceptGrantsPermissions(
+  canAssignPermissions: boolean,
+  diff: AccessPermissionDiff,
+): boolean {
+  return canAssignPermissions && diff.granted.length > 0;
+}
+
 export interface AccessRelinkPreviewRequest {
   readonly newSub: string;
   readonly evidenceToken: string;

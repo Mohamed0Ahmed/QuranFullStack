@@ -105,4 +105,39 @@ describe('AccessUserListComponent', () => {
 
     expect(labels).toEqual(expectedLabels);
   });
+
+  it('reads a status outside the known set as unknown rather than as disabled', () => {
+    const fixture = setup([{ ...USER, status: 'archived' }]);
+
+    const labels = Array.from(
+      element(fixture, 'access-user-17').querySelectorAll('.qd-badge'),
+      (badge) => badge.textContent?.trim(),
+    );
+
+    expect(labels).toEqual(['حالة غير معروفة']);
+  });
+
+  it('gives every row button its own list item inside the list', () => {
+    const fixture = setup([USER, { ...USER, id: 18, email: 'second@example.test' }]);
+    const list = (fixture.nativeElement as HTMLElement).querySelector('[role="list"]');
+
+    const items = Array.from(list?.querySelectorAll(':scope > [role="listitem"]') ?? []);
+
+    expect(
+      items.map((item) => item.querySelector('button')?.getAttribute('data-testid')),
+    ).toEqual(['access-user-17', 'access-user-18']);
+  });
+
+  it('titles the truncatable name and email with their full values', () => {
+    const fullName = 'اسم طويل جدًا لحساب عضو في المنصة';
+    const fixture = setup([{ ...USER, displayName: fullName }]);
+    const row = element(fixture, 'access-user-17');
+    const name = row.querySelector('.access-user-list__name') as HTMLElement;
+    const email = row.querySelector('.access-user-list__email') as HTMLElement;
+
+    expect(name.classList).toContain('qd-truncate');
+    expect(name.getAttribute('title')).toBe(fullName);
+    expect(email.classList).toContain('qd-truncate');
+    expect(email.getAttribute('title')).toBe('member@example.test');
+  });
 });

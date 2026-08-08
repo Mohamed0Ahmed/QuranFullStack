@@ -1,6 +1,9 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .access-permission-editor {
   display: grid;
   gap: var(--qd-space-3);
+  align-items: start;
 }
 
 .access-permission-editor__group {
@@ -11,6 +14,7 @@
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-sm);
   background: var(--qd-section-bg);
+  min-inline-size: 0;
 }
 
 .access-permission-editor__legend {
@@ -31,15 +35,17 @@
 }
 
 .access-permission-editor__code {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: var(--qd-space-2);
-  color: var(--qd-text-muted);
-  font-size: 0.875rem;
+  color: var(--qd-text);
 }
 
-.access-permission-editor__code-value {
-  grid-column: 2;
-  color: var(--qd-text-muted);
-  font-size: 0.8125rem;
+@media (min-width: bp.$qd-bp-desktop-min) {
+  .access-permission-editor {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: bp.$qd-bp-wide-desktop-min) {
+  .access-permission-editor {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }

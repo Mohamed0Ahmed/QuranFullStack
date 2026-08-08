@@ -1,0 +1,65 @@
+<section
+  class="qd-card qd-card--quiet access-audit-log"
+  data-testid="access-audit-log"
+  aria-labelledby="access-audit-log-title"
+>
+  <header class="access-audit-log__header">
+    <h2 id="access-audit-log-title" class="qd-card-title">سجل الوصول</h2>
+    <p class="qd-text-meta">قراءة فقط</p>
+  </header>
+
+  <form class="access-audit-log__filters" data-testid="access-audit-filters" novalidate (submit)="applyFilters($event)">
+    <label class="qd-text-meta" for="access-audit-target">معرّف المستخدم</label>
+    <input id="access-audit-target" class="qd-input" type="number" inputmode="numeric" [value]="targetUserId()" (input)="updateTargetUserId($event)" />
+    <label class="qd-text-meta" for="access-audit-actor">معرّف منفّذ الإجراء</label>
+    <input id="access-audit-actor" class="qd-input" type="number" min="1" inputmode="numeric" data-testid="access-audit-actor" [value]="actorUserId()" (input)="updateActorUserId($event)" />
+    <label class="qd-text-meta" for="access-audit-action">نوع الحدث</label>
+    <input id="access-audit-action" class="qd-input" type="text" [value]="actionType()" (input)="updateActionType($event)" />
+    <label class="qd-text-meta" for="access-audit-permission">الصلاحية</label>
+    <select id="access-audit-permission" class="qd-select" [value]="permissionCode()" (change)="updatePermissionCode($event)">
+      <option value="">كل الصلاحيات</option>
+      @for (group of permissionGroups(); track group.key) {
+        <optgroup [label]="group.label">
+          @for (code of group.codes; track code) {
+            <option [value]="code">{{ code }}</option>
+          }
+        </optgroup>
+      }
+    </select>
+    <button type="submit" class="qd-btn qd-btn-secondary">تطبيق المرشحات</button>
+  </form>
+
+  @if (loading()) {
+    <qd-state variant="loading" message="جارٍ تحميل السجل…" />
+  } @else if (error(); as auditError) {
+    <qd-state variant="error" [message]="auditError" />
+  } @else if (events().length === 0) {
+    <qd-state variant="empty" message="لا توجد أحداث مطابقة." />
+  } @else {
+    <ol class="access-audit-log__list">
+      @for (event of events(); track event.id) {
+        <li>
+          <strong>{{ event.actionType }}</strong>
+          <span>المستخدم {{ event.targetUserId }} · {{ event.occurredAtUtc }}</span>
+          <span>المنفّذ: {{ actorTypeLabel(event.actorType) }}</span>
+          <span>معرّف المستخدم المنفّذ: @if (event.actorUserId !== null) { <bdi dir="ltr">{{ event.actorUserId }}</bdi> } @else { غير متاح }</span>
+          @if (event.permissionCode; as code) {
+            <span dir="ltr">{{ code }}</span>
+          }
+          @if (event.reason; as reason) {
+            <span>{{ reason }}</span>
+          }
+        </li>
+      }
+    </ol>
+    @if (hasNextPage()) {
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary"
+        data-testid="access-audit-next-page"
+        [disabled]="loading()"
+        (click)="nextPageRequested.emit()"
+      >تحميل المزيد</button>
+    }
+  }
+</section>
