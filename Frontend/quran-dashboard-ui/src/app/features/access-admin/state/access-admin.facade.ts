@@ -52,6 +52,7 @@ export class AccessAdminFacade {
   private readonly usersLoadingState = signal(false);
   private readonly usersErrorState = signal<string | null>(null);
   private readonly catalogueState = signal<readonly PermissionCatalogueItem[]>([]);
+  private readonly assignmentReadyState = signal(false);
   private readonly catalogueLoadingState = signal(false);
   private readonly catalogueErrorState = signal<string | null>(null);
   private readonly selectedUserState = signal<AccessUserDetail | null>(null);
@@ -85,6 +86,7 @@ export class AccessAdminFacade {
   readonly permissionGroups = computed<readonly AccessPermissionGroup[]>(() =>
     buildPermissionGroups(this.catalogueState()),
   );
+  readonly assignmentReady = this.assignmentReadyState.asReadonly();
   readonly catalogueLoading = this.catalogueLoadingState.asReadonly();
   readonly catalogueError = this.catalogueErrorState.asReadonly();
   readonly selectedUser = this.selectedUserState.asReadonly();
@@ -169,9 +171,10 @@ export class AccessAdminFacade {
     try {
       const response = await firstValueFrom(this.api.getPermissionCatalogue());
       if (response.isSuccess && response.data) {
-        this.catalogueState.set(response.data);
+        this.catalogueState.set(response.data.items);
+        this.assignmentReadyState.set(response.data.assignmentReady);
         this.selectedPermissionCodesState.set(
-          new Set(permissionCodesForSubmission(response.data, this.selectedPermissionCodesState())),
+          new Set(permissionCodesForSubmission(response.data.items, this.selectedPermissionCodesState())),
         );
         return;
       }

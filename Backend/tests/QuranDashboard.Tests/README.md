@@ -69,10 +69,20 @@ Folders are clustered by Quran domain/use case, not by project layer.
   appear in another case's schema, and the leased database's `public` schema stays relation-free,
   which no head-template clone could be. Cases whose starting point *is* migration head — the live
   schema-drift mutations, the fresh-head preflight acceptance, and the retired-permission refusals —
-  live in `AccessSchemaDriftTests`, which takes its own migrated clone per case. That class and
+  live in `AccessSchemaDriftTests`, which takes its own migrated clone per case.
+  `PermissionCatalogueStartupSyncTests` takes its own migrated clone the same way, and for the same
+  reason it cannot use `AccessCollection`: its subject is what a **never-synchronized** database does
+  when the API host boots, which a shared fixture that every other case has already populated cannot
+  show. Its one degraded-startup case leases no database at all — it boots the sync **enabled**
+  against an unreachable connection string and asserts the host still starts, still answers a
+  database-free 400, and logged the failure at Error, which is the whole of the *start degraded,
+  never refuse to start* policy in `WebApplicationExtensions.SynchronizePermissionCatalogueAsync`.
+  It is also the one Access class that boots hosts with the startup catalogue sync switched
+  **on**; outside `Smoke/SmokeApiHost` every other API factory switches it off (see the
+  `Access:PermissionCatalogueStartupSync` note below). Those classes and
   `AccessAdminCommandTests` — whose valid wrapper run also takes its own migrated clone — share only
   the `DisableParallelization = true` `AccessProcessGlobalCollection` with the staged class, never
-  its empty-database fixture. Those three classes are the whole collection, and it is non-parallel
+  its empty-database fixture. Those four classes are the whole collection, and it is non-parallel
   because together they mutate the current directory, the connection environment variable, and the
   console streams. `AccessAdminCommandTests` owns the only two child-process launches under
   `Api/Access/`:
@@ -91,6 +101,22 @@ Folders are clustered by Quran domain/use case, not by project layer.
   `PermissionCatalogueSynchronizerTests` proves the synchronizer never deletes an unknown code, so
   the `future.example` row it writes would otherwise outlive the case that wrote it.
   `AccessCollectionResetContractTests` fails if the truncation list ever narrows again.
+- **`Access:PermissionCatalogueStartupSync:Enabled=false` is mandatory in an API test factory unless
+  the class is testing the startup sync itself.** `Program.cs` synchronizes the permission catalogue
+  between `UseApiPipeline()` and `app.Run()`, and every `WebApplicationFactory` here boots that real
+  entry point, so **five** factories set it off. `AccessTestFixture` sets it off because `ResetAsync`
+  truncates `permissions` and each case opts into the sync it asserts, so a lazy host build would
+  otherwise steal those inserts; `Api/Health/HealthApiFactory`,
+  `Api/RateLimiting/RateLimitingApiFactory`, and `Api/ApiBehavior/ApiBehaviorTestFactory` set it off
+  because they point at deliberately dead databases and must not spend the 15s startup budget failing
+  to reach them; `Quran/WordsWordTypes/WordTypesTestFixture` sets it off because its connection string
+  can come from `ExternalReadOnlyDatabaseOptIn.TryLease(WordTypesConnectionVariable)` — a database
+  this process does not own, whose read-only contract is an opt-in convention rather than a
+  connection-level grant, so nothing but this flag would stop the sync writing to it.
+  `Smoke/SmokeApiHost` — the single composition behind both `SmokeApiFixture` and
+  `Smoke/Data/SmokeDataFixture`, and the only host that leaves it **on** — does so deliberately: it
+  leases a real migrated database, so its green `/api/health` is evidence that the boot-time sync
+  works end to end.
 - `SmokeApiFixture.ResetAsync` is the whole `ResetPerTest` contract the `SmokeCollection` row of that
   catalog declares, and it is deliberately the collection's **only** restore entry point: it truncates
   `users` and the six `abwab_*` tables with `RESTART IDENTITY CASCADE`, resets the fake profile source,

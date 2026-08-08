@@ -145,7 +145,9 @@ describe('AccessAdminFacade', () => {
 
   async function loadCatalogue(): Promise<void> {
     const load = facade.loadPermissionCatalogue();
-    httpTesting.expectOne(`${ACCESS_BASE_URL}/permissions`).flush(success(CATALOGUE));
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/permissions`)
+      .flush(success({ items: CATALOGUE, assignmentReady: true }));
     await load;
   }
 
@@ -202,6 +204,24 @@ describe('AccessAdminFacade', () => {
     httpTesting.expectNone((request) => request.url === `${ACCESS_BASE_URL}/audit-events`);
     httpTesting.expectNone(`${ACCESS_BASE_URL}/owner-reconciliation/status`);
   });
+
+  it.each([[true], [false]])(
+    'reads the catalogue items and the assignmentReady flag (%s) off the response envelope',
+    async (assignmentReady) => {
+      await loadCurrentUser(OWNER);
+
+      const load = facade.loadPermissionCatalogue();
+      httpTesting
+        .expectOne(`${ACCESS_BASE_URL}/permissions`)
+        .flush(success({ items: CATALOGUE, assignmentReady }));
+      await load;
+
+      expect(facade.assignmentReady()).toBe(assignmentReady);
+      expect(facade.permissionGroups().flatMap((group) => [...group.codes])).toEqual(
+        CATALOGUE.map((item) => item.code),
+      );
+    },
+  );
 
   it('refreshes the target state after a version conflict without retrying or retaining attempted grants', async () => {
     await loadCurrentUser(OWNER);

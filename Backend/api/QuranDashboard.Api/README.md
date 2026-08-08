@@ -103,6 +103,32 @@ never created from the UI.
 data. A clean result neither deploys an artifact nor activates authorization; those operational
 actions remain outside the executable and the API process.
 
+### Permission-catalogue startup synchronization
+
+`Program.cs` calls `SynchronizePermissionCatalogueAsync` **between `UseApiPipeline()` and
+`app.Run()`** — deliberately not an `IHostedService`, which would start after Kestrel and could
+serve `GET /api/access/permissions` against an empty table. It runs inside its own async scope under
+a 15-second budget: if `GetPendingMigrationsAsync` reports pending migrations it logs a warning and
+returns without writing; otherwise it synchronizes the canonical catalogue and logs the
+added/updated/unknown/retired counts. `PermissionCatalogueSynchronizer` takes a blocking
+transaction-scoped advisory lock, so concurrent instances serialize instead of racing.
+
+**A failure here never refuses the start.** Migrations are applied by a human running
+`scripts/update-db` and `railway.json` carries no pre-deploy hook, so a deploy can legitimately
+precede its migration. The operational exception set is caught, logged at `Error`, and the
+application starts degraded — taking down every anonymous public `GET` over one Owner-only endpoint
+would be the worse failure. Degraded startup is not permission to write: `GET /api/access/permissions`
+returns `assignmentReady:false` in exactly that state and the editor fails closed.
+
+The `permission_catalogue` health check reports the same readiness and is registered with
+**`failureStatus: Degraded`, which is mandatory** — `HealthController` answers `503` only for
+`Unhealthy` and `railway.json` gates the deploy on `/api/health`, so an `Unhealthy` catalogue check
+would make the application permanently undeployable.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Access:PermissionCatalogueStartupSync:Enabled` | `true` (in code; no `appsettings` entry) | Master switch for the boot-time sync. Production disables it with `Access__PermissionCatalogueStartupSync__Enabled=false`. `scripts/export-swagger` sets it `false` so generating a spec never writes to a database. |
+
 ### Configuration (`Auth` section)
 
 | Key | Meaning |

@@ -93,6 +93,9 @@ public sealed class WordTypesTestFixture : IAsyncLifetime
                         configuration.AddInMemoryCollection(new Dictionary<string, string?>
                         {
                             ["ConnectionStrings:QuranDashboardDb"] = ConnectionString,
+                            // ConnectionString can be an external read-only opt-in database this process
+                            // does not own; the startup catalogue sync writes, so it must stay off.
+                            ["Access:PermissionCatalogueStartupSync:Enabled"] = "false",
                         }));
                     builder.ConfigureTestServices(services =>
                     {

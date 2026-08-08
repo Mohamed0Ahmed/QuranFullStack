@@ -185,6 +185,9 @@ public sealed class AccessTestFixture : IAsyncLifetime
                         ["OwnerBootstrap:Emails:0"] = OwnerEmail,
                         ["OwnerBootstrap:Emails:1"] = SecondOwnerEmail,
                         ["Cors:AllowedOrigins:0"] = "https://localhost",
+                        // ResetAsync truncates `permissions` and each Access test opts into
+                        // synchronizing it, so the startup sync must not race that contract.
+                        ["Access:PermissionCatalogueStartupSync:Enabled"] = "false",
                     }));
 
                 builder.ConfigureTestServices(services =>

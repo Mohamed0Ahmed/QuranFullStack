@@ -21,10 +21,13 @@ dotnet build api/QuranDashboard.Api/QuranDashboard.Api.csproj \
 
 echo "Exporting OpenAPI spec..."
 mkdir -p "$(dirname "$OUTPUT")"
-# Run from the publish output so the host's content root contains appsettings.json;
-# generation only builds the DI container and never opens a database connection.
+# Run from the publish output so the host's content root contains appsettings.json.
+# The Swashbuckle CLI runs the entry point through to application start, so the startup
+# permission-catalogue sync would otherwise write to whatever database appsettings names.
+# Generating a spec must never mutate a database, so the sync is switched off here.
 cd api/QuranDashboard.Api/bin/Release/net10.0
 ASPNETCORE_ENVIRONMENT="${ASPNETCORE_ENVIRONMENT:-Development}" \
+  Access__PermissionCatalogueStartupSync__Enabled=false \
   dotnet swagger tofile --output "$OUTPUT" QuranDashboard.Api.dll v1
 
 echo "Wrote $OUTPUT"

@@ -1,7 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using QuranDashboard.Application.Abstractions.Access;
-using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Tests.TestSupport.Http;
@@ -521,10 +520,13 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
 
         using var catalogueResponse = await client.GetAsync("/api/access/permissions");
         catalogueResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(catalogueResponse);
         var catalogue = await ApiEnvelope.ReadDataAsync(catalogueResponse);
-        catalogue.GetArrayLength().Should().Be(AbwabPermissionCatalogue.All.Count);
-        catalogue[0].GetProperty("code").GetString().Should().Be(AbwabPermissionCatalogue.All[0].Code);
-        catalogue[0].GetProperty("groupKey").GetString().Should().NotBeNullOrWhiteSpace();
+        var catalogueItems = catalogue.GetProperty("items");
+        catalogueItems.GetArrayLength().Should().Be(AbwabPermissionCatalogue.All.Count);
+        catalogueItems[0].GetProperty("code").GetString().Should().Be(AbwabPermissionCatalogue.All[0].Code);
+        catalogueItems[0].GetProperty("groupKey").GetString().Should().NotBeNullOrWhiteSpace();
+        catalogue.GetProperty("assignmentReady").GetBoolean().Should().BeTrue();
 
         using var statusResponse = await client.GetAsync("/api/access/owner-reconciliation/status");
         statusResponse.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -537,6 +539,45 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
         candidates.Should().Contain(candidate =>
             candidate.GetProperty("userId").ValueKind == JsonValueKind.Null
             && candidate.GetProperty("state").GetString() == "AwaitingVerifiedSignIn");
+    }
+
+    [Fact]
+    public async Task PermissionCatalogue_WithARetiredCanonicalCode_OmitsItAndStaysAssignable()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        await SeedActiveOwnerAsync();
+        await RetirePermissionAsync(AbwabPermissionCatalogue.All[0].Code);
+        using var client = CreateOwnerClient();
+
+        using var response = await client.GetAsync("/api/access/permissions");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var catalogue = await ApiEnvelope.ReadDataAsync(response);
+        catalogue.GetProperty("items").EnumerateArray()
+            .Select(item => item.GetProperty("code").GetString())
+            .Should().Equal(AbwabPermissionCatalogue.All.Skip(1).Select(permission => permission.Code));
+        // Retirement is a product state, not a fault: the remaining codes are still persisted and
+        // non-retired, so assignment stays available.
+        catalogue.GetProperty("assignmentReady").GetBoolean().Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task PermissionCatalogue_OnAnEmptyPermissionsTable_StillAnswersWithTheCanonicalCatalogue()
+    {
+        await fixture.ResetAsync();
+        await SeedActiveOwnerAsync();
+        using var client = CreateOwnerClient();
+
+        using var response = await client.GetAsync("/api/access/permissions");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
+        var catalogue = await ApiEnvelope.ReadDataAsync(response);
+        catalogue.GetProperty("items").EnumerateArray()
+            .Select(item => item.GetProperty("code").GetString())
+            .Should().Equal(AbwabPermissionCatalogue.All.Select(permission => permission.Code));
+        catalogue.GetProperty("assignmentReady").GetBoolean().Should().BeFalse();
     }
 
     [Fact]

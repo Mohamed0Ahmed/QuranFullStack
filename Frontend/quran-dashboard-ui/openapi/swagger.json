@@ -1662,17 +1662,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/PermissionCatalogueItemIReadOnlyListApiResponse"
+                  "$ref": "#/components/schemas/PermissionCatalogueResponseApiResponse"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PermissionCatalogueItemIReadOnlyListApiResponse"
+                  "$ref": "#/components/schemas/PermissionCatalogueResponseApiResponse"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PermissionCatalogueItemIReadOnlyListApiResponse"
+                  "$ref": "#/components/schemas/PermissionCatalogueResponseApiResponse"
                 }
               }
             }
@@ -8603,7 +8603,26 @@
         },
         "additionalProperties": false
       },
-      "PermissionCatalogueItemIReadOnlyListApiResponse": {
+      "PermissionCatalogueResponse": {
+        "required": [
+          "assignmentReady",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionCatalogueItem"
+            }
+          },
+          "assignmentReady": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PermissionCatalogueResponseApiResponse": {
         "required": [
           "data",
           "errors",
@@ -8620,10 +8639,11 @@
             "nullable": true
           },
           "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PermissionCatalogueItem"
-            },
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PermissionCatalogueResponse"
+              }
+            ],
             "nullable": true
           },
           "errors": {

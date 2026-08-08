@@ -27,6 +27,7 @@ QuranDashboard.Tests.Api.Access.EmailIdentityPreflightTests	Access	Database	Tier
 QuranDashboard.Tests.Api.Access.LogtoManagementApiUserProfileSourceTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.LogtoSubjectRelinkEndpointTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.OwnerBootstrapOptionsTests	Access	Fast	TierB
+QuranDashboard.Tests.Api.Access.PermissionCatalogueStartupSyncTests	Access	Database	TierB	Schema
 QuranDashboard.Tests.Api.Access.PermissionCatalogueSynchronizerTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.OwnerReconciliationServiceTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.UnsafeEndpointMetadataValidatorTests	Access	Fast	TierB

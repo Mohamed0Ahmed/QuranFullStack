@@ -9,7 +9,11 @@ public sealed record PermissionCatalogueItem(
     int GroupDisplayOrder,
     int DisplayOrder);
 
+public sealed record PermissionCatalogueResponse(
+    IReadOnlyList<PermissionCatalogueItem> Items,
+    bool AssignmentReady);
+
 public interface IPermissionCatalogueReader
 {
-    Task<IReadOnlyList<PermissionCatalogueItem>> GetActiveAsync(CancellationToken cancellationToken);
+    Task<PermissionCatalogueResponse> GetActiveAsync(CancellationToken cancellationToken);
 }

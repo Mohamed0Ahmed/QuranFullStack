@@ -13,3 +13,12 @@ Index only — defers to the linked code + README, which are the authority. See
 
 **Precedence:** backend code + the nearest backend README define server access; frontend code + its
 nearest README define client-side access behaviour.
+
+## Pointers worth naming
+
+- `GET /api/access/permissions` returns `{ items, assignmentReady }`, not a bare array.
+  `assignmentReady` states whether permission assignment can currently be persisted, so a safe read is
+  never mistaken for a safe write → [`Access/README.md`](../../Backend/infrastructure/QuranDashboard.Infrastructure/Access/README.md)
+- Boot-time catalogue synchronization, its non-fatal failure policy, the `permission_catalogue`
+  health check, and the `Access:PermissionCatalogueStartupSync` switch →
+  [`QuranDashboard.Api/README.md`](../../Backend/api/QuranDashboard.Api/README.md)

@@ -26,6 +26,9 @@ public sealed class HealthApiFactory(HealthStatus stubStatus) : WebApplicationFa
                 ["ConnectionStrings:QuranDashboardDb"] =
                     "Host=localhost;Port=5432;Database=health_tests;Username=none;Password=none",
                 ["Cors:AllowedOrigins:0"] = "https://localhost",
+                // The database above is deliberately dead; the startup catalogue sync must not
+                // spend its budget failing to reach it.
+                ["Access:PermissionCatalogueStartupSync:Enabled"] = "false",
             });
         });
 

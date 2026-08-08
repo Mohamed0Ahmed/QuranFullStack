@@ -202,7 +202,9 @@ describe('AccessAdminPageComponent', () => {
           totalCount: 1,
         }),
       );
-    httpTesting.expectOne(`${ACCESS_BASE_URL}/permissions`).flush(success(CATALOGUE));
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/permissions`)
+      .flush(success({ items: CATALOGUE, assignmentReady: true }));
     httpTesting
       .expectOne((request) => request.url === `${ACCESS_BASE_URL}/audit-events`)
       .flush(success({ items: AUDIT_EVENTS, nextCursor: null }));

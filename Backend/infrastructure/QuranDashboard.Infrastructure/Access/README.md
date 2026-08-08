@@ -25,6 +25,26 @@ already active Owner. Disabled configured users remain Disabled. The store write
 system-actor audit events with immutable before/after snapshots and provenance, then the
 Application use case returns only after the transaction commits.
 
+`PermissionCatalogueSynchronizer` opens one transaction and takes a **blocking**
+`pg_advisory_xact_lock` on its own dedicated key as the first statement, so a second booting instance
+waits and then finds the rows rather than racing the unique index on `permissions.code`. It reads the
+existing rows under that lock, inserts missing canonical codes, refreshes drifted metadata, and
+derives the reported unknown and retired-canonical code sets from the post-insert state. It never
+deletes an unknown code and never reactivates a retired canonical one.
+
+**The catalogue read is served from the compiled catalogue, never from a database join.**
+`Persistence/Reads/Access/EfPermissionCatalogueReader` reads `(code, retired_at)` once, offers
+`AbwabPermissionCatalogue.All` minus the retired codes, and computes `assignmentReady` — true when
+every offered code has a non-retired row — from that same read. Projecting the database rows into the
+item list instead would return an empty catalogue on an unsynchronized database, which a UI renders
+as "no permissions exist": silently wrong, and worse than the failure it replaced. Divergence between
+the compiled catalogue and the table is a health-check and `access-admin` preflight concern, never an
+HTTP failure; an unknown row left in the table changes neither the served items nor readiness.
+`assignmentReady` exists because a safe read does not imply a safe write:
+`Persistence/Writes/Access/EfAccessUserMutationService` still validates every submitted code against
+non-retired database rows, and that validation is not weakened — its `400` on an unseeded database is
+the fail-safe working.
+
 Request-scoped authorization reads live in `Persistence/Reads/Access/AuthorizationStateResolver.cs`.
 That resolver projects one local user by exact `LogtoSub`: status, the local Owner relation, and direct
 non-retired permission codes only for an active non-Owner. It never provisions users and never receives
