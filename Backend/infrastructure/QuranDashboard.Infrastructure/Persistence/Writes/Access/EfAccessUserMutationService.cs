@@ -358,7 +358,7 @@ internal sealed class EfAccessUserMutationService(
         string? permissionCode,
         AccessAuditUserState beforeState,
         AccessAuditUserState afterState,
-        string reason,
+        string? reason,
         string operation)
     {
         auditAppender.Append(new AccessAuditEntry(

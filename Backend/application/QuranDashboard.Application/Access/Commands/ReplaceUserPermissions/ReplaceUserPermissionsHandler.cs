@@ -13,7 +13,7 @@ public sealed class ReplaceUserPermissionsHandler(
     {
         if (command.UserId < 1
             || command.PermissionCodes is null
-            || !AccessAdministrationValidation.TryGetReason(command.Reason, out var reason))
+            || !AccessAdministrationValidation.TryGetOptionalReason(command.Reason, out var reason))
         {
             return Task.FromResult(AccessOperationResult<AccessUserPermissions>.Failed(AccessOperationFailure.InvalidRequest));
         }

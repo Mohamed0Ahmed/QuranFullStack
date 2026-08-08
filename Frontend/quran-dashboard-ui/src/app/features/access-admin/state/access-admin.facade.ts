@@ -243,7 +243,7 @@ export class AccessAdminFacade {
   async acceptSelectedUser(reason: string): Promise<AccessAdminMutationOutcome> {
     const user = this.selectedUserState();
     const normalizedReason = reason.trim();
-    if (!user || user.isOwner || user.status !== 'pending' || !normalizedReason) {
+    if (!user || user.isOwner || user.status !== 'pending') {
       return 'invalid';
     }
 
@@ -251,7 +251,7 @@ export class AccessAdminFacade {
       this.api.acceptUser(user.id, {
         expectedVersion: user.version,
         permissionCodes: this.permissionCodesForAssignment(),
-        reason: normalizedReason,
+        reason: normalizedReason || null,
       }),
     );
   }
@@ -259,24 +259,30 @@ export class AccessAdminFacade {
   async disableSelectedUser(reason: string): Promise<AccessAdminMutationOutcome> {
     const user = this.selectedUserState();
     const normalizedReason = reason.trim();
-    if (!user || user.isOwner || user.status !== 'active' || !normalizedReason) {
+    if (!user || user.isOwner || user.status !== 'active') {
       return 'invalid';
     }
 
     return this.runMutation('disable', () =>
-      this.api.disableUser(user.id, { expectedVersion: user.version, reason: normalizedReason }),
+      this.api.disableUser(user.id, {
+        expectedVersion: user.version,
+        reason: normalizedReason || null,
+      }),
     );
   }
 
   async reactivateSelectedUser(reason: string): Promise<AccessAdminMutationOutcome> {
     const user = this.selectedUserState();
     const normalizedReason = reason.trim();
-    if (!user || user.isOwner || user.status !== 'disabled' || !normalizedReason) {
+    if (!user || user.isOwner || user.status !== 'disabled') {
       return 'invalid';
     }
 
     return this.runMutation('reactivate', () =>
-      this.api.reactivateUser(user.id, { expectedVersion: user.version, reason: normalizedReason }),
+      this.api.reactivateUser(user.id, {
+        expectedVersion: user.version,
+        reason: normalizedReason || null,
+      }),
     );
   }
 
@@ -284,7 +290,7 @@ export class AccessAdminFacade {
     const user = this.selectedUserState();
     const permissions = this.draft.grantedPermissions();
     const normalizedReason = reason.trim();
-    if (!user || !permissions || !normalizedReason || !this.canReplaceSelectedPermissions()) {
+    if (!user || !permissions || !this.canReplaceSelectedPermissions()) {
       return 'invalid';
     }
 
@@ -292,7 +298,7 @@ export class AccessAdminFacade {
       this.api.replacePermissions(user.id, {
         expectedVersion: permissions.version,
         permissionCodes: this.permissionCodesForAssignment(),
-        reason: normalizedReason,
+        reason: normalizedReason || null,
       }),
     );
   }

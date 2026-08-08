@@ -5837,7 +5837,8 @@
             "nullable": true
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -6946,7 +6947,8 @@
             "format": "int32"
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -8704,7 +8706,8 @@
             "format": "int32"
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -8888,7 +8891,8 @@
             "nullable": true
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

@@ -1,6 +1,5 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Tests.TestSupport.Http;
@@ -121,6 +120,42 @@ public sealed class LogtoSubjectRelinkEndpointTests(AccessTestFixture fixture)
         persisted.Version.Should().Be(target.Version);
         (await fixture.GetUserBySubAsync(newSub)).Should().BeNull();
         (await GetGrantCodesAsync(targetId)).Should().Equal(AbwabPermissions.Doors.Create);
+        (await GetAuditEventsAsync(targetId)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Confirm_WithABlankReason_IsStillRejectedWithoutTouchingTheSubjectOrAudit()
+    {
+        await fixture.ResetAsync();
+        await SeedActiveOwnerAsync();
+        const string targetSub = "access-admin-relink-blank-reason-target";
+        const string newSub = "access-admin-relink-blank-reason-replacement";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        fixture.ProfileSource.ReturnEmailFor(newSub, target.Email);
+        using var client = CreateOwnerClient();
+
+        using var confirmResponse = await client.PostAsJsonAsync(
+            $"/api/access/users/{targetId}/logto-sub/relink/confirm",
+            new
+            {
+                expectedVersion = target.Version,
+                oldSub = targetSub,
+                newSub,
+                reason = "   ",
+                confirmed = true,
+                evidenceToken = EvidenceToken(newSub, target.Email, emailVerified: true),
+            });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            confirmResponse,
+            HttpStatusCode.BadRequest,
+            ApiMessages.AccessAdministrationInvalidRequest);
+        var persisted = (await fixture.GetUserBySubAsync(targetSub))!;
+        persisted.Id.Should().Be(targetId);
+        persisted.LogtoSub.Should().Be(targetSub);
+        persisted.Version.Should().Be(target.Version);
+        (await fixture.GetUserBySubAsync(newSub)).Should().BeNull();
         (await GetAuditEventsAsync(targetId)).Should().BeEmpty();
     }
 

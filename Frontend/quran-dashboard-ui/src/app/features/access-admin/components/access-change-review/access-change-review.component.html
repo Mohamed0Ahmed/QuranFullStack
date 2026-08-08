@@ -51,7 +51,7 @@
         }
       </div>
     }
-    <label class="access-change-review__field" for="access-action-reason">سبب الإجراء</label>
+    <label class="access-change-review__field" for="access-action-reason">سبب الإجراء (اختياري)</label>
     <textarea
       id="access-action-reason"
       class="qd-input access-change-review__textarea"
@@ -72,7 +72,7 @@
         type="button"
         class="qd-btn qd-btn-primary"
         data-testid="access-confirm-action"
-        [disabled]="!reason().trim() || busyAction() !== null || isNoOpPermissionSave()"
+        [disabled]="busyAction() !== null || isNoOpPermissionSave()"
         (click)="confirm()"
       >تأكيد</button>
     </div>

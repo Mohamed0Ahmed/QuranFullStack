@@ -59,7 +59,7 @@ public sealed record AccessAuditEntry(
     string? PermissionCode,
     AccessAuditUserState Before,
     AccessAuditUserState After,
-    string Reason,
+    string? Reason,
     string Operation);
 
 public sealed record AccessOwnerReconciliationSummary(

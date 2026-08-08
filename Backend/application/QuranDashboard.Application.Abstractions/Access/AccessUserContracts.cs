@@ -59,17 +59,17 @@ public sealed record AcceptAccessUserCommand(
     int UserId,
     uint ExpectedVersion,
     IReadOnlyList<string>? PermissionCodes,
-    string Reason);
+    string? Reason);
 
-public sealed record DisableAccessUserCommand(int UserId, uint ExpectedVersion, string Reason);
+public sealed record DisableAccessUserCommand(int UserId, uint ExpectedVersion, string? Reason);
 
-public sealed record ReactivateAccessUserCommand(int UserId, uint ExpectedVersion, string Reason);
+public sealed record ReactivateAccessUserCommand(int UserId, uint ExpectedVersion, string? Reason);
 
 public sealed record ReplaceUserPermissionsCommand(
     int UserId,
     uint ExpectedVersion,
     IReadOnlyList<string> PermissionCodes,
-    string Reason);
+    string? Reason);
 
 public enum AccessOperationFailure
 {

@@ -17,7 +17,10 @@ catalogue and direct-grant reads/replacement, audit retrieval, Logto subject rel
 and reconciliation status. They do not expose a generic status setter, role mutation, or Owner
 configuration mutation.
 
-Write handlers require a bounded audit reason and pass the authenticated caller's `sub` to the
+The workspace write handlers (accept, disable, reactivate, permission replacement) take an optional
+audit reason bounded at 1024 characters: a blank or omitted reason travels as `null` and the audit
+rows store `NULL`, while a typed one persists verbatim. Relink confirmation still requires a
+non-blank bounded reason. Every write handler passes the authenticated caller's `sub` to the
 Infrastructure transaction service. That service rechecks the caller as an active Owner, locks the
 target and grants, performs optimistic `xmin` concurrency checking, appends audit events, and commits
 once. A failed audit append therefore leaves the target and grants unchanged.

@@ -72,6 +72,138 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     }
 
     [Fact]
+    public async Task Accept_WithABlankReason_SucceedsAndStoresNullAuditReasons()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        await SeedActiveOwnerAsync();
+        const string targetSub = "access-admin-accept-blank-reason-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Pending);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        using var client = CreateOwnerClient();
+
+        using var response = await client.PostAsJsonAsync(
+            $"/api/access/users/{targetId}/accept",
+            new
+            {
+                expectedVersion = target.Version,
+                permissionCodes = new[] { AbwabPermissions.Doors.Create },
+                reason = "",
+            });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await fixture.GetUserBySubAsync(targetSub))!.Status.Should().Be(UserStatus.Active);
+        var audit = await GetAuditEventsAsync(targetId);
+        audit.Select(eventItem => eventItem.ActionType).Should().Equal(
+            AccessAuditActionType.UserAccepted,
+            AccessAuditActionType.UserActivated,
+            AccessAuditActionType.PermissionGranted);
+        audit.Should().OnlyContain(eventItem => eventItem.Reason == null);
+    }
+
+    [Fact]
+    public async Task Disable_WithAWhitespaceReason_SucceedsAndStoresNullAuditReasons()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        var ownerId = await SeedActiveOwnerAsync();
+        const string targetSub = "access-admin-disable-blank-reason-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
+        await AddGrantsAsync(targetId, ownerId, [AbwabPermissions.Doors.Create]);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        using var client = CreateOwnerClient();
+
+        using var response = await client.PostAsJsonAsync(
+            $"/api/access/users/{targetId}/disable",
+            new { expectedVersion = target.Version, reason = "   " });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await fixture.GetUserBySubAsync(targetSub))!.Status.Should().Be(UserStatus.Disabled);
+        var audit = await GetAuditEventsAsync(targetId);
+        audit.Select(eventItem => eventItem.ActionType).Should().Equal(
+            AccessAuditActionType.PermissionRevoked,
+            AccessAuditActionType.UserDisabled);
+        audit.Should().OnlyContain(eventItem => eventItem.Reason == null);
+    }
+
+    [Fact]
+    public async Task Disable_WithAnOverlongReason_IsRejectedWithoutStatusGrantOrAuditChanges()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        var ownerId = await SeedActiveOwnerAsync();
+        const string targetSub = "access-admin-disable-overlong-reason-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
+        await AddGrantsAsync(targetId, ownerId, [AbwabPermissions.Doors.Create]);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        using var client = CreateOwnerClient();
+
+        using var response = await client.PostAsJsonAsync(
+            $"/api/access/users/{targetId}/disable",
+            new { expectedVersion = target.Version, reason = new string('س', 1025) });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            response,
+            HttpStatusCode.BadRequest,
+            ApiMessages.AccessAdministrationInvalidRequest);
+        var persisted = (await fixture.GetUserBySubAsync(targetSub))!;
+        persisted.Status.Should().Be(UserStatus.Active);
+        persisted.Version.Should().Be(target.Version);
+        (await GetGrantCodesAsync(targetId)).Should().Equal(AbwabPermissions.Doors.Create);
+        (await GetAuditEventsAsync(targetId)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Reactivate_WithAnOmittedReason_SucceedsAndStoresANullAuditReason()
+    {
+        await fixture.ResetAsync();
+        await SeedActiveOwnerAsync();
+        const string targetSub = "access-admin-reactivate-omitted-reason-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Disabled);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        using var client = CreateOwnerClient();
+
+        using var response = await client.PostAsJsonAsync(
+            $"/api/access/users/{targetId}/reactivate",
+            new { expectedVersion = target.Version });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await fixture.GetUserBySubAsync(targetSub))!.Status.Should().Be(UserStatus.Active);
+        var audit = await GetAuditEventsAsync(targetId);
+        audit.Select(eventItem => eventItem.ActionType).Should().Equal(AccessAuditActionType.UserReactivated);
+        audit.Should().OnlyContain(eventItem => eventItem.Reason == null);
+    }
+
+    [Fact]
+    public async Task ReplacePermissions_WithAnOmittedReason_SucceedsAndStoresNullAuditReasons()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        var ownerId = await SeedActiveOwnerAsync();
+        const string targetSub = "access-admin-replace-omitted-reason-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
+        await AddGrantsAsync(targetId, ownerId, [AbwabPermissions.Doors.Create]);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        using var client = CreateOwnerClient();
+
+        using var response = await client.PutAsJsonAsync(
+            $"/api/access/users/{targetId}/permissions",
+            new
+            {
+                expectedVersion = target.Version,
+                permissionCodes = new[] { AbwabPermissions.Doors.Archive },
+            });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await GetGrantCodesAsync(targetId)).Should().Equal(AbwabPermissions.Doors.Archive);
+        var audit = await GetAuditEventsAsync(targetId);
+        audit.Select(eventItem => eventItem.ActionType).Should().Equal(
+            AccessAuditActionType.PermissionRevoked,
+            AccessAuditActionType.PermissionGranted);
+        audit.Should().OnlyContain(eventItem => eventItem.Reason == null);
+    }
+
+    [Fact]
     public async Task DisableThenReactivate_RevokesEveryGrantWithoutRestoringAny()
     {
         await fixture.ResetAsync();

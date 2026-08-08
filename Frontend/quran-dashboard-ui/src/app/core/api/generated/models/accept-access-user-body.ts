@@ -4,5 +4,5 @@
 export interface AcceptAccessUserBody {
   expectedVersion: number;
   permissionCodes: Array<string> | null;
-  reason: string;
+  reason: string | null;
 }

@@ -38,9 +38,11 @@ the navbar and is reached through the guarded route only.
   model* below.
 - Treats permission editing as a draft with an honest exit — see *Permission draft, revert and
   unsaved-change protection* below.
-- Requires an inline reason/diff confirmation for grant/status changes. Every changed permission
-  is shown by its Arabic label and stable code before confirmation. There is only one modal in
-  the feature: the unsaved-changes confirmation described below.
+- Confirms grant/status changes through an inline review step with an **optional** reason. Every
+  changed permission is shown by its Arabic label and stable code before confirmation; a blank
+  reason travels as `null` and the audit rows store `NULL`, while a typed one persists verbatim.
+  Relink keeps its mandatory reason. There is only one modal in the feature: the unsaved-changes
+  confirmation described below.
 - Recovers a lost login identity through Logto-subject relink, presented in its own
   الأمان المتقدم section outside the permission workspace — see *Advanced Security* below. The flow
   is unchanged: preview first, then a separate explicit confirmation; the UI submits a new subject
@@ -204,8 +206,8 @@ the bar carrying the only discard control is hidden while assignment is unavaila
   blocked; the confirmation's own confirm button is additionally disabled if the draft is reverted
   while it is open. The backend already short-circuits an empty change set, so this prevents a
   wasted round-trip, not audit pollution.
-- The mandatory trimmed 1..1024-character reason is unchanged: reverting is the only way to leave
-  an edit without one.
+- The reason is optional: it is trimmed and bounded at 1024 characters by the backend; left blank,
+  it is sent and stored as `null`. The review step itself is still the only save path.
 - A dirty draft still holds back relink, even though relink now lives outside the permission
   workspace. The reason was never adjacency: `confirmSelectedUserRelink` runs through `runMutation`,
   and every successful mutation calls `refreshAfterMutation`, which re-selects the user and makes
@@ -484,7 +486,7 @@ min-block-size on the panes themselves, which is layout work and has not been do
   - `access-user-summary-card` — the detail panel's `.explorer-panel-header`;
   - `access-permission-editor` — the grouped checkbox grid;
   - `access-lifecycle-actions` — «إجراءات الحساب» and its per-status commit;
-  - `access-change-review` — the diff, the mandatory reason, and confirm/cancel; it owns the reason
+  - `access-change-review` — the diff, the optional reason, and confirm/cancel; it owns the reason
     text and drops it whenever the pending action changes. **Which action is pending is the page's
     state, and the page closes the review explicitly** — on a user switch (both the direct one and
     the one behind the discard confirmation) and on a settled write (`success`/`409`/`401`/`403`,

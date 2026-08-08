@@ -81,18 +81,18 @@ describe('AccessChangeReviewComponent', () => {
     ).toBeNull();
   });
 
-  it('requires a reason before it will confirm anything', () => {
+  it('confirms with the reason left empty, superseding the mandatory-reason rule', () => {
     const { fixture, confirmed } = setup('disable');
 
     const confirm = element(fixture, 'access-confirm-action') as HTMLButtonElement;
-    expect(confirm.disabled).toBe(true);
+    expect(confirm.disabled).toBe(false);
     confirm.click();
-    expect(confirmed).toEqual([]);
+    expect(confirmed).toEqual(['']);
 
     fillReason(fixture);
     element(fixture, 'access-confirm-action').click();
 
-    expect(confirmed).toEqual(['مراجعة الوصول']);
+    expect(confirmed).toEqual(['', 'مراجعة الوصول']);
   });
 
   it('trims the captured reason before emitting it', () => {

@@ -67,11 +67,10 @@ export class AccessChangeReviewComponent {
   }
 
   protected confirm(): void {
-    const reason = this.reason().trim();
-    if (!this.action() || !reason || this.busyAction() || this.isNoOpPermissionSave()) {
+    if (!this.action() || this.busyAction() || this.isNoOpPermissionSave()) {
       return;
     }
-    this.confirmed.emit(reason);
+    this.confirmed.emit(this.reason().trim());
   }
 
   private hasUnsavedPermissions(): boolean {

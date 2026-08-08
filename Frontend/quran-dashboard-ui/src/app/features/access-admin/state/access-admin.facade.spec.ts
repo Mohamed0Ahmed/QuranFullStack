@@ -737,13 +737,21 @@ describe('AccessAdminFacade', () => {
     httpTesting.expectNone((request) => request.url.startsWith(ACCESS_BASE_URL));
   });
 
-  it('does not submit a permission replacement without a confirmation reason', async () => {
+  it('submits a permission replacement with a null reason when none is typed, superseding the mandatory-reason rule', async () => {
     await loadCurrentUser(OWNER);
     await loadCatalogue();
     await selectTarget(user(1), permissions(1));
 
-    await expect(facade.replaceSelectedPermissions('   ')).resolves.toBe('invalid');
+    const saving = facade.replaceSelectedPermissions('   ');
+    const request = httpTesting.expectOne(`${ACCESS_BASE_URL}/users/17/permissions`);
+    expect(request.request.body).toEqual({
+      expectedVersion: 1,
+      permissionCodes: [],
+      reason: null,
+    });
+    request.flush(success(permissions(2)));
+    await flushMutationRefresh(user(2), permissions(2));
 
-    httpTesting.expectNone(`${ACCESS_BASE_URL}/users/17/permissions`);
+    await expect(saving).resolves.toBe('success');
   });
 });
