@@ -32,6 +32,10 @@ export interface AccessPermissionDiff {
   readonly revoked: readonly PermissionCode[];
 }
 
+export function hasPermissionChanges(diff: AccessPermissionDiff): boolean {
+  return diff.granted.length > 0 || diff.revoked.length > 0;
+}
+
 export interface AccessRelinkPreviewRequest {
   readonly newSub: string;
   readonly evidenceToken: string;

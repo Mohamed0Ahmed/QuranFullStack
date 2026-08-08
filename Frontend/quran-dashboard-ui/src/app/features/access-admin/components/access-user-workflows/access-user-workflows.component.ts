@@ -4,7 +4,12 @@ import { AccessUserDetail } from '../../../../core/api/generated/models/access-u
 import { LogtoSubjectRelinkPreview } from '../../../../core/api/generated/models/logto-subject-relink-preview';
 import { PermissionCode } from '../../../../core/auth/permission-code';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
-import { AccessPermissionDiff, AccessRelinkPreviewRequest } from '../../models/access-admin.models';
+import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
+import {
+  AccessPermissionDiff,
+  AccessRelinkPreviewRequest,
+  hasPermissionChanges,
+} from '../../models/access-admin.models';
 import { AccessPermissionGroup, permissionLabelFor } from '../../models/access-admin-permissions';
 import { AccessPermissionEditorComponent } from '../access-permission-editor/access-permission-editor.component';
 
@@ -36,6 +41,7 @@ export class AccessUserWorkflowsComponent {
   readonly canAssignPermissions = input(false);
 
   readonly permissionCodesChange = output<PermissionCode[]>();
+  readonly draftDiscarded = output<void>();
   readonly actionConfirmed = output<AccessUserWorkflowConfirmation>();
   readonly catalogueRetryRequested = output<void>();
   readonly relinkPreviewRequested = output<AccessRelinkPreviewRequest>();
@@ -70,6 +76,26 @@ export class AccessUserWorkflowsComponent {
     return this.isActiveNonOwner() && this.canAssignPermissions();
   }
 
+  protected hasUnsavedPermissions(): boolean {
+    return this.canAssignPermissions() && hasPermissionChanges(this.permissionDiff());
+  }
+
+  protected diffSummaryLabel(): string {
+    const diff = this.permissionDiff();
+    return ACCESS_ADMIN_LABELS.permissionDiffSummary(diff.granted.length, diff.revoked.length);
+  }
+
+  protected isNoOpPermissionSave(): boolean {
+    return this.pendingAction() === 'permissions' && !this.hasUnsavedPermissions();
+  }
+
+  protected discardDraft(): void {
+    if (this.busyAction()) {
+      return;
+    }
+    this.draftDiscarded.emit();
+  }
+
   protected requestAction(kind: AccessUserWorkflowAction): void {
     if (this.busyAction() || !this.isActionAvailable(kind)) {
       return;
@@ -92,7 +118,7 @@ export class AccessUserWorkflowsComponent {
   protected confirmAction(): void {
     const kind = this.pendingAction();
     const reason = this.actionReason().trim();
-    if (!kind || !reason || this.busyAction()) {
+    if (!kind || !reason || this.busyAction() || this.isNoOpPermissionSave()) {
       return;
     }
     this.actionConfirmed.emit({ kind, reason });
@@ -123,7 +149,7 @@ export class AccessUserWorkflowsComponent {
   protected requestRelinkPreview(): void {
     const newSub = this.newSub().trim();
     const evidenceToken = this.evidenceToken().trim();
-    if (!newSub || !evidenceToken || this.busyAction()) {
+    if (!newSub || !evidenceToken || this.busyAction() || this.hasUnsavedPermissions()) {
       return;
     }
     this.relinkPreviewRequested.emit({ newSub, evidenceToken });

@@ -265,6 +265,66 @@ describe('AccessUserWorkflowsComponent', () => {
     expect(retries).toBe(1);
   });
 
+  it('offers no permission save path while the draft matches the stored grants', () => {
+    const fixture = setup();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="access-permission-draft-bar"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="access-request-permissions"]')).toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="access-permission-diff-summary"]'),
+    ).toBeNull();
+  });
+
+  it('summarises a dirty draft and emits a discard request from the same bar', () => {
+    const fixture = setup();
+    let discards = 0;
+    fixture.componentInstance.draftDiscarded.subscribe(() => discards++);
+    fixture.componentRef.setInput('permissionDiff', CHANGED_DIFF);
+    fixture.detectChanges();
+
+    expect(element(fixture, 'access-permission-diff-summary-text').textContent).toBe(
+      'صلاحيات مضافة: 1، صلاحيات ملغاة: 1',
+    );
+    const glyphs = element(fixture, 'access-permission-diff-summary');
+    expect(glyphs.getAttribute('aria-hidden')).toBe('true');
+    expect(glyphs.hasAttribute('aria-label')).toBe(false);
+    element(fixture, 'access-discard-draft').click();
+
+    expect(discards).toBe(1);
+  });
+
+  it('offers only a discard path for a pending account whose commit is acceptance', () => {
+    const fixture = setup({ ...USER, status: 'pending', permissionCodes: [] });
+    fixture.componentRef.setInput('permissionDiff', CHANGED_DIFF);
+    fixture.detectChanges();
+
+    expect(element(fixture, 'access-discard-draft')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="access-request-permissions"]')).toBeNull();
+    expect(element(fixture, 'access-request-accept')).toBeTruthy();
+  });
+
+  it('holds back relink while permission edits are unsaved', () => {
+    const fixture = setup();
+    const previews: unknown[] = [];
+    fixture.componentInstance.relinkPreviewRequested.subscribe((request) => previews.push(request));
+    fixture.componentRef.setInput('permissionDiff', CHANGED_DIFF);
+    fixture.detectChanges();
+
+    const newSub = element(fixture, 'access-relink-new-sub') as HTMLInputElement;
+    newSub.value = 'new-subject';
+    newSub.dispatchEvent(new Event('input'));
+    const evidence = element(fixture, 'access-relink-evidence') as HTMLInputElement;
+    evidence.value = 'verified-evidence';
+    evidence.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(element(fixture, 'access-relink-blocked')).toBeTruthy();
+    expect((element(fixture, 'access-relink-preview') as HTMLButtonElement).disabled).toBe(true);
+    element(fixture, 'access-relink-preview').click();
+
+    expect(previews).toEqual([]);
+  });
+
   it('cancels an inline confirmation when the selected target changes', () => {
     const fixture = setup();
 

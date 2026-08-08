@@ -54,6 +54,7 @@
             [catalogueError]="facade.catalogueError()"
             [canAssignPermissions]="facade.canAssignPermissions()"
             (permissionCodesChange)="updatePermissionCodes($event)"
+            (draftDiscarded)="discardDraft()"
             (actionConfirmed)="confirmAction($event)"
             (catalogueRetryRequested)="reloadPermissionCatalogue()"
             (relinkPreviewRequested)="previewRelink($event)"
@@ -151,4 +152,16 @@
       </section>
     </section>
   }
+
+  <qd-confirm-dialog
+    testIdPrefix="access-switch-user-confirm"
+    [open]="userSwitchAwaitingDiscard() !== null"
+    [titleText]="labels.unsavedChangesTitle"
+    [confirmLabel]="labels.discardChangesButton"
+    [cancelLabel]="labels.keepEditingButton"
+    (confirmed)="discardDraftAndSwitchUser()"
+    (cancelled)="keepEditingDraft()"
+  >
+    <p>{{ labels.unsavedChangesSwitchUserBody }}</p>
+  </qd-confirm-dialog>
 </section>

@@ -43,6 +43,28 @@ describe('AccessPermissionEditorComponent', () => {
     expect(emitted).toEqual([['abwab.doors.create', 'abwab.doors.edit']]);
   });
 
+  it('marks a partly selected group indeterminate and a fully selected group checked', () => {
+    TestBed.configureTestingModule({ imports: [AccessPermissionEditorComponent] });
+    const fixture = TestBed.createComponent(AccessPermissionEditorComponent);
+    fixture.componentRef.setInput('groups', GROUPS);
+    fixture.componentRef.setInput('selectedCodes', new Set<PermissionCode>(['abwab.doors.create']));
+    fixture.componentRef.setInput('disabled', false);
+    fixture.detectChanges();
+
+    const selectAll = checkbox(fixture, 'access-permission-group-doors');
+    expect(selectAll.checked).toBe(false);
+    expect(selectAll.indeterminate).toBe(true);
+
+    fixture.componentRef.setInput(
+      'selectedCodes',
+      new Set<PermissionCode>(['abwab.doors.create', 'abwab.doors.edit']),
+    );
+    fixture.detectChanges();
+
+    expect(selectAll.checked).toBe(true);
+    expect(selectAll.indeterminate).toBe(false);
+  });
+
   it('allows an individual code to be unchecked after its group was selected', () => {
     TestBed.configureTestingModule({ imports: [AccessPermissionEditorComponent] });
     const fixture = TestBed.createComponent(AccessPermissionEditorComponent);

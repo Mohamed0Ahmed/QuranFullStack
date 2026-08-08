@@ -3,28 +3,21 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, firstValueFrom } from 'rxjs';
 
 import { CurrentUserStore } from '../../../core/auth/current-user.store';
-import { PermissionCode, isPermissionCode } from '../../../core/auth/permission-code';
+import { PermissionCode } from '../../../core/auth/permission-code';
 import { WriteAuthFailureCoordinator } from '../../../core/auth/write-auth-failure.coordinator';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AccessAuditEventPage } from '../../../core/api/generated/models/access-audit-event-page';
 import { AccessUserDetail } from '../../../core/api/generated/models/access-user-detail';
-import { AccessUserPermissions } from '../../../core/api/generated/models/access-user-permissions';
 import { AccessUserSummaryPagedResult } from '../../../core/api/generated/models/access-user-summary-paged-result';
 import { LogtoSubjectRelinkPreview } from '../../../core/api/generated/models/logto-subject-relink-preview';
 import { OwnerReconciliationStatus } from '../../../core/api/generated/models/owner-reconciliation-status';
-import { PermissionCatalogueItem } from '../../../core/api/generated/models/permission-catalogue-item';
 import { AccessAdminApi } from '../data-access/access-admin.api';
 import {
   AccessAuditQuery,
-  AccessPermissionDiff,
   AccessRelinkPreviewRequest,
   AccessUserListQuery,
 } from '../models/access-admin.models';
-import {
-  AccessPermissionGroup,
-  buildPermissionGroups,
-  permissionCodesForSubmission,
-} from '../models/access-admin-permissions';
+import { AccessPermissionDraftStore } from './access-permission-draft.store';
 
 export type AccessAdminMutationOutcome =
   | 'success'
@@ -55,18 +48,13 @@ export class AccessAdminFacade {
   private readonly api = inject(AccessAdminApi);
   private readonly currentUserStore = inject(CurrentUserStore);
   private readonly writeAuthFailureCoordinator = inject(WriteAuthFailureCoordinator);
+  private readonly draft = new AccessPermissionDraftStore();
 
   private readonly usersState = signal<AccessUserSummaryPagedResult | null>(null);
   private readonly userQueryState = signal<AccessUserListQuery>(defaultUserQuery);
   private readonly usersLoadingState = signal(false);
   private readonly usersErrorState = signal<string | null>(null);
-  private readonly catalogueState = signal<readonly PermissionCatalogueItem[]>([]);
-  private readonly assignmentReadyState = signal(false);
-  private readonly catalogueLoadingState = signal(false);
-  private readonly catalogueErrorState = signal<string | null>(null);
   private readonly selectedUserState = signal<AccessUserDetail | null>(null);
-  private readonly selectedPermissionsState = signal<AccessUserPermissions | null>(null);
-  private readonly selectedPermissionCodesState = signal<ReadonlySet<PermissionCode>>(new Set());
   private readonly selectedUserLoadingState = signal(false);
   private readonly selectedUserErrorState = signal<string | null>(null);
   private readonly auditState = signal<AccessAuditEventPage | null>(null);
@@ -100,18 +88,14 @@ export class AccessAdminFacade {
   readonly userQuery = this.userQueryState.asReadonly();
   readonly usersLoading = this.usersLoadingState.asReadonly();
   readonly usersError = this.usersErrorState.asReadonly();
-  readonly permissionGroups = computed<readonly AccessPermissionGroup[]>(() =>
-    buildPermissionGroups(this.catalogueState()),
-  );
-  readonly assignmentReady = this.assignmentReadyState.asReadonly();
-  readonly catalogueLoading = this.catalogueLoadingState.asReadonly();
-  readonly catalogueError = this.catalogueErrorState.asReadonly();
-  readonly canAssignPermissions = computed(
-    () => this.assignmentReady() && !this.catalogueError() && this.permissionGroups().length > 0,
-  );
+  readonly permissionGroups = this.draft.groups;
+  readonly assignmentReady = this.draft.assignmentReady;
+  readonly catalogueLoading = this.draft.catalogueLoading;
+  readonly catalogueError = this.draft.catalogueError;
+  readonly canAssignPermissions = this.draft.canAssign;
   readonly selectedUser = this.selectedUserState.asReadonly();
-  readonly selectedPermissions = this.selectedPermissionsState.asReadonly();
-  readonly selectedPermissionCodes = this.selectedPermissionCodesState.asReadonly();
+  readonly selectedPermissions = this.draft.grantedPermissions;
+  readonly selectedPermissionCodes = this.draft.codes;
   readonly selectedUserLoading = this.selectedUserLoadingState.asReadonly();
   readonly selectedUserError = this.selectedUserErrorState.asReadonly();
   readonly auditEvents = computed(() => this.auditState()?.items ?? []);
@@ -125,14 +109,8 @@ export class AccessAdminFacade {
   readonly relinkPreview = this.relinkPreviewState.asReadonly();
   readonly mutationMessage = this.mutationMessageState.asReadonly();
   readonly busyAction = this.busyActionState.asReadonly();
-  readonly permissionDiff = computed<AccessPermissionDiff>(() => {
-    const current = knownCodes(this.selectedPermissionsState()?.permissionCodes ?? []);
-    const next = new Set(permissionCodesForSubmission(this.catalogueState(), this.selectedPermissionCodesState()));
-    return {
-      granted: [...next].filter((code) => !current.has(code)),
-      revoked: [...current].filter((code) => !next.has(code)),
-    };
-  });
+  readonly permissionDiff = this.draft.diff;
+  readonly isDirty = this.draft.isDirty;
 
   async load(): Promise<void> {
     if (!this.canAccess()) {
@@ -187,22 +165,18 @@ export class AccessAdminFacade {
       return;
     }
 
-    this.catalogueLoadingState.set(true);
-    this.catalogueErrorState.set(null);
+    this.draft.beginCatalogueLoad();
     try {
       const response = await firstValueFrom(this.api.getPermissionCatalogue());
       if (response.isSuccess && response.data) {
-        this.catalogueState.set(response.data.items);
-        this.assignmentReadyState.set(response.data.assignmentReady);
+        this.draft.publishCatalogue(response.data.items, response.data.assignmentReady);
         return;
       }
-      this.assignmentReadyState.set(false);
-      this.catalogueErrorState.set(response.message ?? AccessAdminFacade.loadErrorMessage);
+      this.draft.failCatalogue(response.message ?? AccessAdminFacade.loadErrorMessage);
     } catch (error) {
-      this.assignmentReadyState.set(false);
-      this.catalogueErrorState.set(messageFrom(error, AccessAdminFacade.loadErrorMessage));
+      this.draft.failCatalogue(messageFrom(error, AccessAdminFacade.loadErrorMessage));
     } finally {
-      this.catalogueLoadingState.set(false);
+      this.draft.endCatalogueLoad();
     }
   }
 
@@ -234,8 +208,7 @@ export class AccessAdminFacade {
       }
 
       this.selectedUserState.set(detailResponse.data);
-      this.selectedPermissionsState.set(permissionsResponse.data);
-      this.selectedPermissionCodesState.set(knownCodes(permissionsResponse.data.permissionCodes));
+      this.draft.adopt(permissionsResponse.data);
     } catch (error) {
       if (requestVersion === this.selectedUserRequestVersion) {
         this.selectedUserErrorState.set(messageFrom(error, AccessAdminFacade.loadErrorMessage));
@@ -251,7 +224,11 @@ export class AccessAdminFacade {
     if (!this.canSelectPermissions()) {
       return;
     }
-    this.selectedPermissionCodesState.set(knownCodes([...codes]));
+    this.draft.setCodes(codes);
+  }
+
+  discardDraft(): void {
+    this.draft.discard();
   }
 
   async acceptSelectedUser(reason: string): Promise<AccessAdminMutationOutcome> {
@@ -296,7 +273,7 @@ export class AccessAdminFacade {
 
   async replaceSelectedPermissions(reason: string): Promise<AccessAdminMutationOutcome> {
     const user = this.selectedUserState();
-    const permissions = this.selectedPermissionsState();
+    const permissions = this.draft.grantedPermissions();
     const normalizedReason = reason.trim();
     if (!user || !permissions || !normalizedReason || !this.canReplaceSelectedPermissions()) {
       return 'invalid';
@@ -530,9 +507,7 @@ export class AccessAdminFacade {
   }
 
   private permissionCodesForAssignment(): PermissionCode[] {
-    return this.canAssignPermissions()
-      ? permissionCodesForSubmission(this.catalogueState(), this.selectedPermissionCodesState())
-      : [];
+    return this.canAssignPermissions() ? this.draft.codesForSubmission() : [];
   }
 
   private canSelectPermissions(): boolean {
@@ -570,16 +545,11 @@ export class AccessAdminFacade {
   private clearProtectedState(): void {
     this.usersState.set(null);
     this.selectedUserState.set(null);
-    this.selectedPermissionsState.set(null);
-    this.selectedPermissionCodesState.set(new Set());
+    this.draft.clear();
     this.auditState.set(null);
     this.reconciliationState.set(null);
     this.invalidateRelinkPreviewRequest();
   }
-}
-
-function knownCodes(codes: readonly string[]): Set<PermissionCode> {
-  return new Set(codes.filter(isPermissionCode));
 }
 
 function messageFrom(error: unknown, fallback: string): string {

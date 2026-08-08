@@ -1,38 +1,80 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
 
 import { isPermissionCode } from '../../../../core/auth/permission-code';
+import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { AccessUserListComponent } from '../../components/access-user-list/access-user-list.component';
 import {
   AccessUserWorkflowConfirmation,
   AccessUserWorkflowsComponent,
 } from '../../components/access-user-workflows/access-user-workflows.component';
+import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
 import { AccessUserListFilters } from '../../models/access-admin.models';
 import { AccessAdminFacade, AccessAdminMutationOutcome } from '../../state/access-admin.facade';
 
 @Component({
   selector: 'qd-access-admin-page',
   standalone: true,
-  imports: [AccessUserListComponent, AccessUserWorkflowsComponent, QdStateComponent],
+  imports: [
+    AccessUserListComponent,
+    AccessUserWorkflowsComponent,
+    ConfirmDialogComponent,
+    QdStateComponent,
+  ],
   templateUrl: './access-admin-page.component.html',
   styleUrl: './access-admin-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [AccessAdminFacade],
 })
-export class AccessAdminPageComponent implements OnInit {
+export class AccessAdminPageComponent {
   protected readonly facade = inject(AccessAdminFacade);
   protected readonly workflowResetToken = signal(0);
+  protected readonly userSwitchAwaitingDiscard = signal<number | null>(null);
   protected readonly auditTargetUserId = signal('');
   protected readonly auditActorUserId = signal('');
   protected readonly auditActionType = signal('');
   protected readonly auditPermissionCode = signal('');
 
-  ngOnInit(): void {
-    void this.facade.load();
+  constructor() {
+    effect(() => {
+      if (this.facade.canAccess()) {
+        untracked(() => void this.facade.load());
+      }
+    });
+  }
+
+  protected get labels(): typeof ACCESS_ADMIN_LABELS {
+    return ACCESS_ADMIN_LABELS;
+  }
+
+  hasUnsavedChanges(): boolean {
+    return this.facade.isDirty();
   }
 
   protected selectUser(userId: number): void {
+    if (this.facade.isDirty()) {
+      this.userSwitchAwaitingDiscard.set(userId);
+      return;
+    }
     void this.facade.selectUser(userId);
+  }
+
+  protected discardDraftAndSwitchUser(): void {
+    const userId = this.userSwitchAwaitingDiscard();
+    this.userSwitchAwaitingDiscard.set(null);
+    if (userId === null) {
+      return;
+    }
+    this.facade.discardDraft();
+    void this.facade.selectUser(userId);
+  }
+
+  protected keepEditingDraft(): void {
+    this.userSwitchAwaitingDiscard.set(null);
+  }
+
+  protected discardDraft(): void {
+    this.facade.discardDraft();
   }
 
   protected updateUsers(filters: AccessUserListFilters): void {

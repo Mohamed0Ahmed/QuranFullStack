@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { accessAdminUnsavedChangesGuard } from './access-admin-unsaved-changes.guard';
 import { ACCESS_ADMIN_ROUTES } from './access-admin.routes';
 
 describe('access-admin routes', () => {
@@ -7,5 +8,9 @@ describe('access-admin routes', () => {
     expect(ACCESS_ADMIN_ROUTES).toHaveLength(1);
     expect(ACCESS_ADMIN_ROUTES[0]?.path).toBe('');
     expect(ACCESS_ADMIN_ROUTES[0]?.loadComponent).toBeTypeOf('function');
+  });
+
+  it('protects navigation away from an unsaved permission draft', () => {
+    expect(ACCESS_ADMIN_ROUTES[0]?.canDeactivate).toEqual([accessAdminUnsavedChangesGuard]);
   });
 });

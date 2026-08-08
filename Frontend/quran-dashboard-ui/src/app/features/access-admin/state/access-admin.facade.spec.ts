@@ -457,6 +457,8 @@ describe('AccessAdminFacade', () => {
     );
 
     expect(facade.canAssignPermissions()).toBe(false);
+    expect(facade.permissionDiff()).toEqual({ granted: [], revoked: [] });
+    expect(facade.isDirty()).toBe(false);
     facade.setSelectedPermissionCodes(new Set(['abwab.doors.edit']));
     expect([...facade.selectedPermissionCodes()]).toEqual(['abwab.doors.create']);
     await expect(facade.replaceSelectedPermissions('تحديث الصلاحيات')).resolves.toBe('invalid');
@@ -485,6 +487,7 @@ describe('AccessAdminFacade', () => {
     expect(facade.assignmentReady()).toBe(false);
     expect(facade.catalogueError()).not.toBeNull();
     expect(facade.canAssignPermissions()).toBe(false);
+    expect(facade.isDirty()).toBe(false);
     expect([...facade.selectedPermissionCodes()]).toEqual(['abwab.doors.create']);
     await expect(facade.replaceSelectedPermissions('تحديث الصلاحيات')).resolves.toBe('invalid');
 
@@ -570,6 +573,88 @@ describe('AccessAdminFacade', () => {
       'abwab.sections.create',
     ]);
     expect(facade.permissionDiff()).toEqual({ granted: [], revoked: [] });
+  });
+
+  it('stops reading a draft as unsaved while a failed refresh withholds assignment, and resumes on recovery', async () => {
+    await loadCurrentUser(OWNER);
+    await loadCatalogue();
+    await selectTarget(
+      user(1, ['abwab.doors.create']),
+      permissions(1, ['abwab.doors.create']),
+    );
+    facade.setSelectedPermissionCodes(new Set(['abwab.doors.edit']));
+    expect(facade.isDirty()).toBe(true);
+
+    const failedRetry = facade.loadPermissionCatalogue();
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/permissions`)
+      .flush(
+        { isSuccess: false, message: 'تعذر تحميل كتالوج الصلاحيات.', data: null },
+        { status: 500, statusText: 'Server Error' },
+      );
+    await failedRetry;
+
+    expect(facade.isDirty()).toBe(false);
+    expect([...facade.selectedPermissionCodes()]).toEqual(['abwab.doors.edit']);
+
+    const recovery = facade.loadPermissionCatalogue();
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/permissions`)
+      .flush(success({ items: CATALOGUE, assignmentReady: true }));
+    await recovery;
+
+    expect(facade.isDirty()).toBe(true);
+  });
+
+  it('keeps a granted code that the catalogue no longer offers out of the pending revocations', async () => {
+    await loadCurrentUser(OWNER);
+    await loadCatalogue();
+    await selectTarget(
+      user(1, ['abwab.doors.create', 'abwab.sections.create']),
+      permissions(1, ['abwab.doors.create', 'abwab.sections.create']),
+    );
+
+    expect(facade.permissionDiff()).toEqual({ granted: [], revoked: [] });
+    expect(facade.isDirty()).toBe(false);
+  });
+
+  it('derives dirty state from the request body it would send, not from the raw selection', async () => {
+    await loadCurrentUser(OWNER);
+    await loadCatalogue();
+    await selectTarget(
+      user(1, ['abwab.doors.create']),
+      permissions(1, ['abwab.doors.create']),
+    );
+
+    expect(facade.isDirty()).toBe(false);
+
+    facade.setSelectedPermissionCodes(new Set(['abwab.doors.create', 'abwab.sections.create']));
+
+    expect(facade.isDirty()).toBe(false);
+
+    facade.setSelectedPermissionCodes(new Set(['abwab.doors.edit']));
+
+    expect(facade.isDirty()).toBe(true);
+    expect(facade.permissionDiff()).toEqual({
+      granted: ['abwab.doors.edit'],
+      revoked: ['abwab.doors.create'],
+    });
+  });
+
+  it('restores the stored grants when a draft is discarded', async () => {
+    await loadCurrentUser(OWNER);
+    await loadCatalogue();
+    await selectTarget(
+      user(1, ['abwab.doors.create']),
+      permissions(1, ['abwab.doors.create']),
+    );
+    facade.setSelectedPermissionCodes(new Set(['abwab.doors.edit']));
+
+    facade.discardDraft();
+
+    expect([...facade.selectedPermissionCodes()]).toEqual(['abwab.doors.create']);
+    expect(facade.isDirty()).toBe(false);
+    httpTesting.expectNone((request) => request.url.startsWith(ACCESS_BASE_URL));
   });
 
   it('does not submit a permission replacement without a confirmation reason', async () => {

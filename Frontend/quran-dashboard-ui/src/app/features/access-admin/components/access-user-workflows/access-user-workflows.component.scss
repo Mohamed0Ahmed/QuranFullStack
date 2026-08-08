@@ -125,3 +125,30 @@
   flex-wrap: wrap;
   gap: var(--qd-space-2);
 }
+
+.access-user-workflows__section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+}
+
+.access-user-workflows__diff-summary {
+  color: var(--qd-accent-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.access-user-workflows__draft-bar {
+  position: sticky;
+  inset-block-end: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+  padding: var(--qd-space-3);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-section-bg);
+}

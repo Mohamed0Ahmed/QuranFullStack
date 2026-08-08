@@ -208,22 +208,18 @@ describe('AccessAdminPageComponent', () => {
     );
   }
 
-  async function renderPage(
-    listedUser: AccessUserDetail,
-    catalogue: CatalogueOutcome = { kind: 'served', assignmentReady: true },
-  ): Promise<ComponentFixture<AccessAdminPageComponent>> {
-    await loadOwner();
-    const fixture = TestBed.createComponent(AccessAdminPageComponent);
-    fixture.detectChanges();
-
+  function flushWorkspace(
+    listedUsers: readonly AccessUserDetail[],
+    catalogue: CatalogueOutcome,
+  ): void {
     httpTesting
       .expectOne((request) => request.url === `${ACCESS_BASE_URL}/users`)
       .flush(
         success({
-          items: [summary(listedUser)],
+          items: listedUsers.map(summary),
           page: 1,
           pageSize: 25,
-          totalCount: 1,
+          totalCount: listedUsers.length,
         }),
       );
     flushCatalogue(catalogue);
@@ -241,9 +237,32 @@ describe('AccessAdminPageComponent', () => {
           lastReconciliation: null,
         }),
       );
+  }
+
+  async function renderPage(
+    listedUser: AccessUserDetail,
+    catalogue: CatalogueOutcome = { kind: 'served', assignmentReady: true },
+    alsoListed: readonly AccessUserDetail[] = [],
+  ): Promise<ComponentFixture<AccessAdminPageComponent>> {
+    await loadOwner();
+    const fixture = TestBed.createComponent(AccessAdminPageComponent);
+    fixture.detectChanges();
+
+    flushWorkspace([listedUser, ...alsoListed], catalogue);
     await fixture.whenStable();
     fixture.detectChanges();
     return fixture;
+  }
+
+  function togglePermission(
+    fixture: ComponentFixture<AccessAdminPageComponent>,
+    code: string,
+    checked: boolean,
+  ): void {
+    const box = element(fixture, `access-permission-${code}`) as HTMLInputElement;
+    box.checked = checked;
+    box.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
   }
 
   async function selectUser(
@@ -382,12 +401,7 @@ describe('AccessAdminPageComponent', () => {
     const initialUser = user('active', 4, ['abwab.doors.create']);
     const fixture = await renderPage(initialUser);
     await selectUser(fixture, initialUser);
-    const editPermission = element(
-      fixture,
-      'access-permission-abwab.doors.edit',
-    ) as HTMLInputElement;
-    editPermission.checked = true;
-    editPermission.dispatchEvent(new Event('change'));
+    togglePermission(fixture, 'abwab.doors.edit', true);
 
     confirmAction(fixture, 'access-request-permissions');
 
@@ -591,11 +605,46 @@ describe('AccessAdminPageComponent', () => {
     fixture.detectChanges();
 
     expect(element(fixture, 'access-permissions-section').textContent).not.toContain(CATALOGUE_ERROR);
-    expect(element(fixture, 'access-request-permissions')).toBeTruthy();
     expect(
       (element(fixture, 'access-permission-abwab.doors.create') as HTMLInputElement).disabled,
     ).toBe(false);
+
+    togglePermission(fixture, 'abwab.doors.edit', true);
+
+    expect(element(fixture, 'access-request-permissions')).toBeTruthy();
   });
+
+  it.each([
+    { name: 'a failed catalogue request', catalogue: { kind: 'failure' } as const },
+    {
+      name: 'an empty catalogue served as ready',
+      catalogue: { kind: 'served', assignmentReady: true, items: [] } as const,
+    },
+  ])(
+    'holds no unsaved permission draft over $name and keeps relink reachable',
+    async ({ catalogue }) => {
+      const activeUser = user('active', 4, ['abwab.doors.create']);
+      const fixture = await renderPage(activeUser, catalogue);
+      await selectUser(fixture, activeUser);
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+      expect(root.querySelector('[data-testid="access-permission-diff-summary"]')).toBeNull();
+      expect(root.querySelector('[data-testid="access-permission-draft-bar"]')).toBeNull();
+      expect(root.querySelector('[data-testid="access-relink-blocked"]')).toBeNull();
+
+      const newSub = element(fixture, 'access-relink-new-sub') as HTMLInputElement;
+      newSub.value = 'replacement-subject';
+      newSub.dispatchEvent(new Event('input'));
+      const evidence = element(fixture, 'access-relink-evidence') as HTMLInputElement;
+      evidence.value = 'verified-evidence';
+      evidence.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      expect((element(fixture, 'access-relink-preview') as HTMLButtonElement).disabled).toBe(false);
+      expect(httpTesting.match((request) => request.method === 'PUT')).toEqual([]);
+    },
+  );
 
   it.each([
     { name: 'an unready catalogue', catalogue: { kind: 'served', assignmentReady: false } as const },
@@ -677,6 +726,7 @@ describe('AccessAdminPageComponent', () => {
     const initialUser = user('active', 4, ['abwab.doors.create']);
     const fixture = await renderPage(initialUser);
     await selectUser(fixture, initialUser);
+    togglePermission(fixture, 'abwab.doors.edit', true);
 
     confirmAction(fixture, 'access-request-permissions');
     httpTesting
@@ -700,7 +750,8 @@ describe('AccessAdminPageComponent', () => {
     expect(notice.querySelector('[data-testid="qd-state-error"]')).toBeNull();
   });
 
-  it('waits for the current-user state instead of flashing the permission-denied error', async () => {
+  it('loads the workspace when Owner access resolves after the page is mounted', async () => {
+    const listedUser = user('active');
     const load = currentUserStore.refresh();
     const identity = httpTesting.expectOne(`${ACCESS_BASE_URL}/me`);
     const fixture = TestBed.createComponent(AccessAdminPageComponent);
@@ -709,12 +760,18 @@ describe('AccessAdminPageComponent', () => {
 
     expect(root.querySelector('[data-testid="qd-state-loading"]')).toBeTruthy();
     expect(root.textContent).not.toContain('لا تملك صلاحية إدارة الوصول');
+    httpTesting.expectNone((request) => request.url === `${ACCESS_BASE_URL}/users`);
 
     identity.flush(success(OWNER));
     await load;
     fixture.detectChanges();
 
+    flushWorkspace([listedUser], { kind: 'served', assignmentReady: true });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
     expect(root.textContent).not.toContain('لا تملك صلاحية إدارة الوصول');
+    expect(element(fixture, `access-user-${listedUser.id}`)).toBeTruthy();
   });
 
   it('renders the permission-denied error once the current-user state is known', async () => {
@@ -728,6 +785,138 @@ describe('AccessAdminPageComponent', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
       'لا تملك صلاحية إدارة الوصول',
     );
+  });
+
+  it('summarises a pending permission change and reverts it without issuing a request', async () => {
+    const activeUser = user('active', 4, ['abwab.doors.create']);
+    const fixture = await renderPage(activeUser);
+    await selectUser(fixture, activeUser);
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="access-permission-draft-bar"]')).toBeNull();
+    expect(root.querySelector('[data-testid="access-request-permissions"]')).toBeNull();
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+
+    togglePermission(fixture, 'abwab.doors.edit', true);
+    togglePermission(fixture, 'abwab.doors.create', false);
+
+    expect(element(fixture, 'access-permission-diff-summary-text').textContent).toBe(
+      'صلاحيات مضافة: 1، صلاحيات ملغاة: 1',
+    );
+    expect(element(fixture, 'access-request-permissions')).toBeTruthy();
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+
+    element(fixture, 'access-discard-draft').click();
+    fixture.detectChanges();
+
+    expect(
+      (element(fixture, 'access-permission-abwab.doors.create') as HTMLInputElement).checked,
+    ).toBe(true);
+    expect(
+      (element(fixture, 'access-permission-abwab.doors.edit') as HTMLInputElement).checked,
+    ).toBe(false);
+    expect(root.querySelector('[data-testid="access-permission-draft-bar"]')).toBeNull();
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+    expect(httpTesting.match(() => true)).toEqual([]);
+  });
+
+  it('refuses to confirm a permission save that would carry no change', async () => {
+    const activeUser = user('active', 4, ['abwab.doors.create']);
+    const fixture = await renderPage(activeUser);
+    await selectUser(fixture, activeUser);
+
+    togglePermission(fixture, 'abwab.doors.edit', true);
+    element(fixture, 'access-request-permissions').click();
+    fixture.detectChanges();
+    const reason = element(fixture, 'access-action-reason') as HTMLTextAreaElement;
+    reason.value = REASON;
+    reason.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect((element(fixture, 'access-confirm-action') as HTMLButtonElement).disabled).toBe(false);
+
+    element(fixture, 'access-discard-draft').click();
+    fixture.detectChanges();
+
+    const confirm = element(fixture, 'access-confirm-action') as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+    confirm.click();
+
+    httpTesting.expectNone(`${ACCESS_BASE_URL}/users/17/permissions`);
+  });
+
+  it('confirms before a user switch discards an unsaved draft, and keeps the draft when declined', async () => {
+    const activeUser = user('active', 4, ['abwab.doors.create']);
+    const otherUser = user('active', 2, [], {
+      id: 18,
+      sub: 'subject-18',
+      email: 'other@example.test',
+      normalizedEmail: 'other@example.test',
+      displayName: 'زميل',
+    });
+    const fixture = await renderPage(activeUser, { kind: 'served', assignmentReady: true }, [
+      otherUser,
+    ]);
+    await selectUser(fixture, activeUser);
+    togglePermission(fixture, 'abwab.doors.edit', true);
+
+    element(fixture, `access-user-${otherUser.id}`).click();
+    fixture.detectChanges();
+
+    expect(element(fixture, 'access-switch-user-confirm')).toBeTruthy();
+    httpTesting.expectNone(`${ACCESS_BASE_URL}/users/${otherUser.id}`);
+
+    element(fixture, 'access-switch-user-confirm-cancel').click();
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="access-switch-user-confirm"]',
+      ),
+    ).toBeNull();
+    expect(
+      (element(fixture, 'access-permission-abwab.doors.edit') as HTMLInputElement).checked,
+    ).toBe(true);
+
+    element(fixture, `access-user-${otherUser.id}`).click();
+    fixture.detectChanges();
+    element(fixture, 'access-switch-user-confirm-confirm').click();
+    fixture.detectChanges();
+
+    httpTesting.expectOne(`${ACCESS_BASE_URL}/users/${otherUser.id}`).flush(success(otherUser));
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/users/${otherUser.id}/permissions`)
+      .flush(success(permissions(otherUser)));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(
+      (element(fixture, 'access-permission-abwab.doors.edit') as HTMLInputElement).checked,
+    ).toBe(false);
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+  });
+
+  it('switches users without a prompt while the draft matches the stored grants', async () => {
+    const activeUser = user('active', 4, ['abwab.doors.create']);
+    const otherUser = user('active', 2, [], {
+      id: 18,
+      sub: 'subject-18',
+      email: 'other@example.test',
+      normalizedEmail: 'other@example.test',
+      displayName: 'زميل',
+    });
+    const fixture = await renderPage(activeUser, { kind: 'served', assignmentReady: true }, [
+      otherUser,
+    ]);
+    await selectUser(fixture, activeUser);
+
+    await selectUser(fixture, otherUser);
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="access-switch-user-confirm"]',
+      ),
+    ).toBeNull();
   });
 
   it('uses a labelled section instead of a nested main landmark', async () => {
