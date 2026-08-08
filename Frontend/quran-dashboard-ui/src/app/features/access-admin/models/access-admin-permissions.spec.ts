@@ -47,7 +47,7 @@ describe('access-admin permission selection', () => {
 
     const selected = setGroupSelection(new Set(), doors!, true);
 
-    expect(permissionCodesForSubmission(CATALOGUE, selected)).toEqual([
+    expect(permissionCodesForSubmission(selected)).toEqual([
       'abwab.doors.create',
       'abwab.doors.edit',
     ]);
@@ -61,13 +61,24 @@ describe('access-admin permission selection', () => {
     const allDoors = setGroupSelection(new Set(), doors!, true);
     const withoutEdit = setIndividualSelection(allDoors, 'abwab.doors.edit', false);
 
-    expect(permissionCodesForSubmission(CATALOGUE, withoutEdit)).toEqual(['abwab.doors.create']);
+    expect(permissionCodesForSubmission(withoutEdit)).toEqual(['abwab.doors.create']);
     expect(withoutEdit.has('abwab.doors.edit')).toBe(false);
   });
 
-  it('drops unknown and group-like values from a request payload', () => {
+  it('drops group-like sentinels and values that are not permission codes from a request payload', () => {
     const selected = new Set(['abwab.doors.create', 'doors.manage-all', 'not-a-permission']);
 
-    expect(permissionCodesForSubmission(CATALOGUE, selected)).toEqual(['abwab.doors.create']);
+    expect(permissionCodesForSubmission(selected)).toEqual(['abwab.doors.create']);
+  });
+
+  it('keeps a real permission code the served catalogue does not offer, in canonical order', () => {
+    const cataloguedCodes = CATALOGUE.map((item) => item.code);
+    const selected = new Set(['abwab.doors.create', 'abwab.template_nodes.delete']);
+
+    expect(cataloguedCodes).not.toContain('abwab.template_nodes.delete');
+    expect(permissionCodesForSubmission(selected)).toEqual([
+      'abwab.doors.create',
+      'abwab.template_nodes.delete',
+    ]);
   });
 });

@@ -1,7 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using QuranDashboard.Application.Abstractions.Access;
-using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Tests.TestSupport.Http;
@@ -70,6 +69,138 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
         using var afterState = JsonDocument.Parse(audit[0].AfterStateJson!);
         beforeState.RootElement.GetProperty("permissionCodes").GetArrayLength().Should().Be(0);
         afterState.RootElement.GetProperty("permissionCodes").GetArrayLength().Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Accept_WithABlankReason_SucceedsAndStoresNullAuditReasons()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        await SeedActiveOwnerAsync();
+        const string targetSub = "access-admin-accept-blank-reason-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Pending);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        using var client = CreateOwnerClient();
+
+        using var response = await client.PostAsJsonAsync(
+            $"/api/access/users/{targetId}/accept",
+            new
+            {
+                expectedVersion = target.Version,
+                permissionCodes = new[] { AbwabPermissions.Doors.Create },
+                reason = "",
+            });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await fixture.GetUserBySubAsync(targetSub))!.Status.Should().Be(UserStatus.Active);
+        var audit = await GetAuditEventsAsync(targetId);
+        audit.Select(eventItem => eventItem.ActionType).Should().Equal(
+            AccessAuditActionType.UserAccepted,
+            AccessAuditActionType.UserActivated,
+            AccessAuditActionType.PermissionGranted);
+        audit.Should().OnlyContain(eventItem => eventItem.Reason == null);
+    }
+
+    [Fact]
+    public async Task Disable_WithAWhitespaceReason_SucceedsAndStoresNullAuditReasons()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        var ownerId = await SeedActiveOwnerAsync();
+        const string targetSub = "access-admin-disable-blank-reason-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
+        await AddGrantsAsync(targetId, ownerId, [AbwabPermissions.Doors.Create]);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        using var client = CreateOwnerClient();
+
+        using var response = await client.PostAsJsonAsync(
+            $"/api/access/users/{targetId}/disable",
+            new { expectedVersion = target.Version, reason = "   " });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await fixture.GetUserBySubAsync(targetSub))!.Status.Should().Be(UserStatus.Disabled);
+        var audit = await GetAuditEventsAsync(targetId);
+        audit.Select(eventItem => eventItem.ActionType).Should().Equal(
+            AccessAuditActionType.PermissionRevoked,
+            AccessAuditActionType.UserDisabled);
+        audit.Should().OnlyContain(eventItem => eventItem.Reason == null);
+    }
+
+    [Fact]
+    public async Task Disable_WithAnOverlongReason_IsRejectedWithoutStatusGrantOrAuditChanges()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        var ownerId = await SeedActiveOwnerAsync();
+        const string targetSub = "access-admin-disable-overlong-reason-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
+        await AddGrantsAsync(targetId, ownerId, [AbwabPermissions.Doors.Create]);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        using var client = CreateOwnerClient();
+
+        using var response = await client.PostAsJsonAsync(
+            $"/api/access/users/{targetId}/disable",
+            new { expectedVersion = target.Version, reason = new string('س', 1025) });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            response,
+            HttpStatusCode.BadRequest,
+            ApiMessages.AccessAdministrationInvalidRequest);
+        var persisted = (await fixture.GetUserBySubAsync(targetSub))!;
+        persisted.Status.Should().Be(UserStatus.Active);
+        persisted.Version.Should().Be(target.Version);
+        (await GetGrantCodesAsync(targetId)).Should().Equal(AbwabPermissions.Doors.Create);
+        (await GetAuditEventsAsync(targetId)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Reactivate_WithAnOmittedReason_SucceedsAndStoresANullAuditReason()
+    {
+        await fixture.ResetAsync();
+        await SeedActiveOwnerAsync();
+        const string targetSub = "access-admin-reactivate-omitted-reason-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Disabled);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        using var client = CreateOwnerClient();
+
+        using var response = await client.PostAsJsonAsync(
+            $"/api/access/users/{targetId}/reactivate",
+            new { expectedVersion = target.Version });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await fixture.GetUserBySubAsync(targetSub))!.Status.Should().Be(UserStatus.Active);
+        var audit = await GetAuditEventsAsync(targetId);
+        audit.Select(eventItem => eventItem.ActionType).Should().Equal(AccessAuditActionType.UserReactivated);
+        audit.Should().OnlyContain(eventItem => eventItem.Reason == null);
+    }
+
+    [Fact]
+    public async Task ReplacePermissions_WithAnOmittedReason_SucceedsAndStoresNullAuditReasons()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        var ownerId = await SeedActiveOwnerAsync();
+        const string targetSub = "access-admin-replace-omitted-reason-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
+        await AddGrantsAsync(targetId, ownerId, [AbwabPermissions.Doors.Create]);
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        using var client = CreateOwnerClient();
+
+        using var response = await client.PutAsJsonAsync(
+            $"/api/access/users/{targetId}/permissions",
+            new
+            {
+                expectedVersion = target.Version,
+                permissionCodes = new[] { AbwabPermissions.Doors.Archive },
+            });
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await GetGrantCodesAsync(targetId)).Should().Equal(AbwabPermissions.Doors.Archive);
+        var audit = await GetAuditEventsAsync(targetId);
+        audit.Select(eventItem => eventItem.ActionType).Should().Equal(
+            AccessAuditActionType.PermissionRevoked,
+            AccessAuditActionType.PermissionGranted);
+        audit.Should().OnlyContain(eventItem => eventItem.Reason == null);
     }
 
     [Fact]
@@ -479,6 +610,39 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     }
 
     [Fact]
+    public async Task UserSearch_MatchesPartOfANameOrEmailAndRejectsOnlyAnOversizedTerm()
+    {
+        await fixture.ResetAsync();
+        await SeedActiveOwnerAsync();
+        var researcherId = await SeedUserAsync(
+            "access-search-researcher",
+            UserStatus.Pending,
+            displayName: "باحثة التفسير");
+        var reviewerId = await SeedUserAsync(
+            "access-search-reviewer",
+            UserStatus.Pending,
+            displayName: "   ",
+            userName: "logto-handle-zuhal");
+        using var client = CreateOwnerClient();
+
+        (await SearchUserIdsAsync(client, "التفسير")).Should().Equal(researcherId);
+        (await SearchUserIdsAsync(client, "search-reviewer@example")).Should().Equal(reviewerId);
+        (await SearchUserIdsAsync(client, "ACCESS-SEARCH")).Should().BeEquivalentTo([researcherId, reviewerId]);
+        (await SearchUserIdsAsync(client, "   ")).Should().BeEquivalentTo([researcherId, reviewerId]);
+        (await SearchUserIdsAsync(client, "%")).Should().BeEmpty();
+        (await SearchUserIdsAsync(client, "_")).Should().BeEmpty();
+        (await SearchUserIdsAsync(client, "zuhal")).Should().BeEmpty();
+        (await SearchUserIdsAsync(client, new string('x', 128))).Should().BeEmpty();
+
+        using var oversizedResponse = await client.GetAsync(
+            $"/api/access/users?isOwner=false&search={new string('x', 129)}&page=1&pageSize=25");
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            oversizedResponse,
+            HttpStatusCode.BadRequest,
+            ApiMessages.AccessAdministrationInvalidRequest);
+    }
+
+    [Fact]
     public async Task OwnerReads_ExposeBoundedProjectionsAndRejectOrdinaryOwnerMutation()
     {
         await fixture.ResetAsync();
@@ -521,10 +685,15 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
 
         using var catalogueResponse = await client.GetAsync("/api/access/permissions");
         catalogueResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(catalogueResponse);
         var catalogue = await ApiEnvelope.ReadDataAsync(catalogueResponse);
-        catalogue.GetArrayLength().Should().Be(AbwabPermissionCatalogue.All.Count);
-        catalogue[0].GetProperty("code").GetString().Should().Be(AbwabPermissionCatalogue.All[0].Code);
-        catalogue[0].GetProperty("groupKey").GetString().Should().NotBeNullOrWhiteSpace();
+        var catalogueItems = catalogue.GetProperty("items");
+        catalogueItems.GetArrayLength().Should().Be(AbwabPermissionCatalogue.All.Count);
+        catalogueItems[0].GetProperty("code").GetString().Should().Be(AbwabPermissionCatalogue.All[0].Code);
+        catalogueItems[0].GetProperty("groupKey").GetString().Should().NotBeNullOrWhiteSpace();
+        catalogueItems[0].GetProperty("groupLabel").GetString()
+            .Should().Be(AbwabPermissionCatalogue.All[0].GroupArabicLabel);
+        catalogue.GetProperty("assignmentReady").GetBoolean().Should().BeTrue();
 
         using var statusResponse = await client.GetAsync("/api/access/owner-reconciliation/status");
         statusResponse.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -540,13 +709,52 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     }
 
     [Fact]
+    public async Task PermissionCatalogue_WithARetiredCanonicalCode_OmitsItAndStaysAssignable()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        await SeedActiveOwnerAsync();
+        await RetirePermissionAsync(AbwabPermissionCatalogue.All[0].Code);
+        using var client = CreateOwnerClient();
+
+        using var response = await client.GetAsync("/api/access/permissions");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var catalogue = await ApiEnvelope.ReadDataAsync(response);
+        catalogue.GetProperty("items").EnumerateArray()
+            .Select(item => item.GetProperty("code").GetString())
+            .Should().Equal(AbwabPermissionCatalogue.All.Skip(1).Select(permission => permission.Code));
+        // Retirement is a product state, not a fault: the remaining codes are still persisted and
+        // non-retired, so assignment stays available.
+        catalogue.GetProperty("assignmentReady").GetBoolean().Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task PermissionCatalogue_OnAnEmptyPermissionsTable_StillAnswersWithTheCanonicalCatalogue()
+    {
+        await fixture.ResetAsync();
+        await SeedActiveOwnerAsync();
+        using var client = CreateOwnerClient();
+
+        using var response = await client.GetAsync("/api/access/permissions");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
+        var catalogue = await ApiEnvelope.ReadDataAsync(response);
+        catalogue.GetProperty("items").EnumerateArray()
+            .Select(item => item.GetProperty("code").GetString())
+            .Should().Equal(AbwabPermissionCatalogue.All.Select(permission => permission.Code));
+        catalogue.GetProperty("assignmentReady").GetBoolean().Should().BeFalse();
+    }
+
+    [Fact]
     public async Task AuditEvents_UseKeysetOrderingAndAllDocumentedFilters()
     {
         await fixture.ResetAsync();
         await SynchronizePermissionsAsync();
         var ownerId = await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-audit-query-target";
-        var targetId = await SeedUserAsync(targetSub, UserStatus.Pending);
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Pending, displayName: "الاسم وقت الحدث");
         var target = (await fixture.GetUserBySubAsync(targetSub))!;
         using var client = CreateOwnerClient();
         var fromUtc = Uri.EscapeDataString(DateTimeOffset.UtcNow.AddMinutes(-1).ToString("O"));
@@ -593,6 +801,45 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             ApiMessages.AccessAdministrationInvalidRequest);
     }
 
+    [Fact]
+    public async Task AuditEvents_NameParticipantsFromTheAccountRowsRatherThanTheStoredSnapshots()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        var ownerId = await SeedActiveOwnerAsync();
+        const string targetSub = "access-admin-audit-identity-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Pending, displayName: "الاسم وقت الحدث");
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        using var client = CreateOwnerClient();
+
+        using var acceptResponse = await client.PostAsJsonAsync(
+            $"/api/access/users/{targetId}/accept",
+            new
+            {
+                expectedVersion = target.Version,
+                permissionCodes = new[] { AbwabPermissions.Doors.Create },
+                reason = "Attribute the audit rows to human identities.",
+            });
+        acceptResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        await fixture.RenameUserAsync(targetId, "الاسم الحالي");
+        await fixture.RenameUserAsync(ownerId, "اسم المالك الحالي");
+
+        using var response = await client.GetAsync($"/api/access/audit-events?targetUserId={targetId}&pageSize=25");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await ApiEnvelope.ReadDataAsync(response);
+        var eventItem = page.GetProperty("items")[0];
+        eventItem.GetProperty("targetDisplayName").GetString().Should().Be("الاسم الحالي");
+        eventItem.GetProperty("targetSnapshot").GetProperty("displayName").GetString()
+            .Should().Be("الاسم وقت الحدث");
+        eventItem.GetProperty("targetEmail").GetString().Should().Be($"{targetSub}@example.test");
+        eventItem.GetProperty("actorDisplayName").GetString().Should().Be("اسم المالك الحالي");
+        eventItem.GetProperty("actorSnapshot").TryGetProperty("displayName", out _).Should().BeFalse();
+        eventItem.GetProperty("actorEmail").GetString().Should().Be(AccessTestFixture.OwnerEmail);
+        eventItem.GetProperty("actorUserId").GetInt32().Should().Be(ownerId);
+        eventItem.GetProperty("targetUserId").GetInt32().Should().Be(targetId);
+    }
+
     private Task<int> SeedActiveOwnerAsync()
     {
         return SeedActiveOwnerAsync(AccessTestFixture.OwnerSub, AccessTestFixture.OwnerEmail);
@@ -612,6 +859,17 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
         });
     }
 
+    private static async Task<IReadOnlyList<int>> SearchUserIdsAsync(HttpClient client, string search)
+    {
+        using var response = await client.GetAsync(
+            $"/api/access/users?isOwner=false&search={Uri.EscapeDataString(search)}&page=1&pageSize=25");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var data = await ApiEnvelope.ReadDataAsync(response);
+        return data.GetProperty("items").EnumerateArray()
+            .Select(user => user.GetProperty("id").GetInt32())
+            .ToArray();
+    }
+
     private HttpClient CreateOwnerClient()
     {
         var client = fixture.CreateApiClient();
@@ -621,13 +879,18 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
         return client;
     }
 
-    private async Task<int> SeedUserAsync(string sub, UserStatus status, string? displayName = null)
+    private async Task<int> SeedUserAsync(
+        string sub,
+        UserStatus status,
+        string? displayName = null,
+        string? userName = null)
     {
         return await fixture.InsertUserAsync(new User
         {
             LogtoSub = sub,
             Email = $"{sub}@example.test",
             DisplayName = displayName,
+            UserName = userName,
             Status = status,
             CreatedAtUtc = DateTimeOffset.UtcNow,
             UpdatedAtUtc = DateTimeOffset.UtcNow,

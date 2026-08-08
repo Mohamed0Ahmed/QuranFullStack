@@ -25,6 +25,44 @@ already active Owner. Disabled configured users remain Disabled. The store write
 system-actor audit events with immutable before/after snapshots and provenance, then the
 Application use case returns only after the transaction commits.
 
+`PermissionCatalogueSynchronizer` opens one transaction and takes a **blocking**
+`pg_advisory_xact_lock` on its own dedicated key as the first statement, so a second booting instance
+waits and then finds the rows rather than racing the unique index on `permissions.code`. It reads the
+existing rows under that lock, inserts missing canonical codes, refreshes drifted metadata, and
+derives the reported unknown and retired-canonical code sets from the post-insert state. It never
+deletes an unknown code and never reactivates a retired canonical one.
+
+**The catalogue read is served from the compiled catalogue, never from a database join.**
+`Persistence/Reads/Access/EfPermissionCatalogueReader` reads `(code, retired_at)` once, offers
+`AbwabPermissionCatalogue.All` minus the retired codes, and computes `assignmentReady` — true when
+every offered code has a non-retired row — from that same read. Projecting the database rows into the
+item list instead would return an empty catalogue on an unsynchronized database, which a UI renders
+as "no permissions exist": silently wrong, and worse than the failure it replaced. Divergence between
+the compiled catalogue and the table is a health-check and `access-admin` preflight concern, never an
+HTTP failure; an unknown row left in the table changes neither the served items nor readiness.
+The served `groupLabel` is `PermissionDefinition.GroupArabicLabel` — «الأبواب», «الأقسام»,
+«العلاقات», «القوالب», «عناصر القوالب» — not an English group name, because the dashboard renders it
+directly as the editor's group heading and an Arabic-first product must not restate the five headings
+in a second place to translate them. `AbwabPermissionCatalogue`'s static constructor rejects a
+catalogue whose definitions disagree about a group's label within one `GroupDisplayOrder`.
+`assignmentReady` exists because a safe read does not imply a safe write:
+`Persistence/Writes/Access/EfAccessUserMutationService` still validates every submitted code against
+non-retired database rows, and that validation is not weakened — its `400` on an unseeded database is
+the fail-safe working.
+
+**User discovery is a substring match, and it carries no index.**
+`Persistence/Reads/Access/EfAccessUserReader` uppercases the already-trimmed search term with
+`ToUpperInvariant` and keeps rows whose `normalized_email` or whose `upper(display_name)` contains it —
+one predicate for the email because `normalized_email` is already the uppercased address. `user_name` is
+deliberately not matched: the list projection does not expose it, so a hit there could not be explained
+to the operator. EF translates both `string.Contains` calls to `column LIKE @term` with the pattern built
+on the client, so `%`, `_` and `\` inside a term arrive escaped and are matched literally; a port to
+`EF.Functions.ILike` would have to escape them by hand, and `AccessAdministrationEndpointTests` pins that
+a bare `%` matches nothing rather than everything. No index serves this predicate and none is wanted:
+`users` gains a row only from an interactive Logto sign-in, so it holds one row per human and a
+sequential scan is the right plan — the unique btree on `normalized_email` could not serve an unanchored
+`%term%` pattern anyway.
+
 Request-scoped authorization reads live in `Persistence/Reads/Access/AuthorizationStateResolver.cs`.
 That resolver projects one local user by exact `LogtoSub`: status, the local Owner relation, and direct
 non-retired permission codes only for an active non-Owner. It never provisions users and never receives
@@ -41,6 +79,18 @@ checks the target `xmin` version before mutation. `AccessAuditAppender` adds imm
 same DbContext without saving independently. The transaction saves and commits once.
 `EfAccessAuditReader` identifies the latest Owner-reconciliation summary from metadata provenance
 `operation=owner-reconciliation`, so a newer system event from legacy-role conversion cannot mask it.
+Its `ListAsync` also `Include`s the mapped `ActorUser`/`TargetUser` navigations and projects
+`ActorDisplayName`, `ActorEmail`, `TargetDisplayName` and `TargetEmail` — one query joining the
+`users` primary key twice — so a caller can attribute an event to a person rather than to a database
+id. Both navigations are `HasOne`/`WithMany`, so each join matches at most one row and
+`Take(pageSize + 1)` still yields exactly `pageSize + 1` events: no row multiplication, and no
+per-row follow-up query. **Those names come
+from the account rows, never from the stored `actor_snapshot`/`target_snapshot` jsonb**, which hold
+three different shapes across two casings, one of them without an `email` member at all. The
+consequence is deliberate and pinned by `AccessAdministrationEndpointTests`: a renamed account reads
+under its current name throughout its history, while the snapshot keeps the identity as it stood when
+the event was written. The numeric `ActorUserId`/`TargetUserId` stay in the contract because the
+audit filters round-trip them.
 `EfLogtoSubjectRelinkService` revalidates both the
 interactive evidence and Logto Management profile email through the shared normalizer before it changes
 only `LogtoSub`; its Owner path also requires current reconciliation status.

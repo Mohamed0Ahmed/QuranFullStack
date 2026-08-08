@@ -11,7 +11,7 @@ public sealed class ReactivateAccessUserHandler(
         ReactivateAccessUserCommand command,
         CancellationToken cancellationToken)
     {
-        if (command.UserId < 1 || !AccessAdministrationValidation.TryGetReason(command.Reason, out var reason))
+        if (command.UserId < 1 || !AccessAdministrationValidation.TryGetOptionalReason(command.Reason, out var reason))
         {
             return Task.FromResult(AccessOperationResult<AccessUserDetail>.Failed(AccessOperationFailure.InvalidRequest));
         }

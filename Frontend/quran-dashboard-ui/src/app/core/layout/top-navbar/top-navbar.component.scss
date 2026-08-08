@@ -170,6 +170,13 @@
   color: var(--qd-accent-text);
 }
 
+.mobile-group-label {
+  display: block;
+  padding: var(--qd-space-3) var(--qd-space-4);
+  font-size: 1rem;
+  color: var(--qd-text-muted);
+}
+
 .mobile-menu-sublist {
   list-style: none;
   margin: 0;

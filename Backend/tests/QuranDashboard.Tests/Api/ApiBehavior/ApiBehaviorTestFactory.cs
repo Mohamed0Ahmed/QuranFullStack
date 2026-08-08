@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
 using QuranDashboard.Api.Controllers.Words;
 
 namespace QuranDashboard.Tests.Api.ApiBehavior;
@@ -25,6 +24,9 @@ public sealed class ApiBehaviorTestFactory : WebApplicationFactory<UniqueWordsCo
                 ["ConnectionStrings:QuranDashboardDb"] =
                     "Host=localhost;Port=5432;Database=api_behavior_tests;Username=none;Password=none",
                 ["Cors:AllowedOrigins:0"] = "https://localhost",
+                // The database above is deliberately dead; the startup catalogue sync must not
+                // spend its budget failing to reach it.
+                ["Access:PermissionCatalogueStartupSync:Enabled"] = "false",
             });
         });
     }

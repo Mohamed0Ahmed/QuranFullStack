@@ -108,7 +108,8 @@ export type { OwnerReconciliationStatusCandidate } from './models/owner-reconcil
 export type { PageMarkerDto } from './models/page-marker-dto';
 export type { PageNavigationSummary } from './models/page-navigation-summary';
 export type { PermissionCatalogueItem } from './models/permission-catalogue-item';
-export type { PermissionCatalogueItemIReadOnlyListApiResponse } from './models/permission-catalogue-item-i-read-only-list-api-response';
+export type { PermissionCatalogueResponse } from './models/permission-catalogue-response';
+export type { PermissionCatalogueResponseApiResponse } from './models/permission-catalogue-response-api-response';
 export type { PreviewLogtoSubjectRelinkBody } from './models/preview-logto-subject-relink-body';
 export type { ReactivateAccessUserBody } from './models/reactivate-access-user-body';
 export type { RenameSectionBody } from './models/rename-section-body';

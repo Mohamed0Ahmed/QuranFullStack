@@ -3,5 +3,5 @@
 
 export interface ReactivateAccessUserBody {
   expectedVersion: number;
-  reason: string;
+  reason: string | null;
 }

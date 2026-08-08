@@ -13,7 +13,11 @@ public sealed class EfAccessAuditReader(QuranDashboardDbContext db) : IAccessAud
 
     public async Task<AccessAuditEventPage> ListAsync(AccessAuditQuery query, CancellationToken cancellationToken)
     {
-        var events = db.AccessAuditEvents.AsNoTracking().AsQueryable();
+        var events = db.AccessAuditEvents
+            .AsNoTracking()
+            .Include(eventItem => eventItem.ActorUser)
+            .Include(eventItem => eventItem.TargetUser)
+            .AsQueryable();
         if (query.TargetUserId is { } targetUserId)
         {
             events = events.Where(eventItem => eventItem.TargetUserId == targetUserId);
@@ -99,6 +103,10 @@ public sealed class EfAccessAuditReader(QuranDashboardDbContext db) : IAccessAud
         eventItem.ActorType.ToString(),
         eventItem.ActorUserId,
         eventItem.TargetUserId,
+        eventItem.ActorUser?.DisplayName,
+        eventItem.ActorUser?.Email,
+        eventItem.TargetUser?.DisplayName,
+        eventItem.TargetUser?.Email,
         ParseDocument(eventItem.ActorSnapshotJson),
         ParseDocument(eventItem.TargetSnapshotJson),
         eventItem.PermissionCode,

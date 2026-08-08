@@ -13,7 +13,7 @@ import { ConfirmLogtoSubjectRelinkBody } from '../../../core/api/generated/model
 import { DisableAccessUserBody } from '../../../core/api/generated/models/disable-access-user-body';
 import { LogtoSubjectRelinkPreview } from '../../../core/api/generated/models/logto-subject-relink-preview';
 import { OwnerReconciliationStatus } from '../../../core/api/generated/models/owner-reconciliation-status';
-import { PermissionCatalogueItem } from '../../../core/api/generated/models/permission-catalogue-item';
+import { PermissionCatalogueResponse } from '../../../core/api/generated/models/permission-catalogue-response';
 import { PreviewLogtoSubjectRelinkBody } from '../../../core/api/generated/models/preview-logto-subject-relink-body';
 import { ReactivateAccessUserBody } from '../../../core/api/generated/models/reactivate-access-user-body';
 import { ReplaceUserPermissionsBody } from '../../../core/api/generated/models/replace-user-permissions-body';
@@ -51,8 +51,8 @@ export class AccessAdminApi {
     return this.http.post<ApiResponse<AccessUserDetail>>(`${this.baseUrl}/users/${userId}/reactivate`, body);
   }
 
-  getPermissionCatalogue(): Observable<ApiResponse<PermissionCatalogueItem[]>> {
-    return this.http.get<ApiResponse<PermissionCatalogueItem[]>>(`${this.baseUrl}/permissions`);
+  getPermissionCatalogue(): Observable<ApiResponse<PermissionCatalogueResponse>> {
+    return this.http.get<ApiResponse<PermissionCatalogueResponse>>(`${this.baseUrl}/permissions`);
   }
 
   getUserPermissions(userId: number): Observable<ApiResponse<AccessUserPermissions>> {

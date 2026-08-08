@@ -43,15 +43,11 @@ public sealed class PermissionCatalogueSynchronizerTests(AccessTestFixture fixtu
     }
 
     [Fact]
-    public async Task SynchronizeAsync_UpdatesMetadataAndReportsUnknownCodesWithoutDeletingThem()
+    public async Task SynchronizeAsync_ReportsUnknownAndRetiredCodesFromThePersistedStateWithoutChangingThem()
     {
         await fixture.ResetAsync();
-        using (var scope = fixture.ApiServices.CreateScope())
-        {
-            await scope.ServiceProvider
-                .GetRequiredService<IPermissionCatalogueSynchronizer>()
-                .SynchronizeAsync(CancellationToken.None);
-        }
+        await SynchronizeAsync();
+        const string retiredCode = AbwabPermissions.Sections.Delete;
 
         await using (var scope = fixture.QueryServices.CreateAsyncScope())
         {
@@ -61,22 +57,34 @@ public sealed class PermissionCatalogueSynchronizerTests(AccessTestFixture fixtu
             known.UpdateMetadata("تغيير مؤقت", "Temporary", 99);
             updateDb.AccessPermissions.Add(new Permission("future.example", "مستقبلي", "Future", 100));
             await updateDb.SaveChangesAsync();
+            await updateDb.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE permissions SET retired_at = {DateTimeOffset.UtcNow} WHERE code = {retiredCode};");
         }
 
-        PermissionCatalogueSyncResult result;
-        using (var scope = fixture.ApiServices.CreateScope())
-        {
-            result = await scope.ServiceProvider
-                .GetRequiredService<IPermissionCatalogueSynchronizer>()
-                .SynchronizeAsync(CancellationToken.None);
-        }
+        var result = await SynchronizeAsync();
 
-        result.UpdatedCodes.Should().ContainSingle().Which.Should().Be(AbwabPermissions.Doors.Create);
-        result.UnknownDatabaseCodes.Should().ContainSingle().Which.Should().Be("future.example");
+        result.UpdatedCodes.Should().Equal(AbwabPermissions.Doors.Create);
+        result.UnknownDatabaseCodes.Should().Equal("future.example");
+        result.RetiredCanonicalCodes.Should().Equal(retiredCode);
 
         await using var readScope = fixture.QueryServices.CreateAsyncScope();
         var readDb = readScope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        (await readDb.AccessPermissions.AsNoTracking().SingleAsync(permission => permission.Code == "future.example"))
-            .Should().NotBeNull();
+        (await readDb.AccessPermissions.AsNoTracking()
+            .Select(permission => permission.Code)
+            .ToListAsync())
+            .Should().Contain("future.example");
+        (await readDb.AccessPermissions.AsNoTracking()
+            .Where(permission => permission.RetiredAtUtc != null)
+            .Select(permission => permission.Code)
+            .ToListAsync())
+            .Should().Equal(retiredCode);
+    }
+
+    private async Task<PermissionCatalogueSyncResult> SynchronizeAsync()
+    {
+        await using var scope = fixture.ApiServices.CreateAsyncScope();
+        return await scope.ServiceProvider
+            .GetRequiredService<IPermissionCatalogueSynchronizer>()
+            .SynchronizeAsync(CancellationToken.None);
     }
 }

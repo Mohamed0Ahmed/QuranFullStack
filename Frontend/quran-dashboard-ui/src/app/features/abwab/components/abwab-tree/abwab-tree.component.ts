@@ -43,6 +43,7 @@ export class AbwabTreeComponent {
   readonly bulkMode = input(false);
   readonly bulkSelectedIds = input<ReadonlySet<number>>(new Set());
   readonly expandSeedIds = input<ReadonlySet<number>>(new Set());
+  readonly searchExpandedIds = input<ReadonlySet<number>>(new Set());
   readonly matchedIds = input<ReadonlySet<number>>(new Set());
   readonly revealedId = input<number | null>(null);
   readonly canCreateDoor = input(false);
@@ -69,7 +70,11 @@ export class AbwabTreeComponent {
     });
   }
 
-  private readonly effectiveExpandedIds = this.manuallyExpandedIds.asReadonly();
+  private readonly effectiveExpandedIds = computed<ReadonlySet<number>>(() => {
+    const manual = this.manuallyExpandedIds();
+    const search = this.searchExpandedIds();
+    return search.size === 0 ? manual : new Set([...manual, ...search]);
+  });
 
   protected readonly nodesById = computed(() => {
     const map = new Map<number, AbwabNode>();

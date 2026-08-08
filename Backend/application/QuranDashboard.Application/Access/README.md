@@ -17,7 +17,10 @@ catalogue and direct-grant reads/replacement, audit retrieval, Logto subject rel
 and reconciliation status. They do not expose a generic status setter, role mutation, or Owner
 configuration mutation.
 
-Write handlers require a bounded audit reason and pass the authenticated caller's `sub` to the
+The workspace write handlers (accept, disable, reactivate, permission replacement) take an optional
+audit reason bounded at 1024 characters: a blank or omitted reason travels as `null` and the audit
+rows store `NULL`, while a typed one persists verbatim. Relink confirmation still requires a
+non-blank bounded reason. Every write handler passes the authenticated caller's `sub` to the
 Infrastructure transaction service. That service rechecks the caller as an active Owner, locks the
 target and grants, performs optimistic `xmin` concurrency checking, appends audit events, and commits
 once. A failed audit append therefore leaves the target and grants unchanged.
@@ -25,6 +28,11 @@ once. A failed audit append therefore leaves the target and grants unchanged.
 User-list paging follows the public `AccessUserPaging` contract. The reader calculates offsets in `long`,
 returns the same successful paged shape with no items when an offset is at or after `totalCount`, and only
 converts an offset after proving it is within the result count.
+
+`ListAccessUsersHandler` validates `search` as free text rather than as an email address. It trims the
+term, turns a blank one into no filter instead of a rejection, and rejects only a term longer than 128
+characters, so a partial name or a partial address is a normal query and never a `400`. Validation stays
+fail-safe because the only rejection is an upper bound: nothing an operator can type is silently widened.
 
 `LegacyRoleConversionService` is an operator-only use case. It inventories every role-bearing user,
 requires a ready Owner reconciliation state and zero direct grants for every former Admin/Editor user,

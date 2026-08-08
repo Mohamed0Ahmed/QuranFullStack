@@ -1,0 +1,67 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+.access-audit-log {
+  display: grid;
+  gap: var(--qd-space-4);
+}
+
+.access-audit-log__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+}
+
+.access-audit-log__filters {
+  display: grid;
+  gap: var(--qd-space-3);
+  align-items: start;
+}
+
+.access-audit-log__field {
+  display: grid;
+  gap: var(--qd-space-2);
+  min-inline-size: 0;
+}
+
+.access-audit-log__list {
+  display: grid;
+  gap: var(--qd-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.access-audit-log__row {
+  gap: var(--qd-space-1);
+  color: var(--qd-text-muted);
+}
+
+.access-audit-log__action {
+  color: var(--qd-text);
+  font-weight: 700;
+}
+
+.access-audit-log__time {
+  font-variant-numeric: tabular-nums;
+}
+
+.access-audit-log__permission {
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: bp.$qd-bp-desktop-min) {
+  .access-audit-log__filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--qd-space-4);
+  }
+
+  .access-audit-log__filters > button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .access-audit-log__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

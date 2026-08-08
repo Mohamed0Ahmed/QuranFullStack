@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi;
+using QuranDashboard.Api.Access;
 using QuranDashboard.Api.Authentication;
 using QuranDashboard.Api.Middleware;
 using QuranDashboard.Api.RateLimiting;
@@ -57,8 +58,13 @@ public static class ServiceCollectionExtensions
             });
             options.SchemaFilter<AllPropertiesRequiredSchemaFilter>();
         });
+        services.Configure<PermissionCatalogueStartupOptions>(
+            configuration.GetSection(PermissionCatalogueStartupOptions.SectionName));
         services.AddHealthChecks()
-            .AddDbContextCheck<QuranDashboardDbContext>("database");
+            .AddDbContextCheck<QuranDashboardDbContext>("database")
+            .AddCheck<PermissionCatalogueHealthCheck>(
+                "permission_catalogue",
+                failureStatus: HealthStatus.Degraded);
         services.AddProblemDetails();
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddCors(options =>

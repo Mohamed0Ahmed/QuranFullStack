@@ -1,0 +1,10 @@
+.access-lifecycle-actions {
+  display: grid;
+  gap: var(--qd-space-3);
+}
+
+.access-lifecycle-actions__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+}

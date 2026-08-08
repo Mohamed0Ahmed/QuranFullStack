@@ -19,54 +19,7 @@
           (mouseenter)="onMenuPointerEnter(item.key)"
           (mouseleave)="onMenuPointerLeave(item.key)"
         >
-          <button
-            class="qd-btn qd-btn-ghost nav-link"
-            [class.active]="isMenuActive(item)"
-            type="button"
-            (click)="onTriggerClick(item.key)"
-            aria-haspopup="true"
-            [attr.aria-controls]="item.key + '-menu'"
-            [attr.aria-expanded]="openMenuKey === item.key"
-            [attr.data-testid]="'nav-' + item.key + '-trigger'"
-          >
-            {{ item.labelAr }}
-            <svg
-              class="chevron"
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path
-                d="M3 4.5L6 7.5L9 4.5"
-                stroke="currentColor"
-                stroke-width="1.2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          @if (openMenuKey === item.key) {
-            <ul [id]="item.key + '-menu'" class="dropdown-menu">
-              @for (child of item.children; track child.key) {
-                <li>
-                  <a
-                    class="qd-btn qd-btn-ghost dropdown-link"
-                    [routerLink]="child.route"
-                    [queryParams]="child.queryParams ?? null"
-                    routerLinkActive="active"
-                    [routerLinkActiveOptions]="{ exact: child.route === item.route }"
-                    [attr.data-testid]="'nav-menu-link--' + child.key"
-                    (click)="closeMenu(item.key)"
-                  >
-                    {{ child.labelAr }}
-                  </a>
-                </li>
-              }
-            </ul>
-          }
+          <ng-container *ngTemplateOutlet="dropdownContent; context: { $implicit: item }" />
         </li>
       } @else {
         <li class="nav-item">
@@ -130,10 +83,22 @@
         </svg>
       }
     </button>
-    @for (item of actionItems; track item.route) {
-      <a class="qd-btn qd-btn-ghost nav-link" [routerLink]="item.route" routerLinkActive="active">
-        {{ item.labelAr }}
-      </a>
+    @for (item of actionItems(); track item.route) {
+      @if (item.children) {
+        <div
+          class="nav-item nav-dropdown"
+          [class.open]="openMenuKey === item.key"
+          [attr.data-menu-key]="item.key"
+          (mouseenter)="onMenuPointerEnter(item.key)"
+          (mouseleave)="onMenuPointerLeave(item.key)"
+        >
+          <ng-container *ngTemplateOutlet="dropdownContent; context: { $implicit: item }" />
+        </div>
+      } @else {
+        <a class="qd-btn qd-btn-ghost nav-link" [routerLink]="item.route" routerLinkActive="active">
+          {{ item.labelAr }}
+        </a>
+      }
     }
     @if (isAuthenticated()) {
       <button
@@ -252,17 +217,21 @@
         }
       </div>
       <ul class="mobile-menu-list">
-        @for (item of allItems; track item.route) {
+        @for (item of allItems(); track item.route) {
           <li>
-            <a
-              class="qd-btn qd-btn-ghost mobile-link"
-              [routerLink]="item.route"
-              routerLinkActive="active"
-              [routerLinkActiveOptions]="{ exact: item.route === dashboardRoute }"
-              (click)="closeMobile()"
-            >
-              {{ item.labelAr }}
-            </a>
+            @if (item.children && item.group === 'actions') {
+              <span class="mobile-group-label">{{ item.labelAr }}</span>
+            } @else {
+              <a
+                class="qd-btn qd-btn-ghost mobile-link"
+                [routerLink]="item.route"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="{ exact: item.route === dashboardRoute }"
+                (click)="closeMobile()"
+              >
+                {{ item.labelAr }}
+              </a>
+            }
             @if (item.children) {
               <ul class="mobile-menu-sublist">
                 @for (child of item.children; track child.key) {
@@ -287,3 +256,54 @@
     </div>
   </div>
 }
+
+<ng-template #dropdownContent let-item>
+  <button
+    class="qd-btn qd-btn-ghost nav-link"
+    [class.active]="isMenuActive(item)"
+    type="button"
+    (click)="onTriggerClick(item.key)"
+    aria-haspopup="true"
+    [attr.aria-controls]="item.key + '-menu'"
+    [attr.aria-expanded]="openMenuKey === item.key"
+    [attr.data-testid]="'nav-' + item.key + '-trigger'"
+  >
+    {{ item.labelAr }}
+    <svg
+      class="chevron"
+      width="12"
+      height="12"
+      viewBox="0 0 12 12"
+      fill="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M3 4.5L6 7.5L9 4.5"
+        stroke="currentColor"
+        stroke-width="1.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
+  @if (openMenuKey === item.key) {
+    <ul [id]="item.key + '-menu'" class="dropdown-menu">
+      @for (child of item.children; track child.key) {
+        <li>
+          <a
+            class="qd-btn qd-btn-ghost dropdown-link"
+            [routerLink]="child.route"
+            [queryParams]="child.queryParams ?? null"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: child.route === item.route }"
+            [attr.data-testid]="'nav-menu-link--' + child.key"
+            (click)="closeMenu(item.key)"
+          >
+            {{ child.labelAr }}
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</ng-template>

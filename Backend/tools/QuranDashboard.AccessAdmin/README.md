@@ -35,6 +35,14 @@ reported as `catalogue_retired=` and fails both `catalogue sync` and `authorizat
 Neither command reactivates it — retiring a still-referenced permission is an operator decision to
 reverse deliberately.
 
+**A normal deploy no longer needs `catalogue sync`.** The API host synchronizes the catalogue itself
+at startup (`api/QuranDashboard.Api/README.md`), so a migrated database populates `permissions`
+without an operator running anything. This command stays the remedy for the cases the startup sync
+deliberately will not resolve: an unknown code left in the table, a retired canonical code, and any
+database the API cannot reach at boot. It is also the only way to sync a database whose API is
+running with `Access__PermissionCatalogueStartupSync__Enabled=false`. The staged sequence below keeps
+the explicit `catalogue sync` step because it runs before the API is deployed at all.
+
 After `qd-build`, run the staged Phase 2 sequence from `Backend/` in this order:
 
 ```bash

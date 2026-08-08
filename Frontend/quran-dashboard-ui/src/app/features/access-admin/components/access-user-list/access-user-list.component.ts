@@ -2,11 +2,14 @@ import { ChangeDetectionStrategy, Component, effect, input, output, signal } fro
 
 import { AccessUserSummary } from '../../../../core/api/generated/models/access-user-summary';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
+import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
 import {
   AccessUserListFilters,
   AccessUserListQuery,
   AccessUserStatus,
+  accessUserNameLabel,
 } from '../../models/access-admin.models';
 
 type OwnerFilter = 'all' | 'owner' | 'non-owner';
@@ -14,7 +17,7 @@ type OwnerFilter = 'all' | 'owner' | 'non-owner';
 @Component({
   selector: 'qd-access-user-list',
   standalone: true,
-  imports: [PaginationComponent, QdStateComponent],
+  imports: [ExplorerResultCountComponent, PaginationComponent, QdStateComponent],
   templateUrl: './access-user-list.component.html',
   styleUrl: './access-user-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -70,13 +73,11 @@ export class AccessUserListComponent {
     });
   }
 
+  protected nameLabel(user: AccessUserSummary): string {
+    return accessUserNameLabel(user);
+  }
+
   protected statusLabel(user: AccessUserSummary): string {
-    if (user.status === 'active') {
-      return 'نشط';
-    }
-    if (user.status === 'pending') {
-      return 'معلّق';
-    }
-    return 'معطّل';
+    return ACCESS_ADMIN_LABELS.userStatus(user.status);
   }
 }

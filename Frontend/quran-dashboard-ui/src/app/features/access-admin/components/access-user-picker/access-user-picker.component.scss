@@ -1,0 +1,36 @@
+.access-user-picker {
+  display: grid;
+  gap: var(--qd-space-2);
+  min-inline-size: 0;
+}
+
+.access-user-picker__selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+  min-inline-size: 0;
+  margin: 0;
+}
+
+.access-user-picker__search {
+  display: flex;
+  gap: var(--qd-space-2);
+  min-inline-size: 0;
+}
+
+.access-user-picker__search .qd-input {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.access-user-picker__results {
+  display: grid;
+  gap: var(--qd-space-1);
+  min-inline-size: 0;
+}
+
+.access-user-picker__result {
+  inline-size: 100%;
+  gap: 2px;
+}

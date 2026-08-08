@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { WritableSignal, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideLocationMocks } from '@angular/common/testing';
 import { provideRouter } from '@angular/router';
@@ -11,17 +12,32 @@ import { AuthReturnLocationStore } from '../../auth/auth-return-location.store';
 import { CurrentUserStore } from '../../auth/current-user.store';
 import { ThemeService } from '../../theme/theme.service';
 
-const DROPDOWN_KEYS = ['words', 'abwab', 'more'] as const;
+const DROPDOWN_KEYS = ['words', 'abwab', 'more', 'settings'] as const;
+
+interface CurrentUserStoreMock {
+  clear: ReturnType<typeof vi.fn>;
+  authStateKnown: WritableSignal<boolean>;
+  isActive: WritableSignal<boolean>;
+  isOwner: WritableSignal<boolean>;
+}
 
 describe('TopNavbarComponent', () => {
+  let currentUserStore: CurrentUserStoreMock;
+
   beforeEach(() => {
+    currentUserStore = {
+      clear: vi.fn(),
+      authStateKnown: signal(true),
+      isActive: signal(true),
+      isOwner: signal(true),
+    };
     TestBed.configureTestingModule({
       imports: [TopNavbarComponent],
       providers: [
         provideRouter([{ path: '**', children: [] }]),
         provideLocationMocks(),
         { provide: ThemeService, useValue: { isDark$: of(false), toggle: vi.fn() } },
-        { provide: CurrentUserStore, useValue: { clear: vi.fn() } },
+        { provide: CurrentUserStore, useValue: currentUserStore },
         { provide: AuthReturnLocationStore, useValue: { clear: vi.fn() } },
         {
           provide: OidcSecurityService,
@@ -192,6 +208,74 @@ describe('TopNavbarComponent', () => {
     expect(menu(fixture, 'words')).toBeNull();
     expect(document.activeElement).toBe(outside);
     outside.remove();
+  });
+
+  it('shows the settings entry to an active Owner in the desktop actions and the mobile panel', () => {
+    const fixture = mount();
+
+    openByTriggerClick(fixture, 'settings');
+    const accessLink = menu(fixture, 'settings')?.querySelector<HTMLAnchorElement>(
+      '[data-testid="nav-menu-link--settings-access"]',
+    );
+    expect(accessLink?.getAttribute('href')).toBe('/settings/access');
+
+    host(fixture).querySelector<HTMLButtonElement>('.menu-toggle')?.click();
+    fixture.detectChanges();
+
+    expect(
+      host(fixture).querySelector('.mobile-menu-panel a[href="/settings/access"]'),
+    ).not.toBeNull();
+    expect(host(fixture).querySelector('.mobile-menu-panel a[href="/settings"]')).toBeNull();
+    expect(
+      host(fixture).querySelector('.mobile-menu-panel .mobile-group-label')?.textContent,
+    ).toContain('الإعدادات');
+  });
+
+  const hiddenSettingsStates: ReadonlyArray<[string, (store: CurrentUserStoreMock) => void]> = [
+    ['the auth state is not yet known', (store) => store.authStateKnown.set(false)],
+    ['the user is not active', (store) => store.isActive.set(false)],
+    ['the user is not an Owner', (store) => store.isOwner.set(false)],
+  ];
+
+  it.each(hiddenSettingsStates)('hides the settings entry when %s', (_state, arrange) => {
+    arrange(currentUserStore);
+    const fixture = mount();
+
+    expect(host(fixture).querySelector('[data-testid="nav-settings-trigger"]')).toBeNull();
+
+    host(fixture).querySelector<HTMLButtonElement>('.menu-toggle')?.click();
+    fixture.detectChanges();
+
+    expect(host(fixture).querySelector('.mobile-menu-panel a[href="/settings/access"]')).toBeNull();
+    expect(host(fixture).querySelector('.mobile-menu-panel a[href="/settings"]')).toBeNull();
+  });
+
+  it('shows and hides the settings entry as the auth signals change after mount', () => {
+    currentUserStore.authStateKnown.set(false);
+    const fixture = mount();
+    host(fixture).querySelector<HTMLButtonElement>('.menu-toggle')?.click();
+    fixture.detectChanges();
+
+    expect(host(fixture).querySelector('[data-testid="nav-settings-trigger"]')).toBeNull();
+    expect(host(fixture).querySelector('.mobile-menu-panel a[href="/settings/access"]')).toBeNull();
+
+    currentUserStore.authStateKnown.set(true);
+    currentUserStore.isActive.set(true);
+    currentUserStore.isOwner.set(true);
+    fixture.detectChanges();
+
+    expect(host(fixture).querySelector('[data-testid="nav-settings-trigger"]')).not.toBeNull();
+    expect(
+      host(fixture).querySelector('.mobile-menu-panel a[href="/settings/access"]'),
+    ).not.toBeNull();
+
+    currentUserStore.authStateKnown.set(false);
+    currentUserStore.isActive.set(false);
+    currentUserStore.isOwner.set(false);
+    fixture.detectChanges();
+
+    expect(host(fixture).querySelector('[data-testid="nav-settings-trigger"]')).toBeNull();
+    expect(host(fixture).querySelector('.mobile-menu-panel a[href="/settings/access"]')).toBeNull();
   });
 
   it('inerts the mobile menu overlay while a modal holds the scroll lock', () => {

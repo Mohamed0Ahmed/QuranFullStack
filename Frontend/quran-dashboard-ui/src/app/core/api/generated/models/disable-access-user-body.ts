@@ -3,5 +3,5 @@
 
 export interface DisableAccessUserBody {
   expectedVersion: number;
-  reason: string;
+  reason: string | null;
 }

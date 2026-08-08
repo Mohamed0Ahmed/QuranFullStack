@@ -4,6 +4,6 @@ namespace QuranDashboard.Application.Access.Queries.GetPermissionCatalogue;
 
 public sealed class GetPermissionCatalogueHandler(IPermissionCatalogueReader reader)
 {
-    public Task<IReadOnlyList<PermissionCatalogueItem>> HandleAsync(CancellationToken cancellationToken) =>
+    public Task<PermissionCatalogueResponse> HandleAsync(CancellationToken cancellationToken) =>
         reader.GetActiveAsync(cancellationToken);
 }

@@ -6,8 +6,15 @@ namespace QuranDashboard.Infrastructure.Access;
 public sealed class PermissionCatalogueSynchronizer(
     QuranDashboardDbContext db) : IPermissionCatalogueSynchronizer
 {
+    private const long AdvisoryLockKey = 844889163665073474L;
+
     public async Task<PermissionCatalogueSyncResult> SynchronizeAsync(CancellationToken cancellationToken)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({AdvisoryLockKey});",
+            cancellationToken);
+
         var existing = await db.AccessPermissions.ToListAsync(cancellationToken);
         var duplicateCode = existing
             .GroupBy(permission => permission.Code, StringComparer.Ordinal)
@@ -49,15 +56,21 @@ public sealed class PermissionCatalogueSynchronizer(
 
         await db.SaveChangesAsync(cancellationToken);
 
+        var synchronized = await db.AccessPermissions
+            .AsNoTracking()
+            .Select(permission => new { permission.Code, permission.RetiredAtUtc })
+            .ToArrayAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
         var knownCodes = AbwabPermissionCatalogue.All
             .Select(permission => permission.Code)
             .ToHashSet(StringComparer.Ordinal);
-        var unknownCodes = existing
+        var unknownCodes = synchronized
             .Where(permission => !knownCodes.Contains(permission.Code))
             .Select(permission => permission.Code)
             .OrderBy(code => code, StringComparer.Ordinal)
             .ToArray();
-        var retiredCanonicalCodes = existing
+        var retiredCanonicalCodes = synchronized
             .Where(permission => knownCodes.Contains(permission.Code) && permission.RetiredAtUtc is not null)
             .Select(permission => permission.Code)
             .OrderBy(code => code, StringComparer.Ordinal)

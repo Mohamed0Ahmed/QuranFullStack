@@ -20,6 +20,10 @@ public sealed record AccessAuditEventItem(
     string ActorType,
     int? ActorUserId,
     int TargetUserId,
+    string? ActorDisplayName,
+    string? ActorEmail,
+    string? TargetDisplayName,
+    string? TargetEmail,
     JsonElement ActorSnapshot,
     JsonElement TargetSnapshot,
     string? PermissionCode,
@@ -55,7 +59,7 @@ public sealed record AccessAuditEntry(
     string? PermissionCode,
     AccessAuditUserState Before,
     AccessAuditUserState After,
-    string Reason,
+    string? Reason,
     string Operation);
 
 public sealed record AccessOwnerReconciliationSummary(

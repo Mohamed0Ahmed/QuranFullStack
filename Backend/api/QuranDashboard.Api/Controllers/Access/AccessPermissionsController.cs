@@ -10,11 +10,11 @@ namespace QuranDashboard.Api.Controllers.Access;
 public sealed class AccessPermissionsController(GetPermissionCatalogueHandler handler) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<ApiResponse<IReadOnlyList<PermissionCatalogueItem>>>> Get(
+    public async Task<ActionResult<ApiResponse<PermissionCatalogueResponse>>> Get(
         CancellationToken cancellationToken)
     {
         var catalogue = await handler.HandleAsync(cancellationToken);
-        return Ok(ApiResponse<IReadOnlyList<PermissionCatalogueItem>>.Ok(
+        return Ok(ApiResponse<PermissionCatalogueResponse>.Ok(
             catalogue,
             ApiMessages.AccessAdministrationPermissionCatalogueLoaded));
     }

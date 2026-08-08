@@ -1662,17 +1662,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/PermissionCatalogueItemIReadOnlyListApiResponse"
+                  "$ref": "#/components/schemas/PermissionCatalogueResponseApiResponse"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PermissionCatalogueItemIReadOnlyListApiResponse"
+                  "$ref": "#/components/schemas/PermissionCatalogueResponseApiResponse"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PermissionCatalogueItemIReadOnlyListApiResponse"
+                  "$ref": "#/components/schemas/PermissionCatalogueResponseApiResponse"
                 }
               }
             }
@@ -5837,7 +5837,8 @@
             "nullable": true
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -5845,6 +5846,8 @@
       "AccessAuditEventItem": {
         "required": [
           "actionType",
+          "actorDisplayName",
+          "actorEmail",
           "actorSnapshot",
           "actorType",
           "actorUserId",
@@ -5855,6 +5858,8 @@
           "occurredAtUtc",
           "permissionCode",
           "reason",
+          "targetDisplayName",
+          "targetEmail",
           "targetSnapshot",
           "targetUserId"
         ],
@@ -5882,6 +5887,22 @@
           "targetUserId": {
             "type": "integer",
             "format": "int32"
+          },
+          "actorDisplayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetDisplayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetEmail": {
+            "type": "string",
+            "nullable": true
           },
           "actorSnapshot": {
             "type": "object"
@@ -6926,7 +6947,8 @@
             "format": "int32"
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -8603,7 +8625,26 @@
         },
         "additionalProperties": false
       },
-      "PermissionCatalogueItemIReadOnlyListApiResponse": {
+      "PermissionCatalogueResponse": {
+        "required": [
+          "assignmentReady",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionCatalogueItem"
+            }
+          },
+          "assignmentReady": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PermissionCatalogueResponseApiResponse": {
         "required": [
           "data",
           "errors",
@@ -8620,10 +8661,11 @@
             "nullable": true
           },
           "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PermissionCatalogueItem"
-            },
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PermissionCatalogueResponse"
+              }
+            ],
             "nullable": true
           },
           "errors": {
@@ -8664,7 +8706,8 @@
             "format": "int32"
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -8848,7 +8891,8 @@
             "nullable": true
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

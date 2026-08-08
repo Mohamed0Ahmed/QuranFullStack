@@ -54,12 +54,13 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
 
 **The lanes:** `npm run test:fast`, `test:feature:access-admin|abwab|auth|dashboard|mushaf|words`,
 `test:authorization`, `test:composition`, `test:shared`, `test:full`, plus `typecheck:app`,
-`typecheck:spec`, `typecheck`, `build:verify`, `check:permission-catalogue`, and the composite `test:pre-pr`
-(`check:permission-catalogue` → `typecheck` → `build:verify` → `test:full`). `npm run test:gates` is the structural check on the
+`typecheck:spec`, `typecheck`, `build:verify`, `check:permission-catalogue`, `check:audit-action-types`,
+`generate:permission-codes`, and the composite `test:pre-pr`
+(`check:permission-catalogue` → `check:audit-action-types` → `typecheck` → `build:verify` → `test:full`). `npm run test:gates` is the structural check on the
 lane definitions and is not part of `test:pre-pr` — run it whenever a spec is added, moved,
 renamed, or deleted, or an `include` pattern changes.
 
-**`testing/README.md` is the contract**: what each of the nine named `angular.json`
+**`testing/README.md` is the contract**: what each of the ten named `angular.json`
 configurations selects, what every command does, and what `test:gates` proves. Which lane to run
 and when is `../../TESTING_STRATEGY.md` §4 and §5.
 

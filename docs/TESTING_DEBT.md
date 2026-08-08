@@ -106,13 +106,13 @@ pre-existing thinness as about what this slice adds to it.
 
 | # | Uncovered area | Where | Pays it |
 |---|---|---|---|
-| H1 | **The navbar itself, wholesale** — no unit spec exists at all: menu open/close state, `openMenuKey` mutual exclusion (now load-bearing for three menus instead of two), Escape/outside-click dismissal, `aria-expanded`, the inert-under-lock binding. This predates the slice; collapsing the state machine to one shared field raises the cost of it staying unpinned | `core/layout/top-navbar/` | The next change to the navbar or the nav model — auth-gated entries, a fourth dropdown, or Slice I if caching adds any nav affordance |
-| H2 | **The §6a active-state matrix** — the query-param cells (`/abwab?archive=1` and its neighbors) are exactly where a `routerLinkActiveOptions` regression hides, they are assertable in jsdom with a router harness, and nothing asserts them | `top-navbar.component.html`, `core/navigation/nav-menu.ts` | The next nav-entry addition, or any change to the abwab URL contract's `archive` key |
-| H3 | **The mobile flattened children** — nesting, indentation, parent-row navigability, per-row active state | `top-navbar.component.{html,scss}` | The next mobile-nav change |
-| H4 | **One e2e flow for the new dropdown** — hover «الأبواب», click «الأرشيف», land on `/abwab?archive=1` with the archive view open. `shell-nav.e2e.ts` is the shipped template; this is one ~10-line test in an existing file, the cheapest row here | `e2e/shell-nav.e2e.ts` | The next time the navbar or the abwab URL contract changes shape |
+| H1 | **The `openMenuKey` mutual exclusion** — that opening one menu closes another, now load-bearing for four menus. The rest of this row's original list is paid: `top-navbar.component.spec.ts` (added with the abwab accessibility fixes, well after this slice recorded "no unit spec exists at all") pins trigger open/close, hover-then-click, Escape and outside-click dismissal with focus return, `aria-expanded`, and the inert-under-lock binding, parameterized over every dropdown — the feature-034 navbar follow-up added `settings` to that parameter list and a visibility pair for the app's first auth-gated entry (Active Owner + `authStateKnown`, desktop and mobile). Only the cross-menu exclusion assertion is still missing | `core/layout/top-navbar/top-navbar.component.spec.ts` | The next change to the shared `openMenuKey` state machine, or a fifth dropdown |
+| H2 | **The §6a active-state matrix** — the query-param cells (`/abwab?archive=1` and its neighbors) are exactly where a `routerLinkActiveOptions` regression hides, they are assertable in jsdom with a router harness, and nothing asserts them. The feature-034 settings entry — the nav-entry addition this row named as its trigger — added a new cell without paying the row: «إدارة الوصول» active on `/settings/access` while its trigger-only parent highlights through `isMenuActive` subset matching | `top-navbar.component.html`, `core/navigation/nav-menu.ts` | The next nav-entry addition, or any change to the abwab URL contract's `archive` key or the settings children |
+| H3 | **The mobile flattened children** — nesting, indentation, parent-row navigability, per-row active state. The feature-034 visibility pair asserts only the settings child's presence for an Active Owner and absence otherwise in the mobile panel; the structural claims stay unpinned | `top-navbar.component.{html,scss}` | The next mobile-nav change |
+| H4 | **One e2e flow per dropdown** — hover «الأبواب», click «الأرشيف», land on `/abwab?archive=1` with the archive view open; since feature-034 also: open «الإعدادات», click «إدارة الوصول», land on `/settings/access` — that half needs row A1's authenticated **Active Owner** persona, because the entry is invisible to the anonymous browser the e2e lane has today. `shell-nav.e2e.ts` is the shipped template; the abwab half is one ~10-line test in an existing file | `e2e/shell-nav.e2e.ts` | The next time the navbar or the abwab URL contract changes shape, or row A1's persona landing |
 
-H4 is the honest one to flag: the posture's logic applies to it same as the rest, but the file,
-fixture, and pattern all exist, so the marginal cost is a fraction of H1-H3.
+H4's abwab half is the honest one to flag: the posture's logic applies to it same as the rest,
+but the file, fixture, and pattern all exist, so the marginal cost is a fraction of H2-H3.
 
 ## ux-slice-i (branch `ux-slice-i`, 2026-08-02)
 
@@ -266,3 +266,37 @@ handcrafted anonymous write receiving the Backend denial envelope.
 | # | Uncovered area | Where | Pays it |
 |---|---|---|---|
 | A1 | **Every Abwab authoring flow that only a browser proves** — create/edit/move/reorder/archive/restore of doors, section create/rename/reorder/delete, relation add and remove, template create/delete/apply, and template-node add/edit/reorder/delete, each driven end to end through the real UI against a real Backend. Unit and component specs pin the dispatch wiring and the route smoke suite pins the HTTP contract, but nothing currently walks an authorized human through an Abwab write in a browser. **The harness must provide** an authenticated E2E persona whose access token the Backend test host actually validates — a signing key the API trusts plus a local user row that is `Active` and holds the exact permission under test — so that `e2e/fixtures/abwab.ts` seeds as that persona instead of anonymously, and so a permission-denied persona can be asserted against the same flow. It must not seed by bypassing HTTP authorization, because the point of the flow is that an authorized caller succeeds where an anonymous one is refused | `Frontend/quran-dashboard-ui/e2e/fixtures/abwab.ts` and `e2e/fixtures/logto.ts` (which today stubs only OIDC discovery and returns an empty JWKS, so it can mint nothing), over the `abwab` project in `playwright.config.ts` | The first explicitly approved authenticated browser-authoring expansion, **or** the first authenticated E2E persona added for any feature. This remains opt-in under `TESTING_STRATEGY.md`; it is not a standing authorization acceptance gate |
+
+## access-admin catalogue readiness (branch `feature/034-access-catalogue-readiness`, 2026-08-08)
+
+Posture: the fail-closed behaviour this work adds is covered — the catalogue-request failure
+isolating one region, the unready-catalogue read-only editor, the absent save path, the
+`expectNone` on any permissions `PUT`, and the severity routing of the operator message all have
+specs.
+
+**Rows AC1 and AC3 are paid and deleted (2026-08-08, the catalogue-deduplication phase).** AC1's
+silent drop is gone at the source rather than merely re-asserted: `permissionCodesForSubmission`
+no longer intersects a selection with the served catalogue, so the diff and the request body carry
+the same set, and the tests moved with it — `access-admin-permissions.spec.ts` keeps dropping group
+sentinels and non-`PermissionCode` strings and now pins that a real code the catalogue omits
+survives; the facade case that asserted `permissionDiff()` was empty while the draft held such a
+code now asserts it reaches `granted` **and** the `PUT` body; the 409 case and the dirty-state case
+that incidentally relied on the drop were rewritten onto values that genuinely cannot reach the wire.
+`core/auth/permission-code.ts` has a spec, and its allowlist is generated from
+`AbwabPermissionCatalogue.cs` rather than typed by hand. AC3 is paid by
+`scripts/check-audit-action-types.mjs`, a both-directions parity gate beside
+`scripts/check-permission-catalogue.mjs` and inside `npm run test:pre-pr`.
+
+**The page redesign that followed added a different gap, and row AC2 records it.** `/settings/access`
+is now a desktop-first master/detail workspace, and **no browser ever rendered it** — the route is
+Owner-only behind a guard and this repository still has no authenticated Playwright persona (see row
+A1 above), so every check on the redesign was a jsdom one. Stated plainly because it is a mitigation
+and not a substitute: the layout is a near-verbatim copy of the shipped, browser-proven
+`Frontend/quran-dashboard-ui/src/app/features/abwab/pages/abwab-page/abwab-page.component.scss:22-60`
+— the same flex split, the same `flex: 1; min-inline-size: 0` main column, the same sticky
+fixed-width aside — which is exactly what the implementation plan directed. That makes the risk
+small; it does not make it observed.
+
+| # | Uncovered area | Where | Pays it |
+|---|---|---|---|
+| AC2 | **Three redesign claims that only a browser can judge, asserted nowhere.** (a) **The sticky aside** — `.access-admin-page__users` carries `position: sticky` with `inset-block-start: calc(var(--qd-navbar-block-size) + var(--qd-space-4))`, and sticking needs a real scroll container and a real resolved navbar height. (b) **The single-column collapse** at `bp.$qd-bp-tablet-max`, where the layout becomes `flex-direction: column` and the aside becomes `inline-size: 100%; position: static` — jsdom evaluates no media query, so the tablet layout is unreachable from a spec. (c) **The no-1px-shift selection thread** — the unselected row reserves `border-inline-start-width: 2px` in `transparent` and `.qd-is-selected` only recolours it, so proving "no shift" means comparing two *resolved* border widths, which jsdom does not compute. (d) **The compacted permission grid** (feature-034 follow-up) — `access-permission-editor.component.scss` sizes its columns with `repeat(auto-fit, minmax(13rem, 1fr))` + `align-items: stretch`, so the track count follows the editor's own width; jsdom resolves no grid layout, so nothing asserts that ~1023px no longer collapses to one column, that 1024px no longer narrows to two cramped ones, or that the two-code العلاقات card no longer strands a blank block beside its taller neighbors. The jsdom-checkable half of the same redesign **is** asserted and is not in this row: `role="listitem"` per row, `.qd-truncate` plus `[title]` on name and email, `[title]` on the permission code, and the `role="status"` reserved mutation region in each mutating panel. **What a browser check must confirm**, signed in as an **Active Owner** on `/settings/access`: the aside stays pinned while the detail panel scrolls; at ≤ tablet width the two columns become one with the aside full-width and unpinned; selecting a list row moves no adjacent pixel; and the permission grid's column count follows the editor width at ~1023 / 1024 / 1440px with «إعادة ترتيب عناصر القوالب» still on one line | `Frontend/quran-dashboard-ui/src/app/features/access-admin/pages/access-admin-page/access-admin-page.component.scss:25-30` and `:148-157`, `components/access-user-list/access-user-list.component.scss:23-39`, `components/access-permission-editor/access-permission-editor.component.scss` | **Row A1's harness — do not build a second one.** A1 already owes the authenticated E2E persona, and its "**or** the first authenticated E2E persona added for any feature" clause is the trigger that unblocks this row too. The only addition this route makes to A1's requirement is that the persona must be an **Active Owner**, since `/settings/access` is guarded on Owner membership rather than on a permission code |

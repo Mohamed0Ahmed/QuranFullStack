@@ -112,11 +112,15 @@ nine), four of them reads.
     straight to the count would announce once per typed character. Clearing the query empties
     the region immediately and announces nothing. Deliberately **not** routed through
     `qd-abwab-announcer`, whose channel is one-shot reveal/write messages.
-  - **Matched ancestors are seeded open, not forced**, so a branch search opened is
-    collapsible at once and survives clearing the query. The consequence — seeds accumulate,
-    so broadening then narrowing leaves the earlier branches open — is accepted and intended;
-    expansion is the user's state once seeded, and rewinding it per keystroke would fight
-    them.
+  - **Matched ancestors are derived open, not seeded** (supersedes ux-slice-l's
+    accumulation decision, which had accepted stale branches as the user's state). The
+    tree renders the union of two sets: the user's manual expansion (chevrons + reveal
+    seeds) and a search-derived `searchExpandedIds` input the page replaces wholesale per
+    query with `searchAbwabNodes`'s `autoExpandedIds`. So narrowing «ال» → «الرح» closes
+    the branches only the broader query opened, a zero-match query derives nothing open,
+    and clearing the query restores exactly the manual state — the move picker's contract,
+    now on the main tree. A search-opened branch is not collapsible while the query still
+    derives it (plain union, no subtraction set — accepted until it proves annoying).
   - **Item 19's root-count badge** renders `.qd-tabs__count` at the call-site on every
     tab, composing `qd-tabs`'s backing class rather than adding a directive input —
     `qdTab` stays a host-bindings-only directive and cannot project a child span. Each
@@ -130,7 +134,7 @@ nine), four of them reads.
     in `models/abwab.labels.ts`) so the two numbers are distinguishable in the
     accessible layer, not only by convention.
 - `components/abwab-tree/` — presentational tree (`role="tree"`/`treeitem`, full ARIA,
-  roving tabindex). **Its TS sits at 356 lines and its host page's template at 312, both
+  roving tabindex). **Its TS sits at 373 lines and its host page's template at 347, both
   just over their 300-line soft thresholds** and both kept there deliberately: the tree's
   TS is one row-rendering component plus the flag/bulk/order handlers that must stay with
   the row they act on, and the page template is a composition root whose length is child
@@ -418,7 +422,8 @@ nine), four of them reads.
   `pruneAbwabNodesToVisible` — rebuilds a node list to only the search-visible ids,
   recursing into children, backing the **archive** search filter; cards do not use it, see
   above). One walk feeds
-  two presentations: the tree reads `matchedIds`/`autoExpandedIds` to mark and seed, the
+  two presentations: the tree reads `matchedIds` to mark and `autoExpandedIds` to derive
+  the current query's branches open, the
   filtering views read `visibleIds` — the archive through the prune, cards directly. The walk
   carries a single push/pop ancestor stack rather
   than allocating a path array per edge; the builder spec's exact-set cases are the fence
@@ -580,9 +585,11 @@ Three things about it are load-bearing and easy to undo by accident:
 - **The ancestor chain is *seeded* into the tree's manual expansion, not forced.** A forced
   set is unioned with manual toggles and cannot be collapsed, so a reveal routed through it
   would lock the target's ancestors open for the rest of the session. `expandSeedIds` merges
-  once and hands the chevrons straight back to the user. Search auto-expansion arrives on the
-  same input now (ux-slice-l); the page unions the two sources and must return the shared
-  `NO_IDS` when both are empty, or the tree's merge effect re-runs on every tick.
+  once and hands the chevrons straight back to the user. The input carries reveal seeds
+  only: search auto-expansion moved to the tree's derived `searchExpandedIds` input, read
+  inside a `computed` union and replaced wholesale per query. The page must still return the
+  shared `NO_IDS` for an empty seed set, or the tree's merge effect re-runs on every tick;
+  it does the same for the search input only to spare re-render churn.
 - **The highlight is an outline, never a tint** — `--qd-selected-bg` *is*
   `--qd-accent-tint`, and the reveal always lands on the row it just selected, so a tint
   would be invisible by construction. See `UI_STYLE_SYSTEM.md` §17 "Reveal highlight".

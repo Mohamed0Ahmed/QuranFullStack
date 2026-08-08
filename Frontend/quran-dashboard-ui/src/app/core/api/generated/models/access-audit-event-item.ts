@@ -3,6 +3,8 @@
 
 export interface AccessAuditEventItem {
   actionType: string;
+  actorDisplayName: string | null;
+  actorEmail: string | null;
   actorSnapshot: {
 };
   actorType: string;
@@ -17,6 +19,8 @@ export interface AccessAuditEventItem {
   occurredAtUtc: string;
   permissionCode: string | null;
   reason: string | null;
+  targetDisplayName: string | null;
+  targetEmail: string | null;
   targetSnapshot: {
 };
   targetUserId: number;

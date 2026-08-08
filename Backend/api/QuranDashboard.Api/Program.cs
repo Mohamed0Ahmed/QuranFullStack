@@ -12,4 +12,6 @@ var app = builder.Build();
 
 app.UseApiPipeline();
 
+await app.SynchronizePermissionCatalogueAsync();
+
 app.Run();

@@ -1,0 +1,51 @@
+@if (user(); as target) {
+  @if (!target.isOwner) {
+    <section
+      class="qd-card qd-card--quiet access-lifecycle-actions"
+      data-testid="access-account-actions"
+      aria-labelledby="access-account-actions-title"
+    >
+      <h3 id="access-account-actions-title" class="qd-card-title">إجراءات الحساب</h3>
+      @if (target.status === 'active') {
+        <p class="qd-text-muted" data-testid="access-disable-cost">
+          يوقف التعطيل وصول الحساب ويزيل جميع صلاحياته المباشرة نهائيًا.
+        </p>
+      }
+      <div class="access-lifecycle-actions__actions">
+        @if (target.status === 'pending') {
+          <button
+            type="button"
+            class="qd-btn qd-btn-primary"
+            data-testid="access-request-accept"
+            [disabled]="busyAction() !== null"
+            (click)="requestAction('accept')"
+          >
+            @if (acceptGrantsPermissions()) {
+              قبول وتفعيل مع الصلاحيات المحددة
+            } @else {
+              قبول وتفعيل دون صلاحيات
+            }
+          </button>
+        }
+        @if (target.status === 'active') {
+          <button
+            type="button"
+            class="qd-btn qd-btn-secondary"
+            data-testid="access-request-disable"
+            [disabled]="busyAction() !== null"
+            (click)="requestAction('disable')"
+          >تعطيل الحساب</button>
+        }
+        @if (target.status === 'disabled') {
+          <button
+            type="button"
+            class="qd-btn qd-btn-primary"
+            data-testid="access-request-reactivate"
+            [disabled]="busyAction() !== null"
+            (click)="requestAction('reactivate')"
+          >إعادة التفعيل</button>
+        }
+      </div>
+    </section>
+  }
+}

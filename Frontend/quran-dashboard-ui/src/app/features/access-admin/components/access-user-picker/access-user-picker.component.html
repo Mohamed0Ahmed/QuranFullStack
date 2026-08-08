@@ -1,0 +1,64 @@
+<div class="access-user-picker" role="group" [attr.aria-labelledby]="controlId() + '-label'">
+  <label
+    class="qd-text-meta"
+    [attr.id]="controlId() + '-label'"
+    [attr.for]="selected() ? null : controlId()"
+  >{{ label() }}</label>
+
+  @if (selected(); as chosen) {
+    <p class="access-user-picker__selected" [attr.data-testid]="testIdPrefix() + '-selected'">
+      <span class="qd-truncate" [title]="nameLabel(chosen)">{{ nameLabel(chosen) }}</span>
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary"
+        [attr.data-testid]="testIdPrefix() + '-clear'"
+        (click)="clear()"
+      >مسح التحديد</button>
+    </p>
+  } @else {
+    @let searchState = state();
+    <div class="access-user-picker__search">
+      <input
+        class="qd-input"
+        type="search"
+        autocomplete="off"
+        [attr.id]="controlId()"
+        [attr.data-testid]="testIdPrefix() + '-search'"
+        [value]="term()"
+        (input)="updateTerm($event)"
+        (keydown.enter)="searchOnEnter($event)"
+      />
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary"
+        [attr.data-testid]="testIdPrefix() + '-find'"
+        [disabled]="!term().trim() || searchState.loading"
+        (click)="search()"
+      >بحث</button>
+    </div>
+
+    @if (searchState.loading) {
+      <qd-state variant="loading" message="جارٍ البحث عن الحسابات…" />
+    } @else if (searchState.error; as searchError) {
+      <qd-state variant="error" [message]="searchError" />
+    } @else if (searchState.users.length > 0) {
+      <div class="access-user-picker__results" role="list">
+        @for (candidate of searchState.users; track candidate.id) {
+          <div role="listitem">
+            <button
+              type="button"
+              class="access-user-picker__result qd-detail-list__row qd-interactive-surface"
+              [attr.data-testid]="testIdPrefix() + '-candidate-' + candidate.id"
+              (click)="select(candidate)"
+            >
+              <span class="qd-truncate" [title]="nameLabel(candidate)">{{ nameLabel(candidate) }}</span>
+              <span class="qd-text-meta qd-truncate" dir="ltr" [title]="candidate.email">{{ candidate.email }}</span>
+            </button>
+          </div>
+        }
+      </div>
+    } @else if (searched()) {
+      <qd-state variant="empty" message="لا توجد حسابات مطابقة." />
+    }
+  }
+</div>
