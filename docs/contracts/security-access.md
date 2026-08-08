@@ -22,3 +22,6 @@ nearest README define client-side access behaviour.
 - Boot-time catalogue synchronization, its non-fatal failure policy, the `permission_catalogue`
   health check, and the `Access:PermissionCatalogueStartupSync` switch →
   [`QuranDashboard.Api/README.md`](../../Backend/api/QuranDashboard.Api/README.md)
+- The Owner permission editor fails closed when the catalogue is unreadable or assignment is not
+  ready — no save path, no empty replacement set, and only that region degrades →
+  [`features/access-admin/README.md`](../../Frontend/quran-dashboard-ui/src/app/features/access-admin/README.md)

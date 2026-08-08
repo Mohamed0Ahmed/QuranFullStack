@@ -39,7 +39,10 @@ const CHANGED_DIFF: AccessPermissionDiff = {
   revoked: ['abwab.doors.create'],
 };
 
-function setup(user: AccessUserDetail = USER): ComponentFixture<AccessUserWorkflowsComponent> {
+function setup(
+  user: AccessUserDetail = USER,
+  canAssignPermissions = true,
+): ComponentFixture<AccessUserWorkflowsComponent> {
   TestBed.configureTestingModule({ imports: [AccessUserWorkflowsComponent] });
   const fixture = TestBed.createComponent(AccessUserWorkflowsComponent);
   fixture.componentRef.setInput('user', user);
@@ -48,6 +51,7 @@ function setup(user: AccessUserDetail = USER): ComponentFixture<AccessUserWorkfl
   fixture.componentRef.setInput('permissionDiff', EMPTY_DIFF);
   fixture.componentRef.setInput('busyAction', null);
   fixture.componentRef.setInput('relinkPreview', null);
+  fixture.componentRef.setInput('canAssignPermissions', canAssignPermissions);
   fixture.detectChanges();
   return fixture;
 }
@@ -218,6 +222,47 @@ describe('AccessUserWorkflowsComponent', () => {
     const labels = Array.from(badges, (badge) => badge.textContent?.trim());
 
     expect(labels).toEqual(['مالك', statusLabel]);
+  });
+
+  it('keeps the disable path and hides the permission-save path when assignment is unavailable', () => {
+    const fixture = setup(USER, false);
+
+    expect(element(fixture, 'access-request-disable')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="access-request-permissions"]')).toBeNull();
+    expect(element(fixture, 'access-permissions-unavailable').textContent).toContain(
+      'لم يطرأ أي تغيير على الوصول الحالي',
+    );
+    expect(
+      (element(fixture, 'access-permission-abwab.doors.create') as HTMLInputElement).disabled,
+    ).toBe(true);
+  });
+
+  it('states that acceptance grants no permissions while assignment is unavailable', () => {
+    const fixture = setup({ ...USER, status: 'pending', permissionCodes: [] }, false);
+    fixture.componentRef.setInput('permissionDiff', CHANGED_DIFF);
+    fixture.detectChanges();
+
+    element(fixture, 'access-request-accept').click();
+    fixture.detectChanges();
+
+    const confirmation = element(fixture, 'access-action-confirmation');
+    expect(confirmation.textContent).toContain('سيُفعَّل الحساب دون إسناد صلاحيات مباشرة');
+    expect(confirmation.querySelector('[aria-label="فرق الصلاحيات"]')).toBeNull();
+  });
+
+  it('replaces the permission editor with a recoverable error when the catalogue request fails', () => {
+    const fixture = setup(USER, false);
+    let retries = 0;
+    fixture.componentInstance.catalogueRetryRequested.subscribe(() => retries++);
+    fixture.componentRef.setInput('catalogueError', 'تعذر تحميل كتالوج الصلاحيات.');
+    fixture.detectChanges();
+
+    const region = element(fixture, 'access-permissions-section');
+    expect(region.textContent).toContain('تعذر تحميل كتالوج الصلاحيات.');
+    expect(region.querySelector('qd-access-permission-editor')).toBeNull();
+    (region.querySelector('[data-testid="qd-state-action"]') as HTMLButtonElement).click();
+
+    expect(retries).toBe(1);
   });
 
   it('cancels an inline confirmation when the selected target changes', () => {

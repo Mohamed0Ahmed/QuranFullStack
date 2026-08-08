@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, effect, input, output, signal } fro
 import { AccessUserDetail } from '../../../../core/api/generated/models/access-user-detail';
 import { LogtoSubjectRelinkPreview } from '../../../../core/api/generated/models/logto-subject-relink-preview';
 import { PermissionCode } from '../../../../core/auth/permission-code';
+import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { AccessPermissionDiff, AccessRelinkPreviewRequest } from '../../models/access-admin.models';
 import { AccessPermissionGroup, permissionLabelFor } from '../../models/access-admin-permissions';
 import { AccessPermissionEditorComponent } from '../access-permission-editor/access-permission-editor.component';
@@ -17,7 +18,7 @@ export interface AccessUserWorkflowConfirmation {
 @Component({
   selector: 'qd-access-user-workflows',
   standalone: true,
-  imports: [AccessPermissionEditorComponent],
+  imports: [AccessPermissionEditorComponent, QdStateComponent],
   templateUrl: './access-user-workflows.component.html',
   styleUrl: './access-user-workflows.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,9 +31,13 @@ export class AccessUserWorkflowsComponent {
   readonly busyAction = input<string | null>(null);
   readonly relinkPreview = input<LogtoSubjectRelinkPreview | null>(null);
   readonly resetToken = input(0);
+  readonly catalogueLoading = input(false);
+  readonly catalogueError = input<string | null>(null);
+  readonly canAssignPermissions = input(false);
 
   readonly permissionCodesChange = output<PermissionCode[]>();
   readonly actionConfirmed = output<AccessUserWorkflowConfirmation>();
+  readonly catalogueRetryRequested = output<void>();
   readonly relinkPreviewRequested = output<AccessRelinkPreviewRequest>();
   readonly relinkConfirmed = output<string>();
   readonly relinkCancelled = output<void>();
@@ -57,8 +62,12 @@ export class AccessUserWorkflowsComponent {
     return user !== null && !user.isOwner && (user.status === 'pending' || user.status === 'active');
   }
 
+  protected canDisable(): boolean {
+    return this.isActiveNonOwner();
+  }
+
   protected canReplacePermissions(): boolean {
-    return this.user()?.status === 'active' && !this.user()?.isOwner;
+    return this.isActiveNonOwner() && this.canAssignPermissions();
   }
 
   protected requestAction(kind: AccessUserWorkflowAction): void {
@@ -144,6 +153,11 @@ export class AccessUserWorkflowsComponent {
     this.relinkCancelled.emit();
   }
 
+  private isActiveNonOwner(): boolean {
+    const user = this.user();
+    return user !== null && !user.isOwner && user.status === 'active';
+  }
+
   private isActionAvailable(kind: AccessUserWorkflowAction): boolean {
     const user = this.user();
     if (!user || user.isOwner) {
@@ -153,7 +167,7 @@ export class AccessUserWorkflowsComponent {
       (kind === 'accept' && user.status === 'pending') ||
       (kind === 'disable' && user.status === 'active') ||
       (kind === 'reactivate' && user.status === 'disabled') ||
-      (kind === 'permissions' && user.status === 'active')
+      (kind === 'permissions' && this.canReplacePermissions())
     );
   }
 

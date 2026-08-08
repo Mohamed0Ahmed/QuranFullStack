@@ -18,14 +18,30 @@
       <p class="access-user-workflows__notice">تُعرض عضوية المالك للمتابعة فقط ولا يمكن تعديلها من هذه الواجهة.</p>
     } @else {
       @if (canSelectPermissions()) {
-        <section class="access-user-workflows__section">
+        <section class="access-user-workflows__section" data-testid="access-permissions-section">
           <h3>الصلاحيات المباشرة</h3>
-          <qd-access-permission-editor
-            [groups]="groups()"
-            [selectedCodes]="selectedCodes()"
-            [disabled]="busyAction() !== null"
-            (selectionChange)="permissionCodesChange.emit($event)"
-          />
+          @if (catalogueLoading()) {
+            <qd-state variant="loading" message="جارٍ تحميل الصلاحيات…" />
+          } @else if (catalogueError(); as catalogueError) {
+            <qd-state
+              variant="error"
+              [message]="catalogueError"
+              actionLabel="إعادة المحاولة"
+              (action)="catalogueRetryRequested.emit()"
+            />
+          } @else {
+            @if (!canAssignPermissions()) {
+              <p class="access-user-workflows__notice" data-testid="access-permissions-unavailable">
+                إسناد الصلاحيات غير متاح مؤقتًا. الصلاحيات المعروضة للاطّلاع فقط، ولم يطرأ أي تغيير على الوصول الحالي.
+              </p>
+            }
+            <qd-access-permission-editor
+              [groups]="groups()"
+              [selectedCodes]="selectedCodes()"
+              [disabled]="busyAction() !== null || !canAssignPermissions()"
+              (selectionChange)="permissionCodesChange.emit($event)"
+            />
+          }
         </section>
       }
 
@@ -39,6 +55,8 @@
         }
         @if (canReplacePermissions()) {
           <button type="button" class="qd-btn qd-btn-primary" data-testid="access-request-permissions" [disabled]="busyAction() !== null" (click)="requestAction('permissions')">مراجعة تعديل الصلاحيات</button>
+        }
+        @if (canDisable()) {
           <button type="button" class="qd-btn qd-btn-secondary" data-testid="access-request-disable" [disabled]="busyAction() !== null" (click)="requestAction('disable')">تعطيل الحساب</button>
         }
         @if (target.status === 'disabled') {
@@ -55,7 +73,12 @@
           @if (action === 'reactivate') {
             <p class="access-user-workflows__notice">لن تُستعاد الصلاحيات السابقة عند إعادة التفعيل.</p>
           }
-          @if (action === 'permissions' || action === 'accept') {
+          @if (action === 'accept' && !canAssignPermissions()) {
+            <p class="access-user-workflows__notice" data-testid="access-accept-without-permissions">
+              سيُفعَّل الحساب دون إسناد صلاحيات مباشرة.
+            </p>
+          }
+          @if ((action === 'permissions' || action === 'accept') && canAssignPermissions()) {
             <div class="access-user-workflows__diff" aria-label="فرق الصلاحيات">
               @if (permissionDiff().granted.length > 0) {
                 <div>

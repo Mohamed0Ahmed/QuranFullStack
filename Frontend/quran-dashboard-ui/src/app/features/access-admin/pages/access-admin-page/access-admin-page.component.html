@@ -7,7 +7,9 @@
     </div>
   </header>
 
-  @if (!facade.canAccess()) {
+  @if (!facade.accessStateKnown()) {
+    <qd-state variant="loading" message="جارٍ التحقق من صلاحية الوصول…" />
+  } @else if (!facade.canAccess()) {
     <qd-state variant="error" message="لا تملك صلاحية إدارة الوصول." />
   } @else {
     <section class="access-admin-page__workspace">
@@ -28,16 +30,18 @@
       </aside>
 
       <section class="qd-card qd-card--feature access-admin-page__detail" aria-label="تفاصيل المستخدم">
-        @if (facade.catalogueLoading() || facade.selectedUserLoading()) {
+        @let mutationMessage = facade.mutationMessage();
+        <qd-state
+          [variant]="mutationMessage?.tone === 'error' ? 'error' : 'empty'"
+          [message]="mutationMessage?.text ?? ''"
+          [reserve]="true"
+          [attr.data-testid]="'access-mutation-message-' + (mutationMessage?.tone ?? 'none')"
+        />
+        @if (facade.selectedUserLoading()) {
           <qd-state variant="loading" message="جارٍ تحميل التفاصيل…" />
-        } @else if (facade.catalogueError(); as catalogueError) {
-          <qd-state variant="error" [message]="catalogueError" />
         } @else if (facade.selectedUserError(); as userError) {
           <qd-state variant="error" [message]="userError" />
         } @else if (facade.selectedUser(); as user) {
-          @if (facade.mutationMessage(); as message) {
-            <qd-state variant="error" [message]="message" />
-          }
           <qd-access-user-workflows
             [user]="user"
             [groups]="facade.permissionGroups()"
@@ -46,8 +50,12 @@
             [busyAction]="facade.busyAction()"
             [relinkPreview]="facade.relinkPreview()"
             [resetToken]="workflowResetToken()"
+            [catalogueLoading]="facade.catalogueLoading()"
+            [catalogueError]="facade.catalogueError()"
+            [canAssignPermissions]="facade.canAssignPermissions()"
             (permissionCodesChange)="updatePermissionCodes($event)"
             (actionConfirmed)="confirmAction($event)"
+            (catalogueRetryRequested)="reloadPermissionCatalogue()"
             (relinkPreviewRequested)="previewRelink($event)"
             (relinkConfirmed)="confirmRelink($event)"
             (relinkCancelled)="cancelRelink()"
@@ -122,7 +130,9 @@
             <h2>حالة مطابقة المالكين</h2>
           </div>
         </header>
-        @if (facade.reconciliationError(); as reconciliationError) {
+        @if (facade.reconciliationLoading()) {
+          <qd-state variant="loading" message="جارٍ تحميل حالة المطابقة…" />
+        } @else if (facade.reconciliationError(); as reconciliationError) {
           <qd-state variant="error" [message]="reconciliationError" />
         } @else if (facade.reconciliationStatus(); as status) {
           <dl class="access-admin-page__reconciliation-list">
@@ -136,7 +146,7 @@
             }
           </ul>
         } @else {
-          <qd-state variant="loading" message="جارٍ تحميل حالة المطابقة…" />
+          <qd-state variant="empty" message="لا تتوفر حالة مطابقة المالكين." />
         }
       </section>
     </section>

@@ -19,6 +19,15 @@ import { AccessAdminPageComponent } from './access-admin-page.component';
 
 const ACCESS_BASE_URL = `${environment.apiBaseUrl}/api/access`;
 const REASON = 'سبب إداري موثق';
+const CATALOGUE_ERROR = 'تعذر تحميل كتالوج الصلاحيات.';
+
+type CatalogueOutcome =
+  | {
+      readonly kind: 'served';
+      readonly assignmentReady: boolean;
+      readonly items?: readonly PermissionCatalogueItem[];
+    }
+  | { readonly kind: 'failure' };
 
 const OWNER: CurrentUserResponse = {
   sub: 'owner-subject',
@@ -185,8 +194,23 @@ describe('AccessAdminPageComponent', () => {
     await load;
   }
 
+  function flushCatalogue(outcome: CatalogueOutcome): void {
+    const request = httpTesting.expectOne(`${ACCESS_BASE_URL}/permissions`);
+    if (outcome.kind === 'failure') {
+      request.flush(
+        { isSuccess: false, message: CATALOGUE_ERROR, data: null },
+        { status: 500, statusText: 'Server Error' },
+      );
+      return;
+    }
+    request.flush(
+      success({ items: outcome.items ?? CATALOGUE, assignmentReady: outcome.assignmentReady }),
+    );
+  }
+
   async function renderPage(
     listedUser: AccessUserDetail,
+    catalogue: CatalogueOutcome = { kind: 'served', assignmentReady: true },
   ): Promise<ComponentFixture<AccessAdminPageComponent>> {
     await loadOwner();
     const fixture = TestBed.createComponent(AccessAdminPageComponent);
@@ -202,9 +226,7 @@ describe('AccessAdminPageComponent', () => {
           totalCount: 1,
         }),
       );
-    httpTesting
-      .expectOne(`${ACCESS_BASE_URL}/permissions`)
-      .flush(success({ items: CATALOGUE, assignmentReady: true }));
+    flushCatalogue(catalogue);
     httpTesting
       .expectOne((request) => request.url === `${ACCESS_BASE_URL}/audit-events`)
       .flush(success({ items: AUDIT_EVENTS, nextCursor: null }));
@@ -269,6 +291,9 @@ describe('AccessAdminPageComponent', () => {
           totalCount: 1,
         }),
       );
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/permissions`)
+      .flush(success({ items: CATALOGUE, assignmentReady: true }));
     httpTesting
       .expectOne((request) => request.url === `${ACCESS_BASE_URL}/audit-events`)
       .flush(success({ items: AUDIT_EVENTS, nextCursor: null }));
@@ -536,6 +561,173 @@ describe('AccessAdminPageComponent', () => {
     fixture.detectChanges();
 
     expect(root.textContent).toContain('نتيجة المرشح');
+  });
+
+  it('degrades only the permission region when the catalogue request fails, then recovers on retry', async () => {
+    const activeUser = user('active', 4, ['abwab.doors.create']);
+    const fixture = await renderPage(activeUser, { kind: 'failure' });
+    await selectUser(fixture, activeUser);
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.textContent).toContain('عضو');
+    expect(root.textContent).toContain('member@example.test');
+    expect(
+      Array.from(
+        root.querySelectorAll('.access-user-workflows__header .qd-badge') as NodeListOf<HTMLElement>,
+        (badge) => badge.textContent?.trim(),
+      ),
+    ).toEqual(['نشط']);
+    expect(element(fixture, 'access-request-disable')).toBeTruthy();
+    expect(element(fixture, 'access-relink-new-sub')).toBeTruthy();
+
+    const region = element(fixture, 'access-permissions-section');
+    expect(region.textContent).toContain(CATALOGUE_ERROR);
+    expect(region.querySelector('qd-access-permission-editor')).toBeNull();
+    expect(root.querySelector('[data-testid="access-request-permissions"]')).toBeNull();
+
+    (region.querySelector('[data-testid="qd-state-action"]') as HTMLButtonElement).click();
+    flushCatalogue({ kind: 'served', assignmentReady: true });
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(element(fixture, 'access-permissions-section').textContent).not.toContain(CATALOGUE_ERROR);
+    expect(element(fixture, 'access-request-permissions')).toBeTruthy();
+    expect(
+      (element(fixture, 'access-permission-abwab.doors.create') as HTMLInputElement).disabled,
+    ).toBe(false);
+  });
+
+  it.each([
+    { name: 'an unready catalogue', catalogue: { kind: 'served', assignmentReady: false } as const },
+    {
+      name: 'an empty catalogue reported as ready',
+      catalogue: { kind: 'served', assignmentReady: true, items: [] } as const,
+    },
+  ])('fails closed over $name and offers no permission write path', async ({ catalogue }) => {
+    const activeUser = user('active', 4, ['abwab.doors.create']);
+    const fixture = await renderPage(activeUser, catalogue);
+    await selectUser(fixture, activeUser);
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(element(fixture, 'access-permissions-unavailable').textContent).toContain(
+      'إسناد الصلاحيات غير متاح مؤقتًا',
+    );
+    expect(root.querySelector('[data-testid="access-request-permissions"]')).toBeNull();
+    expect(element(fixture, 'access-request-disable')).toBeTruthy();
+    expect(httpTesting.match((request) => request.method === 'PUT')).toEqual([]);
+  });
+
+  it('keeps the editor readable but read-only while assignment is unavailable', async () => {
+    const activeUser = user('active', 4, ['abwab.doors.create']);
+    const fixture = await renderPage(activeUser, { kind: 'served', assignmentReady: false });
+    await selectUser(fixture, activeUser);
+
+    const granted = element(fixture, 'access-permission-abwab.doors.create') as HTMLInputElement;
+    expect(granted.checked).toBe(true);
+    expect(granted.disabled).toBe(true);
+    const ungranted = element(fixture, 'access-permission-abwab.doors.edit') as HTMLInputElement;
+    expect(ungranted.checked).toBe(false);
+    expect(ungranted.disabled).toBe(true);
+
+    ungranted.checked = true;
+    ungranted.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(httpTesting.match((request) => request.method === 'PUT')).toEqual([]);
+  });
+
+  it('accepts a pending user without a permission payload while assignment is unavailable', async () => {
+    const pendingUser = user('pending');
+    const fixture = await renderPage(pendingUser, { kind: 'served', assignmentReady: false });
+    await selectUser(fixture, pendingUser);
+
+    expect(element(fixture, 'access-permissions-unavailable')).toBeTruthy();
+    confirmAction(fixture, 'access-request-accept');
+
+    const request = httpTesting.expectOne(`${ACCESS_BASE_URL}/users/17/accept`);
+    expect(request.request.body).toEqual({
+      expectedVersion: 4,
+      permissionCodes: [],
+      reason: REASON,
+    });
+    const activeUser = user('active', 5);
+    request.flush(success(activeUser));
+    await flushMutationRefresh(fixture, activeUser);
+
+    expect(httpTesting.match((candidate) => candidate.method === 'PUT')).toEqual([]);
+  });
+
+  it('reports a completed change without an error state', async () => {
+    const initialUser = user('active');
+    const fixture = await renderPage(initialUser);
+    await selectUser(fixture, initialUser);
+
+    confirmAction(fixture, 'access-request-disable');
+    const disabledUser = user('disabled', 5);
+    httpTesting.expectOne(`${ACCESS_BASE_URL}/users/17/disable`).flush(success(disabledUser));
+    await flushMutationRefresh(fixture, disabledUser);
+
+    expect(element(fixture, 'access-mutation-message-success').textContent).toContain('تم حفظ التغيير');
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="qd-state-error"]'),
+    ).toBeNull();
+  });
+
+  it('reports a version conflict as a recovery notice rather than an error', async () => {
+    const initialUser = user('active', 4, ['abwab.doors.create']);
+    const fixture = await renderPage(initialUser);
+    await selectUser(fixture, initialUser);
+
+    confirmAction(fixture, 'access-request-permissions');
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/users/17/permissions`)
+      .flush(
+        { isSuccess: false, message: 'تغيرت بيانات المستخدم', data: null },
+        { status: 409, statusText: 'Conflict' },
+      );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const refreshedUser = user('active', 5, ['abwab.doors.edit']);
+    httpTesting.expectOne(`${ACCESS_BASE_URL}/users/17`).flush(success(refreshedUser));
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/users/17/permissions`)
+      .flush(success(permissions(refreshedUser)));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const notice = element(fixture, 'access-mutation-message-notice');
+    expect(notice.textContent).toContain('تغيرت بيانات المستخدم');
+    expect(notice.querySelector('[data-testid="qd-state-error"]')).toBeNull();
+  });
+
+  it('waits for the current-user state instead of flashing the permission-denied error', async () => {
+    const load = currentUserStore.refresh();
+    const identity = httpTesting.expectOne(`${ACCESS_BASE_URL}/me`);
+    const fixture = TestBed.createComponent(AccessAdminPageComponent);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="qd-state-loading"]')).toBeTruthy();
+    expect(root.textContent).not.toContain('لا تملك صلاحية إدارة الوصول');
+
+    identity.flush(success(OWNER));
+    await load;
+    fixture.detectChanges();
+
+    expect(root.textContent).not.toContain('لا تملك صلاحية إدارة الوصول');
+  });
+
+  it('renders the permission-denied error once the current-user state is known', async () => {
+    const load = currentUserStore.refresh();
+    httpTesting.expectOne(`${ACCESS_BASE_URL}/me`).flush(success({ ...OWNER, isOwner: false }));
+    await load;
+
+    const fixture = TestBed.createComponent(AccessAdminPageComponent);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'لا تملك صلاحية إدارة الوصول',
+    );
   });
 
   it('uses a labelled section instead of a nested main landmark', async () => {

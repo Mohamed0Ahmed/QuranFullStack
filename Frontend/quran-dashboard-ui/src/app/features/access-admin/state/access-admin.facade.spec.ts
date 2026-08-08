@@ -166,6 +166,7 @@ describe('AccessAdminFacade', () => {
   async function flushMutationRefresh(
     detail: AccessUserDetail,
     permissionSnapshot: AccessUserPermissions,
+    assignmentReady = true,
   ): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 0));
     httpTesting.expectOne(`${ACCESS_BASE_URL}/users/${detail.id}`).flush(success(detail));
@@ -175,6 +176,9 @@ describe('AccessAdminFacade', () => {
     httpTesting
       .expectOne((request) => request.url === `${ACCESS_BASE_URL}/users`)
       .flush(success({ items: [summary(detail)], page: 1, pageSize: 25, totalCount: 1 }));
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/permissions`)
+      .flush(success({ items: CATALOGUE, assignmentReady }));
     httpTesting
       .expectOne((request) => request.url === `${ACCESS_BASE_URL}/audit-events`)
       .flush(success({ items: [], nextCursor: null }));
@@ -437,6 +441,135 @@ describe('AccessAdminFacade', () => {
 
     expect(facade.canAccess()).toBe(false);
     httpTesting.expectNone(`${ACCESS_BASE_URL}/users/17/logto-sub/relink/preview`);
+  });
+
+  it.each([
+    ['an unready catalogue', { items: CATALOGUE, assignmentReady: false }],
+    ['an empty catalogue reported as ready', { items: [], assignmentReady: true }],
+  ])('withholds permission assignment over %s', async (_scenario, payload) => {
+    await loadCurrentUser(OWNER);
+    const load = facade.loadPermissionCatalogue();
+    httpTesting.expectOne(`${ACCESS_BASE_URL}/permissions`).flush(success(payload));
+    await load;
+    await selectTarget(
+      user(1, ['abwab.doors.create']),
+      permissions(1, ['abwab.doors.create']),
+    );
+
+    expect(facade.canAssignPermissions()).toBe(false);
+    facade.setSelectedPermissionCodes(new Set(['abwab.doors.edit']));
+    expect([...facade.selectedPermissionCodes()]).toEqual(['abwab.doors.create']);
+    await expect(facade.replaceSelectedPermissions('تحديث الصلاحيات')).resolves.toBe('invalid');
+
+    httpTesting.expectNone(`${ACCESS_BASE_URL}/users/17/permissions`);
+  });
+
+  it('withholds permission assignment from a failed catalogue refresh until a reload succeeds', async () => {
+    await loadCurrentUser(OWNER);
+    await loadCatalogue();
+    await selectTarget(
+      user(1, ['abwab.doors.create']),
+      permissions(1, ['abwab.doors.create']),
+    );
+    expect(facade.canAssignPermissions()).toBe(true);
+
+    const retry = facade.loadPermissionCatalogue();
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/permissions`)
+      .flush(
+        { isSuccess: false, message: 'تعذر تحميل كتالوج الصلاحيات.', data: null },
+        { status: 500, statusText: 'Server Error' },
+      );
+    await retry;
+
+    expect(facade.assignmentReady()).toBe(false);
+    expect(facade.catalogueError()).not.toBeNull();
+    expect(facade.canAssignPermissions()).toBe(false);
+    expect([...facade.selectedPermissionCodes()]).toEqual(['abwab.doors.create']);
+    await expect(facade.replaceSelectedPermissions('تحديث الصلاحيات')).resolves.toBe('invalid');
+
+    httpTesting.expectNone(`${ACCESS_BASE_URL}/users/17/permissions`);
+
+    const secondRetry = facade.loadPermissionCatalogue();
+    const inFlight = httpTesting.expectOne(`${ACCESS_BASE_URL}/permissions`);
+
+    expect(facade.catalogueError()).toBeNull();
+    expect(facade.canAssignPermissions()).toBe(false);
+    await expect(facade.replaceSelectedPermissions('تحديث الصلاحيات')).resolves.toBe('invalid');
+
+    inFlight.flush(success({ items: CATALOGUE, assignmentReady: true }));
+    await secondRetry;
+
+    expect(facade.canAssignPermissions()).toBe(true);
+  });
+
+  it('re-evaluates catalogue readiness after every mutation', async () => {
+    await loadCurrentUser(OWNER);
+    const load = facade.loadPermissionCatalogue();
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/permissions`)
+      .flush(success({ items: CATALOGUE, assignmentReady: false }));
+    await load;
+    await selectTarget(user(1), permissions(1));
+    expect(facade.canAssignPermissions()).toBe(false);
+
+    const disabling = facade.disableSelectedUser('مراجعة الوصول');
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/users/17/disable`)
+      .flush(success(user(2, [], { status: 'disabled' })));
+    await flushMutationRefresh(user(2, [], { status: 'disabled' }), permissions(2));
+
+    await expect(disabling).resolves.toBe('success');
+    expect(facade.canAssignPermissions()).toBe(true);
+  });
+
+  it('drops a retained draft from the accept payload once assignment becomes unavailable', async () => {
+    await loadCurrentUser(OWNER);
+    await loadCatalogue();
+    const pendingUser = user(1, [], { status: 'pending' });
+    await selectTarget(pendingUser, permissions(1, [], { status: 'pending' }));
+    facade.setSelectedPermissionCodes(new Set(['abwab.doors.create', 'abwab.doors.edit']));
+
+    const unreadyReload = facade.loadPermissionCatalogue();
+    httpTesting
+      .expectOne(`${ACCESS_BASE_URL}/permissions`)
+      .flush(success({ items: CATALOGUE, assignmentReady: false }));
+    await unreadyReload;
+
+    expect([...facade.selectedPermissionCodes()]).toEqual([
+      'abwab.doors.create',
+      'abwab.doors.edit',
+    ]);
+
+    const acceptance = facade.acceptSelectedUser('قبول الحساب');
+    const request = httpTesting.expectOne(`${ACCESS_BASE_URL}/users/17/accept`);
+    expect(request.request.body).toEqual({
+      expectedVersion: 1,
+      permissionCodes: [],
+      reason: 'قبول الحساب',
+    });
+    const activeUser = user(2);
+    request.flush(success(activeUser));
+    await flushMutationRefresh(activeUser, permissions(2), false);
+
+    await expect(acceptance).resolves.toBe('success');
+  });
+
+  it('keeps a draft code that the catalogue no longer offers out of the submitted set', async () => {
+    await loadCurrentUser(OWNER);
+    await loadCatalogue();
+    await selectTarget(
+      user(1, ['abwab.doors.create']),
+      permissions(1, ['abwab.doors.create']),
+    );
+
+    facade.setSelectedPermissionCodes(new Set(['abwab.doors.create', 'abwab.sections.create']));
+
+    expect([...facade.selectedPermissionCodes()]).toEqual([
+      'abwab.doors.create',
+      'abwab.sections.create',
+    ]);
+    expect(facade.permissionDiff()).toEqual({ granted: [], revoked: [] });
   });
 
   it('does not submit a permission replacement without a confirmation reason', async () => {

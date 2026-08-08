@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 
 import { CurrentUserStore } from '../../../core/auth/current-user.store';
 import { PermissionCode, isPermissionCode } from '../../../core/auth/permission-code';
@@ -34,6 +34,13 @@ export type AccessAdminMutationOutcome =
   | 'unauthorized'
   | 'error';
 
+export type AccessAdminMessageTone = 'success' | 'notice' | 'error';
+
+export interface AccessAdminMessage {
+  readonly text: string;
+  readonly tone: AccessAdminMessageTone;
+}
+
 const defaultUserQuery: AccessUserListQuery = { page: 1, pageSize: 25 };
 const defaultAuditQuery: AccessAuditQuery = { pageSize: 25 };
 
@@ -42,6 +49,8 @@ export class AccessAdminFacade {
   private static readonly accessDeniedMessage = 'لا تملك صلاحية إدارة الوصول.';
   private static readonly loadErrorMessage = 'تعذر تحميل بيانات إدارة الوصول.';
   private static readonly writeErrorMessage = 'تعذر إتمام التغيير المطلوب.';
+  private static readonly mutationSuccessMessage = 'تم حفظ التغيير.';
+  private static readonly conflictMessage = 'تغيرت بيانات المستخدم. تم تحديث الحالة الحالية.';
 
   private readonly api = inject(AccessAdminApi);
   private readonly currentUserStore = inject(CurrentUserStore);
@@ -65,10 +74,11 @@ export class AccessAdminFacade {
   private readonly auditLoadingState = signal(false);
   private readonly auditErrorState = signal<string | null>(null);
   private readonly reconciliationState = signal<OwnerReconciliationStatus | null>(null);
+  private readonly reconciliationLoadingState = signal(false);
   private readonly reconciliationErrorState = signal<string | null>(null);
   private readonly relinkPreviewState = signal<LogtoSubjectRelinkPreview | null>(null);
   private readonly relinkEvidenceTokenState = signal<string | null>(null);
-  private readonly mutationMessageState = signal<string | null>(null);
+  private readonly mutationMessageState = signal<AccessAdminMessage | null>(null);
   private readonly busyActionState = signal<string | null>(null);
   private usersRequestVersion = 0;
   private selectedUserRequestVersion = 0;
@@ -76,6 +86,13 @@ export class AccessAdminFacade {
   private relinkPreviewRequestVersion = 0;
 
   readonly canAccess = computed(() => this.currentUserStore.isActive() && this.currentUserStore.isOwner());
+  readonly accessStateKnown = computed(() => {
+    const loadState = this.currentUserStore.loadState();
+    if (loadState === 'ready' || loadState === 'error') {
+      return true;
+    }
+    return loadState === 'idle' && this.currentUserStore.authStateKnown();
+  });
   readonly users = computed(() => this.usersState()?.items ?? []);
   readonly userPage = computed(() => this.usersState()?.page ?? this.userQueryState().page);
   readonly userPageSize = computed(() => this.usersState()?.pageSize ?? this.userQueryState().pageSize);
@@ -89,6 +106,9 @@ export class AccessAdminFacade {
   readonly assignmentReady = this.assignmentReadyState.asReadonly();
   readonly catalogueLoading = this.catalogueLoadingState.asReadonly();
   readonly catalogueError = this.catalogueErrorState.asReadonly();
+  readonly canAssignPermissions = computed(
+    () => this.assignmentReady() && !this.catalogueError() && this.permissionGroups().length > 0,
+  );
   readonly selectedUser = this.selectedUserState.asReadonly();
   readonly selectedPermissions = this.selectedPermissionsState.asReadonly();
   readonly selectedPermissionCodes = this.selectedPermissionCodesState.asReadonly();
@@ -100,6 +120,7 @@ export class AccessAdminFacade {
   readonly auditLoading = this.auditLoadingState.asReadonly();
   readonly auditError = this.auditErrorState.asReadonly();
   readonly reconciliationStatus = this.reconciliationState.asReadonly();
+  readonly reconciliationLoading = this.reconciliationLoadingState.asReadonly();
   readonly reconciliationError = this.reconciliationErrorState.asReadonly();
   readonly relinkPreview = this.relinkPreviewState.asReadonly();
   readonly mutationMessage = this.mutationMessageState.asReadonly();
@@ -115,7 +136,7 @@ export class AccessAdminFacade {
 
   async load(): Promise<void> {
     if (!this.canAccess()) {
-      this.clearProtectedState(AccessAdminFacade.accessDeniedMessage);
+      this.clearProtectedState();
       return;
     }
 
@@ -173,13 +194,12 @@ export class AccessAdminFacade {
       if (response.isSuccess && response.data) {
         this.catalogueState.set(response.data.items);
         this.assignmentReadyState.set(response.data.assignmentReady);
-        this.selectedPermissionCodesState.set(
-          new Set(permissionCodesForSubmission(response.data.items, this.selectedPermissionCodesState())),
-        );
         return;
       }
+      this.assignmentReadyState.set(false);
       this.catalogueErrorState.set(response.message ?? AccessAdminFacade.loadErrorMessage);
     } catch (error) {
+      this.assignmentReadyState.set(false);
       this.catalogueErrorState.set(messageFrom(error, AccessAdminFacade.loadErrorMessage));
     } finally {
       this.catalogueLoadingState.set(false);
@@ -194,6 +214,7 @@ export class AccessAdminFacade {
     const requestVersion = ++this.selectedUserRequestVersion;
     this.selectedUserLoadingState.set(true);
     this.selectedUserErrorState.set(null);
+    this.mutationMessageState.set(null);
     this.invalidateRelinkPreviewRequest();
     try {
       const [detailResponse, permissionsResponse] = await Promise.all([
@@ -230,7 +251,7 @@ export class AccessAdminFacade {
     if (!this.canSelectPermissions()) {
       return;
     }
-    this.selectedPermissionCodesState.set(new Set(permissionCodesForSubmission(this.catalogueState(), codes)));
+    this.selectedPermissionCodesState.set(knownCodes([...codes]));
   }
 
   async acceptSelectedUser(reason: string): Promise<AccessAdminMutationOutcome> {
@@ -243,7 +264,7 @@ export class AccessAdminFacade {
     return this.runMutation('accept', () =>
       this.api.acceptUser(user.id, {
         expectedVersion: user.version,
-        permissionCodes: permissionCodesForSubmission(this.catalogueState(), this.selectedPermissionCodesState()),
+        permissionCodes: this.permissionCodesForAssignment(),
         reason: normalizedReason,
       }),
     );
@@ -281,16 +302,13 @@ export class AccessAdminFacade {
       return 'invalid';
     }
 
-    return this.runMutation('permissions', async () => {
-      const response = await firstValueFrom(
-        this.api.replacePermissions(user.id, {
-          expectedVersion: permissions.version,
-          permissionCodes: permissionCodesForSubmission(this.catalogueState(), this.selectedPermissionCodesState()),
-          reason: normalizedReason,
-        }),
-      );
-      return response;
-    });
+    return this.runMutation('permissions', () =>
+      this.api.replacePermissions(user.id, {
+        expectedVersion: permissions.version,
+        permissionCodes: this.permissionCodesForAssignment(),
+        reason: normalizedReason,
+      }),
+    );
   }
 
   async previewSelectedUserRelink(
@@ -318,7 +336,10 @@ export class AccessAdminFacade {
         return 'invalid';
       }
       if (!response.isSuccess || !response.data) {
-        this.mutationMessageState.set(response.message ?? AccessAdminFacade.writeErrorMessage);
+        this.mutationMessageState.set({
+          text: response.message ?? AccessAdminFacade.writeErrorMessage,
+          tone: 'error',
+        });
         return 'invalid';
       }
       this.relinkPreviewState.set(response.data);
@@ -412,6 +433,7 @@ export class AccessAdminFacade {
       return;
     }
 
+    this.reconciliationLoadingState.set(true);
     this.reconciliationErrorState.set(null);
     try {
       const response = await firstValueFrom(this.api.getOwnerReconciliationStatus());
@@ -422,12 +444,14 @@ export class AccessAdminFacade {
       this.reconciliationErrorState.set(response.message ?? AccessAdminFacade.loadErrorMessage);
     } catch (error) {
       this.reconciliationErrorState.set(messageFrom(error, AccessAdminFacade.loadErrorMessage));
+    } finally {
+      this.reconciliationLoadingState.set(false);
     }
   }
 
   private async runMutation<T>(
     action: string,
-    request: () => Promise<ApiResponse<T>> | import('rxjs').Observable<ApiResponse<T>>,
+    request: () => Observable<ApiResponse<T>>,
   ): Promise<AccessAdminMutationOutcome> {
     const user = this.selectedUserState();
     if (!user || !this.canAccess()) {
@@ -437,12 +461,19 @@ export class AccessAdminFacade {
     this.busyActionState.set(action);
     this.mutationMessageState.set(null);
     try {
-      const response = await resolveRequest(request());
+      const response = await firstValueFrom(request());
       if (!response.isSuccess || !response.data) {
-        this.mutationMessageState.set(response.message ?? AccessAdminFacade.writeErrorMessage);
+        this.mutationMessageState.set({
+          text: response.message ?? AccessAdminFacade.writeErrorMessage,
+          tone: 'error',
+        });
         return 'invalid';
       }
       await this.refreshAfterMutation(user.id);
+      this.mutationMessageState.set({
+        text: AccessAdminFacade.mutationSuccessMessage,
+        tone: 'success',
+      });
       return 'success';
     } catch (error) {
       return this.handleMutationError(error);
@@ -453,33 +484,42 @@ export class AccessAdminFacade {
 
   private async handleMutationError(error: unknown): Promise<AccessAdminMutationOutcome> {
     if (error instanceof HttpErrorResponse && error.status === 409) {
-      this.mutationMessageState.set(messageFrom(error, 'تغيرت بيانات المستخدم. تم تحديث الحالة الحالية.'));
+      const conflictMessage = messageFrom(error, AccessAdminFacade.conflictMessage);
       await this.refreshSelectedUserAfterConflict();
+      this.mutationMessageState.set({ text: conflictMessage, tone: 'notice' });
       return 'conflict';
     }
 
     const authFailure = await this.writeAuthFailureCoordinator.handle(error);
     if (authFailure) {
-      this.mutationMessageState.set(authFailure.message ?? AccessAdminFacade.accessDeniedMessage);
       if (authFailure.kind === 'forbidden' && !this.canAccess()) {
-        this.clearProtectedState(this.mutationMessageState());
+        this.clearProtectedState();
       }
+      this.mutationMessageState.set({
+        text: authFailure.message ?? AccessAdminFacade.accessDeniedMessage,
+        tone: 'error',
+      });
       return authFailure.kind;
     }
 
-    if (error instanceof HttpErrorResponse && (error.status === 400 || error.status === 404)) {
-      this.mutationMessageState.set(messageFrom(error, AccessAdminFacade.writeErrorMessage));
-      return 'invalid';
-    }
-
-    this.mutationMessageState.set(messageFrom(error, AccessAdminFacade.writeErrorMessage));
-    return 'error';
+    this.mutationMessageState.set({
+      text: messageFrom(error, AccessAdminFacade.writeErrorMessage),
+      tone: 'error',
+    });
+    return error instanceof HttpErrorResponse && (error.status === 400 || error.status === 404)
+      ? 'invalid'
+      : 'error';
   }
 
   private async refreshAfterMutation(userId: number): Promise<void> {
     this.relinkPreviewState.set(null);
     this.relinkEvidenceTokenState.set(null);
-    await Promise.all([this.selectUser(userId), this.loadUsers(), this.loadAuditEvents()]);
+    await Promise.all([
+      this.selectUser(userId),
+      this.loadUsers(),
+      this.loadPermissionCatalogue(),
+      this.loadAuditEvents(),
+    ]);
   }
 
   private async refreshSelectedUserAfterConflict(): Promise<void> {
@@ -489,9 +529,21 @@ export class AccessAdminFacade {
     }
   }
 
+  private permissionCodesForAssignment(): PermissionCode[] {
+    return this.canAssignPermissions()
+      ? permissionCodesForSubmission(this.catalogueState(), this.selectedPermissionCodesState())
+      : [];
+  }
+
   private canSelectPermissions(): boolean {
     const user = this.selectedUserState();
-    return this.canAccess() && user !== null && !user.isOwner && (user.status === 'pending' || user.status === 'active');
+    return (
+      this.canAccess() &&
+      this.canAssignPermissions() &&
+      user !== null &&
+      !user.isOwner &&
+      (user.status === 'pending' || user.status === 'active')
+    );
   }
 
   private canReplaceSelectedPermissions(): boolean {
@@ -515,7 +567,7 @@ export class AccessAdminFacade {
     }
   }
 
-  private clearProtectedState(message: string | null): void {
+  private clearProtectedState(): void {
     this.usersState.set(null);
     this.selectedUserState.set(null);
     this.selectedPermissionsState.set(null);
@@ -523,7 +575,6 @@ export class AccessAdminFacade {
     this.auditState.set(null);
     this.reconciliationState.set(null);
     this.invalidateRelinkPreviewRequest();
-    this.mutationMessageState.set(message);
   }
 }
 
@@ -537,10 +588,4 @@ function messageFrom(error: unknown, fallback: string): string {
   }
   const response = error.error as Partial<ApiResponse<unknown>>;
   return typeof response.message === 'string' && response.message.trim() ? response.message : fallback;
-}
-
-function resolveRequest<T>(
-  request: Promise<ApiResponse<T>> | import('rxjs').Observable<ApiResponse<T>>,
-): Promise<ApiResponse<T>> {
-  return request instanceof Promise ? request : firstValueFrom(request);
 }

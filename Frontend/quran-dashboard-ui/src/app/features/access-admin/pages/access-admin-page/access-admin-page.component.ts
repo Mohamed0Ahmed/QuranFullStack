@@ -47,6 +47,10 @@ export class AccessAdminPageComponent implements OnInit {
     this.facade.setSelectedPermissionCodes(new Set(codes));
   }
 
+  protected reloadPermissionCatalogue(): void {
+    void this.facade.loadPermissionCatalogue();
+  }
+
   protected confirmAction(action: AccessUserWorkflowConfirmation): void {
     void this.runAction(action);
   }
