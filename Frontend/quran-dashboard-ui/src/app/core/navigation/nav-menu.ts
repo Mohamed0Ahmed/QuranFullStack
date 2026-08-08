@@ -1,5 +1,5 @@
 import { NAV_ITEMS, NavItem } from './nav-items';
-import { ABWAB_ROUTE_PATH } from './route-paths';
+import { ABWAB_ROUTE_PATH, SETTINGS_ACCESS_ROUTE_PATH } from './route-paths';
 import { WORDS_MENU_ITEMS } from './words-nav-items';
 
 const ABWAB_MENU_ITEMS: readonly NavItem[] = [
@@ -24,6 +24,15 @@ const ABWAB_MENU_ITEMS: readonly NavItem[] = [
 const childrenByParentKey: Record<string, NavItem[]> = {
   words: [...WORDS_MENU_ITEMS],
   abwab: [...ABWAB_MENU_ITEMS],
+  settings: [
+    {
+      key: 'settings-access',
+      labelAr: 'إدارة الوصول',
+      labelEn: 'Access Management',
+      route: SETTINGS_ACCESS_ROUTE_PATH,
+      group: 'actions',
+    },
+  ],
 };
 
 export const NAV_MENU: NavItem[] = NAV_ITEMS.map((item) => {

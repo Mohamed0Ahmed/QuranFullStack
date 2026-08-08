@@ -1,4 +1,5 @@
-import { Component, ElementRef, HostListener, inject } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { Component, ElementRef, HostListener, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
@@ -25,7 +26,7 @@ const MORE_MENU_ITEM: NavItem = {
 @Component({
   selector: 'qd-top-navbar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [NgTemplateOutlet, RouterLink, RouterLinkActive],
   templateUrl: './top-navbar.component.html',
   styleUrls: ['./top-navbar.component.scss'],
 })
@@ -41,12 +42,25 @@ export class TopNavbarComponent {
 
   protected readonly dashboardRoute = DASHBOARD_ROUTE_PATH;
 
-  readonly allItems: NavItem[] = NAV_MENU;
+  private readonly isActiveOwner = computed(
+    () =>
+      this.currentUserStore.authStateKnown() &&
+      this.currentUserStore.isActive() &&
+      this.currentUserStore.isOwner(),
+  );
+
+  readonly allItems = computed(() => NAV_MENU.filter((item) => this.isItemVisible(item)));
   readonly desktopItems: NavItem[] = [
     ...NAV_MENU.filter((i) => i.group === 'primary'),
     MORE_MENU_ITEM,
   ];
-  readonly actionItems = NAV_MENU.filter((i) => i.group === 'actions');
+  readonly actionItems = computed(() =>
+    NAV_MENU.filter((item) => item.group === 'actions' && this.isItemVisible(item)),
+  );
+
+  private isItemVisible(item: NavItem): boolean {
+    return item.key !== 'settings' || this.isActiveOwner();
+  }
 
   openMenuKey: string | null = null;
   mobileOpen = false;

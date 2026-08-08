@@ -1,7 +1,10 @@
 # Access administration
 
-Owner-only security-administration feature at `/settings/access`. It is intentionally absent from
-the navbar and is reached through the guarded route only.
+Owner-only security-administration feature at `/settings/access`. The navbar's «الإعدادات»
+dropdown reaches it through its «إدارة الوصول» entry (`core/navigation/nav-menu.ts`,
+`core/layout/top-navbar/`), which renders only for an Active Owner once the auth state is known.
+That visibility is UX convenience, not authorization — `ownerGuard` on the route remains the sole
+authorization boundary, and the route carries no additional guard for it.
 
 ## What it does
 
@@ -20,7 +23,9 @@ the navbar and is reached through the guarded route only.
   (`components/access-lifecycle-actions/`), never in the row that carries the permission save — see
   *Per-status semantics* below. That region renders nothing at all for an Owner target, so the
   guard in `AccessLifecycleActionsComponent` and the page's own Owner branch cannot disagree.
-- Presents server-catalogued permissions by group, in a responsive 2–3 column grid. Select-all is
+- Presents server-catalogued permissions by group, in a compact container-driven grid —
+  `repeat(auto-fit, minmax(13rem, 1fr))` in `access-permission-editor.component.scss`, so the
+  column count follows the editor's own width rather than viewport breakpoints. Select-all is
   group-local and labelled «تحديد الكل»: a partial group is indeterminate, selecting it adds that
   group's individual `PermissionCode` values, and clearing it removes only that group. Every
   individual value can still be unchecked. Requests contain the flattened known codes only, never a
@@ -506,7 +511,7 @@ min-block-size on the panes themselves, which is layout work and has not been do
   status ∈ {pending, active}" beside the write they gate. A change to which statuses may hold
   permissions therefore cannot move the rendered editor without moving the `PUT` gate with it. The
   facade adds only what is its own to add: the Owner access snapshot and catalogue readiness.
-- Owner membership, role editing, group grants, and navbar changes are out of scope.
+- Owner membership, role editing, and group grants are out of scope.
 
 ## Testing
 

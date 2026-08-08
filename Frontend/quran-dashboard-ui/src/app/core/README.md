@@ -80,10 +80,17 @@ per-feature.
   `childrenByParentKey` table). Children attach **outside** `NAV_ITEMS` because
   `route-paths.ts` imports `NAV_ITEMS` and derives every route constant from it at module
   init — nesting children into `nav-items.ts` would create an import cycle that hits a TDZ
-  `ReferenceError`; recorded here so nobody "simplifies" the children back in. The top-navbar
-  dropdown ("الكلمات والجذور", "الأبواب") is `@if (item.children)`, data-driven, not a
-  per-key template branch; «الأرشيف» (`/abwab` + `{archive:'1'}`) is the app's first
-  query-param nav entry. Also here: `idle-preload.strategy.ts` — the `withPreloading`
+  `ReferenceError`; recorded here so nobody "simplifies" the children back in. The
+  `childrenByParentKey` table carries `words`, `abwab`, and `settings` («إدارة الوصول» →
+  `/settings/access`). The top-navbar dropdowns ("الكلمات والجذور", "الأبواب", "الإعدادات") are
+  `@if (item.children)`, data-driven, not per-key template branches; «الأرشيف» (`/abwab` +
+  `{archive:'1'}`) is the app's first query-param nav entry, and «الإعدادات» is the app's first
+  auth-gated one: a parent that navigates nowhere itself (like «المزيد») — a dropdown trigger
+  in the desktop actions cluster, a non-navigable group label above its child in the mobile
+  panel — that the navbar renders in both places only for an Active Owner and only once
+  `CurrentUserStore.authStateKnown()` is true, so the entry cannot
+  flash while `/api/access/me` resolves. That visibility is convenience; `ownerGuard` on
+  `/settings/access` stays the authorization boundary. Also here: `idle-preload.strategy.ts` — the `withPreloading`
   strategy registered in `app.config.ts`; preloads every lazy route chunk, each after
   an idle callback (timeout-bounded, `setTimeout` fallback), so first clicks find
   chunks cached without preloading ever competing with bootstrap or the landing
@@ -126,10 +133,10 @@ per-feature.
   sits before the `**` wildcard in `app.routes.ts`. The placeholder nav routes (e.g.
   `/tafsirs`) stay top-level and unguarded. `/abwab` (Abwab doors & sections, Slice B) is a
   real top-level lazy feature route, same unguarded posture — see
-  `../features/abwab/README.md`. `/settings/access` is a non-navigated lazy Owner
-  security-administration feature guarded only by `ownerGuard`; it keeps the administration
-  boundary out of normal navigation while allowing active Owners to manage access. No other route
-  has a guard.
+  `../features/abwab/README.md`. `/settings/access` is a lazy Owner security-administration
+  feature guarded only by `ownerGuard`; the navbar's «الإعدادات» dropdown exposes it to Active
+  Owners (a visibility convenience — see `navigation/` above — never a second authorization
+  rule). No other route has a guard.
 - Interceptor order matters (`secureUrlInterceptor`, then `authInterceptor()`, then
   `devLatencyInterceptor`); keep registration order in `app.config.ts`. `authInterceptor()`
   (from `angular-auth-oidc-client`) attaches the Logto Bearer token only to requests under
