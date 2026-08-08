@@ -156,14 +156,12 @@ export class AbwabPageComponent implements OnInit {
 
   protected readonly expandSeedIds = computed<ReadonlySet<number>>(() => {
     const reveal = this.revealExpandSeedIds();
+    return reveal.size === 0 ? NO_IDS : reveal;
+  });
+
+  protected readonly searchExpandedIds = computed<ReadonlySet<number>>(() => {
     const search = this.searchResult().autoExpandedIds;
-    if (reveal.size === 0) {
-      return search.size === 0 ? NO_IDS : search;
-    }
-    if (search.size === 0) {
-      return reveal;
-    }
-    return new Set([...reveal, ...search]);
+    return search.size === 0 ? NO_IDS : search;
   });
 
   protected readonly pickerLiveRoots = computed<readonly AbwabNode[]>(() => this.facade.snapshot()?.liveRoots ?? NO_ROOTS);

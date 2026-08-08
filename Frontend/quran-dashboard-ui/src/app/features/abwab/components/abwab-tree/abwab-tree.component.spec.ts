@@ -4,7 +4,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { AbwabTreeComponent, AbwabTreeMenuRequest } from './abwab-tree.component';
 import { AbwabTreeDoorDto } from '../../../../core/api/generated/models/abwab-tree-door-dto';
 import { AbwabTreeDto } from '../../../../core/api/generated/models/abwab-tree-dto';
-import { buildAbwabTreeSnapshot } from '../../state/abwab-tree.builder';
+import { buildAbwabTreeSnapshot, searchAbwabNodes } from '../../state/abwab-tree.builder';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string }): AbwabTreeDoorDto {
@@ -732,6 +732,60 @@ describe('AbwabTreeComponent', () => {
       expect(root.querySelector('[data-testid="abwab-tree-count-1"]')?.classList.contains('abwab-tree__count--wide')).toBe(false);
       expect(root.querySelector('[data-testid="abwab-tree-descendants-1"]')?.classList.contains('abwab-tree__count--wide')).toBe(true);
       expect(root.querySelector('[data-testid="abwab-tree-depth-1"]')?.classList.contains('abwab-tree__count--wide')).toBe(true);
+    });
+  });
+
+  // Phase 3 of the feature-034 follow-up (supersedes ux-slice-l's accumulation decision):
+  // search expansion arrives on the derived `searchExpandedIds` input, replaced wholesale per
+  // query and unioned with the manual set at render time, while `expandSeedIds` keeps the
+  // reveal's merge-once semantics. Two branches so a stale one has somewhere to linger.
+  describe('search-derived expansion is replaced wholesale per query', () => {
+    const NESTED = tree([
+      door({ id: 1, name: 'الرحمن', orderValue: 1 }),
+      door({ id: 2, name: 'الرحيم', parentId: 1, orderValue: 1 }),
+      door({ id: 3, name: 'الملك', orderValue: 2 }),
+      door({ id: 4, name: 'المالك', parentId: 3, orderValue: 1 }),
+    ]);
+
+    const derivedFor = (query: string) => searchAbwabNodes(NESTED.liveRoots, query).autoExpandedIds;
+
+    const rowsPresent = (fixture: ReturnType<typeof render>, ids: readonly number[]) =>
+      ids.map((id) => !!(fixture.nativeElement as HTMLElement).querySelector(`[data-testid="abwab-tree-row-${id}"]`));
+
+    it('narrowing «ال» → «الرح» closes the branch the broader query opened — no accumulation', () => {
+      const fixture = render({ roots: NESTED.liveRoots, searchExpandedIds: derivedFor('ال') });
+      expect(rowsPresent(fixture, [2, 4])).toEqual([true, true]);
+
+      fixture.componentRef.setInput('searchExpandedIds', derivedFor('الرح'));
+      fixture.detectChanges();
+
+      expect(rowsPresent(fixture, [2, 4])).toEqual([true, false]);
+    });
+
+    it('a zero-match query closes every search-derived branch', () => {
+      const fixture = render({ roots: NESTED.liveRoots, searchExpandedIds: derivedFor('ال') });
+      expect(rowsPresent(fixture, [2, 4])).toEqual([true, true]);
+
+      fixture.componentRef.setInput('searchExpandedIds', derivedFor('لا يوجد باب بهذا الاسم'));
+      fixture.detectChanges();
+
+      expect(rowsPresent(fixture, [2, 4])).toEqual([false, false]);
+    });
+
+    it('reveal seeds still merge into the manual state and stay collapsible', () => {
+      const fixture = render({ roots: NESTED.liveRoots, expandSeedIds: new Set([1]) });
+      expect(rowsPresent(fixture, [2])).toEqual([true]);
+
+      // Merged, not derived: emptying the seed input does not close the branch it opened.
+      fixture.componentRef.setInput('expandSeedIds', new Set<number>());
+      fixture.detectChanges();
+      expect(rowsPresent(fixture, [2])).toEqual([true]);
+
+      (fixture.nativeElement as HTMLElement)
+        .querySelector('[data-testid="abwab-tree-chevron-1"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      fixture.detectChanges();
+      expect(rowsPresent(fixture, [2])).toEqual([false]);
     });
   });
 

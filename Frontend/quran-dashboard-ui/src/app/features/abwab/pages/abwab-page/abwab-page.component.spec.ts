@@ -1294,34 +1294,47 @@ describe('AbwabPageComponent', () => {
       return extras.queryParams;
     }
 
-    // ux-slice-l's other half, tested here because this describe owns the only nested fixture
-    // (1 → 2 → 3): search auto-expansion is a SEED, not a force, so the branch it opens must
-    // survive clearing the query and must still be collapsible. That chain — search →
-    // `expandSeedIds` union → the tree's merge effect — is what this slice rewired when it
-    // deleted `forceExpandedIds`, and it is invisible in the flat fixture the other describes use.
-    describe('search seeds the match’s ancestors open (ux-slice-l)', () => {
+    // Tested here because this describe owns the only nested fixture (1 → 2 → 3): search
+    // auto-expansion is DERIVED, not seeded — the page passes `searchResult().autoExpandedIds`
+    // to the tree's `searchExpandedIds` input, replaced wholesale per query, and the tree unions
+    // it with the manual set at render time. The move-picker contract, now on the main tree.
+    describe('search derives the match’s ancestors open (supersedes ux-slice-l’s surviving-seed pin)', () => {
       const rowsPresent = (fixture: { nativeElement: unknown }, ids: readonly number[]) =>
         ids.map((id) => !!(fixture.nativeElement as HTMLElement).querySelector(`[data-testid="abwab-tree-row-${id}"]`));
 
-      it('opens the chain to a deep match, keeps it open after the query clears, and leaves it collapsible', () => {
+      const toggleRootChevron = (fixture: { nativeElement: unknown }) =>
+        (
+          (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-tree-chevron-1"]') as HTMLElement
+        ).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      it('clearing returns expansion to exactly what the user opened by hand — no more, no less', () => {
         // Collapsed to start: only the root is on screen.
         const fixture = renderReveal({ section: '1' });
         expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, false, false]);
 
-        // «حفيد» is the grandchild — its ancestors 1 and 2 are seeded open.
+        // «حفيد» is the grandchild — its ancestors 1 and 2 derive open.
         params$.next(convertToParamMap({ section: '1', q: 'حفيد' }));
         fixture.detectChanges();
         expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, true, true]);
 
-        // Clearing the query is not an un-expand: the seed became the user's own state.
+        // Clearing the query empties the derived set: the user never opened anything by hand.
         params$.next(convertToParamMap({ section: '1' }));
         fixture.detectChanges();
-        expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, true, true]);
+        expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, false, false]);
 
-        // And it is a seed, not a force — the chevron still collapses it. A forced id could not.
-        (
-          (fixture.nativeElement as HTMLElement).querySelector('[data-testid="abwab-tree-chevron-1"]') as HTMLElement
-        ).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        // The "no less" half: a branch opened by hand survives a search-and-clear cycle
+        // while the search-derived branch below it still closes.
+        toggleRootChevron(fixture);
+        fixture.detectChanges();
+        params$.next(convertToParamMap({ section: '1', q: 'حفيد' }));
+        fixture.detectChanges();
+        expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, true, true]);
+        params$.next(convertToParamMap({ section: '1' }));
+        fixture.detectChanges();
+        expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, true, false]);
+
+        // Still no force anywhere: the hand-opened branch collapses on its chevron.
+        toggleRootChevron(fixture);
         fixture.detectChanges();
         expect(rowsPresent(fixture, [1, 2, 3])).toEqual([true, false, false]);
       });
