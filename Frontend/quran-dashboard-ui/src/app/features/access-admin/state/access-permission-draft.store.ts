@@ -30,11 +30,11 @@ export class AccessPermissionDraftStore {
     () => this.assignmentReady() && !this.catalogueError() && this.groups().length > 0,
   );
   readonly diff = computed<AccessPermissionDiff>(() => {
-    const granted = new Set(this.grantedCodesForSubmission());
-    const next = new Set(this.codesForSubmission());
+    const granted = this.grantedCodes();
+    const draft = this.draftState();
     return {
-      granted: [...next].filter((code) => !granted.has(code)),
-      revoked: [...granted].filter((code) => !next.has(code)),
+      granted: permissionCodesForSubmission(draft).filter((code) => !granted.has(code)),
+      revoked: permissionCodesForSubmission(granted).filter((code) => !draft.has(code)),
     };
   });
   readonly isDirty = computed(() => this.canAssign() && hasPermissionChanges(this.diff()));
@@ -76,15 +76,16 @@ export class AccessPermissionDraftStore {
     this.draftState.set(new Set());
   }
 
-  codesForSubmission(): PermissionCode[] {
-    return permissionCodesForSubmission(this.catalogueState(), this.draftState());
+  codesForSubmission(): string[] {
+    return [...permissionCodesForSubmission(this.draftState()), ...this.unmodelledGrantedCodes()];
   }
 
-  private grantedCodesForSubmission(): PermissionCode[] {
-    return permissionCodesForSubmission(
-      this.catalogueState(),
-      knownCodes(this.grantedState()?.permissionCodes ?? []),
-    );
+  private grantedCodes(): ReadonlySet<PermissionCode> {
+    return knownCodes(this.grantedState()?.permissionCodes ?? []);
+  }
+
+  private unmodelledGrantedCodes(): string[] {
+    return (this.grantedState()?.permissionCodes ?? []).filter((code) => !isPermissionCode(code));
   }
 }
 

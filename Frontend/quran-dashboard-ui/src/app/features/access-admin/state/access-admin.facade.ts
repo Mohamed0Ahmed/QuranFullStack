@@ -3,7 +3,6 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, firstValueFrom } from 'rxjs';
 
 import { CurrentUserStore } from '../../../core/auth/current-user.store';
-import { PermissionCode } from '../../../core/auth/permission-code';
 import { WriteAuthFailureCoordinator } from '../../../core/auth/write-auth-failure.coordinator';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AccessUserDetail } from '../../../core/api/generated/models/access-user-detail';
@@ -494,7 +493,7 @@ export class AccessAdminFacade {
     }
   }
 
-  private permissionCodesForAssignment(): PermissionCode[] {
+  private permissionCodesForAssignment(): string[] {
     return this.canAssignPermissions() ? this.draft.codesForSubmission() : [];
   }
 

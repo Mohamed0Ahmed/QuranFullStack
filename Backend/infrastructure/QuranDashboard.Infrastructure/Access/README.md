@@ -40,6 +40,11 @@ item list instead would return an empty catalogue on an unsynchronized database,
 as "no permissions exist": silently wrong, and worse than the failure it replaced. Divergence between
 the compiled catalogue and the table is a health-check and `access-admin` preflight concern, never an
 HTTP failure; an unknown row left in the table changes neither the served items nor readiness.
+The served `groupLabel` is `PermissionDefinition.GroupArabicLabel` — «الأبواب», «الأقسام»,
+«العلاقات», «القوالب», «عناصر القوالب» — not an English group name, because the dashboard renders it
+directly as the editor's group heading and an Arabic-first product must not restate the five headings
+in a second place to translate them. `AbwabPermissionCatalogue`'s static constructor rejects a
+catalogue whose definitions disagree about a group's label within one `GroupDisplayOrder`.
 `assignmentReady` exists because a safe read does not imply a safe write:
 `Persistence/Writes/Access/EfAccessUserMutationService` still validates every submitted code against
 non-retired database rows, and that validation is not weakened — its `400` on an unseeded database is

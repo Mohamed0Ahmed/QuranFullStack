@@ -1,5 +1,5 @@
 import { PermissionCatalogueItem } from '../../../core/api/generated/models/permission-catalogue-item';
-import { PermissionCode, isPermissionCode } from '../../../core/auth/permission-code';
+import { PERMISSION_CODES, PermissionCode, isPermissionCode } from '../../../core/auth/permission-code';
 
 export interface AccessPermissionGroup {
   readonly key: string;
@@ -83,14 +83,8 @@ export function setIndividualSelection(
   return next;
 }
 
-export function permissionCodesForSubmission(
-  catalogue: readonly PermissionCatalogueItem[],
-  selected: ReadonlySet<string>,
-): PermissionCode[] {
-  const knownSelected = knownSelectedCodes(selected);
-  return buildPermissionGroups(catalogue).flatMap((group) =>
-    group.codes.filter((code) => knownSelected.has(code)),
-  );
+export function permissionCodesForSubmission(selected: ReadonlySet<string>): PermissionCode[] {
+  return PERMISSION_CODES.filter((code) => selected.has(code));
 }
 
 export function permissionLabelFor(

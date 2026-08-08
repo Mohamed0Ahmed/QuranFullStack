@@ -27,6 +27,13 @@ the navbar and is reached through the guarded route only.
   group or select-all sentinel; a later code is not silently granted to existing selections. The raw
   `abwab.*` code is carried on each row's `[title]` rather than printed beside its Arabic label — it
   stays visible where it earns its place, in the confirmation diff.
+  **Group headings are the server's Arabic labels, not a frontend copy of them.**
+  `PermissionDefinition.GroupArabicLabel` carries «الأبواب» / «الأقسام» / «العلاقات» / «القوالب» /
+  «عناصر القوالب», `EfPermissionCatalogueReader` projects it into the wire field `groupLabel`, and
+  `<legend>` renders it verbatim. The wire shape is unchanged; only the value it carries is, which is
+  why no OpenAPI regeneration attends the change. Hardcoding the five Arabic headings here would have
+  created a second hand-maintained mirror of a backend enumeration — the very debt this feature spent
+  its last phase retiring.
 - Fails closed when permission assignment is not available — see *Permission-assignment failure
   model* below.
 - Treats permission editing as a draft with an honest exit — see *Permission draft, revert and
@@ -126,7 +133,7 @@ Two independent guards keep a degraded catalogue from producing an empty replace
   made in a rendered editor, and a failed or unready catalogue renders no editable one;
 - `replaceSelectedPermissions` refuses to submit while assignment is unavailable, and
   `acceptSelectedUser` then sends an explicit empty `permissionCodes` array rather than whatever the
-  catalogue projection produced.
+  draft projection produced.
 
 Accept-without-permissions, disable and reactivate stay available throughout — none of them can
 revoke a grant that assignment readiness was protecting. Readiness is re-read after every mutation
@@ -145,15 +152,35 @@ that ordering is routine, not exotic.
 The permission editor is a draft over the stored grants. Dirty means *a differing request body
 exists **and** can be produced*, and `AccessPermissionDraftStore.isDirty` enforces both halves:
 
-- **Both sides of `diff` are projected through the same catalogue** — the stored grants exactly as
-  the draft is. A code the catalogue does not offer therefore counts on neither side: it can read
-  neither as a pending grant nor as a pending revocation. Projecting only the draft would turn a
-  granted-but-unoffered code into a permanent phantom revocation that «تجاهل التغييرات» cannot
-  clear, since restoring the draft from the stored grants reproduces it. The save projects
-  identically — `permissionCodesForAssignment()` returns the store's `codesForSubmission()`, the same
-  catalogue projection — so such a code is also absent from the request body the save puts on the
-  wire, which the diff says nothing about. That understatement is pre-existing and is Phase 8's
-  tracked defect, recorded as row **AC1** in `docs/TESTING_DEBT.md`.
+- **Both sides of `diff` are projected identically, and neither is narrowed to the served
+  catalogue.** `permissionCodesForSubmission` orders a selection by `PERMISSION_CODES` and keeps
+  every entry `isPermissionCode` accepts; the stored grants pass through the same function. So a
+  code the served catalogue omits — a canonical code retired on the server, say — sits on both sides
+  and counts as neither a pending grant nor a pending revocation, which is what stops it becoming a
+  permanent phantom revocation that «تجاهل التغييرات» could not clear. **What changed in Phase 8 is
+  that the same code now also reaches the request body**: `codesForSubmission()` no longer intersects
+  the draft with the rendered catalogue, so the save can no longer drop a grant the confirmation
+  never mentioned. The diff and the wire agree. That symmetry is why the editor's own narrowing is
+  correct rather than contradictory: `AccessPermissionEditorComponent.emitSelection` reports only
+  codes it rendered, so the first checkbox the operator touches drops an unoffered code out of the
+  draft — and the diff then shows it under «إزالة», because that is exactly what the save will do.
+  The remaining case — a draft holding an unoffered code with no editor interaction to resolve it —
+  offers no permission save at all: an untouched draft still equals the stored grants, so the diff is
+  empty, `isDirty` is `false`, and «مراجعة تعديل الصلاحيات» is never rendered, because the whole
+  draft bar sits inside `@if (facade.isDirty())` (`access-admin-page.component.html:226-231`). No
+  editor interaction can add such a code either, only remove one. The single save not gated on
+  `isDirty` is `acceptSelectedUser`, and it runs only for a non-Owner `pending` user
+  (`access-admin.facade.ts:246`) — a status that has no grants to seed a draft with, because accept
+  creates a user's first grants itself (`EfAccessUserMutationService.cs:117-127`) and the replace
+  path refuses anyone not `Active` (`EfAccessUserMutationService.cs:241`). The server's `400` for a
+  code it will not assign therefore backs the write path rather than describing an exposure this
+  page offers: a visible refusal, never a silent revocation.
+- **A granted code this build does not model is preserved, not dropped.** `PermissionCode` is
+  generated from the backend catalogue (see below), so a server that has moved ahead of the deployed
+  bundle can return a grant the editor cannot render. `codesForSubmission()` appends those codes
+  verbatim after the modelled ones, so a save leaves them exactly as they were; they appear on
+  neither side of the diff because nothing on this page can change them. An older dashboard cannot
+  revoke a permission it does not understand.
 - **`canAssign` must hold**, because a failed, unready or empty catalogue can produce no request
   body at all. A draft made before assignment was withdrawn is kept, not dropped, and reads as dirty
   again once the catalogue recovers. That is an in-memory guarantee only: while assignment is
@@ -297,9 +324,12 @@ plan finishing where it started: the audit log was the last place a database use
   contract and lives beside the other contract types rather than with the Arabic copy.
   `ACCESS_ADMIN_LABELS.auditActionType` maps each to Arabic and **returns an unmodelled value
   unchanged**: a new server-side action type stays legible instead of reading as «غير معروف».
-  That list is hand-maintained, and **nothing fails when the two sides drift** — the graceful
-  degradation is exactly what makes the drift silent. Recorded as row **AC3** in
-  `docs/TESTING_DEBT.md`, beside the same-shaped `core/auth/permission-code.ts` debt in row AC1.
+  That list is hand-written but no longer unguarded: `npm run check:audit-action-types` compares it
+  against `Backend/domain/QuranDashboard.Domain/Access/AccessAuditActionType.cs` in **both**
+  directions and fails by name, so a member added or renamed on either side is a two-sided change
+  rather than a filter that silently stops being offered. It runs inside `npm run test:pre-pr`. The
+  generated OpenAPI cannot carry this — `actionType` and the filter parameter are both plain
+  `string`, so nothing generated pins the membership set.
 - **Timestamps are local.** `yyyy/MM/dd HH:mm` through `DatePipe`, inside a `<time [attr.datetime]>`
   that keeps the exact UTC instant machine-readable. Fixed field order and Western digits, matching
   the digits used everywhere else in the app, so the column stays scannable and free of ICU variance.

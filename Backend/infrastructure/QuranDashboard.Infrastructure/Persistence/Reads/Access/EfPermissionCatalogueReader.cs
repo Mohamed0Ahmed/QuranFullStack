@@ -30,7 +30,7 @@ public sealed class EfPermissionCatalogueReader(QuranDashboardDbContext db) : IP
                     definition.ArabicLabel,
                     definition.EnglishDescription,
                     GroupKey(definition.Code),
-                    definition.Group,
+                    definition.GroupArabicLabel,
                     definition.GroupDisplayOrder,
                     definition.DisplayOrder))
                 .ToArray(),

@@ -38,10 +38,19 @@ public sealed class AbwabPermissionCatalogueTests
         AbwabPermissionCatalogue.All.Should().OnlyContain(permission =>
             !string.IsNullOrWhiteSpace(permission.ArabicLabel)
             && !string.IsNullOrWhiteSpace(permission.EnglishDescription)
-            && !string.IsNullOrWhiteSpace(permission.Group)
+            && !string.IsNullOrWhiteSpace(permission.GroupArabicLabel)
             && permission.DisplayOrder > 0);
         AbwabPermissionCatalogue.All.Select(permission => permission.DisplayOrder)
             .Should().Equal(Enumerable.Range(1, 19));
+    }
+
+    [Fact]
+    public void GroupLabels_AreArabicAndAgreeWithinEachGroup()
+    {
+        AbwabPermissionCatalogue.All
+            .GroupBy(permission => permission.GroupDisplayOrder)
+            .Select(group => group.Select(permission => permission.GroupArabicLabel).Distinct().Single())
+            .Should().Equal("الأبواب", "الأقسام", "العلاقات", "القوالب", "عناصر القوالب");
     }
 
     [Fact]

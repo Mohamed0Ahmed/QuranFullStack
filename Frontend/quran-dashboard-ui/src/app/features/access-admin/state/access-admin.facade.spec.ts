@@ -269,16 +269,14 @@ describe('AccessAdminFacade', () => {
       user(1, ['abwab.doors.create']),
       permissions(1, ['abwab.doors.create']),
     );
-    facade.setSelectedPermissionCodes(
-      new Set(['abwab.doors.create', 'abwab.sections.create']),
-    );
+    facade.setSelectedPermissionCodes(new Set(['abwab.doors.create', 'abwab.doors.edit']));
 
     const replacement = facade.replaceSelectedPermissions('تحديث الصلاحيات');
     const request = httpTesting.expectOne(`${ACCESS_BASE_URL}/users/17/permissions`);
     expect(request.request.method).toBe('PUT');
     expect(request.request.body).toEqual({
       expectedVersion: 1,
-      permissionCodes: ['abwab.doors.create'],
+      permissionCodes: ['abwab.doors.create', 'abwab.doors.edit'],
       reason: 'تحديث الصلاحيات',
     });
     request.flush(
@@ -593,7 +591,7 @@ describe('AccessAdminFacade', () => {
     await expect(acceptance).resolves.toBe('success');
   });
 
-  it('keeps a draft code that the catalogue no longer offers out of the submitted set', async () => {
+  it('carries a draft code the catalogue no longer offers into the diff and into the saved set', async () => {
     await loadCurrentUser(OWNER);
     await loadCatalogue();
     await selectTarget(
@@ -603,11 +601,58 @@ describe('AccessAdminFacade', () => {
 
     facade.setSelectedPermissionCodes(new Set(['abwab.doors.create', 'abwab.sections.create']));
 
+    expect(CATALOGUE.map((item) => item.code)).not.toContain('abwab.sections.create');
     expect([...facade.selectedPermissionCodes()]).toEqual([
       'abwab.doors.create',
       'abwab.sections.create',
     ]);
+    expect(facade.permissionDiff()).toEqual({
+      granted: ['abwab.sections.create'],
+      revoked: [],
+    });
+    expect(facade.isDirty()).toBe(true);
+
+    const saving = facade.replaceSelectedPermissions('تحديث الصلاحيات');
+    const request = httpTesting.expectOne(`${ACCESS_BASE_URL}/users/17/permissions`);
+    expect(request.request.body).toEqual({
+      expectedVersion: 1,
+      permissionCodes: ['abwab.doors.create', 'abwab.sections.create'],
+      reason: 'تحديث الصلاحيات',
+    });
+
+    const saved = user(2, ['abwab.doors.create', 'abwab.sections.create']);
+    request.flush(success(permissions(2, ['abwab.doors.create', 'abwab.sections.create'])));
+    await flushMutationRefresh(saved, permissions(2, ['abwab.doors.create', 'abwab.sections.create']));
+
+    await expect(saving).resolves.toBe('success');
+  });
+
+  it('keeps a granted code this build does not model out of the diff but inside the saved set', async () => {
+    await loadCurrentUser(OWNER);
+    await loadCatalogue();
+    const granted = ['abwab.doors.create', 'abwab.doors.publish'];
+    await selectTarget(user(1, granted), permissions(1, granted));
+
     expect(facade.permissionDiff()).toEqual({ granted: [], revoked: [] });
+    expect(facade.isDirty()).toBe(false);
+
+    facade.setSelectedPermissionCodes(new Set(['abwab.doors.create', 'abwab.doors.edit']));
+
+    expect(facade.permissionDiff()).toEqual({ granted: ['abwab.doors.edit'], revoked: [] });
+
+    const saving = facade.replaceSelectedPermissions('تحديث الصلاحيات');
+    const request = httpTesting.expectOne(`${ACCESS_BASE_URL}/users/17/permissions`);
+    expect(request.request.body).toEqual({
+      expectedVersion: 1,
+      permissionCodes: ['abwab.doors.create', 'abwab.doors.edit', 'abwab.doors.publish'],
+      reason: 'تحديث الصلاحيات',
+    });
+
+    const saved = user(2, [...granted, 'abwab.doors.edit']);
+    request.flush(success(permissions(2, [...granted, 'abwab.doors.edit'])));
+    await flushMutationRefresh(saved, permissions(2, [...granted, 'abwab.doors.edit']));
+
+    await expect(saving).resolves.toBe('success');
   });
 
   it('stops reading a draft as unsaved while a failed refresh withholds assignment, and resumes on recovery', async () => {
@@ -663,7 +708,7 @@ describe('AccessAdminFacade', () => {
 
     expect(facade.isDirty()).toBe(false);
 
-    facade.setSelectedPermissionCodes(new Set(['abwab.doors.create', 'abwab.sections.create']));
+    facade.setSelectedPermissionCodes(new Set(['abwab.doors.create', 'doors.manage-all']));
 
     expect(facade.isDirty()).toBe(false);
 

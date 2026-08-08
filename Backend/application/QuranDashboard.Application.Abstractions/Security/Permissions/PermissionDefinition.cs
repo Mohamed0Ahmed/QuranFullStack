@@ -4,6 +4,6 @@ public sealed record PermissionDefinition(
     string Code,
     string ArabicLabel,
     string EnglishDescription,
-    string Group,
+    string GroupArabicLabel,
     int GroupDisplayOrder,
     int DisplayOrder);

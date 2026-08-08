@@ -559,6 +559,8 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
         catalogueItems.GetArrayLength().Should().Be(AbwabPermissionCatalogue.All.Count);
         catalogueItems[0].GetProperty("code").GetString().Should().Be(AbwabPermissionCatalogue.All[0].Code);
         catalogueItems[0].GetProperty("groupKey").GetString().Should().NotBeNullOrWhiteSpace();
+        catalogueItems[0].GetProperty("groupLabel").GetString()
+            .Should().Be(AbwabPermissionCatalogue.All[0].GroupArabicLabel);
         catalogue.GetProperty("assignmentReady").GetBoolean().Should().BeTrue();
 
         using var statusResponse = await client.GetAsync("/api/access/owner-reconciliation/status");

@@ -19,6 +19,11 @@ nearest README define client-side access behaviour.
 - `GET /api/access/permissions` returns `{ items, assignmentReady }`, not a bare array.
   `assignmentReady` states whether permission assignment can currently be persisted, so a safe read is
   never mistaken for a safe write → [`Access/README.md`](../../Backend/infrastructure/QuranDashboard.Infrastructure/Access/README.md)
+- Permission codes have one source: `AbwabPermissionCatalogue.cs`. The frontend allowlist is
+  generated from it (`npm run generate:permission-codes`) and `npm run check:permission-catalogue`
+  fails unless the constants, the catalogue definitions and the committed generated file agree, so
+  adding or retiring a permission is one visible change →
+  [`core/README.md`](../../Frontend/quran-dashboard-ui/src/app/core/README.md)
 - Boot-time catalogue synchronization, its non-fatal failure policy, the `permission_catalogue`
   health check, and the `Access:PermissionCatalogueStartupSync` switch →
   [`QuranDashboard.Api/README.md`](../../Backend/api/QuranDashboard.Api/README.md)

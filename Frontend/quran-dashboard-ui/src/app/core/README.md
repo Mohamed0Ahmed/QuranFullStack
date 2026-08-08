@@ -40,9 +40,15 @@ per-feature.
     `ApiResponse<CurrentUserResponse>` envelope (thin, like `system.api.ts`). For this interactive
     provisioning call only, it adds the raw signed Logto ID token as
     `X-Interactive-Identity-Evidence`; it never parses identity claims in the browser.
-  - `permission-code.ts` — the canonical named shape and ordered TypeScript union of the
-    server's direct Abwab permission codes. `npm run check:permission-catalogue` compares it
-    to the backend source; no authorization decision uses a role name.
+  - `permission-codes.generated.ts` — the named code shape, written by
+    `npm run generate:permission-codes` from `AbwabPermissionCatalogue.cs` and committed. It is the
+    single source of the codes; nothing here is typed by hand.
+  - `permission-code.ts` — derives `PermissionCode`, the ordered `PERMISSION_CODES` and
+    `isPermissionCode` from that generated shape, so the union and the runtime set cannot disagree
+    with each other or with the server. `npm run check:permission-catalogue` re-renders the
+    generated file from the backend catalogue and fails unless the committed copy matches, which is
+    what makes adding or retiring a permission one visible change rather than a silent drift; no
+    authorization decision uses a role name.
   - `current-user.model.ts` — normalizes the generated `/me` wire DTO to the bounded UI
     snapshot: `sub`, `email`, `displayName`, `status`, `isOwner`, ordered direct
     `permissions`. No role ID or role name crosses this contract.
