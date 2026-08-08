@@ -4,7 +4,11 @@ import { AccessUserDetail } from '../../../../core/api/generated/models/access-u
 import { PermissionCode } from '../../../../core/auth/permission-code';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
-import { AccessPermissionDiff, hasPermissionChanges } from '../../models/access-admin.models';
+import {
+  AccessPermissionDiff,
+  accessUserNameLabel,
+  hasPermissionChanges,
+} from '../../models/access-admin.models';
 import { AccessPermissionGroup, permissionLabelFor } from '../../models/access-admin-permissions';
 import { AccessPermissionEditorComponent } from '../access-permission-editor/access-permission-editor.component';
 
@@ -125,6 +129,10 @@ export class AccessUserWorkflowsComponent {
 
   protected permissionLabel(code: PermissionCode): string {
     return permissionLabelFor(this.groups(), code);
+  }
+
+  protected nameLabel(user: AccessUserDetail): string {
+    return accessUserNameLabel(user);
   }
 
   protected statusLabel(status: string): string {

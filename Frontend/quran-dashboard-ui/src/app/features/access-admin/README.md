@@ -5,7 +5,15 @@ the navbar and is reached through the guarded route only.
 
 ## What it does
 
-- Lists and filters local access users, then shows an individual account's status and version.
+- Lists and filters local access users, then shows an individual account's status and version. The
+  «الاسم أو البريد» box is free text submitted with the filter form: the backend matches it as a
+  substring of the account's email or stored name, ignoring letter case for Arabic and for ASCII, so a
+  partial token finds the account instead of answering `400`, and only a term longer than 128
+  characters is rejected.
+- Labels every account through `accessUserNameLabel` (`models/access-admin.models.ts`), which falls
+  back to the email when the stored name is absent **or only whitespace**. The list row and the
+  workspace header both read it, so a blank-looking Logto profile name cannot render an empty label
+  the way `displayName || email` did.
 - Lets an active Owner accept Pending users, disable Active non-Owners, and reactivate Disabled
   non-Owners. Disable explains that it removes every direct grant; reactivate begins with none.
   Those lifecycle controls live in their own «إجراءات الحساب» region, never in the row that carries

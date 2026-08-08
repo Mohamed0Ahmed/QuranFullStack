@@ -27,6 +27,15 @@ export interface AccessAuditQuery {
   readonly pageSize: number;
 }
 
+export interface AccessUserIdentity {
+  readonly displayName: string | null;
+  readonly email: string;
+}
+
+export function accessUserNameLabel(user: AccessUserIdentity): string {
+  return user.displayName?.trim() || user.email;
+}
+
 export interface AccessPermissionDiff {
   readonly granted: readonly PermissionCode[];
   readonly revoked: readonly PermissionCode[];

@@ -495,8 +495,12 @@ Advanced Security placement.
        user.NormalizedEmail.Contains(term)
        || user.DisplayName != null && user.DisplayName.ToUpper().Contains(term));
    ```
-   `Contains` translates to `strpos(...) > 0` — a literal substring test with no `%`/`_`/`\` escaping
-   to get wrong, unlike `EF.Functions.ILike`. Matching `NormalizedEmail` (already
+   `Contains` is a literal substring test with no `%`/`_`/`\` escaping to get wrong, unlike
+   `EF.Functions.ILike`. *(Corrected during Phase 5 by observing the emitted SQL: it translates to
+   `column LIKE @param`, not `strpos(...) > 0`, with the pattern built client-side — but the provider
+   escapes the term before wrapping it, so `%` and `_` still match literally and the conclusion
+   stands. The mechanism is recorded in the Infrastructure README and pinned by a test.)*
+   Matching `NormalizedEmail` (already
    `Email.ToUpperInvariant()`) gives case-insensitive email search with no second predicate. Do not
    add `UserName` — the list response does not expose it, so a hit there would be unexplainable.
    Verify the emitted SQL once with query logging during implementation.

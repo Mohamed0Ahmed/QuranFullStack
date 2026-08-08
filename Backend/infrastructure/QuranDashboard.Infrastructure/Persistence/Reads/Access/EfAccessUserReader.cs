@@ -1,5 +1,4 @@
 using QuranDashboard.Application.Abstractions.Access;
-using QuranDashboard.Application.Abstractions.Common.Paging;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Infrastructure.Access;
 
@@ -24,9 +23,12 @@ public sealed class EfAccessUserReader(QuranDashboardDbContext db) : IAccessUser
                 : users.Where(user => user.Role == null || user.Role.Name != RoleNames.Owner);
         }
 
-        if (query.Search is not null)
+        if (query.Search is { } search)
         {
-            users = users.Where(user => user.NormalizedEmail == query.Search);
+            var term = search.ToUpperInvariant();
+            users = users.Where(user =>
+                user.NormalizedEmail.Contains(term)
+                || (user.DisplayName != null && user.DisplayName.ToUpper().Contains(term)));
         }
 
         var totalCount = await users.CountAsync(cancellationToken);

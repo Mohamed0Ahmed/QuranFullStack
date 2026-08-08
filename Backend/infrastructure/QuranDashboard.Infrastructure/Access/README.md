@@ -45,6 +45,19 @@ HTTP failure; an unknown row left in the table changes neither the served items 
 non-retired database rows, and that validation is not weakened — its `400` on an unseeded database is
 the fail-safe working.
 
+**User discovery is a substring match, and it carries no index.**
+`Persistence/Reads/Access/EfAccessUserReader` uppercases the already-trimmed search term with
+`ToUpperInvariant` and keeps rows whose `normalized_email` or whose `upper(display_name)` contains it —
+one predicate for the email because `normalized_email` is already the uppercased address. `user_name` is
+deliberately not matched: the list projection does not expose it, so a hit there could not be explained
+to the operator. EF translates both `string.Contains` calls to `column LIKE @term` with the pattern built
+on the client, so `%`, `_` and `\` inside a term arrive escaped and are matched literally; a port to
+`EF.Functions.ILike` would have to escape them by hand, and `AccessAdministrationEndpointTests` pins that
+a bare `%` matches nothing rather than everything. No index serves this predicate and none is wanted:
+`users` gains a row only from an interactive Logto sign-in, so it holds one row per human and a
+sequential scan is the right plan — the unique btree on `normalized_email` could not serve an unanchored
+`%term%` pattern anyway.
+
 Request-scoped authorization reads live in `Persistence/Reads/Access/AuthorizationStateResolver.cs`.
 That resolver projects one local user by exact `LogtoSub`: status, the local Owner relation, and direct
 non-retired permission codes only for an active non-Owner. It never provisions users and never receives

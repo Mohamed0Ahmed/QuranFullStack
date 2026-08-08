@@ -1,19 +1,19 @@
 using QuranDashboard.Application.Abstractions.Access;
-using QuranDashboard.Application.Abstractions.Common.Paging;
 
 namespace QuranDashboard.Application.Access.Queries.ListAccessUsers;
 
-public sealed class ListAccessUsersHandler(
-    IAccessUserReader reader,
-    IEmailIdentityNormalizer emailIdentityNormalizer)
+public sealed class ListAccessUsersHandler(IAccessUserReader reader)
 {
+    private const int MaximumSearchLength = 128;
+
     public Task<AccessOperationResult<PagedResult<AccessUserSummary>>> HandleAsync(
         AccessUserListQuery query,
         CancellationToken cancellationToken)
     {
+        var search = NormalizeSearch(query.Search);
         if (!AccessAdministrationValidation.IsValidPage(query.Page, query.PageSize)
             || !IsValidStatus(query.Status)
-            || !TryNormalizeSearch(query.Search, out var search))
+            || !IsValidSearch(search))
         {
             return Task.FromResult(AccessOperationResult<PagedResult<AccessUserSummary>>.Failed(
                 AccessOperationFailure.InvalidRequest));
@@ -35,14 +35,9 @@ public sealed class ListAccessUsersHandler(
         || string.Equals(status, "active", StringComparison.Ordinal)
         || string.Equals(status, "disabled", StringComparison.Ordinal);
 
-    private bool TryNormalizeSearch(string? search, out string? normalizedSearch)
-    {
-        normalizedSearch = null;
-        if (string.IsNullOrWhiteSpace(search))
-        {
-            return search is null;
-        }
+    private static string? NormalizeSearch(string? search) =>
+        string.IsNullOrWhiteSpace(search) ? null : search.Trim();
 
-        return emailIdentityNormalizer.TryNormalize(search, out normalizedSearch);
-    }
+    private static bool IsValidSearch(string? normalizedSearch) =>
+        normalizedSearch is null || normalizedSearch.Length <= MaximumSearchLength;
 }

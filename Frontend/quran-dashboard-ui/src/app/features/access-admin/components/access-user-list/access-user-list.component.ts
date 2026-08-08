@@ -7,6 +7,7 @@ import {
   AccessUserListFilters,
   AccessUserListQuery,
   AccessUserStatus,
+  accessUserNameLabel,
 } from '../../models/access-admin.models';
 
 type OwnerFilter = 'all' | 'owner' | 'non-owner';
@@ -68,6 +69,10 @@ export class AccessUserListComponent {
       isOwner: owner === 'all' ? undefined : owner === 'owner',
       search: search || undefined,
     });
+  }
+
+  protected nameLabel(user: AccessUserSummary): string {
+    return accessUserNameLabel(user);
   }
 
   protected statusLabel(user: AccessUserSummary): string {

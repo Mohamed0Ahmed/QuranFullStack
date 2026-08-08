@@ -84,7 +84,13 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   Owner membership or configuration. `GET api/access/users` uses one-based offset paging: `page` is 1
   through `Int32.MaxValue`, `pageSize` is 1 through 100 (default 25), and a valid page at or after the
   filtered `totalCount` returns `200` with an empty `items` collection. Invalid page bounds return the
-  shared `400` envelope. The Abwab write routes use granular permission metadata instead.
+  shared `400` envelope, and so does an unrecognized `status`. Its `search` is free text, not an email
+  address: the term is trimmed, a blank one filters nothing, and it is matched as a substring of the
+  account's email — case-insensitive, because both sides are uppercased — or of its display name, whose
+  column and term are each folded to upper case, which agrees for Arabic and for ASCII. Of the `search`
+  parameter alone, only a term longer than 128 characters returns the shared `400` envelope; exactly 128
+  is accepted.
+  The Abwab write routes use granular permission metadata instead.
   See `../README.md` (Authentication / Owner role).
 - `Dashboard/` — `api/dashboard/info` for app/version/environment metadata.
 - `MushafReader/Ayahs/` — `api/mushaf/ayahs/{verseKey}/study`, `/similar-ayahs`, and `/mutashabihat`.

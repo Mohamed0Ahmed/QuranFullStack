@@ -3,7 +3,7 @@
     <header class="access-user-workflows__header">
       <div>
         <p class="access-user-workflows__eyebrow">الحالة الحالية</p>
-        <h2>{{ target.displayName || target.email }}</h2>
+        <h2>{{ nameLabel(target) }}</h2>
         <p class="access-user-workflows__meta"><span dir="ltr">{{ target.email }}</span> · الإصدار {{ target.version }}</p>
       </div>
       <div class="access-user-workflows__badges">

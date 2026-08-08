@@ -26,6 +26,11 @@ User-list paging follows the public `AccessUserPaging` contract. The reader calc
 returns the same successful paged shape with no items when an offset is at or after `totalCount`, and only
 converts an offset after proving it is within the result count.
 
+`ListAccessUsersHandler` validates `search` as free text rather than as an email address. It trims the
+term, turns a blank one into no filter instead of a rejection, and rejects only a term longer than 128
+characters, so a partial name or a partial address is a normal query and never a `400`. Validation stays
+fail-safe because the only rejection is an upper bound: nothing an operator can type is silently widened.
+
 `LegacyRoleConversionService` is an operator-only use case. It inventories every role-bearing user,
 requires a ready Owner reconciliation state and zero direct grants for every former Admin/Editor user,
 then clears only those legacy role relations in one persistence lease. It neither derives nor preserves

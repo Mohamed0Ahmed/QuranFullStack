@@ -478,6 +478,39 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     }
 
     [Fact]
+    public async Task UserSearch_MatchesPartOfANameOrEmailAndRejectsOnlyAnOversizedTerm()
+    {
+        await fixture.ResetAsync();
+        await SeedActiveOwnerAsync();
+        var researcherId = await SeedUserAsync(
+            "access-search-researcher",
+            UserStatus.Pending,
+            displayName: "باحثة التفسير");
+        var reviewerId = await SeedUserAsync(
+            "access-search-reviewer",
+            UserStatus.Pending,
+            displayName: "   ",
+            userName: "logto-handle-zuhal");
+        using var client = CreateOwnerClient();
+
+        (await SearchUserIdsAsync(client, "التفسير")).Should().Equal(researcherId);
+        (await SearchUserIdsAsync(client, "search-reviewer@example")).Should().Equal(reviewerId);
+        (await SearchUserIdsAsync(client, "ACCESS-SEARCH")).Should().BeEquivalentTo([researcherId, reviewerId]);
+        (await SearchUserIdsAsync(client, "   ")).Should().BeEquivalentTo([researcherId, reviewerId]);
+        (await SearchUserIdsAsync(client, "%")).Should().BeEmpty();
+        (await SearchUserIdsAsync(client, "_")).Should().BeEmpty();
+        (await SearchUserIdsAsync(client, "zuhal")).Should().BeEmpty();
+        (await SearchUserIdsAsync(client, new string('x', 128))).Should().BeEmpty();
+
+        using var oversizedResponse = await client.GetAsync(
+            $"/api/access/users?isOwner=false&search={new string('x', 129)}&page=1&pageSize=25");
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            oversizedResponse,
+            HttpStatusCode.BadRequest,
+            ApiMessages.AccessAdministrationInvalidRequest);
+    }
+
+    [Fact]
     public async Task OwnerReads_ExposeBoundedProjectionsAndRejectOrdinaryOwnerMutation()
     {
         await fixture.ResetAsync();
@@ -653,6 +686,17 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
         });
     }
 
+    private static async Task<IReadOnlyList<int>> SearchUserIdsAsync(HttpClient client, string search)
+    {
+        using var response = await client.GetAsync(
+            $"/api/access/users?isOwner=false&search={Uri.EscapeDataString(search)}&page=1&pageSize=25");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var data = await ApiEnvelope.ReadDataAsync(response);
+        return data.GetProperty("items").EnumerateArray()
+            .Select(user => user.GetProperty("id").GetInt32())
+            .ToArray();
+    }
+
     private HttpClient CreateOwnerClient()
     {
         var client = fixture.CreateApiClient();
@@ -662,13 +706,18 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
         return client;
     }
 
-    private async Task<int> SeedUserAsync(string sub, UserStatus status, string? displayName = null)
+    private async Task<int> SeedUserAsync(
+        string sub,
+        UserStatus status,
+        string? displayName = null,
+        string? userName = null)
     {
         return await fixture.InsertUserAsync(new User
         {
             LogtoSub = sub,
             Email = $"{sub}@example.test",
             DisplayName = displayName,
+            UserName = userName,
             Status = status,
             CreatedAtUtc = DateTimeOffset.UtcNow,
             UpdatedAtUtc = DateTimeOffset.UtcNow,

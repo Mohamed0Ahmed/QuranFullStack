@@ -288,6 +288,17 @@ describe('AccessUserWorkflowsComponent', () => {
     expect(element(fixture, 'access-request-accept')).toBeTruthy();
   });
 
+  it.each([
+    ['a whitespace-only stored name', '   '],
+    ['no stored name', null],
+  ])('heads the panel with the email when the account has %s', (_scenario, displayName) => {
+    const fixture = setup({ ...USER, displayName });
+
+    const heading = fixture.nativeElement.querySelector('.access-user-workflows__header h2') as HTMLElement;
+
+    expect(heading.textContent?.trim()).toBe('member@example.test');
+  });
+
   it('cancels an inline confirmation when the selected target changes', () => {
     const fixture = setup();
 

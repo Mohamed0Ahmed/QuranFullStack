@@ -73,6 +73,17 @@ describe('AccessUserListComponent', () => {
   });
 
   it.each([
+    ['a whitespace-only stored name', '   '],
+    ['no stored name', null],
+  ])('labels the row with the email when the account has %s', (_scenario, displayName) => {
+    const fixture = setup([{ ...USER, displayName }]);
+
+    const name = element(fixture, 'access-user-17').querySelector('.access-user-list__name');
+
+    expect(name?.textContent?.trim()).toBe('member@example.test');
+  });
+
+  it.each([
     ['an active Owner', { ...USER, status: 'active' as const, isOwner: true }, ['مالك', 'نشط']],
     ['a pending Owner', { ...USER, isOwner: true }, ['مالك', 'معلّق']],
     [
