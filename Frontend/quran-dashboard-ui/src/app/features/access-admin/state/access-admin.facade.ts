@@ -6,7 +6,6 @@ import { CurrentUserStore } from '../../../core/auth/current-user.store';
 import { PermissionCode } from '../../../core/auth/permission-code';
 import { WriteAuthFailureCoordinator } from '../../../core/auth/write-auth-failure.coordinator';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
-import { AccessAuditEventPage } from '../../../core/api/generated/models/access-audit-event-page';
 import { AccessUserDetail } from '../../../core/api/generated/models/access-user-detail';
 import { AccessUserSummaryPagedResult } from '../../../core/api/generated/models/access-user-summary-paged-result';
 import { LogtoSubjectRelinkPreview } from '../../../core/api/generated/models/logto-subject-relink-preview';
@@ -16,9 +15,12 @@ import {
   AccessAuditQuery,
   AccessRelinkPreviewRequest,
   AccessUserListQuery,
+  AccessUserSearchState,
   canReplaceUserPermissions,
   canSelectUserPermissions,
 } from '../models/access-admin.models';
+import { ACCESS_ADMIN_LOAD_ERROR, failureMessage } from './access-admin-request-failure';
+import { AccessAuditStore } from './access-audit.store';
 import { AccessPermissionDraftStore } from './access-permission-draft.store';
 
 export type AccessAdminMutationOutcome =
@@ -37,12 +39,10 @@ export interface AccessAdminMessage {
 }
 
 const defaultUserQuery: AccessUserListQuery = { page: 1, pageSize: 25 };
-const defaultAuditQuery: AccessAuditQuery = { pageSize: 25 };
 
 @Injectable()
 export class AccessAdminFacade {
   private static readonly accessDeniedMessage = 'لا تملك صلاحية إدارة الوصول.';
-  private static readonly loadErrorMessage = 'تعذر تحميل بيانات إدارة الوصول.';
   private static readonly writeErrorMessage = 'تعذر إتمام التغيير المطلوب.';
   private static readonly mutationSuccessMessage = 'تم حفظ التغيير.';
   private static readonly conflictMessage = 'تغيرت بيانات المستخدم. تم تحديث الحالة الحالية.';
@@ -51,6 +51,7 @@ export class AccessAdminFacade {
   private readonly currentUserStore = inject(CurrentUserStore);
   private readonly writeAuthFailureCoordinator = inject(WriteAuthFailureCoordinator);
   private readonly draft = new AccessPermissionDraftStore();
+  private readonly audit = new AccessAuditStore(this.api);
 
   private readonly usersState = signal<AccessUserSummaryPagedResult | null>(null);
   private readonly userQueryState = signal<AccessUserListQuery>(defaultUserQuery);
@@ -59,10 +60,6 @@ export class AccessAdminFacade {
   private readonly selectedUserState = signal<AccessUserDetail | null>(null);
   private readonly selectedUserLoadingState = signal(false);
   private readonly selectedUserErrorState = signal<string | null>(null);
-  private readonly auditState = signal<AccessAuditEventPage | null>(null);
-  private readonly auditQueryState = signal<AccessAuditQuery>(defaultAuditQuery);
-  private readonly auditLoadingState = signal(false);
-  private readonly auditErrorState = signal<string | null>(null);
   private readonly reconciliationState = signal<OwnerReconciliationStatus | null>(null);
   private readonly reconciliationLoadingState = signal(false);
   private readonly reconciliationErrorState = signal<string | null>(null);
@@ -72,7 +69,6 @@ export class AccessAdminFacade {
   private readonly busyActionState = signal<string | null>(null);
   private usersRequestVersion = 0;
   private selectedUserRequestVersion = 0;
-  private auditRequestVersion = 0;
   private relinkPreviewRequestVersion = 0;
 
   readonly canAccess = computed(() => this.currentUserStore.isActive() && this.currentUserStore.isOwner());
@@ -100,11 +96,11 @@ export class AccessAdminFacade {
   readonly selectedPermissionCodes = this.draft.codes;
   readonly selectedUserLoading = this.selectedUserLoadingState.asReadonly();
   readonly selectedUserError = this.selectedUserErrorState.asReadonly();
-  readonly auditEvents = computed(() => this.auditState()?.items ?? []);
-  readonly auditNextCursor = computed(() => this.auditState()?.nextCursor ?? null);
-  readonly auditQuery = this.auditQueryState.asReadonly();
-  readonly auditLoading = this.auditLoadingState.asReadonly();
-  readonly auditError = this.auditErrorState.asReadonly();
+  readonly auditEvents = this.audit.events;
+  readonly auditNextCursor = this.audit.nextCursor;
+  readonly auditQuery = this.audit.query;
+  readonly auditLoading = this.audit.loading;
+  readonly auditError = this.audit.error;
   readonly reconciliationStatus = this.reconciliationState.asReadonly();
   readonly reconciliationLoading = this.reconciliationLoadingState.asReadonly();
   readonly reconciliationError = this.reconciliationErrorState.asReadonly();
@@ -150,10 +146,10 @@ export class AccessAdminFacade {
         this.usersState.set(response.data);
         return;
       }
-      this.usersErrorState.set(response.message ?? AccessAdminFacade.loadErrorMessage);
+      this.usersErrorState.set(response.message ?? ACCESS_ADMIN_LOAD_ERROR);
     } catch (error) {
       if (requestVersion === this.usersRequestVersion) {
-        this.usersErrorState.set(messageFrom(error, AccessAdminFacade.loadErrorMessage));
+        this.usersErrorState.set(failureMessage(error, ACCESS_ADMIN_LOAD_ERROR));
       }
     } finally {
       if (requestVersion === this.usersRequestVersion) {
@@ -174,12 +170,20 @@ export class AccessAdminFacade {
         this.draft.publishCatalogue(response.data.items, response.data.assignmentReady);
         return;
       }
-      this.draft.failCatalogue(response.message ?? AccessAdminFacade.loadErrorMessage);
+      this.draft.failCatalogue(response.message ?? ACCESS_ADMIN_LOAD_ERROR);
     } catch (error) {
-      this.draft.failCatalogue(messageFrom(error, AccessAdminFacade.loadErrorMessage));
+      this.draft.failCatalogue(failureMessage(error, ACCESS_ADMIN_LOAD_ERROR));
     } finally {
       this.draft.endCatalogueLoad();
     }
+  }
+
+  async findUsers(search: string): Promise<AccessUserSearchState> {
+    if (!this.canAccess()) {
+      return { users: [], error: AccessAdminFacade.accessDeniedMessage, loading: false };
+    }
+
+    return this.audit.findUsers(search);
   }
 
   async selectUser(userId: number): Promise<void> {
@@ -201,11 +205,11 @@ export class AccessAdminFacade {
         return;
       }
       if (!detailResponse.isSuccess || !detailResponse.data) {
-        this.selectedUserErrorState.set(detailResponse.message ?? AccessAdminFacade.loadErrorMessage);
+        this.selectedUserErrorState.set(detailResponse.message ?? ACCESS_ADMIN_LOAD_ERROR);
         return;
       }
       if (!permissionsResponse.isSuccess || !permissionsResponse.data) {
-        this.selectedUserErrorState.set(permissionsResponse.message ?? AccessAdminFacade.loadErrorMessage);
+        this.selectedUserErrorState.set(permissionsResponse.message ?? ACCESS_ADMIN_LOAD_ERROR);
         return;
       }
 
@@ -213,7 +217,7 @@ export class AccessAdminFacade {
       this.draft.adopt(permissionsResponse.data);
     } catch (error) {
       if (requestVersion === this.selectedUserRequestVersion) {
-        this.selectedUserErrorState.set(messageFrom(error, AccessAdminFacade.loadErrorMessage));
+        this.selectedUserErrorState.set(failureMessage(error, ACCESS_ADMIN_LOAD_ERROR));
       }
     } finally {
       if (requestVersion === this.selectedUserRequestVersion) {
@@ -369,46 +373,24 @@ export class AccessAdminFacade {
   }
 
   async updateAuditQuery(query: Partial<AccessAuditQuery>): Promise<void> {
-    this.auditQueryState.set({ ...this.auditQueryState(), ...query, cursor: undefined });
+    this.audit.applyQuery(query);
     await this.loadAuditEvents();
   }
 
   async loadNextAuditPage(): Promise<void> {
-    const cursor = this.auditState()?.nextCursor;
-    if (!cursor) {
-      return;
-    }
-    await this.loadAuditEvents({ ...this.auditQueryState(), cursor }, true);
-  }
-
-  async loadAuditEvents(query = this.auditQueryState(), append = false): Promise<void> {
     if (!this.canAccess()) {
       return;
     }
 
-    const requestVersion = ++this.auditRequestVersion;
-    this.auditLoadingState.set(true);
-    this.auditErrorState.set(null);
-    try {
-      const response = await firstValueFrom(this.api.listAuditEvents(query));
-      if (requestVersion !== this.auditRequestVersion) {
-        return;
-      }
-      if (!response.isSuccess || !response.data) {
-        this.auditErrorState.set(response.message ?? AccessAdminFacade.loadErrorMessage);
-        return;
-      }
-      const items = append ? [...this.auditEvents(), ...response.data.items] : response.data.items;
-      this.auditState.set({ ...response.data, items });
-    } catch (error) {
-      if (requestVersion === this.auditRequestVersion) {
-        this.auditErrorState.set(messageFrom(error, AccessAdminFacade.loadErrorMessage));
-      }
-    } finally {
-      if (requestVersion === this.auditRequestVersion) {
-        this.auditLoadingState.set(false);
-      }
+    await this.audit.loadNextPage();
+  }
+
+  async loadAuditEvents(): Promise<void> {
+    if (!this.canAccess()) {
+      return;
     }
+
+    await this.audit.load();
   }
 
   async loadReconciliationStatus(): Promise<void> {
@@ -424,9 +406,9 @@ export class AccessAdminFacade {
         this.reconciliationState.set(response.data);
         return;
       }
-      this.reconciliationErrorState.set(response.message ?? AccessAdminFacade.loadErrorMessage);
+      this.reconciliationErrorState.set(response.message ?? ACCESS_ADMIN_LOAD_ERROR);
     } catch (error) {
-      this.reconciliationErrorState.set(messageFrom(error, AccessAdminFacade.loadErrorMessage));
+      this.reconciliationErrorState.set(failureMessage(error, ACCESS_ADMIN_LOAD_ERROR));
     } finally {
       this.reconciliationLoadingState.set(false);
     }
@@ -467,7 +449,7 @@ export class AccessAdminFacade {
 
   private async handleMutationError(error: unknown): Promise<AccessAdminMutationOutcome> {
     if (error instanceof HttpErrorResponse && error.status === 409) {
-      const conflictMessage = messageFrom(error, AccessAdminFacade.conflictMessage);
+      const conflictMessage = failureMessage(error, AccessAdminFacade.conflictMessage);
       await this.refreshSelectedUserAfterConflict();
       this.mutationMessageState.set({ text: conflictMessage, tone: 'notice' });
       return 'conflict';
@@ -486,7 +468,7 @@ export class AccessAdminFacade {
     }
 
     this.mutationMessageState.set({
-      text: messageFrom(error, AccessAdminFacade.writeErrorMessage),
+      text: failureMessage(error, AccessAdminFacade.writeErrorMessage),
       tone: 'error',
     });
     return error instanceof HttpErrorResponse && (error.status === 400 || error.status === 404)
@@ -551,16 +533,8 @@ export class AccessAdminFacade {
     this.usersState.set(null);
     this.selectedUserState.set(null);
     this.draft.clear();
-    this.auditState.set(null);
+    this.audit.clear();
     this.reconciliationState.set(null);
     this.invalidateRelinkPreviewRequest();
   }
-}
-
-function messageFrom(error: unknown, fallback: string): string {
-  if (!(error instanceof HttpErrorResponse) || typeof error.error !== 'object' || error.error === null) {
-    return fallback;
-  }
-  const response = error.error as Partial<ApiResponse<unknown>>;
-  return typeof response.message === 'string' && response.message.trim() ? response.message : fallback;
 }

@@ -37,8 +37,12 @@
             [loading]="facade.auditLoading()"
             [error]="facade.auditError()"
             [hasNextPage]="facade.auditNextCursor() !== null"
+            [targetSearch]="auditTargetSearch()"
+            [actorSearch]="auditActorSearch()"
             (filtersApplied)="applyAuditFilters($event)"
             (nextPageRequested)="loadNextAuditPage()"
+            (targetSearchRequested)="searchAuditTarget($event)"
+            (actorSearchRequested)="searchAuditActor($event)"
           />
         </div>
       }
@@ -70,6 +74,7 @@
 
           <section
             class="qd-card qd-card--quiet access-admin-page__reconciliation"
+            data-testid="access-admin-reconciliation"
             aria-labelledby="access-admin-reconciliation-title"
           >
             <header class="access-admin-page__section-header">
@@ -81,16 +86,39 @@
             } @else if (facade.reconciliationError(); as reconciliationError) {
               <qd-state variant="error" [message]="reconciliationError" />
             } @else if (facade.reconciliationStatus(); as status) {
+              <p class="qd-text-muted" data-testid="access-reconciliation-diagnostic-note">
+                تُنفَّذ مطابقة المالكين خارج لوحة التحكم، وما يظهر هنا قراءة تشخيصية لا تُطبَّق من هذه الصفحة.
+              </p>
               <dl class="access-admin-page__reconciliation-list">
-                <div><dt>الحالة</dt><dd>{{ status.isReady ? 'جاهزة' : 'غير جاهزة' }}</dd></div>
-                <div><dt>قابلة للتطبيق</dt><dd>{{ status.canApply ? 'نعم' : 'لا' }}</dd></div>
-                <div><dt>بصمة الإعداد</dt><dd dir="ltr">{{ status.configurationFingerprint }}</dd></div>
+                <div><dt>الحالة</dt><dd>{{ status.isReady ? 'مطابِقة للإعداد' : 'غير مطابِقة للإعداد' }}</dd></div>
+                <div><dt>مؤشّر التنفيذ</dt><dd>{{ status.canApply ? 'لا يوجد ما يمنع التنفيذ' : 'يوجد ما يمنع التنفيذ' }}</dd></div>
               </dl>
               <ul class="access-admin-page__candidates">
                 @for (candidate of status.candidates; track candidate.normalizedEmail) {
-                  <li><span dir="ltr">{{ candidate.normalizedEmail }}</span> — {{ candidate.state }}</li>
+                  <li class="access-admin-page__candidate qd-detail-list__row">
+                    <span class="qd-truncate" dir="ltr" [title]="candidate.normalizedEmail">{{ candidate.normalizedEmail }}</span>
+                    <span>{{ reconciliationCandidateStateLabel(candidate.state) }}</span>
+                  </li>
                 }
               </ul>
+              <div class="access-admin-page__fingerprint">
+                <button
+                  type="button"
+                  class="qd-btn qd-btn-secondary"
+                  data-testid="access-reconciliation-fingerprint-toggle"
+                  [attr.aria-expanded]="reconciliationFingerprintVisible()"
+                  aria-controls="access-reconciliation-fingerprint"
+                  (click)="toggleReconciliationFingerprint()"
+                >{{ reconciliationFingerprintVisible() ? 'إخفاء بصمة الإعداد التقنية' : 'إظهار بصمة الإعداد التقنية' }}</button>
+                @if (reconciliationFingerprintVisible()) {
+                  <p
+                    id="access-reconciliation-fingerprint"
+                    class="qd-text-meta access-admin-page__fingerprint-value"
+                    data-testid="access-reconciliation-fingerprint"
+                    dir="ltr"
+                  >{{ status.configurationFingerprint }}</p>
+                }
+              </div>
             } @else {
               <qd-state variant="empty" message="لا تتوفر حالة مطابقة المالكين." />
             }

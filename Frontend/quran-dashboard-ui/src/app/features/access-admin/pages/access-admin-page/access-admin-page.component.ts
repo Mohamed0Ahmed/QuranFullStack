@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  WritableSignal,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -21,7 +29,9 @@ import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
 import {
   AccessUserListFilters,
   AccessUserLifecycleAction,
+  AccessUserSearchState,
   AccessUserWorkflowAction,
+  EMPTY_ACCESS_USER_SEARCH,
   acceptGrantsPermissions,
   canReplaceUserPermissions,
   canSelectUserPermissions,
@@ -64,6 +74,9 @@ export class AccessAdminPageComponent {
   protected readonly workflowResetToken = signal(0);
   protected readonly userSwitchAwaitingDiscard = signal<number | null>(null);
   protected readonly pendingAction = signal<AccessUserWorkflowAction | null>(null);
+  protected readonly auditTargetSearch = signal<AccessUserSearchState>(EMPTY_ACCESS_USER_SEARCH);
+  protected readonly auditActorSearch = signal<AccessUserSearchState>(EMPTY_ACCESS_USER_SEARCH);
+  protected readonly reconciliationFingerprintVisible = signal(false);
 
   constructor() {
     this.route.queryParamMap
@@ -202,6 +215,30 @@ export class AccessAdminPageComponent {
 
   protected loadNextAuditPage(): void {
     void this.facade.loadNextAuditPage();
+  }
+
+  protected searchAuditTarget(search: string): void {
+    void this.findAuditUsers(search, this.auditTargetSearch);
+  }
+
+  protected searchAuditActor(search: string): void {
+    void this.findAuditUsers(search, this.auditActorSearch);
+  }
+
+  protected toggleReconciliationFingerprint(): void {
+    this.reconciliationFingerprintVisible.update((visible) => !visible);
+  }
+
+  protected reconciliationCandidateStateLabel(state: string): string {
+    return ACCESS_ADMIN_LABELS.reconciliationCandidateState(state);
+  }
+
+  private async findAuditUsers(
+    search: string,
+    into: WritableSignal<AccessUserSearchState>,
+  ): Promise<void> {
+    into.set({ users: [], error: null, loading: true });
+    into.set(await this.facade.findUsers(search));
   }
 
   private async runAction(reason: string): Promise<void> {

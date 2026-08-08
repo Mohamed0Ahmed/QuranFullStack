@@ -2,7 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
 import { AccessAuditEventItem } from '../../../../core/api/generated/models/access-audit-event-item';
+import { AccessUserSummary } from '../../../../core/api/generated/models/access-user-summary';
 import { AccessPermissionGroup } from '../../models/access-admin-permissions';
+import { AccessUserSearchState, EMPTY_ACCESS_USER_SEARCH } from '../../models/access-admin.models';
 import { AccessAuditFilters, AccessAuditLogComponent } from './access-audit-log.component';
 
 const GROUPS: AccessPermissionGroup[] = [
@@ -25,6 +27,10 @@ const EVENTS: readonly AccessAuditEventItem[] = [
     actorType: 'User',
     actorUserId: 9,
     targetUserId: 17,
+    actorDisplayName: 'المالك',
+    actorEmail: 'owner@example.test',
+    targetDisplayName: '   ',
+    targetEmail: 'member@example.test',
     actorSnapshot: {},
     targetSnapshot: {},
     permissionCode: 'abwab.doors.edit',
@@ -36,10 +42,14 @@ const EVENTS: readonly AccessAuditEventItem[] = [
   {
     id: 2,
     occurredAtUtc: '2026-08-07T09:00:00Z',
-    actionType: 'OwnerReconciled',
+    actionType: 'OwnerGrantedByReconciliation',
     actorType: 'System',
     actorUserId: null,
     targetUserId: 17,
+    actorDisplayName: null,
+    actorEmail: null,
+    targetDisplayName: 'عضو',
+    targetEmail: 'member@example.test',
     actorSnapshot: {},
     targetSnapshot: {},
     permissionCode: null,
@@ -50,16 +60,49 @@ const EVENTS: readonly AccessAuditEventItem[] = [
   },
 ];
 
+const CANDIDATES: readonly AccessUserSummary[] = [
+  {
+    id: 17,
+    email: 'member@example.test',
+    displayName: 'عضو',
+    status: 'active',
+    isOwner: false,
+    permissionCount: 1,
+    createdAtUtc: '2026-01-01T00:00:00Z',
+    updatedAtUtc: '2026-01-01T00:00:00Z',
+    version: 4,
+  },
+  {
+    id: 9,
+    email: 'owner@example.test',
+    displayName: 'المالك',
+    status: 'active',
+    isOwner: true,
+    permissionCount: 0,
+    createdAtUtc: '2026-01-01T00:00:00Z',
+    updatedAtUtc: '2026-01-01T00:00:00Z',
+    version: 2,
+  },
+];
+
+function found(users: readonly AccessUserSummary[]): AccessUserSearchState {
+  return { users, error: null, loading: false };
+}
+
 function setup(
   options: {
     events?: readonly AccessAuditEventItem[];
     loading?: boolean;
     error?: string | null;
     hasNextPage?: boolean;
+    targetSearch?: AccessUserSearchState;
+    actorSearch?: AccessUserSearchState;
   } = {},
 ): {
   fixture: ComponentFixture<AccessAuditLogComponent>;
   filters: AccessAuditFilters[];
+  targetSearches: string[];
+  actorSearches: string[];
   nextPages: number;
 } {
   TestBed.configureTestingModule({ imports: [AccessAuditLogComponent] });
@@ -69,9 +112,15 @@ function setup(
   fixture.componentRef.setInput('loading', options.loading ?? false);
   fixture.componentRef.setInput('error', options.error ?? null);
   fixture.componentRef.setInput('hasNextPage', options.hasNextPage ?? false);
+  fixture.componentRef.setInput('targetSearch', options.targetSearch ?? EMPTY_ACCESS_USER_SEARCH);
+  fixture.componentRef.setInput('actorSearch', options.actorSearch ?? EMPTY_ACCESS_USER_SEARCH);
   const filters: AccessAuditFilters[] = [];
-  const state = { fixture, filters, nextPages: 0 };
+  const targetSearches: string[] = [];
+  const actorSearches: string[] = [];
+  const state = { fixture, filters, targetSearches, actorSearches, nextPages: 0 };
   fixture.componentInstance.filtersApplied.subscribe((value) => filters.push(value));
+  fixture.componentInstance.targetSearchRequested.subscribe((value) => targetSearches.push(value));
+  fixture.componentInstance.actorSearchRequested.subscribe((value) => actorSearches.push(value));
   fixture.componentInstance.nextPageRequested.subscribe(() => (state.nextPages += 1));
   fixture.detectChanges();
   return state;
@@ -87,57 +136,160 @@ function element(fixture: ComponentFixture<AccessAuditLogComponent>, testId: str
 
 function typeInto(
   fixture: ComponentFixture<AccessAuditLogComponent>,
-  selector: string,
+  testId: string,
   value: string,
 ): void {
-  const input = fixture.nativeElement.querySelector(selector) as HTMLInputElement;
+  const input = element(fixture, testId) as HTMLInputElement;
   input.value = value;
   input.dispatchEvent(new Event('input'));
   fixture.detectChanges();
 }
 
+function rowTextWithoutTimestamps(fixture: ComponentFixture<AccessAuditLogComponent>): string {
+  const rows = Array.from(
+    (fixture.nativeElement as HTMLElement).querySelectorAll('.access-audit-log__row'),
+  );
+  return rows
+    .map((row) => {
+      const withoutTime = row.cloneNode(true) as HTMLElement;
+      withoutTime.querySelectorAll('time').forEach((stamp) => stamp.remove());
+      return withoutTime.textContent ?? '';
+    })
+    .join(' ');
+}
+
+function submitFilters(fixture: ComponentFixture<AccessAuditLogComponent>): void {
+  element(fixture, 'access-audit-filters').dispatchEvent(
+    new Event('submit', { bubbles: true, cancelable: true }),
+  );
+}
+
 describe('AccessAuditLogComponent', () => {
-  it('names the actor type in Arabic and reports a missing actor rather than blanking it', () => {
+  it('names both participants by human identity and never prints their numeric ids', () => {
     const { fixture } = setup();
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('المنفّذ: مستخدم');
+    expect(text).toContain('المنفّذ: المالك');
     expect(text).toContain('المنفّذ: النظام');
-    expect(text).toMatch(/معرّف المستخدم المنفّذ:\s*غير متاح/);
-    expect(text).toContain('تكليف مراجعة');
+    expect(text).toContain('الحساب: عضو');
+    expect(text).toContain('الحساب: member@example.test');
+    expect(text).not.toContain('معرّف المستخدم');
+    expect(rowTextWithoutTimestamps(fixture)).not.toMatch(/\d/);
   });
 
-  it('emits only the filters the operator actually filled in', () => {
-    const { fixture, filters } = setup();
+  it('says an account is unavailable rather than leaving the attribution blank', () => {
+    const { fixture } = setup({
+      events: [
+        {
+          ...EVENTS[0],
+          actorDisplayName: null,
+          actorEmail: null,
+          targetDisplayName: null,
+          targetEmail: null,
+        },
+      ],
+    });
+    const text = fixture.nativeElement.textContent as string;
 
-    typeInto(fixture, '#access-audit-actor', '9');
-    element(fixture, 'access-audit-filters').dispatchEvent(
-      new Event('submit', { bubbles: true, cancelable: true }),
-    );
+    expect(text).toContain('الحساب: حساب غير متاح');
+    expect(text).toContain('المنفّذ: حساب غير متاح');
+  });
 
-    expect(filters).toEqual([
-      { targetUserId: undefined, actorUserId: 9, actionType: undefined, permissionCode: undefined },
+  it('reads every action type in Arabic and leaves an unmodelled one legible', () => {
+    const { fixture } = setup({
+      events: [{ ...EVENTS[0], actionType: 'SomethingNewer' }, EVENTS[1]],
+    });
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('منح عضوية مالك بالمطابقة');
+    expect(text).toContain('SomethingNewer');
+  });
+
+  it('renders the moment in local time rather than the raw UTC string', () => {
+    const { fixture } = setup();
+    const stamp = fixture.nativeElement.querySelector('time') as HTMLElement;
+
+    expect(stamp.textContent?.trim()).toMatch(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}$/);
+    expect(stamp.getAttribute('datetime')).toBe('2026-08-07T10:00:00Z');
+    expect(fixture.nativeElement.textContent).not.toContain('2026-08-07T10:00:00Z');
+  });
+
+  it('offers the modelled event types as a closed list instead of free text', () => {
+    const { fixture } = setup();
+    const select = element(fixture, 'access-audit-action') as HTMLSelectElement;
+
+    expect(select.tagName).toBe('SELECT');
+    expect(Array.from(select.options, (option) => option.value)).toEqual([
+      '',
+      'UserAccepted',
+      'UserActivated',
+      'UserDisabled',
+      'UserReactivated',
+      'PermissionGranted',
+      'PermissionRevoked',
+      'LogtoSubjectRelinked',
+      'OwnerGrantedByReconciliation',
+      'OwnerRemovedByReconciliation',
+      'LegacyRoleRemoved',
+    ]);
+    expect(select.options[5].textContent).toBe('منح صلاحية');
+  });
+
+  it('offers no numeric identifier input at all', () => {
+    const { fixture } = setup();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('input[type="number"]')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[inputmode="numeric"]')).toBeNull();
+  });
+
+  it('asks for candidates by name and filters by the account the operator picked', () => {
+    const state = setup();
+
+    typeInto(state.fixture, 'access-audit-target-search', ' عضو ');
+    element(state.fixture, 'access-audit-target-find').click();
+
+    expect(state.targetSearches).toEqual(['عضو']);
+
+    state.fixture.componentRef.setInput('targetSearch', found([CANDIDATES[1], CANDIDATES[0]]));
+    state.fixture.detectChanges();
+
+    expect(
+      (state.fixture.nativeElement as HTMLElement).querySelectorAll(
+        '[data-testid^="access-audit-target-candidate-"]',
+      ),
+    ).toHaveLength(2);
+
+    element(state.fixture, 'access-audit-target-candidate-17').click();
+    state.fixture.detectChanges();
+
+    expect(element(state.fixture, 'access-audit-target-selected').textContent).toContain('عضو');
+    submitFilters(state.fixture);
+
+    expect(state.filters).toEqual([
+      { targetUserId: 17, actorUserId: undefined, actionType: undefined, permissionCode: undefined },
     ]);
   });
 
-  it('drops a non-positive identifier instead of sending it', () => {
-    const { fixture, filters } = setup();
+  it('keeps the two pickers independent and lets a chosen account be cleared', () => {
+    const state = setup({ actorSearch: found([CANDIDATES[1]]) });
 
-    typeInto(fixture, '#access-audit-actor', '0');
-    typeInto(fixture, '#access-audit-target', '-3');
-    typeInto(fixture, '#access-audit-action', '   ');
-    element(fixture, 'access-audit-filters').dispatchEvent(
-      new Event('submit', { bubbles: true, cancelable: true }),
-    );
+    expect(
+      (state.fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid^="access-audit-target-candidate-"]',
+      ),
+    ).toBeNull();
 
-    expect(filters).toEqual([
-      {
-        targetUserId: undefined,
-        actorUserId: undefined,
-        actionType: undefined,
-        permissionCode: undefined,
-      },
-    ]);
+    element(state.fixture, 'access-audit-actor-candidate-9').click();
+    state.fixture.detectChanges();
+    submitFilters(state.fixture);
+
+    expect(state.filters[0]).toMatchObject({ actorUserId: 9, targetUserId: undefined });
+
+    element(state.fixture, 'access-audit-actor-clear').click();
+    state.fixture.detectChanges();
+    submitFilters(state.fixture);
+
+    expect(state.filters[1]).toMatchObject({ actorUserId: undefined });
   });
 
   it('offers only catalogued permission codes as filter values', () => {
@@ -154,9 +306,7 @@ describe('AccessAuditLogComponent', () => {
 
     select.value = 'abwab.doors.edit';
     select.dispatchEvent(new Event('change'));
-    element(fixture, 'access-audit-filters').dispatchEvent(
-      new Event('submit', { bubbles: true, cancelable: true }),
-    );
+    submitFilters(fixture);
 
     expect(filters[0]?.permissionCode).toBe('abwab.doors.edit');
   });
@@ -187,6 +337,6 @@ describe('AccessAuditLogComponent', () => {
     const { fixture } = setup(options);
 
     expect(element(fixture, testId)).toBeTruthy();
-    expect((fixture.nativeElement as HTMLElement).querySelector('ol')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('ul.access-audit-log__list')).toBeNull();
   });
 });

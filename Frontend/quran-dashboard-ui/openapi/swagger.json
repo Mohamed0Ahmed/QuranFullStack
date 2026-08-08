@@ -5845,6 +5845,8 @@
       "AccessAuditEventItem": {
         "required": [
           "actionType",
+          "actorDisplayName",
+          "actorEmail",
           "actorSnapshot",
           "actorType",
           "actorUserId",
@@ -5855,6 +5857,8 @@
           "occurredAtUtc",
           "permissionCode",
           "reason",
+          "targetDisplayName",
+          "targetEmail",
           "targetSnapshot",
           "targetUserId"
         ],
@@ -5882,6 +5886,22 @@
           "targetUserId": {
             "type": "integer",
             "format": "int32"
+          },
+          "actorDisplayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetDisplayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "targetEmail": {
+            "type": "string",
+            "nullable": true
           },
           "actorSnapshot": {
             "type": "object"

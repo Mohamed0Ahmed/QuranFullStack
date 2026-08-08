@@ -13,4 +13,13 @@ describe('access-admin routes', () => {
   it('protects navigation away from an unsaved permission draft', () => {
     expect(ACCESS_ADMIN_ROUTES[0]?.canDeactivate).toEqual([accessAdminUnsavedChangesGuard]);
   });
+
+  it('puts no identifier in a visible URL: no route carries a parameter segment', () => {
+    const paths = ACCESS_ADMIN_ROUTES.flatMap(function collect(route): string[] {
+      return [route.path ?? '', ...(route.children ?? []).flatMap(collect)];
+    });
+
+    expect(paths).toEqual(['']);
+    expect(paths.some((path) => path.includes(':'))).toBe(false);
+  });
 });

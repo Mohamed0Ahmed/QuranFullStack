@@ -1,6 +1,42 @@
+import { AccessUserSummary } from '../../../core/api/generated/models/access-user-summary';
 import { PermissionCode } from '../../../core/auth/permission-code';
 
 export type AccessUserStatus = 'pending' | 'active' | 'disabled';
+
+export const ACCESS_AUDIT_ACTION_TYPES = [
+  'UserAccepted',
+  'UserActivated',
+  'UserDisabled',
+  'UserReactivated',
+  'PermissionGranted',
+  'PermissionRevoked',
+  'LogtoSubjectRelinked',
+  'OwnerGrantedByReconciliation',
+  'OwnerRemovedByReconciliation',
+  'LegacyRoleRemoved',
+] as const;
+
+export type AccessAuditActionType = (typeof ACCESS_AUDIT_ACTION_TYPES)[number];
+
+export function isAccessAuditActionType(value: string): value is AccessAuditActionType {
+  return (ACCESS_AUDIT_ACTION_TYPES as readonly string[]).includes(value);
+}
+
+export const OWNER_RELINK_REQUIRED_CANDIDATE_STATE = 'Unchanged';
+
+export const ACCESS_USER_PICKER_PAGE_SIZE = 10;
+
+export interface AccessUserSearchState {
+  readonly users: readonly AccessUserSummary[];
+  readonly error: string | null;
+  readonly loading: boolean;
+}
+
+export const EMPTY_ACCESS_USER_SEARCH: AccessUserSearchState = {
+  users: [],
+  error: null,
+  loading: false,
+};
 
 export interface AccessUserListQuery {
   readonly status?: AccessUserStatus;

@@ -620,7 +620,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
         await SynchronizePermissionsAsync();
         var ownerId = await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-audit-query-target";
-        var targetId = await SeedUserAsync(targetSub, UserStatus.Pending);
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Pending, displayName: "الاسم وقت الحدث");
         var target = (await fixture.GetUserBySubAsync(targetSub))!;
         using var client = CreateOwnerClient();
         var fromUtc = Uri.EscapeDataString(DateTimeOffset.UtcNow.AddMinutes(-1).ToString("O"));
@@ -665,6 +665,45 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             oversizedResponse,
             HttpStatusCode.BadRequest,
             ApiMessages.AccessAdministrationInvalidRequest);
+    }
+
+    [Fact]
+    public async Task AuditEvents_NameParticipantsFromTheAccountRowsRatherThanTheStoredSnapshots()
+    {
+        await fixture.ResetAsync();
+        await SynchronizePermissionsAsync();
+        var ownerId = await SeedActiveOwnerAsync();
+        const string targetSub = "access-admin-audit-identity-target";
+        var targetId = await SeedUserAsync(targetSub, UserStatus.Pending, displayName: "الاسم وقت الحدث");
+        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        using var client = CreateOwnerClient();
+
+        using var acceptResponse = await client.PostAsJsonAsync(
+            $"/api/access/users/{targetId}/accept",
+            new
+            {
+                expectedVersion = target.Version,
+                permissionCodes = new[] { AbwabPermissions.Doors.Create },
+                reason = "Attribute the audit rows to human identities.",
+            });
+        acceptResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        await fixture.RenameUserAsync(targetId, "الاسم الحالي");
+        await fixture.RenameUserAsync(ownerId, "اسم المالك الحالي");
+
+        using var response = await client.GetAsync($"/api/access/audit-events?targetUserId={targetId}&pageSize=25");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await ApiEnvelope.ReadDataAsync(response);
+        var eventItem = page.GetProperty("items")[0];
+        eventItem.GetProperty("targetDisplayName").GetString().Should().Be("الاسم الحالي");
+        eventItem.GetProperty("targetSnapshot").GetProperty("displayName").GetString()
+            .Should().Be("الاسم وقت الحدث");
+        eventItem.GetProperty("targetEmail").GetString().Should().Be($"{targetSub}@example.test");
+        eventItem.GetProperty("actorDisplayName").GetString().Should().Be("اسم المالك الحالي");
+        eventItem.GetProperty("actorSnapshot").TryGetProperty("displayName", out _).Should().BeFalse();
+        eventItem.GetProperty("actorEmail").GetString().Should().Be(AccessTestFixture.OwnerEmail);
+        eventItem.GetProperty("actorUserId").GetInt32().Should().Be(ownerId);
+        eventItem.GetProperty("targetUserId").GetInt32().Should().Be(targetId);
     }
 
     private Task<int> SeedActiveOwnerAsync()

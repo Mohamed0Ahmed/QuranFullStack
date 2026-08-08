@@ -68,6 +68,10 @@ const AUDIT_EVENTS: readonly AccessAuditEventItem[] = [
     actorType: 'User',
     actorUserId: 9,
     targetUserId: 17,
+    actorDisplayName: 'المالك',
+    actorEmail: 'owner@example.test',
+    targetDisplayName: 'عضو',
+    targetEmail: 'member@example.test',
     actorSnapshot: {},
     targetSnapshot: {},
     permissionCode: 'abwab.doors.edit',
@@ -79,10 +83,14 @@ const AUDIT_EVENTS: readonly AccessAuditEventItem[] = [
   {
     id: 2,
     occurredAtUtc: '2026-08-07T09:00:00Z',
-    actionType: 'OwnerReconciled',
+    actionType: 'OwnerGrantedByReconciliation',
     actorType: 'System',
     actorUserId: null,
     targetUserId: 17,
+    actorDisplayName: null,
+    actorEmail: null,
+    targetDisplayName: 'عضو',
+    targetEmail: 'member@example.test',
     actorSnapshot: {},
     targetSnapshot: {},
     permissionCode: null,
@@ -92,6 +100,18 @@ const AUDIT_EVENTS: readonly AccessAuditEventItem[] = [
     metadata: {},
   },
 ];
+
+const OWNER_SUMMARY: AccessUserSummary = {
+  id: 9,
+  email: 'owner@example.test',
+  displayName: 'المالك',
+  status: 'active',
+  isOwner: true,
+  permissionCount: 0,
+  createdAtUtc: '2026-01-01T00:00:00Z',
+  updatedAtUtc: '2026-01-01T00:00:00Z',
+  version: 2,
+};
 
 function user(
   status: 'pending' | 'active' | 'disabled',
@@ -246,8 +266,8 @@ describe('AccessAdminPageComponent', () => {
       .flush(
         success({
           canApply: false,
-          candidates: [],
-          configurationFingerprint: 'fingerprint',
+          candidates: [{ normalizedEmail: 'OWNER@EXAMPLE.TEST', state: 'Unchanged', userId: 9 }],
+          configurationFingerprint: 'a1b2c3d4e5f6',
           isReady: true,
           lastReconciliation: null,
         }),
@@ -1130,24 +1150,101 @@ describe('AccessAdminPageComponent', () => {
 
       const panel = element(fixture, 'access-admin-panel-security');
       expect(panel.textContent).toContain('حالة مطابقة المالكين');
-      expect(panel.textContent).toContain('بصمة الإعداد');
       expect(panel.querySelector('form')).toBeNull();
+      expect(element(fixture, 'access-admin-reconciliation').textContent).toContain('دون تغيير');
+    });
+
+    it('states that reconciliation is diagnostic and offers no way to apply it', async () => {
+      const fixture = await renderPage(user('active'));
+
+      showTab(fixture, 'security');
+      const reconciliation = element(fixture, 'access-admin-reconciliation');
+
+      expect(element(fixture, 'access-reconciliation-diagnostic-note').textContent).toContain(
+        'لا تُطبَّق من هذه الصفحة',
+      );
+      expect(
+        Array.from(reconciliation.querySelectorAll('button'), (button) =>
+          button.getAttribute('data-testid'),
+        ),
+      ).toEqual(['access-reconciliation-fingerprint-toggle']);
+    });
+
+    it('keeps the configuration fingerprint behind a diagnostic disclosure', async () => {
+      const fixture = await renderPage(user('active'));
+
+      showTab(fixture, 'security');
+
+      expect(absent(fixture, 'access-reconciliation-fingerprint')).toBe(true);
+      expect(element(fixture, 'access-admin-reconciliation').textContent).not.toContain(
+        'a1b2c3d4e5f6',
+      );
+
+      const toggle = element(fixture, 'access-reconciliation-fingerprint-toggle');
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      toggle.click();
+      fixture.detectChanges();
+
+      expect(element(fixture, 'access-reconciliation-fingerprint').textContent).toContain(
+        'a1b2c3d4e5f6',
+      );
+      expect(
+        element(fixture, 'access-reconciliation-fingerprint-toggle').getAttribute('aria-expanded'),
+      ).toBe('true');
     });
   });
 
   describe('audit section', () => {
-    it('renders actor attribution and applies the actor filter through HTTP', async () => {
+    it('attributes every row to a human identity and prints no numeric identifier', async () => {
       const fixture = await renderPage(user('active'));
       showTab(fixture, 'audit');
       const panel = element(fixture, 'access-admin-panel-audit');
 
-      expect(panel.textContent).toContain('المنفّذ: مستخدم');
+      expect(panel.textContent).toContain('المنفّذ: المالك');
       expect(panel.textContent).toContain('المنفّذ: النظام');
-      expect(panel.textContent).toMatch(/معرّف المستخدم المنفّذ:\s*غير متاح/);
+      expect(panel.textContent).toContain('الحساب: عضو');
+      expect(panel.textContent).toContain('منح صلاحية');
+      expect(panel.textContent).not.toContain('معرّف المستخدم');
+      expect(panel.querySelector('input[type="number"]')).toBeNull();
+      expect(
+        Array.from(panel.querySelectorAll('.access-audit-log__row'), (row) => {
+          const withoutTime = row.cloneNode(true) as HTMLElement;
+          withoutTime.querySelectorAll('time').forEach((stamp) => stamp.remove());
+          return withoutTime.textContent ?? '';
+        }).join(' '),
+      ).not.toMatch(/\d/);
+    });
 
-      const actor = element(fixture, 'access-audit-actor') as HTMLInputElement;
-      actor.value = '9';
-      actor.dispatchEvent(new Event('input'));
+    it('resolves an account by name and filters the log by the id it never rendered', async () => {
+      const fixture = await renderPage(user('active'));
+      showTab(fixture, 'audit');
+
+      const search = element(fixture, 'access-audit-actor-search') as HTMLInputElement;
+      search.value = 'المالك';
+      search.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      element(fixture, 'access-audit-actor-find').click();
+
+      const lookup = httpTesting.expectOne(
+        (candidate) =>
+          candidate.url === `${ACCESS_BASE_URL}/users` && candidate.params.get('search') === 'المالك',
+      );
+      expect(lookup.request.params.get('pageSize')).toBe('10');
+      lookup.flush(
+        success({
+          items: [summary(user('active')), OWNER_SUMMARY],
+          page: 1,
+          pageSize: 10,
+          totalCount: 2,
+        }),
+      );
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      element(fixture, 'access-audit-actor-candidate-9').click();
+      fixture.detectChanges();
+      expect(element(fixture, 'access-audit-actor-selected').textContent).toContain('المالك');
+
       element(fixture, 'access-audit-filters').dispatchEvent(
         new Event('submit', { bubbles: true, cancelable: true }),
       );

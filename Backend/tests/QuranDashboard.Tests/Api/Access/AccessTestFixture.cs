@@ -150,6 +150,15 @@ public sealed class AccessTestFixture : IAsyncLifetime
         return user.Id;
     }
 
+    public async Task RenameUserAsync(int userId, string displayName)
+    {
+        await using var scope = QueryProvider.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        var user = await db.AccessUsers.SingleAsync(candidate => candidate.Id == userId);
+        user.DisplayName = displayName;
+        await db.SaveChangesAsync();
+    }
+
     public async Task<int> InsertPersonaAsync(string key)
     {
         var persona = TestAccessPersonas.For(key);

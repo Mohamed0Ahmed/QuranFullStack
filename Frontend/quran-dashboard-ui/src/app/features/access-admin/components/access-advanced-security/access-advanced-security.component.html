@@ -15,7 +15,7 @@
       </p>
       @if (target.isOwner) {
         <p class="qd-text-muted" data-testid="access-relink-owner-precondition">
-          ولحساب المالك شرط إضافي: أن يكون بريده ضمن إعدادات المالكين وأن تكون حالته في مطابقة المالكين <span dir="ltr">Unchanged</span>، وإلا رُفض التأكيد.
+          ولحساب المالك شرط إضافي: أن يكون بريده ضمن إعدادات المالكين وأن تكون حالته في مطابقة المالكين «{{ requiredCandidateStateLabel }}»، وإلا رُفض التأكيد.
         </p>
       }
       @if (hasUnsavedPermissions()) {

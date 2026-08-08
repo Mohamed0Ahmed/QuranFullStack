@@ -74,6 +74,18 @@ checks the target `xmin` version before mutation. `AccessAuditAppender` adds imm
 same DbContext without saving independently. The transaction saves and commits once.
 `EfAccessAuditReader` identifies the latest Owner-reconciliation summary from metadata provenance
 `operation=owner-reconciliation`, so a newer system event from legacy-role conversion cannot mask it.
+Its `ListAsync` also `Include`s the mapped `ActorUser`/`TargetUser` navigations and projects
+`ActorDisplayName`, `ActorEmail`, `TargetDisplayName` and `TargetEmail` — one query joining the
+`users` primary key twice — so a caller can attribute an event to a person rather than to a database
+id. Both navigations are `HasOne`/`WithMany`, so each join matches at most one row and
+`Take(pageSize + 1)` still yields exactly `pageSize + 1` events: no row multiplication, and no
+per-row follow-up query. **Those names come
+from the account rows, never from the stored `actor_snapshot`/`target_snapshot` jsonb**, which hold
+three different shapes across two casings, one of them without an `email` member at all. The
+consequence is deliberate and pinned by `AccessAdministrationEndpointTests`: a renamed account reads
+under its current name throughout its history, while the snapshot keeps the identity as it stood when
+the event was written. The numeric `ActorUserId`/`TargetUserId` stay in the contract because the
+audit filters round-trip them.
 `EfLogtoSubjectRelinkService` revalidates both the
 interactive evidence and Logto Management profile email through the shared normalizer before it changes
 only `LogtoSub`; its Owner path also requires current reconciliation status.

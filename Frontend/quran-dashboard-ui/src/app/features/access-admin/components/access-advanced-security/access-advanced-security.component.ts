@@ -3,7 +3,11 @@ import { ChangeDetectionStrategy, Component, effect, input, output, signal } fro
 import { AccessUserDetail } from '../../../../core/api/generated/models/access-user-detail';
 import { LogtoSubjectRelinkPreview } from '../../../../core/api/generated/models/logto-subject-relink-preview';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
-import { AccessRelinkPreviewRequest } from '../../models/access-admin.models';
+import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
+import {
+  AccessRelinkPreviewRequest,
+  OWNER_RELINK_REQUIRED_CANDIDATE_STATE,
+} from '../../models/access-admin.models';
 
 @Component({
   selector: 'qd-access-advanced-security',
@@ -35,6 +39,10 @@ export class AccessAdvancedSecurityComponent {
       this.resetToken();
       this.resetRelinkForm();
     });
+  }
+
+  protected get requiredCandidateStateLabel(): string {
+    return ACCESS_ADMIN_LABELS.reconciliationCandidateState(OWNER_RELINK_REQUIRED_CANDIDATE_STATE);
   }
 
   protected updateNewSub(event: Event): void {

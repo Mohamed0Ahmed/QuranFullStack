@@ -39,10 +39,10 @@ the navbar and is reached through the guarded route only.
   is unchanged: preview first, then a separate explicit confirmation; the UI submits a new subject
   plus masked verification evidence, clears that evidence after preview/cancellation/completion,
   and has no email-only relink path.
-- Displays basic keyset-paginated audit history with actor type and actor ID attribution, plus
-  target, actor, action, and permission filters, in its own سجل الوصول section
-  (`components/access-audit-log/`); owner-reconciliation status is read-only data beside identity
-  recovery — see *Layout and URL state* below.
+- Displays keyset-paginated audit history attributed to **human identities**, plus account, actor,
+  event-type, and permission filters, in its own سجل الوصول section
+  (`components/access-audit-log/`); owner-reconciliation status is read-only diagnostic data beside
+  identity recovery — see *Audit and reconciliation* and *Layout and URL state* below.
 
 ## Layout and URL state
 
@@ -254,16 +254,84 @@ capability.
 An Owner target additionally gets that precondition in the copy, not only in this file. Because
 `ValidateOwnerConfigurationAsync` fails with `OwnerConfigurationNotReconciled` unless the target's
 normalized email is in the configured owner set **and** owner reconciliation reports a candidate for
-that user in state `Unchanged`, an Owner relink can otherwise fail at confirm for a reason the panel
-never named. `access-relink-owner-precondition` states both halves and renders only when
-`target.isOwner`; the owner-reconciliation panel beside it **in the same tab** prints each
-candidate's raw state, so `Unchanged` is a value the operator can actually match without leaving the
-section that will refuse the confirmation.
+that user in the `Unchanged` state, an Owner relink can otherwise fail at confirm for a reason the
+panel never named. `access-relink-owner-precondition` states both halves and renders only when
+`target.isOwner`.
+
+**The precondition and the reconciliation panel name that state through one function, and that is
+the point.** The panel beside it **in the same tab** no longer prints the raw
+`OwnerReconciliationCandidateState` token — it prints the Arabic label — so copy naming the English
+`Unchanged` would name something the operator can no longer see. Both read
+`ACCESS_ADMIN_LABELS.reconciliationCandidateState`, the precondition through
+`OWNER_RELINK_REQUIRED_CANDIDATE_STATE` (`models/access-admin.models.ts`), so the term in the
+sentence and the term in the list are the same string by construction and renaming one renames the
+other. `access-advanced-security.component.spec.ts` asserts the precondition carries that label and
+**not** the raw token.
 
 The component owns only the relink form state. It takes the selected user, the preview, the busy
 action and the dirty-draft gate as inputs and emits preview/confirm/cancel; the facade still owns
 every request, the evidence token and the preview lifecycle. With no user selected it renders an
 empty state instead of a form, since relink targets one account.
+
+## Audit and reconciliation
+
+**No technical identifier is rendered in either section.** That is the feature-wide rule of §3 of the
+plan finishing where it started: the audit log was the last place a database user id was printed.
+
+- **Rows name people, not ids.** `GET /api/access/audit-events` carries `targetDisplayName`,
+  `targetEmail`, `actorDisplayName` and `actorEmail` beside the existing `targetUserId`/`actorUserId`.
+  The ids stay in the payload because the filter round-trip needs them; nothing renders them. A row
+  reads the account through `accessUserNameLabel`, so a blank Logto name falls back to the email, and
+  «حساب غير متاح» covers the shape where neither is known. A `System` actor reads «النظام» from
+  `actorType` alone — the two system-actor paths (owner reconciliation, legacy-role conversion) write
+  no actor row to point at.
+  **The names are the account's current ones, not the ones frozen in the event's snapshot.** The
+  backend sources them from the `ActorUser`/`TargetUser` foreign-key navigations, so a renamed account
+  reads correctly everywhere in its history; `AccessAdministrationEndpointTests` pins the difference
+  by renaming a user after the event and asserting the row and its `targetSnapshot` disagree. The
+  snapshots are not a usable source: they exist in three shapes across two casings, one of them
+  without an `email` field, and the generated TypeScript types all of them as `{}`.
+- **The event type is a closed dropdown, not free text.** `ACCESS_AUDIT_ACTION_TYPES`
+  (`models/access-admin.models.ts`) mirrors the backend `AccessAuditActionType` enum, whose names are
+  the wire values `ListAccessAuditEventsHandler` accepts — anything else is a `400`, so the list is a
+  contract and lives beside the other contract types rather than with the Arabic copy.
+  `ACCESS_ADMIN_LABELS.auditActionType` maps each to Arabic and **returns an unmodelled value
+  unchanged**: a new server-side action type stays legible instead of reading as «غير معروف».
+  That list is hand-maintained, and **nothing fails when the two sides drift** — the graceful
+  degradation is exactly what makes the drift silent. Recorded as row **AC3** in
+  `docs/TESTING_DEBT.md`, beside the same-shaped `core/auth/permission-code.ts` debt in row AC1.
+- **Timestamps are local.** `yyyy/MM/dd HH:mm` through `DatePipe`, inside a `<time [attr.datetime]>`
+  that keeps the exact UTC instant machine-readable. Fixed field order and Western digits, matching
+  the digits used everywhere else in the app, so the column stays scannable and free of ICU variance.
+- **Accounts are chosen by identity.** `components/access-user-picker/` replaces the two numeric-id
+  inputs. It searches through the same `AccessAdminApi.listUsers` the list uses (`pageSize: 10`),
+  renders each candidate by name with the email beneath, and emits the summary object. The audit
+  section keeps the chosen summary and reads `.id` off it only when it builds the query — the integer
+  is constructed in TypeScript, sent as a query parameter, and never bound into a template or a route.
+  Enter inside the picker searches and is `preventDefault`ed, because the picker sits inside the
+  filter `<form>` and Enter would otherwise submit the filters instead. Each candidate's
+  `data-testid` ends in that candidate's id — `<prefix>-candidate-<id>`, the same shape
+  `access-user-list` uses for its rows — so a spec names the candidate it means instead of resolving
+  the first match; the audit-log and page specs both pick a **non-first** candidate out of a
+  multi-result list, which is what makes "the wrong candidate was emitted" a failing test. A
+  `data-testid` is not visible UI, so carrying an id there does not breach the no-IDs rule above.
+- **The picker is presentational like every other component here.** It holds the typed term and
+  nothing else; the page owns the two result signals and calls `AccessAdminFacade.findUsers`, which
+  gates on Owner access and delegates to `AccessAuditStore.findUsers` — between them the only place
+  the lookup request lives. Two signals, not one, because the two pickers must not show each
+  other's candidates. `findUsers` returns the outcome instead of storing it, so a lookup for a filter
+  cannot disturb the listed page; a failed lookup returns its message and the picker renders an
+  error state, which is why a failed search does not read as «لا توجد حسابات مطابقة».
+- **Owner reconciliation is diagnostic, and the page says so.** `canApply` is **status, never an
+  offer**: there is no apply endpoint in this feature, so the panel presents it as «مؤشّر التنفيذ»
+  under a line stating that reconciliation runs outside the dashboard and is not applied from this
+  page. The page spec asserts the section's only `<button>` is the fingerprint disclosure, so adding
+  an Apply control fails a test.
+- **Candidate states read in Arabic** through `ACCESS_ADMIN_LABELS.reconciliationCandidateState`,
+  which is also what the Owner relink precondition names — see *Advanced Security*.
+- **The 64-character configuration fingerprint is behind a disclosure**, collapsed by default, with
+  `aria-expanded` on the toggle. §3 permits a technical value only as an explicitly advanced
+  diagnostic affordance, never in a default view; this is the one such affordance in the feature.
 
 ## State regions and announcement
 
@@ -335,9 +403,27 @@ min-block-size on the panes themselves, which is layout work and has not been do
   the facade composes. It performs no HTTP: the facade calls the API and hands it the outcome, so
   error mapping stays in one place. The facade re-exports its signals, so the store is an internal
   seam and no consumer outside this folder sees it.
+- `state/access-audit.store.ts` owns the audit slice — the loaded page, the filter query, its
+  loading and error state, keyset append, and the participant lookup the audit pickers run — as a
+  second plain signal-backed class the facade composes, on the same seam and for the same reason:
+  `FRONTEND_STRUCTURE.md` §5 caps a facade at 600 lines, and this slice is cohesive enough to lift
+  whole. It is constructed with `new AccessAuditStore(this.api)`, **not** `providedIn: 'root'` —
+  the facade is component-provided, so a root-provided store would share one audit page across every
+  page instance. Unlike the draft store it does issue its own requests, because the four methods
+  that make it a slice are all request-shaped. That is why the error text did not fork: the
+  load-failure fallback and the `HttpErrorResponse` → operator-message mapping moved out of the
+  facade into `state/access-admin-request-failure.ts`, which the facade and this store both import,
+  so a failed audit page and a failed user page still read the same. **The Owner gate is not in the
+  store.** `canAccess()` is the facade's, and the facade checks it before every request the store
+  issues, exactly as it guards `AccessPermissionDraftStore.setCodes`. The facade re-exports the
+  signals under their `audit*` names, so this store is an internal seam too.
 - `models/access-admin.labels.ts` holds the Arabic copy that TypeScript needs (dialog and
-  `window.confirm` wording, the diff-summary label builder, the tab and lifecycle-status label
-  builders). Template-only copy stays in the templates. `userStatus` names the three modelled states
+  `window.confirm` wording, the diff-summary label builder, and the tab, lifecycle-status,
+  audit-action-type and reconciliation-candidate-state label builders). Template-only copy stays in
+  the templates. The two builders added for the audit and reconciliation sections **return an
+  unrecognised value unchanged** rather than mapping it to an «غير معروف» constant: both name
+  server-side enums this page mirrors rather than owns, and a value it does not model is diagnostic
+  information the operator may need to quote. `userStatus` names the three modelled states
   and reads anything else as «حالة غير معروفة» rather than as «معطّل»: the generated
   `AccessUserDetail.status` and `AccessUserSummary.status` are both plain `string`, so a state this
   page does not model is reachable, and the row and the workspace header would otherwise both tell
@@ -375,6 +461,7 @@ min-block-size on the panes themselves, which is layout work and has not been do
     the same outcomes that bump the relink form's reset token). A failed write leaves the review
     open with the reason intact, so a retry does not start from a blank textarea;
   - `access-audit-log` — the audit filters and rows;
+  - `access-user-picker` — the reusable find-an-account control the audit filters use twice;
   - `access-advanced-security` — the relink form.
   The dirty predicate is **not** re-derived per component any more: the draft bar, the `+N / −M`
   summary and `access-advanced-security`'s `hasUnsavedPermissions` input all read

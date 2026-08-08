@@ -9,23 +9,49 @@
   </header>
 
   <form class="access-audit-log__filters" data-testid="access-audit-filters" novalidate (submit)="applyFilters($event)">
-    <label class="qd-text-meta" for="access-audit-target">معرّف المستخدم</label>
-    <input id="access-audit-target" class="qd-input" type="number" inputmode="numeric" [value]="targetUserId()" (input)="updateTargetUserId($event)" />
-    <label class="qd-text-meta" for="access-audit-actor">معرّف منفّذ الإجراء</label>
-    <input id="access-audit-actor" class="qd-input" type="number" min="1" inputmode="numeric" data-testid="access-audit-actor" [value]="actorUserId()" (input)="updateActorUserId($event)" />
-    <label class="qd-text-meta" for="access-audit-action">نوع الحدث</label>
-    <input id="access-audit-action" class="qd-input" type="text" [value]="actionType()" (input)="updateActionType($event)" />
-    <label class="qd-text-meta" for="access-audit-permission">الصلاحية</label>
-    <select id="access-audit-permission" class="qd-select" [value]="permissionCode()" (change)="updatePermissionCode($event)">
-      <option value="">كل الصلاحيات</option>
-      @for (group of permissionGroups(); track group.key) {
-        <optgroup [label]="group.label">
-          @for (code of group.codes; track code) {
-            <option [value]="code">{{ code }}</option>
-          }
-        </optgroup>
-      }
-    </select>
+    <qd-access-user-picker
+      label="الحساب المعني"
+      controlId="access-audit-target"
+      testIdPrefix="access-audit-target"
+      [state]="targetSearch()"
+      [selected]="targetUser()"
+      (searchRequested)="targetSearchRequested.emit($event)"
+      (selectionChange)="selectTargetUser($event)"
+    />
+    <qd-access-user-picker
+      label="منفّذ الإجراء"
+      controlId="access-audit-actor"
+      testIdPrefix="access-audit-actor"
+      [state]="actorSearch()"
+      [selected]="actorUser()"
+      (searchRequested)="actorSearchRequested.emit($event)"
+      (selectionChange)="selectActorUser($event)"
+    />
+
+    <div class="access-audit-log__field">
+      <label class="qd-text-meta" for="access-audit-action">نوع الحدث</label>
+      <select id="access-audit-action" class="qd-select" data-testid="access-audit-action" [value]="actionType()" (change)="updateActionType($event)">
+        <option value="">كل الأحداث</option>
+        @for (action of actionTypes; track action) {
+          <option [value]="action">{{ actionLabel(action) }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="access-audit-log__field">
+      <label class="qd-text-meta" for="access-audit-permission">الصلاحية</label>
+      <select id="access-audit-permission" class="qd-select" [value]="permissionCode()" (change)="updatePermissionCode($event)">
+        <option value="">كل الصلاحيات</option>
+        @for (group of permissionGroups(); track group.key) {
+          <optgroup [label]="group.label">
+            @for (code of group.codes; track code) {
+              <option [value]="code">{{ code }}</option>
+            }
+          </optgroup>
+        }
+      </select>
+    </div>
+
     <button type="submit" class="qd-btn qd-btn-secondary">تطبيق المرشحات</button>
   </form>
 
@@ -36,22 +62,22 @@
   } @else if (events().length === 0) {
     <qd-state variant="empty" message="لا توجد أحداث مطابقة." />
   } @else {
-    <ol class="access-audit-log__list">
+    <ul class="access-audit-log__list">
       @for (event of events(); track event.id) {
-        <li>
-          <strong>{{ event.actionType }}</strong>
-          <span>المستخدم {{ event.targetUserId }} · {{ event.occurredAtUtc }}</span>
-          <span>المنفّذ: {{ actorTypeLabel(event.actorType) }}</span>
-          <span>معرّف المستخدم المنفّذ: @if (event.actorUserId !== null) { <bdi dir="ltr">{{ event.actorUserId }}</bdi> } @else { غير متاح }</span>
+        <li class="access-audit-log__row qd-detail-list__row">
+          <span class="access-audit-log__action">{{ actionLabel(event.actionType) }}</span>
+          <time class="access-audit-log__time" dir="ltr" [attr.datetime]="event.occurredAtUtc">{{ event.occurredAtUtc | date: 'yyyy/MM/dd HH:mm' }}</time>
+          <span class="qd-truncate" [title]="targetLabel(event)">الحساب: {{ targetLabel(event) }}</span>
+          <span class="qd-truncate" [title]="actorLabel(event)">المنفّذ: {{ actorLabel(event) }}</span>
           @if (event.permissionCode; as code) {
-            <span dir="ltr">{{ code }}</span>
+            <span class="access-audit-log__permission" dir="ltr">{{ code }}</span>
           }
           @if (event.reason; as reason) {
             <span>{{ reason }}</span>
           }
         </li>
       }
-    </ol>
+    </ul>
     @if (hasNextPage()) {
       <button
         type="button"

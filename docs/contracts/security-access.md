@@ -25,3 +25,9 @@ nearest README define client-side access behaviour.
 - The Owner permission editor fails closed when the catalogue is unreadable or assignment is not
   ready — no save path, no empty replacement set, and only that region degrades →
   [`features/access-admin/README.md`](../../Frontend/quran-dashboard-ui/src/app/features/access-admin/README.md)
+- `GET /api/access/audit-events` items carry `targetDisplayName`/`targetEmail`/`actorDisplayName`/
+  `actorEmail` beside the numeric ids, sourced from the account rows rather than the stored snapshots
+  → [`Access/README.md`](../../Backend/infrastructure/QuranDashboard.Infrastructure/Access/README.md)
+- No technical user identifier is rendered in the Owner administration UI or its URLs; the audit
+  filters resolve accounts by name and send the id only as a query parameter →
+  [`features/access-admin/README.md`](../../Frontend/quran-dashboard-ui/src/app/features/access-admin/README.md)

@@ -14,7 +14,14 @@
 
 .access-audit-log__filters {
   display: grid;
+  gap: var(--qd-space-3);
+  align-items: start;
+}
+
+.access-audit-log__field {
+  display: grid;
   gap: var(--qd-space-2);
+  min-inline-size: 0;
 }
 
 .access-audit-log__list {
@@ -25,28 +32,31 @@
   list-style: none;
 }
 
-.access-audit-log__list li {
-  display: grid;
+.access-audit-log__row {
   gap: var(--qd-space-1);
-  padding: var(--qd-space-3);
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-sm);
-  background: var(--qd-surface);
   color: var(--qd-text-muted);
 }
 
-.access-audit-log__list strong {
+.access-audit-log__action {
   color: var(--qd-text);
+  font-weight: 700;
+}
+
+.access-audit-log__time {
+  font-variant-numeric: tabular-nums;
+}
+
+.access-audit-log__permission {
+  overflow-wrap: anywhere;
 }
 
 @media (min-width: bp.$qd-bp-desktop-min) {
   .access-audit-log__filters {
-    grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
-    align-items: center;
-    column-gap: var(--qd-space-3);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--qd-space-4);
   }
 
-  .access-audit-log__filters button {
+  .access-audit-log__filters > button {
     grid-column: 1 / -1;
     justify-self: start;
   }

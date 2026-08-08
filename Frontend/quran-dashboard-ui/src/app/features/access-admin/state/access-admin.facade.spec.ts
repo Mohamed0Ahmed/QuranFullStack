@@ -227,6 +227,41 @@ describe('AccessAdminFacade', () => {
     },
   );
 
+  it('looks accounts up by free text for the audit pickers without touching the listed page', async () => {
+    await loadCurrentUser(OWNER);
+    const listed = user(4);
+    const before = facade.users();
+
+    const lookup = facade.findUsers('عضو');
+    const request = httpTesting.expectOne(
+      (candidate) =>
+        candidate.url === `${ACCESS_BASE_URL}/users` && candidate.params.get('search') === 'عضو',
+    );
+    expect(request.request.params.get('pageSize')).toBe('10');
+    request.flush(success({ items: [summary(listed)], page: 1, pageSize: 10, totalCount: 1 }));
+
+    expect(await lookup).toEqual({ users: [summary(listed)], error: null, loading: false });
+    expect(facade.users()).toBe(before);
+  });
+
+  it('reports a failed account lookup rather than reading as no matches', async () => {
+    await loadCurrentUser(OWNER);
+
+    const lookup = facade.findUsers('عضو');
+    httpTesting
+      .expectOne((candidate) => candidate.url === `${ACCESS_BASE_URL}/users`)
+      .flush(
+        { isSuccess: false, message: 'تعذر البحث عن الحسابات.', data: null },
+        { status: 500, statusText: 'Server Error' },
+      );
+
+    expect(await lookup).toEqual({
+      users: [],
+      error: 'تعذر البحث عن الحسابات.',
+      loading: false,
+    });
+  });
+
   it('refreshes the target state after a version conflict without retrying or retaining attempted grants', async () => {
     await loadCurrentUser(OWNER);
     await loadCatalogue();

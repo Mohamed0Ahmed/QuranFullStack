@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AccessUserDetail } from '../../../../core/api/generated/models/access-user-detail';
+import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
 import { AccessAdvancedSecurityComponent } from './access-advanced-security.component';
 
 const USER: AccessUserDetail = {
@@ -100,7 +101,8 @@ describe('AccessAdvancedSecurityComponent', () => {
 
     expect(precondition).toContain('ضمن إعدادات المالكين');
     expect(precondition).toContain('مطابقة المالكين');
-    expect(precondition).toContain('Unchanged');
+    expect(precondition).toContain(ACCESS_ADMIN_LABELS.reconciliationCandidateState('Unchanged'));
+    expect(precondition).not.toContain('Unchanged');
 
     fixture.componentRef.setInput('user', USER);
     fixture.detectChanges();

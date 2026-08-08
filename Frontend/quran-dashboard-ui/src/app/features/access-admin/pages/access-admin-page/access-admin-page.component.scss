@@ -126,13 +126,19 @@
   list-style: none;
 }
 
-.access-admin-page__candidates li {
-  display: grid;
+.access-admin-page__candidate {
   gap: var(--qd-space-1);
-  padding: var(--qd-space-3);
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-sm);
   color: var(--qd-text-muted);
+}
+
+.access-admin-page__fingerprint {
+  display: grid;
+  gap: var(--qd-space-2);
+  justify-items: start;
+}
+
+.access-admin-page__fingerprint-value {
+  overflow-wrap: anywhere;
 }
 
 @media (min-width: bp.$qd-bp-desktop-min) {
