@@ -48,7 +48,6 @@
             [selectedCodes]="facade.selectedPermissionCodes()"
             [permissionDiff]="facade.permissionDiff()"
             [busyAction]="facade.busyAction()"
-            [relinkPreview]="facade.relinkPreview()"
             [resetToken]="workflowResetToken()"
             [catalogueLoading]="facade.catalogueLoading()"
             [catalogueError]="facade.catalogueError()"
@@ -57,9 +56,6 @@
             (draftDiscarded)="discardDraft()"
             (actionConfirmed)="confirmAction($event)"
             (catalogueRetryRequested)="reloadPermissionCatalogue()"
-            (relinkPreviewRequested)="previewRelink($event)"
-            (relinkConfirmed)="confirmRelink($event)"
-            (relinkCancelled)="cancelRelink()"
           />
         } @else {
           <qd-state variant="empty" message="اختر مستخدمًا لعرض تفاصيل الوصول الخاصة به." />
@@ -150,6 +146,19 @@
           <qd-state variant="empty" message="لا تتوفر حالة مطابقة المالكين." />
         }
       </section>
+    </section>
+
+    <section class="qd-card qd-card--quiet access-admin-page__advanced">
+      <qd-access-advanced-security
+        [user]="facade.selectedUser()"
+        [relinkPreview]="facade.relinkPreview()"
+        [busyAction]="facade.busyAction()"
+        [hasUnsavedPermissions]="facade.isDirty()"
+        [resetToken]="workflowResetToken()"
+        (relinkPreviewRequested)="previewRelink($event)"
+        (relinkConfirmed)="confirmRelink($event)"
+        (relinkCancelled)="cancelRelink()"
+      />
     </section>
   }
 

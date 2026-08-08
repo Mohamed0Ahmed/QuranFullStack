@@ -8,6 +8,8 @@ the navbar and is reached through the guarded route only.
 - Lists and filters local access users, then shows an individual account's status and version.
 - Lets an active Owner accept Pending users, disable Active non-Owners, and reactivate Disabled
   non-Owners. Disable explains that it removes every direct grant; reactivate begins with none.
+  Those lifecycle controls live in their own «إجراءات الحساب» region, never in the row that carries
+  the permission save — see *Per-status semantics* below.
 - Presents server-catalogued permissions by group. Select-all is group-local: a partial group is
   indeterminate, selecting it adds that group's individual `PermissionCode` values, and clearing it
   removes only that group. Every individual value can still be unchecked. Requests contain the
@@ -20,7 +22,9 @@ the navbar and is reached through the guarded route only.
 - Requires an inline reason/diff confirmation for grant/status changes. Every changed permission
   is shown by its Arabic label and stable code before confirmation. There is only one modal in
   the feature: the unsaved-changes confirmation described below.
-- Uses relink preview followed by a separate explicit confirmation. The UI submits a new subject
+- Recovers a lost login identity through Logto-subject relink, presented as a secondary
+  الأمان المتقدم region outside the permission workspace — see *Advanced Security* below. The flow
+  is unchanged: preview first, then a separate explicit confirmation; the UI submits a new subject
   plus masked verification evidence, clears that evidence after preview/cancellation/completion,
   and has no email-only relink path.
 - Displays basic keyset-paginated audit history with actor type and actor ID attribution, plus
@@ -35,10 +39,18 @@ stored access.
 
 - **The catalogue request fails.** Only the الصلاحيات المباشرة region degrades: it renders an error
   with a retry that re-issues the catalogue request. Identity, status badges, lifecycle actions and
-  the relink form keep rendering, because none of them reads the catalogue.
+  the identity-recovery panel keep rendering, because none of them reads the catalogue.
 - **The catalogue is served but assignment is not ready.** The editor stays visible and read-only so
   current grants can be inspected, an Arabic notice states that assignment is unavailable and that
-  existing access is unchanged, and no permission-save path is offered.
+  existing access is unchanged, and no permission-save path is offered. A pending account's accept
+  button changes with it, from «قبول وتفعيل مع الصلاحيات المحددة» to «قبول وتفعيل دون صلاحيات».
+
+Readiness is not the only thing that label answers to. `acceptGrantsPermissions()` requires assignment
+readiness **and** a non-empty `permissionDiff().granted`, and `showsPermissionDiff()` routes the accept
+confirmation through that same predicate — so the button and the confirmation one click later cannot
+state opposite things, and neither promises a payload the facade will not send. A pending account
+begins with no grants, so «قبول وتفعيل دون صلاحيات» is its default reading even over a healthy
+catalogue; the «مع الصلاحيات المحددة» wording appears only once something is actually selected.
 
 `AccessAdminFacade.canAssignPermissions` is the single gate. It requires `assignmentReady`, no
 catalogue error, **and** at least one rendered permission group — an empty catalogue is never
@@ -108,8 +120,17 @@ the bar carrying the only discard control is hidden while assignment is unavaila
   wasted round-trip, not audit pollution.
 - The mandatory trimmed 1..1024-character reason is unchanged: reverting is the only way to leave
   an edit without one.
-- A dirty draft holds back relink. Relink is an identity operation that refreshes the selected
-  user, so running it mid-edit would silently drop the draft.
+- A dirty draft still holds back relink, even though relink now lives outside the permission
+  workspace. The reason was never adjacency: `confirmSelectedUserRelink` runs through `runMutation`,
+  and every successful mutation calls `refreshAfterMutation`, which re-selects the user and makes
+  `AccessPermissionDraftStore.adopt` overwrite the draft with the stored grants. Moving the panel
+  removed the confusion of a live identity form sitting mid-edit; it did not remove the overwrite.
+  The gate reads `AccessAdminFacade.isDirty` through the panel's `hasUnsavedPermissions` input,
+  which is the same predicate the draft bar and the diff summary render from. It holds back **both**
+  relink steps, not just the entry point: preview and confirm each carry it in their `disabled`
+  expression and each re-check it in `requestRelinkPreview()`/`confirmRelink()`. Gating the preview
+  alone would leave the sequence *preview → edit a permission → confirm* open, and the confirm is the
+  step that runs the mutation whose refresh overwrites the draft.
 
 Two mechanisms protect the draft, because they cover different exits:
 
@@ -122,6 +143,60 @@ Two mechanisms protect the draft, because they cover different exits:
   public `hasUnsavedChanges()`. It uses `window.confirm` deliberately: hoisting dialog state out of
   the component to reuse `qd-confirm-dialog` from a guard buys nothing, and the in-page path above
   is where the interaction actually happens.
+
+## Per-status semantics
+
+Each account state explains what the page can and cannot do to it, because the backend accepts a
+different commit for each one.
+
+- **Pending.** The editor renders, but the commit is `accept`: the replace endpoint requires
+  `Status == Active`, so a `PUT` for a pending user is rejected. The permission region says the
+  selected permissions are granted on activation, and the button says the same —
+  «قبول وتفعيل مع الصلاحيات المحددة» while assignment is available **and** something is selected,
+  «قبول وتفعيل دون صلاحيات» otherwise. The confirmation shows the grant list only when there is one
+  to show — the same predicate drives both, see above; otherwise it states
+  the account will be activated with no direct permissions, which is exactly what the empty
+  `permissionCodes` payload does.
+- **Active non-Owner.** The affirmative save lives in the draft bar under the editor and appears only
+  while the draft is dirty. «تعطيل الحساب» sits in the separate «إجراءات الحساب» region, under a line
+  stating that disabling stops access and removes every direct permission for good — disable
+  snapshots the grants, emits one revoke event each, and deletes the rows; reactivate restores none
+  of them. The two controls never share a row. There is no danger button class in the style system,
+  so weight comes from placement and from the warning copy, not from a red button.
+- **Disabled.** No editor renders, because the backend rejects a replace on a non-Active user. The
+  region says the account holds no direct permissions and that none can be assigned before
+  reactivation, and repeats that reactivation starts from none.
+- **Owner.** No editor and no checked-and-disabled catalogue. An Owner's access does not come from
+  direct grants at all: `PermissionAuthorizationHandler` succeeds on `state.IsOwner`, and
+  `AuthorizationStateAccessEvaluator.ResolveActiveStateAsync` returns a state only for an Active
+  user — so the bypass statement is made **only** for an Active Owner, and a Pending or Disabled
+  Owner is told the bypass does not apply yet. Both variants add that Owner membership is managed by
+  owner reconciliation rather than from this page. Nothing here claims an Owner account is
+  uneditable in general, because it is not: identity recovery below applies to Owners too.
+
+## Advanced Security
+
+`components/access-advanced-security/` hosts Logto-subject relink as identity recovery, in its own
+recessive `.qd-card--quiet` region below the workspace rather than inside the selected-user panel.
+The move is a placement decision, not a capability change — `ConfirmCoreAsync` has no Owner guard and
+no status guard, and `ValidateBindingAsync` routes an Owner target to
+`ValidateOwnerConfigurationAsync`, which permits the relink when the Owner's configured email
+reconciles as `Unchanged`. The panel says so: it applies to the selected account whatever its role,
+including an Owner. Presenting it as routine permission editing was what was wrong, not the
+capability.
+
+An Owner target additionally gets that precondition in the copy, not only in this file. Because
+`ValidateOwnerConfigurationAsync` fails with `OwnerConfigurationNotReconciled` unless the target's
+normalized email is in the configured owner set **and** owner reconciliation reports a candidate for
+that user in state `Unchanged`, an Owner relink can otherwise fail at confirm for a reason the panel
+never named. `access-relink-owner-precondition` states both halves and renders only when
+`target.isOwner`; the reconciliation panel lower on the page prints each candidate's raw state, so
+`Unchanged` is a value the operator can actually match.
+
+The component owns only the relink form state. It takes the selected user, the preview, the busy
+action and the dirty-draft gate as inputs and emits preview/confirm/cancel; the facade still owns
+every request, the evidence token and the preview lifecycle. With no user selected it renders an
+empty state instead of a form, since relink targets one account.
 
 ## State regions and announcement
 
@@ -188,7 +263,9 @@ min-block-size on the panes themselves, which is layout work and has not been do
 - `components/` renders feature UI and emits interactions. It does not call HTTP directly.
   `access-user-workflows` derives its own dirty predicate (`hasUnsavedPermissions()`) from the
   `permissionDiff` and `canAssignPermissions` inputs instead of taking a separate `isDirty` input,
-  so the bar, the summary and the relink gate cannot disagree with the diff rendered beside them.
+  so the bar and the summary cannot disagree with the diff rendered beside them.
+  `access-advanced-security` renders no diff, so it takes the facade's `isDirty` as an input — the
+  same computed those two are derived from.
 - Owner membership, role editing, group grants, and navbar changes are out of scope.
 
 ## Testing

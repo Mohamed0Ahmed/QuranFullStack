@@ -15,7 +15,15 @@
     </header>
 
     @if (target.isOwner) {
-      <p class="access-user-workflows__notice">تُعرض عضوية المالك للمتابعة فقط ولا يمكن تعديلها من هذه الواجهة.</p>
+      <section class="access-user-workflows__section" data-testid="access-owner-permissions">
+        <h3>الصلاحيات المباشرة</h3>
+        @if (target.status === 'active') {
+          <p class="access-user-workflows__notice">يحصل حساب المالك النشط على كامل صلاحيات الإدارة عبر تجاوز المالك، دون إسناد صلاحيات مباشرة.</p>
+        } @else {
+          <p class="access-user-workflows__notice">لا يسري تجاوز المالك إلا على حساب مالك نشط، ولا تُسند الصلاحيات المباشرة لحسابات المالك من هنا.</p>
+        }
+        <p class="access-user-workflows__notice">تُدار عضوية المالك عبر مطابقة المالكين، لا من هذه الصفحة.</p>
+      </section>
     } @else {
       @if (canSelectPermissions()) {
         <section class="access-user-workflows__section" data-testid="access-permissions-section">
@@ -45,6 +53,10 @@
               <p class="access-user-workflows__notice" data-testid="access-permissions-unavailable">
                 إسناد الصلاحيات غير متاح مؤقتًا. الصلاحيات المعروضة للاطّلاع فقط، ولم يطرأ أي تغيير على الوصول الحالي.
               </p>
+            } @else if (target.status === 'pending') {
+              <p class="access-user-workflows__notice" data-testid="access-pending-permissions-note">
+                تُمنح الصلاحيات المحددة عند تفعيل الحساب، ولا يمكن حفظها قبل ذلك.
+              </p>
             }
             <qd-access-permission-editor
               [groups]="groups()"
@@ -68,20 +80,36 @@
       }
 
       @if (target.status === 'disabled') {
-        <p class="access-user-workflows__notice">إعادة التفعيل تبدأ بلا صلاحيات مباشرة سابقة.</p>
+        <section class="access-user-workflows__section" data-testid="access-disabled-permissions">
+          <h3>الصلاحيات المباشرة</h3>
+          <p class="access-user-workflows__notice">الحساب معطّل ولا يحمل صلاحيات مباشرة، ولا يمكن إسنادها قبل إعادة التفعيل.</p>
+          <p class="access-user-workflows__notice">إعادة التفعيل تبدأ بلا صلاحيات مباشرة سابقة.</p>
+        </section>
       }
 
-      <div class="access-user-workflows__actions">
-        @if (target.status === 'pending') {
-          <button type="button" class="qd-btn qd-btn-primary" data-testid="access-request-accept" [disabled]="busyAction() !== null" (click)="requestAction('accept')">قبول وتفعيل</button>
+      <section class="access-user-workflows__section" data-testid="access-account-actions" aria-label="إجراءات الحساب">
+        <h3>إجراءات الحساب</h3>
+        @if (target.status === 'active') {
+          <p class="access-user-workflows__warning">يوقف التعطيل وصول الحساب ويزيل جميع صلاحياته المباشرة نهائيًا.</p>
         }
-        @if (canDisable()) {
-          <button type="button" class="qd-btn qd-btn-secondary" data-testid="access-request-disable" [disabled]="busyAction() !== null" (click)="requestAction('disable')">تعطيل الحساب</button>
-        }
-        @if (target.status === 'disabled') {
-          <button type="button" class="qd-btn qd-btn-primary" data-testid="access-request-reactivate" [disabled]="busyAction() !== null" (click)="requestAction('reactivate')">إعادة التفعيل</button>
-        }
-      </div>
+        <div class="access-user-workflows__actions">
+          @if (target.status === 'pending') {
+            <button type="button" class="qd-btn qd-btn-primary" data-testid="access-request-accept" [disabled]="busyAction() !== null" (click)="requestAction('accept')">
+              @if (acceptGrantsPermissions()) {
+                قبول وتفعيل مع الصلاحيات المحددة
+              } @else {
+                قبول وتفعيل دون صلاحيات
+              }
+            </button>
+          }
+          @if (canDisable()) {
+            <button type="button" class="qd-btn qd-btn-secondary" data-testid="access-request-disable" [disabled]="busyAction() !== null" (click)="requestAction('disable')">تعطيل الحساب</button>
+          }
+          @if (target.status === 'disabled') {
+            <button type="button" class="qd-btn qd-btn-primary" data-testid="access-request-reactivate" [disabled]="busyAction() !== null" (click)="requestAction('reactivate')">إعادة التفعيل</button>
+          }
+        </div>
+      </section>
 
       @if (pendingAction(); as action) {
         <section class="access-user-workflows__confirmation" data-testid="access-action-confirmation" aria-label="تأكيد الإجراء">
@@ -92,12 +120,18 @@
           @if (action === 'reactivate') {
             <p class="access-user-workflows__notice">لن تُستعاد الصلاحيات السابقة عند إعادة التفعيل.</p>
           }
-          @if (action === 'accept' && !canAssignPermissions()) {
-            <p class="access-user-workflows__notice" data-testid="access-accept-without-permissions">
-              سيُفعَّل الحساب دون إسناد صلاحيات مباشرة.
-            </p>
+          @if (action === 'accept') {
+            @if (showsPermissionDiff()) {
+              <p class="access-user-workflows__notice" data-testid="access-accept-with-permissions">
+                تُمنح الصلاحيات التالية فور تفعيل الحساب.
+              </p>
+            } @else {
+              <p class="access-user-workflows__notice" data-testid="access-accept-without-permissions">
+                سيُفعَّل الحساب دون إسناد صلاحيات مباشرة.
+              </p>
+            }
           }
-          @if ((action === 'permissions' || action === 'accept') && canAssignPermissions()) {
+          @if (showsPermissionDiff()) {
             <div class="access-user-workflows__diff" aria-label="فرق الصلاحيات">
               @if (permissionDiff().granted.length > 0) {
                 <div>
@@ -133,40 +167,5 @@
         </section>
       }
     }
-
-    <section class="access-user-workflows__section" aria-label="إعادة ربط المعرّف">
-      <h3>إعادة ربط معرّف الدخول</h3>
-      <p class="access-user-workflows__notice">تتطلب العملية إثبات هوية موثّقًا ولا تعتمد على البريد الإلكتروني وحده.</p>
-      @if (hasUnsavedPermissions()) {
-        <p class="access-user-workflows__notice" data-testid="access-relink-blocked">
-          احفظ تعديلات الصلاحيات أو تجاهلها قبل إعادة ربط المعرّف.
-        </p>
-      }
-      <label class="access-user-workflows__field" for="access-relink-new-sub">معرّف الدخول الجديد</label>
-      <input id="access-relink-new-sub" class="qd-input" type="text" autocomplete="off" data-testid="access-relink-new-sub" [value]="newSub()" [disabled]="busyAction() !== null" (input)="updateNewSub($event)" />
-      <label class="access-user-workflows__field" for="access-relink-evidence">رمز إثبات الهوية</label>
-      <input id="access-relink-evidence" class="qd-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" data-testid="access-relink-evidence" [value]="evidenceToken()" [disabled]="busyAction() !== null" (input)="updateEvidenceToken($event)" />
-      <button type="button" class="qd-btn qd-btn-secondary" data-testid="access-relink-preview" [disabled]="!newSub().trim() || !evidenceToken().trim() || busyAction() !== null || hasUnsavedPermissions()" (click)="requestRelinkPreview()">معاينة الربط</button>
-
-      @if (relinkPreview(); as preview) {
-        <section class="access-user-workflows__confirmation" data-testid="access-relink-confirmation" aria-label="تأكيد إعادة الربط">
-          <p>ستُعاد مطابقة المعرّف قبل التنفيذ.</p>
-          <dl class="access-user-workflows__relink-subjects">
-            <div><dt>المعرّف الحالي</dt><dd dir="ltr">{{ preview.oldSub }}</dd></div>
-            <div><dt>المعرّف الجديد</dt><dd dir="ltr">{{ preview.newSub }}</dd></div>
-          </dl>
-          <label class="access-user-workflows__field" for="access-relink-confirm-reason">سبب إعادة الربط</label>
-          <textarea id="access-relink-confirm-reason" class="qd-input access-user-workflows__textarea" data-testid="access-relink-confirm-reason" [value]="relinkReason()" [disabled]="busyAction() !== null" (input)="updateRelinkReason($event)"></textarea>
-          <label class="qd-check-row">
-            <input class="qd-checkbox" type="checkbox" data-testid="access-relink-confirmed" [checked]="relinkConfirmation()" [disabled]="busyAction() !== null" (change)="updateRelinkConfirmation($event)" />
-            <span>أؤكد إعادة الربط بعد مراجعة المعاينة.</span>
-          </label>
-          <div class="access-user-workflows__actions">
-            <button type="button" class="qd-btn qd-btn-secondary" data-testid="access-relink-cancel" [disabled]="busyAction() !== null" (click)="cancelRelink()">إلغاء إعادة الربط</button>
-            <button type="button" class="qd-btn qd-btn-primary" data-testid="access-relink-confirm" [disabled]="!relinkReason().trim() || !relinkConfirmation() || busyAction() !== null" (click)="confirmRelink()">تأكيد إعادة الربط</button>
-          </div>
-        </section>
-      }
-    </section>
   </section>
 }

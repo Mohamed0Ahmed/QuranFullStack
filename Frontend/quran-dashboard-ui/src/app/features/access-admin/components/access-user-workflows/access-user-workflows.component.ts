@@ -1,15 +1,10 @@
 import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
 
 import { AccessUserDetail } from '../../../../core/api/generated/models/access-user-detail';
-import { LogtoSubjectRelinkPreview } from '../../../../core/api/generated/models/logto-subject-relink-preview';
 import { PermissionCode } from '../../../../core/auth/permission-code';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
-import {
-  AccessPermissionDiff,
-  AccessRelinkPreviewRequest,
-  hasPermissionChanges,
-} from '../../models/access-admin.models';
+import { AccessPermissionDiff, hasPermissionChanges } from '../../models/access-admin.models';
 import { AccessPermissionGroup, permissionLabelFor } from '../../models/access-admin-permissions';
 import { AccessPermissionEditorComponent } from '../access-permission-editor/access-permission-editor.component';
 
@@ -34,7 +29,6 @@ export class AccessUserWorkflowsComponent {
   readonly selectedCodes = input.required<ReadonlySet<PermissionCode>>();
   readonly permissionDiff = input.required<AccessPermissionDiff>();
   readonly busyAction = input<string | null>(null);
-  readonly relinkPreview = input<LogtoSubjectRelinkPreview | null>(null);
   readonly resetToken = input(0);
   readonly catalogueLoading = input(false);
   readonly catalogueError = input<string | null>(null);
@@ -44,16 +38,9 @@ export class AccessUserWorkflowsComponent {
   readonly draftDiscarded = output<void>();
   readonly actionConfirmed = output<AccessUserWorkflowConfirmation>();
   readonly catalogueRetryRequested = output<void>();
-  readonly relinkPreviewRequested = output<AccessRelinkPreviewRequest>();
-  readonly relinkConfirmed = output<string>();
-  readonly relinkCancelled = output<void>();
 
   protected readonly pendingAction = signal<AccessUserWorkflowAction | null>(null);
   protected readonly actionReason = signal('');
-  protected readonly newSub = signal('');
-  protected readonly evidenceToken = signal('');
-  protected readonly relinkReason = signal('');
-  protected readonly relinkConfirmation = signal(false);
 
   constructor() {
     effect(() => {
@@ -78,6 +65,18 @@ export class AccessUserWorkflowsComponent {
 
   protected hasUnsavedPermissions(): boolean {
     return this.canAssignPermissions() && hasPermissionChanges(this.permissionDiff());
+  }
+
+  protected acceptGrantsPermissions(): boolean {
+    return this.canAssignPermissions() && this.permissionDiff().granted.length > 0;
+  }
+
+  protected showsPermissionDiff(): boolean {
+    const action = this.pendingAction();
+    if (action === 'permissions') {
+      return this.canAssignPermissions();
+    }
+    return action === 'accept' && this.acceptGrantsPermissions();
   }
 
   protected diffSummaryLabel(): string {
@@ -138,47 +137,6 @@ export class AccessUserWorkflowsComponent {
     return 'معطّل';
   }
 
-  protected updateNewSub(event: Event): void {
-    this.newSub.set((event.target as HTMLInputElement).value);
-  }
-
-  protected updateEvidenceToken(event: Event): void {
-    this.evidenceToken.set((event.target as HTMLInputElement).value);
-  }
-
-  protected requestRelinkPreview(): void {
-    const newSub = this.newSub().trim();
-    const evidenceToken = this.evidenceToken().trim();
-    if (!newSub || !evidenceToken || this.busyAction() || this.hasUnsavedPermissions()) {
-      return;
-    }
-    this.relinkPreviewRequested.emit({ newSub, evidenceToken });
-    this.evidenceToken.set('');
-  }
-
-  protected updateRelinkReason(event: Event): void {
-    this.relinkReason.set((event.target as HTMLTextAreaElement).value);
-  }
-
-  protected updateRelinkConfirmation(event: Event): void {
-    this.relinkConfirmation.set((event.target as HTMLInputElement).checked);
-  }
-
-  protected confirmRelink(): void {
-    if (!this.relinkPreview() || !this.relinkReason().trim() || !this.relinkConfirmation() || this.busyAction()) {
-      return;
-    }
-    this.relinkConfirmed.emit(this.relinkReason().trim());
-  }
-
-  protected cancelRelink(): void {
-    if (this.busyAction()) {
-      return;
-    }
-    this.resetRelinkForm();
-    this.relinkCancelled.emit();
-  }
-
   private isActiveNonOwner(): boolean {
     const user = this.user();
     return user !== null && !user.isOwner && user.status === 'active';
@@ -200,13 +158,5 @@ export class AccessUserWorkflowsComponent {
   private resetWorkflow(): void {
     this.pendingAction.set(null);
     this.actionReason.set('');
-    this.resetRelinkForm();
-  }
-
-  private resetRelinkForm(): void {
-    this.newSub.set('');
-    this.evidenceToken.set('');
-    this.relinkReason.set('');
-    this.relinkConfirmation.set(false);
   }
 }

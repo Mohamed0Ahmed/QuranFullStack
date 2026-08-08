@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, effect, inject, signal, untracked }
 import { isPermissionCode } from '../../../../core/auth/permission-code';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { AccessAdvancedSecurityComponent } from '../../components/access-advanced-security/access-advanced-security.component';
 import { AccessUserListComponent } from '../../components/access-user-list/access-user-list.component';
 import {
   AccessUserWorkflowConfirmation,
@@ -16,6 +17,7 @@ import { AccessAdminFacade, AccessAdminMutationOutcome } from '../../state/acces
   selector: 'qd-access-admin-page',
   standalone: true,
   imports: [
+    AccessAdvancedSecurityComponent,
     AccessUserListComponent,
     AccessUserWorkflowsComponent,
     ConfirmDialogComponent,

@@ -50,7 +50,6 @@ function setup(
   fixture.componentRef.setInput('selectedCodes', new Set(['abwab.doors.create']));
   fixture.componentRef.setInput('permissionDiff', EMPTY_DIFF);
   fixture.componentRef.setInput('busyAction', null);
-  fixture.componentRef.setInput('relinkPreview', null);
   fixture.componentRef.setInput('canAssignPermissions', canAssignPermissions);
   fixture.detectChanges();
   return fixture;
@@ -103,111 +102,96 @@ describe('AccessUserWorkflowsComponent', () => {
     expect((element(fixture, 'access-confirm-action') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('requires a preview before relink confirmation and never renders an email-only control', () => {
+  it('keeps identity recovery out of the permission workspace', () => {
     const fixture = setup();
-    const previews: { newSub: string; evidenceToken: string }[] = [];
-    const confirmations: string[] = [];
-    fixture.componentInstance.relinkPreviewRequested.subscribe((request) => previews.push(request));
-    fixture.componentInstance.relinkConfirmed.subscribe((reason) => confirmations.push(reason));
 
-    expect(fixture.nativeElement.querySelector('[data-testid="access-relink-confirmation"]')).toBeNull();
-    expect(fixture.nativeElement.querySelector('input[type="email"]')).toBeNull();
-
-    const newSub = element(fixture, 'access-relink-new-sub') as HTMLInputElement;
-    newSub.value = 'new-subject';
-    newSub.dispatchEvent(new Event('input'));
-    const evidence = element(fixture, 'access-relink-evidence') as HTMLInputElement;
-    expect(evidence.type).toBe('password');
-    evidence.value = 'verified-evidence';
-    evidence.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
-    element(fixture, 'access-relink-preview').click();
-    fixture.detectChanges();
-
-    expect(previews).toEqual([{ newSub: 'new-subject', evidenceToken: 'verified-evidence' }]);
-    expect(evidence.value).toBe('');
-
-    fixture.componentRef.setInput('relinkPreview', {
-      userId: 17,
-      oldSub: 'subject-17',
-      newSub: 'new-subject',
-      version: 4,
-      isOwner: false,
-    });
-    fixture.detectChanges();
-
-    const confirmation = element(fixture, 'access-relink-confirmation');
-    expect(confirmation.textContent).toContain('المعرّف الحالي');
-    expect(confirmation.textContent).toContain('subject-17');
-    expect(confirmation.textContent).toContain('المعرّف الجديد');
-    expect(confirmation.textContent).toContain('new-subject');
-    expect(confirmation.textContent).not.toContain('←');
-
-    const reason = element(fixture, 'access-relink-confirm-reason') as HTMLTextAreaElement;
-    reason.value = 'تحديث المعرّف';
-    reason.dispatchEvent(new Event('input'));
-    const confirmed = element(fixture, 'access-relink-confirmed') as HTMLInputElement;
-    confirmed.checked = true;
-    confirmed.dispatchEvent(new Event('change'));
-    fixture.detectChanges();
-    element(fixture, 'access-relink-confirm').click();
-
-    expect(confirmations).toEqual(['تحديث المعرّف']);
+    expect(fixture.nativeElement.querySelector('[data-testid="access-relink-new-sub"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="access-relink-preview"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('إعادة ربط');
   });
 
-  it('clears relink values and emits cancellation when the preview is abandoned', () => {
-    const fixture = setup();
-    let cancellations = 0;
-    fixture.componentInstance.relinkCancelled.subscribe(() => cancellations++);
-
-    const newSub = element(fixture, 'access-relink-new-sub') as HTMLInputElement;
-    newSub.value = 'new-subject';
-    newSub.dispatchEvent(new Event('input'));
-    const evidence = element(fixture, 'access-relink-evidence') as HTMLInputElement;
-    evidence.value = 'verified-evidence';
-    evidence.dispatchEvent(new Event('input'));
-    fixture.componentRef.setInput('relinkPreview', {
-      userId: 17,
-      oldSub: 'subject-17',
-      newSub: 'new-subject',
-      version: 4,
-      isOwner: false,
-    });
-    fixture.detectChanges();
-
-    element(fixture, 'access-relink-cancel').click();
-    fixture.detectChanges();
-
-    expect(cancellations).toBe(1);
-    expect(newSub.value).toBe('');
-    expect(evidence.value).toBe('');
-  });
-
-  it('shows the pending acceptance path without a disable path', () => {
+  it('promises permissions on acceptance only once some are selected', () => {
     const fixture = setup({ ...USER, status: 'pending', permissionCodes: [] });
 
-    expect(element(fixture, 'access-request-accept')).toBeTruthy();
+    expect(element(fixture, 'access-request-accept').textContent).toContain('قبول وتفعيل دون صلاحيات');
+    expect(element(fixture, 'access-pending-permissions-note').textContent).toContain(
+      'تُمنح الصلاحيات المحددة عند تفعيل الحساب',
+    );
     expect(fixture.nativeElement.querySelector('[data-testid="access-request-disable"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="access-request-reactivate"]')).toBeNull();
+
+    fixture.componentRef.setInput('permissionDiff', CHANGED_DIFF);
+    fixture.detectChanges();
+
+    expect(element(fixture, 'access-request-accept').textContent).toContain(
+      'قبول وتفعيل مع الصلاحيات المحددة',
+    );
   });
 
-  it('shows reactivation as an empty-grant restart for a disabled account', () => {
+  it('lists the grants an acceptance will assign before it is confirmed', () => {
+    const fixture = setup({ ...USER, status: 'pending', permissionCodes: [] });
+    fixture.componentRef.setInput('permissionDiff', CHANGED_DIFF);
+    fixture.detectChanges();
+
+    element(fixture, 'access-request-accept').click();
+    fixture.detectChanges();
+
+    const confirmation = element(fixture, 'access-action-confirmation');
+    expect(element(fixture, 'access-accept-with-permissions').textContent).toContain(
+      'تُمنح الصلاحيات التالية فور تفعيل الحساب',
+    );
+    expect(
+      confirmation.querySelector('[data-testid="access-accept-without-permissions"]'),
+    ).toBeNull();
+    const diff = confirmation.querySelector('[aria-label="فرق الصلاحيات"]');
+    expect(diff?.textContent).toContain('تعديل باب');
+    expect(diff?.textContent).toContain('abwab.doors.edit');
+  });
+
+  it('explains that a disabled account holds nothing and that reactivation restores nothing', () => {
     const fixture = setup({ ...USER, status: 'disabled', permissionCodes: [] });
 
     expect(element(fixture, 'access-request-reactivate')).toBeTruthy();
-    expect(fixture.nativeElement.textContent).toContain('إعادة التفعيل تبدأ بلا صلاحيات مباشرة سابقة');
+    const region = element(fixture, 'access-disabled-permissions');
+    expect(region.textContent).toContain('لا يحمل صلاحيات مباشرة، ولا يمكن إسنادها قبل إعادة التفعيل');
+    expect(region.textContent).toContain('إعادة التفعيل تبدأ بلا صلاحيات مباشرة سابقة');
     expect(fixture.nativeElement.querySelector('qd-access-permission-editor')).toBeNull();
   });
 
-  it('keeps an Owner role and grants read-only without a role selector or status mutation', () => {
+  it('separates the permission save from account disabling and states what disabling costs', () => {
+    const fixture = setup();
+
+    const actions = element(fixture, 'access-account-actions');
+    expect(actions.textContent).toContain('يوقف التعطيل وصول الحساب ويزيل جميع صلاحياته المباشرة نهائيًا');
+    expect(actions.querySelector('[data-testid="access-request-disable"]')).toBeTruthy();
+
+    fixture.componentRef.setInput('permissionDiff', CHANGED_DIFF);
+    fixture.detectChanges();
+
+    const draftBar = element(fixture, 'access-permission-draft-bar');
+    expect(draftBar.querySelector('[data-testid="access-request-permissions"]')).toBeTruthy();
+    expect(draftBar.querySelector('[data-testid="access-request-disable"]')).toBeNull();
+  });
+
+  it('states how an Active Owner receives access instead of rendering an editor', () => {
     const fixture = setup({ ...USER, isOwner: true, permissionCodes: [] });
 
-    expect(fixture.nativeElement.textContent).toContain('لا يمكن تعديلها من هذه الواجهة');
+    const region = element(fixture, 'access-owner-permissions');
+    expect(region.textContent).toContain('كامل صلاحيات الإدارة عبر تجاوز المالك');
+    expect(region.textContent).toContain('تُدار عضوية المالك عبر مطابقة المالكين');
     expect(fixture.nativeElement.querySelector('qd-access-permission-editor')).toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="access-request-accept"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="access-request-disable"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="access-request-reactivate"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('select')).toBeNull();
+  });
+
+  it('does not claim administrative access for an Owner account that is not active', () => {
+    const fixture = setup({ ...USER, isOwner: true, status: 'pending', permissionCodes: [] });
+
+    expect(element(fixture, 'access-owner-permissions').textContent).toContain(
+      'لا يسري تجاوز المالك إلا على حساب مالك نشط',
+    );
   });
 
   it.each([
@@ -242,6 +226,7 @@ describe('AccessUserWorkflowsComponent', () => {
     fixture.componentRef.setInput('permissionDiff', CHANGED_DIFF);
     fixture.detectChanges();
 
+    expect(element(fixture, 'access-request-accept').textContent).toContain('قبول وتفعيل دون صلاحيات');
     element(fixture, 'access-request-accept').click();
     fixture.detectChanges();
 
@@ -301,28 +286,6 @@ describe('AccessUserWorkflowsComponent', () => {
     expect(element(fixture, 'access-discard-draft')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="access-request-permissions"]')).toBeNull();
     expect(element(fixture, 'access-request-accept')).toBeTruthy();
-  });
-
-  it('holds back relink while permission edits are unsaved', () => {
-    const fixture = setup();
-    const previews: unknown[] = [];
-    fixture.componentInstance.relinkPreviewRequested.subscribe((request) => previews.push(request));
-    fixture.componentRef.setInput('permissionDiff', CHANGED_DIFF);
-    fixture.detectChanges();
-
-    const newSub = element(fixture, 'access-relink-new-sub') as HTMLInputElement;
-    newSub.value = 'new-subject';
-    newSub.dispatchEvent(new Event('input'));
-    const evidence = element(fixture, 'access-relink-evidence') as HTMLInputElement;
-    evidence.value = 'verified-evidence';
-    evidence.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
-
-    expect(element(fixture, 'access-relink-blocked')).toBeTruthy();
-    expect((element(fixture, 'access-relink-preview') as HTMLButtonElement).disabled).toBe(true);
-    element(fixture, 'access-relink-preview').click();
-
-    expect(previews).toEqual([]);
   });
 
   it('cancels an inline confirmation when the selected target changes', () => {

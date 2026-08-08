@@ -25,8 +25,7 @@
 .access-user-workflows__meta,
 .access-user-workflows__notice,
 .access-user-workflows__warning,
-.access-user-workflows__diff p,
-.access-user-workflows__relink-subjects {
+.access-user-workflows__diff p {
   margin: 0;
 }
 
@@ -84,30 +83,15 @@
   list-style: none;
 }
 
-.access-user-workflows__permission-list li,
-.access-user-workflows__relink-subjects div {
+.access-user-workflows__permission-list li {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--qd-space-3);
 }
 
-.access-user-workflows__permission-list code,
-.access-user-workflows__relink-subjects dd {
+.access-user-workflows__permission-list code {
   color: var(--qd-text);
-}
-
-.access-user-workflows__relink-subjects {
-  display: grid;
-  gap: var(--qd-space-2);
-}
-
-.access-user-workflows__relink-subjects dt {
-  color: var(--qd-text-muted);
-}
-
-.access-user-workflows__relink-subjects dd {
-  margin: 0;
 }
 
 .access-user-workflows__field {

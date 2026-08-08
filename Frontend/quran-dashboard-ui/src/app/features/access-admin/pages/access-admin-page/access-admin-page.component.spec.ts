@@ -432,10 +432,42 @@ describe('AccessAdminPageComponent', () => {
     ).toBeNull();
   });
 
+  it('grants the selected permissions through acceptance for a pending user', async () => {
+    const pendingUser = user('pending');
+    const fixture = await renderPage(pendingUser);
+    await selectUser(fixture, pendingUser);
+    togglePermission(fixture, 'abwab.doors.edit', true);
+
+    expect(element(fixture, 'access-request-accept').textContent).toContain(
+      'قبول وتفعيل مع الصلاحيات المحددة',
+    );
+    confirmAction(fixture, 'access-request-accept');
+
+    const request = httpTesting.expectOne(`${ACCESS_BASE_URL}/users/17/accept`);
+    expect(request.request.body).toEqual({
+      expectedVersion: 4,
+      permissionCodes: ['abwab.doors.edit'],
+      reason: REASON,
+    });
+    const activeUser = user('active', 5, ['abwab.doors.edit']);
+    request.flush(success(activeUser));
+    await flushMutationRefresh(fixture, activeUser);
+
+    expect(httpTesting.match((candidate) => candidate.method === 'PUT')).toEqual([]);
+    expect(
+      (element(fixture, 'access-permission-abwab.doors.edit') as HTMLInputElement).checked,
+    ).toBe(true);
+  });
+
   it('renders relink preview and confirms it through distinct HTTP requests', async () => {
     const initialUser = user('active');
     const fixture = await renderPage(initialUser);
     await selectUser(fixture, initialUser);
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector(
+        '.access-admin-page__detail [data-testid="access-relink-new-sub"]',
+      ),
+    ).toBeNull();
     const newSub = element(fixture, 'access-relink-new-sub') as HTMLInputElement;
     newSub.value = 'replacement-subject';
     newSub.dispatchEvent(new Event('input'));
