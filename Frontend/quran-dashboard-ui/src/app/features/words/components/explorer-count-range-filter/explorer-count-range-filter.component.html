@@ -14,6 +14,8 @@
         <div class="range-filter__chips" role="group" [attr.aria-label]="metric.labelAr">
           @for (chip of chipsFor(metric); track chip.kind) {
             <button
+              qdAction="toolbar"
+              size="sm"
               type="button"
               class="qd-badge range-filter__chip"
               [class.qd-is-selected]="isChipActive(metric, chip)"
@@ -27,6 +29,8 @@
           }
 
           <button
+            qdAction="toolbar"
+            size="sm"
             type="button"
             class="qd-badge range-filter__chip"
             [class.qd-is-selected]="isCustomActive(metric)"
@@ -44,6 +48,7 @@
             <label class="range-filter__custom-field">
               <span class="qd-sr-only">{{ metric.labelAr }} — {{ labels.min }}</span>
               <input
+                qdControl
                 type="number"
                 inputmode="numeric"
                 min="0"
@@ -61,6 +66,7 @@
             <label class="range-filter__custom-field">
               <span class="qd-sr-only">{{ metric.labelAr }} — {{ labels.max }}</span>
               <input
+                qdControl
                 type="number"
                 inputmode="numeric"
                 min="0"
@@ -75,6 +81,8 @@
               />
             </label>
             <button
+              qdAction="secondary"
+              size="sm"
               type="button"
               class="qd-btn qd-btn-secondary range-filter__custom-apply"
               [disabled]="disabled()"
@@ -91,6 +99,8 @@
 
     @if (activeCount() > 0) {
       <button
+        qdAction="secondary"
+        size="sm"
         type="button"
         class="qd-btn qd-btn-secondary range-filter__clear"
         [disabled]="disabled()"

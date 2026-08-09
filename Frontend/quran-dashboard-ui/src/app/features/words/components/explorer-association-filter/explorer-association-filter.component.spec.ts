@@ -79,6 +79,8 @@ describe('ExplorerAssociationFilterComponent', () => {
 
     expect(root.querySelector('[data-testid="association-filter-option-PN"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="association-filter-option-N"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="association-filter-search"]')?.classList.contains('qd-control')).toBe(true);
+    expect(root.querySelector('[data-testid="association-filter-option-PN"]')?.classList.contains('qd-action')).toBe(true);
   });
 
   it('emits the selected option when an option is clicked', () => {

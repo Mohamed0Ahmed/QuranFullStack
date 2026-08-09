@@ -65,6 +65,7 @@ describe('ExplorerSearchRowComponent', () => {
     expect(input!.type).toBe('search');
     expect(input!.getAttribute('placeholder')).toBe('اكتب جذرًا…');
     expect(input!.value).toBe('قرأ');
+    expect(input!.classList.contains('qd-control')).toBe(true);
 
     const label = root.querySelector('.qd-sr-only');
     expect(label?.textContent).toContain('ابحث في الجذور');

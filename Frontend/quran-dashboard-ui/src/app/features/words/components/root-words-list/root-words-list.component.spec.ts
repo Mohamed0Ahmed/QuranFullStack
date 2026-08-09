@@ -47,6 +47,8 @@ describe('RootWordsListComponent US3', () => {
     expect(link.getAttribute('href')).toContain('qdDetailOpen=1');
     expect(link.getAttribute('target')).toBeNull();
     expect(link.getAttribute('rel')).toBeNull();
+    expect(link.getAttribute('role')).toBe('listitem');
+    expect(link.closest('[role="list"]')?.classList.contains('qd-result-list--linked')).toBe(true);
   });
 
   it('intercepts an unmodified click in-app and leaves a modifier click to the browser', async () => {

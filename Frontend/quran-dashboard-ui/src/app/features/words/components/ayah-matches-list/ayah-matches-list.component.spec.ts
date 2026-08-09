@@ -138,6 +138,9 @@ describe('AyahMatchesListComponent', () => {
     setInputs(fixture, { page: PAGE, currentPage: 1 });
 
     const loaded = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="ayah-match-card"]')!;
+    const list = loaded.closest('[role="list"]');
+    expect(list?.classList.contains('qd-result-list--quran-result')).toBe(true);
+    expect(loaded.getAttribute('role')).toBe('listitem');
     expect(loaded.classList.contains('qd-ayah-card')).toBe(true);
     expect(loaded.classList.contains('qd-card')).toBe(false);
     expect(loaded.classList.contains('ayah-matches-list__card--alt')).toBe(false);

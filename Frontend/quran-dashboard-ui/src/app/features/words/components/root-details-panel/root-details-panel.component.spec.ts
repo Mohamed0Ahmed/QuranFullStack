@@ -5,7 +5,7 @@ import { provideRouter } from '@angular/router';
 
 import { RootDetailsPanelComponent } from './root-details-panel.component';
 import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
-import { ROOTS_NOT_FOUND_LABEL, ROOTS_PANEL_LABEL } from '../../models/roots.labels';
+import { ROOTS_NOT_FOUND_LABEL } from '../../models/roots.labels';
 
 describe('RootDetailsPanelComponent a11y (T070)', () => {
   afterEach(() => {
@@ -27,7 +27,7 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
     return fixture;
   }
 
-  it('renders a tablist with exactly the five tabs linked to a single tabpanel', () => {
+  it('composes the shared details workspace and mounts five labeled tabpanels', () => {
     const fixture = createPanel('ayahs');
     const host = fixture.nativeElement as HTMLElement;
 
@@ -37,14 +37,14 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
     const tabs = host.querySelectorAll('[role="tab"]');
     expect(tabs).toHaveLength(5);
 
-    const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
-    // The surface id is per-instance (not a shared constant); the tabs must resolve to it.
-    expect(panel.id).toBeTruthy();
-
-    expect(panel.getAttribute('tabindex')).toBe('0');
+    expect(host.querySelector('qd-details-workspace')).toBeTruthy();
+    const panels = host.querySelectorAll('[role="tabpanel"]');
+    expect(panels).toHaveLength(5);
 
     for (const tab of Array.from(tabs)) {
-      expect(tab.getAttribute('aria-controls')).toBe(panel.id);
+      const panel = host.querySelector(`#${tab.getAttribute('aria-controls')}`) as HTMLElement;
+      expect(panel).toBeTruthy();
+      expect(panel.getAttribute('aria-labelledby')).toBe(tab.id);
     }
   });
 
@@ -55,27 +55,24 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
       teardown: { destroyAfterEach: true },
     });
 
-    const makeSurface = () => {
+    const makeIds = () => {
       const fixture = TestBed.createComponent(RootDetailsPanelComponent);
       fixture.componentRef.setInput('view', 'ayahs');
       fixture.componentRef.setInput('emptySelection', false);
       fixture.detectChanges();
-      return (fixture.nativeElement as HTMLElement).querySelector(
-        '[data-testid="root-details-panel-surface"]',
-      ) as HTMLElement;
+      const host = fixture.nativeElement as HTMLElement;
+      return Array.from(host.querySelectorAll('[role="tab"], [role="tabpanel"]')).map((element) => element.id);
     };
 
-    const firstSurface = makeSurface();
-    const secondSurface = makeSurface();
+    const firstIds = makeIds();
+    const secondIds = makeIds();
 
-    expect(firstSurface.id).toBeTruthy();
-    expect(secondSurface.id).toBeTruthy();
-    expect(firstSurface.id).not.toBe(secondSurface.id);
+    expect(firstIds.every(Boolean)).toBe(true);
+    expect(secondIds.every(Boolean)).toBe(true);
+    expect(firstIds.some((id) => secondIds.includes(id))).toBe(false);
   });
 
-  // Feature 030, N3 row 5: notFound is a PANEL/selection state (the list is fine and populated), so
-  // it renders here — a mounted, fixed-height shell — instead of a page banner that pushed the grid.
-  it('renders controlled not-found content without detail tabs', () => {
+  it('keeps controlled not-found content inside its labeled tabpanel', () => {
     const fixture = createPanel('words');
     fixture.componentRef.setInput('notFound', true);
     fixture.detectChanges();
@@ -85,11 +82,15 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
     expect(notFound).toBeTruthy();
     expect(notFound?.getAttribute('role')).toBe('status');
     expect(notFound?.textContent?.trim()).toBe(ROOTS_NOT_FOUND_LABEL);
-    expect(host.querySelector('[role="tablist"]')).toBeNull();
-    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(0);
+    expect(host.querySelector('[role="tablist"]')).toBeTruthy();
+    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(5);
+    const activeTab = host.querySelector('[data-root-tab="words"]') as HTMLElement;
+    const panel = host.querySelector(`#${activeTab.getAttribute('aria-controls')}`) as HTMLElement;
+    expect(panel.getAttribute('aria-labelledby')).toBe(activeTab.id);
+    expect(panel.contains(notFound)).toBe(true);
   });
 
-  it('prefers the server not-found message and drops tabpanel semantics once the tabs are gone', () => {
+  it('prefers the server not-found message while retaining tabpanel semantics', () => {
     const fixture = createPanel('words');
     fixture.componentRef.setInput('notFound', true);
     fixture.componentRef.setInput('notFoundMessage', 'الجذر غير موجود');
@@ -100,13 +101,9 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
       'الجذر غير موجود',
     );
 
-    // No tablist is rendered, so exposing a tabpanel would orphan it: the surface
-    // becomes a self-labelled region instead of a tabpanel pointing at a missing tab.
-    expect(host.querySelector('[role="tabpanel"]')).toBeNull();
     const surface = host.querySelector('[data-testid="root-details-panel-surface"]') as HTMLElement;
-    expect(surface.getAttribute('role')).toBe('region');
-    expect(surface.getAttribute('aria-labelledby')).toBeNull();
-    expect(surface.getAttribute('aria-label')).toBe(ROOTS_PANEL_LABEL);
+    expect(surface.getAttribute('role')).toBe('tabpanel');
+    expect(surface.getAttribute('aria-labelledby')).toBeTruthy();
   });
 
   it('marks the active tab selected with roving tabindex and labels the panel', () => {
@@ -121,7 +118,7 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
     }
 
     const activeTab = host.querySelector('[data-root-tab="ayahs"]') as HTMLElement;
-    const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
+    const panel = host.querySelector('[data-testid="root-details-panel-surface"]') as HTMLElement;
     expect(activeTab.id).toBeTruthy();
     expect(panel.getAttribute('aria-labelledby')).toBe(activeTab.id);
   });
@@ -153,8 +150,6 @@ describe('RootDetailsPanelComponent a11y (T070)', () => {
   it('renders the empty-selection state with header, disabled tabs, and empty message', () => {
     TestBed.configureTestingModule({
       imports: [RootDetailsPanelComponent],
-      // The drawer suspends its focus trap from the router-backed
-      // detail-overlay history service.
       providers: [provideRouter([]), provideLocationMocks()],
       teardown: { destroyAfterEach: true },
     });

@@ -8,6 +8,7 @@ import { PaginationComponent } from '../../../../shared/ui/pagination/pagination
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { ExplorerCountRangeFilterComponent } from '../../components/explorer-count-range-filter/explorer-count-range-filter.component';
+import { ExplorerToolbarComponent } from '../../components/explorer-toolbar/explorer-toolbar.component';
 import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
 import { ExplorerSearchRowComponent } from '../../components/explorer-search-row/explorer-search-row.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
@@ -39,7 +40,7 @@ type RootCountTarget = RootCountOpenedEvent & { column: RootTableColumnKey };
 @Component({
   selector: 'qd-roots-explorer-page',
   standalone: true,
-  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, RootDetailsPanelComponent, RootLemmasListComponent, RootStemsListComponent, RootWordsListComponent, RootsTableComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
+  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, RootDetailsPanelComponent, RootLemmasListComponent, RootStemsListComponent, RootWordsListComponent, RootsTableComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
   templateUrl: './roots-explorer-page.component.html',
   styleUrl: './roots-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -70,8 +71,6 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly pageTitle = ROOTS_PAGE_TITLE;
-  // Read the content via a TDZ-safe getter (words/README label rule). The collapse state is seeded
-  // synchronously from storage so the FIRST render reflects it — no expand-then-collapse shift.
   protected get explainer() { return WORDS_EXPLAINER_CONTENT.roots; }
   protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('roots'));
   protected readonly emptySelectionLabel = ROOTS_EMPTY_SELECTION_LABEL;

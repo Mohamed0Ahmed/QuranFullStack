@@ -1,0 +1,36 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--qd-space-3);
+  align-items: center;
+}
+
+.explorer-toolbar__primary,
+.explorer-toolbar__secondary {
+  min-inline-size: 0;
+}
+
+.explorer-toolbar__result {
+  justify-self: end;
+}
+
+.explorer-toolbar__secondary,
+.explorer-toolbar__applied {
+  grid-column: 1 / -1;
+}
+
+.explorer-toolbar__applied {
+  min-block-size: var(--qd-space-5);
+}
+
+@media (max-width: bp.$qd-bp-tablet-max) {
+  :host {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .explorer-toolbar__result {
+    justify-self: start;
+  }
+}

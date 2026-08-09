@@ -56,4 +56,11 @@ describe('WordCountChipComponent', () => {
     expect(button.getAttribute('aria-pressed')).toBe('false');
     expect(button.classList.contains('qd-is-selected')).toBe(false);
   });
+
+  it('associates a disabled trigger with its caller-owned visible reason', () => {
+    const fixture = setup({ count: 0, disabled: true, disabledReasonId: 'root-row-7-disabled-reason' });
+    const button = fixture.nativeElement.querySelector('[data-testid="word-count-chip"]') as HTMLButtonElement;
+
+    expect(button.getAttribute('aria-describedby')).toBe('root-row-7-disabled-reason');
+  });
 });

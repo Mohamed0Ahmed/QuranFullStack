@@ -3,16 +3,20 @@
   height: 100%;
 }
 
-:host .explorer-detail-panel__body {
+.root-details-panel,
+:host qd-details-workspace {
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.root-details-panel__surface {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
   min-block-size: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
-// Frameless content mode (global overlay shell owns the dialog chrome):
-// a plain flex column so the tabpanel body keeps its internal scrolling.
 .root-details-panel--frameless {
   display: flex;
   flex-direction: column;
@@ -27,6 +31,10 @@
 }
 
 .root-details-panel__tab {
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  font-size: 0.875rem;
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body);
+}
+
+.root-details-panel__surface[hidden] {
+  display: none;
 }

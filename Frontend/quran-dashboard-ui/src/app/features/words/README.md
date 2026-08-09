@@ -101,6 +101,31 @@ existing call sites; do not remove it as if it were a second layout contract. Se
 
 ## Gotchas / invariants (read before changing)
 
+- **Phase 4 has two migrated explorers and three compatibility consumers.** Roots and Lemmas use
+  `qd-data-table renderer="standard"`, the feature-local `qd-explorer-toolbar`, and one
+  `split-workspace` page shell. Stems, Unique Words, and Word Types deliberately retain their
+  existing table adapters until Phase 5. The old `utils/table-scrollbar-gutter-sync.ts` is only a
+  thin re-export of the shared F09 helper and must retain exactly those three deferred imports.
+  Do not migrate a third explorer or add a renderer name in this phase.
+- **Roots/Lemmas share one responsive composition contract.** Compact uses semantic list cards at
+  the preserved `5.5rem`/`6.5rem` row heights; Medium `768–1079` keeps table semantics with identity,
+  three priority counts, and the explicit `كل الأعداد` disclosure; Wide begins at `1080` with the
+  `1.25fr/1fr` table/details split, `44px` sticky header, `40px` rows, internal table scrolling, and
+  a fixed table pager. The page shell is the only route-gutter owner.
+- **Roots/Lemmas details use the shared F07/F10/F11 anatomy.** Their five/four tabs and labeled
+  tabpanels remain mounted, inline and overlay instances receive collision-free IDs, `notFound`
+  stays inside the selected tabpanel, and `.qd-details__body` is the sole details scroller. Ordinary
+  linked/display-only results use `qdResultList`/`qdResultItem`; Quran results keep `qdAyahCard` and
+  the existing highlighted-Quran renderer unchanged.
+- **Zero-count detail triggers remain visible but inert.** Roots/Lemmas identity actions, count
+  chips, and Lemma ayah-type controls use
+  `لا كلمات مرتبطة بهذا النوع، لذا لا تفاصيل لعرضها.` as the visible reason, reference it through
+  `aria-describedby`, retain native `disabled` plus `aria-disabled="true"`, and never open details.
+  `word-count-chip` keeps all prior inputs and adds only the optional disabled-reason ID contract.
+- **The explorer toolbar is feature-local and semantic-only.** Its primary, result, secondary,
+  applied-summary, and action zones stay mounted while each page continues to own field meaning,
+  draft/applied state, Submit/Enter/Clear behavior, URL serialization, and Back/Forward restoration.
+
 - **Table/list visuals are centralized** (`UI_STYLE_SYSTEM.md` §17): all 5 explorer
   tables compose `.qd-explorer-table` (root class + `.qd-explorer-table__*` BEM
   elements, `styles/_explorer-tables.scss`) and all 10 detail-list panels compose

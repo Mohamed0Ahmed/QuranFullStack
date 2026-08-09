@@ -32,6 +32,8 @@
   &:disabled,
   &--disabled {
     cursor: default;
+    pointer-events: none;
+    transition: none;
   }
 }
 

@@ -137,16 +137,22 @@ describe('RootsExplorerPageComponent US2', () => {
     return fixture;
   }
 
-  it('mounts the explainer hero inside the intro band, above the toolbar (Feature 031)', async () => {
+  it('mounts the intro and shared explorer toolbar inside one split-workspace shell', async () => {
     const fixture = await initLifecycle();
     const root = fixture.nativeElement as HTMLElement;
 
+    const shell = root.querySelector('.qd-page-shell.qd-page-shell--split-workspace') as HTMLElement;
     const band = root.querySelector('.uw-intro-band') as HTMLElement;
+    const toolbar = root.querySelector('qd-explorer-toolbar.qd-toolbar--explorer') as HTMLElement;
+
+    expect(root.querySelectorAll('.qd-page-shell').length).toBe(1);
+    expect(shell.contains(band)).toBe(true);
+    expect(shell.contains(toolbar)).toBe(true);
     expect(band.querySelector('[data-testid="words-explainer--roots"]')).toBeTruthy();
-    // The toolbar recess is a sibling of the band (unchanged), never a parent of the hero.
-    expect(band.querySelector('.uw-toolbar-recess')).toBeNull();
-    expect(root.querySelector('.uw-toolbar-recess')).toBeTruthy();
-    expect(root.querySelector('.uw-toolbar-recess [data-testid="words-explainer--roots"]')).toBeNull();
+    expect(toolbar.querySelector('[data-testid="roots-search-input"]')).toBeTruthy();
+    expect(toolbar.querySelector('[data-testid="roots-result-count"]')).toBeTruthy();
+    expect(toolbar.querySelector('[data-testid="roots-sort-select"]')).toBeTruthy();
+    expect(toolbar.querySelector('[data-testid="roots-range-filter"]')).toBeTruthy();
   });
 
   it('reflects a stored collapsed state on the first render (synchronous, no layout shift)', async () => {
@@ -161,9 +167,8 @@ describe('RootsExplorerPageComponent US2', () => {
       expect(
         root.querySelector('[data-testid="words-explainer-toggle--roots"]')?.getAttribute('aria-expanded'),
       ).toBe('false');
-      // The intro band + toolbar are still present — nothing expanded then collapsed them.
       expect(root.querySelector('.uw-intro-band [data-testid="words-explainer--roots"]')).toBeTruthy();
-      expect(root.querySelector('.uw-toolbar-recess')).toBeTruthy();
+      expect(root.querySelector('qd-explorer-toolbar.qd-toolbar--explorer')).toBeTruthy();
     } finally {
       localStorage.clear();
     }
@@ -316,7 +321,7 @@ describe('RootsExplorerPageComponent US2', () => {
 
     const panelSurface = root.querySelector('[data-testid="root-details-panel-surface"]') as HTMLElement | null;
     const listViewport = root.querySelector('.ayah-matches-list__viewport') as HTMLElement | null;
-    const tableBody = root.querySelector('.roots-table__body') as HTMLElement | null;
+    const tableBody = root.querySelector('[data-testid="qd-data-table-body"]') as HTMLElement | null;
 
     expect(panelSurface).toBeTruthy();
     expect(listViewport).toBeTruthy();

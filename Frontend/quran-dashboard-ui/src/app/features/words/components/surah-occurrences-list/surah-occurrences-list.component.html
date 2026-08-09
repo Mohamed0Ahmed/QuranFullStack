@@ -7,6 +7,8 @@
 
   <div
     class="surah-occurrences-list qd-detail-list__viewport"
+    qdResultList
+    listVariant="display-only"
     [attr.aria-busy]="loading() ? true : null"
     [attr.data-testid]="loading() ? 'surah-occurrences-list-loading' : 'surah-occurrences-list'"
   >
@@ -25,7 +27,12 @@
       }
     } @else {
       @for (surah of surahs(); track surah.surahNumber; let index = $index) {
-        <div class="surah-occurrences-list__row qd-detail-list__row qd-detail-list__row--flat">
+        <div
+          qdResultItem
+          class="surah-occurrences-list__row qd-detail-list__row qd-detail-list__row--flat"
+          [position]="index + 1"
+          [setSize]="surahs().length"
+        >
           <span class="surah-occurrences-list__row-number qd-detail-list__row-number">{{ index + 1 }}</span>
           <span class="surah-occurrences-list__name">{{ surah.nameArabic }}</span>
           <span class="qd-badge">{{ surah.occurrencesInSurah }}</span>

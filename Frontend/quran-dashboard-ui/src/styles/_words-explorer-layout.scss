@@ -84,10 +84,9 @@
   --qd-explorer-view-tabs-height: 3.5625rem;
 
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   gap: var(--qd-space-4);
   align-items: start;
-  padding-inline: 0;
 }
 
 .qd-explorer-layout__table,
@@ -156,6 +155,11 @@
     grid-template-columns: minmax(0, 1fr);
     padding-inline: var(--qd-space-4);
     gap: var(--qd-space-3);
+  }
+
+  .roots-explorer-layout,
+  .lemmas-explorer-layout {
+    padding-inline: 0;
   }
 }
 

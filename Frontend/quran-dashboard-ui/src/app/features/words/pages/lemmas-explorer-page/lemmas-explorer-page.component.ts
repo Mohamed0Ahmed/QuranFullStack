@@ -15,6 +15,7 @@ import {
 import { WordsAssociationOptionsService } from '../../data-access/words-association-options.service';
 import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
 import { ExplorerSearchRowComponent } from '../../components/explorer-search-row/explorer-search-row.component';
+import { ExplorerToolbarComponent } from '../../components/explorer-toolbar/explorer-toolbar.component';
 import { LemmaAyahTypeFiltersComponent } from '../../components/lemma-ayah-type-filters/lemma-ayah-type-filters.component';
 import { LemmaDetailsPanelComponent } from '../../components/lemma-details-panel/lemma-details-panel.component';
 import { LemmaStemsListComponent } from '../../components/lemma-stems-list/lemma-stems-list.component';
@@ -44,7 +45,7 @@ type LemmaCountTarget = LemmaCountOpenedEvent & { column: LemmaTableColumnKey };
 @Component({
   selector: 'qd-lemmas-explorer-page',
   standalone: true,
-  imports: [NgTemplateOutlet, AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, LemmaAyahTypeFiltersComponent, LemmaDetailsPanelComponent, LemmaStemsListComponent, LemmaWordsListComponent, LemmasTableComponent, MissingSurahsListComponent, PaginationComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
+  imports: [NgTemplateOutlet, AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, LemmaAyahTypeFiltersComponent, LemmaDetailsPanelComponent, LemmaStemsListComponent, LemmaWordsListComponent, LemmasTableComponent, MissingSurahsListComponent, PaginationComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
   templateUrl: './lemmas-explorer-page.component.html',
   styleUrl: './lemmas-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -78,7 +79,6 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly pageTitle = LEMMAS_PAGE_TITLE;
-  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
   protected get explainer() { return WORDS_EXPLAINER_CONTENT.lemmas; }
   protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('lemmas'));
   protected readonly emptySelectionLabel = LEMMAS_EMPTY_SELECTION_LABEL;
@@ -103,7 +103,6 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly association = this.listFacade.association;
   protected readonly rootOptions = signal<readonly AssociationOption[]>([]);
   protected readonly rootOptionsLoading = signal(false);
-  // M32/M43 + M74: a picker load failure must be distinguishable from a genuine empty result.
   protected readonly rootOptionsError = signal(false);
   protected readonly selectedRootLabel = signal<string | null>(null);
   protected get rootFilterLabel(): string { return LEMMAS_ROOT_FILTER_LABEL; }

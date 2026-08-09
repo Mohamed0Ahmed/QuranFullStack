@@ -38,6 +38,8 @@ describe('LemmaStemsListComponent US6', () => {
     expect(links[0].getAttribute('href')).toContain('qdDetailOpen=1');
     expect(links[0].getAttribute('target')).toBeNull();
     expect(links[0].getAttribute('rel')).toBeNull();
+    expect(links[0].getAttribute('role')).toBe('listitem');
+    expect(links[0].closest('[role="list"]')?.classList.contains('qd-result-list--linked')).toBe(true);
     expect(root.textContent).toContain('11');
     expect(root.textContent).toContain('4');
   });

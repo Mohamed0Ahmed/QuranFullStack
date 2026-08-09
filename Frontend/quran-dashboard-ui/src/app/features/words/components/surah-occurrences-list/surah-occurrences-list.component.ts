@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { QdResultItemDirective, QdResultListDirective } from '../../../../shared/ui/result-list/result-list.directive';
 
 import { WORDS_LOADING_LABEL } from '../../models/words.labels';
 import { UniqueWordSurahItemDto } from '../../models/unique-words.models';
@@ -7,6 +8,7 @@ import { ROW_NUMBER_HEADER, SURAH_NAME_HEADER, SURAH_OCCURRENCES_COUNT_HEADER } 
 @Component({
   selector: 'qd-surah-occurrences-list',
   standalone: true,
+  imports: [QdResultItemDirective, QdResultListDirective],
   templateUrl: './surah-occurrences-list.component.html',
   styleUrl: './surah-occurrences-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

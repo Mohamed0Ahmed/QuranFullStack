@@ -1,6 +1,8 @@
 <div class="ayah-matches-list" data-testid="ayah-matches-list">
   <div
     class="ayah-matches-list__viewport"
+    qdResultList
+    listVariant="quran-result"
     [attr.aria-busy]="loading() ? true : null"
     [attr.data-testid]="loading() ? 'ayah-matches-list-loading' : null"
   >
@@ -20,10 +22,15 @@
         </article>
       }
     } @else {
-      <!-- Tracked by verseKey: Word Type ayah rows all carry ayahId 0, so ayahId is not a
-           stable row identity across consumers. -->
       @for (row of rows(); track row.match.verseKey; let i = $index) {
-        <article qdAyahCard class="ayah-matches-list__card" data-testid="ayah-match-card">
+        <article
+          qdAyahCard
+          qdResultItem
+          class="ayah-matches-list__card"
+          [position]="rowNumber(i)"
+          [setSize]="page().totalCount"
+          data-testid="ayah-match-card"
+        >
           <header class="ayah-matches-list__meta-row">
             <span class="ayah-matches-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
             <div class="ayah-matches-list__meta">
@@ -62,7 +69,6 @@
     }
   </div>
 
-  <!-- Always-rendered slot: reserves the pagination row through loading (N3 row 4). -->
   <div class="qd-detail-list__pagination-slot" data-testid="ayah-matches-pagination-slot">
     @if (!loading()) {
       <qd-pagination

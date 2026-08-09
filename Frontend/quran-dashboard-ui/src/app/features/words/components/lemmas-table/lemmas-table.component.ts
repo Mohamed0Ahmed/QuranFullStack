@@ -1,24 +1,29 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, inject, input, output, signal, viewChild } from '@angular/core';
-import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output, signal, viewChild } from '@angular/core';
 
-import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdDataTableComponent } from '../../../../shared/ui/data-table/data-table.component';
+import { QdDataTableState } from '../../../../shared/ui/data-table/data-table.models';
+import { QdSortableHeaderComponent } from '../../../../shared/ui/data-table/sortable-header.component';
+import { syncTableScrollbarGutter } from '../../../../shared/ui/data-table/table-scrollbar-gutter-sync';
+import { WORD_COUNT_DISABLED_REASON, WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
 import { LEMMAS_COLUMN_COUNT_LABELS, LEMMAS_COLUMN_HEADERS, LEMMAS_LOADING_LABEL, LEMMAS_NO_RESULTS_LABEL, LEMMAS_ROOT_MISSING_ARIA, LEMMAS_ROOT_MISSING_LABEL, LEMMAS_ROOT_LINK_PREFIX, LEMMAS_TABLE_BODY_LABEL, LEMMAS_TABLE_LABEL } from '../../models/lemmas.labels';
 import { DEFAULT_LEMMA_SORT, LEMMAS_LIST_PAGE_SIZE, LEMMA_SORT_COLUMNS, LemmaListItemViewModel, LemmaSort, LemmaSurahView, LemmaView, LemmaWordView, LoadStatus, normalizeLemmaSort } from '../../models/lemmas.models';
 import { isMorphologyCountActive, MorphologyColumnKey, resolveMorphologyActiveColumn } from '../../utils/explorer-count-active';
 import { ExplorerInteractionSource, handleExplorerTableKeydown } from '../../utils/explorer-table-keydown';
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
-import { ExplorerRowNavDirection, scrollExplorerRowIntoView } from '../../utils/explorer-table-scroll';
+import { ExplorerRowNavDirection } from '../../utils/explorer-table-scroll';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
-import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { buildRootsDeepLink } from '../../state/roots-url-sync';
 
-import { QD_BP_TABLET_MAX_QUERY } from '../../../../shared/layout/breakpoints';
+import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
 
 const ROW_HEIGHT_DESKTOP = 40;
-const ROW_HEIGHT_MOBILE = 104;
-const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
+const ROW_HEIGHT_COMPACT = 104;
+const LEMMA_TABLE_WIDE_COLUMN_COUNT = 9;
+const LEMMA_TABLE_MEDIUM_COLUMN_COUNT = 6;
+let nextDisabledReasonId = 0;
 type LemmaTableColumnKey = Exclude<MorphologyColumnKey, 'lemmas'>;
 
 const LEMMA_TABLE_COLUMN_ORDER = [
@@ -39,11 +44,10 @@ export interface LemmaCountOpenedEvent {
   source?: ExplorerInteractionSource;
 }
 
-// Technical lemma/root IDs are navigation fields, never rendered as visible labels.
 @Component({
   selector: 'qd-lemmas-table',
   standalone: true,
-  imports: [NgTemplateOutlet, ScrollingModule, WordCountChipComponent],
+  imports: [NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
   templateUrl: './lemmas-table.component.html',
   styleUrl: './lemmas-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,9 +57,8 @@ export class LemmasTableComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly rows = input.required<readonly LemmaListItemViewModel[]>();
+  readonly totalCount = input<number | null>(null);
   readonly loading = input(false);
-  // Drives the error / no-results states that render INSIDE this mounted shell (replacing the body),
-  // separate from `loading`, which drives the skeleton body.
   readonly status = input<LoadStatus>('idle');
   readonly errorMessage = input('');
   readonly selectedLemmaId = input<number | null>(null);
@@ -69,7 +72,6 @@ export class LemmasTableComponent {
 
   readonly rowSelected = output<LemmaListItemViewModel>();
   readonly countOpened = output<LemmaCountOpenedEvent>();
-  // null = release the sort param back to the default (ترتيب المصحف).
   readonly sortChange = output<LemmaSort | null>();
 
   protected readonly sortControl = new ExplorerTableSortController<LemmaSort>(
@@ -90,30 +92,45 @@ export class LemmasTableComponent {
   protected readonly rootLinkPrefix = LEMMAS_ROOT_LINK_PREFIX;
   protected readonly rootMissingAria = LEMMAS_ROOT_MISSING_ARIA;
   protected readonly rootMissingLabel = LEMMAS_ROOT_MISSING_LABEL;
-  protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
-  protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
-  protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
+  protected readonly loadingRowPlaceholders = Array.from({ length: 10 });
+  protected readonly rowHeight = ROW_HEIGHT_DESKTOP;
+  protected readonly compactRowHeight = ROW_HEIGHT_COMPACT;
+  protected readonly isMedium = signal(false);
+  protected readonly columnCount = computed(() => this.isMedium() ? LEMMA_TABLE_MEDIUM_COLUMN_COUNT : LEMMA_TABLE_WIDE_COLUMN_COUNT);
+  protected readonly tableState = computed<QdDataTableState>(() => {
+    if (this.loading()) return 'loading';
+    if (this.status() === 'error') return 'error';
+    if (this.status() === 'empty') return 'empty';
+    return 'ready';
+  });
+  protected readonly selectedRow = computed(() => this.rows().find((row) => row.id === this.selectedLemmaId()) ?? null);
+  protected readonly rowIdentity = (row: LemmaListItemViewModel): number => row.id;
+  protected readonly sameRow = (row: LemmaListItemViewModel, selected: LemmaListItemViewModel | null): boolean => row.id === selected?.id;
+  protected get disabledReason(): string { return WORD_COUNT_DISABLED_REASON; }
+  protected readonly disabledReasonId = `lemmas-table-disabled-reason-${nextDisabledReasonId++}`;
+  protected readonly hasDisabledCounts = computed(() => this.rows().some((row) =>
+    row.occurrencesCount === 0 || row.ayahsCount === 0 || row.surahsCount === 0 ||
+    row.simpleWordsCount === 0 || row.tashkeelWordsCount === 0 || row.stemsCount === 0,
+  ));
 
-  private readonly viewport = viewChild(CdkVirtualScrollViewport);
+  private readonly table = viewChild(QdDataTableComponent<LemmaListItemViewModel>);
 
   constructor() {
     afterNextRender(() => {
       if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-        const mobileMq = window.matchMedia(QD_BP_TABLET_MAX_QUERY);
-        const syncRowHeight = () => {
-          this.rowHeight.set(mobileMq.matches ? ROW_HEIGHT_MOBILE : ROW_HEIGHT_DESKTOP);
-        };
-        syncRowHeight();
-        if (typeof mobileMq.addEventListener === 'function') {
-          mobileMq.addEventListener('change', syncRowHeight);
-          this.destroyRef.onDestroy(() => mobileMq.removeEventListener('change', syncRowHeight));
+        const mediumQuery = window.matchMedia(QD_BP_MEDIUM_QUERY);
+        const syncMedium = () => this.isMedium.set(mediumQuery.matches);
+        syncMedium();
+        if (typeof mediumQuery.addEventListener === 'function') {
+          mediumQuery.addEventListener('change', syncMedium);
+          this.destroyRef.onDestroy(() => mediumQuery.removeEventListener('change', syncMedium));
         }
       }
 
       const disconnect = syncTableScrollbarGutter(
         this.host.nativeElement,
         '--lemmas-table-scrollbar-gutter',
-        '.lemmas-table__body',
+        '.qd-data-table__body',
         '.lemmas-table',
       );
       this.destroyRef.onDestroy(disconnect);
@@ -121,6 +138,9 @@ export class LemmasTableComponent {
   }
 
   protected selectRow(lemma: LemmaListItemViewModel): void {
+    if (lemma.simpleWordsCount === 0) {
+      return;
+    }
     this.rowSelected.emit(lemma);
   }
 
@@ -142,10 +162,6 @@ export class LemmasTableComponent {
     return pageRelativeRowNumber(this.currentPage(), this.pageSize(), index);
   }
 
-  protected trackRowById(_index: number, lemma: LemmaListItemViewModel): number {
-    return lemma.id;
-  }
-
   protected isCountActive(
     lemma: LemmaListItemViewModel,
     column: LemmaTableColumnKey,
@@ -165,7 +181,6 @@ export class LemmasTableComponent {
     });
   }
 
-  // Owned-root deep link into the Roots Explorer; uses numeric identity, never text lookup.
   protected rootHref(rootId: number): string {
     return deepLinkToHref(
       buildRootsDeepLink({ rootId, view: 'words', wordView: 'simple' }),
@@ -189,16 +204,7 @@ export class LemmasTableComponent {
   }
 
   scrollToTop(): void {
-    const viewport = this.viewport();
-    if (this.useVirtualScroll && viewport) {
-      viewport.scrollToIndex(0, 'auto');
-      return;
-    }
-
-    const body = this.host.nativeElement.querySelector('.lemmas-table__body') as HTMLElement | null;
-    if (body) {
-      body.scrollTop = 0;
-    }
+    this.table()?.scrollToTop();
   }
 
   private emitColumnTarget(
@@ -255,23 +261,6 @@ export class LemmasTableComponent {
   }
 
   private scrollToRow(index: number, direction: ExplorerRowNavDirection): void {
-    const viewport = this.viewport();
-    if (this.useVirtualScroll && viewport) {
-      scrollExplorerRowIntoView({
-        targetIndex: index,
-        direction,
-        itemSize: this.rowHeight(),
-        viewport,
-      });
-      return;
-    }
-
-    const body = this.host.nativeElement.querySelector('.lemmas-table__body') as HTMLElement | null;
-    scrollExplorerRowIntoView({
-      targetIndex: index,
-      direction,
-      itemSize: this.rowHeight(),
-      container: body,
-    });
+    this.table()?.scrollRowIntoView(index, direction);
   }
 }

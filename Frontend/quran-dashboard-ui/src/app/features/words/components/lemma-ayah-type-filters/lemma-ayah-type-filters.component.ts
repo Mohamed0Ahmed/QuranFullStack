@@ -6,10 +6,15 @@ import {
   LEMMAS_LOADING_LABEL,
 } from '../../models/lemmas.labels';
 import { TypeSummaryDto } from '../../models/lemmas.models';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { WORD_COUNT_DISABLED_REASON } from '../word-count-chip/word-count-chip.component';
+
+let nextDisabledReasonId = 0;
 
 @Component({
   selector: 'qd-lemma-ayah-type-filters',
   standalone: true,
+  imports: [QdActionDirective],
   templateUrl: './lemma-ayah-type-filters.component.html',
   styleUrl: './lemma-ayah-type-filters.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,8 +32,14 @@ export class LemmaAyahTypeFiltersComponent {
   protected readonly isAllSelected = computed(() => this.selectedTypeCode() === null);
 
   protected readonly loadingChipPlaceholders = [0, 1, 2, 3] as const;
+  protected get disabledReason(): string { return WORD_COUNT_DISABLED_REASON; }
+  protected readonly disabledReasonId = `lemma-ayah-type-disabled-reason-${nextDisabledReasonId++}`;
+  protected readonly hasDisabledItems = computed(() => this.items().some((item) => item.occurrencesCount === 0));
 
   protected selectTypeCode(typeCode: string | null): void {
+    if (typeCode !== null && this.items().find((item) => item.code === typeCode)?.occurrencesCount === 0) {
+      return;
+    }
     const alreadyActive = typeCode === null ? this.isAllSelected() : this.isSelected(typeCode);
     if (alreadyActive) {
       return;

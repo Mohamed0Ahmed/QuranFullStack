@@ -69,7 +69,7 @@ describe('RootsTableComponent', () => {
     const fixture = setup([row(1), row(2)], { currentPage: 1 });
     const root = fixture.nativeElement as HTMLElement;
 
-    const rows = root.querySelectorAll('[role="row"]:not(.roots-table__header-row)');
+    const rows = root.querySelectorAll('.qd-data-table__row[role="row"]');
     expect(rows).toHaveLength(2);
 
     const rowNumbers = Array.from(
@@ -176,6 +176,29 @@ describe('RootsTableComponent', () => {
 
     expect(buttons[2]?.classList.contains('qd-is-selected')).toBe(true);
     expect(buttons[1]?.classList.contains('qd-is-selected')).toBe(false);
+  });
+
+  it('keeps zero-count detail triggers visible, disabled, reason-linked, and non-opening', () => {
+    const fixture = setup([row(1, { ayahsCount: 0, simpleWordsCount: 0 })]);
+    const root = fixture.nativeElement as HTMLElement;
+    const rowSelections: RootListItemViewModel[] = [];
+    const countSelections: unknown[] = [];
+    fixture.componentInstance.rowSelected.subscribe((value) => rowSelections.push(value));
+    fixture.componentInstance.countOpened.subscribe((value) => countSelections.push(value));
+
+    const triggers = Array.from(root.querySelectorAll('button[aria-describedby]')) as HTMLButtonElement[];
+    expect(triggers.length).toBeGreaterThanOrEqual(2);
+    const reasonId = triggers[0].getAttribute('aria-describedby');
+    const reason = root.querySelector(`#${reasonId}`) as HTMLElement;
+    expect(reason.outerHTML).toContain('لا كلمات مرتبطة بهذا النوع، لذا لا تفاصيل لعرضها.');
+    for (const trigger of triggers) {
+      expect(trigger.disabled).toBe(true);
+      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.getAttribute('aria-describedby')).toBe(reasonId);
+      trigger.click();
+    }
+    expect(rowSelections).toEqual([]);
+    expect(countSelections).toEqual([]);
   });
 
   it('moves between columns and rows with keyboard navigation events', () => {
@@ -420,22 +443,22 @@ describe('RootsTableComponent', () => {
   // shell. jsdom does no layout, so the geometry itself is pinned in SCSS (`.roots-table__state`
   // matches the body it replaces in every band) — these assert the structure that SCSS keys off.
   describe('in-shell list states (Feature 030, N3 row 5)', () => {
-    it('renders the error state inside the table shell, replacing the body', () => {
+    it('renders the read-error status inside the mounted shared table body', () => {
       const fixture = setup([], { status: 'error', errorMessage: 'تعذر تحميل الجذور' });
       const root = fixture.nativeElement as HTMLElement;
 
       const state = root.querySelector('[data-testid="roots-list-error"]');
       expect(state).toBeTruthy();
-      expect(state?.getAttribute('role')).toBe('alert');
+      expect(state?.getAttribute('role')).toBe('status');
       expect(state?.textContent?.trim()).toBe('تعذر تحميل الجذور');
       expect(state?.closest('.qd-explorer-table')).toBeTruthy();
       expect(state?.classList.contains('roots-table__state')).toBe(true);
-      // it REPLACES the body (rather than stacking above it) and the shell stays mounted
-      expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
-      expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
+      expect(root.querySelector('[data-testid="qd-data-table-body"]')).toBeTruthy();
+      expect(root.querySelector('.qd-data-table__row')).toBeNull();
+      expect(root.querySelector('.qd-data-table__header')).toBeTruthy();
     });
 
-    it('renders the no-results state inside the table shell, replacing the body', () => {
+    it('renders the no-results status inside the mounted shared table body', () => {
       const fixture = setup([], { status: 'empty' });
       const root = fixture.nativeElement as HTMLElement;
 
@@ -444,8 +467,9 @@ describe('RootsTableComponent', () => {
       expect(state?.textContent?.trim()).toBe(ROOTS_NO_RESULTS_LABEL);
       expect(state?.closest('.qd-explorer-table')).toBeTruthy();
       expect(state?.classList.contains('roots-table__state')).toBe(true);
-      expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
-      expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
+      expect(root.querySelector('[data-testid="qd-data-table-body"]')).toBeTruthy();
+      expect(root.querySelector('.qd-data-table__row')).toBeNull();
+      expect(root.querySelector('.qd-data-table__header')).toBeTruthy();
     });
 
     it('shows the skeleton body and no state box while loading', () => {
@@ -461,7 +485,7 @@ describe('RootsTableComponent', () => {
       const root = fixture.nativeElement as HTMLElement;
 
       expect(root.querySelector('.roots-table__state')).toBeNull();
-      expect(root.querySelector('.qd-explorer-table__body')).toBeTruthy();
+      expect(root.querySelector('[data-testid="qd-data-table-body"]')).toBeTruthy();
     });
   });
 

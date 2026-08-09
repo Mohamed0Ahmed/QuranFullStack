@@ -203,6 +203,23 @@ describe('LemmasExplorerPageComponent US1', () => {
     return fixture;
   }
 
+  it('mounts the intro and shared explorer toolbar inside one split-workspace shell', async () => {
+    const fixture = await initLifecycle();
+    const root = fixture.nativeElement as HTMLElement;
+    const shell = root.querySelector('.qd-page-shell.qd-page-shell--split-workspace') as HTMLElement;
+    const band = root.querySelector('.uw-intro-band') as HTMLElement;
+    const toolbar = root.querySelector('qd-explorer-toolbar.qd-toolbar--explorer') as HTMLElement;
+
+    expect(root.querySelectorAll('.qd-page-shell').length).toBe(1);
+    expect(shell.contains(band)).toBe(true);
+    expect(shell.contains(toolbar)).toBe(true);
+    expect(toolbar.querySelector('[data-testid="lemmas-search-input"]')).toBeTruthy();
+    expect(toolbar.querySelector('[data-testid="lemmas-root-filter"]')).toBeTruthy();
+    expect(toolbar.querySelector('[data-testid="lemmas-result-count"]')).toBeTruthy();
+    expect(toolbar.querySelector('[data-testid="lemmas-sort-select"]')).toBeTruthy();
+    expect(toolbar.querySelector('[data-testid="lemmas-range-filter"]')).toBeTruthy();
+  });
+
   it('shows the headline result count equal to the list totalCount (US4)', async () => {
     const fixture = await initLifecycle();
     await fixture.whenStable();
@@ -964,7 +981,9 @@ describe('LemmasExplorerPageComponent US8 — restore and navigate exact state',
     expect(notFound?.getAttribute('role')).toBe('status');
     expect(notFound?.closest('qd-lemma-details-panel')).toBeTruthy();
     expect(root.querySelector('[data-testid="lemmas-restored-not-found"]')).toBeNull();
-    expect(root.querySelectorAll('[data-lemma-tab]')).toHaveLength(0);
+    const tabs = root.querySelectorAll('[data-lemma-tab]');
+    expect(tabs).toHaveLength(4);
+    expect(Array.from(tabs).filter((tab) => tab.hasAttribute('disabled'))).toHaveLength(3);
     expect(root.querySelector('qd-lemmas-table')).toBeTruthy();
   });
 

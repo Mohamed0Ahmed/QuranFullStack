@@ -1,0 +1,12 @@
+<button
+  type="button"
+  class="qd-sortable-header__button"
+  [attr.data-testid]="testId()"
+  [attr.aria-label]="actionLabel"
+  (click)="activated.emit()"
+>
+  <span class="qd-sortable-header__label">{{ label() }}</span>
+  @if (glyph(); as sortGlyph) {
+    <span class="qd-sortable-header__glyph qd-explorer-table__sort-glyph" aria-hidden="true">{{ sortGlyph }}</span>
+  }
+</button>

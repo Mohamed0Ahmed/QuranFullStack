@@ -7,7 +7,8 @@
 
   <div
     class="lemma-stems-list"
-    role="list"
+    qdResultList
+    listVariant="linked"
     [attr.aria-label]="listLabel"
     [attr.aria-busy]="loading() ? true : null"
     [attr.data-testid]="loading() ? 'lemma-stems-list-loading' : 'lemma-stems-list'"
@@ -32,11 +33,13 @@
     } @else {
       @for (row of rows(); track row.stem.stemId; let index = $index) {
         <a
+          qdResultItem
           class="lemma-stems-list__row qd-interactive-surface qd-detail-list__row"
-          role="listitem"
           data-testid="lemma-stems-list-link"
           [qdDetailLink]="row.frame"
           [attr.aria-label]="'الأصل الصرفي: ' + row.stem.stemText"
+          [position]="index + 1"
+          [setSize]="rows().length"
         >
           <span class="lemma-stems-list__row-number qd-detail-list__row-number" aria-hidden="true">{{ index + 1 }}</span>
           <span class="lemma-stems-list__text qd-detail-list__text">{{ row.stem.stemText }}</span>

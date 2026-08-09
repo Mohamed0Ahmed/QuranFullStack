@@ -46,6 +46,8 @@ describe('LemmaWordsListComponent', () => {
     expect(link.getAttribute('href')).toContain('qdDetailOpen=1');
     expect(link.getAttribute('target')).toBeNull();
     expect(link.getAttribute('rel')).toBeNull();
+    expect(link.getAttribute('role')).toBe('listitem');
+    expect(link.closest('[role="list"]')?.classList.contains('qd-result-list--linked')).toBe(true);
   });
 
   it('renders without a nested tablist', async () => {

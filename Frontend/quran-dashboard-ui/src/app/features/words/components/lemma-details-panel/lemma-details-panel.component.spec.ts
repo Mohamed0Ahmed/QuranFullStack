@@ -27,7 +27,7 @@ describe('LemmaDetailsPanelComponent a11y (T087)', () => {
     return fixture;
   }
 
-  it('renders a tablist with exactly the four tabs linked to a single tabpanel', () => {
+  it('composes the shared details workspace and mounts four labeled tabpanels', () => {
     const fixture = createPanel('surahs');
     const host = fixture.nativeElement as HTMLElement;
 
@@ -37,13 +37,31 @@ describe('LemmaDetailsPanelComponent a11y (T087)', () => {
     const tabs = host.querySelectorAll('[role="tab"]');
     expect(tabs).toHaveLength(4);
 
-    const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
-    expect(panel.id).toBe('lemma-details-panel-surface');
-    expect(panel.getAttribute('tabindex')).toBe('0');
+    expect(host.querySelector('qd-details-workspace')).toBeTruthy();
+    const panels = host.querySelectorAll('[role="tabpanel"]');
+    expect(panels).toHaveLength(4);
 
     for (const tab of Array.from(tabs)) {
-      expect(tab.getAttribute('aria-controls')).toBe('lemma-details-panel-surface');
+      const panel = host.querySelector(`#${tab.getAttribute('aria-controls')}`) as HTMLElement;
+      expect(panel).toBeTruthy();
+      expect(panel.getAttribute('aria-labelledby')).toBe(tab.id);
     }
+  });
+
+  it('gives concurrent panel instances collision-free tab and panel ids', () => {
+    const first = createPanel('surahs');
+    const second = TestBed.createComponent(LemmaDetailsPanelComponent);
+    second.componentRef.setInput('view', 'surahs');
+    second.componentRef.setInput('emptySelection', false);
+    second.detectChanges();
+    const ids = (host: HTMLElement) =>
+      Array.from(host.querySelectorAll('[role="tab"], [role="tabpanel"]')).map((element) => element.id);
+    const firstIds = ids(first.nativeElement as HTMLElement);
+    const secondIds = ids(second.nativeElement as HTMLElement);
+
+    expect(firstIds.every(Boolean)).toBe(true);
+    expect(secondIds.every(Boolean)).toBe(true);
+    expect(firstIds.some((id) => secondIds.includes(id))).toBe(false);
   });
 
   it('marks the active tab selected with roving tabindex and labels the panel', () => {
@@ -57,8 +75,9 @@ describe('LemmaDetailsPanelComponent a11y (T087)', () => {
       expect(tab.getAttribute('tabindex')).toBe(isActive ? '0' : '-1');
     }
 
-    const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
-    expect(panel.getAttribute('aria-labelledby')).toBe('lemma-details-tabbtn-surahs');
+    const activeTab = host.querySelector('[data-lemma-tab="surahs"]') as HTMLElement;
+    const panel = host.querySelector('[data-testid="lemma-details-panel-surface"]') as HTMLElement;
+    expect(panel.getAttribute('aria-labelledby')).toBe(activeTab.id);
   });
 
   it('moves selection forward in RTL reading order on ArrowLeft', () => {
@@ -114,15 +133,19 @@ describe('LemmaDetailsPanelComponent a11y (T087)', () => {
     }
   });
 
-  it('renders controlled not-found content without detail tabs', () => {
+  it('keeps controlled not-found content inside its labeled tabpanel', () => {
     const fixture = createPanel('words');
     fixture.componentRef.setInput('notFound', true);
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
     expect(host.querySelector('[data-testid="lemma-details-not-found"]')).toBeTruthy();
-    expect(host.querySelector('[role="tablist"]')).toBeNull();
-    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(0);
+    expect(host.querySelector('[role="tablist"]')).toBeTruthy();
+    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(4);
+    const activeTab = host.querySelector('[data-lemma-tab="words"]') as HTMLElement;
+    const panel = host.querySelector(`#${activeTab.getAttribute('aria-controls')}`) as HTMLElement;
+    expect(panel.getAttribute('aria-labelledby')).toBe(activeTab.id);
+    expect(panel.querySelector('[data-testid="lemma-details-not-found"]')).toBeTruthy();
   });
 });
 

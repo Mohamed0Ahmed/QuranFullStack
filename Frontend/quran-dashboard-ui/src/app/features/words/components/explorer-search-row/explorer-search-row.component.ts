@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
 
 @Component({
   selector: 'qd-explorer-search-row',
   standalone: true,
+  imports: [QdControlDirective],
   templateUrl: './explorer-search-row.component.html',
   styleUrl: './explorer-search-row.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

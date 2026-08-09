@@ -2,63 +2,50 @@
 
 :host {
   display: block;
+  block-size: 100%;
+  min-block-size: 0;
 }
 
 .lemmas-table {
   --lemmas-table-scrollbar-gutter: 0px;
   --qd-explorer-table-scrollbar-gutter: var(--lemmas-table-scrollbar-gutter);
+
+  block-size: 100%;
 }
 
-.lemmas-table__header-row,
-.lemmas-table__row {
-  grid-template-columns:
-    minmax(2.5rem, 0.28fr)
-    minmax(0, 1.35fr)
-    minmax(0, 0.9fr)
-    repeat(6, minmax(4.25rem, 0.9fr));
-}
-
-.lemmas-table__word-cell {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--qd-space-1);
-}
-
-.lemmas-table__mobile-meta {
-  display: none;
-}
-
-.lemmas-table__root-cell {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
+.lemmas-table__word-cell,
+.lemmas-table__root-cell,
 .lemmas-table__chip-cell {
   display: flex;
   align-items: center;
+  min-inline-size: 0;
+}
+
+.lemmas-table__word-cell {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.lemmas-table__chip-cell {
   justify-content: center;
 }
 
 .lemmas-table__word {
-  display: block;
-  width: 100%;
-  padding: var(--qd-space-1);
-  border: 1px solid transparent;
-  border-radius: var(--qd-radius-sm);
-  background: transparent;
-  text-align: start;
+  display: flex;
+  inline-size: 100%;
+  min-inline-size: 0;
+  justify-content: flex-start;
   overflow: hidden;
+  text-align: start;
 }
 
 .lemmas-table__display,
 .lemmas-table__root-text {
-  font-size: 1.0625rem;
-  line-height: 1.4;
-  white-space: nowrap;
   overflow: hidden;
+  font-size: var(--qd-type-body-lg);
+  line-height: var(--qd-type-body-lg-lh);
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lemmas-table__display {
@@ -66,23 +53,27 @@
 }
 
 .lemmas-table__root-text {
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-family: var(--qd-font-ui);
 }
 
 .lemmas-table__root-link {
   display: block;
-  max-width: 100%;
+  max-inline-size: 100%;
   padding: var(--qd-space-1);
   border-radius: var(--qd-radius-sm);
+  color: var(--qd-ink-body);
   text-decoration: none;
-  color: var(--qd-text);
 }
 
 .lemmas-table__root-missing {
-  display: block;
+  color: var(--qd-ink-muted);
   text-align: center;
-  color: var(--qd-text-muted);
-  font-size: 1rem;
+}
+
+.lemmas-table__mobile-meta,
+.lemmas-table__medium-disclosure,
+.lemmas-table__medium-disclosure-header {
+  display: none;
 }
 
 .lemmas-table__loading-number {
@@ -104,107 +95,108 @@
   margin-inline: auto;
 }
 
-.lemmas-table__loading-mobile-badge {
-  block-size: 1.25rem;
-  min-inline-size: 0;
-}
-
-// The in-shell error / no-results box (Feature 030, N3 row 5). It stands in for the body, so it
-// carries the body's geometry in every band — see the desktop/tablet rules below.
 .lemmas-table__state {
+  min-block-size: 100%;
   margin: 0;
-  gap: var(--qd-space-3);
 }
 
-@media (min-width: bp.$qd-bp-desktop-min) {
-  :host-context(.qd-explorer-layout__table) {
-    display: block;
-    block-size: 100%;
-  }
-
-  :host-context(.qd-explorer-layout__table) .lemmas-table {
-    display: flex;
-    flex-direction: column;
-    block-size: 100%;
-    box-sizing: border-box;
-  }
-
-  :host-context(.qd-explorer-layout__table) .lemmas-table__header {
-    flex-shrink: 0;
-    block-size: var(--qd-explorer-table-header-height, 2.75rem);
-    min-block-size: unset;
-  }
-
-  :host-context(.qd-explorer-layout__table) .lemmas-table__body,
-  :host-context(.qd-explorer-layout__table) .lemmas-table__state {
-    flex: 1 1 auto;
-    min-block-size: 0;
-  }
+.lemmas-table__disabled-reason {
+  margin: 0;
+  padding: var(--qd-space-2) var(--qd-space-3) 0;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-caption);
+  line-height: var(--qd-type-caption-lh);
 }
 
-@media (max-width: bp.$qd-bp-tablet-max) {
-  .lemmas-table__header,
-  .lemmas-table__header-gutter,
-  .lemmas-table__root-cell--desktop {
+.lemmas-table__compact-row-number {
+  align-self: center;
+  color: var(--qd-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.lemmas-table__compact-identity {
+  display: flex;
+  min-inline-size: 0;
+  flex-direction: column;
+  align-items: center;
+}
+
+@media (min-width: bp.$qd-bp-medium-min) and (max-width: bp.$qd-bp-medium-max) {
+  .lemmas-table__header-cell--root,
+  .lemmas-table__root-cell--wide,
+  .lemmas-table__header-cell--secondary,
+  .lemmas-table__chip-cell--secondary {
     display: none;
-  }
-
-  .lemmas-table__body {
-    block-size: min(70vh, 40rem);
-  }
-
-  // Below desktop nothing pins the shell's height (the `.qd-explorer-layout__table > *` card height
-  // is a desktop-only rule), so an in-shell state box would resize the shell it replaced the body in.
-  // Match that body, exactly as the word-types table does (Feature 030, N3 row 7).
-  .lemmas-table__state {
-    min-block-size: min(70vh, 40rem);
-  }
-
-  .lemmas-table__row {
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    gap: var(--qd-space-1) var(--qd-space-2);
-    padding: var(--qd-space-2);
-    block-size: auto;
-    min-block-size: var(--lemmas-table-row-height, 6.5rem);
-  }
-
-  .lemmas-table__cell--row-number {
-    grid-column: 1;
-    grid-row: 1;
-    padding: 0;
-    align-self: center;
-    justify-self: start;
-  }
-
-  .lemmas-table__word-cell {
-    grid-column: 2;
-    grid-row: 1;
-    padding: 0;
-    align-items: center;
-    min-width: 0;
   }
 
   .lemmas-table__mobile-meta {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
     justify-content: center;
+  }
+
+  .lemmas-table__medium-disclosure,
+  .lemmas-table__medium-disclosure-header {
+    display: block;
+  }
+
+  .lemmas-table__medium-disclosure {
+    min-inline-size: 0;
+    padding-inline: var(--qd-space-2);
+  }
+
+  .lemmas-table__medium-disclosure summary {
+    min-block-size: var(--qd-control-md);
+    cursor: pointer;
+    color: var(--qd-ink-body);
+    font-size: var(--qd-type-caption);
+    line-height: var(--qd-control-md);
+  }
+
+  .lemmas-table__medium-disclosure-counts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--qd-space-2);
-    width: 100%;
+    padding-block: var(--qd-space-2);
   }
 
-  .lemmas-table__chip-cell {
-    display: none;
+  .lemmas-table__medium-disclosure-counts qd-word-count-chip {
+    --word-count-chip-width: 100%;
+  }
+}
+
+@media (max-width: bp.$qd-bp-phone-max) {
+  .lemmas-table {
+    block-size: auto;
   }
 
-  .lemmas-table__word {
-    padding: 0;
-    width: 100%;
-    text-align: center;
+  .lemmas-table__word--compact {
+    flex: 1 1 auto;
+    justify-content: center;
   }
 
   .lemmas-table__display {
     text-align: center;
+  }
+
+  .lemmas-table__compact-row-number {
+    position: absolute;
+    inset-block-start: 1.125rem;
+    inset-inline-start: var(--qd-space-2);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .lemmas-table__compact-identity {
+    flex-direction: row;
+    gap: var(--qd-space-1);
+    padding-inline: var(--qd-space-6) var(--qd-space-2);
+  }
+
+  .lemmas-table__compact-identity .lemmas-table__root-link {
+    display: flex;
+    flex: 0 1 35%;
+    min-inline-size: 0;
+    min-block-size: var(--qd-hit-target-min);
+    align-items: center;
   }
 }

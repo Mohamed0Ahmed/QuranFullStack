@@ -67,6 +67,9 @@ describe('ExplorerCountRangeFilterComponent', () => {
 
       expect(chipTextsOf(root, 'occurrences')).toEqual(['أكثر من 100', 'أقل من 100', 'مخصّص']);
       expect(chipTextsOf(root, 'surahs')).toEqual(['أكثر من 50', 'أقل من 50', 'مخصّص']);
+      expect(
+        root.querySelector('[data-testid="range-filter-chip-occurrences-gt"]')?.classList.contains('qd-action'),
+      ).toBe(true);
     });
 
     it.each([

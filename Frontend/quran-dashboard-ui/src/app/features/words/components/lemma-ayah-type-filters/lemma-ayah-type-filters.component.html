@@ -23,6 +23,8 @@
     } @else {
       @if (items().length > 1) {
         <button
+          qdAction="toolbar"
+          size="sm"
           type="button"
           class="qd-btn qd-btn-secondary lemma-ayah-type-filters__chip"
           [class.qd-is-selected]="isAllSelected()"
@@ -36,10 +38,15 @@
 
       @for (item of items(); track item.code) {
         <button
+          qdAction="toolbar"
+          size="sm"
           type="button"
           class="qd-btn qd-btn-secondary lemma-ayah-type-filters__chip"
           [class.qd-is-selected]="isSelected(item.code)"
           [attr.aria-pressed]="isSelected(item.code)"
+          [disabled]="item.occurrencesCount === 0"
+          [attr.aria-disabled]="item.occurrencesCount === 0 ? 'true' : null"
+          [attr.aria-describedby]="item.occurrencesCount === 0 ? disabledReasonId : null"
           [attr.data-testid]="'lemma-ayah-type-filter-' + item.code"
           (click)="selectTypeCode(item.code)"
         >
@@ -49,4 +56,10 @@
       }
     }
   </div>
+
+  @if (hasDisabledItems()) {
+    <p class="lemma-ayah-type-filters__disabled-reason" [id]="disabledReasonId">
+      {{ disabledReason }}
+    </p>
+  }
 </section>

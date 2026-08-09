@@ -1,5 +1,5 @@
 <div class="qd-page">
-  <div class="qd-container qd-explorer-frame lemmas-explorer-frame">
+  <div class="qd-page-shell qd-page-shell--split-workspace lemmas-explorer-frame">
     <div class="uw-intro-band">
       <div class="qd-page-header">
         <h1 class="qd-page-title" data-testid="lemmas-explorer-page-title">{{ pageTitle }}</h1>
@@ -24,8 +24,9 @@
       </qd-words-explainer>
     </div>
 
-    <div class="uw-toolbar-recess">
+    <qd-explorer-toolbar [ariaLabel]="pageTitle">
       <qd-explorer-search-row
+        qdExplorerToolbarPrimary
         [searchValue]="searchDraft()"
         [searchLabel]="searchLabel"
         [searchPlaceholder]="searchPlaceholder"
@@ -48,7 +49,7 @@
       </qd-explorer-search-row>
 
       <qd-explorer-result-count
-        class="uw-toolbar-recess__stat"
+        qdExplorerToolbarResult
         data-testid="lemmas-result-count"
         [count]="listState().totalCount"
         [labelPrefix]="resultCountLabel"
@@ -56,9 +57,7 @@
         [hasError]="listState().status === 'error'"
       />
 
-      <div class="qd-explorer-controls-secondary">
-        <!-- ≤1023px fallback (Feature 030, N8): the table header row is display:none on phone AND
-             tablet, so the header cycle is unreachable there. Same URL contract as the headers. -->
+      <div qdExplorerToolbarSecondary class="qd-explorer-controls-secondary">
         <div class="qd-explorer-sort-fallback">
           <label class="qd-sr-only" for="lemmas-sort">{{ sortLabels.label }}</label>
           <select
@@ -82,19 +81,15 @@
           (rangesChange)="onRangesChange($event)"
         />
       </div>
-    </div>
-
-    <!-- Feature 030, N3 row 5: the list error/no-results states now render inside the table shell
-         and the restored-not-found state inside the details panel — both are mounted shells, so
-         neither can push the table+panel grid down the way these page-level banners did. -->
-  </div>
+    </qd-explorer-toolbar>
 
   @switch (listState().status) {
     @default {
-      <div class="lemmas-explorer-layout qd-explorer-layout">
+      <div class="lemmas-explorer-layout qd-explorer-layout qd-page-split qd-page-split--data">
         <section class="lemmas-explorer-layout__table qd-explorer-layout__table" [attr.aria-label]="tableSectionLabel">
           <qd-lemmas-table
             [rows]="listState().items"
+            [totalCount]="listState().totalCount"
             [loading]="listState().status === 'loading'"
             [status]="listState().status"
             [errorMessage]="listState().errorMessage"
@@ -109,15 +104,17 @@
             (rowSelected)="onRowSelected($event)"
             (countOpened)="onCountOpened($event)"
             (sortChange)="onSortChange($event)"
-          />
-          <qd-pagination
-            [currentPage]="listState().page"
-            [pageSize]="listState().pageSize"
-            [totalCount]="listState().totalCount"
-            [disabled]="listState().status === 'loading'"
-            [ariaLabel]="listPaginationLabel"
-            (pageChange)="onPageChange($event)"
-          />
+          >
+            <qd-pagination
+              lemmasTablePagination
+              [currentPage]="listState().page"
+              [pageSize]="listState().pageSize"
+              [totalCount]="listState().totalCount"
+              [disabled]="listState().status === 'loading'"
+              [ariaLabel]="listPaginationLabel"
+              (pageChange)="onPageChange($event)"
+            />
+          </qd-lemmas-table>
         </section>
 
         @if (isDesktop()) {
@@ -297,4 +294,5 @@
       }
     }
   </ng-template>
+  </div>
 </div>

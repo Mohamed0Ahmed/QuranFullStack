@@ -1,296 +1,185 @@
-<div
+<qd-data-table
   class="roots-table qd-explorer-table"
-  role="table"
-  [attr.aria-label]="tableLabel"
+  renderer="standard"
+  [rows]="rows()"
+  [rowId]="rowIdentity"
+  [ariaLabel]="tableLabel"
+  [bodyAriaLabel]="tableBodyLabel"
+  [columnCount]="columnCount()"
+  [totalRowCount]="totalCount() ?? rows().length"
+  [state]="tableState()"
+  [selectedRow]="selectedRow()"
+  [selected]="sameRow"
+  [virtual]="!isMedium()"
+  [rowHeight]="rowHeight"
+  [compactRowHeight]="compactRowHeight"
   tabindex="0"
   (keydown)="onTableKeydown($event)"
 >
-  <div class="roots-table__header qd-explorer-table__header" role="rowgroup">
-    <div class="roots-table__header-row qd-explorer-table__header-row" role="row">
-      <div class="roots-table__header-cell qd-explorer-table__header-cell roots-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">
-        {{ headers.rowNumber }}
-      </div>
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.alpha, numeric: false }" />
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.occurrences, numeric: true }" />
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.ayahs, numeric: true }" />
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.surahs, numeric: true }" />
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.simple, numeric: true }" />
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.tashkeel, numeric: true }" />
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.lemmas, numeric: true }" />
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.stems, numeric: true }" />
+  <ng-template #headerTemplate>
+    <div class="roots-table__header-cell qd-explorer-table__header-cell roots-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">
+      {{ headers.rowNumber }}
     </div>
-    <div class="roots-table__header-gutter qd-explorer-table__header-gutter" aria-hidden="true"></div>
-  </div>
+    <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.alpha, numeric: false, priority: true }" />
+    <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.occurrences, numeric: true, priority: true }" />
+    <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.ayahs, numeric: true, priority: true }" />
+    <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.surahs, numeric: true, priority: true }" />
+    <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.simple, numeric: true, priority: false }" />
+    <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.tashkeel, numeric: true, priority: false }" />
+    <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.lemmas, numeric: true, priority: false }" />
+    <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.stems, numeric: true, priority: false }" />
+    @if (isMedium()) {
+      <div class="roots-table__medium-disclosure-header qd-explorer-table__header-cell" role="columnheader">
+        كل الأعداد
+      </div>
+    }
+  </ng-template>
 
-  @if (loading()) {
-    <div
-      class="roots-table__body qd-explorer-table__body roots-table__body--loading qd-explorer-table__body--loading"
-      role="rowgroup"
-      [attr.aria-label]="tableBodyLabel"
-      aria-busy="true"
-      data-testid="roots-table-loading"
+  <ng-template #rowTemplate let-row let-index="index">
+    <div class="roots-table__cell qd-explorer-table__cell roots-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
+      {{ rowNumber(index) }}
+    </div>
+    <div class="roots-table__cell qd-explorer-table__cell roots-table__word-cell" role="cell">
+      <button
+        qdAction="row-action"
+        size="sm"
+        type="button"
+        class="roots-table__word qd-interactive-surface"
+        data-testid="roots-table-root-button"
+        [disabled]="row.simpleWordsCount === 0"
+        [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null"
+        [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null"
+        (click)="selectRow(row)"
+      >
+        <span class="roots-table__display">{{ row.displayText }}</span>
+      </button>
+    </div>
+    <ng-container *ngTemplateOutlet="chipCells; context: { row: row }" />
+    @if (isMedium()) {
+      <ng-container *ngTemplateOutlet="mediumDisclosure; context: { row: row }" />
+    }
+  </ng-template>
+
+  <ng-template #compactRowTemplate let-row let-index="index">
+    <div class="roots-table__compact-row-number" aria-hidden="true">{{ rowNumber(index) }}</div>
+    <button
+      qdAction="row-action"
+      size="sm"
+      type="button"
+      class="roots-table__word roots-table__word--compact qd-interactive-surface"
+      data-testid="roots-table-root-button"
+      [disabled]="row.simpleWordsCount === 0"
+      [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null"
+      [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null"
+      (click)="selectRow(row)"
     >
+      <span class="roots-table__display">{{ row.displayText }}</span>
+    </button>
+    <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
+  </ng-template>
+
+  <ng-template #loadingTemplate>
+    <div class="roots-table__loading" data-testid="roots-table-loading">
       <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
       @for (_ of loadingRowPlaceholders; track $index) {
-        <div class="roots-table__row qd-explorer-table__row" role="row" aria-hidden="true">
-          <div class="roots-table__cell qd-explorer-table__cell roots-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
+        <div class="roots-table__loading-row qd-explorer-table__row" role="row" aria-hidden="true">
+          <div class="roots-table__cell qd-explorer-table__cell roots-table__cell--row-number" role="cell">
             <span class="qd-skeleton qd-skeleton--text roots-table__loading-number"></span>
           </div>
           <div class="roots-table__cell qd-explorer-table__cell roots-table__word-cell" role="cell">
             <span class="qd-skeleton qd-skeleton--text roots-table__loading-word"></span>
           </div>
-          @for (i of [0,1,2,3,4,5,6]; track i) {
+          @for (i of [0, 1, 2, 3, 4, 5, 6]; track i) {
             <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell" role="cell">
               <span class="qd-skeleton qd-skeleton--rounded-md roots-table__loading-chip"></span>
             </div>
           }
-          <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--grid-12" role="cell" aria-hidden="true">
-            @for (i of [0,1,2,3,4,5,6]; track i) {
-              <span class="qd-skeleton qd-skeleton--rounded-md roots-table__loading-mobile-badge"></span>
-            }
-          </div>
         </div>
       }
     </div>
-  } @else if (status() === 'error') {
-    <!-- List states live INSIDE the mounted shell (Feature 030, N3 row 5 / §17 mounted-shell
-         doctrine): as a page-level banner they inserted above the fixed table+panel grid and
-         pushed it down ~4.5rem. They replace the body, so the shell keeps its footprint. -->
-    <div class="roots-table__state qd-error-state" role="alert" data-testid="roots-list-error">
+  </ng-template>
+
+  <ng-template #emptyTemplate>
+    <p class="roots-table__state qd-empty-state" role="status" data-testid="roots-list-no-results">
+      {{ noResultsLabel }}
+    </p>
+  </ng-template>
+
+  <ng-template #errorTemplate>
+    <div class="roots-table__state qd-error-state" role="status" data-testid="roots-list-error">
       {{ errorMessage() }}
     </div>
-  } @else if (status() === 'empty') {
-    <p class="roots-table__state qd-empty-state" data-testid="roots-list-no-results">{{ noResultsLabel }}</p>
-  } @else if (useVirtualScroll) {
-    <cdk-virtual-scroll-viewport
-      class="roots-table__body qd-explorer-table__body"
-      [itemSize]="rowHeight()"
-      [minBufferPx]="rowHeight() * 4"
-      [maxBufferPx]="rowHeight() * 8"
-      role="rowgroup"
-      [attr.aria-label]="tableBodyLabel"
-    >
-      <div
-        *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRowById"
-        class="roots-table__row qd-explorer-table__row"
-        role="row"
-        [class.qd-is-selected]="isSelected(row)"
-        [attr.aria-selected]="isSelected(row)"
-        [attr.aria-current]="isSelected(row) ? 'true' : null"
-        [attr.data-row-id]="row.id"
-      >
-        <div class="roots-table__cell qd-explorer-table__cell roots-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div>
-
-        <div class="roots-table__cell qd-explorer-table__cell roots-table__word-cell" role="cell">
-          <button
-            type="button"
-            class="roots-table__word qd-interactive-surface"
-            data-testid="roots-table-root-button"
-            (click)="selectRow(row)"
-          >
-            <span class="roots-table__display">{{ row.displayText }}</span>
-          </button>
-        </div>
-
-        <ng-container *ngTemplateOutlet="chipCells; context: { row: row }" />
-        <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
-      </div>
-    </cdk-virtual-scroll-viewport>
-  } @else {
-    <div class="roots-table__body qd-explorer-table__body" role="rowgroup" [attr.aria-label]="tableBodyLabel">
-      @for (row of rows(); track row.id; let index = $index) {
-        <div
-          class="roots-table__row qd-explorer-table__row"
-          role="row"
-          [class.qd-is-selected]="isSelected(row)"
-          [attr.aria-selected]="isSelected(row)"
-          [attr.aria-current]="isSelected(row) ? 'true' : null"
-          [attr.data-row-id]="row.id"
-        >
-          <div class="roots-table__cell qd-explorer-table__cell roots-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div>
-
-          <div class="roots-table__cell qd-explorer-table__cell roots-table__word-cell" role="cell">
-            <button
-              type="button"
-              class="roots-table__word qd-interactive-surface"
-              data-testid="roots-table-root-button"
-              (click)="selectRow(row)"
-            >
-              <span class="roots-table__display">{{ row.displayText }}</span>
-            </button>
-          </div>
-
-          <ng-container *ngTemplateOutlet="chipCells; context: { row: row }" />
-          <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
-        </div>
-      }
-    </div>
-  }
-
-  <!-- One sortable column header (Feature 030, N8). aria-sort carries the current state and lives on
-       the columnheader; the button's aria-label names the column + the state the next click gives. -->
-  <ng-template #sortHeader let-column="column" let-numeric="numeric">
-    <div
-      class="roots-table__header-cell qd-explorer-table__header-cell"
-      [class.roots-table__header-cell--numeric]="numeric"
-      [class.qd-explorer-table__header-cell--numeric]="numeric"
-      role="columnheader"
-      [attr.aria-sort]="sortControl.ariaSort(column)"
-    >
-      <button
-        type="button"
-        class="qd-explorer-table__sort-button"
-        [class.qd-is-sorted]="sortControl.isSorted(column)"
-        [attr.data-testid]="'roots-table-sort-' + column.key"
-        [attr.aria-label]="sortControl.actionAria(column)"
-        (click)="sortControl.cycle(column)"
-      >
-        <span class="qd-explorer-table__sort-label">{{ column.label }}</span>
-        @if (sortControl.glyph(column); as glyph) {
-          <span class="qd-explorer-table__sort-glyph" aria-hidden="true">{{ glyph }}</span>
-        }
-      </button>
-    </div>
   </ng-template>
 
-  <ng-template #chipCells let-row="row">
-    <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell" role="cell">
-      <qd-word-count-chip
-        [label]="countLabels.occurrences" [count]="row.occurrencesCount" [showLabel]="false"
-        [disabled]="row.occurrencesCount === 0"
-        [selected]="isCountActive(row, 'occurrences', row.occurrencesCount)"
-        (chipClick)="openCount(row, 'occurrences', 'ayahs')"
-      />
-    </div>
-    <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell" role="cell">
-      <qd-word-count-chip
-        [label]="countLabels.ayahs" [count]="row.ayahsCount" [showLabel]="false"
-        [disabled]="row.ayahsCount === 0"
-        [selected]="isCountActive(row, 'ayahs', row.ayahsCount)"
-        (chipClick)="openCount(row, 'ayahs', 'ayahs')"
-      />
-    </div>
-    <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell" role="cell">
-      <qd-word-count-chip
-        [label]="countLabels.surahs" [count]="row.surahsCount" [showLabel]="false"
-        [disabled]="row.surahsCount === 0"
-        [selected]="isCountActive(row, 'surahs', row.surahsCount)"
-        (chipClick)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })"
-      />
-    </div>
-    <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell" role="cell">
-      <qd-word-count-chip
-        [label]="countLabels.simpleWords" [count]="row.simpleWordsCount" [showLabel]="false"
-        [disabled]="row.simpleWordsCount === 0"
-        [selected]="isCountActive(row, 'simple', row.simpleWordsCount)"
-        (chipClick)="openCount(row, 'simple', 'words', { wordView: 'simple' })"
-      />
-    </div>
-    <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell" role="cell">
-      <qd-word-count-chip
-        [label]="countLabels.tashkeelWords" [count]="row.tashkeelWordsCount" [showLabel]="false"
-        [disabled]="row.tashkeelWordsCount === 0"
-        [selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)"
-        (chipClick)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })"
-      />
-    </div>
-    <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell" role="cell">
-      <qd-word-count-chip
-        [label]="countLabels.lemmas" [count]="row.lemmasCount" [showLabel]="false"
-        [disabled]="row.lemmasCount === 0"
-        [selected]="isCountActive(row, 'lemmas', row.lemmasCount)"
-        (chipClick)="openCount(row, 'lemmas', 'lemmas')"
-      />
-    </div>
-    <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell" role="cell">
-      <qd-word-count-chip
-        [label]="countLabels.stems" [count]="row.stemsCount" [showLabel]="false"
-        [disabled]="row.stemsCount === 0"
-        [selected]="isCountActive(row, 'stems', row.stemsCount)"
-        (chipClick)="openCount(row, 'stems', 'stems')"
-      />
-    </div>
+  <ng-template #paginationTemplate>
+    @if (hasDisabledCounts()) {
+      <p class="roots-table__disabled-reason" [id]="disabledReasonId">{{ disabledReason }}</p>
+    }
+    <ng-content select="[rootsTablePagination]" />
   </ng-template>
+</qd-data-table>
 
-  <ng-template #mobileStats let-row="row">
-    <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--grid-12" role="cell">
-      <button
-        type="button"
-        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--occurrences"
-        [class.qd-is-selected]="isCountActive(row, 'occurrences', row.occurrencesCount)"
-        data-testid="roots-table-mobile-occurrences"
-        [attr.aria-label]="row.occurrencesCount + ' ' + countLabels.occurrences"
-        [disabled]="row.occurrencesCount === 0"
-        (click)="openCount(row, 'occurrences', 'ayahs')"
-      >
-        {{ row.occurrencesCount }} {{ headers.occurrences }}
-      </button>
-      <button
-        type="button"
-        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
-        [class.qd-is-selected]="isCountActive(row, 'ayahs', row.ayahsCount)"
-        data-testid="roots-table-mobile-ayahs"
-        [attr.aria-label]="row.ayahsCount + ' ' + countLabels.ayahs"
-        [disabled]="row.ayahsCount === 0"
-        (click)="openCount(row, 'ayahs', 'ayahs')"
-      >
-        {{ row.ayahsCount }} {{ headers.ayahs }}
-      </button>
-      <button
-        type="button"
-        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
-        [class.qd-is-selected]="isCountActive(row, 'surahs', row.surahsCount)"
-        data-testid="roots-table-mobile-surahs"
-        [attr.aria-label]="row.surahsCount + ' ' + countLabels.surahs"
-        [disabled]="row.surahsCount === 0"
-        (click)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })"
-      >
-        {{ row.surahsCount }} {{ headers.surahs }}
-      </button>
-      <button
-        type="button"
-        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
-        [class.qd-is-selected]="isCountActive(row, 'simple', row.simpleWordsCount)"
-        data-testid="roots-table-mobile-simple-words"
-        [attr.aria-label]="row.simpleWordsCount + ' ' + countLabels.simpleWords"
-        [disabled]="row.simpleWordsCount === 0"
-        (click)="openCount(row, 'simple', 'words', { wordView: 'simple' })"
-      >
-        {{ row.simpleWordsCount }} {{ headers.simpleWords }}
-      </button>
-      <button
-        type="button"
-        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
-        [class.qd-is-selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)"
-        data-testid="roots-table-mobile-tashkeel-words"
-        [attr.aria-label]="row.tashkeelWordsCount + ' ' + countLabels.tashkeelWords"
-        [disabled]="row.tashkeelWordsCount === 0"
-        (click)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })"
-      >
-        {{ row.tashkeelWordsCount }} {{ headers.tashkeelWords }}
-      </button>
-      <button
-        type="button"
-        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
-        [class.qd-is-selected]="isCountActive(row, 'lemmas', row.lemmasCount)"
-        data-testid="roots-table-mobile-lemmas"
-        [attr.aria-label]="row.lemmasCount + ' ' + countLabels.lemmas"
-        [disabled]="row.lemmasCount === 0"
-        (click)="openCount(row, 'lemmas', 'lemmas')"
-      >
-        {{ row.lemmasCount }} {{ headers.lemmas }}
-      </button>
-      <button
-        type="button"
-        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
-        [class.qd-is-selected]="isCountActive(row, 'stems', row.stemsCount)"
-        data-testid="roots-table-mobile-stems"
-        [attr.aria-label]="row.stemsCount + ' ' + countLabels.stems"
-        [disabled]="row.stemsCount === 0"
-        (click)="openCount(row, 'stems', 'stems')"
-      >
-        {{ row.stemsCount }} {{ headers.stems }}
-      </button>
+<ng-template #sortHeader let-column="column" let-numeric="numeric" let-priority="priority">
+  <qd-sortable-header
+    class="roots-table__header-cell"
+    [class.roots-table__header-cell--priority]="priority"
+    [class.roots-table__header-cell--secondary]="!priority"
+    [label]="column.label"
+    [numeric]="numeric"
+    [sortState]="sortControl.ariaSort(column) ?? 'none'"
+    [glyph]="sortControl.glyph(column)"
+    [currentSortLabel]="sortControl.glyph(column) ?? ''"
+    [nextSortLabel]="sortControl.actionAria(column)"
+    [actionAriaLabel]="sortControl.actionAria(column)"
+    [testId]="'roots-table-sort-' + column.key"
+    (activated)="sortControl.cycle(column)"
+  />
+</ng-template>
+
+<ng-template #chipCells let-row="row">
+  <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell roots-table__chip-cell--occurrences" role="cell">
+    <qd-word-count-chip [label]="countLabels.occurrences" [count]="row.occurrencesCount" [showLabel]="false" [disabled]="row.occurrencesCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'occurrences', row.occurrencesCount)" (chipClick)="openCount(row, 'occurrences', 'ayahs')" />
+  </div>
+  <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell roots-table__chip-cell--ayahs" role="cell">
+    <qd-word-count-chip [label]="countLabels.ayahs" [count]="row.ayahsCount" [showLabel]="false" [disabled]="row.ayahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'ayahs', row.ayahsCount)" (chipClick)="openCount(row, 'ayahs', 'ayahs')" />
+  </div>
+  <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell roots-table__chip-cell--surahs" role="cell">
+    <qd-word-count-chip [label]="countLabels.surahs" [count]="row.surahsCount" [showLabel]="false" [disabled]="row.surahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'surahs', row.surahsCount)" (chipClick)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })" />
+  </div>
+  <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell roots-table__chip-cell--secondary" role="cell">
+    <qd-word-count-chip [label]="countLabels.simpleWords" [count]="row.simpleWordsCount" [showLabel]="false" [disabled]="row.simpleWordsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'simple', row.simpleWordsCount)" (chipClick)="openCount(row, 'simple', 'words', { wordView: 'simple' })" />
+  </div>
+  <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell roots-table__chip-cell--secondary" role="cell">
+    <qd-word-count-chip [label]="countLabels.tashkeelWords" [count]="row.tashkeelWordsCount" [showLabel]="false" [disabled]="row.tashkeelWordsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)" (chipClick)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })" />
+  </div>
+  <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell roots-table__chip-cell--secondary" role="cell">
+    <qd-word-count-chip [label]="countLabels.lemmas" [count]="row.lemmasCount" [showLabel]="false" [disabled]="row.lemmasCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'lemmas', row.lemmasCount)" (chipClick)="openCount(row, 'lemmas', 'lemmas')" />
+  </div>
+  <div class="roots-table__cell qd-explorer-table__cell roots-table__chip-cell roots-table__chip-cell--secondary" role="cell">
+    <qd-word-count-chip [label]="countLabels.stems" [count]="row.stemsCount" [showLabel]="false" [disabled]="row.stemsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'stems', row.stemsCount)" (chipClick)="openCount(row, 'stems', 'stems')" />
+  </div>
+</ng-template>
+
+<ng-template #mediumDisclosure let-row="row">
+  <details class="roots-table__medium-disclosure">
+    <summary>كل الأعداد</summary>
+    <div class="roots-table__medium-disclosure-counts">
+      <qd-word-count-chip [label]="countLabels.simpleWords" [count]="row.simpleWordsCount" [disabled]="row.simpleWordsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'simple', row.simpleWordsCount)" (chipClick)="openCount(row, 'simple', 'words', { wordView: 'simple' })" />
+      <qd-word-count-chip [label]="countLabels.tashkeelWords" [count]="row.tashkeelWordsCount" [disabled]="row.tashkeelWordsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)" (chipClick)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })" />
+      <qd-word-count-chip [label]="countLabels.lemmas" [count]="row.lemmasCount" [disabled]="row.lemmasCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'lemmas', row.lemmasCount)" (chipClick)="openCount(row, 'lemmas', 'lemmas')" />
+      <qd-word-count-chip [label]="countLabels.stems" [count]="row.stemsCount" [disabled]="row.stemsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'stems', row.stemsCount)" (chipClick)="openCount(row, 'stems', 'stems')" />
     </div>
-  </ng-template>
-</div>
+  </details>
+</ng-template>
+
+<ng-template #mobileStats let-row="row">
+  <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--grid-12">
+    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--occurrences" [class.qd-is-selected]="isCountActive(row, 'occurrences', row.occurrencesCount)" data-testid="roots-table-mobile-occurrences" [attr.aria-label]="row.occurrencesCount + ' ' + countLabels.occurrences" [disabled]="row.occurrencesCount === 0" [attr.aria-disabled]="row.occurrencesCount === 0 ? 'true' : null" [attr.aria-describedby]="row.occurrencesCount === 0 ? disabledReasonId : null" (click)="openCount(row, 'occurrences', 'ayahs')">{{ row.occurrencesCount }} {{ headers.occurrences }}</button>
+    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'ayahs', row.ayahsCount)" data-testid="roots-table-mobile-ayahs" [attr.aria-label]="row.ayahsCount + ' ' + countLabels.ayahs" [disabled]="row.ayahsCount === 0" [attr.aria-disabled]="row.ayahsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.ayahsCount === 0 ? disabledReasonId : null" (click)="openCount(row, 'ayahs', 'ayahs')">{{ row.ayahsCount }} {{ headers.ayahs }}</button>
+    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'surahs', row.surahsCount)" data-testid="roots-table-mobile-surahs" [attr.aria-label]="row.surahsCount + ' ' + countLabels.surahs" [disabled]="row.surahsCount === 0" [attr.aria-disabled]="row.surahsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.surahsCount === 0 ? disabledReasonId : null" (click)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })">{{ row.surahsCount }} {{ headers.surahs }}</button>
+    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'simple', row.simpleWordsCount)" data-testid="roots-table-mobile-simple-words" [attr.aria-label]="row.simpleWordsCount + ' ' + countLabels.simpleWords" [disabled]="row.simpleWordsCount === 0" [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null" (click)="openCount(row, 'simple', 'words', { wordView: 'simple' })">{{ row.simpleWordsCount }} {{ headers.simpleWords }}</button>
+    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)" data-testid="roots-table-mobile-tashkeel-words" [attr.aria-label]="row.tashkeelWordsCount + ' ' + countLabels.tashkeelWords" [disabled]="row.tashkeelWordsCount === 0" [attr.aria-disabled]="row.tashkeelWordsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.tashkeelWordsCount === 0 ? disabledReasonId : null" (click)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })">{{ row.tashkeelWordsCount }} {{ headers.tashkeelWords }}</button>
+    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'lemmas', row.lemmasCount)" data-testid="roots-table-mobile-lemmas" [attr.aria-label]="row.lemmasCount + ' ' + countLabels.lemmas" [disabled]="row.lemmasCount === 0" [attr.aria-disabled]="row.lemmasCount === 0 ? 'true' : null" [attr.aria-describedby]="row.lemmasCount === 0 ? disabledReasonId : null" (click)="openCount(row, 'lemmas', 'lemmas')">{{ row.lemmasCount }} {{ headers.lemmas }}</button>
+    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'stems', row.stemsCount)" data-testid="roots-table-mobile-stems" [attr.aria-label]="row.stemsCount + ' ' + countLabels.stems" [disabled]="row.stemsCount === 0" [attr.aria-disabled]="row.stemsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.stemsCount === 0 ? disabledReasonId : null" (click)="openCount(row, 'stems', 'stems')">{{ row.stemsCount }} {{ headers.stems }}</button>
+  </div>
+</ng-template>

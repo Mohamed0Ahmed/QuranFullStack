@@ -9,8 +9,9 @@ import {
 } from '../../models/words-filter-presets';
 import { WORDS_RANGE_FILTER_LABELS } from '../../models/words-shared.labels';
 import { RangeFilters, RangeMetric, hasActiveRanges } from '../../state/words-range-filters';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
 
-/** The min/max text a metric's مخصّص inputs currently hold, before the user commits it. */
 interface RangeDraft {
   readonly min: string;
   readonly max: string;
@@ -26,14 +27,10 @@ function boundText(bound: number | null): string {
   return bound === null ? '' : String(bound);
 }
 
-// Chips are presentation-only shortcuts that emit ordinary ranges, so the URL grammar, API params and
-// cache key stay untouched — a link carrying any other range just reopens as an active مخصّص. The مخصّص
-// inputs are draft-local: typing changes nothing outside the component, only Enter or تطبيق commits, so
-// a range costs one navigation/fetch instead of one per keystroke. Controlled: `ranges` is the source of
-// truth and every commit emits the full canonical ranges map.
 @Component({
   selector: 'qd-explorer-count-range-filter',
   standalone: true,
+  imports: [QdActionDirective, QdControlDirective],
   templateUrl: './explorer-count-range-filter.component.html',
   styleUrl: './explorer-count-range-filter.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,12 +42,8 @@ export class ExplorerCountRangeFilterComponent {
 
   readonly rangesChange = output<RangeFilters>();
 
-  // TDZ-safe getter (see words README): reading the labels const via a readonly field resolves to
-  // undefined in the bundled test build.
   protected get labels() { return WORDS_RANGE_FILTER_LABELS; }
 
-  // Metric keys whose custom min/max panel the user opened explicitly (a manually active range that
-  // matches no chip also opens it implicitly).
   private readonly manualCustom = signal<ReadonlySet<string>>(new Set());
 
   private readonly chipsByMetric = computed(() => {
@@ -61,13 +54,6 @@ export class ExplorerCountRangeFilterComponent {
     return chips;
   });
 
-  // Drafts hold the user's uncommitted text and re-derive from the committed ranges whenever those
-  // change from outside the component (URL restore, Back/Forward, clear-all).
-  //
-  // Re-sync is decided per metric on the committed range's CONTENT, never on the `ranges` object
-  // identity: the pages re-`set` a freshly parsed object on every queryParamMap emission, so an
-  // identity check would rebuild every draft on any navigation — committing one metric, paginating,
-  // or sorting would wipe a sibling metric's typed-but-uncommitted text out of a panel still open.
   private readonly drafts = linkedSignal<RangeFilters, ReadonlyMap<string, RangeDraft>>({
     source: () => this.ranges(),
     computation: (ranges, previous) => {
@@ -142,7 +128,6 @@ export class ExplorerCountRangeFilterComponent {
     this.manualCustom.set(open);
   }
 
-  // Typing only edits the draft — no emit, so no navigation, no history entry and no fetch until commit.
   protected onMinDraft(metric: RangeMetric, raw: string): void {
     this.setDraft(metric.key, { min: raw, max: this.draftFor(metric).max });
   }
@@ -151,7 +136,6 @@ export class ExplorerCountRangeFilterComponent {
     this.setDraft(metric.key, { min: this.draftFor(metric).min, max: raw });
   }
 
-  // Enter (preventing the implicit form submit) and تطبيق share this one commit path.
   protected onCustomCommit(metric: RangeMetric, event?: Event): void {
     event?.preventDefault();
     if (this.disabled()) {
@@ -196,7 +180,6 @@ export class ExplorerCountRangeFilterComponent {
     this.rangesChange.emit(next);
   }
 
-  // A negative or non-numeric bound folds to null (open) so the URL/back-end never sees invalid input.
   private parseBound(raw: string): number | null {
     const trimmed = raw.trim();
     if (trimmed.length === 0 || !/^\d+$/.test(trimmed)) {
@@ -205,7 +188,6 @@ export class ExplorerCountRangeFilterComponent {
     return Number.parseInt(trimmed, 10);
   }
 
-  // Guards against min > max at the input layer (fail-open: drop the max so the page still loads).
   private normalize(range: CountRange): CountRange | null {
     if (range.min !== null && range.max !== null && range.min > range.max) {
       return { min: range.min, max: null };

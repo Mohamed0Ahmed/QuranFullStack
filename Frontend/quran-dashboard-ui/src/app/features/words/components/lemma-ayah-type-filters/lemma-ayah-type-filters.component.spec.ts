@@ -15,6 +15,12 @@ const verbType = {
   occurrencesCount: 1,
 };
 
+const zeroType = {
+  code: 'P',
+  arabicLabel: 'حرف',
+  occurrencesCount: 0,
+};
+
 describe('LemmaAyahTypeFiltersComponent', () => {
   beforeEach(() => {
     getTestBed().resetTestingModule();
@@ -114,6 +120,28 @@ describe('LemmaAyahTypeFiltersComponent', () => {
     (root.querySelector('[data-testid="lemma-ayah-type-filter-all"]') as HTMLButtonElement).click();
 
     expect(emitted).toEqual(['V', null]);
+  });
+
+  it('keeps a zero-count type visible, disabled, and linked to the visible reason', () => {
+    const fixture = TestBed.createComponent(LemmaAyahTypeFiltersComponent);
+    fixture.componentRef.setInput('items', [nounType, zeroType]);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const trigger = root.querySelector('[data-testid="lemma-ayah-type-filter-P"]') as HTMLButtonElement;
+    const reasonId = trigger.getAttribute('aria-describedby');
+    const emitted: (string | null)[] = [];
+    fixture.componentInstance.typeCodeChange.subscribe((value) => emitted.push(value));
+
+    expect(trigger).toBeTruthy();
+    expect(trigger.disabled).toBe(true);
+    expect(trigger.getAttribute('aria-disabled')).toBe('true');
+    expect(trigger.classList.contains('qd-action')).toBe(true);
+    expect(reasonId).toBeTruthy();
+    const reason = root.querySelector(`#${reasonId}`) as HTMLElement;
+    expect(reason).toBeTruthy();
+    expect(reason.outerHTML).toContain('لا كلمات مرتبطة بهذا النوع، لذا لا تفاصيل لعرضها.');
+    trigger.click();
+    expect(emitted).toEqual([]);
   });
 
   it('shows skeleton chips while loading', () => {

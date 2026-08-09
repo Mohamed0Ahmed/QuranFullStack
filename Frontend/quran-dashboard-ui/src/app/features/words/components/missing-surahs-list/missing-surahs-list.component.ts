@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { QdResultItemDirective, QdResultListDirective } from '../../../../shared/ui/result-list/result-list.directive';
 
 import { WORDS_LOADING_LABEL } from '../../models/words.labels';
 import { MissingSurahItemDto } from '../../models/unique-words.models';
@@ -7,6 +8,7 @@ import { ROW_NUMBER_HEADER, SURAH_NAME_HEADER } from '../../models/unique-words.
 @Component({
   selector: 'qd-missing-surahs-list',
   standalone: true,
+  imports: [QdResultItemDirective, QdResultListDirective],
   templateUrl: './missing-surahs-list.component.html',
   styleUrl: './missing-surahs-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

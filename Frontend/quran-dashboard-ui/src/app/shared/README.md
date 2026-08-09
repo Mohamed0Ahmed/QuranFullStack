@@ -173,6 +173,16 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   directive in its template, so the grep alone under-reports by one. Note that
   `qd-confirm-dialog` applies it, so **every confirm in the app** is a holder and makes the
   chrome inert.
+- `ui/data-table/` — `qd-data-table` (F09), the domain-free mounted table shell. Its frozen
+  renderer vocabulary is exactly `standard | wide-columns | grouped-rows`; it owns lifecycle,
+  table/list ARIA counts, selection state, pagination placement, the virtual-scroll path and the
+  no-`ResizeObserver` fallback. Consumers supply `rowId` plus projected
+  `headerTemplate`/`rowTemplate`/`compactRowTemplate` and lifecycle/pagination templates, so domain
+  columns and actions never enter shared UI. Compact renders semantic list cards; non-Compact
+  renders table rows, tracked by the supplied identity. Grouped rows are display-only even when a
+  caller sets `selectable`. `qd-sortable-header` owns the native sort button and exposes
+  `aria-sort` only while active. `table-scrollbar-gutter-sync.ts` is the shared geometry helper;
+  feature compatibility paths may re-export it but must not fork the implementation.
 - `ui/result-list/` — `qdResultList` + `qdResultItem` (F10), the native-role directive pair for
   every non-table result collection: `role="list"`/`role="listitem"` (D25), an optional
   `listVariant` (`linked` / `display-only` / `master` / `event` / `quran-result`), the logical
