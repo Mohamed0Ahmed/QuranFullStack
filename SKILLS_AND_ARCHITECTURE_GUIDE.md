@@ -162,7 +162,9 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 
 - Implement **by phase/chunk**, not all tasks at once (see §7).
 - Follow your native root and area routers, then read the nearest relevant README and only the triggered headings of `CODING_PRINCIPLES.md`.
-- Select lanes per `TESTING_STRATEGY.md` §5 — the narrowest lane covering the changed scope.
+- Use `TESTING_STRATEGY.md` §5: implementation produces focused evidence for each task/fix, every
+  genuinely triggered protected result, and the final gate union derived from the cumulative diff;
+  a phase ending by itself does not select a broad suite.
 - Read the Backend/Frontend `.architecture/` docs **for the area you're touching** (§3, §4).
 - Before delivery, read `CODING_PRINCIPLES.md` §12 and the production-code headings already implicated; do not load the full `clean-code-guard` pack or run a formal review unless requested.
 - If writing tests, use the native `test-guard` Skill's rules and its stack-relevant reference.
@@ -196,7 +198,10 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 
 ### G. Before opening a PR
 
-- Run the lanes `TESTING_STRATEGY.md` §5 requires for the changed scope (its §6 route-smoke gate included when routes/contracts/auth/middleware/binding changed). There is no CI (its §8), so nothing runs these for you.
+- Confirm implementation already produced the fresh focused/protected/final evidence
+  `TESTING_STRATEGY.md` §5 requires from the cumulative diff, including its §6 route-smoke and §6.1
+  contract guards when triggered. Missing or stale evidence returns to implementation; there is no CI
+  (its §8), and PR preparation only packages what actually ran.
 - Optionally ask for `deploy-smoke` (explicit request) when you want a local runtime smoke, and `engineering-review` for the formal gate.
 - Then ask for `pr-context-prep` to package scope, invariants, evidence, and reviewer/CodeRabbit focus from what already ran.
 - Use `commit-workflow` for the Git/PR execution; for unsquashed subtree-import PRs, use GitHub's **merge commit** strategy.

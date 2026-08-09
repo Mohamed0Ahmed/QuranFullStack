@@ -168,7 +168,11 @@ be a bulk-writes controller, because the bulk pair is the only subset with its o
   there is no external contract consumer, and the frontend generates payload types from the spec, never
   descriptions. Note the committed spec stayed stale for several commits after that strip, because
   `check-api-contract` compares regenerated-against-committed and cannot see a spec that nothing has
-  regenerated; run it after any change that alters what the exporter reads.
+  regenerated. `../../../../TESTING_STRATEGY.md` §6.1 owns the exact trigger: the implementation/
+  change workflow runs it after the complete exporter/generator-visible surface is coherent. That
+  surface is not confined to controllers or `Backend/api/`; it includes response/request DTO graphs, shared
+  envelopes, serialization/schema metadata, Swagger configuration/tooling, and Frontend generator/
+  pruning inputs wherever they live.
 - Frontend payload types are generated from that spec into
   `Frontend/quran-dashboard-ui/src/app/core/api/generated/` (models-only consumption).
   `Backend/scripts/check-api-contract` detects stale generated output. A static human-browsable

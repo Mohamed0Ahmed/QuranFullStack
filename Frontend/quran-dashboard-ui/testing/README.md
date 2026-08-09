@@ -59,6 +59,20 @@ Run all of these from `Frontend/quran-dashboard-ui/`.
 | `npm run build:verify` | a timeout-bounded production `ng build` |
 | `npm run test:pre-pr` | `check:permission-catalogue` → `check:audit-action-types` → `typecheck` → `build:verify` → `test:full` |
 
+The six `test:feature:*` commands above are the complete current feature-lane inventory, including
+`test:feature:access-admin`.
+
+For the fastest local feedback on one spec, enter through the owned `npm test` command:
+
+```bash
+npm test -- --watch=false --include=src/app/.../name.spec.ts
+```
+
+This preserves the fork cap and timeout below. It is focused local feedback, not named gate evidence;
+follow it with the affected named lane and final boundary that `../../../TESTING_STRATEGY.md` §5
+selects. Do not use bare `ng test` or `npx ng test`, and do not present an ad-hoc `--include` as a
+final gate.
+
 `test:gates` is deliberately **not** part of `test:pre-pr`: it is a structural check on
 `../angular.json`, so it belongs with the change that edits the configurations, not with the run
 that executes them. Run it whenever a spec file is added, moved, renamed, or deleted, and
