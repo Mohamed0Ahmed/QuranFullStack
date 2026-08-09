@@ -1,6 +1,6 @@
 ---
 name: engineering-review
-description: Use when explicitly asked for the Quran Dashboard formal engineering review of code, a diff, branch, PR, phase, or completed implementation.
+description: Use when explicitly asked for a formal Quran Dashboard engineering review at any boundary, for the final review of a completed feature/change, or when the user explicitly names the engineering-review Skill.
 ---
 
 # Engineering Review (Adapter)

@@ -64,7 +64,7 @@ These live at the workspace root and apply across Backend + Frontend.
 ## 2. Current skills
 
 All custom skills live under `.claude/skills/` — **`ls .claude/skills/` is the roster**. They
-fall into two families: the 10 workspace skills summarized below, and the **`speckit-*`** family
+fall into two families: the 11 workspace skills summarized below, and the **`speckit-*`** family
 (the Spec Kit command set referenced in §5: `specify`, `clarify`, `plan`, `tasks`, `analyze`,
 `implement`, `converge`, `checklist`, `constitution`, `taskstoissues`, and the `git-*` helpers).
 
@@ -77,14 +77,16 @@ directories before assuming a Spec Kit skill is available to whichever runtime y
 
 One Skill owns one result. A Skill may inspect the evidence needed to produce that result, but it
 never adds another Skill's build, test, review, fix, Git, PR, performance, dependency, or
-deployment stage — and **no project Skill automatically invokes another project Skill**. All 10
-are explicitly invoked. Each canonical `SKILL.md` states its own responsibility,
+deployment stage — and **no project Skill automatically invokes another project Skill**. All 11
+are explicitly invoked, and neither review Skill invokes the other or any project Skill. Each
+canonical `SKILL.md` states its own responsibility,
 non-responsibilities, conditional context, and output contract; this table is the index, not a
 second rule source.
 
 | Skill | Owns | Never owns |
 |-------|------|------------|
-| `engineering-review` | The explicitly requested formal review: findings + verdict. Consumes current evidence, including an existing same-diff Test Guard result; when required Test Guard evidence is missing for changed test files, it reports it missing/incomplete. | Fixes, builds/tests, Git/PR/deploy, dependency/performance audits, unrequested review, invoking other Skills (including `test-guard`). |
+| `engineering-review` | The explicitly requested formal review at any boundary — normally once at the completed feature/change boundary: findings with stable IDs (`ER-1`, `ER-2`, ...) + verdict, plus the re-review path that marks prior findings `CLOSED`/`OPEN`/`REGRESSED`. Consumes supplied final evidence, including an existing same-diff Test Guard result; reports Test Guard evidence missing only when the active plan/spec/contract explicitly requires that separate evidence. | Fixes, builds/tests, Git/PR/deploy, dependency/performance audits, unrequested review, invoking other Skills (including `test-guard` and `focused-review`). |
+| `focused-review` | The explicitly requested scoped review of one phase, task, fix, selected file set, or explicit architecture/security/data-safety checkpoint: frozen scope, scoped findings (`CLEAR`/`FINDINGS` — not a formal verdict), explicit exclusions; may observe supplied checkpoint evidence. | Scope expansion (files → branch, phase → feature, checkpoint → final readiness), formal verdicts, final evidence sufficiency, verification runs, fixes, Git/PR/deploy, invoking other Skills, the Spec Kit formal add-on. |
 | `test-guard` | Test-code quality guidance/review against its nine rules; its result is evidence the formal review consumes. | Production review, test selection/execution, evidence-sufficiency verdicts, test fixes, Git. |
 | `backend-structure-review` | Explicitly requested backend placement/layer/file-responsibility advice or focused findings. | Auto-firing on ordinary new files, holistic review, fixes, builds, tests, Git. |
 | `commit-workflow` | The explicitly requested Git operation (branch/stage/commit/push/PR-open/sync) plus its Git-integrity checks. | Builds, tests, review, deploy, fixes, automatic PR prep. |
@@ -162,19 +164,38 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 
 - Implement **by phase/chunk**, not all tasks at once (see §7).
 - Follow your native root and area routers, then read the nearest relevant README and only the triggered headings of `CODING_PRINCIPLES.md`.
-- Use `TESTING_STRATEGY.md` §5: implementation produces focused evidence for each task/fix, every
-  genuinely triggered protected result, and the final gate union derived from the cumulative diff;
-  a phase ending by itself does not select a broad suite.
+- Use `TESTING_STRATEGY.md` §5 and its four boundaries: implementation produces `FOCUSED`
+  evidence for each task/fix, every genuinely triggered `PROTECTED_TRIGGER` result, and the
+  `FINAL_BOUNDARY` union derived from the cumulative final diff; `RELEASE_ONLY` composition
+  belongs to the authorized release workflow. A phase ending by itself does not select a broad
+  suite or a review.
 - Read the Backend/Frontend `.architecture/` docs **for the area you're touching** (§3, §4).
 - Before delivery, read `CODING_PRINCIPLES.md` §12 and the production-code headings already implicated; do not load the full `clean-code-guard` pack or run a formal review unless requested.
 - If writing tests, use the native `test-guard` Skill's rules and its stack-relevant reference.
 
-### C. After implementing a phase
+### C. Review checkpoints and the formal final review
 
-- Ask for `engineering-review`.
-- **Explicitly state** if it was implemented from Spec Kit, and include the **phase/tasks** and the `specs/<feature>/` path so the Spec Kit compliance module activates.
-- If the phase changed test files and you want the review to consume a Test Guard result, invoke `test-guard` separately first; the review consumes an existing same-diff result and otherwise reports it missing.
-- Fix **only the review findings** before moving on (keep scope focused).
+- A normal phase continues after its `TESTING_STRATEGY.md` §5 verification — no review Skill
+  runs by default, and no arrow in this workflow is an automatic Skill invocation.
+- **Optional focused checkpoint (explicit request):** ask for `focused-review` when one slice
+  deserves early scrutiny — a migration/schema foundation, auth boundary, Quran
+  source/import/persistence integrity, transaction/rollback/audit boundary, major public API
+  foundation, or another risky checkpoint. It returns scoped findings only; fixes are separate,
+  explicitly requested implementation.
+- **Formal final review (explicit request):** after the completed feature/change and any
+  pre-review fixes settle, implementation runs the fresh cumulative final union, then ask for
+  `engineering-review`. **Explicitly state** if it was implemented from Spec Kit, and include
+  the **phase/tasks** and the `specs/<feature>/` path so the Spec Kit compliance module
+  activates. An explicitly requested earlier formal review uses the same contract as a
+  deliberate override.
+- **After formal findings:** fix only the review findings as separate implementation (with
+  focused/protected verification while fixes are in motion), rerun the whole final union once
+  after fixes settle, then ask for the `engineering-review` re-review — same reviewer session
+  when practical. Original finding IDs return `CLOSED`, `OPEN`, or `REGRESSED`; the Skill owns
+  the fresh-full-review fallback conditions.
+- If the change touched test files and you want a review to consume a Test Guard result, invoke
+  `test-guard` separately first; each review consumes an existing same-diff result and never
+  invokes `test-guard` itself.
 
 ### D. For backend structure uncertainty
 
@@ -186,7 +207,7 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 ### E. For tests
 
 - **Test-only change?** Ask for `test-guard` directly.
-- **Mixed feature change?** Ask for `engineering-review`; when the diff contains test files it consumes an existing same-diff `test-guard` result, or reports that evidence missing/incomplete. It does not invoke `test-guard` itself — request the two skills separately when you want both.
+- **Mixed feature change?** At the formal boundary, ask for `engineering-review`; it consumes an existing same-diff `test-guard` result when supplied, and reports that evidence missing only when the active plan/spec/contract explicitly requires it. It does not invoke `test-guard` itself — request the skills separately when you want both.
 
 ### F. For commits
 
@@ -219,14 +240,18 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 
 | Task / Question | Use this skill/doc | Why |
 |-----------------|--------------------|-----|
-| "Review Phase 3 implementation from Spec Kit" | `engineering-review` + `SPEC_KIT_IMPLEMENTATION_REVIEW.md` | Holistic review + phase/task/contract compliance. |
+| "Review Phase 3 only" / "Review these three changed files only" | `focused-review` | Scoped findings on the named slice; no formal verdict or feature expansion. |
+| "Review this auth/schema/Quran foundation checkpoint" | `focused-review` | Explicit high-risk checkpoint; loads only the implicated security/Quran owners. |
+| "Run a formal engineering review of Phase 2 now" | `engineering-review` | Explicitly requested earlier formal review — deliberate override, same contract. |
+| "Run the formal engineering review for the completed Spec Kit feature" | `engineering-review` + `SPEC_KIT_IMPLEMENTATION_REVIEW.md` | Formal final review + phase/task/contract compliance. |
+| "We fixed all formal review findings; re-review them" | `engineering-review` (re-review path) | Finding closure: prior IDs return `CLOSED`/`OPEN`/`REGRESSED` against fresh final evidence. |
 | "Review only new test files" | `test-guard` | Narrow test-code quality gate. |
 | "Which tests must I run for this change?" | `TESTING_STRATEGY.md` | Lane selection by changed scope and pipeline triggers (its §5 matrix). |
 | "Where should `WordSortBy` enum live?" | `backend-structure-review` + `BACKEND_STRUCTURE.md` | Placement/foldering question. |
-| "Review API endpoint response shape" | `engineering-review` + `API_GUIDELINES.md` | API boundary & `ApiResponse` envelope. |
-| "Review Angular feature folder layout" | `engineering-review` + `FRONTEND_STRUCTURE.md` | Frontend structure/routeable pages. |
-| "Review component styling / RTL / theme" | `engineering-review` + `UI_STYLE_SYSTEM.md` | Tokens, `qd-*` classes, RTL, a11y. |
-| "Review facade/API data flow & states" | `engineering-review` + `API_INTEGRATION_GUIDELINES.md` | Page→Facade→Service flow, `ApiResponse<T>`, states. |
+| "Review API endpoint response shape" | `focused-review` + `API_GUIDELINES.md` | Scoped API-boundary checkpoint & `ApiResponse` envelope. |
+| "Review Angular feature folder layout" | `focused-review` + `FRONTEND_STRUCTURE.md` | Scoped frontend structure/routeable-pages checkpoint. |
+| "Review component styling / RTL / theme" | `focused-review` + `UI_STYLE_SYSTEM.md` | Scoped checkpoint: tokens, `qd-*` classes, RTL, a11y. |
+| "Review facade/API data flow & states" | `focused-review` + `API_INTEGRATION_GUIDELINES.md` | Scoped checkpoint: Page→Facade→Service flow, `ApiResponse<T>`, states. |
 | "Commit Backend + Frontend changes safely" | `commit-workflow` | Monorepo-aware grouping and safe explicit staging. |
 | "Does this change still build / migrate / run?" | `deploy-smoke` (explicit request) | Local preflight + runtime smoke; report-only. |
 | "Prepare / write up a PR before opening it" | `pr-context-prep` | Scope, invariants, evidence, reviewer/CodeRabbit focus. |
@@ -242,9 +267,12 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 
 ## 7. Anti-patterns
 
-- ❌ **Don't** use `backend-structure-review` as the full code-review gate — it only covers structure/layering/placement. Use `engineering-review` for the holistic gate.
+- ❌ **Don't** use `backend-structure-review` as the full code-review gate — it only covers structure/layering/placement. Use `engineering-review` for the formal holistic gate.
+- ❌ **Don't** escalate a generic narrow review request ("review this phase / task / fix / these files") to `engineering-review` — that is `focused-review`'s result. `engineering-review` requires an explicit formal request ("formal"/"final" or the Skill named).
+- ❌ **Don't** run a formal review by default after every phase — a normal phase continues after its `TESTING_STRATEGY.md` §5 verification; high-risk checkpoints use an explicitly requested `focused-review`.
+- ❌ **Don't** let `focused-review` expand its scope, judge final evidence sufficiency, or issue a formal verdict — `CLEAR`/`FINDINGS` closes no final boundary.
 - ❌ **Don't** use `test-guard` for production-code review — it is test-code only.
-- ❌ **Don't** chain project skills automatically — no project Skill invokes another. The caller sequences them.
+- ❌ **Don't** chain project skills automatically — no project Skill invokes another, and neither review Skill invokes the other. The caller sequences them.
 - ❌ **Don't** promote `clean-code-guard` to a separate skill — it is reference material under `engineering-review` (it would otherwise collide with engineering-review's triggers). Only revisit deliberately.
 - ❌ **Don't** read `PRODUCT.md`/`DESIGN.md` for backend-only work unless user-facing behavior is affected.
 - ❌ **Don't** run all Spec Kit phases at once unless explicitly approved — implement by phase so the gates do their job.
@@ -258,7 +286,7 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 **Inventory check (all present unless noted):**
 
 - Root docs: `CODING_PRINCIPLES.md`, `TESTING_STRATEGY.md`, `PRODUCT.md`, `DESIGN.md`, `AGENTS.md`, `CLAUDE.md` ✅
-- Skills: `engineering-review/` (+ `SPEC_KIT_IMPLEMENTATION_REVIEW.md`, `references/clean-code-guard/` with `ai-failure-modes.md` + `review-checklist.md`, `references/quran-data-safety.md`), `test-guard/` (+ `dotnet.md`, `jest.md`, `frontend-test-harness-constraints.md`), `backend-structure-review/`, `commit-workflow/`, `deploy-smoke/`, `pr-context-prep/`, `dependency-audit/`, `performance-backend-review/`, `performance-angular-review/`, `backend-global-usings-cleanup/` ✅; plus the `speckit-*` family ✅
+- Skills: `engineering-review/` (+ `SPEC_KIT_IMPLEMENTATION_REVIEW.md`, `references/clean-code-guard/` with `ai-failure-modes.md` + `review-checklist.md`, `references/quran-data-safety.md`), `focused-review/` (self-contained, no reference pack), `test-guard/` (+ `dotnet.md`, `jest.md`, `frontend-test-harness-constraints.md`), `backend-structure-review/`, `commit-workflow/`, `deploy-smoke/`, `pr-context-prep/`, `dependency-audit/`, `performance-backend-review/`, `performance-angular-review/`, `backend-global-usings-cleanup/` ✅; plus the `speckit-*` family ✅
 - Backend `.architecture/`: `BACKEND_STRUCTURE.md`, `CLEAN_ARCHITECTURE.md`, `API_GUIDELINES.md` ✅
 - Frontend `.architecture/`: `FRONTEND_STRUCTURE.md`, `UI_STYLE_SYSTEM.md`, `API_INTEGRATION_GUIDELINES.md` ✅
 
