@@ -39,31 +39,10 @@ const FORBIDDEN = {
 const LEGACY_ALLOWLIST = [
   {
     file: 'src/styles/_components.scss',
-    rule: 'gradient',
-    count: 1,
-    reason: 'skeleton shimmer sweep; D18 replaces it with the flat opacity pulse',
-    retiresIn: 'Phase 2',
-  },
-  {
-    file: 'src/styles/_components.scss',
-    rule: 'activeTransform',
-    count: 1,
-    reason: '.qd-btn active translate; D14 removes it with the F05 action directive',
-    retiresIn: 'Phase 2',
-  },
-  {
-    file: 'src/styles/_components.scss',
     rule: 'colourLiteral',
     count: 0,
     reason: 'no colour literal may live outside the token owner',
     retiresIn: 'never',
-  },
-  {
-    file: 'src/styles/_forms.scss',
-    rule: 'gradient',
-    count: 2,
-    reason: 'select chevron drawn from two gradients; D17 replaces it with a flat icon',
-    retiresIn: 'Phase 2',
   },
   {
     file: 'src/styles/_tokens.scss',
@@ -82,6 +61,19 @@ const LEGACY_ALLOWLIST = [
 ];
 
 const QD_STATE_CONSUMER_BASELINE = 53;
+
+const QD_STATE_ADAPTER_TEMPLATE = 'src/app/shared/ui/state/state.component.html';
+
+const QD_STATE_ADAPTER_OWNERSHIP = /\brole=|\baria-live=|\baria-busy=|class="qd-/;
+
+const ASYNC_OWNERS = [
+  'src/app/shared/ui/skeleton/skeleton-rows.component.ts',
+  'src/app/shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component.ts',
+  'src/app/shared/ui/refreshing-indicator/refreshing-indicator.component.ts',
+  'src/app/shared/ui/empty-state/empty-state.component.ts',
+  'src/app/shared/ui/error-state/error-state.component.ts',
+  'src/app/shared/ui/notice/notice.component.ts',
+];
 
 const CANONICAL_LAYOUT_SELECTORS = new Set([
   '.qd-page-shell--protected-mushaf',
@@ -331,12 +323,31 @@ function checkQdStateNoGrowth() {
   notes.push(`qd-state template consumers: ${consumers} (baseline ${QD_STATE_CONSUMER_BASELINE})`);
 }
 
+function checkAsyncOwners() {
+  for (const owner of ASYNC_OWNERS) {
+    if (!existsSync(path.join(projectRoot, owner))) {
+      failures.push(`missing F12 async owner: ${owner}`);
+    }
+  }
+
+  const adapter = readFile(QD_STATE_ADAPTER_TEMPLATE);
+  for (const line of adapter.split('\n')) {
+    if (QD_STATE_ADAPTER_OWNERSHIP.test(line)) {
+      failures.push(
+        `${QD_STATE_ADAPTER_TEMPLATE} declares state semantics itself ("${line.trim()}"); the adapter may only delegate`,
+      );
+    }
+  }
+  notes.push(`F12 async owners present: ${ASYNC_OWNERS.length}`);
+}
+
 checkContractShape();
 checkSingleBandTruth();
 checkForbiddenPatterns();
 checkRawBreakpoints();
 checkPageShellContract();
 checkQdStateNoGrowth();
+checkAsyncOwners();
 
 console.log('check-golden-ui-contract');
 console.log(

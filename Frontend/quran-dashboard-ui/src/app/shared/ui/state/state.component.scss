@@ -1,24 +1,3 @@
 :host {
   display: block;
 }
-
-.qd-state__action {
-  margin-block-start: var(--qd-space-3);
-}
-
-.qd-state--reserve .qd-state__message {
-  display: block;
-  min-block-size: var(--qd-control-block-size);
-  opacity: 0;
-  transition: opacity var(--qd-t-fast);
-}
-
-.qd-state--reserve .qd-state__message--visible {
-  opacity: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .qd-state--reserve .qd-state__message {
-    transition: none;
-  }
-}

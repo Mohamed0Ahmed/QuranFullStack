@@ -1,0 +1,19 @@
+<div class="qd-notice" role="status" aria-live="polite" [attr.data-testid]="testId()">
+  @if (message() !== '') {
+    <div class="qd-notice__body" [class.qd-notice__body--info]="tone() === 'info'">
+      <span class="qd-notice__message">{{ message() }}</span>
+
+      @if (dismissLabel(); as label) {
+        <button
+          type="button"
+          qdAction="tertiary"
+          size="sm"
+          [attr.data-testid]="dismissTestId()"
+          (click)="dismiss.emit()"
+        >
+          {{ label }}
+        </button>
+      }
+    </div>
+  }
+</div>

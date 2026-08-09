@@ -856,6 +856,11 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   defect.
 
 ### `qd-state`
+> **Since Plan 7 Phase 2 this is a compatibility adapter, not an owner.** Its public surface below
+> is unchanged and still describes what a call-site sees, but the rendering, roles and geometry now
+> come from the five F12 owners in §19.3. New code consumes those owners directly; the adapter's
+> call-site count may only fall, and `npm run check:golden-ui` fails if its template declares a
+> role, live region or `qd-*` class of its own.
 - **Purpose:** the one empty / loading / error presentation.
 - **Inputs / roles:** `variant: 'empty' | 'loading' | 'error'`, `message`, optional
   `actionLabel` + `action` output; loading is non-interactive `role="status"`,
@@ -1041,7 +1046,15 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   aliases); `qd-skeleton-rows` (`count`, `rowTemplate` → renders skeleton cells
   inside the real row grid so loading rows match loaded rows exactly);
   `qd-panel-skeleton` (generalized `explorer-panel-skeleton`, `shape: 'lines' |
-  'rows' | 'panel'`, default reproduces today's six-line panel skeleton).
+  'rows' | 'panel' | 'text'`, default reproduces today's six-line panel skeleton).
+- **The pulse is flat** (D18): `.qd-skeleton` sits on `--qd-surface-sunken` and animates
+  `opacity 1 → .62` over `1.4s`. The shimmer sweep it replaced was a `linear-gradient`
+  pseudo-element, and no gradient may return to any loading or refresh treatment.
+- **`shape="text"` is the single-value text loader** (D40), not a fourth skeleton: a
+  `.qd-loading-state` region with a visible label, `role="status"`, `aria-live="polite"` and
+  `aria-busy`. A surface with a known final shape (table, list, panel, card grid, Quran page)
+  must use a content-shaped skeleton instead; the text loader is only for a count, a badge or a
+  single-value region — and it is the shape the `qd-state` adapter's `loading` variant resolves to.
 - **Roles:** all skeletons are non-interactive, `aria-busy="true"` + `role="status"`
   with an sr-only label, and static under `prefers-reduced-motion`.
 - **`shape="panel"` fills its host** (Feature 030, N3): it stands in for a whole
@@ -1796,3 +1809,103 @@ the layout layer, and any growth in the `qd-state` adapter's call-site count.
 Its `LEGACY_ALLOWLIST` is explicit and each entry names the phase that retires it. The list may only
 shrink: an entry whose recorded count no longer matches reality fails the check, so a cleanup cannot
 silently leave a stale allowance behind.
+
+## 19. Golden UI controls and async owners (Plan 7, Phase 2)
+
+Phase 2 implements F05 (action), F06 (field/control) and F12 (the five async concepts) and closes
+D14, D16, D17, D18, D20 and D21. §18 stays the foundation; this section is what consumes it.
+
+### 19.1 One action contract (F05)
+
+`qdAction` is a **directive on a native `button` or `a`** (`shared/ui/action/`), never a custom
+element. It adds `.qd-action` plus one variant class (`primary`, `secondary`, `tertiary`, `danger`,
+`icon-only`, `toolbar`, `row-action`) and one size class (`sm`/`md`/`lg` → `--qd-control-sm/-md/-lg`
+= `32/40/48`). The styling is the global `.qd-action*` family in `_components.scss`.
+
+Load-bearing decisions:
+
+- **Native activation and native `disabled` stay with the call-site.** The directive never writes
+  `disabled`, never adds `role="button"` to an anchor, and never intercepts a click. Over-normalising
+  a link into a button is how keyboard and middle-click behaviour gets lost.
+- **The busy icon slot is reserved as soon as `busy` is bound at all**, not when it turns true
+  (`.qd-action--busy-slot` vs `.qd-action--busy`). Reserving on `true` would resize the control at
+  the exact moment the operator is waiting on it. An action that never declares a busy state gets
+  no slot, so ordinary buttons keep their natural width. Busy sets `aria-busy` and keeps the label.
+- **No active-state translate** (D14). Active and hover change tone only, and `.qd-btn` lost its
+  `translateY(1px)` in the same change — the transition list no longer mentions `transform`.
+- **Compact hit area** (D45): at `≤767` every action's `--qd-action-size` becomes
+  `--qd-hit-target-min` (44px) through padding growth, and `primary`/`lg` take `--qd-control-lg`
+  (48px). Icon-only and row actions also take that size on the inline axis, so a 16–20px glyph
+  still sits in a 44px box.
+- **Padding-inline uses the spacing scale** (`8/12/16`), not the board's `10/14/18`: the Plan 7
+  contract restricts every spacing step to `2,4,8,12,16,20,24,32,40,48,64`, and a control padding
+  is a spacing step. The heights are the locked values and were not rounded.
+- `row-action` is defined here as an always-mounted transparent icon action. The "reveal on
+  hover/focus/selection at Wide" rule needs a row to hang off, so it belongs to the row families
+  (F09/F10) and is not invented here as an unconsumed container class.
+
+### 19.2 One field contract (F06)
+
+`qd-form-field` owns `[label] [required marker] [control] [helper] [error]` and generates
+`qd-field-N-control/-helper/-error` ids. The projected native control carries `qdControl`, which
+resolves the field through the element injector (content projection preserves the injector
+hierarchy) and binds `id`, `aria-describedby` and `aria-invalid` from it. A `qdControl` outside a
+field is still a styled control but borrows nothing — it exposes its own `invalid` input.
+
+- **Required is stated in text as well as `*`**: the glyph is `aria-hidden`, and an `.qd-sr-only`
+  word carries the meaning.
+- **Focus is `:focus-visible` only, 2px green at 2px offset, and changes no geometry** (D21, D42).
+  `.qd-control`/`.qd-input`/`.qd-select` lost their `:focus` ring, their `box-shadow: var(--qd-ring)`
+  and their focus border-colour change: a pointer click must paint nothing and a keyboard focus must
+  not move the control.
+- **One control geometry** (D20): `.qd-control`, `.qd-input` and `.qd-select` share
+  `min-block-size: var(--qd-control-md)`, `--qd-radius-sm`, the hairline border, `--qd-font-ui` and
+  `--qd-type-body`. The select's radius moved `md → sm` and its height `2.375rem → 2.5rem` so it
+  matches inputs and actions.
+- **Hover is neutral** (D16): `--qd-border-strong` + `--qd-surface-quiet`. The select's green
+  `--qd-border-accent` hover is gone; green now appears only on the focus ring and on selection.
+- **The chevron is a flat inline background image** (D17), replacing two `linear-gradient`s. A
+  `background-image` SVG is an isolated document — it cannot read `currentColor` or a custom
+  property — so the muted-ink hex inside that data URI is the one written colour in the styles layer
+  outside `_tokens.scss`. It is not a token violation to be "fixed" by re-introducing a gradient or
+  by adding a second chevron token; if it must change, change the encoded SVG.
+  `background-position` has no logical form either, so the chevron is positioned from `left`, which
+  is the inline-end edge under the app's RTL direction and exactly where the gradient chevron sat.
+- Disabled controls use `--qd-neutral-tint` + `--qd-neutral-ink-disabled`, never opacity alone, and
+  an invalid control shows a danger hairline **plus** the error text — never colour alone.
+
+### 19.3 Five async owners, five geometry contracts (F12)
+
+| Concept | Owner | Role / live behaviour | Geometry it owns |
+|---|---|---|---|
+| Skeleton / loading | `qd-skeleton-rows`, `qd-panel-skeleton` (`lines`/`rows`/`panel`/`text`) | `aria-busy` + one sr-only `role="status"` (visible label for `text`) | the **final** shape of the surface it replaces |
+| Refreshing | `qd-refreshing-indicator` | none — no role, no live region, `aria-hidden` | nothing; a 2px absolute track on `.qd-refreshing-region` |
+| Empty | `qd-empty-state` | `role="status"` | its own content region |
+| Error / notFound | `qd-error-state` | `severity="read"` → no role; `severity="write"` → `role="alert"` | its own content region; `reserve` keeps a mounted region quiet |
+| Notice | `qd-notice` | `role="status"` + `aria-live="polite"`, always mounted | **zero** idle height; grows only while a message exists (D41) |
+
+The read/write split is the point: a failed read is announced once through the workspace's polite
+region and offers a scoped retry, so making it an alert interrupts twice; only a write failure is an
+alert, and it never clears the draft. Refreshing announces nothing itself — the region it decorates
+keeps its content and carries `aria-busy`, which is why the indicator must not be given a status,
+alert or dialog role.
+
+`reserve` + `.qd-state--reserve` / `.qd-state--reserve-empty` / `.qd-state__message` are now the
+shared reserved-live-region vocabulary of the empty, error and text-loader owners (the styles moved
+from `state.component.scss` into `_components.scss`, because a component stylesheet cannot reach
+markup another component renders). The names keep their legacy spelling on purpose: two feature
+specs and one page assert them, and renaming them would be a call-site migration, not a rename.
+
+`.qd-empty-state` / `.qd-loading-state` / `.qd-error-state` keep their current padding and
+alignment. Their Golden retune (padding 16, `min-block-size: min(40vh, 20rem)` for read states) is
+deliberately **not** done here: roughly sixty unmigrated feature templates use those classes
+directly, and changing their reserve behaviour globally is exactly what Phase 2 is told not to do.
+Each family retunes them as it migrates.
+
+### 19.4 What the gate now enforces
+
+On top of §18.7, `npm run check:golden-ui` fails when any of the six F12 owner files is missing and
+when `state.component.html` declares a `role`, `aria-live`, `aria-busy` or `qd-*` class — the
+adapter may only delegate. Its legacy allowlist lost the four Phase-2 entries (the skeleton shimmer
+gradient, the `.qd-btn:active` translate, and the two select-chevron gradients), so the control and
+state layer now carries zero gradients and zero active transforms with no allowance at all.

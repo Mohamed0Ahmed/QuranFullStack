@@ -91,6 +91,32 @@ describe('QdStateComponent', () => {
     expect(root.querySelector('[data-testid="qd-state-action"]')).toBeNull();
   });
 
+  // D39: the adapter keeps its call-sites working but is no longer the semantic owner. Each
+  // variant must resolve to the canonical F12 owner, or the adapter has silently grown back.
+  describe('delegation to the canonical async owners', () => {
+    it.each([
+      ['loading', 'qd-panel-skeleton', 'qd-state-loading'],
+      ['empty', 'qd-empty-state', 'qd-state-empty'],
+      ['error', 'qd-error-state', 'qd-state-error'],
+    ] as const)('renders the %s variant through <%s>', (variant, owner, testId) => {
+      const fixture = render(variant, 'رسالة');
+      const root = fixture.nativeElement as HTMLElement;
+
+      const ownerElement = root.querySelector(owner);
+      expect(ownerElement).toBeTruthy();
+      expect(ownerElement?.querySelector(`[data-testid="${testId}"]`)).toBeTruthy();
+    });
+
+    it('keeps the legacy test ids on the owner-rendered box, not on an adapter wrapper', () => {
+      const fixture = render('error', 'تعذّر', 'إعادة المحاولة');
+      const root = fixture.nativeElement as HTMLElement;
+
+      const box = root.querySelector('[data-testid="qd-state-error"]');
+      expect(box?.closest('qd-error-state')).toBeTruthy();
+      expect(box?.querySelector('[data-testid="qd-state-action"]')).toBeTruthy();
+    });
+  });
+
   it('renders only one variant at a time', () => {
     const fixture = render('empty', 'لا توجد نتائج');
     const root = fixture.nativeElement as HTMLElement;

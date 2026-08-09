@@ -96,6 +96,43 @@ describe('ExplorerPanelSkeletonComponent (qd-panel-skeleton)', () => {
     ).not.toContain('explorer-panel-skeleton--panel');
   });
 
+  // D40 permits a text loader only for a single-value region; it stays part of the loading
+  // owner rather than becoming a fourth async concept, and it announces once, politely.
+  describe('shape="text" (the single-value text loader)', () => {
+    it('renders one polite busy region carrying the visible label and no skeleton blocks', () => {
+      const fixture = render({ shape: 'text', loadingLabel: 'جارٍ تحميل المستخدمين…' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      const region = root.querySelector('.qd-loading-state') as HTMLElement;
+      expect(region.getAttribute('role')).toBe('status');
+      expect(region.getAttribute('aria-live')).toBe('polite');
+      expect(region.getAttribute('aria-busy')).toBe('true');
+      expect(region.textContent?.trim()).toBe('جارٍ تحميل المستخدمين…');
+      expect(root.querySelectorAll('.qd-skeleton')).toHaveLength(0);
+      expect(root.querySelectorAll('[role="status"]')).toHaveLength(1);
+    });
+
+    it('reserves its message line only when the caller asks for it', () => {
+      const plain = render({ shape: 'text', loadingLabel: 'جارٍ التحميل…' });
+      expect(
+        (plain.nativeElement as HTMLElement).querySelector('.qd-state--reserve'),
+      ).toBeNull();
+
+      const reserved = render({ shape: 'text', loadingLabel: '', reserve: true });
+      const region = (reserved.nativeElement as HTMLElement).querySelector('.qd-loading-state');
+      expect(region?.classList.contains('qd-state--reserve')).toBe(true);
+      expect(region?.querySelector('.qd-state__message--visible')).toBeNull();
+    });
+
+    it('lets a legacy call-site keep its own test id', () => {
+      const fixture = render({ shape: 'text', testId: 'qd-state-loading' });
+      const root = fixture.nativeElement as HTMLElement;
+
+      expect(root.querySelector('[data-testid="qd-state-loading"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="explorer-panel-skeleton"]')).toBeNull();
+    });
+  });
+
   it('is static under reduced motion (no inline transform set by the component)', () => {
     const fixture = render();
     const root = fixture.nativeElement as HTMLElement;

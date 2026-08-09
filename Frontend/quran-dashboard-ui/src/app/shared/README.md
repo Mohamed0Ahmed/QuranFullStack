@@ -51,19 +51,56 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   formatter, route, or output — callers keep their own semantic wrapper (article/li), Quran
   renderer, and navigation. Consumers: Words `ayah-matches-list`, Mushaf `similar-ayahs-card`
   items and `mutashabihat-groups-card` occurrences. See `UI_STYLE_SYSTEM.md` §17.
-- `ui/state/` — `qd-state`, the one empty/loading/error presentation; backed by the existing
-  `.qd-empty-state`/`.qd-loading-state`/`.qd-error-state` classes. Carries an additive `reserve`
-  input (default off) for the §N3 no-layout-shift box; the abwab modals and pages opt in where an
-  error must not shift the layout under it — `grep -rn '\[reserve\]' src/app/` for the current
-  consumers, and see §17's note on `reserve` under `@if`. See `UI_STYLE_SYSTEM.md` §17.
+- `ui/action/` — `qdAction`, the F05 action **directive** on a native `button`/`a`. Variants
+  `primary | secondary | tertiary | danger | icon-only | toolbar | row-action`, sizes `sm|md|lg`
+  mapped to the `32/40/48` control scale, and a `busy` input that sets `aria-busy` and reveals a
+  spinner in an icon slot that is **reserved from the moment `busy` is bound at all**, so going
+  busy cannot resize the control. It never touches `disabled`: native disabled stays with the
+  call-site, and no button semantics are grafted onto an anchor. Styling is the global
+  `.qd-action*` family in `_components.scss`. See `UI_STYLE_SYSTEM.md` §19.
+- `ui/form-field/` — `qd-form-field` + the `qdControl` directive (F06). The field owns the
+  `label`/`helper`/`error` structure and generates the per-instance ids; the directive, applied to
+  the projected native `input`/`select`/`textarea`, resolves the field through DI and binds `id`,
+  `aria-describedby` and `aria-invalid` from it. A `qdControl` with no field parent stays a plain
+  control with its own optional `invalid` input — it never borrows another field's ids. Validation,
+  options and domain copy stay with the feature.
+- `ui/refreshing-indicator/` — `qd-refreshing-indicator` (F12 *refreshing*): a flat 2px track with
+  one solid green segment, rendered only while `active`, `aria-hidden`, and carrying **no** status,
+  alert, dialog role or live region. The refreshed region keeps its content and owns the
+  `aria-busy` announcement; add `.qd-refreshing-region` to that region so the absolutely positioned
+  track anchors to it and adds no geometry.
+- `ui/empty-state/` — `qd-empty-state` (F12 *empty*): `role="status"`, one message, at most one
+  action. Optional `reserve` keeps the box mounted and its message quiet until it lands.
+- `ui/error-state/` — `qd-error-state` (F12 *error/notFound*): `severity="read"` (default) renders
+  a scoped retry block with **no** alert role — a failed read is announced through the workspace's
+  own polite region — while `severity="write"` is the only `role="alert"`, and it never clears the
+  draft. `reserve` keeps a permanently mounted alert region quiet while empty so a later failure
+  lands in an element that already existed.
+- `ui/notice/` — `qd-notice` (F12 *notice*): a permanently mounted `role="status"`/`aria-live`
+  announcer with **zero idle geometry** (D41) — the body only exists while a message does.
+  `tone` is `success` (mutation success semantics) or `info`; failures belong to `qd-error-state`.
+- `ui/state/` — `qd-state`, the **temporary compatibility adapter** for the five owners above. It
+  keeps its `variant`/`message`/`actionLabel`/`reserve` inputs, its `action` output, its selector
+  and its `qd-state-*` test ids, and translates them: `loading` → `qd-panel-skeleton shape="text"`,
+  `empty` → `qd-empty-state`, `error` → `qd-error-state severity="write"` (the legacy variant has
+  always been `role="alert"`, and weakening that would change 28 call-sites' announcing). It owns
+  no role, live region or state styling of its own — `npm run check:golden-ui` fails if its
+  template regains one — and it may not gain a consumer. `reserve` (default off) is the §N3
+  no-layout-shift box: `grep -rn '\[reserve\]' src/app/` for the current consumers, and see §17's
+  note on `reserve` under `@if`. See `UI_STYLE_SYSTEM.md` §17 and §19.
 - `ui/skeleton/` — `qd-skeleton-rows`, renders N skeleton rows into a caller-supplied
   `grid-template-columns` string so loading rows match loaded rows exactly; plus the pure
   `splitGridTemplateColumns` helper it's built on.
 - `ui/explorer-panel-skeleton/` — `qd-panel-skeleton` (class `ExplorerPanelSkeletonComponent`),
   the generalized loading skeleton for explorer/detail panels, with a `shape` input
-  (`'lines' | 'rows' | 'panel'`; default `'lines'` reproduces the original six-line panel
-  skeleton). The `qd-explorer-panel-skeleton` selector is kept as a thin alias on the same
-  component for existing call-sites.
+  (`'lines' | 'rows' | 'panel' | 'text'`; default `'lines'` reproduces the original six-line panel
+  skeleton). `shape="text"` is the D40 **single-value text loader** — a `.qd-loading-state` region
+  with a visible label, `role="status"`, `aria-live="polite"` and `aria-busy` — and it lives here
+  rather than in a sixth async component because loading is one owner with two shapes: a surface
+  with a known final shape must use a content-shaped skeleton, and only a single-value region may
+  use the text loader. `testId` lets a legacy call-site keep its own id (the adapter passes
+  `qd-state-loading`). The `qd-explorer-panel-skeleton` selector is kept as a thin alias on the
+  same component for existing call-sites.
 - `ui/result-count/` — `qd-result-count` (class `ExplorerResultCountComponent`), the one-line
   "label: N" stat that holds its line across loading/error/loaded rather than resizing the
   toolbar around it (Feature 026, US4; Slice B2, T1001 promoted it here from `features/words/`
@@ -137,7 +174,13 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   `npm run check:golden-ui` enforces that.
 - `ui/state/` is a **compatibility adapter that may not grow**. New code consumes the canonical
   async owners; `npm run check:golden-ui` fails when its template call-site count rises above the
-  recorded baseline, and the baseline may only fall (`../../../FRONTEND_UI_RULES.md` §8).
+  recorded baseline, and the baseline may only fall (`../../../FRONTEND_UI_RULES.md` §8). The same
+  check fails when the adapter's template declares a `role`, `aria-live`, `aria-busy` or a `qd-*`
+  class of its own: it delegates, it does not re-implement.
+- The five async concepts are five owners with five different geometry contracts. Skeleton reserves
+  the final shape of what it replaces; refreshing adds nothing but its 2px track; empty and error
+  own their content region; notice is zero-height until it speaks. A shared owner that starts
+  reserving for a concept it does not own is how the ~6.5rem blank Access band came back.
 - `safe-html` sanitizes HTML; it does not bypass Angular security.
 - `ui/skeleton/grid-template-columns.ts` splits a `grid-template-columns` string on top-level
   whitespace only (`depth === 0`, `grid-template-columns.ts:22`), so a parenthesised function such
