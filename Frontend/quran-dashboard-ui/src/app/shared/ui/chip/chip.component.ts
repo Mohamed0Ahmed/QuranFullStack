@@ -3,6 +3,8 @@ import { NgTemplateOutlet } from '@angular/common';
 
 export type QdChipElement = 'button' | 'a';
 
+export type QdChipVariant = 'plain' | 'filter' | 'taxonomy' | 'alias';
+
 @Component({
   selector: 'qd-chip',
   standalone: true,
@@ -14,6 +16,7 @@ export type QdChipElement = 'button' | 'a';
 export class QdChipComponent {
   readonly selected = input(false);
   readonly disabled = input(false);
+  readonly variant = input<QdChipVariant>('plain');
   readonly elementType = input<QdChipElement>('button', { alias: 'as' });
   readonly count = input<number | null>(null);
   readonly href = input<string | null>(null);

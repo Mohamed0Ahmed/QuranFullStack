@@ -1,50 +1,36 @@
-@if (open()) {
-  <div class="qd-modal-backdrop" [attr.data-testid]="testIdPrefix() + '-backdrop'" (click)="cancel()">
-    <section
-      class="qd-modal qd-confirm-dialog"
-      role="alertdialog"
-      aria-modal="true"
-      dir="rtl"
-      [attr.aria-labelledby]="titleId"
-      qdModalScrollLock
-      cdkTrapFocus
-      cdkTrapFocusAutoCapture
-      [attr.data-testid]="testIdPrefix()"
-      (click)="$event.stopPropagation()"
-      (keydown.escape)="cancel()"
+<qd-modal-shell
+  variant="confirm"
+  dialogRole="alertdialog"
+  [open]="open()"
+  [titleText]="titleText()"
+  [showClose]="false"
+  [testIdPrefix]="testIdPrefix()"
+  (dismissed)="cancel()"
+>
+  <ng-content />
+
+  <div qdModalShellFooter class="qd-confirm-dialog__foot">
+    <button
+      type="button"
+      class="qd-btn"
+      [class.qd-btn-primary]="tone() === 'default'"
+      [class.qd-confirm-dialog__confirm--danger]="tone() === 'danger'"
+      [disabled]="busy() || confirmDisabled()"
+      [attr.aria-busy]="busy() ? 'true' : null"
+      [attr.data-testid]="testIdPrefix() + '-confirm'"
+      (click)="confirm()"
     >
-      <header class="qd-modal__head">
-        <h3 [id]="titleId">{{ titleText() }}</h3>
-      </header>
-
-      <div class="qd-modal__body">
-        <ng-content />
-      </div>
-
-      <footer class="qd-modal__foot qd-confirm-dialog__foot">
-        <button
-          type="button"
-          class="qd-btn"
-          [class.qd-btn-primary]="tone() === 'default'"
-          [class.qd-confirm-dialog__confirm--danger]="tone() === 'danger'"
-          [disabled]="busy() || confirmDisabled()"
-          [attr.aria-busy]="busy() ? 'true' : null"
-          [attr.data-testid]="testIdPrefix() + '-confirm'"
-          (click)="confirm()"
-        >
-          {{ confirmLabel() }}
-        </button>
-        <button
-          #cancelButton
-          type="button"
-          class="qd-btn qd-btn-ghost"
-          [disabled]="busy()"
-          [attr.data-testid]="testIdPrefix() + '-cancel'"
-          (click)="cancel()"
-        >
-          {{ cancelLabel() }}
-        </button>
-      </footer>
-    </section>
+      {{ confirmLabel() }}
+    </button>
+    <button
+      #cancelButton
+      type="button"
+      class="qd-btn qd-btn-ghost"
+      [disabled]="busy()"
+      [attr.data-testid]="testIdPrefix() + '-cancel'"
+      (click)="cancel()"
+    >
+      {{ cancelLabel() }}
+    </button>
   </div>
-}
+</qd-modal-shell>

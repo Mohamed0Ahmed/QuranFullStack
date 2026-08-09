@@ -65,4 +65,53 @@ describe('ScrollLockService', () => {
     service.release(); // last holder releases
     expect(service.isLocked()).toBe(false);
   });
+
+  describe('handles — the token-identified hold used by nested layers', () => {
+    it('unlocks only when the last of three nested holders releases, in any order', () => {
+      const drawer = service.hold();
+      const modal = service.hold();
+      const nestedConfirm = service.hold();
+      expect(service.holderCount()).toBe(3);
+
+      nestedConfirm.release();
+      expect(document.body.style.overflow).toBe('hidden');
+
+      drawer.release();
+      expect(document.body.style.overflow).toBe('hidden');
+
+      modal.release();
+      expect(document.body.style.overflow).toBe('scroll');
+    });
+
+    // A layer that releases twice (destroy after an explicit close, a double effect run) used to
+    // decrement a *different* layer's count and unlock the page under a still-open dialog.
+    it('does not unlock early when one holder releases twice while another still holds', () => {
+      const drawer = service.hold();
+      const modal = service.hold();
+
+      modal.release();
+      modal.release();
+      modal.release();
+
+      expect(service.holderCount()).toBe(1);
+      expect(document.body.style.overflow).toBe('hidden');
+
+      drawer.release();
+      expect(document.body.style.overflow).toBe('scroll');
+    });
+
+    it('never deadlocks: releasing every handle restores the page even when handles interleave with legacy pairs', () => {
+      const modal = service.hold();
+      service.acquire();
+      const nested = service.hold();
+
+      service.release();
+      nested.release();
+      modal.release();
+
+      expect(service.holderCount()).toBe(0);
+      expect(service.isLocked()).toBe(false);
+      expect(document.body.style.overflow).toBe('scroll');
+    });
+  });
 });

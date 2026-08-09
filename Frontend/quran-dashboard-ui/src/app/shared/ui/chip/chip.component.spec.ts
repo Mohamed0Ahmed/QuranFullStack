@@ -252,4 +252,29 @@ describe('QdChipComponent', () => {
       expect((asAnchor.nativeElement as HTMLElement).querySelector('[data-testid="qd-chip-label"]')).toBeNull();
     });
   });
+
+  // F17: the Angular chip owns the *interactive* variants only. Lifecycle, membership and count
+  // badges carry no interaction and are semantic classes, so they must not appear here as variants.
+  describe('variant — the interactive chip families', () => {
+    it.each([
+      ['filter', 'qd-chip--filter'],
+      ['taxonomy', 'qd-chip--taxonomy'],
+      ['alias', 'qd-chip--alias'],
+    ] as const)('resolves the %s variant to exactly one named chip class', (variant, expected) => {
+      const fixture = render({ variant });
+      const chip = fixture.nativeElement.querySelector('[data-testid="qd-chip"]') as HTMLElement;
+
+      const variantClasses = Array.from(chip.classList).filter(
+        (name) => name.startsWith('qd-chip--') && name !== 'qd-chip--pill',
+      );
+      expect(variantClasses).toEqual([expected]);
+    });
+
+    it('adds no variant class by default, so existing call-sites are untouched', () => {
+      const fixture = render();
+      const chip = fixture.nativeElement.querySelector('[data-testid="qd-chip"]') as HTMLElement;
+
+      expect(Array.from(chip.classList)).toEqual(['qd-chip', 'qd-chip--pill']);
+    });
+  });
 });

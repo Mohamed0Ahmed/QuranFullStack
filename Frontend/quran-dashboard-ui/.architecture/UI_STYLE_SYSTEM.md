@@ -1909,3 +1909,132 @@ when `state.component.html` declares a `role`, `aria-live`, `aria-busy` or `qd-*
 adapter may only delegate. Its legacy allowlist lost the four Phase-2 entries (the skeleton shimmer
 gradient, the `.qd-btn:active` translate, and the two select-chevron gradients), so the control and
 state layer now carries zero gradients and zero active transforms with no allowance at all.
+
+## 20. Golden UI interaction primitives (Plan 7, Phase 3)
+
+Phase 3 implements F07 (tabs), F08 (toolbar zones), F10 (result list), F11 (details workspace),
+F13 (pagination), the F14 modal base, the F15 floating base and F17, and closes D19, D25, D26, D27,
+D31, D42, D43, D44 and D45 at the shared layer. §18 is the foundation, §19 the controls and async
+owners; this section is the interaction layer that composes both. Broad modal/picker migration is
+Phase 7 — what is built here is the base every later consumer resolves to.
+
+### 20.1 One tab contract (F07)
+
+`qd-tabs` keeps its selector, its `ariaLabel`/`orientation`/`layout` inputs and its consumer-owned
+selection. Phase 3 added, without changing any of that:
+
+- **Per-instance ids** (D31). The tablist gets `qd-tabs-N`; each `qdTab` gets
+  `qd-tabs-N-tab-M`. These are **fallbacks written in `ngAfterViewInit`, only when the element has
+  none.** `abwab-move-picker` binds `[id]="sectionTabId(...)"` and `access-admin-page` binds
+  `[attr.id]`/`[attr.aria-controls]`; a host binding on the directive would have won the update
+  pass and removed theirs. `panelId` and `disabledReasonId` behave the same way.
+- **Layout by count, never by wrap** (D30). Three tabs or fewer render `qd-tabs--segmented` on the
+  sunken track with equal-width tabs; four or more render `qd-tabs--scrollable`, a single row with
+  its own inline scroller. `.qd-tabs` is `flex-wrap: nowrap` in both, so a tablist can no longer
+  form an accidental second row. An explicit `layout="grid"` opts out of the count-driven choice.
+- **Selected treatment** is the Golden pill: green tint, `--qd-green-text`, and a 2px thread on the
+  block-end edge (`box-shadow: inset`, because a border would change the tab's height). A vertical
+  tablist gets the logical `border-inline-start` thread instead.
+- **Selected-tab scroll-into-view**, both on selection change and on keyboard move, so a scrolling
+  row never hides the current tab.
+
+The RTL arrow mapping was already correct and is unchanged: ArrowLeft is the logical *next* tab in
+RTL because that is the next tab in visual order.
+
+### 20.2 Result list and details workspace (F10, F11)
+
+`qdResultList`/`qdResultItem` are a native-role directive pair, not a data component: they add
+`role="list"`/`listitem` (D25), the logical selected thread (D26), `aria-current` on the selected
+master row, and optional set metadata. They add **no** `tabindex` — a truncated value is disclosed
+through the §8.1 ladder on the owning control, and manufacturing a tab stop per truncated node is
+explicitly prohibited.
+
+`qd-details-workspace` is the projected details anatomy: identity, metadata, actions, an optional
+tab zone, a permanently mounted polite status slot with zero idle geometry, exactly one body
+scroller, and an optional footer. Every zone is `<ng-content>`; the shell holds no feature data and
+takes no domain input. Its `tabId(key)`/`panelId(key)`/`statusId` namespace is per instance, which
+is what lets an inline detail panel and the global overlay body coexist (D31).
+
+### 20.3 Pagination geometry (F13)
+
+The jump input is `--qd-pagination-jump-inline-size` (`6rem`) in every state — the `:focus` widen is
+gone (D42). Go is always mounted and only toggles `disabled` (D43). `jumpSubmittable` is
+"parses to a number", **not** "is in range": an out-of-range page has to stay submittable, because
+submitting is what produces the range error in the reserved error line. That line is now permanently
+mounted and toggles `visibility`, so a failed jump adds no height. Ids for the input, the error line
+and the live region are per instance (D44), and every page change announces the new **result range**
+through that instance's polite region. Compact controls take `--qd-hit-target-min` (D45). Audit
+`Load more` remains a separate capability with none of this API.
+
+### 20.4 Modal and floating bases (F14, F15)
+
+`qd-modal-shell` owns four named widths and nothing else may exist: `confirm` 30rem, `form` 38rem,
+`wide` 52rem, `overlay` 46rem, plus the Compact full-bleed `94dvh` sheet with safe-area padding
+(D48). The shell owns padding; header and footer are sticky siblings of the single scrolling body
+(D49). `dismissed` carries its route (`close`/`escape`/`backdrop`) rather than being a bare void, so
+a dirty authoring form can refuse the casual routes and keep an explicit close. Escape is consumed
+by the topmost shell whether or not it dismisses: a shell that refuses the route still calls
+`stopPropagation`/`preventDefault`, so an ancestor drawer or a document-level listener cannot close
+in its place. Backdrop dismissal requires the pointer sequence to **start and end** on the backdrop
+(the press target is recorded on `pointerdown`/`mousedown` and compared at `click`), so a drag-select
+released outside the dialog never discards a draft.
+
+Focus containment is CDK-trap based, but the shell — not each consumer — decides **which** trap is
+live: shells register in an internal open-shell stack and only the topmost one enables its trap, and
+`[trapFocus]="false"` lets a consumer suspend its own trap while it hosts a nested decision. Exactly
+one trap is enabled across nested shells.
+
+**Focus return has exactly one owner: the shell.** It captures the pre-open `activeElement`, drives
+initial focus through the trap itself (there is no `cdkTrapFocusAutoCapture` second restorer), and
+restores **synchronously** on close and on destroy-while-open. A consumer that wants to place focus
+itself sets `[returnFocus]="false"` and owns it end to end; nothing restores asynchronously behind
+its back. The reference-counted
+scroll-lock hold is released on close **and** on destroy, so a shell torn down while open cannot
+strand the page. Making the route content behind the dialog `inert` remains an app-shell concern
+(`app.ts` for the global overlay, `ScrollLockService.isLocked` for the navbar) — the shell does not
+reach outside itself, and D13's nav-sheet work stays in Phase 10.
+
+`qdFloatingLayer` is one keyboard script for five variants (D33) and `placeFloatingLayer()` is the
+pure geometry (D34): block-axis flip when the preferred side cannot hold the layer and the other
+side has more room, inline clamp to an 8px viewport margin, `min(60vh, 24rem)` cap, and
+`position: fixed` so a layer never joins document flow. Items are located by ARIA role, never by a
+shared option model, so grouped and flat hierarchies stay feature-owned (G12).
+
+**One option model per variant** (F15 §16): `action-menu` roves real DOM focus and never carries
+`aria-activedescendant`; `select-listbox` and `searchable-picker` keep DOM focus on the field (or on
+the layer) and move an `aria-activedescendant` cursor, which is cleared when the layer closes or its
+variant changes. Key handling is scoped by event target: inside a text input, textarea or
+`contenteditable`, printable keys, Home/End and the caret arrows stay with the field, and only
+ArrowUp/ArrowDown drive the option cursor. Type-ahead
+accumulates inside a 600ms window and searches forward from the active item; an empty or
+whitespace-only prefix never matches, and Space extends a type-ahead already in progress but
+otherwise belongs to the focused item (APG). The `24rem` half of the cap resolves against the live
+root font size (`resolveRootFontSize()`), so JS can never disagree with
+`--qd-floating-max-block-size`. The computed placement
+is written to `left` because a viewport coordinate has no logical form — the *choice* of anchored
+edge is direction-aware, which is what RTL actually needs. `context-menu-placement.ts` still exists
+and is retired against this helper in Phase 7.
+
+### 20.5 Chip, badge and toolbar semantics (F08, F17)
+
+The Angular `qd-chip` owns the **interactive** families only, through a `variant` input
+(`filter`/`taxonomy`/`alias`; `plain` is the default and adds no class). Static badges have no
+interaction and therefore no Angular owner: `.qd-badge--lifecycle-pending/-active/-disabled/-unknown`,
+`.qd-badge--membership-owner` and `.qd-count-chip` are semantic classes in `_components.scss`.
+Lifecycle and Owner membership are separate badges and Unknown resolves to the neutral tokens with
+its own literal copy — it is never rendered as Disabled (G17). Every one of them states its meaning
+in text; colour is reinforcement only.
+
+`.qd-toolbar` supplies the F08 zones (`__identity`, `__filters`, `__result`, `__actions`,
+`__applied`) plus the `explorer`/`taxonomy`/`workspace` modifiers. It is a semantic layer, not an
+Angular wrapper: it owns no draft/applied value and emits nothing, and a feature composes it with
+its own filter fields. It carries **no entrance animation** — `uw-toolbar-rise` is deleted (D19),
+and the checker fails on any `@keyframes` whose `from` frame translates.
+
+### 20.6 What the gate now enforces
+
+On top of §18.7 and §19.4, `npm run check:golden-ui` fails when a Phase 3 owner file is missing,
+when `modal-shell.component.scss` declares anything other than the four named width classes, when a
+selection edge is written as a physical `box-shadow: inset -Npx 0` instead of the logical thread,
+when a shared partial regains decorative entrance motion, or when a `.qd-truncate` node in a shared
+template carries `tabindex="0"`.

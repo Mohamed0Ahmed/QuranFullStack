@@ -46,9 +46,9 @@
         }
 
         <form class="qd-pagination__jump" novalidate (submit)="submitJump($event)">
-          <label class="qd-sr-only" for="qd-pagination-jump-input">{{ jumpInputLabel }}</label>
+          <label class="qd-sr-only" [attr.for]="jumpInputId">{{ jumpInputLabel }}</label>
           <input
-            id="qd-pagination-jump-input"
+            [id]="jumpInputId"
             class="qd-input qd-pagination__jump-input"
             type="number"
             inputmode="numeric"
@@ -59,23 +59,18 @@
             [value]="jumpValue()"
             [disabled]="disabled()"
             [attr.aria-invalid]="jumpError() ? true : null"
-            [attr.aria-describedby]="jumpError() ? 'qd-pagination-jump-error' : null"
-            (focus)="onJumpFocus()"
-            (blur)="onJumpBlur()"
+            [attr.aria-describedby]="jumpError() ? jumpErrorId : null"
             (input)="onJumpInput($any($event.target).value)"
             (keydown)="onJumpKeydown($event)"
           />
-          @if (jumpActive()) {
-            <button
-              type="submit"
-              class="qd-btn qd-btn-secondary qd-pagination__jump-submit"
-              data-testid="qd-pagination-jump-submit"
-              [disabled]="disabled()"
-              (mousedown)="$event.preventDefault()"
-            >
-              {{ goLabel }}
-            </button>
-          }
+          <button
+            type="submit"
+            class="qd-btn qd-btn-secondary qd-pagination__jump-submit"
+            data-testid="qd-pagination-jump-submit"
+            [disabled]="disabled() || !jumpSubmittable()"
+          >
+            {{ goLabel }}
+          </button>
         </form>
       </div>
 
@@ -108,16 +103,25 @@
       </button>
     </div>
 
-    @if (jumpError()) {
-      <p
-        id="qd-pagination-jump-error"
-        class="qd-pagination__jump-error"
-        role="status"
-        aria-live="polite"
-        data-testid="qd-pagination-jump-error"
-      >
-        {{ jumpError() }}
-      </p>
-    }
+    <p
+      [id]="jumpErrorId"
+      class="qd-pagination__jump-error"
+      [class.qd-pagination__jump-error--visible]="jumpError() !== null"
+      role="status"
+      aria-live="polite"
+      data-testid="qd-pagination-jump-error"
+    >
+      {{ jumpError() }}
+    </p>
+
+    <p
+      [id]="liveRegionId"
+      class="qd-sr-only"
+      role="status"
+      aria-live="polite"
+      data-testid="qd-pagination-live"
+    >
+      {{ rangeAnnouncement() }}
+    </p>
   </nav>
 }

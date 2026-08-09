@@ -58,6 +58,13 @@ const LEGACY_ALLOWLIST = [
     reason: '.qd-explorer-frame legacy alias kept until every route declares a named intent',
     retiresIn: 'Phase 11',
   },
+  {
+    file: 'src/styles/_words-explorer-layout.scss',
+    rule: 'entranceMotion',
+    count: 1,
+    reason: 'uw-toolbar-rise retires with the Words toolbar once its named replacement is proven',
+    retiresIn: 'Phase 5',
+  },
 ];
 
 const QD_STATE_CONSUMER_BASELINE = 53;
@@ -65,6 +72,35 @@ const QD_STATE_CONSUMER_BASELINE = 53;
 const QD_STATE_ADAPTER_TEMPLATE = 'src/app/shared/ui/state/state.component.html';
 
 const QD_STATE_ADAPTER_OWNERSHIP = /\brole=|\baria-live=|\baria-busy=|class="qd-/;
+
+const INTERACTION_OWNERS = [
+  'src/app/shared/ui/tabs/tabs.component.ts',
+  'src/app/shared/ui/tabs/tab.directive.ts',
+  'src/app/shared/ui/result-list/result-list.directive.ts',
+  'src/app/shared/ui/details-workspace/details-workspace.component.ts',
+  'src/app/shared/ui/pagination/pagination.component.ts',
+  'src/app/shared/ui/modal-shell/modal-shell.component.ts',
+  'src/app/shared/ui/floating-layer/floating-layer.directive.ts',
+  'src/app/shared/ui/floating-layer/floating-layer-placement.ts',
+  'src/app/shared/ui/chip/chip.component.ts',
+];
+
+const MODAL_SHELL_STYLES = 'src/app/shared/ui/modal-shell/modal-shell.component.scss';
+
+const MODAL_SHELL_VARIANTS = ['confirm', 'form', 'wide', 'overlay'];
+
+const SELECTION_EDGE_FILES = [
+  'src/styles/_components.scss',
+  'src/styles/_explorer-tables.scss',
+  'src/styles/_explorer-detail-lists.scss',
+  'src/styles/_words-explorer-layout.scss',
+];
+
+const ENTRANCE_MOTION_FILES = [
+  'src/styles/_components.scss',
+  'src/styles/_words-explorer-layout.scss',
+  'src/styles/_explorer-tables.scss',
+];
 
 const ASYNC_OWNERS = [
   'src/app/shared/ui/skeleton/skeleton-rows.component.ts',
@@ -341,6 +377,82 @@ function checkAsyncOwners() {
   notes.push(`F12 async owners present: ${ASYNC_OWNERS.length}`);
 }
 
+function checkInteractionOwners() {
+  for (const owner of INTERACTION_OWNERS) {
+    if (!existsSync(path.join(projectRoot, owner))) {
+      failures.push(`missing Phase 3 interaction owner: ${owner}`);
+    }
+  }
+  notes.push(`interaction owners present: ${INTERACTION_OWNERS.length}`);
+}
+
+function checkModalWidthVocabulary() {
+  const styles = readFile(MODAL_SHELL_STYLES);
+  if (!styles) {
+    return;
+  }
+  const declared = [...styles.matchAll(/\.qd-modal-shell--([a-z-]+)/g)].map((match) => match[1]);
+  const unique = [...new Set(declared)].sort();
+  const expected = [...MODAL_SHELL_VARIANTS].sort();
+  if (unique.join(',') !== expected.join(',')) {
+    failures.push(
+      `${MODAL_SHELL_STYLES}: modal widths must be exactly ${expected.join('/')}; found ${unique.join('/') || 'none'}`,
+    );
+  }
+  notes.push(`modal shell widths: ${unique.join(', ')}`);
+}
+
+function checkSelectionEdgeIsLogical() {
+  for (const file of SELECTION_EDGE_FILES) {
+    const text = readFile(file);
+    if (!text) {
+      continue;
+    }
+    for (const match of text.matchAll(/box-shadow:\s*inset\s+-?\d+px\s+0/g)) {
+      failures.push(
+        `${file}: "${match[0]}" is a physical selected edge; use the logical inline-start thread`,
+      );
+    }
+  }
+}
+
+function checkNoEntranceMotion() {
+  for (const file of ENTRANCE_MOTION_FILES) {
+    const text = readFile(file);
+    if (!text) {
+      continue;
+    }
+    const found = [];
+    for (const match of text.matchAll(/@keyframes\s+([\w-]+)\s*\{([\s\S]*?)\n\}/g)) {
+      if (/from\s*\{[^}]*(transform|translate)/.test(match[2])) {
+        found.push(match[1]);
+      }
+    }
+    const allowed = allowanceFor(file, 'entranceMotion');
+    if (found.length > allowed) {
+      failures.push(
+        `${file}: @keyframes ${found.join(', ')} is decorative entrance motion (D19); allowlist permits ${allowed}`,
+      );
+    } else if (found.length < allowed) {
+      failures.push(
+        `${file}: allowlist for entranceMotion is stale (found ${found.length}, records ${allowed}); lower the recorded count`,
+      );
+    }
+  }
+}
+
+function checkNoArtificialTabStops() {
+  const templates = walk('src/app/shared', ['.html']);
+  for (const file of templates) {
+    const text = readFileSync(path.join(projectRoot, file), 'utf8');
+    for (const match of text.matchAll(/<[^>]*qd-truncate[^>]*>/g)) {
+      if (/tabindex\s*=\s*["']?0/.test(match[0])) {
+        failures.push(`${file}: a truncated node carries tabindex="0"; use the §8.1 disclosure ladder`);
+      }
+    }
+  }
+}
+
 checkContractShape();
 checkSingleBandTruth();
 checkForbiddenPatterns();
@@ -348,6 +460,11 @@ checkRawBreakpoints();
 checkPageShellContract();
 checkQdStateNoGrowth();
 checkAsyncOwners();
+checkInteractionOwners();
+checkModalWidthVocabulary();
+checkSelectionEdgeIsLogical();
+checkNoEntranceMotion();
+checkNoArtificialTabStops();
 
 console.log('check-golden-ui-contract');
 console.log(

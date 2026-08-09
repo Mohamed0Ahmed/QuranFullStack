@@ -1,0 +1,58 @@
+@if (open()) {
+  <div
+    class="qd-modal-shell__backdrop"
+    [attr.data-testid]="testIdPrefix() + '-backdrop'"
+    (pointerdown)="onBackdropPointerDown($event)"
+    (mousedown)="onBackdropPointerDown($event)"
+    (click)="onBackdropClick($event)"
+  >
+    <section
+      class="qd-modal-shell"
+      [class.qd-modal-shell--confirm]="variant() === 'confirm'"
+      [class.qd-modal-shell--form]="variant() === 'form'"
+      [class.qd-modal-shell--wide]="variant() === 'wide'"
+      [class.qd-modal-shell--overlay]="variant() === 'overlay'"
+      [attr.role]="dialogRole()"
+      aria-modal="true"
+      dir="rtl"
+      [attr.aria-labelledby]="titleId"
+      [attr.data-qd-modal-variant]="variant()"
+      [attr.data-testid]="testIdPrefix()"
+      [cdkTrapFocus]="trapEnabled()"
+      (keydown.escape)="onEscape($event)"
+    >
+      <header class="qd-modal-shell__header">
+        <h2
+          class="qd-modal-shell__title"
+          [class.qd-sr-only]="!showTitle()"
+          [id]="titleId"
+          [attr.data-testid]="testIdPrefix() + '-title'"
+        >
+          {{ titleText() }}
+        </h2>
+        <ng-content select="[qdModalShellHeaderExtra]" />
+        @if (showClose()) {
+          <button
+            type="button"
+            class="qd-modal-shell__close"
+            qdAction="tertiary"
+            [attr.data-testid]="testIdPrefix() + '-close'"
+            (click)="onCloseClick()"
+          >
+            {{ closeLabel() }}
+          </button>
+        }
+      </header>
+
+      <div class="qd-modal-shell__body" [attr.data-testid]="testIdPrefix() + '-body'">
+        <ng-content />
+      </div>
+
+      @if (hasFooter()) {
+        <footer class="qd-modal-shell__footer" [attr.data-testid]="testIdPrefix() + '-footer'">
+          <ng-content select="[qdModalShellFooter]" />
+        </footer>
+      }
+    </section>
+  </div>
+}

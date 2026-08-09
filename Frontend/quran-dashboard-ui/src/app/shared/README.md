@@ -20,9 +20,20 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   selection state: consumers project their own `<a routerLink>`/`<button>` tab elements marked
   with `qdTab [selected]="…"` and their own click/routerLink; `qd-tabs` supplies the
   `role="tablist"` wrapper and RTL-aware roving-tabindex keyboard nav (Arrow/Home/End) over
-  them. See `UI_STYLE_SYSTEM.md` §17.
+  them. Phase 3 added: a per-instance `instanceId` on the tablist, a generated per-tab `id`, an
+  optional `panelId`/`disabledReasonId` pair, count-driven layout (`qd-tabs--segmented` at three
+  tabs or fewer, `qd-tabs--scrollable` at four or more — D30), and selected-tab
+  scroll-into-view. The generated attributes are **fallbacks applied in `ngAfterViewInit` and only
+  when the element carries none** — `abwab-move-picker` and `access-admin-page` bind their own
+  `id`/`aria-controls`, and a host binding would have removed theirs. See `UI_STYLE_SYSTEM.md`
+  §17 and §20.1.
 - `ui/chip/` — `qd-chip`, the one selectable/informational chip (button or anchor, optional
-  trailing count). See `UI_STYLE_SYSTEM.md` §17.
+  trailing count) with an optional `variant` (`filter` / `taxonomy` / `alias`; `plain` default adds
+  no class, so existing call-sites are untouched). It owns the **interactive** chip families only:
+  static lifecycle, membership and count badges have no interaction and are semantic classes
+  (`.qd-badge--lifecycle-*`, `.qd-badge--membership-owner`, `.qd-count-chip` in `_components.scss`)
+  with no Angular owner — F17 keeps lifecycle and Owner membership separate, and Unknown never maps
+  to Disabled. See `UI_STYLE_SYSTEM.md` §17 and §20.5.
 - `ui/context-menu/` — `qd-context-menu`, the one row/node context-menu shell (Slice A, both
   Abwab pages' row menus). Owns a `position: fixed; inset: 0` backdrop and a positioned
   `role="menu"` box (`[x, y]` via a `position` input), both keyed off the shared `--qd-z-*`
@@ -128,7 +139,11 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   change resizes the dialog or shifts the header; the count sits outside the heading and
   both live regions (it would otherwise double-announce) and is wired via
   `aria-describedby`. See `.architecture/UI_STYLE_SYSTEM.md` §17 for the full contract.
-- `ui/confirm-dialog/` — `qd-confirm-dialog`, the house confirmation dialog. Body content is
+- `ui/confirm-dialog/` — `qd-confirm-dialog`, the house confirmation dialog, now a **thin adapter
+  over `qd-modal-shell` `variant="confirm"`** (Phase 3). Its selector, inputs, outputs and
+  `testIdPrefix`-derived test ids are unchanged; the shell supplies the backdrop, the `30rem`
+  named width, the single body scroller, the focus trap, the scroll lock and the dismissal routes,
+  and the adapter keeps `role="alertdialog"`, its two actions and its copy. Body content is
   projected, so a consumer composes whatever the decision needs while the primitive keeps the
   framing, the roles, the focus trap and the dismissal routes. It does **not** replace an
   authoring-modal shell: those own a form and its dirty state. Two invariants that are not
@@ -142,7 +157,12 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 - `ui/modal-scroll-lock/` — `qdModalScrollLock` directive + `ScrollLockService`, the
   **reference-counted** body scroll lock (Feature 029): overlapping layers (responsive
   drawer + global overlay) each acquire/release; the body unlocks only when the last
-  holder releases. Never lock `document.body` directly. `ScrollLockService.isLocked` (Slice
+  holder releases. Never lock `document.body` directly. Since Phase 3 the lock is held by
+  **token**, not by a bare counter: `hold()` returns an idempotent `ScrollLockHandle`, so a layer
+  that releases twice (an explicit close followed by destroy) can no longer decrement a *different*
+  layer's hold and unlock the page under a still-open dialog. `acquire()`/`release()` remain as the
+  legacy anonymous LIFO pair for the call-sites that still use them
+  (`detail-modal-shell.component.ts`, `top-navbar`), with byte-identical behaviour. `ScrollLockService.isLocked` (Slice
   B2, T904) is a public signal derived from the same lock count — `.qd-navbar`
   (`core/layout/top-navbar/`) reads it to go `[inert]`/`[aria-hidden]` while any modal dialog
   holds the lock, so this is the one piece of state the chrome-inert rule reads; do not add a
@@ -153,7 +173,80 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   directive in its template, so the grep alone under-reports by one. Note that
   `qd-confirm-dialog` applies it, so **every confirm in the app** is a holder and makes the
   chrome inert.
-- `ui/pagination/` — reusable pagination component, windowing helpers, labels, and tests.
+- `ui/result-list/` — `qdResultList` + `qdResultItem` (F10), the native-role directive pair for
+  every non-table result collection: `role="list"`/`role="listitem"` (D25), an optional
+  `listVariant` (`linked` / `display-only` / `master` / `event` / `quran-result`), the logical
+  selected thread through `.qd-is-selected` (D26), `aria-current` for the selected master row, and
+  optional `aria-posinset`/`aria-setsize`. It adds **no** `tabindex`: a row is focusable only when
+  the consumer made it a real control (§8.1 disclosure ladder). Quran result rows keep their own
+  renderer inside this frame (G11).
+- `ui/details-workspace/` — `qd-details-workspace` (F11), the projected details anatomy: identity,
+  metadata, actions, an optional tab zone, a permanently mounted polite status slot, exactly one
+  body scroller, and an optional footer. It carries **no** feature data — every zone is
+  `<ng-content>` — and it namespaces `identityId`, `statusId`, `tabId(key)` and `panelId(key)` per
+  instance (D31) so an inline panel and the global overlay body cannot collide. `layout="no-selection"`
+  renders the designed prompt instead of collapsing the split.
+- `ui/modal-shell/` — `qd-modal-shell` (F14 base), the one dialog shell: four named widths
+  (`confirm` 30rem / `form` 38rem / `wide` 52rem / `overlay` 46rem — D48, and no fifth), a Compact
+  full-bleed `94dvh` sheet, shell-owned padding with header and footer outside the single body
+  scroller (D49), a CDK focus trap, `dismissed` carrying its route
+  (`close` / `escape` / `backdrop`) so a dirty consumer can refuse a route without losing the close
+  button, focus return to the opener, and a reference-counted scroll-lock hold released on close
+  **and** on destroy. Marking the route content behind it inert stays with the app shell
+  (`app.ts` reads the overlay state; the navbar reads `ScrollLockService.isLocked`) — this shell
+  does not reach outside itself to set `inert`. Four rules are not visible from the call site:
+  - **Escape is consumed while the shell is topmost, dismissing or not.** `dismissOnEscape="false"`
+    refuses the *route*, not the *key*: the handler still stops propagation and prevents the default,
+    or the key reaches an ancestor drawer (`(keydown.escape)`) or the navbar's document-level
+    listener and closes the wrong surface.
+  - **Backdrop dismissal needs the whole pointer sequence on the backdrop.** The press target is
+    recorded on `pointerdown`/`mousedown` and compared with the click target, so a drag-select that
+    began inside the body and was released over the backdrop does not discard the draft. A
+    programmatic click with no recorded press (keyboard, tests) still dismisses.
+  - **The shell owns which trap is enabled, not the consumer.** Open shells register in an internal
+    stack and only the topmost enables its `cdkTrapFocus`, so nesting a confirm inside an authoring
+    modal cannot leave two live traps. `[trapFocus]="false"` is the explicit suspend switch a
+    consumer uses when it hosts a nested decision of its own (the shape the Abwab
+    `[cdkTrapFocus]="deleteConfirmId() === null"` dialogs migrate onto in Phase 7).
+  - **Focus return has exactly one owner — this shell.** It captures the pre-open `activeElement`,
+    drives initial focus through the trap itself, and restores **synchronously** on close and on
+    destroy-while-open. `cdkTrapFocusAutoCapture` is deliberately absent: it would restore a second
+    time on its own schedule. A consumer that wants to place focus itself sets `[returnFocus]="false"`
+    and owns the placement end to end.
+- `ui/floating-layer/` — `qdFloatingLayer` (F15 base) plus the pure `floating-layer-placement.ts`
+  helper. One keyboard script for `action-menu` / `select-listbox` / `searchable-picker` /
+  `disclosure-popover` / `tooltip` (D33): Escape closes and returns focus, Arrow/Home/End walk the
+  **enabled** items with scroll-into-view, type-ahead accumulates inside a 600ms window, Tab closes
+  without preventing the move, and an outside pointer press closes without stealing focus. Items are
+  found by ARIA role (`menuitem`/`option`), never by a shared option model, so each feature keeps its
+  own hierarchy. `placeFloatingLayer()` is pure and unit-pinned per branch: block-axis flip, inline
+  clamp, `min(60vh, 24rem)` cap, `position: fixed` — never document flow (D34). The computed
+  coordinate is written to `left` because a viewport coordinate has no logical form; the *choice* of
+  edge is direction-aware, which is what RTL needs. Three rules that are easy to "simplify" wrongly:
+  - **One option model per variant** (catalog F15 §16). `action-menu` roves real DOM focus and never
+    writes `aria-activedescendant`; `select-listbox` and `searchable-picker` keep DOM focus on the
+    layer (or on the picker's own field) and move an `aria-activedescendant` cursor instead, cleared
+    when the layer closes or its variant changes. Running both at once is what made a picker's search
+    field unreachable.
+  - **Key handling is scoped by event target.** Inside a text input, textarea or `contenteditable`,
+    printable keys, Home/End and the caret arrows belong to the field; only ArrowUp/ArrowDown drive
+    the option cursor. Space is the same rule read from the other side: it extends a type-ahead
+    already in progress, and otherwise belongs to the focused item (APG), so it can still activate a
+    menu item. An empty or whitespace-only prefix never matches — `startsWith('')` matches
+    everything.
+  - **The rem half of the cap is a rem.** `floatingMaxBlockSize()` takes the root font size and the
+    directive supplies the live one (`resolveRootFontSize()`), so the inline `max-block-size` and the
+    `--qd-floating-max-block-size` token cannot disagree at a non-16px root.
+- `ui/pagination/` — reusable pagination component, windowing helpers, labels, and tests. Its
+  geometry is fixed in every state (D42): the jump input is always
+  `--qd-pagination-jump-inline-size` (`6rem`) and no longer widens on focus, Go is **always
+  mounted** and only toggles `disabled` (D43), and Compact controls take
+  `--qd-hit-target-min` (D45). `jumpSubmittable` is deliberately "parses to a number", not "is in
+  range": an out-of-range page must stay submittable, because submitting is what surfaces the
+  reserved-line range error instead of a dead control. Ids for the jump input, its error line and
+  its live region are per instance (D44), and every page change announces the new **result range**
+  through that instance's own polite region. `Load more` (Access audit) is a separate capability and
+  gets none of this API.
 - `ui/placeholder-page/` — generic placeholder page that reads its title from route data.
 - `ui/safe-html/` — HTML sanitizing pipe for trusted API-backed markup display.
 - `url/` — deep-link helpers; today `deep-link-href.ts` builds href strings from path + query params.
@@ -181,6 +274,13 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   the final shape of what it replaces; refreshing adds nothing but its 2px track; empty and error
   own their content region; notice is zero-height until it speaks. A shared owner that starts
   reserving for a concept it does not own is how the ~6.5rem blank Access band came back.
+- Every dialog resolves to one of the four `qd-modal-shell` widths or the Compact sheet. A
+  call-site may not introduce a fifth geometry; `npm run check:golden-ui` reads
+  `modal-shell.component.scss` and fails when the set of `.qd-modal-shell--*` width classes is
+  anything other than `confirm/form/wide/overlay`.
+- A shared owner that generates an id **falls back** rather than overwrites. `qdTab` writes its
+  generated `id`/`aria-controls` only when the element has none, because two features already bind
+  their own and a host binding resolving to `null` removes a template-set attribute.
 - `safe-html` sanitizes HTML; it does not bypass Angular security.
 - `ui/skeleton/grid-template-columns.ts` splits a `grid-template-columns` string on top-level
   whitespace only (`depth === 0`, `grid-template-columns.ts:22`), so a parenthesised function such

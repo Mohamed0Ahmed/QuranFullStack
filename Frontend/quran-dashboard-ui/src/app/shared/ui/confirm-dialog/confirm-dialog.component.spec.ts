@@ -148,6 +148,24 @@ describe('ConfirmDialogComponent', () => {
     expect(confirmButton().classList).not.toContain('qd-btn-primary');
   });
 
+  // Phase 3 moved the framing onto QdModalShellComponent. The confirm keeps its alert-dialog
+  // semantics and its own copy, and gains the shell's named 30rem geometry instead of a local one.
+  it('renders through the named confirm shell rather than a local modal box', () => {
+    expect(dialog().getAttribute('data-qd-modal-variant')).toBe('confirm');
+    expect(dialog().classList).toContain('qd-modal-shell--confirm');
+    expect(dialog().querySelector('[data-testid="qd-confirm-dialog-close"]')).toBeNull();
+  });
+
+  it('keeps the projected decision copy inside the shell body and the two actions in its footer', () => {
+    const body = query('qd-confirm-dialog-body')!;
+    const footer = query('qd-confirm-dialog-footer')!;
+
+    expect(body.querySelector('[data-testid="projected-body"]')).toBeTruthy();
+    expect(footer.contains(confirmButton())).toBe(true);
+    expect(footer.contains(cancelButton())).toBe(true);
+    expect(body.contains(confirmButton())).toBe(false);
+  });
+
   describe('testIdPrefix', () => {
     const SUFFIXES = ['', '-backdrop', '-confirm', '-cancel'] as const;
 

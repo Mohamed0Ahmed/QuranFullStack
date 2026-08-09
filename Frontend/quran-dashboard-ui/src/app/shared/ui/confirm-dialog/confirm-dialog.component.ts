@@ -1,14 +1,11 @@
-import { A11yModule } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, ElementRef, effect, input, output, viewChild } from '@angular/core';
 
-import { ModalScrollLockDirective } from '../modal-scroll-lock/modal-scroll-lock.directive';
-
-let nextDialogId = 0;
+import { QdModalShellComponent } from '../modal-shell/modal-shell.component';
 
 @Component({
   selector: 'qd-confirm-dialog',
   standalone: true,
-  imports: [A11yModule, ModalScrollLockDirective],
+  imports: [QdModalShellComponent],
   templateUrl: './confirm-dialog.component.html',
   styleUrl: './confirm-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,8 +22,6 @@ export class ConfirmDialogComponent {
 
   readonly confirmed = output<void>();
   readonly cancelled = output<void>();
-
-  protected readonly titleId = `qd-confirm-dialog-title-${nextDialogId++}`;
 
   private readonly cancelButton = viewChild<ElementRef<HTMLButtonElement>>('cancelButton');
 

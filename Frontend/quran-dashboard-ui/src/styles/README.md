@@ -91,7 +91,15 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   `.qd-context-menu__item` / `--danger` (`.architecture/UI_STYLE_SYSTEM.md` §17) — the item
   styling `shared/ui/context-menu/`'s `qd-context-menu` projects its content into; global
   because a rule scoped to the primitive's own stylesheet cannot reach content the *consumer*
-  projects via `<ng-content>` (the `.qd-tabs__tab` precedent).
+  projects via `<ng-content>` (the `.qd-tabs__tab` precedent). Since Plan 7 Phase 3 it also holds
+  the shared interaction vocabulary (`.architecture/UI_STYLE_SYSTEM.md` §20): the F08 `.qd-toolbar`
+  zones, the F10 `.qd-result-list` / `.qd-result-item` frame, the F11 `.qd-details__*` anatomy, the
+  F15 `.qd-floating-layer*` surface and item states (including the one shared danger item
+  treatment), and the F17 static badges `.qd-count-chip`, `.qd-badge--lifecycle-*` and
+  `.qd-badge--membership-owner` — static because they carry no interaction and therefore need no
+  Angular owner. The `.qd-tabs*` family gained the count-driven `--segmented` / `--scrollable`
+  layouts and the Golden selected pill; `qd-modal-shell`'s own geometry lives in its component
+  stylesheet, not here, because nothing projects into it from outside.
 - `_utilities.scss` — small utility classes such as screen-reader-only, flex, spacing, and stable
   scrollbars. Also holds `.qd-ltr-isolate` (the only sanctioned Latin island — applied to the value
   element, never a container), `.qd-hit-target` (expands a small control to the 44px
@@ -102,7 +110,10 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   entity names") — the one flexible-with-ellipsis rule for a truncatable entity-name column;
   pair it with `--qd-name-min-inline-size` (`_tokens.scss`) for a reserved minimum.
 - `_words-explorer-layout.scss` — shared layout pieces for words explorer intro/toolbar surfaces.
-  (The page-frame rule that used to live here moved to `_layout.scss` — see above.)
+  (The page-frame rule that used to live here moved to `_layout.scss` — see above.) The
+  `uw-toolbar-rise` entrance animation and its `--kinetic` modifier are gone (D19: motion is state
+  feedback only). One Words template still carries the now-inert class name; it is removed with the
+  Word Types migration in Phase 5.
   Its `--qd-explorer-chrome-block-size` (`14rem` at `:77`, `12rem` in the wide-desktop override
   at `:143`) is a hand-measured viewport budget consumed by
   `calc(100dvh - var(--qd-explorer-chrome-block-size))` (`:116,145`): it includes the navbar's
@@ -112,7 +123,11 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   doctrine of the contrast table below.
 - `_words-explainer.scss` — shared visual primitives for the Words explainer hero example regions
   (global, not component-scoped, because pages project their own example markup via `<ng-content>`).
-- `_explorer-tables.scss` — responsive shared table/list rules for explorer pages.
+- `_explorer-tables.scss` — responsive shared table/list rules for explorer pages. The selected row
+  is marked by an absolutely positioned `::before` thread on `inset-inline-start`, not the former
+  `box-shadow: inset -2px 0` (D26): a physical inset is wrong in RTL, and a real
+  `border-inline-start` would have shifted the body grid 2px out of alignment with the header row,
+  which is a separate element. The pseudo-element is out of flow, so it creates no grid item.
 - `_explorer-detail-lists.scss` — shared detail-list layouts for roots/lemmas/stems/word-types panels.
 
 ## Import order

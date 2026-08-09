@@ -5,7 +5,7 @@ import { getTestBed, TestBed } from '@angular/core/testing';
 import { QdTabsComponent, QdTabsLayout } from './tabs.component';
 import { QdTabDirective } from './tab.directive';
 
-type TabKey = 'a' | 'b' | 'c';
+type TabKey = 'a' | 'b' | 'c' | 'd';
 
 @Component({
   selector: 'qd-test-tabs-host',
@@ -14,9 +14,12 @@ type TabKey = 'a' | 'b' | 'c';
   template: `
     <div [attr.dir]="dir()">
       <qd-tabs ariaLabel="أوضاع العرض" [layout]="layout()">
-        <button qdTab type="button" [selected]="active() === 'a'" data-testid="tab-a">أ</button>
+        <button qdTab type="button" panelId="synth-panel-a" [selected]="active() === 'a'" data-testid="tab-a">أ</button>
         <button qdTab type="button" [selected]="active() === 'b'" data-testid="tab-b">ب</button>
         <button qdTab type="button" [selected]="active() === 'c'" data-testid="tab-c">ج</button>
+        @if (fourth()) {
+          <button qdTab type="button" [selected]="active() === 'd'" data-testid="tab-d">د</button>
+        }
       </qd-tabs>
     </div>
   `,
@@ -25,7 +28,47 @@ class TestTabsHostComponent {
   readonly active = signal<TabKey>('b');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly layout = signal<QdTabsLayout>('inline');
+  readonly fourth = signal(false);
 }
+
+@Component({
+  selector: 'qd-test-two-tablists-host',
+  standalone: true,
+  imports: [QdTabsComponent, QdTabDirective],
+  template: `
+    <qd-tabs ariaLabel="اللوحة المضمّنة">
+      <button qdTab type="button" [selected]="true" data-testid="inline-tab">أ</button>
+    </qd-tabs>
+    <qd-tabs ariaLabel="اللوحة المنبثقة">
+      <button qdTab type="button" [selected]="true" data-testid="overlay-tab">أ</button>
+    </qd-tabs>
+    <qd-tabs ariaLabel="لوحة تملك معرّفاتها">
+      <button
+        qdTab
+        type="button"
+        id="synth-owned-tab"
+        aria-controls="synth-owned-panel"
+        [selected]="true"
+        data-testid="owned-tab"
+      >أ</button>
+    </qd-tabs>
+  `,
+})
+class TestTwoTablistsHostComponent {}
+
+@Component({
+  selector: 'qd-test-tab-neighbour-host',
+  standalone: true,
+  imports: [QdTabsComponent, QdTabDirective],
+  template: `
+    <qd-tabs ariaLabel="لوحة">
+      <button qdTab type="button" [selected]="true" data-testid="neighbour-tab-a">أ</button>
+      <button qdTab type="button" data-testid="neighbour-tab-b">ب</button>
+      <button type="button" data-testid="tab-adjacent">SYNTH_ADJACENT</button>
+    </qd-tabs>
+  `,
+})
+class TestTabNeighbourHostComponent {}
 
 describe('QdTabsComponent', () => {
   beforeEach(() => {
@@ -138,6 +181,28 @@ describe('QdTabsComponent', () => {
     expect(document.activeElement).toBe(tabB);
   });
 
+  // The handler is bound on the host, so every keydown bubbling through it arrives here. Only the
+  // ones raised on a tab of this tablist may be answered — anything else keeps its own key model.
+  it('ignores arrow and Home/End keys raised on a control that is not one of its tabs', () => {
+    getTestBed().resetTestingModule();
+    TestBed.configureTestingModule({ imports: [TestTabNeighbourHostComponent] });
+    const fixture = TestBed.createComponent(TestTabNeighbourHostComponent);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const adjacent = root.querySelector('[data-testid="tab-adjacent"]') as HTMLElement;
+    adjacent.focus();
+
+    for (const key of ['ArrowRight', 'ArrowLeft', 'Home', 'End']) {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      adjacent.dispatchEvent(event);
+      fixture.detectChanges();
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(adjacent);
+    }
+  });
+
   it('applies no transform to a tab in its resting or selected state', () => {
     const fixture = render();
     const root = fixture.nativeElement as HTMLElement;
@@ -159,5 +224,61 @@ describe('QdTabsComponent', () => {
 
     expect(tablist.classList.contains('qd-tabs--grid')).toBe(true);
     expect(tablist.getAttribute('aria-orientation')).toBe('horizontal');
+  });
+
+  // D31: an inline detail panel and the global overlay each mount a tablist; literal ids would make
+  // one panel's aria-controls point at the other's tab.
+  it('generates a per-instance id for every tab, and never overwrites one the consumer owns', async () => {
+    getTestBed().resetTestingModule();
+    TestBed.configureTestingModule({ imports: [TestTwoTablistsHostComponent] });
+    const fixture = TestBed.createComponent(TestTwoTablistsHostComponent);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const inline = root.querySelector('[data-testid="inline-tab"]')!.getAttribute('id');
+    const overlay = root.querySelector('[data-testid="overlay-tab"]')!.getAttribute('id');
+    expect(inline).toBeTruthy();
+    expect(inline).not.toBe(overlay);
+
+    const owned = root.querySelector('[data-testid="owned-tab"]')!;
+    expect(owned.getAttribute('id')).toBe('synth-owned-tab');
+    expect(owned.getAttribute('aria-controls')).toBe('synth-owned-panel');
+
+    const tablists = Array.from(root.querySelectorAll('[role="tablist"]')).map((el) => el.id);
+    expect(new Set(tablists).size).toBe(tablists.length);
+  });
+
+  it('wires a tab to the panel it controls when the consumer names one', () => {
+    const fixture = render();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="tab-a"]')?.getAttribute('aria-controls')).toBe('synth-panel-a');
+    expect(root.querySelector('[data-testid="tab-b"]')?.hasAttribute('aria-controls')).toBe(false);
+  });
+
+  // D30: layout is decided by the tab count, never by an accidental CSS wrap into a second row.
+  it('is segmented at three tabs and becomes a scrolling row at four', () => {
+    const fixture = render();
+    const tablist = (fixture.nativeElement as HTMLElement).querySelector('[role="tablist"]')!;
+
+    expect(tablist.classList.contains('qd-tabs--segmented')).toBe(true);
+    expect(tablist.classList.contains('qd-tabs--scrollable')).toBe(false);
+
+    fixture.componentInstance.fourth.set(true);
+    fixture.detectChanges();
+
+    expect(tablist.classList.contains('qd-tabs--segmented')).toBe(false);
+    expect(tablist.classList.contains('qd-tabs--scrollable')).toBe(true);
+  });
+
+  it('leaves an explicit grid layout out of the count-driven choice', () => {
+    const fixture = render();
+    fixture.componentInstance.layout.set('grid');
+    fixture.detectChanges();
+    const tablist = (fixture.nativeElement as HTMLElement).querySelector('[role="tablist"]')!;
+
+    expect(tablist.classList.contains('qd-tabs--grid')).toBe(true);
+    expect(tablist.classList.contains('qd-tabs--segmented')).toBe(false);
+    expect(tablist.classList.contains('qd-tabs--scrollable')).toBe(false);
   });
 });

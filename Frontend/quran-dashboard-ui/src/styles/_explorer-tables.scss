@@ -142,9 +142,22 @@
   border-bottom: 1px solid var(--qd-border);
 }
 
+.qd-explorer-table__row {
+  position: relative;
+}
+
 .qd-explorer-table__row.qd-is-selected {
   background: var(--qd-selected-bg);
-  box-shadow: inset -2px 0 0 var(--qd-accent);
+}
+
+.qd-explorer-table__row.qd-is-selected::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: var(--qd-green-thread-size);
+  background: var(--qd-green-thread);
+  pointer-events: none;
 }
 
 .qd-explorer-table__row:hover:not(.qd-is-selected, .qd-explorer-table__row--loading) {
