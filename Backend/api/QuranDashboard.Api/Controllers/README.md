@@ -63,7 +63,7 @@ and the `ApiResponse<T>` envelope; application handlers own use-case logic.
   already has a live child named like any of the root's direct children fails the whole batch with
   one `409` naming every colliding **(target, child)** pair.
   None of the Abwab controllers
-  carries `///` XML docs (root `CLAUDE.md` comment policy — see "Generated
+  carries `///` XML docs (`CODING_PRINCIPLES.md` §Comment Policy — see "Generated
   contract artifacts" below for what that means for the exported spec).
 - `Access/` — `api/access/me`; the authenticated caller's provisioned user. Carries `[Authorize]`
   (authenticated-only) and get-or-create provisions the local user on first login from provider
@@ -160,8 +160,9 @@ be a bulk-writes controller, because the bulk pair is the only subset with its o
   `Frontend/quran-dashboard-ui/openapi/swagger.json` by `Backend/scripts/export-swagger`
   (Swashbuckle CLI; no running server). Controller (endpoint) XML docs, where present, are the source of
   the endpoint descriptions in that spec; response DTO schemas are intentionally undocumented (bare typed
-  schemas). Keep the controller docs accurate where they exist. **Resolved conflict:** the root `CLAUDE.md`
-  comment policy (no `///` XML docs on controllers) wins over this convention where the two disagree. As of
+  schemas). Keep the controller docs accurate where they exist. **Resolved conflict:** the
+  `CODING_PRINCIPLES.md` §Comment Policy (no `///` XML docs on controllers) wins over this
+  convention where the two disagree. As of
   the Abwab slice **no controller in the tree carries `///` at all** — `78d70f04` stripped the last of them
   — so every exported `summary`/`description` is blank, not just `Abwab/`'s. This is accepted, not a defect:
   there is no external contract consumer, and the frontend generates payload types from the spec, never

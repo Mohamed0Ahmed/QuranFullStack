@@ -47,8 +47,8 @@ These live at the workspace root and apply across Backend + Frontend.
 | `TESTING_STRATEGY.md` | Single source of truth for **test selection, verification depth, execution lanes, slow data-pipeline triggers, and the phase/milestone/PR/release gates**. Backend lanes are arguments to `Backend/scripts/test-backend` (its §3), Frontend lanes are `npm run test:*` scripts (its §4), and the execution-trigger matrix (its §5) is the one authoritative changed-scope→lane mapping. Selection is by lane, never by a hand-written `FullyQualifiedName` filter or `--include` glob (its §1); the former Tier A–E labels are superseded, only `tier-b` surviving as a lane name. Carries **no test counts and no durations** by rule (its §1). Records one absence that changes what counts as evidence — **no CI** (its §8) — and one active gate agents forget: the **route-smoke gate**, required for route/contract/auth/middleware/binding changes (its §6), whose canonical *data* tier is the separate `canonical-data` lane. The browser E2E layer is **opt-in and never a required gate** (its §11). | Every agent/human before selecting or running tests; `engineering-review` (verification sufficiency); `test-guard` (evidence sufficiency); `pr-context-prep` (evidence section). | Whenever tests are selected, run, or verification evidence is judged. |
 | `PRODUCT.md` | Product strategy & context: register, users (Arabic-speaking admins/supervisors/teachers), product purpose (manage Quran research data, review ayah links, organize gates أبواب, publish), principles, anti-references. | Anyone doing user-facing/product or UI work. | Frontend/UX/product decisions and any backend change that affects user-facing behavior. |
 | `DESIGN.md` | Visual/design direction — the "Quiet Scriptorium" north star: Arabic-first RTL, restrained parchment/ink palette, calm typography; explicitly rejects generic SaaS, kitschy religious decor, gamified UI, enterprise greige. Currently a **seed/direction** doc (see §8). | Anyone doing UI/visual work. | Frontend visual/design tasks. For concrete tokens/classes use `UI_STYLE_SYSTEM.md`. |
-| `AGENTS.md` | Workspace entrypoint for non-Claude agents (Codex/OpenCode/etc.). Points to project instruction files, coding principles, the clean-code & test-code self-checks, and design context. | Non-Claude coding agents. | Loaded at session start for those agents. |
-| `CLAUDE.md` | Same role as `AGENTS.md`, for Claude. Points to `CODING_PRINCIPLES.md`, the self-checks, and design context. | Claude Code. | Loaded at session start. |
+| `AGENTS.md` | Sol/Codex-native workspace router with the universal safety kernel, native area routes, nearest-README discovery, and trigger-scoped pointers. It does not route through Claude entrypoints. | Sol/Codex coding agents. | Loaded at session start for those agents. |
+| `CLAUDE.md` | Claude-native workspace router with the equivalent universal safety kernel, Claude area routes, nearest-README discovery, and trigger-scoped pointers. It does not route through Sol/Codex entrypoints. | Claude Code. | Loaded at session start. |
 
 **What should NOT be duplicated into these files:**
 
@@ -119,7 +119,7 @@ set referenced in §5 (`specify`, `clarify`, `plan`, `tasks`, `analyze`, `implem
 
 - **What it is:** vendored deep clean-code reference material — `naming-and-functions.md`, `comments-and-formatting.md`, `solid.md`, `dry-kiss-yagni.md`, `ai-failure-modes.md`, `review-checklist.md`, `sources.md`.
 - **Status:** **NOT a separate skill** in this workspace — deliberately reference-only, to avoid trigger collision with `engineering-review`. (See §7.)
-- **Used by:** engineering-review (for deep code-quality review) and the **clean-code self-check before delivery** in `CLAUDE.md`/`AGENTS.md`.
+- **Used by:** engineering-review for deep code-quality review. Ordinary pre-delivery self-checks route to the implicated headings of `CODING_PRINCIPLES.md`, not this full pack.
 - **Project overrides:** C#/.NET `I`-prefixed interface names and the `ApiResponse` / `API_GUIDELINES.md` API boundary win over the generic guidance (recorded in `CODING_PRINCIPLES.md`).
 
 ### 2.2 `test-guard` — test-code quality (separate, narrow skill)
@@ -206,8 +206,8 @@ and what is **reference-only**. Use this to know when each item actually comes i
 
 | Item / Path | Category | Auto or Manual? | Trigger / When used | Who reads it | Notes |
 |-------------|----------|-----------------|---------------------|--------------|-------|
-| `CLAUDE.md` | Entry-point / auto-loaded context | **Auto** | Session start (Claude) | Claude Code | Points to principles, the clean-code & test-code self-checks, design context. |
-| `AGENTS.md` | Entry-point / auto-loaded context | **Auto** | Session start (non-Claude agents) | Codex / OpenCode / etc. | Mirror of `CLAUDE.md` for other agents. |
+| `CLAUDE.md` | Entry-point / auto-loaded context | **Auto** | Session start (Claude) | Claude Code | Claude-native router: universal kernel, Claude area entrypoints, nearest README, and trigger-scoped sources. |
+| `AGENTS.md` | Entry-point / auto-loaded context | **Auto** | Session start (Sol/Codex) | Sol / Codex | Sol/Codex-native router: equivalent kernel, native area entrypoints, nearest README, and trigger-scoped sources; not a mirror of the Claude file. |
 | `CODING_PRINCIPLES.md` | Required project principle | **Mandated read** (not auto-injected) | Before any implementation or review | Every agent; **always** read by `engineering-review` & `backend-structure-review` | Core principles incl. **Quranic Data Safety**. Required by the entry-point files. |
 | `TESTING_STRATEGY.md` | Required project policy | **Mandated read** (not auto-injected) | Before selecting/running tests or judging verification evidence | Every agent; `engineering-review`, `test-guard`, `pr-context-prep` | Lane-based test execution (`Backend/scripts/test-backend`, `npm run test:*`), the execution-trigger matrix, pipeline-trigger rules, release canonical gate. Controls test *selection*; test *quality* stays with `test-guard`. |
 | `PRODUCT.md` | Conditional architecture doc | **Conditional** | Only when product / user-facing behavior is involved | Anyone doing product/UX/UI work | Product context (not under `.architecture`). **Not needed for backend-only work unless user-facing behavior is affected.** |
@@ -230,7 +230,7 @@ and what is **reference-only**. Use this to know when each item actually comes i
 
 ### Practical rule of thumb
 
-- **Normal implementation:** follow `AGENTS.md`/`CLAUDE.md` + `CODING_PRINCIPLES.md` + the relevant architecture docs for the area you touch.
+- **Normal implementation:** follow your native root router, its native area router when applicable, the nearest relevant README, and only the exact `CODING_PRINCIPLES.md` heading or specialist source whose trigger matches.
 - **Completed-implementation review:** ask for `engineering-review`.
 - **Backend folder/layer uncertainty:** ask for `backend-structure-review`.
 - **Test-only review:** ask for `test-guard`.
@@ -290,11 +290,11 @@ Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules
 ### B. During implementation
 
 - Implement **by phase/chunk**, not all tasks at once (see §7).
-- Follow `AGENTS.md`/`CLAUDE.md` + `CODING_PRINCIPLES.md`.
+- Follow your native root and area routers, then read the nearest relevant README and only the triggered headings of `CODING_PRINCIPLES.md`.
 - Select lanes per `TESTING_STRATEGY.md` §5 — the narrowest lane covering the changed scope for ordinary phases; do not run full or pipeline lanes unless its triggers require them.
 - Read the Backend/Frontend `.architecture/` docs **for the area you're touching** (§3, §4).
-- Run the **clean-code self-check before delivery** (in `CLAUDE.md`/`AGENTS.md`; backed by `clean-code-guard` references).
-- If writing tests, run the **test-code self-check** (in `CLAUDE.md`/`AGENTS.md`; backed by `test-guard`).
+- Before delivery, read `CODING_PRINCIPLES.md` §12 and the production-code headings already implicated; do not load the full `clean-code-guard` pack or run a formal review unless requested.
+- If writing tests, use the agent's native `test-guard` Skill and its stack-relevant reference.
 
 ### C. After implementing a phase
 

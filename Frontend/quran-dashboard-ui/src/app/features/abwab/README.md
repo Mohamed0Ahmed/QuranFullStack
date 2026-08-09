@@ -1170,8 +1170,9 @@ outlive its line numbers, and every previous set of numbers in it had drifted.
 ## Related
 
 - Planning history: the feature's plans and the UX slice series that followed were swept per the
-  planning-artifact lifecycle rule (`CLAUDE.md`) and live in git history. **This file is the
-  current record** — it is where a decision those plans made should be read from now.
+  planning-artifact lifecycle rule (`docs/README.md` §Lifecycle) and live in git history.
+  **This file is the current record** — it is where a decision those plans made should be read
+  from now.
 - Design contracts: the static comps this feature was drawn against were adopted and then deleted;
   the shipped tree, relations modal, and templates workshop are the contract now, with the token
   and component vocabulary in `.architecture/UI_STYLE_SYSTEM.md`.

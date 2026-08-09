@@ -4,9 +4,10 @@
 
 This file is the single source of truth for **test selection, verification depth, execution
 lanes, slow data-pipeline triggers, and the phase / milestone / review / PR / release
-gates** across the whole monorepo (Backend + Frontend). The six entrypoints (`AGENTS.md`,
-`CLAUDE.md`, and their Backend and Frontend counterparts) carry the short policy and defer
-here; the commands and the trigger matrix live in this file and nowhere else.
+gates** across the whole monorepo (Backend + Frontend). Each agent's native root and area
+entrypoints route here when test selection, execution, or reporting is triggered; they do not
+carry a second test policy. The commands and the trigger matrix live in this file and nowhere
+else.
 
 When any other instruction file, skill, README, or workflow conflicts with this
 strategy about *which tests to run and when*, **this strategy controls test selection**

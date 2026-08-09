@@ -171,9 +171,6 @@ not change, the rule is scoped to the conditional read:
   `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md` —
   read it before adding a second instance or a second conditional read; it is not restated here.
 
-See also section 10 (Localization and Messages) and the localization rules in
-`AGENTS.md` / `CLAUDE.md`.
-
 ## 6. Error Handling
 
 - Do not catch exceptions in every controller.

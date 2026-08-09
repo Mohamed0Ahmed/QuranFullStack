@@ -111,5 +111,11 @@ exists; do not scale this service horizontally until one does.
 ## Invariants
 
 - Word identity keys on **clean imlaei-simple** (display stays Uthmani).
-- Do not hand-write EF migrations or edit snapshots (see `AGENTS.md` → EF Core Migrations).
+- EF migrations are generated with EF tooling only. Add a migration only when explicitly
+  requested, and do not apply one with `dotnet ef database update` without explicit authority.
+- Do not hand-write migration files or manually edit generated migration `.cs`, `.Designer.cs`,
+  or `ModelSnapshot` files except for a clearly documented exceptional fix. For an exception,
+  explain why, list every manually edited file, and report the verification run.
+- After generating a migration, report its name, generated files, build status, applicable test
+  status, and whether the database update was executed or skipped.
 - `resources/` source packages are local/gitignored.

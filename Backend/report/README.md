@@ -4,7 +4,8 @@ This folder is **evidence/reference only**, not the current-truth layer. Reserve
 durable, non-derivable records: audits, reviews, acceptance evidence, data-import outputs,
 diagnostics, database inventory, source-safety checks, and one-off investigations. Current
 truth of a code area lives in the local `README.md` near that code; plans/contracts live in
-`specs/`; "how to work" lives in `AGENTS.md` / `.architecture/*`.
+`specs/`; route through `Backend/CLAUDE.md` for Claude or `Backend/AGENTS.md` for Sol/Codex,
+then load only the triggered `.architecture/*` source.
 
 Do **not** spawn a per-feature report for routine work, and do not recreate the deleted
 feature-report indexes.
@@ -34,11 +35,10 @@ worth less than nothing once it starts being read as current. If you want a revi
 
 ## Lifecycle — a feature deletes its own folder here
 
-Per the planning-artifact lifecycle rule in `CLAUDE.md` §Workspace Path Conventions, a feature's
-`Backend/report/feature-*/` folder is removed in the feature's **last commit before merge**,
-after the engineering review passes. No buffer, no later sweep. Apply the per-file gate from
-`CLAUDE.md` first: a fact not recoverable from code, tests, or a README goes into the nearest
-README with a `file:LINE` from code proving it, and every inbound reference gets repointed.
+The shared deletion timing, per-file preservation gate, evidence-to-test rule, survivor list,
+and inbound-reference gate live in
+[`docs/README.md` §Lifecycle](../../docs/README.md#lifecycle--a-feature-deletes-its-own-planning-artifacts-before-it-merges).
+They apply to `Backend/report/feature-*/`; this README adds only the report-specific exceptions below.
 
 **Evidence worth keeping becomes a test that fails on drift, not a report.** A canonical count,
 source hash, or measured budget with nothing asserting it is a rumour. That rule has exactly one

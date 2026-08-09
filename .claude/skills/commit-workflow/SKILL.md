@@ -35,8 +35,7 @@ they do not inspect independent repositories.
 
 `dev` is the long-lived integration branch; `main` is stable/production and
 protected. Create every new branch off `dev`, and treat `dev` as the base for
-commit ranges and pushes. Never commit directly to `main`. See the "Branching
-workflow" section of the root `CLAUDE.md`.
+commit ranges and pushes. Never commit directly to `main`.
 
 ## Which workflow to use
 
