@@ -3,9 +3,11 @@
 Angular 20 (standalone components + Signals) frontend for the Quran Dashboard
 (المنهج القرآني) — an **Arabic-first (RTL)**, scholarly/calm admin dashboard.
 
-> HOW to work here (rules): `.architecture/FRONTEND_STRUCTURE.md`,
-> `.architecture/UI_STYLE_SYSTEM.md`, `.architecture/API_INTEGRATION_GUIDELINES.md`, plus
-> `../../PRODUCT.md` and `../../DESIGN.md`. This file is the WHAT (current truth + map).
+> HOW to work here (rules): **`FRONTEND_UI_RULES.md` first for any UI-visible change**, then
+> `.architecture/FRONTEND_STRUCTURE.md`, `.architecture/UI_STYLE_SYSTEM.md`,
+> `.architecture/API_INTEGRATION_GUIDELINES.md`, plus `../../PRODUCT.md` and `../../DESIGN.md`.
+> The permanent visual authority is `.architecture/golden-ui/`. This file is the WHAT
+> (current truth + map).
 
 ## Feature map
 
@@ -54,7 +56,7 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
 
 **The lanes:** `npm run test:fast`, `test:feature:access-admin|abwab|auth|dashboard|mushaf|words`,
 `test:authorization`, `test:composition`, `test:shared`, `test:full`, plus `typecheck:app`,
-`typecheck:spec`, `typecheck`, `build:verify`, `check:permission-catalogue`, `check:audit-action-types`,
+`typecheck:spec`, `typecheck`, `build:verify`, `check:golden-ui`, `check:permission-catalogue`, `check:audit-action-types`,
 `generate:permission-codes`, and the composite `test:pre-pr`
 (`check:permission-catalogue` → `check:audit-action-types` → `typecheck` → `build:verify` → `test:full`). `npm run test:gates` is the structural check on the
 lane definitions and is not part of `test:pre-pr` — run it whenever a spec is added, moved,

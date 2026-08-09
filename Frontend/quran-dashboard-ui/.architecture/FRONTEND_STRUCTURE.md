@@ -15,7 +15,9 @@ Read this file **before** adding or changing:
 For visual / style-system rules (colors, themes, tokens, `qd-` classes, RTL),
 read:
 
-- `.architecture/UI_STYLE_SYSTEM.md`
+- `FRONTEND_UI_RULES.md` — the short mandatory rule set, first, for any UI-visible change
+- `.architecture/UI_STYLE_SYSTEM.md` — the mechanics, §18 for the Golden foundation
+- `.architecture/golden-ui/` — the permanent visual authority (contracts + acceptance boards)
 
 For product and visual context:
 
@@ -49,6 +51,13 @@ more.
   logic in route configuration.
 - Follow `UI_STYLE_SYSTEM.md` for all visual styling — compose shared `qd-`
   classes and tokens instead of recreating styles per component.
+- **Cross-cutting UI contracts live as data, not as duplicated constants.** The responsive
+  bands are `src/app/shared/layout/breakpoints.contract.json`, read directly by
+  `shared/layout/breakpoints.ts` and by `tailwind.config.js`, with
+  `src/styles/_breakpoints.scss` as the Sass adapter. `scripts/check-golden-ui-contract.mjs`
+  (`npm run check:golden-ui`) fails the build-time contract when any of the three drift, when a
+  raw pixel threshold appears in a migrated file, or when the `qd-state` adapter gains a
+  call site. Add a contract to that checker rather than to a second constants file.
 - Arabic-first / RTL is the default; respect it in structure and layout.
 - Quranic data safety: never invent Quranic text or labels; show missing data as a
   controlled state, never silently fabricated.

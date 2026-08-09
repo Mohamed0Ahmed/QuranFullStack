@@ -1,0 +1,9 @@
+{
+  "unit": "px",
+  "compactMax": 767,
+  "mediumMin": 768,
+  "mediumMax": 1079,
+  "wideMin": 1080,
+  "widePlusMin": 1440,
+  "widePlusIsStructural": false
+}

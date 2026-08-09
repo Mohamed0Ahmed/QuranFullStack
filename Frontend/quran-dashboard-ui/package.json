@@ -19,6 +19,7 @@
     "test:shared": "npm test -- --configuration=shared",
     "test:full": "npm test",
     "test:gates": "node testing/verify-test-gates.mjs",
+    "check:golden-ui": "node scripts/check-golden-ui-contract.mjs",
     "check:permission-catalogue": "node scripts/check-permission-catalogue.mjs",
     "check:audit-action-types": "node scripts/check-audit-action-types.mjs",
     "typecheck:app": "timeout --signal=TERM --kill-after=30s 10m tsc -p tsconfig.app.json --noEmit",

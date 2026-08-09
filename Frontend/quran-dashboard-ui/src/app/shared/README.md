@@ -4,8 +4,18 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 
 ## What lives here
 
-- `layout/` — shared layout constants; today this is the canonical breakpoint mirror for the app
-  TypeScript side (`breakpoints.ts`).
+- `layout/` — the responsive-band contract. `breakpoints.contract.json` is the **single neutral
+  source** for Compact `≤767` / Medium `768–1079` / Wide `≥1080` / Wide-plus `≥1440`;
+  `breakpoints.ts` imports it and derives every media-query string plus `qdBandForWidth()` and
+  `qdIsWidePlus()`, and `tailwind.config.js` requires the same JSON for its named screens. It is a
+  contract, not a mirror: `../../styles/_breakpoints.scss` restates the numbers only because Sass
+  cannot import JSON, and `npm run check:golden-ui` fails when the restatement drifts.
+  `QD_BP_PHONE_MAX_QUERY` / `QD_BP_TABLET_MAX_QUERY` / `QD_BP_DESKTOP_MIN_QUERY` remain as aliases
+  for unmigrated call-sites, but they now resolve to the Golden bands — the tablet ceiling is
+  `1079` and the desktop floor is `1080`, not `1023`/`1024`. Wide-plus is a measure enhancement
+  only: `qdBandForWidth(1440)` is deliberately `'wide'`, and `widePlusIsStructural` in the contract
+  says so, because a fourth structural composition is exactly the drift the band vocabulary exists
+  to prevent.
 - `ui/tabs/` — `qd-tabs` (the app-wide tablist) + the `qdTab` directive. `qd-tabs` owns no
   selection state: consumers project their own `<a routerLink>`/`<button>` tab elements marked
   with `qdTab [selected]="…"` and their own click/routerLink; `qd-tabs` supplies the
@@ -122,7 +132,12 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 
 ## Invariants
 
-- Breakpoints in `layout/breakpoints.ts` must stay in sync with `../../styles/_breakpoints.scss`.
+- Breakpoint values live in `layout/breakpoints.contract.json` and nowhere else; `breakpoints.ts`,
+  `tailwind.config.js`, and `../../styles/_breakpoints.scss` all resolve to it, and
+  `npm run check:golden-ui` enforces that.
+- `ui/state/` is a **compatibility adapter that may not grow**. New code consumes the canonical
+  async owners; `npm run check:golden-ui` fails when its template call-site count rises above the
+  recorded baseline, and the baseline may only fall (`../../../FRONTEND_UI_RULES.md` §8).
 - `safe-html` sanitizes HTML; it does not bypass Angular security.
 - `ui/skeleton/grid-template-columns.ts` splits a `grid-template-columns` string on top-level
   whitespace only (`depth === 0`, `grid-template-columns.ts:22`), so a parenthesised function such

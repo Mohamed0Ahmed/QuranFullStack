@@ -53,6 +53,12 @@ prototype contract, retained as history; §16/§17 are the live contract.
 When this file and `DESIGN.md` describe the same thing, `DESIGN.md` wins on the
 visual choice; this file governs how that choice is implemented and reused.
 
+The approved **Golden UI** system now sits above both for anything it covers: the
+permanent visual authority is `.architecture/golden-ui/`, the short mandatory rule set is
+`../FRONTEND_UI_RULES.md`, and §18 below records the foundation mechanics (tokens, bands,
+page intents, gutters, grids, hover/selection semantics, and the `check:golden-ui` gate).
+Read §18 before §15/§16 when the two appear to disagree.
+
 > Scope note: this is documentation/rules only. It does not create global styles,
 > theme files, or components — it defines how they must be built when that work is
 > explicitly requested.
@@ -109,7 +115,9 @@ Rules:
 > `padding-block-end`. It was `.qd-explorer-frame` in `_words-explorer-layout.scss` until Slice B2
 > renamed and moved it (the frame stopped being words-only once Abwab adopted it); the old name is
 > kept as a working alias on the same rule so the five existing explorer call-sites are untouched.
-> New call-sites use `.qd-page-frame`.
+> Since the Golden foundation both names, and `.qd-container`, are **legacy aliases on the
+> `.qd-page-shell` gutter contract** (§18.4) and retire in Phase 11. New call-sites use
+> `.qd-page-shell` plus a named page intent, never `.qd-page-frame`.
 
 ## 3. Naming Convention
 
@@ -1656,3 +1664,135 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   component's own skeleton covers "data is loading". The bar's fade may overlap the
   skeleton's appearance by at most the fade duration; neither replaces the other,
   and in-component skeletons must never be removed in its favor.
+
+## 18. Golden UI foundation (Plan 7, Phase 1)
+
+The permanent visual authority is `.architecture/golden-ui/` (four Markdown contracts plus four
+HTML acceptance boards). The short mandatory rule set every UI change must read first is
+`../FRONTEND_UI_RULES.md`. This section records the *mechanics* that foundation put in place; the
+sections above stay valid for everything it did not touch.
+
+### 18.1 One token truth, reached through the existing theme mechanism
+
+`src/styles/_tokens.scss` now carries the Golden light values on the **existing themed token
+names**, and the Golden semantic names are aliases pointing at them:
+
+```
+--qd-bg:      #F4F2EC   ←  --qd-bg-page
+--qd-chrome-bg: #FAF9F5 ←  --qd-bg-chrome
+--qd-surface: #FFFFFF   (already the Golden name)
+--qd-section-bg: #FBFAF6 ← --qd-surface-quiet   (and --qd-surface-hover)
+--qd-surface-recessed: #EEEBE1 ← --qd-surface-sunken
+--qd-text/-body/-muted: #23211C / #443F37 / #6E6759 ← --qd-ink / --qd-ink-body / --qd-ink-muted
+--qd-primary = --qd-accent: #1C6349 ← --qd-green-solid / --qd-green-thread
+--qd-accent-text: #1B5E46 ← --qd-green-text ; --qd-accent-tint: #E7F0EA ← --qd-green-tint
+--qd-accent-soft: #CFE0D6 ← --qd-green-quiet (and --qd-border-accent)
+--qd-danger/-tint #8C2F22/#F7E9E5 · --qd-warning/-tint #8A5A12/#F7EEDC · --qd-success/-tint #1B5E46/#E7F0EA
+--qd-footer-bg #16233A · --qd-footer-text #D5DCE6 ← --qd-ink-on-dark
+```
+
+The direction matters and is not interchangeable: **the themed name holds the value, the Golden
+name is the alias.** `_themes.scss` overrides the themed name, so a component written against a
+Golden alias still follows the existing dark toggle instead of becoming a light island. Writing
+this the other way round (Golden name holds the value, themed name aliases it) would break dark for
+every migrated component. Nothing Golden-dark was added; dark remains interim and unreviewed.
+
+Tokens with no themed equivalent are declared directly and are light-only for now:
+`--qd-neutral`, `--qd-neutral-tint`, `--qd-neutral-ink-disabled`, `--qd-danger-hairline`,
+`--qd-warning-hairline`, and the `--qd-lifecycle-*` / `--qd-mutation-*` / `--qd-membership-owner`
+role aliases (§2.4 of the Golden system is exhaustive — no status colour may be invented at a call
+site). Lifecycle and mutation names never merge: "active account" and "successful mutation" share a
+green today and must keep separate names.
+
+The morphology taxonomy palette (`--qd-segment-cat-*`) is deliberately **unchanged** — it is content
+taxonomy, not status, and no Golden alias recolours it.
+
+### 18.2 Spacing, radius, type, geometry
+
+- `--qd-s-2 … --qd-s-64` is the Golden 4px/8px-rhythm scale (`2,4,8,12,16,20,24,32,40,48,64`).
+  The historical `--qd-space-1…6` are now aliases onto it, so there is one spacing truth and the
+  three steps the old scale lacked (2, 20, 40/48/64) exist without a second vocabulary.
+- Radii are `4/6/10/14/999px` (`--qd-radius-xs` is new; `--qd-radius-sm` moved 7px → 6px).
+- `--qd-type-*` carries `12/1.5 · 13/1.6 · 14/1.75 · 16/1.8 · 18/1.45 · 20/1.4 · 24/1.35 · 30/1.3`
+  plus identity. `_typography.scss`'s `.qd-page-title`/`.qd-section-title`/`.qd-card-title`/
+  `.qd-text*` are built from those tokens rather than local rem literals, and `.qd-text-body`,
+  `.qd-text-caption`, `.qd-text-identity`, `.qd-prose` were added for the roles that had no class.
+- Control geometry, hit target, modal widths, rails, splits, page measures, grid bounds, and the
+  floating-layer block size are all tokens (`--qd-control-*`, `--qd-hit-target-min`,
+  `--qd-modal-*`, `--qd-rail-*`, `--qd-split-*`, `--qd-page-measure-*`, `--qd-grid-*`,
+  `--qd-floating-max-block-size`). Phase 1 declares them; later phases consume them.
+- Elevation: resting is zero. `--qd-shadow-layer` (`0 8px 24px -10px rgb(35 33 28 / .22)`) is the
+  one floating-layer shadow and `--qd-floating-shadow` / `--qd-shadow-lg` resolve to it.
+  `.qd-card` no longer declares a resting `box-shadow` at all.
+
+### 18.3 Bands
+
+`src/app/shared/layout/breakpoints.contract.json` is the single neutral source. `breakpoints.ts`
+imports it, `tailwind.config.js` requires it, and `src/styles/_breakpoints.scss` is a Sass adapter
+whose every literal is compared against the JSON by `npm run check:golden-ui`.
+
+Compact `≤767` · Medium `768–1079` · Wide `≥1080` · Wide-plus `≥1440` (measure only, never a fourth
+structure). The historical `$qd-bp-tablet-max` / `$qd-bp-desktop-min` and
+`QD_BP_TABLET_MAX_QUERY` / `QD_BP_DESKTOP_MIN_QUERY` are kept as aliases but now resolve to
+`1079/1080`, not `1023/1024` — that move is the point of D10, and it is why the legacy desktop
+behaviour no longer engages at the 1024 edge. The aliases retire in Phase 11 once no consumer is
+left.
+
+### 18.4 One gutter, four page intents, three rails
+
+`.qd-page` is **block rhythm only** (`padding-block: var(--qd-page-rhythm)`). The inline gutter
+belongs to the page shell alone:
+
+- `.qd-page-shell` + `--capped-reading` (72rem) / `--full-data` (100rem) / `--split-workspace`
+  (100rem) / `--protected-mushaf` (90rem, feature-owned) — the canonical API.
+- `.qd-container` (capped-reading measure) and `.qd-page-frame` / `.qd-explorer-frame`
+  (full-bleed) are **legacy aliases** on the same gutter contract so unmigrated routes keep one
+  gutter until their owning phase; they retire in Phase 11.
+- `.qd-page > .qd-page-header` keeps a gutter for the one legacy shape (the placeholder page) whose
+  header is a direct child of `.qd-page` and has no content container. It retires with D04 in
+  Phase 10.
+- Any shell/container/frame nested inside another drops its `padding-inline` to `0`, so a nested
+  surface cannot manufacture a second route gutter.
+
+`--qd-page-gutter` is `16 / 24 / 32 / 40px` at Compact / Medium / Wide / Wide-plus, declared once in
+`_tokens.scss`. `.qd-page-rail--s/--m/--l` are `16/18/20rem` and collapse to full width below Wide;
+`.qd-page-split--data` (`1.25fr 1fr`) and `.qd-page-split--mushaf` (`40% 60%`) become two columns
+only at Wide, so Medium can never be a squeezed Wide.
+
+### 18.5 Bounded grids (F04)
+
+`.qd-grid` plus `--destinations` (18–26rem, max 3), `--curriculum` (20–30rem, max 2), `--doors`
+(14–20rem, max 4), `--permission-groups` (15–22rem, max 3). Each modifier sets only the three
+custom properties; the base rule derives both `grid-template-columns` and the max-column cap from
+them, and Compact forces a single column. `.qd-grid__span-all` carries the "final card spans" and
+orphan rules. Feature phases apply these classes; they never restate the numbers.
+
+### 18.6 Hover, selection, direction, hit area
+
+- One neutral hover surface: `--qd-surface-quiet` (`--qd-surface-hover` now aliases it), used by
+  cards, menus, tabs, chips and navigation alike. Green is never a hover tone; the former
+  `.qd-card--mini` accent-border hover is gone (D15).
+- `.qd-selected-thread` is the logical 2px `border-inline-start` green selection mark. It is
+  declared here as the owner; call sites migrate to it in their own phase (D26, Phase 3), and the
+  generic `.qd-is-selected` stays untouched until then.
+- `.qd-ltr-isolate` (`direction: ltr; unicode-bidi: isolate`) is the only sanctioned Latin island,
+  applied to the **value element**, never a container.
+- `.qd-hit-target` expands a small control to `--qd-hit-target-min` (44px) through a negative-inset
+  `::after`, leaving the visible icon size alone.
+- `.qd-flex-shrink-guard` / `.qd-flex-fixed` encode the Golden shrink guard (`flex: 1 1 0` +
+  `min-inline-size: 0` for the flexing child, `flex: 0 0 auto; white-space: nowrap` for its
+  siblings) — a bare `flex: 1` on a text input is the most common way a Compact row pushes the
+  document past the viewport.
+
+### 18.7 The gate
+
+`npm run check:golden-ui` (`scripts/check-golden-ui-contract.mjs`) fails on: a band value that
+disagrees with the JSON contract, a restated band literal in TypeScript or Tailwind, a raw
+non-band `@media` threshold in a migrated file, a gradient / active-transform / hover-lift /
+resting-shadow / physical inline property / colour literal in the Golden layer, `.qd-page` regaining
+an inline gutter, a missing page-intent or rail or bounded-grid selector, a domain-named selector in
+the layout layer, and any growth in the `qd-state` adapter's call-site count.
+
+Its `LEGACY_ALLOWLIST` is explicit and each entry names the phase that retires it. The list may only
+shrink: an entry whose recorded count no longer matches reality fails the check, so a cleanup cannot
+silently leave a stale allowance behind.

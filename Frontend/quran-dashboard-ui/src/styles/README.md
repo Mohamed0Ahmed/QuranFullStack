@@ -6,7 +6,18 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
 ## Partial groups
 
 - `_tokens.scss` — root CSS custom properties for color, spacing, radii, shadows, fonts,
-  Mushaf, and explorer variables. Includes the color-doctrine role tokens
+  Mushaf, and explorer variables. **This is the one place a colour, radius, shadow, spacing step,
+  control height, gutter, rail, measure, or modal width may be written as a literal**; every other
+  partial references a token, and `npm run check:golden-ui` fails on a colour literal found
+  elsewhere in the Golden layer. It now carries the Golden light values on the existing *themed*
+  token names, with the Golden semantic names (`--qd-bg-page`, `--qd-surface-quiet`, `--qd-ink*`,
+  `--qd-green-*`, `--qd-lifecycle-*`, `--qd-mutation-*`, …) declared as aliases onto them — that
+  direction is load-bearing, because `_themes.scss` overrides the themed name and an alias written
+  the other way round would strand every migrated component in light values under the dark toggle
+  (`.architecture/UI_STYLE_SYSTEM.md` §18.1). The `--qd-s-2 … --qd-s-64` scale is the Golden
+  4px/8px rhythm and `--qd-space-1…6` are aliases onto it, so there is a single spacing truth.
+  `--qd-page-gutter` is the one responsive route gutter (16/24/32/40 at Compact/Medium/Wide/
+  Wide-plus) and is declared here, not in `_layout.scss`. Includes the color-doctrine role tokens
   (`--qd-accent-fg`, `--qd-border-accent`, `--qd-surface-hover`, `--qd-selected-bg`,
   `--qd-danger-tint`, `--qd-success-tint`, `--qd-warning-tint`) — see
   `.architecture/UI_STYLE_SYSTEM.md` §16 for the role→color contract these back. Also holds the
@@ -28,10 +39,28 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   chrome").
 - `_themes.scss` — dark-theme overrides for the same token surface (`--qd-accent-fg` and
   `--qd-selected-bg` are intentionally theme-invariant and not overridden here).
-- `_typography.scss` — font-face declarations and shared Arabic-first type classes.
-- `_breakpoints.scss` — canonical Sass breakpoints; mirrored in `../app/shared/layout/breakpoints.ts`.
-- `_layout.scss` — shell, navbar, footer, container, and page-level layout primitives. Also
-  holds `.qd-page-frame` (`.architecture/UI_STYLE_SYSTEM.md` §2) — the full-bleed page-frame
+- `_typography.scss` — font-face declarations and shared Arabic-first type classes. The classes are
+  built from the `--qd-type-*` scale in `_tokens.scss` rather than local rem literals; the
+  `$font-naskh` / `$font-sans` / `$font-quran` Sass variables were removed because they duplicated
+  `--qd-font-naskh` / `--qd-font-ui` / `--qd-font-quran` and nothing consumed them.
+- `_breakpoints.scss` — the **Sass adapter** over
+  `../app/shared/layout/breakpoints.contract.json`, which is the single neutral source TypeScript
+  and Tailwind read directly. Sass cannot import JSON, so the literals are restated here and
+  `npm run check:golden-ui` compares every one of them against the contract. Compact `≤767`,
+  Medium `768–1079`, Wide `≥1080`, Wide-plus `≥1440`. `$qd-bp-phone-max` / `$qd-bp-tablet-max` /
+  `$qd-bp-desktop-min` / `$qd-bp-wide-desktop-min` survive as aliases for unmigrated call-sites,
+  but they now resolve to the Golden bands — `tablet-max` is `1079`, not `1023`, and `desktop-min`
+  is `1080`, not `1024`. Moving those two is D10 itself: it is what stops the legacy desktop
+  composition from engaging at the 1024 edge.
+- `_layout.scss` — shell, navbar, footer, container, and page-level layout primitives, plus the
+  Golden page-shell contract (`.qd-page-shell` + the four named intents, the three rail sizes, the
+  two named splits, and the four bounded grids). `.qd-page` is **block rhythm only**: the inline
+  gutter belongs to the shell alone, and any shell/container/frame nested inside another drops its
+  `padding-inline` so a nested surface cannot create a second route gutter
+  (`.architecture/UI_STYLE_SYSTEM.md` §18.4). The one surviving exception is
+  `.qd-page > .qd-page-header`, which keeps a gutter for the placeholder page — the single legacy
+  shape whose header is a direct child of `.qd-page` with no content container; it retires with D04.
+  Also holds `.qd-page-frame` (`.architecture/UI_STYLE_SYSTEM.md` §2) — the full-bleed page-frame
   rule (`box-sizing: border-box`, no `.qd-container` width cap, column flex, the mobile-stat-bar
   `padding-block-end`), beside `.qd-container` since it is shared page furniture, not
   words-specific. `.qd-explorer-frame` is kept as a working alias on the same rule (Slice B2,
@@ -48,7 +77,12 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   fixed `--qd-checkbox-size` box plus a fixed-gap label row; call-sites compose them and
   never re-declare box size or accent locally.
 - `_components.scss` — global cards, buttons, badges, modal, detail-panel, and skeleton patterns.
-  Also holds `.qd-modal--fixed` (`.architecture/UI_STYLE_SYSTEM.md` §17) — the opt-in fixed
+  Also holds the Golden surface ladder (`.qd-surface` + `--quiet` / `--sunken` / `--chrome`) and
+  `.qd-selected-thread`, the logical 2px `border-inline-start` selection mark that call-sites adopt
+  in their own phase. `.qd-card` carries **no resting `box-shadow`** (resting elevation is zero;
+  shadow exists only on floating layers) and hover is the one neutral surface
+  `--qd-surface-quiet` — the former `.qd-card--mini` accent-border hover was green decoration and
+  is gone. Also holds `.qd-modal--fixed` (`.architecture/UI_STYLE_SYSTEM.md` §17) — the opt-in fixed
   block-size modifier for `.qd-modal`, plus its `.qd-modal__head` / `.qd-modal__body` /
   `.qd-modal__foot` slots; the bare `.qd-modal` base stays width-only and scroller-less, so
   compose the modifier rather than adding a block-size to a call-site. Its width sibling
@@ -59,7 +93,12 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   because a rule scoped to the primitive's own stylesheet cannot reach content the *consumer*
   projects via `<ng-content>` (the `.qd-tabs__tab` precedent).
 - `_utilities.scss` — small utility classes such as screen-reader-only, flex, spacing, and stable
-  scrollbars. Also holds `.qd-truncate` (`.architecture/UI_STYLE_SYSTEM.md` §17 "Truncatable
+  scrollbars. Also holds `.qd-ltr-isolate` (the only sanctioned Latin island — applied to the value
+  element, never a container), `.qd-hit-target` (expands a small control to the 44px
+  `--qd-hit-target-min` through a negative-inset `::after`, leaving the visible icon size alone),
+  and `.qd-flex-shrink-guard` / `.qd-flex-fixed` (the Golden shrink guard: a bare `flex: 1` on a
+  text input keeps `min-width: auto` ≈ 20 characters and pushes a Compact row past the viewport).
+  Also holds `.qd-truncate` (`.architecture/UI_STYLE_SYSTEM.md` §17 "Truncatable
   entity names") — the one flexible-with-ellipsis rule for a truncatable entity-name column;
   pair it with `--qd-name-min-inline-size` (`_tokens.scss`) for a reserved minimum.
 - `_words-explorer-layout.scss` — shared layout pieces for words explorer intro/toolbar surfaces.
@@ -105,24 +144,42 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
 ## Invariants
 
 - Arabic-first typography and RTL-friendly spacing start here; do not swap shared font roles casually.
-- Keep breakpoint values synchronized between `_breakpoints.scss` and `../app/shared/layout/breakpoints.ts`.
+- Breakpoints have one source: `../app/shared/layout/breakpoints.contract.json`. TypeScript and
+  Tailwind read it; `_breakpoints.scss` restates it because Sass cannot import JSON, and
+  `npm run check:golden-ui` fails when the restatement drifts. Never hand-sync three files again,
+  and never write a raw pixel threshold in a migrated partial.
 - Global explorer partials should stay generic across Roots, Lemmas, Stems, Word Types, and related detail panels.
 - **Measured contrast ratios pinned to light-theme tokens (`_tokens.scss`).** These were measured,
   not derived: nothing in the file recomputes them, so re-tuning any of these tokens by eye
   silently drops the pairing below its target. Re-measure rather than adjust. Each ratio is stated
   against the surface it was measured on:
 
+  The table below was **re-measured against the Golden light values** when the foundation retuned
+  the themed tokens; the previous numbers were measured against the superseded oklch values and no
+  longer apply.
+
   | token | measured against | ratio |
   |---|---|---|
-  | `--qd-ayah-card-bg` (`:10`) | Quran text on the ayah card | 12.7:1 |
-  | `--qd-ayah-card-bg` (`:10`) | muted meta text on the ayah card | 4.69:1 (AA) |
-  | `--qd-accent-text` (`:35`) | text emphasis on light surfaces | 7:1 range |
-  | `--qd-warning` (`:40`) | on `--qd-warning-tint` | 4.58:1 |
-  | `--qd-warning` (`:40`) | as a dot on the navy footer | 3.02:1 |
-  | `--qd-danger-tint` (`:42`) | danger text on it | 5.01:1 |
-  | `--qd-success-tint` (`:43`) | against `--qd-success` | 4.58:1 (`UI_STYLE_SYSTEM.md` §16) |
-  | `--qd-text-muted` (`:21`) | zero tab-count digit on `--qd-bg` | 4.82:1 (AA; computed from the oklch tokens) |
-  | `--qd-accent-text` (`:35`) | selected tab count on its `--qd-surface` pill | 7.55:1 (computed from the oklch tokens) |
+  | `--qd-ayah-card-bg` | Quran text on the ayah card | 14.24:1 |
+  | `--qd-ayah-card-bg` | muted meta text on the ayah card | 4.96:1 (AA) |
+  | `--qd-accent-text` | text emphasis on `--qd-surface` | 7.68:1 |
+  | `--qd-accent-text` | text emphasis on `--qd-bg` | 6.86:1 |
+  | `--qd-warning` | on `--qd-warning-tint` | 5.13:1 |
+  | `--qd-warning` | as a dot on the navy footer | **2.66:1** (was 3.02:1) |
+  | `--qd-danger` | on `--qd-danger-tint` | 6.97:1 |
+  | `--qd-accent-text` | on `--qd-success-tint` (mutation success) | 6.60:1 |
+  | `--qd-text-muted` | on `--qd-bg` | 5.01:1 (AA) |
+  | `--qd-text-muted` | on `--qd-surface` / `--qd-section-bg` / `--qd-surface-recessed` | 5.60 / 5.37 / 4.70:1 (AA) |
+  | `--qd-text` | on `--qd-bg` | 14.37:1 |
+  | `--qd-text-body` | on `--qd-surface` | 10.44:1 |
+  | `--qd-footer-text` | on `--qd-footer-bg` | 11.39:1 |
+  | `--qd-primary-fg` | on `--qd-primary` (primary action) | 7.17:1 |
+
+  One pairing moved the wrong way and is recorded rather than silently accepted: the footer health
+  **dot** on the navy band fell from 3.02:1 to 2.66:1, because the Golden warning value (`#8A5A12`)
+  is darker than the value it replaced. It is a non-text indicator that always sits beside its own
+  text label, and the footer is app chrome owned by a later phase — do not "fix" it by inventing a
+  warning value outside the Golden status table, which is exhaustive.
 
   `--qd-ayah-card-bg` is a warm tone deliberately recessed below `--qd-surface` so an ayah card
   reads as a distinct card on the near-white surfaces it sits on; the dark theme overrides it to

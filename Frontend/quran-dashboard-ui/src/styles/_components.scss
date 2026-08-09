@@ -1,26 +1,47 @@
 @use 'breakpoints' as bp;
 
+.qd-surface {
+  background: var(--qd-surface);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+}
+
+.qd-surface--quiet {
+  background: var(--qd-surface-quiet);
+}
+
+.qd-surface--sunken {
+  background: var(--qd-surface-sunken);
+}
+
+.qd-surface--chrome {
+  background: var(--qd-bg-chrome);
+}
+
+.qd-selected-thread {
+  border-inline-start: var(--qd-green-thread-size) solid var(--qd-green-thread);
+}
+
 .qd-card {
   background: var(--qd-surface);
-  border: 1px solid var(--qd-border);
+  border: var(--qd-hairline);
   border-radius: var(--qd-radius-md);
-  padding: var(--qd-space-4);
-  box-shadow: var(--qd-shadow-sm);
+  padding: var(--qd-card-padding);
 }
 
 .qd-card--hover,
 .qd-interactive-surface {
   cursor: pointer;
-  transition: border-color var(--qd-t-fast), background-color var(--qd-t-fast);
+  transition: border-color var(--qd-t-state), background-color var(--qd-t-state);
 }
 .qd-card--hover:hover,
 .qd-interactive-surface:hover {
-  border-color: var(--qd-border-strong);
+  background: var(--qd-surface-quiet);
 }
 
 .qd-interactive-surface:focus-visible {
-  outline: 2px solid var(--qd-focus-ring);
-  outline-offset: 2px;
+  outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+  outline-offset: var(--qd-focus-ring-offset);
 }
 
 button.qd-interactive-surface {
@@ -31,9 +52,8 @@ button.qd-interactive-surface {
 }
 
 .qd-card--quiet {
-  background: var(--qd-section-bg);
+  background: var(--qd-surface-quiet);
   border-color: transparent;
-  box-shadow: none;
 }
 
 .qd-card--bordered { box-shadow: none; }
@@ -42,10 +62,7 @@ button.qd-interactive-surface {
   border-radius: var(--qd-radius-lg);
   padding: var(--qd-space-5);
 }
-.qd-card--mini { padding: var(--qd-space-3); }
-.qd-card--mini.qd-card--hover:hover {
-  border-color: var(--qd-accent-soft);
-}
+.qd-card--mini { padding: var(--qd-card-padding-dense); }
 
 .qd-btn {
   display: inline-flex;

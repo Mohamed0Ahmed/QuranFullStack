@@ -61,3 +61,29 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.qd-ltr-isolate {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.qd-hit-target {
+  position: relative;
+}
+
+.qd-hit-target::after {
+  content: '';
+  position: absolute;
+  inset-block: calc((var(--qd-hit-target-min) - 100%) / -2);
+  inset-inline: calc((var(--qd-hit-target-min) - 100%) / -2);
+}
+
+.qd-flex-shrink-guard {
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+
+.qd-flex-fixed {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
