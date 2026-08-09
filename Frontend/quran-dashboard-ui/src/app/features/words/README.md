@@ -12,38 +12,35 @@ with all selection/filter/paging state reflected in the URL.
 
 ## Shared pattern (each explorer repeats it)
 
-Per explorer `X` in {roots, lemmas, stems, word-types, unique-words}:
+For each `X` in `roots`, `lemmas`, `stems`, `word-types`, and `unique-words`:
 
-- `pages/X-explorer-page/` — routed smart component (unique-words: `unique-words-page`).
-  Word Types additionally keeps
-  `pages/word-types-explorer-page/word-types-detail-panel.view-model.ts` — the pure
-  derivations that turn `WordTypesDetailFacade.panelState()` into what the details panel
-  renders (active summary, the words/ayahs pages incl. the empty-while-loading pages, the
-  B7 ayah parent frame, mentioned/missing surah rows). The page component only wires them
-  into computed signals.
-- `state/X-explorer.facade.ts` (+ `X-detail.facade.ts`) — orchestrates load/select.
-- `state/X-cache.ts` — client cache of fetched pages/details.
-- `state/X-url-sync.ts` — URL ⇄ state (the URL-state contract; keep params stable).
-- `state/X-detail-view.loader.ts` — loads the detail panel for a selection.
-- `data-access/X.api.ts` — `ApiResponse<T>` calls.
-- `models/X.models.ts` + `models/X.labels.ts` — view models + Arabic labels. Wire DTOs are
-  re-exported from `core/api/generated/` (aliased to the historical `*Dto` names); UI-only
-  unions, request params, and view models stay hand-written, and closed backend vocabularies
-  (e.g. `kind`, table-row discriminators) are narrowed via `Omit`-overlays over the generated
-  types.
-- `utils/X-ayah-match.mapper.ts` — maps API ayah matches to view rows.
+- `pages/X-explorer-page/` is the routed smart component
+  (`unique-words-page/` is the naming exception).
+- `state/X-explorer.facade.ts` and `state/X-detail.facade.ts` orchestrate list and selection
+  state; `state/X-cache.ts` caches pages/details; `state/X-url-sync.ts` owns the stable
+  URL-to-state contract; and `state/X-detail-view.loader.ts` loads the selected detail view.
+- `data-access/X.api.ts` owns `ApiResponse<T>` calls.
+- `models/X.models.ts` and `models/X.labels.ts` own view models and Arabic labels.
+  Generated wire DTOs come from `core/api/generated/` under the historical `*Dto` aliases;
+  UI-only unions/request/view models remain local, and closed backend vocabularies are narrowed
+  with `Omit` overlays.
+- `utils/X-ayah-match.mapper.ts` maps API ayah matches to view rows.
 
-Shared across explorers: `utils/explorer-table-*` (focus/keyboard-nav/scroll/column-nav),
-`utils/explorer-keyboard-nav.scheduler.ts`, `utils/verse-key.ts`, and the
-`components/` table + list + panel set.
+Word Types additionally keeps
+`pages/word-types-explorer-page/word-types-detail-panel.view-model.ts` as the pure derivation
+layer over `WordTypesDetailFacade.panelState()`: active summary, word/ayah pages (including
+empty-while-loading pages), the ayah parent frame, and mentioned/missing surah rows. The page
+only wires those results into computed signals.
 
-Each page's root wraps `qd-container` in the shared full-bleed page-frame class. That class was
-`qd-explorer-frame` and lived in `styles/_words-explorer-layout.scss`; Slice B2 renamed it to the
-feature-neutral `qd-page-frame` and moved it to `styles/_layout.scss` beside `qd-container` once
-Abwab adopted it too, keeping `qd-explorer-frame` as a working alias on the same rule so these
-five call-sites (`*-explorer-page.component.html:2`, `unique-words-page.component.html:2`) did
-not need to change. See `styles/README.md` and `.architecture/UI_STYLE_SYSTEM.md` §2.
+Shared explorer mechanics stay in `utils/explorer-table-*`,
+`utils/explorer-keyboard-nav.scheduler.ts`, `utils/verse-key.ts`, and the feature's shared
+`components/` table/list/panel set.
 
+Every explorer root composes `qd-container` with the feature-neutral `qd-page-frame` owned by
+`styles/_layout.scss`. The `qd-explorer-frame` compatibility alias remains on the same rule for
+existing call sites; do not remove it as if it were a second layout contract. See
+[`styles/README.md`](../../../styles/README.md) and
+[`UI_STYLE_SYSTEM.md`](../../../../.architecture/UI_STYLE_SYSTEM.md).
 ## Global entity-detail overlay (Feature 029, Change B)
 
 - `entity-detail-overlay/` owns the persistent global detail overlay: the host component
@@ -152,37 +149,33 @@ not need to change. See `styles/README.md` and `.architecture/UI_STYLE_SYSTEM.md
   test bundle. **Do not revert the getters.**
 - **URL-state is a contract.** `*-url-sync.ts` param names/shape are user-facing (shareable
   links) and spec'd; changing them is a contract change — update the spec and tests too.
-- **`sort` is one param with a suffix grammar** (Feature 030, N8 — cross-stack; the backend
-  half is the authority, see the reads README's ordering contract). `token := column |
-  column "-asc" | column "-desc"`. A **bare token means the column's natural direction** —
-  counts descend, text ascends — so every pre-030 token keeps its exact meaning as an alias:
-  `occurrences` ≡ `occurrences-desc`, `alpha` ≡ `alpha-asc`. The **bare form is canonical**
-  for the natural direction and the suffixed form only for the opposite one, so a count
-  column's canonical set is `{ occurrences, occurrences-asc }` and `occurrences-desc`
-  canonicalizes **out** on the way in — one ordering can never be cached or shared under two
-  spellings. `mushaf-order` is ascending-only and **bare-only** (`mushaf-order-asc/-desc` are
-  rejected here and 400 on the backend). **The default is the param's ABSENCE** — never
-  `sort=mushaf-order` — and releasing a header cycle writes `{ sort: null, page: null }`;
-  changing the ordering always resets `page`. There is **no `dir` param and no new query
-  key** (the `column` key is unrelated — it is detail focus). Client list cache keys keep the
-  token in the same opaque slot (`roots:list:<sort>:…`, `wordtypes:table:…:sort:<sort>:…`) —
-  no key-format change. The grammar, the 3-state cycle, `aria-sort`, the glyph and the
-  aria-label live in `models/explorer-sort.ts` + `utils/explorer-table-sort.controller.ts`;
-  each explorer owns its column allowlist (`*_SORT_COLUMNS`) and a `normalize*Sort` guard that
-  **fails closed to the default** on anything unknown. Matching is **exact** — unlike the
-  backend parser the frontend does not trim or case-fold, so `?sort=ALPHA` falls back to the
-  default (pre-existing, spec'd). Sortable columns: Roots `alpha` + all 7 counts; Lemmas
-  `alpha` + 6 counts; Stems `alpha` + 5 counts; Unique Words / Word Types `alpha`,
-  `occurrences`, `ayahs`, `surahs`. **Related-entity text columns are deliberately NOT
-  sortable** (lemmas' الجذر, stems' dominant الجذور/الصيغ, unique-words' نوع الكلمة/الجذر,
-  word-types' النوع/الجذر/الأصل/الصيغة) and neither is unique-words' لم يذكر فيها (computed
-  post-page; ordering by it is just the inverse of السور) — they render as plain headers.
-  **Word Types is the exception on defaults**: it defaults to `occurrences` desc, so its
-  المواضع header renders actively sorted in the default state and its cycle collapses to
-  desc(default) ⇄ asc with no release step, while `mushaf-order` stays an ordinary offered
-  ordering there rather than the release state. Its `alpha` column is the **dimension text
-  column**, whose header text follows `tableView` (الكلمة / الجذر / الأصل الصرفي / الصيغة
-  المعجمية) even though the token is identical across all four views.
+- **`sort` is one exact, fail-closed URL token.** Its client grammar is
+  `token := column | column "-asc" | column "-desc"`. A bare token means the column's
+  natural direction (counts descending, text ascending); the suffix is used only for the
+  opposite direction, so natural aliases normalize back to the bare canonical spelling.
+  Matching is exact: the frontend neither trims nor case-folds, and an unknown token falls
+  back to the explorer default.
+- `mushaf-order` is ascending and bare-only; the client rejects its suffixed forms. The
+  canonical default is absence of `sort`, never `sort=mushaf-order`. Releasing a header cycle
+  writes `{ sort: null, page: null }`, every order change resets `page`, and there is no
+  `dir` key (`column` belongs to detail focus).
+- List cache keys retain the canonical token in their existing opaque sort slot; do not create a
+  second cache spelling. The three-state header cycle, `aria-sort`, glyph, and label live in
+  `models/explorer-sort.ts` and `utils/explorer-table-sort.controller.ts`.
+- Frontend column allowlists stay local in `*_SORT_COLUMNS` and `normalize*Sort`:
+  Roots offers `alpha` plus `occurrences/ayahs/surahs/simple/tashkeel/lemmas/stems`; Lemmas
+  removes `lemmas`; Stems removes `lemmas/stems`; Unique Words and Word Types offer
+  `alpha/occurrences/ayahs/surahs`. Related-entity text columns are not sortable (Lemma root;
+  Stem dominant root/lemma; Unique Words type/root; Word Types type/root/stem/lemma), nor is
+  Unique Words' computed missing-surahs column.
+- Word Types is the default/cycle exception: `occurrences` descending is default, so that header
+  cycles only default-descending ↔ ascending, while `mushaf-order` remains an offered order.
+  Its `alpha` header follows `tableView` while the token stays the same.
+
+The existing
+[Backend Words reads README](../../../../../../Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/README.md)
+owns server parsing, deterministic ordering/tie-breaks, query construction, and count invariance;
+do not duplicate those implementation formulas here.
 - **Sorting is column-headers at ≥1024px, a `<select>` at ≤1023px** (Feature 030, N8). The
   top ترتيب dropdown is gone from every layout where the table header row is visible. Because
   all five table SCSS files set the header row to `display: none` at ≤1023px, a compact
@@ -192,19 +185,18 @@ not need to change. See `styles/README.md` and `.architecture/UI_STYLE_SYSTEM.md
   picking the explorer's default releases the param instead of spelling it out. The
   `*-sort-select` testids are preserved. Visuals/a11y for the headers: `UI_STYLE_SYSTEM.md`
   §17 (`.qd-explorer-table` → column-header sorting).
-- **Identity is clean imlaei-simple** (display Uthmani) — mirrors the backend read models.
-- **Headline result-count stat** (Feature 026, US4) on the four "normal" explorers (Unique Words, Roots,
-  Lemmas, Stems): the presentational `qd-result-count` component (class `ExplorerResultCountComponent`)
-  renders the label-prefix phrasing **"عدد الـ…: N"** (عدد الكلمات / عدد الجذور / عدد الصيغ المعجمية /
-  عدد الأصول الصرفية) from the page's existing `listState().totalCount` — no new backend read or
-  aggregation. It sits in the toolbar recess beside search/sort. States: list loading → non-interactive
-  skeleton; list error → renders nothing (the table shell's own error state owns the message); zero
-  results → "0". Because the total is the filtered query's own count, the stat reflects search/filters
-  by construction and never disagrees with pagination. Word Types uses the separate four-count scope
-  summary, not this stat. **The component left this feature in Slice B2 (T1001)**: it now lives at
-  `shared/ui/result-count/` (abwab is a second consumer), reachable here only under the alias selector
-  `qd-explorer-result-count` — see `shared/README.md` for the component, its TDZ-safe label getter, and
-  why the alias exists.
+- **Identity is clean imlaei-simple; Uthmani is display-only.** The
+  [Backend Words reads README](../../../../../../Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/README.md)
+  owns the corresponding read-model identity.
+- **Headline result count** appears on Unique Words, Roots, Lemmas, and Stems through the shared
+  `ExplorerResultCountComponent` (`qd-result-count`, with the live
+  `qd-explorer-result-count` compatibility alias). It renders «عدد الـ…: N» from the current
+  `listState().totalCount` beside the search/sort controls: list loading shows a
+  non-interactive skeleton, list error renders nothing because the table shell owns the error,
+  and zero renders `0`. Because it uses the filtered list total, it stays aligned with filters
+  and pagination. Word Types uses its separate four-count scope summary. Component ownership,
+  its TDZ-safe label getter, and the alias rationale live in
+  [`shared/README.md`](../../shared/README.md).
 - **Count-range filters** (Feature 026, US5; chips reshaped in Feature 030, N4) on the four normal
   explorers: the shared `explorer-count-range-filter` component offers exactly **three chips per
   metric** — `أكثر من N` / `أقل من N` / `مخصّص` (`aria-pressed`, RTL) — over exactly the count columns each
@@ -254,26 +246,24 @@ not need to change. See `styles/README.md` and `.architecture/UI_STYLE_SYSTEM.md
   URL, because shared-URL identity and the `aria-pressed` contract tests depend on the convention; do not
   "normalize" it away. Accepted consequence (N1-a): re-clicking the active type while on detail page > 1
   no longer resets to page 1 — pagination owns page navigation.
-- **Association filters** (Feature 026, US7) narrow three of the normal explorers by a related dimension,
-  using the shared presentational `explorer-association-filter` search-select (an inline search field whose
-  input opens a popover holding the options list, with the current selection shown as a badge
-  plus a clear affordance; RTL, `aria`; options stay plain `aria-pressed` buttons, not a listbox — see the
-  Feature 027 controls-layout bullet below for the popover interaction). URL keys (all optional,
-  additive, parsed **fail-closed**): Unique Words `primaryType` (POS code) + `rootId`; Lemmas `rootId`;
-  Stems `rootId` + `lemmaId`. `primaryType` keeps a well-formed catalogue token else absent; ids keep a
-  positive integer else absent (`state/words-association-filters.ts` `parsePosCodeParam` /
-  `parsePositiveIntParam`). Changing any association resets the list `page`. The API sends each param only
-  when set; frontend list cache keys gain an `assoc(...)` fragment (absent ⇒ pre-feature key). Options are
-  loaded by `WordsAssociationOptionsService`, **reusing existing reads with no new endpoint**: the
-  root/lemma pickers server-search `roots.api`/`lemmas.api` (cached under a `*:picker:` namespace in the
-  shared caches); the Unique Words type select is fed from the word-types **tree** read, flattening the
-  noun and particle POS-leaf children (the "POS child catalogue"). Verb and muqatta'at are represented
-  non-granularly in the tree (by tense / as a main type) and are therefore not offered as granular
-  primary-type options — use the Word Types explorer for those. Labels (lock D): Unique Words
-  "النوع الأساسي" / "الجذر الأساسي"; Lemmas "الجذر" (owned root, a true belonging relation); Stems
-  "الجذر الأساسي" / "الصيغة المعجمية الأساسية" (**primary, not sole** — the filter matches the displayed
-  dominant association). Every association filter agrees with the value the row displays, so the chip and
-  the filter can never disagree.
+- **Association filters** use the shared presentational
+  `explorer-association-filter` search-select. Their optional URL keys are: Unique Words
+  `primaryType` and `rootId`; Lemmas `rootId`; Stems `rootId` and `lemmaId`.
+  `primaryType` accepts a well-formed catalogue token and ids accept positive integers;
+  malformed input fails closed to absence through
+  `state/words-association-filters.ts`. A change resets list `page`, sends only active API
+  params, and adds the deterministic `assoc(...)` fragment to the frontend list cache key.
+- `WordsAssociationOptionsService` reuses the existing roots/lemmas server-search reads under
+  their `*:picker:` cache namespaces. Unique Words types come from the Word Types tree:
+  noun and particle POS-leaf children are offered; verb and muqatta'at are not granular there
+  and must be explored through Word Types.
+- User-facing labels remain: Unique Words «النوع الأساسي» / «الجذر الأساسي»; Lemmas «الجذر»;
+  Stems «الجذر الأساسي» / «الصيغة المعجمية الأساسية». Each filter describes the association
+  displayed by its row, so the selected filter and visible chip cannot disagree.
+
+The
+[Backend Words reads README](../../../../../../Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/README.md)
+owns primary/dominant association selection, winner ordering, and server query semantics.
 - **Explorer controls layout** (Feature 027) restructures the four normal explorers' toolbars: the shared
   presentational `qd-explorer-search-row` (`role="search"`) holds the main search `<input type="search">`
   plus each page's projected association-filter fields (`<ng-content>`) side-by-side at ≥ tablet (≥1024px),
@@ -370,57 +360,56 @@ main type clears them (the snapshot belonged to the previous type), refresh/dire
   include `tableView`, so tab switches never cross-serve another view's rows. Stem/lemma
   terminology follows the Roots/Lemmas/Stems explorers: **stem = الأصل / الأصول الصرفية**,
   **lemma = الصيغة / الصيغ المعجمية**.
-- **Word Types search** (`search` URL key, Feature 026) matches the clean, tashkeel-insensitive **word
-  identity text only** (never root/stem/lemma display text). It is part of the **list scope**: the one
-  toolbar input is visible on ALL four table views, and changing it narrows the words view AND the grouped
-  roots/stems/lemmas views together (the placeholder names the word grain — "ابحث في الكلمات"). It follows
-  the shared explorer feel: page-owned `Subject` + `debounceTime(300)` → router merge
-  `{ search, page: null }`; parsed fail-closed (trim, empty → absent); URL-shareable and restored into the
-  input on refresh/Back. Frontend and backend list cache keys gain the search component (empty ⇒
-  pre-feature key). Search resets the list page but keeps the identity-loaded detail selection.
-- **Word Types presence flags** (`hasRoot`/`hasStem`/`hasLemma` URL keys, Feature 026, US6) are
-  tri-state (`true`/`false`, absent = any; parsed fail-closed to null). Like search they are part of the
-  **list scope**: the words view AND the grouped roots/stems/lemmas views (and their totals) reshape
-  together, so a "missing" choice keeps a rootless word row but collapses that grouped view. The
-  toolbar exposes a three-option chip group per dimension (labels per lock D: الجذر / الأصل الصرفي /
-  الصيغة المعجمية; options الكل / موجود / غير موجود). Changing a flag resets the list page and clears any
-  open detail selection (like the case/tense/voice sub-filters). Frontend and backend list cache keys
-  gain a compact flag segment (all-absent ⇒ pre-feature key); grouped-detail reads never carry the
-  flags. The scope threads through `word-types-url-sync.ts` → `word-types-explorer.facade.ts` →
-  `word-types.api.ts` (`hasRoot=true|false` sent only when set) → `word-types-cache.ts`.
-- **Word Types scoped four-count summary** (Feature 026, US8) is the non-interactive `word-type-scope-counts`
-  strip between the filter strip and the view tabs (order: filters → scope summary → tabs → table). It shows
-  how many **كلمات / جذور / أصول / صيغ** the active scope contains, reusing the view tabs' SHORT labels
-  **verbatim** (`WORD_TYPE_TABLE_VIEW_OPTIONS`, same RTL order كلمات | جذور | أصول | صيغ — the tabs are NOT
-  renamed). Each count equals the corresponding tab's pagination `TotalCount` for the identical scope. It is
-  served by **one** new read `GET api/words/word-types/scope-counts` (→ `WordTypeScopeCountsDto`). The strip
-  is a self-contained widget that reads `WordTypesExplorerFacade.scopeCountsState` and triggers a
-  counts-only refetch (`retryScopeCounts`) itself, so the page class stays thin. Counts **load on scope
-  change only** — type/childCode/case/tense/voice/search/flags — and **NOT** on a `tableView` or `page`
-  change (they describe the scope, not a page); the facade keys them off a `scopeKey` that omits
-  tableView/sort/page, and both the frontend (`word-types-cache.ts` `scopeCounts(...)`) and backend
-  (`WordTypesCacheKeys.ScopeCounts`) cache keys use the full scope and nothing view/page. States: a leaf
-  scope confirmed → loading skeleton → four counts (0 renders as 0); a **counts** failure shows a compact
-  error + **إعادة المحاولة** (refetches counts only) and **never blocks the table**; a **table** failure
-  hides the strip's numbers (scope unconfirmed); a parent/prompt scope shows nothing. The strip host stays
-  mounted through every transition (mounted-shell invariant). These are the scoped word-context counts only,
-  never the global `words_count`-backed family.
-- **Word Types page sizes** (Feature 026): the list serves up to **1000 rows/page**
-  (`WORD_TYPES_PAGE_SIZE`, default + cap 1000) across all four views with `CdkVirtualScrollViewport`
-  virtual scrolling (mirrors the other explorer tables; guarded on `ResizeObserver`); detail lists (word
-  ayahs, grouped member words, grouped ayahs) serve up to **100 items/page**
-  (`WORD_TYPES_DETAIL_PAGE_SIZE`). The mounted table-view strip / shell / details-host invariant survives
-  the virtual-scroll change.
-- The data-access client also exposes the grouped-detail contract under
-  `.../word-types/table/{roots|stems|lemmas}/{dimensionId}`. Every grouped request carries the
-  full active scope (`type`, optional `childCode`, and concrete `case`/`tense`/`voice` values);
-  member words and ayahs are paged, while surahs are a single-shot read with no page parameter.
-  `WordTypesCacheKeys.grouped*` keys isolate kind, numeric ID, scope, view, and (for paged views)
-  page, so future detail loading cannot cross-serve a different grouped selection.
+- **Word Types search** uses the optional `search` URL key and matches clean,
+  tashkeel-insensitive word identity only, never root/stem/lemma display text. The single toolbar
+  input is present on all four views and narrows words plus grouped roots/stems/lemmas together;
+  its placeholder therefore names the word grain («ابحث في الكلمات»). The page debounces for
+  300 ms, merges `{ search, page: null }`, trims and fails closed from empty to absence, restores
+  from shared URLs/Back/Forward, sends search through `word-types.api.ts` only when present,
+  and includes it in the frontend list cache identity (absence preserves the unfiltered key).
+  Changing search resets the list page but preserves an identity-loaded detail selection.
+- **Word Types presence flags** are the optional tri-state `hasRoot`/`hasStem`/`hasLemma`
+  keys (`true`/`false`; absent means any) and fail closed to absence. They reshape words,
+  grouped views, and their totals as one list scope. Each dimension exposes
+  «الكل / موجود / غير موجود» under «الجذر / الأصل الصرفي / الصيغة المعجمية».
+  A change resets list page and clears detail selection. The client threads the values through
+  `word-types-url-sync.ts` → `word-types-explorer.facade.ts` → `word-types.api.ts` →
+  `word-types-cache.ts`, sends a flag only when set, and adds a compact cache segment only when
+  active. Grouped-detail reads carry neither these flags nor search; their numeric selection is
+  already scoped by the grammatical fields.
+- **Word Types scoped four-count summary** is the mounted, non-interactive
+  `word-type-scope-counts` strip between filters and view tabs. It reuses the exact
+  `WORD_TYPE_TABLE_VIEW_OPTIONS` short labels and order «كلمات / جذور / أصول / صيغ».
+  Each count equals the corresponding tab's `TotalCount` for the identical scope and belongs to
+  the scoped word-context family, never the global `words_count` family.
+  - The client reads `GET api/words/word-types/scope-counts` as
+    `WordTypeScopeCountsDto`. The widget owns `scopeCountsState` and counts-only
+    `retryScopeCounts` so it never blocks the table.
+  - Counts reload only when type/child/case/tense/voice/search/flags change, not on
+    `tableView`, sort, or page. The frontend `scopeCounts(...)` cache identity contains the full
+    scope and omits view/sort/page.
+  - A confirmed leaf shows loading then four values (including zero); counts failure shows a
+    compact retry; table failure hides unconfirmed numbers; parent/prompt scope shows nothing.
+    The strip host remains mounted through all states.
+- **Word Types page sizes** remain 1000 rows per list page
+  (`WORD_TYPES_PAGE_SIZE`) with `CdkVirtualScrollViewport`, and 100 items per detail page
+  (`WORD_TYPES_DETAIL_PAGE_SIZE`). The mounted tabs/table/details contract remains intact.
+- The data-access client exposes grouped detail at
+  `.../word-types/table/{roots|stems|lemmas}/{dimensionId}`. Every request includes numeric
+  kind/id plus the active grammatical scope (type, optional child code, and concrete
+  case/tense/voice). Member words and ayahs are paged; surahs are single-shot.
+  `WordTypesCacheKeys.grouped*` isolates kind, numeric id, scope, view, and page for paged views,
+  so grouped selections cannot cross-serve one another.
 
+The
+[Backend Words reads README](../../../../../../Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/README.md)
+owns server search/presence predicates, SQL count formulas, grouping/order, command counts, and
+grouped-detail hydration mechanics.
 ## Related
 
-- Backend read models: `Backend/.../Persistence/Reads/Quran/Words/README.md`.
-- Contracts: this README + the components/services here are the truth; the thin index is
-  `docs/contracts/words-explorers.md`. The planning artifacts of the features that built
-  the explorers were swept per the planning-artifact lifecycle rule and live in git history.
+- This README and the local components/services own current frontend Words behavior.
+- Backend ordering, association, query, count, and hydration owner:
+  [`Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/README.md`](../../../../../../Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/README.md).
+- Thin contract index:
+  [`docs/contracts/words-explorers.md`](../../../../../../docs/contracts/words-explorers.md).
+- Planning-artifact lifecycle: [`docs/README.md`](../../../../../../docs/README.md).
