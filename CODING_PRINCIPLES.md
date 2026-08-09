@@ -86,12 +86,13 @@ Every change deletes the offending comments **in the area it touches**, in the s
 the work, and updates that area's README when something worth keeping was removed. There is no
 separate comment-cleanup pass and no backlog.
 
-Deeper clean-code review guidance (naming/functions, comments/formatting, SOLID,
-DRY/KISS/YAGNI, and AI-generated-code failure modes) lives under
-the native `engineering-review` Skill's `references/clean-code-guard/` pack. It is
-reference material for formal review, not a separate Skill. **On comments specifically,
-the Comment Policy above is stricter than the generic pack and overrides it** — the pack's
-list of comment kinds that "earn their keep" is not this project's bar.
+Sections 2–4 and 7 of this document are the canonical clean-code rules. The native
+`engineering-review` Skill keeps two on-demand references under
+`references/clean-code-guard/` — `ai-failure-modes.md` (AI-generated-code failure modes)
+and `review-checklist.md` (an optional deep-review traversal aid). They are reference
+material for formal review, not a separate Skill, and they point back to the headings
+here rather than restating them. **On comments specifically, the Comment Policy above is
+stricter than any generic guidance and overrides it.**
 
 Project overrides for that generic guidance:
 

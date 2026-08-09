@@ -1,20 +1,10 @@
 ---
 name: commit-workflow
-description: >-
-  Pointer for non-Claude agents. Canonical commit-workflow instructions live at
-  `.claude/skills/commit-workflow/SKILL.md`. Safe Git commit workflow for the Quran
-  Dashboard monorepo: one root status, safe explicit path staging, focused commit
-  planning, push readiness, and the post-PR sync-to-dev workflow (only after the PR
-  is merged). Use that Claude skill as the single source of truth.
+description: Use when asked to inspect, branch, stage, commit, push, open a PR, or synchronize Git state in the Quran Dashboard monorepo.
 ---
 
-# Commit Workflow Skill Pointer
+# Commit Workflow (Adapter)
 
-Canonical source:
+Canonical Skill: `.claude/skills/commit-workflow/SKILL.md`
 
-- `.claude/skills/commit-workflow/SKILL.md`
-
-Non-Claude agents should read and follow the canonical Claude skill file (including
-Section 7, the post-PR sync-to-dev workflow). Do not keep a second full copy of
-commit-workflow rules here; this file exists only to route agents to the single source of
-truth.
+Read that file in full and follow it as the single source of truth.

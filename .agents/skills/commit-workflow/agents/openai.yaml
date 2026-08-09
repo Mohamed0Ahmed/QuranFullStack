@@ -1,4 +1,4 @@
 interface:
   display_name: "Commit Workflow"
-  short_description: "Plan safe monorepo commits"
-  default_prompt: "Use $commit-workflow to inspect monorepo status and plan safe commits."
+  short_description: "Perform requested monorepo Git operations safely"
+  default_prompt: "Use $commit-workflow to perform the requested Git operation (inspect, branch, stage, commit, push, PR, or sync) safely from the monorepo root."

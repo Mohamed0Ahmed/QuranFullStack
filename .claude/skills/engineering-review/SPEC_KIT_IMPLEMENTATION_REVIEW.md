@@ -20,8 +20,9 @@ You cannot judge scope without knowing what was asked. First pin down:
    have a folder there.** A feature deletes its own planning artifacts in its last commit
    before merge, *after* this review passes — which is why the artifacts you are reviewing
    against still exist while you run, and why a missing `specs/<feature>/` means the feature
-   already closed rather than that something was lost. See the planning-artifact lifecycle
-   rule in `CLAUDE.md`.
+   already closed rather than that something was lost. The lifecycle rule is
+   `docs/README.md` §Lifecycle — a feature deletes its own planning artifacts before it
+   merges.
 2. **Which phase / tasks were requested** — read it from the user's request
    ("implemented Phase 3", "did T013–T018", "User Story 2"). If the request is vague,
    infer the intended scope from `tasks.md` and **state the assumption** you made.
