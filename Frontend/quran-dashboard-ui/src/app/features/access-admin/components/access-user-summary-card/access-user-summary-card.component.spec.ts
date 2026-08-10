@@ -42,23 +42,35 @@ function element(
 }
 
 describe('AccessUserSummaryCardComponent', () => {
-  it.each([
-    ['a whitespace-only stored name', '   '],
-    ['no stored name', null],
-  ])('heads the workspace with the email when the account has %s', (_scenario, displayName) => {
-    const fixture = setup({ ...USER, displayName });
+  it('exposes the whole login email rather than truncating the safety target', () => {
+    const fixture = setup({ ...USER, email: 'a-very-long-account-address@example.test' });
+    const email = element(fixture, 'access-user-summary-email');
 
-    expect(element(fixture, 'access-user-summary-name').textContent?.trim()).toBe(
-      'member@example.test',
-    );
+    expect(email.textContent?.trim()).toBe('a-very-long-account-address@example.test');
+    expect(email.classList).not.toContain('qd-truncate');
+    expect(email.classList).toContain('qd-ltr-isolate');
   });
 
-  it('titles the truncatable name with its full value', () => {
-    const fixture = setup({ ...USER, displayName: 'اسم طويل جدًا لحساب عضو في المنصة' });
-    const name = element(fixture, 'access-user-summary-name');
+  it.each([
+    ['pending', 'qd-badge--lifecycle-pending'],
+    ['active', 'qd-badge--lifecycle-active'],
+    ['disabled', 'qd-badge--lifecycle-disabled'],
+    ['archived', 'qd-badge--lifecycle-unknown'],
+  ])('carries the %s lifecycle semantics on its own badge', (status, expectedClass) => {
+    const fixture = setup({ ...USER, status });
+    const badge = element(fixture, 'access-user-summary-lifecycle');
 
-    expect(name.classList).toContain('qd-truncate');
-    expect(name.getAttribute('title')).toBe('اسم طويل جدًا لحساب عضو في المنصة');
+    expect(badge.classList).toContain('qd-badge--status');
+    expect(badge.classList).toContain(expectedClass);
+    expect(badge.classList).not.toContain('qd-badge--membership-owner');
+  });
+
+  it('keeps Owner membership on a badge that carries no lifecycle class', () => {
+    const fixture = setup({ ...USER, isOwner: true });
+    const membership = element(fixture, 'access-user-summary-membership');
+
+    expect(membership.classList).toContain('qd-badge--membership-owner');
+    expect(membership.className).not.toContain('qd-badge--lifecycle');
   });
 
   it.each([
@@ -108,11 +120,11 @@ describe('AccessUserSummaryCardComponent', () => {
     ).toBe('member@example.test');
   });
 
-  it('names the workspace before a user is chosen, without inventing an account', () => {
+  it('invents no account before a user is chosen', () => {
     const fixture = setup(null);
     const root = fixture.nativeElement as HTMLElement;
 
-    expect(root.textContent).toContain('مساحة عمل الحساب');
+    expect(root.textContent?.trim()).toBe('');
     expect(root.querySelector('[data-testid="access-user-summary-badges"]')).toBeNull();
     expect(root.querySelector('[dir="ltr"]')).toBeNull();
   });

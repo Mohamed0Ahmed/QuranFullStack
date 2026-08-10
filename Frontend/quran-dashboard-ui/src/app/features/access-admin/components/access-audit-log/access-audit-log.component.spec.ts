@@ -97,6 +97,9 @@ function setup(
     hasNextPage?: boolean;
     targetSearch?: AccessUserSearchState;
     actorSearch?: AccessUserSearchState;
+    appending?: boolean;
+    appendError?: string | null;
+    appendedCount?: number;
   } = {},
 ): {
   fixture: ComponentFixture<AccessAuditLogComponent>;
@@ -112,6 +115,9 @@ function setup(
   fixture.componentRef.setInput('loading', options.loading ?? false);
   fixture.componentRef.setInput('error', options.error ?? null);
   fixture.componentRef.setInput('hasNextPage', options.hasNextPage ?? false);
+  fixture.componentRef.setInput('appending', options.appending ?? false);
+  fixture.componentRef.setInput('appendError', options.appendError ?? null);
+  fixture.componentRef.setInput('appendedCount', options.appendedCount ?? 0);
   fixture.componentRef.setInput('targetSearch', options.targetSearch ?? EMPTY_ACCESS_USER_SEARCH);
   fixture.componentRef.setInput('actorSearch', options.actorSearch ?? EMPTY_ACCESS_USER_SEARCH);
   const filters: AccessAuditFilters[] = [];
@@ -271,7 +277,11 @@ describe('AccessAuditLogComponent', () => {
   });
 
   it('keeps the two pickers independent and lets a chosen account be cleared', () => {
-    const state = setup({ actorSearch: found([CANDIDATES[1]]) });
+    const state = setup();
+    typeInto(state.fixture, 'access-audit-actor-search', 'المالك');
+    element(state.fixture, 'access-audit-actor-find').click();
+    state.fixture.componentRef.setInput('actorSearch', found([CANDIDATES[1]]));
+    state.fixture.detectChanges();
 
     expect(
       (state.fixture.nativeElement as HTMLElement).querySelector(
@@ -294,9 +304,7 @@ describe('AccessAuditLogComponent', () => {
 
   it('offers only catalogued permission codes as filter values', () => {
     const { fixture, filters } = setup();
-    const select = fixture.nativeElement.querySelector(
-      '#access-audit-permission',
-    ) as HTMLSelectElement;
+    const select = element(fixture, 'access-audit-permission') as HTMLSelectElement;
 
     expect(Array.from(select.options, (option) => option.value)).toEqual([
       '',
@@ -330,13 +338,56 @@ describe('AccessAuditLogComponent', () => {
   });
 
   it.each([
-    ['loading', { loading: true }, 'qd-state-loading'],
-    ['error', { error: 'تعذر تحميل السجل.' }, 'qd-state-error'],
-    ['empty', { events: [] }, 'qd-state-empty'],
+    ['loading', { loading: true }, 'qd-skeleton-rows'],
+    ['error', { error: 'تعذر تحميل السجل.' }, 'access-audit-error'],
+    ['empty', { events: [] }, 'access-audit-empty'],
   ] as const)('renders the shared %s state instead of a list', (_name, options, testId) => {
     const { fixture } = setup(options);
 
     expect(element(fixture, testId)).toBeTruthy();
     expect((fixture.nativeElement as HTMLElement).querySelector('ul.access-audit-log__list')).toBeNull();
+  });
+
+  it('keeps the loaded events mounted while an append is in flight', () => {
+    const { fixture } = setup({ hasNextPage: true, appending: true });
+    const list = (fixture.nativeElement as HTMLElement).querySelector('ul.access-audit-log__list');
+
+    expect(list).toBeTruthy();
+    expect(list?.querySelectorAll('[role="listitem"]')).toHaveLength(EVENTS.length);
+    expect(list?.getAttribute('aria-busy')).toBe('true');
+    expect((element(fixture, 'access-audit-next-page') as HTMLButtonElement).disabled).toBe(true);
+    expect(element(fixture, 'access-audit-next-page').getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('reports an append failure beside the events it did not replace', () => {
+    const { fixture } = setup({ hasNextPage: true, appendError: 'تعذر تحميل المزيد.' });
+
+    expect(element(fixture, 'access-audit-append-error').textContent).toContain(
+      'تعذر تحميل المزيد.',
+    );
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('ul.access-audit-log__list [role="listitem"]'),
+    ).toHaveLength(EVENTS.length);
+  });
+
+  it('announces the appended count through a permanently mounted polite region', () => {
+    const { fixture } = setup({ hasNextPage: true });
+    const announcement = element(fixture, 'access-audit-append-announcement');
+
+    expect(announcement.getAttribute('role')).toBe('status');
+    expect(announcement.getAttribute('aria-live')).toBe('polite');
+    expect(announcement.textContent?.trim()).toBe('');
+
+    fixture.componentRef.setInput('appendedCount', 25);
+    fixture.detectChanges();
+
+    expect(element(fixture, 'access-audit-append-announcement').textContent).toContain('25');
+  });
+
+  it('never offers numeric pagination beside the cursor append action', () => {
+    const { fixture } = setup({ hasNextPage: true });
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('qd-pagination')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('nav[aria-label]')).toBeNull();
   });
 });

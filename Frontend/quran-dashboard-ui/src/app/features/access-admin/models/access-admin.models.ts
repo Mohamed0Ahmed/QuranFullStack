@@ -90,6 +90,37 @@ export interface AccessUserPermissionTarget {
   readonly status: string;
 }
 
+export const ACCESS_ACCOUNT_VARIANTS = [
+  'pending-non-owner',
+  'active-non-owner',
+  'disabled-non-owner',
+  'active-owner',
+  'pending-owner',
+  'disabled-owner',
+  'unknown-status',
+] as const;
+
+export type AccessAccountVariant = (typeof ACCESS_ACCOUNT_VARIANTS)[number];
+
+export function accessAccountVariant(
+  user: AccessUserPermissionTarget | null,
+): AccessAccountVariant | null {
+  if (user === null) {
+    return null;
+  }
+  const status = user.status;
+  if (status !== 'pending' && status !== 'active' && status !== 'disabled') {
+    return 'unknown-status';
+  }
+  return user.isOwner ? `${status}-owner` : `${status}-non-owner`;
+}
+
+export type AccessLifecycleTone = AccessUserStatus | 'unknown';
+
+export function accessLifecycleTone(status: string): AccessLifecycleTone {
+  return status === 'pending' || status === 'active' || status === 'disabled' ? status : 'unknown';
+}
+
 export function canSelectUserPermissions(user: AccessUserPermissionTarget | null): boolean {
   return user !== null && !user.isOwner && (user.status === 'pending' || user.status === 'active');
 }

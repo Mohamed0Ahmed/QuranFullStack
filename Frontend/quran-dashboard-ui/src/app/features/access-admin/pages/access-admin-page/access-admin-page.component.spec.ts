@@ -14,6 +14,7 @@ import { AccessUserSummary } from '../../../../core/api/generated/models/access-
 import { CurrentUserResponse } from '../../../../core/api/generated/models/current-user-response';
 import { PermissionCatalogueItem } from '../../../../core/api/generated/models/permission-catalogue-item';
 import { CurrentUserStore } from '../../../../core/auth/current-user.store';
+import { QD_BP_WIDE_QUERY } from '../../../../shared/layout/breakpoints';
 import { AccessAdminApi } from '../../data-access/access-admin.api';
 import { AccessAdminTab } from '../../models/access-admin-tabs';
 import { AccessAdminPageComponent } from './access-admin-page.component';
@@ -182,6 +183,19 @@ function absent(fixture: ComponentFixture<AccessAdminPageComponent>, testId: str
   return fixture.nativeElement.querySelector(`[data-testid="${testId}"]`) === null;
 }
 
+function stubViewport(wide: boolean): void {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query === QD_BP_WIDE_QUERY ? wide : !wide,
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }));
+}
+
 describe('AccessAdminPageComponent', () => {
   let currentUserStore: CurrentUserStore;
   let httpTesting: HttpTestingController;
@@ -189,6 +203,7 @@ describe('AccessAdminPageComponent', () => {
 
   beforeEach(() => {
     queryParamMap$ = new BehaviorSubject(convertToParamMap({}));
+    stubViewport(true);
 
     TestBed.configureTestingModule({
       imports: [AccessAdminPageComponent],
@@ -567,9 +582,7 @@ describe('AccessAdminPageComponent', () => {
       expect(element(fixture, 'access-mutation-message-success').textContent).toContain(
         'تم حفظ التغيير',
       );
-      expect(
-        (fixture.nativeElement as HTMLElement).querySelector('[data-testid="qd-state-error"]'),
-      ).toBeNull();
+      expect(absent(fixture, 'access-mutation-message-error')).toBe(true);
     });
 
     it('reports a version conflict as a recovery notice rather than an error', async () => {
@@ -597,30 +610,62 @@ describe('AccessAdminPageComponent', () => {
 
       const notice = element(fixture, 'access-mutation-message-notice');
       expect(notice.textContent).toContain('تغيرت بيانات المستخدم');
-      expect(notice.querySelector('[data-testid="qd-state-error"]')).toBeNull();
+      expect(absent(fixture, 'access-mutation-message-error')).toBe(true);
     });
   });
 
   describe('the mutation message region', () => {
-    it.each([
-      { section: 'workspace' as const, panel: 'access-admin-panel-workspace' },
-      { section: 'security' as const, panel: 'access-admin-panel-security' },
-    ])(
-      'mounts an empty live region inside the $section panel before any write runs',
-      async ({ section, panel }) => {
-        const fixture = await renderPage(user('active'));
+    it('mounts a permanently empty polite announcer in the workspace before any write runs', async () => {
+      const fixture = await renderPage(user('active'));
 
-        showTab(fixture, section);
+      const announcer = element(fixture, 'access-details-status');
 
-        const region = element(fixture, 'access-mutation-message-none');
-        const live = region.querySelector('[role="status"]');
+      expect(element(fixture, 'access-admin-panel-workspace').contains(announcer)).toBe(true);
+      expect(announcer.getAttribute('role')).toBe('status');
+      expect(announcer.getAttribute('aria-live')).toBe('polite');
+      expect(announcer.textContent?.trim()).toBe('');
+      expect(announcer.getBoundingClientRect().height).toBe(0);
+      expect(absent(fixture, 'access-mutation-message-success')).toBe(true);
+    });
 
-        expect(element(fixture, panel).contains(region)).toBe(true);
-        expect(live).toBeTruthy();
-        expect(live?.classList.contains('qd-state--reserve')).toBe(true);
-        expect(region.textContent?.trim()).toBe('');
-      },
-    );
+    it('mounts a permanently empty polite announcer in the security section too', async () => {
+      const fixture = await renderPage(user('active'));
+
+      showTab(fixture, 'security');
+      const announcer = element(fixture, 'access-security-announcer');
+
+      expect(element(fixture, 'access-admin-panel-security').contains(announcer)).toBe(true);
+      expect(announcer.getAttribute('role')).toBe('status');
+      expect(announcer.textContent?.trim()).toBe('');
+    });
+
+    it('announces a write failure once by shielding its alert from the polite details region', async () => {
+      const activeUser = user('active', 4, ['abwab.doors.create']);
+      const fixture = await renderPage(activeUser);
+      await selectUser(fixture, activeUser);
+      togglePermission(fixture, 'abwab.doors.edit', true);
+
+      confirmAction(fixture, 'access-request-permissions');
+      httpTesting
+        .expectOne(`${ACCESS_BASE_URL}/users/17/permissions`)
+        .flush(
+          { isSuccess: false, message: 'تعذر حفظ الصلاحيات.', data: null },
+          { status: 500, statusText: 'Server Error' },
+        );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const alert = element(fixture, 'access-mutation-message-error');
+      const status = element(fixture, 'access-details-status');
+
+      expect(alert.getAttribute('role')).toBe('alert');
+      expect(status.contains(alert)).toBe(true);
+      expect(alert.closest('[aria-live]')?.getAttribute('aria-live')).toBe('off');
+      expect(
+        (element(fixture, 'access-permission-abwab.doors.edit') as HTMLInputElement).checked,
+      ).toBe(true);
+    });
 
     it('clears a settled message when the operator moves to another section', async () => {
       const activeUser = user('active');
@@ -638,7 +683,7 @@ describe('AccessAdminPageComponent', () => {
       showTab(fixture, 'security');
 
       expect(absent(fixture, 'access-mutation-message-success')).toBe(true);
-      expect(element(fixture, 'access-mutation-message-none').textContent?.trim()).toBe('');
+      expect(element(fixture, 'access-security-announcer').textContent?.trim()).toBe('');
     });
   });
 
@@ -670,11 +715,7 @@ describe('AccessAdminPageComponent', () => {
       expect(element(fixture, 'access-relink-new-sub')).toBeTruthy();
       showTab(fixture, 'workspace');
 
-      (
-        element(fixture, 'access-permissions-section').querySelector(
-          '[data-testid="qd-state-action"]',
-        ) as HTMLButtonElement
-      ).click();
+      (element(fixture, 'access-catalogue-retry') as HTMLButtonElement).click();
       flushCatalogue({ kind: 'served', assignmentReady: true });
       await fixture.whenStable();
       fixture.detectChanges();
@@ -1267,6 +1308,375 @@ describe('AccessAdminPageComponent', () => {
     });
   });
 
+  describe('the exhaustive lifecycle and membership matrix', () => {
+    it.each([
+      {
+        variant: 'pending-non-owner',
+        detail: user('pending'),
+        body: 'access-permissions-section',
+        absentBodies: ['access-owner-permissions', 'access-disabled-permissions', 'access-unknown-status'],
+        lifecycle: 'access-request-accept',
+      },
+      {
+        variant: 'active-non-owner',
+        detail: user('active'),
+        body: 'access-permissions-section',
+        absentBodies: ['access-owner-permissions', 'access-disabled-permissions', 'access-unknown-status'],
+        lifecycle: 'access-request-disable',
+      },
+      {
+        variant: 'disabled-non-owner',
+        detail: user('disabled'),
+        body: 'access-disabled-permissions',
+        absentBodies: ['access-permissions-section', 'access-owner-permissions', 'access-unknown-status'],
+        lifecycle: 'access-request-reactivate',
+      },
+      {
+        variant: 'active-owner',
+        detail: user('active', 4, [], { isOwner: true }),
+        body: 'access-owner-permissions',
+        absentBodies: ['access-permissions-section', 'access-disabled-permissions', 'access-unknown-status'],
+        lifecycle: null,
+      },
+      {
+        variant: 'pending-owner',
+        detail: user('pending', 4, [], { isOwner: true }),
+        body: 'access-owner-permissions',
+        absentBodies: ['access-permissions-section', 'access-disabled-permissions', 'access-unknown-status'],
+        lifecycle: null,
+      },
+      {
+        variant: 'disabled-owner',
+        detail: user('disabled', 4, [], { isOwner: true }),
+        body: 'access-owner-permissions',
+        absentBodies: ['access-permissions-section', 'access-disabled-permissions', 'access-unknown-status'],
+        lifecycle: null,
+      },
+      {
+        variant: 'unknown-status',
+        detail: user('active', 4, [], { status: 'archived' }),
+        body: 'access-unknown-status',
+        absentBodies: ['access-permissions-section', 'access-owner-permissions', 'access-disabled-permissions'],
+        lifecycle: null,
+      },
+    ])('renders exactly one body for $variant', async ({ detail, body, absentBodies, lifecycle }) => {
+      const fixture = await renderPage(detail);
+      await selectUser(fixture, detail);
+
+      expect(element(fixture, body)).toBeTruthy();
+      for (const other of absentBodies) {
+        expect(absent(fixture, other)).toBe(true);
+      }
+      if (lifecycle === null) {
+        expect(absent(fixture, 'access-account-actions')).toBe(true);
+        expect(absent(fixture, 'access-request-accept')).toBe(true);
+        expect(absent(fixture, 'access-request-disable')).toBe(true);
+        expect(absent(fixture, 'access-request-reactivate')).toBe(true);
+      } else {
+        expect(element(fixture, lifecycle)).toBeTruthy();
+      }
+    });
+
+    it('offers an unknown status neither an editor nor a mutation control', async () => {
+      const unknown = user('active', 4, ['abwab.doors.create'], { status: 'archived' });
+      const fixture = await renderPage(unknown);
+      await selectUser(fixture, unknown);
+
+      expect(
+        (fixture.nativeElement as HTMLElement).querySelector('qd-access-permission-editor'),
+      ).toBeNull();
+      expect(absent(fixture, 'access-account-actions')).toBe(true);
+      expect(element(fixture, 'access-user-summary-lifecycle').textContent?.trim()).toBe(
+        'حالة غير معروفة',
+      );
+      expect(
+        element(fixture, 'access-user-summary-lifecycle').classList.contains(
+          'qd-badge--lifecycle-disabled',
+        ),
+      ).toBe(false);
+    });
+  });
+
+  describe('the responsive composition', () => {
+    it('shows the rail beside the details at Wide and mounts no list sheet', async () => {
+      const fixture = await renderPage(user('active'));
+
+      expect(element(fixture, 'access-admin-user-rail').classList).toContain('qd-page-rail--l');
+      expect(element(fixture, 'access-admin-user-rail').querySelector('qd-access-user-list')).toBeTruthy();
+      expect(absent(fixture, 'access-selected-context-bar')).toBe(true);
+      expect(absent(fixture, 'access-user-list-sheet')).toBe(true);
+      expect((fixture.nativeElement as HTMLElement).querySelectorAll('.qd-page-shell')).toHaveLength(1);
+    });
+
+    it('replaces the rail with a pinned context bar and a focus-trapped list sheet below Wide', async () => {
+      stubViewport(false);
+      const activeUser = user('active');
+      const fixture = await renderPage(activeUser);
+      element(fixture, 'access-open-user-list').click();
+      fixture.detectChanges();
+      await selectUser(fixture, activeUser);
+      element(fixture, 'access-open-user-list').click();
+      fixture.detectChanges();
+      element(fixture, 'access-user-list-sheet-close').click();
+      fixture.detectChanges();
+
+      expect(absent(fixture, 'access-admin-user-rail')).toBe(true);
+      const bar = element(fixture, 'access-selected-context-bar');
+      expect(bar.textContent).toContain('عضو');
+      expect(bar.querySelector('[data-testid="access-user-summary-email"]')?.textContent).toContain(
+        'member@example.test',
+      );
+      expect(bar.querySelector('[data-testid="access-user-summary-lifecycle"]')).toBeTruthy();
+      expect(absent(fixture, 'access-user-list-sheet')).toBe(true);
+
+      element(fixture, 'access-open-user-list').click();
+      fixture.detectChanges();
+
+      const sheet = element(fixture, 'access-user-list-sheet');
+      expect(sheet.getAttribute('aria-modal')).toBe('true');
+      expect(sheet.querySelector('qd-access-user-list')).toBeTruthy();
+    });
+
+    it('carries the account search in the pinned context bar and opens the filtered sheet', async () => {
+      stubViewport(false);
+      const activeUser = user('active');
+      const fixture = await renderPage(activeUser);
+      element(fixture, 'access-open-user-list').click();
+      fixture.detectChanges();
+      await selectUser(fixture, activeUser);
+
+      const bar = element(fixture, 'access-selected-context-bar');
+      const search = bar.querySelector(
+        '[data-testid="access-context-search"]',
+      ) as HTMLInputElement;
+      search.value = 'عضو';
+      search.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      element(fixture, 'access-context-search-form').dispatchEvent(
+        new Event('submit', { cancelable: true }),
+      );
+      const request = httpTesting.expectOne(
+        (candidate) =>
+          candidate.url === `${ACCESS_BASE_URL}/users` && candidate.params.get('search') === 'عضو',
+      );
+      request.flush(
+        success({ items: [summary(activeUser)], page: 1, pageSize: 25, totalCount: 1 }),
+      );
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const sheet = element(fixture, 'access-user-list-sheet');
+      expect(sheet.querySelector('qd-access-user-list')).toBeTruthy();
+      expect(
+        (sheet.querySelector('[data-testid="access-users-search"]') as HTMLInputElement).value,
+      ).toBe('عضو');
+    });
+
+    it('renders the identity summary once below Wide, in the pinned context bar only', async () => {
+      stubViewport(false);
+      const activeUser = user('active');
+      const fixture = await renderPage(activeUser);
+      element(fixture, 'access-open-user-list').click();
+      fixture.detectChanges();
+      await selectUser(fixture, activeUser);
+      const root = fixture.nativeElement as HTMLElement;
+
+      for (const testId of [
+        'access-user-summary-email',
+        'access-user-summary-lifecycle',
+        'access-user-summary-badges',
+      ]) {
+        expect(root.querySelectorAll(`[data-testid="${testId}"]`)).toHaveLength(1);
+      }
+      expect(
+        element(fixture, 'access-selected-context-bar').querySelector(
+          '[data-testid="access-user-summary-email"]',
+        ),
+      ).toBeTruthy();
+    });
+
+    it('keeps the single identity summary in the details header at Wide', async () => {
+      const activeUser = user('active');
+      const fixture = await renderPage(activeUser);
+      await selectUser(fixture, activeUser);
+
+      expect(
+        (fixture.nativeElement as HTMLElement).querySelectorAll(
+          '[data-testid="access-user-summary-email"]',
+        ),
+      ).toHaveLength(1);
+      expect(
+        element(fixture, 'access-details-identity').parentElement?.querySelector(
+          '[data-testid="access-user-summary-email"]',
+        ),
+      ).toBeTruthy();
+    });
+
+    it('closes the list sheet once an account is chosen from it', async () => {
+      stubViewport(false);
+      const activeUser = user('active');
+      const fixture = await renderPage(activeUser);
+      element(fixture, 'access-open-user-list').click();
+      fixture.detectChanges();
+
+      await selectUser(fixture, activeUser);
+
+      expect(absent(fixture, 'access-user-list-sheet')).toBe(true);
+    });
+  });
+
+  describe('the dirty review dock', () => {
+    it('exists only while the draft is dirty and keeps lifecycle actions outside it', async () => {
+      const activeUser = user('active', 4, ['abwab.doors.create']);
+      const fixture = await renderPage(activeUser);
+      await selectUser(fixture, activeUser);
+
+      expect(absent(fixture, 'access-permission-draft-bar')).toBe(true);
+
+      togglePermission(fixture, 'abwab.doors.edit', true);
+
+      const dock = element(fixture, 'access-permission-draft-bar');
+      expect(dock.querySelector('[data-testid="access-request-permissions"]')).toBeTruthy();
+      expect(dock.querySelector('[data-testid="access-discard-draft"]')).toBeTruthy();
+      expect(dock.querySelector('[data-testid="access-request-disable"]')).toBeNull();
+      expect(element(fixture, 'access-request-disable')).toBeTruthy();
+
+      element(fixture, 'access-discard-draft').click();
+      fixture.detectChanges();
+
+      expect(absent(fixture, 'access-permission-draft-bar')).toBe(true);
+    });
+
+    it('rides the details footer at Wide, where the panel scroller pins it', async () => {
+      const activeUser = user('active', 4, ['abwab.doors.create']);
+      const fixture = await renderPage(activeUser);
+      await selectUser(fixture, activeUser);
+      togglePermission(fixture, 'abwab.doors.edit', true);
+
+      const docks = (fixture.nativeElement as HTMLElement).querySelectorAll(
+        '[data-testid="access-permission-draft-bar"]',
+      );
+
+      expect(docks).toHaveLength(1);
+      expect(element(fixture, 'access-details-footer').contains(docks[0])).toBe(true);
+      expect(docks[0].classList.contains('access-admin-page__review-dock--pinned')).toBe(false);
+    });
+
+    it('leaves the details shell below Wide and becomes the page-pinned dock instead', async () => {
+      stubViewport(false);
+      const activeUser = user('active', 4, ['abwab.doors.create']);
+      const fixture = await renderPage(activeUser);
+      element(fixture, 'access-open-user-list').click();
+      fixture.detectChanges();
+      await selectUser(fixture, activeUser);
+      togglePermission(fixture, 'abwab.doors.edit', true);
+
+      const root = fixture.nativeElement as HTMLElement;
+      const docks = root.querySelectorAll('[data-testid="access-permission-draft-bar"]');
+
+      expect(docks).toHaveLength(1);
+      const dock = docks[0] as HTMLElement;
+      expect(dock.classList.contains('access-admin-page__review-dock--pinned')).toBe(true);
+      expect(absent(fixture, 'access-details-footer')).toBe(true);
+      expect(root.querySelector('[data-testid="access-details"]')?.contains(dock)).toBe(false);
+      expect(element(fixture, 'access-admin-panel-workspace').contains(dock)).toBe(true);
+      expect(dock.querySelector('[data-testid="access-request-permissions"]')).toBeTruthy();
+      expect(dock.querySelector('[data-testid="access-discard-draft"]')).toBeTruthy();
+
+      element(fixture, 'access-discard-draft').click();
+      fixture.detectChanges();
+
+      expect(absent(fixture, 'access-permission-draft-bar')).toBe(true);
+    });
+  });
+
+  describe('route-leave protection', () => {
+    it('resolves immediately without a dialog while the draft is clean', async () => {
+      const activeUser = user('active');
+      const fixture = await renderPage(activeUser);
+      await selectUser(fixture, activeUser);
+
+      await expect(fixture.componentInstance.confirmRouteLeave()).resolves.toBe(true);
+      expect(absent(fixture, 'access-leave-page-confirm')).toBe(true);
+    });
+
+    it('asks once, keeps the draft and the selection when declined, and lets a later leave through', async () => {
+      const activeUser = user('active', 4, ['abwab.doors.create']);
+      const fixture = await renderPage(activeUser);
+      await selectUser(fixture, activeUser);
+      togglePermission(fixture, 'abwab.doors.edit', true);
+
+      const first = fixture.componentInstance.confirmRouteLeave();
+      const second = fixture.componentInstance.confirmRouteLeave();
+      fixture.detectChanges();
+
+      expect(element(fixture, 'access-leave-page-confirm')).toBeTruthy();
+      expect(first).toBe(second);
+
+      element(fixture, 'access-leave-page-confirm-cancel').click();
+      fixture.detectChanges();
+
+      await expect(first).resolves.toBe(false);
+      expect(absent(fixture, 'access-leave-page-confirm')).toBe(true);
+      expect(
+        (element(fixture, 'access-permission-abwab.doors.edit') as HTMLInputElement).checked,
+      ).toBe(true);
+      expect(element(fixture, 'access-user-summary-email').textContent).toContain(
+        'member@example.test',
+      );
+      expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+
+      const third = fixture.componentInstance.confirmRouteLeave();
+      fixture.detectChanges();
+      element(fixture, 'access-leave-page-confirm-confirm').click();
+      fixture.detectChanges();
+
+      await expect(third).resolves.toBe(true);
+      expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+      expect(httpTesting.match(() => true)).toEqual([]);
+    });
+  });
+
+  describe('the audit append capability', () => {
+    it('appends the next cursor page in server order without replacing the mounted events', async () => {
+      const fixture = await renderPage(user('active'));
+      showTab(fixture, 'audit');
+
+      expect(absent(fixture, 'access-audit-next-page')).toBe(true);
+
+      element(fixture, 'access-audit-filters').dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      );
+      const filtered = httpTesting.expectOne(
+        (request) => request.url === `${ACCESS_BASE_URL}/audit-events`,
+      );
+      filtered.flush(success({ items: AUDIT_EVENTS, nextCursor: 'cursor-2' }));
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      element(fixture, 'access-audit-next-page').click();
+      const appended = httpTesting.expectOne(
+        (request) =>
+          request.url === `${ACCESS_BASE_URL}/audit-events` &&
+          request.params.get('cursor') === 'cursor-2',
+      );
+      appended.flush(
+        success({ items: [{ ...AUDIT_EVENTS[0], id: 5, reason: 'حدث لاحق' }], nextCursor: null }),
+      );
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const rows = Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll('.access-audit-log__row'),
+      );
+      expect(rows).toHaveLength(3);
+      expect(rows[2].textContent).toContain('حدث لاحق');
+      expect(element(fixture, 'access-audit-append-announcement').textContent).toContain('1');
+      expect(absent(fixture, 'access-audit-next-page')).toBe(true);
+    });
+  });
+
   describe('access, structure and direction', () => {
     it('loads the workspace when Owner access resolves after the page is mounted', async () => {
       const listedUser = user('active');
@@ -1276,7 +1686,7 @@ describe('AccessAdminPageComponent', () => {
       fixture.detectChanges();
       const root = fixture.nativeElement as HTMLElement;
 
-      expect(root.querySelector('[data-testid="qd-state-loading"]')).toBeTruthy();
+      expect(root.querySelector('[data-testid="access-admin-checking"]')).toBeTruthy();
       expect(root.textContent).not.toContain('لا تملك صلاحية إدارة الوصول');
       httpTesting.expectNone((request) => request.url === `${ACCESS_BASE_URL}/users`);
 

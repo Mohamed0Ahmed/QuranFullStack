@@ -1,6 +1,9 @@
 .access-lifecycle-actions {
   display: grid;
   gap: var(--qd-space-3);
+  padding: var(--qd-card-padding);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
 }
 
 .access-lifecycle-actions__actions {

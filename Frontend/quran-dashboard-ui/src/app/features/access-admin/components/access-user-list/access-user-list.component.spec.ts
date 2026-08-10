@@ -128,6 +128,55 @@ describe('AccessUserListComponent', () => {
     ).toEqual(['access-user-17', 'access-user-18']);
   });
 
+  it.each([
+    ['pending', 'qd-badge--lifecycle-pending'],
+    ['active', 'qd-badge--lifecycle-active'],
+    ['disabled', 'qd-badge--lifecycle-disabled'],
+    ['archived', 'qd-badge--lifecycle-unknown'],
+  ])('carries the %s lifecycle semantics on the row badge', (status, expectedClass) => {
+    const fixture = setup([{ ...USER, status }]);
+    const badge = element(fixture, 'access-user-lifecycle-17');
+
+    expect(badge.classList).toContain('qd-badge--status');
+    expect(badge.classList).toContain(expectedClass);
+    expect(badge.className).not.toContain('qd-badge--membership-owner');
+  });
+
+  it('marks the selected row through the shared logical selection state', () => {
+    const fixture = setup([USER, { ...USER, id: 18, email: 'second@example.test' }]);
+    fixture.componentRef.setInput('selectedUserId', 18);
+    fixture.detectChanges();
+    const items = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('[role="listitem"]'),
+    );
+
+    expect(items[0].classList).not.toContain('qd-is-selected');
+    expect(items[1].classList).toContain('qd-is-selected');
+    expect(items[1].getAttribute('aria-current')).toBe('true');
+    expect(items[1].getAttribute('aria-posinset')).toBe('2');
+    expect(items[1].getAttribute('aria-setsize')).toBe('2');
+  });
+
+  it('renders a content-shaped skeleton rather than a text loader while the page loads', () => {
+    const fixture = setup();
+    fixture.componentRef.setInput('loading', true);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="qd-skeleton-rows"]')).toBeTruthy();
+    expect(root.querySelector('[role="list"]')).toBeNull();
+  });
+
+  it('scopes a read failure to the list without an alert role', () => {
+    const fixture = setup();
+    fixture.componentRef.setInput('error', 'تعذر تحميل بيانات إدارة الوصول.');
+    fixture.detectChanges();
+    const failure = element(fixture, 'access-users-error');
+
+    expect(failure.textContent).toContain('تعذر تحميل بيانات إدارة الوصول.');
+    expect(failure.getAttribute('role')).toBeNull();
+  });
+
   it('titles the truncatable name and email with their full values', () => {
     const fullName = 'اسم طويل جدًا لحساب عضو في المنصة';
     const fixture = setup([{ ...USER, displayName: fullName }]);

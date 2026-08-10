@@ -1,4 +1,4 @@
-<section class="qd-card access-advanced-security" aria-labelledby="access-advanced-security-title">
+<section class="qd-surface access-advanced-security" aria-labelledby="access-advanced-security-title">
   <header class="access-advanced-security__header">
     <h2 id="access-advanced-security-title" class="qd-card-title">الأمان المتقدم</h2>
     <p class="qd-text-muted">
@@ -9,7 +9,7 @@
   @if (user(); as target) {
     <section class="access-advanced-security__panel" aria-labelledby="access-relink-title">
       <h3 id="access-relink-title" class="qd-card-title">إعادة ربط معرّف الدخول</h3>
-      <p class="qd-text-muted">الحساب المحدد: <span dir="ltr">{{ target.email }}</span></p>
+      <p class="qd-text-muted">الحساب المحدد: <span class="qd-ltr-isolate" dir="ltr">{{ target.email }}</span></p>
       <p class="qd-text-muted">
         تُعيد ربط الحساب بمعرّف دخول جديد لاستعادة الوصول. تتطلب إثبات هوية موثّقًا ولا تعتمد على البريد الإلكتروني وحده، وتنطبق على الحساب المحدد أيًّا كان دوره بما في ذلك حساب المالك.
       </p>
@@ -23,33 +23,56 @@
           احفظ تعديلات الصلاحيات أو تجاهلها قبل إعادة ربط المعرّف.
         </p>
       }
-      <label class="access-advanced-security__field" for="access-relink-new-sub">معرّف الدخول الجديد</label>
-      <input id="access-relink-new-sub" class="qd-input" type="text" autocomplete="off" data-testid="access-relink-new-sub" [value]="newSub()" [disabled]="busyAction() !== null" (input)="updateNewSub($event)" />
-      <label class="access-advanced-security__field" for="access-relink-evidence">رمز إثبات الهوية</label>
-      <input id="access-relink-evidence" class="qd-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" data-testid="access-relink-evidence" [value]="evidenceToken()" [disabled]="busyAction() !== null" (input)="updateEvidenceToken($event)" />
-      <button type="button" class="qd-btn qd-btn-secondary" data-testid="access-relink-preview" [disabled]="!newSub().trim() || !evidenceToken().trim() || busyAction() !== null || hasUnsavedPermissions()" (click)="requestRelinkPreview()">معاينة الربط</button>
+      <qd-form-field label="معرّف الدخول الجديد">
+        <input qdControl type="text" autocomplete="off" data-testid="access-relink-new-sub" [value]="newSub()" [disabled]="busyAction() !== null" (input)="updateNewSub($event)" />
+      </qd-form-field>
+      <qd-form-field label="رمز إثبات الهوية">
+        <input qdControl type="password" autocomplete="off" autocapitalize="off" spellcheck="false" data-testid="access-relink-evidence" [value]="evidenceToken()" [disabled]="busyAction() !== null" (input)="updateEvidenceToken($event)" />
+      </qd-form-field>
+      <button
+        type="button"
+        qdAction="secondary"
+        data-testid="access-relink-preview"
+        [busy]="busyAction() === 'relink-preview'"
+        [disabled]="!newSub().trim() || !evidenceToken().trim() || busyAction() !== null || hasUnsavedPermissions()"
+        (click)="requestRelinkPreview()"
+      >معاينة الربط</button>
 
       @if (relinkPreview(); as preview) {
-        <section class="qd-card qd-card--quiet access-advanced-security__confirmation" data-testid="access-relink-confirmation" aria-label="تأكيد إعادة الربط">
+        <section class="qd-surface qd-surface--quiet access-advanced-security__confirmation" data-testid="access-relink-confirmation" aria-label="تأكيد إعادة الربط">
           <p class="qd-text-muted">ستُعاد مطابقة المعرّف قبل التنفيذ.</p>
           <dl class="access-advanced-security__subjects">
-            <div><dt>المعرّف الحالي</dt><dd dir="ltr">{{ preview.oldSub }}</dd></div>
-            <div><dt>المعرّف الجديد</dt><dd dir="ltr">{{ preview.newSub }}</dd></div>
+            <div><dt>المعرّف الحالي</dt><dd class="qd-ltr-isolate" dir="ltr">{{ preview.oldSub }}</dd></div>
+            <div><dt>المعرّف الجديد</dt><dd class="qd-ltr-isolate" dir="ltr">{{ preview.newSub }}</dd></div>
           </dl>
-          <label class="access-advanced-security__field" for="access-relink-confirm-reason">سبب إعادة الربط</label>
-          <textarea id="access-relink-confirm-reason" class="qd-input access-advanced-security__textarea" data-testid="access-relink-confirm-reason" [value]="relinkReason()" [disabled]="busyAction() !== null" (input)="updateRelinkReason($event)"></textarea>
+          <qd-form-field label="سبب إعادة الربط" [required]="true">
+            <textarea qdControl class="access-advanced-security__textarea" data-testid="access-relink-confirm-reason" [value]="relinkReason()" [disabled]="busyAction() !== null" (input)="updateRelinkReason($event)"></textarea>
+          </qd-form-field>
           <label class="qd-check-row">
             <input class="qd-checkbox" type="checkbox" data-testid="access-relink-confirmed" [checked]="relinkConfirmation()" [disabled]="busyAction() !== null" (change)="updateRelinkConfirmation($event)" />
             <span>أؤكد إعادة الربط بعد مراجعة المعاينة.</span>
           </label>
           <div class="access-advanced-security__actions">
-            <button type="button" class="qd-btn qd-btn-secondary" data-testid="access-relink-cancel" [disabled]="busyAction() !== null" (click)="cancelRelink()">إلغاء إعادة الربط</button>
-            <button type="button" class="qd-btn qd-btn-primary" data-testid="access-relink-confirm" [disabled]="!relinkReason().trim() || !relinkConfirmation() || busyAction() !== null || hasUnsavedPermissions()" (click)="confirmRelink()">تأكيد إعادة الربط</button>
+            <button
+              type="button"
+              qdAction="primary"
+              data-testid="access-relink-confirm"
+              [busy]="busyAction() === 'relink-confirm'"
+              [disabled]="!relinkReason().trim() || !relinkConfirmation() || busyAction() !== null || hasUnsavedPermissions()"
+              (click)="confirmRelink()"
+            >تأكيد إعادة الربط</button>
+            <button
+              type="button"
+              qdAction="tertiary"
+              data-testid="access-relink-cancel"
+              [disabled]="busyAction() !== null"
+              (click)="cancelRelink()"
+            >إلغاء إعادة الربط</button>
           </div>
         </section>
       }
     </section>
   } @else {
-    <qd-state variant="empty" message="اختر مستخدمًا لبدء استعادة الهوية." />
+    <qd-empty-state testId="access-relink-no-selection" message="اختر مستخدمًا لبدء استعادة الهوية." />
   }
 </section>

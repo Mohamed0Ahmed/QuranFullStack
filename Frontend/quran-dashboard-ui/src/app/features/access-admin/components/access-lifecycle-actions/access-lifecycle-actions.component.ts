@@ -1,11 +1,13 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 import { AccessUserDetail } from '../../../../core/api/generated/models/access-user-detail';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { AccessUserLifecycleAction } from '../../models/access-admin.models';
 
 @Component({
   selector: 'qd-access-lifecycle-actions',
   standalone: true,
+  imports: [QdActionDirective],
   templateUrl: './access-lifecycle-actions.component.html',
   styleUrl: './access-lifecycle-actions.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

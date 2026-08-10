@@ -10,39 +10,53 @@
   </header>
 
   <form class="access-user-list__filters" data-testid="access-users-filter-form" novalidate (submit)="applyFilters($event)">
-    <label class="qd-text-meta" for="access-users-search">الاسم أو البريد</label>
-    <input id="access-users-search" class="qd-input" type="search" data-testid="access-users-search" [value]="search()" (input)="updateSearch($event)" />
-    <label class="qd-text-meta" for="access-users-status">الحالة</label>
-    <select id="access-users-status" class="qd-select" data-testid="access-users-status" [value]="status()" (change)="updateStatus($event)">
-      <option value="all">كل الحالات</option>
-      <option value="pending">معلّق</option>
-      <option value="active">نشط</option>
-      <option value="disabled">معطّل</option>
-    </select>
-    <label class="qd-text-meta" for="access-users-owner">العضوية</label>
-    <select id="access-users-owner" class="qd-select" data-testid="access-users-owner" [value]="owner()" (change)="updateOwner($event)">
-      <option value="all">كل الحسابات</option>
-      <option value="owner">المالكون</option>
-      <option value="non-owner">غير المالِكين</option>
-    </select>
-    <button type="submit" class="qd-btn qd-btn-secondary">تطبيق</button>
+    <qd-form-field label="الاسم أو البريد">
+      <input qdControl type="search" data-testid="access-users-search" [value]="search()" (input)="updateSearch($event)" />
+    </qd-form-field>
+    <qd-form-field label="الحالة">
+      <select qdControl data-testid="access-users-status" [value]="status()" (change)="updateStatus($event)">
+        <option value="all">كل الحالات</option>
+        <option value="pending">معلّق</option>
+        <option value="active">نشط</option>
+        <option value="disabled">معطّل</option>
+      </select>
+    </qd-form-field>
+    <qd-form-field label="العضوية">
+      <select qdControl data-testid="access-users-owner" [value]="owner()" (change)="updateOwner($event)">
+        <option value="all">كل الحسابات</option>
+        <option value="owner">المالكون</option>
+        <option value="non-owner">غير المالِكين</option>
+      </select>
+    </qd-form-field>
+    <button type="submit" qdAction="secondary" data-testid="access-users-apply">تطبيق</button>
   </form>
 
   @if (loading()) {
-    <qd-state variant="loading" message="جارٍ تحميل المستخدمين…" />
+    <qd-skeleton-rows
+      class="access-user-list__skeleton"
+      loadingLabel="جارٍ تحميل المستخدمين…"
+      [count]="skeletonRowCount"
+      [rowTemplate]="skeletonRowTemplate"
+    />
   } @else if (error(); as errorMessage) {
-    <qd-state variant="error" [message]="errorMessage" />
+    <qd-error-state severity="read" testId="access-users-error" [message]="errorMessage" />
   } @else if (users().length === 0) {
-    <qd-state variant="empty" message="لا توجد حسابات مطابقة للمرشحات الحالية." />
+    <qd-empty-state testId="access-users-empty" message="لا توجد حسابات مطابقة للمرشحات الحالية." />
   } @else {
-    <div class="access-user-list__items" role="list">
-      @for (user of users(); track user.id) {
-        <div role="listitem" class="access-user-list__row">
+    <div qdResultList listVariant="master" listLabel="حسابات الوصول" class="access-user-list__items">
+      @for (user of users(); track user.id; let index = $index) {
+        <div
+          qdResultItem
+          selectable
+          class="access-user-list__row"
+          [selected]="isSelected(user)"
+          [current]="isSelected(user)"
+          [position]="index + 1"
+          [setSize]="users().length"
+        >
           <button
             type="button"
-            class="access-user-list__item qd-interactive-surface"
-            [class.qd-is-selected]="selectedUserId() === user.id"
-            [attr.aria-current]="selectedUserId() === user.id ? 'true' : null"
+            class="access-user-list__item"
             [attr.data-testid]="'access-user-' + user.id"
             (click)="userSelected.emit(user.id)"
           >
@@ -50,9 +64,9 @@
             <span class="access-user-list__email qd-text-meta qd-truncate" dir="ltr" [title]="user.email">{{ user.email }}</span>
             <span class="access-user-list__badges">
               @if (user.isOwner) {
-                <span class="qd-badge qd-badge--accent">مالك</span>
+                <span class="qd-badge qd-badge--status qd-badge--membership-owner" data-testid="access-user-membership">مالك</span>
               }
-              <span class="qd-badge">{{ statusLabel(user) }}</span>
+              <span [class]="lifecycleBadgeClass(user)" [attr.data-testid]="'access-user-lifecycle-' + user.id">{{ statusLabel(user) }}</span>
             </span>
           </button>
         </div>
@@ -60,5 +74,12 @@
     </div>
   }
 
-  <qd-pagination [currentPage]="page()" [pageSize]="pageSize()" [totalCount]="totalCount()" [disabled]="loading()" ariaLabel="صفحات المستخدمين" (pageChange)="pageChange.emit($event)" />
+  <qd-pagination
+    ariaLabel="صفحات المستخدمين"
+    [currentPage]="page()"
+    [pageSize]="pageSize()"
+    [totalCount]="totalCount()"
+    [disabled]="loading()"
+    (pageChange)="pageChange.emit($event)"
+  />
 </section>

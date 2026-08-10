@@ -1,7 +1,7 @@
 @if (user(); as target) {
   @if (!target.isOwner) {
     <section
-      class="qd-card qd-card--quiet access-lifecycle-actions"
+      class="qd-surface qd-surface--quiet access-lifecycle-actions"
       data-testid="access-account-actions"
       aria-labelledby="access-account-actions-title"
     >
@@ -15,8 +15,9 @@
         @if (target.status === 'pending') {
           <button
             type="button"
-            class="qd-btn qd-btn-primary"
+            qdAction="primary"
             data-testid="access-request-accept"
+            [busy]="busyAction() === 'accept'"
             [disabled]="busyAction() !== null"
             (click)="requestAction('accept')"
           >
@@ -30,8 +31,9 @@
         @if (target.status === 'active') {
           <button
             type="button"
-            class="qd-btn qd-btn-secondary"
+            qdAction="secondary"
             data-testid="access-request-disable"
+            [busy]="busyAction() === 'disable'"
             [disabled]="busyAction() !== null"
             (click)="requestAction('disable')"
           >تعطيل الحساب</button>
@@ -39,8 +41,9 @@
         @if (target.status === 'disabled') {
           <button
             type="button"
-            class="qd-btn qd-btn-primary"
+            qdAction="primary"
             data-testid="access-request-reactivate"
+            [busy]="busyAction() === 'reactivate'"
             [disabled]="busyAction() !== null"
             (click)="requestAction('reactivate')"
           >إعادة التفعيل</button>

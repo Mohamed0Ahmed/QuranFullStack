@@ -737,6 +737,139 @@ describe('AccessAdminFacade', () => {
     httpTesting.expectNone((request) => request.url.startsWith(ACCESS_BASE_URL));
   });
 
+  describe('the audit slice keeps append separate from an initial load', () => {
+    async function loadAuditPage(nextCursor: string | null): Promise<void> {
+      await loadCurrentUser(OWNER);
+      const loading = facade.loadAuditEvents();
+      httpTesting
+        .expectOne((request) => request.url === `${ACCESS_BASE_URL}/audit-events`)
+        .flush(success({ items: [auditEvent(1)], nextCursor }));
+      await loading;
+    }
+
+    function auditEvent(id: number) {
+      return {
+        id,
+        occurredAtUtc: '2026-08-07T10:00:00Z',
+        actionType: 'PermissionGranted',
+        actorType: 'User',
+        actorUserId: 9,
+        targetUserId: 17,
+        actorDisplayName: 'المالك',
+        actorEmail: 'owner@example.test',
+        targetDisplayName: 'عضو',
+        targetEmail: 'member@example.test',
+        actorSnapshot: {},
+        targetSnapshot: {},
+        permissionCode: null,
+        beforeState: {},
+        afterState: {},
+        reason: null,
+        metadata: {},
+      };
+    }
+
+    it('appends the cursor page in server order and reports the appended count', async () => {
+      await loadAuditPage('cursor-2');
+
+      const appending = facade.loadNextAuditPage();
+      const request = httpTesting.expectOne(
+        (candidate) =>
+          candidate.url === `${ACCESS_BASE_URL}/audit-events` &&
+          candidate.params.get('cursor') === 'cursor-2',
+      );
+      expect(facade.auditAppending()).toBe(true);
+      expect(facade.auditLoading()).toBe(false);
+      expect(facade.auditEvents()).toHaveLength(1);
+      request.flush(success({ items: [auditEvent(2), auditEvent(3)], nextCursor: null }));
+      await appending;
+
+      expect(facade.auditEvents().map((event) => event.id)).toEqual([1, 2, 3]);
+      expect(facade.auditAppendedCount()).toBe(2);
+      expect(facade.auditAppending()).toBe(false);
+      expect(facade.auditNextCursor()).toBeNull();
+    });
+
+    it('keeps the mounted events and the read error scoped when an append fails', async () => {
+      await loadAuditPage('cursor-2');
+
+      const appending = facade.loadNextAuditPage();
+      httpTesting
+        .expectOne((candidate) => candidate.params.get('cursor') === 'cursor-2')
+        .flush(
+          { isSuccess: false, message: 'تعذر تحميل المزيد.', data: null },
+          { status: 500, statusText: 'Server Error' },
+        );
+      await appending;
+
+      expect(facade.auditEvents()).toHaveLength(1);
+      expect(facade.auditAppendError()).toContain('تعذر');
+      expect(facade.auditError()).toBeNull();
+      expect(facade.auditAppendedCount()).toBe(0);
+    });
+
+    it('refuses to append without a cursor and clears the append state on a filter change', async () => {
+      await loadAuditPage('cursor-2');
+      const appending = facade.loadNextAuditPage();
+      httpTesting
+        .expectOne((candidate) => candidate.params.get('cursor') === 'cursor-2')
+        .flush(success({ items: [auditEvent(2)], nextCursor: null }));
+      await appending;
+      expect(facade.auditAppendedCount()).toBe(1);
+
+      const filtering = facade.updateAuditQuery({ actionType: 'PermissionGranted' });
+      httpTesting
+        .expectOne((candidate) => candidate.url === `${ACCESS_BASE_URL}/audit-events`)
+        .flush(success({ items: [auditEvent(4)], nextCursor: null }));
+      await filtering;
+
+      expect(facade.auditEvents().map((event) => event.id)).toEqual([4]);
+      expect(facade.auditAppendedCount()).toBe(0);
+      expect(facade.auditAppendError()).toBeNull();
+
+      await facade.loadNextAuditPage();
+      httpTesting.expectNone((candidate) => candidate.url === `${ACCESS_BASE_URL}/audit-events`);
+    });
+
+    it('keeps Load more usable when a filter change lands while an append is still in flight', async () => {
+      await loadAuditPage('cursor-2');
+
+      const appending = facade.loadNextAuditPage();
+      const staleAppend = httpTesting.expectOne(
+        (candidate) => candidate.params.get('cursor') === 'cursor-2',
+      );
+      expect(facade.auditAppending()).toBe(true);
+
+      const filtering = facade.updateAuditQuery({ actionType: 'PermissionGranted' });
+      expect(facade.auditAppending()).toBe(false);
+      httpTesting
+        .expectOne(
+          (candidate) =>
+            candidate.url === `${ACCESS_BASE_URL}/audit-events` &&
+            candidate.params.get('cursor') === null,
+        )
+        .flush(success({ items: [auditEvent(4)], nextCursor: 'cursor-5' }));
+      await filtering;
+
+      staleAppend.flush(success({ items: [auditEvent(2)], nextCursor: 'cursor-9' }));
+      await appending;
+
+      expect(facade.auditEvents().map((event) => event.id)).toEqual([4]);
+      expect(facade.auditNextCursor()).toBe('cursor-5');
+      expect(facade.auditAppending()).toBe(false);
+      expect(facade.auditAppendedCount()).toBe(0);
+
+      const retry = facade.loadNextAuditPage();
+      httpTesting
+        .expectOne((candidate) => candidate.params.get('cursor') === 'cursor-5')
+        .flush(success({ items: [auditEvent(6)], nextCursor: null }));
+      await retry;
+
+      expect(facade.auditEvents().map((event) => event.id)).toEqual([4, 6]);
+      expect(facade.auditAppendedCount()).toBe(1);
+    });
+  });
+
   it('submits a permission replacement with a null reason when none is typed, superseding the mandatory-reason rule', async () => {
     await loadCurrentUser(OWNER);
     await loadCatalogue();

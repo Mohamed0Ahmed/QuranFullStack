@@ -1,6 +1,9 @@
 .access-change-review {
   display: grid;
   gap: var(--qd-space-3);
+  padding: var(--qd-card-padding);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
 }
 
 .access-change-review__warning {
@@ -10,11 +13,11 @@
 .access-change-review__diff {
   display: grid;
   gap: var(--qd-space-3);
-  color: var(--qd-text-muted);
+  color: var(--qd-ink-muted);
 }
 
 .access-change-review__diff-heading {
-  color: var(--qd-text);
+  color: var(--qd-ink);
   font-weight: 700;
 }
 
@@ -34,12 +37,7 @@
 }
 
 .access-change-review__permission-list code {
-  color: var(--qd-text);
-}
-
-.access-change-review__field {
-  color: var(--qd-text);
-  font-weight: 700;
+  color: var(--qd-ink);
 }
 
 .access-change-review__textarea {

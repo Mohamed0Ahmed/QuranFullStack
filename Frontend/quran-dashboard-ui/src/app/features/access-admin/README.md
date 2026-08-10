@@ -60,10 +60,25 @@ authorization boundary, and the route carries no additional guard for it.
 
 ## Layout and URL state
 
-The page is a desktop-first master/detail workspace on the shipped dashboard system: no new token,
-colour or primitive exists for it. The root composes `.qd-container.qd-page-frame` and adds only a
-`gap` and a viewport `min-block-size` of its own, so the frame's deliberate `padding-block-end`
-reserve survives. Three sections sit behind `qd-tabs`, the only tablist primitive in the app:
+The page is the Golden F19 master/detail workspace. Its root section carries `.qd-page` (block
+rhythm only) and its single child carries `.qd-page-shell.qd-page-shell--split-workspace` — the
+**one** inline-gutter owner on the route, capped at the `split-workspace` measure. No feature frame
+adds a second gutter, and page-level horizontal scrolling is a defect in every band.
+
+**Wide (`>= 1080`) is the only band with a rail.** `qd-page-split` puts a `.qd-page-rail--l`
+(`20rem`) user list beside the details. Below Wide the rail is gone: a pinned
+`access-selected-context-bar` carries the selected account's full identity, its LTR email, its
+membership, its lifecycle badge **and the account search** (`access-context-search`), whose submit
+applies the search to the shared user query and opens the results in the sheet. «اختيار حساب» opens
+the *same* user list inside the shared `qd-modal-shell` sheet (`access-user-list-sheet`) —
+focus-trapped, scroll-locked, Compact-full-bleed, and closed again the moment an account is chosen.
+Because the context bar already carries identity, membership and lifecycle below Wide, the details
+shell's metadata slot renders `qd-access-user-summary-card` **only at Wide**: the summary — and its
+`access-user-summary-email` / `-lifecycle` / `-membership` test IDs — exists exactly once in the DOM
+in every band. The band is read once through `QD_BP_WIDE_QUERY` and kept in a signal; nothing in
+this feature writes a pixel threshold.
+
+Three sections sit behind `qd-tabs`, the only tablist primitive in the app:
 
 | Tab | `?tab=` | Contents |
 |---|---|---|
@@ -88,21 +103,41 @@ the email is PII. A deep link would therefore need a new backend contract to car
 and that handle would still be an identifier. Selection stays in memory, which is also why switching
 users needs its own confirmation (below) — the router cannot see it.
 
-The selected-user panel composes `.explorer-detail-panel` with `.explorer-panel-header` (rendered by
-`qd-access-user-summary-card`, whose host *is* the header) and `.explorer-detail-panel__body` as the
-panel's only scroller. That header is what gives the primary work surface a real visible heading; it
-carries the account name, the email marked `dir="ltr"`, and the membership/lifecycle badges. It does
-**not** carry the `xmin` version: optimistic concurrency stays in state and out of view, along with
-every other technical identifier outside the audit rows.
+The selected-user panel is the shared F11 `qd-details-workspace` (`variant="safety"`). The page
+supplies the account name as its `identity`, `qd-access-user-summary-card` projects the LTR email
+and the two badges into the identity zone (at Wide — see above), and the shell's permanently mounted
+`role="status"` slot carries the mutation surface.
 
-A list row composes the shared `.qd-is-selected` state and reserves its 2px accent thread on the
-unselected row as a transparent border, so selecting one causes no 1px shift. Names and emails
-compose `.qd-truncate` with the mandatory `[title]`, and each row button sits inside its own
-`role="listitem"`. The truncation classes, both `[title]`s and the per-row `role="listitem"` are
-asserted by `access-user-list.component.spec.ts`. **The no-shift thread is not asserted anywhere**:
-it is a resolved border width, which jsdom does not compute, so it rests on
-`access-user-list.component.scss` alone until a browser check exists — recorded as row **AC2** in
-`docs/TESTING_DEBT.md`.
+**The panel is only a scroller where it has a definite height, and that is Wide.** The shared shell
+declares `block-size: 100%` on `.qd-details__shell` and `overflow: auto` on `.qd-details__body`, but
+a percentage height resolves to `auto` unless an ancestor has a definite one — `.qd-page` is a block
+with a `min-block-size`, and the Wide split aligns its items to `start`. So the Access-owned
+`.access-admin-page__detail` takes `block-size: calc(100dvh - navbar - 2 × space-4)` plus
+`position: sticky` at `>= 1080`: measured in Chromium at 1080/1440 × 900 the panel is 812px tall, the
+body scrolls 974px inside it, and the identity header, the status slot and the 64px review dock keep
+identical viewport rects while it scrolls. Below Wide the panel stays in the document flow — the
+document is the region's single scroller, identity and status are pinned by the sticky
+`access-selected-context-bar` (which is why that bar, and not the details header, carries identity,
+status, membership and search there), and the save/discard actions are pinned by the page-owned
+sticky review dock described under *Permission drafts*. Do not restore a `block-size: 100%` on the
+host without a definite ancestor height; it silently degrades to a page-tall panel with a dock at
+the very bottom.
+
+`layout="no-selection"` renders the designed prompt instead of an empty split. The panel does
+**not** carry the `xmin` version:
+optimistic concurrency stays in state and out of view, along with every other technical identifier
+outside the audit rows.
+
+**The email is never truncated.** It is the target of a safety decision, so it wraps in full inside
+`.qd-ltr-isolate` rather than eliding behind a `[title]` the operator has to hover to read; only the
+account *name* truncates.
+
+A list row is the shared `qdResultList`/`qdResultItem` pair (`listVariant="master"`): `role="list"` /
+`role="listitem"`, `aria-posinset`/`aria-setsize`, `aria-current` on the selected row, and the
+logical `border-inline-start` selection thread reserved as transparent on every row so selecting one
+causes no shift. Names compose `.qd-truncate` with the mandatory `[title]`. The thread itself is a
+resolved border width jsdom does not compute, so it rests on the shared `.qd-result-item` rules until
+a browser check exists — recorded as row **AC2** in `docs/TESTING_DEBT.md`.
 
 ## Permission-assignment failure model
 
@@ -173,8 +208,9 @@ exists **and** can be produced*, and `AccessPermissionDraftStore.isDirty` enforc
   draft — and the diff then shows it under «إزالة», because that is exactly what the save will do.
   The remaining case — a draft holding an unoffered code with no editor interaction to resolve it —
   offers no permission save at all: an untouched draft still equals the stored grants, so the diff is
-  empty, `isDirty` is `false`, and «مراجعة تعديل الصلاحيات» is never rendered, because the whole
-  draft bar sits inside `@if (facade.isDirty())` (`access-admin-page.component.html:226-231`). No
+  empty, `isDirty` is `false`, and «مراجعة تعديل الصلاحيات» is never rendered, because every mount of
+  the review dock gates on `facade.isDirty()` — the band decides *which* mount, never *whether* one
+  exists (below). No
   editor interaction can add such a code either, only remove one. The single save not gated on
   `isDirty` is `acceptSelectedUser`, and it runs only for a non-Owner `pending` user
   (`access-admin.facade.ts:246`) — a status that has no grants to seed a draft with, because accept
@@ -202,8 +238,36 @@ catalogue — every stored grant falls into `revoked`, the summary prints above 
 switching users and leaving the page prompt, and relink is held back with no way to clear it, since
 the bar carrying the only discard control is hidden while assignment is unavailable.
 
-- While the draft differs, the section heading carries a `+N / −M` summary and a bar under the
-  editor offers the save entry point and «تجاهل التغييرات». `discardDraft()` restores the draft from
+- While the draft differs, the section heading carries a `+N / −M` summary and a **64px sticky
+  review dock** offers the save entry point and «تجاهل التغييرات». Lifecycle actions stay outside
+  the dock. **It is pinned in every band, and the two bands reach that through different owners.**
+  At Wide it is the details shell's footer, outside the body scroller: the viewport-height panel
+  above holds it in place while the editor scrolls (measured `64px` tall, bottom `861px` of a `900px`
+  viewport, unmoved after the body scrolls `974px`). Below Wide the shell has no definite height, so
+  a footer-mounted dock would have no sticky range at all — its containing block is exactly its own
+  box. There the page renders the dock itself instead, as the last child of the workspace panel with
+  `position: sticky; inset-block-end: 0` and the `--pinned` surface, which is what the
+  `env(safe-area-inset-bottom)` padding has always been for. Measured at 390/767/1024 × 800 it sits
+  flush against the viewport bottom at every scroll offset. `hasFooter` on the details shell is
+  therefore `isDirty() && isWide()`, the dock body is one `#reviewDock` template used by both
+  mounts, and `access-permission-draft-bar` names exactly one element in either band — the page spec
+  asserts the count and the owning ancestor on both sides of the boundary, so a band losing its dock
+  cannot pass again.
+- **On a short viewport the dock outranks the context bar.** Two pinned bars do not fit under
+  `32rem` of height — a landscape phone, or a portrait one whose on-screen keyboard shrank the
+  layout viewport. Measured at `390×400` the 201px context bar plus the 115px dock took 79% of the
+  height and left a 29px slot with **no** permission row visible. So `@media (max-height: 32rem)`
+  returns the context bar to the flow while the dock stays pinned; the same measurement then shows
+  10 rows at `390×400` and 12 at `740×360`, with the dock still flush to the bottom. Identity is not
+  lost — it is in the details header a scroll away — but the save and discard actions are the ones
+  that must never be. Tall viewports are untouched (`390×800`: bar pinned, 40% chrome). Note this is
+  a viewport-*height* condition; it is orthogonal to the four named inline bands and introduces no
+  second breakpoint truth. One artefact is inherent to any bottom-pinned bar and is not a defect:
+  at scroll offset `0` the dock paints over whatever sits at the viewport bottom, which on a
+  `≤400px`-tall screen is the context bar (measured `−3px` at `740×360`, `−98px` at `390×400`). It
+  clears on the first scroll, it never covers the dock's own controls, and no control is
+  permanently unreachable. While the draft matches the stored
+  grants the dock does not exist at all, so the idle state costs no vertical band (D41). `discardDraft()` restores the draft from
   the stored grants and issues no request. The summary's glyphs are `aria-hidden` beside a
   `.qd-sr-only` Arabic sibling that carries the reading: `aria-label` on a bare `<span>` names an
   element with the implicit `generic` role, which ARIA 1.2 prohibits, so it may never be announced.
@@ -234,14 +298,35 @@ Two mechanisms protect the draft, because they cover different exits:
 - **Leaving the page is a route change.** `accessAdminUnsavedChangesGuard` is a functional
   `CanDeactivateFn` on the single route. It reads the **component instance** — the facade is
   component-provided, so injecting it into a guard would resolve a different instance — through the
-  public `hasUnsavedChanges()`. It uses `window.confirm` deliberately: hoisting dialog state out of
-  the component to reuse `qd-confirm-dialog` from a guard buys nothing, and the in-page path above
-  is where the interaction actually happens.
+  public `hasUnsavedChanges()`, and when that is true it returns the component's
+  `confirmRouteLeave(): Promise<boolean>`. `window.confirm` is gone: the promise is resolved by the
+  page's own `qd-confirm-dialog` (`access-leave-page-confirm`), so the route decision looks like
+  every other decision in the app. Four rules make that at least as strong as the native prompt, and
+  `access-admin-unsaved-changes.guard.spec.ts` proves each through **real Router navigation**,
+  including a `Location.back()` move: a clean draft resolves `true` with no dialog; a dirty draft
+  holds the navigation open until the operator answers; **repeated guard calls share the one pending
+  promise**, so a second navigation cannot open a second dialog or strand the first; cancelling
+  resolves `false` and leaves the draft and the selection exactly as they were; and confirming
+  resolves `true` **without** eagerly discarding, because the component is about to be destroyed and
+  an eager discard would corrupt a navigation that a later guard still refuses. Destroying the
+  component settles any open decision as `false`.
+- **The Router proof runs against the real page, not only a stub.** The spec keeps a lightweight
+  stub for the pending-promise/back-navigation mechanics, and adds a second suite that routes
+  `AccessAdminPageComponent` itself behind the guard over `HttpTestingController`: it selects an
+  account, stages a real dirty draft, navigates, and answers the page's own dialog. Cancelling keeps
+  both `router.url` **and** `Location.path()` on `/settings/access` — the address-bar assertion is
+  the part that proves the async `canDeactivate` is at least as strong as `window.confirm` on a
+  popstate move, where the browser URL moves first and Angular's `canceledNavigationResolution`
+  restores it — and the draft and the selection survive. Confirming leaves and issues no request.
 
 ## Per-status semantics
 
-Each account state explains what the page can and cannot do to it, because the backend accepts a
-different commit for each one.
+`accessAccountVariant()` (`models/access-admin.models.ts`) is the **exhaustive discriminator** the
+detail panel switches on: `pending-non-owner`, `active-non-owner`, `disabled-non-owner`,
+`active-owner`, `pending-owner`, `disabled-owner`, `unknown-status`. Exactly one body renders per
+account, and `access-admin.models.spec.ts` pins every branch, including that an unrecognised status
+never falls through to the disabled body. Each account state explains what the page can and cannot
+do to it, because the backend accepts a different commit for each one.
 
 - **Pending.** The editor renders, but the commit is `accept`: the replace endpoint requires
   `Status == Active`, so a `PUT` for a pending user is rejected. The permission region says the
@@ -265,6 +350,10 @@ different commit for each one.
 - **Disabled.** No editor renders, because the backend rejects a replace on a non-Active user. The
   region says the account holds no direct permissions and that none can be assigned before
   reactivation, and repeats that reactivation starts from none.
+- **Unknown.** A status this build does not model renders neither the editor nor a single lifecycle
+  control: the page says it does not know the account's state and offers no mutation. The lifecycle
+  badge reads «حالة غير معروفة» through its own `qd-badge--lifecycle-unknown` semantics — it is never
+  mapped onto Disabled, in the row or in the workspace.
 - **Owner.** No editor and no checked-and-disabled catalogue. An Owner's access does not come from
   direct grants at all: `PermissionAuthorizationHandler` succeeds on `state.IsOwner`, and
   `AuthorizationStateAccessEvaluator.ResolveActiveStateAsync` returns a state only for an Active
@@ -340,9 +429,26 @@ plan finishing where it started: the audit log was the last place a database use
 - **Timestamps are local.** `yyyy/MM/dd HH:mm` through `DatePipe`, inside a `<time [attr.datetime]>`
   that keeps the exact UTC instant machine-readable. Fixed field order and Western digits, matching
   the digits used everywhere else in the app, so the column stays scannable and free of ICU variance.
+- **Load more is an append, never a page.** The audit slice keeps `loading` (initial and filter) and
+  `appending` (cursor append) apart, so an append never unmounts the events already on screen: the
+  list stays mounted with `aria-busy`, the button carries its own busy state, an append failure lands
+  in its own scoped `qd-error-state` beside the untouched events rather than replacing them, and the
+  appended count is announced through a permanently mounted polite region. Items are appended in
+  server order. No numeric pagination is offered here, and `Load more` inherits none of F13.
+  An append snapshots `requestVersion` without bumping it, so an initial/filter load that starts
+  while the append is in flight invalidates it. That invalidation is also what has to release
+  `appending`: `clearAppendState()` — called by both `load()` and `clear()` — resets `appending`,
+  `appendError` and `appendedCount` together, because the append's own `finally` is version-guarded
+  and deliberately does nothing once it has been superseded. Without that reset `appending` would
+  stay `true` forever and `Load more` would stay disabled for the rest of the session.
 - **Accounts are chosen by identity.** `components/access-user-picker/` replaces the two numeric-id
   inputs. It searches through the same `AccessAdminApi.listUsers` the list uses (`pageSize: 10`),
-  renders each candidate by name with the email beneath, and emits the summary object. The audit
+  renders each candidate by name with the email beneath, and emits the summary object. Since the
+  Golden pass the candidates open in the shared F15 `qdFloatingLayer` (`select-listbox`) anchored to
+  the search field, so the picker gets the one keyboard script — Arrow/Home/End over the options,
+  Escape to close with focus returned, Tab to close, outside press to close — while the query, the
+  facade call and the two result signals stay in Access. Enter on the layer activates the option the
+  shared cursor points at; Enter in the field still searches and is `preventDefault`ed. The audit
   section keeps the chosen summary and reads `.id` off it only when it builds the query — the integer
   is constructed in TypeScript, sent as a query parameter, and never bound into a template or a route.
   Enter inside the picker searches and is `preventDefault`ed, because the picker sits inside the
@@ -372,25 +478,37 @@ plan finishing where it started: the audit log was the last place a database use
 
 ## State regions and announcement
 
-The mutation message is the one `qd-state` on this page rendered **unconditionally within its
-section**: it sits at the top of the workspace panel's scroller, above that panel's `@if` chain, and
-again at the top of the security panel, carrying `[reserve]="true"` and an empty message whenever
-there is nothing to say. That shape is what makes it announce. **It is written twice because the two
-panels are mutually exclusive and both of them mutate** — the workspace commits accept/disable/
-reactivate/replace, and الأمان المتقدم commits relink. A single instance hoisted above the tab
-switch would put roughly 6.5rem of permanently blank space under the tablist on every section
-including the read-only audit one; one instance inside whichever mutating panel is mounted keeps the
-contract without that. Only ever one is in the DOM, so the tone-suffixed
-`access-mutation-message-*` testid stays unambiguous. A success or `409` recovery
-notice renders `role="status"`, and a live region created together with its text is generally not
-read out; because this element already exists and is empty, the later text insertion is what the
-screen reader announces. That shape is pinned per panel by the page spec — the
-`access-mutation-message-none` region is asserted present, `role="status"`, `[reserve]`d and empty
-before any write runs, in the workspace panel and in the security panel — so wrapping either one in
-an `@if` fails a test rather than silently ending the announcement. `runMutation` clears the message
-before every write, so the region is always empty again before the next text lands. The severity
-routing survives the shape — `error` renders the `error` variant (`role="alert"`, which announces on
-insertion), success and the `409` notice render the quieter `empty` variant.
+**There is no `qd-state` left in this feature.** Every async surface consumes one of the five F12
+owners directly: `qd-skeleton-rows` for a list whose loaded shape is known (the user list, the audit
+log), `qd-panel-skeleton shape="text"` for a single-value region (the access check, the detail load,
+the catalogue, the reconciliation status), `qd-empty-state`, `qd-error-state severity="read"` for a
+scoped read failure, `qd-error-state severity="write"` for a write failure, and `qd-notice` for a
+success or `409` recovery.
+
+**The announcer is permanent; the visible band is not.** In the workspace the announcer is the
+details shell's own always-mounted `role="status"`/`aria-live="polite"` slot; in الأمان المتقدم it
+is a `.qd-sr-only` region carrying `politeMutationText()`. Both exist before any write runs, because
+a live region created together with its text is generally not read out — the later text insertion is
+what the screen reader announces. What sits *inside* those regions is rendered only while there is a
+message, so the idle mutation band is **zero height**: the ~6.5rem permanently blank slot the
+previous shape paid for is gone (D41). The page spec asserts the empty announcer, its role and its
+zero height before any write.
+
+Severity routing is unchanged in meaning and now uses the locked F12 roles: a completed change and a
+`409` recovery render `qd-notice` (`status`, polite, quiet tone), and only a genuine write failure
+renders `qd-error-state severity="write"` — the one `role="alert"`, which never clears the draft. In
+الأمان المتقدم the polite announcer deliberately carries the non-error text only, so an alert is not
+also announced politely. The workspace cannot do the same, because its announcer *is* the details
+shell's status slot and the visible surface lives inside it: the write-error branch is therefore
+wrapped in an `aria-live="off"` element, which shadows the polite ancestor for that subtree while the
+`role="alert"` element remains its own assertive live region. The alert announces once; the F12 role
+lock is untouched, and no shared shell markup changes.
+The tone-suffixed `access-mutation-message-*` testid still names exactly one element.
+
+**Both mutating sections keep their own region** — the workspace commits accept/disable/reactivate/
+replace, and الأمان المتقدم commits relink — because only one is ever mounted and a single hoisted
+instance would put the band on the read-only audit section too. `runMutation` clears the message
+before every write, so the region is empty again before the next text lands.
 
 The message is also cleared **on a section change**, so «تم حفظ التغيير» earned by a permission save
 in the workspace does not reappear at the top of الأمان المتقدم as though that panel had just
@@ -401,32 +519,6 @@ Because that region outlives the detail pane's own load/error branches, the mess
 mutation outcomes and nothing else. The permission-denied text is rendered from `canAccess()`
 directly, one branch higher; `load()` does not also copy it into the message, which would survive an
 access state that has since changed.
-
-That announcement is bought with vertical space, and the cost is real and **unpaid**: the region is
-rendered even with nothing to say, so each mutating panel carries roughly **6.5rem** of permanently
-blank space at its top — `.qd-empty-state` contributes `padding: var(--qd-space-6)` on both block
-edges (2 × 2rem) and `[reserve]` holds `min-block-size: var(--qd-control-block-size)` (≈ 2.53rem)
-for the message line. The redesign did **not** shrink it — a choice, not an impossibility. There is
-no padding modifier on the state primitive, and `.qd-state--reserve-empty` is bound only on the
-`error` variant (`state.component.html:20`), where its one rule drops the danger tint
-(`styles/_components.scss:373`). Two levers therefore exist, and only one of them is barred:
-
-- **Barred.** A consumer-side override of the shared `qd-state` styles from this call-site, which
-  `UI_STYLE_SYSTEM.md` §17 forbids a call-site from taking on its own.
-- **Not barred, and not taken.** Binding that same existing modifier on the `empty` case and adding
-  a padding rule beside the error one. That edits a shipped primitive without inventing a token, a
-  colour or a primitive, so §6's locked visual language would not have stopped it. It was out of
-  **this phase's** scope: `.qd-empty-state` is shared by every state region in the app
-  (`styles/_components.scss:561-568`), so shrinking it is a system-wide change owned by the style
-  system, not a side effect of one page's redesign — and this phase changed no shared style.
-
-Moving the region into the panel's scroller at least means the blank band scrolls away instead of
-pinning the top of the page. It is recorded here rather than left to be rediscovered.
-
-Every other state on this page sits inside an `@if`/`@else if` branch, where `[reserve]` would
-reserve nothing — the flag holds space only in a region that is always rendered. Load and error
-transitions therefore still resize the user, detail, and reconciliation panes; closing that needs a
-min-block-size on the panes themselves, which is layout work and has not been done.
 
 ## Boundaries
 
@@ -441,7 +533,8 @@ min-block-size on the panes themselves, which is layout work and has not been do
   error mapping stays in one place. The facade re-exports its signals, so the store is an internal
   seam and no consumer outside this folder sees it.
 - `state/access-audit.store.ts` owns the audit slice — the loaded page, the filter query, its
-  loading and error state, keyset append, and the participant lookup the audit pickers run — as a
+  loading and error state, the **separate** append lifecycle (`appending`, `appendError`,
+  `appendedCount`), and the participant lookup the audit pickers run — as a
   second plain signal-backed class the facade composes, on the same seam and for the same reason:
   `FRONTEND_STRUCTURE.md` §5 caps a facade at 600 lines, and this slice is cohesive enough to lift
   whole. It is constructed with `new AccessAuditStore(this.api)`, **not** `providedIn: 'root'` —
@@ -454,9 +547,10 @@ min-block-size on the panes themselves, which is layout work and has not been do
   store.** `canAccess()` is the facade's, and the facade checks it before every request the store
   issues, exactly as it guards `AccessPermissionDraftStore.setCodes`. The facade re-exports the
   signals under their `audit*` names, so this store is an internal seam too.
-- `models/access-admin.labels.ts` holds the Arabic copy that TypeScript needs (dialog and
-  `window.confirm` wording, the diff-summary label builder, and the tab, lifecycle-status,
-  audit-action-type and reconciliation-candidate-state label builders). Template-only copy stays in
+- `models/access-admin.labels.ts` holds the Arabic copy that TypeScript needs (both confirmation
+  dialogs' wording, the selected-context and list-sheet copy, the diff-summary and appended-count
+  builders, and the tab, lifecycle-status, audit-action-type and reconciliation-candidate-state
+  label builders). Template-only copy stays in
   the templates. The two builders added for the audit and reconciliation sections **return an
   unrecognised value unchanged** rather than mapping it to an «غير معروف» constant: both name
   server-side enums this page mirrors rather than owns, and a value it does not model is diagnostic
@@ -487,8 +581,10 @@ min-block-size on the panes themselves, which is layout work and has not been do
   spec passes, the mechanism no longer holds here and the getter can go.
 - `components/` renders feature UI and emits interactions. None of them calls HTTP, and none of them
   injects the facade — the page passes signals down and turns every output back into a facade call:
-  - `access-user-list` — filter form, rows, `qd-result-count`, `qd-pagination`, `qd-state`;
-  - `access-user-summary-card` — the detail panel's `.explorer-panel-header`;
+  - `access-user-list` — filter form (`qd-form-field`/`qdControl`), `qdResultList` rows,
+    `qd-result-count`, `qd-pagination`, and the F12 owners directly;
+  - `access-user-summary-card` — the LTR email and the two badges, projected into the details
+    shell's identity zone (and reused verbatim in the below-Wide context bar);
   - `access-permission-editor` — the grouped checkbox grid;
   - `access-lifecycle-actions` — «إجراءات الحساب» and its per-status commit;
   - `access-change-review` — the diff, the optional reason, and confirm/cancel; it owns the reason

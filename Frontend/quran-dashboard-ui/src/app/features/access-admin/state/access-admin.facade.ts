@@ -100,6 +100,9 @@ export class AccessAdminFacade {
   readonly auditQuery = this.audit.query;
   readonly auditLoading = this.audit.loading;
   readonly auditError = this.audit.error;
+  readonly auditAppending = this.audit.appending;
+  readonly auditAppendError = this.audit.appendError;
+  readonly auditAppendedCount = this.audit.appendedCount;
   readonly reconciliationStatus = this.reconciliationState.asReadonly();
   readonly reconciliationLoading = this.reconciliationLoadingState.asReadonly();
   readonly reconciliationError = this.reconciliationErrorState.asReadonly();

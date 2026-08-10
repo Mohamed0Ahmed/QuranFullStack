@@ -53,6 +53,16 @@ function type(fixture: ComponentFixture<AccessUserPickerComponent>, value: strin
   fixture.detectChanges();
 }
 
+function openLayer(
+  fixture: ComponentFixture<AccessUserPickerComponent>,
+  state: AccessUserSearchState,
+): void {
+  type(fixture, 'بحث');
+  element(fixture, 'access-picker-find').click();
+  fixture.componentRef.setInput('state', state);
+  fixture.detectChanges();
+}
+
 describe('AccessUserPickerComponent', () => {
   it('asks for a trimmed search term and refuses an empty one', () => {
     const { fixture, searches } = setup();
@@ -80,7 +90,8 @@ describe('AccessUserPickerComponent', () => {
   });
 
   it('names each candidate by display name, falling back to the email when it is blank', () => {
-    const { fixture } = setup({ users: [NAMED, UNNAMED], error: null, loading: false });
+    const { fixture } = setup();
+    openLayer(fixture, { users: [NAMED, UNNAMED], error: null, loading: false });
     const candidates = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll(
         '[data-testid^="access-picker-candidate-"]',
@@ -93,7 +104,8 @@ describe('AccessUserPickerComponent', () => {
   });
 
   it('emits the chosen account and then the cleared selection', () => {
-    const { fixture, selections } = setup({ users: [UNNAMED, NAMED], error: null, loading: false });
+    const { fixture, selections } = setup();
+    openLayer(fixture, { users: [UNNAMED, NAMED], error: null, loading: false });
 
     element(fixture, `access-picker-candidate-${NAMED.id}`).click();
     expect(selections).toEqual([NAMED]);
@@ -110,9 +122,11 @@ describe('AccessUserPickerComponent', () => {
   });
 
   it('reports a failed lookup instead of reading as no matches', () => {
-    const { fixture } = setup({ users: [], error: 'تعذر تحميل بيانات إدارة الوصول.', loading: false });
+    const { fixture } = setup();
 
-    expect(element(fixture, 'qd-state-error').textContent).toContain(
+    openLayer(fixture, { users: [], error: 'تعذر تحميل بيانات إدارة الوصول.', loading: false });
+
+    expect(element(fixture, 'access-picker-error').textContent).toContain(
       'تعذر تحميل بيانات إدارة الوصول.',
     );
   });
@@ -121,13 +135,60 @@ describe('AccessUserPickerComponent', () => {
     const { fixture } = setup();
 
     expect(
-      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="qd-state-empty"]'),
+      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="access-picker-layer"]'),
     ).toBeNull();
 
     type(fixture, 'لا أحد');
     element(fixture, 'access-picker-find').click();
     fixture.detectChanges();
 
-    expect(element(fixture, 'qd-state-empty').textContent).toContain('لا توجد حسابات مطابقة.');
+    expect(element(fixture, 'access-picker-empty').textContent).toContain('لا توجد حسابات مطابقة.');
+  });
+
+  it('opens the candidates in one anchored floating listbox with the shared keyboard contract', () => {
+    const { fixture } = setup();
+
+    openLayer(fixture, { users: [NAMED, UNNAMED], error: null, loading: false });
+    const layer = element(fixture, 'access-picker-layer');
+    const search = element(fixture, 'access-picker-search');
+
+    expect(layer.getAttribute('data-qd-floating-variant')).toBe('select-listbox');
+    expect(layer.querySelector('[role="listbox"]')?.getAttribute('id')).toBe(
+      'access-picker-listbox',
+    );
+    expect(layer.querySelectorAll('[role="option"]')).toHaveLength(2);
+    expect(search.getAttribute('role')).toBe('combobox');
+    expect(search.getAttribute('aria-controls')).toBe('access-picker-listbox');
+    expect(search.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('selects the option the shared keyboard cursor points at when Enter lands on the layer', () => {
+    const { fixture, selections } = setup();
+    openLayer(fixture, { users: [NAMED, UNNAMED], error: null, loading: false });
+    const layer = element(fixture, 'access-picker-layer');
+
+    layer.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
+    );
+    layer.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+    );
+    fixture.detectChanges();
+
+    expect(selections).toEqual([UNNAMED]);
+  });
+
+  it('closes the layer when the shared floating contract dismisses it', () => {
+    const { fixture } = setup();
+    openLayer(fixture, { users: [NAMED], error: null, loading: false });
+
+    element(fixture, 'access-picker-layer').dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    );
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('[data-testid="access-picker-layer"]'),
+    ).toBeNull();
   });
 });

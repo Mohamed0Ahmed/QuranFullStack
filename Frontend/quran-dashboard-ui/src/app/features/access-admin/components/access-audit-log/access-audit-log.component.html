@@ -1,5 +1,5 @@
 <section
-  class="qd-card qd-card--quiet access-audit-log"
+  class="qd-surface access-audit-log"
   data-testid="access-audit-log"
   aria-labelledby="access-audit-log-title"
 >
@@ -28,19 +28,17 @@
       (selectionChange)="selectActorUser($event)"
     />
 
-    <div class="access-audit-log__field">
-      <label class="qd-text-meta" for="access-audit-action">نوع الحدث</label>
-      <select id="access-audit-action" class="qd-select" data-testid="access-audit-action" [value]="actionType()" (change)="updateActionType($event)">
+    <qd-form-field label="نوع الحدث">
+      <select qdControl data-testid="access-audit-action" [value]="actionType()" (change)="updateActionType($event)">
         <option value="">كل الأحداث</option>
         @for (action of actionTypes; track action) {
           <option [value]="action">{{ actionLabel(action) }}</option>
         }
       </select>
-    </div>
+    </qd-form-field>
 
-    <div class="access-audit-log__field">
-      <label class="qd-text-meta" for="access-audit-permission">الصلاحية</label>
-      <select id="access-audit-permission" class="qd-select" [value]="permissionCode()" (change)="updatePermissionCode($event)">
+    <qd-form-field label="الصلاحية">
+      <select qdControl data-testid="access-audit-permission" [value]="permissionCode()" (change)="updatePermissionCode($event)">
         <option value="">كل الصلاحيات</option>
         @for (group of permissionGroups(); track group.key) {
           <optgroup [label]="group.label">
@@ -50,27 +48,39 @@
           </optgroup>
         }
       </select>
-    </div>
+    </qd-form-field>
 
-    <button type="submit" class="qd-btn qd-btn-secondary">تطبيق المرشحات</button>
+    <button type="submit" qdAction="secondary" data-testid="access-audit-apply">تطبيق المرشحات</button>
   </form>
 
+  <p class="qd-sr-only" role="status" aria-live="polite" data-testid="access-audit-append-announcement">{{ appendAnnouncement() }}</p>
+
   @if (loading()) {
-    <qd-state variant="loading" message="جارٍ تحميل السجل…" />
+    <qd-skeleton-rows
+      loadingLabel="جارٍ تحميل السجل…"
+      [count]="skeletonRowCount"
+      [rowTemplate]="skeletonRowTemplate"
+    />
   } @else if (error(); as auditError) {
-    <qd-state variant="error" [message]="auditError" />
+    <qd-error-state severity="read" testId="access-audit-error" [message]="auditError" />
   } @else if (events().length === 0) {
-    <qd-state variant="empty" message="لا توجد أحداث مطابقة." />
+    <qd-empty-state testId="access-audit-empty" message="لا توجد أحداث مطابقة." />
   } @else {
-    <ul class="access-audit-log__list">
+    <ul
+      qdResultList
+      listVariant="event"
+      listLabel="أحداث سجل الوصول"
+      class="access-audit-log__list"
+      [attr.aria-busy]="appending() ? 'true' : null"
+    >
       @for (event of events(); track event.id) {
-        <li class="access-audit-log__row qd-detail-list__row">
+        <li qdResultItem class="access-audit-log__row">
           <span class="access-audit-log__action">{{ actionLabel(event.actionType) }}</span>
-          <time class="access-audit-log__time" dir="ltr" [attr.datetime]="event.occurredAtUtc">{{ event.occurredAtUtc | date: 'yyyy/MM/dd HH:mm' }}</time>
+          <time class="access-audit-log__time qd-ltr-isolate" dir="ltr" [attr.datetime]="event.occurredAtUtc">{{ event.occurredAtUtc | date: 'yyyy/MM/dd HH:mm' }}</time>
           <span class="qd-truncate" [title]="targetLabel(event)">الحساب: {{ targetLabel(event) }}</span>
           <span class="qd-truncate" [title]="actorLabel(event)">المنفّذ: {{ actorLabel(event) }}</span>
           @if (event.permissionCode; as code) {
-            <span class="access-audit-log__permission" dir="ltr">{{ code }}</span>
+            <span class="access-audit-log__permission qd-ltr-isolate" dir="ltr">{{ code }}</span>
           }
           @if (event.reason; as reason) {
             <span>{{ reason }}</span>
@@ -78,12 +88,18 @@
         </li>
       }
     </ul>
+
+    @if (appendError(); as appendFailure) {
+      <qd-error-state severity="read" testId="access-audit-append-error" [message]="appendFailure" />
+    }
+
     @if (hasNextPage()) {
       <button
         type="button"
-        class="qd-btn qd-btn-secondary"
+        qdAction="secondary"
         data-testid="access-audit-next-page"
-        [disabled]="loading()"
+        [busy]="appending()"
+        [disabled]="appending() || loading()"
         (click)="nextPageRequested.emit()"
       >تحميل المزيد</button>
     }

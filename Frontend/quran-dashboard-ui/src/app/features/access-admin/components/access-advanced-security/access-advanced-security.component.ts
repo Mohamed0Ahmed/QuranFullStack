@@ -2,7 +2,10 @@ import { ChangeDetectionStrategy, Component, effect, input, output, signal } fro
 
 import { AccessUserDetail } from '../../../../core/api/generated/models/access-user-detail';
 import { LogtoSubjectRelinkPreview } from '../../../../core/api/generated/models/logto-subject-relink-preview';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
+import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
+import { QdFormFieldComponent } from '../../../../shared/ui/form-field/form-field.component';
 import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
 import {
   AccessRelinkPreviewRequest,
@@ -12,7 +15,7 @@ import {
 @Component({
   selector: 'qd-access-advanced-security',
   standalone: true,
-  imports: [QdStateComponent],
+  imports: [QdActionDirective, QdControlDirective, QdEmptyStateComponent, QdFormFieldComponent],
   templateUrl: './access-advanced-security.component.html',
   styleUrl: './access-advanced-security.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
