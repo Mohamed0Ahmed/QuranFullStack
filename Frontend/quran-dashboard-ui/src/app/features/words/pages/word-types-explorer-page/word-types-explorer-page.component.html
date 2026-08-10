@@ -116,12 +116,16 @@
         <qd-word-type-table-view-tabs
           [selectedView]="listState().query.tableView"
           [disabled]="listState().status === 'loading'"
+          panelId="word-types-table-panel"
           (viewSelected)="selectTableView($event)"
         />
       }
     </div>
-    <main
+    <section
       class="word-types-page__main qd-explorer-layout__table"
+      id="word-types-table-panel"
+      [attr.role]="listState().tree ? 'tabpanel' : null"
+      [attr.aria-labelledby]="listState().tree ? 'word-type-table-view-tab-' + listState().query.tableView : null"
       [attr.aria-busy]="listState().status === 'loading' ? true : null"
     >
       <qd-word-types-table
@@ -153,7 +157,7 @@
           }
         </div>
       </qd-word-types-table>
-    </main>
+    </section>
 
     <qd-word-type-details-panel
         class="word-types-page__panel qd-explorer-layout__panel"

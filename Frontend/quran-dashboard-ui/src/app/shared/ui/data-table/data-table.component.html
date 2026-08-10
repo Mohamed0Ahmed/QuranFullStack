@@ -29,6 +29,7 @@
     </div>
   }
   @case ('refreshing') {
+    <qd-refreshing-indicator [active]="true" testId="qd-data-table-refreshing" />
     <ng-container *ngTemplateOutlet="readyTable" />
   }
   @default {

@@ -44,6 +44,8 @@ import { LemmasDetailController } from '../../state/lemmas-detail.controller';
 import { mapLemmaAyahMatchToShared } from '../../utils/lemma-ayah-match.mapper';
 import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
+import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 
 // Overlay adapter for lemma frames (Feature 029, B4). Owns a component-scoped LemmasDetailController
@@ -51,6 +53,8 @@ import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.st
 // page/type changes route through DetailOverlayHistoryService.replaceTopFrame — never the Router or
 // controller state directly — and the URL sync feeds the new frame back in, re-driving the controller.
 // Unlike roots, the ayahs view's typeCode is part of the frame identity.
+let nextSubViewInstance = 0;
+
 @Component({
   selector: 'qd-lemma-detail-overlay-adapter',
   standalone: true,
@@ -62,6 +66,8 @@ import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.st
     LemmaWordsListComponent,
     MissingSurahsListComponent,
     QdErrorStateComponent,
+    QdTabDirective,
+    QdTabsComponent,
     SurahOccurrencesListComponent,
   ],
   providers: [LemmasDetailController, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
@@ -74,6 +80,16 @@ export class LemmaDetailOverlayAdapterComponent {
   private readonly titleStore = inject(EntityDetailOverlayTitleStore, { optional: true });
 
   readonly frame = input.required<LemmaDetailFrame>();
+
+  private readonly subViewId = `overlay-lemmas-subview-${nextSubViewInstance++}`;
+  protected readonly subViewPanelId = `${this.subViewId}-panel`;
+  protected readonly activeSubViewTabId = computed(() => {
+    const frame = this.frame();
+    if (frame.view === 'words') {
+      return this.subViewTabId(frame.wordView);
+    }
+    return frame.view === 'surahs' ? this.subViewTabId(frame.surahView) : null;
+  });
 
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
@@ -164,6 +180,10 @@ export class LemmaDetailOverlayAdapterComponent {
       detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
       typeCode: null,
     });
+  }
+
+  protected subViewTabId(option: string): string {
+    return `${this.subViewId}-tab-${option}`;
   }
 
   protected onWordViewChange(wordView: LemmaWordView): void {

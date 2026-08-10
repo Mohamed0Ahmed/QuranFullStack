@@ -150,8 +150,6 @@
 }
 
 @media (max-width: bp.$qd-bp-compact-max) {
-  // D45: the page-jump control itself takes the full Compact target once it is
-  // the mounted control rather than the printed page number.
   .mushaf-page-view__page-input {
     min-height: var(--qd-hit-target-min);
   }

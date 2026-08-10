@@ -37,7 +37,9 @@
   font-variant-numeric: tabular-nums;
 }
 
+.access-audit-log__party,
 .access-audit-log__permission {
+  min-inline-size: 0;
   overflow-wrap: anywhere;
 }
 

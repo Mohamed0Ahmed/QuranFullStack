@@ -89,6 +89,41 @@ export function placeFloatingLayer(
   };
 }
 
+export function repositionFloatingLayer(
+  layer: HTMLElement,
+  anchor: HTMLElement | null,
+  point: FloatingAnchorPoint | null,
+): void {
+  const view = layer.ownerDocument.defaultView;
+  const anchored = anchor !== null && anchor.isConnected;
+  if (view === null || (!anchored && point === null)) {
+    return;
+  }
+
+  applyFloatingPlacement(
+    layer,
+    placeFloatingLayer(
+      anchored ? anchor.getBoundingClientRect() : pointerAnchorRect(point!),
+      { width: layer.offsetWidth, height: layer.scrollHeight },
+      { width: view.innerWidth, height: view.innerHeight },
+      resolveFloatingDirection(layer),
+      resolveRootFontSize(layer),
+      anchored ? FLOATING_ANCHOR_GAP : 0,
+    ),
+  );
+}
+
+function applyFloatingPlacement(layer: HTMLElement, placement: FloatingPlacement): void {
+  layer.style.position = 'fixed';
+  layer.style.insetInlineStart = 'auto';
+  layer.style.insetInlineEnd = 'auto';
+  layer.style.setProperty('inset-block-start', `${placement.top}px`);
+  layer.style.setProperty('left', `${placement.left}px`);
+  layer.style.maxBlockSize = `${placement.maxBlockSize}px`;
+  layer.dataset['qdFloatingBlockSide'] = placement.blockSide;
+  layer.dataset['qdFloatingClamped'] = placement.inlineClamped ? 'true' : 'false';
+}
+
 export function resolveFloatingDirection(host: Element): 'ltr' | 'rtl' {
   return host.closest('[dir]')?.getAttribute('dir') === 'rtl' ? 'rtl' : 'ltr';
 }

@@ -5,6 +5,8 @@ import { Subject, Subscription, debounceTime, switchMap } from 'rxjs';
 
 import { LemmaDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
+import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
+import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { ExplorerCountRangeFilterComponent } from '../../components/explorer-count-range-filter/explorer-count-range-filter.component';
@@ -42,10 +44,12 @@ type LemmaTableColumnKey = Exclude<MorphologyColumnKey, 'lemmas'>;
 type LemmaPanelState = ReturnType<LemmasDetailFacade['panelState']>;
 type LemmaCountTarget = LemmaCountOpenedEvent & { column: LemmaTableColumnKey };
 
+let nextSubViewInstance = 0;
+
 @Component({
   selector: 'qd-lemmas-explorer-page',
   standalone: true,
-  imports: [NgTemplateOutlet, AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, LemmaAyahTypeFiltersComponent, LemmaDetailsPanelComponent, LemmaStemsListComponent, LemmaWordsListComponent, LemmasTableComponent, MissingSurahsListComponent, PaginationComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
+  imports: [NgTemplateOutlet, AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, LemmaAyahTypeFiltersComponent, LemmaDetailsPanelComponent, LemmaStemsListComponent, LemmaWordsListComponent, LemmasTableComponent, MissingSurahsListComponent, PaginationComponent, QdTabDirective, QdTabsComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
   templateUrl: './lemmas-explorer-page.component.html',
   styleUrl: './lemmas-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -113,6 +117,15 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly activeWordView = computed(() => this.tableFocus.activeWordView() ?? this.panelState().wordView);
   protected readonly activeSurahView = computed(() => this.tableFocus.activeSurahView() ?? this.panelState().surahView);
   protected readonly activeColumn = this.tableFocus.activeColumn;
+  private readonly subViewId = `lemmas-explorer-subview-${nextSubViewInstance++}`;
+  protected readonly subViewPanelId = `${this.subViewId}-panel`;
+  protected readonly activeSubViewTabId = computed(() => {
+    const view = this.activeView();
+    if (view === 'words') {
+      return this.subViewTabId(this.panelState().wordView);
+    }
+    return view === 'surahs' ? this.subViewTabId(this.panelState().surahView) : null;
+  });
   protected readonly emptySelection = computed(() => this.panelState().selectedLemmaId === null);
   protected readonly defaultView: LemmaView = DEFAULT_LEMMA_VIEW;
   protected readonly ayahsPageForView = computed(() => {
@@ -231,6 +244,10 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     this.tableFocus.cancel();
     this.detailFacade.setAyahTypeCode(typeCode);
     this.updateQueryParams(buildLemmasQueryParams({ view: 'ayahs', column: this.activeColumn() ?? 'occurrences', detailPage: 1, typeCode }));
+  }
+
+  protected subViewTabId(option: string): string {
+    return `${this.subViewId}-tab-${option}`;
   }
 
   protected onWordViewChange(wordView: LemmaWordView): void {

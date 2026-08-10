@@ -4,6 +4,7 @@ import {
   ACCESS_ACCOUNT_VARIANTS,
   AccessAccountVariant,
   accessAccountVariant,
+  accessLifecycleActionsApply,
   accessLifecycleTone,
   accessUserNameLabel,
   canReplaceUserPermissions,
@@ -85,6 +86,22 @@ describe('permission predicates over the exhaustive variants', () => {
 
   it('refuses a permission replace while assignment is unavailable', () => {
     expect(canReplaceUserPermissions({ status: 'active', isOwner: false }, false)).toBe(false);
+  });
+
+  it.each(TARGETS)(
+    'offers lifecycle actions on $variant only when the account is a known-status non-Owner',
+    ({ status, isOwner, variant }) => {
+      const actionable =
+        variant === 'pending-non-owner' ||
+        variant === 'active-non-owner' ||
+        variant === 'disabled-non-owner';
+
+      expect(accessLifecycleActionsApply({ status, isOwner })).toBe(actionable);
+    },
+  );
+
+  it('offers lifecycle actions on no account at all while none is selected', () => {
+    expect(accessLifecycleActionsApply(null)).toBe(false);
   });
 });
 

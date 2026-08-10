@@ -47,15 +47,17 @@ it.
 | Wide | `>= 1080` | desktop navigation, rails, splits |
 | Wide-plus | `>= 1440` | measure enhancement only, not a fourth structure |
 
-Never write a raw pixel threshold. Legacy `360/420/640` constants are being removed phase by phase;
-adding one is a defect.
+Never write a raw responsive threshold, in px or rem. The legacy `360/420/640` constants are gone
+repository-wide (D11) and `npm run check:golden-ui` scans every stylesheet under `src/`; adding one
+back is a defect.
 
 ## 5. One gutter, four page intents
 
 Only the page shell applies inline gutters: `16 / 24 / 32 / 40px` at Compact / Medium / Wide /
-Wide-plus. `.qd-page` carries block rhythm only. A feature frame, explorer stylesheet, or nested
-surface may never add a second inline gutter, and page-level horizontal scrolling is a defect in
-every mode.
+Wide-plus. `.qd-page` carries block rhythm only. `.qd-page-shell` holds the only
+`padding-inline: var(--qd-page-gutter)` declaration in the tree and the checker fails on a second
+one; a feature frame, explorer stylesheet, or nested surface may never add another, and page-level
+horizontal scrolling is a defect in every mode.
 
 Each route declares exactly one named intent: `capped-reading` (72rem), `full-data` (100rem),
 `split-workspace` (100rem), `protected-mushaf` (feature-owned). Rails are `16 / 18 / 20rem` and
@@ -77,12 +79,13 @@ Layout uses logical properties only (`inline-start/end`, `margin-inline`, `paddi
 `border-inline-start`, `inset-inline`). Latin values are isolated at the value element with
 `.qd-ltr-isolate`; they never reverse a container.
 
-## 8. `qd-state` does not grow
+## 8. Five async owners, and no adapter
 
-`src/app/shared/ui/state/` is a temporary compatibility adapter for the five async owners
-(skeleton, refreshing, empty, error/notFound, notice). New code imports the canonical owners.
-`npm run check:golden-ui` fails when the adapter's call-site count rises above the recorded
-baseline, and the baseline may only fall.
+Async state is five separate owners — skeleton, refreshing, empty, error/notFound, notice — each
+with its own role/live-region and geometry contract. The `qd-state` adapter that conflated the
+first three was deleted in Plan 7 Phase 11 at zero consumers; `npm run check:golden-ui` fails on
+any `<qd-state` / `QdStateComponent` reference and on `src/app/shared/ui/state/` reappearing. Pick
+the owner, never a variant flag.
 
 ## 9. Nearest README duty
 
@@ -92,6 +95,23 @@ belongs in the nearest README or in this file.
 
 ## 10. The gate
 
-`npm run check:golden-ui` enforces one band truth, one token truth, the page-shell contract, the
-prohibited effects, and the `qd-state` baseline. Its legacy allowlist is explicit, dated to the
-phase that retires each entry, and may only shrink.
+`npm run check:golden-ui` enforces one band truth, one token truth, the single route-gutter owner,
+the prohibited effects, the retired `qd-state` adapter, and three boundaries worth stating exactly,
+because a documented guarantee the gate does not deliver is worse than none:
+
+- **Modal widths.** `modal-shell.component.scss` must declare exactly the four named variants, and
+  no Golden-layer stylesheet may give a modal-named selector its own inline-axis size (`width`,
+  `min/max-width`, `inline-size`, `min/max-inline-size`). Colour, padding and other non-geometry
+  rules on projected dialog content stay legal; a competing dialog geometry fails with its file,
+  line and selector. Component stylesheets outside the Golden layer are not scanned for this.
+- **Resting elevation.** Across **every** stylesheet under `src/`, a `box-shadow` reading any
+  `--qd-shadow*` token fails unless it is `--qd-shadow-layer` on a declared floating owner (modal
+  shell, floating layer, nav menu, the detail-shell restore button). Widening that list is a
+  deliberate edit to the checker.
+- **Quran renderer boundary.** Golden-layer stylesheets only, but on a normalized selector list:
+  multi-line lists are split across newlines and pseudo-classes/elements are stripped before the
+  protected-name match, so `.mushaf-line:hover` and `.a,\n.mushaf-word` are both inspected.
+
+It also scans **every** stylesheet under `src/` for a raw responsive threshold, in px *or* rem. Its
+legacy allowlist is now empty except the two permanent colour-literal entries that define the token
+owner's boundary, and it may only shrink.

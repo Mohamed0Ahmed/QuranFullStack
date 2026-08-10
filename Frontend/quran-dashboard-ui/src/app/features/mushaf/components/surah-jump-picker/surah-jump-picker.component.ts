@@ -7,8 +7,6 @@ import {
   filterUniqueSurahs,
 } from '../../utils/surah-jump-catalog.helpers';
 
-// D31/D44: every id this picker owns is generated per instance, so two mounted
-// pickers can never share a listbox or an option target.
 let nextSurahJumpInstance = 0;
 
 @Component({

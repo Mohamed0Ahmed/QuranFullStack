@@ -407,7 +407,7 @@ describe('WordTypesExplorerPageComponent', () => {
     const slot = layout.firstElementChild!;
     expect(slot.classList.contains('word-types-page__tabs')).toBe(true);
     expect(slot.contains(tabs)).toBe(true);
-    expect(slot.nextElementSibling).toBe(layout.querySelector('main.word-types-page__main'));
+    expect(slot.nextElementSibling).toBe(layout.querySelector('section.word-types-page__main'));
   });
 
   // N3 row 2: the tabs are gated on the tree, so their whole row appeared on first load and pushed the

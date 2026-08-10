@@ -524,7 +524,8 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   owner (Phase 8, D01/D02).** `abwab-page.component.html:2` composes
   `qd-page-shell qd-page-shell--full-data` and `abwab-templates-page.component.html:2` composes
   `qd-page-shell qd-page-shell--split-workspace`; both replaced the earlier
-  `qd-container qd-page-frame` pair. `.qd-page-shell` owns the `16 / 24 / 32 / 40px` inline gutter
+  `qd-container qd-page-frame` pair, which Phase 11 deleted outright. `.qd-page-shell` owns the
+  `16 / 24 / 32 / 40px` inline gutter
   and `box-sizing: border-box` (load-bearing for the viewport reservation below), while
   `.qd-page` keeps block rhythm only. The local `__frame` classes supply the column flex context
   and the bottom gap above the footer that the retired frame class used to carry; neither adds a
@@ -532,7 +533,7 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   `qd-container`/`qd-page-frame`/`qd-explorer-frame` on either route.
 - **The doors page (`abwab-page.component`) reserves a full viewport (Slice B2, T801-T802) — the
   templates page does not.** `.abwab-page__frame` adds `min-block-size: calc(100dvh -
-  var(--qd-navbar-block-size))` on top of the shared `.qd-page-frame`; abwab-local for now, see
+  var(--qd-navbar-block-size))` on top of the page shell; abwab-local for now, see
   `UI_STYLE_SYSTEM.md` §17 "Viewport reservation" for the arithmetic, the `border-box`
   prerequisite and the generalization trigger. The reservation only bounds the frame — filling it
   is a four-link chain: `.abwab-page__layout` (`flex: 1; min-block-size: 0`) →
@@ -566,13 +567,13 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   composes the shared `qd-confirm-dialog` primitive (`shared/ui/confirm-dialog/`,
   UI_STYLE_SYSTEM §17) instead — a form plus its dirty guard is a different contract from a
   yes/no decision. Do not migrate confirmations onto this shell, or authoring modals off it.
-  Every authoring one is
-  `.qd-modal.qd-modal--fixed` with `__head`/`__body`/`__foot`, `role="dialog"`,
-  `aria-modal="true"`, an `aria-labelledby` pointing at its own `<h3>`, `qdModalScrollLock`,
-  Escape-to-close, and `cdkTrapFocus cdkTrapFocusAutoCapture` — the trap conditional in exactly
-  the two that nest a `qd-confirm-dialog`, see below. Consequences worth knowing before
+  Since Phase 7 every authoring one is a
+  `qd-modal-shell` — `variant="wide"` for sections, relations, template-copy and the move picker,
+  `variant="form"` for the door and template-node modals — and the shell owns `role="dialog"`,
+  `aria-modal="true"`, `aria-labelledby`, the scroll lock, Escape-to-close, the focus trap and the
+  Compact `94dvh` sheet. The local SCSS is layout-only. Consequences worth knowing before
   changing one:
-  - **No modal states a height, and none nests a scroller.** `__body` is the single scroller;
+  - **No modal states a height, and none nests a scroller.** The shell body is the single scroller;
     the four inner `max-block-size` caps that existed before Slice C are deleted. Adding one back
     re-creates the §17 specificity trap the caps were.
   - **Authoring modals never stack with each other**, so the four that nest no
@@ -604,18 +605,18 @@ in scope, which is exactly what §6.2's M22 cell forbids.
     element a zero-size box, so the CDK's focusable check rejects every target, auto-capture never
     moves focus there, and its "not focusable" warning is filtered in `src/test-setup.ts` as the
     pure noise it is.
-  - **Shallow modals render with empty space** below their content, because `--fixed` is a fixed
-    `min(92dvh, 44rem)`. That is §17's "zero resize" trade, accepted deliberately; do not "fix"
-    it back to content height.
+  - **Shallow modals render with empty space** below their content, because the shell holds its
+    named width and block geometry rather than shrinking to content. That is §17's "zero resize"
+    trade, accepted deliberately; do not "fix" it back to content height.
 - **`.qd-navbar` sits on `--qd-z-mobile-nav` (45), not `--qd-z-sticky` (5) — the rung its own
-  dropdown and mobile menu already declare, because sticky positioning makes the navbar's own
+  dropdown declares, because sticky positioning makes the navbar's own
   rung a ceiling for everything inside it.** `position: sticky` unconditionally creates a
   stacking context (every engine, regardless of `z-index`), so a sticky element's descendants
   can never paint above what the element's own rung permits, no matter their own declared
   z-index. Putting the navbar on `--qd-z-sticky` — the reflexive "lowest rung" choice — would
-  have clamped `.dropdown-menu` and `.mobile-menu` down to 5, breaking three real surfaces
-  (verified against every `--qd-z-*` consumer): the dropdown loses to the `detail-modal-shell`
-  restore control (40); `.mobile-menu`, a full-screen overlay, would paint under page popovers
+  have clamped `.qd-nav__menu` and the Compact navigation sheet down to 5, breaking three real
+  surfaces (verified against every `--qd-z-*` consumer): the dropdown loses to the
+  `detail-modal-shell` restore control (40); the navigation sheet would paint under page popovers
   (30); and page popovers would paint *over* the sticky navbar itself on a scrolled page — a
   failure mode that didn't exist before the navbar was sticky. `--qd-z-mobile-nav` fixes all
   three while staying below `--qd-z-menu-backdrop`/`--qd-z-menu`/`--qd-z-modal-backdrop`, so a
@@ -712,6 +713,21 @@ in scope, which is exactly what §6.2's M22 cell forbids.
     scroll past, every one of them a destination the user did not ask to see. The list
     now opens on the section's root doors and the user expands what they want.
     The toggle is `abwab-door-picker`'s chevron contract, mirrored — not imported.
+- **Five Abwab surfaces stopped truncating under D35, and five deliberately did not.** A truncated
+  name may only elide behind `[title]` when a rung of the Golden §8.1 disclosure ladder carries the
+  full value. The relations modal's bulk target chips, the sections modal's row names, the template
+  tree's node names, the side panel's active door name, and the templates page's editor heading all
+  had `title` as their *only* disclosure and now wrap instead (`min-inline-size: 0;
+  overflow-wrap: anywhere`, no `.qd-truncate`, no `[title]`, and no added `tabindex`). Two of those
+  are permission-conditional and were resolved on their *read-only* branch: the sections row loses
+  its Rename/Delete buttons and the template-tree row loses its `tabindex` when the visitor cannot
+  open the context menu, so the writable layout is not evidence that the read-only one is reachable.
+  The five that keep `.qd-truncate` + `[title]` each have a real owner: `abwab-tree` and
+  `abwab-archive-view` rows are `role="treeitem"` with a roving tabindex, `abwab-cards`' card and
+  crumbs and the templates *list* item truncate inside a `button`, the move picker's two row kinds
+  truncate inside a `button` carrying `aria-label`, and `abwab-door-picker`'s row name is named by
+  its own focusable check control. `abwab-toolbar`'s `[title]` sits on an `aria-hidden` count inside
+  a focusable tab and discloses nothing that is hidden.
 - **The move picker and `abwab-door-picker` look alike and are still separate — on purpose.**
   Since ux-slice-m the move picker has a search, a chevron, truncated names, and a
   collapsed-by-default tree, which is most of what the door picker offers, and the

@@ -13,6 +13,11 @@
   margin: 0;
 }
 
+.access-user-picker__selected-name {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
 .access-user-picker__search {
   display: flex;
   gap: var(--qd-space-2);

@@ -228,6 +228,20 @@ describe('AbwabSidePanelComponent — shared action owners', () => {
     ).toBe(true);
   });
 
+  // D35: the active-door name sits in a plain div under role="group" with no focusable ancestor —
+  // the Clear button beside it is an action, not a disclosure rung for the name.
+  it('discloses the active door name without a pointer-only title', () => {
+    const fixture = render({ selectedDoor: DOOR });
+    const name = (fixture.nativeElement as HTMLElement).querySelector(
+      '.abwab-side-panel__active-name',
+    ) as HTMLElement;
+
+    expect(name.textContent?.trim()).toBe(DOOR.name);
+    expect(name.getAttribute('title')).toBeNull();
+    expect(name.classList.contains('qd-truncate')).toBe(false);
+    expect(name.getAttribute('tabindex')).toBeNull();
+  });
+
   // Below Wide this panel is the page's selected-door action bar, so it must name itself.
   it('names itself as one group of door operations', () => {
     const fixture = render();

@@ -59,11 +59,15 @@ describe('AppNavigationComponent', () => {
     const trigger = host(closed).querySelector('[data-testid="nav-words-trigger"]');
 
     expect(trigger?.getAttribute('aria-expanded')).toBe('false');
-    expect(trigger?.getAttribute('aria-controls')).toBe('words-menu');
+    // The menu element only exists while open, so a closed trigger must not name it: an
+    // aria-controls pointing at a missing id is a broken reference, not a hint.
+    expect(trigger?.hasAttribute('aria-controls')).toBe(false);
     expect(host(closed).querySelector('#words-menu')).toBeNull();
 
     const open = render('desktop', [WORDS], 'words');
-    expect(host(open).querySelector('[data-testid="nav-words-trigger"]')?.getAttribute('aria-expanded')).toBe('true');
+    const openTrigger = host(open).querySelector('[data-testid="nav-words-trigger"]');
+    expect(openTrigger?.getAttribute('aria-expanded')).toBe('true');
+    expect(openTrigger?.getAttribute('aria-controls')).toBe('words-menu');
     expect(host(open).querySelector('#words-menu')).not.toBeNull();
   });
 

@@ -109,6 +109,8 @@
 
 .abwab-templates-page__editor-name {
   flex: 1;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
 .abwab-templates-page__count {
@@ -124,14 +126,6 @@
 .abwab-templates-page__editor-actions {
   display: flex;
   gap: var(--qd-space-2);
-}
-
-.qd-context-menu__item--danger {
-  color: var(--qd-danger);
-
-  &:hover {
-    background: var(--qd-surface-hover);
-  }
 }
 
 @media (max-width: bp.$qd-bp-medium-max) {

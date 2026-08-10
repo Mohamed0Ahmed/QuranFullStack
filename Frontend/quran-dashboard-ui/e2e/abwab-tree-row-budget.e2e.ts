@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures/abwab';
+import { AbwabSandboxDoor, expect, test } from './fixtures/abwab';
 
 /**
  * The tree row's name budget and depth-indent step, measured rather than asserted from a
@@ -20,7 +20,7 @@ for (const width of VIEWPORTS) {
       // A chain deep enough to characterise the budget as a function of depth: §17's "~184px"
       // was measured on some row, and the indent costs the name one step per level, so a single
       // depth-0 number would not be comparable to it.
-      const chain = [];
+      const chain: AbwabSandboxDoor[] = [];
       for (let depth = 0; depth < CHAIN_DEPTH; depth++) {
         chain.push(
           await abwabSandbox.createDoor({

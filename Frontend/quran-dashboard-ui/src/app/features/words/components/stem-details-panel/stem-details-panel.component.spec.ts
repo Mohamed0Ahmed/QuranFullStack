@@ -171,7 +171,9 @@ describe('StemDetailsPanelComponent modal drawer mode (T118)', () => {
     expect(dialog).toBeTruthy();
     expect(dialog.getAttribute('role')).toBe('dialog');
     expect(dialog.getAttribute('aria-modal')).toBe('true');
-    expect(dialog.getAttribute('aria-label')).toBe('تفاصيل الأصل الصرفي');
+    const labelledBy = dialog.getAttribute('aria-labelledby') as string;
+    expect(labelledBy).toBeTruthy();
+    expect(host.querySelector('#' + labelledBy)?.textContent?.trim()).toBe('تفاصيل الأصل الصرفي');
   });
 
   it('emits close when the backdrop is clicked directly', () => {

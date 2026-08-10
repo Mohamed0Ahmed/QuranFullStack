@@ -10,8 +10,6 @@
     height: auto;
     flex-shrink: 0;
 
-    // Relocated from _components.scss (UI_STYLE_SYSTEM.md §2 / styles/README.md
-    // boundary — component internals belong in the owning component's SCSS).
     @media (max-width: bp.$qd-bp-tablet-max) {
       min-height: auto;
     }

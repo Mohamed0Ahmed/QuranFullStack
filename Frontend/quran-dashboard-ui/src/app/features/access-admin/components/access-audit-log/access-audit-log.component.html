@@ -77,8 +77,8 @@
         <li qdResultItem class="access-audit-log__row">
           <span class="access-audit-log__action">{{ actionLabel(event.actionType) }}</span>
           <time class="access-audit-log__time qd-ltr-isolate" dir="ltr" [attr.datetime]="event.occurredAtUtc">{{ event.occurredAtUtc | date: 'yyyy/MM/dd HH:mm' }}</time>
-          <span class="qd-truncate" [title]="targetLabel(event)">الحساب: {{ targetLabel(event) }}</span>
-          <span class="qd-truncate" [title]="actorLabel(event)">المنفّذ: {{ actorLabel(event) }}</span>
+          <span class="access-audit-log__party">الحساب: {{ targetLabel(event) }}</span>
+          <span class="access-audit-log__party">المنفّذ: {{ actorLabel(event) }}</span>
           @if (event.permissionCode; as code) {
             <span class="access-audit-log__permission qd-ltr-isolate" dir="ltr">{{ code }}</span>
           }

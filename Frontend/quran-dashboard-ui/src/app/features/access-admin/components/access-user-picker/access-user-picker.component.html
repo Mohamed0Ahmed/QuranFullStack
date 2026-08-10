@@ -8,10 +8,9 @@
   @if (selected(); as chosen) {
     <p
       class="access-user-picker__selected"
-      [title]="nameLabel(chosen)"
       [attr.data-testid]="testIdPrefix() + '-selected'"
     >
-      <span class="qd-truncate">{{ nameLabel(chosen) }}</span>
+      <span class="access-user-picker__selected-name">{{ nameLabel(chosen) }}</span>
       <button
         type="button"
         qdAction="tertiary"

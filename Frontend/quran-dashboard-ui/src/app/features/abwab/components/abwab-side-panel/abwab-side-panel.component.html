@@ -3,7 +3,7 @@
     <h4>{{ activeDoorHeading }}</h4>
     @if (selectedDoor(); as door) {
       <div class="abwab-side-panel__active-door" data-testid="abwab-side-panel-active-door">
-        <span class="abwab-side-panel__active-name qd-truncate" [title]="door.name">{{ door.name }}</span>
+        <span class="abwab-side-panel__active-name">{{ door.name }}</span>
         <button
           type="button"
           qdAction="tertiary"

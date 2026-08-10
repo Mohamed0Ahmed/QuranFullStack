@@ -292,6 +292,26 @@ describe('AbwabTemplateTreeComponent — row actions are never hover-only', () =
     ).toBeGreaterThan(0);
   });
 
+  it('discloses a node name to a read-only visitor, whose row takes no tab stop (D35)', () => {
+    const fixture = render();
+    fixture.componentRef.setInput('canCreateNode', false);
+    fixture.componentRef.setInput('canReorderNode', false);
+    fixture.componentRef.setInput('canShowRootContextMenu', false);
+    fixture.componentRef.setInput('canShowNodeContextMenu', false);
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+
+    // Without the context menu the row loses its tabindex, so nothing focusable owns the name.
+    const row = root.querySelector('[data-testid="abwab-template-tree-row-2"]') as HTMLElement;
+    expect(row.getAttribute('tabindex')).toBeNull();
+
+    const name = row.querySelector('.abwab-template-tree__name') as HTMLElement;
+    expect(name.textContent?.trim()).toBe('العلم بالله');
+    expect(name.getAttribute('title')).toBeNull();
+    expect(name.classList.contains('qd-truncate')).toBe(false);
+    expect(name.getAttribute('tabindex')).toBeNull();
+  });
+
   it('keeps the hierarchy a list, not a false tree (G20)', () => {
     const fixture = render();
     const root = fixture.nativeElement as HTMLElement;

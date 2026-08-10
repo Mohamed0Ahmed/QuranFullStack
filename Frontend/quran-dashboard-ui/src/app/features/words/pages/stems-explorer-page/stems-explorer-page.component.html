@@ -175,47 +175,49 @@
       }
 
       @if (activeView() === 'words') {
-        <nav
+        <qd-tabs
           class="stems-explorer__sub-tabs qd-explorer-subtabs"
-          role="tablist"
-          [attr.aria-label]="wordsTablistLabel"
+          dir="rtl"
+          [ariaLabel]="wordsTablistLabel"
           data-testid="stems-word-view-tabs"
         >
           @for (option of wordViewOptions; track option) {
             <button
+              qdTab
               type="button"
-              class="qd-btn qd-btn-secondary stems-explorer__sub-tab"
-              role="tab"
+              class="stems-explorer__sub-tab"
+              [id]="subViewTabId(option)"
+              [panelId]="subViewPanelId"
+              [selected]="panelState().wordView === option"
               [attr.data-testid]="'stems-word-view-' + option"
-              [attr.aria-selected]="panelState().wordView === option"
-              [class.qd-is-selected]="panelState().wordView === option"
               (click)="onWordViewChange(option)"
             >
               {{ wordViewLabels[option] }}
             </button>
           }
-        </nav>
+        </qd-tabs>
       } @else if (activeView() === 'surahs') {
-        <nav
+        <qd-tabs
           class="stems-explorer__sub-tabs qd-explorer-subtabs"
-          role="tablist"
-          [attr.aria-label]="surahsTablistLabel"
+          dir="rtl"
+          [ariaLabel]="surahsTablistLabel"
           data-testid="stems-surah-view-tabs"
         >
           @for (option of surahViewOptions; track option) {
             <button
+              qdTab
               type="button"
-              class="qd-btn qd-btn-secondary stems-explorer__sub-tab"
-              role="tab"
+              class="stems-explorer__sub-tab"
+              [id]="subViewTabId(option)"
+              [panelId]="subViewPanelId"
+              [selected]="panelState().surahView === option"
               [attr.data-testid]="'stems-surah-view-' + option"
-              [attr.aria-selected]="panelState().surahView === option"
-              [class.qd-is-selected]="panelState().surahView === option"
               (click)="onSurahViewChange(option)"
             >
               {{ surahViewLabels[option] }}
             </button>
           }
-        </nav>
+        </qd-tabs>
       } @else if (activeView() === 'lemmas' && panelState().status !== 'error' && panelState().status !== 'notFound') {
         <qd-stem-lemmas-list
           [loading]="panelState().status === 'loading'"
@@ -224,6 +226,13 @@
         />
       }
 
+      <div
+        class="qd-explorer-subview-panel"
+        [id]="subViewPanelId"
+        [attr.role]="activeSubViewTabId() ? 'tabpanel' : null"
+        [attr.aria-labelledby]="activeSubViewTabId()"
+        [attr.tabindex]="activeSubViewTabId() ? 0 : null"
+      >
       @switch (panelState().status) {
         @case ('loading') {
           @if (activeView() === 'words') {
@@ -301,6 +310,7 @@
           }
         }
       }
+      </div>
     }
   </ng-template>
   </div>

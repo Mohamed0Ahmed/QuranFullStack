@@ -38,8 +38,9 @@ Shared explorer mechanics stay in `utils/explorer-table-*`,
 
 Every explorer root composes the feature-neutral `qd-page-shell qd-page-shell--split-workspace`
 owned by `styles/_layout.scss` — the single route-gutter owner. The `qd-container` /
-`qd-page-frame` / `qd-explorer-frame` aliases stay on their own rules for the call sites that have
-not migrated yet; do not remove them as if they were a second layout contract. See
+`qd-page-frame` / `qd-explorer-frame` aliases were deleted in Phase 11 at zero consumers; the page
+shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the tree and
+`npm run check:golden-ui` fails if a second one appears. See
 [`styles/README.md`](../../../styles/README.md) and
 [`UI_STYLE_SYSTEM.md`](../../../../.architecture/UI_STYLE_SYSTEM.md).
 ## Global entity-detail overlay (Feature 029, Change B)
@@ -59,11 +60,12 @@ not migrated yet; do not remove them as if they were a second layout contract. S
   stay shared, so the side panel and the overlay de-duplicate the same reads
   (`RootsCacheKeys` unchanged).
 - **Only the top layer traps focus**: the four mobile detail drawers
-  (`root`/`lemma`/`stem`/`word-type-details-panel`) bind `[cdkTrapFocus]` to
-  `!DetailOverlayHistoryService.isOpen()`, and `word-drilldown-modal` passes the same expression
-  as `[trapFocus]` to its `qd-modal-shell`. While the global dialog is open they sit inside the
-  inert app shell, so their traps stand down and exactly one trap is enabled
-  (`app.nested-layers.spec.ts`). Never re-add an unconditional `cdkTrapFocus`.
+  (`root`/`lemma`/`stem`/`word-type-details-panel`) and `word-drilldown-modal` all pass
+  `!DetailOverlayHistoryService.isOpen()` as `[trapFocus]` to their `qd-modal-shell`. The shell
+  additionally requires that it be the topmost open shell, so the two conditions agree. While the
+  global dialog is open the drawers sit inside the inert app shell, so their traps stand down and
+  exactly one trap is enabled (`app.nested-layers.spec.ts`). Never re-add an unconditional
+  `cdkTrapFocus` — no Words surface owns a raw CDK trap any more.
 - **The Unique-Words drilldown modal is an F14 `overlay` shell** (Golden UI Phase 7): its Wide
   modal branch renders `qd-modal-shell variant="overlay"` with `flushBody` (the projected
   `qd-details-workspace` brings its own header, tabs and body scroller, so the shell contributes no
@@ -110,6 +112,25 @@ not migrated yet; do not remove them as if they were a second layout contract. S
 
 ## Gotchas / invariants (read before changing)
 
+- **The app shell owns the only `<main>`.** Word Types rendered a second, nested `<main>` for its
+  table column until Phase 11's browser sweep measured two landmarks on that route at every width;
+  it is now a `<section>`, matching the four sibling explorers. A page never introduces a landmark
+  the shell already provides.
+- **The Compact/Medium detail drawer is the shared shell's `overlay` variant, not a fifth
+  geometry.** Below Wide, `root` / `lemma` / `stem` / `word-type-details-panel` render their
+  `role="dialog"` surface by composing `qd-modal-shell` with `variant="overlay"`,
+  `[showTitle]="false"`, `[showClose]="false"`, `[hasFooter]="false"` and `[flushBody]="true"`; the
+  shell owns the backdrop, the scroll lock, Escape/backdrop dismissal and the focus trap, and
+  `[trapFocus]="drawerTrapEnabled()"` still stands the drawer's trap down while the global detail
+  overlay is the top layer. The panel keeps its own header and close button, which is why the
+  shell's title is `qd-sr-only` — it is the dialog's accessible name, replacing the former
+  `aria-label`. `.explorer-detail-modal` survives as a **content** class only (flex column,
+  `min-block-size: 0`, the detail background); it declares no inline size, no block size and no
+  scroller, so the single body scroller stays `.qd-details__body`. This closes D48: the only dialog
+  geometries in the app are the shell's `confirm` 30rem / `form` 38rem / `wide` 52rem /
+  `overlay` 46rem plus the Compact sheet. The bare `.qd-modal` / `.qd-modal-backdrop` pair that used
+  to carry the drawer was deleted at zero consumers in the same change — do not re-introduce it, and
+  do not add a `.qd-modal--*` width modifier.
 - **All five explorers now consume the shared Words architecture.** Every table selector delegates
   to `qd-data-table`: Roots, Lemmas, Stems and Unique Words render `standard`; Word Types renders
   `wide-columns` in its words view and `grouped-rows` in the roots/stems/lemmas views. All five pages
@@ -138,16 +159,29 @@ not migrated yet; do not remove them as if they were a second layout contract. S
   selected tabpanel (the other tabs are disabled while it holds), and use `.qd-details__body` as the
   sole details scroller. Ordinary linked/display-only results use `qdResultList`/`qdResultItem`;
   Quran results keep `qdAyahCard` and the existing highlighted-Quran renderer unchanged.
+- **Every Words tablist is the F07 owner; no feature re-implements the keyboard contract.** The
+  Roots/Lemmas/Stems explorer sub-tabs (`…-word-view-tabs` / `…-surah-view-tabs`), the three overlay
+  adapters' sub-tabs, and `word-type-table-view-tabs` all compose `qd-tabs` + `qdTab`, so roving
+  `tabindex`, RTL-correct Arrow/Home/End, `aria-selected` and `aria-disabled` have exactly one
+  implementation. `role="tablist"` exists nowhere under `src/app/` except `qd-tabs`'s own template.
+  Each `qd-tabs` in Words carries `dir="rtl"` — the owner resolves arrow direction from the nearest
+  `[dir]` ancestor, and a detached test fixture would otherwise fall back to LTR and reverse the
+  mapping. The explorer/overlay sub-tabs keep selection on click only (selection is URL state, and
+  arrow keys move focus without selecting); `word-type-table-view-tabs` keeps its prior automatic
+  activation by binding `(focus)` to the same handler as `(click)`. The sub-view content each
+  sub-tablist controls is a single swapping region carrying `role="tabpanel"` and a per-instance id
+  (`.qd-explorer-subview-panel`), bound as `[panelId]` on every tab and as `aria-labelledby` back to
+  the selected tab; the role is dropped on views that render no sub-tabs.
 - **Zero-count detail triggers remain visible but inert across all five explorers.** Identity
   actions, count chips, mobile stat badges and Lemma/Stem ayah-type controls use
   `لا كلمات مرتبطة بهذا النوع، لذا لا تفاصيل لعرضها.` as the visible reason, reference it through
   `aria-describedby`, retain native `disabled` plus `aria-disabled="true"`, and never open details.
   Each table renders that reason once, in its pagination slot, under a per-instance id.
   `word-count-chip` keeps all prior inputs and adds only the optional disabled-reason ID contract.
-- **Words has zero `qd-state` consumers.** `word-drilldown-modal` and the Root/Lemma/Stem/Word Type
-  overlay adapters read errors through the F12 owner `qd-error-state severity="read"`; their
-  `data-testid` hooks are unchanged. Nothing under `src/app/features/words/` may reference
-  `<qd-state>` or `QdStateComponent` again.
+- **Words has zero `qd-state` consumers, and the adapter itself is gone** (Phase 11, D39).
+  `word-drilldown-modal` and the Root/Lemma/Stem/Word Type overlay adapters read errors through the
+  F12 owner `qd-error-state severity="read"`; their `data-testid` hooks are unchanged. Nothing
+  under `src/app/features/words/` may reference `<qd-state>` or `QdStateComponent` again.
 - **The explorer toolbar is feature-local and semantic-only.** Its primary, result, secondary,
   applied-summary, and action zones stay mounted while each page continues to own field meaning,
   draft/applied state, Submit/Enter/Clear behavior, URL serialization, and Back/Forward restoration.
@@ -177,8 +211,8 @@ not migrated yet; do not remove them as if they were a second layout contract. S
   the shell's footprint (`min-block-size: min(70vh, 40rem)` in the ≤1023px band, matching the body
   it replaces; `flex: 1 1 auto` inside the desktop card). `notFound` comes from `panelState()` — a
   restored deep-link selection is missing **while the list is fine and populated** — so it renders
-  **inside the details panel**, which is a fixed-height aside on desktop and the fixed
-  `.qd-modal.explorer-detail-modal` at ≤1023px. Putting `notFound` in the table shell would hide a
+  **inside the details panel**, which is a fixed-height aside on desktop and the `qd-modal-shell`
+  `overlay` drawer below Wide (see the drawer note above). Putting `notFound` in the table shell would hide a
   populated table and is **not** an option. Testids follow the new homes: the list states keep
   `<x>-list-error` / `<x>-list-no-results` (Unique Words: `unique-words-error` /
   `unique-words-empty`) inside the table; not-found is the panel's own `<x>-details-not-found`, and

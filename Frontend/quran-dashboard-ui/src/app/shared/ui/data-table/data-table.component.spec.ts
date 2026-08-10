@@ -129,6 +129,19 @@ describe('QdDataTableComponent', () => {
 
     expect(table.getAttribute('aria-busy')).toBe('true');
     expect(table.querySelector('[data-testid="row"]')).not.toBeNull();
+
+    // The F12 refreshing owner is the shared indicator, anchored by the region class on the shell,
+    // and it stays out of the accessibility tree: the shell's aria-busy is the only announcement.
+    expect(table.classList.contains('qd-refreshing-region')).toBe(true);
+    const indicator = table.querySelector('[data-testid="qd-data-table-refreshing"]');
+    expect(indicator).not.toBeNull();
+    expect(indicator!.getAttribute('aria-hidden')).toBe('true');
+    expect(indicator!.getAttribute('role')).toBeNull();
+
+    host.state = 'ready';
+    fixture.detectChanges();
+    expect(table.classList.contains('qd-refreshing-region')).toBe(false);
+    expect(table.querySelector('[data-testid="qd-data-table-refreshing"]')).toBeNull();
   });
 
   it('supports row activation for standard tables and forbids it for grouped display rows', async () => {

@@ -181,7 +181,9 @@ describe('LemmaDetailsPanelComponent modal drawer mode (T118)', () => {
     expect(dialog).toBeTruthy();
     expect(dialog.getAttribute('role')).toBe('dialog');
     expect(dialog.getAttribute('aria-modal')).toBe('true');
-    expect(dialog.getAttribute('aria-label')).toBe('تفاصيل الصيغة المعجمية');
+    const labelledBy = dialog.getAttribute('aria-labelledby') as string;
+    expect(labelledBy).toBeTruthy();
+    expect(host.querySelector('#' + labelledBy)?.textContent?.trim()).toBe('تفاصيل الصيغة المعجمية');
   });
 
   it('emits close when the backdrop is clicked directly', () => {

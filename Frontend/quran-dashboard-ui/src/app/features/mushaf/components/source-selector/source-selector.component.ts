@@ -14,8 +14,6 @@ import {
 type PickerMode = 'languageFirst' | 'flat';
 type PanelView = 'languages' | 'sources';
 
-// D31/D44: the listbox id is generated per instance, so the three source pickers
-// the study shell can mount never share an aria-controls target.
 let nextSourceSelectorInstance = 0;
 
 @Component({

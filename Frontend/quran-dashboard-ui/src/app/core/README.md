@@ -81,6 +81,13 @@ per-feature.
     `sheet` mode (inline sublists, group labels for auth-gated parents). It emits pointer/click and
     activation intent and holds no state, no authorization and no route logic. `ownerGuard` remains
     the boundary; the nav only hides what an Owner-only route would refuse anyway.
+    **The Wide dropdown deliberately does not use `qdFloatingLayer` (F15).** It stays an anchored
+    `position: absolute` `.qd-nav__menu` (`_components.scss`) for two behavioural reasons, both
+    pinned by `e2e/shell-nav.e2e.ts`: the directive's floating surface sits a 4px anchor gap away
+    from its trigger, which breaks the hover-open/hover-into-menu path the nav relies on, and the
+    directive's `action-menu` variant would put `role="menuitem"` on links the same e2e resolves
+    through `getByRole('link')`. It is a recorded deviation from F15, not an oversight; revisit it
+    only together with those e2e expectations.
   - `nav-progress` — the router navigation progress bar (`qd-nav-progress`): a flat 2px track with
     a solid green segment, shown while a lazy route's chunk downloads (200ms show-delay; the settle
     rule is an inversion over the known in-flight router events so unknown/future event classes

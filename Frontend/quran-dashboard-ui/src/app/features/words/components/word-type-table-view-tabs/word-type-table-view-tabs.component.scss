@@ -5,12 +5,7 @@
 // reservation and re-introduce the shift it exists to remove.
 :host {
   display: block;
-}
-
-.word-type-table-view-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--qd-space-2);
+  --qd-tabs-grid-columns: 4;
   padding: var(--qd-space-2);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
@@ -21,7 +16,6 @@
 
 .word-type-table-view-tabs__tab {
   min-inline-size: 0;
-  justify-content: center;
   padding-inline: var(--qd-space-2);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -29,13 +23,8 @@
   font-size: 0.875rem;
 }
 
-.word-type-table-view-tabs__tab:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 @media (max-width: bp.$qd-bp-phone-max) {
-  .word-type-table-view-tabs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  :host {
+    --qd-tabs-grid-columns: 2;
   }
 }

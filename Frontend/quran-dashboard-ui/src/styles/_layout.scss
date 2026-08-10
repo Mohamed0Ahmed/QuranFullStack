@@ -64,43 +64,7 @@
   max-inline-size: var(--qd-page-measure-protected-mushaf);
 }
 
-.qd-container {
-  inline-size: 100%;
-  max-inline-size: var(--qd-page-measure-capped-reading);
-  margin-inline: auto;
-  padding-inline: var(--qd-page-gutter);
-  box-sizing: border-box;
-}
-
-.qd-page-frame,
-.qd-explorer-frame {
-  inline-size: 100%;
-  max-inline-size: none;
-  margin-inline: 0;
-  padding-inline: var(--qd-page-gutter);
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding-block-end: calc(var(--qd-space-5) + (var(--qd-space-4) * 1.55));
-}
-
-.qd-page-shell .qd-page-shell,
-.qd-page-shell .qd-container,
-.qd-page-shell .qd-page-frame,
-.qd-page-shell .qd-explorer-frame,
-.qd-container .qd-page-shell,
-.qd-container .qd-container,
-.qd-container .qd-page-frame,
-.qd-container .qd-explorer-frame,
-.qd-page-frame .qd-page-shell,
-.qd-page-frame .qd-container,
-.qd-page-frame .qd-page-frame,
-.qd-page-frame .qd-explorer-frame,
-.qd-explorer-frame .qd-page-shell,
-.qd-explorer-frame .qd-container,
-.qd-explorer-frame .qd-page-frame,
-.qd-explorer-frame .qd-explorer-frame {
+.qd-page-shell .qd-page-shell {
   padding-inline: 0;
 }
 
@@ -147,29 +111,8 @@
   padding-block: var(--qd-page-rhythm);
 }
 
-.qd-page > .qd-page-header {
-  padding-inline: var(--qd-page-gutter);
-}
-
 .qd-page-header {
   margin-block-end: var(--qd-page-rhythm);
-}
-
-.qd-page-header--split {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--qd-s-16);
-}
-
-.qd-page-header__eyebrow {
-  display: block;
-  font-family: var(--qd-font-ui);
-  font-size: var(--qd-type-caption);
-  line-height: var(--qd-type-caption-lh);
-  color: var(--qd-green-text);
-  margin-block-end: var(--qd-s-4);
 }
 
 .qd-page-header__description {
@@ -180,22 +123,6 @@
   max-inline-size: var(--qd-measure-page-description);
   margin-block-start: var(--qd-s-8);
   text-wrap: pretty;
-}
-
-.qd-page-header__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--qd-s-8);
-  margin-block-start: var(--qd-s-12);
-}
-
-.qd-page-header__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--qd-s-8);
 }
 
 .qd-grid {

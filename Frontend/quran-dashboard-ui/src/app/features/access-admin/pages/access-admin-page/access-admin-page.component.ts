@@ -21,19 +21,15 @@ import { QD_BP_WIDE_QUERY } from '../../../../shared/layout/breakpoints';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { QdDetailsWorkspaceComponent } from '../../../../shared/ui/details-workspace/details-workspace.component';
-import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
 import { QdFormFieldComponent } from '../../../../shared/ui/form-field/form-field.component';
 import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
 import { QdNoticeComponent } from '../../../../shared/ui/notice/notice.component';
-import {
-  QdResultItemDirective,
-  QdResultListDirective,
-} from '../../../../shared/ui/result-list/result-list.directive';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
+import { AccessAccountPermissionsComponent } from '../../components/access-account-permissions/access-account-permissions.component';
 import { AccessAdvancedSecurityComponent } from '../../components/access-advanced-security/access-advanced-security.component';
 import {
   AccessAuditFilters,
@@ -41,7 +37,7 @@ import {
 } from '../../components/access-audit-log/access-audit-log.component';
 import { AccessChangeReviewComponent } from '../../components/access-change-review/access-change-review.component';
 import { AccessLifecycleActionsComponent } from '../../components/access-lifecycle-actions/access-lifecycle-actions.component';
-import { AccessPermissionEditorComponent } from '../../components/access-permission-editor/access-permission-editor.component';
+import { AccessOwnerReconciliationComponent } from '../../components/access-owner-reconciliation/access-owner-reconciliation.component';
 import { AccessUserListComponent } from '../../components/access-user-list/access-user-list.component';
 import { AccessUserSummaryCardComponent } from '../../components/access-user-summary-card/access-user-summary-card.component';
 import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
@@ -52,7 +48,7 @@ import {
   AccessUserWorkflowAction,
   EMPTY_ACCESS_USER_SEARCH,
   acceptGrantsPermissions,
-  accessAccountVariant,
+  accessLifecycleActionsApply,
   accessUserNameLabel,
   canReplaceUserPermissions,
 } from '../../models/access-admin.models';
@@ -68,11 +64,12 @@ import { AccessAdminFacade, AccessAdminMutationOutcome } from '../../state/acces
   selector: 'qd-access-admin-page',
   standalone: true,
   imports: [
+    AccessAccountPermissionsComponent,
     AccessAdvancedSecurityComponent,
     AccessAuditLogComponent,
     AccessChangeReviewComponent,
     AccessLifecycleActionsComponent,
-    AccessPermissionEditorComponent,
+    AccessOwnerReconciliationComponent,
     AccessUserListComponent,
     AccessUserSummaryCardComponent,
     ConfirmDialogComponent,
@@ -81,13 +78,10 @@ import { AccessAdminFacade, AccessAdminMutationOutcome } from '../../state/acces
     QdActionDirective,
     QdControlDirective,
     QdDetailsWorkspaceComponent,
-    QdEmptyStateComponent,
     QdErrorStateComponent,
     QdFormFieldComponent,
     QdModalShellComponent,
     QdNoticeComponent,
-    QdResultItemDirective,
-    QdResultListDirective,
     QdTabDirective,
     QdTabsComponent,
   ],
@@ -108,12 +102,13 @@ export class AccessAdminPageComponent implements OnInit, OnDestroy {
   protected readonly pendingAction = signal<AccessUserWorkflowAction | null>(null);
   protected readonly auditTargetSearch = signal<AccessUserSearchState>(EMPTY_ACCESS_USER_SEARCH);
   protected readonly auditActorSearch = signal<AccessUserSearchState>(EMPTY_ACCESS_USER_SEARCH);
-  protected readonly reconciliationFingerprintVisible = signal(false);
   protected readonly userListSheetOpen = signal(false);
   protected readonly isWide = signal(true);
   protected readonly contextSearch = linkedSignal(() => this.facade.userQuery().search ?? '');
 
-  protected readonly accountVariant = computed(() => accessAccountVariant(this.facade.selectedUser()));
+  protected readonly lifecycleActionsApply = computed(() =>
+    accessLifecycleActionsApply(this.facade.selectedUser()),
+  );
   protected readonly selectedIdentity = computed(() => {
     const user = this.facade.selectedUser();
     return user === null ? '' : accessUserNameLabel(user);
@@ -342,14 +337,6 @@ export class AccessAdminPageComponent implements OnInit, OnDestroy {
 
   protected searchAuditActor(search: string): void {
     void this.findAuditUsers(search, this.auditActorSearch);
-  }
-
-  protected toggleReconciliationFingerprint(): void {
-    this.reconciliationFingerprintVisible.update((visible) => !visible);
-  }
-
-  protected reconciliationCandidateStateLabel(state: string): string {
-    return ACCESS_ADMIN_LABELS.reconciliationCandidateState(state);
   }
 
   private async findAuditUsers(

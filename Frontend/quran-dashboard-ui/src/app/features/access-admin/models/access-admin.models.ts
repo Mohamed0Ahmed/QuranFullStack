@@ -115,6 +115,15 @@ export function accessAccountVariant(
   return user.isOwner ? `${status}-owner` : `${status}-non-owner`;
 }
 
+export function accessLifecycleActionsApply(user: AccessUserPermissionTarget | null): boolean {
+  const variant = accessAccountVariant(user);
+  return (
+    variant === 'pending-non-owner' ||
+    variant === 'active-non-owner' ||
+    variant === 'disabled-non-owner'
+  );
+}
+
 export type AccessLifecycleTone = AccessUserStatus | 'unknown';
 
 export function accessLifecycleTone(status: string): AccessLifecycleTone {

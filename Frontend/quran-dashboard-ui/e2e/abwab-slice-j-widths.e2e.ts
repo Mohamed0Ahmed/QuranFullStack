@@ -55,8 +55,8 @@ for (const theme of ['light', 'dark'] as const) {
 
     const dialog = page.getByTestId('abwab-page-archive-confirm');
     await expect(dialog).toBeVisible();
-    // The confirm dialog is criterion 3's control case: it composes `.qd-modal` and must be
-    // untouched by `--wide` living in the same stylesheet.
+    // The confirm dialog is criterion 3's control case: it is the named `confirm` variant and must
+    // be untouched by `--wide` living in the same stylesheet.
     expect(Math.round((await dialog.boundingBox())!.width)).toBe(28 * REM);
 
     // Task 3.13 — the danger tone reached the button rather than falling back to primary.
@@ -67,8 +67,8 @@ for (const theme of ['light', 'dark'] as const) {
 }
 
 // The words explorers render their detail surface as an inline panel at desktop and as this
-// modal below that breakpoint, so the hold-out is only measurable at a narrow viewport.
-test('a words detail modal keeps its 42rem hold-out', async ({ page }) => {
+// drawer below that breakpoint, so the width is only measurable at a narrow viewport.
+test('a words detail drawer resolves to the named overlay width', async ({ page }) => {
   await page.setViewportSize({ width: 900, height: 900 });
   await page.goto('/dashboard/words/roots');
   await page.getByTestId('roots-search-input').fill('كتب');
@@ -77,9 +77,10 @@ test('a words detail modal keeps its 42rem hold-out', async ({ page }) => {
   await firstRow.waitFor();
   await firstRow.click();
 
-  const modal = page.locator('.qd-modal.explorer-detail-modal').first();
+  const modal = page.getByTestId('root-details-modal');
   await expect(modal).toBeVisible();
-  // 42rem exceeds this viewport, so the rendered box clamps to `min(100%, 42rem)`; the computed
-  // width is what proves the 52rem modifier did not reach it.
-  expect(await modal.evaluate((el) => getComputedStyle(el).width)).toBe('672px');
+  // It is the shared shell's `overlay` variant, not a fifth geometry: 46rem, and the 52rem `wide`
+  // modifier in the same stylesheet still does not reach it.
+  await expect(modal).toHaveAttribute('data-qd-modal-variant', 'overlay');
+  expect(await modal.evaluate((el) => getComputedStyle(el).width)).toBe(`${46 * REM}px`);
 });

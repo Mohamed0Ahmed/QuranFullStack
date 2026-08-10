@@ -79,6 +79,14 @@ describe('AbwabSectionsModalComponent', () => {
     expect(root.querySelector('[data-testid="abwab-sections-modal-delete-1"]')).toBeNull();
     expect(root.querySelector('[data-testid="abwab-sections-modal-order-1"]')?.tagName).toBe('SPAN');
 
+    // D35: with every action withheld the row owns no focusable control, so the section name must
+    // not lean on a pointer-only `title` — it wraps in full instead of truncating.
+    const name = root.querySelector('.abwab-sections-modal__name') as HTMLElement;
+    expect(name.textContent?.trim()).toBe(SECTIONS[0].name);
+    expect(name.getAttribute('title')).toBeNull();
+    expect(name.classList.contains('qd-truncate')).toBe(false);
+    expect(name.getAttribute('tabindex')).toBeNull();
+
     const internals = fixture.componentInstance as unknown as {
       add(): void;
       startRename(section: AbwabTreeSectionDto): void;

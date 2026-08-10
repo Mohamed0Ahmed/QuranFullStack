@@ -415,6 +415,21 @@ describe('AbwabRelationsModalComponent', () => {
       { id: 3, name: 'الشكر' },
     ];
 
+    // D35: the target chips are static spans in a dialog with no owning control, so the honest rung
+    // of the disclosure ladder is a non-truncating chip — a pointer-only `title` reaches neither a
+    // keyboard nor a touch user.
+    it('discloses each fixed target without a pointer-only title', () => {
+      const { root } = render({ anchorPickMode: true, bulkTargets });
+
+      const chips = Array.from(root.querySelectorAll('.abwab-relations-modal__target'));
+      expect(chips.map((chip) => chip.textContent?.trim())).toEqual(['الصبر', 'الشكر']);
+      for (const chip of chips) {
+        expect(chip.getAttribute('title')).toBeNull();
+        expect(chip.classList.contains('qd-truncate')).toBe(false);
+        expect(chip.getAttribute('tabindex')).toBeNull();
+      }
+    });
+
     it('single-selects the anchor and counts the fixed targets on the add button', () => {
       const { el, click, pickedRows } = render({ anchorPickMode: true, bulkTargets });
 

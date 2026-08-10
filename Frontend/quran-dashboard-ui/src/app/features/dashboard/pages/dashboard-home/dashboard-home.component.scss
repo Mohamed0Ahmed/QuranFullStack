@@ -5,8 +5,6 @@
   text-decoration: none;
 }
 
-// Five destinations read as 3 + 2: at Wide the row of three sits on a six-track grid so the
-// final pair deliberately stretches across it instead of leaving a ragged empty cell.
 @media (min-width: bp.$qd-bp-wide-min) {
   .dashboard-cards {
     grid-template-columns: repeat(6, minmax(0, 1fr));

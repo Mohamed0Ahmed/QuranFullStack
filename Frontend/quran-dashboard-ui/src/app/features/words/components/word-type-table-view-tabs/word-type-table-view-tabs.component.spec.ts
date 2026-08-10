@@ -16,9 +16,13 @@ describe('WordTypeTableViewTabsComponent', () => {
 
   afterEach(() => getTestBed().resetTestingModule());
 
-  function createTabs(selectedView: WordTypeTableView = 'words') {
+  function createTabs(selectedView: WordTypeTableView = 'words', panelId: string | null = null) {
     const fixture = TestBed.createComponent(WordTypeTableViewTabsComponent);
     fixture.componentRef.setInput('selectedView', selectedView);
+    fixture.componentRef.setInput('panelId', panelId);
+    // Two passes: the shared qd-tabs owner seeds the roving tabindex from an effect over its
+    // content children, which settles on the render after the tabs are projected.
+    fixture.detectChanges();
     fixture.detectChanges();
     return fixture;
   }
@@ -29,6 +33,9 @@ describe('WordTypeTableViewTabsComponent', () => {
     const tabs = Array.from(root.querySelectorAll('[role="tab"]')) as HTMLButtonElement[];
 
     expect(root.querySelector('[role="tablist"]')?.getAttribute('aria-label')).toBe(WORD_TYPE_TABLE_VIEW_TABS_LABEL);
+    // The shared owner reads its arrow-key direction off the nearest [dir] ancestor; without this the
+    // RTL mapping below silently flips.
+    expect(root.querySelector('qd-tabs')?.getAttribute('dir')).toBe('rtl');
     expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(['كلمات', 'جذور', 'أصول', 'صيغ']);
     expect(tabs.map((tab) => tab.getAttribute('data-testid'))).toEqual([
       'word-type-table-view-tab--words',
@@ -39,6 +46,24 @@ describe('WordTypeTableViewTabsComponent', () => {
     expect(tabs.map((tab) => tab.getAttribute('aria-selected'))).toEqual(['false', 'false', 'true', 'false']);
     expect(tabs.map((tab) => tab.getAttribute('tabindex'))).toEqual(['-1', '-1', '0', '-1']);
     expect(tabs[2].classList.contains('qd-is-selected')).toBe(true);
+  });
+
+  it('points each tab at the table region the page names, and gives every tab a stable id', () => {
+    const fixture = createTabs('stems', 'word-types-table-panel');
+    const tabs = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('[role="tab"]'),
+    ) as HTMLButtonElement[];
+
+    expect(tabs.map((tab) => tab.id)).toEqual([
+      'word-type-table-view-tab-words',
+      'word-type-table-view-tab-roots',
+      'word-type-table-view-tab-stems',
+      'word-type-table-view-tab-lemmas',
+    ]);
+    // The tablist controls a region the page owns, so aria-controls is the page's to supply; with
+    // no panel named the directive leaves the attribute off rather than pointing at nothing.
+    expect(tabs.every((tab) => tab.getAttribute('aria-controls') === 'word-types-table-panel')).toBe(true);
+    expect(createTabs('stems').componentInstance.tabId('stems')).toBe('word-type-table-view-tab-stems');
   });
 
   it.each([
@@ -57,6 +82,7 @@ describe('WordTypeTableViewTabsComponent', () => {
     const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
     currentTab.focus();
     currentTab.dispatchEvent(event);
+    fixture.detectChanges();
 
     expect(event.defaultPrevented).toBe(true);
     expect(emitted).toEqual([expected]);

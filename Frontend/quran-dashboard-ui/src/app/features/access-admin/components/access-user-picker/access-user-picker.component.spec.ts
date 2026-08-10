@@ -178,6 +178,23 @@ describe('AccessUserPickerComponent', () => {
     expect(selections).toEqual([UNNAMED]);
   });
 
+  it('discloses the chosen identity without a pointer-only title (D35)', () => {
+    const { fixture } = setup();
+    fixture.componentRef.setInput('selected', NAMED);
+    fixture.detectChanges();
+
+    const selected = element(fixture, 'access-picker-selected');
+    // The <p> is not focusable and the button beside it clears the choice rather than revealing it.
+    expect(selected.getAttribute('title')).toBeNull();
+    expect(selected.getAttribute('tabindex')).toBeNull();
+
+    const name = selected.querySelector('.access-user-picker__selected-name') as HTMLElement;
+    expect(name.textContent?.trim()).toBe('عضو');
+    expect(name.getAttribute('title')).toBeNull();
+    expect(name.classList.contains('qd-truncate')).toBe(false);
+    expect(name.getAttribute('tabindex')).toBeNull();
+  });
+
   it('closes the layer when the shared floating contract dismisses it', () => {
     const { fixture } = setup();
     openLayer(fixture, { users: [NAMED], error: null, loading: false });

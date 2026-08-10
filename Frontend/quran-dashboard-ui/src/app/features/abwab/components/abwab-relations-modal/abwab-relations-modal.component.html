@@ -31,7 +31,7 @@
     @if (anchorPickMode()) {
       <div class="abwab-relations-modal__targets" data-testid="abwab-relations-modal-targets">
         @for (target of bulkTargets(); track target.id) {
-          <span class="abwab-relations-modal__target qd-truncate" [title]="target.name">{{ target.name }}</span>
+          <span class="abwab-relations-modal__target">{{ target.name }}</span>
         }
       </div>
     } @else if (status() === 'loading') {

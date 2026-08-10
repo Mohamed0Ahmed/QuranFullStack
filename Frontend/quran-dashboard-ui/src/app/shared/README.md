@@ -30,10 +30,12 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 - `ui/chip/` — `qd-chip`, the one selectable/informational chip (button or anchor, optional
   trailing count) with an optional `variant` (`filter` / `taxonomy` / `alias`; `plain` default adds
   no class, so existing call-sites are untouched). It owns the **interactive** chip families only:
-  static lifecycle, membership and count badges have no interaction and are semantic classes
-  (`.qd-badge--lifecycle-*`, `.qd-badge--membership-owner`, `.qd-count-chip` in `_components.scss`)
-  with no Angular owner — F17 keeps lifecycle and Owner membership separate, and Unknown never maps
-  to Disabled. See `UI_STYLE_SYSTEM.md` §17 and §20.5.
+  static lifecycle and membership badges have no interaction and are semantic classes
+  (`.qd-badge--lifecycle-*`, `.qd-badge--membership-owner` in `_components.scss`) with no Angular
+  owner — F17 keeps lifecycle and Owner membership separate, and Unknown never maps to Disabled. A
+  count rides on this chip's own trailing count; the nominated `.qd-count-chip` class had no
+  call-site and was deleted rather than left as a second, unowned count vocabulary. See
+  `UI_STYLE_SYSTEM.md` §17 and §20.5.
 - `ui/context-menu/` — `qd-context-menu`, the one row/node context-menu shell (both Abwab pages'
   row menus). Since Phase 7 it is a **thin specialization of F15**: it owns only the
   `position: fixed; inset: 0` backdrop and the `role="menu"` box, and delegates placement,
@@ -44,11 +46,15 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   `context-menu-placement.ts` module was folded into `floating-layer-placement.ts` as the
   zero-size `pointerAnchorRect()` anchor and deleted. `menuTestId` / `backdropTestId` inputs keep
   each page's test ids byte-identical. Items are projected content (`<ng-content>`): the
-  primitive knows nothing about doors or template nodes, and the item hover/focus/**danger**
-  styling is the one shared rule shared by `.qd-floating-layer__item` and `.qd-context-menu__item`
-  in `_components.scss` (D50 — template delete and Abwab delete cannot drift apart), not this
-  component's own stylesheet, since content the *consumer* projects sits outside the primitive's
-  emulated-encapsulation boundary. See `UI_STYLE_SYSTEM.md` §17.
+  primitive knows nothing about doors or template nodes, and the item hover/focus styling is the one
+  shared rule shared by `.qd-floating-layer__item` and `.qd-context-menu__item` in
+  `_components.scss`, not this component's own stylesheet, since content the *consumer* projects
+  sits outside the primitive's emulated-encapsulation boundary. The **danger** item is
+  `.qd-context-menu__item--danger` alone (D50 — Abwab's template delete and door archive cannot
+  drift apart): a row menu is the only surface in the app that renders a destructive floating item,
+  so the parallel `.qd-floating-layer__item--danger` selector had no call-site and was deleted
+  rather than left as a second, unowned danger vocabulary. A listbox or picker that ever needs one
+  adopts this class or promotes it — it does not declare a third. See `UI_STYLE_SYSTEM.md` §17.
 - `ui/ayah-card/` — `qdAyahCard` (attribute component, host class `qd-ayah-card`), the one
   presentation-only flat frame for ayah-shaped list items (recessed warm card background
   `--qd-ayah-card-bg`, hairline border, control radius, compact padding/gap; no shadow, no
@@ -74,7 +80,10 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   one solid green segment, rendered only while `active`, `aria-hidden`, and carrying **no** status,
   alert, dialog role or live region. The refreshed region keeps its content and owns the
   `aria-busy` announcement; add `.qd-refreshing-region` to that region so the absolutely positioned
-  track anchors to it and adds no geometry.
+  track anchors to it and adds no geometry. Its consumer is `qd-data-table`: the `refreshing` state
+  is the one place in the app that keeps rows mounted while a new page is in flight, so the table
+  shell takes `.qd-refreshing-region` and renders the indicator above the retained body. Nothing
+  else may re-declare a refresh track — a feature that gains a refreshing state consumes these two.
 - `ui/empty-state/` — `qd-empty-state` (F12 *empty*): `role="status"`, one message, at most one
   action. Optional `reserve` keeps the box mounted and its message quiet until it lands.
 - `ui/error-state/` — `qd-error-state` (F12 *error/notFound*): `severity="read"` (default) renders
@@ -85,19 +94,16 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 - `ui/notice/` — `qd-notice` (F12 *notice*): a permanently mounted `role="status"`/`aria-live`
   announcer with **zero idle geometry** (D41) — the body only exists while a message does.
   `tone` is `success` (mutation success semantics) or `info`; failures belong to `qd-error-state`.
-- `ui/state/` — `qd-state`, the **temporary compatibility adapter** for the five owners above.
-  **It has no production consumer left** (Plan 7 Phase 10 migrated the last one, Auth callback);
-  `npm run check:golden-ui` reports `qd-state template consumers: 0`. Only its own implementation
-  and spec remain, and they are deleted in Phase 11 under §7.2's retirement conditions. Until then
-  it stays as described below and may not gain a consumer. It
-  keeps its `variant`/`message`/`actionLabel`/`reserve` inputs, its `action` output, its selector
-  and its `qd-state-*` test ids, and translates them: `loading` → `qd-panel-skeleton shape="text"`,
-  `empty` → `qd-empty-state`, `error` → `qd-error-state severity="write"` (the legacy variant has
-  always been `role="alert"`, and weakening that would change 28 call-sites' announcing). It owns
-  no role, live region or state styling of its own — `npm run check:golden-ui` fails if its
-  template regains one — and it may not gain a consumer. `reserve` (default off) is the §N3
-  no-layout-shift box: `grep -rn '\[reserve\]' src/app/` for the current consumers, and see §17's
-  note on `reserve` under `@if`. See `UI_STYLE_SYSTEM.md` §17 and §19.
+- `ui/state/` is **gone.** The `qd-state` compatibility adapter that once conflated loading, empty
+  and error was deleted in Phase 11 under Plan 7 §7.2 once `rg '<qd-state|QdStateComponent'`
+  returned nothing outside its own folder. `npm run check:golden-ui` now fails both if a consumer
+  reappears and if the directory itself comes back. The five owners above are the only async
+  vocabulary; a surface that used to pass `variant="loading"|"empty"|"error"` picks the owner
+  directly. The legacy `qd-state-*` **test ids** are deliberately preserved on the owners that
+  replaced it (`testId="qd-state-error"` and friends) so no spec or e2e selector had to move; they
+  are ids, not a surviving component. The `reserve` input moved with the owners —
+  `grep -rn '\[reserve\]' src/app/` for the current consumers, and see `UI_STYLE_SYSTEM.md` §17's
+  note on `reserve` under `@if`.
 - `ui/skeleton/` — `qd-skeleton-rows`, renders N skeleton rows into a caller-supplied
   `grid-template-columns` string so loading rows match loaded rows exactly; plus the pure
   `splitGridTemplateColumns` helper it's built on.
@@ -108,9 +114,9 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   with a visible label, `role="status"`, `aria-live="polite"` and `aria-busy` — and it lives here
   rather than in a sixth async component because loading is one owner with two shapes: a surface
   with a known final shape must use a content-shaped skeleton, and only a single-value region may
-  use the text loader. `testId` lets a legacy call-site keep its own id (the adapter passes
-  `qd-state-loading`). The `qd-explorer-panel-skeleton` selector is kept as a thin alias on the
-  same component for existing call-sites.
+  use the text loader. `testId` lets a call-site keep the legacy
+  `qd-state-loading` id its specs already select. The `qd-explorer-panel-skeleton` selector is kept
+  as a thin alias on the same component for existing call-sites.
 - `ui/result-count/` — `qd-result-count` (class `ExplorerResultCountComponent`), the one-line
   "label: N" stat that holds its line across loading/error/loaded rather than resizing the
   toolbar around it (Feature 026, US4; Slice B2, T1001 promoted it here from `features/words/`
@@ -242,8 +248,20 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   ring), and the `[qdModalShellHeaderLead]` / `[qdModalShellHeaderSupport]` slots beside the
   existing `[qdModalShellHeaderExtra]` / `[qdModalShellFooter]`. A header with neither a visible
   title nor a Close renders bare — the labelling heading stays, the chrome does not.
-- `ui/floating-layer/` — `qdFloatingLayer` (F15 base) plus the pure `floating-layer-placement.ts`
-  helper. One keyboard script for `action-menu` / `select-listbox` / `searchable-picker` /
+- `ui/floating-layer/` — `qdFloatingLayer` (F15 base) plus four helper modules it orchestrates:
+  `floating-layer-placement.ts` (the pure geometry, plus `repositionFloatingLayer()`, the one place
+  that measures the layer against its viewport and writes the result onto the element),
+  `floating-layer-keyboard.ts` (the key → intent table `resolveFloatingKeyAction()`, the type-ahead
+  prefix accumulator and its match search, the wrap-around `stepIndex()`, and the item/text-entry
+  selectors), `floating-layer-cursor.ts` (option ids, the cursor marker attribute and the
+  `aria-activedescendant` teardown) and `floating-layer-focus.ts` (`FloatingLayerFocus`: what focus
+  to return to, and whether this layer is still the one holding it). Every one of them takes its
+  elements and state as explicit arguments and holds no Angular state, so the directive itself is
+  only DI, host bindings, lifecycle and orchestration. The directive keeps its type-ahead state as a
+  nullable field rather than an imported empty constant: a bare imported identifier used as a
+  class-field initialiser can be snapshotted as `undefined` by the unit-test builder's transform
+  (the same hazard `features/access-admin/README.md` documents for `ACCESS_ADMIN_LABELS`).
+  One keyboard script for `action-menu` / `select-listbox` / `searchable-picker` /
   `disclosure-popover` / `tooltip` (D33): Escape closes and returns focus, Arrow/Home/End walk the
   **enabled** items with scroll-into-view, type-ahead accumulates inside a 600ms window, Tab closes
   without preventing the move, and an outside pointer press closes without stealing focus. Items are
@@ -314,11 +332,9 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 - Breakpoint values live in `layout/breakpoints.contract.json` and nowhere else; `breakpoints.ts`,
   `tailwind.config.js`, and `../../styles/_breakpoints.scss` all resolve to it, and
   `npm run check:golden-ui` enforces that.
-- `ui/state/` is a **compatibility adapter that may not grow**. New code consumes the canonical
-  async owners; `npm run check:golden-ui` fails when its template call-site count rises above the
-  recorded baseline, and the baseline may only fall (`../../../FRONTEND_UI_RULES.md` §8). The same
-  check fails when the adapter's template declares a `role`, `aria-live`, `aria-busy` or a `qd-*`
-  class of its own: it delegates, it does not re-implement.
+- `ui/state/` **no longer exists** and may not be recreated. New code consumes the canonical async
+  owners directly; `npm run check:golden-ui` fails on any `<qd-state` or `QdStateComponent`
+  reference and on the directory reappearing (`../../../FRONTEND_UI_RULES.md` §8).
 - The five async concepts are five owners with five different geometry contracts. Skeleton reserves
   the final shape of what it replaces; refreshing adds nothing but its 2px track; empty and error
   own their content region; notice is zero-height until it speaks. A shared owner that starts

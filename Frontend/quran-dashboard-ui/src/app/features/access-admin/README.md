@@ -130,7 +130,20 @@ outside the audit rows.
 
 **The email is never truncated.** It is the target of a safety decision, so it wraps in full inside
 `.qd-ltr-isolate` rather than eliding behind a `[title]` the operator has to hover to read; only the
-account *name* truncates.
+account *name* truncates, and only where a focusable row owns it.
+
+**Four Access surfaces stopped truncating for the same reason (D35).** The Compact/Medium
+context-bar identity, the audit row's `الحساب:` / `المنفّذ:` lines, the owner-reconciliation
+candidate emails, and the user picker's chosen identity all had `[title]` as their *only*
+disclosure. None reaches a rung of the Golden §8.1 disclosure ladder: the context-bar name sits in a
+static bar with no owning control; audit rows and reconciliation candidates are deliberately
+non-focusable `qdResultItem`s; and the picker's `<p>` is not focusable, while the button beside it
+*clears* the selection rather than revealing it. `title` is unreachable by keyboard and by touch, so
+all four now wrap (`min-inline-size: 0; overflow-wrap: anywhere`) and carry neither `.qd-truncate`
+nor `[title]`. Adding `tabindex="0"` to the text node is explicitly prohibited and was not the fix.
+Two Access surfaces are deliberately untouched because they *do* have a rung: user-list rows
+truncate inside a focusable row button whose accessible name is the full value, and picker
+candidates are `role="option"` elements carrying name + email in their own `aria-label`.
 
 A list row is the shared `qdResultList`/`qdResultItem` pair (`listVariant="master"`): `role="list"` /
 `role="listitem"`, `aria-posinset`/`aria-setsize`, `aria-current` on the selected row, and the
@@ -435,6 +448,11 @@ plan finishing where it started: the audit log was the last place a database use
   in its own scoped `qd-error-state` beside the untouched events rather than replacing them, and the
   appended count is announced through a permanently mounted polite region. Items are appended in
   server order. No numeric pagination is offered here, and `Load more` inherits none of F13.
+  `clear()` bumps `requestVersion` as well (Phase 11): `clearProtectedState()` runs the moment the
+  Owner check fails, so an audit read that is already in flight must not be able to repopulate
+  `pageState` after the revocation — the version bump makes both `load()` and `loadNextPage()`
+  no-ops on resolve, and `clear()` also resets `loading`/`error` to idle so a cleared store never
+  presents a stale spinner or a stale failure.
   An append snapshots `requestVersion` without bumping it, so an initial/filter load that starts
   while the append is in flight invalidates it. That invalidation is also what has to release
   `appending`: `clearAppendState()` — called by both `load()` and `clear()` — resets `appending`,
@@ -478,7 +496,7 @@ plan finishing where it started: the audit log was the last place a database use
 
 ## State regions and announcement
 
-**There is no `qd-state` left in this feature.** Every async surface consumes one of the five F12
+**There is no `qd-state` left in this feature, and the adapter itself was deleted in Phase 11.** Every async surface consumes one of the five F12
 owners directly: `qd-skeleton-rows` for a list whose loaded shape is known (the user list, the audit
 log), `qd-panel-skeleton shape="text"` for a single-value region (the access check, the detail load,
 the catalogue, the reconciliation status), `qd-empty-state`, `qd-error-state severity="read"` for a
@@ -586,6 +604,15 @@ access state that has since changed.
   - `access-user-summary-card` — the LTR email and the two badges, projected into the details
     shell's identity zone (and reused verbatim in the below-Wide context bar);
   - `access-permission-editor` — the grouped checkbox grid;
+  - `access-account-permissions` — the whole direct-permissions body of the selected account: it
+    reads `accessAccountVariant` from the `user` input and renders exactly one of the four surfaces
+    (owner bypass note, unknown-status note, disabled-account note, or the editable permissions
+    section with its diff summary, catalogue skeleton/error-retry, unavailable and pending notes).
+    The page keeps the facade: this component receives the catalogue slice as inputs and emits
+    `selectionChange` / `catalogueRetryRequested`. Whether the lifecycle pair renders beside it is
+    still the page's decision, through `accessLifecycleActionsApply` in
+    `models/access-admin.models.ts` — the same closed variant set, so the body and the account
+    actions cannot drift apart;
   - `access-lifecycle-actions` — «إجراءات الحساب» and its per-status commit;
   - `access-change-review` — the diff, the optional reason, and confirm/cancel; it owns the reason
     text and drops it whenever the pending action changes. **Which action is pending is the page's
@@ -595,7 +622,17 @@ access state that has since changed.
     open with the reason intact, so a retry does not start from a blank textarea;
   - `access-audit-log` — the audit filters and rows;
   - `access-user-picker` — the reusable find-an-account control the audit filters use twice;
-  - `access-advanced-security` — the relink form.
+  - `access-advanced-security` — the relink form;
+  - `access-owner-reconciliation` — the read-only owner-reconciliation panel of the الأمان المتقدم
+    section: the four read states (loading, error, empty, status), the candidate list with its
+    Arabic state labels, and the technical-fingerprint disclosure whose open/closed state is the
+    component's own — nothing about it is page state, and it offers no control that could apply a
+    reconciliation.
+  These last two extractions are what keeps `access-admin-page.component.html` a composition file:
+  it owns the tabs, the Wide split and below-Wide context bar, the two confirm dialogs, the review
+  dock and the mutation surface, and delegates every account-detail and reconciliation block to a
+  component — `FRONTEND_STRUCTURE.md` §1.2 caps a template at 300 lines before its hard limit, and
+  the inlined blocks had taken it past 400.
   The dirty predicate is **not** re-derived per component any more: the draft bar, the `+N / −M`
   summary and `access-advanced-security`'s `hasUnsavedPermissions` input all read
   `AccessAdminFacade.isDirty`, the single computed on the draft store, so they cannot disagree with

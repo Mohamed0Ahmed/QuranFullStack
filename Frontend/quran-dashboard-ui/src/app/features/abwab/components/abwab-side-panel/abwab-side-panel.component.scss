@@ -22,6 +22,8 @@
 
 .abwab-side-panel__active-name {
   flex: 1;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
 .abwab-side-panel__clear {
@@ -87,8 +89,6 @@
   gap: var(--qd-space-1);
 }
 
-// Below Wide the panel is the page's sticky selected-door action bar, so its two boxes lay out
-// as one row of controls instead of a stacked rail.
 @media (max-width: bp.$qd-bp-medium-max) {
   .abwab-side-panel {
     flex-direction: row;

@@ -384,6 +384,23 @@ describe('AccessAuditLogComponent', () => {
     expect(element(fixture, 'access-audit-append-announcement').textContent).toContain('25');
   });
 
+  it('discloses the target and actor without a pointer-only title (D35)', () => {
+    const { fixture } = setup({});
+    const row = (fixture.nativeElement as HTMLElement).querySelector(
+      'ul.access-audit-log__list [role="listitem"]',
+    ) as HTMLElement;
+
+    // The row is not focusable and owns no control, so the ladder's only honest rung here is a
+    // non-truncating layout: no ellipsis, therefore nothing left for `title` to disclose.
+    const parties = Array.from(row.querySelectorAll('.access-audit-log__party'));
+    expect(parties).toHaveLength(2);
+    for (const party of parties) {
+      expect(party.getAttribute('title')).toBeNull();
+      expect(party.classList.contains('qd-truncate')).toBe(false);
+    }
+    expect(row.getAttribute('tabindex')).toBeNull();
+  });
+
   it('never offers numeric pagination beside the cursor append action', () => {
     const { fixture } = setup({ hasNextPage: true });
 

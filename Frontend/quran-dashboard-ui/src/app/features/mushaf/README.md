@@ -98,6 +98,13 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   `state/mushaf-url-hydration.ts` and `state/mushaf-reader.facade.ts` were not modified in the Golden
   cycle. `panel`, `wordTab` and `segment` keep their parsing, normalization, hydration, serialization,
   session restore and cache identity byte-for-behavior; no visible consumer was added and no key retired.
+- **The study tablist claims `aria-controls` only for the selected tab.** Only one
+  `role="tabpanel"` is mounted at a time and its `id` tracks `activeTab()`, so binding every tab's
+  `aria-controls` to its own panel id would leave four of five pointing at an element that does not
+  exist. The template therefore sets `[attr.aria-controls]` directly (reactive) instead of feeding
+  `qdTab`'s one-shot `panelId` input, and `QdTabDirective` leaves an already-present attribute
+  alone. The Words detail panels are the opposite case — they mount all panels `hidden`, so every
+  `panelId` there resolves.
 - **Ids are per instance (D31/D44).** `selected-ayah-section` generates its own tab/panel ids,
   `surah-jump-picker` its listbox and option ids, and `source-selector` its listbox id. Nothing in the
   reader binds a module-level literal id any more, so an embedded study shell and the global detail

@@ -7,12 +7,11 @@ import {
   input,
   output,
 } from '@angular/core';
-import { A11yModule } from '@angular/cdk/a11y';
 
 import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdDetailsWorkspaceComponent } from '../../../../shared/ui/details-workspace/details-workspace.component';
-import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 
@@ -29,7 +28,7 @@ import { STEM_VIEW_KEYS, StemView } from '../../models/stems.models';
 @Component({
   selector: 'qd-stem-details-panel',
   standalone: true,
-  imports: [A11yModule, ModalScrollLockDirective, NgTemplateOutlet, QdActionDirective, QdDetailsWorkspaceComponent, QdTabDirective, QdTabsComponent],
+  imports: [NgTemplateOutlet, QdActionDirective, QdDetailsWorkspaceComponent, QdModalShellComponent, QdTabDirective, QdTabsComponent],
   templateUrl: './stem-details-panel.component.html',
   styleUrl: './stem-details-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -92,12 +91,6 @@ export class StemDetailsPanelComponent {
 
   protected onEscape(): void {
     if (!this.inline() || this.hasSelection()) {
-      this.close.emit();
-    }
-  }
-
-  protected onBackdropClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) {
       this.close.emit();
     }
   }

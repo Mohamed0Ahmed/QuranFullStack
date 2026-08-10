@@ -14,7 +14,7 @@
           class="qd-nav__link qd-nav__trigger"
           [class.qd-nav__link--current]="isMenuActive(item)"
           aria-haspopup="true"
-          [attr.aria-controls]="item.key + '-menu'"
+          [attr.aria-controls]="openMenuKey() === item.key ? item.key + '-menu' : null"
           [attr.aria-expanded]="openMenuKey() === item.key"
           [attr.data-testid]="'nav-' + item.key + '-trigger'"
           (click)="menuToggled.emit(item.key)"

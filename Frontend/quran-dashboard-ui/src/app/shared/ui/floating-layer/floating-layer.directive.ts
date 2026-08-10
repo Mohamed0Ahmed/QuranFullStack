@@ -13,13 +13,28 @@ import {
 } from '@angular/core';
 
 import {
-  FLOATING_ANCHOR_GAP,
-  FloatingAnchorPoint,
-  placeFloatingLayer,
-  pointerAnchorRect,
-  resolveFloatingDirection,
-  resolveRootFontSize,
-} from './floating-layer-placement';
+  activeDescendantIndex,
+  clearActiveDescendant,
+  ensureOptionId,
+  focusedItemIndex,
+  markCursorItem,
+} from './floating-layer-cursor';
+import {
+  FloatingLayerFocus,
+  containsPointerTarget,
+  entryItem,
+  prepareCursorHostFocus,
+} from './floating-layer-focus';
+import {
+  FloatingTypeAheadState,
+  floatingLayerItems,
+  floatingTextEntryField,
+  nextTypeAheadState,
+  resolveFloatingKeyAction,
+  stepIndex,
+  typeAheadMatchIndex,
+} from './floating-layer-keyboard';
+import { FloatingAnchorPoint, repositionFloatingLayer } from './floating-layer-placement';
 
 export type QdFloatingLayerVariant =
   | 'action-menu'
@@ -30,11 +45,6 @@ export type QdFloatingLayerVariant =
 
 export type QdFloatingLayerDismissReason = 'escape' | 'tab' | 'outside';
 
-const ITEM_SELECTOR = '[role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="option"]';
-const TEXT_ENTRY_SELECTOR =
-  'input:not([type="button"]):not([type="checkbox"]):not([type="hidden"]):not([type="radio"]), textarea, [contenteditable=""], [contenteditable="true"]';
-const TYPE_AHEAD_WINDOW_MS = 600;
-const CURSOR_ATTRIBUTE = 'data-qd-floating-cursor';
 const NAVIGABLE_VARIANTS: readonly QdFloatingLayerVariant[] = [
   'action-menu',
   'select-listbox',
@@ -44,8 +54,6 @@ const ACTIVE_DESCENDANT_VARIANTS: readonly QdFloatingLayerVariant[] = [
   'select-listbox',
   'searchable-picker',
 ];
-
-let nextOptionId = 0;
 
 @Directive({
   selector: '[qdFloatingLayer]',
@@ -80,14 +88,12 @@ export class QdFloatingLayerDirective implements AfterViewInit {
   );
   private readonly typeAheadEnabled = computed(() => this.typeAhead() ?? this.navigable());
 
-  private focusReturnTarget: HTMLElement | null = null;
-  private typedPrefix = '';
-  private typedAt = 0;
+  private readonly focus = new FloatingLayerFocus(this.elementRef.nativeElement);
+  private typed: FloatingTypeAheadState | null = null;
   private viewReady = false;
   private cursorId: string | null = null;
   private appliedVariant: QdFloatingLayerVariant | null = null;
   private boundControl: HTMLElement | null = null;
-  private tookFocus = false;
   private readonly controlKeydown = (event: KeyboardEvent) => this.onKeydown(event);
 
   constructor() {
@@ -101,7 +107,7 @@ export class QdFloatingLayerDirective implements AfterViewInit {
       this.anchorElement();
       this.anchorPoint();
       if (this.appliedVariant !== null && this.appliedVariant !== variant) {
-        this.clearActiveDescendant();
+        this.dropCursor();
       }
       this.appliedVariant = variant;
       if (this.viewReady) {
@@ -115,18 +121,18 @@ export class QdFloatingLayerDirective implements AfterViewInit {
       document.addEventListener('pointerdown', onPointerDown, true);
       window.addEventListener('resize', onViewportChange);
       window.addEventListener('scroll', onViewportChange, true);
+      this.focus.capture(document.activeElement);
       this.destroyRef.onDestroy(() => {
         document.removeEventListener('pointerdown', onPointerDown, true);
         window.removeEventListener('resize', onViewportChange);
         window.removeEventListener('scroll', onViewportChange, true);
+        this.focus.restoreWhenStillHeld(this.anchorElement(), document.activeElement);
       });
     }
 
-    this.captureFocusReturnTarget();
     this.destroyRef.onDestroy(() => {
       this.boundControl?.removeEventListener('keydown', this.controlKeydown);
       this.boundControl = null;
-      this.returnFocusWhenStillHeldInside();
     });
   }
 
@@ -148,155 +154,80 @@ export class QdFloatingLayerDirective implements AfterViewInit {
   }
 
   reposition(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
+    if (isPlatformBrowser(this.platformId)) {
+      repositionFloatingLayer(
+        this.elementRef.nativeElement,
+        this.anchorElement(),
+        this.anchorPoint(),
+      );
     }
-    const layer = this.elementRef.nativeElement;
-    const anchor = this.anchorElement();
-    const point = this.anchorPoint();
-    const anchored = anchor !== null && anchor.isConnected;
-    if (!anchored && point === null) {
-      return;
-    }
-
-    const placement = placeFloatingLayer(
-      anchored ? anchor.getBoundingClientRect() : pointerAnchorRect(point!),
-      { width: layer.offsetWidth, height: layer.scrollHeight },
-      { width: window.innerWidth, height: window.innerHeight },
-      resolveFloatingDirection(layer),
-      resolveRootFontSize(layer),
-      anchored ? FLOATING_ANCHOR_GAP : 0,
-    );
-
-    layer.style.position = 'fixed';
-    layer.style.insetInlineStart = 'auto';
-    layer.style.insetInlineEnd = 'auto';
-    layer.style.setProperty('inset-block-start', `${placement.top}px`);
-    layer.style.setProperty('left', `${placement.left}px`);
-    layer.style.maxBlockSize = `${placement.maxBlockSize}px`;
-    layer.dataset['qdFloatingBlockSide'] = placement.blockSide;
-    layer.dataset['qdFloatingClamped'] = placement.inlineClamped ? 'true' : 'false';
   }
 
   items(): HTMLElement[] {
-    return Array.from(this.elementRef.nativeElement.querySelectorAll<HTMLElement>(ITEM_SELECTOR)).filter(
-      (item) => item.getAttribute('aria-disabled') !== 'true' && !item.hasAttribute('disabled'),
-    );
+    return floatingLayerItems(this.elementRef.nativeElement);
   }
 
   protected onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      this.close('escape');
-      return;
-    }
+    const items = this.navigable() ? this.items() : [];
+    const action = resolveFloatingKeyAction(event, this.navigable(), items.length);
 
-    if (event.key === 'Tab') {
-      this.close('tab');
-      return;
-    }
-
-    if (!this.navigable()) {
-      return;
-    }
-
-    const items = this.items();
-    if (items.length === 0) {
-      return;
-    }
-
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      this.moveBy(items, event.key === 'ArrowDown' ? 1 : -1);
-      return;
-    }
-
-    if (isTextEntry(event.target)) {
-      return;
-    }
-
-    switch (event.key) {
-      case 'Home':
-        event.preventDefault();
-        this.setCursor(items[0]);
+    switch (action.kind) {
+      case 'dismiss':
+        if (action.reason === 'escape') {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        this.close(action.reason);
         return;
-      case 'End':
+      case 'step':
         event.preventDefault();
-        this.setCursor(items[items.length - 1]);
+        this.setCursor(items[stepIndex(items.length, this.activeIndex(items), action.step)]);
+        return;
+      case 'edge':
+        event.preventDefault();
+        this.setCursor(action.edge === 'first' ? items[0] : items[items.length - 1]);
+        return;
+      case 'type-ahead':
+        this.onTypeAhead(event, items);
         return;
       default:
-        this.onTypeAhead(event, items);
+        return;
     }
   }
 
   private onTypeAhead(event: KeyboardEvent, items: HTMLElement[]): void {
-    if (!this.typeAheadEnabled() || event.key.length !== 1 || event.altKey || event.ctrlKey || event.metaKey) {
+    if (!this.typeAheadEnabled()) {
       return;
     }
-
-    const now = Date.now();
-    const continuing = this.typedPrefix !== '' && now - this.typedAt <= TYPE_AHEAD_WINDOW_MS;
-    if (event.key === ' ' && !continuing) {
+    const typed = nextTypeAheadState(this.typed, event.key, Date.now());
+    if (typed === null) {
       return;
     }
+    this.typed = typed;
 
-    const typed = continuing ? this.typedPrefix + event.key : event.key;
-    const prefix = normalize(typed);
-    if (prefix === '') {
-      return;
-    }
-
-    this.typedPrefix = typed;
-    this.typedAt = now;
-
-    const startIndex = this.activeIndex(items) + 1;
-    const ordered = items.slice(startIndex).concat(items.slice(0, startIndex));
-    const match = ordered.find((item) => normalize(item.textContent ?? '').startsWith(prefix));
-    if (match === undefined) {
+    const match = typeAheadMatchIndex(items, this.activeIndex(items) + 1, typed.typed);
+    if (match < 0) {
       return;
     }
     event.preventDefault();
-    this.setCursor(match);
-  }
-
-  private moveBy(items: HTMLElement[], step: number): void {
-    const current = this.activeIndex(items);
-    const base = current >= 0 ? current : step > 0 ? -1 : 0;
-    const next = (base + step + items.length) % items.length;
-    this.setCursor(items[next]);
+    this.setCursor(items[match]);
   }
 
   private activeIndex(items: HTMLElement[]): number {
-    if (this.activeDescendantModel()) {
-      return this.cursorId === null ? -1 : items.findIndex((item) => item.id === this.cursorId);
-    }
-    const active = document.activeElement;
-    return active instanceof HTMLElement ? items.indexOf(active) : -1;
+    return this.activeDescendantModel()
+      ? activeDescendantIndex(items, this.cursorId)
+      : focusedItemIndex(items, document.activeElement);
   }
 
   private setCursor(item: HTMLElement): void {
     item.scrollIntoView?.({ block: 'nearest' });
     if (!this.activeDescendantModel()) {
-      this.tookFocus = true;
-      item.focus();
+      this.focus.take(item);
       return;
     }
-    const id = ensureOptionId(item);
-    this.cursorId = id;
-    this.markCursorItem(item);
-    this.cursorHost().setAttribute('aria-activedescendant', id);
-  }
-
-  private markCursorItem(item: HTMLElement | null): void {
-    for (const marked of Array.from(
-      this.elementRef.nativeElement.querySelectorAll<HTMLElement>(`[${CURSOR_ATTRIBUTE}]`),
-    )) {
-      if (marked !== item) {
-        marked.removeAttribute(CURSOR_ATTRIBUTE);
-      }
-    }
-    item?.setAttribute(CURSOR_ATTRIBUTE, 'true');
+    this.cursorId = ensureOptionId(item);
+    markCursorItem(this.elementRef.nativeElement, item);
+    this.cursorHost().setAttribute('aria-activedescendant', this.cursorId);
   }
 
   private cursorHost(): HTMLElement {
@@ -305,17 +236,13 @@ export class QdFloatingLayerDirective implements AfterViewInit {
 
   private searchField(): HTMLElement | null {
     return this.variant() === 'searchable-picker'
-      ? this.elementRef.nativeElement.querySelector<HTMLElement>(TEXT_ENTRY_SELECTOR)
+      ? floatingTextEntryField(this.elementRef.nativeElement)
       : null;
   }
 
-  private clearActiveDescendant(): void {
+  private dropCursor(): void {
     this.cursorId = null;
-    this.markCursorItem(null);
-    const layer = this.elementRef.nativeElement;
-    layer.removeAttribute('aria-activedescendant');
-    layer.querySelector('[aria-activedescendant]')?.removeAttribute('aria-activedescendant');
-    this.controlElement()?.removeAttribute('aria-activedescendant');
+    clearActiveDescendant(this.elementRef.nativeElement, this.controlElement());
   }
 
   private focusEntryItem(): void {
@@ -323,25 +250,14 @@ export class QdFloatingLayerDirective implements AfterViewInit {
       return;
     }
 
-    // An external combobox control keeps DOM focus and drives the layer through
-    // aria-activedescendant, so the layer must not pull focus off the field the user is typing in.
     if (this.activeDescendantModel() && this.controlElement() === null) {
-      const host = this.cursorHost();
-      if (host === this.elementRef.nativeElement && !host.hasAttribute('tabindex')) {
-        host.setAttribute('tabindex', '-1');
-      }
-      this.tookFocus = true;
-      host.focus();
+      this.focus.take(prepareCursorHostFocus(this.cursorHost(), this.elementRef.nativeElement));
     }
 
-    const items = this.items();
-    if (items.length === 0) {
-      return;
+    const entry = entryItem(this.items());
+    if (entry !== null) {
+      this.setCursor(entry);
     }
-    const selected = items.find(
-      (item) => item.getAttribute('aria-selected') === 'true' || item.getAttribute('aria-current') === 'true',
-    );
-    this.setCursor(selected ?? items[0]);
   }
 
   private onDocumentPointerDown(event: Event): void {
@@ -349,65 +265,17 @@ export class QdFloatingLayerDirective implements AfterViewInit {
     if (!(target instanceof Node)) {
       return;
     }
-    if (
-      this.elementRef.nativeElement.contains(target) ||
-      this.anchorElement()?.contains(target) === true ||
-      this.controlElement()?.contains(target) === true
-    ) {
-      return;
+    const anchors = [this.elementRef.nativeElement, this.anchorElement(), this.controlElement()];
+    if (!containsPointerTarget(target, anchors)) {
+      this.close('outside');
     }
-    this.close('outside');
   }
 
   private close(reason: QdFloatingLayerDismissReason): void {
-    this.clearActiveDescendant();
+    this.dropCursor();
     if (reason !== 'outside') {
-      this.returnFocus();
+      this.focus.restore(this.anchorElement());
     }
     this.dismissed.emit(reason);
   }
-
-  private captureFocusReturnTarget(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-    const active = document.activeElement;
-    this.focusReturnTarget = active instanceof HTMLElement && active !== document.body ? active : null;
-  }
-
-  private returnFocusWhenStillHeldInside(): void {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-    const active = document.activeElement;
-    const heldInside =
-      this.elementRef.nativeElement.contains(active) ||
-      (this.tookFocus && (active === null || active === document.body));
-    if (heldInside) {
-      this.returnFocus();
-    }
-  }
-
-  private returnFocus(): void {
-    const anchor = this.anchorElement();
-    const target = anchor?.isConnected === true ? anchor : this.focusReturnTarget;
-    if (target?.isConnected === true) {
-      target.focus();
-    }
-  }
-}
-
-function normalize(value: string): string {
-  return value.trim().toLocaleLowerCase();
-}
-
-function isTextEntry(target: EventTarget | null): boolean {
-  return target instanceof HTMLElement && target.matches(TEXT_ENTRY_SELECTOR);
-}
-
-function ensureOptionId(item: HTMLElement): string {
-  if (item.id === '') {
-    item.id = `qd-floating-option-${nextOptionId++}`;
-  }
-  return item.id;
 }

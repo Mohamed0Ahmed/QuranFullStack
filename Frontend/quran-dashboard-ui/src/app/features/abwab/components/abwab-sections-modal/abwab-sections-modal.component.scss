@@ -19,7 +19,9 @@
 
 .abwab-sections-modal__name {
   flex: 1;
+  min-inline-size: 0;
   font-size: 0.85rem;
+  overflow-wrap: anywhere;
 }
 
 .abwab-sections-modal__order {

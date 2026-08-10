@@ -177,8 +177,6 @@ export class SelectedAyahSectionComponent {
   protected readonly tabLabels = AYAH_STUDY_TAB_LABELS;
   protected readonly tabs = AYAH_STUDY_TABS;
 
-  // D31: tab and panel ids are per instance, so an embedded study shell and the
-  // global detail overlay can never point at each other's panel.
   private readonly instanceId = `qd-ayah-study-${nextAyahStudyInstance++}`;
 
   protected tabElementId(tab: AyahStudyTab): string {

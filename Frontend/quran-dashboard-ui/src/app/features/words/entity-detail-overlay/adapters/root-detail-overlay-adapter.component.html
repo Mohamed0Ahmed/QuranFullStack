@@ -10,49 +10,56 @@
   (viewChange)="onViewChange($event)"
 >
   @if (frame().view === 'words') {
-    <nav
+    <qd-tabs
       class="qd-explorer-subtabs"
-      role="tablist"
-      [attr.aria-label]="wordsTablistLabel"
+      dir="rtl"
+      [ariaLabel]="wordsTablistLabel"
       data-testid="overlay-roots-word-view-tabs"
     >
       @for (option of wordViewOptions; track option) {
         <button
+          qdTab
           type="button"
-          class="qd-btn qd-btn-secondary"
-          role="tab"
+          [id]="subViewTabId(option)"
+          [panelId]="subViewPanelId"
+          [selected]="frame().wordView === option"
           [attr.data-testid]="'overlay-roots-word-view-' + option"
-          [attr.aria-selected]="frame().wordView === option"
-          [class.qd-is-selected]="frame().wordView === option"
           (click)="onWordViewChange(option)"
         >
           {{ wordViewLabels[option] }}
         </button>
       }
-    </nav>
+    </qd-tabs>
   } @else if (frame().view === 'surahs') {
-    <nav
+    <qd-tabs
       class="qd-explorer-subtabs"
-      role="tablist"
-      [attr.aria-label]="surahsTablistLabel"
+      dir="rtl"
+      [ariaLabel]="surahsTablistLabel"
       data-testid="overlay-roots-surah-view-tabs"
     >
       @for (option of surahViewOptions; track option) {
         <button
+          qdTab
           type="button"
-          class="qd-btn qd-btn-secondary"
-          role="tab"
+          [id]="subViewTabId(option)"
+          [panelId]="subViewPanelId"
+          [selected]="frame().surahView === option"
           [attr.data-testid]="'overlay-roots-surah-view-' + option"
-          [attr.aria-selected]="frame().surahView === option"
-          [class.qd-is-selected]="frame().surahView === option"
           (click)="onSurahViewChange(option)"
         >
           {{ surahViewLabels[option] }}
         </button>
       }
-    </nav>
+    </qd-tabs>
   }
 
+  <div
+    class="qd-explorer-subview-panel"
+    [id]="subViewPanelId"
+    [attr.role]="activeSubViewTabId() ? 'tabpanel' : null"
+    [attr.aria-labelledby]="activeSubViewTabId()"
+    [attr.tabindex]="activeSubViewTabId() ? 0 : null"
+  >
   @switch (panelState().status) {
     @case ('loading') {
       @if (frame().view === 'ayahs') {
@@ -154,4 +161,5 @@
       }
     }
   }
+  </div>
 </qd-root-details-panel>

@@ -35,7 +35,7 @@
           type="button"
           class="selected-ayah-section__tab"
           [id]="tabElementId(tab.key)"
-          [panelId]="panelElementId(tab.key)"
+          [attr.aria-controls]="activeTab() === tab.key ? panelElementId(tab.key) : null"
           [selected]="activeTab() === tab.key"
           [disabled]="loadState().isLoading"
           [attr.disabled]="loadState().isLoading ? '' : null"

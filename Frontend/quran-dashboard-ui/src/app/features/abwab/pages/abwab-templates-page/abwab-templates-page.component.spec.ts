@@ -117,6 +117,22 @@ describe('AbwabTemplatesPageComponent', () => {
     });
   });
 
+  // D35: the editor title is a plain <h2>; the list item at the top of the same page is fine
+  // because it truncates inside a button. Only this heading had `title` as its sole disclosure.
+  it('discloses the selected template name in the editor heading without a pointer-only title', async () => {
+    const fixture = await render();
+
+    click(fixture, 'abwab-templates-page-item-1');
+
+    const heading = element(fixture, 'abwab-templates-page-template-name') as HTMLElement;
+    const name = heading.querySelector('.abwab-templates-page__editor-name') as HTMLElement;
+    expect(name.textContent?.trim()).toBe(TEMPLATE.name);
+    expect(name.getAttribute('title')).toBeNull();
+    expect(name.classList.contains('qd-truncate')).toBe(false);
+    expect(name.getAttribute('tabindex')).toBeNull();
+    expect(heading.closest('button')).toBeNull();
+  });
+
   it('keeps template list and tree public while hiding every template and template-node write path', async () => {
     const fixture = await render([]);
 

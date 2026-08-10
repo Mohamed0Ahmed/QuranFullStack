@@ -121,7 +121,10 @@ export class AccessAuditStore {
   }
 
   clear(): void {
+    this.requestVersion += 1;
     this.pageState.set(null);
+    this.loadingState.set(false);
+    this.errorState.set(null);
     this.clearAppendState();
   }
 

@@ -31,7 +31,7 @@ const FORBIDDEN = {
   physicalInline:
     /(?:^|[\s;{])(?:border-(?:left|right)|padding-(?:left|right)|margin-(?:left|right))\s*:/gm,
   physicalInset: /(?:^|[\s;{])(?:left|right)\s*:\s*(?!auto)/gm,
-  restingShadow: /box-shadow:\s*var\(--qd-shadow(?:-sm)?\)/g,
+  restingShadow: /box-shadow:[^;}]*var\(--qd-shadow(?!-layer\b)[\w-]*\)/g,
   hoverLift: /:hover[^{]*\{[^}]*?(?:transform|translate|scale)[ \t]*:[ \t]*(?<value>[^;}]+)/g,
   colourLiteral: /(?:#[0-9a-fA-F]{3,8}\b|\boklch\(|\brgba?\()/g,
 };
@@ -51,20 +51,11 @@ const LEGACY_ALLOWLIST = [
     reason: 'the token owner is the only place a colour literal may be written',
     retiresIn: 'never',
   },
-  {
-    file: 'src/styles/_layout.scss',
-    rule: 'domainSelector',
-    count: 1,
-    reason: '.qd-explorer-frame legacy alias kept until every route declares a named intent',
-    retiresIn: 'Phase 11',
-  },
 ];
 
-const QD_STATE_CONSUMER_BASELINE = 48;
+const QD_STATE_CONSUMER_BASELINE = 0;
 
-const QD_STATE_ADAPTER_TEMPLATE = 'src/app/shared/ui/state/state.component.html';
-
-const QD_STATE_ADAPTER_OWNERSHIP = /\brole=|\baria-live=|\baria-busy=|class="qd-/;
+const QD_STATE_ADAPTER_DIRECTORY = 'src/app/shared/ui/state';
 
 const INTERACTION_OWNERS = [
   'src/app/shared/ui/tabs/tabs.component.ts',
@@ -81,6 +72,21 @@ const INTERACTION_OWNERS = [
 const MODAL_SHELL_STYLES = 'src/app/shared/ui/modal-shell/modal-shell.component.scss';
 
 const MODAL_SHELL_VARIANTS = ['confirm', 'form', 'wide', 'overlay'];
+
+// The only surfaces allowed to carry a resting elevation, and then only --qd-shadow-layer.
+const FLOATING_ELEVATION_OWNERS = [
+  '.qd-modal-shell',
+  '.qd-floating-layer',
+  '.qd-nav__menu',
+  '.detail-modal-shell__restore',
+];
+
+const ELEVATION_TOKEN = /box-shadow:[^;}]*var\((--qd-shadow[\w-]*)\)/g;
+
+// A class that names a dialog/modal surface, e.g. .qd-modal, .explorer-detail-modal.
+const MODAL_MARKER_CLASS = /(^|[.\s])[a-z0-9-]*modal[a-z0-9-]*(\b|[.:\s])/i;
+
+const INLINE_SIZING_DECLARATION = /^(?:max-|min-)?(?:width|inline-size)\s*:/i;
 
 const SELECTION_EDGE_FILES = [
   'src/styles/_components.scss',
@@ -108,6 +114,14 @@ const CANONICAL_LAYOUT_SELECTORS = new Set([
   '.qd-page-shell--protected-mushaf',
   '.qd-page-split--mushaf',
 ]);
+
+const PROTECTED_QURAN_SELECTORS = [
+  'mushaf-line',
+  'mushaf-word',
+  'mushaf-marker',
+  'segment-rendered-word',
+  'mushaf-page-view__text',
+];
 
 const DOMAIN_WORDS = [
   'words',
@@ -152,6 +166,87 @@ function countMatches(text, expression) {
 function allowanceFor(file, rule) {
   const entry = LEGACY_ALLOWLIST.find((row) => row.file === file && row.rule === rule);
   return entry ? entry.count : 0;
+}
+
+// Blanks comments out in place so every offset (and therefore every line number) is preserved.
+function stripStyleComments(text) {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, (match) => match.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:])\/\/[^\n]*/g, (match, prefix) => prefix + ' '.repeat(match.length - prefix.length));
+}
+
+function lineAt(text, index) {
+  let line = 1;
+  for (let cursor = 0; cursor < index; cursor += 1) {
+    if (text[cursor] === '\n') {
+      line += 1;
+    }
+  }
+  return line;
+}
+
+// Nesting-aware block reader: each block keeps its full (possibly multi-line) prelude and the
+// declarations written at its own level, so a selector list never has to be read one line at a time.
+function parseStyleBlocks(source) {
+  const text = stripStyleComments(source);
+  const blocks = [];
+  const stack = [];
+  let segmentStart = 0;
+
+  const closeSegment = (end) => {
+    const declaration = text.slice(segmentStart, end).trim();
+    const owner = stack[stack.length - 1];
+    if (owner && declaration) {
+      owner.declarations.push(declaration);
+    }
+  };
+
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+    if (character === '{') {
+      const prelude = text.slice(segmentStart, index);
+      const offset = prelude.length - prelude.trimStart().length;
+      const block = {
+        prelude: prelude.trim(),
+        line: lineAt(text, segmentStart + offset),
+        declarations: [],
+      };
+      blocks.push(block);
+      stack.push(block);
+      segmentStart = index + 1;
+    } else if (character === '}') {
+      closeSegment(index);
+      stack.pop();
+      segmentStart = index + 1;
+    } else if (character === ';') {
+      closeSegment(index);
+      segmentStart = index + 1;
+    }
+  }
+  return blocks;
+}
+
+function selectorsOf(block) {
+  if (block.prelude.startsWith('@') || block.prelude === '') {
+    return [];
+  }
+  return block.prelude
+    .split(',')
+    .map((selector) => selector.trim())
+    .filter(Boolean);
+}
+
+function withoutPseudos(selector) {
+  return selector.replace(/::?[\w-]+(\([^)]*\))?/g, ' ');
+}
+
+function classTokens(selector) {
+  return [...withoutPseudos(selector).matchAll(/\.[\w-]+/g)].map((match) => match[0]);
+}
+
+function hasOwnerClass(selector, owner) {
+  const expression = new RegExp(`(^|[^\\w-])${owner.replace('.', '\\.')}(?![\\w-])`);
+  return expression.test(withoutPseudos(selector));
 }
 
 function walk(relativeDirectory, suffixes) {
@@ -273,23 +368,65 @@ function checkForbiddenPatterns() {
 
 function checkRawBreakpoints() {
   const values = bandValues();
+  const scanned = new Set([...GOLDEN_LAYER, ...walk('src', ['.scss'])]);
+  let inspected = 0;
+  for (const file of scanned) {
+    const text = readFile(file);
+    if (!text) {
+      continue;
+    }
+    inspected += 1;
+    for (const prelude of text.matchAll(/@media([^{]*)\{/g)) {
+      for (const feature of prelude[1].matchAll(
+        /(min|max)-(?:width|inline-size)\s*:\s*([\d.]+)(px|rem|em)/g,
+      )) {
+        const px = feature[3] === 'px' ? Number.parseFloat(feature[2]) : Number.parseFloat(feature[2]) * 16;
+        if (!values.has(px)) {
+          failures.push(
+            `${file}: raw responsive threshold ${feature[2]}${feature[3]} is not a named band boundary (D11)`,
+          );
+        }
+      }
+      for (const variable of prelude[1].matchAll(/\$([\w-]+)/g)) {
+        if (!variable[1].startsWith('qd-bp-')) {
+          failures.push(`${file}: media query uses non-band variable $${variable[1]}`);
+        }
+      }
+    }
+  }
+  notes.push(`stylesheets scanned for raw responsive thresholds: ${inspected}`);
+}
+
+function checkProtectedQuranReach() {
+  const violations = [];
   for (const file of GOLDEN_LAYER) {
     const text = readFile(file);
     if (!text) {
       continue;
     }
-    for (const match of text.matchAll(/@media[^{]*?(\d{2,4})px/g)) {
-      const px = Number.parseInt(match[1], 10);
-      if (!values.has(px)) {
-        failures.push(`${file}: raw breakpoint ${px}px is not a named band boundary`);
+    if (!file.endsWith('.scss')) {
+      for (const token of PROTECTED_QURAN_SELECTORS) {
+        if (text.includes(token)) {
+          violations.push(`${file}: names "${token}"`);
+        }
       }
+      continue;
     }
-    for (const match of text.matchAll(/@media[^{]*?\$([\w-]+)/g)) {
-      if (!match[1].startsWith('qd-bp-')) {
-        failures.push(`${file}: media query uses non-band variable $${match[1]}`);
+    for (const block of parseStyleBlocks(text)) {
+      for (const selector of selectorsOf(block)) {
+        const bare = withoutPseudos(selector);
+        if (PROTECTED_QURAN_SELECTORS.some((token) => bare.includes(token))) {
+          violations.push(`${file}:${block.line} "${selector}"`);
+        }
       }
     }
   }
+  if (violations.length > 0) {
+    failures.push(
+      `the Golden layer may not reach Quran renderer descendants (G02): ${violations.join('; ')}`,
+    );
+  }
+  notes.push(`protected Quran selector tokens guarded: ${PROTECTED_QURAN_SELECTORS.length}`);
 }
 
 function checkPageShellContract() {
@@ -319,9 +456,25 @@ function checkPageShellContract() {
   }
 
   const gutterOwners = countMatches(layout, /padding-inline:\s*var\(--qd-page-gutter\)/g);
-  if (gutterOwners !== 4) {
+  if (gutterOwners !== 1) {
     failures.push(
-      `${LAYOUT}: expected exactly 4 gutter declarations (page shell, .qd-container, the frame aliases, the legacy header compat rule); found ${gutterOwners}`,
+      `${LAYOUT}: the page shell is the sole route-gutter owner (D01); found ${gutterOwners} declaration(s)`,
+    );
+  }
+
+  const strayGutterOwners = [];
+  for (const file of walk('src', ['.scss'])) {
+    if (file === LAYOUT) {
+      continue;
+    }
+    const text = readFileSync(path.join(projectRoot, file), 'utf8');
+    if (/padding-inline:\s*var\(--qd-page-gutter\)/.test(text)) {
+      strayGutterOwners.push(file);
+    }
+  }
+  if (strayGutterOwners.length > 0) {
+    failures.push(
+      `route gutter declared outside ${LAYOUT} (D01): ${strayGutterOwners.join(', ')}`,
     );
   }
 
@@ -338,18 +491,24 @@ function checkPageShellContract() {
   }
 }
 
-function checkQdStateNoGrowth() {
-  const files = walk('src/app', ['.html']);
+function checkQdStateRetired() {
+  const files = walk('src/app', ['.html', '.ts']);
   let consumers = 0;
   for (const file of files) {
-    consumers += countMatches(readFileSync(path.join(projectRoot, file), 'utf8'), /<qd-state/g);
+    const text = readFileSync(path.join(projectRoot, file), 'utf8');
+    consumers += countMatches(text, /<qd-state[\s/>]/g) + countMatches(text, /\bQdStateComponent\b/g);
   }
   if (consumers > QD_STATE_CONSUMER_BASELINE) {
     failures.push(
-      `qd-state adapter grew: ${consumers} template consumers, baseline ${QD_STATE_CONSUMER_BASELINE}`,
+      `qd-state adapter grew: ${consumers} consumer(s), baseline ${QD_STATE_CONSUMER_BASELINE}`,
     );
   }
-  notes.push(`qd-state template consumers: ${consumers} (baseline ${QD_STATE_CONSUMER_BASELINE})`);
+  if (existsSync(path.join(projectRoot, QD_STATE_ADAPTER_DIRECTORY))) {
+    failures.push(
+      `${QD_STATE_ADAPTER_DIRECTORY} was retired in Phase 11 (D39); it must not come back`,
+    );
+  }
+  notes.push(`qd-state consumers: ${consumers} (baseline ${QD_STATE_CONSUMER_BASELINE}, adapter deleted)`);
 }
 
 function checkAsyncOwners() {
@@ -359,14 +518,6 @@ function checkAsyncOwners() {
     }
   }
 
-  const adapter = readFile(QD_STATE_ADAPTER_TEMPLATE);
-  for (const line of adapter.split('\n')) {
-    if (QD_STATE_ADAPTER_OWNERSHIP.test(line)) {
-      failures.push(
-        `${QD_STATE_ADAPTER_TEMPLATE} declares state semantics itself ("${line.trim()}"); the adapter may only delegate`,
-      );
-    }
-  }
   notes.push(`F12 async owners present: ${ASYNC_OWNERS.length}`);
 }
 
@@ -393,6 +544,81 @@ function checkModalWidthVocabulary() {
     );
   }
   notes.push(`modal shell widths: ${unique.join(', ')}`);
+
+  const sanctioned = new Set(MODAL_SHELL_VARIANTS.map((variant) => `.qd-modal-shell--${variant}`));
+  const escaped = [];
+  for (const file of GOLDEN_LAYER) {
+    if (!file.endsWith('.scss') || file === MODAL_SHELL_STYLES) {
+      continue;
+    }
+    const text = readFile(file);
+    if (!text) {
+      continue;
+    }
+    for (const block of parseStyleBlocks(text)) {
+      const sizes = block.declarations.some((declaration) =>
+        INLINE_SIZING_DECLARATION.test(declaration),
+      );
+      if (!sizes) {
+        continue;
+      }
+      for (const selector of selectorsOf(block)) {
+        if (!MODAL_MARKER_CLASS.test(withoutPseudos(selector))) {
+          continue;
+        }
+        const markers = classTokens(selector).filter(
+          (token) => /modal/i.test(token) && !sanctioned.has(token),
+        );
+        if (markers.length > 0) {
+          escaped.push(`${file}:${block.line} "${selector}"`);
+        }
+      }
+    }
+  }
+  if (escaped.length > 0) {
+    failures.push(
+      `dialog geometry declared outside ${MODAL_SHELL_STYLES}; only the four named widths may size a modal: ${escaped.join('; ')}`,
+    );
+  }
+}
+
+function checkRestingElevation() {
+  const goldenLayer = new Set(GOLDEN_LAYER);
+  const violations = [];
+  for (const file of walk('src', ['.scss'])) {
+    const text = readFile(file);
+    if (!text) {
+      continue;
+    }
+    for (const block of parseStyleBlocks(text)) {
+      for (const declaration of block.declarations) {
+        for (const match of declaration.matchAll(ELEVATION_TOKEN)) {
+          const token = match[1];
+          const selectors = selectorsOf(block);
+          const owned =
+            token === '--qd-shadow-layer' &&
+            selectors.length > 0 &&
+            selectors.every((selector) =>
+              FLOATING_ELEVATION_OWNERS.some((owner) => hasOwnerClass(selector, owner)),
+            );
+          if (owned) {
+            continue;
+          }
+          // A non-layer elevation inside the Golden layer is already counted by FORBIDDEN.restingShadow.
+          if (goldenLayer.has(file) && token !== '--qd-shadow-layer') {
+            continue;
+          }
+          violations.push(`${file}:${block.line} "${block.prelude}" uses var(${token})`);
+        }
+      }
+    }
+  }
+  if (violations.length > 0) {
+    failures.push(
+      `resting elevation outside the floating owners (${FLOATING_ELEVATION_OWNERS.join(', ')}): ${violations.join('; ')}`,
+    );
+  }
+  notes.push(`floating elevation owners: ${FLOATING_ELEVATION_OWNERS.length}`);
 }
 
 function checkSelectionEdgeIsLogical() {
@@ -451,10 +677,12 @@ checkSingleBandTruth();
 checkForbiddenPatterns();
 checkRawBreakpoints();
 checkPageShellContract();
-checkQdStateNoGrowth();
+checkQdStateRetired();
 checkAsyncOwners();
+checkProtectedQuranReach();
 checkInteractionOwners();
 checkModalWidthVocabulary();
+checkRestingElevation();
 checkSelectionEdgeIsLogical();
 checkNoEntranceMotion();
 checkNoArtificialTabStops();

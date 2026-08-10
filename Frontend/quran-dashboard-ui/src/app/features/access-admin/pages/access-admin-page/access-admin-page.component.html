@@ -74,57 +74,11 @@
               (relinkCancelled)="cancelRelink()"
             />
 
-            <section
-              class="qd-surface qd-surface--quiet access-admin-page__reconciliation"
-              data-testid="access-admin-reconciliation"
-              aria-labelledby="access-admin-reconciliation-title"
-            >
-              <header class="access-admin-page__section-header">
-                <h2 id="access-admin-reconciliation-title" class="qd-card-title">حالة مطابقة المالكين</h2>
-                <p class="qd-text-meta">قراءة فقط</p>
-              </header>
-              @if (facade.reconciliationLoading()) {
-                <qd-panel-skeleton shape="text" testId="access-reconciliation-loading" loadingLabel="جارٍ تحميل حالة المطابقة…" />
-              } @else if (facade.reconciliationError(); as reconciliationError) {
-                <qd-error-state severity="read" testId="access-reconciliation-error" [message]="reconciliationError" />
-              } @else if (facade.reconciliationStatus(); as status) {
-                <p class="qd-text-muted" data-testid="access-reconciliation-diagnostic-note">
-                  تُنفَّذ مطابقة المالكين خارج لوحة التحكم، وما يظهر هنا قراءة تشخيصية لا تُطبَّق من هذه الصفحة.
-                </p>
-                <dl class="access-admin-page__reconciliation-list">
-                  <div><dt>الحالة</dt><dd>{{ status.isReady ? 'مطابِقة للإعداد' : 'غير مطابِقة للإعداد' }}</dd></div>
-                  <div><dt>مؤشّر التنفيذ</dt><dd>{{ status.canApply ? 'لا يوجد ما يمنع التنفيذ' : 'يوجد ما يمنع التنفيذ' }}</dd></div>
-                </dl>
-                <ul qdResultList listVariant="display-only" listLabel="مرشحو المالكين" class="access-admin-page__candidates">
-                  @for (candidate of status.candidates; track candidate.normalizedEmail) {
-                    <li qdResultItem class="access-admin-page__candidate">
-                      <span class="qd-truncate qd-ltr-isolate" dir="ltr" [title]="candidate.normalizedEmail">{{ candidate.normalizedEmail }}</span>
-                      <span>{{ reconciliationCandidateStateLabel(candidate.state) }}</span>
-                    </li>
-                  }
-                </ul>
-                <div class="access-admin-page__fingerprint">
-                  <button
-                    type="button"
-                    qdAction="tertiary"
-                    data-testid="access-reconciliation-fingerprint-toggle"
-                    [attr.aria-expanded]="reconciliationFingerprintVisible()"
-                    aria-controls="access-reconciliation-fingerprint"
-                    (click)="toggleReconciliationFingerprint()"
-                  >{{ reconciliationFingerprintVisible() ? 'إخفاء بصمة الإعداد التقنية' : 'إظهار بصمة الإعداد التقنية' }}</button>
-                  @if (reconciliationFingerprintVisible()) {
-                    <p
-                      id="access-reconciliation-fingerprint"
-                      class="qd-text-meta access-admin-page__fingerprint-value qd-ltr-isolate"
-                      data-testid="access-reconciliation-fingerprint"
-                      dir="ltr"
-                    >{{ status.configurationFingerprint }}</p>
-                  }
-                </div>
-              } @else {
-                <qd-empty-state testId="access-reconciliation-empty" message="لا تتوفر حالة مطابقة المالكين." />
-              }
-            </section>
+            <qd-access-owner-reconciliation
+              [loading]="facade.reconciliationLoading()"
+              [error]="facade.reconciliationError()"
+              [status]="facade.reconciliationStatus()"
+            />
           </div>
         }
         @default {
@@ -148,7 +102,7 @@
             } @else {
               <div class="access-admin-page__context-bar" data-testid="access-selected-context-bar">
                 <div class="access-admin-page__context-identity">
-                  <span class="access-admin-page__context-name qd-truncate" [title]="selectedIdentity()">{{ selectedIdentity() || labels.noSelectedContextLabel }}</span>
+                  <span class="access-admin-page__context-name">{{ selectedIdentity() || labels.noSelectedContextLabel }}</span>
                   <qd-access-user-summary-card [user]="facade.selectedUser()" />
                 </div>
                 <form
@@ -292,34 +246,37 @@
     } @else if (facade.selectedUserError(); as userError) {
       <qd-error-state severity="read" testId="access-user-error" [message]="userError" />
     } @else if (facade.selectedUser(); as user) {
-      @switch (accountVariant()) {
-        @case ('active-owner') {
-          <ng-container *ngTemplateOutlet="ownerBody; context: { $implicit: true }" />
-        }
-        @case ('pending-owner') {
-          <ng-container *ngTemplateOutlet="ownerBody; context: { $implicit: false }" />
-        }
-        @case ('disabled-owner') {
-          <ng-container *ngTemplateOutlet="ownerBody; context: { $implicit: false }" />
-        }
-        @case ('unknown-status') {
-          <section class="qd-surface qd-surface--quiet access-admin-page__section" data-testid="access-unknown-status" aria-labelledby="access-unknown-status-title">
-            <h3 id="access-unknown-status-title" class="qd-card-title">حالة الحساب غير معروفة</h3>
-            <p class="qd-text-muted">لا تعرف هذه الصفحة حالة هذا الحساب، فلا تُعرض الصلاحيات المباشرة ولا أي إجراء عليه.</p>
-          </section>
-        }
-        @case ('disabled-non-owner') {
-          <section class="qd-surface qd-surface--quiet access-admin-page__section" data-testid="access-disabled-permissions" aria-labelledby="access-disabled-permissions-title">
-            <h3 id="access-disabled-permissions-title" class="qd-card-title">الصلاحيات المباشرة</h3>
-            <p class="qd-text-muted">الحساب معطّل ولا يحمل صلاحيات مباشرة، ولا يمكن إسنادها قبل إعادة التفعيل.</p>
-            <p class="qd-text-muted">إعادة التفعيل تبدأ بلا صلاحيات مباشرة سابقة.</p>
-          </section>
-          <ng-container *ngTemplateOutlet="lifecycleBody; context: { $implicit: user }" />
-        }
-        @default {
-          <ng-container *ngTemplateOutlet="permissionsBody; context: { $implicit: user }" />
-          <ng-container *ngTemplateOutlet="lifecycleBody; context: { $implicit: user }" />
-        }
+      <qd-access-account-permissions
+        [user]="user"
+        [groups]="facade.permissionGroups()"
+        [selectedCodes]="facade.selectedPermissionCodes()"
+        [permissionDiff]="facade.permissionDiff()"
+        [hasUnsavedPermissions]="facade.isDirty()"
+        [catalogueLoading]="facade.catalogueLoading()"
+        [catalogueError]="facade.catalogueError()"
+        [canAssignPermissions]="facade.canAssignPermissions()"
+        [busyAction]="facade.busyAction()"
+        (selectionChange)="updatePermissionCodes($event)"
+        (catalogueRetryRequested)="reloadPermissionCatalogue()"
+      />
+
+      @if (lifecycleActionsApply()) {
+        <qd-access-lifecycle-actions
+          [user]="user"
+          [busyAction]="facade.busyAction()"
+          [acceptGrantsPermissions]="acceptWouldGrantPermissions()"
+          (actionRequested)="requestLifecycleAction($event)"
+        />
+
+        <qd-access-change-review
+          [action]="pendingAction()"
+          [groups]="facade.permissionGroups()"
+          [permissionDiff]="facade.permissionDiff()"
+          [canAssignPermissions]="facade.canAssignPermissions()"
+          [busyAction]="facade.busyAction()"
+          (confirmed)="confirmPendingAction($event)"
+          (cancelled)="cancelPendingAction()"
+        />
       }
     }
 
@@ -337,82 +294,4 @@
     }
     <button type="button" qdAction="tertiary" data-testid="access-discard-draft" [disabled]="facade.busyAction() !== null" (click)="discardDraft()">{{ labels.discardChangesButton }}</button>
   </div>
-</ng-template>
-
-<ng-template #ownerBody let-bypassApplies>
-  <section class="qd-surface qd-surface--quiet access-admin-page__section" data-testid="access-owner-permissions" aria-labelledby="access-owner-permissions-title">
-    <h3 id="access-owner-permissions-title" class="qd-card-title">الصلاحيات المباشرة</h3>
-    @if (bypassApplies) {
-      <p class="qd-text-muted">يحصل حساب المالك النشط على كامل صلاحيات الإدارة عبر تجاوز المالك، دون إسناد صلاحيات مباشرة.</p>
-    } @else {
-      <p class="qd-text-muted">لا يسري تجاوز المالك إلا على حساب مالك نشط، ولا تُسند الصلاحيات المباشرة لحسابات المالك من هنا.</p>
-    }
-    <p class="qd-text-muted">تُدار عضوية المالك عبر مطابقة المالكين، لا من هذه الصفحة.</p>
-  </section>
-</ng-template>
-
-<ng-template #permissionsBody let-user>
-  <section class="qd-surface qd-surface--quiet access-admin-page__section" data-testid="access-permissions-section" aria-labelledby="access-permissions-title">
-    <div class="access-admin-page__section-header">
-      <h3 id="access-permissions-title" class="qd-card-title">الصلاحيات المباشرة</h3>
-      @if (facade.isDirty()) {
-        <span class="qd-sr-only" data-testid="access-permission-diff-summary-text">{{ labels.permissionDiffSummary(facade.permissionDiff().granted.length, facade.permissionDiff().revoked.length) }}</span>
-        <span
-          class="access-admin-page__diff-summary qd-ltr-isolate"
-          data-testid="access-permission-diff-summary"
-          dir="ltr"
-          aria-hidden="true"
-        >+{{ facade.permissionDiff().granted.length }} / −{{ facade.permissionDiff().revoked.length }}</span>
-      }
-    </div>
-
-    @if (facade.catalogueLoading()) {
-      <qd-panel-skeleton shape="text" testId="access-catalogue-loading" loadingLabel="جارٍ تحميل الصلاحيات…" />
-    } @else if (facade.catalogueError(); as catalogueError) {
-      <qd-error-state
-        severity="read"
-        testId="access-catalogue-error"
-        actionTestId="access-catalogue-retry"
-        actionLabel="إعادة المحاولة"
-        [message]="catalogueError"
-        (action)="reloadPermissionCatalogue()"
-      />
-    } @else {
-      @if (!facade.canAssignPermissions()) {
-        <p class="qd-text-muted" data-testid="access-permissions-unavailable">
-          إسناد الصلاحيات غير متاح مؤقتًا. الصلاحيات المعروضة للاطّلاع فقط، ولم يطرأ أي تغيير على الوصول الحالي.
-        </p>
-      } @else if (user.status === 'pending') {
-        <p class="qd-text-muted" data-testid="access-pending-permissions-note">
-          تُمنح الصلاحيات المحددة عند تفعيل الحساب، ولا يمكن حفظها قبل ذلك.
-        </p>
-      }
-
-      <qd-access-permission-editor
-        [groups]="facade.permissionGroups()"
-        [selectedCodes]="facade.selectedPermissionCodes()"
-        [disabled]="facade.busyAction() !== null || !facade.canAssignPermissions()"
-        (selectionChange)="updatePermissionCodes($event)"
-      />
-    }
-  </section>
-</ng-template>
-
-<ng-template #lifecycleBody let-user>
-  <qd-access-lifecycle-actions
-    [user]="user"
-    [busyAction]="facade.busyAction()"
-    [acceptGrantsPermissions]="acceptWouldGrantPermissions()"
-    (actionRequested)="requestLifecycleAction($event)"
-  />
-
-  <qd-access-change-review
-    [action]="pendingAction()"
-    [groups]="facade.permissionGroups()"
-    [permissionDiff]="facade.permissionDiff()"
-    [canAssignPermissions]="facade.canAssignPermissions()"
-    [busyAction]="facade.busyAction()"
-    (confirmed)="confirmPendingAction($event)"
-    (cancelled)="cancelPendingAction()"
-  />
 </ng-template>

@@ -74,8 +74,6 @@
   align-self: flex-start;
 }
 
-// Medium and Compact are designed modes, not a squeezed Wide: the tree takes the full width and
-// the rail becomes the sticky selected-door action bar at the bottom of the viewport.
 @media (max-width: bp.$qd-bp-medium-max) {
   .abwab-page__layout {
     flex-direction: column;

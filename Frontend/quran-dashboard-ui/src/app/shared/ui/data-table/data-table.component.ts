@@ -17,12 +17,13 @@ import {
 } from '@angular/core';
 
 import { QD_BP_COMPACT_QUERY } from '../../layout/breakpoints';
+import { QdRefreshingIndicatorComponent } from '../refreshing-indicator/refreshing-indicator.component';
 import { QdDataTableRenderer, QdDataTableRowContext, QdDataTableRowDirection, QdDataTableState } from './data-table.models';
 
 @Component({
   selector: 'qd-data-table',
   standalone: true,
-  imports: [NgTemplateOutlet, ScrollingModule],
+  imports: [NgTemplateOutlet, QdRefreshingIndicatorComponent, ScrollingModule],
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -33,6 +34,7 @@ import { QdDataTableRenderer, QdDataTableRowContext, QdDataTableRowDirection, Qd
     '[attr.aria-rowcount]': 'isCompact() ? null : totalRowCount()',
     '[attr.aria-colcount]': 'isCompact() ? null : columnCount()',
     '[attr.aria-busy]': "state() === 'loading' || state() === 'refreshing' ? 'true' : null",
+    '[class.qd-refreshing-region]': "state() === 'refreshing'",
     '[style.--qd-data-table-compact-row-height.px]': 'compactRowHeight()',
     '[attr.data-renderer]': 'renderer()',
     '[attr.data-state]': 'state()',

@@ -66,6 +66,8 @@
   border-radius: var(--qd-radius-md);
   padding: var(--qd-space-1) var(--qd-space-2);
   max-inline-size: 14rem;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
 .abwab-relations-modal__divider {

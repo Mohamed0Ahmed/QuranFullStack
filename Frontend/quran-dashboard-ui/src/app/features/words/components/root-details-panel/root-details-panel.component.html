@@ -94,25 +94,21 @@
     <ng-container *ngTemplateOutlet="panelBody" />
   </section>
 } @else if (hasSelection()) {
-  <div
-    class="qd-modal-backdrop"
-    role="presentation"
-    data-testid="root-details-panel-backdrop"
-    qdModalScrollLock
-    (click)="onBackdropClick($event)"
+  <qd-modal-shell
+    variant="overlay"
+    testIdPrefix="root-details-panel"
+    dialogTestId="root-details-modal"
+    [open]="true"
+    [titleText]="rootsPanelLabel"
+    [showTitle]="false"
+    [showClose]="false"
+    [hasFooter]="false"
+    [flushBody]="true"
+    [trapFocus]="drawerTrapEnabled()"
+    (dismissed)="close.emit()"
   >
-    <div
-      class="qd-modal explorer-detail-modal root-details-modal"
-      role="dialog"
-      aria-modal="true"
-      [cdkTrapFocus]="drawerTrapEnabled()"
-      cdkTrapFocusAutoCapture
-      [attr.aria-label]="rootsPanelLabel"
-      data-testid="root-details-modal"
-      (click)="$event.stopPropagation()"
-      (keydown.escape)="onEscape()"
-    >
+    <div class="explorer-detail-modal root-details-modal">
       <ng-container *ngTemplateOutlet="panelBody" />
     </div>
-  </div>
+  </qd-modal-shell>
 }

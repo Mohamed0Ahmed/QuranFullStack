@@ -44,7 +44,11 @@ import { StemsDetailController } from '../../state/stems-detail.controller';
 import { mapStemAyahMatchToShared } from '../../utils/stem-ayah-match.mapper';
 import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
+import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
+
+let nextSubViewInstance = 0;
 
 @Component({
   selector: 'qd-stem-detail-overlay-adapter',
@@ -53,6 +57,8 @@ import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.st
     AyahMatchesListComponent,
     MissingSurahsListComponent,
     QdErrorStateComponent,
+    QdTabDirective,
+    QdTabsComponent,
     StemAyahTypeFiltersComponent,
     StemDetailsPanelComponent,
     StemLemmasListComponent,
@@ -69,6 +75,16 @@ export class StemDetailOverlayAdapterComponent {
   private readonly titleStore = inject(EntityDetailOverlayTitleStore, { optional: true });
 
   readonly frame = input.required<StemDetailFrame>();
+
+  private readonly subViewId = `overlay-stems-subview-${nextSubViewInstance++}`;
+  protected readonly subViewPanelId = `${this.subViewId}-panel`;
+  protected readonly activeSubViewTabId = computed(() => {
+    const frame = this.frame();
+    if (frame.view === 'words') {
+      return this.subViewTabId(frame.wordView);
+    }
+    return frame.view === 'surahs' ? this.subViewTabId(frame.surahView) : null;
+  });
 
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
@@ -159,6 +175,10 @@ export class StemDetailOverlayAdapterComponent {
       detailPage: DEFAULT_STEM_DETAIL_PAGE,
       typeCode: null,
     });
+  }
+
+  protected subViewTabId(option: string): string {
+    return `${this.subViewId}-tab-${option}`;
   }
 
   protected onWordViewChange(wordView: StemWordView): void {

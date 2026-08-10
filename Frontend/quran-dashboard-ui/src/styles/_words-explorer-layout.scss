@@ -39,6 +39,13 @@
   flex-shrink: 0;
 }
 
+.qd-explorer-subview-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
 .qd-explorer-layout {
   --qd-explorer-chrome-block-size: 14rem;
   --qd-explorer-table-header-height: 2.75rem;
