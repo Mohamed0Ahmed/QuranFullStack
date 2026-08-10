@@ -87,6 +87,11 @@
   font-size: 0.85rem;
 }
 
+.abwab-sections-modal__foot-slot {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
 .abwab-sections-modal__foot-actions {
   display: flex;
   justify-content: flex-end;

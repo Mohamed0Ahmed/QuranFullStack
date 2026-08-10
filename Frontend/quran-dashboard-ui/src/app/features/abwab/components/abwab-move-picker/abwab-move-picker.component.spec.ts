@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getTestBed, TestBed } from '@angular/core/testing';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { By } from '@angular/platform-browser';
 
 import { AbwabMovePickerComponent } from './abwab-move-picker.component';
 import { AbwabNode } from '../../models/abwab.models';
@@ -308,11 +310,18 @@ describe('AbwabMovePickerComponent — M30', () => {
 
   // A truncated name is unreadable without its `title`; §17 makes the attribute part of the
   // contract, not a nicety, and the strip's fixed 150px cells are where names actually overflow.
-  it('gives every section cell its full name in a title, since the cell truncates', () => {
+  //
+  // D35 moved where the claim is made rather than whether it is made: `title` on the inner
+  // non-interactive span was the only disclosure path and was unreachable by keyboard, so the full
+  // name now sits on the cell itself — the focusable control that owns the truncation — as both the
+  // hover `title` and the accessible name, which the span alone could never provide.
+  it('gives every section cell its full name on the cell itself, since the cell truncates', () => {
     const root = render().nativeElement as HTMLElement;
-    const name = root.querySelector('[data-testid="abwab-move-picker-section-1"] .qd-truncate');
+    const cell = root.querySelector('[data-testid="abwab-move-picker-section-1"]')!;
 
-    expect(name?.getAttribute('title')).toBe('اللغة العربية');
+    expect(cell.getAttribute('title')).toBe('اللغة العربية');
+    expect(cell.getAttribute('aria-label')).toBe('اللغة العربية');
+    expect(cell.querySelector('.qd-truncate')?.hasAttribute('title')).toBe(false);
   });
 
   it('switching sections drops a destination picked in the section just left', () => {
@@ -526,13 +535,19 @@ describe('AbwabMovePickerComponent — M30', () => {
     // Where focus lands is still a browser fact: jsdom gives every element a zero box, so the CDK's
     // focusable check rejects the target and auto-capture never fires. What is asserted here is the
     // contract that produces it.
+    //
+    // The trap moved to `qd-modal-shell`, which binds it as a property (`[cdkTrapFocus]`) rather
+    // than the static attributes this used to read, and replaces auto-capture with the shell's own
+    // initial-focus call. The trap is therefore asserted through the directive instance and its
+    // host element, which says the same thing the attributes did: this dialog is the trapped one.
     it('traps focus and captures it, with the moved door’s own section the one tabbable cell', () => {
       const fixture = render({ movedSectionIds: [1] });
       const root = fixture.nativeElement as HTMLElement;
       const dialog = root.querySelector('[data-testid="abwab-move-picker"]')!;
 
-      expect(dialog.hasAttribute('cdkTrapFocus')).toBe(true);
-      expect(dialog.hasAttribute('cdkTrapFocusAutoCapture')).toBe(true);
+      const trap = fixture.debugElement.query(By.directive(CdkTrapFocus));
+      expect(trap.nativeElement).toBe(dialog);
+      expect(trap.injector.get(CdkTrapFocus).enabled).toBe(true);
 
       const tabbableCells = Array.from(dialog.querySelectorAll('[role="tab"]')).filter(
         (cell) => cell.getAttribute('tabindex') === '0',
@@ -562,13 +577,15 @@ describe('AbwabMovePickerComponent — M30', () => {
       expect(activeCell.getAttribute('aria-controls')).toBe(panel.getAttribute('id'));
     });
 
+    // Sticky footer and single body scroller are `qd-modal-shell`'s now, so the two regions are
+    // read from the shell's published test ids instead of the retired `.qd-modal__*` classes.
     it('keeps the actions out of the scrolling body', () => {
       const fixture = render();
       const root = fixture.nativeElement as HTMLElement;
 
-      const foot = root.querySelector('.qd-modal__foot')!;
+      const foot = root.querySelector('[data-testid="abwab-move-picker-footer"]')!;
       expect(foot.querySelector('[data-testid="abwab-move-picker-confirm"]')).toBeTruthy();
-      expect(root.querySelector('.qd-modal__body')!.contains(foot)).toBe(false);
+      expect(root.querySelector('[data-testid="abwab-move-picker-body"]')!.contains(foot)).toBe(false);
     });
   });
 

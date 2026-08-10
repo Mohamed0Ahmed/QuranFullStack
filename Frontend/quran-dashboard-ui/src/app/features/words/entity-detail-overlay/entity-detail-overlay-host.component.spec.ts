@@ -262,7 +262,7 @@ describe('EntityDetailOverlayHostComponent (composition root)', () => {
     await settle();
 
     const root = fixture.nativeElement as HTMLElement;
-    const title = () => root.querySelector('.detail-modal-shell__title')?.textContent ?? '';
+    const title = () => root.querySelector('[data-testid="detail-modal-title"]')?.textContent ?? '';
     await vi.waitFor(
       () => {
         fixture.detectChanges();

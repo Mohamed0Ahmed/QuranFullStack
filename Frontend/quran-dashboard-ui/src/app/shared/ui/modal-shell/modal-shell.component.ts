@@ -42,15 +42,18 @@ export class QdModalShellComponent {
   readonly variant = input<QdModalShellVariant>('form');
   readonly titleText = input.required<string>();
   readonly dialogRole = input<QdModalShellRole>('dialog');
+  readonly describedById = input<string | null>(null);
   readonly showTitle = input(true);
   readonly showClose = input(true);
   readonly closeLabel = input('إغلاق');
   readonly hasFooter = input(true);
+  readonly flushBody = input(false);
   readonly dismissOnBackdrop = input(true);
   readonly dismissOnEscape = input(true);
   readonly trapFocus = input(true);
   readonly returnFocus = input(true);
   readonly testIdPrefix = input('qd-modal-shell');
+  readonly dialogTestId = input<string | null>(null);
 
   readonly dismissed = output<QdModalShellDismissReason>();
 
@@ -59,6 +62,8 @@ export class QdModalShellComponent {
   protected readonly titleId = `${this.instanceId}-title`;
 
   private readonly trap = viewChild(CdkTrapFocus);
+
+  protected readonly bareHeader = computed(() => !this.showTitle() && !this.showClose());
 
   protected readonly trapEnabled = computed(() => {
     const stack = openShells();

@@ -12,7 +12,14 @@ import {
   output,
 } from '@angular/core';
 
-import { placeFloatingLayer, resolveFloatingDirection, resolveRootFontSize } from './floating-layer-placement';
+import {
+  FLOATING_ANCHOR_GAP,
+  FloatingAnchorPoint,
+  placeFloatingLayer,
+  pointerAnchorRect,
+  resolveFloatingDirection,
+  resolveRootFontSize,
+} from './floating-layer-placement';
 
 export type QdFloatingLayerVariant =
   | 'action-menu'
@@ -27,6 +34,7 @@ const ITEM_SELECTOR = '[role="menuitem"], [role="menuitemradio"], [role="menuite
 const TEXT_ENTRY_SELECTOR =
   'input:not([type="button"]):not([type="checkbox"]):not([type="hidden"]):not([type="radio"]), textarea, [contenteditable=""], [contenteditable="true"]';
 const TYPE_AHEAD_WINDOW_MS = 600;
+const CURSOR_ATTRIBUTE = 'data-qd-floating-cursor';
 const NAVIGABLE_VARIANTS: readonly QdFloatingLayerVariant[] = [
   'action-menu',
   'select-listbox',
@@ -60,6 +68,8 @@ export class QdFloatingLayerDirective implements AfterViewInit {
 
   readonly variant = input<QdFloatingLayerVariant>('action-menu', { alias: 'qdFloatingLayer' });
   readonly anchorElement = input<HTMLElement | null>(null);
+  readonly anchorPoint = input<FloatingAnchorPoint | null>(null);
+  readonly controlElement = input<HTMLElement | null>(null);
   readonly typeAhead = input<boolean | undefined>(undefined);
 
   readonly dismissed = output<QdFloatingLayerDismissReason>();
@@ -76,11 +86,20 @@ export class QdFloatingLayerDirective implements AfterViewInit {
   private viewReady = false;
   private cursorId: string | null = null;
   private appliedVariant: QdFloatingLayerVariant | null = null;
+  private boundControl: HTMLElement | null = null;
+  private tookFocus = false;
+  private readonly controlKeydown = (event: KeyboardEvent) => this.onKeydown(event);
 
   constructor() {
     effect(() => {
+      this.controlElement();
+      this.syncControlBinding();
+    });
+
+    effect(() => {
       const variant = this.variant();
       this.anchorElement();
+      this.anchorPoint();
       if (this.appliedVariant !== null && this.appliedVariant !== variant) {
         this.clearActiveDescendant();
       }
@@ -104,12 +123,28 @@ export class QdFloatingLayerDirective implements AfterViewInit {
     }
 
     this.captureFocusReturnTarget();
+    this.destroyRef.onDestroy(() => {
+      this.boundControl?.removeEventListener('keydown', this.controlKeydown);
+      this.boundControl = null;
+      this.returnFocusWhenStillHeldInside();
+    });
   }
 
   ngAfterViewInit(): void {
     this.viewReady = true;
+    this.syncControlBinding();
     this.reposition();
     this.focusEntryItem();
+  }
+
+  private syncControlBinding(): void {
+    const control = this.controlElement();
+    if (control === this.boundControl) {
+      return;
+    }
+    this.boundControl?.removeEventListener('keydown', this.controlKeydown);
+    this.boundControl = control;
+    control?.addEventListener('keydown', this.controlKeydown);
   }
 
   reposition(): void {
@@ -118,16 +153,19 @@ export class QdFloatingLayerDirective implements AfterViewInit {
     }
     const layer = this.elementRef.nativeElement;
     const anchor = this.anchorElement();
-    if (anchor === null || !anchor.isConnected) {
+    const point = this.anchorPoint();
+    const anchored = anchor !== null && anchor.isConnected;
+    if (!anchored && point === null) {
       return;
     }
 
     const placement = placeFloatingLayer(
-      anchor.getBoundingClientRect(),
+      anchored ? anchor.getBoundingClientRect() : pointerAnchorRect(point!),
       { width: layer.offsetWidth, height: layer.scrollHeight },
       { width: window.innerWidth, height: window.innerHeight },
       resolveFloatingDirection(layer),
       resolveRootFontSize(layer),
+      anchored ? FLOATING_ANCHOR_GAP : 0,
     );
 
     layer.style.position = 'fixed';
@@ -240,16 +278,29 @@ export class QdFloatingLayerDirective implements AfterViewInit {
   private setCursor(item: HTMLElement): void {
     item.scrollIntoView?.({ block: 'nearest' });
     if (!this.activeDescendantModel()) {
+      this.tookFocus = true;
       item.focus();
       return;
     }
     const id = ensureOptionId(item);
     this.cursorId = id;
+    this.markCursorItem(item);
     this.cursorHost().setAttribute('aria-activedescendant', id);
   }
 
+  private markCursorItem(item: HTMLElement | null): void {
+    for (const marked of Array.from(
+      this.elementRef.nativeElement.querySelectorAll<HTMLElement>(`[${CURSOR_ATTRIBUTE}]`),
+    )) {
+      if (marked !== item) {
+        marked.removeAttribute(CURSOR_ATTRIBUTE);
+      }
+    }
+    item?.setAttribute(CURSOR_ATTRIBUTE, 'true');
+  }
+
   private cursorHost(): HTMLElement {
-    return this.searchField() ?? this.elementRef.nativeElement;
+    return this.controlElement() ?? this.searchField() ?? this.elementRef.nativeElement;
   }
 
   private searchField(): HTMLElement | null {
@@ -260,9 +311,11 @@ export class QdFloatingLayerDirective implements AfterViewInit {
 
   private clearActiveDescendant(): void {
     this.cursorId = null;
+    this.markCursorItem(null);
     const layer = this.elementRef.nativeElement;
     layer.removeAttribute('aria-activedescendant');
     layer.querySelector('[aria-activedescendant]')?.removeAttribute('aria-activedescendant');
+    this.controlElement()?.removeAttribute('aria-activedescendant');
   }
 
   private focusEntryItem(): void {
@@ -270,11 +323,14 @@ export class QdFloatingLayerDirective implements AfterViewInit {
       return;
     }
 
-    if (this.activeDescendantModel()) {
+    // An external combobox control keeps DOM focus and drives the layer through
+    // aria-activedescendant, so the layer must not pull focus off the field the user is typing in.
+    if (this.activeDescendantModel() && this.controlElement() === null) {
       const host = this.cursorHost();
       if (host === this.elementRef.nativeElement && !host.hasAttribute('tabindex')) {
         host.setAttribute('tabindex', '-1');
       }
+      this.tookFocus = true;
       host.focus();
     }
 
@@ -293,7 +349,11 @@ export class QdFloatingLayerDirective implements AfterViewInit {
     if (!(target instanceof Node)) {
       return;
     }
-    if (this.elementRef.nativeElement.contains(target) || this.anchorElement()?.contains(target) === true) {
+    if (
+      this.elementRef.nativeElement.contains(target) ||
+      this.anchorElement()?.contains(target) === true ||
+      this.controlElement()?.contains(target) === true
+    ) {
       return;
     }
     this.close('outside');
@@ -313,6 +373,19 @@ export class QdFloatingLayerDirective implements AfterViewInit {
     }
     const active = document.activeElement;
     this.focusReturnTarget = active instanceof HTMLElement && active !== document.body ? active : null;
+  }
+
+  private returnFocusWhenStillHeldInside(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    const active = document.activeElement;
+    const heldInside =
+      this.elementRef.nativeElement.contains(active) ||
+      (this.tookFocus && (active === null || active === document.body));
+    if (heldInside) {
+      this.returnFocus();
+    }
   }
 
   private returnFocus(): void {

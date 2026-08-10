@@ -1,7 +1,6 @@
 .abwab-template-copy-modal__desc {
   color: var(--qd-text-muted);
   font-size: 0.78rem;
-  margin-block-start: var(--qd-space-1);
 }
 
 .abwab-template-copy-modal__preview {
@@ -32,5 +31,7 @@
 
 .abwab-template-copy-modal__foot {
   display: flex;
+  flex: 1 1 auto;
+  min-inline-size: 0;
   gap: var(--qd-space-2);
 }

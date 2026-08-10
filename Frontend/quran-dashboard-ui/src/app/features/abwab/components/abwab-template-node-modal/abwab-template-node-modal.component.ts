@@ -1,19 +1,20 @@
 import { ChangeDetectionStrategy, Component, effect, input, output, signal, viewChild } from '@angular/core';
-import { A11yModule } from '@angular/cdk/a11y';
 import { Observable } from 'rxjs';
 
-import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import {
+  QdModalShellComponent,
+  QdModalShellDismissReason,
+} from '../../../../shared/ui/modal-shell/modal-shell.component';
 import { AbwabDoorFieldsFormComponent } from '../abwab-door-fields-form/abwab-door-fields-form.component';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabAuthoringFields, EMPTY_AUTHORING_FIELDS } from '../../models/abwab-templates.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
-let nextModalId = 0;
-
 @Component({
   selector: 'qd-abwab-template-node-modal',
   standalone: true,
-  imports: [A11yModule, AbwabDoorFieldsFormComponent, ModalScrollLockDirective],
+  imports: [AbwabDoorFieldsFormComponent, QdActionDirective, QdModalShellComponent],
   templateUrl: './abwab-template-node-modal.component.html',
   styleUrl: './abwab-template-node-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,7 +32,6 @@ export class AbwabTemplateNodeModalComponent {
 
   private readonly fieldsForm = viewChild(AbwabDoorFieldsFormComponent);
 
-  protected readonly titleId = `abwab-template-node-modal-title-${nextModalId++}`;
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly confirmingDiscard = signal(false);
   protected readonly saveBusy = signal(false);
@@ -70,6 +70,14 @@ export class AbwabTemplateNodeModalComponent {
       this.saveBusy.set(false);
       setTimeout(() => this.fieldsForm()?.focusFirstField());
     });
+  }
+
+  protected onDismissed(reason: QdModalShellDismissReason): void {
+    if (reason === 'escape') {
+      this.onEscape();
+      return;
+    }
+    this.requestClose();
   }
 
   protected onEscape(): void {

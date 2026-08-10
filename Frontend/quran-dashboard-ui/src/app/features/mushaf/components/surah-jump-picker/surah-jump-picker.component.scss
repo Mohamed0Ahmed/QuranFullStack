@@ -1,5 +1,6 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .surah-jump-picker {
-  position: relative;
   width: 100%;
 
   &__trigger {
@@ -7,7 +8,6 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--qd-space-1);
-    min-height: 2rem;
     padding: calc(var(--qd-space-1) + 1px) var(--qd-space-2);
     padding-inline-end: var(--qd-space-2);
     background-image: none;
@@ -51,22 +51,7 @@
   }
 
   &__panel {
-    position: absolute;
-    inset-inline: 0;
-    top: calc(100% + var(--qd-space-1));
-    z-index: var(--qd-z-popover);
-    display: flex;
-    flex-direction: column;
     gap: var(--qd-space-1);
-    width: 100%;
-    max-height: var(--surah-jump-picker-panel-max-height, 20rem);
-    padding: var(--qd-space-2);
-    border: 1px solid var(--qd-border);
-    border-radius: var(--qd-radius-md);
-    background: var(--qd-surface);
-    box-shadow: var(--qd-floating-shadow);
-    overflow: hidden;
-    overscroll-behavior: contain;
   }
 
   &__search {
@@ -98,50 +83,9 @@
     }
   }
 
-  &__group-heading {
-    margin: 0;
-    padding: var(--qd-space-1) var(--qd-space-2);
-    border-radius: var(--qd-radius-sm);
-    background: var(--qd-section-bg);
-    /* one-off: bespoke heading-text blend tuned against --qd-section-bg;
-       --qd-accent-text is pure navy in light and would lose the eyebrow warmth */
-    color: color-mix(in oklch, var(--qd-accent) 78%, var(--qd-text));
-    font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-    font-size: 0.75rem;
-    font-weight: 700;
-    line-height: 1.35;
-  }
-
   &__row {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    padding: var(--qd-space-1) var(--qd-space-2);
-    border: 1px solid transparent;
-    border-radius: var(--qd-radius-sm);
-    background: transparent;
-    color: var(--qd-text);
-    font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
     font-size: 0.8125rem;
     line-height: 1.4;
-    text-align: start;
-    cursor: pointer;
-    transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast);
-
-    &:hover {
-      background: var(--qd-section-bg);
-    }
-
-    &--active {
-      background: var(--qd-accent-tint);
-      border-color: var(--qd-accent);
-      color: var(--qd-accent-text);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--qd-focus-ring);
-      outline-offset: 1px;
-    }
   }
 
   &__row-label {
@@ -156,6 +100,13 @@
     color: var(--qd-text-muted);
     font-size: 0.8125rem;
     text-align: center;
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .surah-jump-picker__trigger,
+  .surah-jump-picker__search-input {
+    min-height: var(--qd-hit-target-min);
   }
 }
 

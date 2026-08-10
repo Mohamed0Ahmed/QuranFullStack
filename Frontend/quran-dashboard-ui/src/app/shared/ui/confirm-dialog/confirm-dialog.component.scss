@@ -2,9 +2,3 @@
   display: flex;
   gap: var(--qd-space-2);
 }
-
-.qd-confirm-dialog__confirm--danger {
-  background: var(--qd-danger);
-  border-color: var(--qd-danger);
-  color: var(--qd-surface);
-}

@@ -185,20 +185,25 @@ describe('DetailModalShellComponent', () => {
     expect(root.querySelector('[data-testid="detail-modal-live-status"]')!.textContent).not.toContain('SYNTH_COUNT');
   });
 
-  // jsdom cannot lay out, so the fixed block-size itself is a browser check. These
-  // guard the structure that fixed geometry depends on: the body is the only
-  // scroll region, and the geometry-bearing classes still exist to be styled.
-  it('keeps the body as the single scroll region under the fixed-geometry classes', () => {
+  // Phase 7 (D48/D49): the overlay is a thin adapter over the one F14 shell, so its geometry is
+  // the named `overlay` width rather than a fifth local drawer box, and the shell's body remains
+  // the single scroll region with the header outside it.
+  it('resolves to the named overlay width on the shared shell rather than a local geometry', () => {
     const dialog = root.querySelector('[data-testid="detail-modal-shell"]')!;
-    const body = root.querySelector('.detail-modal-shell__body');
-    const header = root.querySelector('.detail-modal-shell__header');
+    const body = root.querySelector('.qd-modal-shell__body');
+    const header = root.querySelector('.qd-modal-shell__header');
 
-    expect(dialog.classList.contains('qd-modal')).toBe(true);
-    expect(dialog.classList.contains('detail-modal-shell')).toBe(true);
+    expect(dialog.getAttribute('data-qd-modal-variant')).toBe('overlay');
+    expect(dialog.classList.contains('qd-modal-shell--overlay')).toBe(true);
+    expect(Array.from(dialog.classList).filter((name) => name.startsWith('qd-modal-shell--'))).toEqual([
+      'qd-modal-shell--overlay',
+    ]);
     expect(header).not.toBeNull();
     expect(body).not.toBeNull();
     expect(body!.contains(header)).toBe(false);
-    expect(root.querySelectorAll('.detail-modal-shell__body').length).toBe(1);
+    expect(root.querySelectorAll('.qd-modal-shell__body').length).toBe(1);
+    expect(root.querySelector('[data-testid="detail-modal-back"], [data-testid="detail-modal-close"]')!
+      .closest('.qd-modal-shell__body')).toBeNull();
   });
 
   // The last Back destroys the Back button itself, so the dialog must choose a
@@ -280,10 +285,9 @@ describe('DetailModalShellComponent', () => {
   });
 
   it('traps focus inside the open dialog', () => {
-    const dialog = root.querySelector('[data-testid="detail-modal-shell"]') as HTMLElement;
-    expect(dialog.hasAttribute('cdktrapfocus')).toBe(true);
-    // CDK renders the trap anchors as tabindex sentinels around the dialog.
-    const anchors = root.querySelectorAll('.cdk-focus-trap-anchor');
+    // CDK renders the trap anchors as tabindex sentinels around the dialog; the shell enables the
+    // trap only while this overlay is the topmost open shell.
+    const anchors = root.querySelectorAll('.cdk-focus-trap-anchor[tabindex="0"]');
     expect(anchors.length).toBeGreaterThanOrEqual(2);
   });
 });

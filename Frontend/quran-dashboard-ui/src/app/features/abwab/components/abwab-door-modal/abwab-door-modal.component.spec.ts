@@ -432,12 +432,15 @@ describe('AbwabDoorModalComponent', () => {
       expect(root.querySelector('[data-testid="abwab-door-modal-error"]')).toBeNull();
     });
 
+    // The sticky footer and the single body scroller are now `qd-modal-shell`'s, so the regions
+    // this asserts are the shell's published test ids rather than the retired `.qd-modal__*`
+    // geometry classes. The decision is unchanged: the guard must never scroll out of reach.
     it('keeps the actions out of the scrolling body so the guard cannot scroll away', () => {
       const fixture = render();
       const root = fixture.nativeElement as HTMLElement;
 
-      const foot = root.querySelector('.qd-modal__foot')!;
-      const body = root.querySelector('.qd-modal__body')!;
+      const foot = root.querySelector('[data-testid="abwab-door-modal-footer"]')!;
+      const body = root.querySelector('[data-testid="abwab-door-modal-body"]')!;
       expect(foot.querySelector('[data-testid="abwab-door-modal-save"]')).toBeTruthy();
       expect(body.contains(foot)).toBe(false);
     });

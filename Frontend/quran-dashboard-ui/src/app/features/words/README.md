@@ -58,11 +58,19 @@ not migrated yet; do not remove them as if they were a second layout contract. S
   activity can never mutate the page panel. The root-scoped API/cache/view-loader services
   stay shared, so the side panel and the overlay de-duplicate the same reads
   (`RootsCacheKeys` unchanged).
-- **Only the top layer traps focus**: the five mobile detail drawers
-  (`root`/`lemma`/`stem`/`word-type-details-panel`, `word-drilldown-modal`) bind
-  `[cdkTrapFocus]` to `!DetailOverlayHistoryService.isOpen()`. While the global dialog is
-  open they sit inside the inert app shell, so their traps stand down and exactly one trap
-  is enabled (`app.nested-layers.spec.ts`). Never re-add an unconditional `cdkTrapFocus`.
+- **Only the top layer traps focus**: the four mobile detail drawers
+  (`root`/`lemma`/`stem`/`word-type-details-panel`) bind `[cdkTrapFocus]` to
+  `!DetailOverlayHistoryService.isOpen()`, and `word-drilldown-modal` passes the same expression
+  as `[trapFocus]` to its `qd-modal-shell`. While the global dialog is open they sit inside the
+  inert app shell, so their traps stand down and exactly one trap is enabled
+  (`app.nested-layers.spec.ts`). Never re-add an unconditional `cdkTrapFocus`.
+- **The Unique-Words drilldown modal is an F14 `overlay` shell** (Golden UI Phase 7): its Wide
+  modal branch renders `qd-modal-shell variant="overlay"` with `flushBody` (the projected
+  `qd-details-workspace` brings its own header, tabs and body scroller, so the shell contributes no
+  second padding ring) and no shell title or close of its own — the workspace already carries both.
+  The shell owns the backdrop, the named width, the Compact `94dvh` sheet, the scroll lock and the
+  Escape/backdrop dismissal; the `word-drilldown-modal`/`word-drilldown-backdrop` test ids and the
+  `inline` and `frameless` branches are unchanged.
 - **Overlay adapters never call the Router** and never push view/page changes into the
   controller directly: every tab/sub-view/pagination change goes through
   `DetailOverlayHistoryService.replaceTopFrame(...)`; the URL sync feeds the new frame back
@@ -317,17 +325,22 @@ owns primary/dominant association selection, winner ordering, and server query s
   former `qd-unique-words-search-bar` is retired — its input is now the shared row's main input, its sort
   select a page-level secondary-row `<select>` — with the `unique-words-search-input`/`unique-words-sort-select`
   testids preserved. `explorer-association-filter`'s popover is field-driven rather than a `<details>`
-  disclosure (Feature 030, N5): it opens on typing, on `ArrowDown`/`Alt+ArrowDown` (which also moves focus
-  to the first option), or on field focus **only when the field already carries a selection or a query** —
-  an empty, unselected field stays closed on focus, and `ArrowDown` is the keyboard route in. It closes on
-  Escape (focus restored to the field, with the reopen guard), outside-click, focus leaving the component
-  (`focusout`), or selecting an option, with no focus trap and single-open behavior (focusing a sibling
-  field closes the previous); `aria-expanded`/`aria-controls`/`aria-haspopup="true"` sit on the field, and
-  options stay plain Tab-reachable `aria-pressed` buttons, not a listbox (no roving arrow-key/
-  `aria-activedescendant` model, deliberate). Re-opening on a selection never re-fetches, so a URL-restored
-  server-searched picker may open with no options until the user types (accepted; `searchChange` stays
-  typing-driven). The panel floats above
-  `.uw-toolbar-recess` (unclipped, RTL-anchored under the field, viewport-aware height limit). **Unchanged:**
+  disclosure (Feature 030, N5): it opens on typing, on `ArrowDown`/`Alt+ArrowDown`, or on field focus
+  **only when the field already carries a selection or a query** — an empty, unselected field stays
+  closed on focus, and `ArrowDown` is the keyboard route in. Since Golden UI Phase 7 the panel itself
+  is the shared F15 layer (`qdFloatingLayer="searchable-picker"`, `shared/ui/floating-layer/`), so
+  placement, block-axis flip, inline clamp, the `min(60vh, 24rem)` cap and the Escape/Tab/outside
+  dismissal script are the same code the Mushaf and Access pickers run (D33/D34) — the component no
+  longer measures or positions anything. The field is the **combobox**
+  (`role="combobox"`, `aria-expanded`/`aria-controls`/`aria-haspopup="listbox"`) and keeps DOM focus
+  while the layer moves an `aria-activedescendant` cursor over `role="option"` items, so the list is
+  navigable *without* interrupting typing; `Enter` activates the cursor option, and `Home`/`End`
+  deliberately stay with the text caret. Escape still restores focus to the field and arms the reopen
+  guard; `focusout` past the component and selecting an option still close it, with no focus trap and
+  single-open behavior (focusing a sibling field closes the previous). Re-opening on a selection never
+  re-fetches, so a URL-restored server-searched picker may open with no options until the user types
+  (accepted; `searchChange` stays typing-driven). The panel floats above `.uw-toolbar-recess`
+  (unclipped, RTL-anchored under the field, viewport-aware height limit). **Unchanged:**
   every URL query key, the url-sync contract, all data-testids, search debounce/semantics, and the
   association-filter public inputs/outputs.
 - **Ayah match cards use the shared `qdAyahCard` frame** (Feature 029, Change A): loaded and

@@ -51,9 +51,9 @@ describe('ExplorerAssociationFilterComponent', () => {
     return root.querySelector<HTMLInputElement>('[data-testid="association-filter-search"]')!;
   }
 
-  // The option list lives in a popover panel that only renders while open. Focus alone no longer opens
-  // it (an empty, unselected field stays closed), so the generic opener here is the ArrowDown escape
-  // hatch: it opens from any state without touching the query or emitting searchChange.
+  // The option list lives in an F15 floating layer that only renders while open. Focus alone no longer
+  // opens it (an empty, unselected field stays closed), so the generic opener here is the ArrowDown
+  // escape hatch: it opens from any state without touching the query or emitting searchChange.
   function openPanel(fixture: ReturnType<typeof render>): void {
     searchField(fixture.nativeElement as HTMLElement).dispatchEvent(
       new KeyboardEvent('keydown', { key: 'ArrowDown' }),
@@ -61,14 +61,6 @@ describe('ExplorerAssociationFilterComponent', () => {
     fixture.detectChanges();
   }
 
-  // openPanel defers focusing the first option to a rAF, mirroring the panel's own layout pass.
-  function flushPanelLayout(): Promise<void> {
-    return new Promise((resolve) => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => resolve());
-      });
-    });
-  }
 
   it('renders the label and one option button per option once the panel is open', () => {
     const fixture = render();
@@ -80,7 +72,9 @@ describe('ExplorerAssociationFilterComponent', () => {
     expect(root.querySelector('[data-testid="association-filter-option-PN"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="association-filter-option-N"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="association-filter-search"]')?.classList.contains('qd-control')).toBe(true);
-    expect(root.querySelector('[data-testid="association-filter-option-PN"]')?.classList.contains('qd-action')).toBe(true);
+    expect(
+      root.querySelector('[data-testid="association-filter-option-PN"]')?.classList.contains('qd-floating-layer__item'),
+    ).toBe(true);
   });
 
   it('emits the selected option when an option is clicked', () => {
@@ -244,10 +238,12 @@ describe('ExplorerAssociationFilterComponent', () => {
     expect(root.querySelector('[data-testid="association-filter-option-PN"]')).toBeTruthy();
   });
 
+  // Phase 7 (D33): the field stays the focused combobox and the layer moves an aria-activedescendant
+  // cursor over the options, so the user can keep typing while navigating the list.
   it.each([
     ['ArrowDown', false],
     ['Alt+ArrowDown', true],
-  ])('opens the panel from an empty field on %s and moves focus to the first option', async (_key, altKey) => {
+  ])('opens the panel from an empty field on %s and puts the cursor on the first option', (_key, altKey) => {
     const fixture = render();
     const root = fixture.nativeElement as HTMLElement;
     const input = searchField(root);
@@ -260,10 +256,66 @@ describe('ExplorerAssociationFilterComponent', () => {
     expect(event.defaultPrevented).toBe(true);
     expect(input.getAttribute('aria-expanded')).toBe('true');
 
-    await flushPanelLayout();
-    expect(document.activeElement).toBe(
-      root.querySelector('[data-testid="association-filter-option-PN"]'),
+    expect(document.activeElement).not.toBe(root.querySelector('[data-testid="association-filter-option-PN"]'));
+    expect(input.getAttribute('aria-activedescendant')).toBe(
+      root.querySelector('[data-testid="association-filter-option-PN"]')!.id,
     );
+  });
+
+  // Home/End deliberately stay with the text caret while the combobox field owns focus — the shared
+  // layer only claims them when the cursor host is not a text entry.
+  it('walks the cursor with ArrowDown/ArrowUp and selects the cursor option on Enter', () => {
+    const fixture = render();
+    const root = fixture.nativeElement as HTMLElement;
+    const input = searchField(root);
+    const idOf = (id: string) => root.querySelector(`[data-testid="association-filter-option-${id}"]`)!.id;
+    const press = (key: string) => {
+      input.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+    };
+
+    const cursored = () =>
+      root.querySelector('[data-qd-floating-cursor="true"]')?.getAttribute('data-testid') ?? '';
+
+    openPanel(fixture);
+    expect(input.getAttribute('aria-activedescendant')).toBe(idOf('PN'));
+
+    press('ArrowDown');
+    expect(input.getAttribute('aria-activedescendant')).toBe(idOf('N'));
+    // The cursor has to be visible: DOM focus never leaves the field, so the marked option is the
+    // only thing a sighted keyboard user can follow.
+    expect(cursored()).toBe('association-filter-option-N');
+    press('ArrowUp');
+    expect(input.getAttribute('aria-activedescendant')).toBe(idOf('PN'));
+    press('ArrowUp');
+    expect(input.getAttribute('aria-activedescendant')).toBe(idOf('N'));
+    press('End');
+    press('Home');
+    expect(input.getAttribute('aria-activedescendant')).toBe(idOf('N'));
+    press('ArrowDown');
+    expect(input.getAttribute('aria-activedescendant')).toBe(idOf('PN'));
+
+    let emitted: AssociationOption | null | undefined;
+    fixture.componentInstance.selectionChange.subscribe((value) => (emitted = value));
+    press('Enter');
+
+    expect(emitted).toEqual({ id: 'PN', label: 'اسم علم' });
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it.each([
+    ['Tab', (input: HTMLInputElement) => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))],
+    ['an outside press', () => document.dispatchEvent(new Event('pointerdown', { bubbles: true }))],
+  ])('closes the panel on %s', (_route, act) => {
+    const fixture = render();
+    const root = fixture.nativeElement as HTMLElement;
+    const input = searchField(root);
+    openPanel(fixture);
+
+    act(input);
+    fixture.detectChanges();
+
+    expect(input.getAttribute('aria-expanded')).toBe('false');
   });
 
   it('keeps the panel closed on focus once the selection has been cleared', () => {
@@ -315,6 +367,8 @@ describe('ExplorerAssociationFilterComponent', () => {
     }
   });
 
+  // Phase 7: Escape, Tab and outside-press are the shared F15 script now, so the key is dispatched
+  // from the field the layer is bound to rather than from a document-level listener.
   it('closes the panel on Escape and suppresses the immediate reopen from the focus restore', () => {
     // A selection is active on purpose: focus would otherwise re-open the panel, which is what makes
     // the suppression guard observable at all.
@@ -324,7 +378,7 @@ describe('ExplorerAssociationFilterComponent', () => {
     openPanel(fixture);
     expect(input.getAttribute('aria-expanded')).toBe('true');
 
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     fixture.detectChanges();
 
     expect(input.getAttribute('aria-expanded')).toBe('false');
@@ -358,24 +412,28 @@ describe('ExplorerAssociationFilterComponent', () => {
     expect(root.querySelector('[data-testid="association-filter-option-PN"]')).toBeNull();
   });
 
-  it('exposes aria-controls/aria-haspopup on the field and keeps options as plain non-listbox buttons', () => {
+  // Phase 7: the field is the combobox and the panel is the one shared searchable-picker layer, so
+  // the options carry the listbox vocabulary the audit/user and Mushaf pickers already use.
+  it('exposes the combobox/listbox vocabulary on the field and its options', () => {
     const fixture = render();
     const root = fixture.nativeElement as HTMLElement;
     const input = searchField(root);
 
-    expect(input.getAttribute('aria-haspopup')).toBe('true');
+    expect(input.getAttribute('role')).toBe('combobox');
+    expect(input.getAttribute('aria-haspopup')).toBe('listbox');
     expect(input.getAttribute('aria-controls')).toBeNull();
 
     openPanel(fixture);
 
     const controlsId = input.getAttribute('aria-controls');
     expect(controlsId).toBeTruthy();
-    expect(root.querySelector(`#${controlsId}`)).toBeTruthy();
+    const layer = root.querySelector(`#${controlsId}`)!;
+    expect(layer.classList.contains('qd-floating-layer')).toBe(true);
+    expect(layer.getAttribute('data-qd-floating-variant')).toBe('searchable-picker');
 
     const option = root.querySelector<HTMLButtonElement>('[data-testid="association-filter-option-PN"]')!;
-    expect(option.tagName).toBe('BUTTON');
-    expect(option.getAttribute('aria-pressed')).toBe('false');
-    expect(root.querySelector('[role="listbox"]')).toBeNull();
-    expect(root.querySelector('[role="option"]')).toBeNull();
+    expect(option.getAttribute('role')).toBe('option');
+    expect(option.getAttribute('aria-selected')).toBe('false');
+    expect(root.querySelector('[role="listbox"]')).not.toBeNull();
   });
 });

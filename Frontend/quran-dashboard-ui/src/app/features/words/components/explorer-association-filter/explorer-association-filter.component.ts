@@ -15,21 +15,19 @@ import { AssociationOption } from '../../state/words-association-filters';
 import { WORDS_ASSOCIATION_FILTER_LABELS } from '../../models/words-shared.labels';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
+import {
+  QdFloatingLayerDirective,
+  QdFloatingLayerDismissReason,
+} from '../../../../shared/ui/floating-layer/floating-layer.directive';
 
 export type { AssociationOption } from '../../state/words-association-filters';
-
-const PANEL_VIEWPORT_PADDING_PX = 8;
-const PANEL_FLIP_THRESHOLD_PX = 120;
-const PANEL_MAX_HEIGHT_PX = 320;
-const PANEL_MAX_HEIGHT_VAR = '--assoc-filter-panel-max-height';
-const PANEL_ABOVE_CLASS = 'association-filter__panel--above';
 
 let nextPanelId = 0;
 
 @Component({
   selector: 'qd-explorer-association-filter',
   standalone: true,
-  imports: [QdActionDirective, QdControlDirective],
+  imports: [QdActionDirective, QdControlDirective, QdFloatingLayerDirective],
   templateUrl: './explorer-association-filter.component.html',
   styleUrl: './explorer-association-filter.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,7 +36,6 @@ export class ExplorerAssociationFilterComponent {
   private readonly elementRef = inject(ElementRef<HTMLElement>);
 
   readonly fieldInputRef = viewChild<ElementRef<HTMLInputElement>>('fieldInput');
-  readonly panelRef = viewChild<ElementRef<HTMLElement>>('panel');
 
   readonly label = input.required<string>();
   readonly placeholder = input<string>('');
@@ -54,13 +51,16 @@ export class ExplorerAssociationFilterComponent {
   readonly searchChange = output<string>();
   readonly selectionChange = output<AssociationOption | null>();
 
-  protected readonly panelId = `association-filter-panel-${nextPanelId++}`;
+  private readonly instance = nextPanelId++;
+  protected readonly panelId = `association-filter-panel-${this.instance}`;
   protected readonly panelOpen = signal(false);
   protected readonly query = signal('');
 
   private reopenSuppressed = false;
 
   protected get labels() { return WORDS_ASSOCIATION_FILTER_LABELS; }
+
+  protected readonly fieldElement = computed(() => this.fieldInputRef()?.nativeElement ?? null);
 
   protected readonly hasSelection = computed(() => this.selectedId() !== null);
 
@@ -88,29 +88,6 @@ export class ExplorerAssociationFilterComponent {
     return this.options().filter((option) => option.label.toLowerCase().includes(term));
   });
 
-  @HostListener('document:keydown', ['$event'])
-  protected onDocumentKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || !this.panelOpen()) {
-      return;
-    }
-    event.preventDefault();
-    this.panelOpen.set(false);
-    this.reopenSuppressed = true;
-    this.fieldInputRef()?.nativeElement.focus();
-  }
-
-  @HostListener('document:click', ['$event'])
-  protected onDocumentClick(event: MouseEvent): void {
-    if (!this.panelOpen()) {
-      return;
-    }
-    const root = this.elementRef.nativeElement as HTMLElement;
-    const target = event.target as Node | null;
-    if (target && !root.contains(target)) {
-      this.panelOpen.set(false);
-    }
-  }
-
   @HostListener('focusout', ['$event'])
   protected onComponentFocusOut(event: FocusEvent): void {
     if (!this.panelOpen()) {
@@ -123,12 +100,8 @@ export class ExplorerAssociationFilterComponent {
     }
   }
 
-  @HostListener('window:scroll')
-  @HostListener('window:resize')
-  protected onViewportChange(): void {
-    if (this.panelOpen()) {
-      requestAnimationFrame(() => this.applyPanelMaxHeight());
-    }
+  protected optionElementId(option: AssociationOption): string {
+    return `${this.panelId}-option-${option.id}`;
   }
 
   protected onFieldFocus(): void {
@@ -142,12 +115,14 @@ export class ExplorerAssociationFilterComponent {
   }
 
   protected onFieldKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'ArrowDown') {
+    if (event.key === 'ArrowDown' && !this.panelOpen()) {
+      event.preventDefault();
+      this.openPanel();
       return;
     }
-    event.preventDefault();
-    this.openPanel();
-    requestAnimationFrame(() => this.focusFirstOption());
+    if (event.key === 'Enter' && this.panelOpen()) {
+      this.activateCursor(event);
+    }
   }
 
   protected onFieldBlur(): void {
@@ -162,6 +137,13 @@ export class ExplorerAssociationFilterComponent {
     }
     if (!this.clientFilter()) {
       this.searchChange.emit(value.trim());
+    }
+  }
+
+  protected onLayerDismissed(reason: QdFloatingLayerDismissReason): void {
+    this.panelOpen.set(false);
+    if (reason === 'escape') {
+      this.reopenSuppressed = true;
     }
   }
 
@@ -181,33 +163,20 @@ export class ExplorerAssociationFilterComponent {
     }
   }
 
-  private openPanel(): void {
-    this.panelOpen.set(true);
-    requestAnimationFrame(() => this.applyPanelMaxHeight());
-  }
-
-  private focusFirstOption(): void {
-    this.panelRef()
-      ?.nativeElement.querySelector<HTMLButtonElement>('.association-filter__option')
-      ?.focus();
-  }
-
-  private applyPanelMaxHeight(): void {
-    const field = this.fieldInputRef()?.nativeElement;
-    const panel = this.panelRef()?.nativeElement;
-    if (!field || !panel) {
+  private activateCursor(event: KeyboardEvent): void {
+    const cursorId = this.fieldInputRef()?.nativeElement.getAttribute('aria-activedescendant');
+    if (!cursorId) {
       return;
     }
+    const option = this.visibleOptions().find((candidate) => this.optionElementId(candidate) === cursorId);
+    if (option === undefined) {
+      return;
+    }
+    event.preventDefault();
+    this.onSelect(option);
+  }
 
-    const fieldRect = field.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - fieldRect.bottom - PANEL_VIEWPORT_PADDING_PX;
-    const spaceAbove = fieldRect.top - PANEL_VIEWPORT_PADDING_PX;
-
-    const openAbove = spaceBelow < PANEL_FLIP_THRESHOLD_PX && spaceAbove > spaceBelow;
-    const available = Math.max(0, openAbove ? spaceAbove : spaceBelow);
-    const maxHeight = Math.min(PANEL_MAX_HEIGHT_PX, available);
-
-    panel.classList.toggle(PANEL_ABOVE_CLASS, openAbove);
-    panel.style.setProperty(PANEL_MAX_HEIGHT_VAR, `${maxHeight}px`);
+  private openPanel(): void {
+    this.panelOpen.set(true);
   }
 }

@@ -1,11 +1,6 @@
 .abwab-move-picker__desc {
   color: var(--qd-text-muted);
   font-size: 0.8125rem;
-  margin-block-end: var(--qd-space-3);
-}
-
-.abwab-move-picker__strip {
-  margin-block-start: var(--qd-space-1);
 }
 
 .abwab-move-picker__section {
@@ -116,5 +111,7 @@
 
 .abwab-move-picker__foot {
   display: flex;
+  flex: 1 1 auto;
+  min-inline-size: 0;
   gap: var(--qd-space-2);
 }

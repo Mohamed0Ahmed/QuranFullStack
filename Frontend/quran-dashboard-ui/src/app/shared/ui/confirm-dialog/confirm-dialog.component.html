@@ -12,11 +12,9 @@
   <div qdModalShellFooter class="qd-confirm-dialog__foot">
     <button
       type="button"
-      class="qd-btn"
-      [class.qd-btn-primary]="tone() === 'default'"
-      [class.qd-confirm-dialog__confirm--danger]="tone() === 'danger'"
+      [qdAction]="tone() === 'danger' ? 'danger' : 'primary'"
+      [busy]="busy()"
       [disabled]="busy() || confirmDisabled()"
-      [attr.aria-busy]="busy() ? 'true' : null"
       [attr.data-testid]="testIdPrefix() + '-confirm'"
       (click)="confirm()"
     >
@@ -25,7 +23,7 @@
     <button
       #cancelButton
       type="button"
-      class="qd-btn qd-btn-ghost"
+      qdAction="tertiary"
       [disabled]="busy()"
       [attr.data-testid]="testIdPrefix() + '-cancel'"
       (click)="cancel()"

@@ -14,6 +14,12 @@ const catalogFixture: readonly MushafSurahJuzGroupDto[] = [
   },
 ];
 
+function press(target: HTMLElement, key: string): KeyboardEvent {
+  const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+  target.dispatchEvent(event);
+  return event;
+}
+
 describe('SurahJumpPickerComponent', () => {
   it('renders one chevron and opens the search panel', () => {
     const fixture = TestBed.createComponent(SurahJumpPickerComponent);
@@ -124,6 +130,8 @@ describe('SurahJumpPickerComponent', () => {
     expect(root.querySelector('[data-testid="surah-jump-picker-panel"]')).toBeNull();
   });
 
+  // D33: Escape is now handled by the shared floating layer, which listens on the layer element
+  // instead of the document, so the key must be pressed from inside the open panel.
   it('closes on Escape and restores focus to the trigger', () => {
     const fixture = TestBed.createComponent(SurahJumpPickerComponent);
     fixture.componentRef.setInput('surahCatalogByJuz', catalogFixture);
@@ -136,14 +144,16 @@ describe('SurahJumpPickerComponent', () => {
     trigger.click();
     fixture.detectChanges();
 
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    press(root.querySelector('[data-testid="surah-jump-picker-search"]') as HTMLElement, 'Escape');
     fixture.detectChanges();
 
     expect(root.querySelector('[data-testid="surah-jump-picker-panel"]')).toBeNull();
     expect(document.activeElement).toBe(trigger);
   });
 
-  it('moves the active option with arrow keys', () => {
+  // D33: the shared layer keeps DOM focus in the search field and moves an aria-activedescendant
+  // cursor over the options, so the cursor now lives on the search input, not on the listbox.
+  it('moves the option cursor with arrow keys while focus stays in the search field', () => {
     const fixture = TestBed.createComponent(SurahJumpPickerComponent);
     fixture.componentRef.setInput('surahCatalogByJuz', catalogFixture);
     fixture.detectChanges();
@@ -152,12 +162,73 @@ describe('SurahJumpPickerComponent', () => {
     (root.querySelector('[data-testid="surah-jump-picker-trigger"]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    const listbox = root.querySelector('#surah-jump-listbox') as HTMLElement;
-    expect(listbox.getAttribute('aria-activedescendant')).toBe('surah-jump-option-j30-s101');
+    const search = root.querySelector('[data-testid="surah-jump-picker-search"]') as HTMLInputElement;
+    expect(document.activeElement).toBe(search);
+    expect(search.getAttribute('aria-activedescendant')).toBe('surah-jump-option-j30-s101');
 
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    press(search, 'ArrowDown');
+    fixture.detectChanges();
+    expect(search.getAttribute('aria-activedescendant')).toBe('surah-jump-option-j30-s102');
+
+    press(search, 'ArrowUp');
+    fixture.detectChanges();
+    expect(search.getAttribute('aria-activedescendant')).toBe('surah-jump-option-j30-s101');
+    expect(document.activeElement).toBe(search);
+  });
+
+  // D33: Enter selects whatever the shared cursor points at, which is what replaced the picker's
+  // own active-index bookkeeping.
+  it('selects the cursor option on Enter', () => {
+    const fixture = TestBed.createComponent(SurahJumpPickerComponent);
+    fixture.componentRef.setInput('surahCatalogByJuz', catalogFixture);
     fixture.detectChanges();
 
-    expect(listbox.getAttribute('aria-activedescendant')).toBe('surah-jump-option-j30-s102');
+    const emitSpy = vi.fn();
+    fixture.componentInstance.surahJump.subscribe(emitSpy);
+
+    const root = fixture.nativeElement as HTMLElement;
+    (root.querySelector('[data-testid="surah-jump-picker-trigger"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const search = root.querySelector('[data-testid="surah-jump-picker-search"]') as HTMLInputElement;
+    press(search, 'ArrowDown');
+    fixture.detectChanges();
+    press(search, 'Enter');
+    fixture.detectChanges();
+
+    expect(emitSpy).toHaveBeenCalledWith(102);
+    expect(root.querySelector('[data-testid="surah-jump-picker-panel"]')).toBeNull();
+  });
+
+  // D33: Tab leaves the picker and an outside pointer press dismisses it; both are the shared
+  // layer's contract rather than picker-local document listeners.
+  it('closes on Tab and on an outside pointer press', () => {
+    const fixture = TestBed.createComponent(SurahJumpPickerComponent);
+    fixture.componentRef.setInput('surahCatalogByJuz', catalogFixture);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const trigger = root.querySelector(
+      '[data-testid="surah-jump-picker-trigger"]',
+    ) as HTMLButtonElement;
+
+    trigger.click();
+    fixture.detectChanges();
+    const tab = press(
+      root.querySelector('[data-testid="surah-jump-picker-search"]') as HTMLElement,
+      'Tab',
+    );
+    fixture.detectChanges();
+
+    expect(tab.defaultPrevented).toBe(false);
+    expect(root.querySelector('[data-testid="surah-jump-picker-panel"]')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+
+    trigger.click();
+    fixture.detectChanges();
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(root.querySelector('[data-testid="surah-jump-picker-panel"]')).toBeNull();
   });
 });

@@ -1,11 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked } from '@angular/core';
-import { A11yModule } from '@angular/cdk/a11y';
 
 import { AbwabNode } from '../../models/abwab.models';
 import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabMoveDestination } from '../../models/abwab.models';
-import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 
@@ -25,7 +25,7 @@ let nextModalId = 0;
 @Component({
   selector: 'qd-abwab-move-picker',
   standalone: true,
-  imports: [A11yModule, ModalScrollLockDirective, QdTabsComponent, QdTabDirective],
+  imports: [QdActionDirective, QdModalShellComponent, QdTabsComponent, QdTabDirective],
   templateUrl: './abwab-move-picker.component.html',
   styleUrl: './abwab-move-picker.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,7 +43,6 @@ export class AbwabMovePickerComponent {
   readonly confirmed = output<AbwabMoveDestination>();
 
   private readonly modalId = nextModalId++;
-  protected readonly titleId = `abwab-move-picker-title-${this.modalId}`;
   protected readonly destinationsId = `abwab-move-picker-destinations-${this.modalId}`;
 
   protected readonly pickedSectionId = signal<number | null>(null);

@@ -1,158 +1,145 @@
 @if (open()) {
-  <div class="qd-modal-backdrop" data-testid="abwab-sections-modal-backdrop" (click)="requestClose()">
-    <section
-      class="qd-modal qd-modal--fixed abwab-sections-modal"
-      role="dialog"
-      aria-modal="true"
-      dir="rtl"
-      [attr.aria-labelledby]="titleId"
-      qdModalScrollLock
-      [cdkTrapFocus]="deleteConfirmId() === null"
-      cdkTrapFocusAutoCapture
-      data-testid="abwab-sections-modal"
-      (click)="$event.stopPropagation()"
-      (keydown.escape)="onEscape()"
-    >
-      <header class="qd-modal__head">
-        <h3 [id]="titleId">{{ title }}</h3>
-      </header>
+  <qd-modal-shell
+    variant="wide"
+    testIdPrefix="abwab-sections-modal"
+    [open]="true"
+    [titleText]="title"
+    [showClose]="false"
+    (dismissed)="onDismissed($event)"
+  >
+    @if (errorMessage(); as error) {
+      <qd-state variant="error" [reserve]="true" [message]="error" data-testid="abwab-sections-modal-error" />
+    }
 
-      <div class="qd-modal__body">
-        @if (errorMessage(); as error) {
-          <qd-state variant="error" [reserve]="true" [message]="error" data-testid="abwab-sections-modal-error" />
-        }
-
-        <ul class="abwab-sections-modal__list">
-          @for (section of sections(); track section.id) {
-            <li class="abwab-sections-modal__row" [attr.data-testid]="'abwab-sections-modal-row-' + section.id">
-              @if (canReorderSection()) {
-                @if (editingOrderId() === section.id) {
-                  <input
-                    #orderInput
-                    type="number"
-                    min="1"
-                    class="abwab-sections-modal__order-input"
-                    [value]="section.orderValue"
-                    [attr.aria-label]="orderInputAriaLabel(section.name)"
-                    [attr.data-testid]="'abwab-sections-modal-order-input-' + section.id"
-                    (click)="$event.stopPropagation()"
-                    (keydown)="onOrderKeydown($event, section.id)"
-                    (blur)="cancelOrderEdit(section.id)"
-                  />
-                } @else {
-                  <button
-                    type="button"
-                    class="abwab-sections-modal__order qd-chip qd-chip--pill"
-                    [attr.aria-label]="orderAriaLabel(section.name, section.orderValue)"
-                    [attr.data-testid]="'abwab-sections-modal-order-' + section.id"
-                    (click)="startOrderEdit(section, $event)"
-                  >{{ section.orderValue }}</button>
-                }
-              } @else {
-                <span
-                  class="abwab-sections-modal__order qd-chip qd-chip--pill qd-chip--static"
-                  [attr.data-testid]="'abwab-sections-modal-order-' + section.id"
-                >{{ section.orderValue }}</span>
-              }
-              @if (canEditSection() && editingId() === section.id) {
-                <input
-                  type="text"
-                  [value]="editingName()"
-                  [attr.data-testid]="'abwab-sections-modal-rename-input-' + section.id"
-                  (input)="onEditingNameInput($event)"
-                />
-                <button
-                  type="button"
-                  class="qd-btn qd-btn-primary"
-                  [attr.data-testid]="'abwab-sections-modal-rename-save-' + section.id"
-                  (click)="saveRename(section.id)"
-                >
-                  {{ saveLabel }}
-                </button>
-                <button type="button" class="qd-btn qd-btn-ghost" (click)="cancelRename()">{{ cancelLabel }}</button>
-              } @else {
-                <span class="abwab-sections-modal__name qd-truncate" [title]="section.name">{{ section.name }}</span>
-                @if (canEditSection()) {
-                  <button
-                    type="button"
-                    class="qd-btn qd-btn-ghost"
-                    [attr.data-testid]="'abwab-sections-modal-rename-' + section.id"
-                    (click)="startRename(section)"
-                  >
-                    {{ renameLabel }}
-                  </button>
-                }
-                @if (canDeleteSection()) {
-                  <button
-                    type="button"
-                    class="qd-btn qd-btn-ghost"
-                    [attr.data-testid]="'abwab-sections-modal-delete-' + section.id"
-                    (click)="requestRemove(section.id)"
-                  >
-                    {{ deleteLabel }}
-                  </button>
-                }
-              }
-            </li>
+    <ul class="abwab-sections-modal__list">
+      @for (section of sections(); track section.id) {
+        <li class="abwab-sections-modal__row" [attr.data-testid]="'abwab-sections-modal-row-' + section.id">
+          @if (canReorderSection()) {
+            @if (editingOrderId() === section.id) {
+              <input
+                #orderInput
+                type="number"
+                min="1"
+                class="abwab-sections-modal__order-input"
+                [value]="section.orderValue"
+                [attr.aria-label]="orderInputAriaLabel(section.name)"
+                [attr.data-testid]="'abwab-sections-modal-order-input-' + section.id"
+                (click)="$event.stopPropagation()"
+                (keydown)="onOrderKeydown($event, section.id)"
+                (blur)="cancelOrderEdit(section.id)"
+              />
+            } @else {
+              <button
+                type="button"
+                class="abwab-sections-modal__order qd-chip qd-chip--pill"
+                [attr.aria-label]="orderAriaLabel(section.name, section.orderValue)"
+                [attr.data-testid]="'abwab-sections-modal-order-' + section.id"
+                (click)="startOrderEdit(section, $event)"
+              >{{ section.orderValue }}</button>
+            }
+          } @else {
+            <span
+              class="abwab-sections-modal__order qd-chip qd-chip--pill qd-chip--static"
+              [attr.data-testid]="'abwab-sections-modal-order-' + section.id"
+            >{{ section.orderValue }}</span>
           }
-        </ul>
-
-        @if (canCreateSection()) {
-          <div class="abwab-sections-modal__add">
-            <label for="abwab-sections-modal-name-input">{{ nameLabel }}</label>
+          @if (canEditSection() && editingId() === section.id) {
             <input
-              id="abwab-sections-modal-name-input"
               type="text"
-              [value]="newSectionName()"
-              data-testid="abwab-sections-modal-name-input"
-              (input)="onNewNameInput($event)"
+              [value]="editingName()"
+              [attr.data-testid]="'abwab-sections-modal-rename-input-' + section.id"
+              (input)="onEditingNameInput($event)"
             />
             <button
               type="button"
-              class="qd-btn qd-btn-primary"
-              [disabled]="addBusy()"
-              data-testid="abwab-sections-modal-add"
-              (click)="add()"
+              qdAction="primary"
+              [attr.data-testid]="'abwab-sections-modal-rename-save-' + section.id"
+              (click)="saveRename(section.id)"
             >
-              {{ addLabel }}
+              {{ saveLabel }}
             </button>
-          </div>
-        }
-      </div>
+            <button type="button" qdAction="tertiary" (click)="cancelRename()">{{ cancelLabel }}</button>
+          } @else {
+            <span class="abwab-sections-modal__name qd-truncate" [title]="section.name">{{ section.name }}</span>
+            @if (canEditSection()) {
+              <button
+                type="button"
+                qdAction="tertiary"
+                [attr.data-testid]="'abwab-sections-modal-rename-' + section.id"
+                (click)="startRename(section)"
+              >
+                {{ renameLabel }}
+              </button>
+            }
+            @if (canDeleteSection()) {
+              <button
+                type="button"
+                qdAction="tertiary"
+                [attr.data-testid]="'abwab-sections-modal-delete-' + section.id"
+                (click)="requestRemove(section.id)"
+              >
+                {{ deleteLabel }}
+              </button>
+            }
+          }
+        </li>
+      }
+    </ul>
 
-      <footer class="qd-modal__foot">
-        @if (confirmingDiscard()) {
-          <div class="abwab-sections-modal__discard-confirm" role="alertdialog" data-testid="abwab-sections-modal-discard-confirm">
-            <p>{{ dirtyCloseConfirmMessage }}</p>
-            <div class="abwab-sections-modal__foot-actions">
-              <button
-                type="button"
-                class="qd-btn"
-                data-testid="abwab-sections-modal-discard-confirm-yes"
-                (click)="confirmDiscard()"
-              >
-                {{ discardChangesLabel }}
-              </button>
-              <button
-                type="button"
-                class="qd-btn qd-btn-ghost"
-                data-testid="abwab-sections-modal-discard-confirm-no"
-                (click)="cancelDiscard()"
-              >
-                {{ keepEditingLabel }}
-              </button>
-            </div>
-          </div>
-        } @else {
+    @if (canCreateSection()) {
+      <div class="abwab-sections-modal__add">
+        <label for="abwab-sections-modal-name-input">{{ nameLabel }}</label>
+        <input
+          id="abwab-sections-modal-name-input"
+          type="text"
+          [value]="newSectionName()"
+          data-testid="abwab-sections-modal-name-input"
+          (input)="onNewNameInput($event)"
+        />
+        <button
+          type="button"
+          qdAction="primary"
+          [disabled]="addBusy()"
+          data-testid="abwab-sections-modal-add"
+          (click)="add()"
+        >
+          {{ addLabel }}
+        </button>
+      </div>
+    }
+
+    <div qdModalShellFooter class="abwab-sections-modal__foot-slot">
+      @if (confirmingDiscard()) {
+        <div class="abwab-sections-modal__discard-confirm" role="alertdialog" data-testid="abwab-sections-modal-discard-confirm">
+          <p>{{ dirtyCloseConfirmMessage }}</p>
           <div class="abwab-sections-modal__foot-actions">
-            <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-sections-modal-close" (click)="requestClose()">
-              {{ closeLabel }}
+            <button
+              type="button"
+              qdAction="secondary"
+              data-testid="abwab-sections-modal-discard-confirm-yes"
+              (click)="confirmDiscard()"
+            >
+              {{ discardChangesLabel }}
+            </button>
+            <button
+              type="button"
+              qdAction="tertiary"
+              data-testid="abwab-sections-modal-discard-confirm-no"
+              (click)="cancelDiscard()"
+            >
+              {{ keepEditingLabel }}
             </button>
           </div>
-        }
-      </footer>
-    </section>
-  </div>
+        </div>
+      } @else {
+        <div class="abwab-sections-modal__foot-actions">
+          <button type="button" qdAction="tertiary" data-testid="abwab-sections-modal-close" (click)="requestClose()">
+            {{ closeLabel }}
+          </button>
+        </div>
+      }
+    </div>
+  </qd-modal-shell>
 
   @if (canDeleteSection() && deleteConfirmTarget(); as target) {
     <qd-confirm-dialog

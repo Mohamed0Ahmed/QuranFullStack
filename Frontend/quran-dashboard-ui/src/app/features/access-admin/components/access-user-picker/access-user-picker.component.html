@@ -6,8 +6,12 @@
   >{{ label() }}</label>
 
   @if (selected(); as chosen) {
-    <p class="access-user-picker__selected" [attr.data-testid]="testIdPrefix() + '-selected'">
-      <span class="qd-truncate" [title]="nameLabel(chosen)">{{ nameLabel(chosen) }}</span>
+    <p
+      class="access-user-picker__selected"
+      [title]="nameLabel(chosen)"
+      [attr.data-testid]="testIdPrefix() + '-selected'"
+    >
+      <span class="qd-truncate">{{ nameLabel(chosen) }}</span>
       <button
         type="button"
         qdAction="tertiary"
@@ -75,11 +79,13 @@
                 role="option"
                 class="access-user-picker__result"
                 aria-selected="false"
+                [title]="nameLabel(candidate) + ' — ' + candidate.email"
+                [attr.aria-label]="nameLabel(candidate) + ' — ' + candidate.email"
                 [attr.data-testid]="testIdPrefix() + '-candidate-' + candidate.id"
                 (click)="select(candidate)"
               >
-                <span class="qd-truncate" [title]="nameLabel(candidate)">{{ nameLabel(candidate) }}</span>
-                <span class="qd-text-meta qd-truncate qd-ltr-isolate" dir="ltr" [title]="candidate.email">{{ candidate.email }}</span>
+                <span class="qd-truncate">{{ nameLabel(candidate) }}</span>
+                <span class="qd-text-meta qd-truncate qd-ltr-isolate" dir="ltr">{{ candidate.email }}</span>
               </li>
             }
           </ul>

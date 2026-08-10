@@ -6,6 +6,7 @@ import {
   FLOATING_VIEWPORT_MARGIN,
   floatingMaxBlockSize,
   placeFloatingLayer,
+  pointerAnchorRect,
   resolveRootFontSize,
 } from './floating-layer-placement';
 
@@ -104,6 +105,40 @@ describe('placeFloatingLayer', () => {
       20,
     );
     expect(placement.maxBlockSize).toBe(480);
+  });
+
+  // Phase 7 folded the context-menu placement module into this helper: a pointer-invoked menu is
+  // the same arithmetic against a zero-size anchor with no gap, so there is one collision truth.
+  describe('pointer anchor', () => {
+    const MENU = { width: 200, height: 150 };
+    const MENU_VIEWPORT = { width: 1000, height: 800 };
+
+    const atPoint = (x: number, y: number, direction: 'ltr' | 'rtl') =>
+      placeFloatingLayer(pointerAnchorRect({ x, y }), MENU, MENU_VIEWPORT, direction, 16, 0);
+
+    it.each([
+      ['rtl', 500, 300],
+      ['ltr', 500, 500],
+    ] as const)('extends from the pointer toward the %s reading direction', (direction, x, expected) => {
+      const placement = atPoint(x, 100, direction);
+
+      expect(placement.left).toBe(expected);
+      expect(placement.top).toBe(100);
+    });
+
+    it('flips above the pointer when the menu would not fit below it', () => {
+      const placement = atPoint(500, 700, 'rtl');
+
+      expect(placement.flipped).toBe(true);
+      expect(placement.top).toBe(550);
+    });
+
+    it('clamps a pointer near either viewport corner back inside the margin', () => {
+      expect(atPoint(4, 4, 'ltr').left).toBe(FLOATING_VIEWPORT_MARGIN);
+      expect(atPoint(4, 4, 'ltr').top).toBe(FLOATING_VIEWPORT_MARGIN);
+      expect(atPoint(996, 796, 'rtl').left).toBe(792);
+      expect(atPoint(996, 796, 'rtl').inlineClamped).toBe(true);
+    });
   });
 
   it('resolves the root font size from the host document, falling back to 16px', () => {

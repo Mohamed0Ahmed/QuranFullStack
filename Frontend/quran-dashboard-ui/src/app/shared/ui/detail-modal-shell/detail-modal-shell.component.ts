@@ -1,33 +1,30 @@
-import { A11yModule } from '@angular/cdk/a11y';
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   ElementRef,
   effect,
-  inject,
   input,
   output,
   viewChild,
 } from '@angular/core';
 
-import { ScrollLockService } from '../modal-scroll-lock/scroll-lock.service';
+import { QdActionDirective } from '../action/action.directive';
+import { QdModalShellComponent } from '../modal-shell/modal-shell.component';
 
 let nextShellId = 0;
 
 @Component({
   selector: 'qd-detail-modal-shell',
   standalone: true,
-  imports: [A11yModule],
+  imports: [QdActionDirective, QdModalShellComponent],
   templateUrl: './detail-modal-shell.component.html',
   styleUrl: './detail-modal-shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(focusin)': 'onDialogFocusIn($event)',
+  },
 })
 export class DetailModalShellComponent {
-  private readonly scrollLock = inject(ScrollLockService);
-  private readonly destroyRef = inject(DestroyRef);
-  private holdsLock = false;
-
   readonly visibility = input.required<'open' | 'closed'>();
   readonly titleText = input.required<string>();
   readonly depth = input.required<number>();
@@ -44,30 +41,17 @@ export class DetailModalShellComponent {
   readonly restoreRequested = output<void>();
 
   private readonly shellId = nextShellId++;
-  protected readonly headingId = `qd-detail-modal-title-${this.shellId}`;
   protected readonly countId = `qd-detail-modal-count-${this.shellId}`;
 
   private readonly restoreButton = viewChild<ElementRef<HTMLButtonElement>>('restoreButton');
   private readonly closeButton = viewChild<ElementRef<HTMLButtonElement>>('closeButton');
   private readonly backButton = viewChild<ElementRef<HTMLButtonElement>>('backButton');
-  private readonly dialogHeading = viewChild<ElementRef<HTMLHeadingElement>>('dialogHeading');
   private previousVisibility: 'open' | 'closed' | null = null;
   private previousDepth: number | null = null;
 
   private readonly lastFocusedByDepth = new Map<number, HTMLElement>();
 
   constructor() {
-    effect(() => {
-      const open = this.visibility() === 'open';
-      if (open && !this.holdsLock) {
-        this.scrollLock.acquire();
-        this.holdsLock = true;
-      } else if (!open && this.holdsLock) {
-        this.scrollLock.release();
-        this.holdsLock = false;
-      }
-    });
-
     effect(() => {
       const visibility = this.visibility();
       const depth = this.depth();
@@ -98,29 +82,11 @@ export class DetailModalShellComponent {
         this.focusFrameEntryControl();
       }
     });
-
-    this.destroyRef.onDestroy(() => {
-      if (this.holdsLock) {
-        this.scrollLock.release();
-        this.holdsLock = false;
-      }
-    });
-  }
-
-  protected onBackdropClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) {
-      this.closeRequested.emit();
-    }
-  }
-
-  protected onEscape(event: Event): void {
-    event.stopPropagation();
-    this.closeRequested.emit();
   }
 
   protected onDialogFocusIn(event: FocusEvent): void {
     const target = event.target;
-    if (target instanceof HTMLElement) {
+    if (this.visibility() === 'open' && target instanceof HTMLElement) {
       this.lastFocusedByDepth.set(this.depth(), target);
     }
   }
@@ -167,8 +133,6 @@ export class DetailModalShellComponent {
     const close = this.closeButton()?.nativeElement;
     if (close?.isConnected) {
       close.focus();
-      return;
     }
-    this.dialogHeading()?.nativeElement.focus();
   }
 }

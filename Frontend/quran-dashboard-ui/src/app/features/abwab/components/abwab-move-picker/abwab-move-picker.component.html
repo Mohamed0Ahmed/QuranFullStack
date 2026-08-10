@@ -1,133 +1,128 @@
 @if (open()) {
-  <div class="qd-modal-backdrop" data-testid="abwab-move-picker-backdrop" (click)="cancel()">
-    <section
-      class="qd-modal qd-modal--fixed qd-modal--wide abwab-move-picker"
-      role="dialog"
-      aria-modal="true"
-      dir="rtl"
-      [attr.aria-labelledby]="titleId"
-      qdModalScrollLock
-      cdkTrapFocus
-      cdkTrapFocusAutoCapture
-      data-testid="abwab-move-picker"
-      (click)="$event.stopPropagation()"
-      (keydown.escape)="cancel()"
-    >
-      <header class="qd-modal__head">
-        <h3 [id]="titleId">{{ titleText() }}</h3>
-        <p class="abwab-move-picker__desc">{{ descriptionText }}</p>
+  <qd-modal-shell
+    variant="wide"
+    testIdPrefix="abwab-move-picker"
+    [open]="true"
+    [titleText]="titleText()"
+    [showClose]="false"
+    (dismissed)="cancel()"
+  >
+    <p qdModalShellHeaderSupport class="abwab-move-picker__desc">{{ descriptionText }}</p>
 
-        <qd-tabs [ariaLabel]="sectionStripLabel" layout="grid" class="abwab-move-picker__strip">
-          @for (section of sections(); track section.id) {
+    <qd-tabs
+      qdModalShellHeaderSupport
+      [ariaLabel]="sectionStripLabel"
+      layout="grid"
+      class="abwab-move-picker__strip"
+    >
+      @for (section of sections(); track section.id) {
+        <button
+          type="button"
+          qdTab
+          class="abwab-move-picker__section"
+          [id]="sectionTabId(section.id)"
+          [selected]="pickedSectionId() === section.id"
+          [title]="section.name"
+          [attr.aria-label]="section.name"
+          [attr.aria-controls]="destinationsId"
+          [attr.data-testid]="'abwab-move-picker-section-' + section.id"
+          (click)="pickSection(section.id)"
+        >
+          <span class="abwab-move-picker__name qd-truncate">{{ section.name }}</span>
+        </button>
+      }
+    </qd-tabs>
+
+    @if (pickedSectionId() === null) {
+      <p
+        class="qd-empty-state"
+        [id]="destinationsId"
+        role="region"
+        [attr.aria-label]="pickSectionHint"
+        data-testid="abwab-move-picker-no-section"
+      >
+        {{ pickSectionHint }}
+      </p>
+    } @else {
+      <div [id]="destinationsId" role="tabpanel" [attr.aria-labelledby]="sectionTabId(pickedSectionId()!)">
+        <input
+          class="abwab-move-picker__search"
+          type="text"
+          [placeholder]="searchPlaceholder"
+          [attr.aria-label]="searchPlaceholder"
+          [value]="searchQuery()"
+          data-testid="abwab-move-picker-search"
+          (input)="onSearchInput($event)"
+        />
+        <div class="abwab-move-picker__list">
+          <div class="abwab-move-picker__row" [class.abwab-move-picker__row--picked]="pickedParentId() === null">
+            <span class="abwab-move-picker__chevron abwab-move-picker__chevron--leaf" aria-hidden="true"></span>
             <button
               type="button"
-              qdTab
-              class="abwab-move-picker__section"
-              [id]="sectionTabId(section.id)"
-              [selected]="pickedSectionId() === section.id"
-              [attr.aria-controls]="destinationsId"
-              [attr.data-testid]="'abwab-move-picker-section-' + section.id"
-              (click)="pickSection(section.id)"
+              class="abwab-move-picker__pick"
+              [attr.aria-pressed]="pickedParentId() === null"
+              data-testid="abwab-move-picker-dest-asmain"
+              (click)="pickAsMain()"
             >
-              <span class="abwab-move-picker__name qd-truncate" [title]="section.name">{{ section.name }}</span>
+              {{ asMainDoorLabel }}
             </button>
-          }
-        </qd-tabs>
-      </header>
-
-      <div class="qd-modal__body">
-        @if (pickedSectionId() === null) {
-          <p
-            class="qd-empty-state"
-            [id]="destinationsId"
-            role="region"
-            [attr.aria-label]="pickSectionHint"
-            data-testid="abwab-move-picker-no-section"
-          >
-            {{ pickSectionHint }}
-          </p>
-        } @else {
-          <div [id]="destinationsId" role="tabpanel" [attr.aria-labelledby]="sectionTabId(pickedSectionId()!)">
-            <input
-              class="abwab-move-picker__search"
-              type="text"
-              [placeholder]="searchPlaceholder"
-              [attr.aria-label]="searchPlaceholder"
-              [value]="searchQuery()"
-              data-testid="abwab-move-picker-search"
-              (input)="onSearchInput($event)"
-            />
-            <div class="abwab-move-picker__list">
-              <div class="abwab-move-picker__row" [class.abwab-move-picker__row--picked]="pickedParentId() === null">
-                <span class="abwab-move-picker__chevron abwab-move-picker__chevron--leaf" aria-hidden="true"></span>
-                <button
-                  type="button"
-                  class="abwab-move-picker__pick"
-                  [attr.aria-pressed]="pickedParentId() === null"
-                  data-testid="abwab-move-picker-dest-asmain"
-                  (click)="pickAsMain()"
-                >
-                  {{ asMainDoorLabel }}
-                </button>
-              </div>
-              @for (row of destinationRows(); track row.node.id) {
-                <div
-                  class="abwab-move-picker__row"
-                  [class.abwab-move-picker__row--picked]="pickedParentId() === row.node.id"
-                  [style.--abwab-move-picker-depth]="row.depth"
-                >
-                  <button
-                    type="button"
-                    class="abwab-move-picker__chevron"
-                    [class.abwab-move-picker__chevron--leaf]="!row.hasChildren"
-                    [attr.tabindex]="row.hasChildren ? null : -1"
-                    [attr.aria-hidden]="row.hasChildren ? null : true"
-                    [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
-                    [attr.aria-label]="row.hasChildren ? expandAriaLabel(row) : null"
-                    [attr.data-testid]="'abwab-move-picker-dest-chevron-' + row.node.id"
-                    (click)="toggleExpanded($event, row)"
-                  >
-                    @if (row.hasChildren) {
-                      <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
-                    }
-                  </button>
-                  <button
-                    type="button"
-                    class="abwab-move-picker__pick"
-                    [attr.aria-pressed]="pickedParentId() === row.node.id"
-                    [attr.data-testid]="'abwab-move-picker-dest-' + row.node.id"
-                    (click)="pickParent(row.node.id)"
-                  >
-                    <span class="abwab-move-picker__name qd-truncate" [title]="row.node.name">{{ row.node.name }}</span>
-                  </button>
-                </div>
-              }
-              @if (searchFoundNothing()) {
-                <p class="qd-empty-state" role="status" data-testid="abwab-move-picker-no-matches">
-                  {{ noMatchesLabel }}
-                </p>
-              }
-            </div>
           </div>
-        }
-      </div>
-
-      <footer class="qd-modal__foot">
-        <div class="abwab-move-picker__foot">
-          <button
-            type="button"
-            class="qd-btn qd-btn-primary"
-            [disabled]="pickedSectionId() === null || !canConfirm()"
-            data-testid="abwab-move-picker-confirm"
-            (click)="confirm()"
-          >
-            {{ confirmLabel }}
-          </button>
-          <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-move-picker-cancel" (click)="cancel()">
-            {{ cancelLabel }}
-          </button>
+          @for (row of destinationRows(); track row.node.id) {
+            <div
+              class="abwab-move-picker__row"
+              [class.abwab-move-picker__row--picked]="pickedParentId() === row.node.id"
+              [style.--abwab-move-picker-depth]="row.depth"
+            >
+              <button
+                type="button"
+                class="abwab-move-picker__chevron"
+                [class.abwab-move-picker__chevron--leaf]="!row.hasChildren"
+                [attr.tabindex]="row.hasChildren ? null : -1"
+                [attr.aria-hidden]="row.hasChildren ? null : true"
+                [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
+                [attr.aria-label]="row.hasChildren ? expandAriaLabel(row) : null"
+                [attr.data-testid]="'abwab-move-picker-dest-chevron-' + row.node.id"
+                (click)="toggleExpanded($event, row)"
+              >
+                @if (row.hasChildren) {
+                  <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
+                }
+              </button>
+              <button
+                type="button"
+                class="abwab-move-picker__pick"
+                [title]="row.node.name"
+                [attr.aria-label]="row.node.name"
+                [attr.aria-pressed]="pickedParentId() === row.node.id"
+                [attr.data-testid]="'abwab-move-picker-dest-' + row.node.id"
+                (click)="pickParent(row.node.id)"
+              >
+                <span class="abwab-move-picker__name qd-truncate">{{ row.node.name }}</span>
+              </button>
+            </div>
+          }
+          @if (searchFoundNothing()) {
+            <p class="qd-empty-state" role="status" data-testid="abwab-move-picker-no-matches">
+              {{ noMatchesLabel }}
+            </p>
+          }
         </div>
-      </footer>
-    </section>
-  </div>
+      </div>
+    }
+
+    <div qdModalShellFooter class="abwab-move-picker__foot">
+      <button
+        type="button"
+        qdAction="primary"
+        [disabled]="pickedSectionId() === null || !canConfirm()"
+        data-testid="abwab-move-picker-confirm"
+        (click)="confirm()"
+      >
+        {{ confirmLabel }}
+      </button>
+      <button type="button" qdAction="tertiary" data-testid="abwab-move-picker-cancel" (click)="cancel()">
+        {{ cancelLabel }}
+      </button>
+    </div>
+  </qd-modal-shell>
 }

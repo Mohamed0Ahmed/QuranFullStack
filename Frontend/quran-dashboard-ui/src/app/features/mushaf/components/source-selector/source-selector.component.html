@@ -6,6 +6,7 @@
   @if (showPicker()) {
     <div class="source-selector__picker">
       <button
+        #trigger
         type="button"
         class="source-selector__trigger"
         data-testid="source-selector-trigger"
@@ -26,10 +27,15 @@
 
       @if (panelOpen()) {
         <div
+          #panel
+          qdFloatingLayer="searchable-picker"
           class="source-selector__panel"
           data-testid="source-selector-panel"
           role="listbox"
           [attr.aria-label]="label()"
+          [anchorElement]="trigger"
+          (dismissed)="closePanel()"
+          (keydown.enter)="selectCursorOption($event)"
         >
           @if (pickerMode() === 'languageFirst' && panelView() === 'languages') {
             <div class="source-selector__search">
@@ -48,8 +54,9 @@
                 <li role="presentation">
                   <button
                     type="button"
-                    class="source-selector__row"
+                    class="qd-floating-layer__item source-selector__row"
                     role="option"
+                    aria-selected="false"
                     data-testid="source-selector-language-row"
                     (click)="selectLanguage(group)"
                   >
@@ -65,6 +72,7 @@
             @if (pickerMode() === 'languageFirst' && activeLanguage(); as language) {
               <button
                 type="button"
+                qdAction="tertiary"
                 class="source-selector__back"
                 data-testid="source-selector-back"
                 (click)="backToLanguages()"
@@ -91,10 +99,9 @@
                 <li role="presentation">
                   <button
                     type="button"
-                    class="source-selector__row"
+                    class="qd-floating-layer__item source-selector__row"
                     role="option"
                     data-testid="source-selector-source-row"
-                    [class.source-selector__row--active]="option.key === selectedKey()"
                     [attr.aria-selected]="option.key === selectedKey()"
                     (click)="selectSource(option.key)"
                   >

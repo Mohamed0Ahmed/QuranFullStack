@@ -509,13 +509,17 @@ describe('AbwabSectionsModalComponent', () => {
     // Where focus lands is a browser fact (jsdom's zero-size boxes make the CDK's focusable check
     // reject every candidate, so auto-capture never fires). What is assertable here is the
     // contract that produces it — and this modal's first tabbable control is inside the dialog.
+    //
+    // `qd-modal-shell` owns the trap now and replaces the static `cdkTrapFocusAutoCapture`
+    // attribute with its own initial-focus call, so the attribute assertion becomes an assertion
+    // that the trap's host element is this dialog — the same claim the attribute stood for.
     it('traps focus and captures it, with the first control inside the dialog', () => {
       const { fixture } = render();
       const root = fixture.nativeElement as HTMLElement;
       const dialog = root.querySelector('[data-testid="abwab-sections-modal"]')!;
 
       expect(trapOf(fixture).enabled).toBe(true);
-      expect(dialog.hasAttribute('cdkTrapFocusAutoCapture')).toBe(true);
+      expect(fixture.debugElement.query(By.directive(CdkTrapFocus)).nativeElement).toBe(dialog);
       // The order trigger is a real <button> (§4.2-16) and renders before rename/delete in DOM
       // order, so it — not rename — is now the row's first focusable control.
       expect(dialog.querySelector('button')).toBe(root.querySelector('[data-testid="abwab-sections-modal-order-1"]'));
@@ -537,7 +541,7 @@ describe('AbwabSectionsModalComponent', () => {
       expect(trapOf(fixture).enabled).toBe(true);
     });
 
-    // Two `qdModalScrollLock` holders are alive while the confirm is nested. The service is
+    // Two `qd-modal-shell` holders are alive while the confirm is nested. The service is
     // reference-counted for exactly this, but abwab is the first feature to actually nest, so
     // this pins that closing the inner dialog does not unlock the page under the outer modal.
     it('keeps page scroll locked when the nested delete confirm closes', () => {
@@ -552,13 +556,15 @@ describe('AbwabSectionsModalComponent', () => {
       expect(TestBed.inject(ScrollLockService).isLocked()).toBe(true);
     });
 
+    // Sticky footer and single body scroller are `qd-modal-shell`'s now, so the two regions are
+    // read from the shell's published test ids instead of the retired `.qd-modal__*` classes.
     it('keeps the close control and the guard out of the scrolling body', () => {
       const { fixture } = render();
       const root = fixture.nativeElement as HTMLElement;
 
-      const foot = root.querySelector('.qd-modal__foot')!;
+      const foot = root.querySelector('[data-testid="abwab-sections-modal-footer"]')!;
       expect(foot.querySelector('[data-testid="abwab-sections-modal-close"]')).toBeTruthy();
-      expect(root.querySelector('.qd-modal__body')!.contains(foot)).toBe(false);
+      expect(root.querySelector('[data-testid="abwab-sections-modal-body"]')!.contains(foot)).toBe(false);
     });
   });
 });

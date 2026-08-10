@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked, viewChild } from '@angular/core';
-import { A11yModule } from '@angular/cdk/a11y';
 import { Observable } from 'rxjs';
 
 import { AbwabDoorPickerComponent } from '../abwab-door-picker/abwab-door-picker.component';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
-import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
@@ -52,16 +52,14 @@ const GROUP_DOT_KIND: Readonly<Record<AbwabRelationGroupKey, AbwabRelationKind>>
   'less-comprehensive': 'comprehensiveness',
 };
 
-let nextModalId = 0;
-
 @Component({
   selector: 'qd-abwab-relations-modal',
   standalone: true,
   imports: [
-    A11yModule,
     AbwabDoorPickerComponent,
     ConfirmDialogComponent,
-    ModalScrollLockDirective,
+    QdActionDirective,
+    QdModalShellComponent,
     QdChipComponent,
     QdSkeletonRowsComponent,
     QdStateComponent,
@@ -111,7 +109,6 @@ export class AbwabRelationsModalComponent {
   protected readonly deleteError = signal<string | null>(null);
 
   protected readonly typeOptions = TYPE_ORDER;
-  protected readonly titleId = `abwab-relations-modal-title-${nextModalId++}`;
 
   protected get addTitle(): string { return ABWAB_LABELS.relationAddTitle; }
   protected get descriptionText(): string { return ABWAB_LABELS.relationsModalDescription; }

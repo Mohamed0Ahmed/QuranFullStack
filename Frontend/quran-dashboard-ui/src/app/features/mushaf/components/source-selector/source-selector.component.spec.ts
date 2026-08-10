@@ -3,11 +3,6 @@ import { TestBed } from '@angular/core/testing';
 
 import { SourceSelectorComponent } from './source-selector.component';
 import { SourceOption } from '../../models/mushaf.models';
-import {
-  SOURCE_SELECTOR_PANEL_MAX_HEIGHT_VAR,
-  SOURCE_SELECTOR_PANEL_MIN_HEIGHT_PX,
-  sourceSelectorPanelMaxHeightPx,
-} from './source-selector-panel.constants';
 
 const arabicTafsir: SourceOption = {
   key: 'ar-muyassar',
@@ -72,28 +67,10 @@ function flushPanelLayout(): Promise<void> {
   });
 }
 
-function mockPanelViewportMetrics(viewportHeight: number, panelTop: number) {
-  const innerHeightSpy = vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(viewportHeight);
-  const getBoundingClientRectSpy = vi
-    .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
-    .mockImplementation(function (this: HTMLElement) {
-      return {
-        top: this.getAttribute('data-testid') === 'source-selector-panel' ? panelTop : 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: 0,
-        height: 0,
-        x: 0,
-        y: 0,
-        toJSON: () => ({}),
-      } as DOMRect;
-    });
-
-  return () => {
-    innerHeightSpy.mockRestore();
-    getBoundingClientRectSpy.mockRestore();
-  };
+function press(target: HTMLElement, key: string): KeyboardEvent {
+  const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+  target.dispatchEvent(event);
+  return event;
 }
 
 describe('SourceSelectorComponent', () => {
@@ -212,7 +189,10 @@ describe('SourceSelectorComponent', () => {
     );
   });
 
-  it('does not scroll the document when opening the panel', async () => {
+  // D33/D34: the shared floating layer now owns opening geometry. It parks the option cursor with
+  // scrollIntoView({ block: 'nearest' }), which keeps the layer's own scroller in range and still
+  // never scrolls the document, so the assertion moved from "no scroll at all" to "only nearest".
+  it('never scrolls the document when opening the panel', async () => {
     const scrollIntoView = vi.fn();
     const previousScrollIntoView = HTMLElement.prototype.scrollIntoView;
     HTMLElement.prototype.scrollIntoView = scrollIntoView;
@@ -223,80 +203,101 @@ describe('SourceSelectorComponent', () => {
       fixture.detectChanges();
       await flushPanelLayout();
 
-      expect(scrollIntoView).not.toHaveBeenCalled();
+      for (const call of scrollIntoView.mock.calls) {
+        expect(call[0]).toEqual({ block: 'nearest' });
+      }
     } finally {
       HTMLElement.prototype.scrollIntoView = previousScrollIntoView;
     }
   });
 
-  it('fits the panel max-height to the remaining viewport space', async () => {
-    const panelTop = 400;
-    const viewportHeight = 900;
-    const restoreViewportMetrics = mockPanelViewportMetrics(viewportHeight, panelTop);
-
-    try {
-      const fixture = createFixture({ pickerMode: 'languageFirst' });
-      query<HTMLButtonElement>(fixture.nativeElement, 'source-selector-trigger').click();
-      fixture.detectChanges();
-      await flushPanelLayout();
-
-      const panel = query<HTMLElement>(fixture.nativeElement, 'source-selector-panel');
-      const expectedMaxHeight = `${sourceSelectorPanelMaxHeightPx(viewportHeight, panelTop)}px`;
-      expect(panel.style.getPropertyValue(SOURCE_SELECTOR_PANEL_MAX_HEIGHT_VAR)).toBe(expectedMaxHeight);
-    } finally {
-      restoreViewportMetrics();
-    }
-  });
-
-  it('clamps panel max-height to the minimum floor near the viewport bottom', async () => {
-    const panelTop = 880;
-    const viewportHeight = 900;
-    const restoreViewportMetrics = mockPanelViewportMetrics(viewportHeight, panelTop);
-
-    try {
-      const fixture = createFixture({ pickerMode: 'languageFirst' });
-      query<HTMLButtonElement>(fixture.nativeElement, 'source-selector-trigger').click();
-      fixture.detectChanges();
-      await flushPanelLayout();
-
-      const panel = query<HTMLElement>(fixture.nativeElement, 'source-selector-panel');
-      expect(panel.style.getPropertyValue(SOURCE_SELECTOR_PANEL_MAX_HEIGHT_VAR)).toBe(
-        `${SOURCE_SELECTOR_PANEL_MIN_HEIGHT_PX}px`,
-      );
-    } finally {
-      restoreViewportMetrics();
-    }
-  });
-
-  it('clears panel max-height when the panel closes', async () => {
-    const fixture = createFixture({ pickerMode: 'languageFirst' });
-    const trigger = query<HTMLButtonElement>(fixture.nativeElement, 'source-selector-trigger');
-
-    trigger.click();
-    fixture.detectChanges();
-    await flushPanelLayout();
-
-    const panel = query<HTMLElement>(fixture.nativeElement, 'source-selector-panel');
-    const removePropertySpy = vi.spyOn(panel.style, 'removeProperty');
-
-    try {
-      trigger.click();
-      fixture.detectChanges();
-
-      expect(removePropertySpy).toHaveBeenCalledWith(SOURCE_SELECTOR_PANEL_MAX_HEIGHT_VAR);
-    } finally {
-      removePropertySpy.mockRestore();
-    }
-  });
-
-  it('focuses the panel search input when opening the languages step', async () => {
+  // D33: the shared layer takes keyboard entry on the search field as soon as the panel renders,
+  // so the focus move no longer waits for the picker's own animation frame.
+  it('focuses the panel search input when opening the languages step', () => {
     const fixture = createFixture({ pickerMode: 'languageFirst' });
 
     query<HTMLButtonElement>(fixture.nativeElement, 'source-selector-trigger').click();
     fixture.detectChanges();
-    await flushPanelLayout();
 
     const search = query<HTMLInputElement>(fixture.nativeElement, 'source-selector-language-search');
     expect(document.activeElement).toBe(search);
+  });
+
+  // G12: stepping between the two views is the picker's own concern, so it still has to move focus
+  // onto the search field of the step it just rendered.
+  it('focuses the search input of the step it moves to', async () => {
+    const fixture = createFixture({ pickerMode: 'languageFirst' });
+
+    query<HTMLButtonElement>(fixture.nativeElement, 'source-selector-trigger').click();
+    fixture.detectChanges();
+
+    queryAll<HTMLButtonElement>(fixture.nativeElement, 'source-selector-language-row')[1].click();
+    fixture.detectChanges();
+    await flushPanelLayout();
+
+    expect(document.activeElement).toBe(
+      query<HTMLInputElement>(fixture.nativeElement, 'source-selector-source-search'),
+    );
+  });
+
+  // D33: Escape closes and hands focus back to the trigger, Tab closes without swallowing the move,
+  // and an outside pointer press dismisses — all from the shared layer instead of document listeners.
+  it('closes on Escape, Tab, and an outside pointer press', () => {
+    const fixture = createFixture({ pickerMode: 'flat', options: i3rabSources });
+    const trigger = query<HTMLButtonElement>(fixture.nativeElement, 'source-selector-trigger');
+
+    trigger.click();
+    fixture.detectChanges();
+    press(query<HTMLElement>(fixture.nativeElement, 'source-selector-source-search'), 'Escape');
+    fixture.detectChanges();
+
+    expect(query(fixture.nativeElement, 'source-selector-panel')).toBeFalsy();
+    expect(document.activeElement).toBe(trigger);
+
+    trigger.click();
+    fixture.detectChanges();
+    const tab = press(
+      query<HTMLElement>(fixture.nativeElement, 'source-selector-source-search'),
+      'Tab',
+    );
+    fixture.detectChanges();
+
+    expect(tab.defaultPrevented).toBe(false);
+    expect(query(fixture.nativeElement, 'source-selector-panel')).toBeFalsy();
+
+    trigger.click();
+    fixture.detectChanges();
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(query(fixture.nativeElement, 'source-selector-panel')).toBeFalsy();
+  });
+
+  // D33: the arrow cursor rides on aria-activedescendant while the search field keeps focus, and
+  // Enter picks whatever the cursor points at now that Tab no longer walks the option buttons.
+  it('flat: moves the option cursor with the arrows and selects it on Enter', () => {
+    const fixture = createFixture({ pickerMode: 'flat', options: i3rabSources });
+    const sourceChange = vi.fn();
+    fixture.componentInstance.sourceChange.subscribe(sourceChange);
+
+    query<HTMLButtonElement>(fixture.nativeElement, 'source-selector-trigger').click();
+    fixture.detectChanges();
+
+    const search = query<HTMLInputElement>(fixture.nativeElement, 'source-selector-source-search');
+    const rows = queryAll<HTMLButtonElement>(fixture.nativeElement, 'source-selector-source-row');
+    expect(document.activeElement).toBe(search);
+    expect(search.getAttribute('aria-activedescendant')).toBe(rows[0].id);
+
+    press(search, 'ArrowDown');
+    fixture.detectChanges();
+
+    expect(document.activeElement).toBe(search);
+    expect(search.getAttribute('aria-activedescendant')).toBe(rows[1].id);
+
+    press(search, 'Enter');
+    fixture.detectChanges();
+
+    expect(sourceChange).toHaveBeenCalledWith('i3rab-2');
+    expect(query(fixture.nativeElement, 'source-selector-panel')).toBeFalsy();
   });
 });

@@ -1,14 +1,7 @@
-import {
-  Component,
-  computed,
-  ElementRef,
-  HostListener,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import { Component, ElementRef, computed, input, output, signal, viewChild } from '@angular/core';
 
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdFloatingLayerDirective } from '../../../../shared/ui/floating-layer/floating-layer.directive';
 import { SourceOption } from '../../models/mushaf.models';
 import {
   filterLanguageGroups,
@@ -17,11 +10,6 @@ import {
   groupSourceOptionsByLanguage,
   LanguageSourceGroup,
 } from '../../utils/study-source-catalog.groups';
-import {
-  SOURCE_SELECTOR_PANEL_MAX_HEIGHT_VAR,
-  SOURCE_SELECTOR_PANEL_MIN_HEIGHT_PX,
-  SOURCE_SELECTOR_PANEL_VIEWPORT_PADDING_PX,
-} from './source-selector-panel.constants';
 
 type PickerMode = 'languageFirst' | 'flat';
 type PanelView = 'languages' | 'sources';
@@ -29,11 +17,12 @@ type PanelView = 'languages' | 'sources';
 @Component({
   selector: 'qd-source-selector',
   standalone: true,
+  imports: [QdActionDirective, QdFloatingLayerDirective],
   templateUrl: './source-selector.component.html',
   styleUrls: ['./source-selector.component.scss'],
 })
 export class SourceSelectorComponent {
-  private readonly elementRef = inject(ElementRef);
+  private readonly panelRef = viewChild<ElementRef<HTMLElement>>('panel');
 
   readonly label = input.required<string>();
   readonly selectedKey = input<string | null>(null);
@@ -80,26 +69,6 @@ export class SourceSelectorComponent {
 
   protected readonly showPicker = computed(() => this.options().length > 1);
 
-  @HostListener('document:keydown.escape')
-  protected onEscape(): void {
-    if (this.panelOpen()) {
-      this.closePanel();
-    }
-  }
-
-  @HostListener('document:click', ['$event'])
-  protected onDocumentClick(event: MouseEvent): void {
-    if (!this.panelOpen()) {
-      return;
-    }
-
-    const root = this.elementRef.nativeElement as HTMLElement;
-    const target = event.target as HTMLElement | null;
-    if (target && !root.contains(target)) {
-      this.closePanel();
-    }
-  }
-
   protected togglePanel(): void {
     if (this.panelOpen()) {
       this.closePanel();
@@ -117,14 +86,34 @@ export class SourceSelectorComponent {
     this.activeLanguage.set(group);
     this.panelView.set('sources');
     this.searchQuery.set('');
-    this.schedulePanelLayout();
+    this.focusStepSearch();
   }
 
   protected backToLanguages(): void {
     this.panelView.set('languages');
     this.activeLanguage.set(null);
     this.searchQuery.set('');
-    this.schedulePanelLayout();
+    this.focusStepSearch();
+  }
+
+  protected selectCursorOption(event: Event): void {
+    const layer = event.currentTarget as HTMLElement;
+    const cursorId = layer.querySelector('[aria-activedescendant]')?.getAttribute(
+      'aria-activedescendant',
+    );
+    if (!cursorId) {
+      return;
+    }
+
+    const option = Array.from(layer.querySelectorAll<HTMLElement>('[role="option"]')).find(
+      (candidate) => candidate.id === cursorId,
+    );
+    if (!option) {
+      return;
+    }
+
+    event.preventDefault();
+    option.click();
   }
 
   protected selectSource(key: string): void {
@@ -138,7 +127,6 @@ export class SourceSelectorComponent {
 
     if (this.pickerMode() === 'flat') {
       this.panelView.set('sources');
-      this.schedulePanelLayout();
       return;
     }
 
@@ -146,62 +134,22 @@ export class SourceSelectorComponent {
     if (languageGroup) {
       this.activeLanguage.set(languageGroup);
       this.panelView.set('sources');
-      this.schedulePanelLayout();
       return;
     }
 
-    if (this.activeLanguage()) {
-      this.panelView.set('sources');
-      this.schedulePanelLayout();
-      return;
-    }
-
-    this.panelView.set('languages');
-    this.schedulePanelLayout();
+    this.panelView.set(this.activeLanguage() ? 'sources' : 'languages');
   }
 
-  private closePanel(): void {
+  protected closePanel(): void {
     this.panelOpen.set(false);
     this.searchQuery.set('');
-    this.clearPanelMaxHeight();
   }
 
-  private schedulePanelLayout(): void {
+  private focusStepSearch(): void {
     requestAnimationFrame(() => {
-      this.fitPanelToViewport();
-      this.focusPanelSearch();
+      const panel = this.panelRef()?.nativeElement;
+      panel?.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
     });
-  }
-
-  private fitPanelToViewport(): void {
-    const panel = this.queryPanelElement();
-    if (!panel) {
-      return;
-    }
-
-    const top = panel.getBoundingClientRect().top;
-    const available = window.innerHeight - top - SOURCE_SELECTOR_PANEL_VIEWPORT_PADDING_PX;
-    const maxHeight = Math.max(SOURCE_SELECTOR_PANEL_MIN_HEIGHT_PX, available);
-    panel.style.setProperty(SOURCE_SELECTOR_PANEL_MAX_HEIGHT_VAR, `${maxHeight}px`);
-  }
-
-  private clearPanelMaxHeight(): void {
-    this.queryPanelElement()?.style.removeProperty(SOURCE_SELECTOR_PANEL_MAX_HEIGHT_VAR);
-  }
-
-  private focusPanelSearch(): void {
-    const root = this.elementRef.nativeElement as HTMLElement;
-    const search =
-      (root.querySelector('[data-testid="source-selector-language-search"]') as HTMLInputElement | null) ??
-      (root.querySelector('[data-testid="source-selector-source-search"]') as HTMLInputElement | null);
-
-    search?.focus();
-  }
-
-  private queryPanelElement(): HTMLElement | null {
-    return this.elementRef.nativeElement.querySelector(
-      '[data-testid="source-selector-panel"]',
-    ) as HTMLElement | null;
   }
 
   private resolveLanguageGroupForSelectedKey(): LanguageSourceGroup | null {

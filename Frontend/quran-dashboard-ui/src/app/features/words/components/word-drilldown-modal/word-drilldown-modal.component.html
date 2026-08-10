@@ -129,24 +129,19 @@
     <ng-container *ngTemplateOutlet="panelBody" />
   </section>
 } @else if (state().isOpen) {
-  <div
-    class="qd-modal-backdrop"
-    role="presentation"
-    data-testid="word-drilldown-backdrop"
-    qdModalScrollLock
-    (click)="onBackdropClick($event)"
+  <qd-modal-shell
+    variant="overlay"
+    testIdPrefix="word-drilldown"
+    dialogTestId="word-drilldown-modal"
+    [open]="true"
+    [titleText]="drilldownPanelTitle"
+    [showTitle]="false"
+    [showClose]="false"
+    [hasFooter]="false"
+    [flushBody]="true"
+    [trapFocus]="drawerTrapEnabled()"
+    (dismissed)="closeModal.emit()"
   >
-    <div
-      class="qd-modal explorer-detail-modal word-drilldown-modal"
-      role="dialog"
-      aria-modal="true"
-      [cdkTrapFocus]="drawerTrapEnabled()"
-      cdkTrapFocusAutoCapture
-      [attr.aria-label]="drilldownPanelTitle"
-      data-testid="word-drilldown-modal"
-      (click)="$event.stopPropagation()"
-    >
-      <ng-container *ngTemplateOutlet="panelBody" />
-    </div>
-  </div>
+    <ng-container *ngTemplateOutlet="panelBody" />
+  </qd-modal-shell>
 }

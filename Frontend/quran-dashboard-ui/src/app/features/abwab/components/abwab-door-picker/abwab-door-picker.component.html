@@ -26,6 +26,7 @@
       [class.abwab-door-picker__row--disabled]="row.isDisabled"
       [class.abwab-door-picker__row--excluded]="row.isExcluded"
       [style.--abwab-door-picker-depth]="row.depth"
+      [title]="row.node.name"
       [attr.role]="row.isExcluded ? 'group' : null"
       [attr.aria-label]="excludedRowAriaLabel(row)"
       [attr.aria-disabled]="row.isExcluded ? true : null"
@@ -61,7 +62,7 @@
           (click)="$event.preventDefault()"
         />
       }
-      <span class="abwab-door-picker__name qd-truncate" [title]="row.node.name">{{ row.node.name }}</span>
+      <span class="abwab-door-picker__name qd-truncate">{{ row.node.name }}</span>
       @if (row.isExcluded && excludedTag()) {
         <span class="abwab-door-picker__tag">{{ excludedTag() }}</span>
       } @else if (row.isDisabled && disabledTag()) {

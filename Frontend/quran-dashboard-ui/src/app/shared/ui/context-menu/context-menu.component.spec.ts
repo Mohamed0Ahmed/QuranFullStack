@@ -88,15 +88,40 @@ describe('QdContextMenuComponent', () => {
     expect(document.activeElement).toBe(query('item-c'));
   });
 
+  // Phase 7: the menu is an F15 action-menu, so Escape is consumed by the layer that owns the
+  // keyboard focus rather than by a document-level listener that any surface could race.
   it('returns focus to the element that opened it when it closes', async () => {
     await openFromInvoker();
     query<HTMLButtonElement>('item-c')!.focus();
 
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    query('item-c')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     fixture.detectChanges();
 
     expect(query('synth-menu')).toBeNull();
     expect(document.activeElement).toBe(invoker());
+  });
+
+  // D33: the shared script also closes on Tab and on an outside pointer press, so every action
+  // menu leaves by the same three routes.
+  it.each([
+    ['Tab key', () => query('item-a')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))],
+    ['outside press', () => document.dispatchEvent(new Event('pointerdown', { bubbles: true }))],
+  ])('closes on %s', async (_route, act) => {
+    await openFromInvoker();
+
+    act();
+    fixture.detectChanges();
+
+    expect(query('synth-menu')).toBeNull();
+  });
+
+  // D50: the danger item carries the one shared treatment, so a consumer never hand-rolls a
+  // destructive hover of its own.
+  it('keeps the projected items inside the shared floating-layer surface', async () => {
+    await openFromInvoker();
+
+    expect(query('synth-menu')!.classList).toContain('qd-floating-layer');
+    expect(query('synth-menu')!.getAttribute('data-qd-floating-variant')).toBe('action-menu');
   });
 
   // A menu item that opens a modal moves focus itself; the return must not fight it.

@@ -210,7 +210,7 @@
                 "src/app/features/mushaf/state/mushaf-reader-session.spec.ts",
                 "src/app/features/words/state/unique-words-drilldown.controller.spec.ts",
                 "src/app/features/words/state/words-range-filters.spec.ts",
-                "src/app/shared/ui/context-menu/context-menu-placement.spec.ts",
+                "src/app/shared/ui/floating-layer/floating-layer-placement.spec.ts",
                 "src/app/shared/ui/pagination/pagination-window.spec.ts",
                 "src/app/shared/ui/skeleton/grid-template-columns.spec.ts",
                 "src/app/shared/url/deep-link-href.spec.ts",

@@ -1,97 +1,87 @@
 @if (open()) {
-  <div class="qd-modal-backdrop" data-testid="abwab-door-modal-backdrop" (click)="requestClose()">
-    <section
-      class="qd-modal qd-modal--fixed abwab-door-modal"
-      role="dialog"
-      aria-modal="true"
-      dir="rtl"
-      [attr.aria-labelledby]="titleId"
-      qdModalScrollLock
-      cdkTrapFocus
-      cdkTrapFocusAutoCapture
-      data-testid="abwab-door-modal"
-      (click)="$event.stopPropagation()"
-      (keydown.escape)="onEscape()"
-    >
-      <header class="qd-modal__head">
-        <h3 [id]="titleId">{{ modalTitle }}</h3>
-        <p class="abwab-door-modal__context" data-testid="abwab-door-modal-context">{{ contextText }}</p>
-      </header>
+  <qd-modal-shell
+    variant="form"
+    testIdPrefix="abwab-door-modal"
+    [open]="true"
+    [titleText]="modalTitle"
+    [showClose]="false"
+    (dismissed)="onDismissed($event)"
+  >
+    <p qdModalShellHeaderSupport class="abwab-door-modal__context" data-testid="abwab-door-modal-context">
+      {{ contextText }}
+    </p>
 
-      <div class="qd-modal__body">
-        <qd-abwab-door-fields-form [value]="initialFields()" [errorMessage]="errorMessage()" />
+    <qd-abwab-door-fields-form [value]="initialFields()" [errorMessage]="errorMessage()" />
 
-        @if (needsSection()) {
-          <div class="abwab-door-modal__section" data-testid="abwab-door-modal-section-field">
-            @if (noSectionsAvailable()) {
-              <p class="abwab-door-modal__section-hint" data-testid="abwab-door-modal-no-sections">
-                {{ noSectionsHint }}
-              </p>
-            } @else {
-              <label [attr.for]="sectionId">{{ sectionLabel }}</label>
-              <select
-                class="qd-input"
-                [id]="sectionId"
-                [attr.aria-invalid]="sectionMissing() ? 'true' : null"
-                [attr.aria-describedby]="sectionMissing() ? sectionId + '-error' : null"
-                data-testid="abwab-door-modal-section-select"
-                (change)="onSectionChange($any($event.target).value)"
-              >
-                <option value=""></option>
-                @for (section of sections(); track section.id) {
-                  <option [value]="section.id" [selected]="section.id === chosenSectionId()">{{ section.name }}</option>
-                }
-              </select>
-              @if (sectionMissing()) {
-                <p class="abwab-door-modal__section-error" [id]="sectionId + '-error'" data-testid="abwab-door-modal-section-error">
-                  {{ sectionRequiredError }}
-                </p>
-              }
+    @if (needsSection()) {
+      <div class="abwab-door-modal__section" data-testid="abwab-door-modal-section-field">
+        @if (noSectionsAvailable()) {
+          <p class="abwab-door-modal__section-hint" data-testid="abwab-door-modal-no-sections">
+            {{ noSectionsHint }}
+          </p>
+        } @else {
+          <label [attr.for]="sectionId">{{ sectionLabel }}</label>
+          <select
+            class="qd-input"
+            [id]="sectionId"
+            [attr.aria-invalid]="sectionMissing() ? 'true' : null"
+            [attr.aria-describedby]="sectionMissing() ? sectionId + '-error' : null"
+            data-testid="abwab-door-modal-section-select"
+            (change)="onSectionChange($any($event.target).value)"
+          >
+            <option value=""></option>
+            @for (section of sections(); track section.id) {
+              <option [value]="section.id" [selected]="section.id === chosenSectionId()">{{ section.name }}</option>
             }
-          </div>
+          </select>
+          @if (sectionMissing()) {
+            <p class="abwab-door-modal__section-error" [id]="sectionId + '-error'" data-testid="abwab-door-modal-section-error">
+              {{ sectionRequiredError }}
+            </p>
+          }
         }
       </div>
+    }
 
-      <footer class="qd-modal__foot">
-        @if (confirmingDiscard()) {
-          <div class="abwab-door-modal__discard-confirm" role="alertdialog" data-testid="abwab-door-modal-discard-confirm">
-            <p>{{ dirtyCloseConfirmMessage }}</p>
-            <div class="abwab-door-modal__discard-actions">
-              <button
-                type="button"
-                class="qd-btn"
-                data-testid="abwab-door-modal-discard-confirm-yes"
-                (click)="confirmDiscard()"
-              >
-                {{ discardChangesLabel }}
-              </button>
-              <button
-                type="button"
-                class="qd-btn qd-btn-ghost"
-                data-testid="abwab-door-modal-discard-confirm-no"
-                (click)="cancelDiscard()"
-              >
-                {{ keepEditingLabel }}
-              </button>
-            </div>
-          </div>
-        } @else {
-          <div class="abwab-door-modal__foot">
+    <div qdModalShellFooter class="abwab-door-modal__foot-slot">
+      @if (confirmingDiscard()) {
+        <div class="abwab-door-modal__discard-confirm" role="alertdialog" data-testid="abwab-door-modal-discard-confirm">
+          <p>{{ dirtyCloseConfirmMessage }}</p>
+          <div class="abwab-door-modal__discard-actions">
             <button
               type="button"
-              class="qd-btn qd-btn-primary"
-              [disabled]="saveBusy() || !canSave()"
-              data-testid="abwab-door-modal-save"
-              (click)="submit()"
+              qdAction="secondary"
+              data-testid="abwab-door-modal-discard-confirm-yes"
+              (click)="confirmDiscard()"
             >
-              {{ saveLabel }}
+              {{ discardChangesLabel }}
             </button>
-            <button type="button" class="qd-btn qd-btn-ghost" data-testid="abwab-door-modal-cancel" (click)="requestClose()">
-              {{ cancelLabel }}
+            <button
+              type="button"
+              qdAction="tertiary"
+              data-testid="abwab-door-modal-discard-confirm-no"
+              (click)="cancelDiscard()"
+            >
+              {{ keepEditingLabel }}
             </button>
           </div>
-        }
-      </footer>
-    </section>
-  </div>
+        </div>
+      } @else {
+        <div class="abwab-door-modal__foot">
+          <button
+            type="button"
+            qdAction="primary"
+            [disabled]="saveBusy() || !canSave()"
+            data-testid="abwab-door-modal-save"
+            (click)="submit()"
+          >
+            {{ saveLabel }}
+          </button>
+          <button type="button" qdAction="tertiary" data-testid="abwab-door-modal-cancel" (click)="requestClose()">
+            {{ cancelLabel }}
+          </button>
+        </div>
+      }
+    </div>
+  </qd-modal-shell>
 }

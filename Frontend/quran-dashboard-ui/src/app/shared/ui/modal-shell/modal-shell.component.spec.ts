@@ -68,6 +68,29 @@ class NestedShellsHostComponent {
 })
 class TwoShellsHostComponent {}
 
+@Component({
+  standalone: true,
+  imports: [QdModalShellComponent],
+  template: `
+    <qd-modal-shell
+      [open]="true"
+      titleText="SYNTH_ADAPTED"
+      testIdPrefix="adapted"
+      dialogTestId="adapted-legacy-id"
+      describedById="synth-described"
+      [showTitle]="false"
+      [showClose]="false"
+      [flushBody]="true"
+    >
+      <span qdModalShellHeaderLead data-testid="lead">SYNTH_BACK</span>
+      <span qdModalShellHeaderExtra id="synth-described" data-testid="extra">SYNTH_COUNT</span>
+      <p qdModalShellHeaderSupport data-testid="support">SYNTH_CONTEXT</p>
+      <p data-testid="adapted-body-content">SYNTH_BODY</p>
+    </qd-modal-shell>
+  `,
+})
+class AdapterHostComponent {}
+
 const flush = () => new Promise((resolve) => setTimeout(resolve));
 
 describe('QdModalShellComponent', () => {
@@ -381,6 +404,39 @@ describe('QdModalShellComponent', () => {
       expect(enabledAnchors()).toHaveLength(0);
       nested.destroy();
     });
+  });
+
+  // Phase 7: an adapter (the entity-detail overlay, the Words drilldown) keeps its pre-migration
+  // dialog test id, describes itself by its own header meta, and hands the shell a body that
+  // already owns its chrome — none of which may cost it the shell's geometry or labelling.
+  it('serves a thin adapter: legacy dialog id, own describedby, bare header, flush body', async () => {
+    await TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({ imports: [AdapterHostComponent] }).compileComponents();
+    const adapted = TestBed.createComponent(AdapterHostComponent);
+    adapted.detectChanges();
+    const root = adapted.nativeElement as HTMLElement;
+
+    const dialog = root.querySelector('[data-testid="adapted-legacy-id"]')!;
+    expect(root.querySelector('[data-testid="adapted"]')).toBeNull();
+    expect(dialog.getAttribute('aria-describedby')).toBe('synth-described');
+
+    const labelledBy = dialog.getAttribute('aria-labelledby')!;
+    const heading = root.querySelector(`#${labelledBy}`)!;
+    expect(heading.textContent).toContain('SYNTH_ADAPTED');
+    expect(heading.classList).toContain('qd-sr-only');
+
+    const header = root.querySelector('.qd-modal-shell__header')!;
+    expect(header.classList).toContain('qd-modal-shell__header--bare');
+    expect(header.querySelector('[data-testid="lead"]')).toBeTruthy();
+    expect(header.querySelector('[data-testid="extra"]')).toBeTruthy();
+    expect(header.querySelector('[data-testid="support"]')).toBeTruthy();
+    expect(header.querySelector('[data-testid="support"]')!.closest('.qd-modal-shell__header-row')).toBeNull();
+
+    const body = root.querySelector('[data-testid="adapted-body"]')!;
+    expect(body.classList).toContain('qd-modal-shell__body--flush');
+    expect(body.querySelector('[data-testid="adapted-body-content"]')).toBeTruthy();
+
+    adapted.destroy();
   });
 
   // D31: an inline shell and an overlay shell coexist; a shared literal id would make one dialog's

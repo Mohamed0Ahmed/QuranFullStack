@@ -1,6 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { A11yModule } from '@angular/cdk/a11y';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 
 import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
@@ -8,7 +7,7 @@ import { DetailFrame } from '../../../../core/navigation/detail-overlay/detail-o
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdDetailsWorkspaceComponent } from '../../../../shared/ui/details-workspace/details-workspace.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
-import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 
@@ -35,8 +34,7 @@ import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-displa
   selector: 'qd-word-drilldown-modal',
   standalone: true,
   imports: [
-    A11yModule,
-    ModalScrollLockDirective,
+    QdModalShellComponent,
     NgTemplateOutlet,
     ScrollingModule,
     ExplorerPanelSkeletonComponent,
@@ -117,11 +115,5 @@ export class WordDrilldownModalComponent {
 
   protected drilldownLabel(view: WordDrilldownView): string {
     return WORD_DRILLDOWN_VIEW_LABELS[view];
-  }
-
-  protected onBackdropClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) {
-      this.closeModal.emit();
-    }
   }
 }

@@ -43,16 +43,26 @@ export function floatingMaxBlockSize(
   );
 }
 
+export interface FloatingAnchorPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+export function pointerAnchorRect(point: FloatingAnchorPoint): FloatingAnchorRect {
+  return { left: point.x, right: point.x, top: point.y, bottom: point.y };
+}
+
 export function placeFloatingLayer(
   anchor: FloatingAnchorRect,
   size: FloatingLayerSize,
   viewport: FloatingViewport,
   direction: 'ltr' | 'rtl',
   rootFontSize: number = FLOATING_DEFAULT_ROOT_FONT_SIZE,
+  gap: number = FLOATING_ANCHOR_GAP,
 ): FloatingPlacement {
   const cap = floatingMaxBlockSize(viewport, rootFontSize);
-  const spaceAfter = viewport.height - FLOATING_VIEWPORT_MARGIN - (anchor.bottom + FLOATING_ANCHOR_GAP);
-  const spaceBefore = anchor.top - FLOATING_ANCHOR_GAP - FLOATING_VIEWPORT_MARGIN;
+  const spaceAfter = viewport.height - FLOATING_VIEWPORT_MARGIN - (anchor.bottom + gap);
+  const spaceBefore = anchor.top - gap - FLOATING_VIEWPORT_MARGIN;
   const desired = Math.min(size.height, cap);
 
   const fitsAfter = desired <= spaceAfter;
@@ -63,9 +73,7 @@ export function placeFloatingLayer(
   const maxBlockSize = Math.max(0, Math.min(cap, available));
   const blockSize = Math.min(size.height, maxBlockSize);
 
-  const top = flipped
-    ? anchor.top - FLOATING_ANCHOR_GAP - blockSize
-    : anchor.bottom + FLOATING_ANCHOR_GAP;
+  const top = flipped ? anchor.top - gap - blockSize : anchor.bottom + gap;
 
   const preferredLeft = direction === 'rtl' ? anchor.right - size.width : anchor.left;
   const maxLeft = viewport.width - size.width - FLOATING_VIEWPORT_MARGIN;

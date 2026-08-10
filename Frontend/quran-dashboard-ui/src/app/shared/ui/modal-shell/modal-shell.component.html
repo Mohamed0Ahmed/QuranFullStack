@@ -16,35 +16,44 @@
       aria-modal="true"
       dir="rtl"
       [attr.aria-labelledby]="titleId"
+      [attr.aria-describedby]="describedById()"
       [attr.data-qd-modal-variant]="variant()"
-      [attr.data-testid]="testIdPrefix()"
+      [attr.data-testid]="dialogTestId() ?? testIdPrefix()"
       [cdkTrapFocus]="trapEnabled()"
       (keydown.escape)="onEscape($event)"
     >
-      <header class="qd-modal-shell__header">
-        <h2
-          class="qd-modal-shell__title"
-          [class.qd-sr-only]="!showTitle()"
-          [id]="titleId"
-          [attr.data-testid]="testIdPrefix() + '-title'"
-        >
-          {{ titleText() }}
-        </h2>
-        <ng-content select="[qdModalShellHeaderExtra]" />
-        @if (showClose()) {
-          <button
-            type="button"
-            class="qd-modal-shell__close"
-            qdAction="tertiary"
-            [attr.data-testid]="testIdPrefix() + '-close'"
-            (click)="onCloseClick()"
+      <header class="qd-modal-shell__header" [class.qd-modal-shell__header--bare]="bareHeader()">
+        <div class="qd-modal-shell__header-row">
+          <ng-content select="[qdModalShellHeaderLead]" />
+          <h2
+            class="qd-modal-shell__title"
+            [class.qd-sr-only]="!showTitle()"
+            [id]="titleId"
+            [attr.data-testid]="testIdPrefix() + '-title'"
           >
-            {{ closeLabel() }}
-          </button>
-        }
+            {{ titleText() }}
+          </h2>
+          <ng-content select="[qdModalShellHeaderExtra]" />
+          @if (showClose()) {
+            <button
+              type="button"
+              class="qd-modal-shell__close"
+              qdAction="tertiary"
+              [attr.data-testid]="testIdPrefix() + '-close'"
+              (click)="onCloseClick()"
+            >
+              {{ closeLabel() }}
+            </button>
+          }
+        </div>
+        <ng-content select="[qdModalShellHeaderSupport]" />
       </header>
 
-      <div class="qd-modal-shell__body" [attr.data-testid]="testIdPrefix() + '-body'">
+      <div
+        class="qd-modal-shell__body"
+        [class.qd-modal-shell__body--flush]="flushBody()"
+        [attr.data-testid]="testIdPrefix() + '-body'"
+      >
         <ng-content />
       </div>
 

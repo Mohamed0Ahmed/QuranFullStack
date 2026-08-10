@@ -1755,13 +1755,17 @@ describe('AbwabPageComponent', () => {
       fixture.detectChanges();
       click(root, 'abwab-side-panel-bulk-move');
       fixture.detectChanges();
-      const bulkTitle = root.querySelector('[data-testid="abwab-move-picker"] h3')?.textContent;
+      // The picker's heading is `qd-modal-shell`'s now, so the title is read from the shell's
+      // published `-title` test id rather than the `h3` the picker used to render itself. The
+      // subject this pins — the bulk title survives a single-subject key — is unchanged.
+      const titleOf = () => root.querySelector('[data-testid="abwab-move-picker-title"]')?.textContent?.trim();
+      const bulkTitle = titleOf();
       expect(bulkTitle).toBe(ABWAB_LABELS.movePickerTitleBulk(2));
 
       params$.next(convertToParamMap({ door: '1', modal: 'move' }));
       fixture.detectChanges();
 
-      expect(root.querySelector('[data-testid="abwab-move-picker"] h3')?.textContent).toBe(bulkTitle);
+      expect(titleOf()).toBe(bulkTitle);
     });
 
     it('the echo of a gesture’s own patch is a no-op, not a second open', () => {

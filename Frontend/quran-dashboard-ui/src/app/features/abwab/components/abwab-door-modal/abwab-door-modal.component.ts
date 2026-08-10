@@ -1,7 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
-import { A11yModule } from '@angular/cdk/a11y';
 
-import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import {
+  QdModalShellComponent,
+  QdModalShellDismissReason,
+} from '../../../../shared/ui/modal-shell/modal-shell.component';
 import { AbwabDoorFieldsFormComponent } from '../abwab-door-fields-form/abwab-door-fields-form.component';
 import { AbwabWriteController, AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
@@ -14,7 +17,7 @@ let nextModalId = 0;
 @Component({
   selector: 'qd-abwab-door-modal',
   standalone: true,
-  imports: [A11yModule, AbwabDoorFieldsFormComponent, ModalScrollLockDirective],
+  imports: [AbwabDoorFieldsFormComponent, QdActionDirective, QdModalShellComponent],
   templateUrl: './abwab-door-modal.component.html',
   styleUrl: './abwab-door-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,8 +39,6 @@ export class AbwabDoorModalComponent {
   private readonly fieldsForm = viewChild(AbwabDoorFieldsFormComponent);
 
   private readonly modalId = nextModalId++;
-
-  protected readonly titleId = `abwab-door-modal-title-${this.modalId}`;
 
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly confirmingDiscard = signal(false);
@@ -107,6 +108,14 @@ export class AbwabDoorModalComponent {
       this.saveBusy.set(false);
       setTimeout(() => this.fieldsForm()?.focusFirstField());
     });
+  }
+
+  protected onDismissed(reason: QdModalShellDismissReason): void {
+    if (reason === 'escape') {
+      this.onEscape();
+      return;
+    }
+    this.requestClose();
   }
 
   protected onEscape(): void {

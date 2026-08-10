@@ -34,26 +34,21 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   (`.qd-badge--lifecycle-*`, `.qd-badge--membership-owner`, `.qd-count-chip` in `_components.scss`)
   with no Angular owner — F17 keeps lifecycle and Owner membership separate, and Unknown never maps
   to Disabled. See `UI_STYLE_SYSTEM.md` §17 and §20.5.
-- `ui/context-menu/` — `qd-context-menu`, the one row/node context-menu shell (Slice A, both
-  Abwab pages' row menus). Owns a `position: fixed; inset: 0` backdrop and a positioned
-  `role="menu"` box (`[x, y]` via a `position` input), both keyed off the shared `--qd-z-*`
-  layer scale, plus a document-level `keydown.escape` dismissal (`dismissed` output) —
-  document-level so Escape works whether or not focus sits inside the menu (the menu now
-  takes focus on open, but a pointer-opened menu can lose it again to the page). `menuTestId` / `backdropTestId` inputs keep each
-  page's test ids byte-identical through the extraction. Items are projected content
-  (`<ng-content>`): the primitive knows nothing about doors or template nodes, and the item
-  hover/focus/danger styling lives in the global `.qd-context-menu__item` classes
-  (`_components.scss`), not this component's own stylesheet, since content the *consumer*
-  projects sits outside the primitive's emulated-encapsulation boundary. Since ux-slice-l it
-  **owns its own placement**: it measures its box after render, pins the box's inline-start
-  edge to the anchor so the box grows in the reading direction, flips when it would cross the
-  far viewport edge, and clamps both axes to an 8 px margin — so a caller passes a raw pointer
-  position and the primitive decides where the menu actually lands — the math is the pure
-  `placeContextMenu()`/`resolveMenuDirection()` in `context-menu-placement.ts`, unit-pinned
-  per branch in `context-menu-placement.spec.ts`. It also **manages focus**:
-  first `role="menuitem"` focused on open, ArrowDown/ArrowUp traversal with wrap, and focus
-  returned to the opener on close unless something else already claimed it. See
-  `UI_STYLE_SYSTEM.md` §17 for the full placement and focus contract.
+- `ui/context-menu/` — `qd-context-menu`, the one row/node context-menu shell (both Abwab pages'
+  row menus). Since Phase 7 it is a **thin specialization of F15**: it owns only the
+  `position: fixed; inset: 0` backdrop and the `role="menu"` box, and delegates placement,
+  keyboard and focus to `qdFloatingLayer="action-menu"` anchored by `anchorPoint` (the raw
+  pointer position). Placement, block-axis flip, inline clamp, the `min(60vh, 24rem)` cap,
+  Escape/Tab/outside dismissal, arrow traversal with wrap, type-ahead and focus return to the
+  opener are therefore the same code every menu, listbox and picker runs (D33/D34); the old
+  `context-menu-placement.ts` module was folded into `floating-layer-placement.ts` as the
+  zero-size `pointerAnchorRect()` anchor and deleted. `menuTestId` / `backdropTestId` inputs keep
+  each page's test ids byte-identical. Items are projected content (`<ng-content>`): the
+  primitive knows nothing about doors or template nodes, and the item hover/focus/**danger**
+  styling is the one shared rule shared by `.qd-floating-layer__item` and `.qd-context-menu__item`
+  in `_components.scss` (D50 — template delete and Abwab delete cannot drift apart), not this
+  component's own stylesheet, since content the *consumer* projects sits outside the primitive's
+  emulated-encapsulation boundary. See `UI_STYLE_SYSTEM.md` §17.
 - `ui/ayah-card/` — `qdAyahCard` (attribute component, host class `qd-ayah-card`), the one
   presentation-only flat frame for ayah-shaped list items (recessed warm card background
   `--qd-ayah-card-bg`, hairline border, control radius, compact padding/gap; no shadow, no
@@ -125,20 +120,20 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   `features/abwab/README.md` state for their own `*.labels.ts` files. See
   `UI_STYLE_SYSTEM.md` §17 "`qd-result-count`".
 - `ui/detail-modal-shell/` — `qd-detail-modal-shell`, the presentation-only accessible
-  dialog shell of the global detail overlay (Feature 029): RTL `role="dialog"` +
-  `aria-modal`, labelled heading, CDK focus trap with auto-capture, Escape/backdrop
-  dismissal, Back (depth > 1)/Close header actions, the optional `kindLabel` chip and
-  `countText` meta beside the title (Feature 030), the fixed restore control shown while
-  a retained stack is closed (focused after Close), polite live regions for title/status,
-  and reference-counted scroll locking. It is the only enabled focus trap while it is
-  open: the Words drawers suspend theirs off `DetailOverlayHistoryService.isOpen`. Back
-  never leaves focus on the document — a pop restores the invoking link inside the dialog
-  when it survived the re-render, else Close, else the heading.
-  It owns no entity, API, URL, or history state.
-  Its geometry is fixed on both axes and the count's box is always reserved, so no state
-  change resizes the dialog or shifts the header; the count sits outside the heading and
-  both live regions (it would otherwise double-announce) and is wired via
-  `aria-describedby`. See `.architecture/UI_STYLE_SYSTEM.md` §17 for the full contract.
+  dialog shell of the global detail overlay (Feature 029). Since Phase 7 it is a **thin adapter
+  over `qd-modal-shell` `variant="overlay"`**: the base shell supplies the backdrop, the `46rem`
+  named width, the Compact sheet, the single body scroller, shell-owned padding, the focus trap,
+  the reference-counted scroll lock and the Escape/backdrop dismissal routes, while the adapter
+  keeps everything that is genuinely overlay furniture — Back (depth > 1) and the optional
+  `kindLabel` chip in the header lead slot, the always-reserved `countText` meta and Close in the
+  header extra slot, the fixed restore control shown while a retained stack is closed (focused
+  after Close), and the polite live regions for title/status. It keeps `[returnFocus]="false"`
+  because it owns focus itself: Back never leaves focus on the document — a pop restores the
+  invoking link inside the dialog when it survived the re-render, else Close. It owns no entity,
+  API, URL, or history state. The count's box is always reserved, so an arriving count cannot
+  shift the header; the count sits outside the heading and both live regions (it would otherwise
+  double-announce) and is wired through the base shell's `describedById`.
+  See `.architecture/UI_STYLE_SYSTEM.md` §17 for the full contract.
 - `ui/confirm-dialog/` — `qd-confirm-dialog`, the house confirmation dialog, now a **thin adapter
   over `qd-modal-shell` `variant="confirm"`** (Phase 3). Its selector, inputs, outputs and
   `testIdPrefix`-derived test ids are unchanged; the shell supplies the backdrop, the `30rem`
@@ -161,16 +156,15 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   **token**, not by a bare counter: `hold()` returns an idempotent `ScrollLockHandle`, so a layer
   that releases twice (an explicit close followed by destroy) can no longer decrement a *different*
   layer's hold and unlock the page under a still-open dialog. `acquire()`/`release()` remain as the
-  legacy anonymous LIFO pair for the call-sites that still use them
-  (`detail-modal-shell.component.ts`, `top-navbar`), with byte-identical behaviour. `ScrollLockService.isLocked` (Slice
+  legacy anonymous LIFO pair for the call-sites that still use them (`top-navbar`), with
+  byte-identical behaviour. `ScrollLockService.isLocked` (Slice
   B2, T904) is a public signal derived from the same lock count — `.qd-navbar`
   (`core/layout/top-navbar/`) reads it to go `[inert]`/`[aria-hidden]` while any modal dialog
   holds the lock, so this is the one piece of state the chrome-inert rule reads; do not add a
   second "any modal open" service (`.architecture/UI_STYLE_SYSTEM.md` §17 "Chrome-inert
   rule"). Which surfaces hold the lock is not a list to maintain here — it is whatever holds
-  `ScrollLockService`'s lock: `grep -rn qdModalScrollLock src/app/` **plus**
-  `detail-modal-shell.component.ts:63`, which acquires it imperatively in an effect with no
-  directive in its template, so the grep alone under-reports by one. Note that
+  `ScrollLockService`'s lock: `grep -rn qdModalScrollLock src/app/` **plus** every mounted
+  `qd-modal-shell`, which holds a token while it is open. Note that
   `qd-confirm-dialog` applies it, so **every confirm in the app** is a holder and makes the
   chrome inert.
 - `ui/data-table/` — `qd-data-table` (F09), the domain-free mounted table shell. Its frozen
@@ -223,6 +217,14 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
     destroy-while-open. `cdkTrapFocusAutoCapture` is deliberately absent: it would restore a second
     time on its own schedule. A consumer that wants to place focus itself sets `[returnFocus]="false"`
     and owns the placement end to end.
+
+  Phase 7 added the three knobs the migrated consumers needed and nothing more: `describedById`
+  (an `aria-describedby` target such as the overlay's reserved count), `dialogTestId` (keeps a
+  consumer's pre-existing dialog test id when it is not the `testIdPrefix`), `flushBody` (the body
+  brings its own details-workspace chrome and scroller, so the shell contributes no second padding
+  ring), and the `[qdModalShellHeaderLead]` / `[qdModalShellHeaderSupport]` slots beside the
+  existing `[qdModalShellHeaderExtra]` / `[qdModalShellFooter]`. A header with neither a visible
+  title nor a Close renders bare — the labelling heading stays, the chrome does not.
 - `ui/floating-layer/` — `qdFloatingLayer` (F15 base) plus the pure `floating-layer-placement.ts`
   helper. One keyboard script for `action-menu` / `select-listbox` / `searchable-picker` /
   `disclosure-popover` / `tooltip` (D33): Escape closes and returns focus, Arrow/Home/End walk the
@@ -232,12 +234,27 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   own hierarchy. `placeFloatingLayer()` is pure and unit-pinned per branch: block-axis flip, inline
   clamp, `min(60vh, 24rem)` cap, `position: fixed` — never document flow (D34). The computed
   coordinate is written to `left` because a viewport coordinate has no logical form; the *choice* of
-  edge is direction-aware, which is what RTL needs. Three rules that are easy to "simplify" wrongly:
+  edge is direction-aware, which is what RTL needs.
+
+  Phase 7 gave it the two anchors and the one ownership rule the remaining consumers needed:
+  `anchorPoint` places the layer against a raw pointer coordinate (a zero-size `pointerAnchorRect()`
+  with no anchor gap) so `qd-context-menu` runs the same arithmetic as every anchored picker;
+  `controlElement` names an **external** combobox field that keeps DOM focus while the layer moves
+  its `aria-activedescendant` cursor, which is what lets the Words association filter stay typable
+  while its list is navigable; and on destroy the layer returns focus to its anchor only when it had
+  actually taken focus and still holds it, so a consumer that deliberately placed focus on close
+  keeps it. Four rules that are easy to "simplify" wrongly:
   - **One option model per variant** (catalog F15 §16). `action-menu` roves real DOM focus and never
     writes `aria-activedescendant`; `select-listbox` and `searchable-picker` keep DOM focus on the
     layer (or on the picker's own field) and move an `aria-activedescendant` cursor instead, cleared
     when the layer closes or its variant changes. Running both at once is what made a picker's search
     field unreachable.
+  - **The activedescendant cursor is visible, and it is not the selection.** The cursored item carries
+    `data-qd-floating-cursor="true"`, styled in `_components.scss` as neutral `--qd-surface-quiet` —
+    the same rest/hover neutral, because green means *selected*, never "where the arrow keys are".
+    On an already-selected item the cursor reads as a focus ring instead of a second fill. Without
+    this a sighted keyboard user arrowing through a picker sees nothing move: DOM focus never leaves
+    the field.
   - **Key handling is scoped by event target.** Inside a text input, textarea or `contenteditable`,
     printable keys, Home/End and the caret arrows belong to the field; only ArrowUp/ArrowDown drive
     the option cursor. Space is the same rule read from the other side: it extends a type-ahead
@@ -288,6 +305,11 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   call-site may not introduce a fifth geometry; `npm run check:golden-ui` reads
   `modal-shell.component.scss` and fails when the set of `.qd-modal-shell--*` width classes is
   anything other than `confirm/form/wide/overlay`.
+- There is **one** menu-item treatment, and one destructive variant of it. `.qd-floating-layer__item`
+  and `.qd-context-menu__item` are declared as a single rule set in `_components.scss` (hover,
+  `:focus-visible`, `[aria-disabled]`, `--danger`, and the Compact `44px` target), so the Abwab row
+  menus and the template menus cannot drift apart again (D50). A feature that needs a destructive
+  item adds `--danger`; it never writes its own danger hover.
 - A shared owner that generates an id **falls back** rather than overwrites. `qdTab` writes its
   generated `id`/`aria-controls` only when the element has none, because two features already bind
   their own and a host binding resolving to `null` removes a template-set attribute.

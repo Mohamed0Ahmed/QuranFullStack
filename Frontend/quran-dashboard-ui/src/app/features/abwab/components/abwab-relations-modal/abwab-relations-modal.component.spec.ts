@@ -597,12 +597,14 @@ describe('AbwabRelationsModalComponent', () => {
       expect(root.querySelector('[data-testid="abwab-relations-modal"]')!.contains(document.activeElement)).toBe(true);
     });
 
+    // Sticky footer and single body scroller are `qd-modal-shell`'s now, so the two regions are
+    // read from the shell's published test ids instead of the retired `.qd-modal__*` classes.
     it('keeps the actions out of the scrolling body', () => {
       const { root } = render();
 
-      const foot = root.querySelector('.qd-modal__foot')!;
+      const foot = root.querySelector('[data-testid="abwab-relations-modal-footer"]')!;
       expect(foot.querySelector('[data-testid="abwab-relations-modal-add"]')).toBeTruthy();
-      expect(root.querySelector('.qd-modal__body')!.contains(foot)).toBe(false);
+      expect(root.querySelector('[data-testid="abwab-relations-modal-body"]')!.contains(foot)).toBe(false);
     });
 
     it('clicking inside the dialog does not close it', () => {

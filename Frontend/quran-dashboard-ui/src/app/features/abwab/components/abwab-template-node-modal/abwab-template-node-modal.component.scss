@@ -10,6 +10,11 @@
   padding: var(--qd-space-3);
 }
 
+.abwab-template-node-modal__foot-slot {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
 .abwab-template-node-modal__actions {
   display: flex;
   gap: var(--qd-space-2);

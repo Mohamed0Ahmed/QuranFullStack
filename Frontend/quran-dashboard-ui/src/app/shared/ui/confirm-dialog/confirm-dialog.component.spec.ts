@@ -137,15 +137,16 @@ describe('ConfirmDialogComponent', () => {
     expect(host.events).toEqual([]);
   });
 
+  // Phase 7: the destructive treatment is the shared F05 danger variant, not a local override.
   it('marks the confirm button destructive only for the danger tone', () => {
-    expect(confirmButton().classList).toContain('qd-btn-primary');
-    expect(confirmButton().classList).not.toContain('qd-confirm-dialog__confirm--danger');
+    expect(confirmButton().classList).toContain('qd-action--primary');
+    expect(confirmButton().classList).not.toContain('qd-action--danger');
 
     host.tone.set('danger');
     fixture.detectChanges();
 
-    expect(confirmButton().classList).toContain('qd-confirm-dialog__confirm--danger');
-    expect(confirmButton().classList).not.toContain('qd-btn-primary');
+    expect(confirmButton().classList).toContain('qd-action--danger');
+    expect(confirmButton().classList).not.toContain('qd-action--primary');
   });
 
   // Phase 3 moved the framing onto QdModalShellComponent. The confirm keeps its alert-dialog
