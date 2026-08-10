@@ -46,6 +46,7 @@
     } @else {
       <div [id]="destinationsId" role="tabpanel" [attr.aria-labelledby]="sectionTabId(pickedSectionId()!)">
         <input
+          qdControl
           class="abwab-move-picker__search"
           type="text"
           [placeholder]="searchPlaceholder"
@@ -59,6 +60,7 @@
             <span class="abwab-move-picker__chevron abwab-move-picker__chevron--leaf" aria-hidden="true"></span>
             <button
               type="button"
+              qdAction="row-action"
               class="abwab-move-picker__pick"
               [attr.aria-pressed]="pickedParentId() === null"
               data-testid="abwab-move-picker-dest-asmain"
@@ -75,7 +77,8 @@
             >
               <button
                 type="button"
-                class="abwab-move-picker__chevron"
+                qdAction="row-action"
+                class="abwab-move-picker__chevron qd-hit-target"
                 [class.abwab-move-picker__chevron--leaf]="!row.hasChildren"
                 [attr.tabindex]="row.hasChildren ? null : -1"
                 [attr.aria-hidden]="row.hasChildren ? null : true"
@@ -90,6 +93,7 @@
               </button>
               <button
                 type="button"
+                qdAction="row-action"
                 class="abwab-move-picker__pick"
                 [title]="row.node.name"
                 [attr.aria-label]="row.node.name"
@@ -102,9 +106,7 @@
             </div>
           }
           @if (searchFoundNothing()) {
-            <p class="qd-empty-state" role="status" data-testid="abwab-move-picker-no-matches">
-              {{ noMatchesLabel }}
-            </p>
+            <qd-empty-state [message]="noMatchesLabel" testId="abwab-move-picker-no-matches" />
           }
         </div>
       </div>

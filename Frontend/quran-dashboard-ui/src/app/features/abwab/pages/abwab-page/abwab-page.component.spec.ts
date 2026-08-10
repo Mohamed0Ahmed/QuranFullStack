@@ -403,7 +403,7 @@ describe('AbwabPageComponent', () => {
       // role="status" live region, not an error surface, and it deliberately still carries the
       // message: alertdialog content changes are not announced, so suppressing it would leave a
       // screen-reader user with silence on failure.
-      expect(root.querySelectorAll('qd-state[variant="error"]')).toHaveLength(1);
+      expect(root.querySelectorAll('qd-error-state[severity="write"]')).toHaveLength(1);
       expect(root.querySelector('qd-abwab-announcer')?.textContent).toContain(backendMessage);
     });
   });
@@ -2148,5 +2148,34 @@ describe('AbwabPageComponent', () => {
     fixture.detectChanges();
 
     expect(overlays.restoreAncestors()).toBe(first);
+  });
+
+  // Phase 8 / D01–D02: the route declares exactly one named page intent and the shell is the only
+  // inline-gutter owner. The rail is the named 18rem Abwab size, never a local inline-size.
+  describe('Golden page composition', () => {
+    it('renders one named page intent and no second gutter frame', () => {
+      const fixture = render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const shells = root.querySelectorAll('.qd-page-shell');
+      expect(shells).toHaveLength(1);
+      expect(shells[0].classList.contains('qd-page-shell--full-data')).toBe(true);
+      expect(root.querySelectorAll('.qd-container, .qd-page-frame, .qd-explorer-frame')).toHaveLength(0);
+    });
+
+    it('sizes the side rail from the named 18rem rail token', () => {
+      const fixture = render();
+      const rail = (fixture.nativeElement as HTMLElement).querySelector('.abwab-page__side')!;
+
+      expect(rail.classList.contains('qd-page-rail')).toBe(true);
+      expect(rail.classList.contains('qd-page-rail--m')).toBe(true);
+    });
+
+    // F12: abwab reaches the five owners directly. The compatibility adapter has no abwab
+    // consumer left, which is what Phase 11 needs before it can delete it.
+    it('mounts no qd-state adapter anywhere on the page', () => {
+      const fixture = render();
+      expect((fixture.nativeElement as HTMLElement).querySelectorAll('qd-state')).toHaveLength(0);
+    });
   });
 });

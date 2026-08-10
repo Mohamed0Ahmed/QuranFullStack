@@ -835,3 +835,90 @@ describe('AbwabTreeComponent', () => {
     });
   });
 });
+
+// Phase 8, D46: a row action that only appears on hover is unreachable by touch and invisible to
+// anyone scanning the row, so the reveal-on-hover rule is gone. Asserting the rendered DOM alone
+// would pass on the old code too — the buttons were always rendered, just hidden — so this reads
+// the stylesheet the way the reveal/match test above does.
+describe('AbwabTreeComponent — row actions are never hover-only (D46)', () => {
+  function styleRules(): CSSStyleRule[] {
+    return Array.from(document.styleSheets)
+      .flatMap((sheet) => {
+        try {
+          return Array.from(sheet.cssRules);
+        } catch {
+          return [];
+        }
+      })
+      .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule);
+  }
+
+  it('renders the add-child and menu actions without a hover or focus-within gate', () => {
+    const fixture = render();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="abwab-tree-add-child-1"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="abwab-tree-more-1"]')).toBeTruthy();
+
+    const hidden = styleRules().filter(
+      (rule) =>
+        rule.selectorText?.includes('abwab-tree__actions') && rule.style.visibility === 'hidden',
+    );
+    expect(hidden).toHaveLength(0);
+  });
+
+  it('gives every row action the shared action geometry', () => {
+    const fixture = render();
+    const root = fixture.nativeElement as HTMLElement;
+
+    for (const testId of ['abwab-tree-chevron-1', 'abwab-tree-add-child-1', 'abwab-tree-more-1']) {
+      expect(root.querySelector(`[data-testid="${testId}"]`)!.classList.contains('qd-action')).toBe(true);
+    }
+  });
+
+  // `qd-hit-target` expands a control symmetrically in BOTH axes to --qd-hit-target-min. That is
+  // safe for the chevron, whose neighbours are unexpanded. It is NOT safe between `＋` and `⋯`:
+  // 20px faces 4px apart both expand 12px per side, so the boxes overlap by 20px and each button
+  // loses 8px of its own face to the other. The area is conserved, so z-index only elects which
+  // button suffers it.
+  it('expands the chevron only, never the side-by-side row actions', () => {
+    const fixture = render();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="abwab-tree-chevron-1"]')!.classList.contains('qd-hit-target')).toBe(true);
+    for (const testId of ['abwab-tree-add-child-1', 'abwab-tree-more-1']) {
+      expect(root.querySelector(`[data-testid="${testId}"]`)!.classList.contains('qd-hit-target')).toBe(false);
+    }
+  });
+
+  // Dropping the utility must not be paid for by shrinking the pair. Only the INLINE axis was
+  // ever contested, so the block axis still grows to the full target inside an already-44px row —
+  // 20x44, not 20x20. jsdom computes no layout, so this reads the rule the way the hover-gate
+  // test above does; without it, a regression to a 20x20 target passes every DOM assertion.
+  it('still gives the side-by-side actions a full block-axis target', () => {
+    render();
+
+    const sized = styleRules().filter(
+      (rule) =>
+        rule.selectorText?.includes('abwab-tree__act') &&
+        rule.style.getPropertyValue('min-block-size').includes('--qd-hit-target-min'),
+    );
+    expect(sized.length).toBeGreaterThan(0);
+  });
+});
+
+// F16: the shared hierarchy owner finds a row by a neutral attribute, never by an abwab test id.
+describe('AbwabTreeComponent — F16 wiring', () => {
+  it('marks every row with the neutral hierarchy id the shared directive reads', () => {
+    const fixture = render();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const rows = Array.from(root.querySelectorAll('[role="treeitem"]'));
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.getAttribute('data-qd-hierarchy-id')).toBe(
+        row.getAttribute('data-testid')?.replace('abwab-tree-row-', ''),
+      );
+    }
+  });
+});

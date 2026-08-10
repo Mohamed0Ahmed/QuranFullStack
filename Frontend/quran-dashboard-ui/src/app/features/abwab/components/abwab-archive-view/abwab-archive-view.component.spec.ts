@@ -232,3 +232,33 @@ describe('AbwabArchiveViewComponent', () => {
     });
   });
 });
+
+// Phase 8 / D22 + D46: the archive tree composes the shared action owner and the neutral
+// hierarchy attribute, so its controls carry the same geometry, focus ring and hit target as
+// every other Abwab control instead of a local stylesheet's approximation.
+describe('AbwabArchiveViewComponent — shared owners', () => {
+  it('gives the chevron and restore the shared action classes', () => {
+    const fixture = render();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const chevron = root.querySelector('[data-testid="abwab-archive-chevron-1"]')!;
+    expect(chevron.classList.contains('qd-action')).toBe(true);
+    expect(chevron.classList.contains('qd-hit-target')).toBe(true);
+
+    const restore = root.querySelector('[data-testid="abwab-archive-restore-1"]')!;
+    expect(restore.classList.contains('qd-action')).toBe(true);
+    expect(restore.classList.contains('qd-action--sm')).toBe(true);
+  });
+
+  it('marks every row with the neutral hierarchy id the shared directive reads', () => {
+    const fixture = render();
+    const rows = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('[role="treeitem"]'),
+    );
+
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(row.getAttribute('data-qd-hierarchy-id')).toBeTruthy();
+    }
+  });
+});

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { AbwabTreeDoorDto } from '../../../../core/api/generated/models/abwab-tree-door-dto';
 import { AbwabTreeDto } from '../../../../core/api/generated/models/abwab-tree-dto';
 import { buildAbwabTreeSnapshot } from '../../state/abwab-tree.builder';
+import { resolveQdHierarchyIntent } from '../../../../shared/ui/hierarchy/hierarchy-keyboard.directive';
 import { flattenVisibleAbwabRows, resolveAbwabTreeKeyboardIntent } from './abwab-tree-keyboard.controller';
 
 function door(overrides: Partial<AbwabTreeDoorDto> & { id: number; name: string }): AbwabTreeDoorDto {
@@ -206,5 +207,40 @@ describe('resolveAbwabTreeKeyboardIntent — selection, bulk, and menu keys', ()
     expect(
       resolveAbwabTreeKeyboardIntent({ key: 'F10', visibleRows: rows, focusedId: 1, direction: 'rtl', bulkMode: false, shiftKey: false }),
     ).toEqual({ type: 'none' });
+  });
+});
+
+// Phase 8 moved movement, expansion and direction mirroring into the shared F16 owner; this
+// controller keeps only the door-domain keys. Asserting the two resolvers agree on every
+// movement key is what stops the adapter quietly forking the shared script again.
+describe('resolveAbwabTreeKeyboardIntent — F16 delegation', () => {
+  const snapshot = buildAbwabTreeSnapshot(SAMPLE_TREE);
+  const rows = flattenVisibleAbwabRows(snapshot.liveRoots, new Set([1]));
+
+  it('returns exactly what the shared hierarchy owner returns for every movement key', () => {
+    for (const key of ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight', 'Home', 'End']) {
+      for (const direction of ['rtl', 'ltr'] as const) {
+        for (const focusedId of [1, 2, 4]) {
+          expect(
+            resolveAbwabTreeKeyboardIntent({
+              key,
+              visibleRows: rows,
+              focusedId,
+              direction,
+              bulkMode: false,
+              shiftKey: false,
+            }),
+          ).toEqual(resolveQdHierarchyIntent({ key, rows, focusedId, direction }));
+        }
+      }
+    }
+  });
+
+  it('keeps the domain keys out of the shared owner', () => {
+    for (const key of ['Enter', ' ', 'ContextMenu', 'F10']) {
+      expect(resolveQdHierarchyIntent({ key, rows, focusedId: 1, direction: 'rtl' })).toEqual({
+        type: 'none',
+      });
+    }
   });
 });

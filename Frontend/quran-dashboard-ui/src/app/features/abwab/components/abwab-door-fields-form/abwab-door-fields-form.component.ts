@@ -1,14 +1,16 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, signal, viewChild } from '@angular/core';
 
 import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { QdFormFieldComponent } from '../../../../shared/ui/form-field/form-field.component';
 import { AbwabAuthoringFields, EMPTY_AUTHORING_FIELDS } from '../../models/abwab-templates.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 @Component({
   selector: 'qd-abwab-door-fields-form',
   standalone: true,
-  imports: [QdChipComponent, QdStateComponent],
+  imports: [QdChipComponent, QdControlDirective, QdErrorStateComponent, QdFormFieldComponent],
   templateUrl: './abwab-door-fields-form.component.html',
   styleUrl: './abwab-door-fields-form.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

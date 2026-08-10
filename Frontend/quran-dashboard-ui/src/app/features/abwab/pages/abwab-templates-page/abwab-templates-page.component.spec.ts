@@ -274,4 +274,27 @@ describe('AbwabTemplatesPageComponent', () => {
       expect(document.activeElement).not.toBe(backLink(fixture));
     });
   });
+
+  // Phase 8: the workshop declares its own named intent and keeps the standard 16rem rail — the
+  // 18rem Abwab rail belongs to the doors page only.
+  describe('Golden page composition', () => {
+    it('renders one named page intent and the standard rail', async () => {
+      const fixture = await render();
+      const root = fixture.nativeElement as HTMLElement;
+
+      const shells = root.querySelectorAll('.qd-page-shell');
+      expect(shells).toHaveLength(1);
+      expect(shells[0].classList.contains('qd-page-shell--split-workspace')).toBe(true);
+      expect(root.querySelectorAll('.qd-container, .qd-page-frame, .qd-explorer-frame')).toHaveLength(0);
+
+      const rail = root.querySelector('.abwab-templates-page__list')!;
+      expect(rail.classList.contains('qd-page-rail--s')).toBe(true);
+      expect(rail.classList.contains('qd-page-rail--m')).toBe(false);
+    });
+
+    it('mounts no qd-state adapter anywhere on the page', async () => {
+      const fixture = await render();
+      expect((fixture.nativeElement as HTMLElement).querySelectorAll('qd-state')).toHaveLength(0);
+    });
+  });
 });

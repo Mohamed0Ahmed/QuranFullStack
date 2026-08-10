@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
 import { AbwabNode } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -10,7 +10,7 @@ import { AbwabWriteController } from '../../state/abwab-write.controller';
 @Component({
   selector: 'qd-abwab-door-restore-modal',
   standalone: true,
-  imports: [ConfirmDialogComponent, QdStateComponent],
+  imports: [ConfirmDialogComponent, QdErrorStateComponent],
   templateUrl: './abwab-door-restore-modal.component.html',
   styleUrl: './abwab-door-restore-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -4,7 +4,8 @@ import { Observable } from 'rxjs';
 import { AbwabDoorPickerComponent, AbwabDoorPickerStatus } from '../abwab-door-picker/abwab-door-picker.component';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabNode } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -13,7 +14,7 @@ import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-d
 @Component({
   selector: 'qd-abwab-template-copy-modal',
   standalone: true,
-  imports: [AbwabDoorPickerComponent, QdActionDirective, QdModalShellComponent, QdStateComponent],
+  imports: [AbwabDoorPickerComponent, QdActionDirective, QdModalShellComponent, QdEmptyStateComponent, QdErrorStateComponent],
   templateUrl: './abwab-template-copy-modal.component.html',
   styleUrl: './abwab-template-copy-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

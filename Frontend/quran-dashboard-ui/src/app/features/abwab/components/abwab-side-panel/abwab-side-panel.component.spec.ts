@@ -205,3 +205,34 @@ describe('AbwabSidePanelComponent', () => {
     });
   });
 });
+
+// D22: every panel operation is the shared F05 owner, so Abwab control geometry matches Access
+// and the danger operation carries the one shared danger treatment rather than a local hover rule.
+describe('AbwabSidePanelComponent — shared action owners', () => {
+  it('renders each operation through qdAction, with archive as the danger variant', () => {
+    const fixture = render({ canCreateDoor: true, canEditDoor: true, canMoveDoor: true, canArchiveDoor: true });
+    const root = fixture.nativeElement as HTMLElement;
+
+    for (const testId of [
+      'abwab-side-panel-op-add-child',
+      'abwab-side-panel-op-edit',
+      'abwab-side-panel-op-move',
+      'abwab-side-panel-op-relations',
+      'abwab-side-panel-op-archive',
+    ]) {
+      expect(root.querySelector(`[data-testid="${testId}"]`)?.classList.contains('qd-action')).toBe(true);
+    }
+
+    expect(
+      root.querySelector('[data-testid="abwab-side-panel-op-archive"]')?.classList.contains('qd-action--danger'),
+    ).toBe(true);
+  });
+
+  // Below Wide this panel is the page's selected-door action bar, so it must name itself.
+  it('names itself as one group of door operations', () => {
+    const fixture = render();
+    const group = (fixture.nativeElement as HTMLElement).querySelector('[role="group"]')!;
+
+    expect(group.getAttribute('aria-label')).toBeTruthy();
+  });
+});

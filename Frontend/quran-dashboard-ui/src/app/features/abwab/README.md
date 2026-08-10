@@ -55,7 +55,11 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
   acquires its own URL state, split the URL-backed overlays into a controller beside
   `abwab-modal-url.controller.ts`.
 - `components/abwab-modal-restore/` is the presentational control for reopening or discarding a
-  retained overlay. It reads no URL and owns only its focus entry point.
+  retained overlay. It reads no URL and owns only its focus entry point. Both halves are shared
+  `qdAction` owners — `secondary` for restore, `icon-only` for the `×` discard — so the pair keeps
+  one focus ring, one hover, and a `--qd-hit-target-min` target on the discard that a `×` sized by
+  padding alone never had. The local SCSS is now only the joined-pair geometry (the shared inner
+  radii and the removed inner border) plus the retained-overlay tint the two halves share.
 
 ### Toolbar, search, tree, and counts
 
@@ -72,6 +76,11 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
   - Empty versus no-match copy is decided from `AbwabSearchResult.isFiltering` and whether the
     unfiltered level contains data. `searchAbwabNodes` trims the query, so whitespace alone is not
     filtering and must not produce no-match copy.
+  - Since Phase 8 the running mode is **stated in visible copy**: the search is a `qd-form-field`
+    whose helper is `searchScopeHintTree` / `searchScopeHintCards` / `searchScopeHintArchive`,
+    linked to the input through the field's generated `aria-describedby`. The three strings are
+    deliberately distinct and pinned in `abwab.labels.spec.ts` — one shared hint would be the
+    first step towards the shared search algorithm this feature does not have.
   - The visible match count sits beside the input. An always-mounted hidden `role="status"` speaks
     the settled count once, 500 ms after typing stops; clearing speaks nothing. It does not use
     `qd-abwab-announcer`, whose channel is for one-shot reveal/write messages.
@@ -86,12 +95,71 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
 - `components/abwab-tree/` is a flat `role="tree"`/`treeitem` ARIA tree: one visible row per
   node, depth through `aria-level`, and an RTL-mirrored keyboard model in
   `abwab-tree-keyboard.controller.ts`
-  (ArrowLeft expands/enters; ArrowRight collapses/exits). The row follows roving tabindex.
+  (ArrowLeft expands/enters; ArrowRight collapses/exits). Since Phase 8 that movement is **not
+  this feature's code**: `shared/ui/hierarchy/hierarchy-keyboard.directive.ts` (F16) owns row
+  flattening, Arrow/Home/End resolution, direction mirroring and roving DOM focus, and the local
+  controller is a thin adapter that adds only the door-domain keys (Enter selects, Space toggles
+  bulk, ContextMenu/Shift+F10 open the row menu). The directive finds a row by the neutral
+  `data-qd-hierarchy-id` attribute, never by an abwab test id, and the archive tree runs the same
+  owner. Indentation is bounded at six levels (`--abwab-tree-depth-budget`) so a deep branch
+  cannot push the name column off the row. The row follows roving tabindex.
   Reorder is the deliberate exception: its real button joins the roving order because it is the
   only keyboard reorder path; relation and hover actions stay at `tabindex="-1"`.
 - Inline door reorder commits only on Enter; blur and Escape cancel. Blur must not write a
-  half-entered order. The `＋` and `⋯` actions appear on hover and selection, disappear in bulk
-  mode, and remain outside the tab order. `⋯`, right-click, and ContextMenu/Shift+F10 all emit
+  half-entered order. The `＋` and `⋯` actions are **always visible** (D46 — a hover-only row
+  action is unreachable by touch and invisible to anyone scanning the row; the old
+  `visibility: hidden` reveal is gone and a tree spec asserts no rule brings it back). They
+  disappear in bulk mode and remain outside the tab order. Every row control — chevron, `＋`, `⋯`
+  — is the shared `qdAction="row-action"` owner sized by a local `--qd-action-size`.
+- **`qd-hit-target` is applied to the chevron and to nothing else in a row.** The utility grows a
+  control symmetrically in *both* axes to `--qd-hit-target-min`, which has one safe shape and one
+  unsafe one:
+  - **Safe — asymmetric neighbours.** Only the chevron's box is expanded; the things beside it
+    (bulk checkbox, order chip, order input, template root marker, relations chip) are not. The
+    expansion is invented area, so lifting the un-expanded neighbour above it costs the chevron
+    nothing real. Block-axis containment comes from the row: every Abwab row carrying a hit-target
+    is itself at least `--qd-hit-target-min` tall (`--qd-control-lg` at Compact), so a chevron can
+    never be hit from the row above or below. Inline containment comes from paint order, and
+    because equal-`z-index` positioned siblings paint in document order, which rule applies depends
+    on where the neighbour sits: one that **follows** the chevron needs only `position: relative`
+    (order chip, order input, template marker); one that **precedes** it needs
+    `position: relative` **plus `z-index: 1`** (the bulk checkbox). These are paint-order rules
+    only — no geometry, spacing, or visual treatment changes.
+  - **Unsafe — symmetric neighbours; do not use `qd-hit-target` here.** `＋` and `⋯` sit
+    `--qd-space-1` (4px) apart with 20px faces, and *both* boxes expand 12px per side. The overlap
+    is `12 + 12 − 4 = 20px` straddling the gap and reaching 8px into each button's face. The area
+    is conserved: `z-index` does not remove the theft, it only elects which button suffers it —
+    and electing `＋` is the worse outcome, because `⋯` renders for every reader while `＋` is
+    permission-gated, and `onAddChildClick` selects the door and opens an authoring dialog whereas
+    `onMoreClick` only opens a menu. **The tell is that both operands are expanded, not that the
+    ladder got deep.** When two expanded boxes meet, fix the geometry, never the stacking.
+- **The `＋`/`⋯` pair grows in the block axis only:** `.abwab-tree__act` and
+  `.abwab-template-tree__act` carry `min-block-size: var(--qd-hit-target-min)` and no utility.
+  Only the *inline* axis was ever contested — the row is already at least `--qd-hit-target-min`
+  tall, so a full-height button steals nothing from the rows above or below, and a 20px inline
+  width keeps the two boxes from ever meeting. The result is a `20×44` target at zero inline cost
+  and with no stacking rule. Do not "simplify" this to the visible 20px height: a `20×20` target is
+  off the `32/40/48` control scale, and it reads Plan §1.4's Compact clause as if it repealed
+  Phase 8 task 4 and D46, which are unqualified. On WCAG 2.2 SC 2.5.8 the pair depends on the
+  *spacing exception* rather than on size: 24px-diameter circles centred on two 20px faces `4px`
+  apart are exactly **tangent** (radii `12 + 12` = centre distance `24`), so they do not intersect
+  and the exception applies — but with no margin at all, which is the second reason the block axis
+  carries the target. Widening the gap to 24px or growing both faces to 44px would also remove the
+  overlap, but each spends 20–48px of inline room per row on two secondary icons and breaks the
+  Golden row density the chevron and order chip set. Compact keeps the visible `--qd-control-lg`
+  (48px) shape, which the local `block-size` already wins over the 44px floor.
+- **Both tree rows therefore carry no block padding**, and that is deliberate rather than an
+  oversight to tidy up. Under `box-sizing: border-box` with `align-items: center`, the row's
+  content box is sized by its tallest child, which since the change above is the 44px action — so
+  `padding-block: var(--qd-space-1)` would push the border box to **52px**, an ~18% density loss on
+  a data-dense workspace. With the padding gone the row measures exactly `--qd-hit-target-min`
+  (44px) above Compact and `--qd-control-lg` (48px) at Compact, which is precisely the row height
+  Phase 8 task 1 asks for at Compact. Row separation comes from the hover/selected background and
+  the inline-start thread, not from padding. Re-adding block padding to `.abwab-tree__row` or
+  `.abwab-template-tree__row` silently re-inflates every row; change the action's target instead if
+  the height ever needs to move. `.abwab-tree__header` keeps its own block padding — it is a column
+  header strip, not a row.
+  `⋯`, right-click, and ContextMenu/Shift+F10 all emit
   `menuRequested` with a pointer or focused-row anchor for the shared `qd-context-menu`. The doors
   and templates pages each compose that shared shell with their own operations; templates also
   keep their root-versus-node item swap.
@@ -111,7 +179,11 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
 
 ### Cards, archive, panel, move, restore, and sections
 
-- `components/abwab-cards/` treats `cardId` as the current parent, not a stored breadcrumb array;
+- `components/abwab-cards/` renders the bounded shared doors grid: the level is `qd-grid
+  qd-grid--doors` (`14–20rem`, at most four columns, single column at Compact), so the track sizes
+  live in `_tokens.scss` and not in this stylesheet — a card spec asserts no local
+  `grid-template-columns` rule survives. Cards keep drill-down and selection only and gain no
+  context menu. It treats `cardId` as the current parent, not a stored breadcrumb array;
   it derives ancestors through `parentId`/`byId` and fails closed to root for unknown or archived
   ids. Empty/no-match state stays below the breadcrumb so a filtered drilled level keeps a way
   back. Each card is a real button named by the door; its bulk checkbox is a sibling, never nested
@@ -120,7 +192,10 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
 - `components/abwab-archive-view/` uses the builder partition directly: depth-zero archived doors
   are restorable; deeper doors remain disabled with «استرجع الأب أولًا» until their archived
   parent returns. It has no child-count badge because an archived door has no live children.
-- `components/abwab-side-panel/` owns the selected door actions and bulk controls. Each write
+- `components/abwab-side-panel/` owns the selected door actions and bulk controls, and every one
+  of them is the shared `qdAction` owner (archive is the shared `danger` variant), so Abwab
+  control geometry matches Access and its stylesheet is layout-only. The panel names itself as
+  one `role="group"` because below Wide it *is* the page's selected-door action bar. Each write
   affordance requires its exact capability, while relation reads remain public. Reorder exists
   only in the tree's inline editor. Add-child is available from the panel, the row `＋`, and the
   row menu. Bulk mode and its selection are unavailable in archive.
@@ -135,6 +210,16 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
   - Changing section clears the chosen parent and manual expansion; the search query remains so a
     user can search across sections. The tree opens collapsed, manual chevrons remain keyboard
     controls, and search derives matching paths open without mutating manual expansion.
+  - Its search field and both pickers' search fields are the shared `qdControl` geometry, and
+    every picker chevron is `qdAction="row-action"` + `qd-hit-target` — the pickers keep their own
+    row semantics and exclusion rules, only the control geometry is shared (D22/D46). The move
+    picker's destination button is the same `row-action` owner with layout-only local overrides
+    (`flex`, start alignment, `color: inherit` so the picked row's own state colour still reaches
+    the label); its rows follow the `--qd-hit-target-min` row floor and rise to `--qd-control-lg`
+    at Compact, so a destination is a real touch target at every width. Its no-match copy is the
+    shared `qd-empty-state` owner, not a hand-rolled `role="status"` paragraph. The section
+    prompt stays a local `role="region"` paragraph because it is the `aria-controls` target of the
+    section tab strip, which the F12 owner's fixed `role="status"` cannot express.
   - The main-door option remains available even when search has no match or cycle exclusions remove
     every root. `excludedIds` contains the moved door(s) and every descendant; this prevents an
     offered client-side cycle while the Backend's `409 WouldCycle` remains authoritative. A branch
@@ -157,7 +242,10 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
 
 ### Shared authoring, templates, relations, and announcements
 
-- `components/abwab-door-fields-form/` owns the presentational name, description, ayah text,
+- `components/abwab-door-fields-form/` composes `qd-form-field` + `qdControl` (F06), so the
+  label/helper/error ids, the required marker and the invalid state are the shared field's and the
+  ayah hint is its helper. `testIdPrefix` still names every control, but the `id`/`for` pair is now
+  the field's generated per-instance one. It owns the presentational name, description, ayah text,
   aliases, dirty tracking, and inline error fields shared by doors and template nodes. It injects
   and dispatches nothing; each shell owns its write. The same door vocabulary is intentional
   because a template node becomes a door. `testIdPrefix` preserves each host's identifiers.
@@ -171,8 +259,13 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
   descendants and conceal why the row cannot be selected. `single` mode uses radio semantics,
   and unmatched search uses picker-owned no-match copy rather than the host's truly-empty copy.
 - `components/abwab-template-tree/` uses the door-tree visual language but intentionally renders
-  a list, not `role="tree"`; chevrons, order, the marked root, hover add/menu, and inline add remain
-  its authoring language, while the retained Gotchas own the ARIA reason. The copy modal is
+  a list, not `role="tree"` (G20); chevrons, order, the marked root, add/menu, and inline add remain
+  its authoring language, while the retained Gotchas own the ARIA reason. Its row actions follow the
+  same D46 rule as the doors tree — always visible `qdAction="row-action"`, never revealed on
+  hover — and the same hit-target split: the chevron expands in both axes, the `＋`/`⋯` pair grows
+  in the block axis only, and Compact raises the visible control through
+  `--abwab-template-tree-row-control: var(--qd-control-lg)`, the Compact block this component
+  previously lacked entirely. The copy modal is
   live-door checkbox multi-select with search expansion and one all-or-nothing apply.
 - `pages/abwab-templates-page/` owns the template list/editor, node/template actions, row menu,
   confirms, and page-scoped overlays. Template list/tree caches remain root-scoped. Template
@@ -427,16 +520,16 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   mid-pick re-run the reset and silently discard a stage-two choice the user had already made. The
   caller sets the moved ids *before* opening the picker, so the untracked read still sees the right
   ones. Removing the `untracked` wrapper compiles and passes type-checking.
-- **Both pages are full-bleed on the shared page frame, not the reading-measure container.**
-  `abwab-page.component.html:2` and `abwab-templates-page.component.html:2` compose
-  `qd-container qd-page-frame` (Slice B2, T703) — the frame that used to be `qd-explorer-frame`,
-  words-only (`styles/README.md`). `box-sizing: border-box` on the frame is load-bearing for the
-  later viewport reservation (item 4), not decorative. Verified in the browser: `.abwab-page__layout`
-  is its own flex **row** nested inside the frame's column-flex context with `gap: 0` — no visual
-  conflict, `.abwab-page__layout`'s own `margin-block-start` supplies the gap from the header. The
-  frame's fixed `padding-block-end` (sized for words' mobile stat bars) leaves the same bottom gap
-  above the footer on both abwab pages that the five explorer pages already carry unconditionally
-  (not media-gated) — not a new imbalance, just the shared class's existing trait extended here.
+- **Each page declares exactly one named Golden page intent, and the shell is the only gutter
+  owner (Phase 8, D01/D02).** `abwab-page.component.html:2` composes
+  `qd-page-shell qd-page-shell--full-data` and `abwab-templates-page.component.html:2` composes
+  `qd-page-shell qd-page-shell--split-workspace`; both replaced the earlier
+  `qd-container qd-page-frame` pair. `.qd-page-shell` owns the `16 / 24 / 32 / 40px` inline gutter
+  and `box-sizing: border-box` (load-bearing for the viewport reservation below), while
+  `.qd-page` keeps block rhythm only. The local `__frame` classes supply the column flex context
+  and the bottom gap above the footer that the retired frame class used to carry; neither adds a
+  second inline gutter, and a page spec asserts there is exactly one shell and no surviving
+  `qd-container`/`qd-page-frame`/`qd-explorer-frame` on either route.
 - **The doors page (`abwab-page.component`) reserves a full viewport (Slice B2, T801-T802) — the
   templates page does not.** `.abwab-page__frame` adds `min-block-size: calc(100dvh -
   var(--qd-navbar-block-size))` on top of the shared `.qd-page-frame`; abwab-local for now, see
@@ -449,10 +542,17 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   a stretched row would zero out its scroll travel. Scoped to the doors page's tree/cards/archive
   card only — `abwab-templates-page.component`'s editor panel keeps its own `min-block-size:
   22rem` and is out of this phase's scope.
-- **`.qd-navbar` is sticky and goes inert while any modal dialog is open (Slice B2, T901/T904).**
-  `.abwab-page__side`'s own sticky `top` is re-based onto `--qd-navbar-block-size`
-  (`abwab-page.component.scss`) so it sits flush under the now-always-visible chrome instead of
-  under the old scrolled-away navbar. Two intentional behavior changes shipped with this phase,
+- **The side panel is the named `18rem` rail at Wide and the sticky selected-door action bar
+  below it (Phase 8, F20).** `.abwab-page__side` composes `qd-page-rail qd-page-rail--m`, so
+  `--qd-rail-m` is the only place the width is written. At Wide it stays a sticky column whose
+  `inset-block-start` is re-based onto `--qd-navbar-block-size` (below); at Medium and Compact the
+  layout stacks and the same element becomes a bottom-anchored chrome bar (sticky
+  `inset-block-end: 0`, hairline, safe-area padding), with the panel's own stylesheet laying its
+  two boxes out as one row of controls. Medium is a designed mode, not a squeezed Wide: the tree
+  takes the full width, and the tree's secondary counts (total descendants, deepest nesting) drop
+  with their headers and grid tracks at `<= 1079px`. A short viewport (`max-height: 32rem`) drops
+  the sticky positioning entirely so the bar cannot eat the page.
+- **`.qd-navbar` is sticky and goes inert while any modal dialog is open (Slice B2, T901/T904).** Two intentional behavior changes shipped with this phase,
   both deliberate and both recorded here: (1) the navbar is keyboard-unreachable while any
   of abwab's six modals — now including `abwab-sections-modal` and `abwab-move-picker` (T905,
   below) — is open, same doctrine `app.ts` already applies to the global words overlay; (2) both
@@ -664,10 +764,24 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   paints nothing on arrival; it renders one control, and reopening waits for the same
   settle point the `door=` deep link waits for. The restore is explicit, and the guard
   refuses it outright when the subject is archived or gone.
-- **Loading/empty/error surfaces are composed, not hand-rolled.** Every text-only loading,
-  empty, and error site across `abwab-page`, `abwab-templates-page`, the template copy modal,
-  and the relations modal now composes `qd-skeleton-rows`/`qd-panel-skeleton` (loading) or
-  `qd-state` (empty/error) — `UI_STYLE_SYSTEM.md` §17. **The relations modal's own read is one of
+- **Loading/empty/error surfaces are composed, not hand-rolled, and since Phase 8 they reach the
+  five F12 owners directly.** Every text-only loading, empty, and error site across `abwab-page`,
+  `abwab-templates-page`, the door fields form, both pickers, the sections, restore, relations and
+  template copy modals composes `qd-skeleton-rows`/`qd-panel-skeleton` (loading), `qd-empty-state`
+  (empty) or `qd-error-state` (error) — `UI_STYLE_SYSTEM.md` §17. **The `qd-state` compatibility
+  adapter has zero Abwab consumers**, which is what Phase 11 needs before it can delete it; both
+  page specs assert the count stays zero. `severity` is not decoration: a failed *read* the user
+  can retry (`abwab-page`'s snapshot load, the templates list, the selected template's own load,
+  the copy modal's doors load, the relations read) is `severity="read"` and stays on the polite
+  path, and a failed *write* is the `role="alert"` `severity="write"` that never clears the draft.
+  The relations modal is the one surface that **binds** `severity` instead of fixing it, because a
+  single `errorMessage` signal carries both its read failure (`status() === 'error'`, retryable)
+  and the add-relation write failure (`status()` stays `ready`). `addDoorRelations` deliberately
+  does not set `announceFailure`, so that write's only live region is this element — pinning it to
+  `read` would silence the failure, and pinning it to `write` would make an ordinary retryable
+  read shout. The binding is the same expression that decides `actionLabel`. Each migrated site kept its host `data-testid` **and** passes the adapter's
+  old inner ids (`qd-state-error` / `qd-state-empty` / `qd-state-action`) through `testId` /
+  `actionTestId`, so no external assertion moved with the owner. **The relations modal's own read is one of
   them**: it holds a `'loading' | 'ready' | 'error'` status, renders `qd-skeleton-rows` while a
   fetch is out, and reaches the empty state or the count chip only once the list has actually
   answered. Which read runs at all is decided by the anchor's snapshot `relationCount` — a

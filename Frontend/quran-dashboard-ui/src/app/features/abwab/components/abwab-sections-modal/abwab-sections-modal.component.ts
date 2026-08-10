@@ -20,7 +20,7 @@ import { AbwabSectionDto } from '../../../../core/api/generated/models/abwab-sec
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import {
   QdModalShellComponent,
   QdModalShellDismissReason,
@@ -30,7 +30,7 @@ import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/con
 @Component({
   selector: 'qd-abwab-sections-modal',
   standalone: true,
-  imports: [QdActionDirective, QdStateComponent, QdModalShellComponent, ConfirmDialogComponent],
+  imports: [QdActionDirective, QdErrorStateComponent, QdModalShellComponent, ConfirmDialogComponent],
   templateUrl: './abwab-sections-modal.component.html',
   styleUrl: './abwab-sections-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

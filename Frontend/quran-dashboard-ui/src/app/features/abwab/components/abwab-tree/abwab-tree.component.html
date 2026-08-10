@@ -12,7 +12,14 @@
       <span></span>
     }
   </div>
-  <div class="abwab-tree" role="tree" [attr.aria-label]="ariaLabel()" data-testid="abwab-tree">
+  <div
+    class="abwab-tree"
+    role="tree"
+    qdHierarchyKeyboard
+    [qdHierarchyRows]="visibleRows()"
+    [attr.aria-label]="ariaLabel()"
+    data-testid="abwab-tree"
+  >
   @for (row of visibleRows(); track row.id) {
     @let node = nodesById().get(row.id);
     @if (node) {
@@ -26,6 +33,7 @@
         [attr.aria-selected]="selectedId() === node.id"
         [attr.tabindex]="rovingId() === node.id ? 0 : -1"
         [style.--abwab-tree-depth]="node.depth"
+        [attr.data-qd-hierarchy-id]="node.id"
         [attr.data-testid]="'abwab-tree-row-' + node.id"
         (click)="onRowClick(node.id)"
         (dblclick)="onRowDblClick(row)"
@@ -46,7 +54,8 @@
         }
         <button
           type="button"
-          class="abwab-tree__chevron"
+          qdAction="row-action"
+          class="abwab-tree__chevron qd-hit-target"
           [class.abwab-tree__chevron--leaf]="!row.hasChildren"
           [attr.data-testid]="'abwab-tree-chevron-' + node.id"
           [attr.tabindex]="-1"
@@ -149,6 +158,7 @@
             @if (canCreateDoor()) {
               <button
                 type="button"
+                qdAction="row-action"
                 class="abwab-tree__act"
                 [attr.aria-label]="addChildAriaLabel(node.name)"
                 [attr.data-testid]="'abwab-tree-add-child-' + node.id"
@@ -160,6 +170,7 @@
             }
             <button
               type="button"
+              qdAction="row-action"
               class="abwab-tree__act"
               [attr.aria-label]="menuAriaLabel(node.name)"
               [attr.data-testid]="'abwab-tree-more-' + node.id"

@@ -1,4 +1,8 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .abwab-template-tree {
+  --abwab-template-tree-row-control: 1.25rem;
+
   display: flex;
   flex-direction: column;
 }
@@ -7,7 +11,8 @@
   display: flex;
   align-items: center;
   gap: var(--qd-space-2);
-  padding: var(--qd-space-1) var(--qd-space-2);
+  min-block-size: var(--qd-hit-target-min);
+  padding-inline: var(--qd-space-2);
   padding-inline-start: calc(var(--abwab-template-tree-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
   border-radius: var(--qd-radius-sm);
   color: var(--qd-text);
@@ -21,17 +26,18 @@
   font-weight: 700;
 }
 
-.abwab-template-tree__chevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 1.25rem;
-  block-size: 1.25rem;
+.abwab-template-tree__chevron,
+.abwab-template-tree__act {
+  --qd-action-size: var(--abwab-template-tree-row-control);
+
   flex: none;
-  border: none;
-  background: transparent;
-  color: var(--qd-text-muted);
-  cursor: pointer;
+  block-size: var(--abwab-template-tree-row-control);
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.abwab-template-tree__act {
+  min-block-size: var(--qd-hit-target-min);
 }
 
 .abwab-template-tree__chevron--leaf {
@@ -39,15 +45,14 @@
 }
 
 .abwab-template-tree__row:focus-visible,
-.abwab-template-tree__chevron:focus-visible,
-.abwab-template-tree__order:focus-visible,
-.abwab-template-tree__act:focus-visible {
+.abwab-template-tree__order:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: 1px;
 }
 
 .abwab-template-tree__marker,
 .abwab-template-tree__order {
+  position: relative;
   font-size: 0.6875rem;
   color: var(--qd-text-muted);
   background: var(--qd-section-bg);
@@ -70,6 +75,7 @@
 }
 
 .abwab-template-tree__order-input {
+  position: relative;
   inline-size: 2.5rem;
   border: 1px solid var(--qd-border-accent);
   border-radius: var(--qd-radius-sm);
@@ -86,34 +92,6 @@
   display: inline-flex;
   gap: var(--qd-space-1);
   flex: none;
-  visibility: hidden;
-}
-
-.abwab-template-tree__row:hover .abwab-template-tree__actions,
-.abwab-template-tree__actions:focus-within {
-  visibility: visible;
-}
-
-.abwab-template-tree__act {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 1.25rem;
-  block-size: 1.25rem;
-  padding: 0;
-  border: none;
-  border-radius: var(--qd-radius-sm);
-  background: transparent;
-  color: var(--qd-text-muted);
-  font-size: 0.75rem;
-  line-height: 1;
-  cursor: pointer;
-  transition: background-color var(--qd-t-fast), color var(--qd-t-fast);
-}
-
-.abwab-template-tree__act:hover {
-  background: var(--qd-surface);
-  color: var(--qd-accent-text);
 }
 
 .abwab-template-tree__add-row {
@@ -146,4 +124,14 @@
 .abwab-template-tree__add-row input:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: -1px;
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .abwab-template-tree {
+    --abwab-template-tree-row-control: var(--qd-control-lg);
+  }
+
+  .abwab-template-tree__row {
+    min-block-size: var(--qd-control-lg);
+  }
 }

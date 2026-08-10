@@ -1,4 +1,9 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .abwab-archive-view {
+  --abwab-archive-depth-budget: 6;
+  --abwab-archive-row-control: 1.25rem;
+
   display: flex;
   flex-direction: column;
 }
@@ -7,8 +12,12 @@
   display: flex;
   align-items: center;
   gap: var(--qd-space-2);
+  min-block-size: var(--qd-hit-target-min);
   padding: var(--qd-space-1) var(--qd-space-2);
-  padding-inline-start: calc(var(--abwab-archive-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
+  padding-inline-start: calc(
+    min(var(--abwab-archive-depth, 0), var(--abwab-archive-depth-budget)) * var(--qd-space-5) +
+      var(--qd-space-2)
+  );
   border-radius: var(--qd-radius-sm);
   color: var(--qd-text-muted);
 }
@@ -23,21 +32,10 @@
 }
 
 .abwab-archive-view__chevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 1.25rem;
-  block-size: 1.25rem;
-  flex: none;
-  border: none;
-  background: transparent;
-  color: var(--qd-text-muted);
-  cursor: pointer;
-}
+  --qd-action-size: var(--abwab-archive-row-control);
 
-.abwab-archive-view__chevron:focus-visible {
-  outline: 2px solid var(--qd-focus-ring);
-  outline-offset: -2px;
+  flex: none;
+  block-size: var(--abwab-archive-row-control);
 }
 
 .abwab-archive-view__chevron--leaf {
@@ -50,32 +48,26 @@
 
 .abwab-archive-view__restore {
   flex: none;
-  border: 1px solid var(--qd-border);
-  background: var(--qd-surface);
-  color: var(--qd-text);
-  border-radius: var(--qd-radius-sm);
-  padding: var(--qd-space-1) var(--qd-space-2);
-  font-family: inherit;
   font-size: 0.75rem;
-  cursor: pointer;
-}
-
-.abwab-archive-view__restore:hover:not(:disabled) {
-  background: var(--qd-surface-hover);
-}
-
-.abwab-archive-view__restore:focus-visible {
-  outline: 2px solid var(--qd-focus-ring);
-  outline-offset: 2px;
-}
-
-.abwab-archive-view__restore:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
 }
 
 .abwab-archive-view__hint {
   flex: none;
   font-size: 0.6875rem;
   color: var(--qd-text-muted);
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .abwab-archive-view {
+    --abwab-archive-row-control: var(--qd-control-lg);
+  }
+
+  .abwab-archive-view__row {
+    min-block-size: var(--qd-control-lg);
+    flex-wrap: wrap;
+    padding-inline-start: calc(
+      min(var(--abwab-archive-depth, 0), var(--abwab-archive-depth-budget)) * var(--qd-space-3) +
+        var(--qd-space-2)
+    );
+  }
 }

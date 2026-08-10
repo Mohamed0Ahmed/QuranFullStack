@@ -177,6 +177,19 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   caller sets `selectable`. `qd-sortable-header` owns the native sort button and exposes
   `aria-sort` only while active. `table-scrollbar-gutter-sync.ts` is the shared geometry helper;
   feature compatibility paths may re-export it but must not fork the implementation.
+- `ui/hierarchy/` — `qdHierarchyKeyboard` (F16), the domain-free tree/hierarchy keyboard owner:
+  `flattenQdHierarchyRows` turns any `{ id, children }` shape into the visible-row list,
+  `resolveQdHierarchyIntent` resolves ArrowUp/Down/Home/End plus the **logical** branch arrows
+  (inline-start enters/expands, inline-end collapses/exits, mirrored by the host's `dir`), and the
+  directive adds roving DOM focus by looking a row up through the neutral
+  `data-qd-hierarchy-id` attribute on its own host subtree. It owns **only** movement: activation,
+  selection, bulk and menu keys stay with the feature, and `resolveQdHierarchyIntent` returns
+  `none` for every one of them. Consumers: Abwab's live tree and archive tree, through
+  `features/abwab/components/abwab-tree/abwab-tree-keyboard.controller.ts`, which is a thin
+  adapter and not a second implementation — its spec asserts the two resolvers agree on every
+  movement key. It knows nothing about doors, roles, ARIA or selection: the consumer still
+  declares `role="tree"`/`treeitem` (or `role="list"` where the hierarchy is a list, as the
+  template tree deliberately is) and owns its own expansion state.
 - `ui/result-list/` — `qdResultList` + `qdResultItem` (F10), the native-role directive pair for
   every non-table result collection: `role="list"`/`role="listitem"` (D25), an optional
   `listVariant` (`linked` / `display-only` / `master` / `event` / `quran-result`), the logical

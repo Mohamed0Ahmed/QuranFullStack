@@ -9,10 +9,11 @@
   >
     <p qdModalShellHeaderSupport class="abwab-template-copy-modal__desc">{{ descriptionText }}</p>
 
-    <qd-state
-      variant="error"
+    <qd-error-state
+      severity="write"
       [reserve]="true"
       [message]="errorMessage() ?? ''"
+      testId="qd-state-error"
       data-testid="abwab-template-copy-modal-error"
     />
 
@@ -20,7 +21,7 @@
       @if (hasElements()) {
         <p>{{ previewText() }}</p>
       } @else {
-        <qd-state variant="empty" [message]="emptyTemplateText" data-testid="abwab-template-copy-modal-empty" />
+        <qd-empty-state [message]="emptyTemplateText" testId="qd-state-empty" data-testid="abwab-template-copy-modal-empty" />
       }
       <p>{{ previewNoRootText }}</p>
       <p>{{ previewDetachedText }}</p>

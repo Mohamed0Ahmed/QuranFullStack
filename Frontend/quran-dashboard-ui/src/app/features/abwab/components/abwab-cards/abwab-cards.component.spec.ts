@@ -294,3 +294,30 @@ describe('AbwabCardsComponent', () => {
     });
   });
 });
+
+// D08: the card grid is bounded by the shared doors primitive (14–20rem, at most four columns).
+// A local `repeat(auto-fill, minmax(...))` is exactly the second value truth Phase 1 removed.
+describe('AbwabCardsComponent — the grid is the bounded shared primitive', () => {
+  it('composes qd-grid--doors instead of declaring its own track sizes', () => {
+    const fixture = render();
+    const grid = (fixture.nativeElement as HTMLElement).querySelector('.abwab-cards__grid')!;
+
+    expect(grid.classList.contains('qd-grid')).toBe(true);
+    expect(grid.classList.contains('qd-grid--doors')).toBe(true);
+
+    const local = Array.from(document.styleSheets)
+      .flatMap((sheet) => {
+        try {
+          return Array.from(sheet.cssRules);
+        } catch {
+          return [];
+        }
+      })
+      .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule)
+      .filter(
+        (rule) =>
+          rule.selectorText?.includes('abwab-cards__grid') && rule.style.gridTemplateColumns !== '',
+      );
+    expect(local).toHaveLength(0);
+  });
+});

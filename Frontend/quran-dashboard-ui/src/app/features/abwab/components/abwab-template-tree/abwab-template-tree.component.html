@@ -13,7 +13,8 @@
     >
       <button
         type="button"
-        class="abwab-template-tree__chevron"
+        qdAction="row-action"
+        class="abwab-template-tree__chevron qd-hit-target"
         [class.abwab-template-tree__chevron--leaf]="!row.hasChildren"
         [attr.tabindex]="row.hasChildren ? null : -1"
         [attr.aria-hidden]="row.hasChildren ? null : true"
@@ -65,6 +66,7 @@
           @if (canCreateNode()) {
             <button
               type="button"
+              qdAction="row-action"
               class="abwab-template-tree__act"
               [attr.aria-label]="addChildAriaLabel(row.node.name)"
               [attr.data-testid]="'abwab-template-tree-add-child-' + row.node.id"
@@ -76,6 +78,7 @@
           @if (canShowContextMenuFor(row.node.id)) {
             <button
               type="button"
+              qdAction="row-action"
               class="abwab-template-tree__act"
               [attr.aria-label]="menuAriaLabel(row.node.name)"
               [attr.data-testid]="'abwab-template-tree-more-' + row.node.id"

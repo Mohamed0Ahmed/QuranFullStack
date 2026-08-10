@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, input, output, signal } from '@angular/core';
 
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { AbwabTemplateNodeVm } from '../../models/abwab-templates.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
@@ -18,6 +19,7 @@ interface AbwabTemplateTreeRow {
 @Component({
   selector: 'qd-abwab-template-tree',
   standalone: true,
+  imports: [QdActionDirective],
   templateUrl: './abwab-template-tree.component.html',
   styleUrl: './abwab-template-tree.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

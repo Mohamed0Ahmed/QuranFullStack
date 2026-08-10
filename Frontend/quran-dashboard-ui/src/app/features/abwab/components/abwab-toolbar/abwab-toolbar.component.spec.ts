@@ -249,3 +249,40 @@ describe('AbwabToolbarComponent', () => {
     });
   });
 });
+
+// Phase 8, task 6: the four abwab searches keep four meanings, and the three reachable from this
+// toolbar now say which one is running. The hint is the field's helper, so the id that links it to
+// the input is generated per instance rather than restated in the template.
+describe('AbwabToolbarComponent — the search states its own scope', () => {
+  const hintOf = (fixture: ReturnType<typeof render>): string | undefined => {
+    const root = fixture.nativeElement as HTMLElement;
+    const input = root.querySelector('[data-testid="abwab-toolbar-search"]')!;
+    const describedBy = input.getAttribute('aria-describedby');
+    return describedBy ? root.querySelector(`#${describedBy}`)?.textContent?.trim() : undefined;
+  };
+
+  it('describes the tree search as marking matches in place', () => {
+    expect(hintOf(render({ view: 'tree' }))).toBe(ABWAB_LABELS.searchScopeHintTree);
+  });
+
+  it('describes the cards search as filtering the displayed level', () => {
+    expect(hintOf(render({ view: 'cards' }))).toBe(ABWAB_LABELS.searchScopeHintCards);
+  });
+
+  // Archive mode is the branch that hides the section controls, and its search prunes paths.
+  it('describes the archive search as pruning to matching paths', () => {
+    expect(hintOf(render({ view: 'tree', hideSectionControls: true }))).toBe(
+      ABWAB_LABELS.searchScopeHintArchive,
+    );
+  });
+
+  it('links the input to that hint and to the shared field control geometry', () => {
+    const fixture = render();
+    const input = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-testid="abwab-toolbar-search"]',
+    )!;
+
+    expect(input.classList.contains('qd-control')).toBe(true);
+    expect(input.getAttribute('aria-describedby')).toBeTruthy();
+  });
+});

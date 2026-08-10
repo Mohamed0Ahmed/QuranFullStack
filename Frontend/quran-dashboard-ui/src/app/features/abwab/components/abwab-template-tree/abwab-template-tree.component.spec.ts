@@ -248,3 +248,55 @@ describe('AbwabTemplateTreeComponent', () => {
     });
   });
 });
+
+// Phase 8 / D46: the workshop's row actions were hover-revealed too. The hierarchy here is a
+// deliberate `role="list"` (G20), but the row-action rule is the same one the doors tree follows.
+describe('AbwabTemplateTreeComponent — row actions are never hover-only', () => {
+  it('renders the add-child and menu actions with shared action geometry and no visibility gate', () => {
+    const fixture = render();
+    const root = fixture.nativeElement as HTMLElement;
+
+    const add = root.querySelector('[data-testid="abwab-template-tree-add-child-1"]')!;
+    expect(add.classList.contains('qd-action')).toBe(true);
+    // Same `＋`/`⋯` geometry as the doors tree: two boxes expanded in both axes 4px apart would
+    // overlap by 20px and eat 8px of each other's face, so the pair grows in the block axis only.
+    expect(add.classList.contains('qd-hit-target')).toBe(false);
+    expect(root.querySelector('[data-testid="abwab-template-tree-chevron-1"]')!.classList.contains('qd-hit-target')).toBe(true);
+
+    const rules = Array.from(document.styleSheets)
+      .flatMap((sheet) => {
+        try {
+          return Array.from(sheet.cssRules);
+        } catch {
+          return [];
+        }
+      })
+      .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule);
+
+    expect(
+      rules.filter(
+        (rule) =>
+          rule.selectorText?.includes('abwab-template-tree__actions') &&
+          rule.style.visibility === 'hidden',
+      ),
+    ).toHaveLength(0);
+
+    // Dropping the utility must not shrink the pair to a 20x20 target — only the inline axis was
+    // ever contested, so the block axis still reaches --qd-hit-target-min inside a 44px row.
+    expect(
+      rules.filter(
+        (rule) =>
+          rule.selectorText?.includes('abwab-template-tree__act') &&
+          rule.style.getPropertyValue('min-block-size').includes('--qd-hit-target-min'),
+      ).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it('keeps the hierarchy a list, not a false tree (G20)', () => {
+    const fixture = render();
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('[data-testid="abwab-template-tree"]')?.getAttribute('role')).toBe('list');
+    expect(root.querySelector('[role="tree"]')).toBeNull();
+  });
+});

@@ -1,4 +1,4 @@
-<div class="abwab-side-panel">
+<div class="abwab-side-panel" role="group" [attr.aria-label]="operationsHeading">
   <div class="qd-card abwab-side-panel__box">
     <h4>{{ activeDoorHeading }}</h4>
     @if (selectedDoor(); as door) {
@@ -6,6 +6,8 @@
         <span class="abwab-side-panel__active-name qd-truncate" [title]="door.name">{{ door.name }}</span>
         <button
           type="button"
+          qdAction="tertiary"
+          size="sm"
           class="abwab-side-panel__clear"
           data-testid="abwab-side-panel-clear"
           (click)="clearRequested.emit()"
@@ -24,6 +26,7 @@
       @if (canUseBulkMode()) {
         <button
           type="button"
+          qdAction="secondary"
           class="abwab-side-panel__op abwab-side-panel__op--toggle"
           [class.abwab-side-panel__op--on]="bulkMode()"
           data-testid="abwab-side-panel-bulk-toggle"
@@ -39,6 +42,7 @@
       @if (canCreateDoor()) {
         <button
           type="button"
+          qdAction="tertiary"
           class="abwab-side-panel__op"
           data-testid="abwab-side-panel-op-add-child"
           [disabled]="selectedDoor() === null || bulkMode()"
@@ -50,6 +54,7 @@
       @if (canEditDoor()) {
         <button
           type="button"
+          qdAction="tertiary"
           class="abwab-side-panel__op"
           data-testid="abwab-side-panel-op-edit"
           [disabled]="selectedDoor() === null || bulkMode()"
@@ -61,6 +66,7 @@
       @if (canMoveDoor()) {
         <button
           type="button"
+          qdAction="tertiary"
           class="abwab-side-panel__op"
           data-testid="abwab-side-panel-op-move"
           [disabled]="selectedDoor() === null || bulkMode()"
@@ -71,6 +77,7 @@
       }
       <button
         type="button"
+        qdAction="tertiary"
         class="abwab-side-panel__op"
         data-testid="abwab-side-panel-op-relations"
         [disabled]="selectedDoor() === null || bulkMode()"
@@ -81,7 +88,8 @@
       @if (canArchiveDoor()) {
         <button
           type="button"
-          class="abwab-side-panel__op abwab-side-panel__op--danger"
+          qdAction="danger"
+          class="abwab-side-panel__op"
           data-testid="abwab-side-panel-op-archive"
           [disabled]="selectedDoor() === null || bulkMode()"
           (click)="archiveRequested.emit()"
@@ -102,13 +110,20 @@
       </div>
       <div class="abwab-side-panel__bulk-actions">
         @if (canMoveDoor()) {
-          <button type="button" class="abwab-side-panel__op" data-testid="abwab-side-panel-bulk-move" (click)="bulkMoveRequested.emit()">
+          <button
+            type="button"
+            qdAction="tertiary"
+            class="abwab-side-panel__op"
+            data-testid="abwab-side-panel-bulk-move"
+            (click)="bulkMoveRequested.emit()"
+          >
             {{ bulkMoveAllLabel }}
           </button>
         }
         @if (canCreateRelation()) {
           <button
             type="button"
+            qdAction="tertiary"
             class="abwab-side-panel__op"
             data-testid="abwab-side-panel-bulk-relations"
             (click)="bulkRelationsRequested.emit()"
@@ -119,14 +134,21 @@
         @if (canArchiveDoor()) {
           <button
             type="button"
-            class="abwab-side-panel__op abwab-side-panel__op--danger"
+            qdAction="danger"
+            class="abwab-side-panel__op"
             data-testid="abwab-side-panel-bulk-archive"
             (click)="bulkArchiveRequested.emit()"
           >
             {{ bulkArchiveAllLabel }}
           </button>
         }
-        <button type="button" class="abwab-side-panel__op" data-testid="abwab-side-panel-bulk-clear" (click)="bulkClearRequested.emit()">
+        <button
+          type="button"
+          qdAction="tertiary"
+          class="abwab-side-panel__op"
+          data-testid="abwab-side-panel-bulk-clear"
+          (click)="bulkClearRequested.emit()"
+        >
           {{ bulkClearLabel }}
         </button>
       </div>

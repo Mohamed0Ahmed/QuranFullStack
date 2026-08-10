@@ -182,3 +182,23 @@ describe('ABWAB_LABELS — write success announcements', () => {
     expect(ABWAB_LABELS.relationsAddedAnnouncement(count)).toBe(expected);
   });
 });
+
+// The four abwab searches mean four different things (README §G19). Phase 8 states the three
+// on-page ones in visible copy, so the strings must stay distinct — a shared hint would be the
+// first step towards a shared search algorithm the feature deliberately does not have.
+describe('ABWAB_LABELS — the search-scope hints are one per mode', () => {
+  it('names what the tree, the cards and the archive each do with a query', () => {
+    expect(ABWAB_LABELS.searchScopeHintTree).toBe('يُبرز المطابق مع بقاء التسلسل كاملًا');
+    expect(ABWAB_LABELS.searchScopeHintCards).toBe('يرشّح المستوى المعروض فقط');
+    expect(ABWAB_LABELS.searchScopeHintArchive).toBe('يرشّح المسارات المؤرشفة المطابقة');
+  });
+
+  it('keeps the three hints distinct', () => {
+    const hints = new Set([
+      ABWAB_LABELS.searchScopeHintTree,
+      ABWAB_LABELS.searchScopeHintCards,
+      ABWAB_LABELS.searchScopeHintArchive,
+    ]);
+    expect(hints.size).toBe(3);
+  });
+});

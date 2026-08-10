@@ -9,7 +9,8 @@ import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabRelationsLoadResult } from '../../state/abwab-relations.controller';
 import {
@@ -62,7 +63,8 @@ const GROUP_DOT_KIND: Readonly<Record<AbwabRelationGroupKey, AbwabRelationKind>>
     QdModalShellComponent,
     QdChipComponent,
     QdSkeletonRowsComponent,
-    QdStateComponent,
+    QdEmptyStateComponent,
+    QdErrorStateComponent,
     QdTabDirective,
     QdTabsComponent,
   ],

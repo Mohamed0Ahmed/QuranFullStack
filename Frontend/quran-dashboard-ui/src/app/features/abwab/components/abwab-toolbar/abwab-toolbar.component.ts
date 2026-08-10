@@ -1,5 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
+import { QdFormFieldComponent } from '../../../../shared/ui/form-field/form-field.component';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
@@ -11,7 +14,7 @@ const ANNOUNCE_SETTLE_MS = 500;
 @Component({
   selector: 'qd-abwab-toolbar',
   standalone: true,
-  imports: [QdTabsComponent, QdTabDirective],
+  imports: [QdActionDirective, QdControlDirective, QdFormFieldComponent, QdTabsComponent, QdTabDirective],
   templateUrl: './abwab-toolbar.component.html',
   styleUrl: './abwab-toolbar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,6 +42,15 @@ export class AbwabToolbarComponent {
   protected get cardsViewLabel(): string { return ABWAB_LABELS.viewToggleCards; }
 
   protected readonly matchCountText = computed(() => ABWAB_LABELS.searchMatchCount(this.searchMatchCount()));
+
+  protected readonly searchScopeHint = computed(() => {
+    if (this.hideSectionControls()) {
+      return ABWAB_LABELS.searchScopeHintArchive;
+    }
+    return this.view() === 'cards'
+      ? ABWAB_LABELS.searchScopeHintCards
+      : ABWAB_LABELS.searchScopeHintTree;
+  });
 
   protected readonly announcedCountText = signal('');
 

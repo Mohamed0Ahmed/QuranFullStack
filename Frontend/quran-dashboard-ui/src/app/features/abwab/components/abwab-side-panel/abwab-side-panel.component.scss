@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .abwab-side-panel {
   display: flex;
   flex-direction: column;
@@ -5,8 +7,8 @@
 }
 
 .abwab-side-panel__box h4 {
-  font-size: 0.75rem;
-  color: var(--qd-text-muted);
+  font-size: var(--qd-type-caption);
+  color: var(--qd-ink-muted);
   font-weight: 700;
   margin-block-end: var(--qd-space-2);
 }
@@ -16,7 +18,6 @@
   align-items: center;
   gap: var(--qd-space-2);
   font-weight: 700;
-  font-size: 0.85rem;
 }
 
 .abwab-side-panel__active-name {
@@ -24,21 +25,13 @@
 }
 
 .abwab-side-panel__clear {
+  flex: none;
   margin-inline-start: auto;
-  font-size: 0.6875rem;
-  color: var(--qd-text-muted);
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-
-.abwab-side-panel__clear:hover {
-  color: var(--qd-danger);
 }
 
 .abwab-side-panel__empty {
-  color: var(--qd-text-muted);
-  font-size: 0.8125rem;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-body-sm);
 }
 
 .abwab-side-panel__ops {
@@ -48,69 +41,41 @@
 }
 
 .abwab-side-panel__op {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  border: none;
-  background: transparent;
-  padding: var(--qd-space-2) var(--qd-space-2);
-  border-radius: var(--qd-radius-sm);
-  font-family: inherit;
-  font-size: 0.8125rem;
-  color: var(--qd-text);
-  cursor: pointer;
+  inline-size: 100%;
+  justify-content: flex-start;
   text-align: start;
-}
-
-.abwab-side-panel__op:hover:not(:disabled) {
-  background: var(--qd-surface-hover);
-}
-
-.abwab-side-panel__op:disabled {
-  color: var(--qd-border-strong);
-  cursor: default;
-}
-
-.abwab-side-panel__op--danger:hover:not(:disabled) {
-  background: var(--qd-danger-tint);
-  color: var(--qd-danger);
-}
-
-.abwab-side-panel__op:focus-visible {
-  outline: 2px solid var(--qd-focus-ring);
-  outline-offset: -2px;
 }
 
 .abwab-side-panel__sep {
   border: none;
-  border-block-start: 1px solid var(--qd-border);
-  margin: var(--qd-space-1) 0;
+  border-block-start: var(--qd-hairline);
+  margin-block: var(--qd-space-1);
 }
 
 .abwab-side-panel__op--on {
-  background: var(--qd-selected-bg);
-  color: var(--qd-accent-text);
-  border: 1px solid var(--qd-border-accent);
+  background: var(--qd-green-tint);
+  color: var(--qd-green-text);
+  border-color: var(--qd-green-quiet);
   font-weight: 700;
 }
 
 .abwab-side-panel__op--on:hover:not(:disabled) {
-  background: var(--qd-selected-bg);
+  background: var(--qd-green-tint);
 }
 
 .abwab-side-panel__bulk-bar {
   border: 1px solid var(--qd-border-accent);
-  background: var(--qd-selected-bg);
+  background: var(--qd-green-tint);
 }
 
 .abwab-side-panel__bulk-count {
   font-weight: 700;
-  color: var(--qd-accent-text);
+  color: var(--qd-green-text);
 }
 
 .abwab-side-panel__bulk-names {
-  color: var(--qd-text-muted);
-  font-size: 0.71875rem;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-caption);
   margin: var(--qd-space-2) 0 var(--qd-space-3);
   max-block-size: 4.375rem;
   overflow: auto;
@@ -120,4 +85,63 @@
   display: flex;
   flex-direction: column;
   gap: var(--qd-space-1);
+}
+
+// Below Wide the panel is the page's sticky selected-door action bar, so its two boxes lay out
+// as one row of controls instead of a stacked rail.
+@media (max-width: bp.$qd-bp-medium-max) {
+  .abwab-side-panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--qd-space-2);
+  }
+
+  .abwab-side-panel__box {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: var(--qd-space-2);
+    min-inline-size: 0;
+    padding: var(--qd-card-padding-dense);
+  }
+
+  .abwab-side-panel__box h4 {
+    margin-block-end: 0;
+    white-space: nowrap;
+  }
+
+  .abwab-side-panel__ops {
+    flex-direction: row;
+    flex-wrap: wrap;
+    flex: 1 1 auto;
+  }
+
+  .abwab-side-panel__op {
+    inline-size: auto;
+    justify-content: center;
+  }
+
+  .abwab-side-panel__sep {
+    display: none;
+  }
+
+  .abwab-side-panel__bulk-bar {
+    display: flex;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--qd-space-2);
+  }
+
+  .abwab-side-panel__bulk-names {
+    flex: 1 1 12rem;
+    margin: 0;
+    max-block-size: 2.5rem;
+  }
+
+  .abwab-side-panel__bulk-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }

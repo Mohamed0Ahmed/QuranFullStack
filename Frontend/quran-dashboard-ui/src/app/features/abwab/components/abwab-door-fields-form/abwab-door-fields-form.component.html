@@ -1,49 +1,44 @@
 @if (errorMessage(); as error) {
-  <qd-state variant="error" [reserve]="true" [message]="error" [attr.data-testid]="testIdPrefix() + '-error'" />
+  <qd-error-state severity="write" [reserve]="true" [message]="error" testId="qd-state-error" [attr.data-testid]="testIdPrefix() + '-error'" />
 }
 
-<div class="abwab-door-fields-form__field">
-  <label [attr.for]="testIdPrefix() + '-name'">{{ nameLabel }} *</label>
+<qd-form-field class="abwab-door-fields-form__field" [label]="nameLabel" [required]="true">
   <input
     #nameInput
     cdkFocusInitial
-    [id]="testIdPrefix() + '-name'"
+    qdControl
     type="text"
     [value]="name()"
     (input)="onNameInput($event)"
     [attr.data-testid]="testIdPrefix() + '-name'"
   />
-</div>
+</qd-form-field>
 
-<div class="abwab-door-fields-form__field">
-  <label [attr.for]="testIdPrefix() + '-description'">{{ descriptionLabel }}</label>
+<qd-form-field class="abwab-door-fields-form__field" [label]="descriptionLabel">
   <textarea
-    [id]="testIdPrefix() + '-description'"
+    qdControl
     rows="2"
     [placeholder]="descriptionPlaceholder"
     [value]="description()"
     (input)="onDescriptionInput($event)"
     [attr.data-testid]="testIdPrefix() + '-description'"
   ></textarea>
-</div>
+</qd-form-field>
 
-<div class="abwab-door-fields-form__field">
-  <label [attr.for]="testIdPrefix() + '-ayah'">{{ ayahLabel }}</label>
+<qd-form-field class="abwab-door-fields-form__field" [label]="ayahLabel" [helper]="ayahHint">
   <input
-    [id]="testIdPrefix() + '-ayah'"
+    qdControl
     type="text"
     [placeholder]="ayahPlaceholder"
     [value]="ayah()"
     (input)="onAyahInput($event)"
     [attr.data-testid]="testIdPrefix() + '-ayah'"
   />
-  <p class="abwab-door-fields-form__hint">{{ ayahHint }}</p>
-</div>
+</qd-form-field>
 
-<div class="abwab-door-fields-form__field">
-  <label [attr.for]="testIdPrefix() + '-alias-input'">{{ aliasLabel }}</label>
+<qd-form-field class="abwab-door-fields-form__field" [label]="aliasLabel">
   <input
-    [id]="testIdPrefix() + '-alias-input'"
+    qdControl
     type="text"
     [placeholder]="aliasPlaceholder"
     [value]="aliasDraft()"
@@ -51,11 +46,12 @@
     (keydown.enter)="onAliasEnter($event)"
     [attr.data-testid]="testIdPrefix() + '-alias-input'"
   />
-  <div class="abwab-door-fields-form__chips">
-    @for (alias of aliases(); track alias; let i = $index) {
-      <qd-chip [removable]="true" [removeAriaLabel]="removeAliasLabel(alias)" (remove)="removeAliasAt(i)">
-        {{ alias }}
-      </qd-chip>
-    }
-  </div>
+</qd-form-field>
+
+<div class="abwab-door-fields-form__chips">
+  @for (alias of aliases(); track alias; let i = $index) {
+    <qd-chip [removable]="true" [removeAriaLabel]="removeAliasLabel(alias)" (remove)="removeAliasAt(i)">
+      {{ alias }}
+    </qd-chip>
+  }
 </div>

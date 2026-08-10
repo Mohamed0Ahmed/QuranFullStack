@@ -8,7 +8,7 @@
     (dismissed)="onDismissed($event)"
   >
     @if (errorMessage(); as error) {
-      <qd-state variant="error" [reserve]="true" [message]="error" data-testid="abwab-sections-modal-error" />
+      <qd-error-state severity="write" [reserve]="true" [message]="error" testId="qd-state-error" data-testid="abwab-sections-modal-error" />
     }
 
     <ul class="abwab-sections-modal__list">
@@ -155,7 +155,7 @@
     >
       <p>{{ deleteConfirmBody(target.name) }}</p>
       @if (deleteError(); as message) {
-        <qd-state variant="error" [message]="message" data-testid="abwab-sections-modal-delete-error" />
+        <qd-error-state severity="write" [message]="message" testId="qd-state-error" data-testid="abwab-sections-modal-delete-error" />
       }
     </qd-confirm-dialog>
   }

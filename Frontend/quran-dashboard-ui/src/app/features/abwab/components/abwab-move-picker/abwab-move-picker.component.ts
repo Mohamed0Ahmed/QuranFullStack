@@ -5,6 +5,8 @@ import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabMoveDestination } from '../../models/abwab.models';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
@@ -25,7 +27,14 @@ let nextModalId = 0;
 @Component({
   selector: 'qd-abwab-move-picker',
   standalone: true,
-  imports: [QdActionDirective, QdModalShellComponent, QdTabsComponent, QdTabDirective],
+  imports: [
+    QdActionDirective,
+    QdControlDirective,
+    QdEmptyStateComponent,
+    QdModalShellComponent,
+    QdTabsComponent,
+    QdTabDirective,
+  ],
   templateUrl: './abwab-move-picker.component.html',
   styleUrl: './abwab-move-picker.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,6 +1,7 @@
 <input
   #searchInput
   cdkFocusInitial
+  qdControl
   type="text"
   [placeholder]="searchPlaceholder()"
   [attr.aria-label]="searchPlaceholder()"
@@ -9,12 +10,14 @@
   (input)="onSearchInput($event)"
 />
 @if (doorsErrorMessage(); as error) {
-  <qd-state
+  <qd-error-state
     class="abwab-door-picker__error"
-    variant="error"
+    severity="read"
     [reserve]="true"
     [message]="error"
     [actionLabel]="retryLabel"
+    testId="qd-state-error"
+    actionTestId="qd-state-action"
     (action)="retry.emit()"
     [attr.data-testid]="testIdPrefix() + '-doors-error'"
   />
@@ -35,7 +38,8 @@
     >
       <button
         type="button"
-        class="abwab-door-picker__chevron"
+        qdAction="row-action"
+        class="abwab-door-picker__chevron qd-hit-target"
         [class.abwab-door-picker__chevron--leaf]="!row.hasChildren"
         [attr.tabindex]="row.hasChildren ? null : -1"
         [attr.aria-hidden]="row.hasChildren ? null : true"
@@ -78,9 +82,9 @@
         [attr.data-testid]="testIdPrefix() + '-loading'"
       />
     } @else if (searchFoundNothing()) {
-      <qd-state variant="empty" [message]="noMatchesLabel" [attr.data-testid]="testIdPrefix() + '-no-matches'" />
+      <qd-empty-state [message]="noMatchesLabel" testId="qd-state-empty" [attr.data-testid]="testIdPrefix() + '-no-matches'" />
     } @else if (doorsErrorMessage() === '') {
-      <qd-state variant="empty" [message]="emptyMessage()" [attr.data-testid]="testIdPrefix() + '-doors-empty'" />
+      <qd-empty-state [message]="emptyMessage()" testId="qd-state-empty" [attr.data-testid]="testIdPrefix() + '-doors-empty'" />
     }
   }
 </div>

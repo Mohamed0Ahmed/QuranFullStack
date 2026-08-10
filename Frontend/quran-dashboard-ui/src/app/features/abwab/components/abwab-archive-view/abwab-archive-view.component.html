@@ -1,4 +1,11 @@
-<div class="abwab-archive-view" role="tree" [attr.aria-label]="ariaLabel()" data-testid="abwab-archive-view">
+<div
+  class="abwab-archive-view"
+  role="tree"
+  qdHierarchyKeyboard
+  [qdHierarchyRows]="visibleRows()"
+  [attr.aria-label]="ariaLabel()"
+  data-testid="abwab-archive-view"
+>
   @for (row of visibleRows(); track row.id) {
     @let node = nodesById().get(row.id);
     @if (node) {
@@ -9,12 +16,14 @@
         [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
         [attr.tabindex]="rovingId() === node.id ? 0 : -1"
         [style.--abwab-archive-depth]="node.depth"
+        [attr.data-qd-hierarchy-id]="node.id"
         [attr.data-testid]="'abwab-archive-row-' + node.id"
         (keydown)="onKeydown($event)"
       >
         <button
           type="button"
-          class="abwab-archive-view__chevron"
+          qdAction="row-action"
+          class="abwab-archive-view__chevron qd-hit-target"
           [class.abwab-archive-view__chevron--leaf]="!row.hasChildren"
           [attr.data-testid]="'abwab-archive-chevron-' + node.id"
           [attr.tabindex]="-1"
@@ -31,6 +40,8 @@
 
         <button
           type="button"
+          qdAction="secondary"
+          size="sm"
           class="abwab-archive-view__restore"
           [disabled]="restoreDisabled(node)"
           [attr.aria-describedby]="!canRestoreDoor() ? restorePermissionHintId(node.id) : null"
