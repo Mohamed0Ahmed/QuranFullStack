@@ -26,7 +26,7 @@
     width: 100%;
     min-height: var(--qd-hit-target-min);
     padding: var(--qd-space-2) var(--qd-space-4);
-    border: 1px solid var(--qd-border);
+    border: var(--qd-hairline);
     border-radius: var(--qd-radius-md);
     background: var(--qd-section-bg);
     color: var(--qd-text);
@@ -47,8 +47,8 @@
     }
 
     &:focus-visible {
-      outline: 2px solid var(--qd-focus-ring);
-      outline-offset: 1px;
+      outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+      outline-offset: var(--qd-focus-ring-offset);
       border-color: var(--qd-accent);
       box-shadow: var(--qd-ring);
     }

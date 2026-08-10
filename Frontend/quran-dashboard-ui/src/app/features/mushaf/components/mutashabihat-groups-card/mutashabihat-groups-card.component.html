@@ -1,7 +1,9 @@
 @if (loadState().errorMessage) {
-  <div class="qd-error-state" role="alert" data-testid="mutashabihat-error">
-    <span>{{ loadState().errorMessage }}</span>
-  </div>
+  <qd-error-state
+    severity="read"
+    [message]="loadState().errorMessage!"
+    testId="mutashabihat-error"
+  />
 } @else if (loadState().isLoading) {
   <p class="qd-sr-only" role="status" aria-live="polite" data-testid="mutashabihat-loading">
     {{ loadingMessage }}
@@ -38,9 +40,7 @@
     }
   </div>
 } @else if (loadState().isEmpty || !mutashabihat() || mutashabihat()!.groupCount === 0) {
-  <div class="qd-empty-state" role="status" data-testid="mutashabihat-empty">
-    <span>{{ emptyMessage }}</span>
-  </div>
+  <qd-empty-state [message]="emptyMessage" testId="mutashabihat-empty" />
 } @else {
   <div class="mutashabihat-groups-card__groups" data-testid="mutashabihat-groups-list">
     @for (group of displayGroups(); track group.groupKey) {
@@ -65,8 +65,11 @@
         </header>
 
         <ul
+          qdResultList
+          listVariant="quran-result"
           class="mutashabihat-groups-card__occurrences"
           [id]="group.occurrenceListId"
+          [listLabel]="group.occurrenceListLabel"
           data-testid="mutashabihat-occurrence-list"
         >
           @for (
@@ -124,6 +127,8 @@
         @if (group.showExpandToggle) {
           <button
             type="button"
+            qdAction="tertiary"
+            size="sm"
             class="mutashabihat-groups-card__expand-toggle"
             data-testid="mutashabihat-expand-toggle"
             [attr.aria-expanded]="group.isExpanded"

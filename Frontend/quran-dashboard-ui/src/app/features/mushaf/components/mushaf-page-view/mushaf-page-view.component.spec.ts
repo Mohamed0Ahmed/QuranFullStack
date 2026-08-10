@@ -158,6 +158,17 @@ describe('MushafPageViewComponent', () => {
     expect(trigger.textContent?.trim()).toBe('5');
   });
 
+  it('expands the page jump trigger to the minimum hit target without resizing its box (D47)', () => {
+    const trigger = fixture.nativeElement.querySelector(
+      '[data-testid="mushaf-page-jump-trigger"]',
+    ) as HTMLButtonElement;
+
+    const style = getComputedStyle(trigger);
+
+    expect(style.position).toBe('relative');
+    expect(style.minWidth).toBe('2.25rem');
+  });
+
   it('emits pageChange when the user enters a new page number', () => {
     const emitted: number[] = [];
     fixture.componentInstance.pageChange.subscribe((pageNumber) => emitted.push(pageNumber));

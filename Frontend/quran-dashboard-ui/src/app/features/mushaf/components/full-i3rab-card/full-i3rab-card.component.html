@@ -1,7 +1,8 @@
 @if (!entry()) {
-  <div class="qd-empty-state" role="status" data-testid="full-i3rab-empty">
-    <span>لا يتوفر إعراب كامل لهذه الآية من المصدر المحدد.</span>
-  </div>
+  <qd-empty-state
+    message="لا يتوفر إعراب كامل لهذه الآية من المصدر المحدد."
+    testId="full-i3rab-empty"
+  />
 } @else {
   <article class="study-card qd-card" data-testid="full-i3rab-card">
     @if (entry()!.coveredAyahCount > 1) {

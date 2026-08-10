@@ -14,6 +14,10 @@ import {
 type PickerMode = 'languageFirst' | 'flat';
 type PanelView = 'languages' | 'sources';
 
+// D31/D44: the listbox id is generated per instance, so the three source pickers
+// the study shell can mount never share an aria-controls target.
+let nextSourceSelectorInstance = 0;
+
 @Component({
   selector: 'qd-source-selector',
   standalone: true,
@@ -32,6 +36,7 @@ export class SourceSelectorComponent {
 
   readonly sourceChange = output<string>();
 
+  protected readonly panelId = `qd-source-selector-${nextSourceSelectorInstance++}-listbox`;
   protected readonly panelOpen = signal(false);
   protected readonly panelView = signal<PanelView>('languages');
   protected readonly activeLanguage = signal<LanguageSourceGroup | null>(null);

@@ -8,6 +8,8 @@
   &__row {
     --segment-accent: var(--qd-border);
 
+    cursor: default;
+
     flex: 1 1 7.8rem;
     min-width: 0;
     min-height: var(--qd-segment-card-min-height);
@@ -15,7 +17,7 @@
     grid-template-columns: minmax(0, 1fr);
     gap: calc(var(--qd-space-1) * 0.79);
     padding: calc(var(--qd-space-1) * 1.65);
-    border: 1px solid var(--qd-border);
+    border: var(--qd-hairline);
     border-inline-start-width: 3px;
     border-inline-start-color: var(--segment-accent);
     border-radius: var(--qd-radius-sm);

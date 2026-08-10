@@ -1,0 +1,72 @@
+// Phase 9 split: the loading/reservation chrome of the selected-ayah study shell.
+// It is a separate responsibility from the loaded study composition in
+// `selected-ayah-section.component.scss` — the reservation, the source-slot
+// placeholder and the skeleton line boxes exist only while a study is in flight,
+// and every rule here has to stay measurable against the loaded geometry it
+// stands in for. Both files are styleUrls of the same component.
+
+.selected-ayah-section {
+  // N3 row 10 loading reservation: while loading, hold the greater of the last
+  // successful natural block size and this band's baseline, so the page does not
+  // collapse around an arbitrarily tall tafsir and spring back on settle. Cleared
+  // with the modifier on success/error/empty — loaded content always determines
+  // its own height. The extra class keeps this ahead of the Medium/Compact
+  // embedded overrides in the base file, which set this shell's floors.
+  // (Scoping copied from selected-word-section.component.scss — U1 precedent.)
+  &.selected-ayah-section--loading {
+    :host &,
+    :host.qd-selected-ayah-section--embedded & {
+      min-block-size: max(
+        var(--qd-selected-ayah-baseline-block-size),
+        var(--qd-selected-ayah-reserved-block-size, 0rem)
+      );
+    }
+  }
+
+  &__source {
+    flex-shrink: 0;
+    min-height: 2.5rem;
+  }
+
+  &__source-loading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--qd-space-2);
+  }
+
+  &__source-loading-label {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--qd-text-muted);
+  }
+
+  &__source-skeleton {
+    display: block;
+
+    width: 100%;
+    height: 2.75rem;
+  }
+
+  // N3 row 10: mirror the loaded --navigable one-line box, which the skeleton
+  // stands in for — same 1px frame and trailing margin, and a line box of the
+  // base rule's own 1.125rem text at its 2.15 line-height. The previous flat
+  // 3.25rem floor was ~1.5rem short of it, so the ayah row grew on every settle.
+  &__ayah--skeleton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: calc(1.125rem * 2.15);
+    margin-block-end: var(--qd-space-3);
+    border: 1px solid transparent;
+  }
+
+  &__ayah-skeleton {
+    width: 70%;
+    height: 1.5rem;
+    border-radius: var(--qd-radius-md);
+  }
+
+  &__content--loading {
+    min-height: 10rem;
+  }
+}

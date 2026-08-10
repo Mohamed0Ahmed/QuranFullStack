@@ -1,7 +1,9 @@
 @if (loadState().errorMessage) {
-  <div class="qd-error-state" role="alert" data-testid="similar-ayahs-error">
-    <span>{{ loadState().errorMessage }}</span>
-  </div>
+  <qd-error-state
+    severity="read"
+    [message]="loadState().errorMessage!"
+    testId="similar-ayahs-error"
+  />
 } @else if (loadState().isLoading) {
   <p class="qd-sr-only" role="status" aria-live="polite" data-testid="similar-ayahs-loading">
     {{ loadingMessage }}
@@ -26,11 +28,15 @@
     }
   </ul>
 } @else if (loadState().isEmpty || !similarAyahs() || similarAyahs()!.count === 0) {
-  <div class="qd-empty-state" role="status" data-testid="similar-ayahs-empty">
-    <span>{{ emptyMessage }}</span>
-  </div>
+  <qd-empty-state [message]="emptyMessage" testId="similar-ayahs-empty" />
 } @else {
-  <ul class="similar-ayahs-card__list" data-testid="similar-ayahs-list">
+  <ul
+    qdResultList
+    listVariant="quran-result"
+    listLabel="آيات قريبة في المعنى"
+    class="similar-ayahs-card__list"
+    data-testid="similar-ayahs-list"
+  >
     @for (item of displayItems(); track item.targetVerseKey) {
       <li qdAyahCard class="similar-ayahs-card__item" data-testid="similar-ayah-item">
         <header class="similar-ayahs-card__meta">

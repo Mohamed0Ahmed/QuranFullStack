@@ -35,7 +35,55 @@ describe('SurahJumpPickerComponent', () => {
 
     expect(root.querySelector('[data-testid="surah-jump-picker-panel"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="surah-jump-picker-search"]')).toBeTruthy();
-    expect(root.querySelector('#surah-jump-listbox')).toBeTruthy();
+
+    // D31/D44: the listbox id is generated per instance and every reference resolves to it.
+    const trigger = root.querySelector(
+      '[data-testid="surah-jump-picker-trigger"]',
+    ) as HTMLButtonElement;
+    const listbox = root.querySelector('[data-testid="surah-jump-picker-scroll-body"]') as HTMLElement;
+    const search = root.querySelector('[data-testid="surah-jump-picker-search"]') as HTMLInputElement;
+
+    expect(listbox.id).not.toBe('');
+    expect(trigger.getAttribute('aria-controls')).toBe(listbox.id);
+    expect(search.getAttribute('aria-controls')).toBe(listbox.id);
+  });
+
+  it('gives two mounted pickers disjoint listbox and option ids', () => {
+    const first = TestBed.createComponent(SurahJumpPickerComponent);
+    first.componentRef.setInput('surahCatalogByJuz', catalogFixture);
+    first.detectChanges();
+    const second = TestBed.createComponent(SurahJumpPickerComponent);
+    second.componentRef.setInput('surahCatalogByJuz', catalogFixture);
+    second.detectChanges();
+
+    for (const fixture of [first, second]) {
+      (
+        (fixture.nativeElement as HTMLElement).querySelector(
+          '[data-testid="surah-jump-picker-trigger"]',
+        ) as HTMLButtonElement
+      ).click();
+      fixture.detectChanges();
+    }
+
+    const ids = [first, second].map(
+      (fixture) =>
+        (
+          (fixture.nativeElement as HTMLElement).querySelector(
+            '[data-testid="surah-jump-picker-scroll-body"]',
+          ) as HTMLElement
+        ).id,
+    );
+    const optionIds = [first, second].map(
+      (fixture) =>
+        (
+          (fixture.nativeElement as HTMLElement).querySelector(
+            '[data-testid="surah-jump-picker-row"]',
+          ) as HTMLElement
+        ).id,
+    );
+
+    expect(ids[0]).not.toBe(ids[1]);
+    expect(optionIds[0]).not.toBe(optionIds[1]);
   });
 
   it('does not open when the catalog is empty', () => {
@@ -163,16 +211,20 @@ describe('SurahJumpPickerComponent', () => {
     fixture.detectChanges();
 
     const search = root.querySelector('[data-testid="surah-jump-picker-search"]') as HTMLInputElement;
+    const rows = Array.from(
+      root.querySelectorAll<HTMLElement>('[data-testid="surah-jump-picker-row"]'),
+    );
+
     expect(document.activeElement).toBe(search);
-    expect(search.getAttribute('aria-activedescendant')).toBe('surah-jump-option-j30-s101');
+    expect(search.getAttribute('aria-activedescendant')).toBe(rows[0].id);
 
     press(search, 'ArrowDown');
     fixture.detectChanges();
-    expect(search.getAttribute('aria-activedescendant')).toBe('surah-jump-option-j30-s102');
+    expect(search.getAttribute('aria-activedescendant')).toBe(rows[1].id);
 
     press(search, 'ArrowUp');
     fixture.detectChanges();
-    expect(search.getAttribute('aria-activedescendant')).toBe('surah-jump-option-j30-s101');
+    expect(search.getAttribute('aria-activedescendant')).toBe(rows[0].id);
     expect(document.activeElement).toBe(search);
   });
 

@@ -7,7 +7,11 @@ import {
   output,
 } from '@angular/core';
 
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { AyahCardComponent } from '../../../../shared/ui/ayah-card/ayah-card.component';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { QdResultListDirective } from '../../../../shared/ui/result-list/result-list.directive';
 import {
   AyahMutashabihatDto,
   AyahNavigationTarget,
@@ -46,6 +50,7 @@ type MutashabihatGroupView = MutashabihatGroupDto & {
   hiddenOccurrenceCount: number;
   isExpanded: boolean;
   occurrenceListId: string;
+  occurrenceListLabel: string;
   showExpandToggle: boolean;
   visibleOccurrences: MutashabihatOccurrenceView[];
   wordRangeLabel: string;
@@ -54,7 +59,13 @@ type MutashabihatGroupView = MutashabihatGroupDto & {
 @Component({
   selector: 'qd-mutashabihat-groups-card',
   standalone: true,
-  imports: [AyahCardComponent],
+  imports: [
+    AyahCardComponent,
+    QdActionDirective,
+    QdEmptyStateComponent,
+    QdErrorStateComponent,
+    QdResultListDirective,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mutashabihat-groups-card.component.html',
   styleUrls: ['./mutashabihat-groups-card.component.scss'],
@@ -117,6 +128,7 @@ export class MutashabihatGroupsCardComponent {
           : Math.max(0, group.occurrences.length - visibleOccurrences.length),
         isExpanded,
         occurrenceListId: `mutashabihat-occurrences-${group.groupKey}`,
+        occurrenceListLabel: `مواضع ${group.representativeVerseKey}`,
         showExpandToggle: group.occurrences.length > OCCURRENCE_PREVIEW_COUNT,
         visibleOccurrences: visibleOccurrences.map((occurrence) => ({
           ...occurrence,

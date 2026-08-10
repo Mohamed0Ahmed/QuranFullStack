@@ -8,7 +8,7 @@
 
   // N3 row 10 first-load baseline: the floor the idle shell already holds, used
   // until a real load has been measured. Declared on :host (not on the section)
-  // so the <1024px band below can raise it to its own study floor — an
+  // so the Medium/Compact bands below can raise it to their own study floor — an
   // element-level declaration would shadow that.
   --qd-selected-ayah-baseline-block-size: 18rem;
 
@@ -18,7 +18,7 @@
 
     // Relocated from _components.scss (UI_STYLE_SYSTEM.md §2 / styles/README.md
     // boundary — component internals belong in the owning component's SCSS).
-    @media (max-width: bp.$qd-bp-tablet-max) {
+    @media (max-width: bp.$qd-bp-medium-max) {
       --qd-ayah-study-min-height: min(50vh, 30rem);
       --qd-ayah-content-min-height: min(42vh, 22rem);
       // N3 row 10: the loading reservation must never resolve below this
@@ -30,10 +30,10 @@
       height: auto;
     }
 
-    // Phone band. --qd-selected-ayah-baseline-block-size is not redeclared
+    // Compact band. --qd-selected-ayah-baseline-block-size is not redeclared
     // here: it resolves through --qd-ayah-study-min-height, so it follows this
     // band's floor automatically (N3 row 10).
-    @media (max-width: bp.$qd-bp-phone-max) {
+    @media (max-width: bp.$qd-bp-compact-max) {
       --qd-ayah-study-min-height: min(55vh, 26rem);
       --qd-ayah-content-min-height: min(48vh, 20rem);
     }
@@ -49,9 +49,8 @@
   height: 100%;
   padding: var(--qd-space-3);
   background: var(--qd-surface);
-  border: 1px solid var(--qd-border);
+  border: var(--qd-hairline);
   border-radius: var(--qd-radius-md);
-  box-shadow: var(--qd-shadow-sm);
 
   :host.qd-selected-ayah-section--embedded & {
     flex: 1;
@@ -61,137 +60,26 @@
     background: transparent;
     border: none;
     border-radius: 0;
-    box-shadow: none;
 
-    @media (max-width: bp.$qd-bp-tablet-max) {
+    @media (max-width: bp.$qd-bp-medium-max) {
       flex: none;
       min-height: var(--qd-ayah-study-min-height);
     }
   }
 
-  // N3 row 10 loading reservation: while loading, hold the greater of the last
-  // successful natural block size and this band's baseline, so the page does not
-  // collapse around an arbitrarily tall tafsir and spring back on settle. Cleared
-  // with the modifier on success/error/empty — loaded content always determines
-  // its own height. The extra class keeps this ahead of the <1024px embedded
-  // overrides above, which set this shell's floors.
-  // (Scoping copied from selected-word-section.component.scss — U1 precedent.)
-  &.selected-ayah-section--loading {
-    :host &,
-    :host.qd-selected-ayah-section--embedded & {
-      min-block-size: max(
-        var(--qd-selected-ayah-baseline-block-size),
-        var(--qd-selected-ayah-reserved-block-size, 0rem)
-      );
-    }
-  }
-
-  &__source {
-    flex-shrink: 0;
-    min-height: 2.5rem;
-  }
-
-  &__source-loading {
-    display: flex;
-    flex-direction: column;
-    gap: var(--qd-space-2);
-  }
-
-  &__source-loading-label {
-    font-size: 0.8125rem;
-    font-weight: 700;
-    color: var(--qd-text-muted);
-  }
-
-  &__source-skeleton {
-    display: block;
-
-    width: 100%;
-    height: 2.75rem;
-  }
-
+  // F07 owns the tablist geometry, roving tabindex, logical RTL arrows, Home/End
+  // and the scroll-not-wrap layout at five tabs (D28/D30); this only places the
+  // tablist in the study column.
   &__tabs {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: calc(var(--qd-space-1) * 1.1);
-    padding: calc(var(--qd-space-1) * 1.1);
-    border: 1px solid var(--qd-border);
-    border-radius: var(--qd-radius-md);
-    background: var(--qd-section-bg);
-    overflow-x: auto;
-    scrollbar-width: thin;
-
-    @media (max-width: bp.$qd-bp-tablet-max) {
-      :host.qd-selected-ayah-section--embedded & {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        overflow-x: visible;
-      }
-    }
-  }
-
-  &__tab {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: calc(var(--qd-space-1) * 0.75);
-    min-width: 0;
-    width: 100%;
-    padding: calc(var(--qd-space-1) * 1.2) calc(var(--qd-space-1) * 0.9);
-    border: 1px solid transparent;
-    border-radius: var(--qd-radius-sm);
-    background: transparent;
-    color: var(--qd-text-muted);
-    font-size: 0.8125rem;
-    line-height: 1.35;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background-color var(--qd-t-fast), color var(--qd-t-fast);
-
-    &:hover:not(:disabled) {
-      background: var(--qd-surface-hover);
-      color: var(--qd-text);
-    }
-
-    &--active {
-      background: var(--qd-accent-tint);
-      border-color: var(--qd-accent);
-      color: var(--qd-accent-text);
-      font-weight: 700;
-
-      .selected-ayah-section__tab-count {
-        background: var(--qd-surface);
-        color: var(--qd-accent-text);
-      }
-    }
-
-    &:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
+    display: block;
+    flex-shrink: 0;
+    max-inline-size: 100%;
   }
 
   &__tab-label {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  // Relocated from _components.scss (component-internal selector; see
-  // UI_STYLE_SYSTEM.md §2 / styles/README.md boundary). font-size stays
-  // 0.6875rem: that is the value this rule already rendered pre-move, since
-  // Angular's per-component scoping attribute gave it higher specificity than
-  // the former global rule's 0.75rem — folded into one rule instead of two
-  // competing ones.
-  &__tab-count {
-    flex-shrink: 0;
-    min-width: 1.25rem;
-    padding: 0 calc(var(--qd-space-1) * 0.75);
-    border-radius: var(--qd-radius-pill, 999px);
-    background: var(--qd-surface-recessed);
-    color: var(--qd-text-muted);
-    font-size: 0.6875rem;
-    font-weight: 700;
-    line-height: 1.4;
   }
 
   &__ayah {
@@ -210,45 +98,20 @@
       display: block;
       width: 100%;
       margin-block-end: var(--qd-space-3);
-      /* one-off: this card's border/glow/hover intensities (60%/12%/75%) are
-         hand-tuned for the ayah-navigation affordance and sit outside the
-         canonical --qd-border-accent (~32%) range; not a clean role map */
-      border: 1px solid color-mix(in oklch, var(--qd-accent) 60%, var(--qd-border));
+      border: 1px solid var(--qd-border-accent);
       border-radius: var(--qd-radius-md);
-      background: var(--qd-accent-tint);
-      box-shadow:
-        var(--qd-shadow-sm),
-        inset 0 0 0 1px color-mix(in oklch, var(--qd-accent) 12%, transparent);
+      background: var(--qd-green-tint);
       cursor: pointer;
+
       &:hover {
-        color: var(--qd-accent);
-        border-color: color-mix(in oklch, var(--qd-accent) 75%, var(--qd-border));
+        background: var(--qd-surface-quiet);
       }
 
       &:focus-visible {
-        outline: 2px solid var(--qd-accent);
-        outline-offset: 2px;
+        outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+        outline-offset: var(--qd-focus-ring-offset);
       }
     }
-
-    // N3 row 10: mirror the loaded --navigable one-line box, which the skeleton
-    // stands in for — same 1px frame and trailing margin, and a line box of this
-    // rule's own 1.125rem text at its 2.15 line-height. The previous flat 3.25rem
-    // floor was ~1.5rem short of it, so the ayah row grew on every settle.
-    &--skeleton {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-block-size: calc(1.125rem * 2.15);
-      margin-block-end: var(--qd-space-3);
-      border: 1px solid transparent;
-    }
-  }
-
-  &__ayah-skeleton {
-    width: 70%;
-    height: 1.5rem;
-    border-radius: var(--qd-radius-md);
   }
 
   &__content {
@@ -267,10 +130,6 @@
       line-height: 1.95;
     }
 
-    &--loading {
-      min-height: 10rem;
-    }
-
     &--flow {
       overflow: visible;
       min-height: auto;
@@ -286,7 +145,7 @@
         overflow: visible;
         min-height: auto;
 
-        @media (max-width: bp.$qd-bp-tablet-max) {
+        @media (max-width: bp.$qd-bp-medium-max) {
           min-height: var(--qd-ayah-content-min-height);
         }
       }
@@ -296,7 +155,7 @@
       // moment a study settled. The two floors are now one — the base rule
       // above covers the loading state too, and the shell's own reservation
       // handles holding height.
-      @media (max-width: bp.$qd-bp-tablet-max) {
+      @media (max-width: bp.$qd-bp-medium-max) {
         flex: none;
         min-height: var(--qd-ayah-content-min-height);
         overflow: visible;

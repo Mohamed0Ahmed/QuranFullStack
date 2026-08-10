@@ -7,7 +7,9 @@ import {
   filterUniqueSurahs,
 } from '../../utils/surah-jump-catalog.helpers';
 
-const LISTBOX_ID = 'surah-jump-listbox';
+// D31/D44: every id this picker owns is generated per instance, so two mounted
+// pickers can never share a listbox or an option target.
+let nextSurahJumpInstance = 0;
 
 @Component({
   selector: 'qd-surah-jump-picker',
@@ -23,7 +25,8 @@ export class SurahJumpPickerComponent {
 
   readonly surahJump = output<number>();
 
-  protected readonly listboxId = LISTBOX_ID;
+  private readonly instanceId = `surah-jump-${nextSurahJumpInstance++}`;
+  protected readonly listboxId = `${this.instanceId}-listbox`;
   protected readonly panelOpen = signal(false);
   protected readonly searchQuery = signal('');
 
@@ -91,7 +94,7 @@ export class SurahJumpPickerComponent {
 
   protected optionId(juzNumber: number | null, surahNumber: number): string {
     return juzNumber === null
-      ? `surah-jump-option-${surahNumber}`
-      : `surah-jump-option-j${juzNumber}-s${surahNumber}`;
+      ? `${this.instanceId}-option-${surahNumber}`
+      : `${this.instanceId}-option-j${juzNumber}-s${surahNumber}`;
   }
 }

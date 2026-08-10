@@ -215,7 +215,7 @@
   --qd-rail-m: 18rem;
   --qd-rail-l: 20rem;
   --qd-split-data: 1.25fr 1fr;
-  --qd-split-mushaf: 40% 60%;
+  --qd-split-mushaf: minmax(0, 40%) minmax(0, 60%);
   --qd-split-gap: var(--qd-s-24);
 
   --qd-grid-gap: var(--qd-s-16);

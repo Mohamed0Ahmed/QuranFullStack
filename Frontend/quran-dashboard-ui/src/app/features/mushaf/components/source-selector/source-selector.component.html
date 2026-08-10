@@ -12,6 +12,7 @@
         data-testid="source-selector-trigger"
         [attr.aria-label]="label()"
         [attr.aria-expanded]="panelOpen()"
+        [attr.aria-controls]="panelOpen() ? panelId : null"
         aria-haspopup="listbox"
         (click)="togglePanel()"
       >
@@ -32,6 +33,7 @@
           class="source-selector__panel"
           data-testid="source-selector-panel"
           role="listbox"
+          [id]="panelId"
           [attr.aria-label]="label()"
           [anchorElement]="trigger"
           (dismissed)="closePanel()"

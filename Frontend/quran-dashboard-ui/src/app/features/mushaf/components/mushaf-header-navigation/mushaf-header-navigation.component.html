@@ -3,7 +3,9 @@
     <div class="mushaf-header__deck-zone mushaf-header__deck-zone--nav">
       <div class="mushaf-header__nav-actions">
         <button
-          class="qd-btn qd-btn-ghost"
+          qdAction="tertiary"
+          size="sm"
+          class="qd-hit-target mushaf-header__nav-button"
           type="button"
           data-testid="mushaf-prev-page"
           [disabled]="page().previousPageNumber === null"
@@ -12,7 +14,9 @@
           السابق
         </button>
         <button
-          class="qd-btn qd-btn-ghost"
+          qdAction="tertiary"
+          size="sm"
+          class="qd-hit-target mushaf-header__nav-button"
           type="button"
           data-testid="mushaf-next-page"
           [disabled]="page().nextPageNumber === null"

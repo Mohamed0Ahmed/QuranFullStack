@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: flex;
   flex-direction: column;
@@ -10,10 +12,9 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  border-radius: 0.75rem;
+  border-radius: var(--qd-radius-md);
   background: var(--qd-bg);
-  border: 1px solid var(--qd-border);
-  box-shadow: var(--qd-shadow-sm);
+  border: var(--qd-hairline);
 }
 
 // N3 row 9: the loading skeleton replaces BOTH the header nav and the page view
@@ -27,7 +28,7 @@
   min-block-size: 0;
 }
 
-@media (max-width: 1023px) {
+@media (max-width: bp.$qd-bp-medium-max) {
   :host {
     flex: none;
     min-height: auto;
@@ -36,8 +37,8 @@
   .mushaf-page-area {
     flex: none;
 
-    /* N3 row 9 — reserved page-area height below the 1024px panel breakpoint,
-       where nothing else fixes this column's height and a collapsing page area
+    /* N3 row 9 — reserved page-area height below the Wide panel band, where
+       nothing else fixes this column's height and a collapsing page area
        shoves the study section up.
 
        Provenance — a Madani page is a structural constant (15 lines, never
@@ -59,10 +60,9 @@
   }
 }
 
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (min-width: bp.$qd-bp-medium-min) and (max-width: bp.$qd-bp-medium-max) {
   .mushaf-page-area {
     border: none;
-    box-shadow: none;
     background: transparent;
   }
 }

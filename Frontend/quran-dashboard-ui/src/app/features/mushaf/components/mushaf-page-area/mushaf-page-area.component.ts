@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 import {
   MushafPageViewModel,
@@ -9,15 +8,18 @@ import {
 import { MushafHeaderNavigationComponent } from '../mushaf-header-navigation/mushaf-header-navigation.component';
 import { MushafPageViewComponent } from '../mushaf-page-view/mushaf-page-view.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 
 @Component({
   selector: 'qd-mushaf-page-area',
   standalone: true,
   imports: [
-    CommonModule,
     MushafHeaderNavigationComponent,
     MushafPageViewComponent,
     ExplorerPanelSkeletonComponent,
+    QdEmptyStateComponent,
+    QdErrorStateComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mushaf-page-area.component.html',

@@ -10,8 +10,11 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
+import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import {
   AyahNavigationTarget,
   AyahStudyTab,
@@ -32,11 +35,30 @@ import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
 
 const RESERVATION_INLINE_SIZE_TOLERANCE_PX = 1;
 
+interface AyahStudyTabDefinition {
+  readonly key: AyahStudyTab;
+  readonly testId: string | null;
+  readonly countTestId: string | null;
+}
+
+const AYAH_STUDY_TABS: readonly AyahStudyTabDefinition[] = [
+  { key: 'tafsir', testId: null, countTestId: null },
+  { key: 'translation', testId: null, countTestId: null },
+  { key: 'full-i3rab', testId: null, countTestId: null },
+  { key: 'similar-ayahs', testId: 'ayah-tab-similar-ayahs', countTestId: 'similar-ayah-count' },
+  { key: 'mutashabihat', testId: 'ayah-tab-mutashabihat', countTestId: 'mutashabihat-group-count' },
+];
+
+let nextAyahStudyInstance = 0;
+
 @Component({
   selector: 'qd-selected-ayah-section',
   standalone: true,
   imports: [
-    CommonModule,
+    QdEmptyStateComponent,
+    QdErrorStateComponent,
+    QdTabsComponent,
+    QdTabDirective,
     SourceSelectorComponent,
     SimilarAyahsCardComponent,
     MutashabihatGroupsCardComponent,
@@ -45,7 +67,10 @@ const RESERVATION_INLINE_SIZE_TOLERANCE_PX = 1;
     FullI3rabCardComponent,
   ],
   templateUrl: './selected-ayah-section.component.html',
-  styleUrls: ['./selected-ayah-section.component.scss'],
+  styleUrls: [
+    './selected-ayah-section.component.scss',
+    './selected-ayah-section.states.scss',
+  ],
   host: {
     '[class.qd-selected-ayah-section--embedded]': 'embedded()',
   },
@@ -150,6 +175,19 @@ export class SelectedAyahSectionComponent {
   });
 
   protected readonly tabLabels = AYAH_STUDY_TAB_LABELS;
+  protected readonly tabs = AYAH_STUDY_TABS;
+
+  // D31: tab and panel ids are per instance, so an embedded study shell and the
+  // global detail overlay can never point at each other's panel.
+  private readonly instanceId = `qd-ayah-study-${nextAyahStudyInstance++}`;
+
+  protected tabElementId(tab: AyahStudyTab): string {
+    return `${this.instanceId}-tab-${tab}`;
+  }
+
+  protected panelElementId(tab: AyahStudyTab): string {
+    return `${this.instanceId}-panel-${tab}`;
+  }
 
   // The summary's counts are what the child cards reserve their loading geometry from, so an
   // absent study must stay `null` ("unknown", fall back) and never collapse into a `0` the cards

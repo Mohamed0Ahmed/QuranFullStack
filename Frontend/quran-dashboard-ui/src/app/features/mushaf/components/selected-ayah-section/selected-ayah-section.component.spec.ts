@@ -664,3 +664,113 @@ describe('SelectedAyahSectionComponent — ayah navigation', () => {
     });
   });
 });
+
+describe('SelectedAyahSectionComponent — F07 study tabs (D28/D29/D30/D31)', () => {
+  function loadedFixture(activeTab: AyahStudyTab = 'tafsir') {
+    const fixture = TestBed.createComponent(SelectedAyahSectionComponent);
+    setInputs(fixture, {
+      study: buildAyahStudyViewModel(),
+      loadState: IDLE,
+      selectedVerseKey: '2:25',
+      activeTab,
+    });
+    return fixture;
+  }
+
+  function tabsOf(fixture: ComponentFixture<SelectedAyahSectionComponent>): HTMLButtonElement[] {
+    return Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+        '.selected-ayah-section__tab',
+      ),
+    );
+  }
+
+  it('delegates the tablist to the shared tabs owner', () => {
+    const root = loadedFixture().nativeElement as HTMLElement;
+
+    expect(root.querySelector('qd-tabs')).toBeTruthy();
+    expect(root.querySelectorAll('[role="tablist"]')).toHaveLength(1);
+    for (const tab of tabsOf(loadedFixture())) {
+      expect(tab.getAttribute('role')).toBe('tab');
+      expect(tab.classList.contains('qd-tabs__tab')).toBe(true);
+    }
+  });
+
+  it('scrolls rather than wraps at five tabs (D30)', () => {
+    const root = loadedFixture().nativeElement as HTMLElement;
+    const tablist = root.querySelector('[role="tablist"]') as HTMLElement;
+
+    expect(tabsOf(loadedFixture())).toHaveLength(5);
+    expect(tablist.classList.contains('qd-tabs--scrollable')).toBe(true);
+    expect(tablist.classList.contains('qd-tabs--segmented')).toBe(false);
+  });
+
+  it('roves the tab index onto the selected tab only', () => {
+    const fixture = loadedFixture('similar-ayahs');
+    const tabs = tabsOf(fixture);
+    const selected = tabs.filter((tab) => tab.getAttribute('aria-selected') === 'true');
+
+    expect(selected).toHaveLength(1);
+    expect(selected[0].getAttribute('data-testid')).toBe('ayah-tab-similar-ayahs');
+    expect(selected[0].getAttribute('tabindex')).toBe('0');
+    for (const tab of tabs.filter((candidate) => candidate !== selected[0])) {
+      expect(tab.getAttribute('tabindex')).toBe('-1');
+    }
+  });
+
+  it('moves focus with the logical RTL arrows and Home/End', () => {
+    const fixture = loadedFixture();
+    const tabs = tabsOf(fixture);
+    const tablist = (fixture.nativeElement as HTMLElement).querySelector(
+      '[role="tablist"]',
+    ) as HTMLElement;
+
+    tabs[0].focus();
+    tabs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(tabs[1]);
+
+    tabs[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(tabs[0]);
+
+    tabs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(tabs[tabs.length - 1]);
+
+    tabs[tabs.length - 1].dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(tabs[0]);
+    expect(tablist.getAttribute('aria-orientation')).toBe('horizontal');
+  });
+
+  it('labels a single tabpanel from the selected tab, with per-instance ids', () => {
+    const first = loadedFixture('translation');
+    const second = loadedFixture('translation');
+
+    const panelOf = (fixture: ComponentFixture<SelectedAyahSectionComponent>) =>
+      (fixture.nativeElement as HTMLElement).querySelector('[role="tabpanel"]') as HTMLElement;
+
+    const firstPanel = panelOf(first);
+    const firstSelected = tabsOf(first).find(
+      (tab) => tab.getAttribute('aria-selected') === 'true',
+    ) as HTMLButtonElement;
+
+    expect((first.nativeElement as HTMLElement).querySelectorAll('[role="tabpanel"]')).toHaveLength(1);
+    expect(firstPanel.getAttribute('aria-labelledby')).toBe(firstSelected.id);
+    expect(firstSelected.getAttribute('aria-controls')).toBe(firstPanel.id);
+    expect(firstPanel.id).not.toBe(panelOf(second).id);
+  });
+
+  it('emits the tab key on click', () => {
+    const fixture = loadedFixture();
+    const tabChange = vi.fn();
+    fixture.componentInstance.tabChange.subscribe(tabChange);
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('[data-testid="ayah-tab-mutashabihat"]')
+      ?.click();
+
+    expect(tabChange).toHaveBeenCalledWith('mutashabihat');
+  });
+});

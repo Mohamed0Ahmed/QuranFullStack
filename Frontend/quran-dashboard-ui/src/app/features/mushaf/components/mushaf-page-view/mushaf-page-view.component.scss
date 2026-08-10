@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: flex;
   flex: 1;
@@ -79,6 +81,7 @@
   }
 
   &__page-trigger {
+    position: relative;
     min-width: 2.25rem;
     padding: var(--qd-space-1) var(--qd-space-2);
     border: 1px solid transparent;
@@ -100,9 +103,16 @@
       color: var(--qd-text);
     }
 
+    &::after {
+      content: '';
+      position: absolute;
+      inset-block: calc((var(--qd-hit-target-min) - 100%) / -2);
+      inset-inline: calc((var(--qd-hit-target-min) - 100%) / -2);
+    }
+
     &:focus-visible {
-      outline: 2px solid var(--qd-ring);
-      outline-offset: 2px;
+      outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+      outline-offset: var(--qd-focus-ring-offset);
     }
   }
 
@@ -119,13 +129,13 @@
     text-align: center;
 
     &:focus-visible {
-      outline: 2px solid var(--qd-ring);
-      outline-offset: 2px;
+      outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+      outline-offset: var(--qd-focus-ring-offset);
     }
   }
 }
 
-@media (max-width: 1023px) {
+@media (max-width: bp.$qd-bp-medium-max) {
   :host {
     flex: none;
     height: auto;
@@ -136,5 +146,13 @@
     flex: none;
     min-height: auto;
     overflow-y: visible;
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  // D45: the page-jump control itself takes the full Compact target once it is
+  // the mounted control rather than the printed page number.
+  .mushaf-page-view__page-input {
+    min-height: var(--qd-hit-target-min);
   }
 }

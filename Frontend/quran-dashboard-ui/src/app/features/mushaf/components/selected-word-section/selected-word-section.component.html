@@ -9,17 +9,18 @@
   (focus)="sectionFocus.emit()"
 >
   @if (loadState().errorMessage) {
-    <div class="qd-error-state" role="alert" data-testid="word-analysis-error">
-      <span>{{ loadState().errorMessage }}</span>
-    </div>
+    <qd-error-state
+      severity="read"
+      [message]="loadState().errorMessage!"
+      testId="word-analysis-error"
+    />
   } @else if (!selectedWordLocation()) {
-    <div class="qd-empty-state" role="status">
-      <span>اختر كلمة من المصحف لعرض التحليل.</span>
-    </div>
+    <qd-empty-state
+      message="اختر كلمة من المصحف لعرض التحليل."
+      testId="word-analysis-unselected"
+    />
   } @else if (loadState().isEmpty || (!loadState().isLoading && !analysis())) {
-    <div class="qd-empty-state" role="status">
-      <span>تعذّر تحميل تحليل الكلمة.</span>
-    </div>
+    <qd-empty-state message="تعذّر تحميل تحليل الكلمة." testId="word-analysis-empty" />
   } @else {
     @if (loadState().isLoading) {
       <p class="qd-sr-only" role="status" aria-live="polite" data-testid="word-analysis-loading">

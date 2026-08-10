@@ -148,6 +148,88 @@ describe('MushafReaderPageComponent study layout', () => {
     expect(root.querySelector('.mushaf-reader__mobile-tabs')).toBeNull();
   });
 
+  it('declares exactly one page shell, the protected-mushaf intent and the reader-first split', () => {
+    const queryParamMap$ = new BehaviorSubject(convertToParamMap({ page: '5' }));
+
+    TestBed.configureTestingModule({
+      imports: [MushafReaderPageComponent],
+      providers: [
+        MushafReaderFacade,
+        {
+          provide: ActivatedRoute,
+          useValue: { queryParamMap: queryParamMap$.asObservable() },
+        },
+        {
+          provide: Router,
+          useValue: buildRouterStub(),
+        },
+        {
+          provide: MushafPagesApi,
+          useValue: {
+            getPage: vi.fn(() =>
+              of({
+                isSuccess: true,
+                message: 'ok',
+                data: {
+                  pageNumber: 5,
+                  previousPageNumber: 4,
+                  nextPageNumber: 6,
+                  surahs: [],
+                  ayahRange: { firstVerseKey: '2:25', lastVerseKey: '2:26' },
+                  navigation: { juzNumbers: [], hizbNumbers: [], rubNumbers: [] },
+                  lines: [],
+                  markers: [],
+                },
+              }),
+            ),
+          },
+        },
+        {
+          provide: MushafAyahStudyApi,
+          useValue: {
+            getAyahStudy: vi.fn(() => of({ isSuccess: true, message: 'ok', data: ayahStudyDto })),
+          },
+        },
+        {
+          provide: MushafWordAnalysisApi,
+          useValue: {
+            getWordAnalysis: vi.fn(() => of({ isSuccess: true, message: 'ok', data: wordAnalysisDto })),
+          },
+        },
+        {
+          provide: MushafStudySourceCatalogApi,
+          useValue: {
+            getCatalog: vi.fn(() =>
+              of({
+                isSuccess: true,
+                message: 'ok',
+                data: { tafsirSources: [], translationSources: [], fullI3rabSources: [] },
+              }),
+            ),
+          },
+        },
+        mushafSimilarAyahsApiProvider,
+        mushafAyahMutashabihatApiProvider,
+      ],
+    });
+
+    const fixture = TestBed.createComponent(MushafReaderPageComponent);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const shells = root.querySelectorAll('.qd-page-shell');
+
+    expect(shells).toHaveLength(1);
+    expect(shells[0].classList.contains('qd-page-shell--protected-mushaf')).toBe(true);
+    expect(shells[0].classList.contains('qd-page-split--mushaf')).toBe(true);
+    expect(shells[0].getAttribute('dir')).toBe('rtl');
+
+    const reader = root.querySelector('.mushaf-reader__page') as HTMLElement;
+    const study = root.querySelector('.mushaf-reader__study') as HTMLElement;
+
+    expect(reader.compareDocumentPosition(study) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('moves between words with ArrowLeft and ArrowRight', () => {
     const queryParamMap$ = new BehaviorSubject(convertToParamMap({ page: '5', word: '2:25:3', ayah: '2:25' }));
 

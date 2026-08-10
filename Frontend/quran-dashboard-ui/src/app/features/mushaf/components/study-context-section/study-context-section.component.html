@@ -4,9 +4,10 @@
   data-testid="study-context-section"
 >
   @if (!selectedWordLocation() && !selectedVerseKey()) {
-    <div class="qd-empty-state" role="status">
-      <span>اختر كلمة أو آية من المصحف لعرض سياق الدراسة.</span>
-    </div>
+    <qd-empty-state
+      message="اختر كلمة أو آية من المصحف لعرض سياق الدراسة."
+      testId="study-context-empty"
+    />
   } @else {
     <qd-selected-word-section
       [embedded]="true"

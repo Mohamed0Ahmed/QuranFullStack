@@ -7,13 +7,13 @@
       data-testid="mushaf-page-loading"
     />
   } @else if (loadState().errorMessage) {
-    <div class="qd-error-state" role="alert">
-      <span>{{ loadState().errorMessage }}</span>
-    </div>
+    <qd-error-state
+      severity="read"
+      [message]="loadState().errorMessage!"
+      testId="mushaf-page-error"
+    />
   } @else if (loadState().isEmpty || !page()) {
-    <div class="qd-empty-state" role="status">
-      <span>لا توجد بيانات لهذه الصفحة.</span>
-    </div>
+    <qd-empty-state message="لا توجد بيانات لهذه الصفحة." testId="mushaf-page-empty" />
   } @else {
     <qd-mushaf-header-navigation
       [page]="page()!"

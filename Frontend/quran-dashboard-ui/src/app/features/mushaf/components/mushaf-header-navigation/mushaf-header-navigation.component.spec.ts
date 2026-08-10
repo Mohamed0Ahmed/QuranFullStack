@@ -57,4 +57,34 @@ describe('MushafHeaderNavigationComponent', () => {
     expect(fixture.nativeElement.querySelector('qd-surah-jump-picker')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('select')).toBeNull();
   });
+
+  it('drives previous/next through the shared action owner and the 44px hit target (D47)', () => {
+    const fixture = TestBed.createComponent(MushafHeaderNavigationComponent);
+    fixture.componentRef.setInput('page', pageFixture);
+    fixture.componentRef.setInput('surahCatalogByJuz', surahCatalogByJuzFixture);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const previous = root.querySelector('[data-testid="mushaf-prev-page"]') as HTMLButtonElement;
+    const next = root.querySelector('[data-testid="mushaf-next-page"]') as HTMLButtonElement;
+
+    for (const trigger of [previous, next]) {
+      expect(trigger.classList.contains('qd-action')).toBe(true);
+      expect(trigger.classList.contains('qd-hit-target')).toBe(true);
+      expect(trigger.classList.contains('qd-btn')).toBe(false);
+    }
+  });
+
+  it('disables the edge trigger without removing it', () => {
+    const fixture = TestBed.createComponent(MushafHeaderNavigationComponent);
+    fixture.componentRef.setInput('page', { ...pageFixture, previousPageNumber: null });
+    fixture.componentRef.setInput('surahCatalogByJuz', surahCatalogByJuzFixture);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const previous = root.querySelector('[data-testid="mushaf-prev-page"]') as HTMLButtonElement;
+
+    expect(previous).toBeTruthy();
+    expect(previous.disabled).toBe(true);
+  });
 });
