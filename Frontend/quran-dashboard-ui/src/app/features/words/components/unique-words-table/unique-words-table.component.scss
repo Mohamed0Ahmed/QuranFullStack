@@ -2,21 +2,15 @@
 
 :host {
   display: block;
+  block-size: 100%;
+  min-block-size: 0;
 }
 
 .unique-words-table {
   --unique-words-table-scrollbar-gutter: 0px;
   --qd-explorer-table-scrollbar-gutter: var(--unique-words-table-scrollbar-gutter);
-}
 
-.unique-words-table__header-row,
-.unique-words-table__row {
-  grid-template-columns:
-    minmax(2.5rem, 0.35fr)
-    minmax(0, 1.8fr)
-    minmax(5rem, 0.9fr)
-    minmax(5rem, 0.9fr)
-    repeat(4, minmax(5.5rem, 1fr));
+  block-size: 100%;
 }
 
 .unique-words-table__loading-number {
@@ -41,146 +35,147 @@
 .unique-words-table__text-cell {
   display: flex;
   align-items: center;
-  min-width: 0;
+  min-inline-size: 0;
 }
 
 .unique-words-table__text {
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  font-size: 0.9375rem;
-  color: var(--qd-text-muted);
-  white-space: nowrap;
   overflow: hidden;
+  color: var(--qd-ink-muted);
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body);
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .unique-words-table__root-link {
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  font-size: 0.9375rem;
-}
-
-.unique-words-table__loading-mobile-badge {
-  block-size: 1.25rem;
-  min-inline-size: 0;
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body);
 }
 
 .unique-words-table__word-cell {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  min-inline-size: 0;
 }
 
 .unique-words-table__chip-cell {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-inline-size: 0;
 }
 
 .unique-words-table__word {
-  display: block;
-  width: 100%;
-  padding: var(--qd-space-1);
-  border: 1px solid transparent;
-  border-radius: var(--qd-radius-sm);
-  background: transparent;
-  text-align: start;
+  display: flex;
+  inline-size: 100%;
+  min-inline-size: 0;
+  justify-content: flex-start;
   overflow: hidden;
+  text-align: start;
 }
 
 .unique-words-table__display {
-  font-family: var(--qd-font-quran, inherit);
-  font-size: 1.125rem;
-  line-height: 1.4;
-  white-space: nowrap;
   overflow: hidden;
+  font-family: var(--qd-font-quran, inherit);
+  font-size: var(--qd-type-body-lg);
+  line-height: var(--qd-type-body-lg-lh);
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-// The in-shell error / no-results box (Feature 030, N3 row 5). It stands in for the body, so it
-// carries the body's geometry in every band — see the desktop/tablet rules below.
 .unique-words-table__state {
+  min-block-size: 100%;
   margin: 0;
   gap: var(--qd-space-3);
 }
 
-@media (min-width: bp.$qd-bp-desktop-min) {
-  :host-context(.qd-explorer-layout__table) {
-    display: block;
-    block-size: 100%;
+.unique-words-table__disabled-reason {
+  margin: 0;
+  padding: var(--qd-space-2) var(--qd-space-3) 0;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-caption);
+  line-height: var(--qd-type-caption-lh);
+}
+
+.unique-words-table__compact-row-number {
+  align-self: center;
+  color: var(--qd-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.unique-words-table__mobile-meta,
+.unique-words-table__medium-disclosure,
+.unique-words-table__medium-disclosure-header {
+  display: none;
+}
+
+@media (min-width: bp.$qd-bp-medium-min) and (max-width: bp.$qd-bp-medium-max) {
+  .unique-words-table__header-cell--type,
+  .unique-words-table__header-cell--root,
+  .unique-words-table__header-cell--secondary,
+  .unique-words-table__text-cell--wide,
+  .unique-words-table__chip-cell--secondary {
+    display: none;
   }
 
-  :host-context(.qd-explorer-layout__table) .unique-words-table {
+  .unique-words-table__mobile-meta {
     display: flex;
-    flex-direction: column;
-    block-size: 100%;
-    box-sizing: border-box;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--qd-space-2);
   }
 
-  :host-context(.qd-explorer-layout__table) .unique-words-table__header {
-    flex-shrink: 0;
-    block-size: var(--qd-explorer-table-header-height, 2.75rem);
-    min-block-size: unset;
+  .unique-words-table__medium-disclosure,
+  .unique-words-table__medium-disclosure-header {
+    display: block;
   }
 
-  :host-context(.qd-explorer-layout__table) .unique-words-table__body,
-  :host-context(.qd-explorer-layout__table) .unique-words-table__state {
-    flex: 1 1 auto;
-    min-block-size: 0;
+  .unique-words-table__medium-disclosure {
+    min-inline-size: 0;
+    padding-inline: var(--qd-space-2);
+  }
+
+  .unique-words-table__medium-disclosure summary {
+    min-block-size: var(--qd-control-md);
+    cursor: pointer;
+    color: var(--qd-ink-body);
+    font-size: var(--qd-type-caption);
+    line-height: var(--qd-control-md);
+  }
+
+  .unique-words-table__medium-disclosure-counts {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--qd-space-2);
+    padding-block: var(--qd-space-2);
+  }
+
+  .unique-words-table__medium-disclosure-counts qd-word-count-chip {
+    --word-count-chip-width: 100%;
   }
 }
 
-@media (max-width: bp.$qd-bp-tablet-max) {
-  .unique-words-table__header,
-  .unique-words-table__header-gutter {
-    display: none;
-  }
-
-  .unique-words-table__body {
-    block-size: min(70vh, 40rem);
-  }
-
-  // Below desktop nothing pins the shell's height (the `.qd-explorer-layout__table > *` card height
-  // is a desktop-only rule), so an in-shell state box would resize the shell it replaced the body in.
-  // Match that body, exactly as the word-types table does (Feature 030, N3 row 7).
-  .unique-words-table__state {
-    min-block-size: min(70vh, 40rem);
-  }
-
-  .unique-words-table__row {
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    gap: var(--qd-space-1) var(--qd-space-2);
-    padding: var(--qd-space-2);
+@media (max-width: bp.$qd-bp-phone-max) {
+  .unique-words-table {
     block-size: auto;
-    min-block-size: var(--unique-words-table-row-height, 4.25rem);
   }
 
-  .unique-words-table__cell--row-number {
-    grid-column: 1;
-    grid-row: 1;
-    padding: 0;
-    align-self: center;
-    justify-self: start;
-  }
-
-  .unique-words-table__word-cell {
-    grid-column: 2;
-    grid-row: 1;
-    padding: 0;
+  .unique-words-table__word--compact {
+    flex: 1 1 auto;
     justify-content: center;
-    min-width: 0;
-  }
-
-  .unique-words-table__chip-cell,
-  .unique-words-table__text-cell {
-    display: none;
-  }
-
-  .unique-words-table__word {
-    padding: 0;
-    width: 100%;
-    text-align: center;
   }
 
   .unique-words-table__display {
     text-align: center;
+  }
+
+  .unique-words-table__compact-row-number {
+    position: absolute;
+    inset-block-start: 0.75rem;
+    inset-inline-start: var(--qd-space-2);
+    z-index: 1;
+    pointer-events: none;
   }
 }

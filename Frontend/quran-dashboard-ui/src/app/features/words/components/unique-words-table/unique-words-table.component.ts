@@ -5,15 +5,20 @@ import {
   DestroyRef,
   ElementRef,
   afterNextRender,
+  computed,
   inject,
   input,
   output,
   signal,
   viewChild,
 } from '@angular/core';
-import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 
-import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdDataTableComponent } from '../../../../shared/ui/data-table/data-table.component';
+import { QdDataTableState } from '../../../../shared/ui/data-table/data-table.models';
+import { QdSortableHeaderComponent } from '../../../../shared/ui/data-table/sortable-header.component';
+import { syncTableScrollbarGutter } from '../../../../shared/ui/data-table/table-scrollbar-gutter-sync';
+import { WORD_COUNT_DISABLED_REASON, WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
 import {
   EMPTY_LIST_LABEL,
   LOADING_LABEL,
@@ -45,21 +50,19 @@ import {
   ExplorerInteractionSource,
   handleExplorerTableKeydown,
 } from '../../utils/explorer-table-keydown';
-import {
-  ExplorerRowNavDirection,
-  scrollExplorerRowIntoView,
-} from '../../utils/explorer-table-scroll';
+import { ExplorerRowNavDirection } from '../../utils/explorer-table-scroll';
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
-import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 import { buildRootsDeepLink } from '../../state/roots-url-sync';
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 
-import { QD_BP_PHONE_MAX_QUERY } from '../../../../shared/layout/breakpoints';
+import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
 
 const ROW_HEIGHT_DESKTOP = 40;
-const ROW_HEIGHT_MOBILE = 68;
-const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
+const ROW_HEIGHT_COMPACT = 68;
+const UNIQUE_TABLE_WIDE_COLUMN_COUNT = 8;
+const UNIQUE_TABLE_MEDIUM_COLUMN_COUNT = 6;
+let nextDisabledReasonId = 0;
 
 const UNIQUE_WORDS_COLUMN_ORDER = [
   'missing',
@@ -77,7 +80,7 @@ export interface UniqueWordsDrilldownOpenEvent {
 @Component({
   selector: 'qd-unique-words-table',
   standalone: true,
-  imports: [NgTemplateOutlet, ScrollingModule, WordCountChipComponent],
+  imports: [NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
   templateUrl: './unique-words-table.component.html',
   styleUrl: './unique-words-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -87,6 +90,7 @@ export class UniqueWordsTableComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly rows = input.required<readonly UniqueWordListItemViewModel[]>();
+  readonly totalCount = input<number | null>(null);
   readonly loading = input(false);
   readonly status = input<LoadStatus>('idle');
   readonly errorMessage = input('');
@@ -112,29 +116,58 @@ export class UniqueWordsTableComponent {
   }
 
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
-  protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
-  protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
+  protected readonly rowHeight = ROW_HEIGHT_DESKTOP;
+  protected readonly compactRowHeight = ROW_HEIGHT_COMPACT;
+  protected readonly isMedium = signal(false);
+  protected readonly columnCount = computed(() =>
+    this.isMedium() ? UNIQUE_TABLE_MEDIUM_COLUMN_COUNT : UNIQUE_TABLE_WIDE_COLUMN_COUNT,
+  );
+  protected readonly tableState = computed<QdDataTableState>(() => {
+    if (this.loading()) return 'loading';
+    if (this.status() === 'error') return 'error';
+    if (this.status() === 'empty') return 'empty';
+    return 'ready';
+  });
+  protected readonly selectedRow = computed(
+    () => this.rows().find((row) => row.id === this.selectedWordId()) ?? null,
+  );
+  protected readonly rowIdentity = (row: UniqueWordListItemViewModel): number => row.id;
+  protected readonly sameRow = (
+    row: UniqueWordListItemViewModel,
+    selected: UniqueWordListItemViewModel | null,
+  ): boolean => row.id === selected?.id;
+  protected get disabledReason(): string {
+    return WORD_COUNT_DISABLED_REASON;
+  }
+  protected readonly disabledReasonId = `unique-words-table-disabled-reason-${nextDisabledReasonId++}`;
+  protected readonly hasDisabledCounts = computed(() =>
+    this.rows().some(
+      (row) =>
+        row.occurrencesCount === 0 ||
+        row.ayahsCount === 0 ||
+        row.surahsCount === 0 ||
+        row.missingSurahsCount === 0,
+    ),
+  );
 
-  private readonly viewport = viewChild(CdkVirtualScrollViewport);
+  private readonly table = viewChild(QdDataTableComponent<UniqueWordListItemViewModel>);
 
   constructor() {
     afterNextRender(() => {
       if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-        const mobileMq = window.matchMedia(QD_BP_PHONE_MAX_QUERY);
-        const syncRowHeight = () => {
-          this.rowHeight.set(mobileMq.matches ? ROW_HEIGHT_MOBILE : ROW_HEIGHT_DESKTOP);
-        };
-        syncRowHeight();
-        if (typeof mobileMq.addEventListener === 'function') {
-          mobileMq.addEventListener('change', syncRowHeight);
-          this.destroyRef.onDestroy(() => mobileMq.removeEventListener('change', syncRowHeight));
+        const mediumQuery = window.matchMedia(QD_BP_MEDIUM_QUERY);
+        const syncMedium = () => this.isMedium.set(mediumQuery.matches);
+        syncMedium();
+        if (typeof mediumQuery.addEventListener === 'function') {
+          mediumQuery.addEventListener('change', syncMedium);
+          this.destroyRef.onDestroy(() => mediumQuery.removeEventListener('change', syncMedium));
         }
       }
 
       const disconnect = syncTableScrollbarGutter(
         this.host.nativeElement,
         '--unique-words-table-scrollbar-gutter',
-        '.unique-words-table__body',
+        '.qd-data-table__body',
         '.unique-words-table',
       );
       this.destroyRef.onDestroy(disconnect);
@@ -212,6 +245,9 @@ export class UniqueWordsTableComponent {
   }
 
   protected selectRow(row: UniqueWordListItemViewModel): void {
+    if (row.surahsCount === 0) {
+      return;
+    }
     this.rowSelected.emit(row);
   }
 
@@ -230,10 +266,6 @@ export class UniqueWordsTableComponent {
 
   protected rowNumber(index: number): number {
     return pageRelativeRowNumber(this.currentPage(), this.pageSize(), index);
-  }
-
-  protected trackRowById(_index: number, row: UniqueWordListItemViewModel): number {
-    return row.id;
   }
 
   protected isCountActive(
@@ -268,16 +300,7 @@ export class UniqueWordsTableComponent {
   }
 
   scrollToTop(): void {
-    const viewport = this.viewport();
-    if (this.useVirtualScroll && viewport) {
-      viewport.scrollToIndex(0, 'auto');
-      return;
-    }
-
-    const body = this.host.nativeElement.querySelector('.unique-words-table__body') as HTMLElement | null;
-    if (body) {
-      body.scrollTop = 0;
-    }
+    this.table()?.scrollToTop();
   }
 
   private emitColumnTarget(
@@ -300,23 +323,6 @@ export class UniqueWordsTableComponent {
   }
 
   private scrollToRow(index: number, direction: ExplorerRowNavDirection): void {
-    const viewport = this.viewport();
-    if (this.useVirtualScroll && viewport) {
-      scrollExplorerRowIntoView({
-        targetIndex: index,
-        direction,
-        itemSize: this.rowHeight(),
-        viewport,
-      });
-      return;
-    }
-
-    const body = this.host.nativeElement.querySelector('.unique-words-table__body') as HTMLElement | null;
-    scrollExplorerRowIntoView({
-      targetIndex: index,
-      direction,
-      itemSize: this.rowHeight(),
-      container: body,
-    });
+    this.table()?.scrollRowIntoView(index, direction);
   }
 }

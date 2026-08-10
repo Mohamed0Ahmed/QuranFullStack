@@ -462,14 +462,14 @@ describe('WordTypesExplorerPageComponent', () => {
     const detailsHost = () => fixture.nativeElement.querySelector('qd-word-type-details-panel');
     const initialTable = tableHost();
     const initialDetails = detailsHost();
-    expect(fixture.nativeElement.querySelector('[data-word-types-row="root:190700"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-row-id="root:190700"]')).not.toBeNull();
 
     queryParamMap$.next(convertToParamMap({ type: 'verb', tableView: 'roots' }));
     await fixture.whenStable();
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    expect(root.querySelector('[data-word-types-row="root:190700"]')).toBeNull();
+    expect(root.querySelector('[data-row-id="root:190700"]')).toBeNull();
     expect(root.querySelector('[data-testid="word-types-select-subtype"]')).not.toBeNull();
     expect(root.querySelector('qd-word-type-table-view-tabs')).not.toBeNull();
     expect(tableHost()).toBe(initialTable);
@@ -786,9 +786,9 @@ describe('WordTypesExplorerPageComponent', () => {
 
     const fixture = await createPage();
     fixture.detectChanges();
-    const renderedRow = (fixture.nativeElement as HTMLElement).querySelector('[data-word-types-row]');
+    const renderedRow = (fixture.nativeElement as HTMLElement).querySelector('[data-row-id]');
     expect(renderedRow?.getAttribute('aria-current')).toBe('true');
-    expect(renderedRow?.getAttribute('data-word-types-row')).toBe('191001:INL:all:all:all');
+    expect(renderedRow?.getAttribute('data-row-id')).toBe('191001:INL:all:all:all');
   });
 
   it('renders independent table and details scroll containers for restored row views', async () => {
@@ -804,7 +804,7 @@ describe('WordTypesExplorerPageComponent', () => {
     const fixture = await createPage();
     const root = fixture.nativeElement as HTMLElement;
 
-    expect(root.querySelector('.word-types-table__body')).not.toBeNull();
+    expect(root.querySelector('[data-testid="qd-data-table-body"]')).not.toBeNull();
     expect(root.querySelector('.word-types-details__scroll')).not.toBeNull();
   });
 
@@ -841,7 +841,7 @@ describe('WordTypesExplorerPageComponent', () => {
     expect(router.navigate).not.toHaveBeenCalled();
     expect(TestBed.inject(WordTypesExplorerFacade).listState().query).toEqual(expect.objectContaining({ type: 'verb', childCode: 'past' }));
     expect(TestBed.inject(WordTypesDetailFacade).panelState().selection).toEqual(before.selection);
-    expect(fixture.nativeElement.querySelector('[data-word-types-row="191001:present:all:all:all"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-row-id="191001:present:all:all:all"]')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="word-type-details-panel-entity"]')?.textContent).toContain('SYNTH_WORD_TEXT');
   });
 
@@ -1016,7 +1016,7 @@ describe('WordTypesExplorerPageComponent', () => {
 
     const fixture = await createPage();
     const originatingStatistic = (fixture.nativeElement as HTMLElement).querySelector(
-      '[data-word-types-row="191001:N:all:all:all"] [data-word-count-column="occurrences"] [data-testid="word-count-chip"]',
+      '[data-row-id="191001:N:all:all:all"] [data-word-count-column="occurrences"] [data-testid="word-count-chip"]',
     ) as HTMLButtonElement;
 
     const closeButton = fixture.nativeElement.querySelector('[data-testid="word-type-details-panel-close"]') as HTMLButtonElement;
@@ -1064,7 +1064,7 @@ describe('WordTypesExplorerPageComponent', () => {
       const fixture = await createPage();
 
       const occurrenceButton = fixture.nativeElement.querySelector(
-        `[data-word-types-row="${domId}"] [data-word-count-column="occurrences"] button`,
+        `[data-row-id="${domId}"] [data-word-count-column="occurrences"] button`,
       ) as HTMLButtonElement;
       expect(occurrenceButton).not.toBeNull();
       occurrenceButton.click();
@@ -1096,7 +1096,7 @@ describe('WordTypesExplorerPageComponent', () => {
     respond('table', ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [properRow] }));
     queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'words' }));
     const fixture = await createPage();
-    const rowContainer = fixture.nativeElement.querySelector('[data-word-types-row="191001:PN:all:all:all"]') as HTMLElement;
+    const rowContainer = fixture.nativeElement.querySelector('[data-row-id="191001:PN:all:all:all"]') as HTMLElement;
 
     (rowContainer.querySelector('[data-word-count-column="occurrences"] button') as HTMLButtonElement).click();
     fixture.detectChanges();
@@ -1138,8 +1138,8 @@ describe('WordTypesExplorerPageComponent', () => {
     }));
     queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
     const fixture = await createPage();
-    const first = fixture.nativeElement.querySelector('[data-word-types-row="root:190700"]') as HTMLElement;
-    const second = fixture.nativeElement.querySelector('[data-word-types-row="root:190701"]') as HTMLElement;
+    const first = fixture.nativeElement.querySelector('[data-row-id="root:190700"]') as HTMLElement;
+    const second = fixture.nativeElement.querySelector('[data-row-id="root:190701"]') as HTMLElement;
 
     (first.querySelector('[data-word-count-column="ayahs"] button') as HTMLButtonElement).click();
     flushPendingRequests();
@@ -1167,7 +1167,7 @@ describe('WordTypesExplorerPageComponent', () => {
     );
     queryParamMap$.next(convertToParamMap(nounListWithVerbDetail));
     const fixture = await createPage();
-    const rowContainer = fixture.nativeElement.querySelector('[data-word-types-row="root:190700"]') as HTMLElement;
+    const rowContainer = fixture.nativeElement.querySelector('[data-row-id="root:190700"]') as HTMLElement;
 
     expect(TestBed.inject(WordTypesExplorerFacade).listState().query).toEqual(expect.objectContaining({ type: 'noun', childCode: 'PN' }));
     expect(TestBed.inject(WordTypesDetailFacade).panelState().selection).toEqual(expect.objectContaining({
@@ -1218,7 +1218,7 @@ describe('WordTypesExplorerPageComponent', () => {
     const summaryCalls = requestsFor('groupedSummary').length;
     const detailCalls = requestsFor('groupedAyahs').length;
 
-    expect(fixture.nativeElement.querySelector('[data-word-types-row="root:190700"].qd-is-selected')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-row-id="root:190700"].qd-is-selected')).toBeNull();
     expect(panelBefore).toMatchObject({
       selection: { kind: 'stem', stemId: 190600 },
       view: 'ayahs',
@@ -1240,7 +1240,7 @@ describe('WordTypesExplorerPageComponent', () => {
     flushPendingRequests();
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[data-word-types-row="stem:190600"].qd-is-selected')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-row-id="stem:190600"].qd-is-selected')).not.toBeNull();
   });
 
   it('atomically replaces a preserved mismatched identity when a new statistic opens details', async () => {
@@ -1261,7 +1261,7 @@ describe('WordTypesExplorerPageComponent', () => {
     const fixture = await createPage();
 
     (fixture.nativeElement.querySelector(
-      '[data-word-types-row="root:190700"] [data-word-count-column="occurrences"] button',
+      '[data-row-id="root:190700"] [data-word-count-column="occurrences"] button',
     ) as HTMLButtonElement).click();
 
     expect(router.navigate).toHaveBeenLastCalledWith([], expect.objectContaining({
@@ -1295,7 +1295,7 @@ describe('WordTypesExplorerPageComponent', () => {
     respond('table', ok<PagedResultDto<WordTypeTableRowDto>>({ page: 1, pageSize: 25, totalCount: 1, items: [tableRow] }));
     queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView }));
     const fixture = await createPage();
-    const rowContainer = fixture.nativeElement.querySelector(`[data-word-types-row="${domId}"]`) as HTMLElement;
+    const rowContainer = fixture.nativeElement.querySelector(`[data-row-id="${domId}"]`) as HTMLElement;
 
     rowContainer.click();
     rowContainer.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
@@ -1312,7 +1312,7 @@ describe('WordTypesExplorerPageComponent', () => {
     queryParamMap$.next(convertToParamMap(withDetailScope({ type: 'noun', childCode: 'PN', tableView: 'roots', root: '190700' })));
     const fixture = await createPage();
 
-    const rowContainer = fixture.nativeElement.querySelector('[data-word-types-row="root:190700"]') as HTMLElement;
+    const rowContainer = fixture.nativeElement.querySelector('[data-row-id="root:190700"]') as HTMLElement;
     expect(rowContainer.getAttribute('aria-selected')).toBe('true');
     expect(rowContainer.getAttribute('aria-current')).toBe('true');
     expect(rowContainer.classList.contains('qd-is-selected')).toBe(true);
@@ -1323,7 +1323,7 @@ describe('WordTypesExplorerPageComponent', () => {
     queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
     const fixture = await createPage();
 
-    (fixture.nativeElement.querySelector('[data-word-types-row="root:190700"] [data-word-count-column="occurrences"] button') as HTMLButtonElement).click();
+    (fixture.nativeElement.querySelector('[data-row-id="root:190700"] [data-word-count-column="occurrences"] button') as HTMLButtonElement).click();
 
     expect(TestBed.inject(WordTypesDetailFacade).panelState()).toEqual(expect.objectContaining({
       selection: {
@@ -1349,7 +1349,7 @@ describe('WordTypesExplorerPageComponent', () => {
     queryParamMap$.next(convertToParamMap({ type: 'noun', childCode: 'PN', tableView: 'roots' }));
     const fixture = await createPage();
 
-    (fixture.nativeElement.querySelector('[data-word-types-row="root:190700"] [data-word-count-column="occurrences"] button') as HTMLButtonElement).click();
+    (fixture.nativeElement.querySelector('[data-row-id="root:190700"] [data-word-count-column="occurrences"] button') as HTMLButtonElement).click();
     flushPendingRequests();
     await fixture.whenStable();
     fixture.detectChanges();

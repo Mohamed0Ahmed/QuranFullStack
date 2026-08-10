@@ -1,5 +1,10 @@
 :host {
   display: block;
+  min-inline-size: 0;
+}
+
+.unique-words-mode-tabs {
+  display: block;
 }
 
 // Reserved slot for the restored-drilldown banners (Feature 030, N3 zero-outer-layout-shift; see the

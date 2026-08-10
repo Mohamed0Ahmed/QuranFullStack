@@ -89,16 +89,16 @@ describe('WordTypeDetailsPanelComponent', () => {
     return Array.from(host.querySelectorAll('[role="tab"]')).map((tab) => tab.getAttribute('data-word-type-tab'));
   }
 
-  it('renders only ayahs and surahs tabs linked to a single tabpanel', () => {
+  it('renders only ayahs and surahs tabs, each linked to its own mounted tabpanel', () => {
     const fixture = createPanel('ayahs');
     const host = fixture.nativeElement as HTMLElement;
 
     expect(host.querySelectorAll('[role="tab"]')).toHaveLength(2);
-    // The surface id is per-instance (not a shared constant); the tabs must resolve to it.
-    const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
-    expect(panel.id).toBeTruthy();
+    expect(host.querySelectorAll('[role="tabpanel"]')).toHaveLength(2);
     for (const tab of Array.from(host.querySelectorAll('[role="tab"]'))) {
-      expect(tab.getAttribute('aria-controls')).toBe(panel.id);
+      const panel = host.querySelector(`#${tab.getAttribute('aria-controls')}`) as HTMLElement;
+      expect(panel).toBeTruthy();
+      expect(panel.getAttribute('aria-labelledby')).toBe(tab.id);
     }
     expect(host.querySelector('[data-word-type-tab="analysis"]')).toBeNull();
   });
@@ -140,12 +140,16 @@ describe('WordTypeDetailsPanelComponent', () => {
     }
   });
 
-  it('hides tabs when notFound is true', () => {
+  it('keeps the tablist mounted and pins the selection when notFound is true', () => {
     const fixture = createPanel('ayahs');
     fixture.componentRef.setInput('notFound', true);
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).querySelector('[role="tablist"]')).toBeNull();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('[role="tablist"]')).not.toBeNull();
+    const tabs = Array.from(host.querySelectorAll('[role="tab"]')) as HTMLButtonElement[];
+    expect(tabs.filter((tab) => !tab.disabled)).toHaveLength(1);
+    expect(tabs.find((tab) => !tab.disabled)?.getAttribute('data-word-type-tab')).toBe('ayahs');
   });
 
   it('shows ayahs and surahs tabs for a word kind', () => {
@@ -211,10 +215,12 @@ describe('WordTypeDetailsPanelComponent', () => {
       fixture.detectChanges();
 
       const host = fixture.nativeElement as HTMLElement;
-      const surface = host.querySelector('[role="tabpanel"]');
+      const surface = host.querySelector('[data-testid="word-type-details-panel-surface"]');
+      const activeTab = host.querySelector(`[data-word-type-tab="${view}"]`) as HTMLElement;
       expect(host.querySelector('[data-testid="word-type-details-not-found"]')?.textContent?.trim()).toBe(notFound);
-      expect(surface?.getAttribute('aria-labelledby')).toBeNull();
-      expect(surface?.getAttribute('aria-label')).toBe(panelLabel);
+      expect(surface?.getAttribute('role')).toBe('tabpanel');
+      expect(surface?.getAttribute('aria-labelledby')).toBe(activeTab.id);
+      expect(host.querySelector('[data-testid="word-type-details-panel-label"]')?.textContent?.trim()).toBe(panelLabel);
     },
   );
 

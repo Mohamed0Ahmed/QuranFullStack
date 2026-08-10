@@ -8,6 +8,7 @@ import { PaginationComponent } from '../../../../shared/ui/pagination/pagination
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { ExplorerCountRangeFilterComponent } from '../../components/explorer-count-range-filter/explorer-count-range-filter.component';
+import { ExplorerToolbarComponent } from '../../components/explorer-toolbar/explorer-toolbar.component';
 import {
   AssociationOption,
   ExplorerAssociationFilterComponent,
@@ -44,7 +45,7 @@ type StemCountTarget = StemCountOpenedEvent & { column: StemTableColumnKey };
 @Component({
   selector: 'qd-stems-explorer-page',
   standalone: true,
-  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, StemAyahTypeFiltersComponent, StemDetailsPanelComponent, StemLemmasListComponent, StemsTableComponent, StemWordsListComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
+  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, StemAyahTypeFiltersComponent, StemDetailsPanelComponent, StemLemmasListComponent, StemsTableComponent, StemWordsListComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
   templateUrl: './stems-explorer-page.component.html',
   styleUrl: './stems-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

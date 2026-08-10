@@ -43,7 +43,7 @@ import { AyahMatchDto } from '../../models/unique-words.models';
 import { LemmasDetailController } from '../../state/lemmas-detail.controller';
 import { mapLemmaAyahMatchToShared } from '../../utils/lemma-ayah-match.mapper';
 import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 
 // Overlay adapter for lemma frames (Feature 029, B4). Owns a component-scoped LemmasDetailController
@@ -61,7 +61,7 @@ import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.st
     LemmaStemsListComponent,
     LemmaWordsListComponent,
     MissingSurahsListComponent,
-    QdStateComponent,
+    QdErrorStateComponent,
     SurahOccurrencesListComponent,
   ],
   providers: [LemmasDetailController, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],

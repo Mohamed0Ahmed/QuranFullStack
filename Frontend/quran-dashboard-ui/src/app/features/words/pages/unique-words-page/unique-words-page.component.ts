@@ -63,6 +63,7 @@ import {
   WordDrilldownView,
   UniqueWordListItemViewModel,
 } from '../../models/unique-words.models';
+import { ExplorerToolbarComponent } from '../../components/explorer-toolbar/explorer-toolbar.component';
 import { UniqueWordsColumnKey } from '../../utils/explorer-count-active';
 import { UniqueWordsDrilldownOpenEvent } from '../../components/unique-words-table/unique-words-table.component';
 import { ExplorerTableFocusController } from '../../utils/explorer-table-focus-controller';
@@ -76,6 +77,7 @@ type UniqueWordsDrilldownState = ReturnType<UniqueWordsFacade['drilldownState']>
     ExplorerCountRangeFilterComponent,
     ExplorerAssociationFilterComponent,
     ExplorerResultCountComponent,
+    ExplorerToolbarComponent,
     UniqueWordsTabsComponent,
     ExplorerSearchRowComponent,
     UniqueWordsTableComponent,

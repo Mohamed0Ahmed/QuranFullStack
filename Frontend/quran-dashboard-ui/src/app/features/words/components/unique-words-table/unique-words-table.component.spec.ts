@@ -140,8 +140,8 @@ describe('UniqueWordsTableComponent', () => {
     const loading = root.querySelector('[data-testid="unique-words-loading"]');
 
     expect(loading).toBeTruthy();
-    expect(loading?.getAttribute('aria-busy')).toBe('true');
-    expect(loading?.querySelectorAll('.unique-words-table__row')).toHaveLength(12);
+    expect(loading?.closest('[data-testid="qd-data-table-body"]')?.getAttribute('aria-busy')).toBe('true');
+    expect(loading?.querySelectorAll('.unique-words-table__loading-row')).toHaveLength(12);
     expect(loading?.querySelectorAll('.qd-skeleton--text')).toHaveLength(48);
     expect(root.querySelector('[data-testid="unique-words-table-word-button"]')).toBeNull();
   });
@@ -149,7 +149,7 @@ describe('UniqueWordsTableComponent', () => {
   it('scrolls the fallback body back to the top', () => {
     const fixture = setup(Array.from({ length: 60 }, (_, index) => row(index + 1)));
     const root = fixture.nativeElement as HTMLElement;
-    const body = root.querySelector('.unique-words-table__body') as HTMLElement;
+    const body = root.querySelector('[data-testid="qd-data-table-body"]') as HTMLElement;
     body.scrollTop = 120;
 
     fixture.componentInstance.scrollToTop();
@@ -214,7 +214,7 @@ describe('UniqueWordsTableComponent', () => {
       const root = fixture.nativeElement as HTMLElement;
       const plainHeaders = Array.from(
         root.querySelectorAll('[role="columnheader"]'),
-      ).filter((header) => header.querySelector('.qd-explorer-table__sort-button') === null);
+      ).filter((header) => !header.matches('qd-sortable-header'));
 
       expect(plainHeaders.length).toBeGreaterThan(0);
       for (const header of plainHeaders) {
@@ -326,13 +326,13 @@ describe('UniqueWordsTableComponent', () => {
 
       const state = root.querySelector('[data-testid="unique-words-error"]');
       expect(state).toBeTruthy();
-      expect(state?.getAttribute('role')).toBe('alert');
+      expect(state?.getAttribute('role')).toBe('status');
       expect(state?.textContent?.trim()).toBe('تعذر تحميل الكلمات');
       expect(state?.closest('.qd-explorer-table')).toBeTruthy();
       expect(state?.classList.contains('unique-words-table__state')).toBe(true);
-      // it REPLACES the body (rather than stacking above it) and the shell stays mounted
-      expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
-      expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
+      expect(root.querySelector('[data-testid="qd-data-table-body"]')).toBeTruthy();
+      expect(root.querySelector('.qd-data-table__row')).toBeNull();
+      expect(root.querySelector('.qd-data-table__header')).toBeTruthy();
     });
 
     it('renders the no-results state inside the table shell, replacing the body', () => {
@@ -344,8 +344,9 @@ describe('UniqueWordsTableComponent', () => {
       expect(state?.textContent?.trim()).toBe(EMPTY_LIST_LABEL);
       expect(state?.closest('.qd-explorer-table')).toBeTruthy();
       expect(state?.classList.contains('unique-words-table__state')).toBe(true);
-      expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
-      expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
+      expect(root.querySelector('[data-testid="qd-data-table-body"]')).toBeTruthy();
+      expect(root.querySelector('.qd-data-table__row')).toBeNull();
+      expect(root.querySelector('.qd-data-table__header')).toBeTruthy();
     });
 
     it('shows the skeleton body and no state box while loading', () => {
@@ -361,7 +362,7 @@ describe('UniqueWordsTableComponent', () => {
       const root = fixture.nativeElement as HTMLElement;
 
       expect(root.querySelector('.unique-words-table__state')).toBeNull();
-      expect(root.querySelector('.qd-explorer-table__body')).toBeTruthy();
+      expect(root.querySelector('[data-testid="qd-data-table-body"]')).toBeTruthy();
     });
   });
 

@@ -190,7 +190,7 @@ describe('StemsTableComponent', () => {
       const root = fixture.nativeElement as HTMLElement;
       const plainHeaders = Array.from(
         root.querySelectorAll('[role="columnheader"]'),
-      ).filter((header) => header.querySelector('.qd-explorer-table__sort-button') === null);
+      ).filter((header) => !header.matches('qd-sortable-header'));
 
       expect(plainHeaders.length).toBeGreaterThan(0);
       for (const header of plainHeaders) {
@@ -302,13 +302,13 @@ describe('StemsTableComponent', () => {
 
       const state = root.querySelector('[data-testid="stems-list-error"]');
       expect(state).toBeTruthy();
-      expect(state?.getAttribute('role')).toBe('alert');
+      expect(state?.getAttribute('role')).toBe('status');
       expect(state?.textContent?.trim()).toBe('تعذر تحميل الأصول');
       expect(state?.closest('.qd-explorer-table')).toBeTruthy();
       expect(state?.classList.contains('stems-table__state')).toBe(true);
-      // it REPLACES the body (rather than stacking above it) and the shell stays mounted
-      expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
-      expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
+      expect(root.querySelector('[data-testid="qd-data-table-body"]')).toBeTruthy();
+      expect(root.querySelector('.qd-data-table__row')).toBeNull();
+      expect(root.querySelector('.qd-data-table__header')).toBeTruthy();
     });
 
     it('renders the no-results state inside the table shell, replacing the body', () => {
@@ -320,8 +320,9 @@ describe('StemsTableComponent', () => {
       expect(state?.textContent?.trim()).toBe(STEMS_NO_RESULTS_LABEL);
       expect(state?.closest('.qd-explorer-table')).toBeTruthy();
       expect(state?.classList.contains('stems-table__state')).toBe(true);
-      expect(root.querySelector('.qd-explorer-table__body')).toBeNull();
-      expect(root.querySelector('.qd-explorer-table__header')).toBeTruthy();
+      expect(root.querySelector('[data-testid="qd-data-table-body"]')).toBeTruthy();
+      expect(root.querySelector('.qd-data-table__row')).toBeNull();
+      expect(root.querySelector('.qd-data-table__header')).toBeTruthy();
     });
 
     it('shows the skeleton body and no state box while loading', () => {
@@ -337,7 +338,7 @@ describe('StemsTableComponent', () => {
       const root = fixture.nativeElement as HTMLElement;
 
       expect(root.querySelector('.stems-table__state')).toBeNull();
-      expect(root.querySelector('.qd-explorer-table__body')).toBeTruthy();
+      expect(root.querySelector('[data-testid="qd-data-table-body"]')).toBeTruthy();
     });
   });
 

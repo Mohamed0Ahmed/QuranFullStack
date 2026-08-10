@@ -2,47 +2,23 @@
 
 :host {
   display: block;
+  block-size: 100%;
+  min-block-size: 0;
 }
 
 .word-types-table {
   --word-types-table-scrollbar-gutter: 0px;
   --qd-explorer-table-scrollbar-gutter: var(--word-types-table-scrollbar-gutter);
+
+  block-size: 100%;
   min-inline-size: 0;
 }
 
-.word-types-table__header-row,
-.word-types-table__row {
-  grid-template-columns:
-    minmax(2.5rem, 0.3fr)
-    minmax(0, 1.65fr)
-    minmax(0, 1.15fr)
-    repeat(3, minmax(0, 1fr))
-    repeat(3, minmax(3.5rem, 0.72fr));
-  box-sizing: border-box;
-}
-
-.word-types-table--grouped .word-types-table__header-row,
-.word-types-table--grouped .word-types-table__row {
-  grid-template-columns: minmax(2.5rem, 0.3fr) minmax(0, 1.65fr) repeat(3, minmax(3.5rem, 0.72fr));
-}
-
-.word-types-table__header-row {
-  block-size: 100%;
-}
-
-.word-types-table__body {
-  overflow-x: hidden;
-  transition: opacity var(--qd-t-fast);
-}
-
-.word-types-table__body--loading {
-  overflow: hidden auto;
-}
-
 .word-types-table__header-cell {
+  overflow: hidden;
   text-align: start;
-  white-space: nowrap;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .word-types-table__header-cell--count,
@@ -60,29 +36,27 @@
 .word-types-table__cell--word {
   display: flex;
   align-items: center;
+  min-inline-size: 0;
 }
 
 .word-types-table__cell--meta {
   display: flex;
   align-items: center;
-  color: var(--qd-text-muted);
-  font-size: 0.875rem;
-  line-height: 1.55;
-}
-
-.word-types-table__row {
-  cursor: default;
+  min-inline-size: 0;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
 }
 
 .word-types-table__word {
   display: block;
   inline-size: 100%;
-  font-family: var(--qd-font-quran, inherit);
-  font-size: 1.05rem;
-  line-height: 1.9;
-  white-space: nowrap;
   overflow: hidden;
+  font-family: var(--qd-font-quran, inherit);
+  font-size: var(--qd-type-body-lg);
+  line-height: var(--qd-type-body-lg-lh);
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .word-types-table__meta-text {
@@ -118,79 +92,88 @@
 }
 
 .word-types-table__state {
+  min-block-size: 100%;
   margin: 0;
   gap: var(--qd-space-3);
 }
 
-@media (min-width: bp.$qd-bp-desktop-min) {
-  :host-context(.qd-explorer-layout__table) {
-    display: block;
-    block-size: 100%;
-  }
-
-  :host-context(.qd-explorer-layout__table) .word-types-table {
-    display: flex;
-    flex-direction: column;
-    block-size: 100%;
-    box-sizing: border-box;
-  }
-
-  :host-context(.qd-explorer-layout__table) .word-types-table__header {
-    flex-shrink: 0;
-    block-size: var(--qd-explorer-table-header-height, 2.75rem);
-    min-block-size: unset;
-  }
-
-  :host-context(.qd-explorer-layout__table) .word-types-table__body {
-    flex: 1 1 auto;
-    min-block-size: 0;
-  }
+.word-types-table__disabled-reason {
+  margin: 0;
+  padding: var(--qd-space-2) var(--qd-space-3) 0;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-caption);
+  line-height: var(--qd-type-caption-lh);
 }
 
-@media (max-width: bp.$qd-bp-tablet-max) {
-  .word-types-table__header,
-  .word-types-table__header-gutter {
+.word-types-table__medium-disclosure,
+.word-types-table__medium-disclosure-header {
+  display: none;
+}
+
+@media (min-width: bp.$qd-bp-medium-min) and (max-width: bp.$qd-bp-medium-max) {
+  .word-types-table__header-cell--meta,
+  .word-types-table__cell--meta {
     display: none;
   }
 
-  .word-types-table__body {
-    block-size: min(70vh, 40rem);
+  .word-types-table__medium-disclosure,
+  .word-types-table__medium-disclosure-header {
+    display: block;
   }
 
-  // Below desktop nothing pins the shell's height (the `.qd-explorer-layout__table > *` card height is a
-  // desktop-only rule), so the empty / error / select-prompt states collapsed the ~40rem card to ~5rem
-  // and jumped everything under it (Feature 030, N3 row 7). Match the body they replace, so the shell
-  // holds its footprint across every state in this band.
-  .word-types-table__state {
-    min-block-size: min(70vh, 40rem);
+  .word-types-table__medium-disclosure {
+    min-inline-size: 0;
+    padding-inline: var(--qd-space-2);
   }
 
-  .word-types-table__row {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: var(--qd-space-2);
-    align-items: start;
-    padding: var(--qd-space-3);
+  .word-types-table__medium-disclosure summary {
+    min-block-size: var(--qd-control-md);
+    cursor: pointer;
+    color: var(--qd-ink-body);
+    font-size: var(--qd-type-caption);
+    line-height: var(--qd-control-md);
+  }
+
+  .word-types-table__medium-disclosure-list {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--qd-space-1) var(--qd-space-2);
+    margin: 0;
+    padding-block: var(--qd-space-2);
+    color: var(--qd-ink-body);
+    font-size: var(--qd-type-caption);
+    line-height: var(--qd-type-caption-lh);
+  }
+
+  .word-types-table__medium-disclosure-list dt {
+    color: var(--qd-ink-muted);
+  }
+
+  .word-types-table__medium-disclosure-list dd {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: bp.$qd-bp-phone-max) {
+  .word-types-table {
     block-size: auto;
-    min-block-size: 0;
-  }
-
-  .word-types-table--grouped .word-types-table__row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .word-types-table__cell {
     display: flex;
     flex-direction: column;
     gap: var(--qd-space-1);
-    white-space: normal;
     padding: 0;
+    white-space: normal;
   }
 
   .word-types-table__cell--row-number {
     grid-column: 1 / -1;
     align-items: flex-start;
-    font-size: 0.75rem;
-    color: var(--qd-text-muted);
+    color: var(--qd-ink-muted);
+    font-size: var(--qd-type-caption);
   }
 
   .word-types-table__cell--word {
@@ -210,28 +193,22 @@
     grid-column: span 1;
   }
 
+  .word-types-table__cell--meta::before,
+  .word-types-table__cell--count::before,
+  .word-types-table--grouped .word-types-table__cell--word::before {
+    content: attr(data-label);
+    color: var(--qd-ink-muted);
+    font-size: var(--qd-type-caption);
+    line-height: var(--qd-type-caption-lh);
+  }
+
   .word-types-table__row--loading .word-types-table__cell--meta::before,
   .word-types-table__row--loading .word-types-table__cell--count::before,
   .word-types-table--grouped .word-types-table__row--loading .word-types-table__cell--word::before {
     content: none;
   }
 
-  .word-types-table__cell--meta::before,
-  .word-types-table__cell--count::before,
-  .word-types-table--grouped .word-types-table__cell--word::before {
-    content: attr(data-label);
-    color: var(--qd-text-muted);
-    font-size: 0.75rem;
-    line-height: 1.4;
-  }
-
   .word-types-table__word {
     white-space: normal;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .word-types-table__body {
-    transition: none;
   }
 }

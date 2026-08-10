@@ -1,9 +1,12 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
-import { ScrollingModule } from '@angular/cdk/scrolling';
 
-import { QD_BP_TABLET_MAX_QUERY } from '../../../../shared/layout/breakpoints';
-import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdDataTableComponent } from '../../../../shared/ui/data-table/data-table.component';
+import { QdDataTableRenderer, QdDataTableState } from '../../../../shared/ui/data-table/data-table.models';
+import { QdSortableHeaderComponent } from '../../../../shared/ui/data-table/sortable-header.component';
+import { syncTableScrollbarGutter } from '../../../../shared/ui/data-table/table-scrollbar-gutter-sync';
+import { WORD_COUNT_DISABLED_REASON, WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
 import {
   WORD_TYPES_LOADING_LABEL,
   WORD_TYPES_NULL_PLACEHOLDER,
@@ -27,7 +30,8 @@ import {
 } from '../../models/word-types.models';
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
-import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
+
+import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
 
 export type WordTypeCountColumn = 'occurrences' | 'ayahs' | 'surahs';
 
@@ -38,13 +42,16 @@ export interface WordTypeCountOpenedEvent {
 }
 
 const ROW_HEIGHT_DESKTOP = 40;
-const ROW_HEIGHT_MOBILE = 88;
-const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
+const ROW_HEIGHT_COMPACT = 80;
+const WORD_TYPES_WIDE_COLUMN_COUNT = 9;
+const WORD_TYPES_MEDIUM_COLUMN_COUNT = 6;
+const WORD_TYPES_GROUPED_COLUMN_COUNT = 5;
+let nextDisabledReasonId = 0;
 
 @Component({
   selector: 'qd-word-types-table',
   standalone: true,
-  imports: [NgTemplateOutlet, ScrollingModule, WordCountChipComponent],
+  imports: [NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
   templateUrl: './word-types-table.component.html',
   styleUrl: './word-types-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -66,8 +73,6 @@ export class WordTypesTableComponent {
   readonly sort = input<WordTypeSort>(DEFAULT_WORD_TYPE_SORT);
   readonly countOpened = output<WordTypeCountOpenedEvent>();
   readonly retry = output<void>();
-  // null = release the sort param — unlike the other four explorers, this lands on المواضع desc (the
-  // Word Types default), not Mushaf order.
   readonly sortChange = output<WordTypeSort | null>();
 
   protected readonly sortControl = new ExplorerTableSortController<WordTypeSort>(
@@ -76,16 +81,11 @@ export class WordTypesTableComponent {
     (sort) => this.sortChange.emit(sort),
   );
 
-  // 12 rows, matching the four sibling explorer tables (Feature 030, N3-d) — this table showed 5.
   protected readonly loadingRowPlaceholders = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
 
-  // Virtual scrolling keeps the 1000-row list bounded (mirrors the other explorer tables). It is guarded
-  // on ResizeObserver so the jsdom test builder falls back to plain rendering.
-  protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
-  protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
+  protected readonly rowHeight = ROW_HEIGHT_DESKTOP;
+  protected readonly compactRowHeight = ROW_HEIGHT_COMPACT;
 
-  // Only rows whose discriminant matches the active view render; a stale/mismatched response is dropped
-  // here (defense-in-depth) so it can never paint a root row under the stems tab, in either branch.
   protected readonly visibleRows = computed<readonly WordTypeTableRowDto[]>(() => {
     const page = this.rows();
     if (!page) {
@@ -94,35 +94,63 @@ export class WordTypesTableComponent {
     return page.items.filter((row) => this.matchesActiveView(row));
   });
 
+  protected readonly renderer = computed<QdDataTableRenderer>(() =>
+    this.isWordView() ? 'wide-columns' : 'grouped-rows',
+  );
+
+  protected readonly isMedium = signal(false);
+
+  protected readonly columnCount = computed(() => {
+    if (!this.isWordView()) {
+      return WORD_TYPES_GROUPED_COLUMN_COUNT;
+    }
+    return this.isMedium() ? WORD_TYPES_MEDIUM_COLUMN_COUNT : WORD_TYPES_WIDE_COLUMN_COUNT;
+  });
+
+  protected readonly totalRowCount = computed(() => this.rows()?.totalCount ?? this.visibleRows().length);
+
+  protected readonly tableState = computed<QdDataTableState>(() => {
+    if (this.loading()) return 'loading';
+    if (this.hasRows()) return 'ready';
+    if (this.status() === 'error') return 'error';
+    return 'empty';
+  });
+
+  protected readonly rowIdentity = (row: WordTypeTableRowDto): string => this.rowDomId(row);
+  protected readonly sameRow = (row: WordTypeTableRowDto, selected: WordTypeTableRowDto | null): boolean =>
+    this.matchesSelection(row, selected);
+
+  protected get disabledReason(): string {
+    return WORD_COUNT_DISABLED_REASON;
+  }
+  protected readonly disabledReasonId = `word-types-table-disabled-reason-${nextDisabledReasonId++}`;
+  protected readonly hasDisabledCounts = computed(() =>
+    this.visibleRows().some(
+      (row) => row.occurrencesCount === 0 || row.ayahsCount === 0 || row.surahsCount === 0,
+    ),
+  );
+
   constructor() {
     afterNextRender(() => {
       if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-        const mobileMq = window.matchMedia(QD_BP_TABLET_MAX_QUERY);
-        const syncRowHeight = () => this.rowHeight.set(mobileMq.matches ? ROW_HEIGHT_MOBILE : ROW_HEIGHT_DESKTOP);
-        syncRowHeight();
-        if (typeof mobileMq.addEventListener === 'function') {
-          mobileMq.addEventListener('change', syncRowHeight);
-          this.destroyRef.onDestroy(() => mobileMq.removeEventListener('change', syncRowHeight));
+        const mediumQuery = window.matchMedia(QD_BP_MEDIUM_QUERY);
+        const syncMedium = () => this.isMedium.set(mediumQuery.matches);
+        syncMedium();
+        if (typeof mediumQuery.addEventListener === 'function') {
+          mediumQuery.addEventListener('change', syncMedium);
+          this.destroyRef.onDestroy(() => mediumQuery.removeEventListener('change', syncMedium));
         }
       }
 
       const disconnect = syncTableScrollbarGutter(
         this.host.nativeElement,
         '--word-types-table-scrollbar-gutter',
-        '.word-types-table__body',
+        '.qd-data-table__body',
         '.word-types-table',
       );
       this.destroyRef.onDestroy(disconnect);
     });
   }
-
-  // Arrow-function field, not a method: CDK's DefaultIterableDiffer invokes the virtual-scroll
-  // `trackBy` callback unbound (no `this`). A prototype method would dereference `this` as
-  // undefined and throw every change-detection cycle, rendering zero rows in the browser (the
-  // jsdom specs use the non-virtual `@for` fallback, so they never caught it). The arrow binds
-  // `this` lexically.
-  protected readonly trackRowDomId = (_index: number, row: WordTypeTableRowDto): string =>
-    this.rowDomId(row);
 
   protected get headers() { return WORD_TYPES_TABLE_HEADERS; }
   protected get loadingLabel() { return WORD_TYPES_LOADING_LABEL; }
@@ -142,7 +170,6 @@ export class WordTypesTableComponent {
     }
   }
 
-  // Page-relative sequence shared across all four views; the persisted database ID is never shown.
   protected rowNumber(index: number): number {
     const page = this.rows();
     if (!page) {
@@ -151,11 +178,13 @@ export class WordTypesTableComponent {
     return pageRelativeRowNumber(page.page, page.pageSize, index);
   }
 
-  // The header and rows render only when there is real data or a load in flight. Prompt, empty, and
-  // error states render inside the same stable shell instead of replacing it.
   protected hasRows(): boolean {
     const page = this.rows();
     return page !== null && page.items.length > 0;
+  }
+
+  protected hasHeader(): boolean {
+    return this.loading() || this.hasRows();
   }
 
   protected dimensionHeader(): string {
@@ -169,34 +198,13 @@ export class WordTypesTableComponent {
 
   protected get sortColumns(): typeof WORD_TYPE_SORT_COLUMNS { return WORD_TYPE_SORT_COLUMNS; }
 
-  // The dimension text column IS the `alpha` sort column (N8-f): one sort token across all four views,
-  // but the header label (and aria-label) follows the view so it names the column the user is viewing.
   protected readonly alphaSortColumn = computed<ExplorerSortColumn<WordTypeSortColumnKey>>(() => ({
     ...WORD_TYPE_SORT_COLUMNS.alpha,
     label: this.dimensionHeader(),
   }));
 
   protected isSelected(row: WordTypeTableRowDto): boolean {
-    const selected = this.selectedRow();
-    if (!selected || selected.kind !== row.kind) {
-      return false;
-    }
-
-    if (selected.kind === 'word' && row.kind === 'word') {
-      const selectedIdentity = normalizeWordTableRow(selected);
-      const rowIdentity = normalizeWordTableRow(row);
-      return selectedIdentity.tashkeelWordId === rowIdentity.tashkeelWordId
-        && selectedIdentity.contextCode === rowIdentity.contextCode
-        && selectedIdentity.case === rowIdentity.case
-        && selectedIdentity.tense === rowIdentity.tense
-        && selectedIdentity.voice === rowIdentity.voice;
-    }
-
-    if (selected.kind !== 'word' && row.kind !== 'word') {
-      return groupedTableRowId(selected) === groupedTableRowId(row);
-    }
-
-    return false;
+    return this.matchesSelection(row, this.selectedRow());
   }
 
   protected openCount(row: WordTypeTableRowDto, column: WordTypeCountColumn): void {
@@ -220,7 +228,7 @@ export class WordTypesTableComponent {
     const resolvedColumn = column ?? (view === 'words' ? 'occurrences' : view);
     const host = this.host.nativeElement as HTMLElement;
     const button = host.querySelector<HTMLButtonElement>(
-      `[data-word-types-row="${this.rowDomId(row)}"] [data-word-count-column="${resolvedColumn}"] [data-testid="word-count-chip"]`,
+      `[data-row-id="${this.rowDomId(row)}"] [data-word-count-column="${resolvedColumn}"] [data-testid="word-count-chip"]`,
     );
     button?.focus();
   }
@@ -238,5 +246,27 @@ export class WordTypesTableComponent {
       case 'lemma':
         return `lemma:${row.lemmaId}`;
     }
+  }
+
+  private matchesSelection(row: WordTypeTableRowDto, selected: WordTypeTableRowDto | null): boolean {
+    if (!selected || selected.kind !== row.kind) {
+      return false;
+    }
+
+    if (selected.kind === 'word' && row.kind === 'word') {
+      const selectedIdentity = normalizeWordTableRow(selected);
+      const rowIdentity = normalizeWordTableRow(row);
+      return selectedIdentity.tashkeelWordId === rowIdentity.tashkeelWordId
+        && selectedIdentity.contextCode === rowIdentity.contextCode
+        && selectedIdentity.case === rowIdentity.case
+        && selectedIdentity.tense === rowIdentity.tense
+        && selectedIdentity.voice === rowIdentity.voice;
+    }
+
+    if (selected.kind !== 'word' && row.kind !== 'word') {
+      return groupedTableRowId(selected) === groupedTableRowId(row);
+    }
+
+    return false;
   }
 }

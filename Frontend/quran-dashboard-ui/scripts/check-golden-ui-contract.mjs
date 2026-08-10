@@ -58,16 +58,9 @@ const LEGACY_ALLOWLIST = [
     reason: '.qd-explorer-frame legacy alias kept until every route declares a named intent',
     retiresIn: 'Phase 11',
   },
-  {
-    file: 'src/styles/_words-explorer-layout.scss',
-    rule: 'entranceMotion',
-    count: 1,
-    reason: 'uw-toolbar-rise retires with the Words toolbar once its named replacement is proven',
-    retiresIn: 'Phase 5',
-  },
 ];
 
-const QD_STATE_CONSUMER_BASELINE = 53;
+const QD_STATE_CONSUMER_BASELINE = 48;
 
 const QD_STATE_ADAPTER_TEMPLATE = 'src/app/shared/ui/state/state.component.html';
 

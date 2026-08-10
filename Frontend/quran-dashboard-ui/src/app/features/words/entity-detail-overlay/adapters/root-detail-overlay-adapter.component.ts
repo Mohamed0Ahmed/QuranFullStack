@@ -42,7 +42,7 @@ import { AyahMatchDto } from '../../models/unique-words.models';
 import { RootsDetailController } from '../../state/roots-detail.controller';
 import { mapRootAyahMatchToShared } from '../../utils/root-ayah-match.mapper';
 import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 
 @Component({
@@ -51,7 +51,7 @@ import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.st
   imports: [
     AyahMatchesListComponent,
     MissingSurahsListComponent,
-    QdStateComponent,
+    QdErrorStateComponent,
     RootDetailsPanelComponent,
     RootLemmasListComponent,
     RootStemsListComponent,

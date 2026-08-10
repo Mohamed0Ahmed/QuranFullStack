@@ -2,17 +2,19 @@ import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   computed,
   inject,
   input,
   output,
-  viewChild,
 } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
 
 import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdDetailsWorkspaceComponent } from '../../../../shared/ui/details-workspace/details-workspace.component';
 import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
+import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
 import { WORD_TYPE_DETAIL_PRESENTATIONS } from '../../models/word-types.labels';
 import {
@@ -22,14 +24,10 @@ import {
 } from '../../models/word-types.models';
 import { WordTypeDetailSelectionKind } from '../../models/word-types-detail.models';
 
-// Per-instance id seed: the overlay copy and the inert drawer can be mounted at once, and a shared id
-// would make ARIA (aria-controls / aria-labelledby) resolve to the wrong (inert) panel.
-let nextWordTypeDetailsPanelInstanceId = 0;
-
 @Component({
   selector: 'qd-word-type-details-panel',
   standalone: true,
-  imports: [A11yModule, ModalScrollLockDirective, NgTemplateOutlet],
+  imports: [A11yModule, ModalScrollLockDirective, NgTemplateOutlet, QdActionDirective, QdDetailsWorkspaceComponent, QdTabDirective, QdTabsComponent],
   templateUrl: './word-type-details-panel.component.html',
   styleUrl: './word-type-details-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,8 +57,6 @@ export class WordTypeDetailsPanelComponent {
   protected get closeLabel() { return CLOSE_LABEL; }
   protected get emptySelectionLabel() { return this.presentation.emptySelectionLabel; }
   protected get notFoundLabel() { return this.presentation.notFoundLabel; }
-  private readonly instanceIdPrefix = `word-type-details-panel-${nextWordTypeDetailsPanelInstanceId++}`;
-  protected readonly surfaceDomId = `${this.instanceIdPrefix}-surface`;
 
   private get presentation() { return WORD_TYPE_DETAIL_PRESENTATIONS[this.kind()]; }
 
@@ -76,23 +72,22 @@ export class WordTypeDetailsPanelComponent {
     })),
   );
 
-  private readonly tabList = viewChild<ElementRef<HTMLElement>>('tabList');
   protected readonly hasSelection = computed(() => !this.emptySelection());
-
-  protected tabDomId(key: WordTypeDetailView): string {
-    return `${this.instanceIdPrefix}-tabbtn-${key}`;
-  }
 
   protected isActive(key: WordTypeDetailView): boolean {
     return this.view() === key;
   }
 
   protected selectView(key: WordTypeDetailView): void {
-    if (this.emptySelection() || key === this.view()) {
+    if (this.emptySelection() || this.notFound() || key === this.view()) {
       return;
     }
 
     this.viewChange.emit(key);
+  }
+
+  protected tabDisabled(key: WordTypeDetailView): boolean {
+    return this.emptySelection() || (this.notFound() && key !== this.view());
   }
 
   protected onEscape(): void {
@@ -105,39 +100,5 @@ export class WordTypeDetailsPanelComponent {
     if (event.target === event.currentTarget) {
       this.close.emit();
     }
-  }
-
-  protected onTabKeydown(event: KeyboardEvent, currentKey: WordTypeDetailView): void {
-    const order = this.tabKeys();
-    const index = order.indexOf(currentKey);
-    let nextIndex: number | null = null;
-
-    switch (event.key) {
-      case 'ArrowLeft':
-        nextIndex = (index + 1) % order.length;
-        break;
-      case 'ArrowRight':
-        nextIndex = (index - 1 + order.length) % order.length;
-        break;
-      case 'Home':
-        nextIndex = 0;
-        break;
-      case 'End':
-        nextIndex = order.length - 1;
-        break;
-      default:
-        return;
-    }
-
-    event.preventDefault();
-    const nextKey = order[nextIndex!];
-    this.selectView(nextKey);
-    this.focusTab(nextKey);
-  }
-
-  private focusTab(key: WordTypeDetailView): void {
-    const list = this.tabList()?.nativeElement;
-    const tab = list?.querySelector<HTMLElement>(`[data-word-type-tab="${key}"]`);
-    tab?.focus();
   }
 }

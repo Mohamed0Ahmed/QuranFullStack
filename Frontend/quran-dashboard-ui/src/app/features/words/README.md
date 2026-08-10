@@ -36,9 +36,10 @@ Shared explorer mechanics stay in `utils/explorer-table-*`,
 `utils/explorer-keyboard-nav.scheduler.ts`, `utils/verse-key.ts`, and the feature's shared
 `components/` table/list/panel set.
 
-Every explorer root composes `qd-container` with the feature-neutral `qd-page-frame` owned by
-`styles/_layout.scss`. The `qd-explorer-frame` compatibility alias remains on the same rule for
-existing call sites; do not remove it as if it were a second layout contract. See
+Every explorer root composes the feature-neutral `qd-page-shell qd-page-shell--split-workspace`
+owned by `styles/_layout.scss` — the single route-gutter owner. The `qd-container` /
+`qd-page-frame` / `qd-explorer-frame` aliases stay on their own rules for the call sites that have
+not migrated yet; do not remove them as if they were a second layout contract. See
 [`styles/README.md`](../../../styles/README.md) and
 [`UI_STYLE_SYSTEM.md`](../../../../.architecture/UI_STYLE_SYSTEM.md).
 ## Global entity-detail overlay (Feature 029, Change B)
@@ -101,30 +102,49 @@ existing call sites; do not remove it as if it were a second layout contract. Se
 
 ## Gotchas / invariants (read before changing)
 
-- **Phase 4 has two migrated explorers and three compatibility consumers.** Roots and Lemmas use
-  `qd-data-table renderer="standard"`, the feature-local `qd-explorer-toolbar`, and one
-  `split-workspace` page shell. Stems, Unique Words, and Word Types deliberately retain their
-  existing table adapters until Phase 5. The old `utils/table-scrollbar-gutter-sync.ts` is only a
-  thin re-export of the shared F09 helper and must retain exactly those three deferred imports.
-  Do not migrate a third explorer or add a renderer name in this phase.
-- **Roots/Lemmas share one responsive composition contract.** Compact uses semantic list cards at
-  the preserved `5.5rem`/`6.5rem` row heights; Medium `768–1079` keeps table semantics with identity,
-  three priority counts, and the explicit `كل الأعداد` disclosure; Wide begins at `1080` with the
-  `1.25fr/1fr` table/details split, `44px` sticky header, `40px` rows, internal table scrolling, and
-  a fixed table pager. The page shell is the only route-gutter owner.
-- **Roots/Lemmas details use the shared F07/F10/F11 anatomy.** Their five/four tabs and labeled
-  tabpanels remain mounted, inline and overlay instances receive collision-free IDs, `notFound`
-  stays inside the selected tabpanel, and `.qd-details__body` is the sole details scroller. Ordinary
-  linked/display-only results use `qdResultList`/`qdResultItem`; Quran results keep `qdAyahCard` and
-  the existing highlighted-Quran renderer unchanged.
-- **Zero-count detail triggers remain visible but inert.** Roots/Lemmas identity actions, count
-  chips, and Lemma ayah-type controls use
+- **All five explorers now consume the shared Words architecture.** Every table selector delegates
+  to `qd-data-table`: Roots, Lemmas, Stems and Unique Words render `standard`; Word Types renders
+  `wide-columns` in its words view and `grouped-rows` in the roots/stems/lemmas views. All five pages
+  use `qd-page-shell qd-page-shell--split-workspace`, the feature-local `qd-explorer-toolbar`, and
+  `qd-page-split qd-page-split--data`. The pager is projected into the table's own footer slot
+  (`rootsTablePagination`, `lemmasTablePagination`, `stemsTablePagination`,
+  `uniqueWordsTablePagination`, `wordTypesTablePagination`). The Phase 4 shared TypeScript API was
+  consumed unchanged; the old `utils/table-scrollbar-gutter-sync.ts` re-export is deleted and every
+  table imports `shared/ui/data-table/table-scrollbar-gutter-sync` directly.
+- **Row identity is the frozen F09 `data-row-id` attribute.** Word Types' former
+  `data-word-types-row` hook is gone: `rowId` returns the same `word/root/stem/lemma` DOM identity
+  and `focusStatistic` resolves it through `[data-row-id]`. Grouped rows stay display-only — no
+  `tabindex`, no row activation, no link or button on the row itself; the three statistic chips are
+  the only interactive elements.
+- **The five explorers share one responsive composition contract.** Compact uses semantic list cards
+  (`role="list"/"listitem"`) at the preserved `5.5rem` Roots, `6.5rem` Lemmas, `6.75rem` Stems,
+  `4.25rem` Unique and `5rem` grouped Word Type heights, with content-driven Word Type word rows;
+  Medium `768–1079` keeps table semantics with identity, three priority counts, and an explicit
+  disclosure (`كل الأعداد`, or `كل التفاصيل` for the Word Types words view, which hides its four
+  related-entity columns there); Wide begins at `1080` with the `1.25fr/1fr` table/details split,
+  `44px` sticky header, `40px` rows, internal table scrolling, and a fixed table pager. The page
+  shell is the only route-gutter owner (`16/24/32/40px`), measured at 390/767/768/1024/1079/1080/1440.
+- **All five details use the shared F07/F10/F11 anatomy.** Root/Lemma/Stem/Word Type panels and the
+  Unique drilldown compose `qd-details-workspace` + `qd-tabs`, keep their `5/4/4/2-or-3/3` tab sets
+  and labeled tabpanels mounted, receive collision-free per-instance IDs, keep `notFound` inside the
+  selected tabpanel (the other tabs are disabled while it holds), and use `.qd-details__body` as the
+  sole details scroller. Ordinary linked/display-only results use `qdResultList`/`qdResultItem`;
+  Quran results keep `qdAyahCard` and the existing highlighted-Quran renderer unchanged.
+- **Zero-count detail triggers remain visible but inert across all five explorers.** Identity
+  actions, count chips, mobile stat badges and Lemma/Stem ayah-type controls use
   `لا كلمات مرتبطة بهذا النوع، لذا لا تفاصيل لعرضها.` as the visible reason, reference it through
   `aria-describedby`, retain native `disabled` plus `aria-disabled="true"`, and never open details.
+  Each table renders that reason once, in its pagination slot, under a per-instance id.
   `word-count-chip` keeps all prior inputs and adds only the optional disabled-reason ID contract.
+- **Words has zero `qd-state` consumers.** `word-drilldown-modal` and the Root/Lemma/Stem/Word Type
+  overlay adapters read errors through the F12 owner `qd-error-state severity="read"`; their
+  `data-testid` hooks are unchanged. Nothing under `src/app/features/words/` may reference
+  `<qd-state>` or `QdStateComponent` again.
 - **The explorer toolbar is feature-local and semantic-only.** Its primary, result, secondary,
   applied-summary, and action zones stay mounted while each page continues to own field meaning,
   draft/applied state, Submit/Enter/Clear behavior, URL serialization, and Back/Forward restoration.
+  Word Types uses its `taxonomy` variant and keeps the type tree as a sibling slot above the
+  toolbar, never a second shell. `uw-toolbar-recess` / `uw-toolbar-rise` are gone.
 
 - **Table/list visuals are centralized** (`UI_STYLE_SYSTEM.md` §17): all 5 explorer
   tables compose `.qd-explorer-table` (root class + `.qd-explorer-table__*` BEM
@@ -163,7 +183,7 @@ existing call sites; do not remove it as if it were a second layout contract. Se
   `isOpen: false` (`utils/unique-words-drilldown.state.ts`), so at ≤1023px the drilldown modal does
   not render at all and on desktop the inline panel shows its select-a-word prompt. Its
   `unique-words-restored-not-found` and `unique-words-restored-error` banners therefore **stay at
-  page level** — the panel would drop the message below desktop and the table shell would hide a
+  page level** (below Wide the drilldown modal does not render at all) — the panel would drop the message below desktop and the table shell would hide a
   populated table — until that state contract is revisited. They no longer shift the grid: they
   live in `.unique-words-restored-slot`, rendered in **every** drilldown state, which reserves one
   compact banner row from first paint (the two states are mutually exclusive). Keep the banners

@@ -2,6 +2,11 @@
 
 :host {
   display: block;
+  min-inline-size: 0;
+}
+
+.word-types-page__filter {
+  min-inline-size: 0;
 }
 
 .word-types-page__main,

@@ -1,349 +1,202 @@
-<div
+<qd-data-table
   class="unique-words-table qd-explorer-table"
-  role="table"
-  [attr.aria-label]="tableLabel"
+  renderer="standard"
+  [rows]="rows()"
+  [rowId]="rowIdentity"
+  [ariaLabel]="tableLabel"
+  [bodyAriaLabel]="tableBodyLabel"
+  [columnCount]="columnCount()"
+  [totalRowCount]="totalCount() ?? rows().length"
+  [state]="tableState()"
+  [selectedRow]="selectedRow()"
+  [selected]="sameRow"
+  [virtual]="!isMedium()"
+  [rowHeight]="rowHeight"
+  [compactRowHeight]="compactRowHeight"
   tabindex="0"
   (keydown)="onTableKeydown($event)"
 >
-  <div class="unique-words-table__header qd-explorer-table__header" role="rowgroup">
-    <div class="unique-words-table__header-row qd-explorer-table__header-row" role="row">
-      <div
-        class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--numeric qd-explorer-table__header-cell--numeric unique-words-table__header-cell--row-number qd-explorer-table__header-cell--row-number"
-        role="columnheader"
-      >
-        {{ rowNumberHeader }}
-      </div>
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.alpha, numeric: false }" />
-      <!-- نوع الكلمة / الجذر are page-only enrichments, absent at the backend's sort point: plain
-           headers, no button, no aria-sort (N8). -->
-      <div class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--type" role="columnheader">{{ typeHeader }}</div>
-      <div class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--root" role="columnheader">{{ rootHeader }}</div>
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.occurrences, numeric: true }" />
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.ayahs, numeric: true }" />
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.surahs, numeric: true }" />
-      <!-- لم يذكر فيها is computed after the page is fetched and is exactly the inverse of السور:
-           ordering by it is that header's asc state, so it stays plain (N8). -->
-      <div class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--numeric qd-explorer-table__header-cell--numeric" role="columnheader">{{ missingLabel }}</div>
-    </div>
-    <div class="unique-words-table__header-gutter qd-explorer-table__header-gutter" aria-hidden="true"></div>
-  </div>
-
-  @if (loading()) {
+  <ng-template #headerTemplate>
     <div
-      class="unique-words-table__body qd-explorer-table__body unique-words-table__body--loading qd-explorer-table__body--loading"
-      role="rowgroup"
-      [attr.aria-label]="tableBodyLabel"
-      aria-busy="true"
-      data-testid="unique-words-loading"
+      class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--numeric qd-explorer-table__header-cell--numeric unique-words-table__header-cell--row-number qd-explorer-table__header-cell--row-number"
+      role="columnheader"
     >
-      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+      {{ rowNumberHeader }}
+    </div>
+    <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.alpha, numeric: false, priority: true }" />
+    <div class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--type" role="columnheader">{{ typeHeader }}</div>
+    <div class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--root" role="columnheader">{{ rootHeader }}</div>
+    <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.occurrences, numeric: true, priority: true }" />
+    <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.ayahs, numeric: true, priority: true }" />
+    <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.surahs, numeric: true, priority: true }" />
+    <div class="unique-words-table__header-cell qd-explorer-table__header-cell unique-words-table__header-cell--numeric qd-explorer-table__header-cell--numeric unique-words-table__header-cell--secondary" role="columnheader">{{ missingLabel }}</div>
+    @if (isMedium()) {
+      <div class="unique-words-table__medium-disclosure-header qd-explorer-table__header-cell" role="columnheader">
+        كل الأعداد
+      </div>
+    }
+  </ng-template>
 
-      @for (_ of loadingRowPlaceholders; track $index) {
-        <div class="unique-words-table__row qd-explorer-table__row" role="row" aria-hidden="true">
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
-            <span class="qd-skeleton qd-skeleton--text unique-words-table__loading-number"></span>
-          </div>
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__word-cell" role="cell">
-            <span class="qd-skeleton qd-skeleton--text unique-words-table__loading-word"></span>
-          </div>
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell">
-            <span class="qd-skeleton qd-skeleton--text unique-words-table__loading-text"></span>
-          </div>
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell">
-            <span class="qd-skeleton qd-skeleton--text unique-words-table__loading-text"></span>
-          </div>
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
-            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
-          </div>
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
-            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
-          </div>
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
-            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
-          </div>
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
-            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span>
-          </div>
-          <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--flex" role="cell" aria-hidden="true">
-            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-mobile-badge"></span>
-            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-mobile-badge"></span>
-            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-mobile-badge"></span>
-            <span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-mobile-badge"></span>
-          </div>
-        </div>
-      }
+  <ng-template #rowTemplate let-row let-index="index">
+    <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
+      {{ rowNumber(index) }}
     </div>
-  } @else if (status() === 'error') {
-    <!-- List states live INSIDE the mounted shell (Feature 030, N3 row 5 / §17 mounted-shell
-         doctrine): as a page-level banner they inserted above the fixed table+panel grid and
-         pushed it down ~4.5rem. They replace the body, so the shell keeps its footprint. -->
-    <div class="unique-words-table__state qd-error-state" role="alert" data-testid="unique-words-error">
-      {{ errorMessage() }}
-    </div>
-  } @else if (status() === 'empty') {
-    <p class="unique-words-table__state qd-empty-state" data-testid="unique-words-empty">{{ noResultsLabel }}</p>
-  } @else if (useVirtualScroll) {
-    <cdk-virtual-scroll-viewport
-      class="unique-words-table__body qd-explorer-table__body"
-      [itemSize]="rowHeight()"
-      [minBufferPx]="rowHeight() * 4"
-      [maxBufferPx]="rowHeight() * 8"
-      role="rowgroup"
-      [attr.aria-label]="tableBodyLabel"
-    >
-      <div
-        *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRowById"
-        class="unique-words-table__row qd-explorer-table__row"
-        role="row"
-        [class.qd-is-selected]="isSelected(row)"
-        [attr.aria-selected]="isSelected(row)"
-        [attr.data-row-id]="row.id"
+    <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__word-cell" role="cell">
+      <button
+        qdAction="row-action"
+        size="sm"
+        type="button"
+        class="unique-words-table__word qd-interactive-surface"
+        data-testid="unique-words-table-word-button"
+        [disabled]="row.surahsCount === 0"
+        [attr.aria-disabled]="row.surahsCount === 0 ? 'true' : null"
+        [attr.aria-describedby]="row.surahsCount === 0 ? disabledReasonId : null"
+        (click)="selectRow(row)"
       >
-        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
-          {{ rowNumber(index) }}
-        </div>
-        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__word-cell" role="cell">
-          <button
-            type="button"
-            class="unique-words-table__word qd-interactive-surface"
-            data-testid="unique-words-table-word-button"
-            (click)="selectRow(row)"
-          >
-            <span class="unique-words-table__display">{{ row.displayText }}</span>
-          </button>
-        </div>
-        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell">
-          <span
-            class="unique-words-table__text"
-            [attr.data-word-type-code]="row.primaryWordTypeCode"
-          >{{ wordTypeLabel(row) }}</span>
-        </div>
-        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell">
-          @if (hasRoot(row)) {
-            <a
-              class="unique-words-table__root-link qd-interactive-surface"
-              data-testid="unique-words-table-root-link"
-              [href]="rootHref(row)"
-              target="_blank"
-              rel="noopener noreferrer"
-            >{{ row.rootText }}</a>
-          } @else {
-            <span class="unique-words-table__text">{{ nullPlaceholder }}</span>
+        <span class="unique-words-table__display">{{ row.displayText }}</span>
+      </button>
+      <div class="unique-words-table__mobile-meta">
+        <ng-container *ngTemplateOutlet="relationCells; context: { row: row }" />
+      </div>
+    </div>
+    <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell unique-words-table__text-cell--wide" role="cell">
+      <span class="unique-words-table__text" [attr.data-word-type-code]="row.primaryWordTypeCode">{{ wordTypeLabel(row) }}</span>
+    </div>
+    <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell unique-words-table__text-cell--wide" role="cell">
+      <ng-container *ngTemplateOutlet="rootCell; context: { row: row }" />
+    </div>
+    <ng-container *ngTemplateOutlet="chipCells; context: { row: row }" />
+    @if (isMedium()) {
+      <ng-container *ngTemplateOutlet="mediumDisclosure; context: { row: row }" />
+    }
+  </ng-template>
+
+  <ng-template #compactRowTemplate let-row let-index="index">
+    <div class="unique-words-table__compact-row-number" aria-hidden="true">{{ rowNumber(index) }}</div>
+    <button
+      qdAction="row-action"
+      size="sm"
+      type="button"
+      class="unique-words-table__word unique-words-table__word--compact qd-interactive-surface"
+      data-testid="unique-words-table-word-button"
+      [disabled]="row.surahsCount === 0"
+      [attr.aria-disabled]="row.surahsCount === 0 ? 'true' : null"
+      [attr.aria-describedby]="row.surahsCount === 0 ? disabledReasonId : null"
+      (click)="selectRow(row)"
+    >
+      <span class="unique-words-table__display">{{ row.displayText }}</span>
+    </button>
+    <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
+  </ng-template>
+
+  <ng-template #loadingTemplate>
+    <div class="unique-words-table__loading" data-testid="unique-words-loading">
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+      @for (_ of loadingRowPlaceholders; track $index) {
+        <div class="unique-words-table__loading-row qd-explorer-table__row" role="row" aria-hidden="true">
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__cell--row-number" role="cell"><span class="qd-skeleton qd-skeleton--text unique-words-table__loading-number"></span></div>
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__word-cell" role="cell"><span class="qd-skeleton qd-skeleton--text unique-words-table__loading-word"></span></div>
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell"><span class="qd-skeleton qd-skeleton--text unique-words-table__loading-text"></span></div>
+          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell"><span class="qd-skeleton qd-skeleton--text unique-words-table__loading-text"></span></div>
+          @for (i of [0, 1, 2, 3]; track i) {
+            <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell"><span class="qd-skeleton qd-skeleton--rounded-md unique-words-table__loading-chip"></span></div>
           }
         </div>
+      }
+    </div>
+  </ng-template>
 
-        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
-          <qd-word-count-chip
-            [label]="occurrencesLabel"
-            [count]="row.occurrencesCount"
-            [showLabel]="false"
-            [disabled]="true"
-          />
-        </div>
-        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
-          <qd-word-count-chip
-            [label]="ayahsLabel"
-            [count]="row.ayahsCount"
-            [showLabel]="false"
-            [disabled]="row.ayahsCount === 0"
-            [selected]="isCountActive(row, 'ayahs', row.ayahsCount)"
-            (chipClick)="openDrilldown(row, 'ayahs', 'ayahs')"
-          />
-        </div>
-        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
-          <qd-word-count-chip
-            [label]="surahsLabel"
-            [count]="row.surahsCount"
-            [showLabel]="false"
-            [disabled]="row.surahsCount === 0"
-            [selected]="isCountActive(row, 'surahs', row.surahsCount)"
-            (chipClick)="openDrilldown(row, 'surahs', 'surahs')"
-          />
-        </div>
-        <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
-          <qd-word-count-chip
-            [label]="missingLabel"
-            [count]="row.missingSurahsCount"
-            [showLabel]="false"
-            [disabled]="row.missingSurahsCount === 0"
-            [selected]="isCountActive(row, 'missing', row.missingSurahsCount)"
-            (chipClick)="openDrilldown(row, 'missing', 'missing')"
-          />
-        </div>
-        <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
-      </div>
-    </cdk-virtual-scroll-viewport>
+  <ng-template #emptyTemplate>
+    <p class="unique-words-table__state qd-empty-state" role="status" data-testid="unique-words-empty">{{ noResultsLabel }}</p>
+  </ng-template>
+
+  <ng-template #errorTemplate>
+    <div class="unique-words-table__state qd-error-state" role="status" data-testid="unique-words-error">{{ errorMessage() }}</div>
+  </ng-template>
+
+  <ng-template #paginationTemplate>
+    @if (hasDisabledCounts()) {
+      <p class="unique-words-table__disabled-reason" [id]="disabledReasonId">{{ disabledReason }}</p>
+    }
+    <ng-content select="[uniqueWordsTablePagination]" />
+  </ng-template>
+</qd-data-table>
+
+<ng-template #rootCell let-row="row">
+  @if (hasRoot(row)) {
+    <a class="unique-words-table__root-link qd-interactive-surface" data-testid="unique-words-table-root-link" [href]="rootHref(row)" target="_blank" rel="noopener noreferrer">{{ row.rootText }}</a>
   } @else {
-    <div class="unique-words-table__body qd-explorer-table__body" role="rowgroup" [attr.aria-label]="tableBodyLabel">
-      @for (row of rows(); track row.id; let index = $index) {
-        <div
-          class="unique-words-table__row qd-explorer-table__row"
-          role="row"
-          [class.qd-is-selected]="isSelected(row)"
-          [attr.aria-selected]="isSelected(row)"
-          [attr.data-row-id]="row.id"
-        >
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
-            {{ rowNumber(index) }}
-          </div>
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__word-cell" role="cell">
-            <button
-              type="button"
-              class="unique-words-table__word qd-interactive-surface"
-              data-testid="unique-words-table-word-button"
-              (click)="selectRow(row)"
-            >
-              <span class="unique-words-table__display">{{ row.displayText }}</span>
-            </button>
-          </div>
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell">
-            <span
-              class="unique-words-table__text"
-              [attr.data-word-type-code]="row.primaryWordTypeCode"
-            >{{ wordTypeLabel(row) }}</span>
-          </div>
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell" role="cell">
-            @if (hasRoot(row)) {
-              <a
-                class="unique-words-table__root-link qd-interactive-surface"
-                data-testid="unique-words-table-root-link"
-                [href]="rootHref(row)"
-                target="_blank"
-                rel="noopener noreferrer"
-              >{{ row.rootText }}</a>
-            } @else {
-              <span class="unique-words-table__text">{{ nullPlaceholder }}</span>
-            }
-          </div>
-
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
-            <qd-word-count-chip
-              [label]="occurrencesLabel"
-              [count]="row.occurrencesCount"
-              [showLabel]="false"
-              [disabled]="true"
-            />
-          </div>
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
-            <qd-word-count-chip
-              [label]="ayahsLabel"
-              [count]="row.ayahsCount"
-              [showLabel]="false"
-              [disabled]="row.ayahsCount === 0"
-              [selected]="isCountActive(row, 'ayahs', row.ayahsCount)"
-              (chipClick)="openDrilldown(row, 'ayahs', 'ayahs')"
-            />
-          </div>
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
-            <qd-word-count-chip
-              [label]="surahsLabel"
-              [count]="row.surahsCount"
-              [showLabel]="false"
-              [disabled]="row.surahsCount === 0"
-              [selected]="isCountActive(row, 'surahs', row.surahsCount)"
-              (chipClick)="openDrilldown(row, 'surahs', 'surahs')"
-            />
-          </div>
-          <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell" role="cell">
-            <qd-word-count-chip
-              [label]="missingLabel"
-              [count]="row.missingSurahsCount"
-              [showLabel]="false"
-              [disabled]="row.missingSurahsCount === 0"
-              [selected]="isCountActive(row, 'missing', row.missingSurahsCount)"
-              (chipClick)="openDrilldown(row, 'missing', 'missing')"
-            />
-          </div>
-          <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
-        </div>
-      }
-    </div>
+    <span class="unique-words-table__text">{{ nullPlaceholder }}</span>
   }
+</ng-template>
 
-  <ng-template #mobileStats let-row="row">
-    <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--flex" role="cell">
-      <span class="qd-explorer-mobile-meta unique-words-table__mobile-meta">
-        <span class="qd-explorer-mobile-meta-label">{{ typeHeader }}:</span>
-        <span>{{ wordTypeLabel(row) }}</span>
-      </span>
-      @if (hasRoot(row)) {
-        <a
-          class="qd-explorer-mobile-meta qd-interactive-surface unique-words-table__mobile-meta"
-          [href]="rootHref(row)"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <span class="qd-explorer-mobile-meta-label">{{ rootHeader }}:</span>
-          <span>{{ row.rootText }}</span>
-        </a>
-      } @else {
-        <span class="qd-explorer-mobile-meta unique-words-table__mobile-meta">
-          <span class="qd-explorer-mobile-meta-label">{{ rootHeader }}:</span>
-          <span>{{ nullPlaceholder }}</span>
-        </span>
-      }
-      <span class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--occurrences-static">
-        {{ row.occurrencesCount }} {{ occurrencesLabel }}
-      </span>
-      <button
-        type="button"
-        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
-        [class.qd-is-selected]="isCountActive(row, 'ayahs', row.ayahsCount)"
-        data-testid="unique-words-table-mobile-ayahs"
-        [attr.aria-label]="row.ayahsCount + ' ' + ayahsLabel"
-        [disabled]="row.ayahsCount === 0"
-        (click)="openDrilldown(row, 'ayahs', 'ayahs')"
-      >
-        {{ row.ayahsCount }} {{ ayahsLabel }}
-      </button>
-      <button
-        type="button"
-        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
-        [class.qd-is-selected]="isCountActive(row, 'surahs', row.surahsCount)"
-        data-testid="unique-words-table-mobile-surahs"
-        [attr.aria-label]="row.surahsCount + ' ' + surahsLabel"
-        [disabled]="row.surahsCount === 0"
-        (click)="openDrilldown(row, 'surahs', 'surahs')"
-      >
-        {{ row.surahsCount }} {{ surahsLabel }}
-      </button>
-      <button
-        type="button"
-        class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action"
-        [class.qd-is-selected]="isCountActive(row, 'missing', row.missingSurahsCount)"
-        data-testid="unique-words-table-mobile-missing"
-        [attr.aria-label]="row.missingSurahsCount + ' ' + missingLabel"
-        [disabled]="row.missingSurahsCount === 0"
-        (click)="openDrilldown(row, 'missing', 'missing')"
-      >
-        {{ row.missingSurahsCount }} {{ missingLabel }}
-      </button>
-    </div>
-  </ng-template>
-  <!-- One sortable column header (Feature 030, N8). aria-sort carries the current state and lives on
-       the columnheader; the button's aria-label names the column + the state the next click gives. -->
-  <ng-template #sortHeader let-column="column" let-numeric="numeric">
-    <div
-      class="unique-words-table__header-cell qd-explorer-table__header-cell"
-      [class.unique-words-table__header-cell--numeric]="numeric"
-      [class.qd-explorer-table__header-cell--numeric]="numeric"
-      role="columnheader"
-      [attr.aria-sort]="sortControl.ariaSort(column)"
-    >
-      <button
-        type="button"
-        class="qd-explorer-table__sort-button"
-        [class.qd-is-sorted]="sortControl.isSorted(column)"
-        [attr.data-testid]="'unique-words-table-sort-' + column.key"
-        [attr.aria-label]="sortControl.actionAria(column)"
-        (click)="sortControl.cycle(column)"
-      >
-        <span class="qd-explorer-table__sort-label">{{ column.label }}</span>
-        @if (sortControl.glyph(column); as glyph) {
-          <span class="qd-explorer-table__sort-glyph" aria-hidden="true">{{ glyph }}</span>
-        }
-      </button>
-    </div>
-  </ng-template>
+<ng-template #relationCells let-row="row">
+  <span class="qd-explorer-mobile-meta unique-words-table__mobile-meta-item">
+    <span class="qd-explorer-mobile-meta-label">{{ typeHeader }}:</span>
+    <span>{{ wordTypeLabel(row) }}</span>
+  </span>
+  @if (hasRoot(row)) {
+    <a class="qd-explorer-mobile-meta qd-interactive-surface unique-words-table__mobile-meta-item" [href]="rootHref(row)" target="_blank" rel="noopener noreferrer">
+      <span class="qd-explorer-mobile-meta-label">{{ rootHeader }}:</span>
+      <span>{{ row.rootText }}</span>
+    </a>
+  } @else {
+    <span class="qd-explorer-mobile-meta unique-words-table__mobile-meta-item">
+      <span class="qd-explorer-mobile-meta-label">{{ rootHeader }}:</span>
+      <span>{{ nullPlaceholder }}</span>
+    </span>
+  }
+</ng-template>
 
-</div>
+<ng-template #sortHeader let-column="column" let-numeric="numeric" let-priority="priority">
+  <qd-sortable-header
+    class="unique-words-table__header-cell"
+    [class.unique-words-table__header-cell--priority]="priority"
+    [class.unique-words-table__header-cell--secondary]="!priority"
+    [label]="column.label"
+    [numeric]="numeric"
+    [sortState]="sortControl.ariaSort(column) ?? 'none'"
+    [glyph]="sortControl.glyph(column)"
+    [currentSortLabel]="sortControl.glyph(column) ?? ''"
+    [nextSortLabel]="sortControl.actionAria(column)"
+    [actionAriaLabel]="sortControl.actionAria(column)"
+    [testId]="'unique-words-table-sort-' + column.key"
+    (activated)="sortControl.cycle(column)"
+  />
+</ng-template>
+
+<ng-template #chipCells let-row="row">
+  <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell unique-words-table__chip-cell--occurrences" role="cell">
+    <qd-word-count-chip [label]="occurrencesLabel" [count]="row.occurrencesCount" [showLabel]="false" [disabled]="true" [disabledReasonId]="row.occurrencesCount === 0 ? disabledReasonId : null" />
+  </div>
+  <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell unique-words-table__chip-cell--ayahs" role="cell">
+    <qd-word-count-chip [label]="ayahsLabel" [count]="row.ayahsCount" [showLabel]="false" [disabled]="row.ayahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'ayahs', row.ayahsCount)" (chipClick)="openDrilldown(row, 'ayahs', 'ayahs')" />
+  </div>
+  <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell unique-words-table__chip-cell--surahs" role="cell">
+    <qd-word-count-chip [label]="surahsLabel" [count]="row.surahsCount" [showLabel]="false" [disabled]="row.surahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'surahs', row.surahsCount)" (chipClick)="openDrilldown(row, 'surahs', 'surahs')" />
+  </div>
+  <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__chip-cell unique-words-table__chip-cell--secondary" role="cell">
+    <qd-word-count-chip [label]="missingLabel" [count]="row.missingSurahsCount" [showLabel]="false" [disabled]="row.missingSurahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'missing', row.missingSurahsCount)" (chipClick)="openDrilldown(row, 'missing', 'missing')" />
+  </div>
+</ng-template>
+
+<ng-template #mediumDisclosure let-row="row">
+  <details class="unique-words-table__medium-disclosure">
+    <summary>كل الأعداد</summary>
+    <div class="unique-words-table__medium-disclosure-counts">
+      <qd-word-count-chip [label]="missingLabel" [count]="row.missingSurahsCount" [disabled]="row.missingSurahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'missing', row.missingSurahsCount)" (chipClick)="openDrilldown(row, 'missing', 'missing')" />
+    </div>
+  </details>
+</ng-template>
+
+<ng-template #mobileStats let-row="row">
+  <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--flex">
+    <ng-container *ngTemplateOutlet="relationCells; context: { row: row }" />
+    <span class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--occurrences-static">
+      {{ row.occurrencesCount }} {{ occurrencesLabel }}
+    </span>
+    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'ayahs', row.ayahsCount)" data-testid="unique-words-table-mobile-ayahs" [attr.aria-label]="row.ayahsCount + ' ' + ayahsLabel" [disabled]="row.ayahsCount === 0" [attr.aria-disabled]="row.ayahsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.ayahsCount === 0 ? disabledReasonId : null" (click)="openDrilldown(row, 'ayahs', 'ayahs')">{{ row.ayahsCount }} {{ ayahsLabel }}</button>
+    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'surahs', row.surahsCount)" data-testid="unique-words-table-mobile-surahs" [attr.aria-label]="row.surahsCount + ' ' + surahsLabel" [disabled]="row.surahsCount === 0" [attr.aria-disabled]="row.surahsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.surahsCount === 0 ? disabledReasonId : null" (click)="openDrilldown(row, 'surahs', 'surahs')">{{ row.surahsCount }} {{ surahsLabel }}</button>
+    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'missing', row.missingSurahsCount)" data-testid="unique-words-table-mobile-missing" [attr.aria-label]="row.missingSurahsCount + ' ' + missingLabel" [disabled]="row.missingSurahsCount === 0" [attr.aria-disabled]="row.missingSurahsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.missingSurahsCount === 0 ? disabledReasonId : null" (click)="openDrilldown(row, 'missing', 'missing')">{{ row.missingSurahsCount }} {{ missingLabel }}</button>
+  </div>
+</ng-template>

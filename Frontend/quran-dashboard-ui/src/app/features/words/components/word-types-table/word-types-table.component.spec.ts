@@ -89,19 +89,17 @@ describe('WordTypesTableComponent', () => {
   afterEach(() => getTestBed().resetTestingModule());
 
   // Regression: CDK's DefaultIterableDiffer invokes the `trackBy` callback UNBOUND (with no
-  // `this`), so a trackBy that dereferences `this` throws every change-detection cycle and the
-  // virtual-scroll viewport renders zero rows in the browser. jsdom specs use the non-virtual
-  // `@for` fallback (where `this` is bound), which is why this stayed invisible. Exercise the
-  // detached call the way CDK does.
-  it('trackRowDomId works when called unbound (CDK virtual-scroll trackBy) so rows render', () => {
+  // `this`), so the shared table's `rowId` callback must not dereference `this` lexically bound
+  // to the caller. Exercise the detached call the way CDK does.
+  it('rowIdentity works when called unbound (CDK virtual-scroll trackBy) so rows render', () => {
     const fixture = TestBed.createComponent(WordTypesTableComponent);
     const instance = fixture.componentInstance as unknown as {
-      trackRowDomId: (index: number, row: WordTypeTableRowDto) => string;
+      rowIdentity: (row: WordTypeTableRowDto) => string;
     };
-    const detachedTrackBy = instance.trackRowDomId;
+    const detachedRowId = instance.rowIdentity;
 
-    expect(() => detachedTrackBy(0, rootRow)).not.toThrow();
-    expect(detachedTrackBy(0, rootRow)).toBe('root:190700');
+    expect(() => detachedRowId(rootRow)).not.toThrow();
+    expect(detachedRowId(rootRow)).toBe('root:190700');
   });
 
   it('renders corrected word headers and makes only its statistics actionable', () => {
@@ -114,7 +112,7 @@ describe('WordTypesTableComponent', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     const headers = Array.from(root.querySelectorAll('[role="columnheader"]')).map((header) => header.textContent?.trim());
-    const tableRow = root.querySelector('.word-types-table__row') as HTMLElement;
+    const tableRow = root.querySelector('.qd-data-table__row') as HTMLElement;
     const countButtons = root.querySelectorAll('[data-testid="word-count-chip"]') as NodeListOf<HTMLButtonElement>;
 
     // المواضع carries the ▼ glyph with no sort input set: it IS this explorer's default order, so it
@@ -123,7 +121,7 @@ describe('WordTypesTableComponent', () => {
     expect(root.textContent).toContain('SYNTH_WORD_TEXT');
     expect(root.textContent).toContain('—');
     expect(root.textContent).not.toContain('191001');
-    expect(root.querySelector('.word-types-table__header-gutter')).not.toBeNull();
+    expect(root.querySelector('.qd-data-table__header')).not.toBeNull();
     expect(tableRow.getAttribute('tabindex')).toBeNull();
     expect(tableRow.getAttribute('aria-current')).toBe('true');
     expect(tableRow.getAttribute('aria-selected')).toBe('true');
@@ -161,7 +159,7 @@ describe('WordTypesTableComponent', () => {
 
       const root = fixture.nativeElement as HTMLElement;
       const headers = Array.from(root.querySelectorAll('[role="columnheader"]')).map((header) => header.textContent?.trim());
-      const groupedTableRow = root.querySelector('.word-types-table__row') as HTMLElement;
+      const groupedTableRow = root.querySelector('.qd-data-table__row') as HTMLElement;
       const countButtons = root.querySelectorAll('[data-testid="word-count-chip"]') as NodeListOf<HTMLButtonElement>;
 
       expect(root.querySelector('[role="table"]')?.getAttribute('aria-label')).toBe(tableLabel);
@@ -170,7 +168,7 @@ describe('WordTypesTableComponent', () => {
       expect(headers).toEqual(['م', dimensionHeader, 'المواضع▼', 'الآيات', 'السور']);
       expect(groupedTableRow).not.toBeNull();
       expect(groupedTableRow.getAttribute('tabindex')).toBeNull();
-      expect(groupedTableRow.getAttribute('data-word-types-row')).toBe(rowDomId);
+      expect(groupedTableRow.getAttribute('data-row-id')).toBe(rowDomId);
       expect(groupedTableRow.textContent).toContain(groupedRow.displayText);
       expect(groupedTableRow.textContent).toContain(String(groupedRow.occurrencesCount));
       expect(groupedTableRow.textContent).toContain(String(groupedRow.ayahsCount));
@@ -207,7 +205,7 @@ describe('WordTypesTableComponent', () => {
     fixture.componentRef.setInput('selectedRow', word());
     fixture.detectChanges();
 
-    const groupedTableRow = (fixture.nativeElement as HTMLElement).querySelector('.word-types-table__row') as HTMLElement;
+    const groupedTableRow = (fixture.nativeElement as HTMLElement).querySelector('.qd-data-table__row') as HTMLElement;
     expect(groupedTableRow.classList.contains('qd-is-selected')).toBe(false);
     expect(groupedTableRow.getAttribute('aria-selected')).toBe('false');
     expect(groupedTableRow.getAttribute('aria-current')).toBeNull();
@@ -221,7 +219,7 @@ describe('WordTypesTableComponent', () => {
 
     const root = fixture.nativeElement as HTMLElement;
 
-    expect(root.querySelector('.word-types-table__body [role="row"]')).toBeNull();
+    expect(root.querySelector('[data-testid="qd-data-table-body"] [role="row"]')).toBeNull();
     expect(root.textContent).not.toContain('SYNTH_WORD_TEXT');
   });
 
@@ -242,7 +240,7 @@ describe('WordTypesTableComponent', () => {
 
       const root = fixture.nativeElement as HTMLElement;
 
-      expect(root.querySelector('.word-types-table__body [role="row"]')).toBeNull();
+      expect(root.querySelector('[data-testid="qd-data-table-body"] [role="row"]')).toBeNull();
       expect(root.textContent).not.toContain(hiddenText);
     },
   );
@@ -253,9 +251,9 @@ describe('WordTypesTableComponent', () => {
     fixture.detectChanges();
 
     const root = fixture.nativeElement as HTMLElement;
-    const body = root.querySelector('.word-types-table__body[role="rowgroup"]');
+    const body = root.querySelector('[data-testid="qd-data-table-body"][role="rowgroup"]');
     expect(body).not.toBeNull();
-    expect(body?.querySelectorAll('.word-types-table__row').length).toBe(2);
+    expect(body?.querySelectorAll('.qd-data-table__row').length).toBe(2);
   });
 
   it('renders a skeleton body while loading, even when prior rows exist', () => {
@@ -274,7 +272,7 @@ describe('WordTypesTableComponent', () => {
 
     const refreshRoot = refreshFixture.nativeElement as HTMLElement;
     expect(refreshRoot.querySelector('[data-testid="word-types-table-loading"]')).not.toBeNull();
-    expect(refreshRoot.querySelector('[data-word-types-row]')).toBeNull();
+    expect(refreshRoot.querySelector('[data-row-id]')).toBeNull();
   });
 
   it('renders the select prompt inside the table when no rows and status is selectPrompt', () => {
@@ -285,7 +283,7 @@ describe('WordTypesTableComponent', () => {
 
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('[data-testid="word-types-select-subtype"]')?.textContent).toContain('اختر نوعًا فرعيًا');
-    expect(root.querySelector('.word-types-table__header')).toBeNull();
+    expect(root.querySelectorAll('[role="columnheader"]')).toHaveLength(0);
   });
 
   it('renders the empty label inside the table when status is empty', () => {
@@ -348,8 +346,8 @@ describe('WordTypesTableComponent', () => {
     fixture.componentRef.setInput('tableView', tableView as WordTypeTableView);
     fixture.detectChanges();
 
-    const tableRow = (fixture.nativeElement as HTMLElement).querySelector('.word-types-table__row') as HTMLElement;
-    expect(tableRow.classList.contains('qd-explorer-table__row')).toBe(true);
+    const tableRow = (fixture.nativeElement as HTMLElement).querySelector('.qd-data-table__row') as HTMLElement;
+    expect(tableRow.classList.contains('qd-data-table__row')).toBe(true);
     expect(tableRow.classList.contains('qd-interactive-surface')).toBe(false);
   });
 
@@ -361,8 +359,8 @@ describe('WordTypesTableComponent', () => {
     const loadingRow = (fixture.nativeElement as HTMLElement).querySelector('.word-types-table__row--loading') as HTMLElement;
     expect(loadingRow).not.toBeNull();
     expect(loadingRow.classList.contains('qd-interactive-surface')).toBe(false);
-    expect(loadingRow.classList.contains('qd-explorer-table__row')).toBe(false);
-    expect(loadingRow.getAttribute('data-word-types-row')).toBeNull();
+    expect(loadingRow.classList.contains('qd-data-table__row')).toBe(false);
+    expect(loadingRow.getAttribute('data-row-id')).toBeNull();
     expect(loadingRow.getAttribute('aria-selected')).toBeNull();
   });
 
@@ -377,9 +375,9 @@ describe('WordTypesTableComponent', () => {
     fixture.componentRef.setInput('tableView', tableView as WordTypeTableView);
     fixture.detectChanges();
 
-    const tableRow = (fixture.nativeElement as HTMLElement).querySelector('.word-types-table__row') as HTMLElement;
+    const tableRow = (fixture.nativeElement as HTMLElement).querySelector('.qd-data-table__row') as HTMLElement;
     expect(tableRow.getAttribute('tabindex')).toBeNull();
-    expect(tableRow.getAttribute('data-word-types-row')).toBe(domId);
+    expect(tableRow.getAttribute('data-row-id')).toBe(domId);
   });
 
   it.each([
@@ -414,13 +412,13 @@ describe('WordTypesTableComponent', () => {
     fixture.componentRef.setInput('selectedRow', firstRow);
     fixture.detectChanges();
 
-    let rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.word-types-table__row');
+    let rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.qd-data-table__row');
     expect(rows[0].classList.contains('qd-is-selected')).toBe(true);
     expect(rows[1].classList.contains('qd-is-selected')).toBe(false);
 
     fixture.componentRef.setInput('selectedRow', secondRow);
     fixture.detectChanges();
-    rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.word-types-table__row');
+    rows = (fixture.nativeElement as HTMLElement).querySelectorAll('.qd-data-table__row');
     expect(rows[0].classList.contains('qd-is-selected')).toBe(false);
     expect(rows[1].classList.contains('qd-is-selected')).toBe(true);
 
@@ -495,7 +493,7 @@ describe('WordTypesTableComponent', () => {
     it('leaves the row-number and related-entity headers plain — no button, no aria-sort', () => {
       const root = sortFixture().nativeElement as HTMLElement;
       const plainHeaders = Array.from(root.querySelectorAll('[role="columnheader"]')).filter(
-        (header) => header.querySelector('.qd-explorer-table__sort-button') === null,
+        (header) => !header.matches('qd-sortable-header'),
       );
 
       for (const header of plainHeaders) {
@@ -520,8 +518,9 @@ describe('WordTypesTableComponent', () => {
       expect(
         root
           .querySelector('[data-testid="word-types-table-sort-occurrences"]')
-          ?.classList.contains('qd-is-sorted'),
-      ).toBe(true);
+          ?.closest('qd-sortable-header')
+          ?.getAttribute('aria-sort'),
+      ).toBe('descending');
     });
 
     it('collapses the المواضع cycle to desc(default) ⇄ asc, never an unsorted third state', () => {
@@ -591,7 +590,7 @@ describe('WordTypesTableComponent', () => {
 
       // One sort token across all four views; only the header text follows the view.
       const button = root.querySelector('[data-testid="word-types-table-sort-alpha"]') as HTMLElement;
-      expect(button.querySelector('.qd-explorer-table__sort-label')?.textContent?.trim()).toBe(label);
+      expect(button.querySelector('.qd-sortable-header__label')?.textContent?.trim()).toBe(label);
       expect(button.getAttribute('aria-label')).toBe(`ترتيب حسب ${label} تصاعديًا`);
     });
   });

@@ -27,7 +27,7 @@ describe('StemDetailsPanelComponent a11y (T087)', () => {
     return fixture;
   }
 
-  it('renders a tablist with exactly the four tabs linked to a single tabpanel', () => {
+  it('composes the shared details workspace and mounts four labeled tabpanels', () => {
     const fixture = createPanel('surahs');
     const host = fixture.nativeElement as HTMLElement;
 
@@ -37,12 +37,16 @@ describe('StemDetailsPanelComponent a11y (T087)', () => {
     const tabs = host.querySelectorAll('[role="tab"]');
     expect(tabs).toHaveLength(4);
 
-    const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
-    expect(panel.id).toBe('stem-details-panel-surface');
-    expect(panel.getAttribute('tabindex')).toBe('0');
+    expect(host.querySelector('qd-details-workspace')).toBeTruthy();
+    expect(host.querySelectorAll('[role="tabpanel"]')).toHaveLength(4);
+
+    const active = host.querySelector('[data-testid="stem-details-panel-surface"]') as HTMLElement;
+    expect(active.getAttribute('tabindex')).toBe('0');
 
     for (const tab of Array.from(tabs)) {
-      expect(tab.getAttribute('aria-controls')).toBe('stem-details-panel-surface');
+      const panel = host.querySelector(`#${tab.getAttribute('aria-controls')}`) as HTMLElement;
+      expect(panel).toBeTruthy();
+      expect(panel.getAttribute('aria-labelledby')).toBe(tab.id);
     }
   });
 
@@ -57,8 +61,10 @@ describe('StemDetailsPanelComponent a11y (T087)', () => {
       expect(tab.getAttribute('tabindex')).toBe(isActive ? '0' : '-1');
     }
 
-    const panel = host.querySelector('[role="tabpanel"]') as HTMLElement;
-    expect(panel.getAttribute('aria-labelledby')).toBe('stem-details-tabbtn-surahs');
+    const activeTab = host.querySelector('[data-stem-tab="surahs"]') as HTMLElement;
+    const panel = host.querySelector('[data-testid="stem-details-panel-surface"]') as HTMLElement;
+    expect(activeTab.id).toBeTruthy();
+    expect(panel.getAttribute('aria-labelledby')).toBe(activeTab.id);
   });
 
   it('moves selection forward in RTL reading order on ArrowLeft', () => {
@@ -114,23 +120,22 @@ describe('StemDetailsPanelComponent a11y (T087)', () => {
     }
   });
 
-  it('renders controlled not-found content without detail tabs', () => {
+  it('keeps controlled not-found content inside its labeled tabpanel', () => {
     const fixture = createPanel('words');
     fixture.componentRef.setInput('notFound', true);
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
-    expect(host.querySelector('[data-testid="stem-details-not-found"]')).toBeTruthy();
-    expect(host.querySelector('[role="tablist"]')).toBeNull();
-    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(0);
+    const notFound = host.querySelector('[data-testid="stem-details-not-found"]');
+    expect(notFound).toBeTruthy();
+    expect(host.querySelector('[role="tablist"]')).toBeTruthy();
+    expect(host.querySelectorAll('[role="tab"]')).toHaveLength(4);
 
-    // No tablist is rendered, so the surface must not keep a tabpanel pointing at a
-    // missing tab: it drops the dangling aria-labelledby and becomes a labelled region.
-    expect(host.querySelector('[role="tabpanel"]')).toBeNull();
+    const activeTab = host.querySelector('[data-stem-tab="words"]') as HTMLElement;
     const surface = host.querySelector('[data-testid="stem-details-panel-surface"]') as HTMLElement;
-    expect(surface.getAttribute('role')).toBe('region');
-    expect(surface.getAttribute('aria-labelledby')).toBeNull();
-    expect(surface.getAttribute('aria-label')).toBe('تفاصيل الأصل الصرفي');
+    expect(surface.getAttribute('role')).toBe('tabpanel');
+    expect(surface.getAttribute('aria-labelledby')).toBe(activeTab.id);
+    expect(surface.contains(notFound)).toBe(true);
   });
 });
 

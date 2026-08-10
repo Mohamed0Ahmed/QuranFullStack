@@ -3,16 +3,20 @@
   height: 100%;
 }
 
-:host .explorer-detail-panel__body {
+.word-type-details-panel,
+:host qd-details-workspace {
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.word-type-details-panel__surface {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
   min-block-size: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
-// Frameless content mode (global overlay shell owns the dialog chrome):
-// a plain flex column so the tabpanel body keeps its internal scrolling.
 .word-type-details-panel--frameless {
   display: flex;
   flex-direction: column;
@@ -26,24 +30,11 @@
   border-radius: var(--qd-radius-sm);
 }
 
-.word-type-details-panel__close:focus-visible,
-.word-type-details-panel__tab:focus-visible {
-  outline: 2px solid var(--qd-focus-ring);
-  outline-offset: 2px;
-}
-
 .word-type-details-panel__tab {
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  font-size: 0.875rem;
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body);
 }
 
-.word-type-details-panel__tabs {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .word-type-details-panel__tab,
-  .word-type-details-panel__close {
-    transition: none;
-  }
+.word-type-details-panel__surface[hidden] {
+  display: none;
 }

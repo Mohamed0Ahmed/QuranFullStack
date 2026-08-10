@@ -89,9 +89,9 @@ describe('UniqueWordsPageComponent', () => {
     // The mode line stays adjacent to the title it qualifies; the hero follows the whole header.
     expect(band.querySelector('[data-testid="unique-words-page-mode"]')).toBeTruthy();
     expect(header.compareDocumentPosition(hero!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    // The toolbar recess stays below the band, unchanged.
-    expect(root.querySelector('.uw-toolbar-recess')).toBeTruthy();
-    expect(band.querySelector('.uw-toolbar-recess')).toBeNull();
+    // The shared explorer toolbar stays below the band, unchanged.
+    expect(root.querySelector('qd-explorer-toolbar')).toBeTruthy();
+    expect(band.querySelector('qd-explorer-toolbar')).toBeNull();
   });
 
   it('renders the mode tabs', async () => {
@@ -162,7 +162,7 @@ describe('UniqueWordsPageComponent', () => {
     const root = await render({ status: 'loading', items: [] });
     const loading = root.querySelector('[data-testid="unique-words-loading"]');
     expect(loading).toBeTruthy();
-    expect(loading?.querySelectorAll('.unique-words-table__row')).toHaveLength(12);
+    expect(loading?.querySelectorAll('.unique-words-table__loading-row')).toHaveLength(12);
     expect(root.querySelector('[data-testid="unique-words-table-word-button"]')).toBeNull();
   });
 

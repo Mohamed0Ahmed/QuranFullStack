@@ -1027,7 +1027,10 @@ describe('StemsExplorerPageComponent US8 — restore and navigate exact state', 
     expect(notFound?.getAttribute('role')).toBe('status');
     expect(notFound?.closest('qd-stem-details-panel')).toBeTruthy();
     expect(root.querySelector('[data-testid="stems-restored-not-found"]')).toBeNull();
-    expect(root.querySelectorAll('[data-stem-tab]')).toHaveLength(0);
+    // The tablist stays mounted; only the selected tab remains enabled while notFound holds.
+    const tabs = Array.from(root.querySelectorAll('[data-stem-tab]')) as HTMLButtonElement[];
+    expect(tabs).toHaveLength(4);
+    expect(tabs.filter((tab) => !tab.disabled)).toHaveLength(1);
     expect(root.querySelector('qd-stems-table')).toBeTruthy();
   });
 
