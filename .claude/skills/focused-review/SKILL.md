@@ -43,8 +43,8 @@ slice. Conditionally load only:
 - **User-facing/product/visual scope only:** `PRODUCT.md`/`DESIGN.md`.
 - **Quran scope only:** Quran safety (`CODING_PRINCIPLES.md` §10) plus the nearest
   source/rendering owner.
-- **Supplied checkpoint evidence:** an exact `TESTING_STRATEGY.md` heading, only to
-  label that evidence.
+- **Supplied checkpoint evidence:** the exact `TESTING_CONSTITUTION.md` rule or owning Backend/E2E
+  README section, only to label that evidence.
 
 ## Evidence, not execution
 

@@ -48,8 +48,8 @@ standing exception, and it is why the two import folders survive:
   surviving record of source verification, per-source hashes, exclusions, and provenance
   warnings for those imports, and **the assertion has nowhere to live yet**: the canonical smoke
   dump (`Backend/scripts/create-smoke-dump`) pins only the five morphology baseline tables, so no
-  tier can currently see a translations or navigation row count. `docs/TESTING_DEBT.md` row C5
-  records the owed test; when it lands, these files go.
+  tier can currently see a translations or navigation row count. Under the Test Freeze, these
+  reports remain the evidence unless an owner-approved retained gate supersedes them.
 - Separately, `tools/QuranDashboard.DataImporter/Import/DefaultPaths/DataImporterDefaults.cs`
   hardcodes both directories as the importers' default output targets. That does not by itself
   protect the reports — the writers call `Directory.CreateDirectory` and would recreate an empty

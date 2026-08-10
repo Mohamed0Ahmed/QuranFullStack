@@ -91,8 +91,7 @@ incidentally.
   `abwab_template_nodes` and writes `abwab_doors`, so it belongs to neither aggregate's writer. That
   is the rule bending to `BACKEND_STRUCTURE.md` §4's own instruction to "split large repositories by
   aggregate, feature, read model, **or use case**": the copy is a use case, and `EfAbwabDoorsWriter`
-  is already past that section's 600-line hard threshold — the split it owes is tracked as
-  `docs/TESTING_DEBT.md` row J1 — so hanging it there was never available. Every other writer here
+  is already past that section's 600-line hard threshold, so hanging it there was never available. Every other writer here
   stays one-aggregate.
 - **Every writer interface here is DI-wrapped by an invalidating decorator, and that is not
   optional.** `Infrastructure/Caching/Abwab/Invalidating*Writer` wraps each of the five interfaces and
@@ -142,7 +141,7 @@ incidentally.
   non-resequencing delete leave duplicate `OrderValue`s reachable today. Matching the reader's own
   order is what makes "position 3" mean the third row on screen even while a duplicate exists — the
   reorder also heals the sequence back to `1..N` whenever it runs. That duplicate-`OrderValue`
-  condition is not fixed here (`docs/TESTING_DEBT.md` rows F1/F2); it is worked around.
+  condition is not fixed here; it is worked around.
 - **Archive claims a subtree; restore returns exactly what that archive claimed.** `ArchiveSubtreeAsync`
   only touches **live** descendants, so a descendant archived earlier by a separate operation is not part
   of the claim. `RestoreAsync` therefore matches descendants on the archive's own `deleted_at` timestamp,
@@ -186,10 +185,8 @@ incidentally.
     paths check the doors FIRST and resolve the section second** — `MoveAsync` returns `null` for a
     missing door and `BulkMoveAsync` throws `AbwabNotFoundException`, each before its own
     `ResolveTargetSectionAsync` call — so a request that names an unknown door AND omits the root
-    section answers `404`, not `400`. Whether that is the intended order is still open and nothing
-    discriminates the two (`docs/TESTING_DEBT.md` row C1); comments in
-    `AbwabDoorWriteBehaviorTests.cs` and `SmokeAbwabWriteTests.cs` still describe the bulk path the
-    other way round.
+    section answers `404`, not `400`. `AbwabDoorWriteBehaviorTests.cs` records the retained bulk-path
+    behavior.
   - `MoveAsync` and `BulkMoveAsync` **cascade** a section change to the moved door's whole subtree,
     `CascadeSectionToDescendantsAsync`. **Archived descendants included** — they keep their `parent_id`
     through soft-delete, and one left behind would later restore into a section its parent has left.
@@ -339,19 +336,15 @@ incidentally.
 - Controllers and status mapping: `api/QuranDashboard.Api/Controllers/Abwab/`
   (`../../../../api/QuranDashboard.Api/Controllers/README.md`).
 - Domain entities: `Backend/domain/QuranDashboard.Domain/Abwab/`.
-- Tests: `Backend/tests/QuranDashboard.Tests/Abwab/` (writer behavior) and
-  `Backend/tests/QuranDashboard.Tests/Smoke/SmokeAbwabWriteTests.cs` (status/envelope contract).
-  **`EfAbwabTemplatesWriter` has none of either** — that feature wrote no tests by decision.
+- Tests: `Backend/tests/QuranDashboard.Tests/Abwab/` holds the retained writer behavior classes;
+  `Backend/tests/QuranDashboard.Tests/Smoke/SmokeAbwabWriteAuthorizationTests.cs` holds the retained
+  authorization/status boundary. **`EfAbwabTemplatesWriter` has no retained direct class.**
   `EfAbwabRelationsWriter` has exactly one behavior test and no smoke coverage:
   `Backend/tests/QuranDashboard.Tests/Abwab/AbwabRelationWriteBehaviorTests.cs` pins the
   null-direction refusal at the seam. `EfAbwabTemplateApplyWriter` has one behavior test and no smoke coverage:
   `Backend/tests/QuranDashboard.Tests/Abwab/AbwabTemplateApplyBehaviorTests.cs` pins the target's
-  section carrying to every copied depth, which `docs/TESTING_DEBT.md` row 7 records as the one paid
-  obligation of that row; the offsets, the aliases, all-or-nothing across N targets and the
-  `(target, child)` `409` are still open, so the apply path stays the highest-value gap of the set —
-  it is the only path in the repository that creates door rows outside
-  `EfAbwabDoorsWriter.CreateAsync`. No Abwab route is dispatched by the smoke sweep except
+  section carrying to every copied depth. The apply path is the only path in the repository that
+  creates door rows outside `EfAbwabDoorsWriter.CreateAsync`. No Abwab route is dispatched by the smoke sweep except
   `api/abwab/tree`; every other one is catalogued `ParityOnly` in
-  `Backend/tests/QuranDashboard.Tests/Smoke/SmokeRouteCatalog.cs`.
-  The relations gaps and what pays them are in `docs/TESTING_DEBT.md`; the templates rows land with
-  that feature's frontend slice.
+  `Backend/tests/QuranDashboard.Tests/Smoke/SmokeRouteCatalog.cs`. The Test Freeze governs any
+  proposed additional automation.

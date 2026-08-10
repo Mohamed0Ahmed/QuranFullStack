@@ -208,5 +208,5 @@ readers are.
 - Response DTOs: `application/QuranDashboard.Application.Abstractions/Abwab/Responses/AbwabTreeDto.cs`,
   `AbwabDoorRelationDto.cs`, `AbwabTemplateDto.cs`, `AbwabTemplateSummaryDto.cs`,
   `AbwabTemplateNodeDto.cs`.
-- Tests: the relations and templates readers have none. The relations gap and its trigger are in
-  `docs/TESTING_DEBT.md`; the templates rows land with that feature's frontend slice.
+- Tests: the relations and templates readers have no retained direct test class. The repository
+  Test Freeze applies to any proposed addition.

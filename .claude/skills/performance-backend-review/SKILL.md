@@ -55,7 +55,7 @@ right answer for this product.
   `CLEAN_ARCHITECTURE.md`, or `API_GUIDELINES.md` — only so a recommendation does not
   violate architecture or the `ApiResponse` contract.
 - `Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md` and
-  `TESTING_STRATEGY.md` §3.3 — only for a real PostgreSQL fixture/test-runtime finding
+  `Backend/tests/QuranDashboard.Tests/README.md` — only for a real PostgreSQL fixture/test-runtime finding
   (ordinary fixtures lease from the shared runtime; a fixture starting its own container
   is a finding).
 - Live cardinality — there is deliberately no stored database-baseline report; if row

@@ -27,7 +27,7 @@ SHARD_HANDOVER_TIMEOUT_SECONDS=30
 usage() {
   cat <<'EOF'
 Usage:
-  Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|canonical-data
+  Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data
     --build|--no-build [--list-tests] [--results-dir PATH]
   Backend/scripts/test-backend feature FEATURE_KEY --build|--no-build
     [--list-tests] [--results-dir PATH]
@@ -70,7 +70,7 @@ lane="$1"
 shift
 
 case "${lane}" in
-  fast|access|access-db|migration|process|smoke|tier-b|canonical-data|feature|pipeline|pre-pr)
+  fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|feature|pipeline|pre-pr)
     ;;
   *)
     fail_usage "Unknown lane: ${lane}"
@@ -235,7 +235,10 @@ while IFS=$'\t' read -r class_name feature kind gate concerns; do
       [[ "${gate}" == "Smoke" && "${kind}" != "Canonical" ]] && selected=true
       ;;
     tier-b)
-      [[ "${gate}" == "TierB" ]] && selected=true
+      [[ "${gate}" == "TierB" && -z "${concerns}" ]] && selected=true
+      ;;
+    gate-contract)
+      [[ -n "${concerns}" ]] && selected=true
       ;;
     canonical-data)
       [[ "${kind}" == "Canonical" ]] && selected=true
@@ -698,7 +701,7 @@ for index in "${!shard_filters[@]}"; do
   fi
 done
 
-# This line is the canonical tier's skip accounting (TESTING_STRATEGY.md 3.4), scoped to the shards that
+# This line is the canonical tier's skip accounting (tests/QuranDashboard.Tests/README.md), scoped to the shards that
 # actually carry Kind=Canonical classes: canonical classes are not confined to the exclusive shard - every
 # Quran.Import class is one, and they run on the shared runtime. "ran" therefore requires every
 # canonical-bearing shard to have both started AND exited zero; a shard that never started or came back

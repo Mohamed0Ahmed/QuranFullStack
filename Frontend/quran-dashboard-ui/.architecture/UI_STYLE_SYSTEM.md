@@ -111,9 +111,8 @@ Rules:
 > app-wide pattern — do not scaffold speculative empty files.
 >
 > `.qd-container`, `.qd-page-frame` and `.qd-explorer-frame` were the pre-Golden page frames. All
-> three were **deleted in Phase 11** once `rg` proved zero template consumers; the four page specs
-> that assert `querySelectorAll('.qd-container, .qd-page-frame, .qd-explorer-frame')` is empty are
-> the standing regression guard. Every route composes `.qd-page-shell` plus one named page intent
+> three were **deleted in Phase 11** once `rg` proved zero template consumers. Every route composes
+> `.qd-page-shell` plus one named page intent
 > (§18.4), and that rule now owns the only `padding-inline: var(--qd-page-gutter)` declaration in
 > the stylesheet tree.
 
@@ -864,8 +863,8 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   is the only `role="alert"` and never clears a draft. That split is the point of the retirement —
   the adapter announced every failure as an alert.
 - **The `qd-state-*` test ids survive on the owners**, deliberately: `testId="qd-state-error"`,
-  `qd-state-empty`, `qd-state-loading`, `qd-state-action`. They are selectors kept so no spec or
-  e2e locator had to move; they are not evidence of a surviving component.
+  `qd-state-empty`, `qd-state-loading`, `qd-state-action`. They are stable call-site identifiers,
+  not evidence of a surviving component.
 - **The `.qd-state--reserve` / `.qd-state--reserve-empty` / `.qd-state__message` /
   `.qd-state__action` classes also survive**, in `_components.scss`, as the backing layer for the
   owners' `reserve` input. Renaming them would be a broad class rename with no behavioural gain and
@@ -1202,10 +1201,9 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   primitive replaces).
 - **Inputs / outputs:** `position: {x, y}` (positions the menu via
   `[style.left.px]`/`[style.top.px]`, unchanged from both prior copies); `menuTestId` /
-  `backdropTestId` (both `string`, required) — **non-negotiable**, because 4 Vitest
-  assertions and ~8 Playwright assertions select `abwab-page-context-menu` /
-  `abwab-page-ctx-backdrop` / the templates-page equivalents by test id, and inputs are
-  what let the extraction keep them byte-identical; `menuAriaLabel` (optional, defaults to
+  `backdropTestId` (both `string`, required) — **non-negotiable**, because surviving consumers use
+  `abwab-page-context-menu` / `abwab-page-ctx-backdrop` / the templates-page equivalents, and the
+  inputs keep them byte-identical; `menuAriaLabel` (optional, defaults to
   `CONTEXT_MENU_LABELS.menuAriaLabel`) names the `role="menu"` box — a menu with no
   accessible name is announced as an unlabelled group, so a consumer whose menu is not
   "operations" passes its own Arabic string; `dismissed` output, emitted on
@@ -1255,11 +1253,10 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   under RTL that means the edge nearest the anchor is the one lost.
   Because all three decisions need the box's own size, the menu
   renders `visibility: hidden` for one frame, measures itself in `afterRenderEffect`, then
-  places and shows — no flash on the wrong side. jsdom reports zero-sized rects and is
-  skipped (the menu keeps the raw anchor there and stays measurable by the specs), so
-  **the browser is the verification tier**: the row-context-menu placement test in
-  `e2e/abwab-operations.e2e.ts` asserts that the RTL box's start (right) edge lands on the
-  anchor within 2px, the inline flip at 900px width, and the block flip at 420px height.
+  places and shows — no flash on the wrong side. When a view and anchor exist,
+  `repositionFloatingLayer()` always computes and applies placement using the measured layer and
+  anchor geometry. Placement retains the RTL inline-start anchor, inline flip at constrained width,
+  and block flip at constrained height.
   Both trees' keyboard paths anchor at the focused row's inline-start edge to match
   (`abwab-tree.component.ts:317-319`, `abwab-template-tree.component.ts:106-108`).
   Recorded browser walk (1024px and 1440px, both themes, 12 points): mid-viewport right-edge
@@ -1270,9 +1267,8 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   named so a future reader does not re-open them as work: gap 1, no viewport clamping,
   **closed by slice L** (the placement contract above — whose math now lives in the pure
   `placeContextMenu()`/`resolveMenuDirection()` helpers of
-  `shared/ui/context-menu/context-menu-placement.ts`, with the RTL/LTR default, the flip
-  and the clamp branches unit-pinned in `context-menu-placement.spec.ts`, so placement
-  coverage no longer depends on the opt-in e2e tier); gap 2, no focus management into
+  `shared/ui/context-menu/context-menu-placement.ts`, with the RTL/LTR default, flip, and clamp
+  branches); gap 2, no focus management into
   the menu, **closed** (the keyboard contract above). What is still open:
   3. **The `--danger` item's rest-state color is not unified.** The two prior copies
      were not byte-identical here: the doors page's danger item was plain-colored until
@@ -1334,8 +1330,7 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   identity; the Access user picker's chosen identity (a `<p>`, whose sibling button
   clears the choice rather than revealing it); the Abwab side panel's active door
   name (a plain `div` chain under `role="group"`); and the templates page's editor
-  heading (a plain `<h2>`). Each has a focused spec asserting the absence of `title`,
-  of `.qd-truncate` and of any added `tabindex`.
+  heading (a plain `<h2>`). Each remains without `title`, `.qd-truncate`, or an added `tabindex`.
   **The remaining `[title]` sites were resolved individually against their real
   focusable owner and are correct**: a name truncating inside a `button`
   (`abwab-cards` card and crumbs, `access-user-list` row, `abwab-move-picker`'s two
@@ -1575,16 +1570,15 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   deliberately: every holder is a modal dialog or a modal overlay, "app chrome is not
   reachable while a modal dialog is open" is not an abwab-only doctrine, and the precedent
   is *stronger* — `app.ts:14` already inerts the entire shell for the global overlay.
-- **Inert-inside-inert is real and was observed live, not just unit-tested.** With a
+- **Inert-inside-inert is real and was observed live.** With a
   words drawer (e.g. `root-details-panel`, holding the lock) open *under* the global
   detail overlay (`app.ts`'s `overlayOpen()`, which inerts the whole shell): the
   shell carries `inert`/`aria-hidden` from `app.ts`, and `.qd-navbar` — itself a
   shell descendant, already inert by cascade — *also* carries its own explicit
   `inert`/`aria-hidden` from `ScrollLockService.isLocked()`. Both apply
   simultaneously and harmlessly; browsers treat nested/duplicate `inert` as
-  idempotent. `app.nested-layers.spec.ts`'s "exactly one focus trap enabled" (the
-  dialog's, not the drawer's) still holds in this state — confirmed both by that
-  spec and by a live count of enabled `.cdk-focus-trap-anchor` elements in the
+  idempotent. Exactly one focus trap remains enabled (the dialog's, not the drawer's), confirmed by
+  a live count of enabled `.cdk-focus-trap-anchor` elements in the
   browser.
 
 ### `qd-result-count`
@@ -1600,13 +1594,13 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   `ExplorerResultCountComponent`, selector `qd-result-count, qd-explorer-result-count`
   — the same dual-selector alias mechanism as `qd-panel-skeleton,
   qd-explorer-panel-skeleton` (`ui/explorer-panel-skeleton/`), kept so the four
-  existing words explorer call-sites (Unique Words, Roots, Lemmas, Stems) and their
-  spec needed no template change, only an import-path update. New call-sites (item
+  existing words explorer call-sites (Unique Words, Roots, Lemmas, Stems) needed no template
+  change, only an import-path update. New call-sites (item
   17's abwab stats bar) use the neutral `qd-result-count` selector.
 - **Its own labels are read through a TDZ-safe getter**
   (`result-count.labels.ts` → `protected get labels()`), never a `readonly` field —
-  a `readonly` field resolves to `undefined` in the bundled test build (temporal
-  dead zone). This is the same rule `features/words/README.md` and
+  a field initialiser can observe the label module inside its temporal dead zone.
+  This is the same rule `features/words/README.md` and
   `features/abwab/README.md` state for their own `*.labels.ts` files; the promotion
   preserved the idiom rather than dropping it on the move.
 - **Renders `labelPrefix()`: `count()` — a data-display idiom, not a counted-noun
@@ -1871,7 +1865,8 @@ class names kept as the backing layer) are now the
 shared reserved-live-region vocabulary of the empty, error and text-loader owners (the styles moved
 from `state.component.scss` into `_components.scss`, because a component stylesheet cannot reach
 markup another component renders). The names keep their legacy spelling on purpose: two feature
-specs and one page assert them, and renaming them would be a call-site migration, not a rename.
+families and one page still consume them, and renaming them would be a call-site migration, not a
+rename.
 
 `.qd-empty-state` / `.qd-loading-state` / `.qd-error-state` keep their current padding and
 alignment. Their Golden retune (padding 16, `min-block-size: min(40vh, 20rem)` for read states) is

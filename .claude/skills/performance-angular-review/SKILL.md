@@ -48,10 +48,8 @@ readable" is the right answer for Quran content.
   `UI_STYLE_SYSTEM.md`, `API_INTEGRATION_GUIDELINES.md` — only the exact heading a
   finding depends on (so a recommendation does not break structure, the style system, or
   the API flow).
-- `.claude/skills/test-guard/references/frontend-test-harness-constraints.md` and
-  `Frontend/quran-dashboard-ui/testing/README.md` — only before treating a jsdom
-  limitation, the deliberate Vitest fork cap, or a harness timeout as a performance
-  problem. Never recommend raising the fork cap.
+- `Frontend/quran-dashboard-ui/e2e/README.md` — only when a retained Playwright journey or its
+  browser/runtime prerequisites are relevant to the finding.
 - Browser/profiler measurement — only when a finding requires it, and read-only.
 - Immediate parent/child components and the relevant facade/state service — only to
   judge whether a component is hot or a list is large; do not drift into auditing

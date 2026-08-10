@@ -67,7 +67,7 @@ The policy governs, and governs nothing else:
   templates and stylesheets are production code and are included.
 
 **Out of scope. Leave every comment alone: do not edit them, do not report them as findings.**
-Test projects and spec files (`Backend/tests/**`, `*.spec.ts`, `e2e/**`); everything under
+Retained test projects (`Backend/tests/**`, `e2e/**`); everything under
 `.claude/`, `.agents/` and `.specify/`; `Backend/scripts/**`; the DataImporter tooling; build
 and CI configuration; and all generated files (`Migrations/*.Designer.cs`,
 `*ModelSnapshot.cs`, `*.d.ts`, build output). These are not where the noise is, and churning
@@ -162,9 +162,8 @@ Frontend:
 - Run build after relevant changes when possible.
 - Run tests when tests exist or when logic is sensitive.
 - Report build/test status in the final summary.
-- Deeper test-code quality guidance lives in the native `test-guard` Skill:
-  use `references/dotnet.md` for backend tests and
-  `references/jest.md` for frontend tests.
+- Testing policy lives in `TESTING_CONSTITUTION.md`; the native `test-guard` Skill applies only to
+  retained Backend and Playwright tests, with `references/dotnet.md` for Backend-specific guidance.
 - Quranic Data Safety (§10) applies to tests too: never invent Quran text, tafsir,
   translations, morphology, roots, or gates in tests unless clearly synthetic.
 

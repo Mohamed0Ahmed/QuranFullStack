@@ -79,7 +79,7 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
   - Since Phase 8 the running mode is **stated in visible copy**: the search is a `qd-form-field`
     whose helper is `searchScopeHintTree` / `searchScopeHintCards` / `searchScopeHintArchive`,
     linked to the input through the field's generated `aria-describedby`. The three strings are
-    deliberately distinct and pinned in `abwab.labels.spec.ts` — one shared hint would be the
+    deliberately distinct — one shared hint would be the
     first step towards the shared search algorithm this feature does not have.
   - The visible match count sits beside the input. An always-mounted hidden `role="status"` speaks
     the settled count once, 500 ms after typing stops; clearing speaks nothing. It does not use
@@ -108,7 +108,7 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
 - Inline door reorder commits only on Enter; blur and Escape cancel. Blur must not write a
   half-entered order. The `＋` and `⋯` actions are **always visible** (D46 — a hover-only row
   action is unreachable by touch and invisible to anyone scanning the row; the old
-  `visibility: hidden` reveal is gone and a tree spec asserts no rule brings it back). They
+  `visibility: hidden` reveal is gone). They
   disappear in bulk mode and remain outside the tab order. Every row control — chevron, `＋`, `⋯`
   — is the shared `qdAction="row-action"` owner sized by a local `--qd-action-size`.
 - **`qd-hit-target` is applied to the chevron and to nothing else in a row.** The utility grows a
@@ -181,8 +181,8 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
 
 - `components/abwab-cards/` renders the bounded shared doors grid: the level is `qd-grid
   qd-grid--doors` (`14–20rem`, at most four columns, single column at Compact), so the track sizes
-  live in `_tokens.scss` and not in this stylesheet — a card spec asserts no local
-  `grid-template-columns` rule survives. Cards keep drill-down and selection only and gain no
+  live in `_tokens.scss` and not in this stylesheet; no local `grid-template-columns` rule survives.
+  Cards keep drill-down and selection only and gain no
   context menu. It treats `cardId` as the current parent, not a stored breadcrumb array;
   it derives ancestors through `parentId`/`byId` and fails closed to root for unknown or archived
   ids. Empty/no-match state stays below the breadcrumb so a filtered drilled level keeps a way
@@ -304,8 +304,8 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
 - `state/abwab-tree.builder.ts` is the pure DTO-to-view builder: live/archive partition,
   gap-tolerant ordering, section scope, root/scope counts, search, and archive pruning. One walk
   produces `matchedIds`, `autoExpandedIds`, and `visibleIds` and uses one push/pop ancestor stack
-  rather than allocating a path per edge. Its exact-set builder specs protect that allocation
-  change from altering results.
+  rather than allocating a path per edge. The allocation strategy must not alter those exact result
+  sets.
 - `state/abwab-selection.store.ts` owns single/bulk selection and rebinds ids after refresh,
   dropping vanished doors. Scope clearing is centralized here: `setSectionScope` clears the bulk
   set but keeps bulk mode; `setArchiveViewActive` clears it and exits bulk mode. This covers both
@@ -322,8 +322,8 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
   - `loadFor` may use cache; `refetchFor` forces the post-write modal read because the snapshot
     refresh is fire-and-forget and may not have landed.
   - Any future narrower invalidation must still evict on door rename because cached partner names
-    and their order change without a relation-count signal. The rename guard in
-    `abwab-relations.controller.spec.ts` and the Backend Abwab reads README pin this requirement.
+    and their order change without a relation-count signal. The Backend Abwab reads README records
+    this requirement.
   - Never key this cache by `AbwabTreeDto.version`: that diagnostic value ignores relation writes,
     so it would serve stale lists after the writes that matter.
 - `state/abwab-templates.facade.ts` is the root-scoped template list/selected-tree cache;
@@ -337,8 +337,8 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
   `data-access/abwab-templates.api.ts` owns template routes. Keep the route families separate and
   take their public methods as the live list.
 - `models/abwab.models.ts` owns view models. `models/abwab.labels.ts` owns Arabic strings, which
-  consumers read through getters rather than readonly field initializers to avoid TDZ failures in
-  bundled tests.
+  consumers read through getters rather than readonly field initializers, which can observe the
+  label module inside its temporal dead zone.
 ## URL contract (`state/abwab-url-sync.ts`)
 
 | Key | Values | Absent means |
@@ -372,7 +372,7 @@ the key carries its subject itself:
 | `<kind>-closed` | `door=`, and it follows a later selection |
 | `relations-<id>-closed` | door `<id>`, **pinned** — selecting another door does not move it |
 
-Fail-closed rules, all pinned in `abwab-url-sync.spec.ts`'s negative table: the id must be a
+Fail-closed rules: the id must be a
 positive integer; an id on the **open** form is invalid (an open overlay's subject is always
 `door=`, and a diverged subject there is exactly what `canOpen` forbids); an id on any other
 kind is invalid (only the relations modal has a reveal). Unlike the plain forms, the
@@ -386,8 +386,8 @@ holds again.
 whatever writes it next wins: opening any modal overwrites a carried key (its restore control
 vanishes for good — closing the new modal retains *that* modal's plain `-closed`, it never
 resurrects the id-carrying one), a second reveal overwrites with the new source, and a section
-switch or archive-on clears it with everything else. Both overwrite orders are pinned in the
-page spec so this stays a decision rather than an artifact.
+switch or archive-on clears it with everything else. Both overwrite orders are part of the URL-state
+contract so this stays a decision rather than an artifact.
 
 **`modal` selects an overlay, never a data scope, and it enters no *caching* identity.** It
 is not part of any cache key or ETag — the carried id in `relations-<id>-closed` is a restore
@@ -485,8 +485,7 @@ by replace. Back past an X-clear therefore surfaces an *earlier* retained entry 
 exists: the restore control reappears, no overlay reopens. The reveal is the one path that
 **rewrites** the key by push rather than replace — it is a navigation to a different door in
 its own right, so Back must undo it, and undoing it restores the relations modal on the
-source door along with `door=` (pinned since ux-slice-l in both the page spec and
-`e2e/abwab-relations.e2e.ts`; before that the designed path had no coverage at all). Since
+source door along with `door=`. Since
 ux-slice-l the reveal *retains* rather than discards — see `relations-<id>-closed` above —
 so the source's relations are also one click away from the restore control, and while the
 cache is warm reopening them costs no additional read. This mirrors the words overlay's contract
@@ -500,8 +499,8 @@ Closing by gesture (Escape, backdrop, the modal's own button) goes through each 
 from the URL — browser Back, a `-closed` emission, a scope switch — goes through the
 overlay's `close` setter and drops the draft silently. Deliberate, and the direct
 consequence of the URL being the single source of truth: a URL that says the overlay is
-closed closes it, and restoring hands back a pristine overlay, never the draft. Pinned in
-the page spec so it stays a decision.
+closed closes it, and restoring hands back a pristine overlay, never the draft. This stays an
+explicit URL-state decision.
 
 **The URL is the single source of truth for the selection.** `AbwabPageComponent` clears
 `AbwabSelectionStore` whenever a param emission carries no `door`, and every path that
@@ -529,8 +528,8 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   and `box-sizing: border-box` (load-bearing for the viewport reservation below), while
   `.qd-page` keeps block rhythm only. The local `__frame` classes supply the column flex context
   and the bottom gap above the footer that the retired frame class used to carry; neither adds a
-  second inline gutter, and a page spec asserts there is exactly one shell and no surviving
-  `qd-container`/`qd-page-frame`/`qd-explorer-frame` on either route.
+  second inline gutter. Each route has exactly one shell and no surviving
+  `qd-container`/`qd-page-frame`/`qd-explorer-frame`.
 - **The doors page (`abwab-page.component`) reserves a full viewport (Slice B2, T801-T802) — the
   templates page does not.** `.abwab-page__frame` adds `min-block-size: calc(100dvh -
   var(--qd-navbar-block-size))` on top of the page shell; abwab-local for now, see
@@ -593,18 +592,15 @@ in scope, which is exactly what §6.2's M22 cell forbids.
     relations and copy modals the picker search. Each of those two targets carries
     `cdkFocusInitial` — in `abwab-door-fields-form` and `abwab-door-picker` respectively, so two
     attributes serve all four modals — which is what the trap's own capture reads, so a modal
-    opens with **one** focus move. The queued `focusFirstField()` / `focusSearch()` calls stay
-    behind it: they are the only path in jsdom, and they cover a capture that resolves before the
-    target renders. Do not "simplify" this by dropping `cdkTrapFocusAutoCapture` — the CDK stores
+    opens with **one** focus move. The queued `focusFirstField()` / `focusSearch()` calls cover a
+    capture that resolves before the target renders. Do not "simplify" this by dropping
+    `cdkTrapFocusAutoCapture` — the CDK stores
     the previously focused element *only* inside auto-capture, so dropping it silently stops focus
     returning to the trigger on close. Sections and the move picker want the trap's default first
     tabbable and mark nothing. For the move picker that default is not "the first control in the
     DOM": its section strip is a roving-tabindex tablist, so every cell but the active one is
     `tabindex="-1"` and the trap lands on the section the move starts from — which is the
-    behaviour wanted, reached without a `cdkFocusInitial`. Where focus lands is verifiable only in a browser: jsdom gives every
-    element a zero-size box, so the CDK's focusable check rejects every target, auto-capture never
-    moves focus there, and its "not focusable" warning is filtered in `src/test-setup.ts` as the
-    pure noise it is.
+    behaviour wanted, reached without a `cdkFocusInitial`.
   - **Shallow modals render with empty space** below their content, because the shell holds its
     named width and block geometry rather than shrinking to content. That is §17's "zero resize"
     trade, accepted deliberately; do not "fix" it back to content height.
@@ -662,7 +658,7 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   `liveRoots`, so once the superset sorts by `globalOrderValue` the picker's destination order
   does too, even when picking a destination within one section. Deliberate: the picker is a
   destination list, not an ordered outline, so following the superset's own order there is
-  coherent — pinned by a spec case in `abwab-move-picker.component.spec.ts`, not a side effect.
+  coherent rather than a side effect.
 - **`AbwabTreeDto.version` is diagnostics only.** Per-row `xmin` tokens are the only
   concurrency currency; do not build snapshot-level conflict detection on it. It is **also
   not the cache validator**: the `ETag` these reads now carry is a server-side generation
@@ -757,10 +753,9 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   So this string is never authored client-side and **no constant for it exists in
   `abwab.labels.ts`**, deliberately: a client copy could only ever be reached if the backend
   omitted its own message, which is dead code dressed as a safeguard, and the generic
-  `writeConflictFallback` already covers that case. The M27 test pins the frontend's verbatim copy
-  of the shipped backend string, so frontend drift fails loudly; the backend literal
-  (`ApiMessages.cs:117`) is pinned by no backend test, so a backend copy edit is caught only by
-  this paragraph's sync rule — re-verify the pair whenever either file changes.
+  `writeConflictFallback` already covers that case. The frontend keeps a verbatim copy of the
+  shipped backend string; this paragraph's sync rule requires re-verifying the pair whenever either
+  file changes.
 - **`AbwabDoorDto` carries no audit-seed columns on the wire** (no `createdAt`/
   `createdBy`/`approvedAt`/`approvedBy` — verified against the generated model and
   `openapi/swagger.json`). No surface may render an authored-by, approved-by, or
@@ -785,8 +780,8 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   `abwab-templates-page`, the door fields form, both pickers, the sections, restore, relations and
   template copy modals composes `qd-skeleton-rows`/`qd-panel-skeleton` (loading), `qd-empty-state`
   (empty) or `qd-error-state` (error) — `UI_STYLE_SYSTEM.md` §17. **The `qd-state` compatibility
-  adapter has zero Abwab consumers**, which is what Phase 11 needs before it can delete it; both
-  page specs assert the count stays zero. `severity` is not decoration: a failed *read* the user
+  adapter has zero Abwab consumers**, and `npm run check:golden-ui` enforces the zero-consumer
+  baseline. `severity` is not decoration: a failed *read* the user
   can retry (`abwab-page`'s snapshot load, the templates list, the selected template's own load,
   the copy modal's doors load, the relations read) is `severity="read"` and stays on the polite
   path, and a failed *write* is the `role="alert"` `severity="write"` that never clears the draft.
@@ -875,7 +870,7 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   «سيتم أرشفة 1 بابًا» is wrong Arabic and this product is Arabic-first.
 - **Labels use the TDZ getter pattern**, same as `features/words/README.md`: read
   `abwab.labels.ts` consts via component **getters**, never `readonly` field
-  initialisers, or they resolve to `undefined` in the bundled test build.
+  initialisers, which can observe the label module inside its temporal dead zone.
 - **No misleading write controls.** Nothing for protection or the «الأبواب
   الرئيسية» tab appears anywhere in this feature. Relations became real controls with
   `abwab-relations`, and **templates became real with `abwab-templates`**: «القوالب» in the
@@ -940,13 +935,12 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   Selecting a door and its own descendant produces two independent copies. This is the
   deliberate opposite of bulk-archive's union count above, where archiving an ancestor already
   claims its descendants; applying a template claims nothing. Do not "fix" one into the other.
-- **There is one door picker, `abwab-door-picker`, and both modals compose it.** The debt that
-  kept them apart is paid: the relations and copy modals each have a behavior spec, and the
-  duplicated picker became a component. Selection stays **consumer-owned** — the picker renders
+- **There is one door picker, `abwab-door-picker`, and both modals compose it.** The duplicated
+  picker became a component. Selection stays **consumer-owned** — the picker renders
   what `pickedIds` says and emits `toggled`, so the relations modal keeps its single-anchor rule
   in bulk mode and the copy modal its multi-select, and the picker knows about neither. Existing
-  `data-testid`s survive through `testIdPrefix`, which is what made the extraction provably
-  behavior-preserving (both specs passed it unedited). Do not re-fork it for a third caller;
+  `data-testid`s survive through `testIdPrefix`, preserving each consumer's identifiers. Do not
+  re-fork it for a third caller;
   add an input. **Consumer-owned selection is not consumer-owned *affordance*:** the picker
   still has to render a control that tells the truth about how many doors are choosable, which
   is what `single` is for. Anchor-pick selection is select-only for the same reason — a radio
@@ -957,7 +951,7 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   not implement. `aria-level` still conveys depth and every keyboard affordance has a real focus target.
   Reusing `AbwabTreeComponent` itself was rejected up front, not discovered mid-work: it is
   typed on `AbwabNode` and carries selection/bulk/roving-tabindex/URL concerns this page has
-  none of, plus a spec suite pinned to that behavior. **ux-slice-g adds a third row-menu path —
+  none of. **ux-slice-g adds a third row-menu path —
   `ContextMenu`/`Shift+F10`, alongside `⋯` and right-click** — without moving this line: the row
   `<div>` itself catches the key. A row with an authorized root or node context menu is its own
   `tabindex="0"` target, so a leaf whose only capability is edit or delete still reaches the
@@ -983,45 +977,16 @@ in scope, which is exactly what §6.2's M22 cell forbids.
   `HttpClient` parses an empty body as `null`. `abwab-write.controller.ts#handleSuccess`
   therefore treats a null response as a payload-less success: only a success is ever a 204,
   since every failure arrives as a 4xx through `catchError`. Dereferencing `response.isSuccess`
-  first — which is how this originally shipped — throws, gets swallowed as a transport error,
-  and leaves the UI reporting failure while the backend write has committed. Vitest missed it
-  because the specs mocked `AbwabApi` with well-formed envelopes; the browser suite caught it.
-  Both the null-envelope path and the real 204 flush are now pinned by tests, and
-  `abwab-archive.e2e.ts` drives archive through the UI end to end. The relation delete rides on
-  that same already-pinned `handleSuccess` branch but has **no test of its own at the controller
-  seam**: `abwab-write.controller.spec.ts` has no `deleteRelation` case, and the modal-level
-  cover in `abwab-relations-modal.component.spec.ts` runs against a mocked delete function that
-  never reaches this branch. Anyone touching the 204 handling or the relations routes should
-  assume this half is unpinned.
+  first throws, gets swallowed as a transport error, and leaves the UI reporting failure while the
+  backend write has committed. Every delete route shares this handling requirement.
 
-## Browser e2e (Slice B2)
+## Browser E2E
 
-**Every `e2e/abwab-*.e2e.ts` spec belongs to this feature — that glob is the rule, not a list
-kept here.** It is also literally the membership test: `playwright.config.ts`'s `abwab` project
-is `testMatch: /abwab-.*\.e2e\.ts$/` and the `default` project `testIgnore`s the same pattern, so
-naming a spec `abwab-*` is what enrolls it. `e2e/README.md` carries the inventory and what each
-one owns; do not re-enumerate them here, and do not read any list in this file as complete.
-
-Between them those specs drive this
-page end to end — sections, root/child doors with alias chips, the dirty guard, inline reorder,
-single and bulk move, bulk archive, the row context menu, archive/restore including the
-parent-must-restore-first rule and the retired-section restore that demands a destination, all
-seven URL query keys including a
-restorable overlay's reload/Back-Forward round trip, the tree's
-ARIA/roving-tabindex/RTL keyboard model, both halves of the section-delete contract (409 while a
-live door remains, and the `204 No Content` success once its doors are archived), and the
-superset/section order independence (a `Global` reorder leaves a section's `orderValue` untouched
-and vice versa). Because a `Global` reorder resequences every live root in the database, the
-whole `abwab` project runs single-worker — see `e2e/README.md`.
-
-`e2e/fixtures/abwab.ts` is the shared sandbox: each test creates its own uniquely-named
-section over the API, and tears down by archiving **every live door in that section** — not
-only the ids it handed out, since flows create doors through the UI too — and then deleting
-the now-empty section. Teardown re-reads each door's version immediately before archiving it:
-every write resequences the scope, so archiving from one up-front snapshot succeeds once and
-then `409`s silently for the rest, which is what previously left live sandbox doors and
-undeleted sandbox sections behind. See `e2e/README.md` and `TESTING_STRATEGY.md` §11 for the
-residue that legitimately remains.
+`e2e/abwab-permissions.e2e.ts` is the one retained Abwab journey. It verifies that public Abwab and
+template navigation remain available, write controls stay hidden, a URL-restored create overlay is
+not exposed, and an anonymous write receives the Backend's `401` envelope. It creates no sandbox and
+leaves no domain residue. The `abwab` Playwright project remains single-worker and is documented in
+`e2e/README.md`.
 
 ## Decisions that reversed mid-series
 

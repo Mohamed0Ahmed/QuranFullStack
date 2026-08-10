@@ -1,25 +1,28 @@
 ---
 name: test-guard
-description: Use when explicitly asked for Quran Dashboard test-code quality guidance or review.
+description: Use when explicitly asked for Quran Dashboard Backend or Playwright test-code quality guidance or review.
 ---
 
 # Test Guard
 
 ## Responsibility
 
-Judge or guide **how tests are written** against the nine rules below, for the changed
-or proposed test code (`*.spec.ts`, `*.test.ts`, `*Tests.cs`, `*Test.cs`, and files
-under `tests/` or `__tests__/`). When invoked before test writing, apply the rules as
+Judge or guide **how retained Backend and Playwright tests are written** against the nine rules
+below, for changed or proposed `*Tests.cs`, `*Test.cs`, and `*.e2e.ts` code. When invoked before test writing, apply the rules as
 guidance so violations are never written; when reviewing, report violations. This
 skill's result is evidence — the formal review verdict stays with the separately
 requested `engineering-review`, which consumes an existing same-diff Test Guard result.
 
 **Not this skill's job:** production-code review, selecting or running tests, judging
 whether executed test evidence was sufficient for a changed scope
-(`TESTING_STRATEGY.md` owns selection policy; `engineering-review` owns the verification
-verdict), implementing test fixes, Git, or loading stack references the changed tests do
+(`TESTING_CONSTITUTION.md` owns policy; the Backend and E2E READMEs own commands;
+`engineering-review` owns the verification verdict), implementing test fixes, Git, or loading stack references the changed tests do
 not use. Be a sharp reviewer, not a pedantic one: flag what wastes maintenance effort or
 hides real bugs, ignore cosmetic preferences.
+
+The Test Freeze applies: updating a retained Permanent test or a triggered change/release gate is
+narrowly allowed, while any new Backend or Playwright test requires owner approval recorded in the
+active Testing Decision. This Skill never supplies that approval. Frontend unit tests are prohibited.
 
 ## The Nine Rules
 
@@ -37,7 +40,7 @@ specific arguments.
 
 ### Rule 3: One scenario per test, data-driven for variants
 Tests sharing identical setup that differ only in input/output values merge into one
-data-driven test (xUnit `[Theory]`, Vitest `test.each`). Separate tests are correct when
+data-driven test (xUnit `[Theory]`, Playwright parameterized cases). Separate tests are correct when
 setup, assertions, or boundary mocks genuinely differ.
 
 ### Rule 4: Every test must justify its existence
@@ -90,12 +93,11 @@ no test. Do not flag pre-existing violations in untouched files unless asked to 
 ## Conditional references
 
 - [references/dotnet.md](references/dotnet.md) — when .NET/xUnit tests are in scope.
-- [references/jest.md](references/jest.md) — when Angular/Vitest tests are in scope.
-  Load both only when the change genuinely spans both stacks.
-- [references/frontend-test-harness-constraints.md](references/frontend-test-harness-constraints.md)
-  — only when a finding depends on how the Angular/Vitest/jsdom harness behaves.
+- `Frontend/quran-dashboard-ui/e2e/README.md` — when Playwright journeys or fixtures are in scope.
+  Load both only when the change genuinely spans Backend and Playwright.
 - `Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md` and
-  `TESTING_STRATEGY.md` §3.3 — only for real PostgreSQL fixture/serialization scope.
+  `Backend/tests/QuranDashboard.Tests/README.md` — only for real PostgreSQL
+  fixture/serialization scope.
 - `CODING_PRINCIPLES.md` §10 — Quranic data safety applies to test data in full
   (synthetic-only, clearly labeled placeholders, never hand-typed "real" scripture);
   load it whenever test data is source-sensitive.

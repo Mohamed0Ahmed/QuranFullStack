@@ -15,8 +15,9 @@ Where things live now:
   Claude, `AGENTS.md` for Sol/Codex), its native area router when applicable, the nearest
   `README.md`, and only the triggered neutral or specialist source. The root files are routers,
   not duplicated law books.
-- **Which tests to run and when** → `TESTING_CONSTITUTION.md` is the sole policy authority; `TESTING_STRATEGY.md` temporarily retains operational lane and command mechanics until Phase 7 removes it. The constitution controls any conflict.
-- **Which tests were deliberately not written** → `docs/TESTING_DEBT.md` — one row per skipped area, each naming the concrete change that pays it. Not a place to defer verification selected by an active plan's `Testing Decision`, and never a home for `SmokeRouteCatalog` parity entries (those are a build-level gate).
+- **Which tests to run and when** → `TESTING_CONSTITUTION.md` is the sole policy authority;
+  Backend lane and fixture mechanics live in `Backend/tests/QuranDashboard.Tests/README.md`, and
+  browser-journey mechanics live in `Frontend/quran-dashboard-ui/e2e/README.md`.
 - **Evidence / reference** (import verification, source hashes, provenance) → `Backend/report/`.
 - **Frontend reports** → no convention is established. Do not invent a Frontend report folder
   without an explicit decision.
@@ -48,10 +49,10 @@ from code, tests, or an existing README?**
   repoint every inbound reference, then delete it. Never fold a claim that code cannot confirm;
   an unprovable planning claim is dropped rather than promoted to current truth.
 
-Evidence worth keeping becomes a test that fails on drift, not a report. A canonical count,
-source hash, or measured budget with nothing asserting it is a rumour. If the assertion has no
-home yet, keep that file and record in `docs/TESTING_DEBT.md` what the test must assert and where
-it must go.
+Evidence worth keeping becomes an existing retained gate that fails on drift, not a report. A
+canonical count, source hash, or measured budget with nothing asserting it is a rumour. If the
+assertion has no approved executable home, keep the evidence file or drop an unprovable planning
+claim; the Test Freeze does not maintain a ledger of coverage that was deliberately not written.
 
 Repoint before deleting. Search the whole repository — code, tests, `.claude/`, `.agents/`,
 `.specify/`, scripts, manifests, and every README — for each path being removed. A dangling
@@ -67,6 +68,5 @@ Anything not in this exact list is feature-scoped and dies with its feature:
   their Backend/Frontend counterparts;
 - all `.architecture/**` documents;
 - `docs/contracts/**`, the pointer index;
-- `docs/TESTING_DEBT.md`, the live testing-debt ledger;
 - everything under `.claude/`, `.agents/`, and `.specify/`, plus all code, tests, and
   configuration.

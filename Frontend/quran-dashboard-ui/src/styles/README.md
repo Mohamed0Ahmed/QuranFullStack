@@ -63,8 +63,8 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   drops it, and `npm run check:golden-ui` fails if a second one appears anywhere under `src/`
   (D01, `.architecture/UI_STYLE_SYSTEM.md` §18.4). The `.qd-container` / `.qd-page-frame` /
   `.qd-explorer-frame` aliases and the `.qd-page > .qd-page-header` compatibility gutter were
-  deleted in Phase 11 after `rg` proved zero template consumers; four page specs assert their
-  continued absence. `.qd-page-header` is likewise down to the two rules every page actually
+  deleted in Phase 11 after `rg` proved zero template consumers; they remain absent.
+  `.qd-page-header` is likewise down to the two rules every page actually
   composes — its block rhythm and `__description`; the `--split`, `__eyebrow`, `__meta` and
   `__actions` members were nominated F03 owners that no page header ever asked for, so they are gone
   rather than left as a header vocabulary the next author would assume is load-bearing.
@@ -215,8 +215,7 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
 
   `--qd-ayah-card-bg` is a warm tone deliberately recessed below `--qd-surface` so an ayah card
   reads as a distinct card on the near-white surfaces it sits on; the dark theme overrides it to
-  `--qd-surface` (`_themes.scss`). Nothing asserts any of these numbers — see
-  `docs/TESTING_DEBT.md` row P2.
+  `--qd-surface` (`_themes.scss`).
 - `.qd-badge`'s line box (`_components.scss:132,135,137,140` — `padding-block var(--qd-space-1)`,
   `0.75rem` text at `1.4` line-height, `1px` border each side) is mirrored by the dashboard
   app-meta skeleton, which composes the same metrics into one height

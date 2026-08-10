@@ -64,7 +64,7 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   `!DetailOverlayHistoryService.isOpen()` as `[trapFocus]` to their `qd-modal-shell`. The shell
   additionally requires that it be the topmost open shell, so the two conditions agree. While the
   global dialog is open the drawers sit inside the inert app shell, so their traps stand down and
-  exactly one trap is enabled (`app.nested-layers.spec.ts`). Never re-add an unconditional
+  exactly one trap is enabled. Never re-add an unconditional
   `cdkTrapFocus` — no Words surface owns a raw CDK trap any more.
 - **The Unique-Words drilldown modal is an F14 `overlay` shell** (Golden UI Phase 7): its Wide
   modal branch renders `qd-modal-shell variant="overlay"` with `flushBody` (the projected
@@ -97,7 +97,7 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   explorer deep links. Context decides the click semantics via the
   `DETAIL_OVERLAY_LINK_MODE` token: overlay adapters provide `'append'` (push onto the
   stack), side panels get the `'start'` default (new one-frame stack that never touches
-  the panel's own selection — proven by `entity-detail-overlay-invariant.spec.ts`).
+  the panel's own selection).
   Modifier clicks/copy-link keep native browser behavior.
 - **Ayah continuity** (plan §5.2, B7): `ayah-matches-list` renders its Mushaf link as
   `a[qdAyahOverlayLink]` (core `detail-overlay-ayah-link.directive.ts`) instead of a
@@ -232,10 +232,11 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   inside that slot and keep them one line; a banner taller than the reservation grows it. Only the
   list states moved into the table shell.
 - **Labels use the TDZ getter pattern.** Read `*.labels.ts` consts via **getters**, not
-  `readonly` fields — otherwise they resolve to `undefined` (temporal dead zone) in the
-  test bundle. **Do not revert the getters.**
+  `readonly` fields, so the lazily initialized binding is read at call time. **Do not revert the
+  getters.**
 - **URL-state is a contract.** `*-url-sync.ts` param names/shape are user-facing (shareable
-  links) and spec'd; changing them is a contract change — update the spec and tests too.
+  links) and documented; changing them is a contract change — update the contract documentation
+  and call sites together.
 - **`sort` is one exact, fail-closed URL token.** Its client grammar is
   `token := column | column "-asc" | column "-desc"`. A bare token means the column's
   natural direction (counts descending, text ascending); the suffix is used only for the
@@ -310,7 +311,7 @@ do not duplicate those implementation formulas here.
   `<prefix>Min`/`<prefix>Max` only for active bounds; frontend list cache keys gain a deterministic
   range fragment (absent ⇒ pre-feature key). The headline stat reflects the filtered `totalCount` by
   construction. `*_RANGE_METRICS` and the range-filter labels are read via **TDZ-safe getters**, never
-  `readonly` fields (they resolve to `undefined` in the bundled test build otherwise). Layout
+  `readonly` fields. Layout
   (Feature 029, U2): the shared filter host is a **full-width second row** of
   `.qd-explorer-controls-secondary` (`flex: 1 1 100%` on the component host) below the sort control
   on all four pages, so expanding the `<details>` panel grows its own row and never moves the sort.
@@ -403,8 +404,8 @@ owns primary/dominant association selection, winner ordering, and server query s
   (every explorer has shipped). The example words are illustrative `مثال` morphology in the Amiri
   face, never Quran data or queryable counts. The green callout is the one tinted-green panel,
   sanctioned in the allowed-green list (DESIGN.md §2 / UI_STYLE_SYSTEM.md §16.3, item 8).
-- Tests: obey the repo test-command rule (see `../../../../README.md`) — the vitest worker
-  cap and jsdom observer guards apply here.
+- Verification follows the repository Test Freeze and the frontend chain in `../../../../README.md`;
+  retained browser journeys live in `../../../../e2e/README.md`.
 - **Word Types has table-view tabs** (`tableView=words|roots|stems|lemmas`, default `words`,
   RTL order كلمات | جذور | أصول | صيغ). Placement (Feature 029, U3): the tab strip is the **first
   child of the split layout**, directly above the table column only (desktop pins tabs/table to

@@ -7,8 +7,8 @@ shared runtime takes an *exclusive* lease through the same code path so the two 
 overlap.
 
 `../../../../../TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` select which lanes
-run. `../../../../../TESTING_STRATEGY.md` §3 documents their composition, `../../README.md` documents
-fixture ownership, and this file documents the runtime mechanics with implementing line references.
+run. `../../README.md` documents their composition and fixture ownership, and this file documents
+the runtime mechanics with implementing line references.
 
 ## The two lease shapes, and which one a fixture may take
 

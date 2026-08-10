@@ -54,7 +54,7 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   - **count columns** (both directions): count → `FirstWordOrderInMushaf` → `Id`.
   - **`alpha` on Roots/Lemmas/Stems** (both directions): text → `Id`, with **NO Mushaf tie-break** —
     this is a deliberate EXCEPTION preserving the exact row order existing `sort=alpha` links already
-    return (pinned by `StemsListReadTests`' alpha sequence). Do not "harmonize" it.
+    return. Do not "harmonize" it.
   - **`alpha` on Unique Words** keeps its own pre-existing chain: `SearchText` → `FirstWordOrderInMushaf`
     → `Id`.
   - **`mushaf-order`**: `FirstWordOrderInMushaf` → `Id`.
@@ -165,8 +165,8 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   (`COUNT(DISTINCT (tashkeel_word_id, context_code))`, the row-constructor form of its `GROUP BY … COUNT(*)`),
   and roots/stems/lemmas = the `GroupedRowsCountSql` formula (`COUNT(DISTINCT <dim>_id)`, which already
   excludes NULLs). Because the base and the formulas are identical, each count **equals the corresponding
-  tableView's `PagedResult.TotalCount` for the identical scope** — the FR-016 equality contract, pinned by the
-  equality matrix in `WordTypesScopeCountsReadTests`. These are the **scoped word-context count family only**,
+  tableView's `PagedResult.TotalCount` for the identical scope** — the FR-016 equality contract.
+  These are the **scoped word-context count family only**,
   never the global `words_count`-backed aggregates. The search term reaches SQL only as a parameter value and
   is never logged (`hasSearch` boolean only). `CachedWordTypesReader` caches it under
   `WordTypesCacheKeys.ScopeCounts` — keyed by every scope input and nothing view/page (no `tableView`/`sort`/

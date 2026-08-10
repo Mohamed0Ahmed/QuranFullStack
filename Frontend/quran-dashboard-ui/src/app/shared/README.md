@@ -100,8 +100,8 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   reappears and if the directory itself comes back. The five owners above are the only async
   vocabulary; a surface that used to pass `variant="loading"|"empty"|"error"` picks the owner
   directly. The legacy `qd-state-*` **test ids** are deliberately preserved on the owners that
-  replaced it (`testId="qd-state-error"` and friends) so no spec or e2e selector had to move; they
-  are ids, not a surviving component. The `reserve` input moved with the owners —
+  replaced it (`testId="qd-state-error"` and friends) as stable call-site identifiers; they are ids,
+  not a surviving component. The `reserve` input moved with the owners —
   `grep -rn '\[reserve\]' src/app/` for the current consumers, and see `UI_STYLE_SYSTEM.md` §17's
   note on `reserve` under `@if`.
 - `ui/skeleton/` — `qd-skeleton-rows`, renders N skeleton rows into a caller-supplied
@@ -115,19 +115,19 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   rather than in a sixth async component because loading is one owner with two shapes: a surface
   with a known final shape must use a content-shaped skeleton, and only a single-value region may
   use the text loader. `testId` lets a call-site keep the legacy
-  `qd-state-loading` id its specs already select. The `qd-explorer-panel-skeleton` selector is kept
+  `qd-state-loading` identifier. The `qd-explorer-panel-skeleton` selector is kept
   as a thin alias on the same component for existing call-sites.
 - `ui/result-count/` — `qd-result-count` (class `ExplorerResultCountComponent`), the one-line
   "label: N" stat that holds its line across loading/error/loaded rather than resizing the
   toolbar around it (Feature 026, US4; Slice B2, T1001 promoted it here from `features/words/`
   once abwab became a second consumer — `FRONTEND_STRUCTURE.md`'s "genuinely reused across
   features" bar). `qd-explorer-result-count` is kept as a thin alias selector on the same
-  component so the four words explorer call-sites (Unique Words, Roots, Lemmas, Stems) and their
-  spec kept working untouched through the move — the same dual-selector mechanism as
+  component so the four words explorer call-sites (Unique Words, Roots, Lemmas, Stems) needed no
+  template change through the move — the same dual-selector mechanism as
   `ui/explorer-panel-skeleton/`. Its own labels (`result-count.labels.ts`) are read through a
-  TDZ-safe **getter**, not a `readonly` field — a `readonly` field resolves to `undefined` in the
-  bundled test build (temporal dead zone), the same rule `features/words/README.md` and
-  `features/abwab/README.md` state for their own `*.labels.ts` files. See
+  TDZ-safe **getter**, not a `readonly` field, so the lazily initialized binding is read at call
+  time; `features/words/README.md` and `features/abwab/README.md` state the same rule for their own
+  `*.labels.ts` files. See
   `UI_STYLE_SYSTEM.md` §17 "`qd-result-count`".
 - `ui/detail-modal-shell/` — `qd-detail-modal-shell`, the presentation-only accessible
   dialog shell of the global detail overlay (Feature 029). Since Phase 7 it is a **thin adapter
@@ -196,8 +196,8 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   selection, bulk and menu keys stay with the feature, and `resolveQdHierarchyIntent` returns
   `none` for every one of them. Consumers: Abwab's live tree and archive tree, through
   `features/abwab/components/abwab-tree/abwab-tree-keyboard.controller.ts`, which is a thin
-  adapter and not a second implementation — its spec asserts the two resolvers agree on every
-  movement key. It knows nothing about doors, roles, ARIA or selection: the consumer still
+  adapter and not a second implementation; both resolvers must agree on every movement key. It knows
+  nothing about doors, roles, ARIA or selection: the consumer still
   declares `role="tree"`/`treeitem` (or `role="list"` where the hierarchy is a list, as the
   template tree deliberately is) and owns its own expansion state.
 - `ui/result-list/` — `qdResultList` + `qdResultItem` (F10), the native-role directive pair for
@@ -258,16 +258,15 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   to return to, and whether this layer is still the one holding it). Every one of them takes its
   elements and state as explicit arguments and holds no Angular state, so the directive itself is
   only DI, host bindings, lifecycle and orchestration. The directive keeps its type-ahead state as a
-  nullable field rather than an imported empty constant: a bare imported identifier used as a
-  class-field initialiser can be snapshotted as `undefined` by the unit-test builder's transform
-  (the same hazard `features/access-admin/README.md` documents for `ACCESS_ADMIN_LABELS`).
+  nullable field rather than an imported empty constant so initialization cannot snapshot a
+  not-yet-initialized imported binding.
   One keyboard script for `action-menu` / `select-listbox` / `searchable-picker` /
   `disclosure-popover` / `tooltip` (D33): Escape closes and returns focus, Arrow/Home/End walk the
   **enabled** items with scroll-into-view, type-ahead accumulates inside a 600ms window, Tab closes
   without preventing the move, and an outside pointer press closes without stealing focus. Items are
   found by ARIA role (`menuitem`/`option`), never by a shared option model, so each feature keeps its
-  own hierarchy. `placeFloatingLayer()` is pure and unit-pinned per branch: block-axis flip, inline
-  clamp, `min(60vh, 24rem)` cap, `position: fixed` — never document flow (D34). The computed
+  own hierarchy. `placeFloatingLayer()` is pure: block-axis flip, inline clamp,
+  `min(60vh, 24rem)` cap, `position: fixed` — never document flow (D34). The computed
   coordinate is written to `left` because a viewport coordinate has no logical form; the *choice* of
   edge is direction-aware, which is what RTL needs.
 

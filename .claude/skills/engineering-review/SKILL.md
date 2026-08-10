@@ -39,8 +39,8 @@ outside the verdict.
 2. Read the active plan/spec/contracts before choosing any specialist context.
 3. Inspect the full relevant final diff against those requirements and repository
    truth.
-4. Consume the supplied final evidence and classify it through only the implicated
-   `TESTING_STRATEGY.md` headings.
+4. Consume the supplied final evidence and classify it through the implicated
+   `TESTING_CONSTITUTION.md` rule and owning Backend/E2E README section.
 5. Load specialist policy/reference context only after the diff or a concrete
    candidate finding implicates it.
 6. Report the seven-section formal output and verdict below.
@@ -48,11 +48,11 @@ outside the verdict.
 ## Evidence, not execution
 
 Consume evidence that already exists in the conversation or that the user supplies;
-never execute `TESTING_STRATEGY.md` §5 or its commands, never generate new build/test
+never execute verification commands, never generate new build/test
 evidence, and never assume success — unknown is unknown.
 
-- Classify evidence through only the implicated headings among `TESTING_STRATEGY.md`
-  §§1, 2.1, 3–6, 8, and 9.
+- Classify evidence through only the implicated Test Freeze rule in `TESTING_CONSTITUTION.md`, the
+  active Testing Decision, and command/runtime mechanics in the Backend test/script or E2E README.
 - Report required evidence as sufficient, stale, missing, failed, unexpectedly
   skipped, or unknown. Do not claim PASS with deficient required final evidence.
 - **Test Guard evidence:** consume a current same-diff `test-guard` result when
@@ -124,15 +124,11 @@ plan/spec/contract when the work is contract-bound.
   service flow, `ApiResponse<T>`, loading/error/empty states); `PRODUCT.md`/`DESIGN.md`
   only when product/design decisions are involved. Frontend-only scope does not load
   Backend or database context.
-- **Testing evidence classification:** the exact `TESTING_STRATEGY.md` headings among
-  §§1, 2.1, 3–6, 8, and 9, loaded only when classifying supplied verification evidence
-  for the changed scope — for example §5 (execution-trigger matrix: which lanes the
-  changed scope requires; do not demand more than it does), §1 (what counts as a lane),
-  §3.3 (shard reporting), §3.4 and §9 (canonical-resource preflight and failure/skip
-  semantics), §6 (the route-smoke gate and the Smoke data tier's lane), §8 (CI
-  absence). Classify the supplied evidence through those headings; do not restate their
-  rules. Test-code references load only when changed tests materially bear on a
-  requirement, one stack only.
+- **Testing evidence classification:** the exact `TESTING_CONSTITUTION.md` rule and active Testing
+  Decision, plus `Backend/tests/QuranDashboard.Tests/README.md`, `Backend/scripts/README.md`, or
+  `Frontend/quran-dashboard-ui/e2e/README.md` only when its lane, runtime, preflight, or browser
+  mechanics bear on supplied evidence. Do not restate those rules. Test-code references load only
+  when changed retained tests materially bear on a requirement, one stack only.
 - **Quran data safety:** `CODING_PRINCIPLES.md` §10 and
   `references/quran-data-safety.md` — whenever source-sensitive data or Quran rendering
   is in scope. This is the highest-priority safety area; violations are BLOCKING or
@@ -170,8 +166,8 @@ unless necessary.
    `OPEN`, or `REGRESSED`. Include threshold and architecture/responsibility findings
    here. "None." when clean.
 5. **Quranic data safety check** — PASS / CONCERN / NOT APPLICABLE, one line.
-6. **Verification check** — supplied evidence versus the lanes `TESTING_STRATEGY.md` §5
-   requires for the changed scope (sufficient / insufficient / stale / missing), and
+6. **Verification check** — supplied evidence versus the active Testing Decision and Test Freeze
+   requirements for the changed scope (sufficient / insufficient / stale / missing), and
    the Test Guard evidence status when the active plan/spec/contract requires that
    separate evidence.
 7. **Final recommendation** — one direct next step consistent with the verdict.

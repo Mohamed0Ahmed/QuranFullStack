@@ -1,6 +1,6 @@
 ---
 name: test-guard
-description: Use when explicitly asked for Quran Dashboard test-code quality guidance or review.
+description: Use when explicitly asked for Quran Dashboard Backend or Playwright test-code quality guidance or review.
 ---
 
 # Test Guard (Adapter)

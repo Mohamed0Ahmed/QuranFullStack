@@ -48,11 +48,10 @@ contract, the nearest area README, and the implicated
 Use only evidence that already exists in this conversation or that the user supplies.
 Name the executed lanes; label anything missing plainly ("not yet run — needs: …") and
 never claim green. When labeling supplied evidence, consult the exact
-`TESTING_STRATEGY.md` headings — §5 (what the changed scope requires), §1 (what counts
-as a lane), §6 (the route-smoke gate and the Smoke data tier's lane), §3.3 (shard
-reporting), §3.4 and §9 (canonical-resource preflight semantics), §8 (CI absence), §11
-(browser E2E status) — rather than restating their rules here. Do not run any of it;
-state gaps for the caller to close.
+`TESTING_CONSTITUTION.md` policy and the owning command sections in
+`Backend/tests/QuranDashboard.Tests/README.md`, `Backend/scripts/README.md`, and
+`Frontend/quran-dashboard-ui/e2e/README.md` rather than restating their rules here. Do not run any
+of it; state gaps for the caller to close.
 
 ## Output
 

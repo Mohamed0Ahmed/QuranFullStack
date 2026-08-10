@@ -46,7 +46,7 @@ These live at the workspace root and apply across Backend + Frontend.
 | File | What it is for | Who/what reads it | When it matters |
 |------|----------------|-------------------|-----------------|
 | `CODING_PRINCIPLES.md` | General coding principles for the whole workspace: Clean Code, SOLID, DRY/KISS/YAGNI, separation of concerns, strong typing, focused changes, error handling, testing/verification, **Quranic Data Safety**, UI/product consistency, Definition of Done. Also points to the retained `clean-code-guard` references and the `test-guard` skill. | Every agent/human before implementation; the review skills load only its implicated headings. | All implementation and review work. |
-| `TESTING_CONSTITUTION.md` + `TESTING_STRATEGY.md` | The constitution is the sole testing-policy authority. The strategy is a transitional operational reference for commands, current lane mechanics, pipeline triggers, and route-smoke details until Phase 7 removes it; where they conflict, the constitution controls. | Every agent/human before selecting or running tests; review/packaging skills load only the exact operational strategy headings they still need. | Whenever tests are selected, run, or verification evidence is judged. |
+| `TESTING_CONSTITUTION.md` | The sole testing-policy authority, including the Test Freeze; Backend lane mechanics live in the Backend test README and browser-journey mechanics live in the E2E README. | Every agent/human before selecting, writing, running, or judging verification. | Whenever tests or verification evidence are in scope. |
 | `PRODUCT.md` | Product strategy & context: register, users (Arabic-speaking admins/supervisors/teachers), product purpose (manage Quran research data, review ayah links, organize gates أبواب, publish), principles, anti-references. | Anyone doing user-facing/product or UI work. | Frontend/UX/product decisions and any backend change that affects user-facing behavior. |
 | `DESIGN.md` | Visual/design direction — the design system of record alongside `UI_STYLE_SYSTEM.md`'s token contract: Arabic-first RTL, restrained parchment/ink palette, calm typography; explicitly rejects generic SaaS, kitschy religious decor, gamified UI, enterprise greige. | Anyone doing UI/visual work. | Frontend visual/design tasks. For concrete tokens/classes use `UI_STYLE_SYSTEM.md`. |
 | `AGENTS.md` | Sol/Codex-native workspace router with the universal safety kernel, native area routes, nearest-README discovery, and trigger-scoped pointers. It does not route through Claude entrypoints. | Sol/Codex coding agents. | Loaded at session start for those agents. |
@@ -111,7 +111,7 @@ terminology such as "God service". This heading is the canonical home of that ru
 | `.claude/skills/engineering-review/SPEC_KIT_IMPLEMENTATION_REVIEW.md` | Conditional add-on rules applied only when the reviewed change came from Spec Kit. |
 | `.claude/skills/engineering-review/references/clean-code-guard/` | `ai-failure-modes.md` (AI-specific review failure modes) and `review-checklist.md` (optional deep-review traversal aid). Canonical clean-code principles stay in `CODING_PRINCIPLES.md` §§2–4 and §7. |
 | `.claude/skills/engineering-review/references/quran-data-safety.md` | Small conditional cross-area Quran safety reference; canonical owners are `CODING_PRINCIPLES.md` §10 and `UI_STYLE_SYSTEM.md` §13. |
-| `.claude/skills/test-guard/references/` | `dotnet.md` (.NET/xUnit applications of the nine rules), `jest.md` (Angular/Vitest applications; filename kept for router stability), `frontend-test-harness-constraints.md` (project harness constraints). |
+| `.claude/skills/test-guard/references/` | `dotnet.md` (.NET/xUnit applications of the nine rules). Playwright mechanics live in `Frontend/quran-dashboard-ui/e2e/README.md`. |
 
 ---
 
@@ -164,9 +164,8 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 
 - Implement **by phase/chunk**, not all tasks at once (see §7).
 - Follow your native root and area routers, then read the nearest relevant README and only the triggered headings of `CODING_PRINCIPLES.md`.
-- Use `TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` to select verification.
-  `TESTING_STRATEGY.md` and the nearest test README supply only the operational commands and fixtures
-  for checks that were selected.
+- Use `TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` to select verification;
+  the Backend test README and E2E README supply only operational commands and fixtures.
 - Read the Backend/Frontend `.architecture/` docs **for the area you're touching** (§3, §4).
 - Before delivery, read `CODING_PRINCIPLES.md` §12 and the production-code headings already implicated; do not load the full `clean-code-guard` pack or run a formal review unless requested.
 - If writing tests, use the native `test-guard` Skill's rules and its stack-relevant reference.
@@ -218,8 +217,8 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 ### G. Before opening a PR
 
 - Confirm implementation already produced the fresh evidence selected by `TESTING_CONSTITUTION.md`
-  and the active plan's `Testing Decision`. Use `TESTING_STRATEGY.md` §6 route-smoke and §6.1 contract
-  sections only for operational details when those checks were selected. Missing or stale evidence
+  and the active plan's `Testing Decision`. Use the Backend test and API READMEs for route-smoke and
+  contract-command mechanics when those checks were selected. Missing or stale evidence
   returns to implementation; there is no CI, and PR preparation only packages what actually ran.
 - Optionally ask for `deploy-smoke` (explicit request) when you want a local runtime smoke, and `engineering-review` for the formal gate.
 - Then ask for `pr-context-prep` to package scope, invariants, evidence, and reviewer/CodeRabbit focus from what already ran.
@@ -283,8 +282,8 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 
 **Inventory check (all present unless noted):**
 
-- Root docs: `CODING_PRINCIPLES.md`, `TESTING_CONSTITUTION.md`, transitional `TESTING_STRATEGY.md`, `PRODUCT.md`, `DESIGN.md`, `AGENTS.md`, `CLAUDE.md` ✅
-- Skills: `engineering-review/` (+ `SPEC_KIT_IMPLEMENTATION_REVIEW.md`, `references/clean-code-guard/` with `ai-failure-modes.md` + `review-checklist.md`, `references/quran-data-safety.md`), `focused-review/` (self-contained, no reference pack), `test-guard/` (+ `dotnet.md`, `jest.md`, `frontend-test-harness-constraints.md`), `backend-structure-review/`, `commit-workflow/`, `deploy-smoke/`, `pr-context-prep/`, `dependency-audit/`, `performance-backend-review/`, `performance-angular-review/`, `backend-global-usings-cleanup/` ✅; plus the `speckit-*` family ✅
+- Root docs: `CODING_PRINCIPLES.md`, `TESTING_CONSTITUTION.md`, `PRODUCT.md`, `DESIGN.md`, `AGENTS.md`, `CLAUDE.md` ✅
+- Skills: `engineering-review/` (+ `SPEC_KIT_IMPLEMENTATION_REVIEW.md`, `references/clean-code-guard/` with `ai-failure-modes.md` + `review-checklist.md`, `references/quran-data-safety.md`), `focused-review/` (self-contained, no reference pack), `test-guard/` (+ `dotnet.md`), `backend-structure-review/`, `commit-workflow/`, `deploy-smoke/`, `pr-context-prep/`, `dependency-audit/`, `performance-backend-review/`, `performance-angular-review/`, `backend-global-usings-cleanup/` ✅; plus the `speckit-*` family ✅
 - Backend `.architecture/`: `BACKEND_STRUCTURE.md`, `CLEAN_ARCHITECTURE.md`, `API_GUIDELINES.md` ✅
 - Frontend `.architecture/`: `FRONTEND_STRUCTURE.md`, `UI_STYLE_SYSTEM.md`, `API_INTEGRATION_GUIDELINES.md` ✅
 

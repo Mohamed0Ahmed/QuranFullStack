@@ -66,6 +66,17 @@ Connection string via user secrets — see `api/QuranDashboard.Api/README.md`. S
 
 ## Deployment (Docker / Railway)
 
+Before release, run the mandatory Backend pre-release gate:
+
+```bash
+Backend/scripts/test-backend pre-pr
+```
+
+Daily Backend verification is `Backend/scripts/test-backend smoke` plus
+`Backend/scripts/test-backend tier-b`. Change-specific gates are `pipeline`, `canonical-data`,
+`migration`, `access-db`, and `gate-contract`; run each on its own trigger. The complete lane
+contract and flags live in `tests/QuranDashboard.Tests/README.md` and `scripts/README.md`.
+
 The API is containerized for Railway (Hobby). Artifacts live at the backend root:
 `Dockerfile` (multi-stage: `sdk:10.0` build → `aspnet:10.0` runtime, publishes only
 `api/QuranDashboard.Api`), `.dockerignore`, and `railway.json`. Those three files plus the

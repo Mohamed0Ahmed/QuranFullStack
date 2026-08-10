@@ -169,8 +169,8 @@ be a bulk-writes controller, because the bulk pair is the only subset with its o
   descriptions. Note the committed spec stayed stale for several commits after that strip, because
   `check-api-contract` compares regenerated-against-committed and cannot see a spec that nothing has
   regenerated. `../../../../TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` select
-  whether to run the contract guard. When selected, `../../../../TESTING_STRATEGY.md` §6.1 requires
-  execution after the complete exporter/generator-visible surface is coherent. That surface is not
+  whether to run the contract guard. When selected, run it after the complete
+  exporter/generator-visible surface is coherent. That surface is not
   confined to controllers or `Backend/api/`; it includes response/request DTO graphs, shared
   envelopes, serialization/schema metadata, Swagger configuration/tooling, and Frontend generator/
   pruning inputs wherever they live.

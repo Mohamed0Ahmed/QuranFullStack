@@ -5,8 +5,9 @@ the same change** (`../../tests/QuranDashboard.Tests/Smoke/SmokeRouteCatalog.cs`
 is bidirectionally locked to the live `EndpointDataSource`, so an uncatalogued route — or a
 catalog entry whose route no longer exists — fails `SmokeCoverageParityTests` by route name.
 When `../../../TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` select route Smoke,
-run `../../scripts/test-backend smoke --no-build`. See `../../../TESTING_STRATEGY.md` §6 and §10 for
-the selected lane's coverage and mechanics.
+run `../../scripts/test-backend smoke --no-build`. See
+`../../tests/QuranDashboard.Tests/README.md` and `../../scripts/README.md` for the selected lane's
+coverage and mechanics.
 
 ## Connection String Setup
 

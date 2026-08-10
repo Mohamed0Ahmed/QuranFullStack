@@ -93,8 +93,8 @@ writes `tab: null`, which removes the parameter rather than spelling out the def
 and each panel carries `role="tabpanel"` labelled by its tab.
 
 **A query param, not a child route, and no user deep-link at all.** `FRONTEND_STRUCTURE.md` requires
-this to be written down. A child route would break `access-admin.routes.spec.ts` and orphan the
-`title` on the single route in `access-admin.routes.ts`, and these are view modes over one Owner-only
+this to be written down. A child route would orphan the `title` on the single route in
+`access-admin.routes.ts`, and these are view modes over one Owner-only
 screen rather than destinations anyone links to. The selected **user** is deliberately *not* in the
 URL: `AccessUserSummary` carries no slug and no `sub` (`sub` exists only on `AccessUserDetail`, i.e.
 only after selection), `AccessAdminApi.userListParams` has no filter that could resolve a handle back
@@ -148,9 +148,8 @@ candidates are `role="option"` elements carrying name + email in their own `aria
 A list row is the shared `qdResultList`/`qdResultItem` pair (`listVariant="master"`): `role="list"` /
 `role="listitem"`, `aria-posinset`/`aria-setsize`, `aria-current` on the selected row, and the
 logical `border-inline-start` selection thread reserved as transparent on every row so selecting one
-causes no shift. Names compose `.qd-truncate` with the mandatory `[title]`. The thread itself is a
-resolved border width jsdom does not compute, so it rests on the shared `.qd-result-item` rules until
-a browser check exists — recorded as row **AC2** in `docs/TESTING_DEBT.md`.
+causes no shift. Names compose `.qd-truncate` with the mandatory `[title]`. The thread rests on the
+shared `.qd-result-item` rules.
 
 ## Permission-assignment failure model
 
@@ -263,9 +262,8 @@ the bar carrying the only discard control is hidden while assignment is unavaila
   `env(safe-area-inset-bottom)` padding has always been for. Measured at 390/767/1024 × 800 it sits
   flush against the viewport bottom at every scroll offset. `hasFooter` on the details shell is
   therefore `isDirty() && isWide()`, the dock body is one `#reviewDock` template used by both
-  mounts, and `access-permission-draft-bar` names exactly one element in either band — the page spec
-  asserts the count and the owning ancestor on both sides of the boundary, so a band losing its dock
-  cannot pass again.
+  mounts, and `access-permission-draft-bar` names exactly one element in either band, under the
+  correct owning ancestor on both sides of the boundary.
 - **On a short viewport the dock outranks the context bar.** Two pinned bars do not fit under
   `32rem` of height — a landscape phone, or a portrait one whose on-screen keyboard shrank the
   layout viewport. Measured at `390×400` the 201px context bar plus the 115px dock took 79% of the
@@ -314,31 +312,22 @@ Two mechanisms protect the draft, because they cover different exits:
   public `hasUnsavedChanges()`, and when that is true it returns the component's
   `confirmRouteLeave(): Promise<boolean>`. `window.confirm` is gone: the promise is resolved by the
   page's own `qd-confirm-dialog` (`access-leave-page-confirm`), so the route decision looks like
-  every other decision in the app. Four rules make that at least as strong as the native prompt, and
-  `access-admin-unsaved-changes.guard.spec.ts` proves each through **real Router navigation**,
-  including a `Location.back()` move: a clean draft resolves `true` with no dialog; a dirty draft
+  every other decision in the app. Four rules make that at least as strong as the native prompt:
+  a clean draft resolves `true` with no dialog; a dirty draft
   holds the navigation open until the operator answers; **repeated guard calls share the one pending
   promise**, so a second navigation cannot open a second dialog or strand the first; cancelling
   resolves `false` and leaves the draft and the selection exactly as they were; and confirming
   resolves `true` **without** eagerly discarding, because the component is about to be destroyed and
   an eager discard would corrupt a navigation that a later guard still refuses. Destroying the
   component settles any open decision as `false`.
-- **The Router proof runs against the real page, not only a stub.** The spec keeps a lightweight
-  stub for the pending-promise/back-navigation mechanics, and adds a second suite that routes
-  `AccessAdminPageComponent` itself behind the guard over `HttpTestingController`: it selects an
-  account, stages a real dirty draft, navigates, and answers the page's own dialog. Cancelling keeps
-  both `router.url` **and** `Location.path()` on `/settings/access` — the address-bar assertion is
-  the part that proves the async `canDeactivate` is at least as strong as `window.confirm` on a
-  popstate move, where the browser URL moves first and Angular's `canceledNavigationResolution`
-  restores it — and the draft and the selection survive. Confirming leaves and issues no request.
 
 ## Per-status semantics
 
 `accessAccountVariant()` (`models/access-admin.models.ts`) is the **exhaustive discriminator** the
 detail panel switches on: `pending-non-owner`, `active-non-owner`, `disabled-non-owner`,
 `active-owner`, `pending-owner`, `disabled-owner`, `unknown-status`. Exactly one body renders per
-account, and `access-admin.models.spec.ts` pins every branch, including that an unrecognised status
-never falls through to the disabled body. Each account state explains what the page can and cannot
+account, including an `unknown-status` branch so an unrecognised status never falls through to the
+disabled body. Each account state explains what the page can and cannot
 do to it, because the backend accepts a different commit for each one.
 
 - **Pending.** The editor renders, but the commit is `accept`: the replace endpoint requires
@@ -401,8 +390,7 @@ the point.** The panel beside it **in the same tab** no longer prints the raw
 `ACCESS_ADMIN_LABELS.reconciliationCandidateState`, the precondition through
 `OWNER_RELINK_REQUIRED_CANDIDATE_STATE` (`models/access-admin.models.ts`), so the term in the
 sentence and the term in the list are the same string by construction and renaming one renames the
-other. `access-advanced-security.component.spec.ts` asserts the precondition carries that label and
-**not** the raw token.
+other.
 
 The component owns only the relink form state. It takes the selected user, the preview, the busy
 action and the dirty-draft gate as inputs and emits preview/confirm/cancel; the facade still owns
@@ -472,10 +460,8 @@ plan finishing where it started: the audit log was the last place a database use
   Enter inside the picker searches and is `preventDefault`ed, because the picker sits inside the
   filter `<form>` and Enter would otherwise submit the filters instead. Each candidate's
   `data-testid` ends in that candidate's id — `<prefix>-candidate-<id>`, the same shape
-  `access-user-list` uses for its rows — so a spec names the candidate it means instead of resolving
-  the first match; the audit-log and page specs both pick a **non-first** candidate out of a
-  multi-result list, which is what makes "the wrong candidate was emitted" a failing test. A
-  `data-testid` is not visible UI, so carrying an id there does not breach the no-IDs rule above.
+  `access-user-list` uses for its rows. A `data-testid` is not visible UI, so carrying an id there
+  does not breach the no-IDs rule above.
 - **The picker is presentational like every other component here.** It holds the typed term and
   nothing else; the page owns the two result signals and calls `AccessAdminFacade.findUsers`, which
   gates on Owner access and delegates to `AccessAuditStore.findUsers` — between them the only place
@@ -486,8 +472,7 @@ plan finishing where it started: the audit log was the last place a database use
 - **Owner reconciliation is diagnostic, and the page says so.** `canApply` is **status, never an
   offer**: there is no apply endpoint in this feature, so the panel presents it as «مؤشّر التنفيذ»
   under a line stating that reconciliation runs outside the dashboard and is not applied from this
-  page. The page spec asserts the section's only `<button>` is the fingerprint disclosure, so adding
-  an Apply control fails a test.
+  page. The section's only `<button>` is the fingerprint disclosure; there is no Apply control.
 - **Candidate states read in Arabic** through `ACCESS_ADMIN_LABELS.reconciliationCandidateState`,
   which is also what the Owner relink precondition names — see *Advanced Security*.
 - **The 64-character configuration fingerprint is behind a disclosure**, collapsed by default, with
@@ -509,8 +494,8 @@ is a `.qd-sr-only` region carrying `politeMutationText()`. Both exist before any
 a live region created together with its text is generally not read out — the later text insertion is
 what the screen reader announces. What sits *inside* those regions is rendered only while there is a
 message, so the idle mutation band is **zero height**: the ~6.5rem permanently blank slot the
-previous shape paid for is gone (D41). The page spec asserts the empty announcer, its role and its
-zero height before any write.
+previous shape paid for is gone (D41). Before any write, the announcer remains empty, keeps its
+role, and occupies zero height.
 
 Severity routing is unchanged in meaning and now uses the locked F12 roles: a completed change and a
 `409` recovery render `qd-notice` (`status`, polite, quiet tone), and only a genuine write failure
@@ -581,22 +566,7 @@ access state that has since changed.
   the keys are a URL contract and must stay stable while the Arabic labels are free to change.
   **The page component reads the labels through a getter, not a class field**
   (`access-admin-page.component.ts` `get labels()`), matching how `abwab-page.component.ts` exposes
-  `ABWAB_LABELS`. This is load-bearing, not style: with `protected readonly labels =
-  ACCESS_ADMIN_LABELS` every test in the page spec fails on a cache-cleared build with «Cannot read
-  properties of undefined (reading 'unsavedChangesTitle')». The unit-test builder's Vite SSR
-  transform hoists a bare imported identifier used as a class-field initialiser into a module-level
-  `const` snapshot of the import, taken before the lazily-initialised chunk that assigns
-  `ACCESS_ADMIN_LABELS` has run, so every instance holds `undefined` while the import itself is a
-  live object by the time the constructor runs. Getter and method bodies read the import at call
-  time and are unaffected. The same class-field shape works elsewhere in the repo, where chunk
-  ordering populates the snapshot in time — this is a property of the bundle, not a rule about class
-  fields — and the page spec is what fails if the getter is reverted. The builder persists no
-  transformed module and emits no surviving chunk, so that mechanism cannot be re-inspected after the
-  run: it is an observation under `@angular/build` 20.3.27, `vite` 7.3.2, `vitest` 3.2.6 and
-  `esbuild` 0.28.0 (vite bundles its own 0.27.7) on Node 20.20.2. To falsify it after a toolchain
-  upgrade rather than inherit it: delete `.angular/cache` and `node_modules/.vite`, revert the getter
-  to `protected readonly labels = ACCESS_ADMIN_LABELS`, and run the feature lane below — if the page
-  spec passes, the mechanism no longer holds here and the getter can go.
+  `ABWAB_LABELS`. Keep the getter so the lazily initialised labels object is read at call time.
 - `components/` renders feature UI and emits interactions. None of them calls HTTP, and none of them
   injects the facade — the page passes signals down and turns every output back into a facade call:
   - `access-user-list` — filter form (`qd-form-field`/`qdControl`), `qdResultList` rows,
@@ -648,5 +618,6 @@ access state that has since changed.
 
 ## Testing
 
-`npm run test:feature:access-admin` is this feature's primary test lane. The repository-wide gate
-checker requires this lane to be configured whenever specs in this folder change.
+The repository Test Freeze applies. Use the three-command frontend verification chain in
+`../../../../README.md`; any new Playwright journey requires owner approval under
+`../../../../../../TESTING_CONSTITUTION.md`.

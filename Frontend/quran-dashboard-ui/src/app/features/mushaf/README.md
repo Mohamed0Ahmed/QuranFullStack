@@ -92,8 +92,7 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
 - **D37 — morphology segment rows are content.** `segment-data-rows` renders `div`s: no button or
   anchor, no `role`, no `tabindex`, no click/keydown output, no `qd-interactive-surface`, no hover,
   no pointer cursor and no focus ring. Only the morphology colour, number, part of speech and إعراب
-  are carried. `segment-data-rows.component.spec.ts` is the regression guard — do not "restore" an
-  affordance here; there is no segment action to open.
+  are carried. Do not "restore" an affordance here; there is no segment action to open.
 - **D38 stays deferred.** `models/mushaf.models.ts`, `state/mushaf-url-sync.ts`,
   `state/mushaf-url-hydration.ts` and `state/mushaf-reader.facade.ts` were not modified in the Golden
   cycle. `panel`, `wordTab` and `segment` keep their parsing, normalization, hydration, serialization,
@@ -154,8 +153,6 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   cells, and the responsive baseline is measured, not invented (333px wide bands /
   495px under the 768px morphology-grid breakpoint). Reservation clears on
   success/error/empty; loaded content always sizes itself.
-  `selected-word-section.component.spec.ts` is the **regression guard** for this
-  pattern — keep it passing untouched.
 - **Selected-ayah loading reserves its natural size too** (Feature 030, N3 row 10):
   a loaded tafsir/translation/إعراب has an arbitrary height, so `selected-ayah-section`
   runs the same pattern as a **local port** (decision N3-a: no shared utility until a
@@ -228,8 +225,8 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   `--qd-border-accent` hairline on top). The frame is presentation-only — the
   `toStudyAyahDisplayText` display mapping, verse-key display, `ayahNavigate` outputs, and all
   Quran text rendering stay feature-owned and unchanged.
-- **jsdom lacks `matchMedia` / `ResizeObserver`** under the vitest builder — guard them and
-  default to desktop (many components use responsive/observer logic).
+- Browser-only APIs such as `matchMedia` and `ResizeObserver` remain guarded, with a desktop
+  fallback when they are unavailable.
 - URL-state (`mushaf-url-sync`) is a shareable contract — keep params stable. The global
   detail overlay's `qdDetail*` keys are a different owner riding the same URL (Feature
   029, B7): `isBareMushafEntry` treats a URL whose only params are overlay keys as bare

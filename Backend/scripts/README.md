@@ -278,7 +278,8 @@ After the first successful build, use `qd-api` directly until backend code chang
 ## Backend test commands
 
 `../../TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` select which checks to run.
-`../../TESTING_STRATEGY.md` §3 and this section document the selected Backend command mechanics.
+This section and `../tests/QuranDashboard.Tests/README.md` own the Backend command mechanics and
+lane membership.
 
 ### `test-backend`
 
@@ -288,8 +289,22 @@ After the first successful build, use `qd-api` directly until backend code chang
 
 `--help` prints the authoritative usage and is the thing to trust when this file and the script
 disagree. The lanes are `fast`, `access`, `access-db`, `migration`, `process`, `smoke`,
-`tier-b`, `canonical-data`, `feature`, `pipeline`, and `pre-pr`; an unknown lane exits 2 with the
+`tier-b`, `gate-contract`, `canonical-data`, `feature`, `pipeline`, and `pre-pr`; an unknown lane exits 2 with the
 usage text (`test-backend:72-78`).
+
+| Purpose | Lanes | Selection |
+|---|---|---|
+| Daily verification | `smoke`, `tier-b` | Permanent classes only; the union is the complete Permanent set |
+| Concern gate | `gate-contract` | Every retained row with a non-empty `Concerns` value |
+| Pipeline gate | `pipeline` | `Gate=Pipeline` **and** `Kind!=Canonical`; `canonical-data` owns every excluded canonical class |
+| Canonical-data gate | `canonical-data` | Every `Kind=Canonical` row, including the nine canonical rows excluded from `pipeline` and the canonical smoke-data class |
+| Migration gate | `migration` | `Kind=Migration` |
+| Access database gate | `access-db` | `Feature=Access` **and** (`Kind=Database` **or** `Concerns` contains `Schema`); `gate-contract` owns the excluded non-Access `AbwabSchemaTests` and `WordTypesChildCatalogueDriftTests` |
+| Mandatory pre-release gate | `pre-pr` | Every retained catalog row |
+
+The focused `fast`, `access`, `process`, and `feature` lanes remain diagnostic entry points. They do
+not replace the daily pair or a change/release gate. Before release, `pre-pr` is mandatory and runs
+the complete retained estate.
 
 | Flag | Effect |
 |------|--------|

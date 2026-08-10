@@ -12,8 +12,8 @@ router; the root universal kernel remains in force.
 | Logging, exception diagnostics, importer/pipeline run summary, CLI output, or report output | `Backend/.architecture/LOGGING_GUIDELINES.md`. |
 | Auth, access, Owner, permission, or identity work | `docs/contracts/security-access.md`, then only its directly implicated README; API route/security changes also load `Backend/.architecture/API_GUIDELINES.md` §11. |
 | Quran import, generation, or source work | `CODING_PRINCIPLES.md` §10 and the nearest pipeline or DataImporter README. |
-| EF migration or schema work | `Backend/README.md` §Invariants, `Backend/scripts/README.md`, and the migration sections of `TESTING_STRATEGY.md`. |
-| Select, run, or report Backend tests | Read `TESTING_CONSTITUTION.md`, then `Backend/tests/QuranDashboard.Tests/README.md`. |
-| Write or review Backend tests | Apply that testing constitution, then read `.claude/skills/test-guard/SKILL.md` and `references/dotnet.md`. |
+| EF migration or schema work | Read `TESTING_CONSTITUTION.md`, `Backend/README.md` §Invariants, and `Backend/scripts/README.md`. |
+| Select, run, or report Backend tests | Read `TESTING_CONSTITUTION.md`; use `Backend/tests/QuranDashboard.Tests/README.md` only for lanes and fixtures. |
+| Write or review retained Backend tests | Read `TESTING_CONSTITUTION.md`, then `.claude/skills/test-guard/SKILL.md` and `references/dotnet.md`. |
 | Deployment or runtime smoke | `Backend/README.md` §Deployment and `.claude/skills/deploy-smoke/SKILL.md`. |
 | A changed Backend file reaches a documented size threshold | `Backend/.architecture/BACKEND_STRUCTURE.md` §File Size and Responsibility Guidelines at pre-delivery. |

@@ -19,7 +19,7 @@ done.
 lanes or broad test commands of any kind; package installs; Git actions or Git status
 reporting; source-code changes; remote deployment; or destructive data work. A runtime
 curl here is a **smoke observation** — it is never route-smoke test evidence
-(`TESTING_STRATEGY.md` §6 owns that gate).
+(`Backend/tests/QuranDashboard.Tests/README.md` owns that gate).
 
 ## Database target safety (hard rules)
 

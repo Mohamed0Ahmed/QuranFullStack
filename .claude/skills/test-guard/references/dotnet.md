@@ -59,7 +59,7 @@ Prefer integration tests where the real bugs live: the HTTP boundary and persist
 **Database — real PostgreSQL via Testcontainers:**
 
 - When a **query, migration, mapping, constraint, or persistence behavior is the subject**, run against real Postgres, applying the real EF Core migrations, seeding via fixtures, and isolating each test.
-- **In this repository a fixture must not construct its own `PostgreSqlContainer`** — fixtures lease a database from the shared, project-owned runtime. The fixture/serialization rules are owned by `Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md` (with `TESTING_STRATEGY.md` §3.3); read the README before writing or reviewing a database fixture, and treat a new container start as a finding.
+- **In this repository a fixture must not construct its own `PostgreSqlContainer`** — fixtures lease a database from the shared, project-owned runtime. The fixture/serialization rules are owned by `Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md`; read the README before writing or reviewing a database fixture, and treat a new container start as a finding.
 - Mocking the `DbContext` here tests nothing (Rules 2 and 9).
 
 **SQLite fallback — acceptable / not acceptable:**

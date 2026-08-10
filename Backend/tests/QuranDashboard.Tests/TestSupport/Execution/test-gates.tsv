@@ -1,7 +1,7 @@
 FullyQualifiedClassName	Feature	Kind	Gate	Concerns
 QuranDashboard.Tests.Abwab.AbwabDoorWriteBehaviorTests	Abwab	Database	TierB
 QuranDashboard.Tests.Abwab.AbwabRelationWriteBehaviorTests	Abwab	Database	TierB
-QuranDashboard.Tests.Abwab.AbwabSchemaTests	Abwab	Database	TierB
+QuranDashboard.Tests.Abwab.AbwabSchemaTests	Abwab	Database	TierB	Schema
 QuranDashboard.Tests.Abwab.AbwabTemplateApplyBehaviorTests	Abwab	Database	TierB
 QuranDashboard.Tests.Api.Access.AbwabPermissionCatalogueTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.AccessAdminCommandTests	Access	Process	TierB
@@ -9,7 +9,7 @@ QuranDashboard.Tests.Api.Access.AccessAdministrationEndpointTests	Access	Databas
 QuranDashboard.Tests.Api.Access.AccessAuditEventPersistenceTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.AccessCollectionResetContractTests	Access	Database	TierB	Execution
 QuranDashboard.Tests.Api.Access.AccessMeEndpointTests	Access	Database	TierB
-QuranDashboard.Tests.Api.Access.AccessMigrationPathTests	Access	Migration	TierB
+QuranDashboard.Tests.Api.Access.AccessMigrationPathTests	Access	Migration	TierB	Schema
 QuranDashboard.Tests.Api.Access.AccessRolesTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.AccessSchemaDriftTests	Access	Database	TierB	Schema
 QuranDashboard.Tests.Api.Access.AuthorizationBoundaryTests	Access	Fast	TierB
@@ -18,7 +18,7 @@ QuranDashboard.Tests.Api.Access.AuthorizationRequirementHandlerTests	Access	Data
 QuranDashboard.Tests.Api.Access.AuthorizationRejectionResponseTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.AuthorizationStateResolverTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.EmailIdentityNormalizerTests	Access	Fast	TierB
-QuranDashboard.Tests.Api.Access.EmailIdentityPreflightTests	Access	Database	TierB
+QuranDashboard.Tests.Api.Access.EmailIdentityPreflightTests	Access	Database	TierB	Startup
 QuranDashboard.Tests.Api.Access.LogtoSubjectRelinkEndpointTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.OwnerBootstrapOptionsTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.PermissionCatalogueStartupSyncTests	Access	Database	TierB	Schema
@@ -28,7 +28,7 @@ QuranDashboard.Tests.Api.Access.UnsafeEndpointMetadataValidatorTests	Access	Fast
 QuranDashboard.Tests.Api.Access.UserProvisioningServiceTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Middleware.GlobalExceptionHandlerTests	Middleware	Fast	TierB
 QuranDashboard.Tests.Api.RateLimiting.RateLimitingIntegrationTests	RateLimiting	Fast	TierB
-QuranDashboard.Tests.Quran.FullI3rab.FullI3rabForceRebuildTests	FullI3rab	Database	Pipeline
+QuranDashboard.Tests.Quran.FullI3rab.FullI3rabForceRebuildTests	FullI3rab	Database	TierB
 QuranDashboard.Tests.Quran.FullI3rab.FullI3rabImportTests	FullI3rab	Database	Pipeline
 QuranDashboard.Tests.Quran.FullI3rab.FullI3rabManifestReaderTests	FullI3rab	Fast	Pipeline
 QuranDashboard.Tests.Quran.FullI3rab.FullI3rabSchemaShapeTests	FullI3rab	Database	Pipeline
@@ -46,21 +46,21 @@ QuranDashboard.Tests.Quran.MushafReader.WordAnalysisCorruptFeaturesJsonTests	Mus
 QuranDashboard.Tests.Quran.MushafReader.WordAnalysisSegmentFallbackTests	MushafReader	Database	TierB
 QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatImportTests	Mutashabihat	Database	Pipeline
 QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatReaderTests	Mutashabihat	Fast	Pipeline
-QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatRefusalForceTests	Mutashabihat	Database	Pipeline
-QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatValidationFailureTests	Mutashabihat	Database	Pipeline
+QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatRefusalForceTests	Mutashabihat	Database	TierB
+QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatValidationFailureTests	Mutashabihat	Database	TierB
 QuranDashboard.Tests.Quran.Navigation.NavigationDatasetReaderTests	Navigation	Fast	Pipeline
 QuranDashboard.Tests.Quran.Navigation.NavigationImportTests	Navigation	Database	Pipeline
 QuranDashboard.Tests.Quran.Navigation.NavigationManifestReaderTests	Navigation	Fast	Pipeline
-QuranDashboard.Tests.Quran.Navigation.NavigationMetadataWriteIsolationTests	Navigation	Fast	Pipeline
+QuranDashboard.Tests.Quran.Navigation.NavigationMetadataWriteIsolationTests	Navigation	Fast	TierB
 QuranDashboard.Tests.Quran.Navigation.NavigationRollbackTests	Navigation	Database	Pipeline
 QuranDashboard.Tests.Quran.Navigation.NavigationSourcePathTests	Navigation	Database	Pipeline
 QuranDashboard.Tests.Quran.Navigation.NavigationSourceSafetyTests	Navigation	Database	Pipeline
 QuranDashboard.Tests.Quran.Navigation.NavigationValidationFailureTests	Navigation	Database	Pipeline
 QuranDashboard.Tests.Quran.Tafsirs.TafsirExcludedSourceTests	Tafsirs	Database	Pipeline
-QuranDashboard.Tests.Quran.Tafsirs.TafsirForceRebuildTests	Tafsirs	Database	Pipeline
+QuranDashboard.Tests.Quran.Tafsirs.TafsirForceRebuildTests	Tafsirs	Database	TierB
 QuranDashboard.Tests.Quran.Tafsirs.TafsirImportTests	Tafsirs	Database	Pipeline
 QuranDashboard.Tests.Quran.Tafsirs.TafsirManifestReaderTests	Tafsirs	Fast	Pipeline
-QuranDashboard.Tests.Quran.Tafsirs.TafsirRollbackTests	Tafsirs	Database	Pipeline
+QuranDashboard.Tests.Quran.Tafsirs.TafsirRollbackTests	Tafsirs	Database	TierB
 QuranDashboard.Tests.Quran.Tafsirs.TafsirSchemaShapeTests	Tafsirs	Database	Pipeline
 QuranDashboard.Tests.Quran.Tafsirs.TafsirSourceReaderTests	Tafsirs	Fast	Pipeline
 QuranDashboard.Tests.Quran.Tafsirs.TafsirSourceSafetyTests	Tafsirs	Database	Pipeline
@@ -68,32 +68,32 @@ QuranDashboard.Tests.Quran.Tafsirs.TafsirValidationFailureTests	Tafsirs	Database
 QuranDashboard.Tests.Quran.Translations.TranslationExcludedSourceTests	Translations	Database	Pipeline
 QuranDashboard.Tests.Quran.Translations.TranslationImportTests	Translations	Database	Pipeline
 QuranDashboard.Tests.Quran.Translations.TranslationManifestReaderTests	Translations	Fast	Pipeline
-QuranDashboard.Tests.Quran.Translations.TranslationRefusalForceTests	Translations	Database	Pipeline
-QuranDashboard.Tests.Quran.Translations.TranslationRollbackTests	Translations	Database	Pipeline
+QuranDashboard.Tests.Quran.Translations.TranslationRefusalForceTests	Translations	Database	TierB
+QuranDashboard.Tests.Quran.Translations.TranslationRollbackTests	Translations	Database	TierB
 QuranDashboard.Tests.Quran.Translations.TranslationSchemaShapeTests	Translations	Database	Pipeline
 QuranDashboard.Tests.Quran.Translations.TranslationSourceReaderTests	Translations	Fast	Pipeline
 QuranDashboard.Tests.Quran.Translations.TranslationSourceSafetyTests	Translations	Database	Pipeline
 QuranDashboard.Tests.Quran.Translations.TranslationValidationFailureTests	Translations	Fast	Pipeline
-QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsDeterministicIdTests	WordsDisplay	Database	Pipeline
+QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsDeterministicIdTests	WordsDisplay	Database	TierB
 QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsFirstOccurrenceTests	WordsDisplay	Database	Pipeline
 QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsIdempotencyTests	WordsDisplay	Database	Pipeline
 QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsIdentityLinksTests	WordsDisplay	Database	Pipeline
 QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRealImportIdentityLinksTests	WordsDisplay	Canonical	Pipeline
 QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRebuildTests	WordsDisplay	Database	Pipeline
-QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRefusalForceTests	WordsDisplay	Database	Pipeline
-QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsSourceUntouchedTests	WordsDisplay	Database	Pipeline
-QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsValidationFailureTests	WordsDisplay	Database	Pipeline
-QuranDashboard.Tests.Quran.WordsMorphology.MorphologyAssemblerTests	WordsMorphology	Fast	Pipeline
+QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRefusalForceTests	WordsDisplay	Database	TierB
+QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsSourceUntouchedTests	WordsDisplay	Database	TierB
+QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsValidationFailureTests	WordsDisplay	Database	TierB
+QuranDashboard.Tests.Quran.WordsMorphology.MorphologyAssemblerTests	WordsMorphology	Fast	TierB
 QuranDashboard.Tests.Quran.WordsMorphology.MorphologyDimensionTests	WordsMorphology	Database	Pipeline
 QuranDashboard.Tests.Quran.WordsMorphology.MorphologyImportSourceNormalizationTests	WordsMorphology	Database	Pipeline
 QuranDashboard.Tests.Quran.WordsMorphology.MorphologyImportTests	WordsMorphology	Database	Pipeline
 QuranDashboard.Tests.Quran.WordsMorphology.MorphologyPosResolutionTests	WordsMorphology	Database	Pipeline
-QuranDashboard.Tests.Quran.WordsMorphology.MorphologyRefusalForceTests	WordsMorphology	Database	Pipeline
+QuranDashboard.Tests.Quran.WordsMorphology.MorphologyRefusalForceTests	WordsMorphology	Database	TierB
 QuranDashboard.Tests.Quran.WordsMorphology.MorphologySegmentRenderingTests	WordsMorphology	Database	Pipeline
 QuranDashboard.Tests.Quran.WordsMorphology.MorphologyUs1GateTests	WordsMorphology	Database	Pipeline
-QuranDashboard.Tests.Quran.WordsMorphology.MorphologyValidationFailureTests	WordsMorphology	Database	Pipeline
+QuranDashboard.Tests.Quran.WordsMorphology.MorphologyValidationFailureTests	WordsMorphology	Database	TierB
 QuranDashboard.Tests.Quran.WordsMorphology.MorphologyVerbFeatureTests	WordsMorphology	Database	Pipeline
-QuranDashboard.Tests.Quran.WordsMorphology.WordLemmaNormalizationApplierTests	WordsMorphology	Fast	Pipeline
+QuranDashboard.Tests.Quran.WordsMorphology.WordLemmaNormalizationApplierTests	WordsMorphology	Fast	TierB
 QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyArtifactTests	WordsMorphologyEnriched	Canonical	Pipeline
 QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyDryValidatorTests	WordsMorphologyEnriched	Fast	Pipeline
 QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyImportSourceTests	WordsMorphologyEnriched	Fast	Pipeline
@@ -106,7 +106,7 @@ QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabRefusalTests	WordsSimpleI3rab	D
 QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabSchemaShapeTests	WordsSimpleI3rab	Database	Pipeline
 QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabSourceSafetyTests	WordsSimpleI3rab	Database	Pipeline
 QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabValidationFailureTests	WordsSimpleI3rab	Database	Pipeline
-QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesChildCatalogueDriftTests	WordsWordTypes	Fast	TierB
+QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesChildCatalogueDriftTests	WordsWordTypes	Fast	TierB	Schema
 QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests	Smoke	Canonical	Smoke
 QuranDashboard.Tests.Smoke.SmokeAccessAdministrationAuthorizationTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeAbwabWriteAuthorizationTests	Smoke	Database	Smoke

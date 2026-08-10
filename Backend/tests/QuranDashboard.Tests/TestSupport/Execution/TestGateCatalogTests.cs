@@ -116,7 +116,7 @@ public sealed class TestGateCatalogTests
             .ToArray();
 
         pipelineEntries.Should().NotBeEmpty();
-        pipelineEntries.Should().OnlyContain(entry => entry.Gate == "Pipeline");
+        pipelineEntries.Should().OnlyContain(entry => entry.Gate == "Pipeline" || entry.Gate == "TierB");
         TestGateCatalog.GateEntries
             .Where(entry => entry.Gate == "Pipeline")
             .Should()

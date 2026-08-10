@@ -36,8 +36,8 @@ Claude does not load a different agent's repository entrypoint as part of this r
 | --- | --- |
 | Production-source implementation | Only the implicated headings of `CODING_PRINCIPLES.md`: §2 Clean Code and `Comment Policy`, §3 SOLID, §4 DRY/KISS/YAGNI, or §7 Focused Changes. |
 | Active phased, specification, or contract-bound work | The active spec/task/contract plus the invoked native Spec Kit Skill. Stop before broadening either. |
-| Selecting, running, or reporting tests | Read `TESTING_CONSTITUTION.md`, then the nearest test README. |
-| Writing or reviewing test code | Apply that testing constitution, then read `.claude/skills/test-guard/SKILL.md` and only its stack-relevant reference. |
+| Selecting, running, or reporting tests | Read `TESTING_CONSTITUTION.md`; use the nearest test README only for commands and fixtures. |
+| Writing or reviewing retained Backend or Playwright tests | Read `TESTING_CONSTITUTION.md`, then `.claude/skills/test-guard/SKILL.md` and only its relevant retained-stack reference. |
 | Pre-delivery implementation self-check | `CODING_PRINCIPLES.md` §12 and production-code headings already implicated; add the area structure document's file-size heading only when its threshold applies. |
 | Git branch, stage, commit, push, or PR work | `.claude/skills/commit-workflow/SKILL.md`. |
 | Deployment or runtime smoke | `Backend/README.md` §Deployment and `.claude/skills/deploy-smoke/SKILL.md`. |
