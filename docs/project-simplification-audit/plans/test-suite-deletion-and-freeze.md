@@ -66,10 +66,10 @@ post-audit class that Phase 1 step 2a classifies as Permanent (`AuthorizationBou
 known example). Retained **as they are** — no consolidation, no rewrite, no renaming (P6). These are
 the daily safety net.
 
-The audit's `MERGE` classes are **not** a bucket here. Under P6 there is no folding step, so each
-one resolves in Phase 1 to either *retain in place* (it uniquely protects a P3 concern) or *delete*
-(its protection demonstrably survives elsewhere). The default is delete, but only **after** the
-survival mapping in Phase 1 proves it — never by assumption and never by consolidation.
+The audit's `MERGE` classes are **not** a bucket here. Under P6 there is no folding step, so that
+label has no operational identity in the repository. **Historical `MERGE` reconstruction is no
+longer required. Final classification is governed by the current P3/P4/P5 policy plus the Phase 1
+high-risk deletion safety sweep.**
 
 ### 3.2 Release / change gates
 
@@ -112,8 +112,8 @@ Delete** — it is not repaired, re-teardowned, or re-fixtured during this initi
 ### 3.3 Deleted
 
 Everything else: every frontend `*.spec.ts`, every E2E file not on the confirmed allowlist (the dark
-`abwab-*` sandbox specs among them), the backend `DELETE` set plus the `MERGE` classes not retained
-in place, and every piece of infrastructure, helper, script, configuration, catalog row, and
+`abwab-*` sandbox specs among them), every backend class the Phase 1 classification places in
+Delete, and every piece of infrastructure, helper, script, configuration, catalog row, and
 document that exists only to serve them — each identified by the Phase 1 manifest, never by a count
 carried over from the audit.
 
@@ -146,8 +146,7 @@ no currently critical Security/Business test is inside it.
      parity guarantee. It survives the cutover. (`SmokeRouteCatalog` and its parity protection,
      `test-resources.tsv`, and the PostgreSQL test-runtime support are retained as already
      specified.)
-   - *Delete* — the residual, which is the audit's `DELETE` set plus any `MERGE` candidate cleared
-     by step 2b below.
+   - *Delete* — the residual, protected by the step-3 safety sweep below.
    - Audit §4.3's cluster counts (~68 gate classes) are a **cross-check only**. A derived set that
      differs is recorded in one line and accepted; it is not investigated further.
 2. **Rename/move reconciliation.** Confirm every audit-named class still exists at its named
@@ -161,13 +160,12 @@ no currently critical Security/Business test is inside it.
    the audit never saw them. `AuthorizationBoundaryTests` is the known example, not the only
    permitted one — enumerate them from the current catalog, not from this plan.
 
-   **2b. `MERGE` survival mapping.** Before any audit-`MERGE` class enters the delete list, record
-   one concise line per class in the form `protected behavior -> surviving retained class/gate`.
-   Nothing is redesigned, folded, or moved to make the mapping true — the surviving protection must
-   already exist. If a candidate's protected behavior cannot be clearly located in the retained
-   estate, **escalate to the owner and leave it retained in place**; do not delete it, and do not
-   repair or restructure it to resolve the ambiguity. Once survival is proven, the default is
-   delete.
+   **2b. No historical `MERGE` reconstruction.** The audit names only one of its 23 `MERGE`
+   candidates, and the label describes a consolidation model this plan abandoned. **Historical
+   `MERGE` reconstruction is no longer required. Final classification is governed by the current
+   P3/P4/P5 policy plus the Phase 1 high-risk deletion safety sweep** (step 3). Do not attempt to
+   recover the unnamed candidates, and do not block execution on their identities. (Owner decision,
+   2026-08-11.)
 3. **Safety sweep.** Every class in the delete list whose name or subject touches auth, permission,
    owner, audit, transaction, rollback, concurrency, corruption, or Quran-data integrity gets one
    line stating where that protection survives. Any that cannot be answered in one line is
@@ -227,8 +225,8 @@ path **`scratchpad/test-suite-deletion-manifest.md`**.
 Permanent set, it does not touch it.
 
 **Safety checks.** The three retain/delete lists partition **every current `test-gates.tsv` row**
-exactly — no row unclassified, none in two lists. Every `MERGE` candidate carries its survival
-mapping. Every escalation is resolved by the owner before Phase 2 starts.
+exactly — no row unclassified, none in two lists. Every high-risk delete candidate carries its
+step-3 survival line. Every escalation is resolved by the owner before Phase 2 starts.
 
 **Must NOT do.** No new audit document, no metrics, no per-class essays, no runtime measurement, no
 repair of a failing candidate, no reclassification of a `KEEP` class into deletion because it looks
@@ -236,7 +234,7 @@ expensive.
 
 **Acceptance.** `scratchpad/test-suite-deletion-manifest.md` exists, is untracked, and lists:
 backend classes to retain (permanent), backend classes to retain (gate), backend classes to delete
-(each former `MERGE` candidate carrying its survival mapping), E2E files to retain, E2E files to
+(each high-risk candidate carrying its step-3 survival line), E2E files to retain, E2E files to
 delete, and the frontend spec glob. Owner has cleared every escalation. **The Permanent-set
 pre-deletion baseline (step 6) has run and is green, with its result recorded** — or the owner has
 explicitly resolved a failure before Phase 2 opens.
@@ -250,8 +248,8 @@ explicitly resolved a failure before Phase 2 opens.
 **Goal.** Remove the estate in one destructive pass, driven by
 `scratchpad/test-suite-deletion-manifest.md`, without repairing anything. Any class that an
 owner-resolved escalation moves out of the delete list during this phase (a non-separable mixed
-file, an unmappable `MERGE` candidate) is amended into the manifest with an explicit Permanent or
-Gate classification before execution resumes, so Phases 3 and 4 check against the truth.
+file, for example) is amended into the manifest with an explicit Permanent or Gate classification
+before execution resumes, so Phases 3 and 4 check against the truth.
 
 **Scope.**
 
@@ -581,8 +579,10 @@ Added to `TESTING_CONSTITUTION.md` as its operative default:
    classified Permanent or Gate; the Phase 4 lane classification check passes on all four of its
    conditions.
 5. Every audit-named `KEEP — SECURITY` and `KEEP — BUSINESS RULE` behavior is still covered by an
-   existing class, retained in place and unconsolidated; every deleted `MERGE` candidate has a
-   recorded `protected behavior -> surviving retained class/gate` mapping.
+   existing class, retained in place and unconsolidated; every high-risk delete candidate has a
+   recorded `protected behavior -> surviving retained class/gate` survival line from the Phase 1
+   safety sweep. Historical `MERGE` reconstruction is not required and is not an acceptance
+   condition.
 6. No **permanent retained** backend test exists solely for endpoint permutations, DTO/property
    mapping, straightforward reads, implementation details, trivial validation, framework behavior,
    or refactor protection. This criterion governs the daily permanent set only: a release/change
@@ -604,8 +604,9 @@ Stop and report to the owner rather than proceeding if:
 
 - A class in the deletion list protects a Security or critical Business invariant with no answer to
   "where does this survive" — escalate; do not delete, and do not repair.
-- An audit-`MERGE` candidate's protected behavior cannot be mapped to a surviving retained class or
-  gate — escalate and leave it retained in place.
+- A high-risk delete candidate's protected behavior cannot be mapped to a surviving retained class
+  or gate — escalate and leave it retained in place. (An unrecoverable *historical* `MERGE` identity
+  is **not** such a case and never blocks execution.)
 - A `.cs` file holds both a retained and a deletion-target class and the two cannot be separated
   without risk to the retained one — **stop Phase 2 and escalate.** Do not keep both and continue.
   Execution resumes only after the owner resolves it and the manifest classifies every surviving
