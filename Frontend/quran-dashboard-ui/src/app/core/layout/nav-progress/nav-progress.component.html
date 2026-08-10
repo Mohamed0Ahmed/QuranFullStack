@@ -4,7 +4,9 @@
     [class.qd-nav-progress--done]="state() === 'done'"
     aria-hidden="true"
     data-testid="qd-nav-progress"
-  ></div>
+  >
+    <span class="qd-nav-progress__segment"></span>
+  </div>
 }
 <span class="qd-sr-only" role="status" data-testid="qd-nav-progress-status">{{
   statusMessage()

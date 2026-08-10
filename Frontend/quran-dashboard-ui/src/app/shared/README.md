@@ -85,7 +85,11 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 - `ui/notice/` — `qd-notice` (F12 *notice*): a permanently mounted `role="status"`/`aria-live`
   announcer with **zero idle geometry** (D41) — the body only exists while a message does.
   `tone` is `success` (mutation success semantics) or `info`; failures belong to `qd-error-state`.
-- `ui/state/` — `qd-state`, the **temporary compatibility adapter** for the five owners above. It
+- `ui/state/` — `qd-state`, the **temporary compatibility adapter** for the five owners above.
+  **It has no production consumer left** (Plan 7 Phase 10 migrated the last one, Auth callback);
+  `npm run check:golden-ui` reports `qd-state template consumers: 0`. Only its own implementation
+  and spec remain, and they are deleted in Phase 11 under §7.2's retirement conditions. Until then
+  it stays as described below and may not gain a consumer. It
   keeps its `variant`/`message`/`actionLabel`/`reserve` inputs, its `action` output, its selector
   and its `qd-state-*` test ids, and translates them: `loading` → `qd-panel-skeleton shape="text"`,
   `empty` → `qd-empty-state`, `error` → `qd-error-state severity="write"` (the legacy variant has
@@ -287,7 +291,12 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   its live region are per instance (D44), and every page change announces the new **result range**
   through that instance's own polite region. `Load more` (Access audit) is a separate capability and
   gets none of this API.
-- `ui/placeholder-page/` — generic placeholder page that reads its title from route data.
+- `ui/placeholder-page/` — generic placeholder page for an unbuilt nav route. It reads its title
+  from route data and renders that title and its single sentence inside **one**
+  `qd-page-shell--capped-reading` axis (D04), so the heading and the body can no longer sit on two
+  different measures. The sentence is the F12 `qd-empty-state` owner (`role="status"`), the state
+  slot has a designed `16rem` minimum block size so short routes do not collapse, and the page
+  offers **no** action — exactly one message, zero or one action is the contract.
 - `ui/safe-html/` — HTML sanitizing pipe for trusted API-backed markup display.
 - `url/` — deep-link helpers; today `deep-link-href.ts` builds href strings from path + query params.
 

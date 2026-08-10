@@ -19,7 +19,9 @@
   align-items: center;
   justify-content: center;
   gap: var(--qd-space-2);
-  font-size: 0.8125rem;
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
   color: var(--qd-footer-muted);
   flex-wrap: wrap;
 }
@@ -32,22 +34,22 @@
 
 .health-dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: var(--qd-radius-pill);
   flex-shrink: 0;
 }
 
 .dot-healthy {
-  background-color: var(--qd-success);
+  background-color: var(--qd-footer-accent);
 }
 
 .dot-unhealthy {
-  background-color: var(--qd-danger);
+  background-color: var(--qd-danger-tint);
 }
 
 .dot-degraded {
-  background-color: var(--qd-warning);
+  background-color: var(--qd-warning-tint);
 }
 
 .health-loading {
@@ -60,6 +62,12 @@
 }
 
 .health-retry-btn {
-  font-size: 0.8125rem;
-  padding: var(--qd-space-1) var(--qd-space-2);
+  border-color: var(--qd-footer-border);
+  color: var(--qd-footer-text);
+}
+
+.health-retry-btn:hover:not(:disabled) {
+  background: var(--qd-footer-border);
+  border-color: var(--qd-footer-border);
+  color: var(--qd-footer-text);
 }

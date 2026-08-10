@@ -4,7 +4,8 @@
 
 .auth-callback {
   display: flex;
+  flex-direction: column;
   justify-content: center;
-  padding-block: var(--qd-space-6);
+  min-block-size: 16rem;
   text-align: center;
 }

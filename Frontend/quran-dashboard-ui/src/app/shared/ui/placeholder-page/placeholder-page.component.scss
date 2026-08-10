@@ -1,3 +1,19 @@
 :host {
   display: block;
 }
+
+.placeholder-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.placeholder-page .qd-page-header {
+  text-align: center;
+}
+
+.placeholder-page__state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-block-size: 16rem;
+}

@@ -61,6 +61,27 @@ describe('WordsHubPageComponent', () => {
     expect(root.querySelectorAll('[data-testid="word-section-coming-soon"]')).toHaveLength(0);
   });
 
+  it('keeps the 2+2+1 curriculum grid on one capped-reading axis with the final card spanning', async () => {
+    const root = await createComponent();
+
+    expect(root.querySelectorAll('.qd-page-shell')).toHaveLength(1);
+    expect(root.querySelector('.qd-page-shell')?.classList).toContain(
+      'qd-page-shell--capped-reading',
+    );
+    expect(root.querySelectorAll('.qd-container, .qd-page-frame, .qd-explorer-frame')).toHaveLength(
+      0,
+    );
+
+    const grid = root.querySelector('.words-hub-grid');
+    expect(grid?.classList).toContain('qd-grid');
+    expect(grid?.classList).toContain('qd-grid--curriculum');
+
+    const cards = Array.from(root.querySelectorAll('qd-word-section-card'));
+    expect(cards).toHaveLength(5);
+    expect(cards.filter((card) => card.classList.contains('qd-grid__span-all'))).toHaveLength(1);
+    expect(cards[4].classList).toContain('qd-grid__span-all');
+  });
+
   it('feeds each card its page hero title + tagline and the correct explorer route', async () => {
     const root = await createComponent();
 

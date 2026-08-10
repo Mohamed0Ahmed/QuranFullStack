@@ -5,7 +5,7 @@
 .word-section-card {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  block-size: 100%;
   text-decoration: none;
   color: inherit;
 }
@@ -25,20 +25,24 @@
 
 .word-section-card__ordinal {
   font-family: var(--qd-font-quran);
-  font-size: 1.1rem;
+  font-size: var(--qd-type-h4);
   font-weight: 700;
   line-height: 1;
-  color: var(--qd-text-muted); // a decorative numeral is not a green use
+  color: var(--qd-ink-muted); // a decorative numeral is not a green use
 }
 
 .word-section-card__eyebrow {
-  font-size: 0.75rem;
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-caption);
+  line-height: var(--qd-type-caption-lh);
   font-weight: 700;
   letter-spacing: 0.01em;
-  color: var(--qd-accent-text); // allowed-green list #4: section eyebrow via the AA text shade
+  color: var(--qd-green-text); // allowed-green list #4: section eyebrow via the AA text shade
 }
 
 .word-section-card__desc {
   margin: 0;
-  line-height: 1.7;
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body);
+  line-height: var(--qd-type-body-lh);
 }

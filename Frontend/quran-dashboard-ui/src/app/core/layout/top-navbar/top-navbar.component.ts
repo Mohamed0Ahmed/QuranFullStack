@@ -1,24 +1,35 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, ElementRef, HostListener, computed, inject } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
 import { map } from 'rxjs';
+
+import { AppNavigationComponent, NAV_GROUP_ONLY_ROUTE } from '../app-navigation/app-navigation.component';
 import { NavItem } from '../../navigation/nav-items';
 import { NAV_MENU } from '../../navigation/nav-menu';
-import { DASHBOARD_ROUTE_PATH } from '../../navigation/route-paths';
 import { ThemeService } from '../../theme/theme.service';
+import { QdActionDirective } from '../../../shared/ui/action/action.directive';
+import { QdModalShellComponent } from '../../../shared/ui/modal-shell/modal-shell.component';
 import { ScrollLockService } from '../../../shared/ui/modal-scroll-lock/scroll-lock.service';
+import { QD_BP_WIDE_QUERY } from '../../../shared/layout/breakpoints';
 import { AuthReturnLocationStore } from '../../auth/auth-return-location.store';
 import { CurrentUserStore } from '../../auth/current-user.store';
-
-const GROUP_ONLY_ROUTE = '';
 
 const MORE_MENU_ITEM: NavItem = {
   key: 'more',
   labelAr: 'المزيد',
   labelEn: 'More',
-  route: GROUP_ONLY_ROUTE,
+  route: NAV_GROUP_ONLY_ROUTE,
   group: 'primary',
   children: NAV_MENU.filter((item) => item.group === 'more'),
 };
@@ -26,21 +37,30 @@ const MORE_MENU_ITEM: NavItem = {
 @Component({
   selector: 'qd-top-navbar',
   standalone: true,
-  imports: [NgTemplateOutlet, RouterLink, RouterLinkActive],
+  imports: [
+    NgTemplateOutlet,
+    RouterLink,
+    AppNavigationComponent,
+    QdActionDirective,
+    QdModalShellComponent,
+  ],
   templateUrl: './top-navbar.component.html',
   styleUrls: ['./top-navbar.component.scss'],
 })
-export class TopNavbarComponent {
-  private readonly router = inject(Router);
+export class TopNavbarComponent implements OnInit, OnDestroy {
   private readonly elementRef = inject(ElementRef);
   private readonly themeService = inject(ThemeService);
   private readonly oidcSecurityService = inject(OidcSecurityService);
   private readonly currentUserStore = inject(CurrentUserStore);
   private readonly authReturnLocationStore = inject(AuthReturnLocationStore);
   private readonly scrollLock = inject(ScrollLockService);
-  protected readonly locked = this.scrollLock.isLocked;
 
-  protected readonly dashboardRoute = DASHBOARD_ROUTE_PATH;
+  readonly sheetOpen = signal(false);
+
+  protected readonly locked = this.scrollLock.isLocked;
+  protected readonly toggleInert = computed(() => this.locked() && !this.sheetOpen());
+  protected readonly openMenuKey = signal<string | null>(null);
+  protected readonly wide = signal(true);
 
   private readonly isActiveOwner = computed(
     () =>
@@ -58,13 +78,10 @@ export class TopNavbarComponent {
     NAV_MENU.filter((item) => item.group === 'actions' && this.isItemVisible(item)),
   );
 
-  private isItemVisible(item: NavItem): boolean {
-    return item.key !== 'settings' || this.isActiveOwner();
-  }
-
-  openMenuKey: string | null = null;
-  mobileOpen = false;
   private hoveredMenuKey: string | null = null;
+  private wideQuery?: MediaQueryList;
+  private readonly onWideChange = (event: MediaQueryListEvent): void =>
+    this.applyWide(event.matches);
 
   protected readonly isDark = toSignal(this.themeService.isDark$, { initialValue: false });
 
@@ -73,13 +90,24 @@ export class TopNavbarComponent {
     { initialValue: false },
   );
 
+  ngOnInit(): void {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+    this.wideQuery = window.matchMedia(QD_BP_WIDE_QUERY);
+    this.applyWide(this.wideQuery.matches);
+    this.wideQuery.addEventListener('change', this.onWideChange);
+  }
+
+  ngOnDestroy(): void {
+    this.wideQuery?.removeEventListener('change', this.onWideChange);
+  }
+
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    if (this.openMenuKey) {
-      this.closeMenu(this.openMenuKey);
-    }
-    if (this.mobileOpen) {
-      this.closeMobile();
+    const open = this.openMenuKey();
+    if (open !== null) {
+      this.closeMenu(open);
     }
   }
 
@@ -87,33 +115,34 @@ export class TopNavbarComponent {
   onDocumentClick(event: MouseEvent): void {
     const el = this.elementRef.nativeElement as HTMLElement;
     const target = event.target as HTMLElement | null;
-    if (!target || !this.openMenuKey) {
+    const open = this.openMenuKey();
+    if (!target || open === null) {
       return;
     }
-    const openLi = el.querySelector(`.nav-dropdown[data-menu-key="${this.openMenuKey}"]`);
-    if (!openLi?.contains(target)) {
-      this.closeMenu(this.openMenuKey);
+    const openItem = el.querySelector(`[data-menu-key="${open}"]`);
+    if (!openItem?.contains(target)) {
+      this.closeMenu(open);
     }
   }
 
   openMenu(key: string): void {
-    this.openMenuKey = key;
+    this.openMenuKey.set(key);
   }
 
   closeMenu(key: string): void {
-    if (this.openMenuKey !== key) {
+    if (this.openMenuKey() !== key) {
       return;
     }
     const trigger = this.menuTrigger(key);
     const focusWasInsideMenu = this.menuHoldsFocus(key);
-    this.openMenuKey = null;
+    this.openMenuKey.set(null);
     if (focusWasInsideMenu) {
       trigger?.focus();
     }
   }
 
   toggleMenu(key: string): void {
-    if (this.openMenuKey === key) {
+    if (this.openMenuKey() === key) {
       this.closeMenu(key);
       return;
     }
@@ -133,7 +162,7 @@ export class TopNavbarComponent {
   }
 
   onTriggerClick(key: string): void {
-    if (this.hoveredMenuKey === key && this.openMenuKey === key) {
+    if (this.hoveredMenuKey === key && this.openMenuKey() === key) {
       this.hoveredMenuKey = null;
       this.openMenu(key);
       return;
@@ -141,30 +170,13 @@ export class TopNavbarComponent {
     this.toggleMenu(key);
   }
 
-  private menuHost(key: string): HTMLElement | null {
-    const host = this.elementRef.nativeElement as HTMLElement;
-    return host.querySelector<HTMLElement>(`.nav-dropdown[data-menu-key="${key}"]`);
+  openSheet(): void {
+    this.openMenuKey.set(null);
+    this.sheetOpen.set(true);
   }
 
-  private menuTrigger(key: string): HTMLElement | null {
-    return this.menuHost(key)?.querySelector<HTMLElement>('button') ?? null;
-  }
-
-  private menuHoldsFocus(key: string): boolean {
-    const active = document.activeElement;
-    return active instanceof HTMLElement && (this.menuHost(key)?.contains(active) ?? false);
-  }
-
-  toggleMobile(): void {
-    this.mobileOpen = !this.mobileOpen;
-    if (!this.mobileOpen) {
-      this.openMenuKey = null;
-    }
-  }
-
-  closeMobile(): void {
-    this.mobileOpen = false;
-    this.openMenuKey = null;
+  closeSheet(): void {
+    this.sheetOpen.set(false);
   }
 
   toggleTheme(): void {
@@ -181,20 +193,30 @@ export class TopNavbarComponent {
     this.oidcSecurityService.logoff().subscribe();
   }
 
-  isMenuActive(item: NavItem): boolean {
-    return this.activeMatchRoutes(item).some((route) =>
-      this.router.isActive(route, {
-        paths: 'subset',
-        queryParams: 'ignored',
-        fragment: 'ignored',
-        matrixParams: 'ignored',
-      }),
-    );
+  private applyWide(matches: boolean): void {
+    this.wide.set(matches);
+    if (matches) {
+      this.closeSheet();
+      return;
+    }
+    this.openMenuKey.set(null);
   }
 
-  private activeMatchRoutes(item: NavItem): string[] {
-    return item.route === GROUP_ONLY_ROUTE
-      ? (item.children ?? []).map((child) => child.route)
-      : [item.route];
+  private isItemVisible(item: NavItem): boolean {
+    return item.key !== 'settings' || this.isActiveOwner();
+  }
+
+  private menuHost(key: string): HTMLElement | null {
+    const host = this.elementRef.nativeElement as HTMLElement;
+    return host.querySelector<HTMLElement>(`[data-menu-key="${key}"]`);
+  }
+
+  private menuTrigger(key: string): HTMLElement | null {
+    return this.menuHost(key)?.querySelector<HTMLElement>('button') ?? null;
+  }
+
+  private menuHoldsFocus(key: string): boolean {
+    const active = document.activeElement;
+    return active instanceof HTMLElement && (this.menuHost(key)?.contains(active) ?? false);
   }
 }

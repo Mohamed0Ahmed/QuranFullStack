@@ -1,22 +1,29 @@
-.dashboard-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: var(--qd-space-4);
-}
-
-@media (max-width: 420px) {
-  .dashboard-cards {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
+@use '../../../../../styles/breakpoints' as bp;
 
 .dashboard-card {
   display: block;
   text-decoration: none;
 }
 
+// Five destinations read as 3 + 2: at Wide the row of three sits on a six-track grid so the
+// final pair deliberately stretches across it instead of leaving a ragged empty cell.
+@media (min-width: bp.$qd-bp-wide-min) {
+  .dashboard-cards {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .dashboard-cards > * {
+    grid-column: span 2;
+  }
+
+  .dashboard-cards > :nth-child(n + 4) {
+    grid-column: span 3;
+  }
+}
+
 .app-meta,
-.app-meta-skeleton {
+.app-meta-skeleton,
+.app-meta-error {
   margin-block-start: var(--qd-space-2);
 }
 
@@ -38,7 +45,5 @@ $badge-line-border-width: 1px;
 }
 
 .app-meta-error {
-  flex-direction: row;
-  gap: var(--qd-space-3);
-  padding: var(--qd-space-2) var(--qd-space-3);
+  display: block;
 }

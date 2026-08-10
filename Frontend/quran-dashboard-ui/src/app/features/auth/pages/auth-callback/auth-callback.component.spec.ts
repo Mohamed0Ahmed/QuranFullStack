@@ -41,7 +41,7 @@ describe('AuthCallbackComponent', () => {
   }
 
   function errorState(fixture: ReturnType<typeof mount>['fixture']) {
-    return (fixture.nativeElement as HTMLElement).querySelector('[data-testid="qd-state-error"]');
+    return (fixture.nativeElement as HTMLElement).querySelector('[data-testid="auth-callback-error"]');
   }
 
   function setupCallbackRetry() {
@@ -110,9 +110,19 @@ describe('AuthCallbackComponent', () => {
   it('restarts the login flow when the error state’s retry action is activated', () => {
     const { fixture, authorize } = mount(false, { error: 'access_denied' });
 
-    errorState(fixture)?.querySelector<HTMLButtonElement>('[data-testid="qd-state-action"]')?.click();
+    errorState(fixture)?.querySelector<HTMLButtonElement>('[data-testid="auth-callback-retry"]')?.click();
 
     expect(authorize).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders the pending state through the F12 skeleton owner, never the qd-state adapter', () => {
+    const { fixture } = mount(false);
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.querySelector('qd-state')).toBeNull();
+    const loading = root.querySelector('[data-testid="auth-callback-loading"]');
+    expect(loading?.getAttribute('role')).toBe('status');
+    expect(loading?.getAttribute('aria-busy')).toBe('true');
   });
 
   it('restores a saved 401 deep link after a callback error, retry, and successful callback', () => {
@@ -122,7 +132,9 @@ describe('AuthCallbackComponent', () => {
 
     const failedCallback = TestBed.createComponent(AuthCallbackComponent);
     failedCallback.detectChanges();
-    errorState(failedCallback)?.querySelector<HTMLButtonElement>('[data-testid="qd-state-action"]')?.click();
+    errorState(failedCallback)
+      ?.querySelector<HTMLButtonElement>('[data-testid="auth-callback-retry"]')
+      ?.click();
 
     expect(authorize).toHaveBeenCalledOnce();
     expect(navigateByUrl).not.toHaveBeenCalled();

@@ -107,12 +107,37 @@ describe('DashboardHomeComponent — stable app-meta loading (N3 row 14)', () =>
     expect(status?.textContent?.trim()).toBe('جارٍ تحميل بيانات التطبيق...');
   });
 
-  it('renders the calm error state with a retry action when app info fails', () => {
+  it('renders the calm read-error owner with a retry action when app info fails', () => {
     const root = renderWith(throwError(() => new Error('تعذر تحميل بيانات التطبيق. حاول مرة أخرى.')));
 
-    const error = root.querySelector('.app-meta-error');
-    expect(error?.getAttribute('role')).toBe('alert');
+    const error = root.querySelector('[data-testid="dashboard-app-meta-error"]');
     expect(error?.textContent).toContain('تعذر تحميل بيانات التطبيق');
+    // F12 locks role="alert" to write failures; a failed dashboard read is not one.
+    expect(error?.getAttribute('role')).toBeNull();
+    expect(root.querySelector('[data-testid="dashboard-app-meta-retry"]')).toBeTruthy();
+  });
+});
+
+describe('DashboardHomeComponent — one capped-reading axis and the bounded destination grid', () => {
+  it('declares exactly one named page intent and adds no second gutter owner', () => {
+    const root = renderWith(of(APP_INFO));
+
+    expect(root.querySelectorAll('.qd-page-shell')).toHaveLength(1);
+    expect(root.querySelector('.qd-page-shell')?.classList).toContain(
+      'qd-page-shell--capped-reading',
+    );
+    expect(root.querySelectorAll('.qd-container, .qd-page-frame, .qd-explorer-frame')).toHaveLength(
+      0,
+    );
+  });
+
+  it('lays the five destinations out on the shared bounded destination grid', () => {
+    const root = renderWith(of(APP_INFO));
+
+    const grid = root.querySelector('.dashboard-cards');
+    expect(grid?.classList).toContain('qd-grid');
+    expect(grid?.classList).toContain('qd-grid--destinations');
+    expect(grid?.querySelectorAll('a.dashboard-card')).toHaveLength(5);
   });
 });
 

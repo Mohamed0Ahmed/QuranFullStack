@@ -33,7 +33,7 @@
   height: var(--qd-navbar-block-size);
   min-height: var(--qd-navbar-block-size);
   max-height: var(--qd-navbar-block-size);
-  padding: var(--qd-space-3) var(--qd-space-5);
+  padding: var(--qd-space-3) var(--qd-page-gutter);
   background: var(--qd-bg-chrome);
   border-block-end: var(--qd-hairline);
   position: sticky;
@@ -130,10 +130,17 @@
 
 .qd-footer {
   position: relative;
-  padding: var(--qd-space-4) var(--qd-space-5);
+  padding: var(--qd-space-4) var(--qd-page-gutter);
   background: var(--qd-footer-bg);
   color: var(--qd-ink-on-dark);
   border-block-start: 1px solid var(--qd-footer-border);
+}
+
+.qd-footer__inner {
+  inline-size: 100%;
+  max-inline-size: var(--qd-page-measure-capped-reading);
+  margin-inline: auto;
+  box-sizing: border-box;
 }
 
 .qd-page {

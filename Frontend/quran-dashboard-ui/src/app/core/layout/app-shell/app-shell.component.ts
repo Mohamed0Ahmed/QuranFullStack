@@ -1,6 +1,5 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 
@@ -9,14 +8,21 @@ import { TopNavbarComponent } from '../top-navbar/top-navbar.component';
 import { FooterComponent } from '../footer/footer.component';
 import { NavProgressComponent } from '../nav-progress/nav-progress.component';
 
+export const QD_MAIN_CONTENT_ID = 'qd-main-content';
+
 @Component({
   selector: 'qd-app-shell',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, TopNavbarComponent, FooterComponent, NavProgressComponent],
+  imports: [RouterOutlet, TopNavbarComponent, FooterComponent, NavProgressComponent],
   templateUrl: './app-shell.component.html',
 })
 export class AppShellComponent {
   private readonly router = inject(Router);
+  private readonly navbar = viewChild(TopNavbarComponent);
+
+  protected readonly mainContentId = QD_MAIN_CONTENT_ID;
+
+  protected readonly navigationSheetOpen = computed(() => this.navbar()?.sheetOpen() ?? false);
 
   private readonly navigationTick = toSignal(
     this.router.events.pipe(

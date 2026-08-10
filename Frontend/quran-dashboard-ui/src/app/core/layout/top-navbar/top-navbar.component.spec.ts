@@ -8,6 +8,7 @@ import { of } from 'rxjs';
 
 import { TopNavbarComponent } from './top-navbar.component';
 import { ScrollLockService } from '../../../shared/ui/modal-scroll-lock/scroll-lock.service';
+import { QD_BP_WIDE_QUERY } from '../../../shared/layout/breakpoints';
 import { AuthReturnLocationStore } from '../../auth/auth-return-location.store';
 import { CurrentUserStore } from '../../auth/current-user.store';
 import { ThemeService } from '../../theme/theme.service';
@@ -21,10 +22,24 @@ interface CurrentUserStoreMock {
   isOwner: WritableSignal<boolean>;
 }
 
+function stubBand(wide: boolean): void {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query === QD_BP_WIDE_QUERY ? wide : !wide,
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }));
+}
+
 describe('TopNavbarComponent', () => {
   let currentUserStore: CurrentUserStoreMock;
 
   beforeEach(() => {
+    stubBand(true);
     currentUserStore = {
       clear: vi.fn(),
       authStateKnown: signal(true),
@@ -62,9 +77,9 @@ describe('TopNavbarComponent', () => {
   }
 
   function dropdown(fixture: ComponentFixture<TopNavbarComponent>, key: string): HTMLElement {
-    const li = host(fixture).querySelector<HTMLElement>(`.nav-dropdown[data-menu-key="${key}"]`);
-    expect(li).not.toBeNull();
-    return li as HTMLElement;
+    const item = host(fixture).querySelector<HTMLElement>(`[data-menu-key="${key}"]`);
+    expect(item).not.toBeNull();
+    return item as HTMLElement;
   }
 
   function trigger(fixture: ComponentFixture<TopNavbarComponent>, key: string): HTMLButtonElement {
@@ -83,7 +98,7 @@ describe('TopNavbarComponent', () => {
     fixture: ComponentFixture<TopNavbarComponent>,
     key: string,
   ): HTMLAnchorElement {
-    const link = menu(fixture, key)?.querySelector<HTMLAnchorElement>('a.dropdown-link');
+    const link = menu(fixture, key)?.querySelector<HTMLAnchorElement>('a.qd-nav__link--child');
     expect(link).not.toBeNull();
     return link as HTMLAnchorElement;
   }
@@ -97,6 +112,14 @@ describe('TopNavbarComponent', () => {
     trigger(fixture, key).focus();
     trigger(fixture, key).click();
     fixture.detectChanges();
+  }
+
+  function openSheet(fixture: ComponentFixture<TopNavbarComponent>): HTMLElement {
+    host(fixture).querySelector<HTMLButtonElement>('[data-testid="app-navigation-toggle"]')?.click();
+    fixture.detectChanges();
+    const sheet = host(fixture).querySelector<HTMLElement>('[data-testid="app-navigation-sheet"]');
+    expect(sheet).not.toBeNull();
+    return sheet as HTMLElement;
   }
 
   function addOutsideButton(): HTMLButtonElement {
@@ -210,7 +233,7 @@ describe('TopNavbarComponent', () => {
     outside.remove();
   });
 
-  it('shows the settings entry to an active Owner in the desktop actions and the mobile panel', () => {
+  it('shows the settings entry to an active Owner in the desktop actions and the navigation sheet', () => {
     const fixture = mount();
 
     openByTriggerClick(fixture, 'settings');
@@ -219,16 +242,14 @@ describe('TopNavbarComponent', () => {
     );
     expect(accessLink?.getAttribute('href')).toBe('/settings/access');
 
-    host(fixture).querySelector<HTMLButtonElement>('.menu-toggle')?.click();
+    stubBand(false);
+    fixture.componentInstance.ngOnInit();
     fixture.detectChanges();
+    const sheet = openSheet(fixture);
 
-    expect(
-      host(fixture).querySelector('.mobile-menu-panel a[href="/settings/access"]'),
-    ).not.toBeNull();
-    expect(host(fixture).querySelector('.mobile-menu-panel a[href="/settings"]')).toBeNull();
-    expect(
-      host(fixture).querySelector('.mobile-menu-panel .mobile-group-label')?.textContent,
-    ).toContain('الإعدادات');
+    expect(sheet.querySelector('a[href="/settings/access"]')).not.toBeNull();
+    expect(sheet.querySelector('a[href="/settings"]')).toBeNull();
+    expect(sheet.querySelector('.qd-nav__group-label')?.textContent).toContain('الإعدادات');
   });
 
   const hiddenSettingsStates: ReadonlyArray<[string, (store: CurrentUserStoreMock) => void]> = [
@@ -243,21 +264,20 @@ describe('TopNavbarComponent', () => {
 
     expect(host(fixture).querySelector('[data-testid="nav-settings-trigger"]')).toBeNull();
 
-    host(fixture).querySelector<HTMLButtonElement>('.menu-toggle')?.click();
+    stubBand(false);
+    fixture.componentInstance.ngOnInit();
     fixture.detectChanges();
+    const sheet = openSheet(fixture);
 
-    expect(host(fixture).querySelector('.mobile-menu-panel a[href="/settings/access"]')).toBeNull();
-    expect(host(fixture).querySelector('.mobile-menu-panel a[href="/settings"]')).toBeNull();
+    expect(sheet.querySelector('a[href="/settings/access"]')).toBeNull();
+    expect(sheet.querySelector('a[href="/settings"]')).toBeNull();
   });
 
   it('shows and hides the settings entry as the auth signals change after mount', () => {
     currentUserStore.authStateKnown.set(false);
     const fixture = mount();
-    host(fixture).querySelector<HTMLButtonElement>('.menu-toggle')?.click();
-    fixture.detectChanges();
 
     expect(host(fixture).querySelector('[data-testid="nav-settings-trigger"]')).toBeNull();
-    expect(host(fixture).querySelector('.mobile-menu-panel a[href="/settings/access"]')).toBeNull();
 
     currentUserStore.authStateKnown.set(true);
     currentUserStore.isActive.set(true);
@@ -265,9 +285,6 @@ describe('TopNavbarComponent', () => {
     fixture.detectChanges();
 
     expect(host(fixture).querySelector('[data-testid="nav-settings-trigger"]')).not.toBeNull();
-    expect(
-      host(fixture).querySelector('.mobile-menu-panel a[href="/settings/access"]'),
-    ).not.toBeNull();
 
     currentUserStore.authStateKnown.set(false);
     currentUserStore.isActive.set(false);
@@ -275,23 +292,95 @@ describe('TopNavbarComponent', () => {
     fixture.detectChanges();
 
     expect(host(fixture).querySelector('[data-testid="nav-settings-trigger"]')).toBeNull();
-    expect(host(fixture).querySelector('.mobile-menu-panel a[href="/settings/access"]')).toBeNull();
   });
 
-  it('inerts the mobile menu overlay while a modal holds the scroll lock', () => {
+  it('renders desktop navigation at Wide and never the sheet toggle', () => {
     const fixture = mount();
-    const scrollLock = TestBed.inject(ScrollLockService);
-    host(fixture).querySelector<HTMLButtonElement>('.menu-toggle')?.click();
+
+    expect(host(fixture).querySelector('[data-testid="app-navigation--desktop"]')).not.toBeNull();
+    expect(host(fixture).querySelector('[data-testid="app-navigation-toggle"]')).toBeNull();
+    expect(host(fixture).querySelector('[data-testid="nav-link--mushaf"]')).not.toBeNull();
+  });
+
+  it('replaces desktop navigation with the sheet toggle below Wide', () => {
+    stubBand(false);
+    const fixture = mount();
+
+    expect(host(fixture).querySelector('[data-testid="app-navigation--desktop"]')).toBeNull();
+    expect(host(fixture).querySelector('[data-testid="nav-link--mushaf"]')).toBeNull();
+    expect(host(fixture).querySelector('[data-testid="app-navigation-toggle"]')).not.toBeNull();
+  });
+
+  it('opens the sheet as a labelled dialog with a visible close action and closes on Escape', () => {
+    stubBand(false);
+    const fixture = mount();
+
+    const toggle = host(fixture).querySelector<HTMLButtonElement>(
+      '[data-testid="app-navigation-toggle"]',
+    )!;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.getAttribute('aria-haspopup')).toBe('dialog');
+
+    const sheet = openSheet(fixture);
+    expect(sheet.getAttribute('role')).toBe('dialog');
+    expect(sheet.getAttribute('aria-modal')).toBe('true');
+    expect(
+      host(fixture).querySelector('[data-testid="app-navigation-sheet-close"]')?.textContent?.trim(),
+    ).toBe('إغلاق');
+    expect(sheet.querySelector('[data-testid="app-navigation--sheet"]')).not.toBeNull();
+    expect(document.body.style.overflow).toBe('hidden');
+
+    sheet.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     fixture.detectChanges();
 
-    expect(host(fixture).querySelector('.mobile-menu')?.hasAttribute('inert')).toBe(false);
+    expect(host(fixture).querySelector('[data-testid="app-navigation-sheet"]')).toBeNull();
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('closes the sheet when a navigation entry inside it is activated', () => {
+    stubBand(false);
+    const fixture = mount();
+    const sheet = openSheet(fixture);
+
+    sheet
+      .querySelector<HTMLAnchorElement>('[data-testid="nav-link--mushaf"]')!
+      .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    fixture.detectChanges();
+
+    expect(host(fixture).querySelector('[data-testid="app-navigation-sheet"]')).toBeNull();
+  });
+
+  it('never inerts the sheet it owns, while the background navbar goes inert with it', () => {
+    stubBand(false);
+    const fixture = mount();
+    const sheet = openSheet(fixture);
+
+    const background = host(fixture).querySelector('.qd-navbar__background')!;
+    expect(background.getAttribute('inert')).toBe('');
+    expect(background.getAttribute('aria-hidden')).toBe('true');
+    expect(sheet.closest('[inert]')).toBeNull();
+    // The toggle stays reachable so the shell can hand focus back to it on close.
+    expect(
+      host(fixture)
+        .querySelector('[data-testid="app-navigation-toggle"]')
+        ?.hasAttribute('inert'),
+    ).toBe(false);
+  });
+
+  it('inerts the whole navbar, toggle included, while another layer holds the scroll lock', () => {
+    stubBand(false);
+    const fixture = mount();
+    const scrollLock = TestBed.inject(ScrollLockService);
+
+    expect(host(fixture).querySelector('.qd-navbar__background')?.hasAttribute('inert')).toBe(false);
 
     scrollLock.acquire();
     fixture.detectChanges();
 
-    const overlay = host(fixture).querySelector('.mobile-menu');
-    expect(overlay?.hasAttribute('inert')).toBe(true);
-    expect(overlay?.getAttribute('aria-hidden')).toBe('true');
+    expect(host(fixture).querySelector('.qd-navbar__background')?.getAttribute('inert')).toBe('');
+    expect(
+      host(fixture).querySelector('[data-testid="app-navigation-toggle"]')?.getAttribute('inert'),
+    ).toBe('');
 
     scrollLock.release();
   });
