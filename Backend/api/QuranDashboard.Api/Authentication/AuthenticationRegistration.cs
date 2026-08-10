@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using QuranDashboard.Api.Authorization;
 using QuranDashboard.Api.Authorization.Owner;
 using QuranDashboard.Api.Authorization.Permissions;
@@ -10,7 +11,10 @@ namespace QuranDashboard.Api.Authentication;
 
 internal static class AuthenticationRegistration
 {
-    public static IServiceCollection AddApiAuthentication(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApiAuthentication(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         services.AddOptions<JwtAuthenticationOptions>()
             .Bind(configuration.GetSection(JwtAuthenticationOptions.SectionName))
@@ -31,25 +35,48 @@ internal static class AuthenticationRegistration
 
         var authOptions = configuration.GetSection(JwtAuthenticationOptions.SectionName).Get<JwtAuthenticationOptions>()
             ?? new JwtAuthenticationOptions();
+        var e2eTestIssuerTrust = E2ETestIssuerTrust.Create(environment.EnvironmentName, configuration);
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
-                options.Authority = authOptions.Authority;
-                options.TokenValidationParameters.ValidAudience = authOptions.Audience;
-
-                options.MapInboundClaims = false;
+                ConfigureBearer(options, authOptions, authOptions.Audience, e2eTestIssuerTrust);
             })
             .AddJwtBearer(InteractiveIdentityEvidenceAuthentication.Scheme, options =>
             {
-                options.Authority = authOptions.Authority;
-                options.TokenValidationParameters.ValidAudience = authOptions.InteractiveClientId;
-
-                options.MapInboundClaims = false;
+                ConfigureBearer(options, authOptions, authOptions.InteractiveClientId, e2eTestIssuerTrust);
             });
 
         services.AddAuthorization();
 
         return services;
+    }
+
+    private static void ConfigureBearer(
+        JwtBearerOptions options,
+        JwtAuthenticationOptions authOptions,
+        string audience,
+        E2ETestIssuerTrust? e2eTestIssuerTrust)
+    {
+        options.Authority = authOptions.Authority;
+        options.TokenValidationParameters.ValidAudience = audience;
+        options.MapInboundClaims = false;
+
+        if (e2eTestIssuerTrust is null)
+        {
+            return;
+        }
+
+        options.TokenValidationParameters.ValidIssuers =
+        [
+            authOptions.Authority,
+            e2eTestIssuerTrust.Issuer,
+        ];
+        options.TokenValidationParameters.IssuerSigningKeys = e2eTestIssuerTrust.SigningKeys;
+        options.Configuration = new OpenIdConnectConfiguration { Issuer = e2eTestIssuerTrust.Issuer };
+        foreach (var signingKey in e2eTestIssuerTrust.SigningKeys)
+        {
+            options.Configuration.SigningKeys.Add(signingKey);
+        }
     }
 }

@@ -46,7 +46,7 @@ These live at the workspace root and apply across Backend + Frontend.
 | File | What it is for | Who/what reads it | When it matters |
 |------|----------------|-------------------|-----------------|
 | `CODING_PRINCIPLES.md` | General coding principles for the whole workspace: Clean Code, SOLID, DRY/KISS/YAGNI, separation of concerns, strong typing, focused changes, error handling, testing/verification, **Quranic Data Safety**, UI/product consistency, Definition of Done. Also points to the retained `clean-code-guard` references and the `test-guard` skill. | Every agent/human before implementation; the review skills load only its implicated headings. | All implementation and review work. |
-| `TESTING_STRATEGY.md` | Single source of truth for **test selection, verification depth, execution lanes, slow data-pipeline triggers, and the phase/milestone/PR/release gates**. Backend lanes are arguments to `Backend/scripts/test-backend` (its §3), Frontend lanes are `npm run test:*` scripts (its §4), and the execution-trigger matrix (its §5) is the one authoritative changed-scope→lane mapping. Selection is by lane, never by a hand-written filter (its §1). Records one absence that changes what counts as evidence — **no CI** (its §8) — and one active gate agents forget: the **route-smoke gate** (its §6). The browser E2E layer is **opt-in and never a required gate** (its §11). | Every agent/human before selecting or running tests; review/packaging skills load only its exact headings when classifying existing evidence. | Whenever tests are selected, run, or verification evidence is judged. |
+| `TESTING_CONSTITUTION.md` + `TESTING_STRATEGY.md` | The constitution is the sole testing-policy authority. The strategy is a transitional operational reference for commands, current lane mechanics, pipeline triggers, and route-smoke details until Phase 7 removes it; where they conflict, the constitution controls. | Every agent/human before selecting or running tests; review/packaging skills load only the exact operational strategy headings they still need. | Whenever tests are selected, run, or verification evidence is judged. |
 | `PRODUCT.md` | Product strategy & context: register, users (Arabic-speaking admins/supervisors/teachers), product purpose (manage Quran research data, review ayah links, organize gates أبواب, publish), principles, anti-references. | Anyone doing user-facing/product or UI work. | Frontend/UX/product decisions and any backend change that affects user-facing behavior. |
 | `DESIGN.md` | Visual/design direction — the design system of record alongside `UI_STYLE_SYSTEM.md`'s token contract: Arabic-first RTL, restrained parchment/ink palette, calm typography; explicitly rejects generic SaaS, kitschy religious decor, gamified UI, enterprise greige. | Anyone doing UI/visual work. | Frontend visual/design tasks. For concrete tokens/classes use `UI_STYLE_SYSTEM.md`. |
 | `AGENTS.md` | Sol/Codex-native workspace router with the universal safety kernel, native area routes, nearest-README discovery, and trigger-scoped pointers. It does not route through Claude entrypoints. | Sol/Codex coding agents. | Loaded at session start for those agents. |
@@ -164,18 +164,16 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 
 - Implement **by phase/chunk**, not all tasks at once (see §7).
 - Follow your native root and area routers, then read the nearest relevant README and only the triggered headings of `CODING_PRINCIPLES.md`.
-- Use `TESTING_STRATEGY.md` §5 and its four boundaries: implementation produces `FOCUSED`
-  evidence for each task/fix, every genuinely triggered `PROTECTED_TRIGGER` result, and the
-  `FINAL_BOUNDARY` union derived from the cumulative final diff; `RELEASE_ONLY` composition
-  belongs to the authorized release workflow. A phase ending by itself does not select a broad
-  suite or a review.
+- Use `TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` to select verification.
+  `TESTING_STRATEGY.md` and the nearest test README supply only the operational commands and fixtures
+  for checks that were selected.
 - Read the Backend/Frontend `.architecture/` docs **for the area you're touching** (§3, §4).
 - Before delivery, read `CODING_PRINCIPLES.md` §12 and the production-code headings already implicated; do not load the full `clean-code-guard` pack or run a formal review unless requested.
 - If writing tests, use the native `test-guard` Skill's rules and its stack-relevant reference.
 
 ### C. Review checkpoints and the formal final review
 
-- A normal phase continues after its `TESTING_STRATEGY.md` §5 verification — no review Skill
+- A normal phase continues after its `Testing Decision` verification — no review Skill
   runs by default, and no arrow in this workflow is an automatic Skill invocation.
 - **Optional focused checkpoint (explicit request):** ask for `focused-review` when one slice
   deserves early scrutiny — a migration/schema foundation, auth boundary, Quran
@@ -219,10 +217,10 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 
 ### G. Before opening a PR
 
-- Confirm implementation already produced the fresh focused/protected/final evidence
-  `TESTING_STRATEGY.md` §5 requires from the cumulative diff, including its §6 route-smoke and §6.1
-  contract guards when triggered. Missing or stale evidence returns to implementation; there is no CI
-  (its §8), and PR preparation only packages what actually ran.
+- Confirm implementation already produced the fresh evidence selected by `TESTING_CONSTITUTION.md`
+  and the active plan's `Testing Decision`. Use `TESTING_STRATEGY.md` §6 route-smoke and §6.1 contract
+  sections only for operational details when those checks were selected. Missing or stale evidence
+  returns to implementation; there is no CI, and PR preparation only packages what actually ran.
 - Optionally ask for `deploy-smoke` (explicit request) when you want a local runtime smoke, and `engineering-review` for the formal gate.
 - Then ask for `pr-context-prep` to package scope, invariants, evidence, and reviewer/CodeRabbit focus from what already ran.
 - Use `commit-workflow` for the Git/PR execution; for unsquashed subtree-import PRs, use GitHub's **merge commit** strategy.
@@ -246,7 +244,7 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 | "Run the formal engineering review for the completed Spec Kit feature" | `engineering-review` + `SPEC_KIT_IMPLEMENTATION_REVIEW.md` | Formal final review + phase/task/contract compliance. |
 | "We fixed all formal review findings; re-review them" | `engineering-review` (re-review path) | Finding closure: prior IDs return `CLOSED`/`OPEN`/`REGRESSED` against fresh final evidence. |
 | "Review only new test files" | `test-guard` | Narrow test-code quality gate. |
-| "Which tests must I run for this change?" | `TESTING_STRATEGY.md` | Lane selection by changed scope and pipeline triggers (its §5 matrix). |
+| "Which tests must I run for this change?" | `TESTING_CONSTITUTION.md` + the active plan's `Testing Decision` | The constitution is the policy authority and each plan records the risk-specific selection. |
 | "Where should `WordSortBy` enum live?" | `backend-structure-review` + `BACKEND_STRUCTURE.md` | Placement/foldering question. |
 | "Review API endpoint response shape" | `focused-review` + `API_GUIDELINES.md` | Scoped API-boundary checkpoint & `ApiResponse` envelope. |
 | "Review Angular feature folder layout" | `focused-review` + `FRONTEND_STRUCTURE.md` | Scoped frontend structure/routeable-pages checkpoint. |
@@ -269,7 +267,7 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 
 - ❌ **Don't** use `backend-structure-review` as the full code-review gate — it only covers structure/layering/placement. Use `engineering-review` for the formal holistic gate.
 - ❌ **Don't** escalate a generic narrow review request ("review this phase / task / fix / these files") to `engineering-review` — that is `focused-review`'s result. `engineering-review` requires an explicit formal request ("formal"/"final" or the Skill named).
-- ❌ **Don't** run a formal review by default after every phase — a normal phase continues after its `TESTING_STRATEGY.md` §5 verification; high-risk checkpoints use an explicitly requested `focused-review`.
+- ❌ **Don't** run a formal review by default after every phase — a normal phase continues after its `Testing Decision` verification; high-risk checkpoints use an explicitly requested `focused-review`.
 - ❌ **Don't** let `focused-review` expand its scope, judge final evidence sufficiency, or issue a formal verdict — `CLEAR`/`FINDINGS` closes no final boundary.
 - ❌ **Don't** use `test-guard` for production-code review — it is test-code only.
 - ❌ **Don't** chain project skills automatically — no project Skill invokes another, and neither review Skill invokes the other. The caller sequences them.
@@ -285,7 +283,7 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 
 **Inventory check (all present unless noted):**
 
-- Root docs: `CODING_PRINCIPLES.md`, `TESTING_STRATEGY.md`, `PRODUCT.md`, `DESIGN.md`, `AGENTS.md`, `CLAUDE.md` ✅
+- Root docs: `CODING_PRINCIPLES.md`, `TESTING_CONSTITUTION.md`, transitional `TESTING_STRATEGY.md`, `PRODUCT.md`, `DESIGN.md`, `AGENTS.md`, `CLAUDE.md` ✅
 - Skills: `engineering-review/` (+ `SPEC_KIT_IMPLEMENTATION_REVIEW.md`, `references/clean-code-guard/` with `ai-failure-modes.md` + `review-checklist.md`, `references/quran-data-safety.md`), `focused-review/` (self-contained, no reference pack), `test-guard/` (+ `dotnet.md`, `jest.md`, `frontend-test-harness-constraints.md`), `backend-structure-review/`, `commit-workflow/`, `deploy-smoke/`, `pr-context-prep/`, `dependency-audit/`, `performance-backend-review/`, `performance-angular-review/`, `backend-global-usings-cleanup/` ✅; plus the `speckit-*` family ✅
 - Backend `.architecture/`: `BACKEND_STRUCTURE.md`, `CLEAN_ARCHITECTURE.md`, `API_GUIDELINES.md` ✅
 - Frontend `.architecture/`: `FRONTEND_STRUCTURE.md`, `UI_STYLE_SYSTEM.md`, `API_INTEGRATION_GUIDELINES.md` ✅

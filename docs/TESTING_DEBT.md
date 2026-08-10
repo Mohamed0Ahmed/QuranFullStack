@@ -12,8 +12,8 @@ be touching that code, at which point writing the missing tests costs almost not
 - **`SmokeRouteCatalog` parity entries are not debt-able.** `SmokeCoverageParityTests` fails by
   name when a registered route has no catalog entry, so an entry is a build-level gate, not
   coverage. A route added without one fails the suite; it cannot be deferred into this file.
-- Tiers `TESTING_STRATEGY.md` requires. This file records what was *not written*, never a reason
-  to skip a run that document mandates.
+- Verification selected by an active plan's `Testing Decision`. This file records what was *not
+  written*, never a reason to skip a selected check.
 
 Rows stay until they are paid. Delete a row when its tests land — do not mark it done.
 
@@ -265,7 +265,7 @@ handcrafted anonymous write receiving the Backend denial envelope.
 
 | # | Uncovered area | Where | Pays it |
 |---|---|---|---|
-| A1 | **Every Abwab authoring flow that only a browser proves** — create/edit/move/reorder/archive/restore of doors, section create/rename/reorder/delete, relation add and remove, template create/delete/apply, and template-node add/edit/reorder/delete, each driven end to end through the real UI against a real Backend. Unit and component specs pin the dispatch wiring and the route smoke suite pins the HTTP contract, but nothing currently walks an authorized human through an Abwab write in a browser. **The harness must provide** an authenticated E2E persona whose access token the Backend test host actually validates — a signing key the API trusts plus a local user row that is `Active` and holds the exact permission under test — so that `e2e/fixtures/abwab.ts` seeds as that persona instead of anonymously, and so a permission-denied persona can be asserted against the same flow. It must not seed by bypassing HTTP authorization, because the point of the flow is that an authorized caller succeeds where an anonymous one is refused | `Frontend/quran-dashboard-ui/e2e/fixtures/abwab.ts` and `e2e/fixtures/logto.ts` (which today stubs only OIDC discovery and returns an empty JWKS, so it can mint nothing), over the `abwab` project in `playwright.config.ts` | The first explicitly approved authenticated browser-authoring expansion, **or** the first authenticated E2E persona added for any feature. This remains opt-in under `TESTING_STRATEGY.md`; it is not a standing authorization acceptance gate |
+| A1 | **Every Abwab authoring flow that only a browser proves** — create/edit/move/reorder/archive/restore of doors, section create/rename/reorder/delete, relation add and remove, template create/delete/apply, and template-node add/edit/reorder/delete, each driven end to end through the real UI against a real Backend. Unit and component specs pin the dispatch wiring and the route smoke suite pins the HTTP contract, but nothing currently walks an authorized human through an Abwab write in a browser. The authenticated persona harness now exists; the remaining work is to move Abwab setup onto it and exercise both exact-permission success and denial through HTTP without bypassing authorization | `Frontend/quran-dashboard-ui/e2e/fixtures/abwab.ts` over the `abwab` project in `playwright.config.ts` | The first plan whose `Testing Decision` selects an authenticated Abwab browser-authoring journey |
 
 ## access-admin catalogue readiness (branch `feature/034-access-catalogue-readiness`, 2026-08-08)
 

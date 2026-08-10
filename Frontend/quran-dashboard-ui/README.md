@@ -63,8 +63,9 @@ lane definitions and is not part of `test:pre-pr` — run it whenever a spec is 
 renamed, or deleted, or an `include` pattern changes.
 
 **`testing/README.md` is the contract**: what each of the ten named `angular.json`
-configurations selects, what every command does, and what `test:gates` proves. Which lane to run
-and when is `../../TESTING_STRATEGY.md` §4 and §5.
+configurations selects, what every command does, and what `test:gates` proves.
+`../../TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` select which checks to run;
+`../../TESTING_STRATEGY.md` §4 and `testing/README.md` document their command mechanics.
 
 - **Keep the `VITEST_MAX_FORKS` cap on `npm test`** — without it the run OOMs/freezes the
   machine. Every `test:*` lane delegates to `npm test`, so the cap and the run timeout live in
@@ -95,10 +96,13 @@ and when is `../../TESTING_STRATEGY.md` §4 and §5.
   `afterEach` that calls `fixture.destroy()` first and `fixture.nativeElement.remove()` second
   (see `src/app/shared/ui/context-menu/context-menu.component.spec.ts`) — Angular teardown
   needs the host still attached.
-- **Browser E2E (opt-in):** `npm run e2e` (headless), `npm run e2e:headed`, `npm run e2e:ui`.
-  Chromium only. It boots the Angular dev server *and* the backend `https` profile, so it needs
-  mkcert certificates, a migrated local `quran_dashboard`, and a prior
-  `dotnet build Backend/QuranDashboard.sln`. Specs live in `e2e/` and MUST be named `*.e2e.ts` —
+- **Browser E2E:** selection follows `../../TESTING_CONSTITUTION.md` and the active plan's
+  `Testing Decision`. Commands are `npm run e2e` (headless), `npm run e2e:headed`, and
+  `npm run e2e:ui`; Chromium only. Playwright owns the Angular dev server, a backend in the
+  `Testing` environment, a local Management API stub, and a disposable clone of the local source
+  database. The source database supplies the clone and is never the E2E write target. The run needs
+  mkcert certificates and a prior `dotnet build Backend/QuranDashboard.sln`. Specs live in `e2e/`
+  and MUST be named `*.e2e.ts` —
   **not** because the Vitest gate would collect them (it globs with `cwd` at `src/` and cannot
   see outside it) but because `playwright.config.ts` matches `/.*\.e2e\.ts$/`, so a `*.spec.ts`
   there is run by nothing at all while looking like coverage. `npm run e2e` runs two Playwright

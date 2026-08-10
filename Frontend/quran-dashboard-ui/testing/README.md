@@ -4,8 +4,8 @@ This folder holds one script, `verify-test-gates.mjs`, and this file. Together t
 contract behind the `npm run test:*` lanes: `../angular.json` defines *what* each lane selects,
 `../package.json` defines *how* it is invoked, and the script proves the two stay honest.
 
-Which lane to run and when is `../../../TESTING_STRATEGY.md` §4 and §5. This file is what the
-lanes **are**.
+`../../../TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` select which checks to
+run. This file documents what the Frontend lanes are and how to run them.
 
 ## The named configurations
 
@@ -69,9 +69,9 @@ npm test -- --watch=false --include=src/app/.../name.spec.ts
 ```
 
 This preserves the fork cap and timeout below. It is focused local feedback, not named gate evidence;
-follow it with the affected named lane and final boundary that `../../../TESTING_STRATEGY.md` §5
-selects. Do not use bare `ng test` or `npx ng test`, and do not present an ad-hoc `--include` as a
-final gate.
+follow it with the checks selected by `../../../TESTING_CONSTITUTION.md` and the active plan's
+`Testing Decision`. Do not use bare `ng test` or `npx ng test`, and do not present an ad-hoc
+`--include` as a named gate.
 
 `test:gates` is deliberately **not** part of `test:pre-pr`: it is a structural check on
 `../angular.json`, so it belongs with the change that edits the configurations, not with the run
@@ -148,5 +148,5 @@ The real hazard is the opposite one. `../playwright.config.ts` sets `testDir: '.
 not the Vitest gate, which cannot see outside `src/`, and not Playwright, which filters by that
 pattern. It would sit in the tree looking like coverage and never run. Name it `*.e2e.ts`.
 
-Browser E2E is opt-in and is never a required gate; see `../e2e/README.md` and
-`../../../TESTING_STRATEGY.md` §11.
+Whether Browser E2E is selected follows `../../../TESTING_CONSTITUTION.md` and the active plan's
+`Testing Decision`; see `../e2e/README.md` for its commands and fixture mechanics.

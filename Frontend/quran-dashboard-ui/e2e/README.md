@@ -1,7 +1,8 @@
 # Browser E2E (Playwright)
 
-**HOW rules:** `../../../TESTING_STRATEGY.md` §11 — E2E is opt-in and never a required gate.
-This file is the WHAT.
+**Policy:** `../../../TESTING_CONSTITUTION.md`. `../../../TESTING_STRATEGY.md` §11 is only the
+transitional command reference until Phase 7 removes it. This file owns the E2E fixtures and runtime
+invariants.
 
 Chromium-only browser flow tests over the public browse surfaces: dashboard home, the app-shell
 navbar and its dropdown menus, the Mushaf reader (paging, deep link, surah jump, fonts) with the
@@ -24,11 +25,20 @@ template navigation remain available while write controls and a URL-restored cre
 then sends a handcrafted anonymous write directly to the Backend and expects its `401` envelope.
 It does not create a sandbox because denial must leave no data behind.
 
-Unsafe Abwab routes now require a real authorized persona. The older Abwab sandbox fixture still
-seeds its local database through anonymous API writes, so those write-oriented specs receive
-`401` until an approved E2E authentication/bootstrap mechanism is supplied. Do not weaken Backend
-enforcement or fake client authorization to make that fixture pass; the anonymous Phase 9
-supplement remains the valid public-read/browser check in the meantime.
+`fixtures/auth.ts` owns the authenticated E2E persona. Playwright supplies a public JWKS to the API,
+keeps the matching private key in the fixture, mints RS256 access and identity-evidence tokens, and
+seeds a fresh `angular-auth-oidc-client` session per test. The API trusts that issuer only when its
+host environment is exactly `Testing` and the explicit test-issuer flag is enabled. `run-backend.mjs`
+keeps the production Logto Management client in composition and serves its `e2e-*` profiles from a
+local stub. The fixture provisions identities through `/api/access/me`, uses an active test Owner to
+assign the exact direct grant through the real access-administration endpoints, then removes the grant
+and disables the persona during teardown. The Owner and its audit history exist only in the disposable
+database clone, which is dropped with the backend process. No authentication or authorization handler
+is replaced or bypassed.
+
+The older Abwab sandbox fixture still seeds through anonymous API writes, so its write-oriented
+specs continue to receive `401` until they adopt the authenticated persona in the later auth-journey
+phase. The anonymous permission supplement remains the valid public-read and denial check meanwhile.
 
 `abwab-tree-row-budget.e2e.ts`, like the one below it, measures rather than drives: it pins the
 tree row's height budget, which needs a real layout engine.
@@ -51,9 +61,9 @@ npm run e2e:typecheck                               # tsc over e2e/ + playwright
 
 `npm run e2e` runs two Playwright projects in sequence: `default` (every non-Abwab spec, 2
 workers) then `abwab` (every `abwab-*.e2e.ts` spec, 1 worker — see the parallelism note
-below). Both share the same `webServer` config and `reuseExistingServer`, so the second
-invocation does not re-pay startup cost when the first left the servers up. To run only one
-group at a custom worker count: `npx playwright test --project=abwab --workers=1`.
+below). Each invocation owns a fresh backend process and disposable database clone; only the
+frontend may be reused. To run only one group at a custom worker count:
+`npx playwright test --project=abwab --workers=1`.
 
 `npm run e2e:headed` and `npm run e2e:ui` do **not** apply the split — both run every project at
 the top-level `workers: 2`, which puts the Abwab specs back under the parallelism hazard below.
@@ -65,8 +75,11 @@ project and the worker count yourself: `npx playwright test --project=abwab --wo
 - mkcert certificates in the project root (`mkcert -install && mkcert localhost`) — without
   `localhost.pem` / `localhost-key.pem` the Angular dev server never starts, and Playwright
   reports it only as a port timeout.
-- A migrated local `quran_dashboard` database with the DB password in backend user-secrets.
-  Nothing migrates on startup.
+- A migrated local `quran_dashboard` source database with its connection string in backend
+  user-secrets or `ConnectionStrings__QuranDashboardDb`. `createdb`, `dropdb`, `pg_dump`, and
+  `pg_restore` must be available. The Playwright-owned backend wrapper refuses non-local PostgreSQL,
+  copies the source into a uniquely named disposable database, and drops that clone on shutdown.
+  Nothing migrates on startup and the source database is never the E2E write target.
 - `dotnet build Backend/QuranDashboard.sln` first — the backend boots with `--no-build`.
 
 ## Invariants
@@ -76,7 +89,9 @@ project and the worker count yourself: `npx playwright test --project=abwab --wo
   (`src`), so it cannot see this folder at all. The reason is the opposite: `playwright.config.ts`
   matches only `/.*\.e2e\.ts$/`, so a `.spec.ts` here is run by **nothing** while looking like
   coverage. See `../testing/README.md`.
-- **Fresh context per test — never add `storageState` reuse.** `qd-mushaf-reader-session`
+- **Fresh context per test — never add `storageState` reuse.** The auth fixture seeds only its own
+  new context and tears its server-side direct grant down after the test; the wrapper drops the
+  disposable database, including the temporary Owner, when the backend exits. `qd-mushaf-reader-session`
   (sessionStorage) restores the last reader page on a bare entry, and `qd-theme` decides the
   theme; leaking either between tests makes results order-dependent.
 - **Zero external network calls.** `fixtures/app-test.ts` stubs the Logto origin and fails any
@@ -97,14 +112,12 @@ project and the worker count yourself: `npx playwright test --project=abwab --wo
   full gate is now two sequential projects — in exchange for not shipping a suite that can pass or
   fail depending on scheduling luck. **Measured 2026-08-02:** 68 passed — `default` 28 in
   ~59 s, `abwab` 40 in ~2.6 m.
-- **A `Global` reorder's residue reaches outside the sandbox, and that is accepted.** Every root
-  in the local dev database gets renumbered by `global_order_value`, sandbox or not — resequencing
-  is order-preserving for untouched rows, and teardown removes the sandbox's own roots again
-  afterward, so the residue is a permutation of nothing observable. It is still a write outside the
-  sandbox's blast radius, same class as the archived-doors residue below, and is accepted on the
-  same terms: a local, disposable dev DB, not a shared one.
+- **A `Global` reorder reaches outside the sandbox but never outside the disposable clone.** Every
+  live root in that clone gets renumbered by `global_order_value`, sandbox or not. The source database
+  remains untouched, and dropping the clone removes the resequencing and archived-door residue.
 - **Read-only flows and loose count assertions, except for Abwab.** Every suite but Abwab reads
-  the live local dev DB without writing to it; exact row counts would break on the next reseed.
+  the source snapshot in the disposable clone without writing to it; exact row counts would break on
+  the next source reseed.
   The Abwab specs are a deliberate, named exception (`TESTING_STRATEGY.md` §11, which this
   amendment mirrors; the slice plan that first recorded it is in git history): each test creates its own
   uniquely-named sandbox section over the API (`fixtures/abwab.ts`) and drives real writes
@@ -117,22 +130,20 @@ project and the worker count yourself: `npx playwright test --project=abwab --wo
   rest, which is what used to leave live sandbox doors and undeleted sandbox sections behind.
   Teardown is best-effort and never masks a test's own failure (R19), and no Abwab test asserts
   a global count — each one only ever asserts on the ids its own sandbox produced (R18).
-  **The residue that remains is archived doors, and it is permanent, not "self-cleaning":**
-  there is no hard delete and no section restore, so every run leaves its sandbox doors
-  **archived** in the local dev DB forever, and any future restore of one is refused until the
-  user names a live destination section, since the one it belonged to is gone. What must **not**
-  remain after a run is any live `e2e-sandbox-*` door or any `e2e-sandbox-*` section — either one
-  is a teardown bug, not accepted residue. This is accepted on a local dev DB with loose, id-scoped
-  assertions; it would need to be revisited (per the same `TESTING_STRATEGY.md` §11 note) before
-  this suite runs anywhere but a disposable local database.
-- Both servers boot with `reuseExistingServer`, and the backend readiness gate is
-  `GET https://localhost:5015/api/health`, which answers 503 when the database is unreachable.
-- **Never leave a server running on :4200 or :5015 outside Playwright's control.** A stray
-  server is adopted by `reuseExistingServer` and silently poisons the whole run.
+  Archived doors can remain inside the clone after per-test teardown because the feature has no hard
+  delete. They disappear when the wrapper drops the clone. What must not remain during a run is any
+  live `e2e-sandbox-*` door or `e2e-sandbox-*` section after its test teardown; either one is still a
+  teardown bug.
+- The frontend may reuse an existing server. The backend never does: Playwright must own its Testing
+  process, disposable database, and shutdown. Its readiness gate is `GET https://localhost:5015/api/health`,
+  which answers 503 when the database is unreachable.
+- **Never leave a backend running on :5015 outside Playwright's control.** Backend reuse is disabled,
+  so a stray process makes startup fail instead of being adopted. The frontend on :4200 may be reused
+  deliberately.
 
 ## Not this suite
 
 This is not the backend route-smoke gate (`Backend/scripts/test-backend smoke`,
-`TESTING_STRATEGY.md` §6), and running it never substitutes for it: that lane is required for
-route, contract, auth, middleware, and binding changes, while this suite is not a required gate
-at all — see §11.
+`TESTING_STRATEGY.md` §6), and running it never substitutes for a separately selected route-smoke
+lane. Route-smoke and browser-journey selection both follow the testing constitution and the active
+plan's `Testing Decision`.

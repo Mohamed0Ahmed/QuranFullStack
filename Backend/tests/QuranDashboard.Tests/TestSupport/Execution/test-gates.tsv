@@ -17,6 +17,7 @@ QuranDashboard.Tests.Api.Access.AccessMigrationPathTests	Access	Migration	TierB
 QuranDashboard.Tests.Api.Access.AccessRolesTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.AccessSchemaDriftTests	Access	Database	TierB	Schema
 QuranDashboard.Tests.Api.Access.AccessSchemaModelTests	Access	Fast	TierB	Schema
+QuranDashboard.Tests.Api.Access.AuthorizationBoundaryTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.AuthorizationPolicyRegistrationTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.AuthorizationPipelineTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.AuthorizationRequirementHandlerTests	Access	Database	TierB

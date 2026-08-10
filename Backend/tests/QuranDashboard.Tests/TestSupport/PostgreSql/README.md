@@ -6,9 +6,9 @@ that template. No fixture starts its own container, and the one fixture that can
 shared runtime takes an *exclusive* lease through the same code path so the two can never
 overlap.
 
-Which lane runs what is `../../../../../TESTING_STRATEGY.md` §3. Which fixture leases what is
-`../../README.md`. This file is the mechanics, and every claim below names the line that
-implements it.
+`../../../../../TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` select which lanes
+run. `../../../../../TESTING_STRATEGY.md` §3 documents their composition, `../../README.md` documents
+fixture ownership, and this file documents the runtime mechanics with implementing line references.
 
 ## The two lease shapes, and which one a fixture may take
 

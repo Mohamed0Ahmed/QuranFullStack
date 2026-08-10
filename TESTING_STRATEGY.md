@@ -2,18 +2,15 @@
 
 ## 1. Purpose and authority
 
-This file is the single source of truth for **test selection, verification depth, execution
-lanes, slow data-pipeline triggers, and focused / protected / final / release boundaries**
-across the whole monorepo (Backend + Frontend). Each agent's native root and area
-entrypoints route here when test selection, execution, or reporting is triggered; they do not
-carry a second test policy. The command vocabulary and cumulative trigger algorithm live in this
-file and nowhere else.
+`TESTING_CONSTITUTION.md` is the repository's sole testing-policy authority. This strategy survives
+only as a transitional operational reference for the current commands, lanes, and fixtures until
+Phase 7 removes it; any policy statement here that conflicts with the constitution is superseded.
 
 When any other instruction file, skill, README, or workflow conflicts with this
-strategy about *which tests to run and when*, **this strategy controls test selection**
-— unless an active feature specification explicitly requires stronger verification for
-its own scope. Test *quality* rules (test-guard, CODING_PRINCIPLES) and Quranic data
-safety rules are unaffected and always apply.
+strategy about the mechanics of a still-active lane, this strategy controls those mechanics unless
+an active feature specification changes them for its own scope. Test selection policy comes from
+the constitution and the active plan's `Testing Decision`. Test-quality rules (`test-guard`,
+`CODING_PRINCIPLES.md`) and Quranic data-safety rules remain independently authoritative.
 
 **This document carries no test counts and no durations.** It used to carry counts, and they
 drifted: a number written in prose is wrong the moment the next test lands, and nothing in this
@@ -39,9 +36,8 @@ final-gate evidence. Do not hand-write a `FullyQualifiedName` filter, use bare `
 an ad-hoc `--include` glob as a gate: a lane is reproducible, catalog-validated, and reportable by
 name, and a hand-written filter is none of those.
 
-**Tier vocabulary.** The former Tier A–E labels are superseded by the lanes in §3 and §4 and
-the cumulative trigger algorithm in §5. One survives as a name: `tier-b` is the Backend no-pipeline
-broad lane.
+**Tier vocabulary.** The former Tier A–E labels are superseded by the lanes in §3 and §4. One
+survives as a name: `tier-b` is the Backend no-pipeline broad lane.
 
 Baselines are taken on a developer machine with Docker up, `resources/import-sources/` staged,
 and the canonical dump at `resources/db-dumps/quran-canonical/` present and regenerated against
@@ -55,8 +51,9 @@ this tree's migration head.
 - Test scope MUST match the changed scope and its risk. Running an unrelated broad
   suite is not a substitute for the focused tests that cover the change.
 - Broad/composite lanes run **once when possible**, at the meaningful final feature/change boundary
-  selected by §5. An unchanged result may satisfy later milestone, engineering-review, or pre-PR
-  labels; those workflows do not rerun it merely because their stage began.
+  selected by the active plan's `Testing Decision`. An unchanged result may satisfy later milestone,
+  engineering-review, or pre-PR labels; those workflows do not rerun it merely because their stage
+  began.
 - Focused verification runs during implementation and review-fix work. A coherent protected slice
   runs its required protection before final closure; security, route, schema, canonical/Quran,
   persistence/transaction, and shared test-runtime risk never becomes focused-only.
@@ -81,13 +78,12 @@ execution boundaries.
 | Boundary | Purpose | Execution owner | Timing |
 | --- | --- | --- | --- |
 | `FOCUSED` | Fastest meaningful feedback for the actual unit, feature, or fix. | Implementation/change workflow. | During each implementation task or focused review fix. |
-| `PROTECTED_TRIGGER` | A named guard for access/security, route composition, schema, process, importer/Quran persistence, canonical data, shared test runtime, parity, or exporter-visible risk. | Implementation/change workflow, selected by this strategy. | Once the protected slice is coherent; repeat on the final state if a later relevant change invalidates it. |
-| `FINAL_BOUNDARY` | Broad/composite safety selected from the union of every trigger in the cumulative final diff. | Implementation/change workflow. | After the change and its fixes settle; each selected broad composite runs once. |
+| `PROTECTED_TRIGGER` | A named guard for access/security, route composition, schema, process, importer/Quran persistence, canonical data, shared test runtime, parity, or exporter-visible risk. | Implementation/change workflow, selected by the constitution and active plan. | Once the protected slice is coherent; repeat on the final state if a later relevant change invalidates it. |
+| `FINAL_BOUNDARY` | Broad/composite safety named by the active `Testing Decision`. | Implementation/change workflow. | After the change and its fixes settle; each selected broad composite runs once. |
 | `RELEASE_ONLY` | Existing explicit release acceptance composition. | Authorized release workflow. | Only at release/hotfix acceptance; never as a deferred substitute for missing feature evidence. |
 
-Safe now: use these four boundaries, reuse same-state evidence across non-executing stages, select
-the final union from the cumulative diff, and schedule `check-api-contract` as §6.1 defines. This is
-an ownership/selection overlay, not a reduction of any current protection-bearing trigger.
+These boundary labels describe operational evidence only. `TESTING_CONSTITUTION.md` and the active
+plan's `Testing Decision` select which checks run; this file does not add tests or gates.
 
 Measurement required before any later change: lane-scoped freshness after relevant changes,
 migration-to-dump relaxation, reduced shared-runtime or full-Backend `pre-pr` protection,
@@ -109,19 +105,19 @@ preflight/shard/cleanup/environment/unknown evidence. No speed goal weakens any 
 (discovery only — it starts no container and never shards) and `--results-dir PATH`. `pre-pr`
 has its own flag rules; see the note under the table.
 
-| Lane | Class | What it selects from the catalog | Command | Run when | Must not run when |
+| Lane | Class | What it selects from the catalog | Command | Conditional risk coverage | Operational boundary |
 | --- | --- | --- | --- | --- | --- |
-| `fast` | `FOCUSED` | every `Kind=Fast` class, including fast logic that lives in Pipeline namespaces | `Backend/scripts/test-backend fast --no-build` | small logic iterations; fast regression after test-only logic changes | never for a case that needs a collection fixture, canonical artifact, migration, or child process — those are not `Kind=Fast` |
-| `feature` | `FOCUSED` | one validated `Feature` value, or one exact class/method | `Backend/scripts/test-backend feature Access --no-build`, `feature --class FULL_CLASS_NAME`, `feature --test FULL_METHOD_NAME` | implementation and coherent feature-slice feedback | never as a substitute for separately triggered Smoke or canonical evidence |
-| `access` | `PROTECTED_TRIGGER` | every `Feature=Access` class | `Backend/scripts/test-backend access --no-build` | coherent authorization, identity, Owner, permission, or Access-contract slice | never to pull in Pipeline, canonical data, or Frontend tests |
-| `access-db` | `PROTECTED_TRIGGER` | `Feature=Access` classes that are `Kind=Database` or carry `Schema` in `Concerns` | `Backend/scripts/test-backend access-db --no-build` | Access persistence, constraint, EF model, catalogue, grant, transaction, or audit-storage change | does not cover the CLI wrapper or the staged migration upgrade |
-| `migration` | `PROTECTED_TRIGGER` | every `Kind=Migration` class | `Backend/scripts/test-backend migration --no-build` | migration, EF model, backfill, collision/refusal, or schema-guard work | never after unrelated UI or ordinary service edits |
-| `process` | `PROTECTED_TRIGGER` | every `Kind=Process` class | `Backend/scripts/test-backend process --no-build` | wrapper, exit-code, executable-directory configuration, or operator-boundary change | never to duplicate lower-level migration/service permutations as child processes; §5 preserves the AccessAdmin wrapper union |
-| `smoke` | `PROTECTED_TRIGGER` | `Gate=Smoke` excluding `Kind=Canonical` — the route/composition classes, not the data tier | `Backend/scripts/test-backend smoke --no-build` | route, contract, auth, middleware, model binding, serialization, startup, DI, configuration, or shared `DbContext` composition change (§6) | not after every edit |
-| `tier-b` | `FINAL_BOUNDARY` | every `Gate=TierB` class | `Backend/scripts/test-backend tier-b --no-build` | ordinary Backend cumulative final diff and the existing milestone/review/pre-PR requirements | never widened with Pipeline or Smoke merely to look broader |
-| `pipeline` | `PROTECTED_TRIGGER` | `Gate=Pipeline` excluding `Kind=Canonical`, optionally narrowed by `--feature` | `Backend/scripts/test-backend pipeline --feature Translations --no-build`; omit `--feature` only for a shared-pipeline trigger | importer, manifest handling, pipeline entity/schema, shared Pipeline, Quran persistence, or reachable persistence change | never for isolated authorization, general API, caching, or Frontend-only changes |
-| `canonical-data` | `PROTECTED_TRIGGER` | every `Kind=Canonical` class | `Backend/scripts/test-backend canonical-data --no-build` | canonical source, manifest/hash, dump, Quran schema/persistence, shared Pipeline, or release acceptance | never for isolated authorization/UI work; missing required resources are a gate failure, not a skip (§3.4) |
-| `pre-pr` | `PROTECTED_TRIGGER` | every catalog row — the full Backend suite, run exactly once | `Backend/scripts/test-backend pre-pr` | shared test/runtime infrastructure, canonical-source/full-regression acceptance, release, or another current explicit full-suite trigger | its name alone never creates an extra unchanged-state run; ordinary isolated authorization remains `access` + `smoke` + `tier-b` and excludes Pipeline/canonical |
+| `fast` | `FOCUSED` | every `Kind=Fast` class, including fast logic that lives in Pipeline namespaces | `Backend/scripts/test-backend fast --no-build` | fast logic and test-only logic feedback | does not cover collection fixtures, canonical artifacts, migrations, or child processes |
+| `feature` | `FOCUSED` | one validated `Feature` value, or one exact class/method | `Backend/scripts/test-backend feature Access --no-build`, `feature --class FULL_CLASS_NAME`, `feature --test FULL_METHOD_NAME` | one coherent feature, class, or method slice | does not substitute for separately selected Smoke or canonical evidence |
+| `access` | `PROTECTED_TRIGGER` | every `Feature=Access` class | `Backend/scripts/test-backend access --no-build` | authorization, identity, Owner, permission, and Access-contract behavior | excludes Pipeline, canonical data, and Frontend tests |
+| `access-db` | `PROTECTED_TRIGGER` | `Feature=Access` classes that are `Kind=Database` or carry `Schema` in `Concerns` | `Backend/scripts/test-backend access-db --no-build` | Access persistence, constraints, EF model, catalogue, grants, transactions, and audit storage | does not cover the CLI wrapper or staged migration upgrade |
+| `migration` | `PROTECTED_TRIGGER` | every `Kind=Migration` class | `Backend/scripts/test-backend migration --no-build` | migration, EF model, backfill, collision/refusal, and schema-guard behavior | excludes unrelated UI and ordinary service behavior |
+| `process` | `PROTECTED_TRIGGER` | every `Kind=Process` class | `Backend/scripts/test-backend process --no-build` | wrapper, exit-code, executable-directory configuration, and operator boundaries | does not duplicate lower-level migration/service permutations as child processes; the lane stays distinct because it exercises wrapper behavior |
+| `smoke` | `PROTECTED_TRIGGER` | `Gate=Smoke` excluding `Kind=Canonical` — the route/composition classes, not the data tier | `Backend/scripts/test-backend smoke --no-build` | route/composition risks described in §6 | does not become a blanket check for every edit |
+| `tier-b` | `FINAL_BOUNDARY` | every `Gate=TierB` class | `Backend/scripts/test-backend tier-b --no-build` | broad Backend behavior excluding Pipeline and route Smoke | is not widened with Pipeline or Smoke merely to look broader |
+| `pipeline` | `PROTECTED_TRIGGER` | `Gate=Pipeline` excluding `Kind=Canonical`, optionally narrowed by `--feature` | `Backend/scripts/test-backend pipeline --feature Translations --no-build`; omit `--feature` only for a shared-pipeline selection | importer, manifest, pipeline entity/schema, shared Pipeline, Quran persistence, and reachable persistence behavior | excludes isolated authorization, general API, caching, and Frontend-only behavior |
+| `canonical-data` | `PROTECTED_TRIGGER` | every `Kind=Canonical` class | `Backend/scripts/test-backend canonical-data --no-build` | canonical sources, manifests/hashes, dumps, Quran schema/persistence, and shared Pipeline behavior | excludes isolated authorization/UI behavior; missing selected resources are a gate failure, not a skip (§3.4) |
+| `pre-pr` | `PROTECTED_TRIGGER` | every catalog row — the full Backend suite, run exactly once | `Backend/scripts/test-backend pre-pr` | full Backend regression coverage | its name alone never creates an extra unchanged-state run |
 
 `pre-pr` is the one lane with different flag rules: executing it **always builds once**, so it
 rejects `--no-build` and needs no `--build`; discovering it requires the exact form
@@ -135,8 +131,8 @@ No Backend lane is `REDUNDANT_OR_MISPLACED`. The catalog intentionally cross-cut
 `Gate=TierB|Pipeline|Smoke` partitions with feature, Access, migration, process, fast, and canonical
 selection. Overlap is not deletion or consolidation evidence. `cleanup-test-runtime` is runner
 mechanics, not a selectable gate; its run-ID ownership and zero-leftover reporting remain mandatory.
-No Backend gate is primarily `RELEASE_ONLY`; release composes the protected `pre-pr` and
-`canonical-data` gates without changing their protection-bearing feature triggers.
+No Backend gate is primarily `RELEASE_ONLY`. When an authorized release `Testing Decision` selects
+`pre-pr` or `canonical-data`, their classifications and mechanics do not change.
 
 ### 3.1 The catalog is the selection contract
 
@@ -245,145 +241,63 @@ script, which owns the two-fork Vitest cap (`VITEST_MIN_FORKS=1 VITEST_MAX_FORKS
 run timeout; a direct `ng test` invocation bypasses both and is not a lane. The named Angular
 test configurations live in `angular.json`.
 
-| Lane/check | Class | What it selects | Command | Run when | Must not run when |
+| Lane/check | Class | What it selects | Command | Conditional risk coverage | Operational boundary |
 | --- | --- | --- | --- | --- | --- |
-| Exact spec | `FOCUSED` | one explicitly named spec | `npm test -- --watch=false --include=src/app/.../name.spec.ts` | fastest meaningful local feedback for one implementation task or review fix | never cite it as named final-gate evidence |
-| Fast / unit | `FOCUSED` | the pure model/utility/data/state/cache/helper specs in the `fast` configuration | `npm run test:fast` | pure state, mapping, codec, cache, URL, or validation work | do not assume it avoids Angular bundle startup; do not add a TestBed/component spec to it |
-| Feature-focused | `FOCUSED` | one feature configuration | `npm run test:feature:access-admin`, `npm run test:feature:abwab`, `npm run test:feature:auth`, `npm run test:feature:dashboard`, `npm run test:feature:mushaf`, `npm run test:feature:words` | feature implementation and coherent feature-slice verification | do not run unrelated feature directories |
-| Authorization | `PROTECTED_TRIGGER` | the cross-cutting auth/config/route/security specs | `npm run test:authorization` | Frontend auth fixtures/contracts, token handling, callback, secure-origin behavior, route posture, or production auth config changed | a Backend-only authorization change needs no Frontend test unless a Frontend or generated contract changed |
-| Composition | `PROTECTED_TRIGGER` | every component/directive spec plus the named application/overlay compositions | `npm run test:composition` | shared component harness, Angular rendering, overlay composition, or broad component infrastructure changed | not after pure Backend or pure utility changes; this is jsdom, not a browser — never call it E2E |
-| Shared | `FOCUSED` | app-shell, core, shared, and environment specs | `npm run test:shared` | core/shared/routing/app-shell/environment/global test setup changed | not a substitute for the affected feature lane |
-| Permission parity | `PROTECTED_TRIGGER` | Backend/Frontend permission-catalogue parity | `npm run check:permission-catalogue` | permission catalogue or its generated Frontend output changed; also a leg of the final composite | not a replacement for authorization or consumer tests |
-| Audit-action parity | `PROTECTED_TRIGGER` | Backend/Frontend audit-action type parity | `npm run check:audit-action-types` | an audit-action type surface changed; also a leg of the final composite | not a replacement for audit/transaction behavior tests |
-| Leaf type-checks | `FOCUSED` | one TypeScript project | `npm run typecheck:app`, `npm run typecheck:spec` | local compilation feedback when only one project is implicated | not a substitute for combined strictness when a cross-project/generated/config change triggers it |
-| Combined type-check | `PROTECTED_TRIGGER` | app and spec projects, in order | `npm run typecheck` | generated DTO, config, routing, template, or cross-project type change; also a leg of the final composite | never cite a root `npx tsc --noEmit`: the root `tsconfig.json` is `"files": []` plus project references and `--noEmit` does not follow references, so it type-checks nothing |
-| Production build | `FINAL_BOUNDARY` | production template, bundle, and configuration build | `npm run build:verify` | standalone only when the final composite is not selected | do not run it immediately before an unchanged `test:pre-pr` that already contains it |
-| Full suite | `FINAL_BOUNDARY` | every `src/**/*.spec.ts` | `npm run test:full` (`npm test` is the same run) | when a broad Frontend gate is required on its own | not for Backend-only changes; do not run it immediately before unchanged `test:pre-pr` |
-| Pre-PR composite | `FINAL_BOUNDARY` | `check:permission-catalogue` → `check:audit-action-types` → `typecheck` → `build:verify` → `test:full`, in that order | `npm run test:pre-pr` | current review/pre-PR/release requirements for a Frontend source/spec/config/generated cumulative diff | its stage-shaped name does not create a second run when final-state evidence is unchanged |
-| Gate self-check | `PROTECTED_TRIGGER` | asserts the named configurations still select what they claim | `npm run test:gates` | shared Frontend test/config infrastructure, `angular.json` test configurations, or spec-layout changes | it remains outside `test:pre-pr` and must be reported separately |
-| E2E type-check | `FOCUSED` | Playwright code/config/fixture types | `npm run e2e:typecheck` | E2E code, config, or fixtures changed | it does not promote browser E2E to required status |
-| Browser E2E | `MEASUREMENT_REQUIRED` | opt-in real-browser flows from §11 | `npm run e2e` and the §11 variants | supplementary evidence when explicitly chosen | not a required final or release gate without the §12 stability/auth/runtime evidence |
+| Exact spec | `FOCUSED` | one explicitly named spec | `npm test -- --watch=false --include=src/app/.../name.spec.ts` | one implementation task or review-fix behavior | is not named gate evidence |
+| Fast / unit | `FOCUSED` | the pure model/utility/data/state/cache/helper specs in the `fast` configuration | `npm run test:fast` | pure state, mapping, codec, cache, URL, and validation behavior | still incurs Angular bundle startup; excludes TestBed/component specs |
+| Feature-focused | `FOCUSED` | one feature configuration | `npm run test:feature:access-admin`, `npm run test:feature:abwab`, `npm run test:feature:auth`, `npm run test:feature:dashboard`, `npm run test:feature:mushaf`, `npm run test:feature:words` | one coherent feature slice | excludes unrelated feature directories |
+| Authorization | `PROTECTED_TRIGGER` | the cross-cutting auth/config/route/security specs | `npm run test:authorization` | Frontend auth fixtures/contracts, token handling, callbacks, secure origins, route posture, and production auth configuration | covers Frontend behavior, not Backend authorization |
+| Composition | `PROTECTED_TRIGGER` | every component/directive spec plus the named application/overlay compositions | `npm run test:composition` | shared component harnesses, Angular rendering, overlay composition, and broad component infrastructure | is jsdom, not browser E2E; excludes pure Backend and pure utility behavior |
+| Shared | `FOCUSED` | app-shell, core, shared, and environment specs | `npm run test:shared` | core/shared/routing/app-shell/environment/global test setup behavior | does not substitute for feature-specific coverage |
+| Permission parity | `PROTECTED_TRIGGER` | Backend/Frontend permission-catalogue parity | `npm run check:permission-catalogue` | permission catalogue and generated Frontend output parity | does not replace authorization or consumer tests; is also a composite leg |
+| Audit-action parity | `PROTECTED_TRIGGER` | Backend/Frontend audit-action type parity | `npm run check:audit-action-types` | audit-action type parity | does not replace audit/transaction behavior tests; is also a composite leg |
+| Leaf type-checks | `FOCUSED` | one TypeScript project | `npm run typecheck:app`, `npm run typecheck:spec` | one TypeScript project's compilation | does not provide combined cross-project strictness |
+| Combined type-check | `PROTECTED_TRIGGER` | app and spec projects, in order | `npm run typecheck` | generated DTO, config, routing, template, and cross-project types | a root `npx tsc --noEmit` checks nothing because the root config has `"files": []` and project references |
+| Production build | `FINAL_BOUNDARY` | production template, bundle, and configuration build | `npm run build:verify` | production templates, bundles, and configuration | is already a `test:pre-pr` leg; do not duplicate it immediately before an unchanged composite |
+| Full suite | `FINAL_BOUNDARY` | every `src/**/*.spec.ts` | `npm run test:full` (`npm test` is the same run) | broad Frontend unit/component behavior | excludes Backend behavior; do not duplicate it immediately before an unchanged composite |
+| Pre-PR composite | `FINAL_BOUNDARY` | `check:permission-catalogue` → `check:audit-action-types` → `typecheck` → `build:verify` → `test:full`, in that order | `npm run test:pre-pr` | the complete Frontend composite | its stage-shaped name does not create a second run when final-state evidence is unchanged |
+| Gate self-check | `PROTECTED_TRIGGER` | asserts the named configurations still select what they claim | `npm run test:gates` | shared Frontend test/config infrastructure, Angular configurations, and spec layout | remains outside `test:pre-pr` and must be reported separately when selected |
+| E2E type-check | `FOCUSED` | Playwright code/config/fixture types | `npm run e2e:typecheck` | Playwright code, config, and fixture types | does not substitute for a selected browser journey |
+| Browser E2E | `PLAN_SELECTED` | real-browser flows from §11 | `npm run e2e` and the §11 variants | browser-only flows and integration behavior | does not substitute for backend route smoke or lower-layer checks protecting different risks |
 
 `npm run test:gates` runs `testing/verify-test-gates.mjs`, not Vitest. **It is not part of
-`test:pre-pr`** — when you change the configurations or move specs between areas, run it as its
-own step and report it separately.
+`test:pre-pr`**. When the `Testing Decision` selects it, run and report it as its own step.
 
 The exact-spec command deliberately enters through `npm test --`, so it preserves the owned two-fork
-cap and timeout. It is local feedback followed by the affected named lane whenever §5 requires one;
-an ad-hoc include is never promoted to final evidence. There is no generic `test:contract` lane:
-generated-model changes use exact consumer specs plus the affected feature lane, add
-`test:authorization` only for auth/session/security scope, and retain the triggered type-check/final
-gate until measured evidence authorizes something narrower.
+cap and timeout. It is local feedback followed by any named lane selected by the active plan;
+an ad-hoc include is never promoted to final evidence. There is no generic `test:contract` lane.
+For generated-model verification selected by the constitution and active plan, the available
+focused mapping is exact consumer specs plus the affected feature lane, with `test:authorization`
+only for auth/session/security scope; the `Testing Decision` separately selects any type-check or
+final composite.
 
-No current required Frontend gate is primarily `RELEASE_ONLY`; release reuses the final
-`test:pre-pr` composition. No named Frontend lane is `REDUNDANT_OR_MISPLACED`; only duplicate
-standalone invocations of an unchanged composite leg are misplaced.
+No named Frontend lane is `REDUNDANT_OR_MISPLACED`; only duplicate standalone invocations of an
+unchanged composite leg are misplaced. Release selection follows its authorized plan's
+`Testing Decision`.
 
 No Frontend lane requires PostgreSQL, EF migrations, Backend startup, Docker, or importer
 processes.
 
-**Backend-only rule.** Run no Frontend tests for a Backend-only change when no file under
-`Frontend/quran-dashboard-ui/`, no committed OpenAPI document, and no generated Frontend API
-contract changed. If a Backend contract change regenerates Frontend DTOs or changes Frontend
-auth fixtures/models, run exact affected consumer specs and the affected feature lane, add
-`test:authorization` when auth/session/security is in scope, and run the required type-check; run
-`test:pre-pr` only because Frontend files then changed, not merely because the Backend changed.
+**Conditional scope note.** A `Testing Decision` may classify work as Backend-only when no file under
+`Frontend/quran-dashboard-ui/`, committed OpenAPI document, or generated Frontend API contract is in
+scope. Regenerated Frontend DTOs or changed Frontend auth fixtures/models make the work cross-stack;
+the constitution and active plan then select any Frontend checks. This document supplies no automatic
+Frontend mapping from either classification.
 
-## 5. Cumulative-final-diff gate selection
+## 5. Test selection
 
-The implementation/change workflow applies this algorithm when a protected slice is coherent and
-again when the feature/change or a set of review fixes is complete. Engineering review classifies
-the resulting evidence; it does not execute the algorithm's commands.
-
-1. **Fix the comparison base.** Compare the feature/change base (normally its merge base with
-   `dev`) with the complete current worktree. Include committed, staged, unstaged, generated, and
-   in-scope untracked files. A last commit, last finding, or last fix is not the base.
-2. **Classify semantics, not extensions alone.** Map every changed path and behavior against all of
-   these families: Backend logic/compilation; auth/authorization/identity/Owner/permissions/audit;
-   routes/metadata/middleware/binding/contracts/serialization/startup/DI/configuration/shared
-   `DbContext`; exporter/generator-visible inputs from §6.1; migration/schema/model/backfill/
-   collision/refusal/process wrapper; importer/manifests/source handling/Pipeline/Quran persistence/
-   canonical source/artifact/hash/dump/transactions; Backend test catalog/resources/fixtures/
-   collections/PostgreSQL runtime/locks/shards/runner/build/output/cleanup; Frontend feature/shared/
-   auth/composition/routing/template/environment/generated/config/spec-layout scope; and browser-only
-   geometry/focus/history/RTL-input/real-network behavior.
-3. **Union; never subtract.** Add every focused, protected, final, and release-only requirement
-   triggered anywhere in the cumulative diff. A later fix may add a gate; it cannot erase a gate
-   triggered by an earlier part of the still-present diff.
-4. **Apply every protected mapping below.** Focused feedback does not replace a named protected
-   gate. When scope is ambiguous, retain the stronger current trigger and request an owner decision.
-5. **Add the final broad boundary.** An ordinary Backend cumulative diff selects `tier-b`; shared
-   test/runtime infrastructure, canonical-source acceptance, release, or another current explicit
-   full-regression trigger selects Backend `pre-pr`. A Frontend source/spec/config/generated diff
-   selects `test:pre-pr` under current policy. Documentation-only changes do not gain product gates.
-6. **Collapse only exact composite duplication.** When `test:pre-pr` is selected for the same final
-   state, do not separately rerun its unchanged parity/typecheck/build/full-test legs immediately
-   before it. Do not infer equivalent collapse across overlapping Backend selectors.
-7. **Execute and record reality.** Record exact command, selection reason, result, skips, Backend
-   shards/canonical-tier status where applicable, cleanup, and environment state. Missing resources,
-   failed preflight/shard/cleanup, unexpected skips, and unknown results cannot close the gate.
-8. **Recompute after any fix set.** Run focused/protected verification while fixes are in motion;
-   after the last fix, restart at step 1 and execute the final union from the whole remaining diff.
-
-### Authoritative trigger mappings
-
-- **Pure Backend logic:** exact class/method or `fast`, then the affected feature lane and final
-  `tier-b`; no Smoke, Pipeline, canonical, or Frontend gate without an independent trigger.
-- **Access service/contract:** exact Access feedback followed by `access` + `smoke` + final `tier-b`.
-  Add route-catalog and API-contract guards when their route/exporter triggers apply. Frontend
-  authorization is selected only when Frontend/generated auth scope changed.
-- **Access persistence/constraints/catalogue/grants/audit storage:** exact/`access-db`, affected
-  `access`, `smoke`, and final `tier-b`; add the migration/model requirements below only when schema
-  or EF model is actually in scope.
-- **Migration/schema/EF model/backfill:** exact migration feedback, `migration`, relevant
-  `access-db`/`access`, `check-pending-model`, same-change `create-smoke-dump --yes`, `smoke`, and final
-  `tier-b`. Preserve the empty-database staged-upgrade path; add Pipeline/canonical only for an
-  independent shared Quran persistence trigger.
-- **AccessAdmin wrapper/operator boundary:** exact process feedback followed by `process` + `access`
-  + `smoke` + final `tier-b`. Lower-level Access tests are not process-boundary evidence.
-- **API route/auth/middleware/binding/serialization/startup/DI:** affected API-family feedback,
-  `smoke`, and same-change `SmokeRouteCatalog` parity, plus `check-api-contract` when exporter-visible
-  and final `tier-b`. Canonical Smoke Data remains separate unless independently triggered.
-- **One isolated importer/Pipeline family:** exact/fast feedback, named `pipeline --feature
-  FEATURE_KEY`, and final `tier-b`; add Smoke only for API composition and do not pull unrelated
-  Pipeline/canonical scope.
-- **Shared Pipeline or Quran persistence:** representative/named feedback, full affected `pipeline`,
-  `canonical-data` whenever the existing shared/Quran trigger applies, required schema/transaction
-  checks, and final `tier-b`; no Frontend gate without a real Frontend/generated diff.
-- **Canonical source/manifest/hash/dump:** exact canonical feedback followed at the feature/change
-  boundary by full `pipeline` + `canonical-data` + `smoke` + full Backend `pre-pr`. Report both
-  Backend shards and canonical-tier/preflight status; release is not the backstop.
-- **Shared Backend test/runtime/catalog/shard infrastructure:** exact contract plus a pilot feature,
-  `access` + `smoke` + `tier-b` + representative `pipeline`, and full Backend `pre-pr`; PostgreSQL
-  processes remain sequential and canonical status remains explicit.
-- **Frontend utility/state:** exact spec or `test:fast`, affected feature/shared lane, and final
-  `test:pre-pr`; no Backend gate.
-- **Frontend feature component:** exact spec, affected feature, `test:composition` when implicated,
-  and final `test:pre-pr`; no unrelated Backend/Pipeline gate.
-- **Frontend auth/config:** exact spec, `test:authorization`, affected feature/shared lane,
-  `typecheck` when implicated, and final `test:pre-pr`; Backend only when it also changed.
-- **Frontend test/config/spec layout:** affected focused lane plus `test:gates`, then the current
-  final `test:pre-pr`; browser E2E remains supplementary.
-- **Exporter-visible contract:** `check-api-contract`, generated-diff review, exact affected consumer
-  specs, affected feature or authorization lane, `typecheck`, route Smoke when API composition
-  changed, and the current final Backend/Frontend gates. No generic `test:contract` lane exists.
-- **Browser-only behavior:** preserve affected unit/feature evidence and label any explicitly chosen
-  targeted E2E run supplementary. jsdom does not prove browser geometry, and this strategy does not
-  promote E2E.
-- **Backend-only with no generated/Frontend diff:** Backend gates only; every Frontend test/build is
-  excluded.
-
-Current milestone, formal-review, pre-PR, and release requirements remain. An unchanged protected or
-final result may satisfy the later label when its tree and relevant environment are identical; a new
-stage name does not create a rerun. Release acceptance remains full Backend `pre-pr` (two shards) +
-`canonical-data` + Frontend `test:pre-pr`, with staged resources and complete skip/shard accounting.
+`TESTING_CONSTITUTION.md` and the active implementation plan's `Testing Decision` are the only test
+selection authorities. Use §3, §4, §6, and the nearest test README only to resolve the command,
+fixture, environment, and reporting mechanics for a selected check. This transitional document does
+not require a broad final suite, classify browser E2E as supplementary, or promote any lane based on
+the changed file set.
 
 ## 6. The route-smoke gate
 
-**A change that alters API routes, request/response contracts, authentication/authorization,
-middleware, model binding, serialization, startup, DI, configuration, or shared `DbContext`
-composition REQUIRES the `smoke` lane**, regardless of which path supplied that behavior and in
-addition to the focused tests for the changed endpoints:
+When `TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` select route/composition
+verification, the `smoke` lane covers API routes, request/response contracts,
+authentication/authorization, middleware, model binding, serialization, startup, DI,
+configuration, and shared `DbContext` composition:
 
 ```bash
 Backend/scripts/test-backend smoke --no-build
@@ -410,10 +324,10 @@ unqualified "smoke passed" is not.
 
 ### 6.1 The OpenAPI contract guard
 
-`Backend/scripts/check-api-contract` is a `PROTECTED_TRIGGER`. Backend owns its mechanics; the
-implementation/change workflow runs it after the exporter/generator-visible surface is coherent and
-before final evidence is packaged. Its trigger is semantic, not a `Backend/api/` path test, and
-includes at least:
+`Backend/scripts/check-api-contract` is a `PROTECTED_TRIGGER`. Backend owns its mechanics. When the
+constitution and active plan select it, execute it after the exporter/generator-visible surface is
+coherent and before its evidence is packaged. Its risk coverage is semantic, not a `Backend/api/`
+path test, and includes at least:
 
 - controller/action routes, verbs, binding, parameters, result types, status/response metadata, and
   endpoint documentation read by the exporter;
@@ -428,28 +342,24 @@ includes at least:
 - anything else that alters what `export-swagger`, Swashbuckle, `ng-openapi-gen`, or pruning reads,
   even when the changed input lives outside `Backend/api/`.
 
-The command continues to Release-build/export offline with permission-catalogue startup sync
-disabled, regenerate the committed Swagger and Frontend models, and fail on diff. Review intentional
-generated changes. This guard complements rather than replaces route `smoke`, focused Backend
-controller/contract tests, focused Frontend consumer/auth tests, Frontend `typecheck`/build/final
-verification, or human compatibility review. Its end-to-end cost remains `MEASUREMENT_REQUIRED`, but
-its scheduling is required now because unscheduled regeneration has already allowed stale committed
-contract output.
+When selected, the command Release-builds/exports offline with permission-catalogue startup sync
+disabled, regenerates the committed Swagger and Frontend models, and fails on diff. Review
+intentional generated changes. This guard complements rather than replaces any separately selected
+route `smoke`, focused Backend controller/contract tests, focused Frontend consumer/auth tests,
+Frontend type-check/build/composite verification, or human compatibility review. Its end-to-end cost
+remains `MEASUREMENT_REQUIRED`; the constitution and active plan alone decide whether to schedule it.
 
-## 7. Build requirements
+## 7. Build mechanics
 
-- Backend compilation-affecting changes REQUIRE one `--build` lane run (or
-  `dotnet build Backend/QuranDashboard.sln`) before any `--no-build` lane against that state.
+- When a `Testing Decision` selects a Backend build, use one `--build` lane run or
+  `dotnet build Backend/QuranDashboard.sln` before any selected `--no-build` lane against that state.
   Build once, then reuse it.
-- Frontend template, routing, configuration, or bundle-affecting changes REQUIRE
-  `npm run build:verify` at the selected final boundary. Do not prepend a build to ordinary test
-  runs — the test builder compiles its own bundle — and do not run it separately immediately before
-  unchanged `test:pre-pr`, which already contains it.
-- Before final PR completion, every changed application MUST have fresh build evidence from the
-  implementation/change workflow.
-- Builds MUST cover the **cumulative final state**: a previously successful build is stale once any
-  relevant code or configuration changes. Focused fixes may use focused verification while they are
-  in motion; rebuild once after the fix set settles.
+- When a `Testing Decision` selects the Frontend production build, run `npm run build:verify`. Do not
+  prepend it to ordinary test runs because the test builder compiles its own bundle, and do not run it
+  separately immediately before unchanged `test:pre-pr`, which already contains it.
+- Selected build evidence must cover the cumulative state it claims: a previous build becomes stale
+  after a relevant code or configuration change. Focused fixes may use focused verification while in
+  motion; rerun the selected build after the fix set settles.
 
 ## 8. Continuous integration — none in this tree
 
@@ -495,7 +405,7 @@ skips, and any required shard/canonical/cleanup state. Apply freshness and reuse
   unchanged. A new workflow label does not stale it.
 - A later relevant change to code, tests, configuration, generated API artifacts, migrations/model,
   canonical sources/artifacts/dump, runner/catalog/harness, or another covered dependency stales final
-  evidence. After fixes settle, recompute §5 from the whole diff and run the new union once.
+  evidence. After fixes settle, reread the active plan's `Testing Decision` and rerun affected checks.
 - An unrelated prose or packaging-only change creates no product-test requirement. A contract/policy
   documentation change uses its static policy checks rather than an invented lane.
 - A relevant toolchain/dependency, staged-resource, migration-head, database-runtime/major, or test-
@@ -505,25 +415,23 @@ skips, and any required shard/canonical/cleanup state. Apply freshness and reuse
 
 ## 10. Responsibilities by workflow
 
-**Implementation/change workflow** — selects the narrowest meaningful focused verification, runs
-protected gates when their real triggers fire, derives the final union from §5, executes each
-selected final composite once against the cumulative state, and reports the exact command, reason,
-result, skips, shards/canonical tier, cleanup, and environment. It MUST NOT substitute an unrelated
-broad lane for focused coverage or run broad gates merely because a phase/stage ended.
+**Implementation/change workflow** — follows the constitution and active plan's `Testing Decision`,
+then uses this document for the selected commands and reporting mechanics. It reports the exact
+command, reason, result, skips, shards/canonical tier, cleanup, and environment.
 
 **Implementation catalog obligations** — adding a test class requires its `test-gates.tsv` row in
 the same change (§3.1); **adding or changing an API route requires the matching
-`SmokeRouteCatalog` entry in the same change** (§6); adding a migration requires regenerating
-the canonical dump in the same change (§3.4); and exporter-visible scope requires
-`check-api-contract` under §6.1.
+`SmokeRouteCatalog` entry in the same change** (§6); and adding a migration requires regenerating
+the canonical dump in the same change (§3.4). When the `Testing Decision` selects
+`check-api-contract`, its §6.1 operational mechanics apply.
 
-**`TESTING_STRATEGY.md`** — owns command vocabulary, classifications, selection triggers,
-cumulative-diff mapping, freshness/reuse, and failure/skip evidence semantics. No Skill or README
-may create a second selection policy or weaken a protected trigger.
+**`TESTING_STRATEGY.md`** — temporarily owns command vocabulary, lane mechanics, freshness, and
+failure/skip evidence semantics. It does not select tests; `TESTING_CONSTITUTION.md` and the active
+plan's `Testing Decision` do.
 
 **Engineering review** — consumes supplied same-diff evidence, compares it with §§3–6, and reports
 sufficient, stale, missing, failed, skipped, or unknown evidence in its verdict. It reports missing
-Pipeline/canonical/Smoke/route-parity/contract evidence when triggered, but does not build, run tests,
+selected Pipeline/canonical/Smoke/route-parity/contract evidence, but does not build, run tests,
 invoke Test Guard, or recreate evidence.
 
 **PR context preparation** — packages existing scope and evidence and labels gaps honestly. It does
@@ -542,12 +450,11 @@ lifecycle. It does not run test lanes or present runtime curls as route-Smoke/ca
 **Any other Skill** — keeps its implemented responsibility and never silently adds build/test
 execution or creates an implicit evidence gate.
 
-**Release workflow** — runs the full Backend `pre-pr` lane (two shards), `canonical-data`, and
-the Frontend `test:pre-pr` lane on a machine with `resources/import-sources/` and the canonical
-dump staged, and accounts for every skipped test. Release is not a deferred substitute for a
-missing feature/change protection.
+**Release workflow** — follows its authorized plan's `Testing Decision`. When that decision selects
+the Backend `pre-pr`, `canonical-data`, or Frontend `test:pre-pr` lanes, this document supplies their
+operational requirements.
 
-## 11. Browser E2E — opt-in, never a required gate
+## 11. Browser E2E — transitional operational guidance
 
 A browser E2E layer exists: `Frontend/quran-dashboard-ui/playwright.config.ts` + `e2e/`,
 chromium only, two sequential projects — `default` (2 workers) then `abwab` (1 worker).
@@ -561,35 +468,31 @@ npm run e2e:typecheck                         # focused type-check of E2E code/c
 npx playwright test e2e/mushaf-reader.e2e.ts  # one flow file
 ```
 
-`e2e:typecheck` is `FOCUSED` feedback when E2E code/config/fixtures change; it does not promote a
-browser run. Browser E2E is `MEASUREMENT_REQUIRED` and remains an **opt-in local gate, not part of
-any required lane**: it is not required pre-PR and
-not required for release, and an E2E run MAY be reported only as supplementary evidence, which
-it MUST then be labelled as. It is **not** the backend route-smoke gate (§6) and never
-substitutes for it. Promoting it into a required lane is a separate decision, to be made only
-after current auth/bootstrap readiness, runtime, repeat stability, residue, and historical
-flakiness have been observed and recorded under §12. Specs are named `*.e2e.ts`, and that is not
+When selected, `e2e:typecheck` provides focused feedback on E2E code, config, and fixtures. Whether a
+browser journey is required follows `TESTING_CONSTITUTION.md` rule 4 and the active plan's
+`Testing Decision`;
+the former opt-in-only policy is retired. Browser E2E is not the backend route-smoke gate (§6) and
+never substitutes for it. Specs are named `*.e2e.ts`, and that is not
 cosmetic: the Angular unit-test builder globs its `include` patterns with `cwd` at the project's
 `sourceRoot` (`src`), so no `angular.json` pattern can reach `e2e/` at all, while
 `playwright.config.ts` matches only `/.*\.e2e\.ts$/` — so a `*.spec.ts` placed under `e2e/` is
 run by **nothing** while looking like coverage. See
 `Frontend/quran-dashboard-ui/testing/README.md`.
 
-The suite boots the Angular dev server **and** the backend `https` launch profile
-(`ASPNETCORE_ENVIRONMENT=Development`), so it reads the real local `quran_dashboard` database.
-It requires `dotnet build Backend/QuranDashboard.sln` beforehand (the backend boots with
-`--no-build`) and mkcert certificates in the frontend project root.
+The suite boots the Angular dev server and a Playwright-owned backend in the `Testing` environment.
+`e2e/run-backend.mjs` reads the local source connection from the API user secret or
+`ConnectionStrings__QuranDashboardDb`, rejects non-local PostgreSQL hosts, clones that database with
+`pg_dump`/`pg_restore`, and passes the clone through the backend environment. Graceful shutdown drops
+the clone, including all temporary accounts and write residue. The suite requires a prior backend
+build, mkcert certificates, and the PostgreSQL client commands named in `e2e/README.md`.
 
 Every flow is read-only and every count assertion is loose, **with one named, deliberate
 exception**: the Abwab specs (`abwab-structure.e2e.ts`, `abwab-operations.e2e.ts`,
 `abwab-archive.e2e.ts`, `abwab-url-and-a11y.e2e.ts` added in Slice B2, plus
 `abwab-global-order.e2e.ts` added by `abwab-global-order`, `abwab-tree-row-budget.e2e.ts`,
 `abwab-slice-j-widths.e2e.ts`, and `abwab-relations.e2e.ts` added by slice K) write against the
-local dev DB through a per-test sandbox section created over the API (`e2e/fixtures/abwab.ts`),
-not the seeded/canonical data.
-**This knowingly overrides the precondition above** — it does not move the suite onto an
-isolated database first, because no such database exists yet for this suite. The sandbox is the
-mitigation: each test's section name embeds the worker index and a timestamp so parallel workers
+disposable clone through a per-test sandbox section created over the API (`e2e/fixtures/abwab.ts`),
+not the source database. Each test's section name embeds the worker index and a timestamp so workers
 never collide, no test asserts a global count (only ids its own sandbox produced), and teardown
 archives **every live door in the sandbox section**
 — swept from the tree by `sectionId`, since flows create doors through the UI too and those ids
@@ -598,26 +501,16 @@ forced, not stylistic: section delete `409`s while live doors remain. Each archi
 door's current version first, because every write resequences the scope and bumps its siblings'
 `xmin`; archiving from one up-front snapshot succeeds once and then `409`s silently for the rest,
 which is what used to leave live sandbox doors and undeleted sandbox sections behind. Teardown is
-best-effort, so a flow that already broke does not get a second, masking failure from it.
-**The residue that remains is archived doors, and it is permanent, not "self-cleaning":** there is
-no hard delete and no section restore in this feature, so every run leaves its sandbox doors
-**archived** in the local dev DB forever, and restoring one later is refused until the user names a
-live destination section, since the one it belonged to is gone. What must **not** remain after a run
-is any live `e2e-sandbox-*` door or any `e2e-sandbox-*` section — either one is a teardown bug, not
-accepted residue, and `GET /api/abwab/tree` is how you check. This is tolerable on a local,
-disposable dev database with loose, id-scoped assertions.
+best-effort, so a flow that already broke does not get a second, masking failure from it. Archived
+doors may remain inside the clone because the feature has no hard delete; dropping the clone removes
+them. A live `e2e-sandbox-*` door or section after its test teardown remains a teardown bug.
 **The Abwab specs run in their own single-worker Playwright project, not the default
 2-worker one.** A `Global`-scope reorder (`abwab-global-order.e2e.ts`) resequences the whole
 live-root set across the database, not just the acting test's own sandbox, so two Abwab specs in
 different workers can race the same rows — measured directly: at 2 workers this produced a
 wrong-result failure (not even a `409`) from another worker's teardown resequencing mid-test; at 1
-worker the Abwab project passes repeatably. `e2e/README.md` carries the measured counts and their
-date — it is the one place they are recorded, so do not restate a figure here. See it also for the
-`playwright.config.ts` project split.
-**The precondition above is reinstated** — future write flows for other features again require an
-isolated e2e database first — the moment this suite runs anywhere the accumulating archived
-residue is not acceptable, or the sandbox-per-test mitigation stops being sufficient (e.g. a
-future flow that cannot be scoped to ids it created itself).
+worker the Abwab project passes repeatably. `e2e/README.md` owns the project split and current runtime
+invariants.
 
 ## 12. Measurement-blocked cadence decisions and deferred optimizations
 
@@ -639,13 +532,13 @@ A later cadence decision remains blocked until the evidence contains, or explici
 5. focused Frontend consumer/authorization plus typecheck timing for a generated-contract change;
 6. current Frontend `test:pre-pr` component timings rather than a prose estimate;
 7. whether suspected stage/fix duplicate invocations actually occur and why; and
-8. E2E runtime, repeat stability, auth/bootstrap readiness, residue, and historical flakiness only if
-   the owner later considers changing its opt-in status.
+8. E2E runtime, repeat stability, auth/bootstrap readiness, residue, and historical flakiness when a
+   later plan needs current operational measurements.
 
 A single run supports no variance claim. Measurements may inform a later bounded plan; they do not
 authorize lane-scoped freshness, lane deletion/merge/rename, migration/dump relaxation, reduced
-shared-runtime/full-Backend protection, generated-only removal of current Frontend final gates, E2E
-promotion, CI, or a runtime/percentage target.
+shared-runtime/full-Backend protection, generated-only removal of current Frontend final gates, CI,
+or a runtime/percentage target.
 
 Test implementation and fixture optimizations remain separate, explicitly requested work: sharing
 the enriched-morphology artifact load, safely reducing repeated canonical imports, and optional test

@@ -15,7 +15,10 @@ namespace QuranDashboard.Api.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddApiServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApiServices(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
         services.AddControllers().ConfigureApiBehaviorOptions(options =>
         {
@@ -91,7 +94,7 @@ public static class ServiceCollectionExtensions
                     .AllowCredentials();
             });
         });
-        services.AddApiAuthentication(configuration);
+        services.AddApiAuthentication(configuration, environment);
         services.AddRateLimiting(configuration);
 
         return services;

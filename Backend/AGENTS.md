@@ -13,7 +13,7 @@ table. The root universal kernel continues to control.
 | Authentication, access, Owner, permissions, or identity | `docs/contracts/security-access.md`, followed only by the directly implicated README; route/security changes also require `Backend/.architecture/API_GUIDELINES.md` §11. |
 | Quran import, generation, or source handling | `CODING_PRINCIPLES.md` §10 and the nearest pipeline/DataImporter README. |
 | EF migration or schema changes | `Backend/README.md` §Invariants, `Backend/scripts/README.md`, and `TESTING_STRATEGY.md` migration sections. |
-| Backend test selection, execution, or reporting | `TESTING_STRATEGY.md` §§1–2 and §5 with the relevant §3 lane; add §3.2 for output/hangs, §§3.3–3.4 for database/canonical work, §6 for route/auth/binding, and §§7–10 for build/no-CI/failure/workflow ownership. Read `Backend/tests/QuranDashboard.Tests/README.md`. |
-| Writing or reviewing Backend tests | `.agents/skills/test-guard/SKILL.md` with `references/dotnet.md`. |
+| Backend test selection, execution, or reporting | Read `TESTING_CONSTITUTION.md`, then `Backend/tests/QuranDashboard.Tests/README.md`. |
+| Writing or reviewing Backend tests | Apply that testing constitution, then read `.agents/skills/test-guard/SKILL.md` with `references/dotnet.md`. |
 | Deployment or runtime smoke | `Backend/README.md` §Deployment and `.agents/skills/deploy-smoke/SKILL.md`. |
 | A changed Backend file meets a documented size threshold | `Backend/.architecture/BACKEND_STRUCTURE.md` §File Size and Responsibility Guidelines during pre-delivery. |

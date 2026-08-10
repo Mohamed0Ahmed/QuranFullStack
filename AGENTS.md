@@ -37,8 +37,8 @@ adapters remain the native Skill route.
 | --- | --- |
 | Production-source implementation | Only the needed headings of `CODING_PRINCIPLES.md`: §2 Clean Code and `Comment Policy`, §3 SOLID, §4 DRY/KISS/YAGNI, or §7 Focused Changes. |
 | Active phased, specification, or contract-bound work | The active spec/task/contract and the invoked native Spec Kit Skill. Stop before expanding either. |
-| Selecting, running, or reporting tests | `TESTING_STRATEGY.md` at the sections selected by the native area router, plus the nearest test README. |
-| Writing or reviewing test code | `.agents/skills/test-guard/SKILL.md` and only the reference for the affected stack. |
+| Selecting, running, or reporting tests | Read `TESTING_CONSTITUTION.md`, then the nearest test README. |
+| Writing or reviewing test code | Apply that testing constitution, then read `.agents/skills/test-guard/SKILL.md` and only the reference for the affected stack. |
 | Pre-delivery implementation self-check | `CODING_PRINCIPLES.md` §12 and already-triggered production-code headings; include the area's file-size heading only when its threshold applies. |
 | Git branch, stage, commit, push, or PR work | `.agents/skills/commit-workflow/SKILL.md`. |
 | Deployment or runtime smoke | `Backend/README.md` §Deployment and `.agents/skills/deploy-smoke/SKILL.md`. |

@@ -1,5 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import { environment } from './src/environments/environment.development';
+import {
+  E2E_OWNER_SUBJECT,
+  E2E_TEST_ISSUER,
+  E2E_TEST_JWKS,
+  e2eProfileEmail,
+} from './e2e/fixtures/logto';
+
 const UI_ORIGIN = 'https://localhost:4200';
 const API_HEALTH_URL = 'https://localhost:5015/api/health';
 
@@ -46,13 +54,22 @@ export default defineConfig({
     },
     {
       ...SHARED_WEB_SERVER_OPTIONS,
-      // /api/health is DbContext-backed and answers 503 when the database is unreachable, which
-      // Playwright refuses to accept as ready — a broken DB fails the boot instead of producing a
-      // suite of red UI tests.
-      command:
-        'dotnet run --project ../../Backend/api/QuranDashboard.Api --launch-profile https --no-build',
+      command: 'node e2e/run-backend.mjs',
+      reuseExistingServer: false,
+      gracefulShutdown: { signal: 'SIGTERM', timeout: 60_000 },
+      env: {
+        ASPNETCORE_ENVIRONMENT: 'Testing',
+        ASPNETCORE_URLS: 'https://localhost:5015',
+        Auth__Authority: `${new URL(environment.logto.endpoint).origin}/oidc`,
+        Auth__Audience: environment.logto.resource,
+        Auth__InteractiveClientId: environment.logto.appId,
+        E2E__TestIssuer__Enabled: 'true',
+        E2E__TestIssuer__Issuer: E2E_TEST_ISSUER,
+        E2E__TestIssuer__Jwks: JSON.stringify(E2E_TEST_JWKS),
+        OwnerBootstrap__Emails__0: e2eProfileEmail(E2E_OWNER_SUBJECT),
+      },
       url: API_HEALTH_URL,
-      timeout: 120_000,
+      timeout: 300_000,
     },
   ],
 });

@@ -277,8 +277,8 @@ After the first successful build, use `qd-api` directly until backend code chang
 
 ## Backend test commands
 
-**Which lane to run and when is `../../TESTING_STRATEGY.md` §3 and §5.** This section is what
-the three scripts do; it deliberately does not repeat the selection policy.
+`../../TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` select which checks to run.
+`../../TESTING_STRATEGY.md` §3 and this section document the selected Backend command mechanics.
 
 ### `test-backend`
 

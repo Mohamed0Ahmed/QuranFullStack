@@ -15,8 +15,8 @@ Where things live now:
   Claude, `AGENTS.md` for Sol/Codex), its native area router when applicable, the nearest
   `README.md`, and only the triggered neutral or specialist source. The root files are routers,
   not duplicated law books.
-- **Which tests to run and when** → `TESTING_STRATEGY.md` (workspace root) — the `Backend/scripts/test-backend` and `npm run test:*` lanes, the execution-trigger matrix, pipeline triggers, and the PR/release gates. Not a planning doc and not superseded by anything here.
-- **Which tests were deliberately not written** → `docs/TESTING_DEBT.md` — one row per skipped area, each naming the concrete change that pays it. Not a place to defer a lane `TESTING_STRATEGY.md` requires, and never a home for `SmokeRouteCatalog` parity entries (those are a build-level gate).
+- **Which tests to run and when** → `TESTING_CONSTITUTION.md` is the sole policy authority; `TESTING_STRATEGY.md` temporarily retains operational lane and command mechanics until Phase 7 removes it. The constitution controls any conflict.
+- **Which tests were deliberately not written** → `docs/TESTING_DEBT.md` — one row per skipped area, each naming the concrete change that pays it. Not a place to defer verification selected by an active plan's `Testing Decision`, and never a home for `SmokeRouteCatalog` parity entries (those are a build-level gate).
 - **Evidence / reference** (import verification, source hashes, provenance) → `Backend/report/`.
 - **Frontend reports** → no convention is established. Do not invent a Frontend report folder
   without an explicit decision.
@@ -63,7 +63,7 @@ Anything not in this exact list is feature-scoped and dies with its feature:
 
 - every `README.md` anywhere in the repository;
 - root and per-project law: `CLAUDE.md`, `AGENTS.md`, `CODING_PRINCIPLES.md`,
-  `TESTING_STRATEGY.md`, `PRODUCT.md`, `DESIGN.md`, `SKILLS_AND_ARCHITECTURE_GUIDE.md`, and
+  `TESTING_CONSTITUTION.md`, `PRODUCT.md`, `DESIGN.md`, `SKILLS_AND_ARCHITECTURE_GUIDE.md`, and
   their Backend/Frontend counterparts;
 - all `.architecture/**` documents;
 - `docs/contracts/**`, the pointer index;

@@ -193,9 +193,10 @@ Folders are clustered by Quran domain/use case, not by project layer.
 
 - Backend map: `../../README.md`
 - Report/evidence conventions: `../../report/README.md`
-- Which tests to run and when: `../../../TESTING_STRATEGY.md` — the Backend lanes of
-  `../../scripts/test-backend` (§3), the Frontend lanes (§4), and the execution-trigger matrix
-  (§5). Note §8: there is no CI, so every lane is a local gate that nothing verifies ran.
+- Which tests to run and when: `../../../TESTING_CONSTITUTION.md` and the active plan's
+  `Testing Decision`. `../../../TESTING_STRATEGY.md` §3 documents the Backend lane commands and
+  runtime mechanics. Note its §8: there is no CI, so every selected lane is a local gate that
+  nothing verifies ran.
 - How the shared database runtime works: `TestSupport/PostgreSql/README.md`.
 - `resources/db-dumps/quran-canonical/` (`quran-canonical.dump` + `manifest.json`) is
   **produced by `../../scripts/create-smoke-dump` and consumed by `Smoke/Data/`**. It is a
