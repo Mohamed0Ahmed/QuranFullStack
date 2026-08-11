@@ -159,6 +159,7 @@
   --qd-measure-page-description: 72ch;
 
   --qd-mushaf-text-column-width: 28rem;
+  --qd-mushaf-panel-chrome: 1.5rem;
   --qd-mushaf-surah-header-frame-width: 12rem;
   --qd-navbar-block-size: 3.5rem;
   --qd-mushaf-panel-height: calc(100dvh - var(--qd-mushaf-sticky-top));
@@ -292,6 +293,10 @@
 @media (min-width: bp.$qd-bp-wide-plus-min) {
   :root {
     --qd-page-gutter: var(--qd-s-40);
+    --qd-page-measure-protected-mushaf: 100rem;
+    --qd-split-mushaf:
+      minmax(0, calc(var(--qd-mushaf-text-column-width) + 2rem + var(--qd-mushaf-panel-chrome)))
+      minmax(0, 1fr);
   }
 }
 

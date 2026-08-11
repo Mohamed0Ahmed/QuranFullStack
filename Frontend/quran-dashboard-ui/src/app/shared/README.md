@@ -324,8 +324,10 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   existing `[qdModalShellHeaderExtra]` / `[qdModalShellFooter]`. A header with neither a visible
   title nor a Close renders bare — the labelling heading stays, the chrome does not.
 - `ui/floating-layer/` — `qdFloatingLayer` (F15 base) plus four helper modules it orchestrates:
-  `floating-layer-placement.ts` (the pure geometry, plus `repositionFloatingLayer()`, the one place
-  that measures the layer against its viewport and writes the result onto the element),
+  `floating-layer-placement.ts` (the pure geometry, plus `repositionFloatingLayer()`, the measure-
+  and-write entry point every directive-driven layer goes through — the navbar's Wide dropdown is
+  the one caller that reaches past it to `placeFloatingLayer()` directly, because it needs a zero
+  anchor gap and none of the directive's keyboard/focus semantics: see `core/README.md`),
   `floating-layer-keyboard.ts` (the key → intent table `resolveFloatingKeyAction()`, the type-ahead
   prefix accumulator and its match search, the wrap-around `stepIndex()`, and the item/text-entry
   selectors), `floating-layer-cursor.ts` (option ids, the cursor marker attribute and the

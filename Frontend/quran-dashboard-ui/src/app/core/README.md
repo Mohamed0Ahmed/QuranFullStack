@@ -80,13 +80,22 @@ per-feature.
     `sheet` mode (inline sublists, group labels for auth-gated parents). It emits pointer/click and
     activation intent and holds no state, no authorization and no route logic. `ownerGuard` remains
     the boundary; the nav only hides what an Owner-only route would refuse anyway.
-    **The Wide dropdown deliberately does not use `qdFloatingLayer` (F15).** It stays an anchored
-    `position: absolute` `.qd-nav__menu` (`_components.scss`) for two behavioural reasons, both
-    pinned by `e2e/shell-nav.e2e.ts`: the directive's floating surface sits a 4px anchor gap away
-    from its trigger, which breaks the hover-open/hover-into-menu path the nav relies on, and the
-    directive's `action-menu` variant would put `role="menuitem"` on links the same e2e resolves
-    through `getByRole('link')`. It is a recorded deviation from F15, not an oversight; revisit it
-    only together with those e2e expectations.
+    **The Wide dropdown takes F15's placement but not the `qdFloatingLayer` directive.**
+    `.qd-nav__menu` (`_components.scss`) is a bare `position: fixed` surface whose coordinates come
+    from the shared pure geometry — `placeFloatingLayer()` in
+    `shared/ui/floating-layer/floating-layer-placement.ts` — called by `app-navigation` itself
+    against the open item's `.qd-nav__item` (the same element that used to be its containing block)
+    once per render and on viewport resize. That is what makes an edge-adjacent menu open inward:
+    «الإعدادات» sits in the actions cluster, which in RTL is the *left* edge, and the previous
+    hand-written `inset-inline-start: 0` grew it off the viewport. The sticky navbar is the layer's
+    only ancestor that moves, and it is pinned to the viewport, so resize is the only anchor change
+    to answer.
+    Two behavioural reasons keep the *directive* out, both pinned by `e2e/shell-nav.e2e.ts`: it
+    dismisses on Tab and on Escape with its own focus restore — the navbar's Tab must walk *into*
+    the open menu and leave it open, and its Escape/focus-return is the navbar's own — and its
+    anchored surface sits a 4px gap from the trigger, which breaks the hover-open/hover-into-menu
+    path the nav relies on. So the navbar passes an explicit zero anchor gap and keeps the menu
+    flush under its trigger. Revisit only together with those e2e expectations.
   - `nav-progress` — the router navigation progress bar (`qd-nav-progress`): a flat 2px track with
     a solid green segment, shown while a lazy route's chunk downloads (200ms show-delay; the settle
     rule is an inversion over the known in-flight router events so unknown/future event classes

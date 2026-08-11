@@ -40,24 +40,54 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
 - **The route declares one page intent and one split.** `mushaf-reader-page.component.html` carries
   `qd-page-shell qd-page-shell--protected-mushaf qd-page-split qd-page-split--mushaf`, so the inline
   gutter (`16 / 24 / 32 / 40px`), the `--qd-page-measure-protected-mushaf` measure and the feature-owned
-  `40/60` split all come from the global layout layer. No component below it may add a second inline
+  split all come from the global layout layer. No component below it may add a second inline
   gutter. `protected-mushaf` and `--qd-split-mushaf` deliberately sit outside the `16/18/20rem` rail
   scale (G03) — the reader column is a page measure, not a rail.
-- **The split token must stay gap-safe.** `--qd-split-mushaf` is `minmax(0, 40%) minmax(0, 60%)`, not
-  `40% 60%`. Two fixed percentage tracks already sum to 100% of the shell content box, so tracks plus
-  `--qd-split-gap` overflow it by exactly the gap and push the study column outside the route gutter
-  (measured at `40% 60%`: at 1080 the study started at `8.02px` against a content box starting at
-  `32px`; at 1440, `16px` against `40px`). With `minmax()` the percentages become growth limits, so the
-  reader takes 40% of the content box and the study absorbs the gap: 1080 → `400.391 + 576.609 + 24 =
-  1001`; 1440 → `538 + 783 + 24 = 1345`, both exactly the content box. The reader — the protected
-  side — is the track that does **not** move when `--qd-split-gap` or `--qd-page-gutter` is retuned.
+- **The split token must stay gap-safe (Wide).** Through the Wide band `--qd-split-mushaf` is
+  `minmax(0, 40%) minmax(0, 60%)`, not `40% 60%`. Two fixed percentage tracks already sum to 100% of
+  the shell content box, so tracks plus `--qd-split-gap` overflow it by exactly the gap and push the
+  study column outside the route gutter (measured at `40% 60%`: at 1080 the study started at
+  `8.02px` against a content box starting at `32px`; at 1440, `16px` against `40px`). With
+  `minmax()` the percentages become growth limits, so the reader takes 40% of the content box and
+  the study absorbs the gap: 1080 → `400.391 + 576.609 + 24 = 1001`, exactly the content box. The
+  reader — the protected side — is the track that does **not** move when `--qd-split-gap` or
+  `--qd-page-gutter` is retuned.
+- **At Wide-plus the reader track is content-sized, not percentage-sized.** `styles/_tokens.scss`
+  re-declares two tokens inside the existing `≥1440` band block: the measure rises to `100rem` and
+  `--qd-split-mushaf` becomes
+  `minmax(0, calc(var(--qd-mushaf-text-column-width) + 2rem + var(--qd-mushaf-panel-chrome))) minmax(0, 1fr)`.
+  The reader therefore asks for exactly what a Madani page needs and every further pixel goes to the
+  study side instead of becoming reader slack — a `40%` track spends 40% of any reclaimed width on a
+  column that is hard-capped at `--qd-mushaf-text-column-width` and cannot use it. **The
+  three addends are a derivation, not a shape:** `28rem` text column + `2rem` `mushaf-page-view`
+  inline padding + `--qd-mushaf-panel-chrome` (`1.5rem`) for the chrome that sits between
+  the track edge and that padding box — the `mushaf-page-area` hairline pair (`2px`) and the Wide
+  panel's own vertical scrollbar gutter (`15px` measured in Chrome/Linux; classic scrollbars run to
+  `17px`, overlay platforms to `0`). **That last addend is load-bearing and was measured, not
+  guessed:** the reader panel is a scroll container at Wide, so without it the scrollbar eats the
+  protected column — a track of exactly `28rem + 2rem` measured `431px` of text column instead of
+  `448px`, which is a Quran rendering delta. Anything that changes the page-view padding, the
+  page-area border or the panel's scroller must re-measure this allowance. Measured at 1440 content
+  box `1345`: `504 + 24 + 817`; at 1920 (content `1905`, shell `1600`): `504 + 24 + 992`. Below
+  `1440` nothing moves — the base `90rem`/`40%–60%` values still resolve, and at every viewport under
+  `1440` the shell was already viewport-bound rather than measure-bound.
 - **Wide reading measure.** The Quran text column is `326px` at 390 (capped by the viewport), `351.39px`
-  at 1080 (capped by the 40% reader track) and `448px` at 1440 (capped by
+  at 1080 (capped by the 40% reader track) and `448px` at 1440 **and** 1920 (capped by
   `--qd-mushaf-text-column-width`, `28rem`). The 1080 value was `377px` before the Golden shell; the
   `32px` Wide route gutter and the `24px` split gap account for the difference. Line count, line
   heights, word rects, fonts, markers and ligatures are unchanged at every width — the narrower Wide
   measure only removes slack inside the 15 fixed lines. Making the split gap-safe does not narrow it
-  further: it takes the 24px off the study side only.
+  further: it takes the 24px off the study side only. Content-sizing the Wide-plus track does not
+  narrow it either — it only removes the slack that used to sit *around* the column (`544 → 504` of
+  track for the same `448` of text, re-verified word-rect by word-rect on pages 1, 2, 22, 50, 106
+  and 604).
+- **The study prose is capped independently of the study column.** `.study-card__body`
+  (`components/_study-card.shared.scss`, the tafsir / translation / full-إعراب body) carries
+  `max-inline-size: var(--qd-measure-prose)`, so widening the study track grows the card, list and
+  ayah surfaces rather than the tafsir line length. Without it the body tracked the column: `700px`
+  ≈ `72ch` at 1920 before this cap and ≈ `100ch` at the reclaimed width. It binds only where the
+  column is wide enough to exceed the measure (1440 and 1920: `691px → 660.44px`, `68ch`); at 390,
+  768 and 1080 the body is already narrower and nothing changes.
 - **Compact declines the route gutter for the protected canvas.** §1.4 of the Golden geometry locks a
   `16px` Compact gutter, and `.mushaf-reader__page` cancels it —
   `inline-size: calc(100% + 2 * var(--qd-page-gutter))` with `margin-inline: calc(-1 * var(--qd-page-gutter))`,
