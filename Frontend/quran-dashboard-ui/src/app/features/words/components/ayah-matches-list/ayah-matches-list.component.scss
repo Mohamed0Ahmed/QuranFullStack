@@ -12,8 +12,8 @@
 .ayah-matches-list__viewport {
   flex: 0 0 auto;
   block-size: var(--qd-ayah-matches-list-viewport-block-size, min(58vh, 30rem));
-  overflow: auto;
-  scrollbar-gutter: stable;
+  overflow: var(--qd-ayah-matches-list-viewport-overflow, auto);
+  scrollbar-gutter: var(--qd-ayah-matches-list-viewport-scrollbar-gutter, stable);
 }
 
 .ayah-matches-list__card {

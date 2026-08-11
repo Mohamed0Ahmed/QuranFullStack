@@ -492,7 +492,15 @@ owns primary/dominant association selection, winner ordering, and server query s
   to the same contained scroller in the inline and frameless paths. A context selects the other
   variant by setting the custom property, never by writing a competing `block-size` rule:
   `.explorer-detail-modal` sets it to `auto` so the Compact drawer keeps its single
-  `.qd-details__body` scroller. Global stylesheets must not re-declare the viewport's block size —
+  `.qd-details__body` scroller, and `.qd-modal-shell--overlay` sets it for **every** overlay
+  dialog — the global entity detail overlay, the Unique Words drilldown's modal branch, and the
+  shell's own modal branch. All three previously nested a second ayah scroller inside an already
+  scrolling dialog body. The overlay rule also sets
+  `--qd-ayah-matches-list-viewport-overflow: visible` and
+  `--qd-ayah-matches-list-viewport-scrollbar-gutter: auto`, because an auto-height viewport is not
+  a scroll container and must not reserve a gutter for a scrollbar that never appears. The inline
+  path keeps the contained scroller by design — there the explorer layout gives the panel a
+  definite height. Global stylesheets must not re-declare the viewport's block size —
   they tie on specificity with the component sheet and lose on document order, which is exactly the
   silent divergence that left Stems and Word Types on a different `flex` value than Roots and
   Lemmas.

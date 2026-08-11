@@ -155,8 +155,11 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
 - `_explorer-detail-lists.scss` — shared detail-list layouts for roots/lemmas/stems/word-types panels.
   It does **not** own `.ayah-matches-list__viewport` geometry: that lives in
   `features/words/components/ayah-matches-list/ayah-matches-list.component.scss`, and
-  `.explorer-detail-modal` selects the drawer variant through
-  `--qd-ayah-matches-list-viewport-block-size` instead of re-declaring the block size. A global rule
+  `.qd-modal-shell--overlay` selects the single-scroller variant through
+  `--qd-ayah-matches-list-viewport-block-size` (plus `…-overflow` and `…-scrollbar-gutter`, so an
+  auto-height viewport stops being a scroll container and reserves no phantom gutter) instead of
+  re-declaring the geometry. The overlay dialog owns the scroll, so nothing inside it may nest a
+  second one. A global rule
   that re-declares a component-owned property ties on specificity and loses on document order,
   because Angular appends component styles after this layer.
 

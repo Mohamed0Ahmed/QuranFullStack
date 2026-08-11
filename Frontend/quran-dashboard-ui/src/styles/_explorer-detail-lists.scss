@@ -334,6 +334,12 @@ qd-type-distribution-list {
   }
 }
 
+.qd-modal-shell--overlay {
+  --qd-ayah-matches-list-viewport-block-size: auto;
+  --qd-ayah-matches-list-viewport-overflow: visible;
+  --qd-ayah-matches-list-viewport-scrollbar-gutter: auto;
+}
+
 .explorer-detail-modal {
   --qd-ayah-matches-list-viewport-block-size: auto;
 
