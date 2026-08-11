@@ -294,11 +294,11 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 - `ui/modal-shell/` — `qd-modal-shell` (F14 base), the one dialog shell: four named widths
   (`confirm` 30rem / `form` 38rem / `wide` 52rem / `overlay` 46rem — D48, and no fifth). A wide
   consumer may supply neutral inline/block-size overrides while retaining the same `wide` variant;
-  the Linking Workspace is the current `80vw` by `80dvh` use. Compact
+  the Linking Workspace is the current `80vw` by `88dvh` use. Compact
   full-bleed `94dvh` sheet, shell-owned padding with header and footer outside the single body
   scroller (D49), a CDK focus trap, `dismissed` carrying its route
   (`close` / `escape` / `backdrop`) so a dirty consumer can refuse a route without losing the close
-  button, focus return to the opener, and a reference-counted scroll-lock hold released on close
+  button, optional consumer-owned focus return, and a reference-counted scroll-lock hold released on close
   **and** on destroy. Marking the route content behind it inert stays with the app shell
   (`app.ts` reads the overlay state; the navbar reads `ScrollLockService.isLocked`) — this shell
   does not reach outside itself to set `inert`. Four rules are not visible from the call site:

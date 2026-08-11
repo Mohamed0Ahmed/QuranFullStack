@@ -20,7 +20,13 @@
   </dl>
 
   <footer class="linking-workspace-item__actions">
-    <button type="button" qdAction="secondary" size="sm" (click)="editSelectionRequested.emit(item())">
+    <button
+      type="button"
+      qdAction="secondary"
+      size="sm"
+      [attr.data-linking-editor-source-key]="item().sourceKey"
+      (click)="editSelectionRequested.emit(item())"
+    >
       {{ labels.editSelection }}
     </button>
     <button type="button" qdAction="primary" size="sm" (click)="directLinkRequested.emit(item())">

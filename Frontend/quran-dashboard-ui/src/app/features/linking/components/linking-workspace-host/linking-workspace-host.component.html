@@ -1,4 +1,4 @@
-@defer (when isOpen()) {
+@if (isOpen()) {
   <qd-modal-shell
     variant="wide"
     [wideInlineSize]="'var(--qd-linking-workspace-modal-inline-size)'"
@@ -8,13 +8,24 @@
     [open]="isOpen()"
     [hasFooter]="false"
     [flushBody]="true"
+    [returnFocus]="false"
     testIdPrefix="linking-workspace"
     (dismissed)="close()"
   >
-    @if (isWorkspace()) {
-      <qd-linking-workspace />
-    } @else if (isDirectLink()) {
-      <qd-direct-link-workflow [workspaceSourceKey]="activeSourceKey()" />
-    }
+    <div #surfaceEntry class="linking-workspace-host__surface-entry" tabindex="-1">
+      @defer (on idle) {
+        @if (isWorkspace()) {
+          <qd-linking-workspace />
+        } @else if (isSourceAyahEditor()) {
+          <qd-linking-source-ayah-editor [sourceKey]="activeSourceKey()" (dismissed)="closeSourceEditor()" />
+        } @else if (isLinkingFlow()) {
+          <qd-direct-link-workflow [workspaceSourceKey]="activeSourceKey()" />
+        } @else if (isManualWordEditor()) {
+          <p class="qd-sr-only" role="status">{{ labels.sourceEditorUnsupported }}</p>
+        }
+      } @placeholder {
+        <p class="qd-sr-only" role="status">{{ labels.sourceLoading }}</p>
+      }
+    </div>
   </qd-modal-shell>
 }

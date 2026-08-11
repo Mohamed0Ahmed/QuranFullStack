@@ -40,6 +40,22 @@ late previous-actor hydrate/save completions from publishing; they do not delete
 bucket. Same-actor tabs are last-writer-wins, and a local storage failure leaves in-memory Linking
 usable with a non-blocking warning.
 
+`LinkingWorkspaceHostComponent` is the one primary Linking shell. Its lightweight wide modal mounts
+with the app inert boundary, while inner workspace/editor/flow surfaces defer independently. Wide
+and Medium Linking uses the explicit `80vw` by `88dvh` override; Compact continues to use the shared
+`94dvh` sheet. The shell body is non-scrolling, each mounted surface owns one body scroller, and
+`LinkingFocusCoordinator` owns entry and return focus with the shell's default return disabled.
+Focus origins distinguish Navbar, workspace rows, inline source actions, and retained entity
+overlays. Surface, focus, and shell readiness are transient only.
+
+`LinkingSourceEditorFacade` owns the automatic-source ayah editor's complete one-source read,
+raw API progress, unique verse universe, local search, client page, stale-load generation, and
+controlled error state. The editor never persists its loaded ayahs or UI state. It reconciles a
+complete universe only when the source row still has the configuration revision captured at load
+start; selection changes remain source-row state. Search and pagination constrain visible cards
+only, while Select All, Clear All, and checkbox selection continue to operate on the full source
+universe. Manual Mushaf source editing remains unavailable until Phase 6.
+
 `QuranSourceLinkingActionsComponent` remains the shared Owner-only explorer seam. Add to Workspace
 is idempotent, preserves focus, and announces whether the row was added or already existed; it does
 not open the workspace. Direct Link remains a transient one-source shortcut and does not add a row.

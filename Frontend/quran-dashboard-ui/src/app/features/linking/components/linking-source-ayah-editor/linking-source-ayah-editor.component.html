@@ -1,0 +1,64 @@
+<section class="linking-source-ayah-editor" aria-label="تعديل اختيار آيات المصدر">
+  <header class="linking-source-ayah-editor__header">
+    <div>
+      @if (state().sourceLabel; as sourceLabel) {
+        <p class="linking-source-ayah-editor__source">{{ sourceLabel }}</p>
+      }
+      @if (currentItem()?.lastResolvedCountIsStale && currentItem()?.lastResolvedCount !== null) {
+        <p class="linking-source-ayah-editor__stale-count">{{ labels.sourceEditorPreviousCount }}</p>
+      }
+    </div>
+    <button qdAction="tertiary" size="sm" type="button" (click)="dismiss()">
+      {{ labels.sourceEditorBack }}
+    </button>
+  </header>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <qd-panel-skeleton
+        shape="text"
+        [loadingLabel]="labels.sourceEditorLoading + ' (' + state().rawProgress.loaded + (state().rawProgress.total === null ? '' : ' / ' + state().rawProgress.total) + ')'"
+      />
+    }
+    @case ('success') {
+      @if (state().ayahs.length > 0) {
+        <p class="linking-source-ayah-editor__ready-count">
+          {{ labels.sourceEditorReady }}: {{ state().universe.length }}
+        </p>
+        <qd-linking-ayah-selection
+          [ayahs]="visibleAyahs()"
+          [selection]="selection()"
+          [selectedCount]="selectedCount()"
+          [query]="state().query"
+          [page]="state().page"
+          [pageSize]="pageSize"
+          [filteredCount]="filteredAyahs().length"
+          [focusOnEntry]="true"
+          [disabled]="false"
+          [paginationLabel]="labels.sourceEditorPagination"
+          (queryChanged)="setQuery($event)"
+          (pageChanged)="setPage($event)"
+          (selectionToggled)="toggleAyah($event)"
+          (selectAllRequested)="selectAll()"
+          (clearAllRequested)="clearAll()"
+        />
+      } @else {
+        <qd-empty-state [message]="labels.noAyahMatches" />
+      }
+    }
+    @case ('error') {
+      <qd-error-state
+        severity="read"
+        [message]="state().errorMessage || labels.sourceLoadError"
+        [actionLabel]="labels.retry"
+        (action)="retry()"
+      />
+    }
+    @case ('unsupported') {
+      <qd-error-state severity="read" [message]="state().errorMessage || labels.sourceEditorUnsupported" />
+    }
+    @default {
+      <qd-panel-skeleton shape="text" [loadingLabel]="labels.sourceEditorLoading" />
+    }
+  }
+</section>

@@ -1,33 +1,56 @@
-<section class="linking-ayah-selection" aria-labelledby="linking-ayah-selection-title">
+<section class="linking-ayah-selection" aria-label="اختيار الآيات">
   <header class="linking-ayah-selection__header">
-    <div>
-      <h2 id="linking-ayah-selection-title">{{ labels.selectAyahs }}</h2>
-      <p>{{ labels.selectedCount }}: {{ selectedCount() }}</p>
-    </div>
+    <p>{{ labels.selectedCount }}: {{ selectedCount() }}</p>
     <div class="linking-ayah-selection__bulk-actions">
-      <button qdAction="tertiary" size="sm" type="button" (click)="selectAllRequested.emit()">{{ labels.selectAll }}</button>
-      <button qdAction="tertiary" size="sm" type="button" (click)="clearAllRequested.emit()">{{ labels.clearAll }}</button>
+      <button qdAction="tertiary" size="sm" type="button" [disabled]="disabled()" (click)="selectAllRequested.emit()">
+        {{ labels.selectAll }}
+      </button>
+      <button qdAction="tertiary" size="sm" type="button" [disabled]="disabled()" (click)="clearAllRequested.emit()">
+        {{ labels.clearAll }}
+      </button>
     </div>
   </header>
 
   <qd-form-field [label]="labels.searchAyahs">
-    <input qdControl type="search" [value]="searchQuery()" (input)="onSearch($event)" />
+    <input
+      #searchInput
+      qdControl
+      type="search"
+      [value]="query()"
+      [disabled]="disabled()"
+      (input)="onSearch($event)"
+    />
   </qd-form-field>
 
-  <div class="linking-ayah-selection__list" role="list">
-    @for (ayah of visibleAyahs(); track ayah.verseKey) {
-      <label class="linking-ayah-selection__row qd-check-row" role="listitem">
+  <ul class="linking-ayah-selection__list">
+    @for (ayah of ayahs(); track ayah.verseKey) {
+      <li class="linking-ayah-selection__row">
         <input
           class="qd-checkbox"
           type="checkbox"
+          [id]="inputId(ayah.verseKey)"
           [checked]="isSelected(ayah.verseKey)"
-          [attr.aria-label]="labels.selectAyahs + ': ' + ayah.verseKey"
+          [disabled]="disabled()"
           (change)="selectionToggled.emit(ayah.verseKey)"
         />
+        <label class="linking-ayah-selection__activation" [for]="inputId(ayah.verseKey)">
+          {{ labels.selectAyahs }}: {{ ayah.verseKey }}
+        </label>
         <qd-linking-ayah-card [ayah]="ayah" [highlightSourceWords]="highlightSourceWords()" />
-      </label>
+      </li>
     } @empty {
-      <p class="linking-ayah-selection__empty" role="status">{{ labels.noAyahMatches }}</p>
+      <li class="linking-ayah-selection__empty" role="status">{{ labels.noAyahMatches }}</li>
     }
-  </div>
+  </ul>
+
+  @if (totalCount() > pageSize()) {
+    <qd-pagination
+      [currentPage]="page()"
+      [pageSize]="pageSize()"
+      [totalCount]="totalCount()"
+      [disabled]="disabled()"
+      [ariaLabel]="paginationLabel()"
+      (pageChange)="pageChanged.emit($event)"
+    />
+  }
 </section>

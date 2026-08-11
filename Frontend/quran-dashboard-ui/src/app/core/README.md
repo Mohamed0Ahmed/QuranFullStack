@@ -191,7 +191,8 @@ per-feature.
 
 ## Global dialog composition
 
-`app.ts` mounts `qd-app-shell`, the Words entity-detail overlay host, and the deferred Linking
-workspace host as siblings. The app shell is inert while either dialog is open, and the detail
-overlay is inert while Linking is foreground. `LinkingWorkspaceStore` remains the owner of Linking
-open state, items, and workflow intent; core only composes the layer boundary.
+`app.ts` mounts `qd-app-shell`, the Words entity-detail overlay host, and the Linking workspace
+host as siblings. The Linking host mounts its lightweight shell in the same render as the inert
+boundary, then defers only its heavy inner surface. The app shell is inert while either dialog is
+open, and the detail overlay is inert while Linking is foreground. `LinkingWorkspaceStore` remains
+the owner of Linking open state, items, and workflow intent; core only composes the layer boundary.

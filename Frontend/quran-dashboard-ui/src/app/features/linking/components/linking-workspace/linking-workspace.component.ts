@@ -5,6 +5,7 @@ import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-s
 import { LINKING_LABELS } from '../../models/linking.labels';
 import { LinkingWorkspaceItem } from '../../models/linking-workspace.models';
 import { LinkingWorkspaceStore } from '../../state/linking-workspace.store';
+import { LinkingFocusCoordinator } from '../../state/linking-focus.coordinator';
 import { LinkingWorkspaceItemComponent } from '../linking-workspace-item/linking-workspace-item.component';
 
 @Component({
@@ -17,6 +18,7 @@ import { LinkingWorkspaceItemComponent } from '../linking-workspace-item/linking
 })
 export class LinkingWorkspaceComponent {
   private readonly workspace = inject(LinkingWorkspaceStore);
+  private readonly focus = inject(LinkingFocusCoordinator);
 
   protected readonly labels = LINKING_LABELS;
   protected readonly items = this.workspace.items;
@@ -27,7 +29,8 @@ export class LinkingWorkspaceComponent {
   }
 
   protected editSelection(item: LinkingWorkspaceItem): void {
-    this.workspace.addOrFocus(item.source);
+    this.focus.capture('workspace-row');
+    this.workspace.openAyahEditor(item.sourceKey);
   }
 
   protected startDirectLink(item: LinkingWorkspaceItem): void {

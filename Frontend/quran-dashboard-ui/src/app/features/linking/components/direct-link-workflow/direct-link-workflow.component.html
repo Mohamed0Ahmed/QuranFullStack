@@ -1,7 +1,7 @@
 <section class="direct-link-workflow" aria-labelledby="direct-link-workflow-title">
   <header class="direct-link-workflow__header">
     <div>
-      <h2 id="direct-link-workflow-title">{{ labels.directLink }}</h2>
+      <p id="direct-link-workflow-title" class="direct-link-workflow__title">{{ labels.directLink }}</p>
       @if (state().source; as source) {
         <p>{{ labels.directLinkSource }}: {{ source.label }}</p>
       }
@@ -39,10 +39,17 @@
             @case ('success') {
               @if (allAyahs().length > 0) {
                 <qd-linking-ayah-selection
-                  [ayahs]="allAyahs()"
+                  [ayahs]="visibleAyahs()"
                   [selection]="selection()"
                   [highlightSourceWords]="highlightSourceWords()"
                   [selectedCount]="selectedCount()"
+                  [query]="ayahQuery()"
+                  [page]="ayahPage()"
+                  [pageSize]="ayahPageSize"
+                  [filteredCount]="filteredAyahs().length"
+                  [paginationLabel]="labels.sourceEditorPagination"
+                  (queryChanged)="setAyahQuery($event)"
+                  (pageChanged)="setAyahPage($event)"
                   (selectionToggled)="toggleAyah($event)"
                   (selectAllRequested)="selectAllAyahs()"
                   (clearAllRequested)="clearAllAyahs()"

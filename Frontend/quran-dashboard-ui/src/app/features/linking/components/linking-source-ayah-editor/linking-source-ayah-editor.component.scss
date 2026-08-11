@@ -1,0 +1,48 @@
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-block-size: 0;
+}
+
+.linking-source-ayah-editor {
+  display: grid;
+  flex: 1 1 auto;
+  gap: var(--qd-space-4);
+  min-block-size: 0;
+  overflow: auto;
+  padding: var(--qd-space-4);
+  scrollbar-gutter: stable;
+}
+
+.linking-source-ayah-editor__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+}
+
+.linking-source-ayah-editor__source,
+.linking-source-ayah-editor__stale-count,
+.linking-source-ayah-editor__ready-count {
+  margin: 0;
+}
+
+.linking-source-ayah-editor__source {
+  color: var(--qd-text);
+  font-family: var(--qd-font-naskh);
+  font-size: var(--qd-type-h4);
+  line-height: var(--qd-type-h4-lh);
+}
+
+.linking-source-ayah-editor__stale-count {
+  color: var(--qd-text-muted);
+  font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
+}
+
+.linking-source-ayah-editor__ready-count {
+  color: var(--qd-text-muted);
+  font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
+}

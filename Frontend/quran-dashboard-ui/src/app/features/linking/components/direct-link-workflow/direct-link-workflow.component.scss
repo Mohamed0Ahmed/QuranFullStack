@@ -21,7 +21,6 @@
   justify-content: space-between;
 }
 
-.direct-link-workflow__header h2,
 .direct-link-workflow__header p,
 .direct-link-workflow__selection,
 .direct-link-workflow__source-status p {
@@ -32,6 +31,13 @@
 .direct-link-workflow__selection,
 .direct-link-workflow__notice {
   color: var(--qd-color-text-muted);
+}
+
+.direct-link-workflow__header .direct-link-workflow__title {
+  color: var(--qd-color-text);
+  font-family: var(--qd-font-naskh);
+  font-size: var(--qd-type-h4);
+  line-height: var(--qd-type-h4-lh);
 }
 
 .direct-link-workflow__steps {

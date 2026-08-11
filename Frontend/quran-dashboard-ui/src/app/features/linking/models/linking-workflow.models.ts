@@ -43,6 +43,19 @@ export interface LinkingSourceLoadState {
   errorMessage: string | null;
 }
 
+export interface LinkingSourceEditorState {
+  sourceKey: string | null;
+  sourceLabel: string | null;
+  capturedConfigurationRevision: number | null;
+  status: LinkingSourceLoadStatus;
+  ayahs: readonly LinkingAyah[];
+  rawProgress: LinkingSourceLoadProgress;
+  universe: readonly string[];
+  query: string;
+  page: number;
+  errorMessage: string | null;
+}
+
 export interface DirectLinkWorkflowState {
   source: LinkingSourceDescriptor | null;
   sourceKey: string | null;

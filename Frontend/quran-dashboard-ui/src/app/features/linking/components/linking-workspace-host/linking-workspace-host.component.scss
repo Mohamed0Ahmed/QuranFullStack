@@ -1,3 +1,11 @@
 :host {
   display: contents;
 }
+
+.linking-workspace-host__surface-entry {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-block-size: 0;
+  outline: none;
+}

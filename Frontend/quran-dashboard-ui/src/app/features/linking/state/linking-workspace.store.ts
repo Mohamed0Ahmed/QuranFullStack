@@ -24,8 +24,6 @@ import {
   clearLinkingAyahs,
   reconcileLinkingSelection,
   selectAllLinkingAyahs,
-  selectedLinkingAyahCount,
-  selectedLinkingVerseKeys,
   toggleLinkingSelection,
 } from '../utils/linking-selection';
 import { LinkingAccessService } from './linking-access.service';
@@ -59,7 +57,7 @@ export class LinkingWorkspaceStore {
   readonly activeSurface = this.activeSurfaceSignal.asReadonly();
   readonly editorSourceKey = this.editorSourceKeySignal.asReadonly();
   readonly activeSourceKey = computed(() =>
-    this.activeSurfaceSignal() === 'direct-link'
+    this.activeSurfaceSignal() === 'linking-flow'
       ? this.directLinkSourceKeySignal()
       : this.editorSourceKeySignal(),
   );
@@ -134,7 +132,7 @@ export class LinkingWorkspaceStore {
   openAyahEditor(sourceKey: string): void {
     if (this.canMutate() && this.findItem(sourceKey) !== null) {
       this.editorSourceKeySignal.set(sourceKey);
-      this.activeSurfaceSignal.set('workspace');
+      this.activeSurfaceSignal.set('source-ayah-editor');
     }
   }
 
@@ -142,7 +140,7 @@ export class LinkingWorkspaceStore {
     const item = this.findItem(sourceKey);
     if (this.canMutate() && item?.configuration.kind === 'manual') {
       this.editorSourceKeySignal.set(sourceKey);
-      this.activeSurfaceSignal.set('workspace');
+      this.activeSurfaceSignal.set('manual-word-editor');
     }
   }
 
@@ -225,13 +223,13 @@ export class LinkingWorkspaceStore {
       return;
     }
     this.directLinkSourceKeySignal.set(sourceKey);
-    this.activeSurfaceSignal.set('direct-link');
+    this.activeSurfaceSignal.set('linking-flow');
   }
 
   openEphemeralDirectLink(): void {
     if (this.canMutate()) {
       this.directLinkSourceKeySignal.set(null);
-      this.activeSurfaceSignal.set('direct-link');
+      this.activeSurfaceSignal.set('linking-flow');
     }
   }
 
@@ -240,6 +238,15 @@ export class LinkingWorkspaceStore {
     if (sourceKey !== null) {
       this.openDirectLink(sourceKey);
     }
+  }
+
+  returnToWorkspace(): void {
+    if (!this.canMutate()) {
+      return;
+    }
+    this.editorSourceKeySignal.set(null);
+    this.directLinkSourceKeySignal.set(null);
+    this.activeSurfaceSignal.set('workspace');
   }
 
   updateSelection(sourceKey: string, selection: LinkingSelection, universe: readonly string[]): void {
@@ -346,16 +353,6 @@ export class LinkingWorkspaceStore {
 
   setHighlightSourceWords(sourceKey: string, highlightSourceWords: boolean): void {
     this.setAutomaticWordMatchesEnabled(sourceKey, highlightSourceWords);
-  }
-
-  selectedVerseKeys(sourceKey: string, universe: readonly string[]): readonly string[] {
-    const item = this.findItem(sourceKey);
-    return item ? selectedLinkingVerseKeys(item.configuration.ayahInclusion, universe) : [];
-  }
-
-  selectedCount(sourceKey: string, universe: readonly string[]): number {
-    const item = this.findItem(sourceKey);
-    return item ? selectedLinkingAyahCount(item.configuration.ayahInclusion, universe) : 0;
   }
 
   captureOperationMembers(): readonly LinkingOperationMember[] {
