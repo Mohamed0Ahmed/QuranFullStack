@@ -42,8 +42,9 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   cannot force a reflow, and it re-runs only when `isSettled` changes, never per change-detection
   cycle. Extracted per Mushaf decision **N3-a** (extract on a third consumer);
   consumers are `features/mushaf/components/selected-word-section`,
-  `.../selected-ayah-section`, and the four Words details panels' `.…-details-panel__content`
-  (`features/words/components/{root,lemma,stem,word-type}-details-panel`).
+  `.../selected-ayah-section`, and the Words details shell's single `.qd-details-panel__content`
+  (`features/words/components/details-panel-shell`), which is the one reservation host for all
+  four Words details panels.
 - `ui/tabs/` — `qd-tabs` (the app-wide tablist) + the `qdTab` directive. `qd-tabs` owns no
   selection state: consumers project their own `<a routerLink>`/`<button>` tab elements marked
   with `qdTab [selected]="…"` and their own click/routerLink; `qd-tabs` supplies the

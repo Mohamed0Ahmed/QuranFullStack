@@ -1,22 +1,6 @@
-import { NgTemplateOutlet } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  computed,
-  inject,
-  input,
-  output,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
-import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
-import { qdLoadingSizeReservation } from '../../../../shared/layout/loading-size-reservation';
-import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
-import { QdDetailsWorkspaceComponent } from '../../../../shared/ui/details-workspace/details-workspace.component';
-import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
-import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
-import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
+import { QdDetailsPanelShellComponent } from '../details-panel-shell/details-panel-shell.component';
 
 import {
   ROOTS_EMPTY_SELECTION_LABEL,
@@ -31,16 +15,12 @@ import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
 @Component({
   selector: 'qd-root-details-panel',
   standalone: true,
-  imports: [NgTemplateOutlet, QdActionDirective, QdDetailsWorkspaceComponent, QdModalShellComponent, QdTabDirective, QdTabsComponent],
+  imports: [QdDetailsPanelShellComponent],
   templateUrl: './root-details-panel.component.html',
   styleUrl: './root-details-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RootDetailsPanelComponent {
-  private readonly detailOverlayHistory = inject(DetailOverlayHistoryService);
-
-  protected readonly drawerTrapEnabled = computed(() => !this.detailOverlayHistory.isOpen());
-
   readonly view = input.required<RootView>();
   readonly inline = input(true);
   readonly frameless = input(false);
@@ -52,14 +32,6 @@ export class RootDetailsPanelComponent {
 
   readonly viewChange = output<RootView>();
   readonly close = output<void>();
-
-  private readonly contentElement = viewChild<ElementRef<HTMLElement>>('detailsContent');
-
-  protected readonly reservedBlockSize = qdLoadingSizeReservation({
-    host: this.contentElement,
-    isLoading: this.loading,
-    isSettled: computed(() => !this.loading() && !this.notFound() && !this.emptySelection()),
-  }).reservedBlockSize;
 
   protected get rootsPanelLabel() {
     return ROOTS_PANEL_LABEL;
@@ -82,28 +54,4 @@ export class RootDetailsPanelComponent {
     label: ROOTS_PANEL_TAB_LABELS[key],
     aria: ROOTS_PANEL_TAB_ARIA[key],
   }));
-
-  protected readonly hasSelection = computed(() => !this.emptySelection());
-
-  protected isActive(key: RootView): boolean {
-    return this.view() === key;
-  }
-
-  protected selectView(key: RootView): void {
-    if (this.emptySelection() || this.notFound() || key === this.view()) {
-      return;
-    }
-    this.viewChange.emit(key);
-  }
-
-  protected tabDisabled(key: RootView): boolean {
-    return this.emptySelection() || (this.notFound() && key !== this.view());
-  }
-
-  protected onEscape(): void {
-    if (!this.inline() || this.hasSelection()) {
-      this.close.emit();
-    }
-  }
-
 }

@@ -1,112 +1,20 @@
-<ng-template #panelBody>
-  <qd-details-workspace
-    #workspace
-    [identity]="frameless() ? '' : selectionTitle()"
-    variant="entity"
-    [hasHeader]="!frameless()"
-    [hasTabs]="true"
-    testIdPrefix="root-details-workspace"
-  >
-    @if (!frameless()) {
-      <ng-container qdDetailsMetadata>
-        <h2 class="explorer-panel-header__label" data-testid="root-details-panel-label">
-          {{ rootsPanelLabel }}
-        </h2>
-        <span class="explorer-panel-header__entity qd-sr-only" data-testid="root-details-panel-entity">
-          {{ selectionTitle() }}
-        </span>
-      </ng-container>
-    }
-    @if (!frameless() && hasSelection()) {
-      <button
-        qdDetailsActions
-        qdAction="tertiary"
-        size="sm"
-        type="button"
-        class="root-details-panel__close"
-        data-testid="root-details-panel-close"
-        (click)="close.emit()"
-      >
-        {{ closeLabel }}
-      </button>
-    }
-
-    <qd-tabs qdDetailsTabs layout="tracks" [ariaLabel]="rootsPanelLabel" dir="rtl">
-      @for (tab of tabs; track tab.key) {
-        <button
-          qdTab
-          type="button"
-          class="root-details-panel__tab"
-          [id]="workspace.tabId(tab.key)"
-          [panelId]="workspace.panelId('content')"
-          [selected]="isActive(tab.key) && hasSelection()"
-          [disabled]="tabDisabled(tab.key)"
-          [attr.disabled]="tabDisabled(tab.key) ? '' : null"
-          [attr.data-root-tab]="tab.key"
-          [attr.data-testid]="'root-details-tab-' + tab.key"
-          [attr.aria-label]="tab.aria"
-          (focus)="selectView(tab.key)"
-          (click)="selectView(tab.key)"
-        >
-          {{ tab.label }}
-        </button>
-      }
-    </qd-tabs>
-
-    <section
-      class="root-details-panel__surface"
-      role="tabpanel"
-      [id]="workspace.panelId('content')"
-      [attr.aria-labelledby]="workspace.tabId(view())"
-      [attr.aria-busy]="loading() ? 'true' : null"
-      tabindex="0"
-      data-testid="root-details-panel-surface"
-    >
-      @if (emptySelection()) {
-        <div class="qd-empty-state" data-testid="root-details-empty-selection">
-          {{ emptySelectionLabel }}
-        </div>
-      } @else if (notFound()) {
-        <div class="qd-empty-state" role="status" data-testid="root-details-not-found">
-          {{ notFoundMessage() || notFoundLabel }}
-        </div>
-      }
-      <div
-        #detailsContent
-        class="root-details-panel__content"
-        [style.min-block-size]="reservedBlockSize()"
-        [hidden]="emptySelection() || notFound()"
-      >
-        <ng-content />
-      </div>
-    </section>
-  </qd-details-workspace>
-</ng-template>
-
-@if (frameless()) {
-  <div class="root-details-panel root-details-panel--frameless" data-testid="root-details-panel-frameless">
-    <ng-container *ngTemplateOutlet="panelBody" />
-  </div>
-} @else if (inline()) {
-  <section class="explorer-detail-panel root-details-panel" [attr.aria-label]="rootsPanelLabel" (keydown.escape)="onEscape()">
-    <ng-container *ngTemplateOutlet="panelBody" />
-  </section>
-} @else if (hasSelection()) {
-  <qd-modal-shell
-    variant="overlay"
-    testIdPrefix="root-details-panel"
-    dialogTestId="root-details-modal"
-    [open]="true"
-    [titleText]="rootsPanelLabel"
-    [showTitle]="false"
-    [showClose]="false"
-    [hasFooter]="false"
-    [flushBody]="true"
-    [trapFocus]="drawerTrapEnabled()"
-    (dismissed)="close.emit()"
-  >
-    <div class="explorer-detail-modal root-details-modal">
-      <ng-container *ngTemplateOutlet="panelBody" />
-    </div>
-  </qd-modal-shell>
-}
+<qd-details-panel-shell
+  testIdPrefix="root-details"
+  [panelLabel]="rootsPanelLabel"
+  [closeLabel]="closeLabel"
+  [emptySelectionLabel]="emptySelectionLabel"
+  [notFoundLabel]="notFoundLabel"
+  [tabs]="tabs"
+  [view]="view()"
+  [inline]="inline()"
+  [frameless]="frameless()"
+  [emptySelection]="emptySelection()"
+  [selectionTitle]="selectionTitle()"
+  [loading]="loading()"
+  [notFound]="notFound()"
+  [notFoundMessage]="notFoundMessage()"
+  (viewChange)="viewChange.emit($event)"
+  (closed)="close.emit()"
+>
+  <ng-content />
+</qd-details-panel-shell>

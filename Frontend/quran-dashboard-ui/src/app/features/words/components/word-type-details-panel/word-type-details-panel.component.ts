@@ -1,22 +1,6 @@
-import { NgTemplateOutlet } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  computed,
-  inject,
-  input,
-  output,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
-import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
-import { qdLoadingSizeReservation } from '../../../../shared/layout/loading-size-reservation';
-import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
-import { QdDetailsWorkspaceComponent } from '../../../../shared/ui/details-workspace/details-workspace.component';
-import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
-import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
-import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
+import { QdDetailsPanelShellComponent } from '../details-panel-shell/details-panel-shell.component';
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
 import { WORD_TYPE_DETAIL_PRESENTATIONS } from '../../models/word-types.labels';
 import {
@@ -29,23 +13,15 @@ import { WordTypeDetailSelectionKind } from '../../models/word-types-detail.mode
 @Component({
   selector: 'qd-word-type-details-panel',
   standalone: true,
-  imports: [NgTemplateOutlet, QdActionDirective, QdDetailsWorkspaceComponent, QdModalShellComponent, QdTabDirective, QdTabsComponent],
+  imports: [QdDetailsPanelShellComponent],
   templateUrl: './word-type-details-panel.component.html',
   styleUrl: './word-type-details-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WordTypeDetailsPanelComponent {
-  private readonly detailOverlayHistory = inject(DetailOverlayHistoryService);
-
-  // Only the top layer may trap focus: while the detail overlay is open this drawer sits in the inert
-  // app shell, so its own trap stands down and the dialog's is the only one enabled.
-  protected readonly drawerTrapEnabled = computed(() => !this.detailOverlayHistory.isOpen());
-
   readonly view = input.required<WordTypeDetailView>();
   readonly kind = input<WordTypeDetailSelectionKind>('word');
   readonly inline = input(true);
-  // Content-only mode: renders just the tablist + tabpanel body, no dialog chrome. Used inside the
-  // global detail overlay shell, which owns the dialog chrome and the notFound rendering.
   readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
@@ -54,14 +30,6 @@ export class WordTypeDetailsPanelComponent {
 
   readonly viewChange = output<WordTypeDetailView>();
   readonly close = output<void>();
-
-  private readonly contentElement = viewChild<ElementRef<HTMLElement>>('detailsContent');
-
-  protected readonly reservedBlockSize = qdLoadingSizeReservation({
-    host: this.contentElement,
-    isLoading: this.loading,
-    isSettled: computed(() => !this.loading() && !this.notFound() && !this.emptySelection()),
-  }).reservedBlockSize;
 
   protected get panelLabel() { return this.presentation.panelLabel; }
   protected get closeLabel() { return CLOSE_LABEL; }
@@ -81,33 +49,4 @@ export class WordTypeDetailsPanelComponent {
       ...this.presentation.tabs[key],
     })),
   );
-
-  protected readonly labelledTabKey = computed<WordTypeDetailView>(() => {
-    const keys = this.tabKeys();
-    return keys.includes(this.view()) ? this.view() : keys[0];
-  });
-
-  protected readonly hasSelection = computed(() => !this.emptySelection());
-
-  protected isActive(key: WordTypeDetailView): boolean {
-    return this.view() === key;
-  }
-
-  protected selectView(key: WordTypeDetailView): void {
-    if (this.emptySelection() || this.notFound() || key === this.view()) {
-      return;
-    }
-
-    this.viewChange.emit(key);
-  }
-
-  protected tabDisabled(key: WordTypeDetailView): boolean {
-    return this.emptySelection() || (this.notFound() && key !== this.view());
-  }
-
-  protected onEscape(): void {
-    if (!this.inline() || this.hasSelection()) {
-      this.close.emit();
-    }
-  }
 }

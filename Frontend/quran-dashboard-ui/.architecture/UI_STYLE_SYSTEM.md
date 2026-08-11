@@ -766,8 +766,10 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   - **No `overflow-x` in this mode, ever** — wrapping is the overflow answer, so the strip never
     grows an inline scroller. Since Phase 11 no `.qd-tabs*` rule carries `overflow-x` at all; the
     RTL-hostile `--scrollable` mode this contract replaced no longer exists.
-  - **Consumers that raise the floor:** `word-type-details-panel` sets `9.5rem` on its
-    `qd-tabs[qdDetailsTabs]`, because its `lemma`/`stem` kinds render the longest labels in the
+  - **Consumers that raise the floor:** `word-type-details-panel` passes `tabsTrackFloor="9.5rem"`
+    to `qd-details-panel-shell`, which renders it as `[style.--qd-tabs-track-floor]` on the details
+    `qd-tabs[qdDetailsTabs]` host alone — no stylesheet rule sets the floor, so projected sub-tab
+    rows keep the `6.25rem` default. It is raised because its `lemma`/`stem` kinds render the longest labels in the
     product (`كلمات الصيغة المعجمية`, 123.7 px at `--qd-type-body`, plus the tab's two
     `--qd-space-3` insets = 147.7 px). At the `6.25rem` default those three tabs share one 319 px
     row in the sub-1080 modal and each label overflows its tab by ~18–23 px per side.
@@ -800,7 +802,7 @@ fills, resting borders — stays **banned as solid green**: use a tint,
     `--qd-tabs-grid-columns` and records its own arithmetic the same way.
 - **Extending the tab's visual state:** a call-site adding a cue the primitive does
   not carry puts it on a **feature-local class beside** `.qd-tabs__tab`
-  (`lemma-details-panel__tab`, `abwab-move-picker__section`), never by re-styling
+  (`abwab-move-picker__section`), never by re-styling
   `.qd-tabs__tab` from the consumer's own stylesheet. The move picker's active cell
   adds `font-weight: 700` that way, because §17's tint-plus-accent-border selected
   state is a colour cue and an active state must not rest on colour alone.

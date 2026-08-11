@@ -1,0 +1,117 @@
+<ng-template #panelBody>
+  <qd-details-workspace
+    #workspace
+    [identity]="frameless() ? '' : selectionTitle()"
+    variant="entity"
+    [hasHeader]="!frameless()"
+    [hasTabs]="true"
+    [testIdPrefix]="testIdPrefix() + '-workspace'"
+  >
+    @if (!frameless()) {
+      <ng-container qdDetailsMetadata>
+        <h2 class="explorer-panel-header__label" [attr.data-testid]="testIdPrefix() + '-panel-label'">
+          {{ panelLabel() }}
+        </h2>
+        <span class="explorer-panel-header__entity qd-sr-only" [attr.data-testid]="testIdPrefix() + '-panel-entity'">
+          {{ selectionTitle() }}
+        </span>
+      </ng-container>
+    }
+    @if (!frameless() && hasSelection()) {
+      <button
+        qdDetailsActions
+        qdAction="tertiary"
+        size="sm"
+        type="button"
+        class="qd-details-panel__close"
+        [attr.data-testid]="testIdPrefix() + '-panel-close'"
+        (click)="closed.emit()"
+      >
+        {{ closeLabel() }}
+      </button>
+    }
+
+    <qd-tabs
+      qdDetailsTabs
+      layout="tracks"
+      [ariaLabel]="panelLabel()"
+      dir="rtl"
+      [style.--qd-tabs-track-floor]="tabsTrackFloor() || null"
+    >
+      @for (tab of tabs(); track tab.key) {
+        <button
+          qdTab
+          type="button"
+          class="qd-details-panel__tab"
+          [id]="workspace.tabId(tab.key)"
+          [panelId]="workspace.panelId('content')"
+          [selected]="isActive(tab.key) && hasSelection()"
+          [disabled]="tabDisabled(tab.key)"
+          [attr.disabled]="tabDisabled(tab.key) ? '' : null"
+          [attr.data-testid]="testIdPrefix() + '-tab-' + tab.key"
+          [attr.aria-label]="tab.aria"
+          (focus)="selectView(tab.key)"
+          (click)="selectView(tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </qd-tabs>
+
+    <section
+      class="qd-details-panel__surface"
+      role="tabpanel"
+      [id]="workspace.panelId('content')"
+      [attr.aria-labelledby]="workspace.tabId(labelledTabKey())"
+      [attr.aria-busy]="loading() ? 'true' : null"
+      tabindex="0"
+      [attr.data-testid]="testIdPrefix() + '-panel-surface'"
+    >
+      @if (emptySelection()) {
+        <div class="qd-empty-state" [attr.data-testid]="testIdPrefix() + '-empty-selection'">
+          {{ emptySelectionLabel() }}
+        </div>
+      } @else if (notFound()) {
+        <div class="qd-empty-state" role="status" [attr.data-testid]="testIdPrefix() + '-not-found'">
+          {{ notFoundMessage() || notFoundLabel() }}
+        </div>
+      }
+      <div
+        #detailsContent
+        class="qd-details-panel__content"
+        [style.min-block-size]="reservedBlockSize()"
+        [hidden]="emptySelection() || notFound()"
+      >
+        <ng-content />
+      </div>
+    </section>
+  </qd-details-workspace>
+</ng-template>
+
+@if (frameless()) {
+  <div [class]="framelessClass()" [attr.data-testid]="testIdPrefix() + '-panel-frameless'">
+    <ng-container *ngTemplateOutlet="panelBody" />
+  </div>
+} @else if (inline()) {
+  <section [class]="inlineClass()" [attr.aria-label]="panelLabel()" (keydown.escape)="onEscape()">
+    <ng-container *ngTemplateOutlet="panelBody" />
+  </section>
+} @else if (hasSelection()) {
+  <qd-modal-shell
+    variant="overlay"
+    [testIdPrefix]="testIdPrefix() + '-panel'"
+    [dialogTestId]="testIdPrefix() + '-modal'"
+    [open]="true"
+    [titleText]="panelLabel()"
+    [showTitle]="false"
+    [showClose]="false"
+    [hasFooter]="false"
+    [flushBody]="true"
+    [trapFocus]="drawerTrapEnabled()"
+    (dismissed)="closed.emit()"
+  >
+    <div [class]="modalClass()">
+      <ng-container *ngTemplateOutlet="panelBody" />
+    </div>
+  </qd-modal-shell>
+}

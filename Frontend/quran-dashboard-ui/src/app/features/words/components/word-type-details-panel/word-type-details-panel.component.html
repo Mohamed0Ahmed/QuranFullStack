@@ -1,112 +1,20 @@
-<ng-template #panelBody>
-  <qd-details-workspace
-    #workspace
-    [identity]="frameless() ? '' : selectionTitle()"
-    variant="entity"
-    [hasHeader]="!frameless()"
-    [hasTabs]="true"
-    testIdPrefix="word-type-details-workspace"
-  >
-    @if (!frameless()) {
-      <ng-container qdDetailsMetadata>
-        <h2 class="explorer-panel-header__label" data-testid="word-type-details-panel-label">
-          {{ panelLabel }}
-        </h2>
-        <span class="explorer-panel-header__entity qd-sr-only" data-testid="word-type-details-panel-entity">
-          {{ selectionTitle() }}
-        </span>
-      </ng-container>
-    }
-    @if (!frameless() && hasSelection()) {
-      <button
-        qdDetailsActions
-        qdAction="tertiary"
-        size="sm"
-        type="button"
-        class="word-type-details-panel__close"
-        data-testid="word-type-details-panel-close"
-        (click)="close.emit()"
-      >
-        {{ closeLabel }}
-      </button>
-    }
-
-    <qd-tabs qdDetailsTabs layout="tracks" [ariaLabel]="panelLabel" dir="rtl">
-      @for (tab of tabs(); track tab.key) {
-        <button
-          qdTab
-          type="button"
-          class="word-type-details-panel__tab"
-          [id]="workspace.tabId(tab.key)"
-          [panelId]="workspace.panelId('content')"
-          [selected]="isActive(tab.key) && hasSelection()"
-          [disabled]="tabDisabled(tab.key)"
-          [attr.disabled]="tabDisabled(tab.key) ? '' : null"
-          [attr.data-word-type-tab]="tab.key"
-          [attr.data-testid]="'word-type-details-tab-' + tab.key"
-          [attr.aria-label]="tab.aria"
-          (focus)="selectView(tab.key)"
-          (click)="selectView(tab.key)"
-        >
-          {{ tab.label }}
-        </button>
-      }
-    </qd-tabs>
-
-    <section
-      class="word-type-details-panel__surface"
-      role="tabpanel"
-      [id]="workspace.panelId('content')"
-      [attr.aria-labelledby]="workspace.tabId(labelledTabKey())"
-      [attr.aria-busy]="loading() ? 'true' : null"
-      tabindex="0"
-      data-testid="word-type-details-panel-surface"
-    >
-      @if (emptySelection()) {
-        <div class="qd-empty-state" data-testid="word-type-details-empty-selection">
-          {{ emptySelectionLabel }}
-        </div>
-      } @else if (notFound()) {
-        <div class="qd-empty-state" role="status" data-testid="word-type-details-not-found">
-          {{ notFoundLabel }}
-        </div>
-      }
-      <div
-        #detailsContent
-        class="word-type-details-panel__content"
-        [style.min-block-size]="reservedBlockSize()"
-        [hidden]="emptySelection() || notFound()"
-      >
-        <ng-content />
-      </div>
-    </section>
-  </qd-details-workspace>
-</ng-template>
-
-@if (frameless()) {
-  <div class="word-type-details-panel word-type-details-panel--frameless" data-testid="word-type-details-panel-frameless">
-    <ng-container *ngTemplateOutlet="panelBody" />
-  </div>
-} @else if (inline()) {
-  <section class="explorer-detail-panel word-type-details-panel" [attr.aria-label]="panelLabel" (keydown.escape)="onEscape()">
-    <ng-container *ngTemplateOutlet="panelBody" />
-  </section>
-} @else if (hasSelection()) {
-  <qd-modal-shell
-    variant="overlay"
-    testIdPrefix="word-type-details-panel"
-    dialogTestId="word-type-details-modal"
-    [open]="true"
-    [titleText]="panelLabel"
-    [showTitle]="false"
-    [showClose]="false"
-    [hasFooter]="false"
-    [flushBody]="true"
-    [trapFocus]="drawerTrapEnabled()"
-    (dismissed)="close.emit()"
-  >
-    <div class="explorer-detail-modal word-type-details-modal">
-      <ng-container *ngTemplateOutlet="panelBody" />
-    </div>
-  </qd-modal-shell>
-}
+<qd-details-panel-shell
+  testIdPrefix="word-type-details"
+  tabsTrackFloor="9.5rem"
+  [panelLabel]="panelLabel"
+  [closeLabel]="closeLabel"
+  [emptySelectionLabel]="emptySelectionLabel"
+  [notFoundLabel]="notFoundLabel"
+  [tabs]="tabs()"
+  [view]="view()"
+  [inline]="inline()"
+  [frameless]="frameless()"
+  [emptySelection]="emptySelection()"
+  [selectionTitle]="selectionTitle()"
+  [loading]="loading()"
+  [notFound]="notFound()"
+  (viewChange)="viewChange.emit($event)"
+  (closed)="close.emit()"
+>
+  <ng-content />
+</qd-details-panel-shell>
