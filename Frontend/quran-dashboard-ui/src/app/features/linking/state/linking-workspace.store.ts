@@ -19,6 +19,7 @@ import {
   LinkingWorkspaceSurface,
 } from '../models/linking-workspace.models';
 import { linkingSourceKey } from '../utils/linking-source-key';
+import { manualMushafVerseKeys } from '../utils/manual-link-shape';
 import {
   DEFAULT_LINKING_SELECTION,
   clearLinkingAyahs,
@@ -368,6 +369,7 @@ export class LinkingWorkspaceStore {
         configuration: item.configuration,
         origin: 'workspace',
         configurationRevision: item.configurationRevision,
+        operationOrder: this.itemsSignal().indexOf(item),
       }));
   }
 
@@ -563,7 +565,7 @@ function initialConfiguration(source: LinkingSourceDescriptor): LinkingSourceCon
       kind: 'manual',
       ayahInclusion: DEFAULT_LINKING_SELECTION,
       wordLocationsByVerseKey: {},
-      linkShape: 'independent',
+      linkShape: manualMushafVerseKeys(source).length > 1 ? 'grouped' : 'independent',
     };
   }
   return {

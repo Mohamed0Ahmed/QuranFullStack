@@ -8,6 +8,7 @@ import { LinkingWorkspaceComponent } from '../linking-workspace/linking-workspac
 import { DirectLinkWorkflowComponent } from '../direct-link-workflow/direct-link-workflow.component';
 import { LinkingWorkflowFacade } from '../../state/linking-workflow.facade';
 import { LinkingSourceAyahEditorComponent } from '../linking-source-ayah-editor/linking-source-ayah-editor.component';
+import { LinkingManualWordEditorComponent } from '../linking-manual-word-editor/linking-manual-word-editor.component';
 
 @Component({
   selector: 'qd-linking-workspace-host',
@@ -17,6 +18,7 @@ import { LinkingSourceAyahEditorComponent } from '../linking-source-ayah-editor/
     LinkingWorkspaceComponent,
     DirectLinkWorkflowComponent,
     LinkingSourceAyahEditorComponent,
+    LinkingManualWordEditorComponent,
   ],
   templateUrl: './linking-workspace-host.component.html',
   styleUrl: './linking-workspace-host.component.scss',
@@ -41,6 +43,9 @@ export class LinkingWorkspaceHostComponent {
   protected readonly modalTitle = computed(() => {
     if (this.isSourceAyahEditor()) {
       return this.labels.sourceEditor;
+    }
+    if (this.isManualWordEditor()) {
+      return this.labels.manualWords;
     }
     return this.isLinkingFlow() ? this.labels.directLink : this.labels.workspace;
   });
@@ -69,6 +74,18 @@ export class LinkingWorkspaceHostComponent {
   }
 
   protected closeSourceEditor(): void {
+    this.workspace.returnToWorkspace();
+    this.focus.restore(() => this.surfaceEntry()?.nativeElement ?? null);
+  }
+
+  protected openManualWordEditor(): void {
+    const sourceKey = this.activeSourceKey();
+    if (sourceKey !== null) {
+      this.workspace.openManualWordEditor(sourceKey);
+    }
+  }
+
+  protected closeManualWordEditor(): void {
     this.workspace.returnToWorkspace();
     this.focus.restore(() => this.surfaceEntry()?.nativeElement ?? null);
   }

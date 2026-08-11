@@ -17,11 +17,15 @@
         @if (isWorkspace()) {
           <qd-linking-workspace />
         } @else if (isSourceAyahEditor()) {
-          <qd-linking-source-ayah-editor [sourceKey]="activeSourceKey()" (dismissed)="closeSourceEditor()" />
+          <qd-linking-source-ayah-editor
+            [sourceKey]="activeSourceKey()"
+            (dismissed)="closeSourceEditor()"
+            (manualWordsRequested)="openManualWordEditor()"
+          />
+        } @else if (isManualWordEditor()) {
+          <qd-linking-manual-word-editor [sourceKey]="activeSourceKey()" (dismissed)="closeManualWordEditor()" />
         } @else if (isLinkingFlow()) {
           <qd-direct-link-workflow [workspaceSourceKey]="activeSourceKey()" />
-        } @else if (isManualWordEditor()) {
-          <p class="qd-sr-only" role="status">{{ labels.sourceEditorUnsupported }}</p>
         }
       } @placeholder {
         <p class="qd-sr-only" role="status">{{ labels.sourceLoading }}</p>

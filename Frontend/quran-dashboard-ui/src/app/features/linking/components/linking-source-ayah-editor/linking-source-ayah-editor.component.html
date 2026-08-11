@@ -13,6 +13,31 @@
     </button>
   </header>
 
+  @if (currentItem(); as item) {
+    @if (item.configuration.kind === 'manual') {
+      <section class="linking-source-ayah-editor__manual-options" [attr.aria-label]="labels.manualShape">
+        <button qdAction="secondary" size="sm" type="button" (click)="manualWordsRequested.emit()">
+          {{ labels.manualWords }}
+        </button>
+        @if (selectedCount() > 1) {
+          <fieldset>
+            <legend>{{ labels.manualShape }}</legend>
+            <label>
+              <input type="radio" name="manual-link-shape" value="grouped" [checked]="item.configuration.linkShape === 'grouped'" (change)="setManualLinkShape($event)" />
+              {{ labels.manualShapeGrouped }}
+            </label>
+            <label>
+              <input type="radio" name="manual-link-shape" value="independent" [checked]="item.configuration.linkShape === 'independent'" (change)="setManualLinkShape($event)" />
+              {{ labels.manualShapeIndependent }}
+            </label>
+          </fieldset>
+        } @else {
+          <p>{{ labels.manualShapeSingle }}</p>
+        }
+      </section>
+    }
+  }
+
   @switch (state().status) {
     @case ('loading') {
       <qd-panel-skeleton

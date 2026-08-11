@@ -36,6 +36,7 @@ const INITIAL_SOURCE_LOAD: LinkingSourceLoadState = {
 const INITIAL_WORKFLOW: DirectLinkWorkflowState = {
   source: null,
   sourceKey: null,
+  capturedConfigurationRevision: null,
   origin: null,
   step: 'door',
   selectedDoorId: null,
@@ -131,7 +132,14 @@ export class LinkingWorkflowFacade {
     if (state.origin === 'workspace' && state.sourceKey === sourceKey && state.source !== null) {
       return;
     }
-    this.activate(item.source, 'workspace', sourceKey, item.selection, item.highlightSourceWords);
+    this.activate(
+      item.source,
+      'workspace',
+      sourceKey,
+      item.selection,
+      item.highlightSourceWords,
+      item.configurationRevision,
+    );
   }
 
   startFromSource(source: LinkingSourceDescriptor): void {
@@ -277,7 +285,7 @@ export class LinkingWorkflowFacade {
   retrySource(): void {
     const state = this.workflowState();
     if (state.source !== null && this.access.canUseLinking()) {
-      this.resolveSource(state.source, state.sourceKey);
+      this.resolveSource(state.source, state.sourceKey, state.capturedConfigurationRevision);
     }
   }
 
@@ -287,6 +295,7 @@ export class LinkingWorkflowFacade {
     sourceKey: string | null = null,
     selection: LinkingSelection = DEFAULT_LINKING_SELECTION,
     highlightSourceWords = true,
+    capturedConfigurationRevision: number | null = null,
   ): void {
     if (!this.access.canUseLinking()) {
       return;
@@ -295,6 +304,7 @@ export class LinkingWorkflowFacade {
     this.workflowState.set({
       source,
       sourceKey,
+      capturedConfigurationRevision,
       origin,
       step: 'door',
       selectedDoorId: null,
@@ -308,10 +318,14 @@ export class LinkingWorkflowFacade {
       this.workspace.openEphemeralDirectLink();
     }
     this.loadDoors();
-    this.resolveSource(source, sourceKey);
+    this.resolveSource(source, sourceKey, capturedConfigurationRevision);
   }
 
-  private resolveSource(source: LinkingSourceDescriptor, sourceKey: string | null): void {
+  private resolveSource(
+    source: LinkingSourceDescriptor,
+    sourceKey: string | null,
+    capturedConfigurationRevision: number | null,
+  ): void {
     this.cancelSourceLoad();
     this.workflowState.update((state) => ({
       ...state,
@@ -326,7 +340,11 @@ export class LinkingWorkflowFacade {
       }).subscribe({
         next: (ayahs) => {
           const universe = ayahs.map((ayah) => ayah.verseKey);
-          if (sourceKey !== null) {
+          if (
+            sourceKey !== null &&
+            capturedConfigurationRevision !== null &&
+            this.workspace.item(sourceKey)?.configurationRevision === capturedConfigurationRevision
+          ) {
             this.workspace.reconcileResolvedSource(sourceKey, universe);
           }
           this.workflowState.update((state) => ({

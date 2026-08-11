@@ -45,8 +45,8 @@ export interface LinkingSourceLoadState {
 
 export interface LinkingSourceEditorState {
   sourceKey: string | null;
-  sourceLabel: string | null;
   capturedConfigurationRevision: number | null;
+  sourceLabel: string | null;
   status: LinkingSourceLoadStatus;
   ayahs: readonly LinkingAyah[];
   rawProgress: LinkingSourceLoadProgress;
@@ -59,6 +59,7 @@ export interface LinkingSourceEditorState {
 export interface DirectLinkWorkflowState {
   source: LinkingSourceDescriptor | null;
   sourceKey: string | null;
+  capturedConfigurationRevision: number | null;
   origin: DirectLinkOrigin | null;
   step: DirectLinkStep;
   selectedDoorId: number | null;
@@ -72,5 +73,10 @@ export interface DirectLinkWorkflowState {
 export interface LinkingTransientOperationState {
   members: readonly LinkingOperationMember[];
   mergedSelection: MergedLinkingSelection | null;
+  sourceIntents: readonly LinkingSourceIntent[];
+}
+
+export interface LinkingSourceSetOperationResult {
+  mergedSelection: MergedLinkingSelection;
   sourceIntents: readonly LinkingSourceIntent[];
 }

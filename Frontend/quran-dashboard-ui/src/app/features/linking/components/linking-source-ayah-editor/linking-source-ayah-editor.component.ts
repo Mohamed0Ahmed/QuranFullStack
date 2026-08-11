@@ -36,6 +36,7 @@ export class LinkingSourceAyahEditorComponent {
 
   readonly sourceKey = input<string | null>(null);
   readonly dismissed = output<void>();
+  readonly manualWordsRequested = output<void>();
 
   protected readonly labels = LINKING_LABELS;
   protected readonly state = this.facade.state;
@@ -78,5 +79,9 @@ export class LinkingSourceAyahEditorComponent {
 
   protected clearAll(): void {
     this.facade.clearAll();
+  }
+
+  protected setManualLinkShape(event: Event): void {
+    this.facade.setManualLinkShape((event.target as HTMLInputElement).value as 'grouped' | 'independent');
   }
 }

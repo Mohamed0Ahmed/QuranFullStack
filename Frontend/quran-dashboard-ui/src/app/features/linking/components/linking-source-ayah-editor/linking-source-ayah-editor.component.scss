@@ -22,6 +22,20 @@
   gap: var(--qd-space-3);
 }
 
+.linking-source-ayah-editor__manual-options,
+.linking-source-ayah-editor__manual-options fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--qd-space-2);
+  margin: 0;
+}
+
+.linking-source-ayah-editor__manual-options p,
+.linking-source-ayah-editor__manual-options legend {
+  margin: 0;
+}
+
 .linking-source-ayah-editor__source,
 .linking-source-ayah-editor__stale-count,
 .linking-source-ayah-editor__ready-count {

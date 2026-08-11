@@ -10,11 +10,21 @@ export interface MergedAyahSelection {
   verseKey: string;
   ayah: LinkingAyah;
   sourceKeys: readonly string[];
+  words: readonly MergedLinkingWordSelection[];
+}
+
+export interface MergedLinkingWordSelection {
+  renderPosition: number;
+  textUthmani: string;
+  sourceKeys: readonly string[];
+  canonicalQuranWordId: number | null;
+  wordLocation: string | null;
 }
 
 export interface LinkingSourceIntent {
   sourceKey: string;
   source: LinkingSourceDescriptor;
+  contributionMode: 'automatic' | 'manual-single' | 'manual-independent' | 'manual-grouped';
   units: readonly LinkingIntentUnit[];
 }
 

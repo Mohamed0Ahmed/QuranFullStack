@@ -9,4 +9,15 @@ export interface LinkingOperationMember {
   configuration: LinkingSourceConfiguration;
   origin: LinkingOperationMemberOrigin;
   configurationRevision: number;
+  operationOrder: number;
+}
+
+export type LinkingOperationMemberLoadStatus = 'unresolved' | 'loading' | 'error' | 'ready';
+
+export interface LinkingOperationMemberLoadState {
+  member: LinkingOperationMember;
+  status: LinkingOperationMemberLoadStatus;
+  progress: { loaded: number; total: number | null };
+  errorMessage: string | null;
+  contributedAyahCount: number | null;
 }

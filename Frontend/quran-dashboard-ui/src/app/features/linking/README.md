@@ -48,23 +48,40 @@ and Medium Linking uses the explicit `80vw` by `88dvh` override; Compact continu
 Focus origins distinguish Navbar, workspace rows, inline source actions, and retained entity
 overlays. Surface, focus, and shell readiness are transient only.
 
-`LinkingSourceEditorFacade` owns the automatic-source ayah editor's complete one-source read,
+`LinkingSourceEditorFacade` owns the source ayah editor's complete one-source read,
 raw API progress, unique verse universe, local search, client page, stale-load generation, and
 controlled error state. The editor never persists its loaded ayahs or UI state. It reconciles a
 complete universe only when the source row still has the configuration revision captured at load
 start; selection changes remain source-row state. Search and pagination constrain visible cards
 only, while Select All, Clear All, and checkbox selection continue to operate on the full source
-universe. Manual Mushaf source editing remains unavailable until Phase 6.
+universe. Manual Mushaf sources use the same complete-selection boundary and expose their stored
+grouped/independent preference only when more than one ayah is included.
+
+`ManualMushafAyahReader` validates AyahCore identity before returning refreshable metadata and, for
+complete reads, loads every page in the authoritative range through `MushafReaderCache`. It rejects
+incomplete, duplicate, out-of-order, or mismatched word occurrences rather than publishing a
+partial ayah. `LinkingManualWordEditorFacade` keeps its reads and selections transient until one
+revision-guarded save persists the whole word draft. Manual words stay verse-scoped `wordLocation`
+prototype coordinates; this path makes no word-analysis request and fabricates no canonical ID.
+
+`LinkingSourceSetCoordinator` snapshots only checked workspace rows (or one ephemeral source),
+resolves every member atomically, and publishes merged display ayahs plus source-owned intents only
+when the whole generation succeeds. Merge compatibility is checked before enrichment, while intent
+generation stays separate so grouped manual units cannot be reconstructed from the merged display.
+Operation state, resolved Quran text, provenance, and intents are transient; only a revision-matched
+workspace reconciliation can persist.
 
 `QuranSourceLinkingActionsComponent` remains the shared Owner-only explorer seam. Add to Workspace
 is idempotent, preserves focus, and announces whether the row was added or already existed; it does
 not open the workspace. Direct Link remains a transient one-source shortcut and does not add a row.
 
-The resolver registry supports the automatic source families only. It sequentially loads matching
+The resolver registry supports the automatic source families and the complete manual Mushaf reader.
+It sequentially loads matching
 API pages, rejects incomplete or inconsistent envelopes, and de-duplicates only repeated identical
 `verseKey` rows. Root, Lemma, and Stem retain exact Uthmani tokens and backend `isMatched` flags
-without claiming canonical Quran word IDs; Word Type preserves returned canonical IDs. A later
-source-set coordinator will own multi-source loading, merged review, and intent derivation.
+without claiming canonical Quran word IDs; Word Type preserves returned canonical IDs. The source-set
+coordinator owns multi-source loading and intent derivation; later phases render its review and
+command boundary.
 
 There is still no Linking write API, request, draft, approval, history, cache mutation, durable
 group ID, backend entity, or server workspace. The current Direct Link mock remains presentation

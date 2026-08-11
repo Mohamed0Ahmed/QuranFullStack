@@ -6,7 +6,8 @@ import { LinkingSourceResolver } from '../data-access/linking-source-resolver';
 import { LinkingAyah } from '../models/linking-ayah.models';
 import { LINKING_LABELS } from '../models/linking.labels';
 import { LinkingSourceEditorState } from '../models/linking-workflow.models';
-import { LinkingAutomaticSourceDescriptor, LinkingSelection } from '../models/linking-workspace.models';
+import { LinkingSelection } from '../models/linking-workspace.models';
+import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import { selectedLinkingAyahCount } from '../utils/linking-selection';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
@@ -71,18 +72,6 @@ export class LinkingSourceEditorFacade {
       this.close();
       return;
     }
-    if (item.source.kind === 'manual-mushaf-ayahs') {
-      this.cancelLoad();
-      this.editorStateSignal.set({
-        ...INITIAL_EDITOR_STATE,
-        sourceKey,
-        sourceLabel: item.source.label,
-        capturedConfigurationRevision: item.configurationRevision,
-        status: 'unsupported',
-        errorMessage: LINKING_LABELS.sourceEditorUnsupported,
-      });
-      return;
-    }
     this.resolve(item.sourceKey, item.source, item.configurationRevision);
   }
 
@@ -95,7 +84,7 @@ export class LinkingSourceEditorFacade {
   retry(): void {
     const state = this.editorStateSignal();
     const item = state.sourceKey === null ? null : this.workspace.item(state.sourceKey);
-    if (item !== null && item.source.kind !== 'manual-mushaf-ayahs') {
+    if (item !== null) {
       this.resolve(item.sourceKey, item.source, item.configurationRevision);
     }
   }
@@ -131,9 +120,16 @@ export class LinkingSourceEditorFacade {
     }
   }
 
+  setManualLinkShape(linkShape: 'grouped' | 'independent'): void {
+    const item = this.currentItem();
+    if (item?.configuration.kind === 'manual') {
+      this.workspace.setManualLinkShape(item.sourceKey, linkShape);
+    }
+  }
+
   private resolve(
     sourceKey: string,
-    source: LinkingAutomaticSourceDescriptor,
+    source: LinkingSourceDescriptor,
     configurationRevision: number,
   ): void {
     this.cancelLoad();

@@ -8,12 +8,14 @@ import { RootLinkingSourceResolver } from './resolvers/root-linking-source.resol
 import { LemmaLinkingSourceResolver } from './resolvers/lemma-linking-source.resolver';
 import { StemLinkingSourceResolver } from './resolvers/stem-linking-source.resolver';
 import { WordTypeLinkingSourceResolver } from './resolvers/word-type-linking-source.resolver';
+import { ManualMushafAyahsLinkingSourceResolver } from './resolvers/manual-mushaf-ayahs-linking-source.resolver';
+import type { LinkingSourceResolveProgress } from './linking-source-resolver';
 
 export interface LinkingSourceResolverRegistration {
   readonly kind: LinkingSourceKind;
   resolve(
     source: LinkingSourceDescriptor,
-    onProgress: (progress: { loaded: number; total: number }) => void,
+    onProgress: (progress: LinkingSourceResolveProgress) => void,
   ): Observable<readonly LinkingAyah[]>;
 }
 
@@ -24,17 +26,30 @@ export class LinkingSourceResolverRegistry {
   private readonly lemmaResolver = inject(LemmaLinkingSourceResolver);
   private readonly stemResolver = inject(StemLinkingSourceResolver);
   private readonly wordTypeResolver = inject(WordTypeLinkingSourceResolver);
+  private readonly manualMushafAyahsResolver = inject(ManualMushafAyahsLinkingSourceResolver);
   private readonly registrations: ReadonlyMap<LinkingSourceKind, LinkingSourceResolverRegistration> = new Map<
     LinkingSourceKind,
     LinkingSourceResolverRegistration
   >([
+    [
+      'manual-mushaf-ayahs',
+      {
+        kind: 'manual-mushaf-ayahs',
+        resolve: (source, onProgress) => {
+          if (source.kind !== 'manual-mushaf-ayahs') {
+            throw new Error('مصدر الربط غير متوافق مع آيات المصحف اليدوية.');
+          }
+          return this.manualMushafAyahsResolver.resolve(source, onProgress);
+        },
+      },
+    ],
     [
       'unique-word',
       {
         kind: 'unique-word',
         resolve: (
           source: LinkingSourceDescriptor,
-          onProgress: (progress: { loaded: number; total: number }) => void,
+          onProgress: (progress: LinkingSourceResolveProgress) => void,
         ) => {
           if (source.kind !== 'unique-word') {
             throw new Error('مصدر الربط غير متوافق مع محلل الآيات.');
