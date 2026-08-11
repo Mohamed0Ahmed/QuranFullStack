@@ -46,17 +46,12 @@ authorization boundary, and the route carries no additional guard for it.
 - Confirms grant/status changes through an inline review step with an **optional** reason. Every
   changed permission is shown by its Arabic label and stable code before confirmation; a blank
   reason travels as `null` and the audit rows store `NULL`, while a typed one persists verbatim.
-  Relink keeps its mandatory reason. There is only one modal in the feature: the unsaved-changes
-  confirmation described below.
-- Recovers a lost login identity through Logto-subject relink, presented in its own
-  الأمان المتقدم section outside the permission workspace — see *Advanced Security* below. The flow
-  is unchanged: preview first, then a separate explicit confirmation; the UI submits a new subject
-  plus masked verification evidence, clears that evidence after preview/cancellation/completion,
-  and has no email-only relink path.
-- Displays keyset-paginated audit history attributed to **human identities**, plus account, actor,
-  event-type, and permission filters, in its own سجل الوصول section
-  (`components/access-audit-log/`); owner-reconciliation status is read-only diagnostic data beside
-  identity recovery — see *Audit and reconciliation* and *Layout and URL state* below.
+  There is only one modal in the feature: the unsaved-changes confirmation described below.
+- **There is no audit-history section and no advanced-security section.** The سجل الوصول and
+  الأمان المتقدم tabs and every frontend surface behind them were removed — see *Removed frontend
+  surfaces* below. `GET /api/access/audit-events`, the two `logto-sub/relink` endpoints,
+  `GET /api/access/owner-reconciliation/status`, the backend audit trail and owner reconciliation
+  itself are all untouched; nothing on this page reads them.
 
 ## Layout and URL state
 
@@ -78,24 +73,32 @@ shell's metadata slot renders `qd-access-user-summary-card` **only at Wide**: th
 in every band. The band is read once through `QD_BP_WIDE_QUERY` and kept in a signal; nothing in
 this feature writes a pixel threshold.
 
-Three sections sit behind `qd-tabs`, the only tablist primitive in the app:
+**The page is Workspace-only, and there is no tab strip.** With مساحة العمل the sole surviving
+section, the one-tab `qd-tabs` strip, the `@switch` that wrapped its single `@default` case, the
+`activeTab` signal, `selectTab`/`showTab`, the `?tab=` query-parameter subscription and
+`models/access-admin-tabs.ts` (`ACCESS_ADMIN_TAB_KEYS`, `AccessAdminTab`, `DEFAULT_ACCESS_ADMIN_TAB`,
+`parseAccessAdminTab`) are all gone. The workspace — the sticky 20rem user-list aside plus the
+selected-user panel at Wide, the context bar plus sheet below it — is rendered directly under the
+access check, and it carries neither `role="tabpanel"` nor an `aria-labelledby`, because a tabpanel
+with no tab to label it is invalid ARIA rather than harmless leftover markup.
 
-| Tab | `?tab=` | Contents |
-|---|---|---|
-| مساحة العمل | *(absent — the default)* | sticky 20rem user-list aside + the selected-user panel |
-| سجل الوصول | `audit` | `qd-access-audit-log` |
-| الأمان المتقدم | `security` | `qd-access-advanced-security` + owner reconciliation |
+**Stale `?tab=` links degrade by construction, not by a parser.** `/settings/access?tab=audit`,
+`?tab=security` and any other value render exactly the workspace: the route reads no query
+parameter, nothing branches on one, and no code path exists that a value could send anywhere else.
+That is why the parser was removed rather than retained. `parseAccessAdminTab`'s
+`?? DEFAULT_ACCESS_ADMIN_TAB` made an unknown value *fall back* to the workspace; deleting the whole
+branch means there is nothing to fall back *from*. Keeping a one-member enum, its parser and a
+subscription that could only ever re-select the section already showing would have left dead code
+whose only effect was to re-derive a constant. Browser back/forward across those URLs is a
+same-component query-parameter change with no subscriber, so it re-renders nothing and cannot strand
+the page. **If a second section is ever added, the strip and the parser come back together** — the
+URL contract is a keys-and-parser pair, not a label concern, which is what the deleted
+`models/access-admin-tabs.ts` existed to keep separate from the Arabic copy.
 
-`?tab=` is a **closed enum** parsed by `models/access-admin-tabs.ts`; anything else falls back to the
-workspace, so a stale or hand-edited link cannot render a blank page. Choosing the default section
-writes `tab: null`, which removes the parameter rather than spelling out the default. The tabs are
-`<button>`s that navigate — `qdTab` supplies `role="tab"`, `aria-selected` and the roving tabindex,
-and each panel carries `role="tabpanel"` labelled by its tab.
-
-**A query param, not a child route, and no user deep-link at all.** `FRONTEND_STRUCTURE.md` requires
-this to be written down. A child route would orphan the `title` on the single route in
-`access-admin.routes.ts`, and these are view modes over one Owner-only
-screen rather than destinations anyone links to. The selected **user** is deliberately *not* in the
+**Not a child route, and no user deep-link at all.** `FRONTEND_STRUCTURE.md` requires this to be
+written down. A child route would orphan the `title` on the single route in
+`access-admin.routes.ts`, and there is now exactly one view over this Owner-only
+screen anyway. The selected **user** is deliberately *not* in the
 URL: `AccessUserSummary` carries no slug and no `sub` (`sub` exists only on `AccessUserDetail`, i.e.
 only after selection), `AccessAdminApi.userListParams` has no filter that could resolve a handle back
 to an account, the numeric id is a technical identifier that must never appear in a visible URL, and
@@ -125,25 +128,23 @@ the very bottom.
 
 `layout="no-selection"` renders the designed prompt instead of an empty split. The panel does
 **not** carry the `xmin` version:
-optimistic concurrency stays in state and out of view, along with every other technical identifier
-outside the audit rows.
+optimistic concurrency stays in state and out of view, along with every other technical identifier.
 
 **The email is never truncated.** It is the target of a safety decision, so it wraps in full inside
 `.qd-ltr-isolate` rather than eliding behind a `[title]` the operator has to hover to read; only the
 account *name* truncates, and only where a focusable row owns it.
 
-**Four Access surfaces stopped truncating for the same reason (D35).** The Compact/Medium
-context-bar identity, the audit row's `الحساب:` / `المنفّذ:` lines, the owner-reconciliation
-candidate emails, and the user picker's chosen identity all had `[title]` as their *only*
-disclosure. None reaches a rung of the Golden §8.1 disclosure ladder: the context-bar name sits in a
-static bar with no owning control; audit rows and reconciliation candidates are deliberately
-non-focusable `qdResultItem`s; and the picker's `<p>` is not focusable, while the button beside it
-*clears* the selection rather than revealing it. `title` is unreachable by keyboard and by touch, so
-all four now wrap (`min-inline-size: 0; overflow-wrap: anywhere`) and carry neither `.qd-truncate`
-nor `[title]`. Adding `tabindex="0"` to the text node is explicitly prohibited and was not the fix.
-Two Access surfaces are deliberately untouched because they *do* have a rung: user-list rows
-truncate inside a focusable row button whose accessible name is the full value, and picker
-candidates are `role="option"` elements carrying name + email in their own `aria-label`.
+**The surviving Access surface stopped truncating for the same reason (D35).** The Compact/Medium
+context-bar identity had `[title]` as its *only* disclosure, which reaches no rung of the Golden
+§8.1 disclosure ladder: the name sits in a static bar with no owning control, and `title` is
+unreachable by keyboard and by touch. It now wraps (`min-inline-size: 0; overflow-wrap: anywhere`)
+and carries neither `.qd-truncate` nor `[title]`.
+Adding `tabindex="0"` to the text node is explicitly prohibited and was not the fix. User-list rows
+are deliberately untouched because they *do* have a rung: they truncate inside a focusable row button
+whose accessible name is the full value. The other three surfaces D35 originally covered — the audit
+row's `الحساب:` / `المنفّذ:` lines, the owner-reconciliation candidate emails, and the user picker's
+chosen identity — are all deleted, the first two with the audit and advanced-security sections and
+the picker with the consumerless components that outlived them.
 
 A list row is the shared `qdResultList`/`qdResultItem` pair (`listVariant="master"`): `role="list"` /
 `role="listitem"`, `aria-posinset`/`aria-setsize`, `aria-current` on the selected row, and the
@@ -158,8 +159,8 @@ not mean a writable one, so the two failure modes are kept distinct and neither 
 stored access.
 
 - **The catalogue request fails.** Only the الصلاحيات المباشرة region degrades: it renders an error
-  with a retry that re-issues the catalogue request. Identity, status badges, lifecycle actions and
-  the identity-recovery panel keep rendering, because none of them reads the catalogue.
+  with a retry that re-issues the catalogue request. Identity, status badges and lifecycle actions
+  keep rendering, because none of them reads the catalogue.
 - **The catalogue is served but assignment is not ready.** The editor stays visible and read-only so
   current grants can be inspected, an Arabic notice states that assignment is unavailable and that
   existing access is unchanged, and no permission-save path is offered. A pending account's accept
@@ -247,8 +248,8 @@ exists **and** can be produced*, and `AccessPermissionDraftStore.isDirty` enforc
 
 Both halves are load-bearing: without them a user nobody touched reads as dirty over a degraded
 catalogue — every stored grant falls into `revoked`, the summary prints above the catalogue error,
-switching users and leaving the page prompt, and relink is held back with no way to clear it, since
-the bar carrying the only discard control is hidden while assignment is unavailable.
+and switching users and leaving the page prompt with no way to clear the draft, since the bar
+carrying the only discard control is hidden while assignment is unavailable.
 
 - While the draft differs, the section heading carries a `+N / −M` summary and a **64px sticky
   review dock** offers the save entry point and «تجاهل التغييرات». Lifecycle actions stay outside
@@ -288,18 +289,6 @@ the bar carrying the only discard control is hidden while assignment is unavaila
   wasted round-trip, not audit pollution.
 - The reason is optional: it is trimmed and bounded at 1024 characters by the backend; left blank,
   it is sent and stored as `null`. The review step itself is still the only save path.
-- A dirty draft still holds back relink, even though relink now lives outside the permission
-  workspace. The reason was never adjacency: `confirmSelectedUserRelink` runs through `runMutation`,
-  and every successful mutation calls `refreshAfterMutation`, which re-selects the user and makes
-  `AccessPermissionDraftStore.adopt` overwrite the draft with the stored grants. Moving the panel
-  removed the confusion of a live identity form sitting mid-edit; it did not remove the overwrite.
-  The gate reads `AccessAdminFacade.isDirty` through the panel's `hasUnsavedPermissions` input —
-  the same signal the draft bar and the diff summary render from, so the three cannot disagree about
-  whether a draft exists. It holds back **both**
-  relink steps, not just the entry point: preview and confirm each carry it in their `disabled`
-  expression and each re-check it in `requestRelinkPreview()`/`confirmRelink()`. Gating the preview
-  alone would leave the sequence *preview → edit a permission → confirm* open, and the confirm is the
-  step that runs the mutation whose refresh overwrites the draft.
 
 Two mechanisms protect the draft, because they cover different exits:
 
@@ -361,162 +350,96 @@ do to it, because the backend accepts a different commit for each one.
   `AuthorizationStateAccessEvaluator.ResolveActiveStateAsync` returns a state only for an Active
   user — so the bypass statement is made **only** for an Active Owner, and a Pending or Disabled
   Owner is told the bypass does not apply yet. Both variants add that Owner membership is managed by
-  owner reconciliation rather than from this page. Nothing here claims an Owner account is
-  uneditable in general, because it is not: identity recovery below applies to Owners too.
+  owner reconciliation rather than from this page.
 
-## Advanced Security
+## Removed frontend surfaces
 
-`components/access-advanced-security/` hosts Logto-subject relink as identity recovery, in its own
-first-class الأمان المتقدم tab rather than inside the selected-user panel. A tab, not a hidden menu:
-a real identity incident is exactly when the recovery path has to be findable.
-The move is a placement decision, not a capability change — `ConfirmCoreAsync` has no Owner guard and
-no status guard, and `ValidateBindingAsync` routes an Owner target to
-`ValidateOwnerConfigurationAsync`, which permits the relink when the Owner's configured email
-reconciles as `Unchanged`. The panel says so: it applies to the selected account whatever its role,
-including an Owner. Presenting it as routine permission editing was what was wrong, not the
-capability.
+**The audit-history surface is gone from the frontend.** `components/access-audit-log/`,
+`state/access-audit.store.ts`, `AccessAdminApi.listAuditEvents`, the facade's `audit*` readonlys and
+its `updateAuditQuery`/`loadNextAuditPage`/`loadAuditEvents` methods, and the `?tab=audit` panel were
+all deleted, so the page no longer requests `GET /api/access/audit-events` — on load or after a
+mutation.
 
-An Owner target additionally gets that precondition in the copy, not only in this file. Because
-`ValidateOwnerConfigurationAsync` fails with `OwnerConfigurationNotReconciled` unless the target's
-normalized email is in the configured owner set **and** owner reconciliation reports a candidate for
-that user in the `Unchanged` state, an Owner relink can otherwise fail at confirm for a reason the
-panel never named. `access-relink-owner-precondition` states both halves and renders only when
-`target.isOwner`.
+**The advanced-security surface is gone from the frontend too.** `components/access-advanced-security/`
+(Logto-subject relink) and `components/access-owner-reconciliation/` (the read-only owner-reconciliation
+panel) were deleted with the `?tab=security` panel, together with `AccessAdminApi.previewRelink`,
+`confirmRelink` and `getOwnerReconciliationStatus`; the facade's `reconciliationStatus`/
+`reconciliationLoading`/`reconciliationError`/`relinkPreview` readonlys and its relink and
+reconciliation state, request-version and lifecycle methods; the page's `workflowResetToken`,
+`previewRelink`/`confirmRelink`/`cancelRelink` and `politeMutationText`; the
+`reconciliationCandidateState` label builder with its Arabic map; and the
+`AccessRelinkPreviewRequest`/`AccessRelinkConfirmRequest` models with
+`OWNER_RELINK_REQUIRED_CANDIDATE_STATE`. So the page requests neither
+`POST /api/access/users/{id}/logto-sub/relink/preview` nor `…/confirm` nor
+`GET /api/access/owner-reconciliation/status` — there is no identity-recovery form and no
+reconciliation panel left to request them. **And `load()` is no longer a four-legged fan-out:**
+`Promise.all` now holds `loadUsers()` and `loadPermissionCatalogue()` only, which is why an Owner
+landing on `/settings/access` issues exactly two requests.
 
-**The precondition and the reconciliation panel name that state through one function, and that is
-the point.** The panel beside it **in the same tab** no longer prints the raw
-`OwnerReconciliationCandidateState` token — it prints the Arabic label — so copy naming the English
-`Unchanged` would name something the operator can no longer see. Both read
-`ACCESS_ADMIN_LABELS.reconciliationCandidateState`, the precondition through
-`OWNER_RELINK_REQUIRED_CANDIDATE_STATE` (`models/access-admin.models.ts`), so the term in the
-sentence and the term in the list are the same string by construction and renaming one renames the
-other.
+Removing the eager reconciliation leg does **not** move the readiness gate. `accessStateKnown()` is
+computed from `CurrentUserStore.loadState()`/`authStateKnown()` alone and never read a load leg, so
+which responses `load()` waits for cannot change when the access check resolves, and the check is
+still what decides between the skeleton, the denied state and the workspace.
 
-The component owns only the relink form state. It takes the selected user, the preview, the busy
-action and the dirty-draft gate as inputs and emits preview/confirm/cancel; the facade still owns
-every request, the evidence token and the preview lifecycle. With no user selected it renders an
-empty state instead of a form, since relink targets one account.
+**Nothing backend was touched by either removal.** The four endpoints, the audit trail, owner
+reconciliation, the writes that populate them and every authorization path around them are
+unchanged. `GET /api/access/audit-events`, the two `logto-sub/relink` endpoints and
+`GET /api/access/owner-reconciliation/status` are recorded as *possible unused API surface —
+separate review required*, which is a decision with its own review and not this feature's to make.
+Owner reconciliation in particular is a backend safety mechanism whose value does not depend on a UI
+existing to read it.
 
-## Audit and reconciliation
+**`ACCESS_AUDIT_ACTION_TYPES` stays, and is deliberately unreferenced by any component.**
+It lives in `models/access-admin.models.ts` with `AccessAuditActionType` and `isAccessAuditActionType`
+derived from it, and it is **not** audit-UI code: it is the frontend mirror of the backend
+`AccessAuditActionType` enum, and `npm run check:audit-action-types` reads that exact file and fails
+if the declaration goes missing or drifts from
+`Backend/domain/QuranDashboard.Domain/Access/AccessAuditActionType.cs` in either direction. The
+generated OpenAPI cannot carry this — `actionType` is a plain `string`, so nothing generated pins the
+membership set. Do not delete it as dead code; having no component consumer is its expected state.
 
-**No technical identifier is rendered in either section.** That is the feature-wide rule of §3 of the
-plan finishing where it started: the audit log was the last place a database user id was printed.
-
-- **Rows name people, not ids.** `GET /api/access/audit-events` carries `targetDisplayName`,
-  `targetEmail`, `actorDisplayName` and `actorEmail` beside the existing `targetUserId`/`actorUserId`.
-  The ids stay in the payload because the filter round-trip needs them; nothing renders them. A row
-  reads the account through `accessUserNameLabel`, so a blank Logto name falls back to the email, and
-  «حساب غير متاح» covers the shape where neither is known. A `System` actor reads «النظام» from
-  `actorType` alone — the two system-actor paths (owner reconciliation, legacy-role conversion) write
-  no actor row to point at.
-  **The names are the account's current ones, not the ones frozen in the event's snapshot.** The
-  backend sources them from the `ActorUser`/`TargetUser` foreign-key navigations, so a renamed account
-  reads correctly everywhere in its history; `AccessAdministrationEndpointTests` pins the difference
-  by renaming a user after the event and asserting the row and its `targetSnapshot` disagree. The
-  snapshots are not a usable source: they exist in three shapes across two casings, one of them
-  without an `email` field, and the generated TypeScript types all of them as `{}`.
-- **The event type is a closed dropdown, not free text.** `ACCESS_AUDIT_ACTION_TYPES`
-  (`models/access-admin.models.ts`) mirrors the backend `AccessAuditActionType` enum, whose names are
-  the wire values `ListAccessAuditEventsHandler` accepts — anything else is a `400`, so the list is a
-  contract and lives beside the other contract types rather than with the Arabic copy.
-  `ACCESS_ADMIN_LABELS.auditActionType` maps each to Arabic and **returns an unmodelled value
-  unchanged**: a new server-side action type stays legible instead of reading as «غير معروف».
-  That list is hand-written but no longer unguarded: `npm run check:audit-action-types` compares it
-  against `Backend/domain/QuranDashboard.Domain/Access/AccessAuditActionType.cs` in **both**
-  directions and fails by name, so a member added or renamed on either side is a two-sided change
-  rather than a filter that silently stops being offered. It runs inside `npm run test:pre-pr`. The
-  generated OpenAPI cannot carry this — `actionType` and the filter parameter are both plain
-  `string`, so nothing generated pins the membership set.
-- **Timestamps are local.** `yyyy/MM/dd HH:mm` through `DatePipe`, inside a `<time [attr.datetime]>`
-  that keeps the exact UTC instant machine-readable. Fixed field order and Western digits, matching
-  the digits used everywhere else in the app, so the column stays scannable and free of ICU variance.
-- **Load more is an append, never a page.** The audit slice keeps `loading` (initial and filter) and
-  `appending` (cursor append) apart, so an append never unmounts the events already on screen: the
-  list stays mounted with `aria-busy`, the button carries its own busy state, an append failure lands
-  in its own scoped `qd-error-state` beside the untouched events rather than replacing them, and the
-  appended count is announced through a permanently mounted polite region. Items are appended in
-  server order. No numeric pagination is offered here, and `Load more` inherits none of F13.
-  `clear()` bumps `requestVersion` as well (Phase 11): `clearProtectedState()` runs the moment the
-  Owner check fails, so an audit read that is already in flight must not be able to repopulate
-  `pageState` after the revocation — the version bump makes both `load()` and `loadNextPage()`
-  no-ops on resolve, and `clear()` also resets `loading`/`error` to idle so a cleared store never
-  presents a stale spinner or a stale failure.
-  An append snapshots `requestVersion` without bumping it, so an initial/filter load that starts
-  while the append is in flight invalidates it. That invalidation is also what has to release
-  `appending`: `clearAppendState()` — called by both `load()` and `clear()` — resets `appending`,
-  `appendError` and `appendedCount` together, because the append's own `finally` is version-guarded
-  and deliberately does nothing once it has been superseded. Without that reset `appending` would
-  stay `true` forever and `Load more` would stay disabled for the rest of the session.
-- **Accounts are chosen by identity.** `components/access-user-picker/` replaces the two numeric-id
-  inputs. It searches through the same `AccessAdminApi.listUsers` the list uses (`pageSize: 10`),
-  renders each candidate by name with the email beneath, and emits the summary object. Since the
-  Golden pass the candidates open in the shared F15 `qdFloatingLayer` (`select-listbox`) anchored to
-  the search field, so the picker gets the one keyboard script — Arrow/Home/End over the options,
-  Escape to close with focus returned, Tab to close, outside press to close — while the query, the
-  facade call and the two result signals stay in Access. Enter on the layer activates the option the
-  shared cursor points at; Enter in the field still searches and is `preventDefault`ed. The audit
-  section keeps the chosen summary and reads `.id` off it only when it builds the query — the integer
-  is constructed in TypeScript, sent as a query parameter, and never bound into a template or a route.
-  Enter inside the picker searches and is `preventDefault`ed, because the picker sits inside the
-  filter `<form>` and Enter would otherwise submit the filters instead. Each candidate's
-  `data-testid` ends in that candidate's id — `<prefix>-candidate-<id>`, the same shape
-  `access-user-list` uses for its rows. A `data-testid` is not visible UI, so carrying an id there
-  does not breach the no-IDs rule above.
-- **The picker is presentational like every other component here.** It holds the typed term and
-  nothing else; the page owns the two result signals and calls `AccessAdminFacade.findUsers`, which
-  gates on Owner access and delegates to `AccessAuditStore.findUsers` — between them the only place
-  the lookup request lives. Two signals, not one, because the two pickers must not show each
-  other's candidates. `findUsers` returns the outcome instead of storing it, so a lookup for a filter
-  cannot disturb the listed page; a failed lookup returns its message and the picker renders an
-  error state, which is why a failed search does not read as «لا توجد حسابات مطابقة».
-- **Owner reconciliation is diagnostic, and the page says so.** `canApply` is **status, never an
-  offer**: there is no apply endpoint in this feature, so the panel presents it as «مؤشّر التنفيذ»
-  under a line stating that reconciliation runs outside the dashboard and is not applied from this
-  page. The section's only `<button>` is the fingerprint disclosure; there is no Apply control.
-- **Candidate states read in Arabic** through `ACCESS_ADMIN_LABELS.reconciliationCandidateState`,
-  which is also what the Owner relink precondition names — see *Advanced Security*.
-- **The 64-character configuration fingerprint is behind a disclosure**, collapsed by default, with
-  `aria-expanded` on the toggle. §3 permits a technical value only as an explicitly advanced
-  diagnostic affordance, never in a default view; this is the one such affordance in the feature.
+**The generated API models stay too.** `LogtoSubjectRelinkPreview`, `OwnerReconciliationStatus`,
+`PreviewLogtoSubjectRelinkBody` and `ConfirmLogtoSubjectRelinkBody` remain under
+`core/api/generated/`: only the *imports* of them were removed, because generated files mirror the
+backend contract and are not hand-edited.
 
 ## State regions and announcement
 
 **There is no `qd-state` left in this feature, and the adapter itself was deleted in Phase 11.** Every async surface consumes one of the five F12
-owners directly: `qd-skeleton-rows` for a list whose loaded shape is known (the user list, the audit
-log), `qd-panel-skeleton shape="text"` for a single-value region (the access check, the detail load,
-the catalogue, the reconciliation status), `qd-empty-state`, `qd-error-state severity="read"` for a
+owners directly: `qd-skeleton-rows` for a list whose loaded shape is known (the user list),
+`qd-panel-skeleton shape="text"` for a single-value region (the access check, the detail load,
+the catalogue), `qd-empty-state`, `qd-error-state severity="read"` for a
 scoped read failure, `qd-error-state severity="write"` for a write failure, and `qd-notice` for a
 success or `409` recovery.
 
-**The announcer is permanent; the visible band is not.** In the workspace the announcer is the
-details shell's own always-mounted `role="status"`/`aria-live="polite"` slot; in الأمان المتقدم it
-is a `.qd-sr-only` region carrying `politeMutationText()`. Both exist before any write runs, because
+**The announcer is permanent; the visible band is not.** With the workspace the only section left,
+there is one announcer: the details shell's own always-mounted `role="status"`/`aria-live="polite"`
+slot. It exists before any write runs, because
 a live region created together with its text is generally not read out — the later text insertion is
-what the screen reader announces. What sits *inside* those regions is rendered only while there is a
+what the screen reader announces. What sits *inside* that region is rendered only while there is a
 message, so the idle mutation band is **zero height**: the ~6.5rem permanently blank slot the
 previous shape paid for is gone (D41). Before any write, the announcer remains empty, keeps its
-role, and occupies zero height.
+role, and occupies zero height. The `.qd-sr-only` `politeMutationText()` region went with the
+الأمان المتقدم panel it belonged to.
 
 Severity routing is unchanged in meaning and now uses the locked F12 roles: a completed change and a
 `409` recovery render `qd-notice` (`status`, polite, quiet tone), and only a genuine write failure
-renders `qd-error-state severity="write"` — the one `role="alert"`, which never clears the draft. In
-الأمان المتقدم the polite announcer deliberately carries the non-error text only, so an alert is not
-also announced politely. The workspace cannot do the same, because its announcer *is* the details
-shell's status slot and the visible surface lives inside it: the write-error branch is therefore
+renders `qd-error-state severity="write"` — the one `role="alert"`, which never clears the draft. The
+workspace's announcer *is* the details shell's status slot and the visible surface lives inside it,
+so the write-error branch is
 wrapped in an `aria-live="off"` element, which shadows the polite ancestor for that subtree while the
 `role="alert"` element remains its own assertive live region. The alert announces once; the F12 role
 lock is untouched, and no shared shell markup changes.
 The tone-suffixed `access-mutation-message-*` testid still names exactly one element.
 
-**Both mutating sections keep their own region** — the workspace commits accept/disable/reactivate/
-replace, and الأمان المتقدم commits relink — because only one is ever mounted and a single hoisted
-instance would put the band on the read-only audit section too. `runMutation` clears the message
-before every write, so the region is empty again before the next text lands.
-
-The message is also cleared **on a section change**, so «تم حفظ التغيير» earned by a permission save
-in the workspace does not reappear at the top of الأمان المتقدم as though that panel had just
-written something. The clear hangs off the `?tab=` subscription (`AccessAdminPageComponent.showTab`)
-rather than off the tablist click, so a browser history move between sections clears it too.
+The workspace is the only mutating section — it commits accept/disable/reactivate/replace — and it
+announces into the surface that belongs to it. `runMutation` clears the message
+before every write, so the region is empty again before the next text lands. **That is now the only
+clear.** The section-change clear (`AccessAdminPageComponent.showTab` → `clearMutationMessage`) went
+with the tab strip, and `AccessAdminFacade.clearMutationMessage` went with its last caller: with one
+section it could never fire, and a facade method whose only reachable effect was to duplicate what
+`runMutation` already does before every write is not a contract worth keeping alive for a section
+change that cannot happen.
 
 Because that region outlives the detail pane's own load/error branches, the message channel carries
 mutation outcomes and nothing else. The permission-denied text is rendered from `canAccess()`
@@ -535,35 +458,21 @@ access state that has since changed.
   the facade composes. It performs no HTTP: the facade calls the API and hands it the outcome, so
   error mapping stays in one place. The facade re-exports its signals, so the store is an internal
   seam and no consumer outside this folder sees it.
-- `state/access-audit.store.ts` owns the audit slice — the loaded page, the filter query, its
-  loading and error state, the **separate** append lifecycle (`appending`, `appendError`,
-  `appendedCount`), and the participant lookup the audit pickers run — as a
-  second plain signal-backed class the facade composes, on the same seam and for the same reason:
-  `FRONTEND_STRUCTURE.md` §5 caps a facade at 600 lines, and this slice is cohesive enough to lift
-  whole. It is constructed with `new AccessAuditStore(this.api)`, **not** `providedIn: 'root'` —
-  the facade is component-provided, so a root-provided store would share one audit page across every
-  page instance. Unlike the draft store it does issue its own requests, because the four methods
-  that make it a slice are all request-shaped. That is why the error text did not fork: the
-  load-failure fallback and the `HttpErrorResponse` → operator-message mapping moved out of the
-  facade into `state/access-admin-request-failure.ts`, which the facade and this store both import,
-  so a failed audit page and a failed user page still read the same. **The Owner gate is not in the
-  store.** `canAccess()` is the facade's, and the facade checks it before every request the store
-  issues, exactly as it guards `AccessPermissionDraftStore.setCodes`. The facade re-exports the
-  signals under their `audit*` names, so this store is an internal seam too.
+- `state/access-admin-request-failure.ts` holds the load-failure fallback and the
+  `HttpErrorResponse` → operator-message mapping, so a failed read reads the same wherever it is
+  raised. It outlived the audit store that shared it with the facade.
 - `models/access-admin.labels.ts` holds the Arabic copy that TypeScript needs (both confirmation
-  dialogs' wording, the selected-context and list-sheet copy, the diff-summary and appended-count
-  builders, and the tab, lifecycle-status, audit-action-type and reconciliation-candidate-state
-  label builders). Template-only copy stays in
-  the templates. The two builders added for the audit and reconciliation sections **return an
-  unrecognised value unchanged** rather than mapping it to an «غير معروف» constant: both name
-  server-side enums this page mirrors rather than owns, and a value it does not model is diagnostic
-  information the operator may need to quote. `userStatus` names the three modelled states
+  dialogs' wording, the selected-context and list-sheet copy, the diff-summary builder, and the
+  lifecycle-status label builder). The `tab` label builder and `tabsAriaLabel` went with the strip,
+  as did `systemActor` and `unnamedParticipant`, which were audit-row copy. Template-only copy stays in
+  the templates. `userStatus` names the three modelled states
   and reads anything else as «حالة غير معروفة» rather than as «معطّل»: the generated
   `AccessUserDetail.status` and `AccessUserSummary.status` are both plain `string`, so a state this
   page does not model is reachable, and the row and the workspace header would otherwise both tell
   the operator an account is disabled when the page in fact does not know what it is.
-  `models/access-admin-tabs.ts` holds the tab **keys** and their parser, separately from the copy —
-  the keys are a URL contract and must stay stable while the Arabic labels are free to change.
+  There is no `models/access-admin-tabs.ts` any more; if a second section ever returns, its keys and
+  parser belong in a file of their own again, separate from the copy, because keys are a URL contract
+  and must stay stable while the Arabic labels are free to change.
   **The page component reads the labels through a getter, not a class field**
   (`access-admin-page.component.ts` `get labels()`), matching how `abwab-page.component.ts` exposes
   `ABWAB_LABELS`. Keep the getter so the lazily initialised labels object is read at call time.
@@ -587,24 +496,21 @@ access state that has since changed.
   - `access-change-review` — the diff, the optional reason, and confirm/cancel; it owns the reason
     text and drops it whenever the pending action changes. **Which action is pending is the page's
     state, and the page closes the review explicitly** — on a user switch (both the direct one and
-    the one behind the discard confirmation) and on a settled write (`success`/`409`/`401`/`403`,
-    the same outcomes that bump the relink form's reset token). A failed write leaves the review
+    the one behind the discard confirmation) and on a settled write (`success`/`409`/`401`/`403`).
+    A failed write leaves the review
     open with the reason intact, so a retry does not start from a blank textarea;
-  - `access-audit-log` — the audit filters and rows;
-  - `access-user-picker` — the reusable find-an-account control the audit filters use twice;
-  - `access-advanced-security` — the relink form;
-  - `access-owner-reconciliation` — the read-only owner-reconciliation panel of the الأمان المتقدم
-    section: the four read states (loading, error, empty, status), the candidate list with its
-    Arabic state labels, and the technical-fingerprint disclosure whose open/closed state is the
-    component's own — nothing about it is page state, and it offers no control that could apply a
-    reconciliation.
-  These last two extractions are what keeps `access-admin-page.component.html` a composition file:
-  it owns the tabs, the Wide split and below-Wide context bar, the two confirm dialogs, the review
-  dock and the mutation surface, and delegates every account-detail and reconciliation block to a
+  `access-user-picker` is **gone**. Its only two mounts were the audit filters, and the facade's
+  `findUsers` delegation went with the audit store, so it had no consumer at all; the three model
+  symbols that existed only for it — `AccessUserSearchState`, `EMPTY_ACCESS_USER_SEARCH` and
+  `ACCESS_USER_PICKER_PAGE_SIZE` — were deleted with it. It survived the audit removal only because
+  it sat outside that phase's enumerated surface, not because anything still read it.
+  `access-account-permissions` is what keeps `access-admin-page.component.html` a composition file:
+  it owns the Wide split and below-Wide context bar, the two confirm dialogs, the review
+  dock and the mutation surface, and delegates every account-detail block to a
   component — `FRONTEND_STRUCTURE.md` §1.2 caps a template at 300 lines before its hard limit, and
   the inlined blocks had taken it past 400.
-  The dirty predicate is **not** re-derived per component any more: the draft bar, the `+N / −M`
-  summary and `access-advanced-security`'s `hasUnsavedPermissions` input all read
+  The dirty predicate is **not** re-derived per component any more: the draft bar and the `+N / −M`
+  summary both read
   `AccessAdminFacade.isDirty`, the single computed on the draft store, so they cannot disagree with
   the diff rendered beside them. The predicates that *are* shared —
   `canSelectUserPermissions`, `canReplaceUserPermissions`, `acceptGrantsPermissions` — live as pure

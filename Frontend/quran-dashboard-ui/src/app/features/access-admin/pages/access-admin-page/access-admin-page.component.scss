@@ -12,10 +12,6 @@
   min-block-size: 0;
 }
 
-.access-admin-page__tabs {
-  align-self: start;
-}
-
 .access-admin-page__layout {
   display: flex;
   flex-direction: column;
@@ -126,12 +122,6 @@
   gap: var(--qd-space-2);
 }
 
-.access-admin-page__security {
-  display: grid;
-  gap: var(--qd-space-4);
-  align-items: start;
-}
-
 @media (min-width: bp.$qd-bp-wide-min) {
   .access-admin-page__split {
     display: grid;
@@ -142,14 +132,5 @@
     position: sticky;
     inset-block-start: calc(var(--qd-navbar-block-size) + var(--qd-space-4));
     block-size: calc(100dvh - var(--qd-navbar-block-size) - (var(--qd-space-4) * 2));
-  }
-
-  .access-admin-page__security {
-    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-  }
-
-  .access-admin-page__security > p,
-  .access-admin-page__security > .access-admin-page__mutation {
-    grid-column: 1 / -1;
   }
 }

@@ -2,7 +2,7 @@
   <div class="qd-page-shell qd-page-shell--split-workspace access-admin-page__shell">
     <header class="qd-page-header">
       <h1 id="access-admin-page-title" class="qd-page-title">إدارة الوصول</h1>
-      <p class="qd-page-header__description">متابعة الحسابات والصلاحيات المباشرة وسجل التغييرات بعناية.</p>
+      <p class="qd-page-header__description">متابعة الحسابات والصلاحيات المباشرة بعناية.</p>
     </header>
 
     @if (!facade.accessStateKnown()) {
@@ -10,157 +10,77 @@
     } @else if (!facade.canAccess()) {
       <qd-error-state severity="read" testId="access-admin-denied" message="لا تملك صلاحية إدارة الوصول." />
     } @else {
-      <qd-tabs class="access-admin-page__tabs" [ariaLabel]="labels.tabsAriaLabel">
-        @for (tab of tabKeys; track tab) {
-          <button
-            type="button"
-            qdTab
-            [selected]="activeTab() === tab"
-            [attr.id]="'access-admin-tab-' + tab"
-            [attr.aria-controls]="'access-admin-panel-' + tab"
-            [attr.data-testid]="'access-admin-tab-' + tab"
-            (click)="selectTab(tab)"
-          >{{ labels.tab(tab) }}</button>
-        }
-      </qd-tabs>
-
-      @switch (activeTab()) {
-        @case ('audit') {
-          <div
-            id="access-admin-panel-audit"
-            role="tabpanel"
-            aria-labelledby="access-admin-tab-audit"
-            data-testid="access-admin-panel-audit"
-          >
-            <qd-access-audit-log
-              [events]="facade.auditEvents()"
-              [permissionGroups]="facade.permissionGroups()"
-              [loading]="facade.auditLoading()"
-              [error]="facade.auditError()"
-              [hasNextPage]="facade.auditNextCursor() !== null"
-              [appending]="facade.auditAppending()"
-              [appendError]="facade.auditAppendError()"
-              [appendedCount]="facade.auditAppendedCount()"
-              [targetSearch]="auditTargetSearch()"
-              [actorSearch]="auditActorSearch()"
-              (filtersApplied)="applyAuditFilters($event)"
-              (nextPageRequested)="loadNextAuditPage()"
-              (targetSearchRequested)="searchAuditTarget($event)"
-              (actorSearchRequested)="searchAuditActor($event)"
-            />
+      <div data-testid="access-admin-panel-workspace" class="access-admin-page__layout">
+        @if (isWide()) {
+          <div class="qd-page-split access-admin-page__split">
+            <aside
+              class="qd-page-rail qd-page-rail--l access-admin-page__rail"
+              data-testid="access-admin-user-rail"
+            >
+              <ng-container *ngTemplateOutlet="userListPanel" />
+            </aside>
+            <ng-container *ngTemplateOutlet="detailPanel" />
           </div>
-        }
-        @case ('security') {
-          <div
-            id="access-admin-panel-security"
-            role="tabpanel"
-            aria-labelledby="access-admin-tab-security"
-            data-testid="access-admin-panel-security"
-            class="access-admin-page__security"
-          >
-            <p class="qd-sr-only" role="status" aria-live="polite" data-testid="access-security-announcer">{{ politeMutationText() }}</p>
-            <div class="access-admin-page__mutation">
-              <ng-container *ngTemplateOutlet="mutationSurface" />
+        } @else {
+          <div class="access-admin-page__context-bar" data-testid="access-selected-context-bar">
+            <div class="access-admin-page__context-identity">
+              <span class="access-admin-page__context-name">{{ selectedIdentity() || labels.noSelectedContextLabel }}</span>
+              <qd-access-user-summary-card [user]="facade.selectedUser()" />
             </div>
-
-            <qd-access-advanced-security
-              [user]="facade.selectedUser()"
-              [relinkPreview]="facade.relinkPreview()"
-              [busyAction]="facade.busyAction()"
-              [hasUnsavedPermissions]="facade.isDirty()"
-              [resetToken]="workflowResetToken()"
-              (relinkPreviewRequested)="previewRelink($event)"
-              (relinkConfirmed)="confirmRelink($event)"
-              (relinkCancelled)="cancelRelink()"
-            />
-
-            <qd-access-owner-reconciliation
-              [loading]="facade.reconciliationLoading()"
-              [error]="facade.reconciliationError()"
-              [status]="facade.reconciliationStatus()"
-            />
+            <form
+              class="access-admin-page__context-search"
+              data-testid="access-context-search-form"
+              novalidate
+              (submit)="applyContextSearch($event)"
+            >
+              <qd-form-field [label]="labels.contextSearchLabel">
+                <input
+                  qdControl
+                  type="search"
+                  data-testid="access-context-search"
+                  [value]="contextSearch()"
+                  (input)="updateContextSearch($event)"
+                />
+              </qd-form-field>
+              <button
+                type="submit"
+                qdAction="secondary"
+                data-testid="access-context-search-apply"
+              >{{ labels.contextSearchButton }}</button>
+            </form>
+            <button
+              type="button"
+              qdAction="secondary"
+              data-testid="access-open-user-list"
+              (click)="openUserListSheet()"
+            >{{ labels.openUserListButton }}</button>
           </div>
-        }
-        @default {
-          <div
-            id="access-admin-panel-workspace"
-            role="tabpanel"
-            aria-labelledby="access-admin-tab-workspace"
-            data-testid="access-admin-panel-workspace"
-            class="access-admin-page__layout"
+
+          <ng-container *ngTemplateOutlet="detailPanel" />
+
+          @if (facade.isDirty()) {
+            <div
+              class="access-admin-page__review-dock access-admin-page__review-dock--pinned"
+              data-testid="access-permission-draft-bar"
+              [attr.aria-label]="labels.reviewDockLabel"
+              role="group"
+            >
+              <ng-container *ngTemplateOutlet="reviewDock" />
+            </div>
+          }
+
+          <qd-modal-shell
+            variant="form"
+            testIdPrefix="access-user-list-sheet"
+            [open]="userListSheetOpen()"
+            [titleText]="labels.userListSheetTitle"
+            [hasFooter]="false"
+            (dismissed)="closeUserListSheet()"
           >
-            @if (isWide()) {
-              <div class="qd-page-split access-admin-page__split">
-                <aside
-                  class="qd-page-rail qd-page-rail--l access-admin-page__rail"
-                  data-testid="access-admin-user-rail"
-                >
-                  <ng-container *ngTemplateOutlet="userListPanel" />
-                </aside>
-                <ng-container *ngTemplateOutlet="detailPanel" />
-              </div>
-            } @else {
-              <div class="access-admin-page__context-bar" data-testid="access-selected-context-bar">
-                <div class="access-admin-page__context-identity">
-                  <span class="access-admin-page__context-name">{{ selectedIdentity() || labels.noSelectedContextLabel }}</span>
-                  <qd-access-user-summary-card [user]="facade.selectedUser()" />
-                </div>
-                <form
-                  class="access-admin-page__context-search"
-                  data-testid="access-context-search-form"
-                  novalidate
-                  (submit)="applyContextSearch($event)"
-                >
-                  <qd-form-field [label]="labels.contextSearchLabel">
-                    <input
-                      qdControl
-                      type="search"
-                      data-testid="access-context-search"
-                      [value]="contextSearch()"
-                      (input)="updateContextSearch($event)"
-                    />
-                  </qd-form-field>
-                  <button
-                    type="submit"
-                    qdAction="secondary"
-                    data-testid="access-context-search-apply"
-                  >{{ labels.contextSearchButton }}</button>
-                </form>
-                <button
-                  type="button"
-                  qdAction="secondary"
-                  data-testid="access-open-user-list"
-                  (click)="openUserListSheet()"
-                >{{ labels.openUserListButton }}</button>
-              </div>
-
-              <ng-container *ngTemplateOutlet="detailPanel" />
-
-              @if (facade.isDirty()) {
-                <div
-                  class="access-admin-page__review-dock access-admin-page__review-dock--pinned"
-                  data-testid="access-permission-draft-bar"
-                  [attr.aria-label]="labels.reviewDockLabel"
-                  role="group"
-                >
-                  <ng-container *ngTemplateOutlet="reviewDock" />
-                </div>
-              }
-
-              <qd-modal-shell
-                variant="form"
-                testIdPrefix="access-user-list-sheet"
-                [open]="userListSheetOpen()"
-                [titleText]="labels.userListSheetTitle"
-                [hasFooter]="false"
-                (dismissed)="closeUserListSheet()"
-              >
-                <ng-container *ngTemplateOutlet="userListPanel" />
-              </qd-modal-shell>
-            }
-          </div>
+            <ng-container *ngTemplateOutlet="userListPanel" />
+          </qd-modal-shell>
         }
-      }
+      </div>
     }
 
     <qd-confirm-dialog

@@ -1383,9 +1383,7 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   focusable owner and are correct**: a name truncating inside a `button`
   (`abwab-cards` card and crumbs, `access-user-list` row, `abwab-move-picker`'s two
   row kinds, `abwab-templates-page`'s list item, `word-type-filter`'s child chip), a
-  `role="treeitem"` with a roving tabindex (`abwab-tree`, `abwab-archive-view`), a
-  `role="option"` carrying the full value as its `aria-label` (`access-user-picker`'s
-  candidates), a row whose focusable check control carries the name
+  `role="treeitem"` with a roving tabindex (`abwab-tree`, `abwab-archive-view`), a row whose focusable check control carries the name
   (`abwab-door-picker`), an `aria-hidden` count inside a focusable tab
   (`abwab-toolbar`), a `<label>` wrapping a checkbox with no truncation
   (`access-permission-editor`), and one that is not the HTML attribute at all
