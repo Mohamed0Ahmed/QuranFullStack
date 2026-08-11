@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
@@ -6,7 +6,6 @@ import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-p
 import { QdNoticeComponent } from '../../../../shared/ui/notice/notice.component';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { LINKING_LABELS } from '../../models/linking.labels';
-import { LinkingWorkspaceStore } from '../../state/linking-workspace.store';
 import { LinkingWorkflowFacade, LinkingWorkflowStep } from '../../state/linking-workflow.facade';
 import { LinkingDoorStepComponent } from '../linking-door-step/linking-door-step.component';
 import { LinkingAyahCardComponent } from '../linking-ayah-card/linking-ayah-card.component';
@@ -22,10 +21,8 @@ const REVIEW_PAGE_SIZE = 12;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DirectLinkWorkflowComponent {
-  private readonly workspace = inject(LinkingWorkspaceStore);
   private readonly workflow = inject(LinkingWorkflowFacade);
 
-  readonly workspaceSourceKey = input<string | null>(null);
   protected readonly labels = LINKING_LABELS;
   protected readonly state = this.workflow.state;
   protected readonly currentStep = this.workflow.step;
@@ -46,12 +43,6 @@ export class DirectLinkWorkflowComponent {
   protected readonly steps: readonly LinkingWorkflowStep[] = ['configure-source', 'resolve', 'door', 'review'];
 
   constructor() {
-    effect(() => {
-      const sourceKey = this.workspaceSourceKey();
-      if (this.workspace.activeSurface() === 'linking-flow' && sourceKey !== null && this.state().origin === null) {
-        this.workflow.startWorkspaceOperation();
-      }
-    });
     effect(() => {
       this.operation();
       this.reviewPage.set(1);

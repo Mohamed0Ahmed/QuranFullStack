@@ -105,7 +105,9 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   discriminant. The Word Type global overlay supports its current word-only frame. Ordinary details
   contribute through the neutral `qdDetailsActions` zone; frameless overlays render the same
   contribution above their content. All actions remain Owner-only, and Direct Link closes the
-  retained overlay before opening the global Linking shell.
+  retained overlay before opening the global Linking shell. Closing the operation restores the
+  retained overlay before focus returns to the regenerated, source-key-qualified action; Add only
+  prepares the source and never opens the workspace.
 - **Cross-entity links** (plan §5.2): the seven detail-list link components
   (root-words/lemmas/stems, lemma-words/stems, stem-words/lemmas) render real
   `a[qdDetailLink]` anchors carrying fully-explicit frames instead of forced-new-tab

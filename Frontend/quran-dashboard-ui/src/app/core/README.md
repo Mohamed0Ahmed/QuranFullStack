@@ -196,3 +196,5 @@ host as siblings. The Linking host mounts its lightweight shell in the same rend
 boundary, then defers only its heavy inner surface. The app shell is inert while either dialog is
 open, and the detail overlay is inert while Linking is foreground. `LinkingWorkspaceStore` remains
 the owner of Linking open state, items, and workflow intent; core only composes the layer boundary.
+`top-navbar` captures the Linking trigger before opening the host, so the feature coordinator can
+return focus to that trigger after a Navbar-originated close without making core own Linking state.

@@ -18,14 +18,14 @@
           <qd-linking-workspace />
         } @else if (isSourceAyahEditor()) {
           <qd-linking-source-ayah-editor
-            [sourceKey]="activeSourceKey()"
+            [sourceKey]="editorSourceKey()"
             (dismissed)="closeSourceEditor()"
             (manualWordsRequested)="openManualWordEditor()"
           />
         } @else if (isManualWordEditor()) {
-          <qd-linking-manual-word-editor [sourceKey]="activeSourceKey()" (dismissed)="closeManualWordEditor()" />
+          <qd-linking-manual-word-editor [sourceKey]="editorSourceKey()" (dismissed)="closeManualWordEditor()" />
         } @else if (isLinkingFlow()) {
-          <qd-direct-link-workflow [workspaceSourceKey]="activeSourceKey()" />
+          <qd-direct-link-workflow />
         }
       } @placeholder {
         <p class="qd-sr-only" role="status">{{ labels.sourceLoading }}</p>

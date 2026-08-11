@@ -38,7 +38,6 @@ export class LinkingWorkspaceStore {
   private readonly checkedSourceKeysSignal = signal<readonly string[]>([]);
   private readonly activeSurfaceSignal = signal<LinkingWorkspaceSurface>('closed');
   private readonly editorSourceKeySignal = signal<string | null>(null);
-  private readonly directLinkSourceKeySignal = signal<string | null>(null);
   private readonly removedItemSignal = signal<LinkingRemovedWorkspaceItem | null>(null);
   private readonly clearAllRequestedSignal = signal(false);
   private readonly persistenceWarningSignal = signal<string | null>(null);
@@ -57,11 +56,6 @@ export class LinkingWorkspaceStore {
   );
   readonly activeSurface = this.activeSurfaceSignal.asReadonly();
   readonly editorSourceKey = this.editorSourceKeySignal.asReadonly();
-  readonly activeSourceKey = computed(() =>
-    this.activeSurfaceSignal() === 'linking-flow'
-      ? this.directLinkSourceKeySignal()
-      : this.editorSourceKeySignal(),
-  );
   readonly removedItem = this.removedItemSignal.asReadonly();
   readonly clearAllRequested = this.clearAllRequestedSignal.asReadonly();
   readonly persistenceWarning = this.persistenceWarningSignal.asReadonly();
@@ -100,14 +94,6 @@ export class LinkingWorkspaceStore {
       toWorkspaceItem(sourceKey, source, initialConfiguration(source), null, true),
     ]);
     this.persist();
-    return sourceKey;
-  }
-
-  addOrFocus(source: LinkingSourceDescriptor): string | null {
-    const sourceKey = this.addSource(source);
-    if (sourceKey !== null) {
-      this.editorSourceKeySignal.set(sourceKey);
-    }
     return sourceKey;
   }
 
@@ -158,10 +144,6 @@ export class LinkingWorkspaceStore {
     if (this.editorSourceKeySignal() === sourceKey) {
       this.editorSourceKeySignal.set(null);
     }
-    if (this.directLinkSourceKeySignal() === sourceKey) {
-      this.directLinkSourceKeySignal.set(null);
-      this.activeSurfaceSignal.set('workspace');
-    }
     this.persist();
   }
 
@@ -195,7 +177,6 @@ export class LinkingWorkspaceStore {
     this.itemsSignal.set([]);
     this.checkedSourceKeysSignal.set([]);
     this.editorSourceKeySignal.set(null);
-    this.directLinkSourceKeySignal.set(null);
     this.removedItemSignal.set(null);
     this.clearAllRequestedSignal.set(false);
     this.persist();
@@ -212,35 +193,18 @@ export class LinkingWorkspaceStore {
       return;
     }
     this.editorSourceKeySignal.set(null);
-    this.directLinkSourceKeySignal.set(null);
     this.activeSurfaceSignal.set('workspace');
   }
 
   close(): void {
     this.editorSourceKeySignal.set(null);
-    this.directLinkSourceKeySignal.set(null);
     this.activeSurfaceSignal.set('closed');
   }
 
-  openDirectLink(sourceKey: string): void {
-    if (!this.canMutate() || this.findItem(sourceKey) === null) {
-      return;
-    }
-    this.directLinkSourceKeySignal.set(sourceKey);
-    this.activeSurfaceSignal.set('linking-flow');
-  }
-
-  openEphemeralDirectLink(): void {
+  openOperationFlow(): void {
     if (this.canMutate()) {
-      this.directLinkSourceKeySignal.set(null);
+      this.editorSourceKeySignal.set(null);
       this.activeSurfaceSignal.set('linking-flow');
-    }
-  }
-
-  addAndOpenDirectLink(source: LinkingSourceDescriptor): void {
-    const sourceKey = this.addSource(source);
-    if (sourceKey !== null) {
-      this.openDirectLink(sourceKey);
     }
   }
 
@@ -249,7 +213,6 @@ export class LinkingWorkspaceStore {
       return;
     }
     this.editorSourceKeySignal.set(null);
-    this.directLinkSourceKeySignal.set(null);
     this.activeSurfaceSignal.set('workspace');
   }
 
@@ -318,22 +281,6 @@ export class LinkingWorkspaceStore {
     );
   }
 
-  refreshResultCount(sourceKey: string, resultCount: number): void {
-    if (!Number.isSafeInteger(resultCount) || resultCount < 0) {
-      return;
-    }
-    this.updateItem(sourceKey, (item) =>
-      toWorkspaceItem(
-        item.sourceKey,
-        item.source,
-        item.configuration,
-        resultCount,
-        false,
-        item.configurationRevision,
-      ),
-    );
-  }
-
   reconcileResolvedSource(sourceKey: string, universe: readonly string[]): void {
     const item = this.findItem(sourceKey);
     if (item === null) {
@@ -353,10 +300,6 @@ export class LinkingWorkspaceStore {
         current.configurationRevision + 1,
       ),
     );
-  }
-
-  setHighlightSourceWords(sourceKey: string, highlightSourceWords: boolean): void {
-    this.setAutomaticWordMatchesEnabled(sourceKey, highlightSourceWords);
   }
 
   captureOperationMembers(): readonly LinkingOperationMember[] {
@@ -452,7 +395,6 @@ export class LinkingWorkspaceStore {
     this.checkedSourceKeysSignal.set([]);
     this.activeSurfaceSignal.set('closed');
     this.editorSourceKeySignal.set(null);
-    this.directLinkSourceKeySignal.set(null);
     this.removedItemSignal.set(null);
     this.clearAllRequestedSignal.set(false);
     this.persistenceWarningSignal.set(null);

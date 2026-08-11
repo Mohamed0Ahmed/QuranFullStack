@@ -427,6 +427,9 @@ content, so an ordinary Undo control is not announced as part of a live status m
   call-site may not introduce a fifth geometry; `npm run check:golden-ui` reads
   `modal-shell.component.scss` and fails when the set of `.qd-modal-shell--*` width classes is
   anything other than `confirm/form/wide/overlay`.
+- `qdAction` keeps the shared 32/40/48 control scale. A feature may raise an action's local
+  `--qd-action-size` to the 44px hit-target token on Wide/Medium and the 48px control token on
+  Compact when an action is an integration entry point; it does not add a parallel button primitive.
 - There is **one** menu-item treatment, and one destructive variant of it. `.qd-floating-layer__item`
   and `.qd-context-menu__item` are declared as a single rule set in `_components.scss` (hover,
   `:focus-visible`, `[aria-disabled]`, `--danger`, and the Compact `44px` target), so the Abwab row

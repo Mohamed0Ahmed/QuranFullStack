@@ -29,8 +29,8 @@ export class LinkingWorkspaceComponent {
     return this.workspace.items().map((item) => ({
       item,
       checked: checked.has(item.sourceKey),
-      countStatus: item.resultCount === null ? 'unresolved' : item.lastResolvedCountIsStale ? 'stale' : 'ready',
-      countLabel: item.resultCount === null ? this.labels.unresolvedResultCount : `${item.resultCount} ${this.labels.ayahUnit}`,
+      countStatus: item.lastResolvedCount === null ? 'unresolved' : item.lastResolvedCountIsStale ? 'stale' : 'ready',
+      countLabel: item.lastResolvedCount === null ? this.labels.unresolvedResultCount : `${item.lastResolvedCount} ${this.labels.ayahUnit}`,
     }));
   });
   protected readonly selectedCount = computed(() => this.workspace.checkedSourceKeys().length);

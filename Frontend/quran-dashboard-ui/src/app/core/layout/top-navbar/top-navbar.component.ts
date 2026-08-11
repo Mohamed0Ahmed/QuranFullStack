@@ -27,6 +27,7 @@ import { QD_BP_WIDE_QUERY } from '../../../shared/layout/breakpoints';
 import { AuthReturnLocationStore } from '../../auth/auth-return-location.store';
 import { CurrentUserStore } from '../../auth/current-user.store';
 import { LinkingAccessService } from '../../../features/linking/state/linking-access.service';
+import { LinkingFocusCoordinator } from '../../../features/linking/state/linking-focus.coordinator';
 import { LinkingWorkspaceStore } from '../../../features/linking/state/linking-workspace.store';
 
 const MORE_MENU_ITEM: NavItem = {
@@ -60,6 +61,7 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
   private readonly authReturnLocationStore = inject(AuthReturnLocationStore);
   private readonly scrollLock = inject(ScrollLockService);
   private readonly linkingAccess = inject(LinkingAccessService);
+  private readonly linkingFocus = inject(LinkingFocusCoordinator);
   private readonly linkingWorkspace = inject(LinkingWorkspaceStore);
 
   readonly sheetOpen = signal(false);
@@ -193,6 +195,7 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
   }
 
   openLinkingWorkspace(): void {
+    this.linkingFocus.capture('navbar');
     if (this.wide()) {
       this.linkingWorkspace.openWorkspace();
       return;

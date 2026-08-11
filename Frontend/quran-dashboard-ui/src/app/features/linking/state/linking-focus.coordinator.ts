@@ -62,9 +62,13 @@ export class LinkingFocusCoordinator {
 }
 
 function fallbackSelectorFor(invoker: HTMLElement | null): string | null {
-  const sourceKey = invoker?.dataset['linkingEditorSourceKey'];
+  const sourceKey = invoker?.dataset['linkingSourceAction'];
   if (sourceKey) {
-    return `[data-linking-editor-source-key="${CSS.escape(sourceKey)}"]`;
+    return `[data-linking-source-action="${CSS.escape(sourceKey)}"]`;
+  }
+  const editorSourceKey = invoker?.dataset['linkingEditorSourceKey'];
+  if (editorSourceKey) {
+    return `[data-linking-editor-source-key="${CSS.escape(editorSourceKey)}"]`;
   }
   return invoker?.classList.contains('qd-navbar__linking-trigger') ? '.qd-navbar__linking-trigger' : null;
 }

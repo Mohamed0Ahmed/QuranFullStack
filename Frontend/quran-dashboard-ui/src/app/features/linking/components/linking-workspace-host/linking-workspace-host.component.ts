@@ -51,7 +51,7 @@ export class LinkingWorkspaceHostComponent {
     }
     return this.isLinkingFlow() ? this.labels.directLink : this.labels.workspace;
   });
-  protected readonly activeSourceKey = this.workspace.activeSourceKey;
+  protected readonly editorSourceKey = this.workspace.editorSourceKey;
   protected readonly clearAllRequested = this.workspace.clearAllRequested;
   protected readonly itemCount = this.workspace.itemCount;
 
@@ -83,7 +83,7 @@ export class LinkingWorkspaceHostComponent {
   }
 
   protected openManualWordEditor(): void {
-    const sourceKey = this.activeSourceKey();
+    const sourceKey = this.editorSourceKey();
     if (sourceKey !== null) {
       this.workspace.openManualWordEditor(sourceKey);
     }

@@ -86,8 +86,12 @@ configuration. Removal keeps one transient Undo snapshot, while remove-all uses 
 confirmation dialog without clearing another actor's local-storage bucket.
 
 `QuranSourceLinkingActionsComponent` remains the shared Owner-only explorer seam. Add to Workspace
-is idempotent, preserves focus, and announces whether the row was added or already existed; it does
-not open the workspace. Direct Link remains a transient one-source shortcut and does not add a row.
+is idempotent, preserves focus, and announces a source-qualified added/already-prepared result; it
+does not open the workspace. Its controls have stable source-key focus fallbacks, source-qualified
+accessible names, 44px targets on Wide/Medium, and 48px targets on Compact. Direct Link remains a
+transient one-source shortcut and does not add a row. A retained Words overlay closes before the
+Linking shell opens; on return it restores first, then `LinkingFocusCoordinator` targets the
+regenerated source action or its documented fallback.
 
 The resolver registry supports the automatic source families and the complete manual Mushaf reader.
 It sequentially loads matching
@@ -99,4 +103,5 @@ command boundary.
 
 There is still no Linking write API, request, draft, approval, history, cache mutation, durable
 group ID, backend entity, or server workspace. The current Direct Link mock remains presentation
-only and sends no HTTP request.
+only and sends no HTTP request. The workspace codec has only the V2 actor-bound envelope; no V1
+scalar workflow, selected-word source, active-source field, or compatibility reconstruction remains.

@@ -162,7 +162,6 @@ export function toWorkspaceItem(
   lastResolvedCountIsStale: boolean,
   configurationRevision = 0,
 ): LinkingWorkspaceItem {
-  const selection = configuration.ayahInclusion;
   return {
     sourceKey,
     source,
@@ -170,10 +169,6 @@ export function toWorkspaceItem(
     configurationRevision,
     lastResolvedCount,
     lastResolvedCountIsStale,
-    selection,
-    highlightSourceWords:
-      configuration.kind === 'automatic' && configuration.automaticWordMatchesEnabled,
-    resultCount: lastResolvedCount,
   };
 }
 

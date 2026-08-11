@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: contents;
 }
@@ -7,4 +9,14 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--qd-space-2);
+
+  .qd-action {
+    --qd-action-size: var(--qd-hit-target-min);
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .quran-source-linking-actions .qd-action {
+    --qd-action-size: var(--qd-control-lg);
+  }
 }

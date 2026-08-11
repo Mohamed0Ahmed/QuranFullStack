@@ -13,6 +13,7 @@ import { LinkingSourceConfiguration } from '../models/linking-workspace.models';
 import { ephemeralLinkingOperationMember } from '../utils/linking-operation-members';
 import { DEFAULT_LINKING_SELECTION } from '../utils/linking-selection';
 import { LinkingAccessService } from './linking-access.service';
+import { LinkingFocusCoordinator } from './linking-focus.coordinator';
 import { LinkingSourceSetCoordinator } from './linking-source-set.coordinator';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
 
@@ -48,12 +49,14 @@ export class LinkingWorkflowFacade {
   private readonly access = inject(LinkingAccessService);
   private readonly workspace = inject(LinkingWorkspaceStore);
   private readonly overlay = inject(DetailOverlayHistoryService);
+  private readonly focus = inject(LinkingFocusCoordinator);
   private readonly doors = inject(AbwabSnapshotFacade);
   private readonly sourceSet = inject(LinkingSourceSetCoordinator);
   private readonly commandPort = inject(LINKING_COMMAND_PORT);
   private readonly stateSignal = signal<LinkingWorkflowState>(INITIAL_WORKFLOW);
   private commandSubscription: Subscription | null = null;
   private pendingSource: LinkingSourceDescriptor | null = null;
+  private restoreOverlayFocus = false;
 
   readonly state = this.stateSignal.asReadonly();
   readonly step = computed(() => this.stateSignal().step);
@@ -91,6 +94,10 @@ export class LinkingWorkflowFacade {
         this.pendingSource = null;
         untracked(() => this.startFromSource(source));
       }
+      if (this.restoreOverlayFocus && this.overlay.isOpen()) {
+        this.restoreOverlayFocus = false;
+        untracked(() => this.focus.restore());
+      }
     });
   }
 
@@ -103,7 +110,7 @@ export class LinkingWorkflowFacade {
       this.overlay.close();
       return;
     }
-    this.workspace.openEphemeralDirectLink();
+    this.workspace.openOperationFlow();
     const configuration = defaultConfiguration(source);
     this.stateSignal.set({
       ...INITIAL_WORKFLOW,
@@ -118,14 +125,14 @@ export class LinkingWorkflowFacade {
     if (!this.access.canUseLinking() || members.length === 0) {
       return;
     }
-    this.workspace.openEphemeralDirectLink();
+    this.workspace.openOperationFlow();
     this.stateSignal.set({ ...INITIAL_WORKFLOW, origin: 'workspace', members });
     this.resolve();
   }
 
   setDirectAutomaticWords(enabled: boolean): void {
     const state = this.stateSignal();
-    if (state.origin !== 'source' || state.directConfiguration?.kind !== 'automatic') {
+    if (!this.access.canUseLinking() || state.origin !== 'source' || state.directConfiguration?.kind !== 'automatic') {
       return;
     }
     const configuration = { ...state.directConfiguration, automaticWordMatchesEnabled: enabled };
@@ -208,7 +215,7 @@ export class LinkingWorkflowFacade {
   }
 
   acknowledgeSuccess(): void {
-    if (this.step() !== 'success') {
+    if (!this.access.canUseLinking() || this.step() !== 'success') {
       return;
     }
     if (this.state().origin === 'workspace') {
@@ -224,7 +231,18 @@ export class LinkingWorkflowFacade {
     this.pendingSource = null;
     this.sourceSet.cancel();
     this.stateSignal.set(INITIAL_WORKFLOW);
-    origin === 'workspace' ? this.workspace.openWorkspace() : this.workspace.close();
+    if (origin === 'workspace') {
+      this.workspace.openWorkspace();
+      return;
+    }
+
+    this.workspace.close();
+    if (this.overlay.isRetainedClosed()) {
+      this.restoreOverlayFocus = true;
+      this.overlay.restore();
+      return;
+    }
+    this.focus.restore();
   }
 
   private isLiveDoor(doorId: number | null): boolean {

@@ -40,9 +40,6 @@ export interface LinkingWorkspaceItem {
   configurationRevision: number;
   lastResolvedCount: number | null;
   lastResolvedCountIsStale: boolean;
-  selection: LinkingSelection;
-  highlightSourceWords: boolean;
-  resultCount: number | null;
 }
 
 export interface LinkingWorkspacePersistedEnvelope {

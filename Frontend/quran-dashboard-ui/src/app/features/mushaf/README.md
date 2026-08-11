@@ -296,6 +296,10 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   Quran text rendering stay feature-owned and unchanged.
 - Browser-only APIs such as `matchMedia` and `ResizeObserver` remain guarded, with a desktop
   fallback when they are unavailable.
+- **Linking mode remains a reader-page boundary.** Its transient ayah draft is never part of the
+  Mushaf URL/session/cache identity, while its successful prepared source uses the same V2,
+  actor-bound workspace persistence as Words actions. The reader neither opens that workspace nor
+  moves focus after the handoff.
 - URL-state (`mushaf-url-sync`) is a shareable contract — keep params stable. The global
   detail overlay's `qdDetail*` keys are a different owner riding the same URL (Feature
   029, B7): `isBareMushafEntry` treats a URL whose only params are overlay keys as bare

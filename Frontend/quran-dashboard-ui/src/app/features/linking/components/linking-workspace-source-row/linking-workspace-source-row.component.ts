@@ -4,6 +4,7 @@ import { QdActionDirective } from '../../../../shared/ui/action/action.directive
 import { QdResultItemDirective } from '../../../../shared/ui/result-list/result-list.directive';
 import { LINKING_LABELS } from '../../models/linking.labels';
 import { LinkingWorkspaceSourceRowView } from '../../models/linking-workspace-view.models';
+import { linkingSourcePresentation } from '../../utils/linking-source-presentation';
 
 @Component({
   selector: 'qd-linking-workspace-source-row',
@@ -23,7 +24,7 @@ export class LinkingWorkspaceSourceRowComponent {
   readonly manualWordsRequested = output<void>();
   readonly removeRequested = output<void>();
   protected readonly labels = LINKING_LABELS;
-  protected readonly sourceKind = computed(() => this.labels.sourceKinds[this.row().item.source.kind]);
+  protected readonly sourceKind = computed(() => linkingSourcePresentation(this.row().item.source));
   protected readonly isAutomatic = computed(() => this.row().item.configuration.kind === 'automatic');
   protected readonly automaticConfiguration = computed(() => {
     const configuration = this.row().item.configuration;
