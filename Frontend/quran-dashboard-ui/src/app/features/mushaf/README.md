@@ -119,7 +119,8 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   canonical occurrence identity. The shared action component receives one `mushaf-word` descriptor;
   it does not alter reader selection, route state, or the protected word renderer. Direct Link reads
   the existing page, reconstructs only that descriptor's verse, and preserves the selected occurrence
-  as the sole highlighted word.
+  as the sole highlighted word. The actions sit beside the selected-word header so they remain
+  contextual to the chosen occurrence.
 - **D47 hit targets are overlays, not boxes.** The page-jump trigger keeps its printed `2.25rem`
   proportions and expands to `--qd-hit-target-min` through a transparent `::after`, and the
   previous/next actions carry `.qd-hit-target` for the same reason: growing the real box would

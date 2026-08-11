@@ -1997,7 +1997,9 @@ through that instance's polite region. Compact controls take `--qd-hit-target-mi
 ### 20.4 Modal and floating bases (F14, F15)
 
 `qd-modal-shell` owns four named widths and nothing else may exist: `confirm` 30rem, `form` 38rem,
-`wide` 52rem, `overlay` 46rem, plus the Compact full-bleed `94dvh` sheet with safe-area padding
+`wide` 52rem, `overlay` 46rem. A consumer may override only the existing `wide` variant's inline and
+block size through its neutral shell inputs; the Linking Workspace uses this for its 80vw by 80dvh
+working area. Compact remains the full-bleed `94dvh` sheet with safe-area padding
 (D48). The shell owns padding; header and footer are sticky siblings of the single scrolling body
 (D49). `dismissed` carries its route (`close`/`escape`/`backdrop`) rather than being a bare void, so
 a dirty authoring form can refuse the casual routes and keep an explicit close. Escape is consumed

@@ -29,23 +29,26 @@
     }
 
     <header class="selected-word-section__header">
-      @if (loadState().isLoading) {
-        <span
-          class="qd-skeleton qd-skeleton--rounded-md selected-word-section__word-skeleton"
-          aria-hidden="true"
-        ></span>
-      } @else {
-        <qd-segment-rendered-word
-          class="selected-word-section__rendered-word"
-          [segments]="analysis()!.segments"
-          [fullWordText]="analysis()!.word.textUthmani"
-        />
+      <div class="selected-word-section__title">
+        @if (loadState().isLoading) {
+          <span
+            class="qd-skeleton qd-skeleton--rounded-md selected-word-section__word-skeleton"
+            aria-hidden="true"
+          ></span>
+        } @else {
+          <qd-segment-rendered-word
+            class="selected-word-section__rendered-word"
+            [segments]="analysis()!.segments"
+            [fullWordText]="analysis()!.word.textUthmani"
+          />
+        }
+      </div>
+      @if (linkingSource(); as source) {
+        <div class="selected-word-section__linking-actions">
+          <qd-quran-source-linking-actions [source]="source" />
+        </div>
       }
     </header>
-
-    @if (linkingSource(); as source) {
-      <qd-quran-source-linking-actions [source]="source" />
-    }
 
     <div class="selected-word-section__content">
       @if (loadState().isLoading) {

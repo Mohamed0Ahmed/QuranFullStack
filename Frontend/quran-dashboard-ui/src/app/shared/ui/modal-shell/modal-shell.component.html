@@ -12,6 +12,8 @@
       [class.qd-modal-shell--form]="variant() === 'form'"
       [class.qd-modal-shell--wide]="variant() === 'wide'"
       [class.qd-modal-shell--overlay]="variant() === 'overlay'"
+      [style.--qd-modal-shell-wide-inline-size]="wideInlineSize()"
+      [style.--qd-modal-shell-wide-block-size]="wideBlockSize()"
       [attr.role]="dialogRole()"
       aria-modal="true"
       dir="rtl"

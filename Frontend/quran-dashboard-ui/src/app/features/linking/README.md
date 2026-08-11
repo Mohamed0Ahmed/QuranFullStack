@@ -21,8 +21,10 @@ path, or Mushaf grouped descriptor. Word Type Root/Stem/Lemma grouped dimensions
 existing scoped read endpoints; the future grouped-Mushaf seam remains deliberately unimplemented.
 
 `LinkingWorkspaceHostComponent` is mounted once beside the app shell and the Words detail overlay.
-It defers the wide `qd-modal-shell` workspace surface until Linking opens, while app-root owns the
-cross-layer inert boundary. The Navbar reads only Owner access and item count. Workspace cards remain
+It defers the wide `qd-modal-shell` workspace surface until Linking opens; on non-Compact viewports,
+that host supplies the workspace-only `80vw` by `80dvh` wide-size tokens while Compact retains the
+shared full-width sheet. App-root owns the cross-layer inert boundary. The Navbar reads only Owner
+access and item count. Workspace cards remain
 presentational and dispatch remove, edit-selection focus, and one-source Direct Link intent to
 `LinkingWorkspaceStore`; the same shell now composes its workspace or Direct Link content without
 nested dialogs.

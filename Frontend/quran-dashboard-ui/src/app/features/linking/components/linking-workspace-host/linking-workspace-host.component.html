@@ -1,6 +1,8 @@
 @defer (when isOpen()) {
   <qd-modal-shell
     variant="wide"
+    [wideInlineSize]="'var(--qd-linking-workspace-modal-inline-size)'"
+    [wideBlockSize]="'var(--qd-linking-workspace-modal-block-size)'"
     [titleText]="modalTitle()"
     closeLabel="إغلاق"
     [open]="isOpen()"

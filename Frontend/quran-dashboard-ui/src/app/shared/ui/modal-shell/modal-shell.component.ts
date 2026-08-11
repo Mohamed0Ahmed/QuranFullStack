@@ -40,6 +40,8 @@ export class QdModalShellComponent {
 
   readonly open = input(false);
   readonly variant = input<QdModalShellVariant>('form');
+  readonly wideInlineSize = input<string | null>(null);
+  readonly wideBlockSize = input<string | null>(null);
   readonly titleText = input.required<string>();
   readonly dialogRole = input<QdModalShellRole>('dialog');
   readonly describedById = input<string | null>(null);
