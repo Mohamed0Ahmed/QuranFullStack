@@ -16,59 +16,60 @@
     </div>
   </header>
 
-  @if (includedVerseKeys().length > 0) {
-    <nav class="linking-manual-word-editor__chooser" aria-label="اختيار الآية">
-      @for (verseKey of includedVerseKeys(); track verseKey) {
-        <button
-          qdAction="tertiary"
-          size="sm"
-          type="button"
-          [attr.aria-pressed]="state().activeVerseKey === verseKey"
-          [class.linking-manual-word-editor__ayah--active]="state().activeVerseKey === verseKey"
-          (click)="activateAyah(verseKey)"
-        >
-          {{ verseKey }} ({{ state().draftLocations[verseKey]?.length ?? 0 }})
-        </button>
-      }
-    </nav>
-
-    <div class="linking-manual-word-editor__navigation">
-      <button qdAction="secondary" size="sm" type="button" (click)="previous()">{{ labels.manualWordsPrevious }}</button>
-      <button qdAction="secondary" size="sm" type="button" (click)="next()">{{ labels.manualWordsNext }}</button>
-      <button qdAction="tertiary" size="sm" type="button" (click)="clearActiveAyah()">{{ labels.manualWordsClear }}</button>
-    </div>
-
-    @switch (activeStatus()) {
-      @case ('loading') {
-        <qd-panel-skeleton shape="text" [loadingLabel]="labels.manualWordsLoading" />
-      }
-      @case ('error') {
-        <qd-error-state severity="read" [message]="state().errorMessage || labels.sourceLoadError" [actionLabel]="labels.retry" (action)="retry()" />
-      }
-      @case ('success') {
-        @if (activeAyah(); as ayah) {
-          <div class="linking-manual-word-editor__words" role="group" [attr.aria-label]="'كلمات الآية ' + ayah.verseKey">
-            @for (word of ayah.words; track word.wordLocation) {
-              @if (!word.isAyahMarker && word.wordLocation !== null) {
-                <button
-                  qdAction="secondary"
-                  size="sm"
-                  type="button"
-                  [attr.aria-pressed]="state().draftLocations[ayah.verseKey]?.includes(word.wordLocation) ?? false"
-                  [attr.aria-label]="'تحديد كلمة ' + word.textUthmani + ' في الآية ' + ayah.verseKey"
-                  (click)="toggleWord(word.wordLocation)"
-                >
-                  {{ word.textUthmani }}
-                </button>
+  <div class="linking-manual-word-editor__body">
+    @if (includedVerseKeys().length > 0) {
+      @switch (status()) {
+        @case ('loading') {
+          <qd-panel-skeleton shape="text" [loadingLabel]="labels.manualWordsLoading" />
+        }
+        @case ('error') {
+          <qd-error-state severity="read" [message]="state().errorMessage || labels.sourceLoadError" [actionLabel]="labels.retry" (action)="retry()" />
+        }
+        @case ('success') {
+          @if (ayahs().length > 0) {
+            <div class="linking-manual-word-editor__ayahs">
+              @for (ayah of ayahs(); track ayah.verseKey) {
+                <article qdAyahCard class="linking-manual-word-editor__ayah" [attr.aria-label]="'كلمات ' + (ayah.surahNameArabic || ayah.verseKey) + '، الآية ' + ayah.ayahNumber">
+                  <header class="linking-manual-word-editor__ayah-header">
+                    <h3 class="linking-manual-word-editor__ayah-title">
+                      @if (ayah.surahNameArabic) {
+                        <span>{{ ayah.surahNameArabic }}</span>
+                      } @else {
+                        <span class="qd-ltr-isolate">{{ ayah.verseKey }}</span>
+                      }
+                      <span>{{ labels.manualWordsAyahNumber }} {{ ayah.ayahNumber }}</span>
+                    </h3>
+                    <button qdAction="tertiary" size="sm" type="button" (click)="clearAyah(ayah.verseKey)">
+                      {{ labels.manualWordsClear }}
+                    </button>
+                  </header>
+                  <div class="linking-manual-word-editor__words" role="group" [attr.aria-label]="'كلمات ' + (ayah.surahNameArabic || ayah.verseKey) + '، الآية ' + ayah.ayahNumber">
+                    @for (word of ayah.words; track word.wordLocation) {
+                      @if (!word.isAyahMarker && word.wordLocation !== null) {
+                        <button
+                          qdAction="secondary"
+                          size="sm"
+                          type="button"
+                          [attr.aria-pressed]="state().draftLocations[ayah.verseKey]?.includes(word.wordLocation) ?? false"
+                          [class.linking-manual-word-editor__word--selected]="state().draftLocations[ayah.verseKey]?.includes(word.wordLocation) ?? false"
+                          [attr.aria-label]="'تحديد كلمة ' + word.textUthmani + ' في ' + (ayah.surahNameArabic || ayah.verseKey) + '، الآية ' + ayah.ayahNumber"
+                          (click)="toggleWord(ayah.verseKey, word.wordLocation)"
+                        >
+                          {{ word.textUthmani }}
+                        </button>
+                      }
+                    }
+                  </div>
+                </article>
               }
-            }
-          </div>
-        } @else {
-          <qd-empty-state [message]="labels.manualWordsEmpty" />
+            </div>
+          } @else {
+            <qd-empty-state [message]="labels.manualWordsEmpty" />
+          }
         }
       }
+    } @else {
+      <qd-empty-state [message]="labels.noAyahMatches" />
     }
-  } @else {
-    <qd-empty-state [message]="labels.noAyahMatches" />
-  }
+  </div>
 </section>

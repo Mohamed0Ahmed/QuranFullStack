@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, output } from '@angular/core';
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { AyahCardComponent } from '../../../../shared/ui/ayah-card/ayah-card.component';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
@@ -10,7 +11,13 @@ import { LinkingManualWordEditorFacade } from '../../state/linking-manual-word-e
 @Component({
   selector: 'qd-linking-manual-word-editor',
   standalone: true,
-  imports: [QdActionDirective, QdEmptyStateComponent, QdErrorStateComponent, ExplorerPanelSkeletonComponent],
+  imports: [
+    QdActionDirective,
+    AyahCardComponent,
+    QdEmptyStateComponent,
+    QdErrorStateComponent,
+    ExplorerPanelSkeletonComponent,
+  ],
   templateUrl: './linking-manual-word-editor.component.html',
   styleUrl: './linking-manual-word-editor.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,8 +32,8 @@ export class LinkingManualWordEditorComponent {
   protected readonly labels = LINKING_LABELS;
   protected readonly state = this.facade.state;
   protected readonly includedVerseKeys = this.facade.includedVerseKeys;
-  protected readonly activeAyah = this.facade.activeAyah;
-  protected readonly activeStatus = this.facade.activeStatus;
+  protected readonly ayahs = this.facade.ayahs;
+  protected readonly status = this.facade.status;
   protected readonly selectedWordCount = this.facade.selectedWordCount;
 
   constructor() {
@@ -45,24 +52,12 @@ export class LinkingManualWordEditorComponent {
     }
   }
 
-  protected activateAyah(verseKey: string): void {
-    this.facade.activateAyah(verseKey);
+  protected toggleWord(verseKey: string, wordLocation: string): void {
+    this.facade.toggleWord(verseKey, wordLocation);
   }
 
-  protected toggleWord(wordLocation: string): void {
-    this.facade.toggleWord(wordLocation);
-  }
-
-  protected clearActiveAyah(): void {
-    this.facade.clearActiveAyah();
-  }
-
-  protected previous(): void {
-    this.facade.previous();
-  }
-
-  protected next(): void {
-    this.facade.next();
+  protected clearAyah(verseKey: string): void {
+    this.facade.clearAyah(verseKey);
   }
 
   protected retry(): void {

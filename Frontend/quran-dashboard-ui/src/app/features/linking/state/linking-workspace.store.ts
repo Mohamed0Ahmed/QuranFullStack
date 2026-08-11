@@ -41,8 +41,8 @@ export class LinkingWorkspaceStore {
   private readonly removedItemSignal = signal<LinkingRemovedWorkspaceItem | null>(null);
   private readonly clearAllRequestedSignal = signal(false);
   private readonly persistenceWarningSignal = signal<string | null>(null);
-  private currentActorSub: string | null = null;
-  private hydratedActorSub: string | null = null;
+  private readonly currentActorSub = signal<string | null>(null);
+  private readonly hydratedActorSub = signal<string | null>(null);
   private actorGeneration = 0;
   private durableWorkspaceRevision = 0;
   private saveQueue: Promise<void> = Promise.resolve();
@@ -334,15 +334,15 @@ export class LinkingWorkspaceStore {
       return;
     }
 
-    if (this.currentActorSub !== currentUser.sub) {
+    if (this.currentActorSub() !== currentUser.sub) {
       this.activateActor(currentUser.sub);
     }
   }
 
   private activateActor(actorSub: string): void {
     this.actorGeneration += 1;
-    this.currentActorSub = actorSub;
-    this.hydratedActorSub = null;
+    this.currentActorSub.set(actorSub);
+    this.hydratedActorSub.set(null);
     this.durableWorkspaceRevision = 0;
     this.resetWorkspaceSignals();
     const actorGeneration = this.actorGeneration;
@@ -360,10 +360,10 @@ export class LinkingWorkspaceStore {
       }
       this.itemsSignal.set(result.items);
       this.checkedSourceKeysSignal.set([]);
-      this.hydratedActorSub = actorSub;
+      this.hydratedActorSub.set(actorSub);
     } catch {
       if (this.isCurrentActor(actorSub, actorGeneration)) {
-        this.hydratedActorSub = actorSub;
+        this.hydratedActorSub.set(actorSub);
         this.persistenceWarningSignal.set('تعذر استعادة مساحة الربط المحفوظة محلياً.');
       }
     }
@@ -380,12 +380,12 @@ export class LinkingWorkspaceStore {
   }
 
   private resetInMemoryWorkspace(): void {
-    if (this.currentActorSub === null && this.itemsSignal().length === 0) {
+    if (this.currentActorSub() === null && this.itemsSignal().length === 0) {
       return;
     }
     this.actorGeneration += 1;
-    this.currentActorSub = null;
-    this.hydratedActorSub = null;
+    this.currentActorSub.set(null);
+    this.hydratedActorSub.set(null);
     this.durableWorkspaceRevision = 0;
     this.resetWorkspaceSignals();
   }
@@ -455,13 +455,13 @@ export class LinkingWorkspaceStore {
     return (
       this.linkingAccess.canUseLinking() &&
       actorSub !== undefined &&
-      actorSub === this.currentActorSub &&
-      actorSub === this.hydratedActorSub
+      actorSub === this.currentActorSub() &&
+      actorSub === this.hydratedActorSub()
     );
   }
 
   private persist(): void {
-    const actorSub = this.currentActorSub;
+    const actorSub = this.currentActorSub();
     if (actorSub === null || !this.canMutate()) {
       return;
     }
@@ -487,7 +487,7 @@ export class LinkingWorkspaceStore {
   private isCurrentActor(actorSub: string, actorGeneration: number): boolean {
     return (
       this.actorGeneration === actorGeneration &&
-      this.currentActorSub === actorSub &&
+      this.currentActorSub() === actorSub &&
       this.linkingAccess.canUseLinking() &&
       this.currentUserStore.currentUser()?.sub === actorSub
     );
@@ -498,8 +498,8 @@ export class LinkingWorkspaceStore {
     return (
       this.linkingAccess.canUseLinking() &&
       actorSub !== undefined &&
-      actorSub === this.currentActorSub &&
-      actorSub === this.hydratedActorSub
+      actorSub === this.currentActorSub() &&
+      actorSub === this.hydratedActorSub()
     );
   }
 }

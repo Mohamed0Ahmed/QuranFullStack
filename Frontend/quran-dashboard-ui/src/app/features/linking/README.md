@@ -63,9 +63,12 @@ grouped/independent preference only when more than one ayah is included.
 `ManualMushafAyahReader` validates AyahCore identity before returning refreshable metadata and, for
 complete reads, loads every page in the authoritative range through `MushafReaderCache`. It rejects
 incomplete, duplicate, out-of-order, or mismatched word occurrences rather than publishing a
-partial ayah. `LinkingManualWordEditorFacade` keeps its reads and selections transient until one
-revision-guarded save persists the whole word draft. Manual words stay verse-scoped `wordLocation`
-prototype coordinates; this path makes no word-analysis request and fabricates no canonical ID.
+partial ayah. The manual-word editor loads every included ayah, presents them together in Quran
+order with the surah name and ayah number, and keeps each ayah's word selection independently
+editable without an active-ayah chooser. `LinkingManualWordEditorFacade` keeps its reads and
+selections transient until one revision-guarded save persists the whole word draft. Manual words
+stay verse-scoped `wordLocation` prototype coordinates; this path makes no word-analysis request
+and fabricates no canonical ID.
 
 `LinkingSourceSetCoordinator` snapshots only checked workspace rows (or one ephemeral source),
 resolves every member atomically, and publishes merged display ayahs plus source-owned intents only

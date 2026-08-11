@@ -13,9 +13,8 @@ type ManualWordLoadStatus = 'idle' | 'loading' | 'success' | 'error';
 interface ManualWordEditorState {
   sourceKey: string | null;
   capturedConfigurationRevision: number | null;
-  activeVerseKey: string | null;
-  occurrencesByVerseKey: Readonly<Record<string, LinkingAyah>>;
-  loadStatusByVerseKey: Readonly<Record<string, ManualWordLoadStatus>>;
+  status: ManualWordLoadStatus;
+  ayahs: readonly LinkingAyah[];
   draftLocations: LinkingManualWordLocationsByVerseKey;
   errorMessage: string | null;
 }
@@ -23,9 +22,8 @@ interface ManualWordEditorState {
 const INITIAL_STATE: ManualWordEditorState = {
   sourceKey: null,
   capturedConfigurationRevision: null,
-  activeVerseKey: null,
-  occurrencesByVerseKey: {},
-  loadStatusByVerseKey: {},
+  status: 'idle',
+  ayahs: [],
   draftLocations: {},
   errorMessage: null,
 };
@@ -50,14 +48,8 @@ export class LinkingManualWordEditorFacade {
       ? selectedLinkingVerseKeys(item.configuration.ayahInclusion, item.source.manualAyahs.map((ayah) => ayah.verseKey))
       : [];
   });
-  readonly activeAyah = computed(() => {
-    const activeVerseKey = this.stateSignal().activeVerseKey;
-    return activeVerseKey === null ? null : this.stateSignal().occurrencesByVerseKey[activeVerseKey] ?? null;
-  });
-  readonly activeStatus = computed(() => {
-    const activeVerseKey = this.stateSignal().activeVerseKey;
-    return activeVerseKey === null ? 'idle' : this.stateSignal().loadStatusByVerseKey[activeVerseKey] ?? 'idle';
-  });
+  readonly ayahs = computed(() => this.stateSignal().ayahs);
+  readonly status = computed(() => this.stateSignal().status);
   readonly selectedWordCount = computed(() =>
     Object.values(this.stateSignal().draftLocations).reduce((count, locations) => count + locations.length, 0),
   );
@@ -80,11 +72,10 @@ export class LinkingManualWordEditorFacade {
       ...INITIAL_STATE,
       sourceKey,
       capturedConfigurationRevision: item.configurationRevision,
-      activeVerseKey: includedVerseKeys[0] ?? null,
       draftLocations: item.configuration.wordLocationsByVerseKey,
     });
-    if (includedVerseKeys[0]) {
-      this.loadAyah(includedVerseKeys[0]);
+    if (includedVerseKeys.length > 0) {
+      this.loadAyahs(includedVerseKeys);
     }
   }
 
@@ -94,30 +85,16 @@ export class LinkingManualWordEditorFacade {
     this.stateSignal.set(INITIAL_STATE);
   }
 
-  activateAyah(verseKey: string): void {
-    if (!this.includedVerseKeys().includes(verseKey)) {
-      return;
-    }
-    this.stateSignal.update((state) => ({ ...state, activeVerseKey: verseKey, errorMessage: null }));
-    if (!this.stateSignal().occurrencesByVerseKey[verseKey]) {
-      this.loadAyah(verseKey);
-    }
-  }
-
   retry(): void {
-    const verseKey = this.stateSignal().activeVerseKey;
-    if (verseKey !== null) {
-      this.loadAyah(verseKey);
+    const verseKeys = this.includedVerseKeys();
+    if (verseKeys.length > 0) {
+      this.loadAyahs(verseKeys);
     }
   }
 
-  toggleWord(wordLocation: string): void {
-    const verseKey = this.stateSignal().activeVerseKey;
-    const activeAyah = this.activeAyah();
-    if (
-      verseKey === null ||
-      activeAyah?.words.some((word) => !word.isAyahMarker && word.wordLocation === wordLocation) !== true
-    ) {
+  toggleWord(verseKey: string, wordLocation: string): void {
+    const ayah = this.stateSignal().ayahs.find((candidate) => candidate.verseKey === verseKey);
+    if (ayah?.words.some((word) => !word.isAyahMarker && word.wordLocation === wordLocation) !== true) {
       return;
     }
     this.stateSignal.update((state) => {
@@ -130,14 +107,14 @@ export class LinkingManualWordEditorFacade {
     });
   }
 
-  clearActiveAyah(): void {
-    const verseKey = this.stateSignal().activeVerseKey;
-    if (verseKey !== null) {
-      this.stateSignal.update((state) => ({
-        ...state,
-        draftLocations: { ...state.draftLocations, [verseKey]: [] },
-      }));
+  clearAyah(verseKey: string): void {
+    if (!this.includedVerseKeys().includes(verseKey)) {
+      return;
     }
+    this.stateSignal.update((state) => ({
+      ...state,
+      draftLocations: { ...state.draftLocations, [verseKey]: [] },
+    }));
   }
 
   save(): boolean {
@@ -154,57 +131,56 @@ export class LinkingManualWordEditorFacade {
     return true;
   }
 
-  previous(): void {
-    this.moveActiveAyah(-1);
-  }
-
-  next(): void {
-    this.moveActiveAyah(1);
-  }
-
-  private moveActiveAyah(offset: number): void {
-    const verseKeys = this.includedVerseKeys();
-    const index = verseKeys.indexOf(this.stateSignal().activeVerseKey ?? '');
-    const nextVerseKey = verseKeys[index + offset];
-    if (nextVerseKey) {
-      this.activateAyah(nextVerseKey);
-    }
-  }
-
-  private loadAyah(verseKey: string): void {
+  private loadAyahs(verseKeys: readonly string[]): void {
     this.cancelLoad();
     const generation = ++this.generation;
     this.stateSignal.update((state) => ({
       ...state,
-      loadStatusByVerseKey: { ...state.loadStatusByVerseKey, [verseKey]: 'loading' },
+      status: 'loading',
+      ayahs: [],
       errorMessage: null,
     }));
-    this.subscription = this.reader.readCompleteAyah(verseKey).subscribe({
-      next: (ayah) => {
+    this.subscription = this.reader.readCompleteAyahs(verseKeys).subscribe({
+      next: (ayahs) => {
         if (generation !== this.generation) {
+          return;
+        }
+        const orderedAyahs = orderAyahs(verseKeys, ayahs);
+        if (orderedAyahs.length !== verseKeys.length) {
+          this.publishLoadError(generation, 'تعذر تحميل جميع الآيات المحددة كاملة.');
           return;
         }
         this.stateSignal.update((state) => ({
           ...state,
-          occurrencesByVerseKey: { ...state.occurrencesByVerseKey, [verseKey]: ayah },
-          loadStatusByVerseKey: { ...state.loadStatusByVerseKey, [verseKey]: 'success' },
+          status: 'success',
+          ayahs: orderedAyahs,
         }));
       },
       error: (error: unknown) => {
-        if (generation !== this.generation) {
-          return;
-        }
-        this.stateSignal.update((state) => ({
-          ...state,
-          loadStatusByVerseKey: { ...state.loadStatusByVerseKey, [verseKey]: 'error' },
-          errorMessage: error instanceof Error ? error.message : 'تعذر تحميل كلمات الآية كاملة.',
-        }));
+        this.publishLoadError(
+          generation,
+          error instanceof Error ? error.message : 'تعذر تحميل كلمات الآيات كاملة.',
+        );
       },
     });
+  }
+
+  private publishLoadError(generation: number, errorMessage: string): void {
+    if (generation !== this.generation) {
+      return;
+    }
+    this.stateSignal.update((state) => ({ ...state, status: 'error', ayahs: [], errorMessage }));
   }
 
   private cancelLoad(): void {
     this.subscription?.unsubscribe();
     this.subscription = null;
   }
+}
+
+function orderAyahs(verseKeys: readonly string[], ayahs: readonly LinkingAyah[]): readonly LinkingAyah[] {
+  const byVerseKey = new Map(ayahs.map((ayah) => [ayah.verseKey, ayah]));
+  return verseKeys
+    .map((verseKey) => byVerseKey.get(verseKey))
+    .filter((ayah): ayah is LinkingAyah => ayah !== undefined);
 }
