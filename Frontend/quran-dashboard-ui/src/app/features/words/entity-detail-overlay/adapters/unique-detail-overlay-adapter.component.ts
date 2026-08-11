@@ -18,11 +18,13 @@ import { DEFAULT_AYAH_PAGE, WordDrilldownView } from '../../models/unique-words.
 import { UniqueWordsDrilldownController } from '../../state/unique-words-drilldown.controller';
 import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-display.mapper';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
+import { QuranSourceLinkingActionsComponent } from '../../../linking/components/quran-source-linking-actions/quran-source-linking-actions.component';
+import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
 @Component({
   selector: 'qd-unique-detail-overlay-adapter',
   standalone: true,
-  imports: [WordDrilldownModalComponent],
+  imports: [WordDrilldownModalComponent, QuranSourceLinkingActionsComponent],
   providers: [UniqueWordsDrilldownController, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
   templateUrl: './unique-detail-overlay-adapter.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,14 +45,24 @@ export class UniqueDetailOverlayAdapterComponent {
 
   readonly entityAyahCount = computed(() => this.drilldownState().summary?.ayahsCount ?? null);
 
+  protected readonly linkingSource = computed<LinkingSourceDescriptor | null>(() => {
+    const state = this.drilldownState();
+    if (!state.isOpen || state.summary === null || state.selectedWordId === null) {
+      return null;
+    }
+    return {
+      kind: 'unique-word',
+      mode: state.summary.kind,
+      wordId: state.selectedWordId,
+      label: mapUniqueWordSummaryDisplayText(state.summary).displayText,
+    };
+  });
+
   protected get notFoundLabel() {
     return RESTORED_WORD_NOT_FOUND_LABEL;
   }
 
   constructor() {
-    // Track ONLY the frame input: applyUrlState reads/writes the controller's
-    // drilldown signal internally, and tracking it would re-trigger this effect
-    // on every load-state change (cancelling in-flight summary loads).
     effect(() => {
       const frame = this.frame();
       untracked(() =>
@@ -68,8 +80,6 @@ export class UniqueDetailOverlayAdapterComponent {
     inject(DestroyRef).onDestroy(() => this.titleStore?.clear());
   }
 
-  // Retry re-drives the unchanged frame directly through the controller: it never
-  // touches the URL, since replacing an identical frame would be a no-op.
   protected onRetry(): void {
     this.controller.retryCurrentIdentity();
   }

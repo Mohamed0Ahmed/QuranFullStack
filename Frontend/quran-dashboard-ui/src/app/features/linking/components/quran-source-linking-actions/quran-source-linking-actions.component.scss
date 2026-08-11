@@ -1,0 +1,10 @@
+:host {
+  display: contents;
+}
+
+.quran-source-linking-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+}

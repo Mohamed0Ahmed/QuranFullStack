@@ -1,0 +1,66 @@
+<section class="direct-link-workflow" aria-labelledby="direct-link-workflow-title">
+  <header class="direct-link-workflow__header">
+    <div>
+      <h2 id="direct-link-workflow-title">{{ labels.directLink }}</h2>
+      @if (state().source; as source) {
+        <p>{{ labels.directLinkSource }}: {{ source.label }}</p>
+      }
+    </div>
+    <button qdAction="tertiary" size="sm" type="button" (click)="dismiss()">{{ labels.back }}</button>
+  </header>
+
+  <ol class="direct-link-workflow__steps" aria-label="مراحل الربط المباشر">
+    @for (step of steps; track step) {
+      <li [class.direct-link-workflow__step--active]="currentStep() === step">
+        {{ stepLabel(step) }}
+      </li>
+    }
+  </ol>
+
+  <div class="direct-link-workflow__body">
+    @switch (currentStep()) {
+      @case ('door') {
+        <qd-linking-door-step />
+        @if (state().doorNotice; as notice) {
+          <p class="direct-link-workflow__notice" role="status">{{ notice }}</p>
+        }
+        @if (selectedDoor(); as door) {
+          <p class="direct-link-workflow__selection">
+            {{ door.name }}@if (door.sectionName) { — {{ door.sectionName }} }
+          </p>
+        }
+      }
+      @case ('ayahs') {
+        <section class="direct-link-workflow__source-status" aria-live="polite">
+          @switch (sourceLoad().status) {
+            @case ('loading') {
+              <p>{{ labels.sourceLoading }} ({{ sourceLoadProgress() }})</p>
+            }
+            @case ('success') {
+              <p>{{ labels.sourceReady }} ({{ sourceLoadProgress() }})</p>
+            }
+            @case ('unsupported') {
+              <p>{{ sourceLoad().errorMessage || labels.sourceUnsupported }}</p>
+            }
+            @case ('error') {
+              <p>{{ sourceLoad().errorMessage || labels.sourceLoadError }}</p>
+              <button qdAction="secondary" size="sm" type="button" (click)="retrySource()">{{ labels.retry }}</button>
+            }
+            @default {
+              <p>{{ labels.sourceLoading }}</p>
+            }
+          }
+        </section>
+      }
+    }
+  </div>
+
+  <footer class="direct-link-workflow__footer">
+    <button qdAction="secondary" type="button" (click)="back()">{{ labels.back }}</button>
+    @if (currentStep() === 'door') {
+      <button qdAction="primary" type="button" [disabled]="!canAdvanceDoor()" (click)="next()">
+        {{ labels.next }}
+      </button>
+    }
+  </footer>
+</section>

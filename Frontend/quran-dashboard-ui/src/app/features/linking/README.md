@@ -23,5 +23,22 @@ Mushaf grouped descriptor. The future grouped-Mushaf seam remains deliberately u
 It defers the wide `qd-modal-shell` workspace surface until Linking opens, while app-root owns the
 cross-layer inert boundary. The Navbar reads only Owner access and item count. Workspace cards remain
 presentational and dispatch remove, edit-selection focus, and one-source Direct Link intent to
-`LinkingWorkspaceStore`; workflow content, source resolution, and Door selection remain outside
-this phase.
+`LinkingWorkspaceStore`; the same shell now composes its workspace or Direct Link content without
+nested dialogs.
+
+`LinkingWorkflowFacade` owns one transient Direct Link state machine. It starts from either a saved
+workspace source or an ephemeral source action, uses the current live Abwab snapshot for the single
+Door selection, and returns to the appropriate surface on dismissal. Starting from the global
+entity overlay closes that overlay through its existing retained-history behavior before the Linking
+shell opens. Door search, selected Door, resolver progress, loaded ayahs, errors, and workflow state
+are never persisted.
+
+`QuranSourceLinkingActionsComponent` is the shared Owner-only action seam. Its Unique Word adapter
+keeps the `simple` and `tashkeel` descriptor identities separate, adds idempotently to the workspace,
+and starts Direct Link without changing the detail overlay URL stack.
+
+The resolver registry currently supports only Unique Word descriptors. It sequentially loads every
+`UniqueWordsApi.getAyahMatches` page, rejects incomplete or inconsistent envelopes, de-duplicates
+only identical repeated `verseKey` rows, and maps exact Uthmani tokens plus canonical Quran word IDs
+to feature-owned `LinkingAyah` values. A successful workspace-backed load reconciles stored
+selection and updates the lightweight result count; loaded ayahs remain workflow memory only.

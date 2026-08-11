@@ -29,6 +29,8 @@ import {
 import { WordDrilldownState, WordDrilldownView } from '../../models/unique-words.models';
 import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
 import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-display.mapper';
+import { QuranSourceLinkingActionsComponent } from '../../../linking/components/quran-source-linking-actions/quran-source-linking-actions.component';
+import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
 @Component({
   selector: 'qd-word-drilldown-modal',
@@ -46,6 +48,7 @@ import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-displa
     SurahOccurrencesListComponent,
     MissingSurahsListComponent,
     AyahMatchesListComponent,
+    QuranSourceLinkingActionsComponent,
   ],
   templateUrl: './word-drilldown-modal.component.html',
   styleUrl: './word-drilldown-modal.component.scss',
@@ -107,6 +110,19 @@ export class WordDrilldownModalComponent {
     }
     const summary = this.state().summary;
     return summary ? mapUniqueWordSummaryDisplayText(summary).displayText : '';
+  });
+
+  protected readonly linkingSource = computed<LinkingSourceDescriptor | null>(() => {
+    const state = this.state();
+    if (!state.isOpen || state.summary === null || state.selectedWordId === null) {
+      return null;
+    }
+    return {
+      kind: 'unique-word',
+      mode: state.summary.kind,
+      wordId: state.selectedWordId,
+      label: mapUniqueWordSummaryDisplayText(state.summary).displayText,
+    };
   });
 
   protected readonly drilldownViews: readonly WordDrilldownView[] = ['surahs', 'missing', 'ayahs'];

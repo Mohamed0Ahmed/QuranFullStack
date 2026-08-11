@@ -1,7 +1,7 @@
 @defer (when isOpen()) {
   <qd-modal-shell
     variant="wide"
-    [titleText]="labels.workspace"
+    [titleText]="modalTitle()"
     closeLabel="إغلاق"
     [open]="isOpen()"
     [hasFooter]="false"
@@ -9,6 +9,10 @@
     testIdPrefix="linking-workspace"
     (dismissed)="close()"
   >
-    <qd-linking-workspace />
+    @if (isWorkspace()) {
+      <qd-linking-workspace />
+    } @else if (isDirectLink()) {
+      <qd-direct-link-workflow [workspaceSourceKey]="activeSourceKey()" />
+    }
   </qd-modal-shell>
 }

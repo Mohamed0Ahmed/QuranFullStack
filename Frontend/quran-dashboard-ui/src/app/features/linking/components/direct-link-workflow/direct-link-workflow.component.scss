@@ -1,0 +1,65 @@
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
+.direct-link-workflow {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: var(--qd-space-4);
+  flex: 1 1 auto;
+  min-block-size: 0;
+  padding: var(--qd-space-4);
+}
+
+.direct-link-workflow__header,
+.direct-link-workflow__footer {
+  align-items: center;
+  display: flex;
+  gap: var(--qd-space-3);
+  justify-content: space-between;
+}
+
+.direct-link-workflow__header h2,
+.direct-link-workflow__header p,
+.direct-link-workflow__selection,
+.direct-link-workflow__source-status p {
+  margin: 0;
+}
+
+.direct-link-workflow__header p,
+.direct-link-workflow__selection,
+.direct-link-workflow__notice {
+  color: var(--qd-color-text-muted);
+}
+
+.direct-link-workflow__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.direct-link-workflow__steps li {
+  color: var(--qd-color-text-muted);
+  font-size: var(--qd-font-size-sm);
+}
+
+.direct-link-workflow__steps .direct-link-workflow__step--active {
+  color: var(--qd-color-text);
+  font-weight: var(--qd-font-weight-semibold);
+}
+
+.direct-link-workflow__body {
+  min-block-size: 0;
+  overflow: auto;
+}
+
+.direct-link-workflow__source-status {
+  display: grid;
+  gap: var(--qd-space-3);
+  padding: var(--qd-space-4);
+}

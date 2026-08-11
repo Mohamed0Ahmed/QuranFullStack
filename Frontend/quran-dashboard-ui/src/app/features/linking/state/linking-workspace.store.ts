@@ -103,6 +103,15 @@ export class LinkingWorkspaceStore {
     this.activeSurfaceSignal.set('direct-link');
   }
 
+  openEphemeralDirectLink(): void {
+    if (!this.canMutate()) {
+      return;
+    }
+
+    this.activeSourceKeySignal.set(null);
+    this.activeSurfaceSignal.set('direct-link');
+  }
+
   addAndOpenDirectLink(source: LinkingSourceDescriptor): void {
     const sourceKey = this.addOrFocus(source);
     if (sourceKey) {
@@ -140,6 +149,14 @@ export class LinkingWorkspaceStore {
     this.updateItem(sourceKey, (item) => ({ ...item, resultCount }));
   }
 
+  reconcileResolvedSource(sourceKey: string, universe: readonly string[]): void {
+    this.updateItem(sourceKey, (item) => ({
+      ...item,
+      selection: reconcileLinkingSelection(item.selection, universe),
+      resultCount: universe.length,
+    }));
+  }
+
   setHighlightSourceWords(sourceKey: string, highlightSourceWords: boolean): void {
     this.updateItem(sourceKey, (item) => ({ ...item, highlightSourceWords }));
   }
@@ -152,6 +169,10 @@ export class LinkingWorkspaceStore {
   selectedCount(sourceKey: string, universe: readonly string[]): number {
     const item = this.findItem(sourceKey);
     return item ? selectedLinkingAyahCount(item.selection, universe) : 0;
+  }
+
+  item(sourceKey: string): LinkingWorkspaceItem | null {
+    return this.findItem(sourceKey);
   }
 
   private synchronizeActorSession(): void {
