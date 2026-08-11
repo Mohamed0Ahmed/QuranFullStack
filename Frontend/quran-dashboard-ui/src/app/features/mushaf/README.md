@@ -74,9 +74,10 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
 - **Wide reading measure.** The Quran text column is `326px` at 390 (capped by the viewport), `351.39px`
   at 1080 (capped by the 40% reader track) and `448px` at 1440 **and** 1920 (capped by
   `--qd-mushaf-text-column-width`, `28rem`). The 1080 value was `377px` before the Golden shell; the
-  `32px` Wide route gutter and the `24px` split gap account for the difference. Line count, line
-  heights, word rects, fonts, markers and ligatures are unchanged at every width — the narrower Wide
-  measure only removes slack inside the 15 fixed lines. Making the split gap-safe does not narrow it
+  `32px` Wide route gutter and the `24px` split gap account for the difference. Line count, markers,
+  ligatures and the Medium/Wide `1.35rem` word size are unchanged — the narrower Wide measure only
+  removes slack inside the 15 fixed lines. Compact alone uses the responsive type step described
+  below. Making the split gap-safe does not narrow it
   further: it takes the 24px off the study side only. Content-sizing the Wide-plus track does not
   narrow it either — it only removes the slack that used to sit *around* the column (`544 → 504` of
   track for the same `448` of text, re-verified word-rect by word-rect on pages 1, 2, 22, 50, 106
@@ -93,12 +94,20 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   `inline-size: calc(100% + 2 * var(--qd-page-gutter))` with `margin-inline: calc(-1 * var(--qd-page-gutter))`,
   so its margin box equals the grid track exactly and cannot overflow at any Compact width. This is
   deliberate, not an oversight: a Madani page is a structural constant (15 non-wrapping lines over
-  `--qd-mushaf-text-column-width`), and taking `2 × 16px` off the column at 390 wraps a line (measured:
-  column `326px → 294px`, line 4 `42.61px → 84.2px`), which is a Quran rendering delta rather than a
-  layout preference. The page shell stays the sole gutter owner; this only declines the gutter for the
-  protected column, and the document still never scrolls horizontally. Medium and Wide are unaffected —
+  `--qd-mushaf-text-column-width`). On the original `1.35rem` Compact baseline, taking `2 × 16px`
+  off the column measured `326px → 294px` and wrapped line 4 from `42.61px → 84.2px`. The current
+  smaller Compact type step reduces collisions but does not replace the protected full-width
+  geometry. The page shell stays the sole gutter owner; this only declines the gutter for the
+  protected column, and the document still never scrolls horizontally. The smaller Compact word
+  size does not authorize restoring the gutter; full-width line geometry remains the protected
+  contract. Medium and Wide are unaffected —
   there the column is capped by `--qd-mushaf-text-column-width` or by the 40% reader track, not by the
   viewport. Do not "restore" the gutter here.
+- **Compact reading type.** `--qd-mushaf-word-font-size` resolves to `1.25rem` through Compact and
+  `1.35rem` from Medium upward. It sizes rendered words and the standalone basmallah only; the
+  `1.9` line-height ratio, Amiri/Mushaf Common families, ayah-marker size, surah ligatures, glyphs,
+  word order and selection behavior are unchanged. The loading reservation stays sized for the
+  larger Medium line box, so the Compact reduction cannot make loading content shift downward.
 - **Bands, not 1024.** Every Mushaf media query now resolves through `styles/_breakpoints.scss`:
   Wide (`≥1080`) is the sticky reader + independently scrolling study; Medium and Compact
   (`≤1079`) are reader-first, study-second in one column. The legacy `1023/1024` and `767` literals
@@ -109,8 +118,9 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   (page navigation, the mutashabihat disclosure), F07 `qd-tabs`/`qdTab` (the five ayah-study tabs),
   F10 `qdResultList` (`quran-result` on the similar-ayah and mutashabihat occurrence lists — the rows
   keep their own ayah-card renderer, G11), F12 `qd-empty-state`/`qd-error-state` and F15
-  `qdFloatingLayer` (both pickers). Nothing shared reaches a Quran renderer descendant: `mushaf-line`,
-  `mushaf-word`, `mushaf-marker` and `segment-rendered-word` were not touched.
+  `qdFloatingLayer` (both pickers). Nothing shared reaches a Quran renderer descendant. The
+  feature-owned `mushaf-line` and `mushaf-word` consume only the responsive word-size token;
+  `mushaf-marker`, `segment-rendered-word`, renderer data and selection boundaries remain untouched.
 - **Read failures are not alerts.** Every Mushaf failure is a *read* failure and renders through
   `qd-error-state severity="read"` (no `role="alert"`); loading keeps its own sr-only `role="status"`
   announcement, and empties render through `qd-empty-state`. The reader has never had a `qd-state`

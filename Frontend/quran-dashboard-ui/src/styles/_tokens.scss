@@ -182,6 +182,7 @@
   --qd-mushaf-word-hover-bg: color-mix(in oklch, var(--qd-mushaf-word-selection-indicator) 8%, var(--qd-bg));
   --qd-mushaf-word-selection-bg: color-mix(in oklch, var(--qd-mushaf-word-selection-indicator) 28%, var(--qd-surface));
   --qd-mushaf-word-selection-ring: color-mix(in oklch, var(--qd-mushaf-word-selection-indicator) 55%, transparent);
+  --qd-mushaf-word-font-size: 1.35rem;
   --qd-mushaf-ayah-marker-font-size: 1.5rem;
   --qd-mushaf-ayah-marker-color: var(--qd-text-muted);
   --qd-mushaf-sticky-top: calc(var(--qd-navbar-block-size) + var(--qd-space-3));
@@ -304,6 +305,7 @@
 
 @media (max-width: bp.$qd-bp-compact-max) {
   :root {
+    --qd-mushaf-word-font-size: 1.25rem;
     --qd-pagination-margin-block-start: var(--qd-space-2);
   }
 }

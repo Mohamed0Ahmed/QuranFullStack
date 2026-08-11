@@ -1,5 +1,10 @@
 @if (canUseLinking()) {
-  <div class="quran-source-linking-actions" role="group" aria-label="خيارات الربط">
+  <div
+    class="quran-source-linking-actions"
+    [class.quran-source-linking-actions--centered]="alignment() === 'center'"
+    role="group"
+    aria-label="خيارات الربط"
+  >
     <button qdAction="secondary" size="sm" type="button" [attr.aria-label]="addActionLabel()" [attr.data-linking-source-action]="sourceKey()" (click)="addToWorkspace()">
       {{ labels.addToWorkspace }}
     </button>

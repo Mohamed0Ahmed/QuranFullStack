@@ -25,6 +25,7 @@ export class QuranSourceLinkingActionsComponent {
   private readonly focus = inject(LinkingFocusCoordinator);
 
   readonly source = input.required<LinkingSourceDescriptor>();
+  readonly alignment = input<'start' | 'center'>('start');
 
   protected readonly labels = LINKING_LABELS;
   protected readonly canUseLinking = this.access.canUseLinking;

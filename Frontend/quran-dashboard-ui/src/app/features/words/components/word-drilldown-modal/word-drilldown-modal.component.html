@@ -7,6 +7,7 @@
     [hasHeader]="!frameless()"
     [hasTabs]="true"
     testIdPrefix="word-drilldown-workspace"
+    [class.qd-details-panel-shell--contained-scroll]="inline() && state().view === 'ayahs'"
   >
     @if (!frameless()) {
       <ng-container qdDetailsMetadata>

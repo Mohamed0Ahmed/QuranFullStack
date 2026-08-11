@@ -15,6 +15,11 @@
   }
 }
 
+.quran-source-linking-actions--centered {
+  inline-size: 100%;
+  justify-content: center;
+}
+
 @media (max-width: bp.$qd-bp-compact-max) {
   .quran-source-linking-actions .qd-action {
     --qd-action-size: var(--qd-control-lg);

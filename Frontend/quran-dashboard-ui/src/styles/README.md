@@ -36,7 +36,8 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   onto `--qd-navbar-block-size` now that the navbar is sticky; `--qd-mushaf-panel-height`
   derives from `--qd-mushaf-sticky-top`, not the bare navbar token, or the panel's stuck
   bottom edge lands past the viewport (`.architecture/UI_STYLE_SYSTEM.md` §17 "Sticky app
-  chrome").
+  chrome"). `--qd-mushaf-word-font-size` is the protected reader's responsive type step:
+  `1.25rem` on Compact and `1.35rem` from Medium upward.
 - `_themes.scss` — dark-theme overrides for the same token surface (`--qd-accent-fg` and
   `--qd-selected-bg` are intentionally theme-invariant and not overridden here).
 - `_typography.scss` — font-face declarations and shared Arabic-first type classes. The classes are
@@ -155,13 +156,11 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
 - `_explorer-detail-lists.scss` — shared detail-list layouts for roots/lemmas/stems/word-types panels.
   It does **not** own `.ayah-matches-list__viewport` geometry: that lives in
   `features/words/components/ayah-matches-list/ayah-matches-list.component.scss`, and
-  `.qd-modal-shell--overlay` selects the single-scroller variant through
-  `--qd-ayah-matches-list-viewport-block-size` (plus `…-overflow` and `…-scrollbar-gutter`, so an
-  auto-height viewport stops being a scroll container and reserves no phantom gutter) instead of
-  re-declaring the geometry. The overlay dialog owns the scroll, so nothing inside it may nest a
-  second one. A global rule
-  that re-declares a component-owned property ties on specificity and loses on document order,
-  because Angular appends component styles after this layer.
+  the inline `.qd-details-panel-shell--contained-scroll` mode disables the outer body scroller so
+  the flex-filled ayah viewport owns the only scrollbar and leaves pagination visible. Modal
+  contexts select the outer-scroller variant through component-local `:host-context` rules instead
+  of re-declaring that geometry globally. The overlay dialog owns the scroll, so nothing inside it
+  may nest a second one.
 
 ## Import order
 

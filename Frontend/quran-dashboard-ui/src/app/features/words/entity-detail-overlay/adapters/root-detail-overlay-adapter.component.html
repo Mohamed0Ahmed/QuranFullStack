@@ -51,7 +51,6 @@
   [frameless]="true"
   [view]="frame().view"
   [selectionTitle]="panelState().summary?.rootText ?? ''"
-  [linkingSource]="linkingSource()"
   [loading]="panelState().status === 'loading'"
   (viewChange)="onViewChange($event)"
 >

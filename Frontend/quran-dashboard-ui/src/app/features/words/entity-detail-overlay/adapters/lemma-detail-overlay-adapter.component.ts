@@ -47,7 +47,7 @@ import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
-import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
+import { EntityDetailOverlayHeaderStore } from '../entity-detail-overlay-header.store';
 import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
 let nextSubViewInstance = 0;
@@ -75,7 +75,7 @@ let nextSubViewInstance = 0;
 export class LemmaDetailOverlayAdapterComponent {
   private readonly controller = inject(LemmasDetailController);
   private readonly overlay = inject(DetailOverlayHistoryService);
-  private readonly titleStore = inject(EntityDetailOverlayTitleStore, { optional: true });
+  private readonly headerStore = inject(EntityDetailOverlayHeaderStore, { optional: true });
 
   readonly frame = input.required<LemmaDetailFrame>();
 
@@ -168,9 +168,10 @@ export class LemmaDetailOverlayAdapterComponent {
       );
     });
 
-    effect(() => this.titleStore?.setTitle(this.entityTitle()));
-    effect(() => this.titleStore?.setAyahCount(this.entityAyahCount()));
-    inject(DestroyRef).onDestroy(() => this.titleStore?.clear());
+    effect(() => this.headerStore?.setTitle(this.entityTitle()));
+    effect(() => this.headerStore?.setAyahCount(this.entityAyahCount()));
+    effect(() => this.headerStore?.setLinkingSource(this.linkingSource()));
+    inject(DestroyRef).onDestroy(() => this.headerStore?.clear());
   }
 
   protected onViewChange(view: LemmaView): void {

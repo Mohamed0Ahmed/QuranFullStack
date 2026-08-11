@@ -17,14 +17,13 @@ import { RESTORED_WORD_NOT_FOUND_LABEL } from '../../models/unique-words.labels'
 import { DEFAULT_AYAH_PAGE, WordDrilldownView } from '../../models/unique-words.models';
 import { UniqueWordsDrilldownController } from '../../state/unique-words-drilldown.controller';
 import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-display.mapper';
-import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
-import { QuranSourceLinkingActionsComponent } from '../../../linking/components/quran-source-linking-actions/quran-source-linking-actions.component';
+import { EntityDetailOverlayHeaderStore } from '../entity-detail-overlay-header.store';
 import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
 @Component({
   selector: 'qd-unique-detail-overlay-adapter',
   standalone: true,
-  imports: [WordDrilldownModalComponent, QuranSourceLinkingActionsComponent],
+  imports: [WordDrilldownModalComponent],
   providers: [UniqueWordsDrilldownController, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
   templateUrl: './unique-detail-overlay-adapter.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,7 +31,7 @@ import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.
 export class UniqueDetailOverlayAdapterComponent {
   private readonly controller = inject(UniqueWordsDrilldownController);
   private readonly overlay = inject(DetailOverlayHistoryService);
-  private readonly titleStore = inject(EntityDetailOverlayTitleStore, { optional: true });
+  private readonly headerStore = inject(EntityDetailOverlayHeaderStore, { optional: true });
 
   readonly frame = input.required<UniqueDetailFrame>();
 
@@ -75,9 +74,10 @@ export class UniqueDetailOverlayAdapterComponent {
       );
     });
 
-    effect(() => this.titleStore?.setTitle(this.entityTitle()));
-    effect(() => this.titleStore?.setAyahCount(this.entityAyahCount()));
-    inject(DestroyRef).onDestroy(() => this.titleStore?.clear());
+    effect(() => this.headerStore?.setTitle(this.entityTitle()));
+    effect(() => this.headerStore?.setAyahCount(this.entityAyahCount()));
+    effect(() => this.headerStore?.setLinkingSource(this.linkingSource()));
+    inject(DestroyRef).onDestroy(() => this.headerStore?.clear());
   }
 
   protected onRetry(): void {

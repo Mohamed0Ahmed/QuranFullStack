@@ -11,9 +11,5 @@
     (viewChange)="onViewChange($event)"
     (ayahPageChange)="onAyahPageChange($event)"
     (retry)="onRetry()"
-  >
-    @if (linkingSource(); as source) {
-      <qd-quran-source-linking-actions qdDetailsActions [source]="source" />
-    }
-  </qd-word-drilldown-modal>
+  />
 }

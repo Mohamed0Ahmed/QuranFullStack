@@ -95,17 +95,19 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   `WordTypesCacheKeys`; a frame `view` of `words` is clamped to `ayahs` since member-words
   exists only for grouped selections — the page facade keeps grouped logic and was not
   refactored).
-- The shell heading uses the host-provided `EntityDetailOverlayTitleStore`: the active
-  adapter publishes its loaded entity title and clears it on destroy; while empty the host
-  falls back to the generic kind label.
+- The shell header uses the host-provided `EntityDetailOverlayHeaderStore`: the active adapter
+  publishes its loaded entity title, ayah count, and complete linking descriptor, then clears them
+  on destroy. While the title is empty the host falls back to the generic kind label.
 - **Linking actions** render only after a resolved summary provides a complete descriptor. Unique
   Word keeps `simple`/`tashkeel` identities separate; Root, Lemma, and Stem use their selected detail
   and Lemma/Stem retain `typeCode`. Word Type actions exist only for an actual word or grouped
   Root/Stem/Lemma detail, never a bare list scope, and preserve the complete scope plus selection
   discriminant. The Word Type global overlay supports its current word-only frame. Ordinary details
-  contribute through the neutral `qdDetailsActions` zone; frameless overlays render the same
-  contribution above their content. All actions remain Owner-only, and Direct Link closes the
-  retained overlay before opening the global Linking shell. Closing the operation restores the
+  contribute through the neutral `qdDetailsActions` zone. The global overlay host renders the
+  published descriptor in `qd-detail-modal-shell`'s centered header-action slot, between the
+  identity group and the count/Close group; frameless panel content never renders a second action
+  row above its tabs. All actions remain Owner-only, and Direct Link closes the retained overlay
+  before opening the global Linking shell. Closing the operation restores the
   retained overlay before focus returns to the regenerated, source-key-qualified action; Add only
   prepares the source and never opens the workspace.
 - **Cross-entity links** (plan §5.2): the seven detail-list link components
@@ -174,8 +176,10 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
 - **All five details use the shared F07/F10/F11 anatomy.** Root/Lemma/Stem/Word Type panels and the
   Unique drilldown compose `qd-details-workspace` + `qd-tabs`, keep their `5/4/4/2-or-3/3` tab sets,
   receive collision-free per-instance IDs, keep `notFound` inside the
-  selected tabpanel (the other tabs are disabled while it holds), and use `.qd-details__body` as the
-  sole details scroller. The four Root/Lemma/Stem/Word Type panels mount **one** stable tabpanel
+  selected tabpanel (the other tabs are disabled while it holds). `.qd-details__body` is the normal
+  details scroller; the inline ayah view deliberately transfers scroll ownership to its flex-filled
+  viewport so pagination stays visible and exactly one scrollbar remains. The four
+  Root/Lemma/Stem/Word Type panels mount **one** stable tabpanel
   (`.qd-details-panel__surface`) that never unmounts across a tab switch; the projected view content
   lives in a single always-mounted `.qd-details-panel__content` container inside it, hidden only for
   the empty-selection and `notFound` states. Because only that one tabpanel exists, its id is the
@@ -494,26 +498,19 @@ owns primary/dominant association selection, winner ordering, and server query s
   `qdResultItem`; **`qdAyahCard` is the geometry owner** and `qdResultItem` contributes the list
   semantics/ARIA only (`listVariant="quran-result"` withholds the row frame — see
   `../../shared/README.md`). The card's `flex-shrink: 0` is what keeps the Quran line at its
-  natural height inside the fixed-height viewport; the list scrolls, the card never compresses.
+  natural height inside the contained viewport; the list scrolls, the card never compresses.
 - **`ayah-matches-list` owns its own viewport height policy.** `.ayah-matches-list__viewport` is
-  declared only in `ayah-matches-list.component.scss`: `flex: 0 0 auto`, `overflow: auto`,
-  `scrollbar-gutter: stable`, and `block-size: var(--qd-ayah-matches-list-viewport-block-size,
-  min(58vh, 30rem))`. All four details panels (Roots, Lemmas, Stems, Word Types) therefore resolve
-  to the same contained scroller in the inline and frameless paths. A context selects the other
-  variant by setting the custom property, never by writing a competing `block-size` rule:
-  `.explorer-detail-modal` sets it to `auto` so the Compact drawer keeps its single
-  `.qd-details__body` scroller, and `.qd-modal-shell--overlay` sets it for **every** overlay
-  dialog — the global entity detail overlay, the Unique Words drilldown's modal branch, and the
-  shell's own modal branch. All three previously nested a second ayah scroller inside an already
-  scrolling dialog body. The overlay rule also sets
-  `--qd-ayah-matches-list-viewport-overflow: visible` and
-  `--qd-ayah-matches-list-viewport-scrollbar-gutter: auto`, because an auto-height viewport is not
-  a scroll container and must not reserve a gutter for a scrollbar that never appears. The inline
-  path keeps the contained scroller by design — there the explorer layout gives the panel a
-  definite height. Global stylesheets must not re-declare the viewport's block size —
-  they tie on specificity with the component sheet and lose on document order, which is exactly the
-  silent divergence that left Stems and Word Types on a different `flex` value than Roots and
-  Lemmas.
+  declared only in `ayah-matches-list.component.scss`: its default is `flex: 1 1 auto`,
+  `block-size: auto`, `min-block-size: 0`, `overflow: auto`, and `scrollbar-gutter: stable`.
+  Inline Root/Lemma/Stem/Word Type details and the Unique drilldown mark their workspace with
+  `.qd-details-panel-shell--contained-scroll`; that mode makes `.qd-details__body` a non-scrolling
+  flex container and lets the ayah viewport consume every remaining pixel above pagination. A
+  modal context selects the outer-scroller variant inside the component itself through
+  `:host-context(.explorer-detail-modal)` and `:host-context(.qd-modal-shell--overlay)`. Those
+  contexts set the host, list, and viewport to natural-height flex items, make viewport overflow
+  visible, and remove its scrollbar gutter. The Compact drawer and every overlay dialog therefore
+  keep `.qd-details__body` as their single scroller, while no global stylesheet competes with the
+  component-owned viewport geometry.
 - **Words explainer hero + hub** (Feature 031, presentation-only, no backend/URL/cache change): each
   explorer page mounts the shared `qd-words-explainer` **inside `.uw-intro-band`, after
   `.qd-page-header` and above `.uw-toolbar-recess`**. It renders ordinal + eyebrow + tagline + body +

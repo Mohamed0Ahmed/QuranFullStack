@@ -29,6 +29,13 @@
   opacity: 1;
 }
 
+.detail-modal-shell__header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 0;
+}
+
 .detail-modal-shell__back,
 .detail-modal-shell__close {
   flex-shrink: 0;

@@ -6,6 +6,7 @@
     [hasHeader]="!frameless()"
     [hasTabs]="true"
     [testIdPrefix]="testIdPrefix() + '-workspace'"
+    [class.qd-details-panel-shell--contained-scroll]="usesContainedAyahScroll()"
   >
     @if (!frameless()) {
       <ng-container qdDetailsMetadata>
@@ -18,7 +19,9 @@
       </ng-container>
     }
     @if (!frameless() && hasSelection()) {
-      <ng-content select="[qdDetailsActions]" />
+      <ng-container qdDetailsActions>
+        <ng-content select="[qdDetailsActions]" />
+      </ng-container>
     }
     @if (!frameless() && hasSelection()) {
       <button

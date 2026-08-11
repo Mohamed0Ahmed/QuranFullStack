@@ -1037,18 +1037,18 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   `block-size: min(94dvh, 44rem)`. Shallow states (skeleton, not-found) therefore
   render a tall dialog with empty space — the accepted trade for zero resize. Body
   scroll is locked while open, so a dvh height cannot trap content.
-- **Header order (inline-start → inline-end):** Back (depth > 1) · kind chip ·
-  `h2` title (`flex: 1`, ellipsis) · ayah-count meta · Close. Back and Close are
-  `flex-shrink: 0` + `nowrap` and are the row's anchors: **nothing may move or
-  reflow them**. The title is the only shrinkable item, so a count wider than its
-  reservation steals width from the title, which its ellipsis absorbs.
+- **Header layout:** the balanced overlay header has three tracks: Back/kind/`h2` identity on the
+  RTL start side, optional linking actions in the exact center track, and ayah-count/Close on the
+  RTL end side. The two side tracks are equal and flexible, so the action group stays centered while
+  the title absorbs pressure through ellipsis. Back and Close remain `nowrap` anchors.
 - **Header priority is Back/Close > title > count > kind.** The row cannot hold
   every element at phone widths (at 390px the content box is ~326px while
   Back + kind + a 6rem count + Close + gaps need ~378px), so on
   ≤ `$qd-bp-phone-max` the kind marker is `display: none` and the count
   reservation tightens to `4.5rem`. The `h2` still names the entity, and the count
-  box stays reserved, so the zero-shift contract below survives. Adding a new
-  header element means re-checking this budget at 390px with `depth > 1`.
+  box stays reserved, so the zero-shift contract below survives. When linking actions exist they
+  occupy a centered second row inside the same header on Compact, avoiding collisions without
+  returning the controls to the tab/content region.
 - **Kind chip (`kindLabel`, optional, `''` = omitted):** hairline `--qd-border` +
   `--qd-text-muted` text, no fill, no shadow (flat doctrine §16.2). Deliberately
   **not** `qd-chip` — that contract carries selectable/interactive semantics, and

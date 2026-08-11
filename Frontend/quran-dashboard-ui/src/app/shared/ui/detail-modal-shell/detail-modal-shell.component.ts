@@ -1,7 +1,9 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  TemplateRef,
   effect,
   input,
   output,
@@ -16,7 +18,7 @@ let nextShellId = 0;
 @Component({
   selector: 'qd-detail-modal-shell',
   standalone: true,
-  imports: [QdActionDirective, QdModalShellComponent],
+  imports: [NgTemplateOutlet, QdActionDirective, QdModalShellComponent],
   templateUrl: './detail-modal-shell.component.html',
   styleUrl: './detail-modal-shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -35,6 +37,7 @@ export class DetailModalShellComponent {
   readonly statusMessage = input('');
   readonly kindLabel = input('');
   readonly countText = input('');
+  readonly headerActions = input<TemplateRef<unknown> | null>(null);
 
   readonly backRequested = output<void>();
   readonly closeRequested = output<void>();

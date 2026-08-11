@@ -50,6 +50,7 @@ export class QdModalShellComponent {
   readonly closeLabel = input('إغلاق');
   readonly hasFooter = input(true);
   readonly flushBody = input(false);
+  readonly balancedHeader = input(false);
   readonly dismissOnBackdrop = input(true);
   readonly dismissOnEscape = input(true);
   readonly trapFocus = input(true);

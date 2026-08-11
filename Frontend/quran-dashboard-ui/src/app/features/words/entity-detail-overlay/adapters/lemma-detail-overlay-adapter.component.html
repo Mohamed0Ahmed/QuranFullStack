@@ -39,7 +39,6 @@
   [frameless]="true"
   [view]="frame().view"
   [selectionTitle]="panelState().summary?.lemmaText ?? ''"
-  [linkingSource]="linkingSource()"
   [loading]="panelState().status === 'loading'"
   (viewChange)="onViewChange($event)"
 >

@@ -76,6 +76,9 @@ export class QdDetailsPanelShellComponent<TKey extends string> {
   );
 
   protected readonly hasSelection = computed(() => !this.emptySelection());
+  protected readonly usesContainedAyahScroll = computed(
+    () => this.inline() && !this.frameless() && this.view() === 'ayahs',
+  );
 
   protected readonly labelledTabKey = computed<TKey>(() => {
     const keys = this.tabs().map((tab) => tab.key);

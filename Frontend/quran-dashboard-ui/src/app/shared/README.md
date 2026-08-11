@@ -198,8 +198,9 @@ content, so an ordinary Undo control is not announced as part of a live status m
   named width, the Compact sheet, the single body scroller, shell-owned padding, the focus trap,
   the reference-counted scroll lock and the Escape/backdrop dismissal routes, while the adapter
   keeps everything that is genuinely overlay furniture — Back (depth > 1) and the optional
-  `kindLabel` chip in the header lead slot, the always-reserved `countText` meta and Close in the
-  header extra slot, the fixed restore control shown while a retained stack is closed (focused
+  `kindLabel` chip in the header lead slot, an optional centered action `TemplateRef`, the
+  always-reserved `countText` meta and Close in the header extra slot, the fixed restore control
+  shown while a retained stack is closed (focused
   after Close), and the polite live regions for title/status. It keeps `[returnFocus]="false"`
   because it owns focus itself: Back never leaves focus on the document — a pop restores the
   invoking link inside the dialog when it survived the re-render, else Close. It owns no entity,
@@ -328,8 +329,9 @@ content, so an ordinary Undo control is not announced as part of a live status m
   (an `aria-describedby` target such as the overlay's reserved count), `dialogTestId` (keeps a
   consumer's pre-existing dialog test id when it is not the `testIdPrefix`), `flushBody` (the body
   brings its own details-workspace chrome and scroller, so the shell contributes no second padding
-  ring), and the `[qdModalShellHeaderLead]` / `[qdModalShellHeaderSupport]` slots beside the
-  existing `[qdModalShellHeaderExtra]` / `[qdModalShellFooter]`. A header with neither a visible
+  ring). The shell exposes lead, center, extra, and support header slots plus the footer slot;
+  `balancedHeader` gives a populated center slot equal flexible side tracks on Wide/Medium and
+  moves it to a second header row on Compact. A header with neither a visible
   title nor a Close renders bare — the labelling heading stays, the chrome does not.
 - `ui/floating-layer/` — `qdFloatingLayer` (F15 base) plus four helper modules it orchestrates:
   `floating-layer-placement.ts` (the pure geometry, plus `repositionFloatingLayer()`, the measure-

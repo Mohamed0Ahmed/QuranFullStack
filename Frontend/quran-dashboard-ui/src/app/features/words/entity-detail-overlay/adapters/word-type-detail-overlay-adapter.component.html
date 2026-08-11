@@ -27,7 +27,6 @@
   [kind]="'word'"
   [view]="effectiveView()"
   [selectionTitle]="panelState().summary?.displayText ?? ''"
-  [linkingSource]="linkingSource()"
   [loading]="panelState().status === 'loading'"
   (viewChange)="onViewChange($event)"
 >

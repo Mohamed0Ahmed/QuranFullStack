@@ -88,6 +88,13 @@
   min-block-size: var(--qd-pagination-slot-block-size);
 }
 
+.qd-details-panel-shell--contained-scroll .qd-details__body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+
 .qd-detail-list__loading-number {
   inline-size: 1.25rem;
   block-size: 0.875rem;
@@ -319,7 +326,6 @@ qd-type-distribution-list {
 
 
 .explorer-detail-modal {
-  qd-ayah-matches-list,
   qd-missing-surahs-list,
   qd-surah-occurrences-list,
   qd-root-words-list,
@@ -334,15 +340,7 @@ qd-type-distribution-list {
   }
 }
 
-.qd-modal-shell--overlay {
-  --qd-ayah-matches-list-viewport-block-size: auto;
-  --qd-ayah-matches-list-viewport-overflow: visible;
-  --qd-ayah-matches-list-viewport-scrollbar-gutter: auto;
-}
-
 .explorer-detail-modal {
-  --qd-ayah-matches-list-viewport-block-size: auto;
-
   .ayah-matches-list {
     gap: 0;
   }

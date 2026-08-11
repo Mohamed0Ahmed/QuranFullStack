@@ -7,6 +7,7 @@
   [describedById]="countId"
   [showClose]="false"
   [hasFooter]="false"
+  [balancedHeader]="headerActions() !== null"
   [returnFocus]="false"
   (dismissed)="closeRequested.emit()"
 >
@@ -29,6 +30,12 @@
       <span class="detail-modal-shell__kind" data-testid="detail-modal-kind">{{ kindLabel() }}</span>
     }
   </ng-container>
+
+  @if (headerActions(); as actions) {
+    <div qdModalShellHeaderCenter class="detail-modal-shell__header-actions">
+      <ng-container *ngTemplateOutlet="actions" />
+    </div>
+  }
 
   <ng-container qdModalShellHeaderExtra>
     <span

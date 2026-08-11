@@ -89,7 +89,9 @@ confirmation dialog without clearing another actor's local-storage bucket.
 is idempotent, preserves focus, and announces a source-qualified added/already-prepared result; it
 does not open the workspace. Its controls have stable source-key focus fallbacks, source-qualified
 accessible names, 44px targets on Wide/Medium, and 48px targets on Compact. Direct Link remains a
-transient one-source shortcut and does not add a row. A retained Words overlay closes before the
+transient one-source shortcut and does not add a row. Its default logical-start alignment serves
+inline detail headers, while retained Words overlays place the centered action group in the global
+modal header between the entity identity and its ayah count. A retained Words overlay closes before the
 Linking shell opens; on return it restores first, then `LinkingFocusCoordinator` targets the
 regenerated source action or its documented fallback.
 

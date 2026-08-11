@@ -66,9 +66,35 @@
 }
 
 .qd-modal-shell__header-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
+.qd-modal-shell__header-row--balanced {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.qd-modal-shell__header-lead,
+.qd-modal-shell__header-center,
+.qd-modal-shell__header-extra {
   display: flex;
   align-items: center;
   gap: var(--qd-space-2);
+  min-inline-size: 0;
+}
+
+.qd-modal-shell__header-center {
+  justify-content: center;
+}
+
+.qd-modal-shell__header-center:empty {
+  display: none;
+}
+
+.qd-modal-shell__header-extra {
+  justify-content: flex-end;
 }
 
 .qd-modal-shell__header--bare {
@@ -151,5 +177,19 @@
 
   .qd-modal-shell__body--flush {
     padding: 0;
+  }
+
+  .qd-modal-shell__header-row--balanced {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .qd-modal-shell__header-row--balanced .qd-modal-shell__header-center {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .qd-modal-shell__header-row--balanced .qd-modal-shell__header-extra {
+    grid-column: 2;
+    grid-row: 1;
   }
 }
