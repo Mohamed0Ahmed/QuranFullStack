@@ -1,6 +1,7 @@
 :host {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: var(--qd-space-2);
   padding: var(--qd-space-2) var(--qd-space-3);
   background: var(--qd-ayah-card-bg);

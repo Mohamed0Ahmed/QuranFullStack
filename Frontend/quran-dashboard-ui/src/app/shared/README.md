@@ -63,6 +63,9 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   formatter, route, or output — callers keep their own semantic wrapper (article/li), Quran
   renderer, and navigation. Consumers: Words `ayah-matches-list`, Mushaf `similar-ayahs-card`
   items and `mutashabihat-groups-card` occurrences. See `UI_STYLE_SYSTEM.md` §17.
+  The frame also declares `flex-shrink: 0`: a Quran card sizes to its text, so a height-constrained
+  column-flex list can never compress it into its content. That is a property of the card, not of
+  any one list, which is why it lives here rather than in a consumer stylesheet.
 - `ui/action/` — `qdAction`, the F05 action **directive** on a native `button`/`a`. Variants
   `primary | secondary | tertiary | danger | icon-only | toolbar | row-action`, sizes `sm|md|lg`
   mapped to the `32/40/48` control scale, and a `busy` input that sets `aria-busy` and reveals a
@@ -207,6 +210,19 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   optional `aria-posinset`/`aria-setsize`. It adds **no** `tabindex`: a row is focusable only when
   the consumer made it a real control (§8.1 disclosure ladder). Quran result rows keep their own
   renderer inside this frame (G11).
+  **`qdResultItem` carries row geometry only in the row variants.** The frame's
+  `display`/`align-items`/`gap`/`padding`/borders/background live on
+  `:where(.qd-result-list--linked, --display-only, --master, --event) .qd-result-item`, never on
+  the bare `.qd-result-item`. The variant scope is wrapped in `:where()` deliberately: it selects
+  the row variants without raising specificity above a single class, so the frame still yields to
+  the detail-list row layouts in `styles/_explorer-detail-lists.scss` on document order the way it
+  always did. In `quran-result` the item therefore contributes list semantics and ARIA
+  only, and `qdAyahCard` on the same element is the single geometry owner — before this, the two
+  classes declared `display`, `align-items` and `padding` at equal specificity and the winner
+  depended on stylesheet injection order. The `--qd-hit-target-min` floor is likewise scoped to
+  the rows that are real touch targets (`--linked` rows and `--selectable` items), so a content
+  card can no longer inherit a 44px minimum it is not a target for; the Compact-band override that
+  raises that floor to `--qd-control-lg` carries the same scope.
 - `ui/details-workspace/` — `qd-details-workspace` (F11), the projected details anatomy: identity,
   metadata, actions, an optional tab zone, a permanently mounted polite status slot, exactly one
   body scroller, and an optional footer. It carries **no** feature data — every zone is

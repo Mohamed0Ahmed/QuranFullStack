@@ -408,7 +408,22 @@ owns primary/dominant association selection, winner ordering, and server query s
   alternating row fill, no per-context recolors in `_explorer-detail-lists.scss`). Rows are
   **tracked by `verseKey`**, never `ayahId` — Word Type ayah rows all carry `ayahId: 0`.
   `HighlightedAyahComponent` (marker filtering, matched-ID set, untouched `textUthmani` spans,
-  Quran font) stays feature-owned and unchanged.
+  Quran font) stays feature-owned and unchanged. A card carries both `qdAyahCard` and
+  `qdResultItem`; **`qdAyahCard` is the geometry owner** and `qdResultItem` contributes the list
+  semantics/ARIA only (`listVariant="quran-result"` withholds the row frame — see
+  `../../shared/README.md`). The card's `flex-shrink: 0` is what keeps the Quran line at its
+  natural height inside the fixed-height viewport; the list scrolls, the card never compresses.
+- **`ayah-matches-list` owns its own viewport height policy.** `.ayah-matches-list__viewport` is
+  declared only in `ayah-matches-list.component.scss`: `flex: 0 0 auto`, `overflow: auto`,
+  `scrollbar-gutter: stable`, and `block-size: var(--qd-ayah-matches-list-viewport-block-size,
+  min(58vh, 30rem))`. All four details panels (Roots, Lemmas, Stems, Word Types) therefore resolve
+  to the same contained scroller in the inline and frameless paths. A context selects the other
+  variant by setting the custom property, never by writing a competing `block-size` rule:
+  `.explorer-detail-modal` sets it to `auto` so the Compact drawer keeps its single
+  `.qd-details__body` scroller. Global stylesheets must not re-declare the viewport's block size —
+  they tie on specificity with the component sheet and lose on document order, which is exactly the
+  silent divergence that left Stems and Word Types on a different `flex` value than Roots and
+  Lemmas.
 - **Words explainer hero + hub** (Feature 031, presentation-only, no backend/URL/cache change): each
   explorer page mounts the shared `qd-words-explainer` **inside `.uw-intro-band`, after
   `.qd-page-header` and above `.uw-toolbar-recess`**. It renders ordinal + eyebrow + tagline + body +

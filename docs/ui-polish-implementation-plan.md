@@ -1757,6 +1757,20 @@ Carry forward anything that could not be verified by the implementing agent, wit
 
 ---
 
+## 9.5 Deferred items (intentionally not fixed in this initiative)
+
+Recorded here so Definition of Done item 1 is satisfied — each is a conscious deferral, not an
+oversight.
+
+| Item | Why deferred |
+| --- | --- |
+| The **last** `quran-result` ayah card computes `border-block-end: 0`, because `:where(.qd-result-list) .qd-result-item:last-child` (0,2,0) beats `qd-ayah-card`'s `:host` border (0,1,0). | **Pre-existing, not a regression** — verified against `3c846fc5`: the baseline had the same two specificities and the same effect, and the only change to `ayah-card.component.scss` in this initiative is `flex-shrink: 0`. It is not an L8 concern (a missing 1 px border is neither clipping nor compression of Quran text), and L14 forbids opportunistic stylesheet cleanup while a fix is in flight. Conceptually the last residue of the `qdAyahCard` + `qdResultItem` overlap behind X-3; affects `ayah-matches-list` only — the two Mushaf `quran-result` lists carry no `qdResultItem`. |
+| `.qd-result-list--linked .qd-result-item, .qd-result-item--selectable` at `_components.scss:921-924` and the Compact-band twin at `:1193-1196` remain unwrapped at (0,2,0), where the baseline blanket rule was (0,1,0). | Harmless today — nothing in `_explorer-detail-lists.scss` declares `min-block-size` on a linked row — but it is the same specificity-raising shape that caused review finding ER-1, surviving only because it currently has no competitor. Wrapping both in `:where()` would make the block uniform. Advisory; no behavioural defect. |
+| Inert residue in `_explorer-detail-lists.scss`: `.explorer-detail-modal .ayah-matches-list { gap: 0 }` and the two `__meta-row` / `__meta` gap rules lose to the component's own `gap`. | Not height policy, so outside Phase 5's proven-dead scope under L14. |
+| `/api/access/me` takes ~1017–1029 ms on every page load and is the only request over 400 ms. | Sits on the OIDC/auth bootstrap path, which **L4** puts entirely out of scope. Survived the dev-latency removal at the same magnitude, so it is unrelated to Phase 1. |
+
+---
+
 ## 10. Definition of Done
 
 This initiative is complete only when **all** of the following hold:
