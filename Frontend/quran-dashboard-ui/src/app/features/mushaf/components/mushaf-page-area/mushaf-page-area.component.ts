@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output, viewChild } from '@angular/core';
 
 import {
   MushafPageViewModel,
@@ -31,9 +31,18 @@ export class MushafPageAreaComponent {
   readonly surahCatalogByJuz = input.required<readonly MushafSurahJuzGroupDto[]>();
   readonly highlightedVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
+  readonly canSelectAyahs = input(false);
+  readonly ayahSelectionMode = input(false);
+  readonly selectedVerseKeys = input<readonly string[]>([]);
 
   readonly pageChange = output<number>();
   readonly surahJump = output<number>();
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
+  readonly ayahSelectionModeChange = output<void>();
+  private readonly headerNavigation = viewChild(MushafHeaderNavigationComponent);
+
+  focusAyahSelectionAction(): void {
+    this.headerNavigation()?.focusAyahSelectionAction();
+  }
 }

@@ -14,11 +14,26 @@ export class MushafWordComponent {
   readonly word = input.required<MushafWordDto>();
   readonly highlightedVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
+  readonly ayahSelectionMode = input(false);
+  readonly selectedVerseKeys = input<readonly string[]>([]);
 
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
 
   protected readonly displayText = computed(() => toMushafWordDisplayText(this.word().textUthmani));
+
+  protected readonly isSelectedAyah = computed(
+    () => this.ayahSelectionMode() && this.selectedVerseKeys().includes(this.word().verseKey),
+  );
+
+  protected readonly selectionLabel = computed(() => {
+    const word = this.word();
+    if (!this.ayahSelectionMode() || word.isAyahMarker) {
+      return null;
+    }
+
+    return `${this.isSelectedAyah() ? 'إلغاء تحديد' : 'تحديد'} الآية ${word.verseKey}`;
+  });
 
   protected readonly isHighlightedAyahWord = computed(() => {
     const word = this.word();

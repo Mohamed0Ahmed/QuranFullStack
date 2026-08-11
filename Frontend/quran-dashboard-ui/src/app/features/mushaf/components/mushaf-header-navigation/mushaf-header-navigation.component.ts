@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, ElementRef, input, output, viewChild } from '@angular/core';
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { SurahJumpPickerComponent } from '../surah-jump-picker/surah-jump-picker.component';
@@ -14,9 +14,17 @@ import { MushafPageViewModel, MushafSurahJuzGroupDto } from '../../models/mushaf
 export class MushafHeaderNavigationComponent {
   readonly page = input.required<MushafPageViewModel>();
   readonly surahCatalogByJuz = input.required<readonly MushafSurahJuzGroupDto[]>();
+  readonly canSelectAyahs = input(false);
+  readonly ayahSelectionMode = input(false);
 
   readonly pageChange = output<number>();
   readonly surahJump = output<number>();
+  readonly ayahSelectionModeChange = output<void>();
+  private readonly ayahSelectionButton = viewChild<ElementRef<HTMLButtonElement>>('ayahSelectionButton');
+
+  focusAyahSelectionAction(): void {
+    this.ayahSelectionButton()?.nativeElement.focus();
+  }
 
   protected onPrevious(): void {
     const previous = this.page().previousPageNumber;
@@ -34,5 +42,9 @@ export class MushafHeaderNavigationComponent {
 
   protected onSurahJump(surahNumber: number): void {
     this.surahJump.emit(surahNumber);
+  }
+
+  protected toggleAyahSelectionMode(): void {
+    this.ayahSelectionModeChange.emit();
   }
 }

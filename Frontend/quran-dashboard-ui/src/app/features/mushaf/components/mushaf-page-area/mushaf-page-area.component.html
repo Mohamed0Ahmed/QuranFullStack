@@ -18,13 +18,18 @@
     <qd-mushaf-header-navigation
       [page]="page()!"
       [surahCatalogByJuz]="surahCatalogByJuz()"
+      [canSelectAyahs]="canSelectAyahs()"
+      [ayahSelectionMode]="ayahSelectionMode()"
       (pageChange)="pageChange.emit($event)"
       (surahJump)="surahJump.emit($event)"
+      (ayahSelectionModeChange)="ayahSelectionModeChange.emit()"
     />
     <qd-mushaf-page-view
       [page]="page()!"
       [highlightedVerseKey]="highlightedVerseKey()"
       [selectedWordLocation]="selectedWordLocation()"
+      [ayahSelectionMode]="ayahSelectionMode()"
+      [selectedVerseKeys]="selectedVerseKeys()"
       (ayahSelect)="ayahSelect.emit($event)"
       (wordSelect)="wordSelect.emit($event)"
       (pageChange)="pageChange.emit($event)"

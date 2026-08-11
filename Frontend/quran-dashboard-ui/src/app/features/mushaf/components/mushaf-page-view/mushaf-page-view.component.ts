@@ -31,6 +31,8 @@ export class MushafPageViewComponent {
   readonly page = input.required<MushafPageViewModel>();
   readonly highlightedVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
+  readonly ayahSelectionMode = input(false);
+  readonly selectedVerseKeys = input<readonly string[]>([]);
 
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();

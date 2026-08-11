@@ -22,6 +22,8 @@ export class MushafLineComponent {
   readonly markers = input<PageMarkerDto[]>([]);
   readonly highlightedVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
+  readonly ayahSelectionMode = input(false);
+  readonly selectedVerseKeys = input<readonly string[]>([]);
   readonly surahNameArabic = input<string | null>(null);
 
   readonly ayahSelect = output<string>();

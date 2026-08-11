@@ -4,11 +4,14 @@ This feature owns the frontend-only Quran Linking prototype. It is available onl
 authenticated, active System Owner through `LinkingAccessService`; every public workspace mutation
 rechecks that gate rather than relying on hidden UI.
 
-The selected-Mushaf-word Linking source has been retired. Normal Mushaf word selection, analysis,
-identity navigation, URL/session state, renderer boundaries, glyphs, word order, markers, fonts,
-spacing, and line metrics remain outside Linking. The current automatic sources are Unique Word,
-Root, Lemma, Stem, and Word Type. Manual Mushaf ayah descriptors are V2 contracts only at this
-stage; their reader entry and source loading arrive in later phases.
+The selected-Mushaf-word Linking source has been retired. An Owner can instead start a transient
+Mushaf ayah-selection draft from the reader header. The draft records Quran-ordered verse keys and
+metadata only, rechecks the Owner gate for every action, survives reader page navigation, and is
+discarded on route destruction, cancellation, completed handoff, or access loss. Its successful
+handoff upserts one manual Mushaf source without opening the workspace or changing reader focus.
+Normal Mushaf word selection, analysis, identity navigation, URL/session state, renderer boundaries,
+glyphs, word order, markers, fonts, spacing, and line metrics remain outside Linking. The current
+automatic sources are Unique Word, Root, Lemma, Stem, and Word Type.
 
 `LinkingWorkspaceStore` owns ordered prepared rows, per-row configuration, transient checked
 operation membership, editor targets, a one-item undo snapshot, and presentation-only surface state.

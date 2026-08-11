@@ -1,0 +1,29 @@
+@if (selection.active()) {
+  <section class="mushaf-selection-status" aria-label="تحديد آيات من المصحف">
+    <div class="mushaf-selection-status__summary">
+      <strong>{{ labels.mushafSelectionCount }}: {{ selection.selectedCount() }}</strong>
+      <span>{{ labels.mushafSelectionInstruction }}</span>
+    </div>
+    <div class="mushaf-selection-status__actions" role="group" aria-label="إجراءات تحديد آيات المصحف">
+      <button qdAction="tertiary" size="sm" type="button" [disabled]="selection.selectedCount() === 0" (click)="clear()">
+        {{ labels.mushafSelectionClear }}
+      </button>
+      <button #cancelButton qdAction="tertiary" size="sm" type="button" (click)="cancel()">
+        {{ labels.mushafSelectionCancel }}
+      </button>
+      <button qdAction="primary" size="sm" type="button" [disabled]="!selection.canAddToWorkspace()" (click)="addToWorkspace()">
+        {{ labels.addToWorkspace }}
+      </button>
+    </div>
+    @if (selection.failedEntry(); as failedEntry) {
+      <div class="mushaf-selection-status__error" role="status">
+        <span>{{ failedEntry.errorMessage }}</span>
+        <button qdAction="tertiary" size="sm" type="button" (click)="retry(failedEntry.verseKey)">{{ labels.retry }}</button>
+        <button qdAction="danger" size="sm" type="button" (click)="remove(failedEntry.verseKey)">{{ labels.mushafSelectionRemove }}</button>
+      </div>
+    }
+  </section>
+}
+@if (selection.statusMessage(); as statusMessage) {
+  <span class="qd-sr-only" aria-live="polite">{{ statusMessage }}</span>
+}

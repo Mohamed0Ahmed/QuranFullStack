@@ -1,4 +1,4 @@
-<header class="mushaf-header" aria-label="التنقّل بين الصفحات">
+<header class="mushaf-header" aria-label="التنقّل بين صفحات المصحف وإجراءاته">
   <div class="mushaf-header__deck">
     <div class="mushaf-header__deck-zone mushaf-header__deck-zone--nav">
       <div class="mushaf-header__nav-actions">
@@ -24,6 +24,19 @@
         >
           التالي
         </button>
+        @if (canSelectAyahs()) {
+          <button
+            #ayahSelectionButton
+            qdAction="tertiary"
+            size="sm"
+            class="qd-hit-target mushaf-header__nav-button"
+            type="button"
+            [attr.aria-pressed]="ayahSelectionMode()"
+            (click)="toggleAyahSelectionMode()"
+          >
+            تحديد
+          </button>
+        }
       </div>
       <div class="mushaf-header__surah-jump">
         <qd-surah-jump-picker

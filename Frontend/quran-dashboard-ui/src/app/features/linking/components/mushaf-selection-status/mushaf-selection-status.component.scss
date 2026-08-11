@@ -1,0 +1,37 @@
+:host {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.mushaf-selection-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qd-space-2);
+  padding: var(--qd-space-2);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface-quiet);
+
+  &__summary,
+  &__actions,
+  &__error {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--qd-space-2);
+  }
+
+  &__summary {
+    font-size: var(--qd-type-meta);
+    line-height: var(--qd-type-meta-lh);
+  }
+
+  &__error {
+    flex-basis: 100%;
+    color: var(--qd-danger);
+    font-size: var(--qd-type-meta);
+    line-height: var(--qd-type-meta-lh);
+  }
+}

@@ -116,7 +116,13 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   announcement, and empties render through `qd-empty-state`. The reader has never had a `qd-state`
   consumer and gained none.
 - **Selected-word Linking is retired.** The selected-word study remains analysis-only: it no longer
-  creates a Linking descriptor or renders Linking actions. Its reader selection, route state,
+  creates a Linking descriptor or renders Linking actions. An Owner-only header action instead
+  starts a transient ayah-selection mode owned by Linking at the reader-page boundary. It passes
+  neutral mode and selected-key inputs through the protected renderer without injecting Linking
+  below that boundary. In mode, a non-marker word emits its normal ayah then word events; the page
+  consumes the ayah toggle and ignores that immediate word event, while ArrowLeft/ArrowRight study
+  navigation is paused. The selected-word ring remains authoritative, markers stay disabled, and
+  only selected mounted ayahs receive a text-color cue. The reader selection, route state,
   protected renderer, analysis API, cache, glyphs, word order, markers, font, spacing, and line
   metrics remain unchanged.
 - **D47 hit targets are overlays, not boxes.** The page-jump trigger keeps its printed `2.25rem`

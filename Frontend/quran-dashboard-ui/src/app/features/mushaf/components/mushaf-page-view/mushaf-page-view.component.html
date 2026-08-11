@@ -44,6 +44,8 @@
         [surahNameArabic]="lineView.surahNameArabic"
         [highlightedVerseKey]="highlightedVerseKey()"
         [selectedWordLocation]="selectedWordLocation()"
+        [ayahSelectionMode]="ayahSelectionMode()"
+        [selectedVerseKeys]="selectedVerseKeys()"
         (ayahSelect)="ayahSelect.emit($event)"
         (wordSelect)="wordSelect.emit($event)"
       />

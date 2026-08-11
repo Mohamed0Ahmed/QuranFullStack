@@ -4,16 +4,21 @@
   data-testid="mushaf-reader-page"
 >
   <section class="mushaf-reader__page" aria-label="منطقة المصحف">
+    <qd-mushaf-selection-status />
     <qd-mushaf-page-area
       [page]="facade.page()"
       [loadState]="facade.pageLoadState()"
       [surahCatalogByJuz]="facade.surahCatalogByJuz()"
-      [highlightedVerseKey]="facade.mushafHighlightVerseKey()"
+      [highlightedVerseKey]="ayahSelection.active() ? null : facade.mushafHighlightVerseKey()"
       [selectedWordLocation]="facade.selectedWordLocation()"
+      [canSelectAyahs]="linkingAccess.canUseLinking()"
+      [ayahSelectionMode]="ayahSelection.active()"
+      [selectedVerseKeys]="ayahSelection.selectedVerseKeys()"
       (pageChange)="onPageChange($event)"
       (surahJump)="onSurahJump($event)"
       (ayahSelect)="onAyahSelect($event)"
       (wordSelect)="onWordSelect($event)"
+      (ayahSelectionModeChange)="toggleAyahSelectionMode()"
     />
   </section>
   <section class="mushaf-reader__study" aria-label="منطقة الدراسة">

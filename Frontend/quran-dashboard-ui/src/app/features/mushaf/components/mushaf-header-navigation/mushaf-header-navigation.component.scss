@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   flex-shrink: 0;
 }
@@ -16,6 +18,7 @@
   &__nav-actions {
     display: flex;
     flex: 0 0 auto;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--qd-space-1);
     grid-column: 1;
@@ -80,5 +83,20 @@
     padding-inline: var(--qd-space-3);
     font-size: 0.875rem;
     line-height: 1.35;
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .mushaf-header__deck-zone--nav {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mushaf-header__nav-actions {
+    justify-self: stretch;
+  }
+
+  .mushaf-header__surah-jump {
+    grid-column: 1;
+    grid-row: 2;
   }
 }
