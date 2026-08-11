@@ -2,13 +2,16 @@ import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
   inject,
   input,
   output,
+  viewChild,
 } from '@angular/core';
 
 import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
+import { qdLoadingSizeReservation } from '../../../../shared/layout/loading-size-reservation';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdDetailsWorkspaceComponent } from '../../../../shared/ui/details-workspace/details-workspace.component';
 import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
@@ -49,6 +52,14 @@ export class StemDetailsPanelComponent {
 
   readonly viewChange = output<StemView>();
   readonly close = output<void>();
+
+  private readonly contentElement = viewChild<ElementRef<HTMLElement>>('detailsContent');
+
+  protected readonly reservedBlockSize = qdLoadingSizeReservation({
+    host: this.contentElement,
+    isLoading: this.loading,
+    isSettled: computed(() => !this.loading() && !this.notFound() && !this.emptySelection()),
+  }).reservedBlockSize;
 
   protected get panelLabel() {
     return STEMS_PANEL_LABEL;

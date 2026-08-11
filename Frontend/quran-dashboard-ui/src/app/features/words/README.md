@@ -216,6 +216,32 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   The Roots skeleton chain names every one of its five views explicitly and terminates in the same
   sr-only status, so a future sixth view degrades to a neutral announcement instead of another
   view's skeleton.
+- **The details content container holds its geometry across a load.** `.…-details-panel__content`
+  — the single always-mounted content container in all four details panels — is the reservation
+  host for the shared `qdLoadingSizeReservation()` (`shared/layout/loading-size-reservation.ts`,
+  the third consumer that met Mushaf decision N3-a's extraction threshold). While the panel is
+  `loading` it carries the last settled natural block size as an inline `min-block-size`; the
+  reservation releases on settle and is invalidated by an inline-size change, so a width change
+  mid-load cannot strand the panel at a height measured at another width. It is a **floor, never a
+  clamp** — a skeleton taller than the reservation still renders at its own height, so nothing is
+  ever clipped. "Settled" here is *not loading, not not-found, not empty-selection*: the two
+  excluded states hide the container, and recording their zero height would make the reservation
+  inert. Measured on Roots at 1440px, root `1`, forward tab moves: الآيات 570.5 → الأصول skeleton
+  **570.5** (was 334) → الأصول loaded 1422. One transition instead of two; the skeleton still
+  appears on the first frame, and a cached tab still resolves with no skeleton and no reservation.
+  The reservation applies in all three render modes (inline panel, mobile modal, frameless overlay
+  adapter) because the container lives in the panel's one shared `#panelBody` template.
+  - **Accepted trade-off, inherited from the shared utility:** the reservation holds the
+    **previous** view's height while a **different** view loads. That is the point — the last
+    settled height is the only honest predictor available before the new one arrives.
+  - **Views that settle at their skeleton's height are covered too.** A view whose loading
+    skeleton is geometry-matched to its loaded content (the ayah and surah lists, by design)
+    settles without firing a resize, so the shared utility also captures the region's size on
+    settle rather than only inside the `ResizeObserver` callback. Before that second capture point
+    existed the Stems panel recorded nothing and its reservation was a permanent no-op: measured on
+    Stems at 1440px, stem `3`, forward moves collapsed to the new view's bare skeleton
+    (643 → 613.61 → 534.5 → **186** → 78.8). With it, each move holds the previous height for the
+    whole load (643 → 613.61 → 534.5 → 78.8, reservations `643px`, `613.609px`, `534.5px`).
 - **Zero-count detail triggers remain visible but inert across all five explorers.** Identity
   actions, count chips, mobile stat badges and Lemma/Stem ayah-type controls use
   `لا كلمات مرتبطة بهذا النوع، لذا لا تفاصيل لعرضها.` as the visible reason, reference it through

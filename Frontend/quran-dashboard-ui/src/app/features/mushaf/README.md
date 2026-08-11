@@ -144,26 +144,44 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
     They compose the real `qdAyahCard` frame and the real meta/text classes, so
     the placeholder geometry cannot drift from the loaded geometry. Multi-line ayah text
     is unknowable before the load and still grows its card (accepted).
-- **Selected-word loading reserves its natural size** (Feature 029, U1): while word
-  analysis loads, `selected-word-section` holds `min-block-size: max(baseline, last
-  natural)` so the divider/next section below it never moves. The last successful
-  block size and segment count are recorded by a guarded `ResizeObserver` (numeric
-  geometry only — old text/Quran DOM is never retained), the skeleton renders that
-  segment count (fallback 3 on first load) with geometry matched to the loaded
-  cells, and the responsive baseline is measured, not invented (333px wide bands /
-  495px under the 768px morphology-grid breakpoint). Reservation clears on
-  success/error/empty; loaded content always sizes itself.
-- **Selected-ayah loading reserves its natural size too** (Feature 030, N3 row 10):
-  a loaded tafsir/translation/إعراب has an arbitrary height, so `selected-ayah-section`
-  runs the same pattern as a **local port** (decision N3-a: no shared utility until a
-  third consumer). Same guarded `ResizeObserver`, same numeric-geometry-only rule, same
-  `--loading` class scoping — the scoping is load-bearing, because the reservation sits
-  over three layered min-heights (the component's own, the `<1024px`/`<768px` embedded
-  overrides in `styles/_components.scss`, and the reserved var). Its per-band baseline
-  resolves through `--qd-ayah-study-min-height`, so it follows each band's study floor
-  and can never reserve *less* than the loaded floor. Accepted trade (as in U1):
-  reserving the previous ayah's height while a **different** ayah loads holds stale
-  geometry.
+- **Both selected sections reserve their natural size while loading, through one shared
+  utility.** Decision **N3-a** said "no shared utility until a third consumer"; the
+  Words details content area (audit finding R-2) is that third consumer, so the
+  threshold is reached and the contract now lives in
+  `shared/layout/loading-size-reservation.ts` as `qdLoadingSizeReservation()`. It is the
+  *whole* extraction and nothing more: hold the last known natural block size of a
+  content region while it is loading, release it on settle, and invalidate it on an
+  inline-size change, via the guarded `ResizeObserver` both Mushaf ports already used —
+  plus a settle capture, because a section that settles at the height its skeleton already
+  had never fires a second callback (`shared/README.md` holds the mechanism).
+  It stores **numeric geometry only** — never prior text and never Quran DOM. What stays
+  with the caller is what was always page-specific: which element is the reservation
+  host, what "settled" means for that resource, and the per-band baseline floor the
+  reservation is `max()`-ed against in CSS.
+  - **Accepted trade-off, inherited from both original ports and now a property of the
+    shared utility:** the reservation holds the **previous** entity's height while a
+    **different** entity loads. The last successful size is the only honest predictor of
+    the next one, so a section switching between two entities of very different heights
+    holds stale geometry until the new one settles. This is deliberate — the alternative
+    is the collapse-and-jump the reservation exists to prevent.
+  - **`selected-word-section`** (Feature 029, U1): holds `min-block-size: max(baseline,
+    last natural)` so the divider/next section below it never moves. Its loading skeleton
+    still renders the **previous segment count** (fallback 3 on first load) with geometry
+    matched to the loaded cells — that count is the component's own state, not the shared
+    utility's, which carries geometry alone. The responsive baseline is measured, not
+    invented (333px wide bands / 495px under the 768px morphology-grid breakpoint). Because
+    the loaded section normally settles *on* that baseline, its recorded natural size and its
+    floor coincide (measured: 333.05px natural, `333.046875px` reserved at 1440px), so the
+    reservation is live but geometrically inert here — it earns its keep only when a word's
+    analysis grows the section past the floor.
+  - **`selected-ayah-section`** (Feature 030, N3 row 10): a loaded tafsir/translation/إعراب
+    has an arbitrary height, so the same reservation applies with the same `--loading`
+    class scoping — the scoping is load-bearing, because the reservation sits over three
+    layered min-heights (the component's own, the `<1024px`/`<768px` embedded overrides in
+    `styles/_components.scss`, and the reserved var). Its per-band baseline resolves
+    through `--qd-ayah-study-min-height`, so it follows each band's study floor and can
+    never reserve *less* than the loaded floor.
+  - Reservation clears on success/error/empty; loaded content always sizes itself.
 - **The study tab strip holds its inline geometry too, and never shows a stale count.**
   The strip is `qd-tabs layout="tracks"` with `--qd-tabs-track-floor: 7.75rem` on
   `.selected-ayah-section__tabs` — the floor clears the widest label (`المتشابهات`) plus its

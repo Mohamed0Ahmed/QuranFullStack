@@ -71,7 +71,12 @@
           {{ notFoundMessage() || notFoundLabel }}
         </div>
       }
-      <div class="stem-details-panel__content" [hidden]="emptySelection() || notFound()">
+      <div
+        #detailsContent
+        class="stem-details-panel__content"
+        [style.min-block-size]="reservedBlockSize()"
+        [hidden]="emptySelection() || notFound()"
+      >
         <ng-content />
       </div>
     </section>

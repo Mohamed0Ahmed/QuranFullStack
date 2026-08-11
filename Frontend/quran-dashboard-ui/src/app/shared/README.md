@@ -4,7 +4,9 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 
 ## What lives here
 
-- `layout/` — the responsive-band contract. `breakpoints.contract.json` is the **single neutral
+- `layout/` — the cross-feature layout contracts: the responsive bands, and the loading-geometry
+  reservation.
+- `layout/breakpoints*` — the responsive-band contract. `breakpoints.contract.json` is the **single neutral
   source** for Compact `≤767` / Medium `768–1079` / Wide `≥1080` / Wide-plus `≥1440`;
   `breakpoints.ts` imports it and derives every media-query string plus `qdBandForWidth()` and
   `qdIsWidePlus()`, and `tailwind.config.js` requires the same JSON for its named screens. It is a
@@ -16,6 +18,32 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   only: `qdBandForWidth(1440)` is deliberately `'wide'`, and `widePlusIsStructural` in the contract
   says so, because a fourth structural composition is exactly the drift the band vocabulary exists
   to prevent.
+- `layout/loading-size-reservation.ts` — `qdLoadingSizeReservation()`, the one loading-geometry
+  reservation. Called from a component's injection context with a host element signal, an
+  `isLoading` signal and an `isSettled` signal, it returns a `reservedBlockSize` signal the
+  template applies as a block-size **floor** — bound straight to `min-block-size` when the host has
+  no other minimum, or routed through a CSS custom property when the consumer must `max()` it
+  against a per-band baseline. A floor, never a clamp: content taller than the reservation still
+  renders at its own height. Its whole contract: hold the last known natural block size of a
+  content region while it is loading, release on settle, and **invalidate on an inline-size
+  change** (guarded `ResizeObserver`, 1px tolerance) so a reservation cannot outlive the width it
+  was measured at and strand the panel at a stale height. It retains **numeric geometry only** —
+  never markup, text, or Quran DOM. It deliberately owns none of the per-call-site decisions: the
+  reservation host, the meaning of "settled", and the per-band baseline floor the reservation is
+  `max()`-ed against in CSS all stay with the consumer. **Accepted trade-off it inherits from the
+  two Mushaf implementations it was extracted from:** the reservation holds the previous entity's
+  height while a *different* entity loads. **The natural size has two capture points, and it needs
+  both:** the observer callback records it whenever the region actually resizes, and a settle
+  effect promotes the size the observer last reported whenever `isSettled` turns true. Without the
+  second, a resource that settles at exactly the height its skeleton already had — a Words view
+  whose content matches its skeleton, or a Mushaf section sitting on its per-band baseline floor —
+  fires no callback, records nothing, and leaves the *next* load with no reservation to hold. The
+  settle effect reads no layout: it reuses the geometry the observer already delivered, so it
+  cannot force a reflow, and it re-runs only when `isSettled` changes, never per change-detection
+  cycle. Extracted per Mushaf decision **N3-a** (extract on a third consumer);
+  consumers are `features/mushaf/components/selected-word-section`,
+  `.../selected-ayah-section`, and the four Words details panels' `.…-details-panel__content`
+  (`features/words/components/{root,lemma,stem,word-type}-details-panel`).
 - `ui/tabs/` — `qd-tabs` (the app-wide tablist) + the `qdTab` directive. `qd-tabs` owns no
   selection state: consumers project their own `<a routerLink>`/`<button>` tab elements marked
   with `qdTab [selected]="…"` and their own click/routerLink; `qd-tabs` supplies the
