@@ -1,5 +1,10 @@
+import {
+  isLinkingManualMushafAyahSource,
+  LinkingManualMushafAyahSource,
+} from './linking-manual-mushaf.models';
+
 export type LinkingSourceKind =
-  | 'mushaf-word'
+  | 'manual-mushaf-ayahs'
   | 'unique-word'
   | 'root'
   | 'lemma'
@@ -35,14 +40,7 @@ export type LinkingWordTypeSelection =
   | { kind: 'lemma'; lemmaId: number; scope: LinkingWordTypeScope };
 
 export type LinkingSourceDescriptor =
-  | {
-      kind: 'mushaf-word';
-      quranWordId: number;
-      wordLocation: string;
-      verseKey: string;
-      pageNumber: number;
-      label: string;
-    }
+  | ({ kind: 'manual-mushaf-ayahs'; label: string } & LinkingManualMushafAyahSource)
   | { kind: 'unique-word'; mode: LinkingUniqueWordMode; wordId: number; label: string }
   | { kind: 'root'; rootId: number; label: string }
   | { kind: 'lemma'; lemmaId: number; typeCode: string | null; label: string }
@@ -60,13 +58,8 @@ export function isLinkingSourceDescriptor(value: unknown): value is LinkingSourc
   }
 
   switch (value['kind']) {
-    case 'mushaf-word':
-      return (
-        isPositiveSafeInteger(value['quranWordId']) &&
-        isWordLocation(value['wordLocation']) &&
-        isVerseKey(value['verseKey']) &&
-        isPageNumber(value['pageNumber'])
-      );
+    case 'manual-mushaf-ayahs':
+      return isLinkingManualMushafAyahSource(value);
     case 'unique-word':
       return (
         (value['mode'] === 'simple' || value['mode'] === 'tashkeel') &&
@@ -144,20 +137,12 @@ function isPositiveSafeInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 }
 
-function isPageNumber(value: unknown): value is number {
-  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 1 && value <= 604;
-}
-
 function isNonBlankString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
 function isNullableTypeCode(value: unknown): value is string | null {
   return value === null || isNonBlankString(value);
-}
-
-function isWordLocation(value: unknown): value is string {
-  return typeof value === 'string' && /^\d{1,3}:\d{1,3}:\d{1,2}$/.test(value);
 }
 
 function isWordTypeMainType(value: unknown): value is LinkingWordTypeMainType {

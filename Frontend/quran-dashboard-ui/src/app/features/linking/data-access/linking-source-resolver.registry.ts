@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 import { LinkingAyah } from '../models/linking-ayah.models';
 import { LinkingSourceDescriptor, LinkingSourceKind } from '../models/linking-source.models';
 import { UniqueWordLinkingSourceResolver } from './resolvers/unique-word-linking-source.resolver';
-import { MushafWordLinkingSourceResolver } from './resolvers/mushaf-word-linking-source.resolver';
 import { RootLinkingSourceResolver } from './resolvers/root-linking-source.resolver';
 import { LemmaLinkingSourceResolver } from './resolvers/lemma-linking-source.resolver';
 import { StemLinkingSourceResolver } from './resolvers/stem-linking-source.resolver';
@@ -21,7 +20,6 @@ export interface LinkingSourceResolverRegistration {
 @Injectable({ providedIn: 'root' })
 export class LinkingSourceResolverRegistry {
   private readonly uniqueWordResolver = inject(UniqueWordLinkingSourceResolver);
-  private readonly mushafWordResolver = inject(MushafWordLinkingSourceResolver);
   private readonly rootResolver = inject(RootLinkingSourceResolver);
   private readonly lemmaResolver = inject(LemmaLinkingSourceResolver);
   private readonly stemResolver = inject(StemLinkingSourceResolver);
@@ -30,21 +28,6 @@ export class LinkingSourceResolverRegistry {
     LinkingSourceKind,
     LinkingSourceResolverRegistration
   >([
-    [
-      'mushaf-word',
-      {
-        kind: 'mushaf-word',
-        resolve: (
-          source: LinkingSourceDescriptor,
-          onProgress: (progress: { loaded: number; total: number }) => void,
-        ) => {
-          if (source.kind !== 'mushaf-word') {
-            throw new Error('مصدر الربط غير متوافق مع محلل كلمة المصحف.');
-          }
-          return this.mushafWordResolver.resolve(source, onProgress);
-        },
-      },
-    ],
     [
       'unique-word',
       {

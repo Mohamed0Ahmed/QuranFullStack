@@ -29,7 +29,7 @@ export class QuranSourceLinkingActionsComponent {
 
   protected addToWorkspace(): void {
     const existing = this.workspace.itemCount();
-    const sourceKey = this.workspace.addOrFocus(this.source());
+    const sourceKey = this.workspace.addSource(this.source());
     if (sourceKey === null) {
       return;
     }

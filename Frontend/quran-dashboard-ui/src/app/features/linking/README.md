@@ -1,64 +1,55 @@
 # Linking feature
 
-This feature owns the frontend-only Quran Linking workspace. It is available only to a resolved,
-authenticated, active System Owner through `LinkingAccessService`; every store command repeats that
-gate rather than relying on hidden UI.
+This feature owns the frontend-only Quran Linking prototype. It is available only to a resolved,
+authenticated, active System Owner through `LinkingAccessService`; every public workspace mutation
+rechecks that gate rather than relying on hidden UI.
 
-`LinkingWorkspaceStore` owns prepared sources, source-wide adaptive ayah selection, source-word
-highlight preference, lightweight result counts, and the active workspace/Direct Link intent.
-Source descriptors are serializable, feature-owned contracts. They contain every field that defines
-the existing read-result scope, but no API DTO graphs, callbacks, Observables, facades, modal state,
-loaded ayahs, Quran text, Door selection, workflow step, load state, or mock result.
+The selected-Mushaf-word Linking source has been retired. Normal Mushaf word selection, analysis,
+identity navigation, URL/session state, renderer boundaries, glyphs, word order, markers, fonts,
+spacing, and line metrics remain outside Linking. The current automatic sources are Unique Word,
+Root, Lemma, Stem, and Word Type. Manual Mushaf ayah descriptors are V2 contracts only at this
+stage; their reader entry and source loading arrive in later phases.
 
-The workspace session uses the versioned `qd-linking-workspace-v1` `sessionStorage` key. It stores
-only the Owner `sub`, ordered prepared items, descriptor keys, selection overrides, last resolved
-count, and highlight preference. Invalid, cross-actor, or unavailable storage fails closed; logout
-or actor changes clear both storage and in-memory state. Restored descriptors are not resolved until
-a later workspace action or Direct Link flow requests them.
+`LinkingWorkspaceStore` owns ordered prepared rows, per-row configuration, transient checked
+operation membership, editor targets, a one-item undo snapshot, and presentation-only surface state.
+Automatic configuration combines ayah inclusion with `automaticWordMatchesEnabled`; manual
+configuration combines ayah inclusion, verse-scoped `wordLocation` coordinates, and the stored
+grouped/independent preference. A row's V2 configuration is the persisted truth. Temporary
+compatibility selectors keep the existing one-source workspace and Direct Link surfaces compiling
+until their later replacement; they are not serialized contracts.
 
-There is no write API, request, draft, approval, history, cache mutation, generic grouped linking
-path, or Mushaf grouped descriptor. Word Type Root/Stem/Lemma grouped dimensions use only their
-existing scoped read endpoints; the future grouped-Mushaf seam remains deliberately unimplemented.
+Source descriptors are serializable feature contracts. Automatic source keys retain their previous
+identities. A manual Mushaf key is the numerically ordered, deduplicated `verseKey` set only;
+display hints, page hints, inclusion overrides, words, and grouping never change it. `verseKey` is
+the merge identity, `quranWordId` is canonical only when a read supplied it, `wordLocation` is a
+temporary manual coordinate, and a render-position occurrence is presentation-only. Merged review
+and ordered source intents are sibling V2 contracts: the display cannot reconstruct or widen an
+intent.
 
-`LinkingWorkspaceHostComponent` is mounted once beside the app shell and the Words detail overlay.
-It defers the wide `qd-modal-shell` workspace surface until Linking opens; on non-Compact viewports,
-that host supplies the workspace-only `80vw` by `80dvh` wide-size tokens while Compact retains the
-shared full-width sheet. App-root owns the cross-layer inert boundary. The Navbar reads only Owner
-access and item count. Workspace cards remain
-presentational and dispatch remove, edit-selection focus, and one-source Direct Link intent to
-`LinkingWorkspaceStore`; the same shell now composes its workspace or Direct Link content without
-nested dialogs.
+`LocalStorageLinkingWorkspaceRepository` implements the replaceable, async-capable persistence port
+with `qd-linking-workspace:v2:<encodeURIComponent(actorSub)>`. The V2 envelope repeats its version
+and exact actor subject, persists only prepared descriptors/configuration/last-resolved count, and
+is strictly decoded. Malformed, cross-actor, or unknown-version payloads invalidate only the active
+actor's V2 bucket. Valid envelopes retain independent valid rows, normalize source keys, and keep
+the first duplicate. V1 `qd-linking-workspace-v1` data is neither read nor migrated. Hydrated rows
+are always unchecked and stale; loaded ayahs, Quran text, DTOs, merged selections, source intents,
+Door state, workflow/focus/modal state, errors, and mock results are never serialized.
 
-`LinkingWorkflowFacade` owns one transient Direct Link state machine. It starts from either a saved
-workspace source or an ephemeral source action, uses the current live Abwab snapshot for the single
-Door selection, and returns to the appropriate surface on dismissal. Starting from the global
-entity overlay closes that overlay through its existing retained-history behavior before the Linking
-shell opens. Door search, selected Door, resolver progress, loaded ayahs, errors, and workflow state
-are never persisted.
+Storage begins only after resolved Owner identity. Actor changes clear in-memory state and prevent
+late previous-actor hydrate/save completions from publishing; they do not delete another actor's
+bucket. Same-actor tabs are last-writer-wins, and a local storage failure leaves in-memory Linking
+usable with a non-blocking warning.
 
-`QuranSourceLinkingActionsComponent` is the shared Owner-only action seam. Unique Word keeps the
-`simple` and `tashkeel` descriptor identities separate. Root, Lemma, Stem, and an actual Word Type
-word or grouped Root/Stem/Lemma selection contribute the same actions through the neutral Words
-detail-panel action slot after a matching summary resolves. Lemma and Stem retain their current
-`typeCode`; Word Type preserves its complete scope and selection discriminant. The Word Type global
-overlay supports its existing word-only frame. Every action adds idempotently to the workspace and
-starts Direct Link without changing the detail overlay URL stack.
+`QuranSourceLinkingActionsComponent` remains the shared Owner-only explorer seam. Add to Workspace
+is idempotent, preserves focus, and announces whether the row was added or already existed; it does
+not open the workspace. Direct Link remains a transient one-source shortcut and does not add a row.
 
-The resolver registry supports Unique Word, selected Mushaf word, Root, Lemma, Stem, and Word Type
-descriptors. It sequentially loads every matching API page, rejects incomplete or inconsistent
-envelopes, and de-duplicates only identical repeated `verseKey` rows. Root, Lemma, and Stem preserve
-exact Uthmani tokens and backend `isMatched` flags without claiming canonical Quran word IDs; those
-IDs remain `null`. Word Type preserves returned canonical word IDs and exposes unavailable ayah and
-surah-name metadata as `null`. A successful workspace-backed load reconciles stored selection and
-updates the lightweight result count; loaded ayahs remain workflow memory only.
+The resolver registry supports the automatic source families only. It sequentially loads matching
+API pages, rejects incomplete or inconsistent envelopes, and de-duplicates only repeated identical
+`verseKey` rows. Root, Lemma, and Stem retain exact Uthmani tokens and backend `isMatched` flags
+without claiming canonical Quran word IDs; Word Type preserves returned canonical IDs. A later
+source-set coordinator will own multi-source loading, merged review, and intent derivation.
 
-Direct Link now keeps complete-source selection in its active workflow state, while a workspace-backed
-source mirrors the compact selection and highlight preference to its prepared item. Local ayah search
-uses the shared Arabic normalization helper only for comparison, so the renderer always displays the
-exact returned Uthmani text. The mock command port is an injectable, frontend-only boundary: it
-validates the active Owner, live Door, complete source, and nonempty selected ayahs before returning
-the one presentation-only success result. It sends no HTTP request and mutates no cache.
-
-The Mushaf source resolves exactly one selected occurrence through its descriptor's existing page
-read. It reconstructs only the matching `verseKey`, preserves the selected canonical Quran word ID,
-leaves sibling canonical IDs null, and marks the chosen `wordLocation` as the only source match.
+There is still no Linking write API, request, draft, approval, history, cache mutation, durable
+group ID, backend entity, or server workspace. The current Direct Link mock remains presentation
+only and sends no HTTP request.

@@ -11,6 +11,7 @@ export interface LinkingAyah {
 export interface LinkingAyahWord {
   renderPosition: number;
   canonicalQuranWordId: number | null;
+  wordLocation: string | null;
   textUthmani: string;
   isAyahMarker: boolean;
   isSourceMatch: boolean;

@@ -43,6 +43,7 @@ function mapLemmaMatches(matches: readonly LemmaAyahMatchDto[]): readonly Linkin
       words: match.words.map((word, renderPosition) => ({
         renderPosition,
         canonicalQuranWordId: null,
+        wordLocation: null,
         textUthmani: word.textUthmani,
         isAyahMarker: false,
         isSourceMatch: word.isMatched,

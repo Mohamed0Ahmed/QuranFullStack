@@ -1,6 +1,8 @@
 import { LINKING_LABELS } from './linking.labels';
 import { LinkingAyah } from './linking-ayah.models';
 import { LinkingSourceDescriptor } from './linking-source.models';
+import { MergedLinkingSelection, LinkingSourceIntent } from './linking-merge.models';
+import { LinkingOperationMember } from './linking-operation.models';
 import { LinkingSelection } from './linking-workspace.models';
 
 export type DirectLinkStep = 'door' | 'ayahs' | 'highlight' | 'review' | 'result';
@@ -52,4 +54,10 @@ export interface DirectLinkWorkflowState {
   highlightSourceWords: boolean;
   sourceLoad: LinkingSourceLoadState;
   result: DirectLinkResult | null;
+}
+
+export interface LinkingTransientOperationState {
+  members: readonly LinkingOperationMember[];
+  mergedSelection: MergedLinkingSelection | null;
+  sourceIntents: readonly LinkingSourceIntent[];
 }

@@ -1,29 +1,60 @@
+import {
+  LinkingManualLinkShape,
+  LinkingManualWordLocationsByVerseKey,
+} from './linking-manual-mushaf.models';
 import { LinkingSourceDescriptor } from './linking-source.models';
 
 export type LinkingSelection =
   | { mode: 'all-except'; verseKeys: readonly string[] }
   | { mode: 'only'; verseKeys: readonly string[] };
 
+export type LinkingAutomaticSourceDescriptor = Exclude<
+  LinkingSourceDescriptor,
+  { kind: 'manual-mushaf-ayahs' }
+>;
+
+export type LinkingSourceConfiguration =
+  | {
+      kind: 'automatic';
+      ayahInclusion: LinkingSelection;
+      automaticWordMatchesEnabled: boolean;
+    }
+  | {
+      kind: 'manual';
+      ayahInclusion: LinkingSelection;
+      wordLocationsByVerseKey: LinkingManualWordLocationsByVerseKey;
+      linkShape: LinkingManualLinkShape;
+    };
+
 export type LinkingWorkspaceSurface = 'closed' | 'workspace' | 'direct-link';
 
 export interface LinkingWorkspaceItem {
   sourceKey: string;
   source: LinkingSourceDescriptor;
+  configuration: LinkingSourceConfiguration;
+  configurationRevision: number;
+  lastResolvedCount: number | null;
+  lastResolvedCountIsStale: boolean;
   selection: LinkingSelection;
-  resultCount: number | null;
   highlightSourceWords: boolean;
+  resultCount: number | null;
 }
 
-export interface LinkingWorkspaceSessionEnvelope {
-  version: 1;
+export interface LinkingWorkspacePersistedEnvelope {
+  version: 2;
   actorSub: string;
-  items: readonly LinkingWorkspaceSessionItem[];
+  revision: number;
+  items: readonly LinkingWorkspacePersistedItem[];
 }
 
-export interface LinkingWorkspaceSessionItem {
+export interface LinkingWorkspacePersistedItem {
   sourceKey: string;
   source: LinkingSourceDescriptor;
-  selection: LinkingSelection;
-  resultCount: number | null;
-  highlightSourceWords: boolean;
+  configuration: LinkingSourceConfiguration;
+  lastResolvedCount: number | null;
+}
+
+export interface LinkingRemovedWorkspaceItem {
+  item: LinkingWorkspaceItem;
+  index: number;
 }

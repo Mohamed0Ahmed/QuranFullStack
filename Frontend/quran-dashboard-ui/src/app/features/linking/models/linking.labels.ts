@@ -50,11 +50,11 @@ export const LINKING_LABELS = {
   highlightDisabled: 'متوقف',
   success: 'تم الربط بنجاح',
   sourceKinds: {
-    'mushaf-word': 'كلمة من المصحف',
+    'manual-mushaf-ayahs': 'آيات من المصحف',
     'unique-word': 'كلمة فريدة',
     root: 'جذر',
-    lemma: 'أصل',
-    stem: 'صيغة',
+    lemma: 'الصيغة المعجمية',
+    stem: 'الأصل الصرفي',
     'word-type': 'نوع كلمة',
   },
 } as const;

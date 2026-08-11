@@ -45,6 +45,7 @@ function mapUniqueWordMatches(
       words: match.words.map((word, renderPosition) => ({
         renderPosition,
         canonicalQuranWordId: word.quranWordId,
+        wordLocation: null,
         textUthmani: word.textUthmani,
         isAyahMarker: word.isAyahMarker,
         isSourceMatch: word.quranWordId !== null && match.matchedQuranWordIds.includes(word.quranWordId),
