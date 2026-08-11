@@ -6,6 +6,9 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 
 - `layout/` — the cross-feature layout contracts: the responsive bands, and the loading-geometry
   reservation.
+- `quran/arabic-search-normalize.ts` — pure Arabic normalization and matching for local search.
+  It compares normalized copies only; every consumer keeps the original Quran or Arabic display text
+  untouched. Mushaf and Linking share this helper rather than carrying feature-local variants.
 - `layout/breakpoints*` — the responsive-band contract. `breakpoints.contract.json` is the **single neutral
   source** for Compact `≤767` / Medium `768–1079` / Wide `≥1080` / Wide-plus `≥1440`;
   `breakpoints.ts` imports it and derives every media-query string plus `qdBandForWidth()` and

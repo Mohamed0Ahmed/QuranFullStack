@@ -1,0 +1,14 @@
+<article qdAyahCard class="linking-ayah-card" [attr.aria-label]="ayah().verseKey">
+  <header class="linking-ayah-card__meta">
+    <span>{{ ayah().surahNameArabic || ayah().verseKey }}</span>
+    <span class="qd-ltr-isolate">{{ ayah().verseKey }}</span>
+  </header>
+  <p class="linking-ayah-card__text" dir="rtl">
+    @for (word of displayWords(); track word.renderPosition) {
+      <span
+        class="linking-ayah-card__word"
+        [class.linking-ayah-card__word--matched]="isMatched(word.isSourceMatch)"
+      >{{ word.textUthmani }}</span>
+    }
+  </p>
+</article>

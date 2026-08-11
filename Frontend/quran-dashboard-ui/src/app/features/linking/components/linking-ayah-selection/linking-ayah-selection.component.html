@@ -1,0 +1,33 @@
+<section class="linking-ayah-selection" aria-labelledby="linking-ayah-selection-title">
+  <header class="linking-ayah-selection__header">
+    <div>
+      <h2 id="linking-ayah-selection-title">{{ labels.selectAyahs }}</h2>
+      <p>{{ labels.selectedCount }}: {{ selectedCount() }}</p>
+    </div>
+    <div class="linking-ayah-selection__bulk-actions">
+      <button qdAction="tertiary" size="sm" type="button" (click)="selectAllRequested.emit()">{{ labels.selectAll }}</button>
+      <button qdAction="tertiary" size="sm" type="button" (click)="clearAllRequested.emit()">{{ labels.clearAll }}</button>
+    </div>
+  </header>
+
+  <qd-form-field [label]="labels.searchAyahs">
+    <input qdControl type="search" [value]="searchQuery()" (input)="onSearch($event)" />
+  </qd-form-field>
+
+  <div class="linking-ayah-selection__list" role="list">
+    @for (ayah of visibleAyahs(); track ayah.verseKey) {
+      <label class="linking-ayah-selection__row qd-check-row" role="listitem">
+        <input
+          class="qd-checkbox"
+          type="checkbox"
+          [checked]="isSelected(ayah.verseKey)"
+          [attr.aria-label]="labels.selectAyahs + ': ' + ayah.verseKey"
+          (change)="selectionToggled.emit(ayah.verseKey)"
+        />
+        <qd-linking-ayah-card [ayah]="ayah" [highlightSourceWords]="highlightSourceWords()" />
+      </label>
+    } @empty {
+      <p class="linking-ayah-selection__empty" role="status">{{ labels.noAyahMatches }}</p>
+    }
+  </div>
+</section>

@@ -1,0 +1,29 @@
+:host {
+  display: block;
+}
+
+.linking-ayah-card__meta {
+  color: var(--qd-text-muted);
+  display: flex;
+  font-size: var(--qd-font-size-sm);
+  gap: var(--qd-space-2);
+  justify-content: space-between;
+}
+
+.linking-ayah-card__text {
+  font-family: var(--qd-font-quran);
+  font-size: 1.25rem;
+  line-height: 2;
+  margin: 0;
+}
+
+.linking-ayah-card__word {
+  display: inline;
+  padding-inline: 0.1em;
+}
+
+.linking-ayah-card__word--matched {
+  background: var(--qd-accent-tint);
+  border-block-end: 2px solid var(--qd-accent);
+  font-weight: 700;
+}

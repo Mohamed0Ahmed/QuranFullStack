@@ -1,5 +1,5 @@
 import { SourceOption } from '../models/mushaf.models';
-import { arabicSearchIncludes } from './arabic-search-normalize';
+import { arabicSearchIncludes } from '../../../shared/quran/arabic-search-normalize';
 
 export interface LanguageSourceGroup {
   languageCode: string;

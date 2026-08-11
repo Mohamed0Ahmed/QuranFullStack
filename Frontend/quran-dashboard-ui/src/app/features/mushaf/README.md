@@ -27,7 +27,7 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   `loadStudySourceCatalog()` / `*SourceOptions` to it and stays its only consumer, so the
   page keeps reading them off `MushafReaderFacade`.
 - `utils/`: `segment-uthmani-slices`, `segment-word-highlights`, `mushaf-word-display-text`,
-  `morphology-display.labels`, `arabic-search-normalize`, `study-source-catalog.*`,
+  `morphology-display.labels`, `study-source-catalog.*`,
   `mushaf-verse-key-display`, `mushaf-location-keys`, `surah-jump-catalog.helpers`.
 - `models/mushaf.models.ts` — the reader/segment/study view models. Wire DTOs are
   re-exported from `core/api/generated/` (aliased, e.g. `MushafPageDto` ↔ generated
@@ -268,7 +268,7 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   `UthmanicHafs_V22`, which mis-renders mark **U+06DF** as baseline dots. Do not swap the
   Mushaf font.
 - **Display text is Uthmani**; segment slicing/highlighting operates on the Uthmani string.
-  Search/normalize is a separate concern (`arabic-search-normalize`).
+  Search/normalize is a separate concern (`shared/quran/arabic-search-normalize`).
 - **Selected-word identity links open the global detail overlay** (Feature 029, Change B):
   the root/lemma/stem/unique anchors in `selected-word-section` / `word-morphology-summary`
   and the new word-type link are real `a[qdDetailLink]` anchors carrying typed `v1~…`

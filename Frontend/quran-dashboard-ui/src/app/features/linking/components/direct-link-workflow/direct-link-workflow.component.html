@@ -31,25 +31,79 @@
         }
       }
       @case ('ayahs') {
-        <section class="direct-link-workflow__source-status" aria-live="polite">
+        <section class="direct-link-workflow__source-status">
           @switch (sourceLoad().status) {
             @case ('loading') {
-              <p>{{ labels.sourceLoading }} ({{ sourceLoadProgress() }})</p>
+              <qd-panel-skeleton shape="text" [loadingLabel]="labels.sourceLoading + ' (' + sourceLoadProgress() + ')'" />
             }
             @case ('success') {
-              <p>{{ labels.sourceReady }} ({{ sourceLoadProgress() }})</p>
+              @if (allAyahs().length > 0) {
+                <qd-linking-ayah-selection
+                  [ayahs]="allAyahs()"
+                  [selection]="selection()"
+                  [highlightSourceWords]="highlightSourceWords()"
+                  [selectedCount]="selectedCount()"
+                  (selectionToggled)="toggleAyah($event)"
+                  (selectAllRequested)="selectAllAyahs()"
+                  (clearAllRequested)="clearAllAyahs()"
+                />
+              } @else {
+                <qd-empty-state [message]="labels.noAyahMatches" />
+              }
             }
             @case ('unsupported') {
-              <p>{{ sourceLoad().errorMessage || labels.sourceUnsupported }}</p>
+              <qd-error-state severity="read" [message]="sourceLoad().errorMessage || labels.sourceUnsupported" />
             }
             @case ('error') {
-              <p>{{ sourceLoad().errorMessage || labels.sourceLoadError }}</p>
-              <button qdAction="secondary" size="sm" type="button" (click)="retrySource()">{{ labels.retry }}</button>
+              <qd-error-state
+                severity="read"
+                [message]="sourceLoad().errorMessage || labels.sourceLoadError"
+                [actionLabel]="labels.retry"
+                (action)="retrySource()"
+              />
             }
             @default {
-              <p>{{ labels.sourceLoading }}</p>
+              <qd-panel-skeleton shape="text" [loadingLabel]="labels.sourceLoading" />
             }
           }
+        </section>
+      }
+      @case ('highlight') {
+        <section class="direct-link-workflow__highlight-step">
+          <h2>{{ labels.highlightStep }}</h2>
+          <label class="qd-check-row">
+            <input
+              class="qd-checkbox"
+              type="checkbox"
+              [checked]="highlightSourceWords()"
+              (change)="setHighlightSourceWords($event)"
+            />
+            <span>{{ labels.highlightDescription }}</span>
+          </label>
+          @for (ayah of selectedAyahs(); track ayah.verseKey) {
+            <qd-linking-ayah-card [ayah]="ayah" [highlightSourceWords]="highlightSourceWords()" />
+          }
+        </section>
+      }
+      @case ('review') {
+        <section class="direct-link-workflow__review">
+          <h2>{{ labels.reviewTitle }}</h2>
+          @if (selectedDoor(); as door) {
+            <p>{{ labels.reviewTarget }}: {{ door.name }}</p>
+          }
+          <p>{{ labels.reviewSelection }}: {{ selectedCount() }} / {{ allAyahs().length }}</p>
+          <p>{{ labels.reviewHighlight }}: {{ highlightSourceWords() ? labels.highlightEnabled : labels.highlightDisabled }}</p>
+          <p>{{ labels.reviewIndependent }}</p>
+          <div class="direct-link-workflow__review-ayahs">
+            @for (ayah of selectedAyahs(); track ayah.verseKey) {
+              <qd-linking-ayah-card [ayah]="ayah" [highlightSourceWords]="highlightSourceWords()" />
+            }
+          </div>
+        </section>
+      }
+      @case ('result') {
+        <section class="direct-link-workflow__result">
+          <qd-notice [message]="state().result?.message || ''" [dismissLabel]="labels.close" (dismiss)="dismiss()" />
         </section>
       }
     }
@@ -57,9 +111,18 @@
 
   <footer class="direct-link-workflow__footer">
     <button qdAction="secondary" type="button" (click)="back()">{{ labels.back }}</button>
-    @if (currentStep() === 'door') {
-      <button qdAction="primary" type="button" [disabled]="!canAdvanceDoor()" (click)="next()">
+    @if (currentStep() === 'door' || currentStep() === 'ayahs' || currentStep() === 'highlight') {
+      <button
+        qdAction="primary"
+        type="button"
+        [disabled]="currentStep() === 'door' ? !canAdvanceDoor() : !canAdvanceAyahs()"
+        (click)="next()"
+      >
         {{ labels.next }}
+      </button>
+    } @else if (currentStep() === 'review') {
+      <button qdAction="primary" type="button" [disabled]="!canAdvanceAyahs()" (click)="confirm()">
+        {{ labels.confirm }}
       </button>
     }
   </footer>

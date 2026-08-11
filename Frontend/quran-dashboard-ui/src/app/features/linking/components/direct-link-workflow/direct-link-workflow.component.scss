@@ -59,7 +59,18 @@
 }
 
 .direct-link-workflow__source-status {
+  min-block-size: 0;
+}
+
+.direct-link-workflow__highlight-step,
+.direct-link-workflow__review,
+.direct-link-workflow__review-ayahs {
   display: grid;
   gap: var(--qd-space-3);
-  padding: var(--qd-space-4);
+}
+
+.direct-link-workflow__highlight-step h2,
+.direct-link-workflow__review h2,
+.direct-link-workflow__review p {
+  margin: 0;
 }

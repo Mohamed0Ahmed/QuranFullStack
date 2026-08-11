@@ -42,3 +42,10 @@ The resolver registry currently supports only Unique Word descriptors. It sequen
 only identical repeated `verseKey` rows, and maps exact Uthmani tokens plus canonical Quran word IDs
 to feature-owned `LinkingAyah` values. A successful workspace-backed load reconciles stored
 selection and updates the lightweight result count; loaded ayahs remain workflow memory only.
+
+Direct Link now keeps complete-source selection in its active workflow state, while a workspace-backed
+source mirrors the compact selection and highlight preference to its prepared item. Local ayah search
+uses the shared Arabic normalization helper only for comparison, so the renderer always displays the
+exact returned Uthmani text. The mock command port is an injectable, frontend-only boundary: it
+validates the active Owner, live Door, complete source, and nonempty selected ayahs before returning
+the one presentation-only success result. It sends no HTTP request and mutates no cache.

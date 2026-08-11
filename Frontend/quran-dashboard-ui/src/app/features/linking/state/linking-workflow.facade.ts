@@ -3,15 +3,26 @@ import { Subscription } from 'rxjs';
 
 import { DetailOverlayHistoryService } from '../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import { AbwabSnapshotFacade } from '../../abwab/state/abwab-snapshot.facade';
+import { LINKING_COMMAND_PORT } from '../data-access/linking-command.port';
 import { LinkingSourceResolver } from '../data-access/linking-source-resolver';
 import { LINKING_LABELS } from '../models/linking.labels';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import {
   DirectLinkOrigin,
-  DirectLinkStep,
   DirectLinkWorkflowState,
   LinkingSourceLoadState,
+  previousDirectLinkStep,
 } from '../models/linking-workflow.models';
+import { LinkingSelection } from '../models/linking-workspace.models';
+import {
+  DEFAULT_LINKING_SELECTION,
+  clearLinkingAyahs,
+  reconcileLinkingSelection,
+  selectAllLinkingAyahs,
+  selectedLinkingAyahCount,
+  selectedLinkingVerseKeys,
+  toggleLinkingSelection,
+} from '../utils/linking-selection';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
 
@@ -29,6 +40,8 @@ const INITIAL_WORKFLOW: DirectLinkWorkflowState = {
   step: 'door',
   selectedDoorId: null,
   doorNotice: null,
+  selection: DEFAULT_LINKING_SELECTION,
+  highlightSourceWords: true,
   sourceLoad: INITIAL_SOURCE_LOAD,
   result: null,
 };
@@ -40,6 +53,7 @@ export class LinkingWorkflowFacade {
   private readonly overlay = inject(DetailOverlayHistoryService);
   private readonly abwabSnapshot = inject(AbwabSnapshotFacade);
   private readonly resolver = inject(LinkingSourceResolver);
+  private readonly commandPort = inject(LINKING_COMMAND_PORT);
   private readonly workflowState = signal<DirectLinkWorkflowState>(INITIAL_WORKFLOW);
   private pendingSourceStart: LinkingSourceDescriptor | null = null;
   private pendingOrigin: DirectLinkOrigin | null = null;
@@ -50,6 +64,10 @@ export class LinkingWorkflowFacade {
   readonly step = computed(() => this.workflowState().step);
   readonly selectedDoorId = computed(() => this.workflowState().selectedDoorId);
   readonly sourceLoad = computed(() => this.workflowState().sourceLoad);
+  readonly allAyahs = computed(() => this.sourceLoad().ayahs);
+  readonly selectedVerseKeys = computed(() => selectedLinkingVerseKeys(this.workflowState().selection, this.ayahVerseKeys()));
+  readonly selectedCount = computed(() => selectedLinkingAyahCount(this.workflowState().selection, this.ayahVerseKeys()));
+  readonly highlightSourceWords = computed(() => this.workflowState().highlightSourceWords);
   readonly selectedDoor = computed(() => {
     const doorId = this.selectedDoorId();
     const snapshot = this.abwabSnapshot.snapshot();
@@ -67,6 +85,9 @@ export class LinkingWorkflowFacade {
     };
   });
   readonly canAdvanceDoor = computed(() => this.selectedDoor() !== null && this.access.canUseLinking());
+  readonly canAdvanceAyahs = computed(
+    () => this.access.canUseLinking() && this.sourceLoad().status === 'success' && this.selectedCount() > 0,
+  );
 
   constructor() {
     effect(() => {
@@ -110,7 +131,7 @@ export class LinkingWorkflowFacade {
     if (state.origin === 'workspace' && state.sourceKey === sourceKey && state.source !== null) {
       return;
     }
-    this.activate(item.source, 'workspace', sourceKey);
+    this.activate(item.source, 'workspace', sourceKey, item.selection, item.highlightSourceWords);
   }
 
   startFromSource(source: LinkingSourceDescriptor): void {
@@ -144,10 +165,86 @@ export class LinkingWorkflowFacade {
   }
 
   next(): void {
-    if (!this.access.canUseLinking() || this.step() !== 'door' || !this.canAdvanceDoor()) {
+    if (!this.access.canUseLinking()) {
       return;
     }
-    this.workflowState.update((state) => ({ ...state, step: 'ayahs' }));
+    switch (this.step()) {
+      case 'door':
+        if (this.canAdvanceDoor()) {
+          this.workflowState.update((state) => ({ ...state, step: 'ayahs' }));
+        }
+        return;
+      case 'ayahs':
+        if (this.canAdvanceAyahs()) {
+          this.workflowState.update((state) => ({ ...state, step: 'highlight' }));
+        }
+        return;
+      case 'highlight':
+        if (this.canAdvanceAyahs()) {
+          this.workflowState.update((state) => ({ ...state, step: 'review' }));
+        }
+        return;
+      default:
+        return;
+    }
+  }
+
+  toggleAyah(verseKey: string): void {
+    const state = this.workflowState();
+    if (!this.access.canUseLinking() || state.sourceLoad.status !== 'success') {
+      return;
+    }
+    this.setSelection(toggleLinkingSelection(state.selection, verseKey, this.ayahVerseKeys()));
+  }
+
+  selectAllAyahs(): void {
+    if (this.access.canUseLinking() && this.sourceLoad().status === 'success') {
+      this.setSelection(selectAllLinkingAyahs());
+    }
+  }
+
+  clearAllAyahs(): void {
+    if (this.access.canUseLinking() && this.sourceLoad().status === 'success') {
+      this.setSelection(clearLinkingAyahs());
+    }
+  }
+
+  setHighlightSourceWords(highlightSourceWords: boolean): void {
+    const state = this.workflowState();
+    if (!this.access.canUseLinking()) {
+      return;
+    }
+    this.workflowState.update((current) => ({ ...current, highlightSourceWords }));
+    if (state.sourceKey !== null) {
+      this.workspace.setHighlightSourceWords(state.sourceKey, highlightSourceWords);
+    }
+  }
+
+  confirm(): void {
+    const state = this.workflowState();
+    const door = this.selectedDoor();
+    if (
+      !this.access.canUseLinking() ||
+      state.step !== 'review' ||
+      state.source === null ||
+      state.sourceLoad.status !== 'success' ||
+      door === null ||
+      this.selectedVerseKeys().length === 0
+    ) {
+      return;
+    }
+    try {
+      const result = this.commandPort.execute({
+        source: state.source,
+        doorId: door.id,
+        selectedVerseKeys: this.selectedVerseKeys(),
+        highlightSourceWords: state.highlightSourceWords,
+      });
+      this.workflowState.update((current) => ({ ...current, step: 'result', result }));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : LINKING_LABELS.sourceLoadError;
+      this.workflowState.update((current) => ({ ...current, doorNotice: message }));
+    }
   }
 
   back(): void {
@@ -157,7 +254,7 @@ export class LinkingWorkflowFacade {
       return;
     }
     if (state.step !== 'door') {
-      const nextStep = previousStep(state.step);
+      const nextStep = previousDirectLinkStep(state.step);
       this.workflowState.update((current) => ({ ...current, step: nextStep }));
       if (nextStep === 'door') {
         this.loadDoors();
@@ -184,7 +281,13 @@ export class LinkingWorkflowFacade {
     }
   }
 
-  private activate(source: LinkingSourceDescriptor, origin: DirectLinkOrigin, sourceKey: string | null = null): void {
+  private activate(
+    source: LinkingSourceDescriptor,
+    origin: DirectLinkOrigin,
+    sourceKey: string | null = null,
+    selection: LinkingSelection = DEFAULT_LINKING_SELECTION,
+    highlightSourceWords = true,
+  ): void {
     if (!this.access.canUseLinking()) {
       return;
     }
@@ -196,6 +299,8 @@ export class LinkingWorkflowFacade {
       step: 'door',
       selectedDoorId: null,
       doorNotice: null,
+      selection,
+      highlightSourceWords,
       sourceLoad: INITIAL_SOURCE_LOAD,
       result: null,
     });
@@ -226,6 +331,7 @@ export class LinkingWorkflowFacade {
           }
           this.workflowState.update((state) => ({
             ...state,
+            selection: reconcileLinkingSelection(state.selection, universe),
             sourceLoad: {
               status: 'success',
               ayahs,
@@ -256,6 +362,20 @@ export class LinkingWorkflowFacade {
     this.workspace.close();
   }
 
+  private setSelection(selection: LinkingSelection): void {
+    const state = this.workflowState();
+    const universe = this.ayahVerseKeys();
+    const reconciled = reconcileLinkingSelection(selection, universe);
+    this.workflowState.update((current) => ({ ...current, selection: reconciled }));
+    if (state.sourceKey !== null) {
+      this.workspace.updateSelection(state.sourceKey, reconciled, universe);
+    }
+  }
+
+  private ayahVerseKeys(): readonly string[] {
+    return this.allAyahs().map((ayah) => ayah.verseKey);
+  }
+
   private reset(): void {
     this.pendingSourceStart = null;
     this.pendingOrigin = null;
@@ -266,20 +386,5 @@ export class LinkingWorkflowFacade {
   private cancelSourceLoad(): void {
     this.sourceLoadSubscription?.unsubscribe();
     this.sourceLoadSubscription = null;
-  }
-}
-
-function previousStep(step: DirectLinkStep): DirectLinkStep {
-  switch (step) {
-    case 'ayahs':
-      return 'door';
-    case 'highlight':
-      return 'ayahs';
-    case 'review':
-      return 'highlight';
-    case 'result':
-      return 'review';
-    default:
-      return 'door';
   }
 }

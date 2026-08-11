@@ -1,5 +1,5 @@
 import { MushafSurahCatalogItemDto, MushafSurahJuzGroupDto } from '../models/mushaf.models';
-import { arabicSearchIncludes } from './arabic-search-normalize';
+import { arabicSearchIncludes } from '../../../shared/quran/arabic-search-normalize';
 
 export function dedupeSurahCatalogItems(
   groups: readonly MushafSurahJuzGroupDto[],

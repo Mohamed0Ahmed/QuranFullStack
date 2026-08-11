@@ -1,11 +1,27 @@
 import { LINKING_LABELS } from './linking.labels';
 import { LinkingAyah } from './linking-ayah.models';
 import { LinkingSourceDescriptor } from './linking-source.models';
+import { LinkingSelection } from './linking-workspace.models';
 
 export type DirectLinkStep = 'door' | 'ayahs' | 'highlight' | 'review' | 'result';
 
+export function previousDirectLinkStep(step: DirectLinkStep): DirectLinkStep {
+  switch (step) {
+    case 'ayahs':
+      return 'door';
+    case 'highlight':
+      return 'ayahs';
+    case 'review':
+      return 'highlight';
+    case 'result':
+      return 'review';
+    default:
+      return 'door';
+  }
+}
+
 export interface DirectLinkResult {
-  kind: 'success';
+  kind: 'linked';
   message: typeof LINKING_LABELS.success;
 }
 
@@ -32,6 +48,8 @@ export interface DirectLinkWorkflowState {
   step: DirectLinkStep;
   selectedDoorId: number | null;
   doorNotice: string | null;
+  selection: LinkingSelection;
+  highlightSourceWords: boolean;
   sourceLoad: LinkingSourceLoadState;
   result: DirectLinkResult | null;
 }
