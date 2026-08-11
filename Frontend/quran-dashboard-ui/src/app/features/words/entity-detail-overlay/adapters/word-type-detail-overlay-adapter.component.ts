@@ -31,6 +31,7 @@ import { mapWordTypeAyahMatchToShared } from '../../utils/word-type-ayah-match.m
 import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
+import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
 @Component({
   selector: 'qd-word-type-detail-overlay-adapter',
@@ -56,8 +57,6 @@ export class WordTypeDetailOverlayAdapterComponent {
 
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
-  // Retry re-drives the unchanged frame directly through the controller: it never
-  // touches the URL, since replacing an identical frame would be a no-op.
   protected onRetry(): void {
     this.controller.retryCurrentIdentity();
   }
@@ -68,9 +67,19 @@ export class WordTypeDetailOverlayAdapterComponent {
 
   readonly entityAyahCount = computed(() => this.panelState().summary?.ayahsCount ?? null);
 
-  // A word-kind Word Type detail has no member-words view ('words' exists only for
-  // grouped root/stem/lemma selections; the view loader no-ops it for kind 'word'),
-  // so a frame carrying view 'words' (a hand-edited or shared URL) is clamped to 'ayahs'.
+  protected readonly linkingSource = computed(() => {
+    const selection = this.panelState().selection;
+    const summary = this.panelState().summary;
+    if (selection === null || selection.kind !== 'word' || summary === null) {
+      return null;
+    }
+    return {
+      kind: 'word-type',
+      selection: { kind: 'word', ...selection.identity, scope: { ...selection.scope } },
+      label: summary.displayText,
+    } satisfies LinkingSourceDescriptor;
+  });
+
   protected readonly effectiveView = computed<WordTypeDetailView>(() =>
     this.frame().view === 'words' ? DEFAULT_WORD_TYPES_DETAIL_VIEW : this.frame().view,
   );
@@ -111,9 +120,6 @@ export class WordTypeDetailOverlayAdapterComponent {
   }
 
   constructor() {
-    // Track ONLY the frame input: applyUrlState reads/writes the controller's
-    // panel signal internally, and tracking it would re-trigger this effect on
-    // every load-state change (cancelling in-flight summary loads).
     effect(() => {
       const frame = this.frame();
       untracked(() => {
@@ -128,12 +134,6 @@ export class WordTypeDetailOverlayAdapterComponent {
           view: this.effectiveView(),
           detailPage: frame.detailPage,
         });
-
-        // Canonicalize an unsupported `words` top frame: the controller renders
-        // `ayahs` for it, so rewrite the URL to the word detail default rather
-        // than leave `view=words` (a hand-edited or shared URL) in the address
-        // bar. The replaced frame (view 'ayahs') re-enters this effect and
-        // short-circuits in the controller, so this never loops.
         if (frame.view === 'words') {
           this.overlay.replaceTopFrame({ ...frame, view: DEFAULT_WORD_TYPES_DETAIL_VIEW });
         }
@@ -151,8 +151,6 @@ export class WordTypeDetailOverlayAdapterComponent {
       return;
     }
 
-    // Canonical frame: the surahs view is single-shot, so it always serializes
-    // detail page 1 — every tab switch resets the page.
     this.overlay.replaceTopFrame({ ...frame, view, detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE });
   }
 
@@ -162,7 +160,6 @@ export class WordTypeDetailOverlayAdapterComponent {
       return;
     }
 
-    // Serialize the effective view so a clamped 'words' frame is canonicalized.
     this.overlay.replaceTopFrame({ ...frame, view: this.effectiveView(), detailPage: page });
   }
 }

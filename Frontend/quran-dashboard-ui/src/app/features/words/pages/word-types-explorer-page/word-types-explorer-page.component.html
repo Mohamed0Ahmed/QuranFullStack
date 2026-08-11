@@ -98,7 +98,6 @@
       </div>
     </qd-explorer-toolbar>
 
-    <!-- Host stays mounted; the table's failure hides its numbers (scope unconfirmed). -->
     <qd-word-type-scope-counts
       [state]="scopeCountsState()"
       [tableFailed]="listState().status === 'error'"
@@ -106,11 +105,6 @@
     />
 
   <div class="word-types-page__layout qd-explorer-layout qd-page-split qd-page-split--data">
-    <!-- View tabs live in the table column (Feature 029, U3): first layout child so they
-         sit directly above the table, never spanning the details-panel column.
-         The slot — not the tabs — is that layout child and carries the U3 placement, because the tabs
-         mount only once the tree lands: gating the grid item itself made their whole row appear on first
-         load and pushed the table + panel grid down (Feature 030, N3 row 2). -->
     <div class="word-types-page__tabs qd-explorer-layout__tabs-slot">
       @if (listState().tree) {
         <qd-word-type-table-view-tabs
@@ -186,6 +180,7 @@
         [kind]="detailKind()"
         [emptySelection]="emptySelection()"
         [selectionTitle]="selectionTitle()"
+        [linkingSource]="linkingSource()"
         [loading]="panelState().status === 'loading'"
         [notFound]="panelState().status === 'notFound'"
         (viewChange)="onPanelViewChange($event)"

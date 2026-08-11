@@ -78,6 +78,7 @@ import {
   wordTypeAyahParentFrame,
   wordTypeAyahsPageView,
   wordTypeDetailSummaryView,
+  wordTypeLinkingSource,
   wordTypeMemberWordsPageView,
   wordTypeMentionedSurahViews,
   wordTypeMissingSurahViews,
@@ -123,8 +124,6 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   private desktopQuery?: MediaQueryList;
   private readonly onDesktopChange = (event: MediaQueryListEvent): void => this.isDesktop.set(event.matches);
 
-  // Debounced word-identity search: user input echoes into searchDraft immediately and only settles to
-  // the URL after 300ms; the route sync mirrors the restored search back into the input on refresh/Back.
   private readonly searchInput = new Subject<string>();
   private searchSub?: Subscription;
   private querySyncSub?: Subscription;
@@ -181,9 +180,9 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly memberWordsForView = computed(() => wordTypeMemberWordsPageView(this.panelState()));
   protected readonly ayahsPageForView = computed(() => wordTypeAyahsPageView(this.panelState()));
   protected readonly ayahParentFrame = computed(() => wordTypeAyahParentFrame(this.panelState()));
+  protected readonly linkingSource = computed(() => wordTypeLinkingSource(this.panelState()));
 
   protected get pageTitle() { return WORD_TYPES_PAGE_TITLE; }
-  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
   protected get explainer() { return WORDS_EXPLAINER_CONTENT['word-types']; }
   protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('word-types'));
   protected get emptyLabel() { return WORD_TYPE_TABLE_VIEW_EMPTY_LABELS[this.listState().query.tableView]; }
@@ -213,7 +212,6 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     this.explorerFacade.bindToRoute(this.route);
     this.detailFacade.bindToRoute(this.route);
 
-    // Search is list-scope: a change resets the list page and keeps the identity-loaded detail selection.
     this.searchSub = this.searchInput.pipe(debounceTime(300))
       .subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
     this.querySyncSub = this.route.queryParamMap

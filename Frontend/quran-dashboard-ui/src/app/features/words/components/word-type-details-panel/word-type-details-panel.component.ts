@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import { QdDetailsPanelShellComponent } from '../details-panel-shell/details-panel-shell.component';
+import { QuranSourceLinkingActionsComponent } from '../../../linking/components/quran-source-linking-actions/quran-source-linking-actions.component';
+import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
 import { WORD_TYPE_DETAIL_PRESENTATIONS } from '../../models/word-types.labels';
 import {
@@ -13,7 +15,7 @@ import { WordTypeDetailSelectionKind } from '../../models/word-types-detail.mode
 @Component({
   selector: 'qd-word-type-details-panel',
   standalone: true,
-  imports: [QdDetailsPanelShellComponent],
+  imports: [QdDetailsPanelShellComponent, QuranSourceLinkingActionsComponent],
   templateUrl: './word-type-details-panel.component.html',
   styleUrl: './word-type-details-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,6 +29,7 @@ export class WordTypeDetailsPanelComponent {
   readonly selectionTitle = input('');
   readonly loading = input(false);
   readonly notFound = input(false);
+  readonly linkingSource = input<LinkingSourceDescriptor | null>(null);
 
   readonly viewChange = output<WordTypeDetailView>();
   readonly close = output<void>();
@@ -38,7 +41,6 @@ export class WordTypeDetailsPanelComponent {
 
   private get presentation() { return WORD_TYPE_DETAIL_PRESENTATIONS[this.kind()]; }
 
-  // Word selections expose ayahs/surahs; grouped selections add the leading related-words tab.
   protected readonly tabKeys = computed<readonly WordTypeDetailView[]>(() =>
     this.kind() === 'word' ? WORD_TYPE_DETAIL_VIEW_KEYS : WORD_TYPE_DETAIL_VIEWS,
   );

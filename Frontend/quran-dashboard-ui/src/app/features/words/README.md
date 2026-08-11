@@ -98,11 +98,14 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
 - The shell heading uses the host-provided `EntityDetailOverlayTitleStore`: the active
   adapter publishes its loaded entity title and clears it on destroy; while empty the host
   falls back to the generic kind label.
-- **Unique Word Linking actions** render only after a resolved summary and selected word ID provide
-  a complete `unique-word` descriptor. The ordinary drilldown contributes them through its existing
-  `qdDetailsActions` zone; the frameless global overlay projects the same contribution at the top of
-  its content. They remain Owner-only, retain the `simple`/`tashkeel` mode in the descriptor, and a
-  Direct Link handoff closes the retained overlay before opening the global Linking shell.
+- **Linking actions** render only after a resolved summary provides a complete descriptor. Unique
+  Word keeps `simple`/`tashkeel` identities separate; Root, Lemma, and Stem use their selected detail
+  and Lemma/Stem retain `typeCode`. Word Type actions exist only for an actual word or grouped
+  Root/Stem/Lemma detail, never a bare list scope, and preserve the complete scope plus selection
+  discriminant. The Word Type global overlay supports its current word-only frame. Ordinary details
+  contribute through the neutral `qdDetailsActions` zone; frameless overlays render the same
+  contribution above their content. All actions remain Owner-only, and Direct Link closes the
+  retained overlay before opening the global Linking shell.
 - **Cross-entity links** (plan §5.2): the seven detail-list link components
   (root-words/lemmas/stems, lemma-words/stems, stem-words/lemmas) render real
   `a[qdDetailLink]` anchors carrying fully-explicit frames instead of forced-new-tab

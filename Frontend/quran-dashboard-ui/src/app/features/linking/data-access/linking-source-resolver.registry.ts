@@ -8,6 +8,7 @@ import { MushafWordLinkingSourceResolver } from './resolvers/mushaf-word-linking
 import { RootLinkingSourceResolver } from './resolvers/root-linking-source.resolver';
 import { LemmaLinkingSourceResolver } from './resolvers/lemma-linking-source.resolver';
 import { StemLinkingSourceResolver } from './resolvers/stem-linking-source.resolver';
+import { WordTypeLinkingSourceResolver } from './resolvers/word-type-linking-source.resolver';
 
 export interface LinkingSourceResolverRegistration {
   readonly kind: LinkingSourceKind;
@@ -24,6 +25,7 @@ export class LinkingSourceResolverRegistry {
   private readonly rootResolver = inject(RootLinkingSourceResolver);
   private readonly lemmaResolver = inject(LemmaLinkingSourceResolver);
   private readonly stemResolver = inject(StemLinkingSourceResolver);
+  private readonly wordTypeResolver = inject(WordTypeLinkingSourceResolver);
   private readonly registrations: ReadonlyMap<LinkingSourceKind, LinkingSourceResolverRegistration> = new Map<
     LinkingSourceKind,
     LinkingSourceResolverRegistration
@@ -91,6 +93,18 @@ export class LinkingSourceResolverRegistry {
             throw new Error('مصدر الربط غير متوافق مع محلل الصيغة.');
           }
           return this.stemResolver.resolve(source, onProgress);
+        },
+      },
+    ],
+    [
+      'word-type',
+      {
+        kind: 'word-type',
+        resolve: (source, onProgress) => {
+          if (source.kind !== 'word-type') {
+            throw new Error('مصدر الربط غير متوافق مع محلل نوع الكلمة.');
+          }
+          return this.wordTypeResolver.resolve(source, onProgress);
         },
       },
     ],

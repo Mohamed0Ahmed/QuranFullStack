@@ -16,8 +16,9 @@ count, and highlight preference. Invalid, cross-actor, or unavailable storage fa
 or actor changes clear both storage and in-memory state. Restored descriptors are not resolved until
 a later workspace action or Direct Link flow requests them.
 
-There is no write API, request, draft, approval, history, cache mutation, grouped linking path, or
-Mushaf grouped descriptor. The future grouped-Mushaf seam remains deliberately unimplemented.
+There is no write API, request, draft, approval, history, cache mutation, generic grouped linking
+path, or Mushaf grouped descriptor. Word Type Root/Stem/Lemma grouped dimensions use only their
+existing scoped read endpoints; the future grouped-Mushaf seam remains deliberately unimplemented.
 
 `LinkingWorkspaceHostComponent` is mounted once beside the app shell and the Words detail overlay.
 It defers the wide `qd-modal-shell` workspace surface until Linking opens, while app-root owns the
@@ -34,17 +35,20 @@ shell opens. Door search, selected Door, resolver progress, loaded ayahs, errors
 are never persisted.
 
 `QuranSourceLinkingActionsComponent` is the shared Owner-only action seam. Unique Word keeps the
-`simple` and `tashkeel` descriptor identities separate. Root, Lemma, and Stem contribute the same
-actions through the neutral Words detail-panel action slot after a matching summary resolves; Lemma
-and Stem retain their current `typeCode` scope in their descriptors. Every action adds idempotently
-to the workspace and starts Direct Link without changing the detail overlay URL stack.
+`simple` and `tashkeel` descriptor identities separate. Root, Lemma, Stem, and an actual Word Type
+word or grouped Root/Stem/Lemma selection contribute the same actions through the neutral Words
+detail-panel action slot after a matching summary resolves. Lemma and Stem retain their current
+`typeCode`; Word Type preserves its complete scope and selection discriminant. The Word Type global
+overlay supports its existing word-only frame. Every action adds idempotently to the workspace and
+starts Direct Link without changing the detail overlay URL stack.
 
-The resolver registry supports Unique Word, selected Mushaf word, Root, Lemma, and Stem descriptors.
-It sequentially loads every matching API page, rejects incomplete or inconsistent envelopes, and
-de-duplicates only identical repeated `verseKey` rows. Root, Lemma, and Stem preserve exact Uthmani
-tokens and backend `isMatched` flags without claiming canonical Quran word IDs; those IDs remain
-`null`. A successful workspace-backed load reconciles stored selection and updates the lightweight
-result count; loaded ayahs remain workflow memory only.
+The resolver registry supports Unique Word, selected Mushaf word, Root, Lemma, Stem, and Word Type
+descriptors. It sequentially loads every matching API page, rejects incomplete or inconsistent
+envelopes, and de-duplicates only identical repeated `verseKey` rows. Root, Lemma, and Stem preserve
+exact Uthmani tokens and backend `isMatched` flags without claiming canonical Quran word IDs; those
+IDs remain `null`. Word Type preserves returned canonical word IDs and exposes unavailable ayah and
+surah-name metadata as `null`. A successful workspace-backed load reconciles stored selection and
+updates the lightweight result count; loaded ayahs remain workflow memory only.
 
 Direct Link now keeps complete-source selection in its active workflow state, while a workspace-backed
 source mirrors the compact selection and highlight preference to its prepared item. Local ayah search
