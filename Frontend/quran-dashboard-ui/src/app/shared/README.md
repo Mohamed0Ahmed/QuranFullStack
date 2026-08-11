@@ -233,8 +233,8 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   - **The shell owns which trap is enabled, not the consumer.** Open shells register in an internal
     stack and only the topmost enables its `cdkTrapFocus`, so nesting a confirm inside an authoring
     modal cannot leave two live traps. `[trapFocus]="false"` is the explicit suspend switch a
-    consumer uses when it hosts a nested decision of its own (the shape the Abwab
-    `[cdkTrapFocus]="deleteConfirmId() === null"` dialogs migrate onto in Phase 7).
+    consumer uses when it hosts a nested decision of its own. No consumer binds a raw
+    `cdkTrapFocus` — this shell is the only binder.
   - **Focus return has exactly one owner — this shell.** It captures the pre-open `activeElement`,
     drives initial focus through the trap itself, and restores **synchronously** on close and on
     destroy-while-open. `cdkTrapFocusAutoCapture` is deliberately absent: it would restore a second

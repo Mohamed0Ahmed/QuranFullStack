@@ -1132,20 +1132,18 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Consumers:** the six abwab modals (`abwab-door-modal`,
   `abwab-template-node-modal`, `abwab-sections-modal`, `abwab-move-picker`,
   `abwab-relations-modal`, `abwab-template-copy-modal`), all composed by Slice C
-  with `__head`/`__body`/`__foot` and `cdkTrapFocus cdkTrapFocusAutoCapture`.
-  **The trap rule is conditional by design: a modal that hosts a nested confirm
-  dialog yields its trap while that confirm is open, so two traps are never live at
-  once.** Such a modal binds the trap to "no confirm open" — `abwab-sections-modal`
-  (`[cdkTrapFocus]="deleteConfirmId() === null"`,
-  `abwab-sections-modal.component.html:10`) and `abwab-relations-modal`
-  (`[cdkTrapFocus]="pendingDelete() === null"`,
-  `abwab-relations-modal.component.html:10`); the rest carry it bare because nothing
-  nests above them. `features/abwab/README.md` holds the reasoning (two live traps
+  with `__head`/`__body`/`__foot`. Focus containment belongs to `qd-modal-shell`
+  (§20.9), not to these consumers.
+  **A modal that hosts a nested confirm dialog yields its trap while that confirm is
+  open, so two traps are never live at once** — and no consumer arranges that itself:
+  `qd-modal-shell` registers open shells in a stack and enables the topmost one's trap
+  only, with `[trapFocus]="false"` available when a consumer must suspend its own.
+  `features/abwab/README.md` holds the reasoning (two live traps
   fight over focus) and the limit (no second nesting level, no confirm above a
   confirm). A modal that wants a control other than the first tabbable one marks that
   control `cdkFocusInitial` rather than moving focus itself after the trap captures —
-  one focus move, and `cdkTrapFocusAutoCapture` stays on, which is the only
-  thing that returns focus to the trigger on close. The
+  one focus move. Focus return belongs to the shell (§20.9), which captures the
+  pre-open `activeElement`; `cdkTrapFocusAutoCapture` is deliberately absent. The
   shallow ones (door, template-node) render with empty space below the fields:
   that is this section's "zero resize" trade, not a defect to fix back to
   content height.
@@ -1244,19 +1242,17 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   **The menu's inline-START edge is pinned at the anchor point and the box grows in the
   reading direction:** under RTL its right edge sits at `x` and the box grows leftward;
   under LTR the mirror (left edge at `x`), which is the behaviour that originally shipped.
-  Direction is resolved from `closest('[dir]')`, never hardcoded. It **flips** on
-  collision — inline when the box's **trailing (inline-END)** edge would cross the
-  viewport, block when opening below would cross the bottom — and is clamped into
-  `[8px, viewport − 8px]` afterwards (`context-menu.component.ts:107-126`). The clamp is a
-  floor, not a guarantee: a menu wider or taller than that axis of the viewport is pinned
-  at the `8px` margin and overflows the far side — and since the pin is always `left`/`top`,
-  under RTL that means the edge nearest the anchor is the one lost.
-  Because all three decisions need the box's own size, the menu
-  renders `visibility: hidden` for one frame, measures itself in `afterRenderEffect`, then
-  places and shows — no flash on the wrong side. When a view and anchor exist,
-  `repositionFloatingLayer()` always computes and applies placement using the measured layer and
-  anchor geometry. Placement retains the RTL inline-start anchor, inline flip at constrained width,
-  and block flip at constrained height.
+  Direction is resolved from `closest('[dir]')`, never hardcoded
+  (`floating-layer-placement.ts:127`). The menu owns no placement math of its own: the
+  template delegates to `qdFloatingLayer` (`context-menu.component.html:3`), the directive
+  places at `ngAfterViewInit` (`floating-layer.directive.ts:139`), and the geometry lives in
+  `computeFloatingPlacement()` (`floating-layer-placement.ts:59-88`). It **flips in the block
+  axis** when opening below would cross the bottom and more space exists above; both axes are
+  then clamped to an `8px` viewport margin (`FLOATING_VIEWPORT_MARGIN`), and block size is
+  capped at 60% of viewport height. The clamp is a floor, not a guarantee: a menu wider or
+  taller than that axis of the viewport is pinned at the `8px` margin and overflows the far
+  side — and since the pin is always `left`/`top`, under RTL that means the edge nearest the
+  anchor is the one lost.
   Both trees' keyboard paths anchor at the focused row's inline-start edge to match
   (`abwab-tree.component.ts:317-319`, `abwab-template-tree.component.ts:106-108`).
   Recorded browser walk (1024px and 1440px, both themes, 12 points): mid-viewport right-edge
@@ -1266,9 +1262,9 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Two of the three gaps this primitive originally left open are now closed** — kept
   named so a future reader does not re-open them as work: gap 1, no viewport clamping,
   **closed by slice L** (the placement contract above — whose math now lives in the pure
-  `placeContextMenu()`/`resolveMenuDirection()` helpers of
-  `shared/ui/context-menu/context-menu-placement.ts`, with the RTL/LTR default, flip, and clamp
-  branches); gap 2, no focus management into
+  `computeFloatingPlacement()`/`resolveFloatingDirection()` helpers of
+  `shared/ui/floating-layer/floating-layer-placement.ts`, with the RTL/LTR default, block flip,
+  and clamp branches); gap 2, no focus management into
   the menu, **closed** (the keyboard contract above). What is still open:
   3. **The `--danger` item's rest-state color is not unified.** The two prior copies
      were not byte-identical here: the doors page's danger item was plain-colored until
@@ -1984,8 +1980,8 @@ otherwise belongs to the focused item (APG). The `24rem` half of the cap resolve
 root font size (`resolveRootFontSize()`), so JS can never disagree with
 `--qd-floating-max-block-size`. The computed placement
 is written to `left` because a viewport coordinate has no logical form — the *choice* of anchored
-edge is direction-aware, which is what RTL actually needs. `context-menu-placement.ts` still exists
-and is retired against this helper in Phase 7.
+edge is direction-aware, which is what RTL actually needs. `context-menu-placement.ts` has since
+been retired into this helper; the context menu carries no placement math of its own.
 
 ### 20.5 Chip, badge and toolbar semantics (F08, F17)
 

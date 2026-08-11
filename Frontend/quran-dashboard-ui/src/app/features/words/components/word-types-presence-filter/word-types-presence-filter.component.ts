@@ -24,8 +24,7 @@ export class WordTypesPresenceFilterComponent {
 
   readonly flagChange = output<WordTypePresenceFlagChange>();
 
-  // TDZ-safe getters (see words README): label consts read via readonly fields resolve to undefined
-  // in the bundled test build.
+  // Labels read through getters, not readonly fields (see words README).
   protected get labels() { return WORD_TYPES_PRESENCE_FILTER_LABELS; }
   protected get dimensions(): readonly WordTypePresenceDimension[] { return ['root', 'stem', 'lemma']; }
 

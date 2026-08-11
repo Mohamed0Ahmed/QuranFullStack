@@ -2,7 +2,7 @@
 
 > Status: **Golden design system — direction approved, revision 2 for final lock.** Design phase only. This document does not implement, and does not approve, Plan 7. It resolves the 48 direct drift targets in `UI_DESIGN_HANDOFF.md` §4, preserves G01–G24 in §21, and leaves D36 and D38 as explicit owner decisions.
 >
-> Input authority: `claude-design-input/UI_DESIGN_HANDOFF.md` (861 lines) and all 44 screenshots under `claude-design-input/screenshots/`. Every value below is either taken from that evidence, or is a **proposed canonical replacement** for a value the evidence proved inconsistent. Proposals are marked `→ NEW` where they change a current number.
+> Input authority: `UI_DESIGN_HANDOFF.md` in this folder, and the 44 screenshots it was derived from (session artifacts, never committed). Every value below is either taken from that evidence, or is a **proposed canonical replacement** for a value the evidence proved inconsistent. Proposals are marked `→ NEW` where they change a current number. Verification method: `GOLDEN_VISUAL_VERIFICATION.md`.
 >
 > Visual companions (annotated frames, real fixtures, all three bands):
 > - `Golden UI — Foundation.dc.html`

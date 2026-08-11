@@ -1,12 +1,12 @@
 # Quran Dashboard UI Design Handoff
 
-> Status: evidence-based discovery artifact for Claude Design. This is not production UI doctrine, an implementation specification, or approval of the visual choices in Plan 7.
+> Status: the evidence base behind the Golden UI system — the input authority `01 GOLDEN_UI_SYSTEM.md` and `02`/`03` cite by section. It records what the UI looked like at the snapshot below; it is not production UI doctrine and not an implementation specification. The living contracts in this folder supersede it wherever they disagree, and `GOLDEN_VISUAL_VERIFICATION.md` owns the verification method.
 
 ## Audit basis and counting rules
 
 - Snapshot: branch `audit/project-simplification`, commit `32547a82`, 2026-08-09.
 - Runtime evidence: the user's existing authenticated Google Chrome session, inspected without restarting Chrome, replacing the profile, re-authenticating, or submitting writes.
-- Source evidence: the current Angular source, generated API models, feature READMEs, `PRODUCT.md`, `DESIGN.md`, `.architecture/UI_STYLE_SYSTEM.md`, and `docs/project-simplification-audit/plans/07-frontend-ui-architecture-v2.md` as engineering context only.
+- Source evidence: the Angular source at that snapshot, generated API models, feature READMEs, `PRODUCT.md`, `DESIGN.md`, and `.architecture/UI_STYLE_SYSTEM.md`, plus the then-active frontend architecture plan as engineering context only.
 - Screenshot evidence: 44 accepted PNGs under `/tmp/quran-ui-design-handoff.L6BYle/current-ui/`. Access screenshots are redacted.
 - Surface count: **25 meaningful visual/operational rows**. This is 19 routed patterns expanded where valid query modes create materially different surfaces, plus the cross-route detail overlay. It is not a count of Angular route declarations.
 - Canonical-family count: **20 design-family candidates**, comprising 18 cross-cutting families and 2 high-value feature compositions. This is not a proposed Angular component count.

@@ -17,7 +17,8 @@ read:
 
 - `FRONTEND_UI_RULES.md` — the short mandatory rule set, first, for any UI-visible change
 - `.architecture/UI_STYLE_SYSTEM.md` — the mechanics, §18 for the Golden foundation
-- `.architecture/golden-ui/` — the permanent visual authority (contracts + acceptance boards)
+- `.architecture/golden-ui/` — the permanent visual authority (contracts, acceptance boards, the
+  `UI_DESIGN_HANDOFF.md` evidence base, and `GOLDEN_VISUAL_VERIFICATION.md` for how to verify)
 
 For product and visual context:
 

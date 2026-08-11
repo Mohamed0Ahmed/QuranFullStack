@@ -2,8 +2,8 @@
 
 The short, non-negotiable rules for any UI change in `Frontend/quran-dashboard-ui`. Deep
 mechanics stay in `.architecture/UI_STYLE_SYSTEM.md`; the permanent visual authority is
-`.architecture/golden-ui/`. This file wins over habit, not over the Golden contracts or the
-repository kernel.
+`.architecture/golden-ui/`, whose `GOLDEN_VISUAL_VERIFICATION.md` owns how a UI-visible change is
+verified. This file wins over habit, not over the Golden contracts or the repository kernel.
 
 ## 1. Ownership ladder — pick the smallest owner that fits
 

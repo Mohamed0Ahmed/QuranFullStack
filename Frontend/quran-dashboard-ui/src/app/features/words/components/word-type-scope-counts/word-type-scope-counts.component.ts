@@ -36,8 +36,7 @@ export class WordTypeScopeCountsComponent {
     }));
   });
 
-  // TDZ-safe getters (see words README): label consts read via readonly fields resolve to undefined in
-  // the bundled test build.
+  // Labels read through getters, not readonly fields (see words README).
   protected get ariaLabel() { return WORD_TYPES_SCOPE_COUNTS_LABEL; }
   protected get errorLabel() { return WORD_TYPES_SCOPE_COUNTS_ERROR_LABEL; }
   protected get retryLabel() { return WORD_TYPES_RETRY_LABEL; }

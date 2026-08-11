@@ -580,10 +580,10 @@ in scope, which is exactly what §6.2's M22 cell forbids.
     strip is a `role="alertdialog"` region inside `__foot` with no trap of its own, so it does
     not qualify. The one
     permitted nesting is a **confirmation dialog above exactly one authoring modal**, and the
-    host yields while it is open — **two modals do this now, not one**: the sections modal binds
-    `[cdkTrapFocus]="deleteConfirmId() === null"` for its section-delete confirm and the
-    relations modal `[cdkTrapFocus]="pendingDelete() === null"` for its relation-delete confirm,
-    so in each case the confirm's own trap is the only live one (the words dialogs'
+    host yields while it is open. No modal here binds a raw `cdkTrapFocus` any more:
+    `qd-modal-shell` registers open shells in a stack and enables the topmost trap only, so a
+    confirm above an authoring modal leaves exactly one live trap by construction, and
+    `[trapFocus]="false"` is the explicit suspend switch when a consumer needs one (the words dialogs'
     `drawerTrapEnabled` pattern, applied). Two live traps fight over focus, so a second nesting
     level — or a confirmation above a confirmation — is still forbidden, and a modal that grows
     a nested confirm must make its trap conditional in the same change.
@@ -593,10 +593,10 @@ in scope, which is exactly what §6.2's M22 cell forbids.
     `cdkFocusInitial` — in `abwab-door-fields-form` and `abwab-door-picker` respectively, so two
     attributes serve all four modals — which is what the trap's own capture reads, so a modal
     opens with **one** focus move. The queued `focusFirstField()` / `focusSearch()` calls cover a
-    capture that resolves before the target renders. Do not "simplify" this by dropping
-    `cdkTrapFocusAutoCapture` — the CDK stores
-    the previously focused element *only* inside auto-capture, so dropping it silently stops focus
-    returning to the trigger on close. Sections and the move picker want the trap's default first
+    capture that resolves before the target renders. Focus **return** is not this feature's
+    concern: `qd-modal-shell` captures the pre-open `activeElement` and restores it synchronously
+    on close, and `cdkTrapFocusAutoCapture` is deliberately absent so nothing restores a second
+    time on its own schedule. Sections and the move picker want the trap's default first
     tabbable and mark nothing. For the move picker that default is not "the first control in the
     DOM": its section strip is a roving-tabindex tablist, so every cell but the active one is
     `tabindex="-1"` and the trap lands on the section the move starts from — which is the

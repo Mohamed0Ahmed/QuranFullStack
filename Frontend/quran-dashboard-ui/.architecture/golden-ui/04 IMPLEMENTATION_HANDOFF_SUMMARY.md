@@ -108,6 +108,9 @@ Rule of thumb for reviewers: **visual-only repetition → semantic class; visual
 
 ## 6. Verification work that must follow implementation (not claimed here)
 
+> Method: `GOLDEN_VISUAL_VERIFICATION.md` in this folder — acceptance hierarchy, computed-geometry
+> and responsive checks, evidence rules, and the authenticated/protected-state constraints.
+
 Keyboard and screen-reader passes per family script; computed 44px hit-area audit (pagination, tree, Mushaf); 320px, short-landscape, 200% zoom and forced-colors checks; reduced-motion comparison for skeleton pulse and state transitions; a re-measure of document width at 768 and 1024 to confirm zero page-level horizontal scroll; contrast verification of `--qd-ink-muted` on all four surface steps; RTL arrow-key behaviour in trees and tablists; populated-archive and deep-hierarchy density review (the current archive is empty, so real density was never observed).
 
 ---
