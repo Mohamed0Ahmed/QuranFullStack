@@ -21,9 +21,8 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   with `qdTab [selected]="…"` and their own click/routerLink; `qd-tabs` supplies the
   `role="tablist"` wrapper and RTL-aware roving-tabindex keyboard nav (Arrow/Home/End) over
   them. Phase 3 added: a per-instance `instanceId` on the tablist, a generated per-tab `id`, an
-  optional `panelId`/`disabledReasonId` pair, count-driven layout (`qd-tabs--segmented` at three
-  tabs or fewer, `qd-tabs--scrollable` at four or more — D30), and selected-tab
-  scroll-into-view. The generated attributes are **fallbacks applied in `ngAfterViewInit` and only
+  optional `panelId`/`disabledReasonId` pair, and the count-driven `--segmented` track at three
+  tabs or fewer. The generated attributes are **fallbacks applied in `ngAfterViewInit` and only
   when the element carries none** — `abwab-move-picker` and `access-admin-page` bind their own
   `id`/`aria-controls`, and a host binding would have removed theirs. See `UI_STYLE_SYSTEM.md`
   §17 and §20.1.
@@ -42,8 +41,17 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   labels are longer — `word-type-details-panel` uses `9.5rem`), and `overflow: hidden` on the tab
   is what keeps a missed floor from becoming a defect: an oversized label is clipped inside its
   tab rather than spilling ink out of the strip. The tab's `:focus-visible` outline and the
-  selected state's `inset` thread are the tab's own paint and survive that clip. Consumers that do
-  not pass `layout` keep the count-driven `inline` behaviour unchanged.
+  selected state's `inset` thread are the tab's own paint and survive that clip.
+  `layout="inline"` (the default) now has exactly one rendered form, the `--segmented` track:
+  Phase 11 retired the four-or-more `--scrollable` mode, its `overflow-x` rules and the
+  selected-tab scroll-into-view `effect` that existed to serve it, because the inventory found no
+  consumer left that could resolve to it — every inline consumer is statically bounded at three
+  tabs (`unique-words-tabs` 2, `abwab-relations-modal` 3, `access-admin-page` 3) and every
+  variable-length strip migrated to `tracks` in Phases 8–10. `qdTab.scrollIntoView()` survives on
+  the directive and is still called on keyboard movement, which keeps a focused tab visible when
+  an *ancestor* scrolls; the primitive itself no longer scrolls. Nothing here caps the tab count:
+  a future inline strip past three would render as a plain `flex-wrap: nowrap` row, which is the
+  signal to pass `layout="tracks"` rather than to reintroduce a scroller.
 - `ui/chip/` — `qd-chip`, the one selectable/informational chip (button or anchor, optional
   trailing count) with an optional `variant` (`filter` / `taxonomy` / `alias`; `plain` default adds
   no class, so existing call-sites are untouched). It owns the **interactive** chip families only:
@@ -240,9 +248,14 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   the rows that are real touch targets (`--linked` rows and `--selectable` items), so a content
   card can no longer inherit a 44px minimum it is not a target for; the Compact-band override that
   raises that floor to `--qd-control-lg` carries the same scope.
-- `ui/details-workspace/` — `qd-details-workspace` (F11), the projected details anatomy: identity,
-  metadata, actions, an optional tab zone, a permanently mounted polite status slot, exactly one
-  body scroller, and an optional footer. It carries **no** feature data — every zone is
+- `ui/details-workspace/` — `qd-details-workspace` (F11), the projected details anatomy: an
+  optional header (identity, metadata, actions), an optional tab zone, a permanently mounted polite
+  status slot, exactly one body scroller, and an optional footer. `hasHeader` defaults to `true`;
+  a consumer with no identity, metadata or actions to show — the frameless/overlay path of the five
+  Words entity panels — passes `[hasHeader]="false"` so the header element is not rendered at all,
+  rather than being hidden per-consumer in CSS. `aria-labelledby` on the shell and the identity
+  `<h2>` share one `showsIdentity` condition, so the label can never point at an id the header did
+  not render. It carries **no** feature data — every zone is
   `<ng-content>` — and it namespaces `identityId`, `statusId`, `tabId(key)` and `panelId(key)` per
   instance (D31) so an inline panel and the global overlay body cannot collide. `layout="no-selection"`
   renders the designed prompt instead of collapsing the split.

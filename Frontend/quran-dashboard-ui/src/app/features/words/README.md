@@ -80,7 +80,10 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   `untracked` so panel-state reads don't retrigger the effect).
 - All five entity panels expose a `frameless` input that renders only the view tablist +
   tabpanel body (no card, no header/close, no dialog/backdrop) for composition inside the
-  global shell, which owns all dialog chrome. Overlay content testids are prefixed
+  global shell, which owns all dialog chrome. Frameless binds
+  `[hasHeader]="!frameless()"` on `qd-details-workspace`, so the header element is absent in
+  that path for all five panels; the identity spans and close buttons the inline and modal
+  paths depend on are unaffected. Overlay content testids are prefixed
   `overlay-<entity>-*` (page testids unchanged). All five adapters are fully implemented:
   root/lemma/stem (controllers extracted from their facades — lemma/stem identity includes
   the ayahs `typeCode`), unique (drilldown controller extracted; `(mode, wordId, view,
@@ -187,16 +190,16 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   second row instead of growing an inline scroller, and keeps single-line labels. The floor lives in
   the primitive (`--qd-tabs-track-floor`), raised to `9.5rem` only by `word-type-details-panel`,
   whose `lemma`/`stem` kinds carry the longest labels in the product; no Words panel carries local
-  tab width, alignment or truncation CSS, and `.qd-explorer-subtabs` styles only the host's block
-  margin, never the tablist inside it. Its `display: flex`, `gap` and `flex-shrink` are inert and
-  retained under L14. `display` and `gap` lose because the class sits on the `<qd-tabs>` host:
-  `tabs.component.scss`'s `:host { display: block }` ties on specificity and wins on document
-  order, so the host computes `display: block` and its single projected child makes `gap`
-  meaningless either way. `flex-shrink: 0` is live in the cascade — the host *is* a flex item of
-  the column-flex `.…-details-panel__content` — but changes nothing, because a flex item's
-  automatic minimum size already floors the row at its content height (measured identical at
-  1440 / 1080 / 390 with `flex-shrink: 1` forced). Only `margin-block-end` has an observable
-  effect.
+  tab width, alignment or truncation CSS, and `.qd-explorer-subtabs` is now **only**
+  `margin-block-end` — one declaration, on the host, never on the tablist inside it. Its former
+  `display: flex`, `gap` and `flex-shrink: 0` were deleted in Phase 10 once L14's proof-of-
+  irrelevance bar was met. `display` and `gap` never applied: the class sits on the `<qd-tabs>`
+  host, `tabs.component.scss`'s `:host { display: block }` ties on specificity and wins on document
+  order, so the host computed `display: block` and its single projected child made `gap`
+  meaningless either way. `flex-shrink: 0` did apply — the host *is* a flex item of the column-flex
+  `.…-details-panel__content` — but changed nothing, because a flex item's automatic minimum size
+  already floors the row at its content height (measured identical at 1440 / 1080 / 390 with
+  `flex-shrink: 1` forced, and re-measured unchanged after the deletion).
 - **The details content switch is exhaustive in every explorer page and overlay adapter.** Each
   page/adapter declares its per-view loading skeletons once, as a named template, and renders that
   template from three places: the `loading` status branch, the terminal `@default` of the

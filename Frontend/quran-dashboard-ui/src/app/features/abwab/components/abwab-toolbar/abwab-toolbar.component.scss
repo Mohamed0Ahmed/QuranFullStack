@@ -1,11 +1,17 @@
 @use '../../../../../styles/breakpoints' as bp;
 
 .abwab-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+}
+
+.abwab-toolbar__controls {
   align-items: flex-end;
 }
 
 .abwab-toolbar__tabs {
-  flex-wrap: wrap;
+  --qd-tabs-track-floor: 8.5rem;
 }
 
 .abwab-toolbar__search {

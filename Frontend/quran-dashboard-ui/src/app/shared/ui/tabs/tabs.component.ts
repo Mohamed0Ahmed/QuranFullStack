@@ -46,10 +46,6 @@ export class QdTabsComponent {
     () => this.layout() === 'inline' && this.tabs().length <= QD_TABS_SEGMENTED_MAX,
   );
 
-  protected readonly scrollable = computed(
-    () => this.layout() === 'inline' && this.tabs().length > QD_TABS_SEGMENTED_MAX,
-  );
-
   private readonly rovingIndex = computed(() => {
     const tabs = this.tabs();
     if (tabs.length === 0) {
@@ -75,11 +71,6 @@ export class QdTabsComponent {
       const tabs = this.tabs();
       const active = this.rovingIndex();
       tabs.forEach((tab, index) => tab.setRoving(index === active));
-    });
-
-    effect(() => {
-      const selected = this.tabs().find((tab) => tab.selected());
-      selected?.scrollIntoView();
     });
   }
 

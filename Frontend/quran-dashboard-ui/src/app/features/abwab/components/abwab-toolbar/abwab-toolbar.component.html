@@ -1,6 +1,60 @@
-<div class="abwab-toolbar qd-toolbar">
+<div class="abwab-toolbar">
+  <div class="abwab-toolbar__controls qd-toolbar">
+    <div class="abwab-toolbar__search qd-toolbar__filters">
+      <qd-form-field
+        class="abwab-toolbar__search-field"
+        [label]="searchLabel"
+        [helper]="searchScopeHint()"
+      >
+        <input
+          qdControl
+          type="search"
+          [placeholder]="searchPlaceholder"
+          [value]="searchQuery()"
+          data-testid="abwab-toolbar-search"
+          (input)="onSearchInput($event)"
+        />
+      </qd-form-field>
+      @if (searchQuery() !== '') {
+        <span class="abwab-toolbar__search-count" aria-hidden="true" data-testid="abwab-toolbar-search-count">
+          {{ matchCountText() }}
+        </span>
+      }
+      <span class="qd-sr-only" role="status" data-testid="abwab-toolbar-search-count-announce">
+        {{ announcedCountText() }}
+      </span>
+    </div>
+
+    @if (!hideSectionControls()) {
+      <div class="abwab-toolbar__view-toggle qd-toolbar__actions" role="group" [attr.aria-label]="viewToggleAriaLabel">
+        <button
+          type="button"
+          qdAction="toolbar"
+          class="abwab-toolbar__view-btn"
+          [class.abwab-toolbar__view-btn--active]="view() === 'tree'"
+          [attr.aria-pressed]="view() === 'tree'"
+          data-testid="abwab-toolbar-view-tree"
+          (click)="selectView('tree')"
+        >
+          {{ treeViewLabel }}
+        </button>
+        <button
+          type="button"
+          qdAction="toolbar"
+          class="abwab-toolbar__view-btn"
+          [class.abwab-toolbar__view-btn--active]="view() === 'cards'"
+          [attr.aria-pressed]="view() === 'cards'"
+          data-testid="abwab-toolbar-view-cards"
+          (click)="selectView('cards')"
+        >
+          {{ cardsViewLabel }}
+        </button>
+      </div>
+    }
+  </div>
+
   @if (!hideSectionControls()) {
-    <qd-tabs [ariaLabel]="sectionTabsAriaLabel" class="abwab-toolbar__tabs qd-toolbar__identity">
+    <qd-tabs class="abwab-toolbar__tabs" layout="tracks" [ariaLabel]="sectionTabsAriaLabel">
       <button
         type="button"
         qdTab
@@ -38,57 +92,5 @@
         </button>
       }
     </qd-tabs>
-  }
-
-  <div class="abwab-toolbar__search qd-toolbar__filters">
-    <qd-form-field
-      class="abwab-toolbar__search-field"
-      [label]="searchLabel"
-      [helper]="searchScopeHint()"
-    >
-      <input
-        qdControl
-        type="search"
-        [placeholder]="searchPlaceholder"
-        [value]="searchQuery()"
-        data-testid="abwab-toolbar-search"
-        (input)="onSearchInput($event)"
-      />
-    </qd-form-field>
-    @if (searchQuery() !== '') {
-      <span class="abwab-toolbar__search-count" aria-hidden="true" data-testid="abwab-toolbar-search-count">
-        {{ matchCountText() }}
-      </span>
-    }
-    <span class="qd-sr-only" role="status" data-testid="abwab-toolbar-search-count-announce">
-      {{ announcedCountText() }}
-    </span>
-  </div>
-
-  @if (!hideSectionControls()) {
-    <div class="abwab-toolbar__view-toggle qd-toolbar__actions" role="group" [attr.aria-label]="viewToggleAriaLabel">
-      <button
-        type="button"
-        qdAction="toolbar"
-        class="abwab-toolbar__view-btn"
-        [class.abwab-toolbar__view-btn--active]="view() === 'tree'"
-        [attr.aria-pressed]="view() === 'tree'"
-        data-testid="abwab-toolbar-view-tree"
-        (click)="selectView('tree')"
-      >
-        {{ treeViewLabel }}
-      </button>
-      <button
-        type="button"
-        qdAction="toolbar"
-        class="abwab-toolbar__view-btn"
-        [class.abwab-toolbar__view-btn--active]="view() === 'cards'"
-        [attr.aria-pressed]="view() === 'cards'"
-        data-testid="abwab-toolbar-view-cards"
-        (click)="selectView('cards')"
-      >
-        {{ cardsViewLabel }}
-      </button>
-    </div>
   }
 </div>

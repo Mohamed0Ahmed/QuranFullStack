@@ -728,11 +728,11 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   nothing in the strip that holds it. That is the exact guarantee, and no more: a third or fourth
   digit does widen the badge. It is a real reservation only where counts stay small (the Mushaf
   study strip's similarity counts). `abwab-toolbar`'s `totalRootCount()` badge is routinely three
-  or four digits and sits on the still-`--segmented` Abwab strip, where badge width does feed tab
-  width — deliberately not widened here, because a 4ch floor would pad every count badge in the
-  app to fix one strip. Phase 10 migrates the Abwab sections to `tracks`, whose track sizing
-  ignores item intrinsic width entirely, which makes that strip count-independent regardless of
-  this floor. `--empty` (known zero) and `--unknown` (value not yet
+  or four digits, and the floor was deliberately not widened for it, because a 4ch floor would pad
+  every count badge in the app to fix one strip. It does not need to be: Phase 10 moved the Abwab
+  section strip off the count-driven `inline` modes onto `tracks`
+  (`--qd-tabs-track-floor: 8.5rem`), and track sizing ignores item intrinsic width entirely, so
+  that strip is count-independent regardless of this floor. `--empty` (known zero) and `--unknown` (value not yet
   known) drop the pill background and keep the slot; `--unknown` also wins over the
   selected-tab count treatment, because a selected tab can be the one still loading. A
   count-bearing tab therefore keeps its badge element **mounted at all times** and varies only
@@ -764,7 +764,8 @@ fills, resting borders — stays **banned as solid green**: use a tint,
     — raise it when labels are long enough to be cut — never the thing that makes the mode
     overflow-proof.
   - **No `overflow-x` in this mode, ever** — wrapping is the overflow answer, so the strip never
-    grows the RTL-hostile inline scroller `--scrollable` has.
+    grows an inline scroller. Since Phase 11 no `.qd-tabs*` rule carries `overflow-x` at all; the
+    RTL-hostile `--scrollable` mode this contract replaced no longer exists.
   - **Consumers that raise the floor:** `word-type-details-panel` sets `9.5rem` on its
     `qd-tabs[qdDetailsTabs]`, because its `lemma`/`stem` kinds render the longest labels in the
     product (`كلمات الصيغة المعجمية`, 123.7 px at `--qd-type-body`, plus the tab's two
@@ -1946,14 +1947,24 @@ selection. Phase 3 added, without changing any of that:
   `[attr.id]`/`[attr.aria-controls]`; a host binding on the directive would have won the update
   pass and removed theirs. `panelId` and `disabledReasonId` behave the same way.
 - **Layout by count, never by wrap** (D30). Three tabs or fewer render `qd-tabs--segmented` on the
-  sunken track with equal-width tabs; four or more render `qd-tabs--scrollable`, a single row with
-  its own inline scroller. `.qd-tabs` is `flex-wrap: nowrap` in both, so a tablist can no longer
-  form an accidental second row. An explicit `layout="grid"` opts out of the count-driven choice.
+  sunken track with equal-width tabs. `.qd-tabs` is `flex-wrap: nowrap`, so a tablist can no longer
+  form an accidental second row. An explicit `layout="grid"` or `layout="tracks"` opts out of the
+  count-driven choice — and since Phase 11 that opt-out is the *only* answer for four or more:
+  the `qd-tabs--scrollable` half of D30 is **retired**. It was a single row owning an
+  `overflow-x: auto` inline scroller, which is exactly the RTL-hostile behaviour §17 and the
+  `tracks` contract exist to remove, and by the end of the tabs migration no consumer could still
+  resolve to it — the three remaining `inline` tablists (`unique-words-tabs` 2 tabs,
+  `abwab-relations-modal` 3, `access-admin-page` 3) are statically bounded at the segmented
+  maximum, and every variable-length strip is `tracks`. The class, its rules and the
+  selected-tab `scrollIntoView` effect are gone; a strip that outgrows three tabs adopts
+  `layout="tracks"`, it does not get a scroller back.
 - **Selected treatment** is the Golden pill: green tint, `--qd-green-text`, and a 2px thread on the
   block-end edge (`box-shadow: inset`, because a border would change the tab's height). A vertical
   tablist gets the logical `border-inline-start` thread instead.
-- **Selected-tab scroll-into-view**, both on selection change and on keyboard move, so a scrolling
-  row never hides the current tab.
+- **Selected-tab scroll-into-view on keyboard move** (`{ block: 'nearest', inline: 'nearest' }`),
+  so a tab reached with Arrow/Home/End is brought into view by whatever ancestor scrolls. The
+  companion `effect` that re-scrolled on every selection change went with `--scrollable`: with no
+  scroller inside the primitive it could only ever move an ancestor the user did not ask to move.
 
 The RTL arrow mapping was already correct and is unchanged: ArrowLeft is the logical *next* tab in
 RTL because that is the next tab in visual order.

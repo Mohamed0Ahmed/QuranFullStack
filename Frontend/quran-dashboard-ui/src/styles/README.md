@@ -121,8 +121,9 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   app renders is an Abwab row-menu item, so the parallel `.qd-floating-layer__item--danger` selector
   was dead), and F17's `.qd-count-chip` had no consumer at all — a count today rides on `qd-chip`'s
   trailing count or on a feature-local chip. The F08 toolbar likewise keeps only `.qd-toolbar` and
-  `--taxonomy`; `--workspace` was a modifier no toolbar asked for. The `.qd-tabs*` family gained the count-driven `--segmented` / `--scrollable`
-  layouts and the Golden selected pill; `qd-modal-shell`'s own geometry lives in its component
+  `--taxonomy`; `--workspace` was a modifier no toolbar asked for. The `.qd-tabs*` family gained the count-driven `--segmented`
+  layout and the Golden selected pill (its `--scrollable` sibling, the one `overflow-x: auto` rule
+  in the family, was deleted in Phase 11 once `--tracks` left it without a consumer); `qd-modal-shell`'s own geometry lives in its component
   stylesheet, not here, because nothing projects into it from outside.
 - `_utilities.scss` — small utility classes such as screen-reader-only, flex, spacing, and stable
   scrollbars. Also holds `.qd-ltr-isolate` (the only sanctioned Latin island — applied to the value

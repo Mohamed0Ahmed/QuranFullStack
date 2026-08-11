@@ -310,13 +310,6 @@ button.qd-interactive-surface {
   background: var(--qd-surface-sunken);
 }
 
-.qd-tabs--scrollable {
-  display: flex;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-}
-
 .qd-tabs--vertical {
   flex-direction: column;
   align-items: stretch;

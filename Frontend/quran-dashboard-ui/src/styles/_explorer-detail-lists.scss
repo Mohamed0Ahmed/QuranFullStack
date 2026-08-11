@@ -58,11 +58,6 @@
   scrollbar-gutter: stable;
 }
 
-.root-details-panel--frameless .qd-details__header,
-.lemma-details-panel--frameless .qd-details__header {
-  display: none;
-}
-
 .root-details-panel,
 .lemma-details-panel {
   .qd-detail-list__viewport,

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 export type QdDetailsWorkspaceLayout = 'selection' | 'no-selection';
 export type QdDetailsWorkspaceVariant = 'entity' | 'safety' | 'action-rail' | 'study' | 'overlay-body';
@@ -20,9 +20,12 @@ export class QdDetailsWorkspaceComponent {
   readonly layout = input<QdDetailsWorkspaceLayout>('selection');
   readonly variant = input<QdDetailsWorkspaceVariant>('entity');
   readonly noSelectionMessage = input('');
+  readonly hasHeader = input(true);
   readonly hasTabs = input(false);
   readonly hasFooter = input(false);
   readonly testIdPrefix = input('qd-details');
+
+  readonly showsIdentity = computed(() => this.hasHeader() && this.identity() !== '');
 
   private readonly instance = nextWorkspaceId++;
   readonly instanceId = `qd-details-${this.instance}`;
