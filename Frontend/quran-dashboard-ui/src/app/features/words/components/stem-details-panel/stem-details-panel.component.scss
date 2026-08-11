@@ -38,6 +38,13 @@
   white-space: nowrap;
 }
 
-.stem-details-panel__surface[hidden] {
+.stem-details-panel__content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
+.stem-details-panel__content[hidden] {
   display: none;
 }

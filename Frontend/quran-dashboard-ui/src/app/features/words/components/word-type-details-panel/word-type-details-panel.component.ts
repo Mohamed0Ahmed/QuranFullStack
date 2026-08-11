@@ -71,6 +71,11 @@ export class WordTypeDetailsPanelComponent {
     })),
   );
 
+  protected readonly labelledTabKey = computed<WordTypeDetailView>(() => {
+    const keys = this.tabKeys();
+    return keys.includes(this.view()) ? this.view() : keys[0];
+  });
+
   protected readonly hasSelection = computed(() => !this.emptySelection());
 
   protected isActive(key: WordTypeDetailView): boolean {

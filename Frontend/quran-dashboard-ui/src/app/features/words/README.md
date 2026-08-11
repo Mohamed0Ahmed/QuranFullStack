@@ -154,10 +154,19 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   `44px` sticky header, `40px` rows, internal table scrolling, and a fixed table pager. The page
   shell is the only route-gutter owner (`16/24/32/40px`), measured at 390/767/768/1024/1079/1080/1440.
 - **All five details use the shared F07/F10/F11 anatomy.** Root/Lemma/Stem/Word Type panels and the
-  Unique drilldown compose `qd-details-workspace` + `qd-tabs`, keep their `5/4/4/2-or-3/3` tab sets
-  and labeled tabpanels mounted, receive collision-free per-instance IDs, keep `notFound` inside the
+  Unique drilldown compose `qd-details-workspace` + `qd-tabs`, keep their `5/4/4/2-or-3/3` tab sets,
+  receive collision-free per-instance IDs, keep `notFound` inside the
   selected tabpanel (the other tabs are disabled while it holds), and use `.qd-details__body` as the
-  sole details scroller. Ordinary linked/display-only results use `qdResultList`/`qdResultItem`;
+  sole details scroller. The four Root/Lemma/Stem/Word Type panels mount **one** stable tabpanel
+  (`.…-details-panel__surface`) that never unmounts across a tab switch; the projected view content
+  lives in a single always-mounted `.…-details-panel__content` container inside it, hidden only for
+  the empty-selection and `notFound` states. Because only that one tabpanel exists, its id is the
+  view-independent `workspace.panelId('content')` and **every** tab — not only the selected one —
+  binds that same id as `[panelId]`, so the one-shot `aria-controls` `qdTab` writes in
+  `ngAfterViewInit` can never go stale or dangle. `aria-labelledby` still tracks the active tab; the
+  Word Type panel resolves it through `tabKeys()` and falls back to the first key, because its tab
+  set is kind-dependent and `view()` can name a tab that the current kind does not render. Ordinary
+  linked/display-only results use `qdResultList`/`qdResultItem`;
   Quran results keep `qdAyahCard` and the existing highlighted-Quran renderer unchanged.
 - **Every Words tablist is the F07 owner; no feature re-implements the keyboard contract.** The
   Roots/Lemmas/Stems explorer sub-tabs (`…-word-view-tabs` / `…-surah-view-tabs`), the three overlay
@@ -172,6 +181,22 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   sub-tablist controls is a single swapping region carrying `role="tabpanel"` and a per-instance id
   (`.qd-explorer-subview-panel`), bound as `[panelId]` on every tab and as `aria-labelledby` back to
   the selected tab; the role is dropped on views that render no sub-tabs.
+- **The details content switch is exhaustive in every explorer page and overlay adapter.** Each
+  page/adapter declares its per-view loading skeletons once, as a named template, and renders that
+  template from three places: the `loading` status branch, the terminal `@default` of the
+  `panelState().status` switch, and the terminal `@else` of the success view chain. No combination
+  of status and active view can therefore render nothing — an unmatched combination (the keyboard
+  focus preview that moves the active view before the load commits, `idle`, or a view whose data is
+  still `null`) degrades to that view's skeleton. Views that deliberately render their content
+  **outside** `.qd-explorer-subview-panel` (Lemma `stems`, Stem `lemmas`) are excluded from the two
+  fallback call sites exactly as they already are from the `empty` branch, and render nothing there.
+  The exclusion is not cosmetic: the terminal branch of those skeleton templates is an sr-only
+  `role="status" aria-live="polite"` node, so letting the settled `success`/`@default` states reach
+  it would leave a permanent, false "loading" announcement in the accessibility tree even though
+  nothing new is visible. The `loading` branch keeps that announcement, where it is true.
+  The Roots skeleton chain names every one of its five views explicitly and terminates in the same
+  sr-only status, so a future sixth view degrades to a neutral announcement instead of another
+  view's skeleton.
 - **Zero-count detail triggers remain visible but inert across all five explorers.** Identity
   actions, count chips, mobile stat badges and Lemma/Stem ayah-type controls use
   `لا كلمات مرتبطة بهذا النوع، لذا لا تفاصيل لعرضها.` as the visible reason, reference it through

@@ -16,7 +16,6 @@ import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { AppTitleStrategy } from './core/navigation/app-title.strategy';
 import { IdlePreloadStrategy } from './core/navigation/idle-preload.strategy';
-import { devLatencyInterceptor } from './core/data-access/dev-latency.interceptor';
 import { secureUrlInterceptor } from './core/data-access/secure-url.interceptor';
 
 const { endpoint, appId, redirectUri, postLogoutRedirectUri, scope, resource } = environment.logto;
@@ -41,7 +40,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withPreloading(IdlePreloadStrategy)),
     provideHttpClient(
       withFetch(),
-      withInterceptors([secureUrlInterceptor, authInterceptor(), devLatencyInterceptor]),
+      withInterceptors([secureUrlInterceptor, authInterceptor()]),
     ),
     { provide: TitleStrategy, useClass: AppTitleStrategy },
     provideAuth({ config: oidcConfig }, withAppInitializerAuthCheck()),

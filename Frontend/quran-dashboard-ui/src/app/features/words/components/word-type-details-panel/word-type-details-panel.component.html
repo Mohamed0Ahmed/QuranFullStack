@@ -1,7 +1,3 @@
-<ng-template #projectedContent>
-  <ng-content />
-</ng-template>
-
 <ng-template #panelBody>
   <qd-details-workspace
     #workspace
@@ -41,7 +37,7 @@
           type="button"
           class="word-type-details-panel__tab"
           [id]="workspace.tabId(tab.key)"
-          [panelId]="workspace.panelId(tab.key)"
+          [panelId]="workspace.panelId('content')"
           [selected]="isActive(tab.key) && hasSelection()"
           [disabled]="tabDisabled(tab.key)"
           [attr.disabled]="tabDisabled(tab.key) ? '' : null"
@@ -56,32 +52,28 @@
       }
     </qd-tabs>
 
-    @for (tab of tabs(); track tab.key) {
-      <section
-        class="word-type-details-panel__surface"
-        role="tabpanel"
-        [id]="workspace.panelId(tab.key)"
-        [attr.aria-labelledby]="workspace.tabId(tab.key)"
-        [attr.aria-busy]="isActive(tab.key) && loading() ? 'true' : null"
-        [attr.tabindex]="isActive(tab.key) ? 0 : -1"
-        [attr.data-testid]="isActive(tab.key) ? 'word-type-details-panel-surface' : null"
-        [hidden]="!isActive(tab.key)"
-      >
-        @if (isActive(tab.key)) {
-          @if (emptySelection()) {
-            <div class="qd-empty-state" data-testid="word-type-details-empty-selection">
-              {{ emptySelectionLabel }}
-            </div>
-          } @else if (notFound()) {
-            <div class="qd-empty-state" role="status" data-testid="word-type-details-not-found">
-              {{ notFoundLabel }}
-            </div>
-          } @else {
-            <ng-container *ngTemplateOutlet="projectedContent" />
-          }
-        }
-      </section>
-    }
+    <section
+      class="word-type-details-panel__surface"
+      role="tabpanel"
+      [id]="workspace.panelId('content')"
+      [attr.aria-labelledby]="workspace.tabId(labelledTabKey())"
+      [attr.aria-busy]="loading() ? 'true' : null"
+      tabindex="0"
+      data-testid="word-type-details-panel-surface"
+    >
+      @if (emptySelection()) {
+        <div class="qd-empty-state" data-testid="word-type-details-empty-selection">
+          {{ emptySelectionLabel }}
+        </div>
+      } @else if (notFound()) {
+        <div class="qd-empty-state" role="status" data-testid="word-type-details-not-found">
+          {{ notFoundLabel }}
+        </div>
+      }
+      <div class="word-type-details-panel__content" [hidden]="emptySelection() || notFound()">
+        <ng-content />
+      </div>
+    </section>
   </qd-details-workspace>
 </ng-template>
 

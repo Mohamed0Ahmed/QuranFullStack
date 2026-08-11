@@ -159,6 +159,26 @@
       </qd-word-types-table>
     </section>
 
+    <ng-template #wordTypesViewSkeleton>
+      @if (panelState().view === 'words') {
+        <qd-word-type-grouped-words-list
+          [page]="emptyMemberWordsPage"
+          [currentPage]="panelState().detailPage"
+          [loading]="true"
+        />
+      } @else if (panelState().view === 'ayahs') {
+        <qd-ayah-matches-list
+          [page]="emptyAyahsPage"
+          [currentPage]="panelState().detailPage"
+          [loading]="true"
+          [parentFrame]="ayahParentFrame()"
+        />
+      } @else if (panelState().view === 'surahs') {
+        <qd-surah-occurrences-list [surahs]="[]" [loading]="true" />
+        <qd-missing-surahs-list [surahs]="[]" [loading]="true" />
+      }
+    </ng-template>
+
     <qd-word-type-details-panel
         class="word-types-page__panel qd-explorer-layout__panel"
         [inline]="isDesktop()"
@@ -171,76 +191,60 @@
         (viewChange)="onPanelViewChange($event)"
         (close)="clearSelection()"
       >
-        <div class="word-types-details__scroll">
-          @switch (panelState().status) {
-            @case ('loading') {
-              @if (panelState().view === 'words') {
-                <qd-word-type-grouped-words-list
-                  [page]="emptyMemberWordsPage"
-                  [currentPage]="panelState().detailPage"
-                  [loading]="true"
-                />
-              } @else if (panelState().view === 'ayahs') {
-                <qd-ayah-matches-list
-                  [page]="emptyAyahsPage"
-                  [currentPage]="panelState().detailPage"
-                  [loading]="true"
-                  [parentFrame]="ayahParentFrame()"
-                />
-              } @else if (panelState().view === 'surahs') {
-                <qd-surah-occurrences-list [surahs]="[]" [loading]="true" />
-                <qd-missing-surahs-list [surahs]="[]" [loading]="true" />
+        @if (!emptySelection()) {
+          <div class="word-types-details__scroll">
+            @switch (panelState().status) {
+              @case ('loading') {
+                <ng-container *ngTemplateOutlet="wordTypesViewSkeleton" />
+              }
+              @case ('error') {
+                <div class="qd-error-state word-types-details__error" role="alert" data-testid="word-type-details-error">
+                  <span>{{ panelState().errorMessage || errorLabel }}</span>
+                  <button
+                    type="button"
+                    class="qd-btn qd-btn-secondary"
+                    data-testid="word-type-details-retry"
+                    (click)="retryDetail()"
+                  >
+                    {{ retryLabel }}
+                  </button>
+                </div>
+              }
+              @case ('empty') {
+                <div class="qd-empty-state">{{ detailEmptyLabel() }}</div>
+              }
+              @default {
+                @if (panelState().view === 'words' && panelState().words) {
+                  <qd-word-type-grouped-words-list
+                    [page]="memberWordsForView()"
+                    [currentPage]="panelState().detailPage"
+                    [loading]="false"
+                    (pageChange)="onDetailPageChange($event)"
+                  />
+                } @else if (panelState().view === 'ayahs' && panelState().ayahs) {
+                  <qd-ayah-matches-list
+                    [page]="ayahsPageForView()"
+                    [currentPage]="panelState().detailPage"
+                    [loading]="false"
+                    [parentFrame]="ayahParentFrame()"
+                    (pageChange)="onDetailPageChange($event)"
+                  />
+                } @else if (panelState().view === 'surahs' && panelState().surahs) {
+                  <qd-surah-occurrences-list
+                    [surahs]="mentionedSurahs()"
+                    [loading]="false"
+                  />
+                  <qd-missing-surahs-list
+                    [surahs]="missingSurahs()"
+                    [loading]="false"
+                  />
+                } @else {
+                  <ng-container *ngTemplateOutlet="wordTypesViewSkeleton" />
+                }
               }
             }
-            @case ('error') {
-              <div class="qd-error-state word-types-details__error" role="alert" data-testid="word-type-details-error">
-                <span>{{ panelState().errorMessage || errorLabel }}</span>
-                <button
-                  type="button"
-                  class="qd-btn qd-btn-secondary"
-                  data-testid="word-type-details-retry"
-                  (click)="retryDetail()"
-                >
-                  {{ retryLabel }}
-                </button>
-              </div>
-            }
-            @case ('empty') {
-              <div class="qd-empty-state">{{ detailEmptyLabel() }}</div>
-            }
-            @default {
-              @if (panelState().view === 'words' && panelState().words) {
-                <qd-word-type-grouped-words-list
-                  [page]="memberWordsForView()"
-                  [currentPage]="panelState().detailPage"
-                  [loading]="false"
-                  (pageChange)="onDetailPageChange($event)"
-                />
-              }
-
-              @if (panelState().view === 'ayahs' && panelState().ayahs) {
-                <qd-ayah-matches-list
-                  [page]="ayahsPageForView()"
-                  [currentPage]="panelState().detailPage"
-                  [loading]="false"
-                  [parentFrame]="ayahParentFrame()"
-                  (pageChange)="onDetailPageChange($event)"
-                />
-              }
-
-              @if (panelState().view === 'surahs' && panelState().surahs) {
-                <qd-surah-occurrences-list
-                  [surahs]="mentionedSurahs()"
-                  [loading]="false"
-                />
-                <qd-missing-surahs-list
-                  [surahs]="missingSurahs()"
-                  [loading]="false"
-                />
-              }
-            }
-          }
-        </div>
+          </div>
+        }
       </qd-word-type-details-panel>
   </div>
   </div>

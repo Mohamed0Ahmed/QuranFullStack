@@ -11,8 +11,6 @@ import { subscribeToApiLoad } from './mushaf-api-load.helpers';
 import { MushafReaderCache, MushafReaderCacheKeys } from './mushaf-reader-cache';
 import { toAyahStudyViewModel } from './mushaf-reader-view-mappers';
 
-export const AYAH_STUDY_SWITCH_DELAY_MS = 700;
-
 export interface AyahStudyLoadBindings {
   getUrlExplicitSources(): MushafReaderSources;
   setAyahStudy(value: AyahStudyViewModel | null): void;
@@ -25,7 +23,6 @@ export interface AyahStudyLoadBindings {
 }
 
 export class AyahStudyLoadRunner {
-  private timer: ReturnType<typeof setTimeout> | null = null;
   private activeSubscription: Subscription | null = null;
 
   constructor(private readonly bindings: AyahStudyLoadBindings) {}
@@ -44,19 +41,10 @@ export class AyahStudyLoadRunner {
     }
 
     const requestToken = this.bindings.bumpRequestToken();
-    this.bindings.setLoadState({ isLoading: true, isEmpty: false, errorMessage: null });
-    this.timer = setTimeout(() => {
-      this.timer = null;
-      this.runLoad(verseKey, requestToken);
-    }, AYAH_STUDY_SWITCH_DELAY_MS);
+    this.runLoad(verseKey, requestToken);
   }
 
   clearPending(): void {
-    if (this.timer !== null) {
-      clearTimeout(this.timer);
-      this.timer = null;
-    }
-
     if (this.activeSubscription !== null) {
       this.activeSubscription.unsubscribe();
       this.activeSubscription = null;

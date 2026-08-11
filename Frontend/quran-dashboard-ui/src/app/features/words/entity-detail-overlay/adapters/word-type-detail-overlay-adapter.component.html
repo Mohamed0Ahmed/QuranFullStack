@@ -1,3 +1,26 @@
+<ng-template #wordTypeViewSkeleton>
+  @if (effectiveView() === 'ayahs') {
+    <qd-ayah-matches-list
+      [loading]="true"
+      [page]="emptyAyahsPage"
+      [currentPage]="panelState().detailPage"
+      [parentFrame]="frame()"
+      data-testid="overlay-word-type-ayahs-view"
+    />
+  } @else if (effectiveView() === 'surahs') {
+    <qd-surah-occurrences-list
+      [loading]="true"
+      [surahs]="[]"
+      data-testid="overlay-word-type-mentioned-surahs-view"
+    />
+    <qd-missing-surahs-list
+      [loading]="true"
+      [surahs]="[]"
+      data-testid="overlay-word-type-missing-surahs-view"
+    />
+  }
+</ng-template>
+
 <!-- The panel's own notFound input stays unbound: in the overlay the adapter
      owns the notFound branch (overlay-word-type-not-found) inside the projected
      content, mirroring the root reference adapter. -->
@@ -12,26 +35,7 @@
 >
   @switch (panelState().status) {
     @case ('loading') {
-      @if (effectiveView() === 'ayahs') {
-        <qd-ayah-matches-list
-          [loading]="true"
-          [page]="emptyAyahsPage"
-          [currentPage]="panelState().detailPage"
-          [parentFrame]="frame()"
-          data-testid="overlay-word-type-ayahs-view"
-        />
-      } @else if (effectiveView() === 'surahs') {
-        <qd-surah-occurrences-list
-          [loading]="true"
-          [surahs]="[]"
-          data-testid="overlay-word-type-mentioned-surahs-view"
-        />
-        <qd-missing-surahs-list
-          [loading]="true"
-          [surahs]="[]"
-          data-testid="overlay-word-type-missing-surahs-view"
-        />
-      }
+      <ng-container *ngTemplateOutlet="wordTypeViewSkeleton" />
     }
     @case ('error') {
       <qd-error-state
@@ -68,7 +72,12 @@
           [surahs]="missingSurahs()"
           data-testid="overlay-word-type-missing-surahs-view"
         />
+      } @else {
+        <ng-container *ngTemplateOutlet="wordTypeViewSkeleton" />
       }
+    }
+    @default {
+      <ng-container *ngTemplateOutlet="wordTypeViewSkeleton" />
     }
   }
 </qd-word-type-details-panel>

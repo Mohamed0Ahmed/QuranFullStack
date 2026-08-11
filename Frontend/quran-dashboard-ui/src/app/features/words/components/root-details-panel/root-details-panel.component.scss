@@ -35,6 +35,13 @@
   font-size: var(--qd-type-body);
 }
 
-.root-details-panel__surface[hidden] {
+.root-details-panel__content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
+.root-details-panel__content[hidden] {
   display: none;
 }

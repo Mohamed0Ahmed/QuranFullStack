@@ -1,3 +1,51 @@
+<ng-template #rootsViewSkeleton>
+  @if (frame().view === 'ayahs') {
+    <qd-ayah-matches-list
+      [loading]="true"
+      [page]="ayahsPageForView()"
+      [currentPage]="panelState().detailPage"
+      [parentFrame]="frame()"
+      data-testid="overlay-roots-ayahs-view"
+    />
+  } @else if (frame().view === 'words') {
+    <qd-root-words-list
+      [loading]="true"
+      [page]="emptyWordsPage"
+      [currentPage]="panelState().detailPage"
+      [wordView]="panelState().wordView"
+      data-testid="overlay-roots-words-view"
+    />
+  } @else if (frame().view === 'surahs' && panelState().surahView === 'missing') {
+    <qd-missing-surahs-list
+      [loading]="true"
+      [surahs]="[]"
+      data-testid="overlay-roots-missing-surahs-view"
+    />
+  } @else if (frame().view === 'surahs' && panelState().surahView === 'mentioned') {
+    <qd-surah-occurrences-list
+      [loading]="true"
+      [surahs]="[]"
+      data-testid="overlay-roots-mentioned-surahs-view"
+    />
+  } @else if (frame().view === 'lemmas') {
+    <qd-root-lemmas-list
+      [loading]="true"
+      [lemmas]="[]"
+      data-testid="overlay-roots-lemmas-view"
+    />
+  } @else if (frame().view === 'stems') {
+    <qd-root-stems-list
+      [loading]="true"
+      [stems]="[]"
+      data-testid="overlay-roots-stems-view"
+    />
+  } @else {
+    <p class="qd-sr-only" role="status" aria-live="polite" data-testid="overlay-roots-panel-loading">
+      {{ panelLoadingLabel }}
+    </p>
+  }
+</ng-template>
+
 <!-- The panel's own notFound input stays unbound: in the overlay the adapter
      owns the notFound branch (overlay-roots-not-found) inside the projected
      content, exactly as the lemma/stem/word-type adapters do. -->
@@ -62,47 +110,7 @@
   >
   @switch (panelState().status) {
     @case ('loading') {
-      @if (frame().view === 'ayahs') {
-        <qd-ayah-matches-list
-          [loading]="true"
-          [page]="ayahsPageForView()"
-          [currentPage]="panelState().detailPage"
-          [parentFrame]="frame()"
-          data-testid="overlay-roots-ayahs-view"
-        />
-      } @else if (frame().view === 'words') {
-        <qd-root-words-list
-          [loading]="true"
-          [page]="emptyWordsPage"
-          [currentPage]="panelState().detailPage"
-          [wordView]="panelState().wordView"
-          data-testid="overlay-roots-words-view"
-        />
-      } @else if (frame().view === 'surahs' && panelState().surahView === 'mentioned') {
-        <qd-surah-occurrences-list
-          [loading]="true"
-          [surahs]="[]"
-          data-testid="overlay-roots-mentioned-surahs-view"
-        />
-      } @else if (frame().view === 'surahs' && panelState().surahView === 'missing') {
-        <qd-missing-surahs-list
-          [loading]="true"
-          [surahs]="[]"
-          data-testid="overlay-roots-missing-surahs-view"
-        />
-      } @else if (frame().view === 'lemmas') {
-        <qd-root-lemmas-list
-          [loading]="true"
-          [lemmas]="[]"
-          data-testid="overlay-roots-lemmas-view"
-        />
-      } @else if (frame().view === 'stems') {
-        <qd-root-stems-list
-          [loading]="true"
-          [stems]="[]"
-          data-testid="overlay-roots-stems-view"
-        />
-      }
+      <ng-container *ngTemplateOutlet="rootsViewSkeleton" />
     }
     @case ('error') {
       <qd-error-state
@@ -158,7 +166,12 @@
           [stems]="stems.stems"
           data-testid="overlay-roots-stems-view"
         />
+      } @else {
+        <ng-container *ngTemplateOutlet="rootsViewSkeleton" />
       }
+    }
+    @default {
+      <ng-container *ngTemplateOutlet="rootsViewSkeleton" />
     }
   }
   </div>

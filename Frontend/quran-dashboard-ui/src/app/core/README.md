@@ -19,7 +19,6 @@ per-feature.
   - `secure-url.interceptor.ts` — forces/validates the API base URL; also lets the Logto
     IdP origin (`environment.logto.endpoint`) pass through un-blocked (the OIDC library uses
     `HttpClient` for discovery/token calls), while every other foreign origin stays blocked.
-  - `dev-latency.interceptor.ts` + `dev-api-latency.ts` — dev-only injected latency.
   - `system.api.ts` / `system.models.ts` — health/system info (models re-export generated
     types with UI narrowing).
 - `caching/api-response-cache.ts` — shared response cache (feature caches build on the
@@ -168,8 +167,8 @@ per-feature.
   feature guarded only by `ownerGuard`; the navbar's «الإعدادات» dropdown exposes it to Active
   Owners (a visibility convenience — see `navigation/` above — never a second authorization
   rule). No other route has a guard.
-- Interceptor order matters (`secureUrlInterceptor`, then `authInterceptor()`, then
-  `devLatencyInterceptor`); keep registration order in `app.config.ts`. `authInterceptor()`
+- Interceptor order matters (`secureUrlInterceptor`, then `authInterceptor()`); keep
+  registration order in `app.config.ts`. `authInterceptor()`
   (from `angular-auth-oidc-client`) attaches the Logto Bearer token only to requests under
   `apiBaseUrl` via the `secureRoutes` config, and must run after `secureUrlInterceptor`.
 - Both Development and production Logto configuration request the `email` OIDC scope. The production

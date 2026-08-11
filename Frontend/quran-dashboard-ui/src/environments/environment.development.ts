@@ -4,8 +4,6 @@ export const environment: Environment = {
   production: false,
   apiBaseUrl: 'https://localhost:5015',
 
-  devApiLatencyMs: 450,
-
   logto: {
     endpoint: 'https://a8kvwi.logto.app',
     appId: 'osfceu3so056z6r762sjs',
