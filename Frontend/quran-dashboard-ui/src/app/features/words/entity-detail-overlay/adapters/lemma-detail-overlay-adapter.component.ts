@@ -48,12 +48,8 @@ import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-s
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
+import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
-// Overlay adapter for lemma frames (Feature 029, B4). Owns a component-scoped LemmasDetailController
-// (never the page facade) and maps every `frame` input change onto applyUrlState. All view/sub-view/
-// page/type changes route through DetailOverlayHistoryService.replaceTopFrame — never the Router or
-// controller state directly — and the URL sync feeds the new frame back in, re-driving the controller.
-// Unlike roots, the ayahs view's typeCode is part of the frame identity.
 let nextSubViewInstance = 0;
 
 @Component({
@@ -95,8 +91,6 @@ export class LemmaDetailOverlayAdapterComponent {
 
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
-  // Re-drives the current frame after a failed load (Feature 030, M3). The frame is unchanged, so this
-  // never touches the URL — routing an identical frame through the history service would be a no-op.
   protected onRetry(): void {
     this.controller.retryCurrentIdentity();
   }
@@ -106,6 +100,20 @@ export class LemmaDetailOverlayAdapterComponent {
   readonly entityTitle = computed(() => this.panelState().summary?.lemmaText ?? '');
 
   readonly entityAyahCount = computed(() => this.panelState().summary?.ayahsCount ?? null);
+
+  protected readonly linkingSource = computed<LinkingSourceDescriptor | null>(() => {
+    const frame = this.frame();
+    const summary = this.panelState().summary;
+    if (summary === null || summary.id !== frame.id) {
+      return null;
+    }
+    return {
+      kind: 'lemma',
+      lemmaId: frame.id,
+      typeCode: frame.typeCode,
+      label: summary.lemmaText,
+    };
+  });
 
   protected readonly wordViewOptions: readonly LemmaWordView[] = ['simple', 'tashkeel'];
   protected readonly surahViewOptions: readonly LemmaSurahView[] = ['mentioned', 'missing'];
@@ -146,9 +154,6 @@ export class LemmaDetailOverlayAdapterComponent {
   }
 
   constructor() {
-    // Track ONLY the frame input: applyUrlState reads/writes the controller's
-    // panel signal internally, and tracking it would re-trigger this effect on
-    // every load-state change (cancelling in-flight summary loads).
     effect(() => {
       const frame = this.frame();
       untracked(() =>

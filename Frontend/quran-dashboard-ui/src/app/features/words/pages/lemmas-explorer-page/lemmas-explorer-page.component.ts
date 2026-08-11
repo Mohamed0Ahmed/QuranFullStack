@@ -39,6 +39,7 @@ import { MorphologyColumnKey, parseMorphologyColumnKey, resolveMorphologyActiveC
 import { ExplorerTableFocusController } from '../../utils/explorer-table-focus-controller';
 import { mapLemmaAyahMatchToShared } from '../../utils/lemma-ayah-match.mapper';
 import { EMPTY_RANGE_FILTERS, RangeFilters, buildRangeQueryParams } from '../../state/words-range-filters';
+import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
 type LemmaTableColumnKey = Exclude<MorphologyColumnKey, 'lemmas'>;
 type LemmaPanelState = ReturnType<LemmasDetailFacade['panelState']>;
@@ -131,6 +132,18 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapLemmaAyahMatchToShared) } : this.emptyAyahsPage;
+  });
+  protected readonly linkingSource = computed<LinkingSourceDescriptor | null>(() => {
+    const state = this.panelState();
+    if (state.selectedLemmaId === null || state.summary === null || state.summary.id !== state.selectedLemmaId) {
+      return null;
+    }
+    return {
+      kind: 'lemma',
+      lemmaId: state.selectedLemmaId,
+      typeCode: state.ayahTypeCode,
+      label: state.summary.lemmaText,
+    };
   });
   protected readonly ayahParentFrame = computed<LemmaDetailFrame | null>(() => {
     const state = this.panelState();

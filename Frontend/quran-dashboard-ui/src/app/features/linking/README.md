@@ -33,15 +33,18 @@ entity overlay closes that overlay through its existing retained-history behavio
 shell opens. Door search, selected Door, resolver progress, loaded ayahs, errors, and workflow state
 are never persisted.
 
-`QuranSourceLinkingActionsComponent` is the shared Owner-only action seam. Its Unique Word adapter
-keeps the `simple` and `tashkeel` descriptor identities separate, adds idempotently to the workspace,
-and starts Direct Link without changing the detail overlay URL stack.
+`QuranSourceLinkingActionsComponent` is the shared Owner-only action seam. Unique Word keeps the
+`simple` and `tashkeel` descriptor identities separate. Root, Lemma, and Stem contribute the same
+actions through the neutral Words detail-panel action slot after a matching summary resolves; Lemma
+and Stem retain their current `typeCode` scope in their descriptors. Every action adds idempotently
+to the workspace and starts Direct Link without changing the detail overlay URL stack.
 
-The resolver registry supports Unique Word descriptors and one selected Mushaf word occurrence. It sequentially loads every
-`UniqueWordsApi.getAyahMatches` page, rejects incomplete or inconsistent envelopes, de-duplicates
-only identical repeated `verseKey` rows, and maps exact Uthmani tokens plus canonical Quran word IDs
-to feature-owned `LinkingAyah` values. A successful workspace-backed load reconciles stored
-selection and updates the lightweight result count; loaded ayahs remain workflow memory only.
+The resolver registry supports Unique Word, selected Mushaf word, Root, Lemma, and Stem descriptors.
+It sequentially loads every matching API page, rejects incomplete or inconsistent envelopes, and
+de-duplicates only identical repeated `verseKey` rows. Root, Lemma, and Stem preserve exact Uthmani
+tokens and backend `isMatched` flags without claiming canonical Quran word IDs; those IDs remain
+`null`. A successful workspace-backed load reconciles stored selection and updates the lightweight
+result count; loaded ayahs remain workflow memory only.
 
 Direct Link now keeps complete-source selection in its active workflow state, while a workspace-backed
 source mirrors the compact selection and highlight preference to its prepared item. Local ayah search

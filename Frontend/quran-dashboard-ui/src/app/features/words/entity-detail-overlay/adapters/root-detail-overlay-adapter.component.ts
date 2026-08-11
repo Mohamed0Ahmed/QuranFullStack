@@ -48,6 +48,7 @@ import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-s
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
+import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
 let nextSubViewInstance = 0;
 
@@ -94,6 +95,15 @@ export class RootDetailOverlayAdapterComponent {
 
   readonly entityAyahCount = computed(() => this.panelState().summary?.ayahsCount ?? null);
 
+  protected readonly linkingSource = computed<LinkingSourceDescriptor | null>(() => {
+    const frame = this.frame();
+    const summary = this.panelState().summary;
+    if (summary === null || summary.id !== frame.id) {
+      return null;
+    }
+    return { kind: 'root', rootId: frame.id, label: summary.rootText };
+  });
+
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
   protected readonly wordViewOptions: readonly RootWordView[] = ['simple', 'tashkeel'];
@@ -135,9 +145,6 @@ export class RootDetailOverlayAdapterComponent {
   }
 
   constructor() {
-    // Track ONLY the frame input: applyUrlState reads/writes the controller's
-    // panel signal internally, and tracking it would re-trigger this effect on
-    // every load-state change (cancelling in-flight summary loads).
     effect(() => {
       const frame = this.frame();
       untracked(() =>
@@ -156,8 +163,6 @@ export class RootDetailOverlayAdapterComponent {
     inject(DestroyRef).onDestroy(() => this.titleStore?.clear());
   }
 
-  // Retry re-drives the unchanged frame directly through the controller: it never
-  // touches the URL, since replacing an identical frame would be a no-op.
   protected onRetry(): void {
     this.controller.retryCurrentIdentity();
   }

@@ -18,6 +18,9 @@
       </ng-container>
     }
     @if (!frameless() && hasSelection()) {
+      <ng-content select="[qdDetailsActions]" />
+    }
+    @if (!frameless() && hasSelection()) {
       <button
         qdDetailsActions
         qdAction="tertiary"

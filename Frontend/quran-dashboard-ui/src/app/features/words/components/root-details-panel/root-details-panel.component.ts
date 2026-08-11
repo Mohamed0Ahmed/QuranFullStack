@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 import { QdDetailsPanelShellComponent } from '../details-panel-shell/details-panel-shell.component';
+import { QuranSourceLinkingActionsComponent } from '../../../linking/components/quran-source-linking-actions/quran-source-linking-actions.component';
+import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
 import {
   ROOTS_EMPTY_SELECTION_LABEL,
@@ -15,7 +17,7 @@ import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
 @Component({
   selector: 'qd-root-details-panel',
   standalone: true,
-  imports: [QdDetailsPanelShellComponent],
+  imports: [QdDetailsPanelShellComponent, QuranSourceLinkingActionsComponent],
   templateUrl: './root-details-panel.component.html',
   styleUrl: './root-details-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,6 +31,7 @@ export class RootDetailsPanelComponent {
   readonly loading = input(false);
   readonly notFound = input(false);
   readonly notFoundMessage = input('');
+  readonly linkingSource = input<LinkingSourceDescriptor | null>(null);
 
   readonly viewChange = output<RootView>();
   readonly close = output<void>();

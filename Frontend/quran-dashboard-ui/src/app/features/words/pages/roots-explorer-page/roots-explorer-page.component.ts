@@ -34,6 +34,7 @@ import { MorphologyColumnKey, parseMorphologyColumnKey, resolveMorphologyActiveC
 import { ExplorerTableFocusController } from '../../utils/explorer-table-focus-controller';
 import { mapRootAyahMatchToShared } from '../../utils/root-ayah-match.mapper';
 import { EMPTY_RANGE_FILTERS, RangeFilters, buildRangeQueryParams } from '../../state/words-range-filters';
+import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
 type RootTableColumnKey = MorphologyColumnKey;
 type RootPanelState = ReturnType<RootsDetailFacade['panelState']>;
@@ -116,6 +117,17 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapRootAyahMatchToShared) } : this.emptyAyahsPage;
+  });
+  protected readonly linkingSource = computed<LinkingSourceDescriptor | null>(() => {
+    const state = this.panelState();
+    if (state.selectedRootId === null || state.summary === null || state.summary.id !== state.selectedRootId) {
+      return null;
+    }
+    return {
+      kind: 'root',
+      rootId: state.selectedRootId,
+      label: state.summary.rootText,
+    };
   });
   protected readonly ayahParentFrame = computed<RootDetailFrame | null>(() => {
     const state = this.panelState();

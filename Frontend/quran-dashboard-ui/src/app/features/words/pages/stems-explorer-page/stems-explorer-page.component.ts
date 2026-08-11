@@ -39,6 +39,7 @@ import { MorphologyColumnKey, parseMorphologyColumnKey, resolveMorphologyActiveC
 import { ExplorerTableFocusController } from '../../utils/explorer-table-focus-controller';
 import { mapStemAyahMatchToShared } from '../../utils/stem-ayah-match.mapper';
 import { EMPTY_RANGE_FILTERS, RangeFilters, buildRangeQueryParams } from '../../state/words-range-filters';
+import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
 type StemTableColumnKey = Exclude<MorphologyColumnKey, 'stems'>;
 type StemPanelState = ReturnType<StemsDetailFacade['panelState']>;
@@ -85,7 +86,6 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly pageTitle = STEMS_PAGE_TITLE;
-  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
   protected get explainer() { return WORDS_EXPLAINER_CONTENT.stems; }
   protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('stems'));
   protected readonly emptySelectionLabel = STEMS_EMPTY_SELECTION_LABEL;
@@ -108,6 +108,18 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapStemAyahMatchToShared) } : this.emptyAyahsPage;
   });
+  protected readonly linkingSource = computed<LinkingSourceDescriptor | null>(() => {
+    const state = this.panelState();
+    if (state.selectedStemId === null || state.summary === null || state.summary.id !== state.selectedStemId) {
+      return null;
+    }
+    return {
+      kind: 'stem',
+      stemId: state.selectedStemId,
+      typeCode: state.ayahTypeCode,
+      label: state.summary.stemText,
+    };
+  });
   protected readonly ayahParentFrame = computed<StemDetailFrame | null>(() => {
     const state = this.panelState();
     if (state.selectedStemId === null) {
@@ -129,7 +141,6 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly association = this.listFacade.association;
   protected readonly rootOptions = signal<readonly AssociationOption[]>([]);
   protected readonly rootOptionsLoading = signal(false);
-  // M32/M43 + M74: a picker load failure must be distinguishable from a genuine empty result.
   protected readonly rootOptionsError = signal(false);
   protected readonly selectedRootLabel = signal<string | null>(null);
   protected readonly lemmaOptions = signal<readonly AssociationOption[]>([]);

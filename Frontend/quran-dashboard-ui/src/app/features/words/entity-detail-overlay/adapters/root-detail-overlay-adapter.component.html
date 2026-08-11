@@ -46,14 +46,12 @@
   }
 </ng-template>
 
-<!-- The panel's own notFound input stays unbound: in the overlay the adapter
-     owns the notFound branch (overlay-roots-not-found) inside the projected
-     content, exactly as the lemma/stem/word-type adapters do. -->
 <qd-root-details-panel
   [inline]="true"
   [frameless]="true"
   [view]="frame().view"
   [selectionTitle]="panelState().summary?.rootText ?? ''"
+  [linkingSource]="linkingSource()"
   [loading]="panelState().status === 'loading'"
   (viewChange)="onViewChange($event)"
 >

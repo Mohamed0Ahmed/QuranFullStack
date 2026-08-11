@@ -1,3 +1,7 @@
+@if (frameless() && linkingSource(); as source) {
+  <qd-quran-source-linking-actions [source]="source" />
+}
+
 <qd-details-panel-shell
   testIdPrefix="stem-details"
   [panelLabel]="panelLabel"
@@ -16,5 +20,8 @@
   (viewChange)="viewChange.emit($event)"
   (closed)="close.emit()"
 >
+  @if (!frameless() && linkingSource(); as source) {
+    <qd-quran-source-linking-actions qdDetailsActions [source]="source" />
+  }
   <ng-content />
 </qd-details-panel-shell>

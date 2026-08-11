@@ -5,6 +5,9 @@ import { LinkingAyah } from '../models/linking-ayah.models';
 import { LinkingSourceDescriptor, LinkingSourceKind } from '../models/linking-source.models';
 import { UniqueWordLinkingSourceResolver } from './resolvers/unique-word-linking-source.resolver';
 import { MushafWordLinkingSourceResolver } from './resolvers/mushaf-word-linking-source.resolver';
+import { RootLinkingSourceResolver } from './resolvers/root-linking-source.resolver';
+import { LemmaLinkingSourceResolver } from './resolvers/lemma-linking-source.resolver';
+import { StemLinkingSourceResolver } from './resolvers/stem-linking-source.resolver';
 
 export interface LinkingSourceResolverRegistration {
   readonly kind: LinkingSourceKind;
@@ -18,6 +21,9 @@ export interface LinkingSourceResolverRegistration {
 export class LinkingSourceResolverRegistry {
   private readonly uniqueWordResolver = inject(UniqueWordLinkingSourceResolver);
   private readonly mushafWordResolver = inject(MushafWordLinkingSourceResolver);
+  private readonly rootResolver = inject(RootLinkingSourceResolver);
+  private readonly lemmaResolver = inject(LemmaLinkingSourceResolver);
+  private readonly stemResolver = inject(StemLinkingSourceResolver);
   private readonly registrations: ReadonlyMap<LinkingSourceKind, LinkingSourceResolverRegistration> = new Map<
     LinkingSourceKind,
     LinkingSourceResolverRegistration
@@ -49,6 +55,42 @@ export class LinkingSourceResolverRegistry {
             throw new Error('مصدر الربط غير متوافق مع محلل الآيات.');
           }
           return this.uniqueWordResolver.resolve(source, onProgress);
+        },
+      },
+    ],
+    [
+      'root',
+      {
+        kind: 'root',
+        resolve: (source, onProgress) => {
+          if (source.kind !== 'root') {
+            throw new Error('مصدر الربط غير متوافق مع محلل الجذر.');
+          }
+          return this.rootResolver.resolve(source, onProgress);
+        },
+      },
+    ],
+    [
+      'lemma',
+      {
+        kind: 'lemma',
+        resolve: (source, onProgress) => {
+          if (source.kind !== 'lemma') {
+            throw new Error('مصدر الربط غير متوافق مع محلل اللمة.');
+          }
+          return this.lemmaResolver.resolve(source, onProgress);
+        },
+      },
+    ],
+    [
+      'stem',
+      {
+        kind: 'stem',
+        resolve: (source, onProgress) => {
+          if (source.kind !== 'stem') {
+            throw new Error('مصدر الربط غير متوافق مع محلل الصيغة.');
+          }
+          return this.stemResolver.resolve(source, onProgress);
         },
       },
     ],
