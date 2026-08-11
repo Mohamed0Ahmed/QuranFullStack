@@ -1,0 +1,14 @@
+@defer (when isOpen()) {
+  <qd-modal-shell
+    variant="wide"
+    [titleText]="labels.workspace"
+    closeLabel="إغلاق"
+    [open]="isOpen()"
+    [hasFooter]="false"
+    [flushBody]="true"
+    testIdPrefix="linking-workspace"
+    (dismissed)="close()"
+  >
+    <qd-linking-workspace />
+  </qd-modal-shell>
+}

@@ -3,8 +3,10 @@ import {
   Component,
   ElementRef,
   HostListener,
+  Injector,
   OnDestroy,
   OnInit,
+  afterNextRender,
   computed,
   inject,
   signal,
@@ -24,6 +26,8 @@ import { ScrollLockService } from '../../../shared/ui/modal-scroll-lock/scroll-l
 import { QD_BP_WIDE_QUERY } from '../../../shared/layout/breakpoints';
 import { AuthReturnLocationStore } from '../../auth/auth-return-location.store';
 import { CurrentUserStore } from '../../auth/current-user.store';
+import { LinkingAccessService } from '../../../features/linking/state/linking-access.service';
+import { LinkingWorkspaceStore } from '../../../features/linking/state/linking-workspace.store';
 
 const MORE_MENU_ITEM: NavItem = {
   key: 'more',
@@ -49,11 +53,14 @@ const MORE_MENU_ITEM: NavItem = {
 })
 export class TopNavbarComponent implements OnInit, OnDestroy {
   private readonly elementRef = inject(ElementRef);
+  private readonly injector = inject(Injector);
   private readonly themeService = inject(ThemeService);
   private readonly oidcSecurityService = inject(OidcSecurityService);
   private readonly currentUserStore = inject(CurrentUserStore);
   private readonly authReturnLocationStore = inject(AuthReturnLocationStore);
   private readonly scrollLock = inject(ScrollLockService);
+  private readonly linkingAccess = inject(LinkingAccessService);
+  private readonly linkingWorkspace = inject(LinkingWorkspaceStore);
 
   readonly sheetOpen = signal(false);
 
@@ -61,6 +68,12 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
   protected readonly toggleInert = computed(() => this.locked() && !this.sheetOpen());
   protected readonly openMenuKey = signal<string | null>(null);
   protected readonly wide = signal(true);
+  protected readonly canUseLinking = this.linkingAccess.canUseLinking;
+  protected readonly linkingItemCount = this.linkingWorkspace.itemCount;
+  protected readonly linkingWorkspaceAriaLabel = computed(() => {
+    const count = this.linkingItemCount();
+    return count === 0 ? 'مساحة الربط' : `مساحة الربط، ${count} مصادر`;
+  });
 
   private readonly isActiveOwner = computed(
     () =>
@@ -177,6 +190,16 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
 
   closeSheet(): void {
     this.sheetOpen.set(false);
+  }
+
+  openLinkingWorkspace(): void {
+    if (this.wide()) {
+      this.linkingWorkspace.openWorkspace();
+      return;
+    }
+
+    this.closeSheet();
+    afterNextRender(() => this.linkingWorkspace.openWorkspace(), { injector: this.injector });
   }
 
   toggleTheme(): void {

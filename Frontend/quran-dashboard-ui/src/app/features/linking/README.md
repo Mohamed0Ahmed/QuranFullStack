@@ -18,3 +18,10 @@ a later workspace action or Direct Link flow requests them.
 
 There is no write API, request, draft, approval, history, cache mutation, grouped linking path, or
 Mushaf grouped descriptor. The future grouped-Mushaf seam remains deliberately unimplemented.
+
+`LinkingWorkspaceHostComponent` is mounted once beside the app shell and the Words detail overlay.
+It defers the wide `qd-modal-shell` workspace surface until Linking opens, while app-root owns the
+cross-layer inert boundary. The Navbar reads only Owner access and item count. Workspace cards remain
+presentational and dispatch remove, edit-selection focus, and one-source Direct Link intent to
+`LinkingWorkspaceStore`; workflow content, source resolution, and Door selection remain outside
+this phase.

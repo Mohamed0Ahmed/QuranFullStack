@@ -35,7 +35,8 @@
 }
 
 .qd-navbar__theme-toggle,
-.qd-navbar__menu-toggle {
+.qd-navbar__menu-toggle,
+.qd-navbar__linking-trigger {
   --qd-action-padding-inline: var(--qd-space-2);
 
   flex: 0 0 auto;
@@ -44,6 +45,26 @@
 
 .qd-navbar__menu-toggle {
   --qd-action-size: var(--qd-hit-target-min);
+}
+
+.qd-navbar__linking-trigger {
+  gap: var(--qd-space-1);
+}
+
+.qd-navbar__linking-trigger--active {
+  color: var(--qd-accent-text);
+}
+
+.qd-navbar__linking-label {
+  white-space: nowrap;
+}
+
+.qd-navbar__linking-count {
+  min-inline-size: 1.25rem;
+  color: inherit;
+  font-size: var(--qd-type-meta);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 .qd-navbar__sheet-actions {

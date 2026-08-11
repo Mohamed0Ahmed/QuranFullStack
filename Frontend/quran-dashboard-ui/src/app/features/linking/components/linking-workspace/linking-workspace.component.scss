@@ -1,0 +1,15 @@
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
+qd-details-workspace {
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
+.linking-workspace__items {
+  display: grid;
+  gap: var(--qd-space-3);
+}

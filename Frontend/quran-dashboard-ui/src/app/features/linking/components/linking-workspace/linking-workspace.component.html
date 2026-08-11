@@ -1,0 +1,20 @@
+<qd-details-workspace
+  [identity]="labels.preparedSources"
+  variant="action-rail"
+  testIdPrefix="linking-workspace-content"
+>
+  @if (hasItems()) {
+    <div class="linking-workspace__items" role="list">
+      @for (item of items(); track item.sourceKey) {
+        <qd-linking-workspace-item
+          [item]="item"
+          (removeRequested)="remove($event)"
+          (editSelectionRequested)="editSelection($event)"
+          (directLinkRequested)="startDirectLink($event)"
+        />
+      }
+    </div>
+  } @else {
+    <qd-empty-state [message]="labels.emptyWorkspace" testId="linking-workspace-empty" />
+  }
+</qd-details-workspace>

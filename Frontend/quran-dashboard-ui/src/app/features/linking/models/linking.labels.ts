@@ -1,7 +1,17 @@
 export const LINKING_LABELS = {
   workspace: 'مساحة الربط',
+  preparedSources: 'المصادر المُعَدَّة',
   directLink: 'ربط مباشر',
   addToWorkspace: 'إضافة للربط',
+  editSelection: 'تعديل اختيار الآيات',
+  removeSource: 'إزالة المصدر',
+  emptyWorkspace: 'لم تُضف مصادر للربط بعد.',
+  unresolvedResultCount: 'لم تُحمّل النتائج بعد',
+  resultCount: 'عدد النتائج',
+  selectedCount: 'الآيات المختارة',
+  highlightSourceWords: 'إبراز كلمات المصدر',
+  highlightEnabled: 'مفعّل',
+  highlightDisabled: 'متوقف',
   success: 'تم الربط بنجاح',
   sourceKinds: {
     'mushaf-word': 'كلمة من المصحف',

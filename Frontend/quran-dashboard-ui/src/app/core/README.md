@@ -188,3 +188,10 @@ per-feature.
 
 - Feature consumers: `../features/words/README.md`, `../features/mushaf/README.md`.
 - Shared UI primitives: `../shared/`.
+
+## Global dialog composition
+
+`app.ts` mounts `qd-app-shell`, the Words entity-detail overlay host, and the deferred Linking
+workspace host as siblings. The app shell is inert while either dialog is open, and the detail
+overlay is inert while Linking is foreground. `LinkingWorkspaceStore` remains the owner of Linking
+open state, items, and workflow intent; core only composes the layer boundary.
