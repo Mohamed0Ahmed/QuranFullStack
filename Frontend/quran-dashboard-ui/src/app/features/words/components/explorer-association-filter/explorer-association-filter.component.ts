@@ -13,24 +13,21 @@ import {
 
 import { AssociationOption } from '../../state/words-association-filters';
 import { WORDS_ASSOCIATION_FILTER_LABELS } from '../../models/words-shared.labels';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
+import {
+  QdFloatingLayerDirective,
+  QdFloatingLayerDismissReason,
+} from '../../../../shared/ui/floating-layer/floating-layer.directive';
 
 export type { AssociationOption } from '../../state/words-association-filters';
 
-const PANEL_VIEWPORT_PADDING_PX = 8;
-// Preferred room below the field before we flip the panel above it — not a forced minimum height.
-const PANEL_FLIP_THRESHOLD_PX = 120;
-const PANEL_MAX_HEIGHT_PX = 320;
-const PANEL_MAX_HEIGHT_VAR = '--assoc-filter-panel-max-height';
-const PANEL_ABOVE_CLASS = 'association-filter__panel--above';
-
 let nextPanelId = 0;
 
-// Presentational picker: owns no data — the page supplies options and reacts to searchChange;
-// selecting an option emits selectionChange. clientFilter=true filters the given options locally
-// (small static lists); clientFilter=false lets the page server-search and feed results back in.
 @Component({
   selector: 'qd-explorer-association-filter',
   standalone: true,
+  imports: [QdActionDirective, QdControlDirective, QdFloatingLayerDirective],
   templateUrl: './explorer-association-filter.component.html',
   styleUrl: './explorer-association-filter.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,7 +36,6 @@ export class ExplorerAssociationFilterComponent {
   private readonly elementRef = inject(ElementRef<HTMLElement>);
 
   readonly fieldInputRef = viewChild<ElementRef<HTMLInputElement>>('fieldInput');
-  readonly panelRef = viewChild<ElementRef<HTMLElement>>('panel');
 
   readonly label = input.required<string>();
   readonly placeholder = input<string>('');
@@ -47,8 +43,6 @@ export class ExplorerAssociationFilterComponent {
   readonly selectedId = input<string | number | null>(null);
   readonly selectedLabel = input<string | null>(null);
   readonly loading = input<boolean>(false);
-  // True when the last options load failed — distinct from a genuine zero-match result, so the panel
-  // can show a calm error hint instead of silently looking empty (M32/M43 + M74).
   readonly error = input<boolean>(false);
   readonly disabled = input<boolean>(false);
   readonly clientFilter = input<boolean>(false);
@@ -57,24 +51,19 @@ export class ExplorerAssociationFilterComponent {
   readonly searchChange = output<string>();
   readonly selectionChange = output<AssociationOption | null>();
 
-  protected readonly panelId = `association-filter-panel-${nextPanelId++}`;
+  private readonly instance = nextPanelId++;
+  protected readonly panelId = `association-filter-panel-${this.instance}`;
   protected readonly panelOpen = signal(false);
   protected readonly query = signal('');
 
-  // Guards against the panel instantly reopening when Escape or a selection restores focus to the
-  // field programmatically. Cleared on the field's next real blur. A plain field is enough: it only
-  // gates event handlers and never drives template rendering.
   private reopenSuppressed = false;
 
-  // TDZ-safe getter (see words README): reading the labels const via a readonly field resolves to
-  // undefined in the bundled test build.
   protected get labels() { return WORDS_ASSOCIATION_FILTER_LABELS; }
+
+  protected readonly fieldElement = computed(() => this.fieldInputRef()?.nativeElement ?? null);
 
   protected readonly hasSelection = computed(() => this.selectedId() !== null);
 
-  // The active selection's display text. On URL restore the option list may not carry the selected
-  // entry yet (server-searched pickers start empty) — show the neutral active-filter badge rather
-  // than leaking the raw id.
   protected readonly selectionText = computed(() => {
     const explicit = this.selectedLabel();
     if (explicit !== null && explicit.length > 0) {
@@ -99,32 +88,6 @@ export class ExplorerAssociationFilterComponent {
     return this.options().filter((option) => option.label.toLowerCase().includes(term));
   });
 
-  @HostListener('document:keydown', ['$event'])
-  protected onDocumentKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || !this.panelOpen()) {
-      return;
-    }
-    event.preventDefault();
-    this.panelOpen.set(false);
-    this.reopenSuppressed = true;
-    this.fieldInputRef()?.nativeElement.focus();
-  }
-
-  @HostListener('document:click', ['$event'])
-  protected onDocumentClick(event: MouseEvent): void {
-    if (!this.panelOpen()) {
-      return;
-    }
-    const root = this.elementRef.nativeElement as HTMLElement;
-    const target = event.target as Node | null;
-    if (target && !root.contains(target)) {
-      this.panelOpen.set(false);
-    }
-  }
-
-  // Focus leaving the whole component (not just the field) closes the panel — this is what makes
-  // tabbing past the last option close it, and makes focusing a sibling association field close this
-  // one (single-open invariant). No focus is moved here; the browser already decided where it's going.
   @HostListener('focusout', ['$event'])
   protected onComponentFocusOut(event: FocusEvent): void {
     if (!this.panelOpen()) {
@@ -137,17 +100,10 @@ export class ExplorerAssociationFilterComponent {
     }
   }
 
-  @HostListener('window:scroll')
-  @HostListener('window:resize')
-  protected onViewportChange(): void {
-    if (this.panelOpen()) {
-      requestAnimationFrame(() => this.applyPanelMaxHeight());
-    }
+  protected optionElementId(option: AssociationOption): string {
+    return `${this.panelId}-option-${option.id}`;
   }
 
-  // Focus alone opens the panel only when there is something to show back: an active selection (so the
-  // user can revise it) or a query already in the field. An empty, unselected field stays closed —
-  // ArrowDown (see onFieldKeydown) is the keyboard route in.
   protected onFieldFocus(): void {
     if (this.reopenSuppressed) {
       return;
@@ -158,16 +114,15 @@ export class ExplorerAssociationFilterComponent {
     this.openPanel();
   }
 
-  // ArrowDown (bare or Alt+ArrowDown, both key === 'ArrowDown') is the combobox escape hatch: it opens
-  // the panel even from an empty field and hands focus to the first option, so keyboard users can browse
-  // without typing.
   protected onFieldKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'ArrowDown') {
+    if (event.key === 'ArrowDown' && !this.panelOpen()) {
+      event.preventDefault();
+      this.openPanel();
       return;
     }
-    event.preventDefault();
-    this.openPanel();
-    requestAnimationFrame(() => this.focusFirstOption());
+    if (event.key === 'Enter' && this.panelOpen()) {
+      this.activateCursor(event);
+    }
   }
 
   protected onFieldBlur(): void {
@@ -182,6 +137,13 @@ export class ExplorerAssociationFilterComponent {
     }
     if (!this.clientFilter()) {
       this.searchChange.emit(value.trim());
+    }
+  }
+
+  protected onLayerDismissed(reason: QdFloatingLayerDismissReason): void {
+    this.panelOpen.set(false);
+    if (reason === 'escape') {
+      this.reopenSuppressed = true;
     }
   }
 
@@ -201,34 +163,20 @@ export class ExplorerAssociationFilterComponent {
     }
   }
 
-  private openPanel(): void {
-    this.panelOpen.set(true);
-    requestAnimationFrame(() => this.applyPanelMaxHeight());
-  }
-
-  private focusFirstOption(): void {
-    this.panelRef()
-      ?.nativeElement.querySelector<HTMLButtonElement>('.association-filter__option')
-      ?.focus();
-  }
-
-  private applyPanelMaxHeight(): void {
-    const field = this.fieldInputRef()?.nativeElement;
-    const panel = this.panelRef()?.nativeElement;
-    if (!field || !panel) {
+  private activateCursor(event: KeyboardEvent): void {
+    const cursorId = this.fieldInputRef()?.nativeElement.getAttribute('aria-activedescendant');
+    if (!cursorId) {
       return;
     }
+    const option = this.visibleOptions().find((candidate) => this.optionElementId(candidate) === cursorId);
+    if (option === undefined) {
+      return;
+    }
+    event.preventDefault();
+    this.onSelect(option);
+  }
 
-    const fieldRect = field.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - fieldRect.bottom - PANEL_VIEWPORT_PADDING_PX;
-    const spaceAbove = fieldRect.top - PANEL_VIEWPORT_PADDING_PX;
-
-    const openAbove = spaceBelow < PANEL_FLIP_THRESHOLD_PX && spaceAbove > spaceBelow;
-    // Cap the height to the chosen side's actual space so the panel never overflows the viewport.
-    const available = Math.max(0, openAbove ? spaceAbove : spaceBelow);
-    const maxHeight = Math.min(PANEL_MAX_HEIGHT_PX, available);
-
-    panel.classList.toggle(PANEL_ABOVE_CLASS, openAbove);
-    panel.style.setProperty(PANEL_MAX_HEIGHT_VAR, `${maxHeight}px`);
+  private openPanel(): void {
+    this.panelOpen.set(true);
   }
 }

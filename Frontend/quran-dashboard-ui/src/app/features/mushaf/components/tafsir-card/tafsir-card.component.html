@@ -1,7 +1,8 @@
 @if (!entry()) {
-  <div class="qd-empty-state" role="status" data-testid="tafsir-empty">
-    <span>لا يتوفر تفسير لهذه الآية من المصدر المحدد.</span>
-  </div>
+  <qd-empty-state
+    message="لا يتوفر تفسير لهذه الآية من المصدر المحدد."
+    testId="tafsir-empty"
+  />
 } @else {
   <article class="study-card qd-card" data-testid="tafsir-card">
     @if (entry()!.coveredAyahCount > 1) {

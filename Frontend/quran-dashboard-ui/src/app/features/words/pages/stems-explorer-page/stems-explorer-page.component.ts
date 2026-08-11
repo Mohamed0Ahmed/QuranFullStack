@@ -5,9 +5,12 @@ import { Subject, Subscription, debounceTime, switchMap } from 'rxjs';
 
 import { StemDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
+import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
+import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { ExplorerCountRangeFilterComponent } from '../../components/explorer-count-range-filter/explorer-count-range-filter.component';
+import { ExplorerToolbarComponent } from '../../components/explorer-toolbar/explorer-toolbar.component';
 import {
   AssociationOption,
   ExplorerAssociationFilterComponent,
@@ -41,10 +44,12 @@ type StemTableColumnKey = Exclude<MorphologyColumnKey, 'stems'>;
 type StemPanelState = ReturnType<StemsDetailFacade['panelState']>;
 type StemCountTarget = StemCountOpenedEvent & { column: StemTableColumnKey };
 
+let nextSubViewInstance = 0;
+
 @Component({
   selector: 'qd-stems-explorer-page',
   standalone: true,
-  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, StemAyahTypeFiltersComponent, StemDetailsPanelComponent, StemLemmasListComponent, StemsTableComponent, StemWordsListComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
+  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, QdTabDirective, QdTabsComponent, StemAyahTypeFiltersComponent, StemDetailsPanelComponent, StemLemmasListComponent, StemsTableComponent, StemWordsListComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
   templateUrl: './stems-explorer-page.component.html',
   styleUrl: './stems-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -141,6 +146,15 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly activeWordView = computed(() => this.tableFocus.activeWordView() ?? this.panelState().wordView);
   protected readonly activeSurahView = computed(() => this.tableFocus.activeSurahView() ?? this.panelState().surahView);
   protected readonly activeColumn = this.tableFocus.activeColumn;
+  private readonly subViewId = `stems-explorer-subview-${nextSubViewInstance++}`;
+  protected readonly subViewPanelId = `${this.subViewId}-panel`;
+  protected readonly activeSubViewTabId = computed(() => {
+    const view = this.activeView();
+    if (view === 'words') {
+      return this.subViewTabId(this.panelState().wordView);
+    }
+    return view === 'surahs' ? this.subViewTabId(this.panelState().surahView) : null;
+  });
   protected readonly emptySelection = computed(() => this.panelState().selectedStemId === null);
   protected readonly defaultView: StemView = DEFAULT_STEM_VIEW;
 
@@ -257,6 +271,10 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
     this.tableFocus.cancel();
     this.detailFacade.setAyahTypeCode(typeCode);
     this.updateQueryParams(buildStemsQueryParams({ view: 'ayahs', column: this.activeColumn() ?? 'occurrences', detailPage: 1, typeCode }));
+  }
+
+  protected subViewTabId(option: string): string {
+    return `${this.subViewId}-tab-${option}`;
   }
 
   protected onWordViewChange(wordView: StemWordView): void {

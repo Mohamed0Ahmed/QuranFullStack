@@ -28,7 +28,7 @@ import {
 import { WordTypesDetailController } from '../../state/word-types-detail.controller';
 import { mapWordTypeAyahMatchToShared } from '../../utils/word-type-ayah-match.mapper';
 import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
 
 @Component({
@@ -37,7 +37,7 @@ import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.st
   imports: [
     AyahMatchesListComponent,
     MissingSurahsListComponent,
-    QdStateComponent,
+    QdErrorStateComponent,
     SurahOccurrencesListComponent,
     WordTypeDetailsPanelComponent,
   ],

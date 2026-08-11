@@ -42,8 +42,12 @@ import { AyahMatchDto } from '../../models/unique-words.models';
 import { RootsDetailController } from '../../state/roots-detail.controller';
 import { mapRootAyahMatchToShared } from '../../utils/root-ayah-match.mapper';
 import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
+import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.store';
+
+let nextSubViewInstance = 0;
 
 @Component({
   selector: 'qd-root-detail-overlay-adapter',
@@ -51,7 +55,9 @@ import { EntityDetailOverlayTitleStore } from '../entity-detail-overlay-title.st
   imports: [
     AyahMatchesListComponent,
     MissingSurahsListComponent,
-    QdStateComponent,
+    QdErrorStateComponent,
+    QdTabDirective,
+    QdTabsComponent,
     RootDetailsPanelComponent,
     RootLemmasListComponent,
     RootStemsListComponent,
@@ -68,6 +74,16 @@ export class RootDetailOverlayAdapterComponent {
   private readonly titleStore = inject(EntityDetailOverlayTitleStore, { optional: true });
 
   readonly frame = input.required<RootDetailFrame>();
+
+  private readonly subViewId = `overlay-roots-subview-${nextSubViewInstance++}`;
+  protected readonly subViewPanelId = `${this.subViewId}-panel`;
+  protected readonly activeSubViewTabId = computed(() => {
+    const frame = this.frame();
+    if (frame.view === 'words') {
+      return this.subViewTabId(frame.wordView);
+    }
+    return frame.view === 'surahs' ? this.subViewTabId(frame.surahView) : null;
+  });
 
   protected readonly panelState = this.controller.panelState;
 
@@ -152,6 +168,10 @@ export class RootDetailOverlayAdapterComponent {
       surahView: view === 'surahs' ? frame.surahView : DEFAULT_ROOT_SURAHS_VIEW,
       detailPage: DEFAULT_ROOT_DETAIL_PAGE,
     });
+  }
+
+  protected subViewTabId(option: string): string {
+    return `${this.subViewId}-tab-${option}`;
   }
 
   protected onWordViewChange(wordView: RootWordView): void {

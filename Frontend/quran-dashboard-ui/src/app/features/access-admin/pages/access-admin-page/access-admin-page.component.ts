@@ -1,9 +1,15 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  OnDestroy,
+  OnInit,
   WritableSignal,
+  computed,
   effect,
   inject,
+  linkedSignal,
   signal,
   untracked,
 } from '@angular/core';
@@ -11,10 +17,19 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { AccessUserDetail } from '../../../../core/api/generated/models/access-user-detail';
+import { QD_BP_WIDE_QUERY } from '../../../../shared/layout/breakpoints';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdDetailsWorkspaceComponent } from '../../../../shared/ui/details-workspace/details-workspace.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
+import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
+import { QdFormFieldComponent } from '../../../../shared/ui/form-field/form-field.component';
+import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
+import { QdNoticeComponent } from '../../../../shared/ui/notice/notice.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
+import { AccessAccountPermissionsComponent } from '../../components/access-account-permissions/access-account-permissions.component';
 import { AccessAdvancedSecurityComponent } from '../../components/access-advanced-security/access-advanced-security.component';
 import {
   AccessAuditFilters,
@@ -22,7 +37,7 @@ import {
 } from '../../components/access-audit-log/access-audit-log.component';
 import { AccessChangeReviewComponent } from '../../components/access-change-review/access-change-review.component';
 import { AccessLifecycleActionsComponent } from '../../components/access-lifecycle-actions/access-lifecycle-actions.component';
-import { AccessPermissionEditorComponent } from '../../components/access-permission-editor/access-permission-editor.component';
+import { AccessOwnerReconciliationComponent } from '../../components/access-owner-reconciliation/access-owner-reconciliation.component';
 import { AccessUserListComponent } from '../../components/access-user-list/access-user-list.component';
 import { AccessUserSummaryCardComponent } from '../../components/access-user-summary-card/access-user-summary-card.component';
 import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
@@ -33,8 +48,9 @@ import {
   AccessUserWorkflowAction,
   EMPTY_ACCESS_USER_SEARCH,
   acceptGrantsPermissions,
+  accessLifecycleActionsApply,
+  accessUserNameLabel,
   canReplaceUserPermissions,
-  canSelectUserPermissions,
 } from '../../models/access-admin.models';
 import {
   ACCESS_ADMIN_TAB_KEYS,
@@ -48,15 +64,24 @@ import { AccessAdminFacade, AccessAdminMutationOutcome } from '../../state/acces
   selector: 'qd-access-admin-page',
   standalone: true,
   imports: [
+    AccessAccountPermissionsComponent,
     AccessAdvancedSecurityComponent,
     AccessAuditLogComponent,
     AccessChangeReviewComponent,
     AccessLifecycleActionsComponent,
-    AccessPermissionEditorComponent,
+    AccessOwnerReconciliationComponent,
     AccessUserListComponent,
     AccessUserSummaryCardComponent,
     ConfirmDialogComponent,
-    QdStateComponent,
+    ExplorerPanelSkeletonComponent,
+    NgTemplateOutlet,
+    QdActionDirective,
+    QdControlDirective,
+    QdDetailsWorkspaceComponent,
+    QdErrorStateComponent,
+    QdFormFieldComponent,
+    QdModalShellComponent,
+    QdNoticeComponent,
     QdTabDirective,
     QdTabsComponent,
   ],
@@ -65,7 +90,7 @@ import { AccessAdminFacade, AccessAdminMutationOutcome } from '../../state/acces
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [AccessAdminFacade],
 })
-export class AccessAdminPageComponent {
+export class AccessAdminPageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(AccessAdminFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -73,10 +98,37 @@ export class AccessAdminPageComponent {
   protected readonly activeTab = signal<AccessAdminTab>(DEFAULT_ACCESS_ADMIN_TAB);
   protected readonly workflowResetToken = signal(0);
   protected readonly userSwitchAwaitingDiscard = signal<number | null>(null);
+  protected readonly routeLeaveAwaitingDecision = signal(false);
   protected readonly pendingAction = signal<AccessUserWorkflowAction | null>(null);
   protected readonly auditTargetSearch = signal<AccessUserSearchState>(EMPTY_ACCESS_USER_SEARCH);
   protected readonly auditActorSearch = signal<AccessUserSearchState>(EMPTY_ACCESS_USER_SEARCH);
-  protected readonly reconciliationFingerprintVisible = signal(false);
+  protected readonly userListSheetOpen = signal(false);
+  protected readonly isWide = signal(true);
+  protected readonly contextSearch = linkedSignal(() => this.facade.userQuery().search ?? '');
+
+  protected readonly lifecycleActionsApply = computed(() =>
+    accessLifecycleActionsApply(this.facade.selectedUser()),
+  );
+  protected readonly selectedIdentity = computed(() => {
+    const user = this.facade.selectedUser();
+    return user === null ? '' : accessUserNameLabel(user);
+  });
+  protected readonly detailLayout = computed(() =>
+    this.facade.selectedUser() !== null ||
+    this.facade.selectedUserLoading() ||
+    this.facade.selectedUserError() !== null
+      ? 'selection'
+      : 'no-selection',
+  );
+  protected readonly politeMutationText = computed(() => {
+    const message = this.facade.mutationMessage();
+    return message === null || message.tone === 'error' ? '' : message.text;
+  });
+
+  private wideQuery?: MediaQueryList;
+  private readonly onWideChange = (event: MediaQueryListEvent): void => this.isWide.set(event.matches);
+  private routeLeaveDecision: Promise<boolean> | null = null;
+  private routeLeaveResolver: ((allowed: boolean) => void) | null = null;
 
   constructor() {
     this.route.queryParamMap
@@ -88,6 +140,21 @@ export class AccessAdminPageComponent {
         untracked(() => void this.facade.load());
       }
     });
+
+    inject(DestroyRef).onDestroy(() => this.settleRouteLeave(false));
+  }
+
+  ngOnInit(): void {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+    this.wideQuery = window.matchMedia(QD_BP_WIDE_QUERY);
+    this.isWide.set(this.wideQuery.matches);
+    this.wideQuery.addEventListener('change', this.onWideChange);
+  }
+
+  ngOnDestroy(): void {
+    this.wideQuery?.removeEventListener('change', this.onWideChange);
   }
 
   protected get labels(): typeof ACCESS_ADMIN_LABELS {
@@ -100,6 +167,36 @@ export class AccessAdminPageComponent {
 
   hasUnsavedChanges(): boolean {
     return this.facade.isDirty();
+  }
+
+  confirmRouteLeave(): Promise<boolean> {
+    if (!this.hasUnsavedChanges()) {
+      return Promise.resolve(true);
+    }
+    if (this.routeLeaveDecision !== null) {
+      return this.routeLeaveDecision;
+    }
+    this.routeLeaveDecision = new Promise<boolean>((resolve) => {
+      this.routeLeaveResolver = resolve;
+    });
+    this.routeLeaveAwaitingDecision.set(true);
+    return this.routeLeaveDecision;
+  }
+
+  protected allowRouteLeave(): void {
+    this.settleRouteLeave(true);
+  }
+
+  protected cancelRouteLeave(): void {
+    this.settleRouteLeave(false);
+  }
+
+  private settleRouteLeave(allowed: boolean): void {
+    const resolve = this.routeLeaveResolver;
+    this.routeLeaveResolver = null;
+    this.routeLeaveDecision = null;
+    this.routeLeaveAwaitingDecision.set(false);
+    resolve?.(allowed);
   }
 
   protected selectTab(tab: AccessAdminTab): void {
@@ -121,16 +218,31 @@ export class AccessAdminPageComponent {
     this.facade.clearMutationMessage();
   }
 
-  protected canSelectPermissions(user: AccessUserDetail): boolean {
-    return canSelectUserPermissions(user);
-  }
-
-  protected canReplacePermissions(user: AccessUserDetail): boolean {
+  protected canReplacePermissions(user: AccessUserDetail | null): boolean {
     return canReplaceUserPermissions(user, this.facade.canAssignPermissions());
   }
 
   protected acceptWouldGrantPermissions(): boolean {
     return acceptGrantsPermissions(this.facade.canAssignPermissions(), this.facade.permissionDiff());
+  }
+
+  protected openUserListSheet(): void {
+    this.userListSheetOpen.set(true);
+  }
+
+  protected updateContextSearch(event: Event): void {
+    this.contextSearch.set((event.target as HTMLInputElement).value);
+  }
+
+  protected applyContextSearch(event: Event): void {
+    event.preventDefault();
+    const search = this.contextSearch().trim();
+    void this.facade.updateUserQuery({ search: search || undefined });
+    this.openUserListSheet();
+  }
+
+  protected closeUserListSheet(): void {
+    this.userListSheetOpen.set(false);
   }
 
   protected selectUser(userId: number): void {
@@ -139,6 +251,7 @@ export class AccessAdminPageComponent {
       return;
     }
     this.pendingAction.set(null);
+    this.closeUserListSheet();
     void this.facade.selectUser(userId);
   }
 
@@ -149,6 +262,7 @@ export class AccessAdminPageComponent {
       return;
     }
     this.pendingAction.set(null);
+    this.closeUserListSheet();
     this.facade.discardDraft();
     void this.facade.selectUser(userId);
   }
@@ -223,14 +337,6 @@ export class AccessAdminPageComponent {
 
   protected searchAuditActor(search: string): void {
     void this.findAuditUsers(search, this.auditActorSearch);
-  }
-
-  protected toggleReconciliationFingerprint(): void {
-    this.reconciliationFingerprintVisible.update((visible) => !visible);
-  }
-
-  protected reconciliationCandidateStateLabel(state: string): string {
-    return ACCESS_ADMIN_LABELS.reconciliationCandidateState(state);
   }
 
   private async findAuditUsers(

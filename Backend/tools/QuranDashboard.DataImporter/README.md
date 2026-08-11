@@ -5,8 +5,8 @@
 runs the matching `application/.../Quran/DataPipelines/**` handler.
 
 **HOW rules:** `Backend/.architecture/LOGGING_GUIDELINES.md` (run summaries). Source-data
-rules: `Backend/AGENTS.md` → "Backend Reports and Import Sources" (that heading is in the
-**Backend** agent guide, not the workspace-root one).
+rules: `CODING_PRINCIPLES.md` §10 Quranic Data Safety, this README's *Defaults & sources*
+and *Safety* sections, and `Backend/report/README.md` when a durable report applies.
 
 ## Verbs
 
@@ -33,6 +33,11 @@ Running with no verb or an unknown verb prints usage and exits non-zero.
   `quran-full-i3rab`. `import-foundation` requires an explicit `--source`.
 - `resources/` is **local and gitignored** — packages are not in CI/other clones. Repo root
   is auto-detected (the folder containing both `resources/` and `Backend/`).
+- Import work uses staged, canonicalized source packages under
+  `resources/import-sources/<feature-or-source-name>/`. Do not import directly from random
+  upstream folders when staging is required.
+- Upstream source folders are provenance/read-only inputs unless the task explicitly asks to
+  stage or canonicalize a package.
 - Report defaults land under `resources/report/...` or `Backend/report/feature-XXX-.../`
   depending on the verb; override with `--report-out`.
 
@@ -43,6 +48,8 @@ Running with no verb or an unknown verb prints usage and exits non-zero.
 - Do not modify staged source packages from here; corrections belong in the pipeline's
   `Corrections/` (see
   `../../infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/Words/MorphologyImporting/README.md`).
+- Preserve traceability from every imported or generated result back to its staged package and
+  upstream provenance.
 
 ## Related
 

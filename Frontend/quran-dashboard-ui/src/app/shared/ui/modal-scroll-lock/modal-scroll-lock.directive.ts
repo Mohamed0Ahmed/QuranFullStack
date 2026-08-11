@@ -1,6 +1,6 @@
 import { Directive, OnDestroy, OnInit, inject } from '@angular/core';
 
-import { ScrollLockService } from './scroll-lock.service';
+import { ScrollLockHandle, ScrollLockService } from './scroll-lock.service';
 
 @Directive({
   selector: '[qdModalScrollLock]',
@@ -8,12 +8,14 @@ import { ScrollLockService } from './scroll-lock.service';
 })
 export class ModalScrollLockDirective implements OnInit, OnDestroy {
   private readonly scrollLock = inject(ScrollLockService);
+  private handle: ScrollLockHandle | null = null;
 
   ngOnInit(): void {
-    this.scrollLock.acquire();
+    this.handle ??= this.scrollLock.hold();
   }
 
   ngOnDestroy(): void {
-    this.scrollLock.release();
+    this.handle?.release();
+    this.handle = null;
   }
 }

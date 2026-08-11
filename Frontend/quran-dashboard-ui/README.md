@@ -3,9 +3,11 @@
 Angular 20 (standalone components + Signals) frontend for the Quran Dashboard
 (المنهج القرآني) — an **Arabic-first (RTL)**, scholarly/calm admin dashboard.
 
-> HOW to work here (rules): `.architecture/FRONTEND_STRUCTURE.md`,
-> `.architecture/UI_STYLE_SYSTEM.md`, `.architecture/API_INTEGRATION_GUIDELINES.md`, plus
-> `../../PRODUCT.md` and `../../DESIGN.md`. This file is the WHAT (current truth + map).
+> HOW to work here (rules): **`FRONTEND_UI_RULES.md` first for any UI-visible change**, then
+> `.architecture/FRONTEND_STRUCTURE.md`, `.architecture/UI_STYLE_SYSTEM.md`,
+> `.architecture/API_INTEGRATION_GUIDELINES.md`, plus `../../PRODUCT.md` and `../../DESIGN.md`.
+> The permanent visual authority is `.architecture/golden-ui/`. This file is the WHAT
+> (current truth + map).
 
 ## Feature map
 
@@ -50,59 +52,30 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
   hand-written; closed backend vocabularies the spec types as `string` are narrowed there
   via documented `Omit`-overlays.
 
-## Testing (read before running tests)
+## Verification
 
-**The lanes:** `npm run test:fast`, `test:feature:access-admin|abwab|auth|dashboard|mushaf|words`,
-`test:authorization`, `test:composition`, `test:shared`, `test:full`, plus `typecheck:app`,
-`typecheck:spec`, `typecheck`, `build:verify`, `check:permission-catalogue`, `check:audit-action-types`,
-`generate:permission-codes`, and the composite `test:pre-pr`
-(`check:permission-catalogue` → `check:audit-action-types` → `typecheck` → `build:verify` → `test:full`). `npm run test:gates` is the structural check on the
-lane definitions and is not part of `test:pre-pr` — run it whenever a spec is added, moved,
-renamed, or deleted, or an `include` pattern changes.
+`../../TESTING_CONSTITUTION.md` is the policy. The normal frontend verification chain is three
+independent commands, in this order:
 
-**`testing/README.md` is the contract**: what each of the ten named `angular.json`
-configurations selects, what every command does, and what `test:gates` proves. Which lane to run
-and when is `../../TESTING_STRATEGY.md` §4 and §5.
+```bash
+npm run check:no-unit-specs
+npm run typecheck:app
+npm run build:verify
+```
 
-- **Keep the `VITEST_MAX_FORKS` cap on `npm test`** — without it the run OOMs/freezes the
-  machine. Every `test:*` lane delegates to `npm test`, so the cap and the run timeout live in
-  that one script; do not inline them per lane. **A `vitest.config.ts` would be ignored** — the
-  Angular unit-test builder starts Vitest with `config: false` — so the cap must stay where
-  `package.json` already sets it; do not "clean it up".
-- **jsdom lacks `matchMedia` / `ResizeObserver` / `requestIdleCallback`** under the builder —
-  guard them in components and default to desktop.
-- **`src/test-setup.ts` owns an `afterEach` safety net** that runs after every spec's own
-  hooks: it unstubs Vitest-stubbed globals, restores real timers, restores spies, clears
-  `localStorage`/`sessionStorage`, removes `data-theme` from `<html>`, and clears the inline
-  `body` `overflow`. Specs therefore stub browser globals with `vi.stubGlobal`, never with a
-  direct `window.x = …` / `Object.defineProperty` assignment — a direct assignment survives a
-  test that throws and leaks into the next one. The net deliberately does **not** polyfill
-  `matchMedia`, reset `TestBed`, or wipe `body` children.
-- **Inside that `afterEach`, `vi.unstubAllGlobals()` must stay before `vi.useRealTimers()`.**
-  The first `useRealTimers`/`useFakeTimers` call builds the fake-timer clock and permanently
-  captures which timer APIs exist on `globalThis` at that moment; with the order swapped a
-  still-installed `requestIdleCallback` stub gets faked for the rest of the file, and
-  `src/app/core/navigation/idle-preload.strategy.spec.ts` loses its fallback branch.
-- **The `console.warn` filter in `src/test-setup.ts` is a plain assignment on purpose**
-  (`src/test-setup.ts:10-15`): it swallows jsdom's unfixable `[cdkFocusInitial]` warning and
-  delegates every other warning to the captured original. Rewriting it as
-  `vi.spyOn(console, 'warn')` would put it under the `vi.restoreAllMocks()` on line 21, which
-  removes it after the first test of every file and brings the noise back. It is the one global
-  the safety net deliberately does not restore — not a leak.
-- **A spec that appends a fixture host to `document.body` removes it itself**, in a file-local
-  `afterEach` that calls `fixture.destroy()` first and `fixture.nativeElement.remove()` second
-  (see `src/app/shared/ui/context-menu/context-menu.component.spec.ts`) — Angular teardown
-  needs the host still attached.
-- **Browser E2E (opt-in):** `npm run e2e` (headless), `npm run e2e:headed`, `npm run e2e:ui`.
-  Chromium only. It boots the Angular dev server *and* the backend `https` profile, so it needs
-  mkcert certificates, a migrated local `quran_dashboard`, and a prior
-  `dotnet build Backend/QuranDashboard.sln`. Specs live in `e2e/` and MUST be named `*.e2e.ts` —
-  **not** because the Vitest gate would collect them (it globs with `cwd` at `src/` and cannot
-  see outside it) but because `playwright.config.ts` matches `/.*\.e2e\.ts$/`, so a `*.spec.ts`
-  there is run by nothing at all while looking like coverage. `npm run e2e` runs two Playwright
-  projects in sequence — `default` (2 workers), then every `abwab-*.e2e.ts` at `--workers=1`,
-  since a `Global`-scope Abwab reorder resequences every live root and can race a second worker.
-  See `e2e/README.md` and `testing/README.md`.
+Keep `check:no-unit-specs` independent; never fold it into `build:verify`. `npm run typecheck` is an
+alias for `typecheck:app`. `npm run test:pre-pr` runs the permission catalogue, audit action type,
+golden UI, no-unit-specs, typecheck, and production-build checks in sequence.
+
+New automated tests are frozen by default. The source tree must contain no Angular unit specs.
+Playwright is the retained frontend test estate, and a new journey still requires owner approval
+under the constitution. Commands are `npm run e2e` (headless), `npm run e2e:headed`, and
+`npm run e2e:ui`; Chromium only. Playwright owns the Angular dev server, a backend in the `Testing`
+environment, a local Management API stub, and a disposable clone of the local source database. The
+source database supplies the clone and is never the E2E write target. The run needs mkcert
+certificates and a prior `dotnet build Backend/QuranDashboard.sln`. Journey files live in `e2e/`
+and must be named `*.e2e.ts`; see `e2e/README.md` for the six retained journeys and runtime
+invariants.
 
 ## Invariants
 

@@ -72,7 +72,7 @@ test('word-types explorer: picking a subtype lists rows and a count chip opens t
     .click();
   await expect(page).toHaveURL(/[?&]childCode=[^&]/);
 
-  const rows = page.locator('[data-word-types-row]');
+  const rows = page.locator('qd-word-types-table [data-row-id]');
   await expect(rows.first()).toBeVisible();
 
   // Rows are not clickable: the three statistic chips are the only interactive elements in a row

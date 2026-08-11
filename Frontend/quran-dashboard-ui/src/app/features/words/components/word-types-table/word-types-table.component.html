@@ -1,209 +1,197 @@
-<section
+<qd-data-table
   class="word-types-table qd-explorer-table"
   [class.word-types-table--grouped]="!isWordView()"
-  role="table"
-  [attr.aria-label]="tableLabel"
-  [attr.aria-rowcount]="rows()?.totalCount ?? null"
+  [class.word-types-table--headerless]="!hasHeader()"
+  [renderer]="renderer()"
+  [rows]="visibleRows()"
+  [rowId]="rowIdentity"
+  [ariaLabel]="tableLabel"
+  [columnCount]="columnCount()"
+  [totalRowCount]="totalRowCount()"
+  [state]="tableState()"
+  [selectedRow]="selectedRow()"
+  [selected]="sameRow"
+  [virtual]="true"
+  [rowHeight]="rowHeight"
+  [compactRowHeight]="compactRowHeight"
 >
-  @if (loading() || hasRows()) {
-    <div class="word-types-table__header qd-explorer-table__header" role="rowgroup">
-      <div class="word-types-table__header-row qd-explorer-table__header-row" role="row">
-        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">{{ headers.rowNumber }}</span>
-        <!-- The dimension text column is the alpha sort column in every view (N8-f). -->
-        <ng-container *ngTemplateOutlet="sortHeader; context: { column: alphaSortColumn(), variant: 'word' }" />
-        @if (isWordView()) {
-          <!-- النوع/الجذر/الأصل/الصيغة are related-entity text columns: plain headers (N8). -->
-          <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.type }}</span>
-          <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.root }}</span>
-          <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.stem }}</span>
-          <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.lemma }}</span>
-        }
-        <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.occurrences, variant: 'count' }" />
-        <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.ayahs, variant: 'count' }" />
-        <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.surahs, variant: 'count' }" />
-      </div>
-      <div class="word-types-table__header-gutter qd-explorer-table__header-gutter" aria-hidden="true"></div>
-    </div>
+  <ng-template #headerTemplate>
+    @if (hasHeader()) {
+      <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">{{ headers.rowNumber }}</span>
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: alphaSortColumn(), variant: 'word' }" />
+      @if (isWordView()) {
+        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.type }}</span>
+        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.root }}</span>
+        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.stem }}</span>
+        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.lemma }}</span>
+      }
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.occurrences, variant: 'count' }" />
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.ayahs, variant: 'count' }" />
+      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.surahs, variant: 'count' }" />
+      @if (isMedium() && isWordView()) {
+        <span class="word-types-table__medium-disclosure-header qd-explorer-table__header-cell" role="columnheader">كل التفاصيل</span>
+      }
+    }
+  </ng-template>
 
-    @if (loading()) {
-      <div
-        class="word-types-table__body qd-explorer-table__body word-types-table__body--loading qd-explorer-table__body--loading"
-        role="rowgroup"
-        aria-busy="true"
-        data-testid="word-types-table-loading"
-      >
-        <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
-        @for (placeholderRow of loadingRowPlaceholders; track placeholderRow) {
-          <div
-            class="word-types-table__row word-types-table__row--loading qd-explorer-table__row--loading"
-            [class.word-types-table__row--grouped]="!isWordView()"
-            role="row"
-            aria-hidden="true"
-          >
-            <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
-              <span class="qd-skeleton qd-skeleton--text word-types-table__loading-number"></span>
-            </span>
-            @if (isWordView()) {
-              <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell">
-                <span class="qd-skeleton qd-skeleton--text word-types-table__loading-word"></span>
-              </span>
-              @for (placeholderMeta of [0, 1, 2, 3]; track placeholderMeta) {
-                <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell">
-                  <span class="qd-skeleton qd-skeleton--text word-types-table__loading-meta"></span>
-                </span>
-              }
-            } @else {
-              <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell">
-                <span class="qd-skeleton qd-skeleton--text word-types-table__loading-word"></span>
-              </span>
-            }
-            @for (placeholderCount of [0, 1, 2]; track placeholderCount) {
-              <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell">
-                <span class="qd-skeleton qd-skeleton--rounded-md word-types-table__loading-count"></span>
-              </span>
-            }
-          </div>
-        }
-      </div>
-    } @else if (rows()) {
-      @if (useVirtualScroll) {
-        <cdk-virtual-scroll-viewport
-          class="word-types-table__body qd-explorer-table__body"
-          [itemSize]="rowHeight()"
-          [minBufferPx]="rowHeight() * 4"
-          [maxBufferPx]="rowHeight() * 8"
-          role="rowgroup"
+  <ng-template #rowTemplate let-row let-index="index">
+    <ng-container *ngTemplateOutlet="rowCells; context: { row: row, index: index }" />
+  </ng-template>
+
+  <ng-template #compactRowTemplate let-row let-index="index">
+    <ng-container *ngTemplateOutlet="rowCells; context: { row: row, index: index }" />
+  </ng-template>
+
+  <ng-template #loadingTemplate>
+    <div class="word-types-table__loading" data-testid="word-types-table-loading">
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+      @for (placeholderRow of loadingRowPlaceholders; track placeholderRow) {
+        <div
+          class="word-types-table__loading-row word-types-table__row--loading qd-explorer-table__row--loading"
+          [class.word-types-table__loading-row--grouped]="!isWordView()"
+          role="row"
+          aria-hidden="true"
         >
-          <div
-            *cdkVirtualFor="let row of visibleRows(); let index = index; trackBy: trackRowDomId"
-            class="word-types-table__row qd-explorer-table__row"
-            role="row"
-            [attr.data-word-types-row]="rowDomId(row)"
-            [class.qd-is-selected]="isSelected(row)"
-            [attr.aria-current]="isSelected(row) ? 'true' : null"
-            [attr.aria-selected]="isSelected(row)"
-          >
-            <ng-container *ngTemplateOutlet="rowCells; context: { row: row, index: index }" />
-          </div>
-        </cdk-virtual-scroll-viewport>
-      } @else {
-        <div class="word-types-table__body qd-explorer-table__body" role="rowgroup">
-          @for (row of visibleRows(); track rowDomId(row); let index = $index) {
-            <div
-              class="word-types-table__row qd-explorer-table__row"
-              role="row"
-              [attr.data-word-types-row]="rowDomId(row)"
-              [class.qd-is-selected]="isSelected(row)"
-              [attr.aria-current]="isSelected(row) ? 'true' : null"
-              [attr.aria-selected]="isSelected(row)"
-            >
-              <ng-container *ngTemplateOutlet="rowCells; context: { row: row, index: index }" />
-            </div>
+          <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
+            <span class="qd-skeleton qd-skeleton--text word-types-table__loading-number"></span>
+          </span>
+          <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell">
+            <span class="qd-skeleton qd-skeleton--text word-types-table__loading-word"></span>
+          </span>
+          @if (isWordView()) {
+            @for (placeholderMeta of [0, 1, 2, 3]; track placeholderMeta) {
+              <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell">
+                <span class="qd-skeleton qd-skeleton--text word-types-table__loading-meta"></span>
+              </span>
+            }
+          }
+          @for (placeholderCount of [0, 1, 2]; track placeholderCount) {
+            <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell">
+              <span class="qd-skeleton qd-skeleton--rounded-md word-types-table__loading-count"></span>
+            </span>
           }
         </div>
       }
+    </div>
+  </ng-template>
+
+  <ng-template #emptyTemplate>
+    @if (status() === 'empty') {
+      <p class="word-types-table__state qd-empty-state" role="status" data-testid="word-types-table-empty">{{ emptyLabel() }}</p>
+    } @else {
+      <p class="word-types-table__state qd-empty-state" role="status" data-testid="word-types-select-subtype">{{ selectPromptLabel() }}</p>
     }
-  } @else if (status() === 'error') {
-    <div class="word-types-table__state qd-error-state" role="alert" data-testid="word-types-table-error">
+  </ng-template>
+
+  <ng-template #errorTemplate>
+    <div class="word-types-table__state qd-error-state" role="status" data-testid="word-types-table-error">
       <span>{{ errorMessage() || errorLabel() }}</span>
       <button
+        qdAction="secondary"
+        size="sm"
         type="button"
-        class="qd-btn qd-btn-secondary word-types-table__retry"
+        class="word-types-table__retry"
         data-testid="word-types-table-retry"
         (click)="retry.emit()"
       >
         {{ retryLabel() }}
       </button>
     </div>
-  } @else if (status() === 'empty') {
-    <p class="word-types-table__state qd-empty-state" role="status" data-testid="word-types-table-empty">{{ emptyLabel() }}</p>
-  } @else {
-    <p class="word-types-table__state qd-empty-state" role="status" data-testid="word-types-select-subtype">{{ selectPromptLabel() }}</p>
-  }
+  </ng-template>
 
-  <!-- Shared row cells for both the virtual and plain-render branches; the three statistic chips are
-       the only interactive elements in a row. -->
-  <ng-template #rowCells let-row="row" let-index="index">
-    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</span>
-    @if (row.kind === 'word') {
-      <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell">
-        <span class="word-types-table__word">{{ row.displayText }}</span>
-      </span>
-      <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.type">
-        <span class="word-types-table__meta-text">{{ row.typeLabel.ar }}</span>
-      </span>
-      <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.root">
-        <span class="word-types-table__meta-text">{{ row.rootText || placeholder }}</span>
-      </span>
-      <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.stem">
-        <span class="word-types-table__meta-text">{{ row.stemText || placeholder }}</span>
-      </span>
-      <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.lemma">
-        <span class="word-types-table__meta-text">{{ row.lemmaText || placeholder }}</span>
-      </span>
-    } @else {
-      <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell" [attr.data-label]="dimensionHeader()">
-        <span class="word-types-table__word">{{ row.displayText }}</span>
-      </span>
+  <ng-template #paginationTemplate>
+    @if (hasDisabledCounts()) {
+      <p class="word-types-table__disabled-reason" [id]="disabledReasonId">{{ disabledReason }}</p>
     }
-    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.occurrences">
-      <span class="word-types-table__count-chip" data-word-count-column="occurrences">
-        <qd-word-count-chip
-          [label]="headers.occurrences"
-          [count]="row.occurrencesCount"
-          [showLabel]="false"
-          (chipClick)="openCount(row, 'occurrences')"
-        />
-      </span>
-    </span>
-    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.ayahs">
-      <span class="word-types-table__count-chip" data-word-count-column="ayahs">
-        <qd-word-count-chip
-          [label]="headers.ayahs"
-          [count]="row.ayahsCount"
-          [showLabel]="false"
-          (chipClick)="openCount(row, 'ayahs')"
-        />
-      </span>
-    </span>
-    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.surahs">
-      <span class="word-types-table__count-chip" data-word-count-column="surahs">
-        <qd-word-count-chip
-          [label]="headers.surahs"
-          [count]="row.surahsCount"
-          [showLabel]="false"
-          (chipClick)="openCount(row, 'surahs')"
-        />
-      </span>
-    </span>
+    <ng-content select="[wordTypesTablePagination]" />
   </ng-template>
+</qd-data-table>
 
-  <!-- One sortable column header (Feature 030, N8). aria-sort carries the current state and lives on
-       the columnheader; the button's aria-label names the column + the state the next click gives.
-       المواضع is this explorer's DEFAULT order, so it renders actively sorted descending even with no
-       sort param — its cycle collapses to desc(default) ⇄ asc and has no unsorted third state. -->
-  <ng-template #sortHeader let-column="column" let-variant="variant">
-    <span
-      class="word-types-table__header-cell qd-explorer-table__header-cell"
-      [class.word-types-table__header-cell--word]="variant === 'word'"
-      [class.word-types-table__header-cell--count]="variant === 'count'"
-      [class.qd-explorer-table__header-cell--numeric]="variant === 'count'"
-      role="columnheader"
-      [attr.aria-sort]="sortControl.ariaSort(column)"
-    >
-      <button
-        type="button"
-        class="qd-explorer-table__sort-button"
-        [class.qd-is-sorted]="sortControl.isSorted(column)"
-        [attr.data-testid]="'word-types-table-sort-' + column.key"
-        [attr.aria-label]="sortControl.actionAria(column)"
-        (click)="sortControl.cycle(column)"
-      >
-        <span class="qd-explorer-table__sort-label">{{ column.label }}</span>
-        @if (sortControl.glyph(column); as glyph) {
-          <span class="qd-explorer-table__sort-glyph" aria-hidden="true">{{ glyph }}</span>
-        }
-      </button>
+<ng-template #rowCells let-row="row" let-index="index">
+  <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</span>
+  @if (row.kind === 'word') {
+    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell">
+      <span class="word-types-table__word">{{ row.displayText }}</span>
     </span>
-  </ng-template>
-</section>
+    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.type">
+      <span class="word-types-table__meta-text">{{ row.typeLabel.ar }}</span>
+    </span>
+    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.root">
+      <span class="word-types-table__meta-text">{{ row.rootText || placeholder }}</span>
+    </span>
+    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.stem">
+      <span class="word-types-table__meta-text">{{ row.stemText || placeholder }}</span>
+    </span>
+    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.lemma">
+      <span class="word-types-table__meta-text">{{ row.lemmaText || placeholder }}</span>
+    </span>
+  } @else {
+    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell" [attr.data-label]="dimensionHeader()">
+      <span class="word-types-table__word">{{ row.displayText }}</span>
+    </span>
+  }
+  <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.occurrences">
+    <span class="word-types-table__count-chip" data-word-count-column="occurrences">
+      <qd-word-count-chip
+        [label]="headers.occurrences"
+        [count]="row.occurrencesCount"
+        [showLabel]="false"
+        [disabled]="row.occurrencesCount === 0"
+        [disabledReasonId]="disabledReasonId"
+        (chipClick)="openCount(row, 'occurrences')"
+      />
+    </span>
+  </span>
+  <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.ayahs">
+    <span class="word-types-table__count-chip" data-word-count-column="ayahs">
+      <qd-word-count-chip
+        [label]="headers.ayahs"
+        [count]="row.ayahsCount"
+        [showLabel]="false"
+        [disabled]="row.ayahsCount === 0"
+        [disabledReasonId]="disabledReasonId"
+        (chipClick)="openCount(row, 'ayahs')"
+      />
+    </span>
+  </span>
+  <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.surahs">
+    <span class="word-types-table__count-chip" data-word-count-column="surahs">
+      <qd-word-count-chip
+        [label]="headers.surahs"
+        [count]="row.surahsCount"
+        [showLabel]="false"
+        [disabled]="row.surahsCount === 0"
+        [disabledReasonId]="disabledReasonId"
+        (chipClick)="openCount(row, 'surahs')"
+      />
+    </span>
+  </span>
+  @if (isMedium() && row.kind === 'word') {
+    <details class="word-types-table__medium-disclosure">
+      <summary>كل التفاصيل</summary>
+      <dl class="word-types-table__medium-disclosure-list">
+        <dt>{{ headers.type }}</dt><dd>{{ row.typeLabel.ar }}</dd>
+        <dt>{{ headers.root }}</dt><dd>{{ row.rootText || placeholder }}</dd>
+        <dt>{{ headers.stem }}</dt><dd>{{ row.stemText || placeholder }}</dd>
+        <dt>{{ headers.lemma }}</dt><dd>{{ row.lemmaText || placeholder }}</dd>
+      </dl>
+    </details>
+  }
+</ng-template>
+
+<ng-template #sortHeader let-column="column" let-variant="variant">
+  <qd-sortable-header
+    class="word-types-table__header-cell"
+    [class.word-types-table__header-cell--word]="variant === 'word'"
+    [class.word-types-table__header-cell--count]="variant === 'count'"
+    [label]="column.label"
+    [numeric]="variant === 'count'"
+    [sortState]="sortControl.ariaSort(column) ?? 'none'"
+    [glyph]="sortControl.glyph(column)"
+    [currentSortLabel]="sortControl.glyph(column) ?? ''"
+    [nextSortLabel]="sortControl.actionAria(column)"
+    [actionAriaLabel]="sortControl.actionAria(column)"
+    [testId]="'word-types-table-sort-' + column.key"
+    (activated)="sortControl.cycle(column)"
+  />
+</ng-template>

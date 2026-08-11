@@ -60,12 +60,42 @@ per-feature.
     `ensureLoaded()` calls share one request; `refresh()` supersedes stale results; `clear()`
     invalidates pending work, snapshot, and permissions for logout. Unknown, loading, and
     error state fail closed.
-- `layout/` — `app-shell`, `top-navbar`, `footer`, `shell-layout.model.ts`, and
-  `nav-progress/` — the router navigation progress bar (`qd-nav-progress`): the 2px
-  accent hairline the shell shows while a lazy route's chunk downloads (200ms
-  show-delay; settle rule is an inversion over the known in-flight router events so
-  unknown/future event classes clear it, never stick it). Contract:
-  `.architecture/UI_STYLE_SYSTEM.md` §17.
+- `layout/` — the F01 app chrome: `app-shell`, `top-navbar`, `app-navigation`, `footer`,
+  `shell-layout.model.ts`, and `nav-progress/`.
+  - `app-shell` owns the skip link (`.qd-skip-link` → the sole `<main id="qd-main-content"
+    tabindex="-1">`), the shell order (nav progress → navbar → main → footer), and the
+    **background/sibling arrangement**: while the navigation sheet is open the shell inerts
+    `main` and the footer, and the sheet — a `qd-modal-shell` rendered outside both — is never
+    inside a subtree it inerts. It reads that state from `TopNavbarComponent.sheetOpen` through a
+    `viewChild`; the navbar keeps ownership of open/close/focus-return.
+  - `top-navbar` owns navigation *state*: which dropdown is open, whether the sheet is open, the
+    Wide/`matchMedia` band, theme toggle, and sign in/out. Desktop navigation is rendered **only**
+    at Wide (`>= 1080`, `QD_BP_WIDE_QUERY`) — structurally, not with `display: none` — because a
+    Medium-width navbar cannot hold the full link row and used to push the document to 865px at
+    768. Below Wide the navbar shows one 44px sheet toggle. The navbar's own background subtree
+    (`.qd-navbar__background`, `display: contents`) goes inert whenever anything holds the scroll
+    lock; the toggle stays reachable while the sheet it opened is the lock holder, which is what
+    lets focus return to it on close.
+  - `app-navigation` is app-specific presentation, not shared UI: one component renders the same
+    `NAV_MENU` tree in `desktop` mode (anchored dropdowns, `#<key>-menu`, `nav-<key>-trigger`) or
+    `sheet` mode (inline sublists, group labels for auth-gated parents). It emits pointer/click and
+    activation intent and holds no state, no authorization and no route logic. `ownerGuard` remains
+    the boundary; the nav only hides what an Owner-only route would refuse anyway.
+    **The Wide dropdown deliberately does not use `qdFloatingLayer` (F15).** It stays an anchored
+    `position: absolute` `.qd-nav__menu` (`_components.scss`) for two behavioural reasons, both
+    pinned by `e2e/shell-nav.e2e.ts`: the directive's floating surface sits a 4px anchor gap away
+    from its trigger, which breaks the hover-open/hover-into-menu path the nav relies on, and the
+    directive's `action-menu` variant would put `role="menuitem"` on links the same e2e resolves
+    through `getByRole('link')`. It is a recorded deviation from F15, not an oversight; revisit it
+    only together with those e2e expectations.
+  - `nav-progress` — the router navigation progress bar (`qd-nav-progress`): a flat 2px track with
+    a solid green segment, shown while a lazy route's chunk downloads (200ms show-delay; the settle
+    rule is an inversion over the known in-flight router events so unknown/future event classes
+    clear it, never stick it). Contract: `.architecture/UI_STYLE_SYSTEM.md` §17.
+  - `footer` keeps its natural height and the navy chrome, owns its measure with
+    `.qd-footer__inner` (no second gutter), and reports the health read politely: loading and
+    error are both `role="status"`, because a failed health *read* is not a write failure and must
+    not claim `role="alert"`.
 - `navigation/` — `route-paths.ts` (canonical route constants — incl. `DASHBOARD_ROUTE_PATH`
   and `CALLBACK_PATH` for the Feature-033 landing route — plus `navLabel(key)` for a
   nav item's Arabic label) + `app-title.strategy.ts` (the `TitleStrategy`
@@ -82,12 +112,13 @@ per-feature.
   init — nesting children into `nav-items.ts` would create an import cycle that hits a TDZ
   `ReferenceError`; recorded here so nobody "simplifies" the children back in. The
   `childrenByParentKey` table carries `words`, `abwab`, and `settings` («إدارة الوصول» →
-  `/settings/access`). The top-navbar dropdowns ("الكلمات والجذور", "الأبواب", "الإعدادات") are
-  `@if (item.children)`, data-driven, not per-key template branches; «الأرشيف» (`/abwab` +
-  `{archive:'1'}`) is the app's first query-param nav entry, and «الإعدادات» is the app's first
-  auth-gated one: a parent that navigates nowhere itself (like «المزيد») — a dropdown trigger
-  in the desktop actions cluster, a non-navigable group label above its child in the mobile
-  panel — that the navbar renders in both places only for an Active Owner and only once
+  `/settings/access`). The dropdowns ("الكلمات والجذور", "الأبواب", "الإعدادات") are
+  `@if (item.children)` inside `layout/app-navigation`, data-driven, not per-key template
+  branches; «الأرشيف» (`/abwab` + `{archive:'1'}`) is the app's first query-param nav entry, and
+  «الإعدادات» is the app's first auth-gated one: a parent that navigates nowhere itself (like
+  «المزيد») — a dropdown trigger in the desktop actions cluster, a non-navigable group label above
+  its child in the navigation sheet — that the navbar renders in both modes only for an Active
+  Owner and only once
   `CurrentUserStore.authStateKnown()` is true, so the entry cannot
   flash while `/api/access/me` resolves. That visibility is convenience; `ownerGuard` on
   `/settings/access` stays the authorization boundary. Also here: `idle-preload.strategy.ts` — the `withPreloading`

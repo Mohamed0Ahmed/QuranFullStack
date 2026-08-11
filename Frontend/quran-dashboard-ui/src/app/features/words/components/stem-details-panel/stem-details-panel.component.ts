@@ -2,17 +2,18 @@ import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   computed,
   inject,
   input,
   output,
-  viewChild,
 } from '@angular/core';
-import { A11yModule } from '@angular/cdk/a11y';
 
 import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
-import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdDetailsWorkspaceComponent } from '../../../../shared/ui/details-workspace/details-workspace.component';
+import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
+import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
+import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 
 import {
   STEMS_EMPTY_SELECTION_LABEL,
@@ -24,13 +25,10 @@ import {
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
 import { STEM_VIEW_KEYS, StemView } from '../../models/stems.models';
 
-// Pure chrome: the page projects the active view via <ng-content /> and drives `viewChange`.
-// Below the desktop breakpoint the page flips inline=false to render this as a modal drawer;
-// RTL tablist arrows move forward on ArrowLeft (Feature 016 / T117).
 @Component({
   selector: 'qd-stem-details-panel',
   standalone: true,
-  imports: [A11yModule, ModalScrollLockDirective, NgTemplateOutlet],
+  imports: [NgTemplateOutlet, QdActionDirective, QdDetailsWorkspaceComponent, QdModalShellComponent, QdTabDirective, QdTabsComponent],
   templateUrl: './stem-details-panel.component.html',
   styleUrl: './stem-details-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,14 +36,10 @@ import { STEM_VIEW_KEYS, StemView } from '../../models/stems.models';
 export class StemDetailsPanelComponent {
   private readonly detailOverlayHistory = inject(DetailOverlayHistoryService);
 
-  // Only the top layer may trap focus (Feature 029 §5.9): while the global detail overlay is open
-  // this drawer sits inside the inert app shell, so its own trap must stand down.
   protected readonly drawerTrapEnabled = computed(() => !this.detailOverlayHistory.isOpen());
 
   readonly view = input.required<StemView>();
   readonly inline = input(true);
-  // Content-only mode (Feature 029, Change B4): render just the tablist + tabpanel body, no
-  // card/dialog/backdrop/header — for the global detail overlay shell that owns the chrome.
   readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
@@ -72,80 +66,32 @@ export class StemDetailsPanelComponent {
     return STEMS_NOT_FOUND_LABEL;
   }
 
-  protected readonly surfaceDomId = 'stem-details-panel-surface';
-
   protected readonly tabs = STEM_VIEW_KEYS.map((key) => ({
     key,
     label: STEMS_PANEL_TAB_LABELS[key],
     aria: STEMS_PANEL_TAB_ARIA[key],
   }));
 
-  private readonly tabList = viewChild<ElementRef<HTMLElement>>('tabList');
-
   protected readonly hasSelection = computed(() => !this.emptySelection());
-
-  protected tabDomId(key: StemView): string {
-    return `stem-details-tabbtn-${key}`;
-  }
 
   protected isActive(key: StemView): boolean {
     return this.view() === key;
   }
 
   protected selectView(key: StemView): void {
-    if (this.emptySelection() || key === this.view()) {
+    if (this.emptySelection() || this.notFound() || key === this.view()) {
       return;
     }
     this.viewChange.emit(key);
+  }
+
+  protected tabDisabled(key: StemView): boolean {
+    return this.emptySelection() || (this.notFound() && key !== this.view());
   }
 
   protected onEscape(): void {
     if (!this.inline() || this.hasSelection()) {
       this.close.emit();
     }
-  }
-
-  protected onBackdropClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) {
-      this.close.emit();
-    }
-  }
-
-  protected onTabKeydown(event: KeyboardEvent, currentKey: StemView): void {
-    const order = STEM_VIEW_KEYS;
-    const index = order.indexOf(currentKey);
-    let nextIndex: number | null = null;
-
-    switch (event.key) {
-      case 'ArrowLeft':
-        nextIndex = (index + 1) % order.length;
-        break;
-      case 'ArrowRight':
-        nextIndex = (index - 1 + order.length) % order.length;
-        break;
-      case 'Home':
-        nextIndex = 0;
-        break;
-      case 'End':
-        nextIndex = order.length - 1;
-        break;
-      default:
-        return;
-    }
-
-    event.preventDefault();
-    if (nextIndex === null) {
-      return;
-    }
-
-    const nextKey = order[nextIndex];
-    this.selectView(nextKey);
-    this.focusTab(nextKey);
-  }
-
-  private focusTab(key: StemView): void {
-    const list = this.tabList()?.nativeElement;
-    const tab = list?.querySelector<HTMLElement>(`[data-stem-tab="${key}"]`);
-    tab?.focus();
   }
 }

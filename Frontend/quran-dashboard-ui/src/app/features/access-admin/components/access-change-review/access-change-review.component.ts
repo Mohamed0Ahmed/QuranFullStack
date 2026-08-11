@@ -1,6 +1,9 @@
 import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
 
 import { PermissionCode } from '../../../../core/auth/permission-code';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
+import { QdFormFieldComponent } from '../../../../shared/ui/form-field/form-field.component';
 import {
   AccessPermissionDiff,
   AccessUserWorkflowAction,
@@ -12,6 +15,7 @@ import { AccessPermissionGroup, permissionLabelFor } from '../../models/access-a
 @Component({
   selector: 'qd-access-change-review',
   standalone: true,
+  imports: [QdActionDirective, QdControlDirective, QdFormFieldComponent],
   templateUrl: './access-change-review.component.html',
   styleUrl: './access-change-review.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

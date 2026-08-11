@@ -1,68 +1,69 @@
-@if (visibility() === 'open') {
-  <div class="qd-modal-backdrop detail-modal-shell__backdrop" data-testid="detail-modal-backdrop" (click)="onBackdropClick($event)">
-    <section
-      class="qd-modal detail-modal-shell"
-      role="dialog"
-      aria-modal="true"
-      dir="rtl"
-      [attr.aria-labelledby]="headingId"
-      [attr.aria-describedby]="countId"
-      cdkTrapFocus
-      cdkTrapFocusAutoCapture
-      data-testid="detail-modal-shell"
-      (keydown.escape)="onEscape($event)"
-      (focusin)="onDialogFocusIn($event)"
+<qd-modal-shell
+  variant="overlay"
+  testIdPrefix="detail-modal"
+  dialogTestId="detail-modal-shell"
+  [open]="visibility() === 'open'"
+  [titleText]="titleText()"
+  [describedById]="countId"
+  [showClose]="false"
+  [hasFooter]="false"
+  [returnFocus]="false"
+  (dismissed)="closeRequested.emit()"
+>
+  <ng-container qdModalShellHeaderLead>
+    @if (depth() > 1) {
+      <button
+        #backButton
+        type="button"
+        qdAction="tertiary"
+        size="sm"
+        class="detail-modal-shell__back"
+        data-testid="detail-modal-back"
+        (click)="backRequested.emit()"
+      >
+        <span class="detail-modal-shell__back-icon" aria-hidden="true">&#8594;</span>
+        {{ backLabel() }}
+      </button>
+    }
+    @if (kindLabel()) {
+      <span class="detail-modal-shell__kind" data-testid="detail-modal-kind">{{ kindLabel() }}</span>
+    }
+  </ng-container>
+
+  <ng-container qdModalShellHeaderExtra>
+    <span
+      class="detail-modal-shell__count"
+      [class.detail-modal-shell__count--visible]="countText() !== ''"
+      [id]="countId"
+      data-testid="detail-modal-count"
+      >{{ countText() }}</span
     >
-      <header class="detail-modal-shell__header">
-        @if (depth() > 1) {
-          <button
-            #backButton
-            type="button"
-            class="qd-btn qd-btn-ghost detail-modal-shell__back"
-            data-testid="detail-modal-back"
-            (click)="backRequested.emit()"
-          >
-            <span class="detail-modal-shell__back-icon" aria-hidden="true">&#8594;</span>
-            {{ backLabel() }}
-          </button>
-        }
-        @if (kindLabel()) {
-          <span class="detail-modal-shell__kind" data-testid="detail-modal-kind">{{ kindLabel() }}</span>
-        }
-        <h2 #dialogHeading class="detail-modal-shell__title" [id]="headingId" tabindex="-1">{{ titleText() }}</h2>
-        <span
-          class="detail-modal-shell__count"
-          [class.detail-modal-shell__count--visible]="countText() !== ''"
-          [id]="countId"
-          data-testid="detail-modal-count"
-          >{{ countText() }}</span
-        >
-        <button
-          #closeButton
-          type="button"
-          class="qd-btn qd-btn-ghost detail-modal-shell__close"
-          data-testid="detail-modal-close"
-          (click)="closeRequested.emit()"
-        >
-          {{ closeLabel() }}
-        </button>
-      </header>
+    <button
+      #closeButton
+      type="button"
+      qdAction="tertiary"
+      size="sm"
+      class="detail-modal-shell__close"
+      data-testid="detail-modal-close"
+      (click)="closeRequested.emit()"
+    >
+      {{ closeLabel() }}
+    </button>
+  </ng-container>
 
-      <div class="detail-modal-shell__body">
-        <ng-content />
-      </div>
+  <ng-content />
 
-      <p class="qd-sr-only" role="status" aria-live="polite" data-testid="detail-modal-live-title">
-        {{ titleText() }}
-      </p>
-      @if (statusMessage()) {
-        <p class="qd-sr-only" role="status" aria-live="polite" data-testid="detail-modal-live-status">
-          {{ statusMessage() }}
-        </p>
-      }
-    </section>
-  </div>
-} @else {
+  <p class="qd-sr-only" role="status" aria-live="polite" data-testid="detail-modal-live-title">
+    {{ titleText() }}
+  </p>
+  @if (statusMessage()) {
+    <p class="qd-sr-only" role="status" aria-live="polite" data-testid="detail-modal-live-status">
+      {{ statusMessage() }}
+    </p>
+  }
+</qd-modal-shell>
+
+@if (visibility() === 'closed') {
   <button
     #restoreButton
     type="button"

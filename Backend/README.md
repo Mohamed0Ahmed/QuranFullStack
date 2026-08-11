@@ -66,6 +66,17 @@ Connection string via user secrets — see `api/QuranDashboard.Api/README.md`. S
 
 ## Deployment (Docker / Railway)
 
+Before release, run the mandatory Backend pre-release gate:
+
+```bash
+Backend/scripts/test-backend pre-pr
+```
+
+Daily Backend verification is `Backend/scripts/test-backend smoke` plus
+`Backend/scripts/test-backend tier-b`. Change-specific gates are `pipeline`, `canonical-data`,
+`migration`, `access-db`, and `gate-contract`; run each on its own trigger. The complete lane
+contract and flags live in `tests/QuranDashboard.Tests/README.md` and `scripts/README.md`.
+
 The API is containerized for Railway (Hobby). Artifacts live at the backend root:
 `Dockerfile` (multi-stage: `sdk:10.0` build → `aspnet:10.0` runtime, publishes only
 `api/QuranDashboard.Api`), `.dockerignore`, and `railway.json`. Those three files plus the
@@ -111,5 +122,11 @@ exists; do not scale this service horizontally until one does.
 ## Invariants
 
 - Word identity keys on **clean imlaei-simple** (display stays Uthmani).
-- Do not hand-write EF migrations or edit snapshots (see `AGENTS.md` → EF Core Migrations).
+- EF migrations are generated with EF tooling only. Add a migration only when explicitly
+  requested, and do not apply one with `dotnet ef database update` without explicit authority.
+- Do not hand-write migration files or manually edit generated migration `.cs`, `.Designer.cs`,
+  or `ModelSnapshot` files except for a clearly documented exceptional fix. For an exception,
+  explain why, list every manually edited file, and report the verification run.
+- After generating a migration, report its name, generated files, build status, applicable test
+  status, and whether the database update was executed or skipped.
 - `resources/` source packages are local/gitignored.

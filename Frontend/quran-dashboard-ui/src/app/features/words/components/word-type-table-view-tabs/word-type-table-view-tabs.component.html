@@ -1,23 +1,23 @@
-<nav
-  class="word-type-table-view-tabs"
-  role="tablist"
-  [attr.aria-label]="tabsLabel"
-  #tabList
+<qd-tabs
+  dir="rtl"
+  layout="grid"
+  [ariaLabel]="tabsLabel"
 >
   @for (option of options; track option.value) {
     <button
+      qdTab
       type="button"
-      class="qd-tabs__tab word-type-table-view-tabs__tab"
-      role="tab"
-      [attr.aria-selected]="isSelected(option.value)"
-      [attr.tabindex]="isSelected(option.value) ? 0 : -1"
-      [attr.data-testid]="'word-type-table-view-tab--' + option.value"
-      [class.qd-is-selected]="isSelected(option.value)"
+      class="word-type-table-view-tabs__tab"
+      [id]="tabId(option.value)"
+      [panelId]="panelId()"
+      [selected]="isSelected(option.value)"
       [disabled]="disabled()"
+      [attr.disabled]="disabled() ? '' : null"
+      [attr.data-testid]="'word-type-table-view-tab--' + option.value"
+      (focus)="selectView(option.value)"
       (click)="selectView(option.value)"
-      (keydown)="onTabKeydown($event, option.value)"
     >
       {{ option.label }}
     </button>
   }
-</nav>
+</qd-tabs>

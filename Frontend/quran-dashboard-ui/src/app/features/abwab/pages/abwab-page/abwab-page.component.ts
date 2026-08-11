@@ -52,7 +52,9 @@ import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
 import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 
 const NO_IDS: ReadonlySet<number> = new Set<number>();
@@ -79,7 +81,9 @@ const NO_ROOTS: readonly AbwabNode[] = [];
     QdContextMenuComponent,
     ExplorerResultCountComponent,
     QdSkeletonRowsComponent,
-    QdStateComponent,
+    QdActionDirective,
+    QdEmptyStateComponent,
+    QdErrorStateComponent,
     ConfirmDialogComponent,
   ],
   templateUrl: './abwab-page.component.html',

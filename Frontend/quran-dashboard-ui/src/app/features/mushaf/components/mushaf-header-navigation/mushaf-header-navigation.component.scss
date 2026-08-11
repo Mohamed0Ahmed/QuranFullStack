@@ -48,10 +48,9 @@
     width: 100%;
     gap: var(--qd-space-1);
     padding: var(--qd-space-1) var(--qd-space-2);
-    border: 1px solid var(--qd-border);
-    border-radius: var(--qd-radius-lg);
+    border: var(--qd-hairline);
+    border-radius: var(--qd-radius-md);
     background: var(--qd-surface);
-    box-shadow: var(--qd-shadow-sm);
   }
 
   &__deck-zone {
@@ -70,17 +69,16 @@
     width: 100%;
     gap: var(--qd-space-2);
     padding: var(--qd-space-1);
-    border-radius: var(--qd-radius-md);
-    /* one-off: 5.5% accent wash grouping the nav zone, always-on (not
-       hover/selected) — no role token models a static subtle group wash */
-    background: color-mix(in oklch, var(--qd-accent) 5.5%, var(--qd-section-bg));
+    border-radius: var(--qd-radius-sm);
+    background: var(--qd-surface-quiet);
     overflow: visible;
+  }
 
-    .qd-btn {
-      min-height: 2rem;
-      padding: calc(var(--qd-space-1) + 1px) var(--qd-space-3);
-      font-size: 0.875rem;
-      line-height: 1.35;
-    }
+  &__nav-button {
+    min-block-size: 2rem;
+    padding-block: calc(var(--qd-space-1) + 1px);
+    padding-inline: var(--qd-space-3);
+    font-size: 0.875rem;
+    line-height: 1.35;
   }
 }

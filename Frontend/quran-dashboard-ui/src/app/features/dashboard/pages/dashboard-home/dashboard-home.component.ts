@@ -1,10 +1,10 @@
 import { Component, OnInit, inject, DestroyRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { SystemApi } from '../../../../core/data-access/system.api';
 import { AppInfo } from '../../../../core/data-access/system.models';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 
 type ViewState = 'loading' | 'success' | 'error';
@@ -12,7 +12,7 @@ type ViewState = 'loading' | 'success' | 'error';
 @Component({
   selector: 'qd-dashboard-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, QdSkeletonRowsComponent],
+  imports: [RouterLink, QdErrorStateComponent, QdSkeletonRowsComponent],
   templateUrl: './dashboard-home.component.html',
   styleUrls: ['./dashboard-home.component.scss'],
 })

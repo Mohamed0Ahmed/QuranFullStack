@@ -92,7 +92,7 @@ When the codebase already satisfies everything, the command MUST leave `tasks.md
 is the highest-severity finding and produces a remediation task. **If it is absent, or present
 but still an unfilled template, there is no constitution gate**: skip those checks, say so once,
 and continue. Absence is not a finding. This repository deliberately has no constitution; its
-binding rules live in `CLAUDE.md`, `CODING_PRINCIPLES.md`, `TESTING_STRATEGY.md`, and
+binding rules live in `CLAUDE.md`, `CODING_PRINCIPLES.md`, `TESTING_CONSTITUTION.md`, and
 `.architecture/`.
 
 ## Execution Steps

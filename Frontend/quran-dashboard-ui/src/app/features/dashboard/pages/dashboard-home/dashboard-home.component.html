@@ -1,8 +1,10 @@
 <div class="qd-page">
-  <div class="qd-container">
+  <div class="qd-page-shell qd-page-shell--capped-reading">
     <div class="qd-page-header">
       <h1 class="qd-page-title">مرحباً بك في المنهج القرآني</h1>
-      <p class="qd-text-muted">لوحة تحكم لتنظيم ومراجعة بيانات البحث القرآني وإعدادها للنشر.</p>
+      <p class="qd-page-header__description">
+        لوحة تحكم لتنظيم ومراجعة بيانات البحث القرآني وإعدادها للنشر.
+      </p>
 
       @switch (viewState) {
         @case ('loading') {
@@ -22,38 +24,41 @@
           </div>
         }
         @case ('error') {
-          <div class="qd-error-state app-meta-error" role="alert">
-            <span>{{ errorMessage }}</span>
-            <button class="qd-btn qd-btn-ghost" type="button" (click)="retry()">
-              إعادة المحاولة
-            </button>
-          </div>
+          <qd-error-state
+            class="app-meta-error"
+            severity="read"
+            testId="dashboard-app-meta-error"
+            actionTestId="dashboard-app-meta-retry"
+            actionLabel="إعادة المحاولة"
+            [message]="errorMessage"
+            (action)="retry()"
+          />
         }
       }
     </div>
 
-    <div class="dashboard-cards">
-      <a class="qd-card dashboard-card qd-card--hover qd-interactive-surface" [routerLink]="['/dashboard/mushaf']">
+    <div class="qd-grid qd-grid--destinations dashboard-cards">
+      <a class="qd-card qd-interactive-surface dashboard-card" [routerLink]="['/dashboard/mushaf']">
         <h2 class="qd-card-title">المصحف والآيات</h2>
         <p class="qd-text-muted">عرض صفحات المصحف والآيات الكريمة</p>
       </a>
 
-      <a class="qd-card dashboard-card qd-card--hover qd-interactive-surface" [routerLink]="['/dashboard/words']">
+      <a class="qd-card qd-interactive-surface dashboard-card" [routerLink]="['/dashboard/words']">
         <h2 class="qd-card-title">الكلمات والجذور</h2>
         <p class="qd-text-muted">استكشاف كلمات القرآن وجذورها</p>
       </a>
 
-      <a class="qd-card dashboard-card qd-card--hover qd-interactive-surface" [routerLink]="['/tafsirs']">
+      <a class="qd-card qd-interactive-surface dashboard-card" [routerLink]="['/tafsirs']">
         <h2 class="qd-card-title">التفاسير</h2>
         <p class="qd-text-muted">التفاسير المتصلة بالآيات</p>
       </a>
 
-      <a class="qd-card dashboard-card qd-card--hover qd-interactive-surface" [routerLink]="['/abwab']">
+      <a class="qd-card qd-interactive-surface dashboard-card" [routerLink]="['/abwab']">
         <h2 class="qd-card-title">الأبواب</h2>
         <p class="qd-text-muted">إدارة أبواب الدراسات القرآنية</p>
       </a>
 
-      <a class="qd-card dashboard-card qd-card--hover qd-interactive-surface" [routerLink]="['/resources']">
+      <a class="qd-card qd-interactive-surface dashboard-card" [routerLink]="['/resources']">
         <h2 class="qd-card-title">المصادر</h2>
         <p class="qd-text-muted">المصادر والمراجع القرآنية</p>
       </a>

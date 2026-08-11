@@ -1,5 +1,5 @@
 <div class="qd-page abwab-templates-page" data-testid="abwab-templates-page">
-  <div class="qd-container qd-page-frame">
+  <div class="qd-page-shell qd-page-shell--split-workspace abwab-templates-page__frame">
     <header class="qd-page-header abwab-templates-page__header">
       <div>
         <h1 class="qd-page-title">{{ pageTitle }}</h1>
@@ -7,7 +7,7 @@
       </div>
       <a
         #headerFallbackFocus
-        class="qd-btn"
+        qdAction="secondary"
         [routerLink]="doorsRoutePath"
         data-testid="abwab-templates-page-back"
       >{{ backToDoorsLabel }}</a>
@@ -17,7 +17,10 @@
 
     @if (facade.isLoading() && facade.templates().length === 0) {
       <div class="abwab-templates-page__layout">
-        <aside class="abwab-templates-page__list" [attr.aria-label]="templatesListAriaLabel">
+        <aside
+          class="abwab-templates-page__list qd-page-rail qd-page-rail--s"
+          [attr.aria-label]="templatesListAriaLabel"
+        >
           <qd-skeleton-rows
             class="abwab-templates-page__list-skeleton"
             [count]="5"
@@ -30,17 +33,21 @@
         </div>
       </div>
     } @else if (facade.errorMessage() && facade.templates().length === 0) {
-      <qd-state
-        variant="error"
+      <qd-error-state
+        severity="read"
         [reserve]="true"
         [message]="facade.errorMessage() ?? ''"
         [actionLabel]="retryLabel"
-        data-testid="abwab-templates-page-list-error"
+        testId="abwab-templates-page-list-error"
+        actionTestId="qd-state-action"
         (action)="facade.loadList()"
       />
     } @else {
       <div class="abwab-templates-page__layout">
-        <aside class="abwab-templates-page__list" [attr.aria-label]="templatesListAriaLabel">
+        <aside
+          class="abwab-templates-page__list qd-page-rail qd-page-rail--s"
+          [attr.aria-label]="templatesListAriaLabel"
+        >
           @for (template of facade.templates(); track template.id) {
             <button
               type="button"
@@ -57,20 +64,22 @@
 
           @if (permissions.canCreateTemplate() && namingTemplate()) {
             <form class="abwab-templates-page__new" (submit)="createTemplate($event)">
-              <label class="qd-sr-only" for="abwab-templates-page-new-name">{{ newTemplateNameLabel }}</label>
-              <input
-                id="abwab-templates-page-new-name"
-                type="text"
-                [placeholder]="newTemplateNamePlaceholder"
-                [value]="newTemplateName()"
-                data-testid="abwab-templates-page-new-name"
-                (input)="onNewTemplateNameInput($event)"
-                (keydown.escape)="cancelNamingTemplate()"
-              />
+              <qd-form-field [label]="newTemplateNameLabel">
+                <input
+                  qdControl
+                  type="text"
+                  [placeholder]="newTemplateNamePlaceholder"
+                  [value]="newTemplateName()"
+                  data-testid="abwab-templates-page-new-name"
+                  (input)="onNewTemplateNameInput($event)"
+                  (keydown.escape)="cancelNamingTemplate()"
+                />
+              </qd-form-field>
             </form>
           } @else if (permissions.canCreateTemplate()) {
             <button
               type="button"
+              qdAction="tertiary"
               class="abwab-templates-page__add"
               data-testid="abwab-templates-page-add"
               (click)="startNamingTemplate()"
@@ -80,17 +89,17 @@
           }
 
           @if (facade.isEmpty() && !namingTemplate()) {
-            <qd-state variant="empty" [message]="templatesEmptyMessage" data-testid="abwab-templates-page-empty" />
+            <qd-empty-state [message]="templatesEmptyMessage" testId="abwab-templates-page-empty" />
           }
         </aside>
 
         <div class="qd-card abwab-templates-page__editor">
           @if (facade.selectedErrorMessage(); as selectedError) {
-            <qd-state
-              variant="error"
+            <qd-error-state
+              severity="read"
               [reserve]="true"
               [message]="selectedError"
-              data-testid="abwab-templates-page-template-error"
+              testId="abwab-templates-page-template-error"
             />
           }
 
@@ -104,12 +113,12 @@
             />
           } @else if (!template) {
             @if (!facade.selectedErrorMessage()) {
-              <qd-state variant="empty" [message]="templateNoneSelectedMessage" data-testid="abwab-templates-page-none-selected" />
+              <qd-empty-state [message]="templateNoneSelectedMessage" testId="abwab-templates-page-none-selected" />
             }
           } @else {
             <div class="abwab-templates-page__editor-head">
               <h2 class="abwab-templates-page__editor-title" data-testid="abwab-templates-page-template-name">
-                <span class="abwab-templates-page__editor-name qd-truncate" [title]="template.name">{{ template.name }}</span>
+                <span class="abwab-templates-page__editor-name">{{ template.name }}</span>
                 <span class="abwab-templates-page__count" data-testid="abwab-templates-page-template-count">
                   {{ elementCountLabel(template.nodeCount) }}
                 </span>
@@ -118,7 +127,7 @@
                 @if (permissions.canApplyTemplate()) {
                   <button
                     type="button"
-                    class="qd-btn qd-btn-primary"
+                    qdAction="primary"
                     data-testid="abwab-templates-page-copy"
                     (click)="openCopyModal()"
                   >
@@ -128,7 +137,7 @@
                 @if (permissions.canEditTemplateNode()) {
                   <button
                     type="button"
-                    class="qd-btn"
+                    qdAction="secondary"
                     data-testid="abwab-templates-page-edit-template"
                     (click)="editRoot()"
                   >
@@ -138,7 +147,7 @@
                 @if (permissions.canDeleteTemplate()) {
                   <button
                     type="button"
-                    class="qd-btn"
+                    qdAction="secondary"
                     data-testid="abwab-templates-page-delete-template"
                     (click)="requestTemplateDelete()"
                   >
@@ -175,7 +184,7 @@
             >
               <p>{{ templateDeleteConfirmMessage }}</p>
               @if (templateDeleteError(); as message) {
-                <qd-state variant="error" [message]="message" data-testid="abwab-templates-page-delete-template-confirm-error" />
+                <qd-error-state severity="write" [message]="message" testId="abwab-templates-page-delete-template-confirm-error" />
               }
               </qd-confirm-dialog>
             }
@@ -195,7 +204,7 @@
             >
               <p>{{ nodeDeleteConfirmMessage(deletingName ?? '') }}</p>
               @if (nodeDeleteError(); as message) {
-                <qd-state variant="error" [message]="message" data-testid="abwab-templates-page-delete-node-confirm-error" />
+                <qd-error-state severity="write" [message]="message" testId="abwab-templates-page-delete-node-confirm-error" />
               }
               </qd-confirm-dialog>
             }

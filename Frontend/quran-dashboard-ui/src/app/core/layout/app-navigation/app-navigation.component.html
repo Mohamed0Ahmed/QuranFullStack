@@ -1,0 +1,99 @@
+<ul class="qd-nav" [class.qd-nav--sheet]="sheet()" [attr.data-testid]="'app-navigation--' + mode()">
+  @for (item of items(); track item.key) {
+    <li
+      class="qd-nav__item"
+      [class.qd-nav__item--open]="openMenuKey() === item.key"
+      [attr.data-menu-key]="hasMenu(item) ? item.key : null"
+      (mouseenter)="onPointerEnter(item)"
+      (mouseleave)="onPointerLeave(item)"
+    >
+      @if (hasMenu(item)) {
+        <button
+          type="button"
+          qdAction="tertiary"
+          class="qd-nav__link qd-nav__trigger"
+          [class.qd-nav__link--current]="isMenuActive(item)"
+          aria-haspopup="true"
+          [attr.aria-controls]="openMenuKey() === item.key ? item.key + '-menu' : null"
+          [attr.aria-expanded]="openMenuKey() === item.key"
+          [attr.data-testid]="'nav-' + item.key + '-trigger'"
+          (click)="menuToggled.emit(item.key)"
+        >
+          {{ item.labelAr }}
+          <svg
+            class="qd-nav__chevron"
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              d="M3 4.5L6 7.5L9 4.5"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+
+        @if (openMenuKey() === item.key) {
+          <ul class="qd-nav__menu" [id]="item.key + '-menu'">
+            @for (child of item.children; track child.key) {
+              <li>
+                <ng-container
+                  *ngTemplateOutlet="childLink; context: { $implicit: child, parent: item }"
+                />
+              </li>
+            }
+          </ul>
+        }
+      } @else if (rendersAsLabel(item)) {
+        <span class="qd-nav__group-label">{{ item.labelAr }}</span>
+      } @else {
+        <a
+          class="qd-nav__link"
+          qdAction="tertiary"
+          [routerLink]="item.route"
+          routerLinkActive="qd-nav__link--current"
+          ariaCurrentWhenActive="page"
+          [routerLinkActiveOptions]="{ exact: exactFor(item.route) }"
+          [attr.data-testid]="'nav-link--' + item.key"
+          (click)="navigated.emit()"
+        >
+          {{ item.labelAr }}
+        </a>
+      }
+
+      @if (sheet() && item.children) {
+        <ul class="qd-nav__sublist">
+          @for (child of item.children; track child.key) {
+            <li>
+              <ng-container
+                *ngTemplateOutlet="childLink; context: { $implicit: child, parent: item }"
+              />
+            </li>
+          }
+        </ul>
+      }
+    </li>
+  }
+</ul>
+
+<ng-template #childLink let-child let-parent="parent">
+  <a
+    class="qd-nav__link qd-nav__link--child"
+    qdAction="tertiary"
+    [routerLink]="child.route"
+    [queryParams]="child.queryParams ?? null"
+    routerLinkActive="qd-nav__link--current"
+    ariaCurrentWhenActive="page"
+    [routerLinkActiveOptions]="{ exact: child.route === parent.route }"
+    [attr.data-testid]="'nav-menu-link--' + child.key"
+    (click)="onChildActivated(parent)"
+  >
+    {{ child.labelAr }}
+  </a>
+</ng-template>

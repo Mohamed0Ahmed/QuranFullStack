@@ -20,8 +20,9 @@ You cannot judge scope without knowing what was asked. First pin down:
    have a folder there.** A feature deletes its own planning artifacts in its last commit
    before merge, *after* this review passes — which is why the artifacts you are reviewing
    against still exist while you run, and why a missing `specs/<feature>/` means the feature
-   already closed rather than that something was lost. See the planning-artifact lifecycle
-   rule in `CLAUDE.md`.
+   already closed rather than that something was lost. The lifecycle rule is
+   `docs/README.md` §Lifecycle — a feature deletes its own planning artifacts before it
+   merges.
 2. **Which phase / tasks were requested** — read it from the user's request
    ("implemented Phase 3", "did T013–T018", "User Story 2"). If the request is vague,
    infer the intended scope from `tasks.md` and **state the assumption** you made.
@@ -100,10 +101,11 @@ this change.
 
 - **Acceptance criteria met?** Check the implementation against the acceptance criteria
   for the reviewed phase/story (in `spec.md`, and the manual steps in `quickstart.md`).
-- **Verification reported?** This project verifies by build (`dotnet build`,
-  `npm run build:verify`), the test lanes `TESTING_STRATEGY.md` §5 requires for the changed
-  scope (`Backend/scripts/test-backend …`, `npm run test:*`), and the manual `quickstart.md`
-  checklist. Report whatever build/lane/manual evidence was provided, by lane name.
+- **Verification reported?** Classify supplied evidence through `TESTING_CONSTITUTION.md`, the
+  feature's Testing Decision, the retained Backend lanes in
+  `Backend/tests/QuranDashboard.Tests/README.md`, the three-command frontend chain, any approved
+  Playwright journey, and the manual `quickstart.md` checklist. Report whatever
+  build/lane/manual evidence was provided, by command or lane name.
 - **Verification skipped?** If build or manual verification was not run or not reported,
   say so plainly. Do not assume success; unknown is unknown.
 

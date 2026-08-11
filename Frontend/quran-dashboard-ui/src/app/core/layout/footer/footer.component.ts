@@ -1,16 +1,16 @@
 import { Component, OnInit, inject, DestroyRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { SystemApi } from '../../data-access/system.api';
 import { HealthCheckItem, HealthStatus } from '../../data-access/system.models';
+import { QdActionDirective } from '../../../shared/ui/action/action.directive';
 
 type ViewState = 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'qd-footer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [QdActionDirective],
   templateUrl: './footer.component.html',
   styleUrl: './footer.component.scss',
 })

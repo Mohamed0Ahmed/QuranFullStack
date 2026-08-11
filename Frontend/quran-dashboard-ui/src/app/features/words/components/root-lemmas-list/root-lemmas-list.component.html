@@ -7,6 +7,8 @@
 
   <div
     class="root-lemmas-list"
+    qdResultList
+    listVariant="linked"
     [attr.aria-busy]="loading() ? true : null"
     [attr.data-testid]="loading() ? 'root-lemmas-list-loading' : 'root-lemmas-list'"
   >
@@ -26,9 +28,12 @@
     } @else {
       @for (row of rows(); track row.item.lemmaId; let index = $index) {
         <a
+          qdResultItem
           class="root-lemmas-list__row qd-interactive-surface qd-detail-list__row"
           [qdDetailLink]="row.frame"
           [attr.aria-label]="openLemmaLabel"
+          [position]="index + 1"
+          [setSize]="rows().length"
           data-testid="root-lemma-item"
         >
           <span class="root-lemmas-list__row-number qd-detail-list__row-number" aria-hidden="true">{{ index + 1 }}</span>

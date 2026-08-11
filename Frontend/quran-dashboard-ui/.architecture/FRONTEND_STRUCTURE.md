@@ -15,7 +15,10 @@ Read this file **before** adding or changing:
 For visual / style-system rules (colors, themes, tokens, `qd-` classes, RTL),
 read:
 
-- `.architecture/UI_STYLE_SYSTEM.md`
+- `FRONTEND_UI_RULES.md` — the short mandatory rule set, first, for any UI-visible change
+- `.architecture/UI_STYLE_SYSTEM.md` — the mechanics, §18 for the Golden foundation
+- `.architecture/golden-ui/` — the permanent visual authority (contracts, acceptance boards, the
+  `UI_DESIGN_HANDOFF.md` evidence base, and `GOLDEN_VISUAL_VERIFICATION.md` for how to verify)
 
 For product and visual context:
 
@@ -49,6 +52,19 @@ more.
   logic in route configuration.
 - Follow `UI_STYLE_SYSTEM.md` for all visual styling — compose shared `qd-`
   classes and tokens instead of recreating styles per component.
+- **Cross-cutting UI contracts live as data, not as duplicated constants.** The responsive
+  bands are `src/app/shared/layout/breakpoints.contract.json`, read directly by
+  `shared/layout/breakpoints.ts` and by `tailwind.config.js`, with
+  `src/styles/_breakpoints.scss` as the Sass adapter. `scripts/check-golden-ui-contract.mjs`
+  (`npm run check:golden-ui`) fails the build-time contract when any of the three drift, when a raw
+  responsive threshold (px or rem) appears in any stylesheet under `src/`, when a second route
+  gutter is declared, when the modal shell stops declaring exactly the four named widths or any
+  other Golden-layer stylesheet gives a modal-named selector its own inline-axis size, when a
+  `box-shadow` in any stylesheet under `src/` reads a `--qd-shadow*` token outside the declared
+  floating owners, when a Golden-layer selector — multi-line selector lists and pseudo-classes
+  included — reaches a Quran renderer descendant, or when the retired `qd-state` adapter reappears.
+  `FRONTEND_UI_RULES.md` §10 states the exact reach of each of those three boundaries. Add a
+  contract to that checker rather than to a second constants file.
 - Arabic-first / RTL is the default; respect it in structure and layout.
 - Quranic data safety: never invent Quranic text or labels; show missing data as a
   controlled state, never silently fabricated.

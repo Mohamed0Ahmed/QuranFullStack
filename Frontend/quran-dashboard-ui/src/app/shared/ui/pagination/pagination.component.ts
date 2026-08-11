@@ -19,6 +19,7 @@ import {
   PAGINATION_NEXT_LABEL,
   PAGINATION_PAGES_GROUP_LABEL,
   PAGINATION_PREV_LABEL,
+  paginationRangeAnnouncement,
 } from './pagination.labels';
 import { lastPageNumber } from './pagination-range';
 import {
@@ -28,6 +29,8 @@ import {
 } from './pagination-window';
 
 import { QD_BP_PHONE_MAX_QUERY } from '../../layout/breakpoints';
+
+let nextPaginationId = 0;
 
 @Component({
   selector: 'qd-pagination',
@@ -57,13 +60,22 @@ export class PaginationComponent {
   protected readonly jumpPlaceholder = '…';
   protected readonly invalidPageLabel = PAGINATION_INVALID_PAGE_LABEL;
 
+  private readonly instance = nextPaginationId++;
+  protected readonly jumpInputId = `qd-pagination-${this.instance}-jump-input`;
+  protected readonly jumpErrorId = `qd-pagination-${this.instance}-jump-error`;
+  protected readonly liveRegionId = `qd-pagination-${this.instance}-live`;
+
   protected readonly jumpValue = signal('');
   protected readonly jumpError = signal<string | null>(null);
-  protected readonly jumpActive = signal(false);
+  protected readonly rangeAnnouncement = signal('');
 
   protected readonly showPagination = computed(() => this.totalCount() > this.pageSize());
 
   protected readonly lastPage = computed(() => lastPageNumber(this.pageSize(), this.totalCount()));
+
+  protected readonly jumpSubmittable = computed(() =>
+    Number.isFinite(Number.parseInt(this.jumpValue().trim(), 10)),
+  );
 
   protected readonly visiblePages = computed(() =>
     buildPaginationWindow(
@@ -97,24 +109,7 @@ export class PaginationComponent {
     }
 
     this.resetJump();
-    this.pageChange.emit(page);
-  }
-
-  protected onJumpFocus(): void {
-    if (this.disabled()) {
-      return;
-    }
-
-    this.jumpActive.set(true);
-    this.jumpError.set(null);
-  }
-
-  protected onJumpBlur(): void {
-    this.jumpActive.set(false);
-
-    if (!this.jumpError()) {
-      this.jumpValue.set('');
-    }
+    this.emitPage(page);
   }
 
   protected onJumpInput(value: string): void {
@@ -142,7 +137,7 @@ export class PaginationComponent {
       return;
     }
 
-    this.pageChange.emit(parsed);
+    this.emitPage(parsed);
     this.resetJump();
   }
 
@@ -160,9 +155,20 @@ export class PaginationComponent {
     }
   }
 
+  private emitPage(page: number): void {
+    this.announceRange(page);
+    this.pageChange.emit(page);
+  }
+
+  private announceRange(page: number): void {
+    const total = this.totalCount();
+    const from = (page - 1) * this.pageSize() + 1;
+    const to = Math.min(page * this.pageSize(), total);
+    this.rangeAnnouncement.set(paginationRangeAnnouncement(from, to, total));
+  }
+
   private resetJump(): void {
     this.jumpValue.set('');
     this.jumpError.set(null);
-    this.jumpActive.set(false);
   }
 }

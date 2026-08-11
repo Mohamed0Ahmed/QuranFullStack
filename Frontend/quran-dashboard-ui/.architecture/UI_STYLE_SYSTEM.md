@@ -53,6 +53,12 @@ prototype contract, retained as history; §16/§17 are the live contract.
 When this file and `DESIGN.md` describe the same thing, `DESIGN.md` wins on the
 visual choice; this file governs how that choice is implemented and reused.
 
+The approved **Golden UI** system now sits above both for anything it covers: the
+permanent visual authority is `.architecture/golden-ui/`, the short mandatory rule set is
+`../FRONTEND_UI_RULES.md`, and §18 below records the foundation mechanics (tokens, bands,
+page intents, gutters, grids, hover/selection semantics, and the `check:golden-ui` gate).
+Read §18 before §15/§16 when the two appear to disagree.
+
 > Scope note: this is documentation/rules only. It does not create global styles,
 > theme files, or components — it defines how they must be built when that work is
 > explicitly requested.
@@ -104,12 +110,11 @@ Rules:
 > organization. Only add a new global partial when it holds a genuinely reusable,
 > app-wide pattern — do not scaffold speculative empty files.
 >
-> `.qd-page-frame` (`_layout.scss`, beside `.qd-container`) is the full-bleed page-frame rule —
-> `box-sizing: border-box`, no width cap, column flex, a reserved mobile-stat-bar
-> `padding-block-end`. It was `.qd-explorer-frame` in `_words-explorer-layout.scss` until Slice B2
-> renamed and moved it (the frame stopped being words-only once Abwab adopted it); the old name is
-> kept as a working alias on the same rule so the five existing explorer call-sites are untouched.
-> New call-sites use `.qd-page-frame`.
+> `.qd-container`, `.qd-page-frame` and `.qd-explorer-frame` were the pre-Golden page frames. All
+> three were **deleted in Phase 11** once `rg` proved zero template consumers. Every route composes
+> `.qd-page-shell` plus one named page intent
+> (§18.4), and that rule now owns the only `padding-inline: var(--qd-page-gutter)` declaration in
+> the stylesheet tree.
 
 ## 3. Naming Convention
 
@@ -120,7 +125,7 @@ Examples:
 ```text
 qd-page          qd-btn           qd-table
 qd-shell         qd-btn-primary   qd-modal
-qd-container     qd-btn-secondary qd-sidebar
+qd-page-shell    qd-btn-secondary qd-sidebar
 qd-card          qd-btn-ghost     qd-toolbar
 qd-section-title qd-input         qd-empty-state
                  qd-select        qd-loading-state
@@ -690,7 +695,7 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 ## 17. Component contracts ("never hand-write these again")
 
 > **Status: implemented.** This section is the **live contract** for the shared
-> primitives below. `qd-tabs`, `qd-chip`, `qd-state`, `qd-nav-progress`, and the
+> primitives below. `qd-tabs`, `qd-chip`, `qd-nav-progress`, and the
 > skeleton primitives
 > (`qd-skeleton-rows`, `qd-panel-skeleton`) are shipped Angular components;
 > `.qd-explorer-table` and `.qd-detail-list` are shipped CSS class-family collapses.
@@ -737,12 +742,11 @@ fills, resting borders — stays **banned as solid green**: use a tint,
     it would be a second keyboard contract for one consumer, and linear traversal
     already reaches every cell.
   - **Consumer (exactly one):** `abwab-move-picker`'s section strip. Its cells
-    measure **150 px** — the `--wide` modal's 832 px, minus 2 px of border and the
-    48 px of `.qd-modal__head` padding, minus four `--qd-space-2` gaps, over five
+    measure **150 px** — the `wide` shell's 832 px, minus 2 px of border and the
+    48 px of shell header padding, minus four `--qd-space-2` gaps, over five
     tracks — so the ~15-section product ceiling is exactly three rows. The strip
-    sits in `__head` (`flex-shrink: 0`), so it needs **no `max-block-size` and no
-    scroller of its own**, and `.qd-modal__body` stays the modal's only scroller per
-    the `.qd-modal` entry below. A call-site needing a different column count sets
+    sits in the shell's header slot (`flex-shrink: 0`), so it needs **no `max-block-size` and no
+    scroller of its own**, and the shell body stays the dialog's only scroller. A call-site needing a different column count sets
     `--qd-tabs-grid-columns` and records its own arithmetic the same way.
 - **Extending the tab's visual state:** a call-site adding a cue the primitive does
   not carry puts it on a **feature-local class beside** `.qd-tabs__tab`
@@ -820,13 +824,13 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   A destructive confirm must be re-initiated, never restored from a URL: a link that reopens
   "are you sure you want to delete this" is a link that can be sent to someone.
 - **Body is projected** (`<ng-content>`), so a consumer composes whatever the decision needs — a
-  path, a selector, an inline `qd-state variant="error"`. The dialog owns the framing and the
+  path, a selector, an inline `qd-error-state`. The dialog owns the framing and the
   dismissal routes; it never owns the content.
 - **Behavior:** focus trapped (`cdkTrapFocus` + auto-capture); **initial focus on CANCEL** — the
   dialog interrupts, so a reflexive Enter must produce the safe answer. `Escape` and a backdrop
   click both emit `cancelled`. `busy` disables BOTH buttons (a decision in flight is not
   cancellable into an inconsistent state either), carries the house busy affordance
-  (`aria-busy="true"` on the confirm button, the same signal the skeletons and `qd-state` use),
+  (`aria-busy="true"` on the confirm button, the same signal the skeletons use),
   blocks a second `confirmed` emission, and suppresses `Escape` and backdrop dismissal for the
   same reason it disables cancel; `confirmDisabled` disables confirm alone, for a decision that
   is not yet complete.
@@ -847,60 +851,51 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   dialogs, and they deliberately stay where the unsaved work is. A new hand-rolled confirm is a
   defect.
 
-### `qd-state`
-- **Purpose:** the one empty / loading / error presentation.
-- **Inputs / roles:** `variant: 'empty' | 'loading' | 'error'`, `message`, optional
-  `actionLabel` + `action` output; loading is non-interactive `role="status"`,
-  error is `role="alert"`.
-- **Recovery action:** an `error` may offer **exactly one** action (Feature 030,
-  M3) by supplying an Arabic `actionLabel` — the retry affordance for transient
-  transport failures. Without a label the error stays plain text. `empty` and
-  `loading` are never interactive. The control is the global `.qd-btn` (with the
-  `.qd-btn-secondary` variant); do not hand-roll a retry beside a
-  `.qd-error-state`.
-- **Visuals:** error uses `--qd-danger` on `--qd-danger-tint` (§16.1), calm per §11
-  — not visually aggressive; empty/loading stay on the neutral surface ladder, no
-  status color.
-- Supersedes ad-hoc `.qd-empty-state` / `.qd-loading-state` / `.qd-error-state`
-  usage; those classes remain as the backing layer. Compose, do not re-style.
-- **`reserve` (optional, `boolean`, default `false`):** additive input applying the
-  §N3 no-layout-shift doctrine (see the Loading/skeleton system entry above; not
-  restated here) to this component. On, the **message span** (not the container —
-  its padding alone already exceeds one control row, so a container-level
-  reservation would be a no-op) carries
-  `min-block-size: var(--qd-control-block-size)` — the shared control-geometry
-  token family `.qd-checkbox` / `.qd-modal--fixed` already draw from
-  (`styles/README.md`'s "size a new reserved slot from these tokens; never
-  re-measure the control by hand" rule) — so its box never appears/disappears;
-  only its text fades in, opacity only, static under `prefers-reduced-motion`,
-  mirroring `qd-detail-modal-shell`'s count span (above). Default off, so existing
-  call-sites are unaffected.
+### `qd-state` — retired
+> **Deleted in Plan 7 Phase 11 (D39).** The adapter that conflated empty / loading / error behind a
+> `variant` flag no longer exists. Its five replacements are the F12 owners in §19.3:
+> `qd-panel-skeleton`, `qd-refreshing-indicator`, `qd-empty-state`, `qd-error-state` and
+> `qd-notice`. `npm run check:golden-ui` fails on any `<qd-state` or `QdStateComponent` reference
+> and on `src/app/shared/ui/state/` reappearing.
+- **What moved where.** `variant="loading"` → `qd-panel-skeleton shape="text"`;
+  `variant="empty"` → `qd-empty-state`; `variant="error"` → `qd-error-state`, whose `severity`
+  now makes the announcing explicit: `read` is a scoped retry block with **no** alert role, `write`
+  is the only `role="alert"` and never clears a draft. That split is the point of the retirement —
+  the adapter announced every failure as an alert.
+- **The `qd-state-*` test ids survive on the owners**, deliberately: `testId="qd-state-error"`,
+  `qd-state-empty`, `qd-state-loading`, `qd-state-action`. They are stable call-site identifiers,
+  not evidence of a surviving component.
+- **The `.qd-state--reserve` / `.qd-state--reserve-empty` / `.qd-state__message` /
+  `.qd-state__action` classes also survive**, in `_components.scss`, as the backing layer for the
+  owners' `reserve` input. Renaming them would be a broad class rename with no behavioural gain and
+  is out of Plan 7's scope.
+- **`reserve` semantics are unchanged** and now belong to the owners. The message span (not the
+  container) carries `min-block-size: var(--qd-control-block-size)`, so its box never
+  appears/disappears; only its text fades in, opacity only, static under
+  `prefers-reduced-motion`.
 - **`reserve` under an `@if` reserves nothing, and most abwab sites do exactly that —
   knowingly.** All but one abwab `[reserve]` error surface are guarded on a **non-empty
-  message**, and no count belongs here — the inventory is the grep `shared/README.md`
-  already points at, `grep -rn '\[reserve\]' src/app/`. Most take the direct shape
-  `@if (message; as m) { <qd-state variant="error" [reserve]="true" [message]="m" /> }`;
+  message**; the inventory is the grep `shared/README.md` already points at,
+  `grep -rn '\[reserve\]' src/app/`. Most take the direct shape
+  `@if (message; as m) { <qd-error-state severity="write" [reserve]="true" [message]="m" /> }`;
   the two list-level page surfaces add a "nothing loaded yet" test to the same truthiness
   (`abwab-page.component.html`, `abwab-templates-page.component.html`); and
   `abwab-door-picker` reaches the same shape through a computed that is empty unless the
-  picker is in its error status (`abwab-door-picker.component.ts:62`). At a guarded site
-  the box appears and disappears with the message, the input's own contract
-  ("never appears/disappears") cannot hold, and the announcing comes from the
-  `role="alert"` being **inserted** into the open `role="dialog"`, not from the reserve.
-  **The one unconditional site is the template-copy modal**
+  picker is in its error status. At a guarded site the box appears and disappears with the
+  message, the input's own contract ("never appears/disappears") cannot hold, and the announcing
+  comes from the `role="alert"` being **inserted** into the open `role="dialog"`, not from the
+  reserve. **The one unconditional site is the template-copy modal**
   (`abwab-template-copy-modal.component.html`): its region is permanently mounted so the
-  live region exists before any failure, and `.qd-state--reserve-empty`
-  (`state.component.html:20`, `_components.scss`) keeps it visually quiet while empty —
-  `role="alert"` and block size retained, danger tint dropped to transparent and
-  transitioned in over `--qd-t-fast` (static under `prefers-reduced-motion`) when the
-  message lands. That class exists because Slice C once rendered the door/template-node
-  surface unguarded **without** it and shipped a 105px empty danger box on every open of
-  both modals — the quiet class is what makes a permanently-mounted reserve viable.
-  `reserve` earns its keep where a box is **permanently mounted** and only its content
-  arrives late; guarding the whole component remains right where the failure's announcing
-  comes from insertion into a plain dialog. Do not delete a guarded site's `@if` without
-  also giving it the quiet-empty shape, and flip the operation's `announceFailure` if you
-  change which shape a surface has (`features/abwab/README.md`, the announcer entry).
+  live region exists before any failure, and `.qd-state--reserve-empty` (`_components.scss`)
+  keeps it visually quiet while empty — `role="alert"` and block size retained, danger tint
+  dropped to transparent and transitioned in over `--qd-t-fast` (static under
+  `prefers-reduced-motion`) when the message lands. That class exists because Slice C once
+  rendered the door/template-node surface unguarded **without** it and shipped a 105px empty
+  danger box on every open of both modals — the quiet class is what makes a permanently-mounted
+  reserve viable. `reserve` earns its keep where a box is **permanently mounted** and only its
+  content arrives late. Do not delete a guarded site's `@if` without also giving it the
+  quiet-empty shape, and flip the operation's `announceFailure` if you change which shape a
+  surface has (`features/abwab/README.md`, the announcer entry).
 
 ### `.qd-explorer-table`
 - **Purpose:** the one table implementation for all 5 explorer tables (roots,
@@ -1033,7 +1028,16 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   aliases); `qd-skeleton-rows` (`count`, `rowTemplate` → renders skeleton cells
   inside the real row grid so loading rows match loaded rows exactly);
   `qd-panel-skeleton` (generalized `explorer-panel-skeleton`, `shape: 'lines' |
-  'rows' | 'panel'`, default reproduces today's six-line panel skeleton).
+  'rows' | 'panel' | 'text'`, default reproduces today's six-line panel skeleton).
+- **The pulse is flat** (D18): `.qd-skeleton` sits on `--qd-surface-sunken` and animates
+  `opacity 1 → .62` over `1.4s`. The shimmer sweep it replaced was a `linear-gradient`
+  pseudo-element, and no gradient may return to any loading or refresh treatment.
+- **`shape="text"` is the single-value text loader** (D40), not a fourth skeleton: a
+  `.qd-loading-state` region with a visible label, `role="status"`, `aria-live="polite"` and
+  `aria-busy`. A surface with a known final shape (table, list, panel, card grid, Quran page)
+  must use a content-shaped skeleton instead; the text loader is only for a count, a badge or a
+  single-value region — and it is the shape the retired `qd-state` adapter's `loading` variant
+  resolved to before Phase 11 deleted it.
 - **Roles:** all skeletons are non-interactive, `aria-busy="true"` + `role="status"`
   with an sr-only label, and static under `prefers-reduced-motion`.
 - **`shape="panel"` fills its host** (Feature 030, N3): it stands in for a whole
@@ -1096,69 +1100,25 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - Compose, do not re-style — a call-site needing a different box size or accent is
   a signal to extend this contract, not fork it.
 
-### `.qd-modal` / `.qd-modal--fixed` / `.qd-modal--wide`
-- **The base is width-only and scroller-less, and stays that way.** `.qd-modal`
-  (`_components.scss`) sets surface/border/radius/shadow/padding and
-  `width: min(100%, 36rem)` — no block-size, no scroller, no `overflow`. It is
-  what the six abwab modals compose today and must keep composing unmodified.
-  **Width variants opt in via `--wide`, never by editing the base** — the same
-  discipline `--fixed` applies to block-size.
-- **`--wide` is the one sanctioned wide step: `width: min(100%, 52rem)`.** The
-  ladder is now 28rem (`qd-confirm-dialog`) / 36rem (base) / 42rem (the
-  `explorer-detail-modal` hold-out) / 44–46rem (`--fixed` block-size,
-  `qd-detail-modal-shell`) / 52rem (`--wide`), and **no further ad-hoc width may
-  be added** — a call-site that wants something else extends this ladder here or
-  composes an existing step. 52rem == 832px fits inside the 992px available at
-  the 1024px minimum desktop with ~80px gutters per side; the rejected
-  literal-double 72rem goes full-bleed below 1184px, and the existing 46rem step
-  is only +160px over the base, which under-delivers for the two-pane content
-  that motivates the variant. **Consumers (exactly three):**
-  `abwab-relations-modal`, `abwab-move-picker`, `abwab-template-copy-modal`.
-  Everything else stays at the base. The modifier is `(0,1,0)`, so a call-site
-  class that sets its own width outranks it — compose `--wide` by *deleting* the
-  local width, never by adding specificity (the same trap the `--fixed` entry
-  names below).
-- **`--fixed` is the opt-in that carries this section's geometry rule** (a fixed
-  block-size, never `max-block-size`): `display: flex; flex-direction: column;
-  block-size: min(92dvh, 44rem); padding: 0; overflow: hidden`. `dvh`, not `vh`,
-  matching every other modal block-size in the app. `44rem` is
-  `qd-detail-modal-shell`'s own value — reused deliberately so the app converges
-  on one fixed modal height instead of gaining a fourth geometry.
-- **Slot contract:** `.qd-modal__head` / `.qd-modal__foot` are `flex-shrink: 0`
-  with their own `--qd-space-5` padding (the same step the base's uniform
-  padding uses, so composing surfaces keep today's rhythm); `.qd-modal__body`
-  is `flex: 1; min-block-size: 0; overflow-y: auto` — the **only** scroller —
-  with `padding-inline: var(--qd-space-5)` and `scrollbar-gutter: stable` so
-  the reserved scrollbar track cannot reflow content width once the list
-  crosses the scroll threshold (the same reflow-on-scroll defect class this
-  section exists to prevent, one level down). **`__body` has no block padding by design** — the gap at the
-  head/body and body/foot seams comes entirely from `__head`'s
-  `padding-block-end` and `__foot`'s `padding-block-start`, so `__foot` is
-  load-bearing for that gap, not an optional slot. A `--fixed` dialog composed
-  without a foot must give `__body` its own `padding-block-end` or its last
-  content line sits flush against the dialog's bottom edge. Phone
-  (≤ `$qd-bp-phone-max`) tightens to `--qd-space-3` padding and
-  `block-size: min(94dvh, 44rem)`, mirroring `qd-detail-modal-shell`'s own
-  phone rule — but **not** its backdrop padding: `.qd-modal-backdrop` is the
-  shared base for **every** modal consumer — `qd-confirm-dialog` included, so every
-  confirm inherits it too — which is why `--fixed` does not touch it. Grep the class
-  for the current consumer set rather than trusting a count here.
-- **Why opt-in and not a base change:** `.qd-modal.explorer-detail-modal` sets
-  `max-height: min(90vh, 36rem)` but never `height`/`block-size`. A block-size
-  added to the base would therefore also apply to it — silently clamping the
-  five shipped words detail modals that use that variant. `--fixed` is how a
-  consumer reaches this section's geometry rule without that collision; the
-  base must never gain a block-size.
-- **Specificity trap when composing:** the same trap named in the `.qd-checkbox`
-  entry above — an existing call-site rule can outrank `.qd-modal--fixed`
-  under Angular emulated encapsulation. Composing the modifier means
-  **deleting** any inner `max-block-size`, not adding the class beside it.
-  Slice C deleted four such caps when it composed the modifier on the six
-  abwab modals — the sections list (14rem), the copy and relations pick-lists
-  (13rem and 11rem), and the move picker's destination list (15rem, found only
-  during the deletion itself) — along with the nested scrollers they implied. The
-  standing rule the greps enforce: **no `max-block-size` in a modal's own
-  SCSS.**
+### `.qd-modal` / `.qd-modal-backdrop` (retired base, one documented consumer)
+- **`qd-modal-shell` is the dialog owner.** Every dialog in the app resolves to one of its four
+  named widths — `confirm` 30rem / `form` 38rem / `wide` 52rem / `overlay` 46rem — plus the Compact
+  full-bleed `94dvh` sheet (D48). `npm run check:golden-ui` fails if a fifth
+  `.qd-modal-shell--*` variant is declared.
+- **The legacy modifiers are gone.** `.qd-modal--wide`, `.qd-modal--fixed` and the
+  `.qd-modal__head` / `__body` / `__foot` slots were deleted in Plan 7 Phase 11 after `rg` proved
+  zero consumers; the abwab and detail dialogs that once composed them now compose
+  `qd-modal-shell`, which owns padding, the single body scroller, focus and scroll lock.
+- **What survives, and why.** `.qd-modal` (`width: min(100%, 36rem)`, surface/border/radius/
+  padding, no block-size and no scroller) and `.qd-modal-backdrop` (fixed, centred, `--qd-overlay`)
+  remain for exactly one consumer: the four Words Compact **detail drawers**
+  (`root` / `lemma` / `stem` / `word-type-details-panel`), which compose
+  `.qd-modal.explorer-detail-modal` below Wide. That drawer keeps a fifth geometry
+  (`min(100%, 42rem)` wide, `min(88dvh, 42rem)` tall below Wide) and is therefore a **known open
+  D48 residue**, recorded rather than silently accepted — Plan 7 §7's failure branch for
+  "feature-local outer modal width/padding/scroll selectors" is *retain*, and migrating those four
+  panels to `qd-modal-shell` needs a plan amendment. Do not add a second consumer to `.qd-modal`.
+- **Standing rule:** no `max-block-size` in a dialog's own SCSS. The shell owns block geometry.
 - **Convergence trigger for `.qd-modal.explorer-detail-modal` (required, not
   optional):** `--fixed` deliberately reuses `qd-detail-modal-shell`'s own
   `44rem` rather than introducing a new height, so no new modal height enters
@@ -1172,20 +1132,18 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Consumers:** the six abwab modals (`abwab-door-modal`,
   `abwab-template-node-modal`, `abwab-sections-modal`, `abwab-move-picker`,
   `abwab-relations-modal`, `abwab-template-copy-modal`), all composed by Slice C
-  with `__head`/`__body`/`__foot` and `cdkTrapFocus cdkTrapFocusAutoCapture`.
-  **The trap rule is conditional by design: a modal that hosts a nested confirm
-  dialog yields its trap while that confirm is open, so two traps are never live at
-  once.** Such a modal binds the trap to "no confirm open" — `abwab-sections-modal`
-  (`[cdkTrapFocus]="deleteConfirmId() === null"`,
-  `abwab-sections-modal.component.html:10`) and `abwab-relations-modal`
-  (`[cdkTrapFocus]="pendingDelete() === null"`,
-  `abwab-relations-modal.component.html:10`); the rest carry it bare because nothing
-  nests above them. `features/abwab/README.md` holds the reasoning (two live traps
+  with `__head`/`__body`/`__foot`. Focus containment belongs to `qd-modal-shell`
+  (§20.9), not to these consumers.
+  **A modal that hosts a nested confirm dialog yields its trap while that confirm is
+  open, so two traps are never live at once** — and no consumer arranges that itself:
+  `qd-modal-shell` registers open shells in a stack and enables the topmost one's trap
+  only, with `[trapFocus]="false"` available when a consumer must suspend its own.
+  `features/abwab/README.md` holds the reasoning (two live traps
   fight over focus) and the limit (no second nesting level, no confirm above a
   confirm). A modal that wants a control other than the first tabbable one marks that
   control `cdkFocusInitial` rather than moving focus itself after the trap captures —
-  one focus move, and `cdkTrapFocusAutoCapture` stays on, which is the only
-  thing that returns focus to the trigger on close. The
+  one focus move. Focus return belongs to the shell (§20.9), which captures the
+  pre-open `activeElement`; `cdkTrapFocusAutoCapture` is deliberately absent. The
   shallow ones (door, template-node) render with empty space below the fields:
   that is this section's "zero resize" trade, not a defect to fix back to
   content height.
@@ -1241,10 +1199,9 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   primitive replaces).
 - **Inputs / outputs:** `position: {x, y}` (positions the menu via
   `[style.left.px]`/`[style.top.px]`, unchanged from both prior copies); `menuTestId` /
-  `backdropTestId` (both `string`, required) — **non-negotiable**, because 4 Vitest
-  assertions and ~8 Playwright assertions select `abwab-page-context-menu` /
-  `abwab-page-ctx-backdrop` / the templates-page equivalents by test id, and inputs are
-  what let the extraction keep them byte-identical; `menuAriaLabel` (optional, defaults to
+  `backdropTestId` (both `string`, required) — **non-negotiable**, because surviving consumers use
+  `abwab-page-context-menu` / `abwab-page-ctx-backdrop` / the templates-page equivalents, and the
+  inputs keep them byte-identical; `menuAriaLabel` (optional, defaults to
   `CONTEXT_MENU_LABELS.menuAriaLabel`) names the `role="menu"` box — a menu with no
   accessible name is announced as an unlabelled group, so a consumer whose menu is not
   "operations" passes its own Arabic string; `dismissed` output, emitted on
@@ -1285,20 +1242,17 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   **The menu's inline-START edge is pinned at the anchor point and the box grows in the
   reading direction:** under RTL its right edge sits at `x` and the box grows leftward;
   under LTR the mirror (left edge at `x`), which is the behaviour that originally shipped.
-  Direction is resolved from `closest('[dir]')`, never hardcoded. It **flips** on
-  collision — inline when the box's **trailing (inline-END)** edge would cross the
-  viewport, block when opening below would cross the bottom — and is clamped into
-  `[8px, viewport − 8px]` afterwards (`context-menu.component.ts:107-126`). The clamp is a
-  floor, not a guarantee: a menu wider or taller than that axis of the viewport is pinned
-  at the `8px` margin and overflows the far side — and since the pin is always `left`/`top`,
-  under RTL that means the edge nearest the anchor is the one lost.
-  Because all three decisions need the box's own size, the menu
-  renders `visibility: hidden` for one frame, measures itself in `afterRenderEffect`, then
-  places and shows — no flash on the wrong side. jsdom reports zero-sized rects and is
-  skipped (the menu keeps the raw anchor there and stays measurable by the specs), so
-  **the browser is the verification tier**: the row-context-menu placement test in
-  `e2e/abwab-operations.e2e.ts` asserts that the RTL box's start (right) edge lands on the
-  anchor within 2px, the inline flip at 900px width, and the block flip at 420px height.
+  Direction is resolved from `closest('[dir]')`, never hardcoded
+  (`floating-layer-placement.ts:127`). The menu owns no placement math of its own: the
+  template delegates to `qdFloatingLayer` (`context-menu.component.html:3`), the directive
+  places at `ngAfterViewInit` (`floating-layer.directive.ts:139`), and the geometry lives in
+  `computeFloatingPlacement()` (`floating-layer-placement.ts:59-88`). It **flips in the block
+  axis** when opening below would cross the bottom and more space exists above; both axes are
+  then clamped to an `8px` viewport margin (`FLOATING_VIEWPORT_MARGIN`), and block size is
+  capped at 60% of viewport height. The clamp is a floor, not a guarantee: a menu wider or
+  taller than that axis of the viewport is pinned at the `8px` margin and overflows the far
+  side — and since the pin is always `left`/`top`, under RTL that means the edge nearest the
+  anchor is the one lost.
   Both trees' keyboard paths anchor at the focused row's inline-start edge to match
   (`abwab-tree.component.ts:317-319`, `abwab-template-tree.component.ts:106-108`).
   Recorded browser walk (1024px and 1440px, both themes, 12 points): mid-viewport right-edge
@@ -1308,10 +1262,9 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Two of the three gaps this primitive originally left open are now closed** — kept
   named so a future reader does not re-open them as work: gap 1, no viewport clamping,
   **closed by slice L** (the placement contract above — whose math now lives in the pure
-  `placeContextMenu()`/`resolveMenuDirection()` helpers of
-  `shared/ui/context-menu/context-menu-placement.ts`, with the RTL/LTR default, the flip
-  and the clamp branches unit-pinned in `context-menu-placement.spec.ts`, so placement
-  coverage no longer depends on the opt-in e2e tier); gap 2, no focus management into
+  `computeFloatingPlacement()`/`resolveFloatingDirection()` helpers of
+  `shared/ui/floating-layer/floating-layer-placement.ts`, with the RTL/LTR default, block flip,
+  and clamp branches); gap 2, no focus management into
   the menu, **closed** (the keyboard contract above). What is still open:
   3. **The `--danger` item's rest-state color is not unified.** The two prior copies
      were not byte-identical here: the doors page's danger item was plain-colored until
@@ -1347,19 +1300,54 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   name width where every existing precedent was flexible; this paragraph is where
   that gets settled once, so a later reviewer does not re-litigate it per
   call-site.
-- **Mandatory `[title]`, not optional:** any element composing `.qd-truncate` (or
-  otherwise capable of visually truncating) MUST carry `[title]="fullName"` so the
-  full name is available on hover/long-press once the ellipsis hides it —
-  precedent `word-type-filter.component.html:57`:
+- **Mandatory `[title]`, not optional — and never sufficient on its own:** any
+  element composing `.qd-truncate` (or otherwise capable of visually truncating)
+  MUST carry `[title]="fullName"` so the full name is available on hover/long-press
+  once the ellipsis hides it — precedent `word-type-filter.component.html:57`:
   `<span class="word-type-filter__child-label" [title]="child.label.ar">{{
   child.label.ar }}</span>`. A truncated name with no `[title]` is a contract
-  violation, not a style nit.
+  violation, not a style nit. But `title` is a *pointer* affordance, so it never
+  discharges D35 by itself: the truncating node must ALSO sit on a rung of the
+  Golden §8.1 disclosure ladder — a focusable owner carrying the full value, or a
+  related surface already showing it in full. `word-type-filter`'s span qualifies
+  because it labels a focusable filter control; a bare `<span>` in a static row or
+  chip does not. **When no rung fits, the surface does not truncate at all** — it
+  wraps (`min-inline-size: 0; overflow-wrap: anywhere`) and drops both `.qd-truncate`
+  and `[title]`. Adding `tabindex="0"` to the text node to manufacture a rung is
+  explicitly prohibited.
+- **Nine sites left the rule under D35, and the whole set was swept, not listed.**
+  The nine that had `title` as their *only* disclosure, each with no focusable owner
+  and no related full-value surface, now wrap instead of truncating: the relations
+  modal's bulk target chips; the sections modal's row names and the template tree's
+  node names (both of which a read-only visitor sees with the permission-gated
+  buttons — and, for the tree row, its `tabindex` — absent); the Access audit row's
+  target/actor lines and the owner-reconciliation candidate emails (both inside a
+  `qdResultItem` that is deliberately not focusable); the Access Compact context-bar
+  identity; the Access user picker's chosen identity (a `<p>`, whose sibling button
+  clears the choice rather than revealing it); the Abwab side panel's active door
+  name (a plain `div` chain under `role="group"`); and the templates page's editor
+  heading (a plain `<h2>`). Each remains without `title`, `.qd-truncate`, or an added `tabindex`.
+  **The remaining `[title]` sites were resolved individually against their real
+  focusable owner and are correct**: a name truncating inside a `button`
+  (`abwab-cards` card and crumbs, `access-user-list` row, `abwab-move-picker`'s two
+  row kinds, `abwab-templates-page`'s list item, `word-type-filter`'s child chip), a
+  `role="treeitem"` with a roving tabindex (`abwab-tree`, `abwab-archive-view`), a
+  `role="option"` carrying the full value as its `aria-label` (`access-user-picker`'s
+  candidates), a row whose focusable check control carries the name
+  (`abwab-door-picker`), an `aria-hidden` count inside a focusable tab
+  (`abwab-toolbar`), a `<label>` wrapping a checkbox with no truncation
+  (`access-permission-editor`), and one that is not the HTML attribute at all
+  (`words-hub-page` binds a component input named `title`). **Close this class by
+  sweeping `rg '\[title\]|\btitle='` over `src/`, never by working a reported list.**
 - **Debt paid (Slice D).** Slice C composed the rule inside the abwab modals — the
-  door picker's row names and the relations modal's bulk target chips. Slice D
-  finished the page surfaces: the doors tree, the archive view, the template tree,
-  the side panel's active door, the cards' title and breadcrumb trail, the sections
-  modal, the templates list and its editor title, and the move picker's two row
-  kinds. Every one composes `.qd-truncate` with its mandatory `[title]`, and each
+  door picker's row names and the relations modal's bulk target chips (the latter
+  since reverted to wrapping, above). Slice D
+  finished the page surfaces: the doors tree, the archive view, the template tree
+  (since reverted), the side panel's active door (since reverted), the cards' title
+  and breadcrumb trail, the sections modal (since reverted), the templates list and
+  its editor title (the title since reverted), and the move picker's two row
+  kinds. Every remaining one composes `.qd-truncate` with its mandatory `[title]` on a
+  focusable row owner, and each
   local ellipsis rule it supersedes was **deleted**, not left beside it. Three of
   those sites needed a shape change rather than a class: a name sharing one text
   node with a sibling chip (the card title, the templates editor title) had to
@@ -1452,13 +1440,13 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Requires `box-sizing: border-box` on the element carrying the reservation.**
   The app has no global `border-box`; without it the reservation overshoots the
   viewport by that element's own padding under the default `content-box`.
-  `.qd-page-frame` (`_layout.scss`) already carries `border-box`, which is why the
-  page-frame rename (§2) is a prerequisite of this pattern, not a coincidence.
+  `.qd-page-shell` (`_layout.scss`) carries `border-box`, which is why the page-shell contract
+  (§18.4) is a prerequisite of this pattern, not a coincidence.
 - **Abwab-local for now.** The reservation lives on `abwab-page.component.scss`
-  (`.abwab-page__frame`), not on the shared `.qd-page-frame` rule — promoting it
+  (`.abwab-page__frame`), not on the shared `.qd-page-shell` rule — promoting it
   there would silently reserve a viewport on all five explorer pages, which nobody
   has measured. **Generalize it only when** a second feature's page needs the same
-  state-stability guarantee; at that point promote the rule onto `.qd-page-frame`
+  state-stability guarantee; at that point promote the rule onto `.qd-page-shell`
   itself and re-verify the five explorer pages' bottom-of-page geometry (their
   existing `padding-block-end` mobile-stat-bar reservation interacts with any
   `min-block-size` added alongside it) rather than assuming the abwab measurement
@@ -1517,31 +1505,33 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   `position: sticky` unconditionally establishes a new stacking context in every current engine,
   regardless of `z-index` value (verified: forcing `.qd-navbar`'s `z-index` to `auto` does not
   restore the escape — sticky itself is the trigger, confirmed with an isolated repro on this
-  app's own page). `.qd-navbar`'s own dropdown menu and mobile-menu overlay
-  (`top-navbar.component.scss`) both already declare `--qd-z-mobile-nav` (45) for themselves.
+  app's own page). The navbar's own Wide dropdown, `.qd-nav__menu` (`_components.scss`), declares
+  `--qd-z-mobile-nav` (45) for itself.
   Putting `.qd-navbar` on `--qd-z-sticky` (5) instead — the first, wrong instinct, since it reads
-  as "the lowest rung, so everything else wins" — clamps those descendants down to 5 against
-  anything painting *outside* the navbar, regardless of their own declared z-index. **That isn't
+  as "the lowest rung, so everything else wins" — clamps that descendant down to 5 against
+  anything painting *outside* the navbar, regardless of its own declared z-index. **That isn't
   only a dropdown problem: confirmed against every z-scale consumer (`grep -rn "var(--qd-z-"`),
   it silently breaks three real surfaces once the navbar is sticky:**
-  1. `.dropdown-menu` (`--qd-z-mobile-nav`) loses to a `--qd-z-floating` (40) sibling outside the
+  1. `.qd-nav__menu` (`--qd-z-mobile-nav`) loses to a `--qd-z-floating` (40) sibling outside the
      navbar — confirmed live with a synthetic probe positioned over an open dropdown.
-  2. `.mobile-menu` (`--qd-z-mobile-nav`, `position: fixed; inset: 0`, the full-screen mobile nav
-     overlay) would paint *below* every page popover (`--qd-z-popover` = 30) and below
-     `.detail-modal-shell__restore` (`--qd-z-floating` = 40) — a visible regression, not latent.
+  2. The Compact/Medium navigation sheet — since Phase 10 a `qd-modal-shell` on
+     `--qd-z-modal-backdrop` (50) / `--qd-z-modal` (51), previously a fixed full-screen overlay on
+     `--qd-z-mobile-nav` — would paint *below* every page popover (`--qd-z-popover` = 30) and
+     below `.detail-modal-shell__restore` (`--qd-z-floating` = 40) — a visible regression, not
+     latent.
   3. Page popovers (`source-selector`, `surah-jump-picker`, `explorer-association-filter`, all
      `--qd-z-popover` = 30) would paint *over* the sticky navbar's own box on a scrolled page — a
      failure mode that did not exist before the navbar was sticky, since content never used to
      scroll under it.
-  **Resolution: `.qd-navbar` sits on `--qd-z-mobile-nav` (45), the same rung its dropdown and
-  mobile menu already declare** — not a new token, and not a respacing of the scale. This
+  **Resolution: `.qd-navbar` sits on `--qd-z-mobile-nav` (45), the same rung its dropdown
+  declares** — not a new token, and not a respacing of the scale. This
   satisfies the scale's stated purpose exactly (§4: "deliberately below `--qd-z-menu-backdrop`,
   so row menus and modals paint above the chrome") while fixing the mechanism: 45 beats popover
   (30) and floating (40), so a `qd-context-menu`/modal backdrop still paints above the chrome at
   49/50/51. Re-verified live after the fix: an open dropdown now beats a `--qd-z-floating` probe
-  at the same screen position; `.mobile-menu` covers page content; a `qd-context-menu` and a modal
-  backdrop still paint above the sticky navbar; a page popover no longer overpaints the navbar on
-  a scrolled page. **`--qd-z-sticky` (5) stays reserved for a genuinely in-page sticky element
+  at the same screen position; the navigation sheet covers page content; a `qd-context-menu` and a
+  modal backdrop still paint above the sticky navbar; a page popover no longer overpaints the
+  navbar on a scrolled page. **`--qd-z-sticky` (5) stays reserved for a genuinely in-page sticky element
   with no competing descendants of its own** (`mushaf-header-navigation.component.scss` is the one
   consumer) — the failure mode above is specific to a sticky element that *also* hosts its own
   higher-rung menus, which is why respacing the whole scale was rejected: nothing else on the
@@ -1576,16 +1566,15 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   deliberately: every holder is a modal dialog or a modal overlay, "app chrome is not
   reachable while a modal dialog is open" is not an abwab-only doctrine, and the precedent
   is *stronger* — `app.ts:14` already inerts the entire shell for the global overlay.
-- **Inert-inside-inert is real and was observed live, not just unit-tested.** With a
+- **Inert-inside-inert is real and was observed live.** With a
   words drawer (e.g. `root-details-panel`, holding the lock) open *under* the global
   detail overlay (`app.ts`'s `overlayOpen()`, which inerts the whole shell): the
   shell carries `inert`/`aria-hidden` from `app.ts`, and `.qd-navbar` — itself a
   shell descendant, already inert by cascade — *also* carries its own explicit
   `inert`/`aria-hidden` from `ScrollLockService.isLocked()`. Both apply
   simultaneously and harmlessly; browsers treat nested/duplicate `inert` as
-  idempotent. `app.nested-layers.spec.ts`'s "exactly one focus trap enabled" (the
-  dialog's, not the drawer's) still holds in this state — confirmed both by that
-  spec and by a live count of enabled `.cdk-focus-trap-anchor` elements in the
+  idempotent. Exactly one focus trap remains enabled (the dialog's, not the drawer's), confirmed by
+  a live count of enabled `.cdk-focus-trap-anchor` elements in the
   browser.
 
 ### `qd-result-count`
@@ -1601,13 +1590,13 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   `ExplorerResultCountComponent`, selector `qd-result-count, qd-explorer-result-count`
   — the same dual-selector alias mechanism as `qd-panel-skeleton,
   qd-explorer-panel-skeleton` (`ui/explorer-panel-skeleton/`), kept so the four
-  existing words explorer call-sites (Unique Words, Roots, Lemmas, Stems) and their
-  spec needed no template change, only an import-path update. New call-sites (item
+  existing words explorer call-sites (Unique Words, Roots, Lemmas, Stems) needed no template
+  change, only an import-path update. New call-sites (item
   17's abwab stats bar) use the neutral `qd-result-count` selector.
 - **Its own labels are read through a TDZ-safe getter**
   (`result-count.labels.ts` → `protected get labels()`), never a `readonly` field —
-  a `readonly` field resolves to `undefined` in the bundled test build (temporal
-  dead zone). This is the same rule `features/words/README.md` and
+  a field initialiser can observe the label module inside its temporal dead zone.
+  This is the same rule `features/words/README.md` and
   `features/abwab/README.md` state for their own `*.labels.ts` files; the promotion
   preserved the idiom rather than dropping it on the move.
 - **Renders `labelPrefix()`: `count()` — a data-display idiom, not a counted-noun
@@ -1656,3 +1645,364 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   component's own skeleton covers "data is loading". The bar's fade may overlap the
   skeleton's appearance by at most the fade duration; neither replaces the other,
   and in-component skeletons must never be removed in its favor.
+
+## 18. Golden UI foundation (Plan 7, Phase 1)
+
+The permanent visual authority is `.architecture/golden-ui/` (four Markdown contracts plus four
+HTML acceptance boards). The short mandatory rule set every UI change must read first is
+`../FRONTEND_UI_RULES.md`. This section records the *mechanics* that foundation put in place; the
+sections above stay valid for everything it did not touch.
+
+### 18.1 One token truth, reached through the existing theme mechanism
+
+`src/styles/_tokens.scss` now carries the Golden light values on the **existing themed token
+names**, and the Golden semantic names are aliases pointing at them:
+
+```
+--qd-bg:      #F4F2EC   ←  --qd-bg-page
+--qd-chrome-bg: #FAF9F5 ←  --qd-bg-chrome
+--qd-surface: #FFFFFF   (already the Golden name)
+--qd-section-bg: #FBFAF6 ← --qd-surface-quiet   (and --qd-surface-hover)
+--qd-surface-recessed: #EEEBE1 ← --qd-surface-sunken
+--qd-text/-body/-muted: #23211C / #443F37 / #6E6759 ← --qd-ink / --qd-ink-body / --qd-ink-muted
+--qd-primary = --qd-accent: #1C6349 ← --qd-green-solid / --qd-green-thread
+--qd-accent-text: #1B5E46 ← --qd-green-text ; --qd-accent-tint: #E7F0EA ← --qd-green-tint
+--qd-accent-soft: #CFE0D6 ← --qd-green-quiet (and --qd-border-accent)
+--qd-danger/-tint #8C2F22/#F7E9E5 · --qd-warning/-tint #8A5A12/#F7EEDC · --qd-success/-tint #1B5E46/#E7F0EA
+--qd-footer-bg #16233A · --qd-footer-text #D5DCE6 ← --qd-ink-on-dark
+```
+
+The direction matters and is not interchangeable: **the themed name holds the value, the Golden
+name is the alias.** `_themes.scss` overrides the themed name, so a component written against a
+Golden alias still follows the existing dark toggle instead of becoming a light island. Writing
+this the other way round (Golden name holds the value, themed name aliases it) would break dark for
+every migrated component. Nothing Golden-dark was added; dark remains interim and unreviewed.
+
+Tokens with no themed equivalent are declared directly and are light-only for now:
+`--qd-neutral`, `--qd-neutral-tint`, `--qd-neutral-ink-disabled`, `--qd-danger-hairline`,
+`--qd-warning-hairline`, and the `--qd-lifecycle-*` / `--qd-mutation-*` / `--qd-membership-owner`
+role aliases (§2.4 of the Golden system is exhaustive — no status colour may be invented at a call
+site). Lifecycle and mutation names never merge: "active account" and "successful mutation" share a
+green today and must keep separate names.
+
+The morphology taxonomy palette (`--qd-segment-cat-*`) is deliberately **unchanged** — it is content
+taxonomy, not status, and no Golden alias recolours it.
+
+### 18.2 Spacing, radius, type, geometry
+
+- `--qd-s-2 … --qd-s-64` is the Golden 4px/8px-rhythm scale (`2,4,8,12,16,20,24,32,40,48,64`).
+  The historical `--qd-space-1…6` are now aliases onto it, so there is one spacing truth and the
+  three steps the old scale lacked (2, 20, 40/48/64) exist without a second vocabulary.
+- Radii are `4/6/10/14/999px` (`--qd-radius-xs` is new; `--qd-radius-sm` moved 7px → 6px).
+- `--qd-type-*` carries `12/1.5 · 13/1.6 · 14/1.75 · 16/1.8 · 18/1.45 · 20/1.4 · 24/1.35 · 30/1.3`
+  plus identity. `_typography.scss`'s `.qd-page-title`/`.qd-section-title`/`.qd-card-title`/
+  `.qd-text*` are built from those tokens rather than local rem literals, and `.qd-text-body`,
+  `.qd-text-caption`, `.qd-text-identity`, `.qd-prose` were added for the roles that had no class.
+- Control geometry, hit target, modal widths, rails, splits, page measures, grid bounds, and the
+  floating-layer block size are all tokens (`--qd-control-*`, `--qd-hit-target-min`,
+  `--qd-modal-*`, `--qd-rail-*`, `--qd-split-*`, `--qd-page-measure-*`, `--qd-grid-*`,
+  `--qd-floating-max-block-size`). Phase 1 declares them; later phases consume them.
+- Elevation: resting is zero. `--qd-shadow-layer` (`0 8px 24px -10px rgb(35 33 28 / .22)`) is the
+  one floating-layer shadow and `--qd-floating-shadow` / `--qd-shadow-lg` resolve to it.
+  `.qd-card` no longer declares a resting `box-shadow` at all.
+
+### 18.3 Bands
+
+`src/app/shared/layout/breakpoints.contract.json` is the single neutral source. `breakpoints.ts`
+imports it, `tailwind.config.js` requires it, and `src/styles/_breakpoints.scss` is a Sass adapter
+whose every literal is compared against the JSON by `npm run check:golden-ui`.
+
+Compact `≤767` · Medium `768–1079` · Wide `≥1080` · Wide-plus `≥1440` (measure only, never a fourth
+structure). The historical `$qd-bp-tablet-max` / `$qd-bp-desktop-min` and
+`QD_BP_TABLET_MAX_QUERY` / `QD_BP_DESKTOP_MIN_QUERY` are kept as aliases but now resolve to
+`1079/1080`, not `1023/1024` — that move is the point of D10, and it is why the legacy desktop
+behaviour no longer engages at the 1024 edge. The aliases retire in Phase 11 once no consumer is
+left.
+
+### 18.4 One gutter, four page intents, three rails
+
+`.qd-page` is **block rhythm only** (`padding-block: var(--qd-page-rhythm)`). The inline gutter
+belongs to the page shell alone:
+
+- `.qd-page-shell` + `--capped-reading` (72rem) / `--full-data` (100rem) / `--split-workspace`
+  (100rem) / `--protected-mushaf` (90rem, feature-owned) — the canonical API.
+- The `.qd-container` / `.qd-page-frame` / `.qd-explorer-frame` legacy aliases and the
+  `.qd-page > .qd-page-header` compatibility gutter are **deleted** (Phase 11, zero consumers).
+- A page shell nested inside another drops its `padding-inline` to `0`, so a nested surface cannot
+  manufacture a second route gutter. `npm run check:golden-ui` fails if any stylesheet under
+  `src/` other than `_layout.scss` declares `padding-inline: var(--qd-page-gutter)`, or if
+  `_layout.scss` declares it more than once.
+
+`--qd-page-gutter` is `16 / 24 / 32 / 40px` at Compact / Medium / Wide / Wide-plus, declared once in
+`_tokens.scss`. `.qd-page-rail--s/--m/--l` are `16/18/20rem` and collapse to full width below Wide;
+`.qd-page-split--data` (`1.25fr 1fr`) and `.qd-page-split--mushaf` (`40% 60%`) become two columns
+only at Wide, so Medium can never be a squeezed Wide.
+
+### 18.5 Bounded grids (F04)
+
+`.qd-grid` plus `--destinations` (18–26rem, max 3), `--curriculum` (20–30rem, max 2), `--doors`
+(14–20rem, max 4), `--permission-groups` (15–22rem, max 3). Each modifier sets only the three
+custom properties; the base rule derives both `grid-template-columns` and the max-column cap from
+them, and Compact forces a single column. `.qd-grid__span-all` carries the "final card spans" and
+orphan rules. Feature phases apply these classes; they never restate the numbers.
+
+### 18.6 Hover, selection, direction, hit area
+
+- One neutral hover surface: `--qd-surface-quiet` (`--qd-surface-hover` now aliases it), used by
+  cards, menus, tabs, chips and navigation alike. Green is never a hover tone; the former
+  `.qd-card--mini` accent-border hover is gone (D15).
+- `.qd-selected-thread` is the logical 2px `border-inline-start` green selection mark. It is
+  declared here as the owner; call sites migrate to it in their own phase (D26, Phase 3), and the
+  generic `.qd-is-selected` stays untouched until then.
+- `.qd-ltr-isolate` (`direction: ltr; unicode-bidi: isolate`) is the only sanctioned Latin island,
+  applied to the **value element**, never a container.
+- `.qd-hit-target` expands a small control to `--qd-hit-target-min` (44px) through a negative-inset
+  `::after`, leaving the visible icon size alone.
+- `.qd-flex-shrink-guard` / `.qd-flex-fixed` encode the Golden shrink guard (`flex: 1 1 0` +
+  `min-inline-size: 0` for the flexing child, `flex: 0 0 auto; white-space: nowrap` for its
+  siblings) — a bare `flex: 1` on a text input is the most common way a Compact row pushes the
+  document past the viewport.
+
+### 18.7 The gate
+
+`npm run check:golden-ui` (`scripts/check-golden-ui-contract.mjs`) fails on: a band value that
+disagrees with the JSON contract, a restated band literal in TypeScript or Tailwind, a raw
+non-band `@media` threshold in a migrated file, a gradient / active-transform / hover-lift /
+resting-shadow / physical inline property / colour literal in the Golden layer, `.qd-page` regaining
+an inline gutter, a missing page-intent or rail or bounded-grid selector, a domain-named selector in
+the layout layer, and any reappearance of the retired `qd-state` adapter.
+
+Its `LEGACY_ALLOWLIST` is explicit and each entry names the phase that retires it. The list may only
+shrink: an entry whose recorded count no longer matches reality fails the check, so a cleanup cannot
+silently leave a stale allowance behind.
+
+## 19. Golden UI controls and async owners (Plan 7, Phase 2)
+
+Phase 2 implements F05 (action), F06 (field/control) and F12 (the five async concepts) and closes
+D14, D16, D17, D18, D20 and D21. §18 stays the foundation; this section is what consumes it.
+
+### 19.1 One action contract (F05)
+
+`qdAction` is a **directive on a native `button` or `a`** (`shared/ui/action/`), never a custom
+element. It adds `.qd-action` plus one variant class (`primary`, `secondary`, `tertiary`, `danger`,
+`icon-only`, `toolbar`, `row-action`) and one size class (`sm`/`md`/`lg` → `--qd-control-sm/-md/-lg`
+= `32/40/48`). The styling is the global `.qd-action*` family in `_components.scss`.
+
+Load-bearing decisions:
+
+- **Native activation and native `disabled` stay with the call-site.** The directive never writes
+  `disabled`, never adds `role="button"` to an anchor, and never intercepts a click. Over-normalising
+  a link into a button is how keyboard and middle-click behaviour gets lost.
+- **The busy icon slot is reserved as soon as `busy` is bound at all**, not when it turns true
+  (`.qd-action--busy-slot` vs `.qd-action--busy`). Reserving on `true` would resize the control at
+  the exact moment the operator is waiting on it. An action that never declares a busy state gets
+  no slot, so ordinary buttons keep their natural width. Busy sets `aria-busy` and keeps the label.
+- **No active-state translate** (D14). Active and hover change tone only, and `.qd-btn` lost its
+  `translateY(1px)` in the same change — the transition list no longer mentions `transform`.
+- **Compact hit area** (D45): at `≤767` every action's `--qd-action-size` becomes
+  `--qd-hit-target-min` (44px) through padding growth, and `primary`/`lg` take `--qd-control-lg`
+  (48px). Icon-only and row actions also take that size on the inline axis, so a 16–20px glyph
+  still sits in a 44px box.
+- **Padding-inline uses the spacing scale** (`8/12/16`), not the board's `10/14/18`: the Plan 7
+  contract restricts every spacing step to `2,4,8,12,16,20,24,32,40,48,64`, and a control padding
+  is a spacing step. The heights are the locked values and were not rounded.
+- `row-action` is defined here as an always-mounted transparent icon action. The "reveal on
+  hover/focus/selection at Wide" rule needs a row to hang off, so it belongs to the row families
+  (F09/F10) and is not invented here as an unconsumed container class.
+
+### 19.2 One field contract (F06)
+
+`qd-form-field` owns `[label] [required marker] [control] [helper] [error]` and generates
+`qd-field-N-control/-helper/-error` ids. The projected native control carries `qdControl`, which
+resolves the field through the element injector (content projection preserves the injector
+hierarchy) and binds `id`, `aria-describedby` and `aria-invalid` from it. A `qdControl` outside a
+field is still a styled control but borrows nothing — it exposes its own `invalid` input.
+
+- **Required is stated in text as well as `*`**: the glyph is `aria-hidden`, and an `.qd-sr-only`
+  word carries the meaning.
+- **Focus is `:focus-visible` only, 2px green at 2px offset, and changes no geometry** (D21, D42).
+  `.qd-control`/`.qd-input`/`.qd-select` lost their `:focus` ring, their `box-shadow: var(--qd-ring)`
+  and their focus border-colour change: a pointer click must paint nothing and a keyboard focus must
+  not move the control.
+- **One control geometry** (D20): `.qd-control`, `.qd-input` and `.qd-select` share
+  `min-block-size: var(--qd-control-md)`, `--qd-radius-sm`, the hairline border, `--qd-font-ui` and
+  `--qd-type-body`. The select's radius moved `md → sm` and its height `2.375rem → 2.5rem` so it
+  matches inputs and actions.
+- **Hover is neutral** (D16): `--qd-border-strong` + `--qd-surface-quiet`. The select's green
+  `--qd-border-accent` hover is gone; green now appears only on the focus ring and on selection.
+- **The chevron is a flat inline background image** (D17), replacing two `linear-gradient`s. A
+  `background-image` SVG is an isolated document — it cannot read `currentColor` or a custom
+  property — so the muted-ink hex inside that data URI is the one written colour in the styles layer
+  outside `_tokens.scss`. It is not a token violation to be "fixed" by re-introducing a gradient or
+  by adding a second chevron token; if it must change, change the encoded SVG.
+  `background-position` has no logical form either, so the chevron is positioned from `left`, which
+  is the inline-end edge under the app's RTL direction and exactly where the gradient chevron sat.
+- Disabled controls use `--qd-neutral-tint` + `--qd-neutral-ink-disabled`, never opacity alone, and
+  an invalid control shows a danger hairline **plus** the error text — never colour alone.
+
+### 19.3 Five async owners, five geometry contracts (F12)
+
+| Concept | Owner | Role / live behaviour | Geometry it owns |
+|---|---|---|---|
+| Skeleton / loading | `qd-skeleton-rows`, `qd-panel-skeleton` (`lines`/`rows`/`panel`/`text`) | `aria-busy` + one sr-only `role="status"` (visible label for `text`) | the **final** shape of the surface it replaces |
+| Refreshing | `qd-refreshing-indicator` | none — no role, no live region, `aria-hidden` | nothing; a 2px absolute track on `.qd-refreshing-region` |
+| Empty | `qd-empty-state` | `role="status"` | its own content region |
+| Error / notFound | `qd-error-state` | `severity="read"` → no role; `severity="write"` → `role="alert"` | its own content region; `reserve` keeps a mounted region quiet |
+| Notice | `qd-notice` | `role="status"` + `aria-live="polite"`, always mounted | **zero** idle height; grows only while a message exists (D41) |
+
+The read/write split is the point: a failed read is announced once through the workspace's polite
+region and offers a scoped retry, so making it an alert interrupts twice; only a write failure is an
+alert, and it never clears the draft. Refreshing announces nothing itself — the region it decorates
+keeps its content and carries `aria-busy`, which is why the indicator must not be given a status,
+alert or dialog role.
+
+`reserve` + `.qd-state--reserve` / `.qd-state--reserve-empty` / `.qd-state__message` (legacy
+class names kept as the backing layer) are now the
+shared reserved-live-region vocabulary of the empty, error and text-loader owners (the styles moved
+from `state.component.scss` into `_components.scss`, because a component stylesheet cannot reach
+markup another component renders). The names keep their legacy spelling on purpose: two feature
+families and one page still consume them, and renaming them would be a call-site migration, not a
+rename.
+
+`.qd-empty-state` / `.qd-loading-state` / `.qd-error-state` keep their current padding and
+alignment. Their Golden retune (padding 16, `min-block-size: min(40vh, 20rem)` for read states) is
+deliberately **not** done here: roughly sixty unmigrated feature templates use those classes
+directly, and changing their reserve behaviour globally is exactly what Phase 2 is told not to do.
+Each family retunes them as it migrates.
+
+### 19.4 What the gate now enforces
+
+On top of §18.7, `npm run check:golden-ui` fails when any of the six F12 owner files is missing and
+when `state.component.html` declares a `role`, `aria-live`, `aria-busy` or `qd-*` class — the
+adapter may only delegate. Its legacy allowlist lost the four Phase-2 entries (the skeleton shimmer
+gradient, the `.qd-btn:active` translate, and the two select-chevron gradients), so the control and
+state layer now carries zero gradients and zero active transforms with no allowance at all.
+
+## 20. Golden UI interaction primitives (Plan 7, Phase 3)
+
+Phase 3 implements F07 (tabs), F08 (toolbar zones), F10 (result list), F11 (details workspace),
+F13 (pagination), the F14 modal base, the F15 floating base and F17, and closes D19, D25, D26, D27,
+D31, D42, D43, D44 and D45 at the shared layer. §18 is the foundation, §19 the controls and async
+owners; this section is the interaction layer that composes both. Broad modal/picker migration is
+Phase 7 — what is built here is the base every later consumer resolves to.
+
+### 20.1 One tab contract (F07)
+
+`qd-tabs` keeps its selector, its `ariaLabel`/`orientation`/`layout` inputs and its consumer-owned
+selection. Phase 3 added, without changing any of that:
+
+- **Per-instance ids** (D31). The tablist gets `qd-tabs-N`; each `qdTab` gets
+  `qd-tabs-N-tab-M`. These are **fallbacks written in `ngAfterViewInit`, only when the element has
+  none.** `abwab-move-picker` binds `[id]="sectionTabId(...)"` and `access-admin-page` binds
+  `[attr.id]`/`[attr.aria-controls]`; a host binding on the directive would have won the update
+  pass and removed theirs. `panelId` and `disabledReasonId` behave the same way.
+- **Layout by count, never by wrap** (D30). Three tabs or fewer render `qd-tabs--segmented` on the
+  sunken track with equal-width tabs; four or more render `qd-tabs--scrollable`, a single row with
+  its own inline scroller. `.qd-tabs` is `flex-wrap: nowrap` in both, so a tablist can no longer
+  form an accidental second row. An explicit `layout="grid"` opts out of the count-driven choice.
+- **Selected treatment** is the Golden pill: green tint, `--qd-green-text`, and a 2px thread on the
+  block-end edge (`box-shadow: inset`, because a border would change the tab's height). A vertical
+  tablist gets the logical `border-inline-start` thread instead.
+- **Selected-tab scroll-into-view**, both on selection change and on keyboard move, so a scrolling
+  row never hides the current tab.
+
+The RTL arrow mapping was already correct and is unchanged: ArrowLeft is the logical *next* tab in
+RTL because that is the next tab in visual order.
+
+### 20.2 Result list and details workspace (F10, F11)
+
+`qdResultList`/`qdResultItem` are a native-role directive pair, not a data component: they add
+`role="list"`/`listitem` (D25), the logical selected thread (D26), `aria-current` on the selected
+master row, and optional set metadata. They add **no** `tabindex` — a truncated value is disclosed
+through the §8.1 ladder on the owning control, and manufacturing a tab stop per truncated node is
+explicitly prohibited.
+
+`qd-details-workspace` is the projected details anatomy: identity, metadata, actions, an optional
+tab zone, a permanently mounted polite status slot with zero idle geometry, exactly one body
+scroller, and an optional footer. Every zone is `<ng-content>`; the shell holds no feature data and
+takes no domain input. Its `tabId(key)`/`panelId(key)`/`statusId` namespace is per instance, which
+is what lets an inline detail panel and the global overlay body coexist (D31).
+
+### 20.3 Pagination geometry (F13)
+
+The jump input is `--qd-pagination-jump-inline-size` (`6rem`) in every state — the `:focus` widen is
+gone (D42). Go is always mounted and only toggles `disabled` (D43). `jumpSubmittable` is
+"parses to a number", **not** "is in range": an out-of-range page has to stay submittable, because
+submitting is what produces the range error in the reserved error line. That line is now permanently
+mounted and toggles `visibility`, so a failed jump adds no height. Ids for the input, the error line
+and the live region are per instance (D44), and every page change announces the new **result range**
+through that instance's polite region. Compact controls take `--qd-hit-target-min` (D45). Audit
+`Load more` remains a separate capability with none of this API.
+
+### 20.4 Modal and floating bases (F14, F15)
+
+`qd-modal-shell` owns four named widths and nothing else may exist: `confirm` 30rem, `form` 38rem,
+`wide` 52rem, `overlay` 46rem, plus the Compact full-bleed `94dvh` sheet with safe-area padding
+(D48). The shell owns padding; header and footer are sticky siblings of the single scrolling body
+(D49). `dismissed` carries its route (`close`/`escape`/`backdrop`) rather than being a bare void, so
+a dirty authoring form can refuse the casual routes and keep an explicit close. Escape is consumed
+by the topmost shell whether or not it dismisses: a shell that refuses the route still calls
+`stopPropagation`/`preventDefault`, so an ancestor drawer or a document-level listener cannot close
+in its place. Backdrop dismissal requires the pointer sequence to **start and end** on the backdrop
+(the press target is recorded on `pointerdown`/`mousedown` and compared at `click`), so a drag-select
+released outside the dialog never discards a draft.
+
+Focus containment is CDK-trap based, but the shell — not each consumer — decides **which** trap is
+live: shells register in an internal open-shell stack and only the topmost one enables its trap, and
+`[trapFocus]="false"` lets a consumer suspend its own trap while it hosts a nested decision. Exactly
+one trap is enabled across nested shells.
+
+**Focus return has exactly one owner: the shell.** It captures the pre-open `activeElement`, drives
+initial focus through the trap itself (there is no `cdkTrapFocusAutoCapture` second restorer), and
+restores **synchronously** on close and on destroy-while-open. A consumer that wants to place focus
+itself sets `[returnFocus]="false"` and owns it end to end; nothing restores asynchronously behind
+its back. The reference-counted
+scroll-lock hold is released on close **and** on destroy, so a shell torn down while open cannot
+strand the page. Making the route content behind the dialog `inert` remains an app-shell concern
+(`app.ts` for the global overlay, `ScrollLockService.isLocked` for the navbar) — the shell does not
+reach outside itself, and D13's nav-sheet work stays in Phase 10.
+
+`qdFloatingLayer` is one keyboard script for five variants (D33) and `placeFloatingLayer()` is the
+pure geometry (D34): block-axis flip when the preferred side cannot hold the layer and the other
+side has more room, inline clamp to an 8px viewport margin, `min(60vh, 24rem)` cap, and
+`position: fixed` so a layer never joins document flow. Items are located by ARIA role, never by a
+shared option model, so grouped and flat hierarchies stay feature-owned (G12).
+
+**One option model per variant** (F15 §16): `action-menu` roves real DOM focus and never carries
+`aria-activedescendant`; `select-listbox` and `searchable-picker` keep DOM focus on the field (or on
+the layer) and move an `aria-activedescendant` cursor, which is cleared when the layer closes or its
+variant changes. Key handling is scoped by event target: inside a text input, textarea or
+`contenteditable`, printable keys, Home/End and the caret arrows stay with the field, and only
+ArrowUp/ArrowDown drive the option cursor. Type-ahead
+accumulates inside a 600ms window and searches forward from the active item; an empty or
+whitespace-only prefix never matches, and Space extends a type-ahead already in progress but
+otherwise belongs to the focused item (APG). The `24rem` half of the cap resolves against the live
+root font size (`resolveRootFontSize()`), so JS can never disagree with
+`--qd-floating-max-block-size`. The computed placement
+is written to `left` because a viewport coordinate has no logical form — the *choice* of anchored
+edge is direction-aware, which is what RTL actually needs. `context-menu-placement.ts` has since
+been retired into this helper; the context menu carries no placement math of its own.
+
+### 20.5 Chip, badge and toolbar semantics (F08, F17)
+
+The Angular `qd-chip` owns the **interactive** families only, through a `variant` input
+(`filter`/`taxonomy`/`alias`; `plain` is the default and adds no class). Static badges have no
+interaction and therefore no Angular owner: `.qd-badge--lifecycle-pending/-active/-disabled/-unknown`,
+`.qd-badge--membership-owner` and `.qd-count-chip` are semantic classes in `_components.scss`.
+Lifecycle and Owner membership are separate badges and Unknown resolves to the neutral tokens with
+its own literal copy — it is never rendered as Disabled (G17). Every one of them states its meaning
+in text; colour is reinforcement only.
+
+`.qd-toolbar` supplies the F08 zones (`__identity`, `__filters`, `__result`, `__actions`,
+`__applied`) plus the `explorer`/`taxonomy`/`workspace` modifiers. It is a semantic layer, not an
+Angular wrapper: it owns no draft/applied value and emits nothing, and a feature composes it with
+its own filter fields. It carries **no entrance animation** — `uw-toolbar-rise` is deleted (D19),
+and the checker fails on any `@keyframes` whose `from` frame translates.
+
+### 20.6 What the gate now enforces
+
+On top of §18.7 and §19.4, `npm run check:golden-ui` fails when a Phase 3 owner file is missing,
+when `modal-shell.component.scss` declares anything other than the four named width classes, when a
+selection edge is written as a physical `box-shadow: inset -Npx 0` instead of the logical thread,
+when a shared partial regains decorative entrance motion, or when a `.qd-truncate` node in a shared
+template carries `tabindex="0"`.

@@ -5,9 +5,12 @@ import { Subject, Subscription, debounceTime } from 'rxjs';
 
 import { RootDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
+import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
+import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
 import { ExplorerCountRangeFilterComponent } from '../../components/explorer-count-range-filter/explorer-count-range-filter.component';
+import { ExplorerToolbarComponent } from '../../components/explorer-toolbar/explorer-toolbar.component';
 import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
 import { ExplorerSearchRowComponent } from '../../components/explorer-search-row/explorer-search-row.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
@@ -36,10 +39,12 @@ type RootTableColumnKey = MorphologyColumnKey;
 type RootPanelState = ReturnType<RootsDetailFacade['panelState']>;
 type RootCountTarget = RootCountOpenedEvent & { column: RootTableColumnKey };
 
+let nextSubViewInstance = 0;
+
 @Component({
   selector: 'qd-roots-explorer-page',
   standalone: true,
-  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, RootDetailsPanelComponent, RootLemmasListComponent, RootStemsListComponent, RootWordsListComponent, RootsTableComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
+  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, QdTabDirective, QdTabsComponent, RootDetailsPanelComponent, RootLemmasListComponent, RootStemsListComponent, RootWordsListComponent, RootsTableComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
   templateUrl: './roots-explorer-page.component.html',
   styleUrl: './roots-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -70,8 +75,6 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly pageTitle = ROOTS_PAGE_TITLE;
-  // Read the content via a TDZ-safe getter (words/README label rule). The collapse state is seeded
-  // synchronously from storage so the FIRST render reflects it — no expand-then-collapse shift.
   protected get explainer() { return WORDS_EXPLAINER_CONTENT.roots; }
   protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('roots'));
   protected readonly emptySelectionLabel = ROOTS_EMPTY_SELECTION_LABEL;
@@ -98,6 +101,15 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly activeWordView = computed(() => this.tableFocus.activeWordView() ?? this.panelState().wordView);
   protected readonly activeSurahView = computed(() => this.tableFocus.activeSurahView() ?? this.panelState().surahView);
   protected readonly activeColumn = this.tableFocus.activeColumn;
+  private readonly subViewId = `roots-explorer-subview-${nextSubViewInstance++}`;
+  protected readonly subViewPanelId = `${this.subViewId}-panel`;
+  protected readonly activeSubViewTabId = computed(() => {
+    const view = this.activeView();
+    if (view === 'words') {
+      return this.subViewTabId(this.panelState().wordView);
+    }
+    return view === 'surahs' ? this.subViewTabId(this.panelState().surahView) : null;
+  });
   protected readonly emptySelection = computed(() => this.panelState().selectedRootId === null);
   protected readonly defaultView: RootView = DEFAULT_ROOT_VIEW;
   protected readonly ayahsPageForView = computed(() => {
@@ -181,6 +193,10 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     this.syncTableFocusToPanelView(view);
     this.detailFacade.setView(view);
     this.updateQueryParams(buildRootsQueryParams({ view, column: this.defaultColumnForView(view, 'simple'), detailPage: null, wordView: view === 'words' ? 'simple' : null, surahView: view === 'surahs' ? 'mentioned' : null }));
+  }
+
+  protected subViewTabId(option: string): string {
+    return `${this.subViewId}-tab-${option}`;
   }
 
   protected onWordViewChange(wordView: RootWordView): void {

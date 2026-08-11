@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
   height: 100%;
@@ -6,10 +8,6 @@
 }
 
 .mushaf-reader {
-  display: grid;
-
-  grid-template-columns: minmax(0, 40%) minmax(0, 60%);
-  gap: 1rem;
   height: 100%;
   min-height: 0;
 
@@ -37,7 +35,7 @@
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: bp.$qd-bp-wide-min) {
   :host {
     height: auto;
     overflow: visible;
@@ -51,7 +49,7 @@
 
   .mushaf-reader__page {
     position: sticky;
-    top: var(--qd-mushaf-sticky-top);
+    inset-block-start: var(--qd-mushaf-sticky-top);
     align-self: start;
     height: var(--qd-mushaf-panel-height);
     min-height: var(--qd-mushaf-panel-height);
@@ -71,16 +69,14 @@
   }
 }
 
-@media (max-width: 1023px) {
+@media (max-width: bp.$qd-bp-medium-max) {
   :host {
     height: auto;
     overflow: visible;
   }
 
   .mushaf-reader {
-    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto;
-    gap: var(--qd-space-3);
     height: auto;
     min-height: auto;
   }
@@ -105,5 +101,13 @@
   .mushaf-reader__study-context {
     flex: none;
     min-height: auto;
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .mushaf-reader__page {
+    inline-size: calc(100% + 2 * var(--qd-page-gutter));
+    max-inline-size: none;
+    margin-inline: calc(-1 * var(--qd-page-gutter));
   }
 }

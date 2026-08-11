@@ -1,6 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import { AyahCardComponent } from '../../../../shared/ui/ayah-card/ayah-card.component';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { QdResultListDirective } from '../../../../shared/ui/result-list/result-list.directive';
 import {
   AyahNavigationTarget,
   ResourceLoadState,
@@ -26,7 +29,12 @@ const MAX_PLACEHOLDER_COUNT = 8;
 @Component({
   selector: 'qd-similar-ayahs-card',
   standalone: true,
-  imports: [AyahCardComponent],
+  imports: [
+    AyahCardComponent,
+    QdEmptyStateComponent,
+    QdErrorStateComponent,
+    QdResultListDirective,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './similar-ayahs-card.component.html',
   styleUrls: ['./similar-ayahs-card.component.scss'],

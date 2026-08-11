@@ -10,13 +10,11 @@ Folders are clustered by Quran domain/use case, not by project layer.
   authorization state, requirement handlers, controlled denial envelopes, authorization metadata
   validation, and real-PostgreSQL Owner administration transition/relink/audit atomicity coverage.
 - `Quran/Import/` — foundation import, validation, reconstruction, and source-staging checks.
-- `Quran/MushafReader/` — page reader, ayah study, similar ayahs, mutashabihat, catalogs,
-  word analysis, and cache behavior.
-- `Quran/Mutashabihat/`, `Navigation/`, `Tafsirs/`, `Translations/`, `FullI3rab/` — domain import
-  and report-shape coverage per pipeline.
-- `Quran/Words/` — Unique Words explorer reads and logging.
-- `Quran/WordsRoots/`, `WordsMorphologyExplorers/`, `WordsWordTypes/` — explorer read-model tests
-  for Roots, Lemmas/Stems, and Word Types.
+- `Quran/MushafReader/` — retained corrupt-data and word-analysis fallback protections.
+- `Quran/Mutashabihat/`, `Navigation/`, `Tafsirs/`, `Translations/`, `FullI3rab/` — retained
+  source, import, validation, rollback, and schema protections per pipeline.
+- `Quran/WordsWordTypes/` — the retained child-catalogue drift gate. Explorer fixture folders
+  remain only where the resource catalog or retained helpers still consume them.
 - `Quran/WordsMorphology/`, `WordsMorphologyEnriched/`, `WordsSimpleI3rab/`, `WordsDisplay/` —
   morphology import, enriched morphology, generated simple i3rab, and display-word rebuild coverage.
 - `Smoke/` — the route-smoke tier (`QuranDashboard.Tests.Smoke`). Boots the real API
@@ -104,12 +102,11 @@ Folders are clustered by Quran domain/use case, not by project layer.
 - **`Access:PermissionCatalogueStartupSync:Enabled=false` is mandatory in an API test factory unless
   the class is testing the startup sync itself.** `Program.cs` synchronizes the permission catalogue
   between `UseApiPipeline()` and `app.Run()`, and every `WebApplicationFactory` here boots that real
-  entry point, so **five** factories set it off. `AccessTestFixture` sets it off because `ResetAsync`
-  truncates `permissions` and each case opts into the sync it asserts, so a lazy host build would
-  otherwise steal those inserts; `Api/Health/HealthApiFactory`,
-  `Api/RateLimiting/RateLimitingApiFactory`, and `Api/ApiBehavior/ApiBehaviorTestFactory` set it off
-  because they point at deliberately dead databases and must not spend the 15s startup budget failing
-  to reach them; `Quran/WordsWordTypes/WordTypesTestFixture` sets it off because its connection string
+  entry point. `AccessTestFixture` sets it off because `ResetAsync` truncates `permissions` and each
+  case opts into the sync it asserts, so a lazy host build would otherwise steal those inserts;
+  `Api/RateLimiting/RateLimitingApiFactory` sets it off because it points at a deliberately dead
+  database and must not spend the startup budget failing to reach it;
+  `Quran/WordsWordTypes/WordTypesTestFixture` sets it off because its connection string
   can come from `ExternalReadOnlyDatabaseOptIn.TryLease(WordTypesConnectionVariable)` — a database
   this process does not own, whose read-only contract is an opt-in convention rather than a
   connection-level grant, so nothing but this flag would stop the sync writing to it.
@@ -123,20 +120,12 @@ Folders are clustered by Quran domain/use case, not by project layer.
   and invalidates the abwab read caches. That last
   step is not housekeeping — raw SQL never moves `AbwabCacheGeneration`'s counter, so
   `CachedAbwabTreeReader` keeps serving the truncated tree from `IMemoryCache` until something does.
-  Every case that reads or writes one of those tables calls it first, the two empty-schema sweeps
-  (`SmokeRoutePipelineTests`, `SmokePublicReadRegressionTests`) included: the write cases restore
-  *before* their case rather than after, so their rows outlive them, and the id-scoped abwab reads
-  derive 404 only while those tables are empty. `SmokeBootGuardTests` and `SmokeCoverageParityTests`
-  assert composition rather than data and call nothing. `SmokeCollectionResetContractTests` dirties
-  all seven tables, reads them back empty, and fails if the cache invalidation is dropped.
+  Retained cases that read or write one of those tables call it first; write cases restore before
+  their case rather than after. `SmokeBootGuardTests` and `SmokeCoverageParityTests` assert
+  composition rather than data and call nothing.
 - `AbwabSchemaTestCollection` is `UniqueKeyIsolation`: its cases share one database for the whole run
-  and do not restore it, so each creates uniquely keyed rows and asserts only its own keys.
-  `AbwabCollectionKeyIsolationTests` is that policy's regression — the representative write sequence
-  three times over with no restore between, read back through the production tree reader. Fixed keys
-  collide on the second write (section name is unique, door name is unique within
-  `(section, parent)`, both filtered to live rows), and a case that began asserting table totals
-  instead of its own keys fails the scoped reads. `AbwabTreeReadTests` is the one case that truncates
-  first, because "empty" is its subject; classes inside one collection never run concurrently.
+  and do not restore it, so retained cases create uniquely keyed rows and assert only their own keys;
+  classes inside one collection never run concurrently.
 - `TranslationImportTestFixture` owns exactly one root `ServiceProvider` for its collection and
   reaches it through `CreateScope()`; every helper on it needs the collection, and throws without
   one. Writing a synthetic source package needs no database, so it lives in the disposable
@@ -155,6 +144,32 @@ Folders are clustered by Quran domain/use case, not by project layer.
   record of primitives, so nothing survives it — which keeps every generation run from leaving a
   live connection pool behind against one leased clone. `configure` must stay last: the tamper
   cases replace `II3rabAssembler` and `II3rabGenerationWriteProbe`, and last registration wins.
+
+## Retained lanes and gates
+
+`TestSupport/Execution/test-gates.tsv` is the source of truth for all retained classes. The daily
+pair is `Backend/scripts/test-backend smoke` plus `Backend/scripts/test-backend tier-b`; their union
+selects every Permanent class and no Gate class. Change and release gates are:
+
+| Lane | Trigger/selection |
+|---|---|
+| `gate-contract` | Any retained row with a non-empty `Concerns` value |
+| `pipeline` | `Gate=Pipeline` and `Kind!=Canonical`; `canonical-data` owns every excluded canonical class |
+| `canonical-data` | Every `Kind=Canonical` row, including the nine canonical pipeline rows and canonical smoke-data class |
+| `migration` | Migration tooling and migration-path work |
+| `access-db` | `Feature=Access` and (`Kind=Database` or `Concerns` contains `Schema`); `gate-contract` owns the excluded non-Access `AbwabSchemaTests` and `WordTypesChildCatalogueDriftTests` |
+| `pre-pr` | Mandatory pre-release gate over every retained row |
+
+Each gate runs on its own trigger; a daily run does not substitute for it. The focused `fast`,
+`access`, `process`, and `feature` lanes are diagnostic entry points. Flags, discovery behavior,
+resource preflights, and sharding mechanics live in `../../scripts/README.md`.
+
+`Concerns` is reserved for change-gate families, never for daily membership. The accepted vocabulary
+is `Authorization` (authorization contract gates), `Cli` (command-line contract gates), `Execution`
+(shared test-runtime contracts), `Schema` (schema and catalogue integrity gates), and `Startup`
+(startup/preflight contracts). The current catalog uses `Schema` on 5 rows, `Execution` on 7, and
+`Startup` on 1; `Authorization` and `Cli` are accepted but currently unused. Permanent rows keep
+`Concerns` empty; `gate-contract` selects every retained row with a non-empty value.
 
 ## Navigation conventions
 
@@ -193,9 +208,9 @@ Folders are clustered by Quran domain/use case, not by project layer.
 
 - Backend map: `../../README.md`
 - Report/evidence conventions: `../../report/README.md`
-- Which tests to run and when: `../../../TESTING_STRATEGY.md` — the Backend lanes of
-  `../../scripts/test-backend` (§3), the Frontend lanes (§4), and the execution-trigger matrix
-  (§5). Note §8: there is no CI, so every lane is a local gate that nothing verifies ran.
+- Which tests to run and when: `../../../TESTING_CONSTITUTION.md` and the active plan's
+  `Testing Decision`. This README owns lane membership; `../../scripts/README.md` owns command
+  mechanics. There is no CI, so every selected lane is a local gate that nothing verifies ran.
 - How the shared database runtime works: `TestSupport/PostgreSql/README.md`.
 - `resources/db-dumps/quran-canonical/` (`quran-canonical.dump` + `manifest.json`) is
   **produced by `../../scripts/create-smoke-dump` and consumed by `Smoke/Data/`**. It is a

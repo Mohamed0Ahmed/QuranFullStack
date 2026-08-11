@@ -1,11 +1,15 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { A11yModule } from '@angular/cdk/a11y';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 
 import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import { DetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
-import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdDetailsWorkspaceComponent } from '../../../../shared/ui/details-workspace/details-workspace.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
+import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
+import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 import { SurahOccurrencesListComponent } from '../surah-occurrences-list/surah-occurrences-list.component';
@@ -24,19 +28,21 @@ import {
 } from '../../models/unique-words.labels';
 import { WordDrilldownState, WordDrilldownView } from '../../models/unique-words.models';
 import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
 import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-display.mapper';
 
 @Component({
   selector: 'qd-word-drilldown-modal',
   standalone: true,
   imports: [
-    A11yModule,
-    ModalScrollLockDirective,
+    QdModalShellComponent,
     NgTemplateOutlet,
     ScrollingModule,
     ExplorerPanelSkeletonComponent,
-    QdStateComponent,
+    QdActionDirective,
+    QdDetailsWorkspaceComponent,
+    QdErrorStateComponent,
+    QdTabDirective,
+    QdTabsComponent,
     SurahOccurrencesListComponent,
     MissingSurahsListComponent,
     AyahMatchesListComponent,
@@ -105,13 +111,9 @@ export class WordDrilldownModalComponent {
 
   protected readonly drilldownViews: readonly WordDrilldownView[] = ['surahs', 'missing', 'ayahs'];
 
+  protected readonly hasSelection = computed(() => (this.inline() ? this.state().isOpen : true));
+
   protected drilldownLabel(view: WordDrilldownView): string {
     return WORD_DRILLDOWN_VIEW_LABELS[view];
-  }
-
-  protected onBackdropClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) {
-      this.closeModal.emit();
-    }
   }
 }

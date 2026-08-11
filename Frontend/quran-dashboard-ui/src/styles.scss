@@ -32,7 +32,7 @@ html {
 }
 
 body {
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  background: var(--qd-bg);
-  color: var(--qd-text);
+  font-family: var(--qd-font-ui);
+  background: var(--qd-bg-page);
+  color: var(--qd-ink);
 }

@@ -1,7 +1,8 @@
 @if (!entry()) {
-  <div class="qd-empty-state" role="status" data-testid="translation-empty">
-    <span>لا تتوفر ترجمة لهذه الآية من المصدر المحدد.</span>
-  </div>
+  <qd-empty-state
+    message="لا تتوفر ترجمة لهذه الآية من المصدر المحدد."
+    testId="translation-empty"
+  />
 } @else {
   <article class="study-card qd-card" data-testid="translation-card">
     <div

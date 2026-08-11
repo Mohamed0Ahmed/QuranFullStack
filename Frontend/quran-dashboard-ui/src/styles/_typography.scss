@@ -73,54 +73,82 @@
   font-display: block;
 }
 
-$font-naskh: 'Amiri', serif;
-$font-quran: 'Amiri', serif;
-$font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-
 .qd-page-title {
-  font-family: $font-naskh;
-  font-size: 1.75rem;
+  font-family: var(--qd-font-naskh);
+  font-size: var(--qd-type-h1);
   font-weight: 700;
-  line-height: 1.6;
-  color: var(--qd-text);
+  line-height: var(--qd-type-h1-lh);
+  color: var(--qd-ink);
+  text-wrap: pretty;
 }
 
 .qd-section-title {
-  font-family: $font-naskh;
-  font-size: 1.375rem;
+  font-family: var(--qd-font-naskh);
+  font-size: var(--qd-type-h2);
   font-weight: 700;
-  line-height: 1.5;
-  color: var(--qd-text);
+  line-height: var(--qd-type-h2-lh);
+  color: var(--qd-ink);
+  text-wrap: pretty;
 }
 
 .qd-card-title {
-  font-family: $font-naskh;
-  font-size: 1.125rem;
+  font-family: var(--qd-font-naskh);
+  font-size: var(--qd-type-h4);
   font-weight: 700;
-  line-height: 1.5;
-  color: var(--qd-text);
+  line-height: var(--qd-type-h4-lh);
+  color: var(--qd-ink);
 }
 
 .qd-text {
-  font-family: $font-sans;
-  font-size: 1rem;
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body-lg);
   font-weight: 400;
-  line-height: 1.7;
-  color: var(--qd-text);
+  line-height: var(--qd-type-body-lg-lh);
+  color: var(--qd-ink);
+}
+
+.qd-text-body {
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body);
+  font-weight: 400;
+  line-height: var(--qd-type-body-lh);
+  color: var(--qd-ink-body);
 }
 
 .qd-text-muted {
-  font-family: $font-sans;
-  font-size: 0.9375rem;
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body);
   font-weight: 400;
-  line-height: 1.6;
-  color: var(--qd-text-muted);
+  line-height: var(--qd-type-body-lh);
+  color: var(--qd-ink-muted);
 }
 
 .qd-text-meta {
-  font-family: $font-sans;
-  font-size: 0.8125rem;
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-meta);
   font-weight: 400;
-  line-height: 1.5;
-  color: var(--qd-text-muted);
+  line-height: var(--qd-type-meta-lh);
+  color: var(--qd-ink-muted);
+}
+
+.qd-text-caption {
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-caption);
+  font-weight: 400;
+  line-height: var(--qd-type-caption-lh);
+  color: var(--qd-ink-muted);
+}
+
+.qd-text-identity {
+  font-family: var(--qd-font-naskh);
+  font-size: var(--qd-type-identity);
+  font-weight: 700;
+  line-height: var(--qd-type-identity-lh);
+  color: var(--qd-ink);
+}
+
+.qd-prose {
+  max-inline-size: var(--qd-measure-prose);
+  text-align: start;
+  text-wrap: pretty;
 }

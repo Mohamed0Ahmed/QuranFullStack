@@ -19,7 +19,14 @@
   </button>
 
   @if (panelOpen()) {
-    <div #panel class="surah-jump-picker__panel" data-testid="surah-jump-picker-panel">
+    <div
+      qdFloatingLayer="searchable-picker"
+      class="surah-jump-picker__panel"
+      data-testid="surah-jump-picker-panel"
+      [anchorElement]="trigger"
+      (dismissed)="closePanel()"
+      (keydown.enter)="selectCursorOption($event)"
+    >
       <div class="surah-jump-picker__search">
         <input
           #searchInput
@@ -42,7 +49,6 @@
         [id]="listboxId"
         role="listbox"
         aria-label="قائمة السور"
-        [attr.aria-activedescendant]="activeOptionId()"
       >
         @if (isSearchMode()) {
           @if (filteredUniqueSurahs().length === 0) {
@@ -50,11 +56,10 @@
           } @else {
             @for (surah of filteredUniqueSurahs(); track surah.surahNumber) {
               <div
-                class="surah-jump-picker__row"
-                [class.surah-jump-picker__row--active]="isOptionActive(null, surah.surahNumber)"
+                class="qd-floating-layer__item surah-jump-picker__row"
                 [id]="optionId(null, surah.surahNumber)"
                 role="option"
-                [attr.aria-selected]="isOptionActive(null, surah.surahNumber)"
+                aria-selected="false"
                 data-testid="surah-jump-picker-row"
                 tabindex="-1"
                 (click)="selectSurah(surah.surahNumber)"
@@ -72,18 +77,18 @@
               role="group"
               [attr.aria-label]="'الجزء ' + group.juzNumber"
             >
-              <h3 class="surah-jump-picker__group-heading" aria-hidden="true">
+              <h3
+                class="qd-floating-layer__group-label surah-jump-picker__group-heading"
+                aria-hidden="true"
+              >
                 الجزء {{ group.juzNumber }}
               </h3>
               @for (surah of group.surahs; track surah.surahNumber) {
                 <div
-                  class="surah-jump-picker__row"
-                  [class.surah-jump-picker__row--active]="
-                    isOptionActive(group.juzNumber, surah.surahNumber)
-                  "
+                  class="qd-floating-layer__item surah-jump-picker__row"
                   [id]="optionId(group.juzNumber, surah.surahNumber)"
                   role="option"
-                  [attr.aria-selected]="isOptionActive(group.juzNumber, surah.surahNumber)"
+                  aria-selected="false"
                   data-testid="surah-jump-picker-row"
                   tabindex="-1"
                   (click)="selectSurah(surah.surahNumber)"

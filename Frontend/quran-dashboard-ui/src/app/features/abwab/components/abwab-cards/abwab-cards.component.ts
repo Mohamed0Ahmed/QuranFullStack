@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 
 export interface AbwabCardsCrumb {
   readonly id: number | null;
@@ -12,7 +13,7 @@ export interface AbwabCardsCrumb {
 @Component({
   selector: 'qd-abwab-cards',
   standalone: true,
-  imports: [QdStateComponent],
+  imports: [QdActionDirective, QdEmptyStateComponent],
   templateUrl: './abwab-cards.component.html',
   styleUrl: './abwab-cards.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

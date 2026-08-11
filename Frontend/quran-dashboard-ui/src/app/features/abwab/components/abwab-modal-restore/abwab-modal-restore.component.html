@@ -1,7 +1,8 @@
 <button
   #restoreButton
   type="button"
-  class="qd-btn abwab-modal-restore__btn"
+  qdAction="secondary"
+  class="abwab-modal-restore__btn"
   data-testid="abwab-page-modal-restore"
   (click)="restore.emit()"
 >
@@ -9,6 +10,7 @@
 </button>
 <button
   type="button"
+  qdAction="icon-only"
   class="abwab-modal-restore__discard"
   data-testid="abwab-page-modal-discard"
   [attr.aria-label]="discardAriaLabel()"

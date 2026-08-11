@@ -1,5 +1,5 @@
 <div class="qd-page">
-  <div class="qd-container qd-explorer-frame unique-words-page-frame">
+  <div class="qd-page-shell qd-page-shell--split-workspace unique-words-page-frame">
     <div class="uw-intro-band">
       <div class="qd-page-header">
         <h1 class="qd-page-title" data-testid="unique-words-page-title">{{ pageTitle }}</h1>
@@ -33,10 +33,11 @@
       </qd-words-explainer>
     </div>
 
-    <div class="uw-toolbar-recess uw-toolbar-recess--stacked">
-      <qd-unique-words-tabs [activeMode]="listState().mode" />
+    <qd-unique-words-tabs class="unique-words-mode-tabs" [activeMode]="listState().mode" />
 
+    <qd-explorer-toolbar [ariaLabel]="pageTitle">
       <qd-explorer-search-row
+        qdExplorerToolbarPrimary
         [searchValue]="searchDraft()"
         [searchLabel]="searchLabel"
         [searchPlaceholder]="searchPlaceholder"
@@ -69,6 +70,7 @@
       </qd-explorer-search-row>
 
       <qd-explorer-result-count
+        qdExplorerToolbarResult
         data-testid="unique-words-result-count"
         [count]="listState().totalCount"
         [labelPrefix]="resultCountLabel"
@@ -76,9 +78,7 @@
         [hasError]="listState().status === 'error'"
       />
 
-      <div class="qd-explorer-controls-secondary">
-        <!-- ≤1023px fallback (Feature 030, N8): the table header row is display:none on phone AND
-             tablet, so the header cycle is unreachable there. Same URL contract as the headers. -->
+      <div qdExplorerToolbarSecondary class="qd-explorer-controls-secondary">
         <div class="qd-explorer-sort-fallback">
           <label class="qd-sr-only" for="unique-words-sort">{{ sortLabel }}</label>
           <select
@@ -102,7 +102,7 @@
           (rangesChange)="onRangesChange($event)"
         />
       </div>
-    </div>
+    </qd-explorer-toolbar>
 
     <!-- Feature 030, N3 row 5: the list error/no-results states moved into the table shell. The two
          drilldown banners below CANNOT follow them: a restored-not-found word sets `isOpen: false`
@@ -136,14 +136,14 @@
         </div>
       }
     </div>
-  </div>
 
   @switch (listState().status) {
     @default {
-      <div class="unique-words-layout qd-explorer-layout">
+      <div class="unique-words-layout qd-explorer-layout qd-page-split qd-page-split--data">
         <section class="unique-words-layout__table qd-explorer-layout__table">
           <qd-unique-words-table
             [rows]="listState().items"
+            [totalCount]="listState().totalCount"
             [loading]="listState().status === 'loading'"
             [status]="listState().status"
             [errorMessage]="listState().errorMessage"
@@ -156,15 +156,17 @@
             (rowSelected)="onRowSelected($event)"
             (drilldownOpen)="onDrilldownOpen($event)"
             (sortChange)="onSortChange($event)"
-          />
-          <qd-pagination
-            [currentPage]="listState().page"
-            [pageSize]="listState().pageSize"
-            [totalCount]="listState().totalCount"
-            [disabled]="listState().status === 'loading'"
-            [ariaLabel]="listPaginationLabel"
-            (pageChange)="onPaginationPageChange($event)"
-          />
+          >
+            <qd-pagination
+              uniqueWordsTablePagination
+              [currentPage]="listState().page"
+              [pageSize]="listState().pageSize"
+              [totalCount]="listState().totalCount"
+              [disabled]="listState().status === 'loading'"
+              [ariaLabel]="listPaginationLabel"
+              (pageChange)="onPaginationPageChange($event)"
+            />
+          </qd-unique-words-table>
         </section>
 
         @if (isDesktop()) {
@@ -195,4 +197,5 @@
       (retry)="onDrilldownRetry()"
     />
   }
+  </div>
 </div>

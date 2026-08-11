@@ -1,36 +1,58 @@
 <footer class="qd-footer">
-  <div class="qd-container">
-    <div class="qd-footer-inner">
-      <p class="qd-text-muted">المنهج القرآني © 2026</p>
-      <p class="qd-text-meta">لوحة تحكم لتنظيم ومراجعة بيانات البحث القرآني</p>
+  <div class="qd-footer__inner qd-footer-inner">
+    <p class="qd-text-muted">المنهج القرآني © 2026</p>
+    <p class="qd-text-meta">لوحة تحكم لتنظيم ومراجعة بيانات البحث القرآني</p>
 
-      @switch (viewState) {
-        @case ('loading') {
-          <span class="health-indicator health-loading" role="status" aria-live="polite">
-            جارٍ التحقق من الحالة...
-          </span>
-        }
-        @case ('success') {
-          <span class="health-indicator" [ngClass]="healthClass" role="status" aria-live="polite">
-            <span class="health-dot" [ngClass]="healthDotClass"></span>
-            {{ healthLabel }}
-            @if (databaseCheck) {
-              <span class="health-check">
-                <span class="health-dot" [ngClass]="databaseDotClass"></span>
-                {{ databaseLabel }}
-              </span>
-            }
-          </span>
-        }
-        @case ('error') {
-          <span class="health-indicator health-error" role="alert">
-            <span>{{ errorMessage }}</span>
-            <button class="qd-btn qd-btn-ghost health-retry-btn" type="button" (click)="retry()">
-              إعادة المحاولة
-            </button>
-          </span>
-        }
+    @switch (viewState) {
+      @case ('loading') {
+        <span
+          class="health-indicator health-loading"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          data-testid="footer-health-loading"
+        >
+          جارٍ التحقق من الحالة...
+        </span>
       }
-    </div>
+      @case ('success') {
+        <span
+          class="health-indicator"
+          [class]="healthClass"
+          role="status"
+          aria-live="polite"
+          data-testid="footer-health"
+        >
+          <span class="health-dot" [class]="healthDotClass"></span>
+          {{ healthLabel }}
+          @if (databaseCheck) {
+            <span class="health-check">
+              <span class="health-dot" [class]="databaseDotClass"></span>
+              {{ databaseLabel }}
+            </span>
+          }
+        </span>
+      }
+      @case ('error') {
+        <span
+          class="health-indicator health-error"
+          role="status"
+          aria-live="polite"
+          data-testid="footer-health-error"
+        >
+          <span>{{ errorMessage }}</span>
+          <button
+            type="button"
+            qdAction="tertiary"
+            size="sm"
+            class="health-retry-btn"
+            data-testid="footer-health-retry"
+            (click)="retry()"
+          >
+            إعادة المحاولة
+          </button>
+        </span>
+      }
+    }
   </div>
 </footer>

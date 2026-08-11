@@ -1,14 +1,12 @@
 <div class="qd-context-menu__backdrop" [attr.data-testid]="backdropTestId()" (click)="dismissed.emit()"></div>
 <div
-  #menu
   class="qd-context-menu"
-  [class.qd-context-menu--measuring]="placement() === null"
+  qdFloatingLayer="action-menu"
+  [anchorPoint]="position()"
   role="menu"
   [attr.aria-label]="menuAriaLabel()"
   [attr.data-testid]="menuTestId()"
-  (keydown)="onMenuKeydown($event)"
-  [style.left.px]="placement()?.left ?? position().x"
-  [style.top.px]="placement()?.top ?? position().y"
+  (dismissed)="dismissed.emit()"
 >
   <ng-content />
 </div>

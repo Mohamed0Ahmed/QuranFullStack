@@ -10,10 +10,14 @@ import {
   signal,
 } from '@angular/core';
 
-import { QdTabDirective } from './tab.directive';
+import { QD_TABS_INSTANCE, QdTabDirective } from './tab.directive';
 
 export type QdTabsOrientation = 'horizontal' | 'vertical';
 export type QdTabsLayout = 'inline' | 'grid';
+
+export const QD_TABS_SEGMENTED_MAX = 3;
+
+let nextTabsId = 0;
 
 @Component({
   selector: 'qd-tabs',
@@ -21,6 +25,7 @@ export type QdTabsLayout = 'inline' | 'grid';
   templateUrl: './tabs.component.html',
   styleUrl: './tabs.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: QD_TABS_INSTANCE, useExisting: QdTabsComponent }],
   host: {
     '(keydown)': 'onKeydown($event)',
   },
@@ -30,10 +35,20 @@ export class QdTabsComponent {
   readonly orientation = input<QdTabsOrientation>('horizontal');
   readonly layout = input<QdTabsLayout>('inline');
 
+  readonly instanceId = `qd-tabs-${nextTabsId++}`;
+
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly tabs = contentChildren(QdTabDirective, { descendants: true });
 
   private readonly manualFocusIndex = signal<number | null>(null);
+
+  protected readonly segmented = computed(
+    () => this.layout() === 'inline' && this.tabs().length <= QD_TABS_SEGMENTED_MAX,
+  );
+
+  protected readonly scrollable = computed(
+    () => this.layout() === 'inline' && this.tabs().length > QD_TABS_SEGMENTED_MAX,
+  );
 
   private readonly rovingIndex = computed(() => {
     const tabs = this.tabs();
@@ -61,9 +76,18 @@ export class QdTabsComponent {
       const active = this.rovingIndex();
       tabs.forEach((tab, index) => tab.setRoving(index === active));
     });
+
+    effect(() => {
+      const selected = this.tabs().find((tab) => tab.selected());
+      selected?.scrollIntoView();
+    });
   }
 
   protected onKeydown(event: KeyboardEvent): void {
+    if (!this.originatesOnOwnTab(event.target)) {
+      return;
+    }
+
     const tabs = this.tabs();
     const enabledIndexes = tabs.map((_, index) => index).filter((index) => !tabs[index].disabled());
 
@@ -113,7 +137,17 @@ export class QdTabsComponent {
 
   private moveTo(index: number): void {
     this.manualFocusIndex.set(index);
-    this.tabs()[index]?.focus();
+    const tab = this.tabs()[index];
+    tab?.focus();
+    tab?.scrollIntoView();
+  }
+
+  private originatesOnOwnTab(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) {
+      return false;
+    }
+    const tablist = target.closest('[role="tab"]')?.closest('[role="tablist"]') ?? null;
+    return tablist !== null && tablist.parentElement === this.elementRef.nativeElement;
   }
 
   private resolveDirection(): 'ltr' | 'rtl' {

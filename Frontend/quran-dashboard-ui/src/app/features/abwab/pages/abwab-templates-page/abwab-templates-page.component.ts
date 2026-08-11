@@ -29,7 +29,11 @@ import { AbwabTemplateCopyModalComponent } from '../../components/abwab-template
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { QdFormFieldComponent } from '../../../../shared/ui/form-field/form-field.component';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 
 @Component({
@@ -44,7 +48,11 @@ import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/con
     QdContextMenuComponent,
     QdSkeletonRowsComponent,
     ExplorerPanelSkeletonComponent,
-    QdStateComponent,
+    QdActionDirective,
+    QdControlDirective,
+    QdEmptyStateComponent,
+    QdErrorStateComponent,
+    QdFormFieldComponent,
     ConfirmDialogComponent,
   ],
   templateUrl: './abwab-templates-page.component.html',

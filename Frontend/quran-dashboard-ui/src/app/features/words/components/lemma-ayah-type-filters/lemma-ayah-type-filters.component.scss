@@ -30,6 +30,17 @@
   padding-inline: var(--qd-space-3);
 }
 
+.lemma-ayah-type-filters__chip:disabled {
+  cursor: default;
+}
+
+.lemma-ayah-type-filters__disabled-reason {
+  margin: 0;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-caption);
+  line-height: var(--qd-type-caption-lh);
+}
+
 .lemma-ayah-type-filters__label {
   font-family: var(--qd-font-quran, inherit);
   font-size: 0.9375rem;

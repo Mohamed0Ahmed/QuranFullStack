@@ -24,7 +24,6 @@ Justified mock targets in .NET:
 - **Clock/time:** depend on `TimeProvider` (.NET 8+) or an `IClock` abstraction; never call `DateTime.Now`/`DateTimeOffset.Now` directly in code under test.
 - **Randomness / GUID generation:** inject the generator.
 - **Filesystem outside controlled temp paths:** abstract via `System.IO.Abstractions`, or write to a per-test temp directory.
-- **LLM APIs** (if introduced): mock the client to return controlled responses (see [llm-app-testing.md](llm-app-testing.md)).
 
 Do **not** mock:
 
@@ -59,8 +58,8 @@ Prefer integration tests where the real bugs live: the HTTP boundary and persist
 
 **Database — real PostgreSQL via Testcontainers:**
 
-- When a **query, migration, mapping, constraint, or persistence behavior is the subject**, run against real Postgres, applying the real EF Core migrations, seeding via fixtures, and isolating each test (a transaction rolled back per test, or a fresh database per test collection).
-- **In this repository a fixture must not construct its own `PostgreSqlContainer`.** One shared, project-owned PostgreSQL runtime per test process serves every ordinary fixture, guarded by a cross-process OS lock; fixtures lease an isolated database from it. Read `Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md` before writing or reviewing a database fixture, and treat a new container start as a finding.
+- When a **query, migration, mapping, constraint, or persistence behavior is the subject**, run against real Postgres, applying the real EF Core migrations, seeding via fixtures, and isolating each test.
+- **In this repository a fixture must not construct its own `PostgreSqlContainer`** — fixtures lease a database from the shared, project-owned runtime. The fixture/serialization rules are owned by `Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md`; read the README before writing or reviewing a database fixture, and treat a new container start as a finding.
 - Mocking the `DbContext` here tests nothing (Rules 2 and 9).
 
 **SQLite fallback — acceptable / not acceptable:**
@@ -98,12 +97,11 @@ Reproduce a real bug, reference the incident (issue ID / date) in the test name 
 
 ## Quranic data safety in tests (overrides convenience)
 
-Source-sensitive rule — it overrides any testing convenience:
-
-- **Never invent** Quran text, ayah text, tafsir, translations, morphology, roots, i3rab, or gate/topic content in a test and present it as real religious data.
-- If synthetic data is needed, **label it clearly as synthetic** and keep it obviously non-religious (e.g. `"AYAH_TEXT_PLACEHOLDER"`, a test-marked `"بَابٌ تجريبي"`). Do not hand-type "real" scripture from memory.
-- For tests that genuinely need real Quranic data, load it from the project's **authoritative, traceable fixture source**, and report fixture/source paths where relevant.
-- Import/persistence tests for Quranic data must assert the safety guarantees themselves — totals, missing records, duplicates, validation result — mirroring `CODING_PRINCIPLES.md` §10.
+The canonical rules are `CODING_PRINCIPLES.md` §10, which applies to test data in full:
+synthetic-only unless loaded from a traceable fixture source, obvious placeholders, never
+hand-typed "real" scripture. The .NET application of it: import/persistence tests for
+Quranic data assert the safety guarantees themselves — totals, missing records, duplicates,
+validation result — not just the happy path.
 
 ## .NET-specific smells
 

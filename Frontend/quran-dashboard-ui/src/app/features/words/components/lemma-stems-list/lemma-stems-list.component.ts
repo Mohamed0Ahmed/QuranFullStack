@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 
 import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
 import { StemDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
+import { QdResultItemDirective, QdResultListDirective } from '../../../../shared/ui/result-list/result-list.directive';
 import { LemmaStemItemDto } from '../../models/lemmas.models';
 import {
   LEMMAS_STEMS_LIST_EMPTY_LABEL,
@@ -20,7 +21,7 @@ interface LemmaStemRow {
 @Component({
   selector: 'qd-lemma-stems-list',
   standalone: true,
-  imports: [DetailOverlayLinkDirective],
+  imports: [DetailOverlayLinkDirective, QdResultItemDirective, QdResultListDirective],
   templateUrl: './lemma-stems-list.component.html',
   styleUrl: './lemma-stems-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,8 +37,6 @@ export class LemmaStemsListComponent {
   protected readonly loadingLabel = LEMMAS_STEMS_LIST_LOADING_LABEL;
   protected readonly emptyLabel = LEMMAS_STEMS_LIST_EMPTY_LABEL;
 
-  // Mirrors the retired stem explorer deep link (words view, simple word
-  // view); frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed<readonly LemmaStemRow[]>(() =>
     this.stems().map((stem) => ({
       stem,

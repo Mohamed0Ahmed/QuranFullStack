@@ -12,6 +12,7 @@ import { WordTypeFilterComponent, WordTypeScopeSelectedEvent } from '../../compo
 import { WordTypeGroupedWordsListComponent } from '../../components/word-type-grouped-words-list/word-type-grouped-words-list.component';
 import { WordTypeScopeCountsComponent } from '../../components/word-type-scope-counts/word-type-scope-counts.component';
 import { WordTypeTableViewTabsComponent } from '../../components/word-type-table-view-tabs/word-type-table-view-tabs.component';
+import { ExplorerToolbarComponent } from '../../components/explorer-toolbar/explorer-toolbar.component';
 import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
 import {
   WordTypePresenceFlagChange,
@@ -93,6 +94,7 @@ const DETAIL_KIND_BY_TABLE_VIEW: Record<WordTypeTableView, WordTypeDetailSelecti
   standalone: true,
   imports: [
     AyahMatchesListComponent,
+    ExplorerToolbarComponent,
     MissingSurahsListComponent,
     PaginationComponent,
     SurahOccurrencesListComponent,

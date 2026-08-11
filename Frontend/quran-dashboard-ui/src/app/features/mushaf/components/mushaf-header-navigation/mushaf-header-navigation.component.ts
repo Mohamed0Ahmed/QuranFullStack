@@ -1,13 +1,13 @@
 import { Component, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { SurahJumpPickerComponent } from '../surah-jump-picker/surah-jump-picker.component';
 import { MushafPageViewModel, MushafSurahJuzGroupDto } from '../../models/mushaf.models';
 
 @Component({
   selector: 'qd-mushaf-header-navigation',
   standalone: true,
-  imports: [CommonModule, SurahJumpPickerComponent],
+  imports: [QdActionDirective, SurahJumpPickerComponent],
   templateUrl: './mushaf-header-navigation.component.html',
   styleUrls: ['./mushaf-header-navigation.component.scss'],
 })

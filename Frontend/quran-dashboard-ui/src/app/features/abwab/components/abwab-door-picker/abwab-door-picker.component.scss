@@ -1,22 +1,13 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
+  --abwab-door-picker-row-control: 1rem;
+
   display: block;
 }
 
 :host > input {
   inline-size: 100%;
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-sm);
-  padding: var(--qd-space-2) var(--qd-space-3);
-  background: var(--qd-surface);
-  color: var(--qd-text);
-  font-family: inherit;
-  font-size: 0.8125rem;
-}
-
-:host > input:focus-visible,
-.abwab-door-picker__chevron:focus-visible {
-  outline: 2px solid var(--qd-focus-ring);
-  outline-offset: -1px;
 }
 
 .abwab-door-picker__error,
@@ -25,6 +16,7 @@
 }
 
 .abwab-door-picker__row {
+  min-block-size: var(--qd-hit-target-min);
   padding: var(--qd-space-1) var(--qd-space-2);
   padding-inline-start: calc(var(--abwab-door-picker-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
   border-radius: var(--qd-radius-sm);
@@ -58,17 +50,17 @@
   flex: none;
 }
 
+.abwab-door-picker__row > .qd-checkbox {
+  position: relative;
+}
+
 .abwab-door-picker__chevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  inline-size: 1rem;
-  block-size: 1rem;
+  --qd-action-size: var(--abwab-door-picker-row-control);
+
   flex: none;
-  border: none;
-  background: transparent;
-  color: var(--qd-text-muted);
-  cursor: pointer;
+  block-size: var(--abwab-door-picker-row-control);
+  font-size: 0.75rem;
+  line-height: 1;
 }
 
 .abwab-door-picker__chevron--leaf {
@@ -83,4 +75,14 @@
 .abwab-door-picker__tag {
   color: var(--qd-text-muted);
   font-size: 0.6875rem;
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  :host {
+    --abwab-door-picker-row-control: var(--qd-control-lg);
+  }
+
+  .abwab-door-picker__row {
+    min-block-size: var(--qd-control-lg);
+  }
 }

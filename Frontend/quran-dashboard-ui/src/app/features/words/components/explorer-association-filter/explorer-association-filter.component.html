@@ -7,6 +7,8 @@
         {{ selectionText() }}
       </span>
       <button
+        qdAction="icon-only"
+        size="sm"
         type="button"
         class="association-filter__clear"
         [disabled]="disabled()"
@@ -21,13 +23,17 @@
     <label class="association-filter__search-field">
       <span class="qd-sr-only">{{ label() }}</span>
       <input
+        qdControl
         #fieldInput
         type="search"
         class="qd-input association-filter__search"
+        role="combobox"
+        autocomplete="off"
+        aria-autocomplete="list"
+        aria-haspopup="listbox"
         [attr.placeholder]="placeholder()"
         [value]="query()"
         [disabled]="disabled()"
-        aria-haspopup="true"
         [attr.aria-expanded]="panelOpen()"
         [attr.aria-controls]="panelOpen() ? panelId : null"
         data-testid="association-filter-search"
@@ -40,7 +46,15 @@
   </div>
 
   @if (panelOpen()) {
-    <div #panel class="association-filter__panel" [id]="panelId" [attr.aria-label]="label()">
+    <div
+      class="association-filter__panel"
+      qdFloatingLayer="searchable-picker"
+      [anchorElement]="fieldElement()"
+      [controlElement]="fieldElement()"
+      [id]="panelId"
+      [attr.aria-label]="label()"
+      (dismissed)="onLayerDismissed($event)"
+    >
       @if (loading()) {
         <p class="association-filter__hint" data-testid="association-filter-loading" role="status">
           <span aria-hidden="true">…</span>
@@ -55,16 +69,16 @@
           {{ labels.noResults }}
         </p>
       } @else {
-        <!-- Plain list semantics on purpose: options are ordinary buttons reachable by Tab. No listbox
-             role is claimed because no arrow-key/listbox keyboard model is implemented. -->
-        <ul class="association-filter__options">
+        <ul class="association-filter__options" role="listbox" [attr.aria-label]="label()">
           @for (option of visibleOptions(); track option.id) {
-            <li>
+            <li role="presentation">
               <button
                 type="button"
-                class="association-filter__option"
+                role="option"
+                class="qd-floating-layer__item association-filter__option"
+                [id]="optionElementId(option)"
                 [class.qd-is-selected]="option.id === selectedId()"
-                [attr.aria-pressed]="option.id === selectedId()"
+                [attr.aria-selected]="option.id === selectedId()"
                 [disabled]="disabled()"
                 [attr.data-testid]="'association-filter-option-' + option.id"
                 (click)="onSelect(option)"

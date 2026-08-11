@@ -5,20 +5,31 @@
 .qd-nav-progress {
   position: fixed;
   inset-block-start: 0;
-  inset-inline-start: 0;
+  inset-inline: 0;
   block-size: 2px;
-  inline-size: 0;
   z-index: var(--qd-z-nav-progress);
   pointer-events: none;
-  background-color: var(--qd-accent);
+  overflow: hidden;
+  background-color: var(--qd-border);
+}
+
+.qd-nav-progress__segment {
+  display: block;
+  block-size: 100%;
+  inline-size: 0;
+  background-color: var(--qd-green-solid);
   animation: qd-nav-progress-grow 1.6s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
 }
 
 .qd-nav-progress--done {
-  animation: none;
-  inline-size: 100%;
+  background-color: transparent;
   opacity: 0;
   transition: opacity var(--qd-t-base) 80ms;
+}
+
+.qd-nav-progress--done .qd-nav-progress__segment {
+  animation: none;
+  inline-size: 100%;
 }
 
 @keyframes qd-nav-progress-grow {
@@ -34,8 +45,12 @@
 @media (prefers-reduced-motion: reduce) {
   .qd-nav-progress,
   .qd-nav-progress--done {
+    transition: none;
+  }
+
+  .qd-nav-progress__segment,
+  .qd-nav-progress--done .qd-nav-progress__segment {
     animation: none;
     inline-size: 100%;
-    transition: none;
   }
 }

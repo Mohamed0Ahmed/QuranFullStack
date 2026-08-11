@@ -52,9 +52,10 @@
                     [attr.aria-current]="isChildSelected(child) ? 'true' : null"
                     [attr.aria-selected]="isChildSelected(child)"
                     [disabled]="loading()"
+                    [title]="child.label.ar"
                     (click)="selectChild(child)"
                   >
-                    <span class="word-type-filter__child-label" [title]="child.label.ar">{{ child.label.ar }}</span>
+                    <span class="word-type-filter__child-label">{{ child.label.ar }}</span>
                     <span class="word-type-filter__count qd-chip__count">{{ child.count }}</span>
                   </button>
                 </li>

@@ -1,4 +1,10 @@
-$qd-bp-phone-max: 767px;
-$qd-bp-tablet-max: 1023px;
-$qd-bp-desktop-min: 1024px;
-$qd-bp-wide-desktop-min: 1440px;
+$qd-bp-compact-max: 767px;
+$qd-bp-medium-min: 768px;
+$qd-bp-medium-max: 1079px;
+$qd-bp-wide-min: 1080px;
+$qd-bp-wide-plus-min: 1440px;
+
+$qd-bp-phone-max: $qd-bp-compact-max;
+$qd-bp-tablet-max: $qd-bp-medium-max;
+$qd-bp-desktop-min: $qd-bp-wide-min;
+$qd-bp-wide-desktop-min: $qd-bp-wide-plus-min;

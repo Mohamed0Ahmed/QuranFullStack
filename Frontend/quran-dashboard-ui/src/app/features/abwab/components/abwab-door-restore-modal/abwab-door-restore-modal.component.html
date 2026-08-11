@@ -12,7 +12,7 @@
   @if (door(); as node) {
     <div class="abwab-door-restore-modal">
       @if (errorMessage(); as error) {
-        <qd-state variant="error" [message]="error" data-testid="abwab-door-restore-modal-error" />
+        <qd-error-state severity="write" [message]="error" testId="qd-state-error" data-testid="abwab-door-restore-modal-error" />
       }
 
       @if (!canRestoreDoor()) {

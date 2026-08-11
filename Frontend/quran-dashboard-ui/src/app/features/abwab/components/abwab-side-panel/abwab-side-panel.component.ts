@@ -1,11 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 @Component({
   selector: 'qd-abwab-side-panel',
   standalone: true,
+  imports: [QdActionDirective],
   templateUrl: './abwab-side-panel.component.html',
   styleUrl: './abwab-side-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

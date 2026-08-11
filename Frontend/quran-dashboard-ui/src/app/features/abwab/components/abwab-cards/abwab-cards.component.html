@@ -2,6 +2,8 @@
   <nav class="abwab-cards__crumbs" [attr.aria-label]="allDoorsCrumbLabel">
     <button
       type="button"
+      qdAction="tertiary"
+      size="sm"
       class="abwab-cards__crumb qd-truncate"
       [class.abwab-cards__crumb--current]="crumbs().length === 0"
       [title]="allDoorsCrumbLabel"
@@ -14,6 +16,8 @@
       <span class="abwab-cards__crumb-sep" aria-hidden="true">‹</span>
       <button
         type="button"
+        qdAction="tertiary"
+        size="sm"
         class="abwab-cards__crumb qd-truncate"
         [class.abwab-cards__crumb--current]="$last"
         [title]="crumb.name"
@@ -26,9 +30,9 @@
   </nav>
 
   @if (visibleLevel().length === 0) {
-    <qd-state variant="empty" [message]="emptyStateMessage()" data-testid="abwab-cards-empty" />
+    <qd-empty-state [message]="emptyStateMessage()" testId="abwab-cards-empty" />
   } @else {
-    <div class="abwab-cards__grid">
+    <div class="abwab-cards__grid qd-grid qd-grid--doors">
       @for (node of visibleLevel(); track node.id) {
         <div class="abwab-cards__cell">
           <button

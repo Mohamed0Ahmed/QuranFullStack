@@ -1,114 +1,114 @@
+<ng-template #projectedContent>
+  <ng-content />
+</ng-template>
+
 <ng-template #panelBody>
-  @if (!notFound()) {
-    <div
-      class="explorer-detail-panel__toolbar explorer-detail-panel__toolbar--grid-4 lemma-details-panel__tabs"
-      role="tablist"
-      [attr.aria-label]="panelLabel"
-      #tabList
-    >
+  <qd-details-workspace
+    #workspace
+    [identity]="frameless() ? '' : selectionTitle()"
+    variant="entity"
+    [hasTabs]="true"
+    testIdPrefix="lemma-details-workspace"
+  >
+    @if (!frameless()) {
+      <ng-container qdDetailsMetadata>
+        <h2 class="explorer-panel-header__label" data-testid="lemma-details-panel-label">
+          {{ panelLabel }}
+        </h2>
+        <span class="explorer-panel-header__entity qd-sr-only" data-testid="lemma-details-panel-entity">
+          {{ selectionTitle() }}
+        </span>
+      </ng-container>
+    }
+    @if (!frameless() && hasSelection()) {
+      <button
+        qdDetailsActions
+        qdAction="tertiary"
+        size="sm"
+        type="button"
+        class="lemma-details-panel__close"
+        data-testid="lemma-details-panel-close"
+        (click)="close.emit()"
+      >
+        {{ closeLabel }}
+      </button>
+    }
+
+    <qd-tabs qdDetailsTabs [ariaLabel]="panelLabel" dir="rtl">
       @for (tab of tabs; track tab.key) {
         <button
+          qdTab
           type="button"
-          class="qd-tabs__tab lemma-details-panel__tab"
-          role="tab"
-          [id]="tabDomId(tab.key)"
+          class="lemma-details-panel__tab"
+          [id]="workspace.tabId(tab.key)"
+          [panelId]="workspace.panelId(tab.key)"
+          [selected]="isActive(tab.key) && hasSelection()"
+          [disabled]="tabDisabled(tab.key)"
+          [attr.disabled]="tabDisabled(tab.key) ? '' : null"
           [attr.data-lemma-tab]="tab.key"
           [attr.data-testid]="'lemma-details-tab-' + tab.key"
-          [attr.aria-controls]="surfaceDomId"
-          [attr.aria-selected]="isActive(tab.key) && hasSelection()"
           [attr.aria-label]="tab.aria"
-          [attr.tabindex]="isActive(tab.key) && hasSelection() ? 0 : -1"
-          [class.qd-is-selected]="isActive(tab.key) && hasSelection()"
-          [disabled]="emptySelection()"
+          (focus)="selectView(tab.key)"
           (click)="selectView(tab.key)"
-          (keydown)="onTabKeydown($event, tab.key)"
         >
           {{ tab.label }}
         </button>
       }
-    </div>
-  }
+    </qd-tabs>
 
-  <div
-    class="explorer-detail-panel__body lemma-details-panel__surface"
-    role="tabpanel"
-    [id]="surfaceDomId"
-    [attr.aria-labelledby]="tabDomId(view())"
-    [attr.aria-busy]="loading() ? true : null"
-    tabindex="0"
-    data-testid="lemma-details-panel-surface"
-  >
-    @if (emptySelection()) {
-      <div class="qd-empty-state" data-testid="lemma-details-empty-selection">
-        {{ emptySelectionLabel }}
-      </div>
-    } @else if (notFound()) {
-      <div class="qd-empty-state" role="status" data-testid="lemma-details-not-found">
-        {{ notFoundMessage() || notFoundLabel }}
-      </div>
-    } @else {
-      <ng-content />
+    @for (tab of tabs; track tab.key) {
+      <section
+        class="lemma-details-panel__surface"
+        role="tabpanel"
+        [id]="workspace.panelId(tab.key)"
+        [attr.aria-labelledby]="workspace.tabId(tab.key)"
+        [attr.aria-busy]="isActive(tab.key) && loading() ? 'true' : null"
+        [attr.tabindex]="isActive(tab.key) ? 0 : -1"
+        [attr.data-testid]="isActive(tab.key) ? 'lemma-details-panel-surface' : null"
+        [hidden]="!isActive(tab.key)"
+      >
+        @if (isActive(tab.key)) {
+          @if (emptySelection()) {
+            <div class="qd-empty-state" data-testid="lemma-details-empty-selection">
+              {{ emptySelectionLabel }}
+            </div>
+          } @else if (notFound()) {
+            <div class="qd-empty-state" role="status" data-testid="lemma-details-not-found">
+              {{ notFoundMessage() || notFoundLabel }}
+            </div>
+          } @else {
+            <ng-container *ngTemplateOutlet="projectedContent" />
+          }
+        }
+      </section>
     }
-  </div>
-</ng-template>
-
-<ng-template #panelChrome>
-  <header class="explorer-panel-header lemma-details-panel__header">
-    <h2 class="explorer-panel-header__label" data-testid="lemma-details-panel-label">{{ panelLabel }}</h2>
-    <span class="explorer-panel-header__entity" data-testid="lemma-details-panel-entity">{{ selectionTitle() }}</span>
-    <div class="explorer-panel-header__end">
-      @if (hasSelection()) {
-        <button
-          type="button"
-          class="qd-btn qd-btn-ghost lemma-details-panel__close"
-          data-testid="lemma-details-panel-close"
-          (click)="close.emit()"
-        >
-          {{ closeLabel }}
-        </button>
-      }
-    </div>
-  </header>
-
-  <ng-container *ngTemplateOutlet="panelBody" />
+  </qd-details-workspace>
 </ng-template>
 
 @if (frameless()) {
-  <div
-    class="lemma-details-panel lemma-details-panel--frameless"
-    data-testid="lemma-details-panel-frameless"
-  >
+  <div class="lemma-details-panel lemma-details-panel--frameless" data-testid="lemma-details-panel-frameless">
     <ng-container *ngTemplateOutlet="panelBody" />
   </div>
 } @else if (inline()) {
-  <section
-    class="qd-card explorer-detail-panel lemma-details-panel"
-    [attr.aria-label]="panelLabel"
-    (keydown.escape)="onEscape()"
-  >
-    <ng-container *ngTemplateOutlet="panelChrome" />
+  <section class="explorer-detail-panel lemma-details-panel" [attr.aria-label]="panelLabel" (keydown.escape)="onEscape()">
+    <ng-container *ngTemplateOutlet="panelBody" />
   </section>
 } @else if (hasSelection()) {
-  <div
-    class="qd-modal-backdrop"
-    role="presentation"
-    data-testid="lemma-details-panel-backdrop"
-    qdModalScrollLock
-    (click)="onBackdropClick($event)"
+  <qd-modal-shell
+    variant="overlay"
+    testIdPrefix="lemma-details-panel"
+    dialogTestId="lemma-details-modal"
+    [open]="true"
+    [titleText]="panelLabel"
+    [showTitle]="false"
+    [showClose]="false"
+    [hasFooter]="false"
+    [flushBody]="true"
+    [trapFocus]="drawerTrapEnabled()"
+    (dismissed)="close.emit()"
   >
-    <div
-      class="qd-modal explorer-detail-modal lemma-details-modal"
-      #panelRoot
-      role="dialog"
-      aria-modal="true"
-      [cdkTrapFocus]="drawerTrapEnabled()"
-      cdkTrapFocusAutoCapture
-      [attr.aria-label]="panelLabel"
-      data-testid="lemma-details-modal"
-      (click)="$event.stopPropagation()"
-      (keydown.escape)="onEscape()"
-    >
-      <ng-container *ngTemplateOutlet="panelChrome" />
+    <div class="explorer-detail-modal lemma-details-modal">
+      <ng-container *ngTemplateOutlet="panelBody" />
     </div>
-  </div>
+  </qd-modal-shell>
 }

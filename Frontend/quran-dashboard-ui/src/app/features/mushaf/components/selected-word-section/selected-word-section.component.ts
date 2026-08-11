@@ -10,8 +10,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
 import {
   LemmaDetailFrame,
@@ -33,8 +33,9 @@ const RESERVATION_INLINE_SIZE_TOLERANCE_PX = 1;
   selector: 'qd-selected-word-section',
   standalone: true,
   imports: [
-    CommonModule,
     DetailOverlayLinkDirective,
+    QdEmptyStateComponent,
+    QdErrorStateComponent,
     SegmentRenderedWordComponent,
     WordMorphologySummaryComponent,
     SegmentDataRowsComponent,

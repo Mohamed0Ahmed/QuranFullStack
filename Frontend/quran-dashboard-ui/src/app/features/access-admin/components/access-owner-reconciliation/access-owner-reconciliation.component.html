@@ -1,0 +1,51 @@
+<section
+  class="qd-surface qd-surface--quiet access-owner-reconciliation"
+  data-testid="access-admin-reconciliation"
+  aria-labelledby="access-admin-reconciliation-title"
+>
+  <header class="access-owner-reconciliation__header">
+    <h2 id="access-admin-reconciliation-title" class="qd-card-title">حالة مطابقة المالكين</h2>
+    <p class="qd-text-meta">قراءة فقط</p>
+  </header>
+  @if (loading()) {
+    <qd-panel-skeleton shape="text" testId="access-reconciliation-loading" loadingLabel="جارٍ تحميل حالة المطابقة…" />
+  } @else if (error(); as reconciliationError) {
+    <qd-error-state severity="read" testId="access-reconciliation-error" [message]="reconciliationError" />
+  } @else if (status(); as reconciliationStatus) {
+    <p class="qd-text-muted" data-testid="access-reconciliation-diagnostic-note">
+      تُنفَّذ مطابقة المالكين خارج لوحة التحكم، وما يظهر هنا قراءة تشخيصية لا تُطبَّق من هذه الصفحة.
+    </p>
+    <dl class="access-owner-reconciliation__list">
+      <div><dt>الحالة</dt><dd>{{ reconciliationStatus.isReady ? 'مطابِقة للإعداد' : 'غير مطابِقة للإعداد' }}</dd></div>
+      <div><dt>مؤشّر التنفيذ</dt><dd>{{ reconciliationStatus.canApply ? 'لا يوجد ما يمنع التنفيذ' : 'يوجد ما يمنع التنفيذ' }}</dd></div>
+    </dl>
+    <ul qdResultList listVariant="display-only" listLabel="مرشحو المالكين" class="access-owner-reconciliation__candidates">
+      @for (candidate of reconciliationStatus.candidates; track candidate.normalizedEmail) {
+        <li qdResultItem class="access-owner-reconciliation__candidate">
+          <span class="access-owner-reconciliation__candidate-email qd-ltr-isolate" dir="ltr">{{ candidate.normalizedEmail }}</span>
+          <span>{{ candidateStateLabel(candidate.state) }}</span>
+        </li>
+      }
+    </ul>
+    <div class="access-owner-reconciliation__fingerprint">
+      <button
+        type="button"
+        qdAction="tertiary"
+        data-testid="access-reconciliation-fingerprint-toggle"
+        [attr.aria-expanded]="fingerprintVisible()"
+        aria-controls="access-reconciliation-fingerprint"
+        (click)="toggleFingerprint()"
+      >{{ fingerprintVisible() ? 'إخفاء بصمة الإعداد التقنية' : 'إظهار بصمة الإعداد التقنية' }}</button>
+      @if (fingerprintVisible()) {
+        <p
+          id="access-reconciliation-fingerprint"
+          class="qd-text-meta access-owner-reconciliation__fingerprint-value qd-ltr-isolate"
+          data-testid="access-reconciliation-fingerprint"
+          dir="ltr"
+        >{{ reconciliationStatus.configurationFingerprint }}</p>
+      }
+    </div>
+  } @else {
+    <qd-empty-state testId="access-reconciliation-empty" message="لا تتوفر حالة مطابقة المالكين." />
+  }
+</section>

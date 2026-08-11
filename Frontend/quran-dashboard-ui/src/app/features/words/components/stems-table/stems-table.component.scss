@@ -1,20 +1,14 @@
 :host {
   display: block;
+  block-size: 100%;
+  min-block-size: 0;
 }
 
 .stems-table {
   --stems-table-scrollbar-gutter: 0px;
   --qd-explorer-table-scrollbar-gutter: var(--stems-table-scrollbar-gutter);
-}
 
-.stems-table__header-row,
-.stems-table__row {
-  grid-template-columns:
-    minmax(2.5rem, 0.28fr)
-    minmax(0, 1.35fr)
-    minmax(0, 1.1fr)
-    minmax(0, 1fr)
-    repeat(5, minmax(4.25rem, 0.9fr));
+  block-size: 100%;
 }
 
 .stems-table__stem-cell {
@@ -22,6 +16,7 @@
   flex-direction: column;
   align-items: stretch;
   gap: var(--qd-space-1);
+  min-inline-size: 0;
 }
 
 .stems-table__mobile-meta {
@@ -29,37 +24,35 @@
 }
 
 .stems-table__lemma-cell,
-.stems-table__root-cell,
-.stems-table__type-cell {
+.stems-table__root-cell {
   display: flex;
   align-items: center;
-  min-width: 0;
+  min-inline-size: 0;
 }
 
 .stems-table__chip-cell {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-inline-size: 0;
 }
 
 .stems-table__stem {
-  display: block;
-  width: 100%;
-  padding: var(--qd-space-1);
-  border: 1px solid transparent;
-  border-radius: var(--qd-radius-sm);
-  background: transparent;
-  text-align: start;
+  display: flex;
+  inline-size: 100%;
+  min-inline-size: 0;
+  justify-content: flex-start;
   overflow: hidden;
+  text-align: start;
 }
 
 .stems-table__display,
 .stems-table__relation-text {
-  font-size: 1.0625rem;
-  line-height: 1.4;
-  white-space: nowrap;
   overflow: hidden;
+  font-size: var(--qd-type-body-lg);
+  line-height: var(--qd-type-body-lg-lh);
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stems-table__display {
@@ -67,45 +60,23 @@
 }
 
 .stems-table__relation-text {
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-family: var(--qd-font-ui);
 }
 
 .stems-table__lemma-link,
 .stems-table__root-link {
   display: block;
-  max-width: 100%;
+  max-inline-size: 100%;
   padding: var(--qd-space-1);
   border-radius: var(--qd-radius-sm);
+  color: var(--qd-ink-body);
   text-decoration: none;
-  color: var(--qd-text);
 }
 
 .stems-table__relation-missing {
   display: block;
+  color: var(--qd-ink-muted);
   text-align: center;
-  color: var(--qd-text-muted);
-  font-size: 1rem;
-}
-
-.stems-table__type {
-  display: flex;
-  align-items: center;
-  gap: var(--qd-space-1);
-  min-width: 0;
-}
-
-.stems-table__type-label {
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-  font-size: 0.9375rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.stems-table__type-more {
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
 }
 
 .stems-table__loading-number {
@@ -118,8 +89,7 @@
 }
 
 .stems-table__loading-lemma,
-.stems-table__loading-root,
-.stems-table__loading-type {
+.stems-table__loading-root {
   inline-size: min(100%, 4.5rem);
 }
 
@@ -129,15 +99,34 @@
   margin-inline: auto;
 }
 
-.stems-table__loading-mobile-badge {
-  block-size: 1.25rem;
-  min-inline-size: 0;
-}
-
-// The in-shell error / no-results box (Feature 030, N3 row 5). It stands in for the body, so it
-// carries the body's geometry in every band — see the desktop/tablet rules in
-// `stems-table.component.responsive.scss`.
 .stems-table__state {
+  min-block-size: 100%;
   margin: 0;
   gap: var(--qd-space-3);
+}
+
+.stems-table__disabled-reason {
+  margin: 0;
+  padding: var(--qd-space-2) var(--qd-space-3) 0;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-caption);
+  line-height: var(--qd-type-caption-lh);
+}
+
+.stems-table__compact-row-number {
+  align-self: center;
+  color: var(--qd-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.stems-table__compact-identity {
+  display: flex;
+  min-inline-size: 0;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stems-table__medium-disclosure,
+.stems-table__medium-disclosure-header {
+  display: none;
 }

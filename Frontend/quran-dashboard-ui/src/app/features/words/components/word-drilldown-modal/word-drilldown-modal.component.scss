@@ -3,18 +3,38 @@
   height: 100%;
 }
 
-// Frameless content mode (global overlay shell owns the dialog chrome):
-// a plain flex column so the drilldown body keeps its internal scrolling.
-// Scoped here so the inline/modal branches keep their existing geometry.
+.word-drilldown-panel,
+:host qd-details-workspace {
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.word-drilldown-modal__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: visible;
+}
+
+.word-drilldown-modal__body[hidden] {
+  display: none;
+}
+
+.word-drilldown-modal__body:focus-visible {
+  outline: 2px solid var(--qd-focus-ring);
+  outline-offset: -2px;
+  border-radius: var(--qd-radius-sm);
+}
+
+.word-drilldown-modal__tab {
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body);
+}
+
 .word-drilldown-modal--frameless {
   display: flex;
   flex-direction: column;
   block-size: 100%;
   min-block-size: 0;
-
-  .word-drilldown-modal__body {
-    flex: 1 1 auto;
-    min-block-size: 0;
-    overflow: auto;
-  }
 }

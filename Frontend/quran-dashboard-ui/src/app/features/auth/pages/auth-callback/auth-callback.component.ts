@@ -7,14 +7,15 @@ import { take } from 'rxjs';
 import { AuthReturnLocationStore } from '../../../../core/auth/auth-return-location.store';
 import { CurrentUserStore } from '../../../../core/auth/current-user.store';
 import { DASHBOARD_ROUTE_PATH } from '../../../../core/navigation/route-paths';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 
 type AuthCallbackStatus = 'pending' | 'error';
 
 @Component({
   selector: 'qd-auth-callback',
   standalone: true,
-  imports: [QdStateComponent],
+  imports: [QdErrorStateComponent, ExplorerPanelSkeletonComponent],
   templateUrl: './auth-callback.component.html',
   styleUrls: ['./auth-callback.component.scss'],
 })

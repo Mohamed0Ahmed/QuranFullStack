@@ -4,10 +4,20 @@ export const ACCESS_ADMIN_LABELS = {
   unsavedChangesTitle: 'تغييرات غير محفوظة',
   unsavedChangesSwitchUserBody:
     'لم تُحفظ تعديلات الصلاحيات الحالية، واختيار مستخدم آخر يتجاهلها.',
-  unsavedChangesLeavePrompt:
-    'هناك تعديلات غير محفوظة على الصلاحيات، ومغادرة الصفحة تتجاهلها. هل تريد المغادرة؟',
+  unsavedChangesLeaveBody:
+    'هناك تعديلات غير محفوظة على الصلاحيات، ومغادرة الصفحة تتجاهلها.',
   discardChangesButton: 'تجاهل التغييرات',
   keepEditingButton: 'متابعة التعديل',
+  reviewDockLabel: 'تعديلات الصلاحيات غير المحفوظة',
+  selectedContextLabel: 'الحساب المحدد',
+  noSelectedContextLabel: 'لم يُحدَّد حساب بعد',
+  openUserListButton: 'اختيار حساب',
+  contextSearchLabel: 'البحث في الحسابات',
+  contextSearchButton: 'عرض النتائج',
+  noSelectionMessage: 'اختر مستخدمًا لعرض تفاصيل الوصول الخاصة به.',
+  userListSheetTitle: 'حسابات الوصول',
+  auditAppendedAnnouncement: (count: number): string =>
+    count > 0 ? `أُضيف ${count} حدثًا إلى نهاية السجل.` : '',
   permissionDiffSummary: (granted: number, revoked: number): string =>
     `صلاحيات مضافة: ${granted}، صلاحيات ملغاة: ${revoked}`,
   tabsAriaLabel: 'أقسام إدارة الوصول',

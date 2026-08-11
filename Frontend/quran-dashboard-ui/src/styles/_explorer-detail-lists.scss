@@ -58,6 +58,34 @@
   scrollbar-gutter: stable;
 }
 
+.root-details-panel--frameless .qd-details__header,
+.lemma-details-panel--frameless .qd-details__header {
+  display: none;
+}
+
+.root-details-panel,
+.lemma-details-panel {
+  .qd-detail-list__viewport,
+  .ayah-matches-list__viewport,
+  .root-words-list__viewport,
+  .lemma-words-list__viewport,
+  .missing-surahs-list,
+  .surah-occurrences-list {
+    flex: 0 0 auto;
+    block-size: auto;
+    max-block-size: none;
+    overflow: visible;
+    scrollbar-gutter: auto;
+  }
+
+  .ayah-matches-list,
+  .root-words-list,
+  .lemma-words-list {
+    block-size: auto;
+    min-block-size: 0;
+  }
+}
+
 
 
 .qd-detail-list__pagination-slot {

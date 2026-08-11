@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
 import { UniqueDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
+import { QdResultItemDirective, QdResultListDirective } from '../../../../shared/ui/result-list/result-list.directive';
 import {
   ROOTS_OPEN_UNIQUE_WORD_LABEL,
   ROOTS_WORD_DISPLAY_HEADER,
@@ -22,7 +23,7 @@ interface RootWordRowViewModel {
 @Component({
   selector: 'qd-root-words-list',
   standalone: true,
-  imports: [DetailOverlayLinkDirective, PaginationComponent],
+  imports: [DetailOverlayLinkDirective, PaginationComponent, QdResultItemDirective, QdResultListDirective],
   templateUrl: './root-words-list.component.html',
   styleUrl: './root-words-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,8 +45,6 @@ export class RootWordsListComponent {
   protected readonly loadingLabel = WORDS_LOADING_LABEL;
   protected readonly paginationLabel = ROOTS_WORDS_PAGINATION_LABEL;
 
-  // Mirrors the retired unique-words explorer deep link (same mode + ayahs
-  // view); frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed((): readonly RootWordRowViewModel[] => {
     const wordView = this.wordView();
     return this.page().items.map((item) => ({

@@ -3,6 +3,10 @@
 .access-audit-log {
   display: grid;
   gap: var(--qd-space-4);
+  padding: var(--qd-card-padding);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  min-inline-size: 0;
 }
 
 .access-audit-log__header {
@@ -18,27 +22,14 @@
   align-items: start;
 }
 
-.access-audit-log__field {
-  display: grid;
-  gap: var(--qd-space-2);
-  min-inline-size: 0;
-}
-
-.access-audit-log__list {
-  display: grid;
-  gap: var(--qd-space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .access-audit-log__row {
+  display: grid;
   gap: var(--qd-space-1);
-  color: var(--qd-text-muted);
+  color: var(--qd-ink-muted);
 }
 
 .access-audit-log__action {
-  color: var(--qd-text);
+  color: var(--qd-ink);
   font-weight: 700;
 }
 
@@ -46,11 +37,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+.access-audit-log__party,
 .access-audit-log__permission {
+  min-inline-size: 0;
   overflow-wrap: anywhere;
 }
 
-@media (min-width: bp.$qd-bp-desktop-min) {
+@media (min-width: bp.$qd-bp-wide-min) {
   .access-audit-log__filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: var(--qd-space-4);
@@ -62,6 +55,8 @@
   }
 
   .access-audit-log__list {
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--qd-space-3);
   }
 }

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { QdSkeletonRowsComponent } from '../skeleton/skeleton-rows.component';
 
-export type QdPanelSkeletonShape = 'lines' | 'rows' | 'panel';
+export type QdPanelSkeletonShape = 'lines' | 'rows' | 'panel' | 'text';
 
 @Component({
   selector: 'qd-panel-skeleton, qd-explorer-panel-skeleton',
@@ -21,4 +21,7 @@ export class ExplorerPanelSkeletonComponent {
 
   readonly rowsCount = input(4);
   readonly rowTemplate = input('1fr');
+
+  readonly reserve = input(false);
+  readonly testId = input('explorer-panel-skeleton');
 }

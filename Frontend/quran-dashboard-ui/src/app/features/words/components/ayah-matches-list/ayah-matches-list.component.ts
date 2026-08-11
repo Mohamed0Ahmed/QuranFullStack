@@ -7,6 +7,7 @@ import {
 import { DetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { AyahCardComponent } from '../../../../shared/ui/ayah-card/ayah-card.component';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
+import { QdResultItemDirective, QdResultListDirective } from '../../../../shared/ui/result-list/result-list.directive';
 import { HighlightedAyahComponent } from '../highlighted-ayah/highlighted-ayah.component';
 import { WORDS_AYAHS_PAGINATION_LABEL, WORDS_LOADING_LABEL } from '../../models/words.labels';
 import {
@@ -26,7 +27,7 @@ interface AyahMatchRowViewModel {
 @Component({
   selector: 'qd-ayah-matches-list',
   standalone: true,
-  imports: [AyahCardComponent, DetailOverlayAyahLinkDirective, HighlightedAyahComponent, PaginationComponent],
+  imports: [AyahCardComponent, DetailOverlayAyahLinkDirective, HighlightedAyahComponent, PaginationComponent, QdResultItemDirective, QdResultListDirective],
   templateUrl: './ayah-matches-list.component.html',
   styleUrl: './ayah-matches-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,9 +38,6 @@ export class AyahMatchesListComponent {
   readonly loading = input(false);
   readonly showAnalysisAction = input(false);
   readonly analysisActionLabel = input('');
-  // The render site must provide the source detail's typed frame — this shared list never infers a
-  // parent from generic route keys. When set it is promoted to a one-frame stack over the Mushaf so
-  // the scholarly context stays open.
   readonly parentFrame = input<DetailFrame | null>(null);
 
   readonly pageChange = output<number>();

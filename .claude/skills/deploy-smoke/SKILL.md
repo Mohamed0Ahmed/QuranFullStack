@@ -1,160 +1,70 @@
 ---
 name: deploy-smoke
-description: >-
-  Report-only local deployment and runtime smoke check for the Quran Dashboard
-  monorepo (.NET backend and Angular frontend). Use after migrations, dependency
-  upgrades, cross-stack changes, performance work, or before review and PR creation.
-  It verifies builds, inspects local database targeting, optionally applies local
-  migrations only with explicit approval, and smokes health or changed endpoints.
-  It never drops or resets databases, runs import/reseed/destructive scripts without
-  explicit approval, targets remote databases silently, implements fixes, or replaces
-  engineering, performance, or dependency audits.
+description: Use when explicitly asked for a Quran Dashboard deployment preflight or local runtime smoke check.
 ---
 
 # Deploy Smoke
 
-A fast, **report-only** local smoke check: does this change still restore, build, migrate,
-and run on this machine? The goal is to catch build breakage, pending/broken migrations,
-and dead endpoints locally - before the change reaches engineering review, a PR, or a
-cross-stack commit - without touching application code or destroying local data.
+## Responsibility
 
-This skill produces findings, evidence, and a verdict. It does not fix failures; when it
-finds a break it reports it and hands off.
+Run the explicitly requested deployment preflight or local runtime smoke and report what
+was observed: build state of the requested target, migration and pending-model state, a
+confirmed and masked local database target, health and changed-endpoint responses, and
+deployment notes. It may build **only a missing targeted deployable artifact required by
+the requested smoke** — nothing broader. It owns the lifecycle of any process it starts:
+reuse an already-running local instance where possible, and stop what it started when
+done.
 
-## When to use
+**Not this skill's job:** running proactively before reviews, commits, or PRs; test
+lanes or broad test commands of any kind; package installs; Git actions or Git status
+reporting; source-code changes; remote deployment; or destructive data work. A runtime
+curl here is a **smoke observation** — it is never route-smoke test evidence
+(`Backend/tests/QuranDashboard.Tests/README.md` owns that gate).
 
-- **After an EF Core migration** — generated or applied; confirm it builds and the expected
-  schema objects exist locally.
-- **Before a final review / before opening a PR** — a green build + runtime smoke saves a
-  review round-trip.
-- **After a dependency or security upgrade** — confirm the app still restores, builds, and
-  boots (then recommend a separate `dependency-audit` for vulnerability/version findings).
-- **Before committing a cross-stack change** - make sure Backend and Frontend build
-  and run together.
-- **After backend or frontend performance changes** — confirm the optimization did not break
-  the build or runtime path (perf *quality* stays with the performance-* review skills).
+## Database target safety (hard rules)
 
-## What this skill is NOT
+1. Read the connection from the config the requested target actually uses and **display
+   the host/database with credentials masked** before any database action. Confirm it is
+   local (`localhost` / `127.0.0.1` / a local container) — never a shared, staging, or
+   production host.
+2. Listing migrations and checking pending model changes are read-only and always fine.
+   **Applying** a migration requires the user to have explicitly asked for a smoke with
+   local migration application; otherwise report the pending state as a deployment note.
+3. If the target is unclear, ambiguous, or non-local — stop and ask. Never guess and
+   never apply against an unconfirmed target.
+4. Never drop, reset, or recreate a database, and never run
+   import/reseed/truncate/`--force` scripts as part of a smoke.
 
-- Not an implementation or auto-fix skill — it reports, it does not repair.
-- It **must not** drop, reset, or recreate a database.
-- It **must not** run import / reseed / rebuild / truncate / `--force` scripts unless the
-  user explicitly asks for that run.
-- It **must not** target a remote or production database. Local only, and only after the DB
-  target is confirmed (see below).
-- It is not a full review (that is `engineering-review` and the `performance-*` skills) and
-  not a vulnerability audit (recommend `dependency-audit` separately instead of duplicating
-  it here).
+## Workflow
 
-## Database safety (hard rules)
+1. Confirm the explicitly requested scope (backend, frontend, or full-stack path).
+2. Read `Backend/README.md` §Deployment (Docker / Railway) and §Invariants for the
+   deployment truth of the requested target, and `Backend/scripts/README.md` when a
+   project script is involved. Prefer the project's own scripts; confirm real names
+   before running anything.
+3. Observe only what the request touches; mark the rest not applicable. Distinguish "it
+   compiled" from "it ran", and an applied local migration from a pending deployment
+   note.
 
-Migrations are the one place this skill can do harm, so treat the DB target as untrusted
-until proven local:
+## Conditional context
 
-1. **Verify and display the DB target before any migration action.** Read the connection
-   from the backend config the project actually uses — `appsettings*.json`,
-   `launchSettings.json`, environment variables, or `dotnet user-secrets` — and show the
-   host/database (mask credentials). Confirm it is local (`localhost` / `127.0.0.1` / a
-   local container), not a shared/staging/production host.
-2. **Applying a migration is allowed only** when the user explicitly asked for a deploy
-   smoke *with local DB migration/application*, or the task clearly says to apply local
-   migrations. Otherwise stop at "migrations list / pending check" and report.
-3. **If the DB target is unclear, ambiguous, or non-local — ask, or stop** and record a
-   Deployment Note. Never guess and never apply against an unconfirmed target.
-4. Listing migrations and checking for pending model changes are read-only and always fine.
+- Effective configuration (`appsettings*.json`, `launchSettings.json`, environment,
+  user-secrets presence) — only to confirm the target for the requested path, with
+  secrets masked.
+- `Frontend/quran-dashboard-ui/package.json` scripts — only when the requested smoke
+  includes the frontend build or app.
+- `.claude/skills/engineering-review/references/quran-data-safety.md` — only when the
+  smoke path touches Quran source/import behavior; a "make it run" shortcut that
+  bypasses source-integrity checks is a finding, never an acceptable smoke.
 
-## Before running: inspect, don't assume
+## Output
 
-Prefer the project's own scripts and confirm real names before running anything — do not
-invent commands.
+1. **Verdict** — PASS / PASS WITH DEPLOYMENT NOTE / CHANGES REQUESTED / BLOCKED.
+2. **Scope checked** — and what was not applicable.
+3. **Commands run** — in order, project scripts preferred.
+4. **Evidence** — masked DB target, build/migration output, endpoint status codes.
+5. **Deployment notes** — pending migrations, config the deployer must set.
+6. **Skipped checks** — what was not run and why.
+7. **Next recommended action** — one short, direct step.
 
-- **Backend:** locate the solution file (e.g. `QuranDashboard.sln`) under `Backend/` rather
-  than assuming its name; identify the API startup project and the `DbContext` project;
-  check for any build/migration helper scripts. Read the config files above to learn the DB
-  target and which environment is active.
-- **Frontend:** read `Frontend/quran-dashboard-ui/package.json` `scripts` for the real
-  `build` / `test` entries and note whether a lockfile exists. The test command and its
-  worker cap are documented — see the pointer under Frontend checks; do not hand-roll it.
-- If a script encodes the intended command, use the script; only fall back to explicit CLI
-  commands when no script exists.
-
-## Checks
-
-Run only what the change touches; mark untouched areas "not applicable". Capture the actual
-command output as evidence.
-
-### Backend
-
-- **Restore + build** the backend solution (`dotnet build` on the located `.sln`). Build
-  failure is BLOCKING.
-- **Migrations list** (`dotnet ef migrations list`) for the API/DbContext project, and a
-  **pending-model-changes check** where the project supports it (e.g.
-  `dotnet ef migrations has-pending-model-changes`). Uncommitted model drift is a finding.
-- **DB target verification** (see Database safety) — display it before any apply.
-- **Apply local migration only with explicit local-DB approval** (`dotnet ef database
-  update`). Otherwise report pending state as a Deployment Note.
-- **Verify expected migration objects** when a migration was part of the change: after a
-  confirmed local apply, read-only-check that the expected tables/columns/indexes/constraints
-  exist (inspect the migration `Up()` and query the local schema). Do not mutate data.
-- **Run the API locally** (or reuse an already-running local instance — check before
-  starting a second one).
-- **Smoke `/api/health`** and any endpoint the change touched; record status codes and the
-  `ApiResponse` shape. A changed endpoint that 500s locally is a finding.
-
-### Frontend
-
-- **`npm install` only if needed** — lockfile changed, or `node_modules` missing. Skip
-  otherwise.
-- **`npm run build`** (confirm the script name first). Build failure is BLOCKING.
-- **Focused tests:** for how to run Angular specs on this project's Vitest/jsdom harness
-  (the mandatory fork cap, the `--run` caveat, jsdom's missing browser APIs, and how to
-  read a harness timeout), follow
-  `.claude/skills/test-guard/references/frontend-test-harness-constraints.md`. Do not
-  reinvent the command.
-- **Smoke the Angular app** only if the user asked or it is already part of the task.
-
-### Full-stack
-
-- **Distinguish build success from runtime smoke success** — "it compiled" is not "it ran".
-  Say which you actually observed.
-- **Distinguish a locally-applied migration from a pending deployment note** — a migration
-  that only exists in code (not applied to a confirmed local DB) is a Deployment Note, not a
-  pass.
-- **Repository status awareness** - note dirty or untracked paths so the user knows
-  what a commit would capture, but **do not commit** (that is `commit-workflow`).
-- **Dependency / security upgrades** — recommend a separate `dependency-audit` pass rather
-  than duplicating vulnerability/version checks here.
-
-## Quran data safety
-
-A smoke check must never become a reason to skip source-integrity checks. If a "make it
-run" shortcut would bypass Quran text/data validation, provenance/traceability, or
-source-unchanged checks, that is a finding, not an acceptable smoke shortcut. Apply the
-shared rules: `.claude/skills/engineering-review/references/quran-data-safety.md`.
-
-## Output format
-
-Return the result in this structure:
-
-1. **Verdict** — one of: `PASS` / `PASS WITH DEPLOYMENT NOTE` / `CHANGES REQUESTED` /
-   `BLOCKED`.
-2. **Scope checked** — backend / frontend / full-stack; which areas were in scope and which
-   were not applicable.
-3. **Commands run** — the actual commands (project scripts preferred), in order.
-4. **Evidence** — real output: build result, migrations list / pending check, DB target
-   shown, health/endpoint status codes, frontend build result, any test run.
-5. **Deployment notes** — pending migrations not applied, unconfirmed DB target, config the
-   deployer must set, anything that is fine locally but must be done for a real deploy.
-6. **Risks / skipped checks** — what was not run and why (e.g. DB target unclear, app not
-   started because runtime smoke was out of scope).
-7. **Next recommended action** — one short, direct step (e.g. "apply migration on confirmed
-   local DB then re-smoke", "hand to engineering-review", "run dependency-audit").
-
-## Guardrails
-
-- Report findings and evidence; do not implement or auto-fix.
-- Local only; never touch a remote/production DB; verify and display the target first.
-- No drop/reset/import/reseed/destructive runs unless the user explicitly asks.
-- If build/test/runtime status is unknown, say unknown — do not assume success.
-- Do not commit, stage, or push (that is `commit-workflow`).
-- Prefer project scripts; inspect them before naming exact commands.
+Report-only: findings and evidence, never fixes. If a status is unknown, say unknown.

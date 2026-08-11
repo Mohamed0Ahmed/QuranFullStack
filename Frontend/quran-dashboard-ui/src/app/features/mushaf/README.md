@@ -35,6 +35,84 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   source-value kinds, relationship directions) are narrowed via `Omit`-overlays, and
   view models stay hand-written.
 
+## Golden shell (Phase 9)
+
+- **The route declares one page intent and one split.** `mushaf-reader-page.component.html` carries
+  `qd-page-shell qd-page-shell--protected-mushaf qd-page-split qd-page-split--mushaf`, so the inline
+  gutter (`16 / 24 / 32 / 40px`), the `--qd-page-measure-protected-mushaf` measure and the feature-owned
+  `40/60` split all come from the global layout layer. No component below it may add a second inline
+  gutter. `protected-mushaf` and `--qd-split-mushaf` deliberately sit outside the `16/18/20rem` rail
+  scale (G03) — the reader column is a page measure, not a rail.
+- **The split token must stay gap-safe.** `--qd-split-mushaf` is `minmax(0, 40%) minmax(0, 60%)`, not
+  `40% 60%`. Two fixed percentage tracks already sum to 100% of the shell content box, so tracks plus
+  `--qd-split-gap` overflow it by exactly the gap and push the study column outside the route gutter
+  (measured at `40% 60%`: at 1080 the study started at `8.02px` against a content box starting at
+  `32px`; at 1440, `16px` against `40px`). With `minmax()` the percentages become growth limits, so the
+  reader takes 40% of the content box and the study absorbs the gap: 1080 → `400.391 + 576.609 + 24 =
+  1001`; 1440 → `538 + 783 + 24 = 1345`, both exactly the content box. The reader — the protected
+  side — is the track that does **not** move when `--qd-split-gap` or `--qd-page-gutter` is retuned.
+- **Wide reading measure.** The Quran text column is `326px` at 390 (capped by the viewport), `351.39px`
+  at 1080 (capped by the 40% reader track) and `448px` at 1440 (capped by
+  `--qd-mushaf-text-column-width`, `28rem`). The 1080 value was `377px` before the Golden shell; the
+  `32px` Wide route gutter and the `24px` split gap account for the difference. Line count, line
+  heights, word rects, fonts, markers and ligatures are unchanged at every width — the narrower Wide
+  measure only removes slack inside the 15 fixed lines. Making the split gap-safe does not narrow it
+  further: it takes the 24px off the study side only.
+- **Compact declines the route gutter for the protected canvas.** §1.4 of the Golden geometry locks a
+  `16px` Compact gutter, and `.mushaf-reader__page` cancels it —
+  `inline-size: calc(100% + 2 * var(--qd-page-gutter))` with `margin-inline: calc(-1 * var(--qd-page-gutter))`,
+  so its margin box equals the grid track exactly and cannot overflow at any Compact width. This is
+  deliberate, not an oversight: a Madani page is a structural constant (15 non-wrapping lines over
+  `--qd-mushaf-text-column-width`), and taking `2 × 16px` off the column at 390 wraps a line (measured:
+  column `326px → 294px`, line 4 `42.61px → 84.2px`), which is a Quran rendering delta rather than a
+  layout preference. The page shell stays the sole gutter owner; this only declines the gutter for the
+  protected column, and the document still never scrolls horizontally. Medium and Wide are unaffected —
+  there the column is capped by `--qd-mushaf-text-column-width` or by the 40% reader track, not by the
+  viewport. Do not "restore" the gutter here.
+- **Bands, not 1024.** Every Mushaf media query now resolves through `styles/_breakpoints.scss`:
+  Wide (`≥1080`) is the sticky reader + independently scrolling study; Medium and Compact
+  (`≤1079`) are reader-first, study-second in one column. The legacy `1023/1024` and `767` literals
+  are gone; the reserved page-area height and the selected-word/ayah baselines follow the same bands.
+  Note that the Wide split therefore starts at `1080`, not `1024` — 1024–1079 is a designed Medium
+  composition, not a squeezed Wide one.
+- **Shared owners around a protected renderer.** The reader/study chrome consumes F05 `qdAction`
+  (page navigation, the mutashabihat disclosure), F07 `qd-tabs`/`qdTab` (the five ayah-study tabs),
+  F10 `qdResultList` (`quran-result` on the similar-ayah and mutashabihat occurrence lists — the rows
+  keep their own ayah-card renderer, G11), F12 `qd-empty-state`/`qd-error-state` and F15
+  `qdFloatingLayer` (both pickers). Nothing shared reaches a Quran renderer descendant: `mushaf-line`,
+  `mushaf-word`, `mushaf-marker` and `segment-rendered-word` were not touched.
+- **Read failures are not alerts.** Every Mushaf failure is a *read* failure and renders through
+  `qd-error-state severity="read"` (no `role="alert"`); loading keeps its own sr-only `role="status"`
+  announcement, and empties render through `qd-empty-state`. The reader has never had a `qd-state`
+  consumer and gained none.
+- **D47 hit targets are overlays, not boxes.** The page-jump trigger keeps its printed `2.25rem`
+  proportions and expands to `--qd-hit-target-min` through a transparent `::after`, and the
+  previous/next actions carry `.qd-hit-target` for the same reason: growing the real box would
+  change the Quran page measure and invalidate the measured N3 row 9 reservation below.
+- **D37 — morphology segment rows are content.** `segment-data-rows` renders `div`s: no button or
+  anchor, no `role`, no `tabindex`, no click/keydown output, no `qd-interactive-surface`, no hover,
+  no pointer cursor and no focus ring. Only the morphology colour, number, part of speech and إعراب
+  are carried. Do not "restore" an affordance here; there is no segment action to open.
+- **D38 stays deferred.** `models/mushaf.models.ts`, `state/mushaf-url-sync.ts`,
+  `state/mushaf-url-hydration.ts` and `state/mushaf-reader.facade.ts` were not modified in the Golden
+  cycle. `panel`, `wordTab` and `segment` keep their parsing, normalization, hydration, serialization,
+  session restore and cache identity byte-for-behavior; no visible consumer was added and no key retired.
+- **The study tablist claims `aria-controls` only for the selected tab.** Only one
+  `role="tabpanel"` is mounted at a time and its `id` tracks `activeTab()`, so binding every tab's
+  `aria-controls` to its own panel id would leave four of five pointing at an element that does not
+  exist. The template therefore sets `[attr.aria-controls]` directly (reactive) instead of feeding
+  `qdTab`'s one-shot `panelId` input, and `QdTabDirective` leaves an already-present attribute
+  alone. The Words detail panels are the opposite case — they mount all panels `hidden`, so every
+  `panelId` there resolves.
+- **Ids are per instance (D31/D44).** `selected-ayah-section` generates its own tab/panel ids,
+  `surah-jump-picker` its listbox and option ids, and `source-selector` its listbox id. Nothing in the
+  reader binds a module-level literal id any more, so an embedded study shell and the global detail
+  overlay can never point at each other's panel.
+- **`selected-ayah-section` owns two stylesheets.** `…component.scss` is the loaded study composition;
+  `…states.scss` is the loading chrome (the N3 row 10 reservation, the source placeholder and the
+  skeleton line boxes). They are both `styleUrls` of the same component, split by responsibility and to
+  keep each file inside the component-SCSS threshold.
+
 ## Gotchas / invariants (read before changing)
 
 - **Loading is a skeleton, never visible loading text** (`UI_STYLE_SYSTEM.md` §17
@@ -75,8 +153,6 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   cells, and the responsive baseline is measured, not invented (333px wide bands /
   495px under the 768px morphology-grid breakpoint). Reservation clears on
   success/error/empty; loaded content always sizes itself.
-  `selected-word-section.component.spec.ts` is the **regression guard** for this
-  pattern — keep it passing untouched.
 - **Selected-ayah loading reserves its natural size too** (Feature 030, N3 row 10):
   a loaded tafsir/translation/إعراب has an arbitrary height, so `selected-ayah-section`
   runs the same pattern as a **local port** (decision N3-a: no shared utility until a
@@ -149,8 +225,8 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   `--qd-border-accent` hairline on top). The frame is presentation-only — the
   `toStudyAyahDisplayText` display mapping, verse-key display, `ayahNavigate` outputs, and all
   Quran text rendering stay feature-owned and unchanged.
-- **jsdom lacks `matchMedia` / `ResizeObserver`** under the vitest builder — guard them and
-  default to desktop (many components use responsive/observer logic).
+- Browser-only APIs such as `matchMedia` and `ResizeObserver` remain guarded, with a desktop
+  fallback when they are unavailable.
 - URL-state (`mushaf-url-sync`) is a shareable contract — keep params stable. The global
   detail overlay's `qdDetail*` keys are a different owner riding the same URL (Feature
   029, B7): `isBareMushafEntry` treats a URL whose only params are overlay keys as bare

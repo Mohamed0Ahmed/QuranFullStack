@@ -1,14 +1,4 @@
-.qd-confirm-dialog {
-  inline-size: min(28rem, 100%);
-}
-
 .qd-confirm-dialog__foot {
   display: flex;
   gap: var(--qd-space-2);
-}
-
-.qd-confirm-dialog__confirm--danger {
-  background: var(--qd-danger);
-  border-color: var(--qd-danger);
-  color: var(--qd-surface);
 }

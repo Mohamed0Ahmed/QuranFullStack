@@ -62,7 +62,7 @@ Identify inconsistencies, duplications, ambiguities, and underspecified items ac
 
 **If there is no constitution, there is no constitution gate.** That covers both the file being absent and the file being present but still an unfilled template (placeholder tokens such as `[PROJECT_NAME]` / `[PRINCIPLE_1_NAME]`). Skip constitution checks entirely, note once in the output that no constitution is defined, and continue — **absence is not a finding and never fails the run**. Do not invent principles from placeholders, from this repository's other documents, or from your own judgement of what they ought to be.
 
-**This repository deliberately has none.** The file was deleted because an unfilled template held as non-negotiable law is a worse artifact than no law at all. Binding rules live in `CLAUDE.md` / `AGENTS.md`, `CODING_PRINCIPLES.md`, `TESTING_STRATEGY.md`, and the `.architecture/` documents; judge against those, and against the feature's own spec, not against a constitution. `/speckit-converge` states the same escape hatch.
+**This repository deliberately has none.** The file was deleted because an unfilled template held as non-negotiable law is a worse artifact than no law at all. Binding rules live in `CLAUDE.md` / `AGENTS.md`, `CODING_PRINCIPLES.md`, `TESTING_CONSTITUTION.md`, and the `.architecture/` documents; judge against those, and against the feature's own spec, not against a constitution. `/speckit-converge` states the same escape hatch.
 
 ## Execution Steps
 

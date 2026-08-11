@@ -5,15 +5,19 @@ import {
   DestroyRef,
   ElementRef,
   afterNextRender,
+  computed,
   inject,
   input,
   output,
   signal,
   viewChild,
 } from '@angular/core';
-import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
-
-import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdDataTableComponent } from '../../../../shared/ui/data-table/data-table.component';
+import { QdDataTableState } from '../../../../shared/ui/data-table/data-table.models';
+import { QdSortableHeaderComponent } from '../../../../shared/ui/data-table/sortable-header.component';
+import { syncTableScrollbarGutter } from '../../../../shared/ui/data-table/table-scrollbar-gutter-sync';
+import { WORD_COUNT_DISABLED_REASON, WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
 import {
   ROOTS_COLUMN_COUNT_LABELS,
   ROOTS_COLUMN_HEADERS,
@@ -44,18 +48,14 @@ import {
   handleExplorerTableKeydown,
 } from '../../utils/explorer-table-keydown';
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
-import {
-  ExplorerRowNavDirection,
-  scrollExplorerRowIntoView,
-} from '../../utils/explorer-table-scroll';
+import { ExplorerRowNavDirection } from '../../utils/explorer-table-scroll';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
-import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
-
-import { QD_BP_TABLET_MAX_QUERY } from '../../../../shared/layout/breakpoints';
-
+import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
 const ROW_HEIGHT_DESKTOP = 40;
-const ROW_HEIGHT_MOBILE = 88;
-const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
+const ROW_HEIGHT_COMPACT = 88;
+const ROOT_TABLE_WIDE_COLUMN_COUNT = 9;
+const ROOT_TABLE_MEDIUM_COLUMN_COUNT = 6;
+let nextDisabledReasonId = 0;
 type RootTableColumnKey = MorphologyColumnKey;
 
 const ROOT_TABLE_COLUMN_ORDER = [
@@ -79,7 +79,7 @@ export interface RootCountOpenedEvent {
 @Component({
   selector: 'qd-roots-table',
   standalone: true,
-  imports: [NgTemplateOutlet, ScrollingModule, WordCountChipComponent],
+  imports: [NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
   templateUrl: './roots-table.component.html',
   styleUrl: './roots-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -89,9 +89,8 @@ export class RootsTableComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly rows = input.required<readonly RootListItemViewModel[]>();
+  readonly totalCount = input<number | null>(null);
   readonly loading = input(false);
-  // Separate from `loading` so error / no-results can render INSIDE the mounted shell rather than
-  // above the page grid (Feature 030, N3 row 5); `loading` still drives the skeleton body.
   readonly status = input<LoadStatus>('idle');
   readonly errorMessage = input('');
   readonly selectedRootId = input<number | null>(null);
@@ -105,7 +104,6 @@ export class RootsTableComponent {
 
   readonly rowSelected = output<RootListItemViewModel>();
   readonly countOpened = output<RootCountOpenedEvent>();
-  // null = release the sort param back to the default (ترتيب المصحف).
   readonly sortChange = output<RootSort | null>();
 
   protected readonly sortControl = new ExplorerTableSortController<RootSort>(
@@ -130,30 +128,45 @@ export class RootsTableComponent {
   protected get noResultsLabel(): string {
     return ROOTS_NO_RESULTS_LABEL;
   }
-  protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
-  protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
-  protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
+  protected readonly loadingRowPlaceholders = Array.from({ length: 10 });
+  protected readonly rowHeight = ROW_HEIGHT_DESKTOP;
+  protected readonly compactRowHeight = ROW_HEIGHT_COMPACT;
+  protected readonly isMedium = signal(false);
+  protected readonly columnCount = computed(() => this.isMedium() ? ROOT_TABLE_MEDIUM_COLUMN_COUNT : ROOT_TABLE_WIDE_COLUMN_COUNT);
+  protected readonly tableState = computed<QdDataTableState>(() => {
+    if (this.loading()) return 'loading';
+    if (this.status() === 'error') return 'error';
+    if (this.status() === 'empty') return 'empty';
+    return 'ready';
+  });
+  protected readonly selectedRow = computed(() => this.rows().find((row) => row.id === this.selectedRootId()) ?? null);
+  protected readonly rowIdentity = (row: RootListItemViewModel): number => row.id;
+  protected readonly sameRow = (row: RootListItemViewModel, selected: RootListItemViewModel | null): boolean => row.id === selected?.id;
+  protected get disabledReason(): string { return WORD_COUNT_DISABLED_REASON; }
+  protected readonly disabledReasonId = `roots-table-disabled-reason-${nextDisabledReasonId++}`;
+  protected readonly hasDisabledCounts = computed(() => this.rows().some((row) =>
+    row.occurrencesCount === 0 || row.ayahsCount === 0 || row.surahsCount === 0 ||
+    row.simpleWordsCount === 0 || row.tashkeelWordsCount === 0 || row.lemmasCount === 0 || row.stemsCount === 0,
+  ));
 
-  private readonly viewport = viewChild(CdkVirtualScrollViewport);
+  private readonly table = viewChild(QdDataTableComponent<RootListItemViewModel>);
 
   constructor() {
     afterNextRender(() => {
       if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-        const mobileMq = window.matchMedia(QD_BP_TABLET_MAX_QUERY);
-        const syncRowHeight = () => {
-          this.rowHeight.set(mobileMq.matches ? ROW_HEIGHT_MOBILE : ROW_HEIGHT_DESKTOP);
-        };
-        syncRowHeight();
-        if (typeof mobileMq.addEventListener === 'function') {
-          mobileMq.addEventListener('change', syncRowHeight);
-          this.destroyRef.onDestroy(() => mobileMq.removeEventListener('change', syncRowHeight));
+        const mediumQuery = window.matchMedia(QD_BP_MEDIUM_QUERY);
+        const syncMedium = () => this.isMedium.set(mediumQuery.matches);
+        syncMedium();
+        if (typeof mediumQuery.addEventListener === 'function') {
+          mediumQuery.addEventListener('change', syncMedium);
+          this.destroyRef.onDestroy(() => mediumQuery.removeEventListener('change', syncMedium));
         }
       }
 
       const disconnect = syncTableScrollbarGutter(
         this.host.nativeElement,
         '--roots-table-scrollbar-gutter',
-        '.roots-table__body',
+        '.qd-data-table__body',
         '.roots-table',
       );
       this.destroyRef.onDestroy(disconnect);
@@ -161,6 +174,9 @@ export class RootsTableComponent {
   }
 
   protected selectRow(root: RootListItemViewModel): void {
+    if (root.simpleWordsCount === 0) {
+      return;
+    }
     this.rowSelected.emit(root);
   }
 
@@ -180,10 +196,6 @@ export class RootsTableComponent {
 
   protected rowNumber(index: number): number {
     return pageRelativeRowNumber(this.currentPage(), this.pageSize(), index);
-  }
-
-  protected trackRowById(_index: number, root: RootListItemViewModel): number {
-    return root.id;
   }
 
   protected isCountActive(
@@ -222,16 +234,7 @@ export class RootsTableComponent {
   }
 
   scrollToTop(): void {
-    const viewport = this.viewport();
-    if (this.useVirtualScroll && viewport) {
-      viewport.scrollToIndex(0, 'auto');
-      return;
-    }
-
-    const body = this.host.nativeElement.querySelector('.roots-table__body') as HTMLElement | null;
-    if (body) {
-      body.scrollTop = 0;
-    }
+    this.table()?.scrollToTop();
   }
 
   private emitColumnTarget(
@@ -291,23 +294,6 @@ export class RootsTableComponent {
   }
 
   private scrollToRow(index: number, direction: ExplorerRowNavDirection): void {
-    const viewport = this.viewport();
-    if (this.useVirtualScroll && viewport) {
-      scrollExplorerRowIntoView({
-        targetIndex: index,
-        direction,
-        itemSize: this.rowHeight(),
-        viewport,
-      });
-      return;
-    }
-
-    const body = this.host.nativeElement.querySelector('.roots-table__body') as HTMLElement | null;
-    scrollExplorerRowIntoView({
-      targetIndex: index,
-      direction,
-      itemSize: this.rowHeight(),
-      container: body,
-    });
+    this.table()?.scrollRowIntoView(index, direction);
   }
 }

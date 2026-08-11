@@ -22,6 +22,24 @@ controlled authorization responses, and unsafe-endpoint validator; their registr
 - Startup validation: `JwtAuthenticationOptionsValidator` with `ValidateOnStart` fails fast unless
   `Authority` is an absolute `https` URI and both audience values are non-blank.
 
+## E2E test issuer
+
+Authenticated Playwright runs configure a test RS256 issuer on both bearer schemes only when the host
+environment is exactly `Testing` and `E2E:TestIssuer:Enabled=true`. Both conditions are required. The
+flag defaults off, has no appsettings entry, and is ignored in Development and Production. An enabled
+Testing host also requires an absolute HTTPS issuer distinct from `Auth:Authority` and a non-empty
+public `E2E:TestIssuer:Jwks` document. The private key remains in the Playwright fixture.
+
+The gated schemes intentionally use a static `OpenIdConnectConfiguration` containing the test issuer
+and public keys. That suppresses authority metadata retrieval for the isolated run, so real Logto
+tokens do not validate while the test gate is active even though the primary authority remains in the
+valid-issuer list. Outside the two-part gate, normal authority metadata and signing keys are unchanged.
+
+The `IExternalUserProfileSource` registration is never replaced. The Playwright-owned backend wrapper
+points the real `LogtoManagementApiUserProfileSource` at a local Management API stub that serves only
+the run's `e2e-*` identities. Authentication, `/api/access/me` provisioning, Owner reconciliation,
+local authorization-state resolution, and permission administration all remain the production paths.
+
 ## Current user
 
 `HttpContextCurrentUser` (`ICurrentUser`, scoped) exposes only `Sub` from the API access-token

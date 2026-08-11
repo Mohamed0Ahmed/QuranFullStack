@@ -1,0 +1,22 @@
+<div
+  class="qd-error-state"
+  [attr.role]="role()"
+  [class.qd-state--reserve]="reserve()"
+  [class.qd-state--reserve-empty]="quiet()"
+  [attr.data-testid]="testId()"
+>
+  <span class="qd-state__message" [class.qd-state__message--visible]="message() !== ''">{{ message() }}</span>
+
+  @if (actionLabel(); as label) {
+    <button
+      type="button"
+      qdAction="secondary"
+      class="qd-state__action"
+      [attr.aria-label]="actionAriaLabel()"
+      [attr.data-testid]="actionTestId()"
+      (click)="action.emit()"
+    >
+      {{ label }}
+    </button>
+  }
+</div>

@@ -1,0 +1,122 @@
+@if (!isCompact() && headerTemplate(); as header) {
+  <div class="qd-data-table__header" role="rowgroup">
+    <div class="qd-data-table__header-row" role="row">
+      <ng-container *ngTemplateOutlet="header" />
+    </div>
+  </div>
+}
+
+@switch (state()) {
+  @case ('loading') {
+    <div class="qd-data-table__body qd-data-table__body--state" role="rowgroup" [attr.aria-label]="bodyAriaLabel()" data-testid="qd-data-table-body" aria-busy="true">
+      @if (loadingTemplate(); as loading) {
+        <ng-container *ngTemplateOutlet="loading" />
+      }
+    </div>
+  }
+  @case ('empty') {
+    <div class="qd-data-table__body qd-data-table__body--state" role="rowgroup" [attr.aria-label]="bodyAriaLabel()" data-testid="qd-data-table-body">
+      @if (emptyTemplate(); as empty) {
+        <ng-container *ngTemplateOutlet="empty" />
+      }
+    </div>
+  }
+  @case ('error') {
+    <div class="qd-data-table__body qd-data-table__body--state" role="rowgroup" [attr.aria-label]="bodyAriaLabel()" data-testid="qd-data-table-body">
+      @if (errorTemplate(); as error) {
+        <ng-container *ngTemplateOutlet="error" />
+      }
+    </div>
+  }
+  @case ('refreshing') {
+    <qd-refreshing-indicator [active]="true" testId="qd-data-table-refreshing" />
+    <ng-container *ngTemplateOutlet="readyTable" />
+  }
+  @default {
+    <ng-container *ngTemplateOutlet="readyTable" />
+  }
+}
+
+<ng-template #readyTable>
+    @if (isCompact()) {
+      <div class="qd-data-table__body qd-data-table__body--compact" [attr.aria-label]="bodyAriaLabel()" data-testid="qd-data-table-body">
+        @for (row of rows(); track rowId()(row); let index = $index) {
+          <div
+            class="qd-data-table__row qd-data-table__row--compact"
+            role="listitem"
+            [class.qd-data-table__row--selected]="isSelected(row)"
+            [class.qd-is-selected]="isSelected(row)"
+            [attr.aria-selected]="isSelected(row)"
+            [attr.aria-current]="isSelected(row) ? 'true' : null"
+            [attr.data-row-id]="rowId()(row)"
+            [attr.aria-posinset]="index + 1"
+            [attr.aria-setsize]="totalRowCount()"
+            [attr.tabindex]="canSelect() ? 0 : null"
+            (click)="selectRow(row)"
+            (keydown)="onRowKeydown($event, row)"
+          >
+            @if (compactRowTemplate(); as compactRow) {
+              <ng-container *ngTemplateOutlet="compactRow; context: rowContext(row, index)" />
+            } @else if (rowTemplate(); as rowTemplate) {
+              <ng-container *ngTemplateOutlet="rowTemplate; context: rowContext(row, index)" />
+            }
+          </div>
+        }
+      </div>
+    } @else if (useVirtualScroll()) {
+      <cdk-virtual-scroll-viewport
+        class="qd-data-table__body qd-data-table__body--virtual"
+        data-testid="qd-data-table-body"
+        [itemSize]="rowHeight()"
+        [minBufferPx]="rowHeight() * 4"
+        [maxBufferPx]="rowHeight() * 8"
+        role="rowgroup"
+        [attr.aria-label]="bodyAriaLabel()"
+      >
+        <div
+          *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRow"
+          class="qd-data-table__row"
+          role="row"
+          [class.qd-data-table__row--selected]="isSelected(row)"
+          [class.qd-is-selected]="isSelected(row)"
+          [attr.aria-selected]="isSelected(row)"
+          [attr.aria-current]="isSelected(row) ? 'true' : null"
+          [attr.data-row-id]="rowId()(row)"
+          [attr.tabindex]="canSelect() ? 0 : null"
+          (click)="selectRow(row)"
+          (keydown)="onRowKeydown($event, row)"
+        >
+          @if (rowTemplate(); as rowTemplate) {
+            <ng-container *ngTemplateOutlet="rowTemplate; context: rowContext(row, index)" />
+          }
+        </div>
+      </cdk-virtual-scroll-viewport>
+    } @else {
+      <div class="qd-data-table__body" role="rowgroup" [attr.aria-label]="bodyAriaLabel()" data-testid="qd-data-table-body">
+        @for (row of rows(); track rowId()(row); let index = $index) {
+          <div
+            class="qd-data-table__row"
+            role="row"
+            [class.qd-data-table__row--selected]="isSelected(row)"
+            [class.qd-is-selected]="isSelected(row)"
+            [attr.aria-selected]="isSelected(row)"
+            [attr.aria-current]="isSelected(row) ? 'true' : null"
+            [attr.data-row-id]="rowId()(row)"
+            [attr.tabindex]="canSelect() ? 0 : null"
+            (click)="selectRow(row)"
+            (keydown)="onRowKeydown($event, row)"
+          >
+            @if (rowTemplate(); as rowTemplate) {
+              <ng-container *ngTemplateOutlet="rowTemplate; context: rowContext(row, index)" />
+            }
+          </div>
+        }
+      </div>
+    }
+</ng-template>
+
+@if (paginationTemplate(); as pagination) {
+  <footer class="qd-data-table__pagination">
+    <ng-container *ngTemplateOutlet="pagination" />
+  </footer>
+}

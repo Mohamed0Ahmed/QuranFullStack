@@ -14,9 +14,6 @@
   scrollbar-gutter: stable;
 }
 
-// The card frame (surface/hairline/radius/padding/gap) comes from the shared
-// `qdAyahCard` primitive (Feature 029, Change A); only list spacing and the
-// highlight sizing variables stay here.
 .ayah-matches-list__card {
   margin-block-end: var(--qd-space-2);
   --highlighted-ayah-font-size: 1rem;
@@ -64,7 +61,7 @@
 .ayah-matches-list__row-number {
   flex-shrink: 0;
   inline-size: 1.75rem;
-  font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  font-family: var(--qd-font-ui);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   text-align: center;

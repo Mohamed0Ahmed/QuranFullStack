@@ -2,9 +2,8 @@ using QuranDashboard.Application.Abstractions.Abwab;
 
 namespace QuranDashboard.Tests.Abwab;
 
-// The apply writer copies a template subtree into live doors and had no tests at all
-// (`docs/TESTING_DEBT.md` row 7). Only the section-inheritance obligation is paid here — the rest of
-// row 7 (offsets, aliases, all-or-nothing, 409 collisions) stays open.
+// The apply writer copies a template subtree into live doors. Only the section-inheritance
+// obligation is covered here; offsets, aliases, all-or-nothing, and 409 collisions are not.
 [Collection(nameof(AbwabSchemaTestCollection))]
 public sealed class AbwabTemplateApplyBehaviorTests(AbwabSchemaFixture fixture)
 {

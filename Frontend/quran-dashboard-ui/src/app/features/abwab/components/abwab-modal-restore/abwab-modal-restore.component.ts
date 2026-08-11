@@ -1,11 +1,13 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, input, output, viewChild } from '@angular/core';
 
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { AbwabModalKind } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 @Component({
   selector: 'qd-abwab-modal-restore',
   standalone: true,
+  imports: [QdActionDirective],
   templateUrl: './abwab-modal-restore.component.html',
   styleUrl: './abwab-modal-restore.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

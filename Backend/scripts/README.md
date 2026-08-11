@@ -16,7 +16,7 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `check-pending-model --build\|--no-build` | Reports whether the EF Core model has pending changes. Never adds and never applies a migration |
 | `create-smoke-dump` | Regenerates the canonical `quran_*` data dump the backend smoke data tier restores: `resources/db-dumps/quran-canonical/{quran-canonical.dump,manifest.json}` |
 | `wipe-abwab` | Empties the six `abwab_*` tables on a local database, leaving the canonical `quran_*` data intact |
-| `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project. EF tooling only — never hand-write a migration (`Backend/CLAUDE.md`) |
+| `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project. EF tooling only — never hand-write a migration (`Backend/README.md` §Invariants) |
 | `update-db` | `dotnet ef database update` — applies pending migrations to the configured database |
 | `access-admin` | Runs normalized-identity scan/backfill, permission-catalogue sync, Owner reconciliation, legacy-role inventory/conversion, and authorization preflight |
 | `clean-local-build` | Clears the NuGet caches, deletes every `bin`/`obj`, and restores the solution. Non-destructive to data |
@@ -277,8 +277,9 @@ After the first successful build, use `qd-api` directly until backend code chang
 
 ## Backend test commands
 
-**Which lane to run and when is `../../TESTING_STRATEGY.md` §3 and §5.** This section is what
-the three scripts do; it deliberately does not repeat the selection policy.
+`../../TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` select which checks to run.
+This section and `../tests/QuranDashboard.Tests/README.md` own the Backend command mechanics and
+lane membership.
 
 ### `test-backend`
 
@@ -288,8 +289,22 @@ the three scripts do; it deliberately does not repeat the selection policy.
 
 `--help` prints the authoritative usage and is the thing to trust when this file and the script
 disagree. The lanes are `fast`, `access`, `access-db`, `migration`, `process`, `smoke`,
-`tier-b`, `canonical-data`, `feature`, `pipeline`, and `pre-pr`; an unknown lane exits 2 with the
+`tier-b`, `gate-contract`, `canonical-data`, `feature`, `pipeline`, and `pre-pr`; an unknown lane exits 2 with the
 usage text (`test-backend:72-78`).
+
+| Purpose | Lanes | Selection |
+|---|---|---|
+| Daily verification | `smoke`, `tier-b` | Permanent classes only; the union is the complete Permanent set |
+| Concern gate | `gate-contract` | Every retained row with a non-empty `Concerns` value |
+| Pipeline gate | `pipeline` | `Gate=Pipeline` **and** `Kind!=Canonical`; `canonical-data` owns every excluded canonical class |
+| Canonical-data gate | `canonical-data` | Every `Kind=Canonical` row, including the nine canonical rows excluded from `pipeline` and the canonical smoke-data class |
+| Migration gate | `migration` | `Kind=Migration` |
+| Access database gate | `access-db` | `Feature=Access` **and** (`Kind=Database` **or** `Concerns` contains `Schema`); `gate-contract` owns the excluded non-Access `AbwabSchemaTests` and `WordTypesChildCatalogueDriftTests` |
+| Mandatory pre-release gate | `pre-pr` | Every retained catalog row |
+
+The focused `fast`, `access`, `process`, and `feature` lanes remain diagnostic entry points. They do
+not replace the daily pair or a change/release gate. Before release, `pre-pr` is mandatory and runs
+the complete retained estate.
 
 | Flag | Effect |
 |------|--------|

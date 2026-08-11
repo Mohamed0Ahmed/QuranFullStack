@@ -10,8 +10,6 @@
     height: auto;
     flex-shrink: 0;
 
-    // Relocated from _components.scss (UI_STYLE_SYSTEM.md §2 / styles/README.md
-    // boundary — component internals belong in the owning component's SCSS).
     @media (max-width: bp.$qd-bp-tablet-max) {
       min-height: auto;
     }
@@ -32,9 +30,8 @@
   height: 100%;
   padding: var(--qd-space-3);
   background: var(--qd-surface);
-  border: 1px solid var(--qd-border);
+  border: var(--qd-hairline);
   border-radius: var(--qd-radius-md);
-  box-shadow: var(--qd-shadow-sm);
 
   :host.qd-selected-word-section--embedded & {
     height: auto;
@@ -42,7 +39,6 @@
     background: transparent;
     border: none;
     border-radius: 0;
-    box-shadow: none;
 
     @media (max-width: bp.$qd-bp-tablet-max) {
       min-height: auto;
@@ -129,7 +125,7 @@
     min-width: 0;
     min-height: var(--qd-segment-card-min-height);
     padding: calc(var(--qd-space-1) * 1.65);
-    border: 1px solid var(--qd-border);
+    border: var(--qd-hairline);
     border-inline-start-width: 3px;
     border-radius: var(--qd-radius-sm);
     background: var(--qd-section-bg);
@@ -173,7 +169,7 @@
     gap: calc(var(--qd-space-1) * 0.82);
     min-width: 7.4rem;
     padding: var(--qd-space-3);
-    border: 1px solid var(--qd-border);
+    border: var(--qd-hairline);
     border-radius: var(--qd-radius-sm);
     background: var(--qd-section-bg);
     text-align: center;
@@ -227,7 +223,7 @@
     gap: var(--qd-space-1);
     min-width: 0;
     padding: var(--qd-space-3);
-    border: 1px solid var(--qd-border);
+    border: var(--qd-hairline);
     border-radius: var(--qd-radius-sm);
     background: var(--qd-section-bg);
     font-size: 0.9375rem;
@@ -259,7 +255,7 @@
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: bp.$qd-bp-compact-max) {
   .selected-word-section {
     // Measured 1-segment natural floor at phone widths (U1 baseline).
     --qd-selected-word-baseline-block-size: 30.9375rem;

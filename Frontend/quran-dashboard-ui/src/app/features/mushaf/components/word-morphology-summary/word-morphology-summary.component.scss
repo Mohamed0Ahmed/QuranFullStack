@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .word-morphology-summary {
   display: flex;
   flex-direction: row;
@@ -13,7 +15,7 @@
     gap: calc(var(--qd-space-1) * 0.82);
     min-width: 7.4rem;
     padding: var(--qd-space-3);
-    border: 1px solid var(--qd-border);
+    border: var(--qd-hairline);
     border-radius: var(--qd-radius-sm);
     background: var(--qd-section-bg);
     font-size: 0.875rem;
@@ -44,7 +46,7 @@
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: bp.$qd-bp-compact-max) {
   .word-morphology-summary {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

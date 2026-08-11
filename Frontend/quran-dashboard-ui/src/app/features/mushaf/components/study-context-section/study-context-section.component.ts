@@ -1,5 +1,4 @@
 import { Component, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 import {
   AyahNavigationTarget,
@@ -11,13 +10,14 @@ import {
   SourceOption,
   WordAnalysisViewModel,
 } from '../../models/mushaf.models';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { SelectedAyahSectionComponent } from '../selected-ayah-section/selected-ayah-section.component';
 import { SelectedWordSectionComponent } from '../selected-word-section/selected-word-section.component';
 
 @Component({
   selector: 'qd-study-context-section',
   standalone: true,
-  imports: [CommonModule, SelectedWordSectionComponent, SelectedAyahSectionComponent],
+  imports: [QdEmptyStateComponent, SelectedWordSectionComponent, SelectedAyahSectionComponent],
   templateUrl: './study-context-section.component.html',
   styleUrls: ['./study-context-section.component.scss'],
 })

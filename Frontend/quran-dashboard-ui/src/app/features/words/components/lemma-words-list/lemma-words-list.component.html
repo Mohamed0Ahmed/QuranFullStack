@@ -7,6 +7,8 @@
 
   <div
     class="lemma-words-list__viewport"
+    qdResultList
+    listVariant="linked"
     [attr.aria-busy]="loading() ? true : null"
     [attr.data-testid]="loading() ? 'lemma-words-list-loading' : null"
   >
@@ -26,9 +28,12 @@
     } @else {
       @for (row of rows(); track row.item.uniqueWordId; let i = $index) {
         <a
+          qdResultItem
           class="lemma-words-list__row qd-interactive-surface qd-detail-list__row"
           [qdDetailLink]="row.frame"
           [attr.aria-label]="uniqueWordLabel(row.item.displayText)"
+          [position]="rowNumber(i)"
+          [setSize]="page().totalCount"
           data-testid="lemma-word-link"
         >
           <span class="lemma-words-list__row-number qd-detail-list__row-number" aria-hidden="true">{{ rowNumber(i) }}</span>
@@ -39,7 +44,6 @@
     }
   </div>
 
-  <!-- Always-rendered slot: reserves the pagination row through loading (N3 row 4). -->
   <div class="qd-detail-list__pagination-slot" data-testid="lemma-words-pagination-slot">
     @if (!loading()) {
       <qd-pagination

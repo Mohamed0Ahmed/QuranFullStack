@@ -1,10 +1,19 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 
 import { AccessAuditEventItem } from '../../../../core/api/generated/models/access-audit-event-item';
 import { AccessUserSummary } from '../../../../core/api/generated/models/access-user-summary';
 import { PermissionCode, isPermissionCode } from '../../../../core/auth/permission-code';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
+import { QdFormFieldComponent } from '../../../../shared/ui/form-field/form-field.component';
+import {
+  QdResultItemDirective,
+  QdResultListDirective,
+} from '../../../../shared/ui/result-list/result-list.directive';
+import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
 import { AccessPermissionGroup } from '../../models/access-admin-permissions';
 import {
@@ -26,7 +35,18 @@ export interface AccessAuditFilters {
 @Component({
   selector: 'qd-access-audit-log',
   standalone: true,
-  imports: [AccessUserPickerComponent, DatePipe, QdStateComponent],
+  imports: [
+    AccessUserPickerComponent,
+    DatePipe,
+    QdActionDirective,
+    QdControlDirective,
+    QdEmptyStateComponent,
+    QdErrorStateComponent,
+    QdFormFieldComponent,
+    QdResultItemDirective,
+    QdResultListDirective,
+    QdSkeletonRowsComponent,
+  ],
   templateUrl: './access-audit-log.component.html',
   styleUrl: './access-audit-log.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,6 +57,9 @@ export class AccessAuditLogComponent {
   readonly loading = input(false);
   readonly error = input<string | null>(null);
   readonly hasNextPage = input(false);
+  readonly appending = input(false);
+  readonly appendError = input<string | null>(null);
+  readonly appendedCount = input(0);
   readonly targetSearch = input<AccessUserSearchState>(EMPTY_ACCESS_USER_SEARCH);
   readonly actorSearch = input<AccessUserSearchState>(EMPTY_ACCESS_USER_SEARCH);
 
@@ -49,6 +72,13 @@ export class AccessAuditLogComponent {
   protected readonly actorUser = signal<AccessUserSummary | null>(null);
   protected readonly actionType = signal('');
   protected readonly permissionCode = signal('');
+
+  protected readonly skeletonRowCount = 6;
+  protected readonly skeletonRowTemplate = 'minmax(0, 1fr) auto';
+
+  protected readonly appendAnnouncement = computed(() =>
+    ACCESS_ADMIN_LABELS.auditAppendedAnnouncement(this.appendedCount()),
+  );
 
   protected get actionTypes(): readonly string[] {
     return ACCESS_AUDIT_ACTION_TYPES;

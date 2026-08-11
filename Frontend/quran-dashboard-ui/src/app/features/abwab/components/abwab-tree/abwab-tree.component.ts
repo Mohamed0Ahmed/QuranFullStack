@@ -9,7 +9,11 @@ import {
   output,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
+
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdHierarchyKeyboardDirective } from '../../../../shared/ui/hierarchy/hierarchy-keyboard.directive';
 
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -29,12 +33,14 @@ export interface AbwabTreeMenuRequest {
 @Component({
   selector: 'qd-abwab-tree',
   standalone: true,
+  imports: [QdActionDirective, QdHierarchyKeyboardDirective],
   templateUrl: './abwab-tree.component.html',
   styleUrl: './abwab-tree.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AbwabTreeComponent {
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly hierarchy = viewChild.required(QdHierarchyKeyboardDirective);
 
   readonly roots = input<readonly AbwabNode[]>([]);
   readonly orderScope = input<AbwabOrderScope>('section');
@@ -359,15 +365,14 @@ export class AbwabTreeComponent {
   }
 
   private rowElement(id: number): HTMLElement | null {
-    return this.elementRef.nativeElement.querySelector<HTMLElement>(`[data-testid="abwab-tree-row-${id}"]`);
+    return this.hierarchy().rowElement(id);
   }
 
   private focusRow(id: number): void {
-    queueMicrotask(() => this.rowElement(id)?.focus());
+    this.hierarchy().focusRow(id);
   }
 
   private resolveDirection(): 'ltr' | 'rtl' {
-    const dirHost = this.elementRef.nativeElement.closest('[dir]');
-    return dirHost?.getAttribute('dir') === 'rtl' ? 'rtl' : 'ltr';
+    return this.hierarchy().direction();
   }
 }

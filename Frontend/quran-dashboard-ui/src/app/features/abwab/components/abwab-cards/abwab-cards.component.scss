@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .abwab-cards__crumbs {
   display: flex;
   align-items: center;
@@ -9,24 +11,9 @@
 }
 
 .abwab-cards__crumb {
-  border: none;
-  background: transparent;
-  padding: var(--qd-space-1) var(--qd-space-2);
-  border-radius: var(--qd-radius-sm);
-  font-family: inherit;
+  display: block;
+  max-inline-size: 14rem;
   font-size: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-
-.abwab-cards__crumb:hover {
-  background: var(--qd-surface-hover);
-  color: var(--qd-accent-text);
-}
-
-.abwab-cards__crumb:focus-visible {
-  outline: 2px solid var(--qd-focus-ring);
-  outline-offset: -1px;
 }
 
 .abwab-cards__crumb--current {
@@ -34,20 +21,10 @@
   font-weight: 700;
 }
 
-.abwab-cards__crumb {
-  display: block;
-  max-inline-size: 14rem;
-}
-
 .abwab-cards__crumb-sep {
   color: var(--qd-border-strong);
 }
 
-.abwab-cards__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
-  gap: var(--qd-space-3);
-}
 
 .abwab-cards__cell {
   position: relative;
@@ -59,6 +36,7 @@
   text-align: start;
   background: var(--qd-surface);
   border: 1px solid var(--qd-border);
+  border-inline-start-width: var(--qd-green-thread-size);
   border-radius: var(--qd-radius-md);
   padding: var(--qd-space-3);
   font-family: inherit;
@@ -88,6 +66,7 @@
 .abwab-cards__card--checked {
   outline: 2px solid var(--qd-border-accent);
   outline-offset: -2px;
+  border-inline-start-color: var(--qd-green-thread);
 }
 
 .abwab-cards__card--checked {
@@ -126,4 +105,14 @@
   font-size: 0.75rem;
   margin-block-start: var(--qd-space-2);
   min-block-size: 1em;
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .abwab-cards__card {
+    min-block-size: var(--qd-control-lg);
+  }
+
+  .abwab-cards__crumb {
+    max-inline-size: 100%;
+  }
 }

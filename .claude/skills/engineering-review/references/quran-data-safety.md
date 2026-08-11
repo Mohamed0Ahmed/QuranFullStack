@@ -1,58 +1,29 @@
-# Quranic Data Safety (Shared Reference)
+# Quranic Data Safety (Conditional Reference)
 
-Single source of truth for the Quran data-safety rules shared across the Quran
-Dashboard review skills: `engineering-review`, `performance-backend-review`,
-`performance-angular-review`, and the Spec Kit add-on
-(`SPEC_KIT_IMPLEMENTATION_REVIEW.md`). Those skills point here for the core rules and
-keep only their own severity scale and stack-specific framing.
+Conditional reference for source-sensitive or Quran-rendering scope. The canonical owners
+are `CODING_PRINCIPLES.md` §10 (source data: no invention or silent correction, provenance,
+staged imports, traceability, reports), `Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md`
+§13 (Quranic data display safety), and the nearest source-pipeline README under
+`Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/`. This file
+adds only the cross-area safeguards below; each consumer keeps its own severity and
+application wording.
 
-This product curates Quran source data. Source-sensitive data is the
-**highest-priority safety area**. Correctness, provenance, and readability always win
-over convenience, cleverness, or speed.
+1. **Never trade Quran data safety for performance or convenience.** No optimization or
+   "make it run" shortcut may weaken text integrity, source hashes or manifest checks,
+   source-unchanged checks, validation hard checks, rollback/atomicity, report correctness,
+   or provenance. "Slower but correct" is the right answer for this product.
 
-## The rules
+2. **Never hide missing or unknown data.** Show a controlled empty / unknown / loading
+   state instead of a plausible-looking fallback. Loading is not empty; unknown is not
+   zero; no hardcoded parallel copy that can drift from the declared source of truth.
 
-1. **Never invent Quran text or data.** Do not fabricate or hallucinate ayah text,
-   word text, roots, lemmas/stems, morphology/i3rab, tafsir, translations, counts,
-   statistics, or gates. If a value is not in the source, it does not exist.
+3. **Preserve Quran text/glyph readability and RTL semantics in any change.** Do not
+   reduce Quran text readability, contrast, or sizing; do not break text
+   selection/highlight semantics or RTL layout correctness; do not swap the correct Mushaf
+   font/rendering for a "lighter" one that mis-renders glyphs or marks; do not animate or
+   transition Quran glyphs; respect reduced-motion for Quran content; keep Quran-related
+   actions accessible.
 
-2. **Never silently correct Quran text or data.** Do not "fix", normalize, or adjust
-   source-sensitive data in frontend or backend without explicit, traceable handling.
-   A silent correction with no trace is a defect even when it looks more "right".
-
-3. **Never hide missing or unknown data.** Show a controlled empty / unknown / loading
-   state instead of masking absent data or substituting a plausible-looking fallback.
-   Loading is not empty; unknown is not zero.
-
-4. **Never drop traceability / provenance / source checks.** Preserve source and
-   traceability metadata, source hashes, manifest and source-unchanged checks,
-   validation hard checks, report gates, and rollback / atomicity for imported or
-   generated data. No partial-state imports; no hardcoded parallel copy that can drift
-   from the declared single source of truth.
-
-5. **Never trade Quran data safety for performance.** No optimization may weaken text
-   integrity, provenance, validation, atomicity, or report correctness. If something
-   cannot be made faster without touching one of these, say so plainly and stop —
-   "slower but correct" is the right answer for this product.
-
-6. **Preserve Quran text/glyph readability and RTL semantics.** Do not reduce Quran
-   text readability, contrast, or sizing; do not break text selection / highlight
-   semantics or RTL layout correctness; do not swap the correct Mushaf font / rendering
-   for a "lighter" one that mis-renders glyphs or marks; do not animate or transition
-   Quran glyphs; respect reduced-motion for Quran content; keep Quran-related actions
-   accessible.
-
-7. **Report uncertainty instead of guessing.** When source truth is unclear, report the
+4. **Report uncertainty instead of guessing.** When source truth is unclear, report the
    uncertainty and recommend verification against the source — never guess, fill, or
-   assert a value just to look complete.
-
-## Severity
-
-Any violation is a high-priority safety issue. Each skill applies its own severity
-scale:
-
-- `engineering-review` and the Spec Kit add-on: treat as **BLOCKING** or **MAJOR**
-  depending on impact.
-- `performance-backend-review` and `performance-angular-review`: a performance or
-  visual recommendation that trades away any rule above is itself the defect — never
-  propose it, and flag it if the diff already makes the trade.
+   assert a value to look complete.

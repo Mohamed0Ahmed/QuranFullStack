@@ -1,4 +1,4 @@
 interface:
   display_name: "PR Context Prep"
   short_description: "Prep a copy-paste PR context package for CodeRabbit + reviewers"
-  default_prompt: "Use $pr-context-prep to read the current diff and produce a PR context package (scope, invariants, CodeRabbit focus, risk, merge readiness)."
+  default_prompt: "Use $pr-context-prep to package the current diff and existing evidence into a PR context (scope, invariants, reviewer/CodeRabbit focus, risk)."

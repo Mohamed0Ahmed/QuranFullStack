@@ -1,0 +1,20 @@
+.access-account-permissions__section {
+  display: grid;
+  gap: var(--qd-space-3);
+  padding: var(--qd-card-padding);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+}
+
+.access-account-permissions__section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+}
+
+.access-account-permissions__diff-summary {
+  color: var(--qd-green-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

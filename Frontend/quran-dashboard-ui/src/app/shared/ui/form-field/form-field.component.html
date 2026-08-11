@@ -1,0 +1,17 @@
+<label class="qd-field__label" [id]="labelId()" [attr.for]="controlId()">
+  {{ label() }}
+  @if (required()) {
+    <span class="qd-field__required" aria-hidden="true">*</span>
+    <span class="qd-sr-only">{{ requiredLabel() }}</span>
+  }
+</label>
+
+<ng-content />
+
+@if (helper(); as helperText) {
+  <p class="qd-field__helper" [id]="helperId()">{{ helperText }}</p>
+}
+
+@if (invalid()) {
+  <p class="qd-field__error" [id]="errorId()">{{ error() }}</p>
+}

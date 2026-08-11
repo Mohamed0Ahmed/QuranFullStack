@@ -34,8 +34,8 @@
       }
     }
     @case ('error') {
-      <qd-state
-        variant="error"
+      <qd-error-state
+        severity="read"
         [message]="panelState().errorMessage"
         [actionLabel]="retryLabel"
         (action)="onRetry()"

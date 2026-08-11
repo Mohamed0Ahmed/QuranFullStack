@@ -1,21 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked, viewChild } from '@angular/core';
-import { A11yModule } from '@angular/cdk/a11y';
 import { Observable } from 'rxjs';
 
 import { AbwabDoorPickerComponent, AbwabDoorPickerStatus } from '../abwab-door-picker/abwab-door-picker.component';
-import { ModalScrollLockDirective } from '../../../../shared/ui/modal-scroll-lock/modal-scroll-lock.directive';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabNode } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabDoorDto } from '../../../../core/api/generated/models/abwab-door-dto';
 
-let nextModalId = 0;
-
 @Component({
   selector: 'qd-abwab-template-copy-modal',
   standalone: true,
-  imports: [A11yModule, AbwabDoorPickerComponent, ModalScrollLockDirective, QdStateComponent],
+  imports: [AbwabDoorPickerComponent, QdActionDirective, QdModalShellComponent, QdEmptyStateComponent, QdErrorStateComponent],
   templateUrl: './abwab-template-copy-modal.component.html',
   styleUrl: './abwab-template-copy-modal.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,7 +36,6 @@ export class AbwabTemplateCopyModalComponent {
 
   private readonly picker = viewChild(AbwabDoorPickerComponent);
 
-  protected readonly titleId = `abwab-template-copy-modal-title-${nextModalId++}`;
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly pickedIds = signal<ReadonlySet<number>>(new Set());
   protected readonly applyBusy = signal(false);

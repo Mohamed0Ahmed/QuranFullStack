@@ -1,25 +1,30 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, inject, input, output, signal, viewChild } from '@angular/core';
-import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output, signal, viewChild } from '@angular/core';
 
-import { WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdDataTableComponent } from '../../../../shared/ui/data-table/data-table.component';
+import { QdDataTableState } from '../../../../shared/ui/data-table/data-table.models';
+import { QdSortableHeaderComponent } from '../../../../shared/ui/data-table/sortable-header.component';
+import { syncTableScrollbarGutter } from '../../../../shared/ui/data-table/table-scrollbar-gutter-sync';
+import { WORD_COUNT_DISABLED_REASON, WordCountChipComponent } from '../word-count-chip/word-count-chip.component';
 import { STEMS_COLUMN_COUNT_LABELS, STEMS_COLUMN_HEADERS, STEMS_LEMMA_LINK_PREFIX, STEMS_LEMMA_MISSING_ARIA, STEMS_LEMMA_MISSING_LABEL, STEMS_LOADING_LABEL, STEMS_NO_RESULTS_LABEL, STEMS_ROOT_LINK_PREFIX, STEMS_ROOT_MISSING_ARIA, STEMS_ROOT_MISSING_LABEL, STEMS_TABLE_BODY_LABEL, STEMS_TABLE_LABEL } from '../../models/stems.labels';
 import { DEFAULT_STEM_SORT, LoadStatus, STEMS_LIST_PAGE_SIZE, STEM_SORT_COLUMNS, StemListItemViewModel, StemSort, StemSurahView, StemView, StemWordView, normalizeStemSort } from '../../models/stems.models';
 import { isMorphologyCountActive, MorphologyColumnKey, resolveMorphologyActiveColumn } from '../../utils/explorer-count-active';
 import { ExplorerInteractionSource, handleExplorerTableKeydown } from '../../utils/explorer-table-keydown';
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
-import { ExplorerRowNavDirection, scrollExplorerRowIntoView } from '../../utils/explorer-table-scroll';
+import { ExplorerRowNavDirection } from '../../utils/explorer-table-scroll';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
-import { syncTableScrollbarGutter } from '../../utils/table-scrollbar-gutter-sync';
 import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 import { buildLemmasDeepLink } from '../../state/lemmas-url-sync';
 import { buildRootsDeepLink } from '../../state/roots-url-sync';
 
-import { QD_BP_TABLET_MAX_QUERY } from '../../../../shared/layout/breakpoints';
+import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
 
 const ROW_HEIGHT_DESKTOP = 40;
-const ROW_HEIGHT_MOBILE = 108;
-const HAS_RESIZE_OBSERVER = typeof ResizeObserver !== 'undefined';
+const ROW_HEIGHT_COMPACT = 108;
+const STEM_TABLE_WIDE_COLUMN_COUNT = 9;
+const STEM_TABLE_MEDIUM_COLUMN_COUNT = 6;
+let nextDisabledReasonId = 0;
 type StemTableColumnKey = Exclude<MorphologyColumnKey, 'stems'>;
 
 const STEM_TABLE_COLUMN_ORDER = [
@@ -43,7 +48,7 @@ export interface StemCountOpenedEvent {
 @Component({
   selector: 'qd-stems-table',
   standalone: true,
-  imports: [NgTemplateOutlet, ScrollingModule, WordCountChipComponent],
+  imports: [NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
   templateUrl: './stems-table.component.html',
   styleUrls: ['./stems-table.component.scss', './stems-table.component.responsive.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,6 +58,7 @@ export class StemsTableComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly rows = input.required<readonly StemListItemViewModel[]>();
+  readonly totalCount = input<number | null>(null);
   readonly loading = input(false);
   readonly status = input<LoadStatus>('idle');
   readonly errorMessage = input('');
@@ -85,32 +91,51 @@ export class StemsTableComponent {
   protected get noResultsLabel(): string {
     return STEMS_NO_RESULTS_LABEL;
   }
-  protected readonly lemmaLinkPrefix = STEMS_LEMMA_LINK_PREFIX;
-  protected readonly rootLinkPrefix = STEMS_ROOT_LINK_PREFIX;
+  protected get lemmaLinkPrefix(): string { return STEMS_LEMMA_LINK_PREFIX; }
+  protected get rootLinkPrefix(): string { return STEMS_ROOT_LINK_PREFIX; }
+  protected get lemmaMissingLabel(): string { return STEMS_LEMMA_MISSING_LABEL; }
+  protected get lemmaMissingAria(): string { return STEMS_LEMMA_MISSING_ARIA; }
+  protected get rootMissingLabel(): string { return STEMS_ROOT_MISSING_LABEL; }
+  protected get rootMissingAria(): string { return STEMS_ROOT_MISSING_ARIA; }
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
-  protected readonly rowHeight = signal(ROW_HEIGHT_DESKTOP);
-  protected readonly useVirtualScroll = HAS_RESIZE_OBSERVER;
+  protected readonly rowHeight = ROW_HEIGHT_DESKTOP;
+  protected readonly compactRowHeight = ROW_HEIGHT_COMPACT;
+  protected readonly isMedium = signal(false);
+  protected readonly columnCount = computed(() => this.isMedium() ? STEM_TABLE_MEDIUM_COLUMN_COUNT : STEM_TABLE_WIDE_COLUMN_COUNT);
+  protected readonly tableState = computed<QdDataTableState>(() => {
+    if (this.loading()) return 'loading';
+    if (this.status() === 'error') return 'error';
+    if (this.status() === 'empty') return 'empty';
+    return 'ready';
+  });
+  protected readonly selectedRow = computed(() => this.rows().find((row) => row.id === this.selectedStemId()) ?? null);
+  protected readonly rowIdentity = (row: StemListItemViewModel): number => row.id;
+  protected readonly sameRow = (row: StemListItemViewModel, selected: StemListItemViewModel | null): boolean => row.id === selected?.id;
+  protected get disabledReason(): string { return WORD_COUNT_DISABLED_REASON; }
+  protected readonly disabledReasonId = `stems-table-disabled-reason-${nextDisabledReasonId++}`;
+  protected readonly hasDisabledCounts = computed(() => this.rows().some((row) =>
+    row.occurrencesCount === 0 || row.ayahsCount === 0 || row.surahsCount === 0 ||
+    row.simpleWordsCount === 0 || row.tashkeelWordsCount === 0,
+  ));
 
-  private readonly viewport = viewChild(CdkVirtualScrollViewport);
+  private readonly table = viewChild(QdDataTableComponent<StemListItemViewModel>);
 
   constructor() {
     afterNextRender(() => {
       if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-        const mobileMq = window.matchMedia(QD_BP_TABLET_MAX_QUERY);
-        const syncRowHeight = () => {
-          this.rowHeight.set(mobileMq.matches ? ROW_HEIGHT_MOBILE : ROW_HEIGHT_DESKTOP);
-        };
-        syncRowHeight();
-        if (typeof mobileMq.addEventListener === 'function') {
-          mobileMq.addEventListener('change', syncRowHeight);
-          this.destroyRef.onDestroy(() => mobileMq.removeEventListener('change', syncRowHeight));
+        const mediumQuery = window.matchMedia(QD_BP_MEDIUM_QUERY);
+        const syncMedium = () => this.isMedium.set(mediumQuery.matches);
+        syncMedium();
+        if (typeof mediumQuery.addEventListener === 'function') {
+          mediumQuery.addEventListener('change', syncMedium);
+          this.destroyRef.onDestroy(() => mediumQuery.removeEventListener('change', syncMedium));
         }
       }
 
       const disconnect = syncTableScrollbarGutter(
         this.host.nativeElement,
         '--stems-table-scrollbar-gutter',
-        '.stems-table__body',
+        '.qd-data-table__body',
         '.stems-table',
       );
       this.destroyRef.onDestroy(disconnect);
@@ -118,6 +143,9 @@ export class StemsTableComponent {
   }
 
   protected selectRow(stem: StemListItemViewModel): void {
+    if (stem.simpleWordsCount === 0) {
+      return;
+    }
     this.rowSelected.emit(stem);
   }
 
@@ -137,10 +165,6 @@ export class StemsTableComponent {
 
   protected rowNumber(index: number): number {
     return pageRelativeRowNumber(this.currentPage(), this.pageSize(), index);
-  }
-
-  protected trackRowById(_index: number, stem: StemListItemViewModel): number {
-    return stem.id;
   }
 
   protected isCountActive(
@@ -187,32 +211,7 @@ export class StemsTableComponent {
   }
 
   scrollToTop(): void {
-    const viewport = this.viewport();
-    if (this.useVirtualScroll && viewport) {
-      viewport.scrollToIndex(0, 'auto');
-      return;
-    }
-
-    const body = this.host.nativeElement.querySelector('.stems-table__body') as HTMLElement | null;
-    if (body) {
-      body.scrollTop = 0;
-    }
-  }
-
-  protected lemmaMissingLabel(): string {
-    return STEMS_LEMMA_MISSING_LABEL;
-  }
-
-  protected lemmaMissingAria(): string {
-    return STEMS_LEMMA_MISSING_ARIA;
-  }
-
-  protected rootMissingLabel(): string {
-    return STEMS_ROOT_MISSING_LABEL;
-  }
-
-  protected rootMissingAria(): string {
-    return STEMS_ROOT_MISSING_ARIA;
+    this.table()?.scrollToTop();
   }
 
   private emitColumnTarget(
@@ -269,23 +268,6 @@ export class StemsTableComponent {
   }
 
   private scrollToRow(index: number, direction: ExplorerRowNavDirection): void {
-    const viewport = this.viewport();
-    if (this.useVirtualScroll && viewport) {
-      scrollExplorerRowIntoView({
-        targetIndex: index,
-        direction,
-        itemSize: this.rowHeight(),
-        viewport,
-      });
-      return;
-    }
-
-    const body = this.host.nativeElement.querySelector('.stems-table__body') as HTMLElement | null;
-    scrollExplorerRowIntoView({
-      targetIndex: index,
-      direction,
-      itemSize: this.rowHeight(),
-      container: body,
-    });
+    this.table()?.scrollRowIntoView(index, direction);
   }
 }

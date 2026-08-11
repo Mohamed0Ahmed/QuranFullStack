@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 
 import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
 import { LemmaDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
+import { QdResultItemDirective, QdResultListDirective } from '../../../../shared/ui/result-list/result-list.directive';
 
 import {
   ROOTS_LEMMA_TEXT_HEADER,
@@ -20,7 +21,7 @@ interface RootLemmaRowViewModel {
 @Component({
   selector: 'qd-root-lemmas-list',
   standalone: true,
-  imports: [DetailOverlayLinkDirective],
+  imports: [DetailOverlayLinkDirective, QdResultItemDirective, QdResultListDirective],
   templateUrl: './root-lemmas-list.component.html',
   styleUrl: './root-lemmas-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,8 +38,6 @@ export class RootLemmasListComponent {
   protected readonly loadingLabel = WORDS_LOADING_LABEL;
   protected readonly openLemmaLabel = ROOTS_OPEN_LEMMA_LABEL;
 
-  // Mirrors the retired lemma explorer deep link, which opened the default
-  // words view; frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed((): readonly RootLemmaRowViewModel[] =>
     this.lemmas().map((item) => ({
       item,

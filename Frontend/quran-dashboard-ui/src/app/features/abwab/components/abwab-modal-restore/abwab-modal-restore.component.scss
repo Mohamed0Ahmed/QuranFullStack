@@ -3,39 +3,24 @@
   align-items: stretch;
 }
 
-.abwab-modal-restore__btn {
+.abwab-modal-restore__btn,
+.abwab-modal-restore__discard {
   color: var(--qd-accent-text);
   border-color: var(--qd-border-accent);
   background: var(--qd-selected-bg);
+}
+
+.abwab-modal-restore__btn {
   border-start-end-radius: 0;
   border-end-end-radius: 0;
 }
 
 .abwab-modal-restore__discard {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding-inline: var(--qd-space-2);
-  border: var(--qd-btn-border-width) solid var(--qd-border-accent);
+  --qd-action-size: var(--qd-hit-target-min);
+
   border-inline-start: none;
   border-start-start-radius: 0;
   border-end-start-radius: 0;
-  border-start-end-radius: var(--qd-radius-sm);
-  border-end-end-radius: var(--qd-radius-sm);
-  background: var(--qd-selected-bg);
-  color: var(--qd-text-muted);
-  font-family: inherit;
   font-size: 1rem;
   line-height: 1;
-  cursor: pointer;
-
-  &:hover {
-    color: var(--qd-text);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--qd-focus-ring);
-    outline-offset: 2px;
-    box-shadow: var(--qd-ring);
-  }
 }

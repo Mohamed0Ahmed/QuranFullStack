@@ -1,4 +1,7 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal, viewChild } from '@angular/core';
+
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdHierarchyKeyboardDirective } from '../../../../shared/ui/hierarchy/hierarchy-keyboard.directive';
 
 import { AbwabNode } from '../../models/abwab.models';
 import {
@@ -12,12 +15,13 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 @Component({
   selector: 'qd-abwab-archive-view',
   standalone: true,
+  imports: [QdActionDirective, QdHierarchyKeyboardDirective],
   templateUrl: './abwab-archive-view.component.html',
   styleUrl: './abwab-archive-view.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AbwabArchiveViewComponent {
-  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly hierarchy = viewChild.required(QdHierarchyKeyboardDirective);
 
   readonly roots = input<readonly AbwabNode[]>([]);
   readonly ariaLabel = input('');
@@ -150,15 +154,10 @@ export class AbwabArchiveViewComponent {
   }
 
   private focusRow(id: number): void {
-    queueMicrotask(() => {
-      this.elementRef.nativeElement
-        .querySelector<HTMLElement>(`[data-testid="abwab-archive-row-${id}"]`)
-        ?.focus();
-    });
+    this.hierarchy().focusRow(id);
   }
 
   private resolveDirection(): 'ltr' | 'rtl' {
-    const dirHost = this.elementRef.nativeElement.closest('[dir]');
-    return dirHost?.getAttribute('dir') === 'rtl' ? 'rtl' : 'ltr';
+    return this.hierarchy().direction();
   }
 }

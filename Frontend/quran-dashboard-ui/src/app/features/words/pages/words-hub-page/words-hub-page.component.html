@@ -1,5 +1,5 @@
 <div class="qd-page">
-  <div class="qd-container">
+  <div class="qd-page-shell qd-page-shell--capped-reading">
     <div class="qd-page-header words-hub-header">
       <h1 class="qd-page-title" data-testid="words-hub-title">{{ title }}</h1>
       <p class="qd-text-muted words-hub-subtitle" data-testid="words-hub-subtitle">{{ subtitle }}</p>
@@ -14,9 +14,10 @@
       </p>
     </div>
 
-    <section class="words-hub-grid" [attr.aria-label]="sectionsLabel">
+    <section class="qd-grid qd-grid--curriculum words-hub-grid" [attr.aria-label]="sectionsLabel">
       @for (card of cards; track card.key) {
         <qd-word-section-card
+          [class.qd-grid__span-all]="$last"
           [attr.data-testid]="'words-hub-card--' + card.key"
           [ordinal]="card.ordinal"
           [eyebrow]="card.eyebrow"

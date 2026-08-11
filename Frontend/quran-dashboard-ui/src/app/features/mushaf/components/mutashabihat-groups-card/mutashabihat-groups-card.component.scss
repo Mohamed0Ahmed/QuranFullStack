@@ -44,7 +44,7 @@
     align-items: center;
     padding: 0.125rem 0.5rem;
     border-radius: var(--qd-radius-sm);
-    border: 1px solid var(--qd-border);
+    border: var(--qd-hairline);
     background: var(--qd-surface);
     color: var(--qd-text);
     font-size: 0.75rem;
@@ -121,36 +121,15 @@
       }
 
       &:focus-visible {
-        outline: 2px solid var(--qd-accent);
-        outline-offset: 2px;
+        outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+        outline-offset: var(--qd-focus-ring-offset);
       }
     }
   }
 
   &__expand-toggle {
     align-self: center;
-    padding: calc(var(--qd-space-1) * 1.2) var(--qd-space-3);
-    border: 1px solid var(--qd-border);
-    border-radius: var(--qd-radius-sm);
-    background: var(--qd-surface-recessed);
-    color: var(--qd-text-muted);
     font-size: 0.8125rem;
-    font-weight: 700;
-    line-height: 1.4;
-    cursor: pointer;
-    transition:
-      color 120ms ease,
-      border-color 120ms ease;
-
-    &:hover {
-      color: var(--qd-accent-text);
-      border-color: var(--qd-accent);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--qd-accent);
-      outline-offset: 2px;
-    }
   }
 
   // N3 row 12: the loading placeholders reuse the real group / `qdAyahCard` frames

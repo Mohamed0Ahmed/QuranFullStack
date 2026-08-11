@@ -1,12 +1,25 @@
 <div class="qd-shell">
+  <a class="qd-skip-link" [href]="'#' + mainContentId" data-testid="qd-skip-link">
+    تخطّي إلى المحتوى
+  </a>
+
   <div class="qd-shell-viewport">
     <qd-nav-progress />
     <qd-top-navbar />
 
-    <main [class.qd-shell-main--page-scroll]="pageScrollLayout()">
+    <main
+      [id]="mainContentId"
+      tabindex="-1"
+      [class.qd-shell-main--page-scroll]="pageScrollLayout()"
+      [attr.inert]="navigationSheetOpen() ? '' : null"
+      [attr.aria-hidden]="navigationSheetOpen() ? true : null"
+    >
       <router-outlet />
     </main>
   </div>
 
-  <qd-footer />
+  <qd-footer
+    [attr.inert]="navigationSheetOpen() ? '' : null"
+    [attr.aria-hidden]="navigationSheetOpen() ? true : null"
+  />
 </div>

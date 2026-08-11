@@ -1,14 +1,20 @@
 <div class="qd-page">
-  <div class="qd-container auth-callback">
+  <div class="qd-page-shell qd-page-shell--capped-reading auth-callback">
     @if (status() === 'error') {
-      <qd-state
-        variant="error"
+      <qd-error-state
+        severity="write"
+        testId="auth-callback-error"
+        actionTestId="auth-callback-retry"
         message="تعذّر إكمال تسجيل الدخول"
         actionLabel="إعادة المحاولة"
         (action)="retry()"
       />
     } @else {
-      <qd-state variant="loading" message="جارٍ إكمال تسجيل الدخول…" />
+      <qd-panel-skeleton
+        shape="text"
+        testId="auth-callback-loading"
+        loadingLabel="جارٍ إكمال تسجيل الدخول…"
+      />
     }
   </div>
 </div>

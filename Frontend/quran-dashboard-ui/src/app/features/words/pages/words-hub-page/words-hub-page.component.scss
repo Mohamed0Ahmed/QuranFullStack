@@ -7,7 +7,7 @@
 }
 
 .words-hub-subtitle {
-  max-width: 42rem;
+  max-inline-size: var(--qd-measure-prose);
   margin-inline: auto;
 }
 
@@ -21,38 +21,23 @@
   justify-content: center;
   gap: var(--qd-space-2);
   margin-block: var(--qd-space-4) 0;
-  font-size: 0.875rem;
+  font-size: var(--qd-type-body);
+  line-height: var(--qd-type-body-lh);
 }
 
 .words-hub-chain__node {
   background: var(--qd-surface);
-  border: 1px solid var(--qd-border);
+  border: var(--qd-hairline);
   border-radius: var(--qd-radius-pill);
   padding: var(--qd-space-1) var(--qd-space-3);
   font-weight: 400;
-  color: var(--qd-text);
+  color: var(--qd-ink);
 }
 
 .words-hub-chain__sep {
-  color: var(--qd-text-muted);
+  color: var(--qd-ink-muted);
 }
 
 .words-hub-grid {
-  display: grid;
-  gap: var(--qd-space-4);
-  grid-template-columns: 1fr;
-  margin-block-start: var(--qd-space-5);
-}
-
-@media (min-width: 640px) {
-  .words-hub-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-// Richer cards want the width; a 2+2+1 layout reads calmer than a ragged 3+2 (plan D6).
-@media (min-width: 1024px) {
-  .words-hub-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  margin-inline: auto;
 }

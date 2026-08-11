@@ -11,42 +11,8 @@
   margin-block-end: 0;
 }
 
-.uw-toolbar-recess {
-  background: var(--qd-surface-recessed);
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-md);
-  padding: var(--qd-space-4);
-  margin-block-end: var(--qd-space-3);
-}
-
-.uw-toolbar-recess--stacked {
-  display: grid;
-  gap: var(--qd-space-3);
-}
-
-.uw-toolbar-recess__stat {
-  margin-block-start: var(--qd-space-3);
-}
-
-.uw-toolbar-recess--kinetic {
-  animation: uw-toolbar-rise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes uw-toolbar-rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .uw-toolbar-recess--kinetic {
-    animation: none;
-  }
+.explorer-toolbar {
+  margin-block-end: var(--qd-page-rhythm);
 }
 
 .qd-explorer-controls {
@@ -73,6 +39,13 @@
   flex-shrink: 0;
 }
 
+.qd-explorer-subview-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
 .qd-explorer-layout {
   --qd-explorer-chrome-block-size: 14rem;
   --qd-explorer-table-header-height: 2.75rem;
@@ -84,10 +57,9 @@
   --qd-explorer-view-tabs-height: 3.5625rem;
 
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   gap: var(--qd-space-4);
   align-items: start;
-  padding-inline: 0;
 }
 
 .qd-explorer-layout__table,
@@ -154,7 +126,6 @@
 @media (max-width: bp.$qd-bp-tablet-max) {
   .qd-explorer-layout {
     grid-template-columns: minmax(0, 1fr);
-    padding-inline: var(--qd-space-4);
     gap: var(--qd-space-3);
   }
 }

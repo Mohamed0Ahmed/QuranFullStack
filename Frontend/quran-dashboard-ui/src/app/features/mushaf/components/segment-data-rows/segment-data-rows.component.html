@@ -1,8 +1,7 @@
 <div class="segment-data-rows segment-data-rows--form-first" data-testid="segment-data-rows">
   @for (segment of segments(); track segment.segmentLocation) {
-    <button
-      type="button"
-      class="segment-data-rows__row qd-interactive-surface"
+    <div
+      class="segment-data-rows__row"
       [style.--segment-accent]="segment.color"
       [attr.data-segment-slot]="segment.segmentColorSlot"
     >
@@ -30,6 +29,6 @@
           {{ segment.segmentI3rabArabic }}
         </div>
       }
-    </button>
+    </div>
   }
 </div>

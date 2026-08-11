@@ -1,5 +1,5 @@
 <div class="qd-page abwab-page" data-testid="abwab-page">
-  <div class="qd-container qd-page-frame abwab-page__frame">
+  <div class="qd-page-shell qd-page-shell--full-data abwab-page__frame">
     <header class="qd-page-header abwab-page__header">
       <div>
         <h1 class="qd-page-title">{{ pageTitle }}</h1>
@@ -17,7 +17,7 @@
         <button
           #headerFallbackFocus
           type="button"
-          class="qd-btn"
+          qdAction="secondary"
           [class.abwab-page__header-btn--active]="archiveParam()"
           data-testid="abwab-page-archive-toggle"
           (click)="interactions.onArchiveToggle(archiveParam())"
@@ -27,7 +27,7 @@
         @if (permissions.canManageSections()) {
           <button
             type="button"
-            class="qd-btn"
+            qdAction="secondary"
             data-testid="abwab-page-manage-sections"
             (click)="interactions.onSectionsRequested()"
           >
@@ -35,13 +35,13 @@
           </button>
         }
         @if (!archiveParam()) {
-          <a class="qd-btn" [routerLink]="templatesRoutePath" data-testid="abwab-page-templates">
+          <a qdAction="secondary" [routerLink]="templatesRoutePath" data-testid="abwab-page-templates">
             {{ templatesLabel }}
           </a>
           @if (permissions.canCreateDoor()) {
             <button
               type="button"
-              class="qd-btn qd-btn-primary"
+              qdAction="primary"
               data-testid="abwab-page-add-root"
               (click)="interactions.onCreateRootRequested()"
             >
@@ -102,11 +102,13 @@
       <div class="abwab-page__layout">
         <div class="abwab-page__main">
           <div class="qd-card abwab-page__tree-card">
-            <qd-state
-              variant="error"
+            <qd-error-state
+              severity="read"
               [reserve]="true"
               [message]="facade.errorMessage() ?? ''"
               [actionLabel]="retryLabel"
+              testId="abwab-page-load-error"
+              actionTestId="abwab-page-load-retry"
               (action)="facade.load()"
             />
           </div>
@@ -118,10 +120,9 @@
           @if (archiveParam()) {
             <div class="qd-card abwab-page__tree-card">
               @if (displayArchivedRoots().length === 0) {
-                <qd-state
-                  variant="empty"
+                <qd-empty-state
                   [message]="archiveEmptyStateMessage()"
-                  data-testid="abwab-page-archive-empty"
+                  testId="abwab-page-archive-empty"
                 />
               } @else {
                 <qd-abwab-archive-view
@@ -153,7 +154,7 @@
           } @else {
             <div class="qd-card abwab-page__tree-card">
               @if (visibleRoots().length === 0) {
-                <qd-state variant="empty" [message]="emptyLabel" data-testid="abwab-page-empty" />
+                <qd-empty-state [message]="emptyLabel" testId="abwab-page-empty" />
               } @else {
                 <qd-abwab-tree
                   [roots]="visibleRoots()"
@@ -179,6 +180,7 @@
               @if (permissions.canCreateDoor()) {
                 <button
                   type="button"
+                  qdAction="tertiary"
                   class="abwab-page__add-ghost"
                   data-testid="abwab-page-add-root-ghost"
                   (click)="interactions.onCreateRootRequested()"
@@ -189,7 +191,7 @@
             </div>
           }
         </div>
-        <aside class="abwab-page__side">
+        <aside class="abwab-page__side qd-page-rail qd-page-rail--m">
           <qd-abwab-side-panel
             [selectedDoor]="selectedDoor()"
             [bulkMode]="selection.bulkMode()"
@@ -299,7 +301,7 @@
 >
   <p>{{ overlays.archiveConfirmMessage() }}</p>
   @if (overlays.archiveError(); as message) {
-    <qd-state variant="error" [message]="message" data-testid="abwab-page-archive-confirm-error" />
+    <qd-error-state severity="write" [message]="message" testId="abwab-page-archive-confirm-error" />
   }
 </qd-confirm-dialog>
 
@@ -317,7 +319,7 @@
 >
   <p>{{ overlays.bulkArchiveConfirmMessage() }}</p>
   @if (overlays.archiveError(); as message) {
-    <qd-state variant="error" [message]="message" data-testid="abwab-page-bulk-archive-confirm-error" />
+    <qd-error-state severity="write" [message]="message" testId="abwab-page-bulk-archive-confirm-error" />
   }
 </qd-confirm-dialog>
 

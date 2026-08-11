@@ -1,17 +1,19 @@
 @if (user(); as target) {
-  <h2
-    id="access-admin-workspace-title"
-    class="explorer-panel-header__label qd-truncate"
-    data-testid="access-user-summary-name"
-    [title]="nameLabel(target)"
-  >{{ nameLabel(target) }}</h2>
-  <span class="explorer-panel-header__entity" dir="ltr" [title]="target.email">{{ target.email }}</span>
-  <span class="explorer-panel-header__end qd-gap-2" data-testid="access-user-summary-badges">
+  <span
+    class="qd-ltr-isolate qd-text-meta"
+    data-testid="access-user-summary-email"
+    dir="ltr"
+  >{{ target.email }}</span>
+  <span class="qd-flex qd-items-center qd-gap-2" data-testid="access-user-summary-badges">
     @if (target.isOwner) {
-      <span class="qd-badge qd-badge--accent">مالك</span>
+      <span
+        class="qd-badge qd-badge--status qd-badge--membership-owner"
+        data-testid="access-user-summary-membership"
+      >مالك</span>
     }
-    <span class="qd-badge">{{ statusLabel(target) }}</span>
+    <span
+      [class]="lifecycleBadgeClass(target)"
+      data-testid="access-user-summary-lifecycle"
+    >{{ statusLabel(target) }}</span>
   </span>
-} @else {
-  <h2 id="access-admin-workspace-title" class="explorer-panel-header__label">مساحة عمل الحساب</h2>
 }

@@ -1,7 +1,10 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, input, output, signal, viewChild } from '@angular/core';
 
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
-import { QdStateComponent } from '../../../../shared/ui/state/state.component';
+import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { AbwabNode } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
@@ -25,7 +28,13 @@ function subtreeMatches(node: AbwabNode, query: string): boolean {
 @Component({
   selector: 'qd-abwab-door-picker',
   standalone: true,
-  imports: [QdSkeletonRowsComponent, QdStateComponent],
+  imports: [
+    QdActionDirective,
+    QdControlDirective,
+    QdSkeletonRowsComponent,
+    QdEmptyStateComponent,
+    QdErrorStateComponent,
+  ],
   templateUrl: './abwab-door-picker.component.html',
   styleUrl: './abwab-door-picker.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

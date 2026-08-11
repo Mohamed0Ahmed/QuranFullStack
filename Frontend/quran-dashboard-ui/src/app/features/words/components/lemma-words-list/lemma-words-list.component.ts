@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
 import { UniqueDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
+import { QdResultItemDirective, QdResultListDirective } from '../../../../shared/ui/result-list/result-list.directive';
 import {
   LEMMAS_LOADING_LABEL,
   LEMMAS_OPEN_UNIQUE_WORD_LABEL,
@@ -22,7 +23,7 @@ interface LemmaWordRowViewModel {
 @Component({
   selector: 'qd-lemma-words-list',
   standalone: true,
-  imports: [DetailOverlayLinkDirective, PaginationComponent],
+  imports: [DetailOverlayLinkDirective, PaginationComponent, QdResultItemDirective, QdResultListDirective],
   templateUrl: './lemma-words-list.component.html',
   styleUrl: './lemma-words-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,8 +44,6 @@ export class LemmaWordsListComponent {
   protected readonly paginationLabel = LEMMAS_WORDS_PAGINATION_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 8 });
 
-  // Mirrors the retired unique-words explorer deep link (same mode + ayahs
-  // view); frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed((): readonly LemmaWordRowViewModel[] =>
     this.page().items.map((item) => ({
       item,

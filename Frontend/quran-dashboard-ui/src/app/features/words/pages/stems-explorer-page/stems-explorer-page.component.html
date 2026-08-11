@@ -1,5 +1,5 @@
 <div class="qd-page">
-  <div class="qd-container qd-explorer-frame stems-explorer-frame">
+  <div class="qd-page-shell qd-page-shell--split-workspace stems-explorer-frame">
     <div class="uw-intro-band">
       <div class="qd-page-header">
         <h1 class="qd-page-title" data-testid="stems-explorer-page-title">{{ pageTitle }}</h1>
@@ -20,8 +20,9 @@
       </qd-words-explainer>
     </div>
 
-    <div class="uw-toolbar-recess">
+    <qd-explorer-toolbar [ariaLabel]="pageTitle">
       <qd-explorer-search-row
+        qdExplorerToolbarPrimary
         [searchValue]="searchDraft()"
         [searchLabel]="searchLabel"
         [searchPlaceholder]="searchPlaceholder"
@@ -57,7 +58,7 @@
       </qd-explorer-search-row>
 
       <qd-explorer-result-count
-        class="uw-toolbar-recess__stat"
+        qdExplorerToolbarResult
         data-testid="stems-result-count"
         [count]="listState().totalCount"
         [labelPrefix]="resultCountLabel"
@@ -65,9 +66,7 @@
         [hasError]="listState().status === 'error'"
       />
 
-      <div class="qd-explorer-controls-secondary">
-        <!-- ≤1023px fallback (Feature 030, N8): the table header row is display:none on phone AND
-             tablet, so the header cycle is unreachable there. Same URL contract as the headers. -->
+      <div qdExplorerToolbarSecondary class="qd-explorer-controls-secondary">
         <div class="qd-explorer-sort-fallback">
           <label class="qd-sr-only" for="stems-sort">{{ sortLabels.label }}</label>
           <select
@@ -91,19 +90,15 @@
           (rangesChange)="onRangesChange($event)"
         />
       </div>
-    </div>
-
-    <!-- Feature 030, N3 row 5: the list error/no-results states now render inside the table shell
-         and the restored-not-found state inside the details panel — both are mounted shells, so
-         neither can push the table+panel grid down the way these page-level banners did. -->
-  </div>
+    </qd-explorer-toolbar>
 
   @switch (listState().status) {
     @default {
-      <div class="stems-explorer-layout qd-explorer-layout">
+      <div class="stems-explorer-layout qd-explorer-layout qd-page-split qd-page-split--data">
         <section class="stems-explorer-layout__table qd-explorer-layout__table" [attr.aria-label]="tableSectionLabel">
           <qd-stems-table
             [rows]="listState().items"
+            [totalCount]="listState().totalCount"
             [loading]="listState().status === 'loading'"
             [status]="listState().status"
             [errorMessage]="listState().errorMessage"
@@ -118,15 +113,17 @@
             (rowSelected)="onRowSelected($event)"
             (countOpened)="onCountOpened($event)"
             (sortChange)="onSortChange($event)"
-          />
-          <qd-pagination
-            [currentPage]="listState().page"
-            [pageSize]="listState().pageSize"
-            [totalCount]="listState().totalCount"
-            [disabled]="listState().status === 'loading'"
-            [ariaLabel]="listPaginationLabel"
-            (pageChange)="onPageChange($event)"
-          />
+          >
+            <qd-pagination
+              stemsTablePagination
+              [currentPage]="listState().page"
+              [pageSize]="listState().pageSize"
+              [totalCount]="listState().totalCount"
+              [disabled]="listState().status === 'loading'"
+              [ariaLabel]="listPaginationLabel"
+              (pageChange)="onPageChange($event)"
+            />
+          </qd-stems-table>
         </section>
 
         @if (isDesktop()) {
@@ -178,47 +175,49 @@
       }
 
       @if (activeView() === 'words') {
-        <nav
+        <qd-tabs
           class="stems-explorer__sub-tabs qd-explorer-subtabs"
-          role="tablist"
-          [attr.aria-label]="wordsTablistLabel"
+          dir="rtl"
+          [ariaLabel]="wordsTablistLabel"
           data-testid="stems-word-view-tabs"
         >
           @for (option of wordViewOptions; track option) {
             <button
+              qdTab
               type="button"
-              class="qd-btn qd-btn-secondary stems-explorer__sub-tab"
-              role="tab"
+              class="stems-explorer__sub-tab"
+              [id]="subViewTabId(option)"
+              [panelId]="subViewPanelId"
+              [selected]="panelState().wordView === option"
               [attr.data-testid]="'stems-word-view-' + option"
-              [attr.aria-selected]="panelState().wordView === option"
-              [class.qd-is-selected]="panelState().wordView === option"
               (click)="onWordViewChange(option)"
             >
               {{ wordViewLabels[option] }}
             </button>
           }
-        </nav>
+        </qd-tabs>
       } @else if (activeView() === 'surahs') {
-        <nav
+        <qd-tabs
           class="stems-explorer__sub-tabs qd-explorer-subtabs"
-          role="tablist"
-          [attr.aria-label]="surahsTablistLabel"
+          dir="rtl"
+          [ariaLabel]="surahsTablistLabel"
           data-testid="stems-surah-view-tabs"
         >
           @for (option of surahViewOptions; track option) {
             <button
+              qdTab
               type="button"
-              class="qd-btn qd-btn-secondary stems-explorer__sub-tab"
-              role="tab"
+              class="stems-explorer__sub-tab"
+              [id]="subViewTabId(option)"
+              [panelId]="subViewPanelId"
+              [selected]="panelState().surahView === option"
               [attr.data-testid]="'stems-surah-view-' + option"
-              [attr.aria-selected]="panelState().surahView === option"
-              [class.qd-is-selected]="panelState().surahView === option"
               (click)="onSurahViewChange(option)"
             >
               {{ surahViewLabels[option] }}
             </button>
           }
-        </nav>
+        </qd-tabs>
       } @else if (activeView() === 'lemmas' && panelState().status !== 'error' && panelState().status !== 'notFound') {
         <qd-stem-lemmas-list
           [loading]="panelState().status === 'loading'"
@@ -227,6 +226,13 @@
         />
       }
 
+      <div
+        class="qd-explorer-subview-panel"
+        [id]="subViewPanelId"
+        [attr.role]="activeSubViewTabId() ? 'tabpanel' : null"
+        [attr.aria-labelledby]="activeSubViewTabId()"
+        [attr.tabindex]="activeSubViewTabId() ? 0 : null"
+      >
       @switch (panelState().status) {
         @case ('loading') {
           @if (activeView() === 'words') {
@@ -304,6 +310,8 @@
           }
         }
       }
+      </div>
     }
   </ng-template>
+  </div>
 </div>

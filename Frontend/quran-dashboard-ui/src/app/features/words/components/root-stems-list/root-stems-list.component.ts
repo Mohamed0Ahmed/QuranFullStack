@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 
 import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
 import { StemDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
+import { QdResultItemDirective, QdResultListDirective } from '../../../../shared/ui/result-list/result-list.directive';
 
 import {
   ROOTS_OPEN_STEM_LABEL,
@@ -20,7 +21,7 @@ interface RootStemRowViewModel {
 @Component({
   selector: 'qd-root-stems-list',
   standalone: true,
-  imports: [DetailOverlayLinkDirective],
+  imports: [DetailOverlayLinkDirective, QdResultItemDirective, QdResultListDirective],
   templateUrl: './root-stems-list.component.html',
   styleUrl: './root-stems-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,8 +38,6 @@ export class RootStemsListComponent {
   protected readonly loadingLabel = WORDS_LOADING_LABEL;
   protected readonly openStemLabel = ROOTS_OPEN_STEM_LABEL;
 
-  // Mirrors the retired stem explorer deep link, which opened the default
-  // words view; frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed((): readonly RootStemRowViewModel[] =>
     this.stems().map((item) => ({
       item,

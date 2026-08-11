@@ -1,0 +1,51 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+}
+
+.qd-data-table__header {
+  flex: 0 0 auto;
+  background: var(--qd-bg-chrome);
+  border-block-end: 1px solid var(--qd-border-strong);
+}
+
+.qd-data-table__header-row,
+.qd-data-table__row {
+  min-inline-size: max-content;
+}
+
+.qd-data-table__body {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow: auto;
+}
+
+.qd-data-table__body--virtual {
+  block-size: 32rem;
+}
+
+.qd-data-table__body--compact {
+  display: grid;
+}
+
+.qd-data-table__row {
+  border-block-end: 1px solid var(--qd-border);
+}
+
+.qd-data-table__row--compact {
+  min-inline-size: 0;
+  min-block-size: var(--qd-data-table-compact-row-height);
+}
+
+.qd-data-table__row--selected {
+  position: relative;
+}
+
+.qd-data-table__pagination {
+  flex: 0 0 auto;
+  border-block-start: 1px solid var(--qd-border);
+}

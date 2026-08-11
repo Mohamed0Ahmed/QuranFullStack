@@ -1,25 +1,38 @@
-<div
-  class="explorer-panel-skeleton qd-skeleton-group"
-  [class.explorer-panel-skeleton--panel]="shape() === 'panel'"
-  aria-busy="true"
-  data-testid="explorer-panel-skeleton"
->
-  @switch (shape()) {
-    @case ('rows') {
-      <qd-skeleton-rows [count]="rowsCount()" [rowTemplate]="rowTemplate()" [loadingLabel]="loadingLabel()" />
+@if (shape() === 'text') {
+  <div
+    class="qd-loading-state"
+    role="status"
+    aria-live="polite"
+    aria-busy="true"
+    [class.qd-state--reserve]="reserve()"
+    [attr.data-testid]="testId()"
+  >
+    <span class="qd-state__message" [class.qd-state__message--visible]="loadingLabel() !== ''">{{ loadingLabel() }}</span>
+  </div>
+} @else {
+  <div
+    class="explorer-panel-skeleton qd-skeleton-group"
+    [class.explorer-panel-skeleton--panel]="shape() === 'panel'"
+    aria-busy="true"
+    [attr.data-testid]="testId()"
+  >
+    @switch (shape()) {
+      @case ('rows') {
+        <qd-skeleton-rows [count]="rowsCount()" [rowTemplate]="rowTemplate()" [loadingLabel]="loadingLabel()" />
+      }
+      @case ('panel') {
+        <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel() }}</p>
+        <span class="qd-skeleton qd-skeleton--block qd-skeleton--rounded-md" aria-hidden="true"></span>
+      }
+      @default {
+        <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel() }}</p>
+        <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span>
+        <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span>
+        <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90" aria-hidden="true"></span>
+        <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span>
+        <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span>
+        <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90" aria-hidden="true"></span>
+      }
     }
-    @case ('panel') {
-      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel() }}</p>
-      <span class="qd-skeleton qd-skeleton--block qd-skeleton--rounded-md" aria-hidden="true"></span>
-    }
-    @default {
-      <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel() }}</p>
-      <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span>
-      <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span>
-      <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90" aria-hidden="true"></span>
-      <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-75" aria-hidden="true"></span>
-      <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-50" aria-hidden="true"></span>
-      <span class="qd-skeleton qd-skeleton--text qd-skeleton--w-90" aria-hidden="true"></span>
-    }
-  }
-</div>
+  </div>
+}

@@ -17,6 +17,9 @@ export class AccessAuditStore {
   private readonly queryState = signal<AccessAuditQuery>(defaultAuditQuery);
   private readonly loadingState = signal(false);
   private readonly errorState = signal<string | null>(null);
+  private readonly appendingState = signal(false);
+  private readonly appendErrorState = signal<string | null>(null);
+  private readonly appendedCountState = signal(0);
   private requestVersion = 0;
 
   readonly events = computed(() => this.pageState()?.items ?? []);
@@ -24,6 +27,9 @@ export class AccessAuditStore {
   readonly query = this.queryState.asReadonly();
   readonly loading = this.loadingState.asReadonly();
   readonly error = this.errorState.asReadonly();
+  readonly appending = this.appendingState.asReadonly();
+  readonly appendError = this.appendErrorState.asReadonly();
+  readonly appendedCount = this.appendedCountState.asReadonly();
 
   constructor(private readonly api: AccessAdminApi) {}
 
@@ -31,10 +37,11 @@ export class AccessAuditStore {
     this.queryState.set({ ...this.queryState(), ...query, cursor: undefined });
   }
 
-  async load(query = this.queryState(), append = false): Promise<void> {
+  async load(query = this.queryState()): Promise<void> {
     const requestVersion = ++this.requestVersion;
     this.loadingState.set(true);
     this.errorState.set(null);
+    this.clearAppendState();
     try {
       const response = await firstValueFrom(this.api.listAuditEvents(query));
       if (requestVersion !== this.requestVersion) {
@@ -44,8 +51,7 @@ export class AccessAuditStore {
         this.errorState.set(response.message ?? ACCESS_ADMIN_LOAD_ERROR);
         return;
       }
-      const items = append ? [...this.events(), ...response.data.items] : response.data.items;
-      this.pageState.set({ ...response.data, items });
+      this.pageState.set(response.data);
     } catch (error) {
       if (requestVersion === this.requestVersion) {
         this.errorState.set(failureMessage(error, ACCESS_ADMIN_LOAD_ERROR));
@@ -59,10 +65,37 @@ export class AccessAuditStore {
 
   async loadNextPage(): Promise<void> {
     const cursor = this.pageState()?.nextCursor;
-    if (!cursor) {
+    if (!cursor || this.appendingState() || this.loadingState()) {
       return;
     }
-    await this.load({ ...this.queryState(), cursor }, true);
+
+    const requestVersion = this.requestVersion;
+    this.appendingState.set(true);
+    this.appendErrorState.set(null);
+    this.appendedCountState.set(0);
+    try {
+      const response = await firstValueFrom(
+        this.api.listAuditEvents({ ...this.queryState(), cursor }),
+      );
+      if (requestVersion !== this.requestVersion) {
+        return;
+      }
+      if (!response.isSuccess || !response.data) {
+        this.appendErrorState.set(response.message ?? ACCESS_ADMIN_LOAD_ERROR);
+        return;
+      }
+      const appended = response.data.items;
+      this.pageState.set({ ...response.data, items: [...this.events(), ...appended] });
+      this.appendedCountState.set(appended.length);
+    } catch (error) {
+      if (requestVersion === this.requestVersion) {
+        this.appendErrorState.set(failureMessage(error, ACCESS_ADMIN_LOAD_ERROR));
+      }
+    } finally {
+      if (requestVersion === this.requestVersion) {
+        this.appendingState.set(false);
+      }
+    }
   }
 
   async findUsers(search: string): Promise<AccessUserSearchState> {
@@ -88,6 +121,16 @@ export class AccessAuditStore {
   }
 
   clear(): void {
+    this.requestVersion += 1;
     this.pageState.set(null);
+    this.loadingState.set(false);
+    this.errorState.set(null);
+    this.clearAppendState();
+  }
+
+  private clearAppendState(): void {
+    this.appendingState.set(false);
+    this.appendErrorState.set(null);
+    this.appendedCountState.set(0);
   }
 }
