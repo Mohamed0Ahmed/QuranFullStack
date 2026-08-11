@@ -28,7 +28,12 @@
       </p>
     }
 
-    <qd-tabs class="selected-ayah-section__tabs" ariaLabel="تبويبات دراسة الآية" dir="rtl">
+    <qd-tabs
+      class="selected-ayah-section__tabs"
+      layout="tracks"
+      ariaLabel="تبويبات دراسة الآية"
+      dir="rtl"
+    >
       @for (tab of tabs; track tab.key) {
         <button
           qdTab
@@ -43,10 +48,13 @@
           (click)="tabChange.emit(tab.key)"
         >
           <span class="selected-ayah-section__tab-label">{{ tabLabels[tab.key].short }}</span>
-          @if (tabCount(tab.key) !== null) {
-            <span class="qd-tabs__count" [attr.data-testid]="tab.countTestId">
-              {{ tabCount(tab.key) }}
-            </span>
+          @if (tab.countTestId !== null) {
+            <span
+              class="qd-tabs__count"
+              [class.qd-tabs__count--unknown]="tabCount(tab.key) === null"
+              [attr.data-testid]="tab.countTestId"
+              >{{ tabCountLabel(tab.key) }}</span
+            >
           }
         </button>
       }

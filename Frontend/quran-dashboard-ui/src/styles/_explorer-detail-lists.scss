@@ -58,15 +58,9 @@
   scrollbar-gutter: stable;
 }
 
-.root-details-panel--frameless .qd-details__header,
-.lemma-details-panel--frameless .qd-details__header {
-  display: none;
-}
-
 .root-details-panel,
 .lemma-details-panel {
   .qd-detail-list__viewport,
-  .ayah-matches-list__viewport,
   .root-words-list__viewport,
   .lemma-words-list__viewport,
   .missing-surahs-list,
@@ -78,7 +72,6 @@
     scrollbar-gutter: auto;
   }
 
-  .ayah-matches-list,
   .root-words-list,
   .lemma-words-list {
     block-size: auto;
@@ -325,7 +318,6 @@ qd-type-distribution-list {
 }
 
 
-.explorer-detail-panel__body,
 .explorer-detail-modal {
   qd-ayah-matches-list,
   qd-missing-surahs-list,
@@ -342,86 +334,12 @@ qd-type-distribution-list {
   }
 }
 
-.explorer-detail-panel__body {
-  .ayah-matches-list,
-  .root-words-list,
-  .lemma-words-list {
-    flex: 1;
-    min-height: 0;
-    height: 100%;
-  }
-
-  .ayah-matches-list__viewport,
-  .root-words-list__viewport,
-  .lemma-words-list__viewport {
-    flex: 1;
-    min-height: 0;
-    block-size: auto;
-    overflow: auto;
-    scrollbar-gutter: stable;
-  }
-
-  .missing-surahs-list-shell,
-  .surah-occurrences-list-shell,
-  .root-lemmas-list-shell,
-  .root-stems-list-shell {
-    flex: 1;
-    min-height: 0;
-  }
-
-  .missing-surahs-list,
-  .surah-occurrences-list,
-  .root-lemmas-list,
-  .root-stems-list {
-    flex: 1;
-    min-height: 0;
-    block-size: auto;
-    overflow: auto;
-    scrollbar-gutter: stable;
-  }
-
-
-  .root-words-list__row,
-  .root-lemmas-list__row,
-  .root-stems-list__row,
-  .lemma-words-list__row {
-    background: var(--qd-explorer-detail-card);
-    border-color: var(--qd-explorer-detail-border);
-  }
-
-  .missing-surahs-list__header,
-  .missing-surahs-list__row,
-  .root-lemmas-list__header,
-  .root-stems-list__header,
-  .root-words-list__header,
-  .lemma-stems-list__header,
-  .lemma-words-list__header,
-  .stem-lemmas-list__header,
-  .stem-words-list__header,
-  .type-distribution-list__header,
-  .surah-occurrences-list__header,
-  .surah-occurrences-list__row {
-    border-block-end-color: var(--qd-explorer-detail-border);
-  }
-
-  qd-pagination {
-    flex-shrink: 0;
-  }
-}
-
 .explorer-detail-modal {
+  --qd-ayah-matches-list-viewport-block-size: auto;
+
   .ayah-matches-list {
     gap: 0;
   }
-
-  .ayah-matches-list__viewport {
-    flex: 1;
-    min-height: 0;
-    block-size: auto;
-    overflow: auto;
-    scrollbar-gutter: stable;
-  }
-
 
   .ayah-matches-list__meta-row,
   .ayah-matches-list__meta {

@@ -5,22 +5,28 @@
   [class.qd-details__shell--action-rail]="variant() === 'action-rail'"
   [class.qd-details__shell--study]="variant() === 'study'"
   [class.qd-details__shell--overlay-body]="variant() === 'overlay-body'"
-  [attr.aria-labelledby]="identity() ? identityId : null"
+  [attr.aria-labelledby]="showsIdentity() ? identityId : null"
   [attr.data-testid]="testIdPrefix()"
 >
-  <header class="qd-details__header">
-    <div class="qd-details__identity-zone">
-      @if (identity()) {
-        <h2 class="qd-details__identity qd-truncate" [id]="identityId" [attr.data-testid]="testIdPrefix() + '-identity'">
-          {{ identity() }}
-        </h2>
-      }
-      <ng-content select="[qdDetailsMetadata]" />
-    </div>
-    <div class="qd-details__actions">
-      <ng-content select="[qdDetailsActions]" />
-    </div>
-  </header>
+  @if (hasHeader()) {
+    <header class="qd-details__header">
+      <div class="qd-details__identity-zone">
+        @if (showsIdentity()) {
+          <h2
+            class="qd-details__identity qd-truncate"
+            [id]="identityId"
+            [attr.data-testid]="testIdPrefix() + '-identity'"
+          >
+            {{ identity() }}
+          </h2>
+        }
+        <ng-content select="[qdDetailsMetadata]" />
+      </div>
+      <div class="qd-details__actions">
+        <ng-content select="[qdDetailsActions]" />
+      </div>
+    </header>
+  }
 
   @if (hasTabs()) {
     <div class="qd-details__tabs" [attr.data-testid]="testIdPrefix() + '-tabs'">

@@ -168,6 +168,7 @@
       @if (activeView() === 'words') {
         <qd-tabs
           class="lemmas-explorer__sub-tabs qd-explorer-subtabs"
+          layout="tracks"
           dir="rtl"
           [ariaLabel]="wordsTablistLabel"
           data-testid="lemmas-word-view-tabs"
@@ -190,6 +191,7 @@
       } @else if (activeView() === 'surahs') {
         <qd-tabs
           class="lemmas-explorer__sub-tabs qd-explorer-subtabs"
+          layout="tracks"
           dir="rtl"
           [ariaLabel]="surahsTablistLabel"
           data-testid="lemmas-surah-view-tabs"
@@ -217,16 +219,8 @@
         />
       }
 
-      <div
-        class="qd-explorer-subview-panel"
-        [id]="subViewPanelId"
-        [attr.role]="activeSubViewTabId() ? 'tabpanel' : null"
-        [attr.aria-labelledby]="activeSubViewTabId()"
-        [attr.tabindex]="activeSubViewTabId() ? 0 : null"
-      >
-      @switch (panelState().status) {
-        @case ('loading') {
-          @if (activeView() === 'words') {
+      <ng-template #lemmasViewSkeleton>
+        @if (activeView() === 'words') {
           <qd-lemma-words-list
             [loading]="true"
             [page]="emptyWordsPage"
@@ -243,23 +237,35 @@
             [parentFrame]="ayahParentFrame()"
             data-testid="lemmas-ayahs-view"
           />
-          } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned') {
-            <qd-surah-occurrences-list
-              [loading]="true"
-              [surahs]="[]"
-              data-testid="lemmas-mentioned-surahs-view"
-            />
-          } @else if (activeView() === 'surahs' && panelState().surahView === 'missing') {
-            <qd-missing-surahs-list
-              [loading]="true"
-              [surahs]="[]"
-              data-testid="lemmas-missing-surahs-view"
-            />
-          } @else {
-            <p class="qd-sr-only" role="status" aria-live="polite" data-testid="lemmas-panel-loading">
-              {{ panelLoadingLabel }}
-            </p>
-          }
+        } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned') {
+          <qd-surah-occurrences-list
+            [loading]="true"
+            [surahs]="[]"
+            data-testid="lemmas-mentioned-surahs-view"
+          />
+        } @else if (activeView() === 'surahs' && panelState().surahView === 'missing') {
+          <qd-missing-surahs-list
+            [loading]="true"
+            [surahs]="[]"
+            data-testid="lemmas-missing-surahs-view"
+          />
+        } @else {
+          <p class="qd-sr-only" role="status" aria-live="polite" data-testid="lemmas-panel-loading">
+            {{ panelLoadingLabel }}
+          </p>
+        }
+      </ng-template>
+
+      <div
+        class="qd-explorer-subview-panel"
+        [id]="subViewPanelId"
+        [attr.role]="activeSubViewTabId() ? 'tabpanel' : null"
+        [attr.aria-labelledby]="activeSubViewTabId()"
+        [attr.tabindex]="activeSubViewTabId() ? 0 : null"
+      >
+      @switch (panelState().status) {
+        @case ('loading') {
+          <ng-container *ngTemplateOutlet="lemmasViewSkeleton" />
         }
         @case ('error') {
           <div class="qd-error-state" role="alert" data-testid="lemmas-panel-error">
@@ -298,6 +304,13 @@
               [surahs]="missing.surahs"
               data-testid="lemmas-missing-surahs-view"
             />
+          } @else if (activeView() !== 'stems') {
+            <ng-container *ngTemplateOutlet="lemmasViewSkeleton" />
+          }
+        }
+        @default {
+          @if (activeView() !== 'stems') {
+            <ng-container *ngTemplateOutlet="lemmasViewSkeleton" />
           }
         }
       }

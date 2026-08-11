@@ -40,24 +40,54 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
 - **The route declares one page intent and one split.** `mushaf-reader-page.component.html` carries
   `qd-page-shell qd-page-shell--protected-mushaf qd-page-split qd-page-split--mushaf`, so the inline
   gutter (`16 / 24 / 32 / 40px`), the `--qd-page-measure-protected-mushaf` measure and the feature-owned
-  `40/60` split all come from the global layout layer. No component below it may add a second inline
+  split all come from the global layout layer. No component below it may add a second inline
   gutter. `protected-mushaf` and `--qd-split-mushaf` deliberately sit outside the `16/18/20rem` rail
   scale (G03) — the reader column is a page measure, not a rail.
-- **The split token must stay gap-safe.** `--qd-split-mushaf` is `minmax(0, 40%) minmax(0, 60%)`, not
-  `40% 60%`. Two fixed percentage tracks already sum to 100% of the shell content box, so tracks plus
-  `--qd-split-gap` overflow it by exactly the gap and push the study column outside the route gutter
-  (measured at `40% 60%`: at 1080 the study started at `8.02px` against a content box starting at
-  `32px`; at 1440, `16px` against `40px`). With `minmax()` the percentages become growth limits, so the
-  reader takes 40% of the content box and the study absorbs the gap: 1080 → `400.391 + 576.609 + 24 =
-  1001`; 1440 → `538 + 783 + 24 = 1345`, both exactly the content box. The reader — the protected
-  side — is the track that does **not** move when `--qd-split-gap` or `--qd-page-gutter` is retuned.
+- **The split token must stay gap-safe (Wide).** Through the Wide band `--qd-split-mushaf` is
+  `minmax(0, 40%) minmax(0, 60%)`, not `40% 60%`. Two fixed percentage tracks already sum to 100% of
+  the shell content box, so tracks plus `--qd-split-gap` overflow it by exactly the gap and push the
+  study column outside the route gutter (measured at `40% 60%`: at 1080 the study started at
+  `8.02px` against a content box starting at `32px`; at 1440, `16px` against `40px`). With
+  `minmax()` the percentages become growth limits, so the reader takes 40% of the content box and
+  the study absorbs the gap: 1080 → `400.391 + 576.609 + 24 = 1001`, exactly the content box. The
+  reader — the protected side — is the track that does **not** move when `--qd-split-gap` or
+  `--qd-page-gutter` is retuned.
+- **At Wide-plus the reader track is content-sized, not percentage-sized.** `styles/_tokens.scss`
+  re-declares two tokens inside the existing `≥1440` band block: the measure rises to `100rem` and
+  `--qd-split-mushaf` becomes
+  `minmax(0, calc(var(--qd-mushaf-text-column-width) + 2rem + var(--qd-mushaf-panel-chrome))) minmax(0, 1fr)`.
+  The reader therefore asks for exactly what a Madani page needs and every further pixel goes to the
+  study side instead of becoming reader slack — a `40%` track spends 40% of any reclaimed width on a
+  column that is hard-capped at `--qd-mushaf-text-column-width` and cannot use it. **The
+  three addends are a derivation, not a shape:** `28rem` text column + `2rem` `mushaf-page-view`
+  inline padding + `--qd-mushaf-panel-chrome` (`1.5rem`) for the chrome that sits between
+  the track edge and that padding box — the `mushaf-page-area` hairline pair (`2px`) and the Wide
+  panel's own vertical scrollbar gutter (`15px` measured in Chrome/Linux; classic scrollbars run to
+  `17px`, overlay platforms to `0`). **That last addend is load-bearing and was measured, not
+  guessed:** the reader panel is a scroll container at Wide, so without it the scrollbar eats the
+  protected column — a track of exactly `28rem + 2rem` measured `431px` of text column instead of
+  `448px`, which is a Quran rendering delta. Anything that changes the page-view padding, the
+  page-area border or the panel's scroller must re-measure this allowance. Measured at 1440 content
+  box `1345`: `504 + 24 + 817`; at 1920 (content `1905`, shell `1600`): `504 + 24 + 992`. Below
+  `1440` nothing moves — the base `90rem`/`40%–60%` values still resolve, and at every viewport under
+  `1440` the shell was already viewport-bound rather than measure-bound.
 - **Wide reading measure.** The Quran text column is `326px` at 390 (capped by the viewport), `351.39px`
-  at 1080 (capped by the 40% reader track) and `448px` at 1440 (capped by
+  at 1080 (capped by the 40% reader track) and `448px` at 1440 **and** 1920 (capped by
   `--qd-mushaf-text-column-width`, `28rem`). The 1080 value was `377px` before the Golden shell; the
   `32px` Wide route gutter and the `24px` split gap account for the difference. Line count, line
   heights, word rects, fonts, markers and ligatures are unchanged at every width — the narrower Wide
   measure only removes slack inside the 15 fixed lines. Making the split gap-safe does not narrow it
-  further: it takes the 24px off the study side only.
+  further: it takes the 24px off the study side only. Content-sizing the Wide-plus track does not
+  narrow it either — it only removes the slack that used to sit *around* the column (`544 → 504` of
+  track for the same `448` of text, re-verified word-rect by word-rect on pages 1, 2, 22, 50, 106
+  and 604).
+- **The study prose is capped independently of the study column.** `.study-card__body`
+  (`components/_study-card.shared.scss`, the tafsir / translation / full-إعراب body) carries
+  `max-inline-size: var(--qd-measure-prose)`, so widening the study track grows the card, list and
+  ayah surfaces rather than the tafsir line length. Without it the body tracked the column: `700px`
+  ≈ `72ch` at 1920 before this cap and ≈ `100ch` at the reclaimed width. It binds only where the
+  column is wide enough to exceed the measure (1440 and 1920: `691px → 660.44px`, `68ch`); at 390,
+  768 and 1080 the body is already narrower and nothing changes.
 - **Compact declines the route gutter for the protected canvas.** §1.4 of the Golden geometry locks a
   `16px` Compact gutter, and `.mushaf-reader__page` cancels it —
   `inline-size: calc(100% + 2 * var(--qd-page-gutter))` with `margin-inline: calc(-1 * var(--qd-page-gutter))`,
@@ -144,26 +174,55 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
     They compose the real `qdAyahCard` frame and the real meta/text classes, so
     the placeholder geometry cannot drift from the loaded geometry. Multi-line ayah text
     is unknowable before the load and still grows its card (accepted).
-- **Selected-word loading reserves its natural size** (Feature 029, U1): while word
-  analysis loads, `selected-word-section` holds `min-block-size: max(baseline, last
-  natural)` so the divider/next section below it never moves. The last successful
-  block size and segment count are recorded by a guarded `ResizeObserver` (numeric
-  geometry only — old text/Quran DOM is never retained), the skeleton renders that
-  segment count (fallback 3 on first load) with geometry matched to the loaded
-  cells, and the responsive baseline is measured, not invented (333px wide bands /
-  495px under the 768px morphology-grid breakpoint). Reservation clears on
-  success/error/empty; loaded content always sizes itself.
-- **Selected-ayah loading reserves its natural size too** (Feature 030, N3 row 10):
-  a loaded tafsir/translation/إعراب has an arbitrary height, so `selected-ayah-section`
-  runs the same pattern as a **local port** (decision N3-a: no shared utility until a
-  third consumer). Same guarded `ResizeObserver`, same numeric-geometry-only rule, same
-  `--loading` class scoping — the scoping is load-bearing, because the reservation sits
-  over three layered min-heights (the component's own, the `<1024px`/`<768px` embedded
-  overrides in `styles/_components.scss`, and the reserved var). Its per-band baseline
-  resolves through `--qd-ayah-study-min-height`, so it follows each band's study floor
-  and can never reserve *less* than the loaded floor. Accepted trade (as in U1):
-  reserving the previous ayah's height while a **different** ayah loads holds stale
-  geometry.
+- **Both selected sections reserve their natural size while loading, through one shared
+  utility.** Decision **N3-a** said "no shared utility until a third consumer"; the
+  Words details content area (audit finding R-2) is that third consumer, so the
+  threshold is reached and the contract now lives in
+  `shared/layout/loading-size-reservation.ts` as `qdLoadingSizeReservation()`. It is the
+  *whole* extraction and nothing more: hold the last known natural block size of a
+  content region while it is loading, release it on settle, and invalidate it on an
+  inline-size change, via the guarded `ResizeObserver` both Mushaf ports already used —
+  plus a settle capture, because a section that settles at the height its skeleton already
+  had never fires a second callback (`shared/README.md` holds the mechanism).
+  It stores **numeric geometry only** — never prior text and never Quran DOM. What stays
+  with the caller is what was always page-specific: which element is the reservation
+  host, what "settled" means for that resource, and the per-band baseline floor the
+  reservation is `max()`-ed against in CSS.
+  - **Accepted trade-off, inherited from both original ports and now a property of the
+    shared utility:** the reservation holds the **previous** entity's height while a
+    **different** entity loads. The last successful size is the only honest predictor of
+    the next one, so a section switching between two entities of very different heights
+    holds stale geometry until the new one settles. This is deliberate — the alternative
+    is the collapse-and-jump the reservation exists to prevent.
+  - **`selected-word-section`** (Feature 029, U1): holds `min-block-size: max(baseline,
+    last natural)` so the divider/next section below it never moves. Its loading skeleton
+    still renders the **previous segment count** (fallback 3 on first load) with geometry
+    matched to the loaded cells — that count is the component's own state, not the shared
+    utility's, which carries geometry alone. The responsive baseline is measured, not
+    invented (333px wide bands / 495px under the 768px morphology-grid breakpoint). Because
+    the loaded section normally settles *on* that baseline, its recorded natural size and its
+    floor coincide (measured: 333.05px natural, `333.046875px` reserved at 1440px), so the
+    reservation is live but geometrically inert here — it earns its keep only when a word's
+    analysis grows the section past the floor.
+  - **`selected-ayah-section`** (Feature 030, N3 row 10): a loaded tafsir/translation/إعراب
+    has an arbitrary height, so the same reservation applies with the same `--loading`
+    class scoping — the scoping is load-bearing, because the reservation sits over three
+    layered min-heights (the component's own, the `<1024px`/`<768px` embedded overrides in
+    `styles/_components.scss`, and the reserved var). Its per-band baseline resolves
+    through `--qd-ayah-study-min-height`, so it follows each band's study floor and can
+    never reserve *less* than the loaded floor.
+  - Reservation clears on success/error/empty; loaded content always sizes itself.
+- **The study tab strip holds its inline geometry too, and never shows a stale count.**
+  The strip is `qd-tabs layout="tracks"` with `--qd-tabs-track-floor: 7.75rem` on
+  `.selected-ayah-section__tabs` — the floor clears the widest label (`المتشابهات`) plus its
+  count slot, so the five tabs are equal grid tracks whose width never follows content, and a
+  container too narrow for five wraps a tab instead of growing a scroller. The two
+  count-bearing tabs keep their `.qd-tabs__count` **mounted at all times** and mark it
+  `--unknown` while the study loads: `tabCount()` still returns `null` for `isLoading`, so the
+  outgoing ayah's numbers are never repainted onto the incoming one, and the `null` = unknown /
+  `0` = known empty semantics the similarity placeholders read stay honest. The slot's own
+  two-digit floor lives in the golden layer (`.qd-tabs__count`), so a count crossing from one
+  digit to two moves nothing either.
 - **Word hover is CSS-only and word-scoped** (Feature 030 N7, rescoped by M1): hovering (or
   keyboard-focusing) a word paints `--qd-mushaf-word-hover-bg` behind **that one word** — it
   does **not** fan out across the ayah. There is deliberately **no hover state in TypeScript**:

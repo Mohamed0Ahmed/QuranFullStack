@@ -1,16 +1,6 @@
-import {
-  Component,
-  DestroyRef,
-  ElementRef,
-  computed,
-  effect,
-  inject,
-  input,
-  output,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { Component, ElementRef, computed, input, output, viewChild } from '@angular/core';
 
+import { qdLoadingSizeReservation } from '../../../../shared/layout/loading-size-reservation';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
@@ -32,8 +22,6 @@ import { TafsirCardComponent } from '../tafsir-card/tafsir-card.component';
 import { TranslationCardComponent } from '../translation-card/translation-card.component';
 import { FullI3rabCardComponent } from '../full-i3rab-card/full-i3rab-card.component';
 import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
-
-const RESERVATION_INLINE_SIZE_TOLERANCE_PX = 1;
 
 interface AyahStudyTabDefinition {
   readonly key: AyahStudyTab;
@@ -76,8 +64,6 @@ let nextAyahStudyInstance = 0;
   },
 })
 export class SelectedAyahSectionComponent {
-  private readonly destroyRef = inject(DestroyRef);
-
   readonly study = input<AyahStudyViewModel | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
   readonly similarAyahs = input<SimilarAyahsDto | null>(null);
@@ -109,19 +95,6 @@ export class SelectedAyahSectionComponent {
 
   private readonly sectionElement = viewChild<ElementRef<HTMLElement>>('ayahSection');
 
-  // N3 row 10 (Feature 030): loading layout reservation, a local port of the U1
-  // pattern in selected-word-section (decision N3-a — extract a shared utility
-  // only on a third consumer). A loaded tafsir/translation/إعراب has an arbitrary
-  // height, so the only honest predictor of the next one is the last one; without
-  // this the section collapses to the skeleton and the page jumps. Only numeric
-  // geometry is retained — never prior text or Quran DOM.
-  private readonly lastNaturalSize = signal<{ blockSize: number; inlineSize: number } | null>(null);
-
-  protected readonly reservedBlockSize = computed<string | null>(() => {
-    const natural = this.lastNaturalSize();
-    return this.loadState().isLoading && natural !== null ? `${natural.blockSize}px` : null;
-  });
-
   private readonly isLoadedSuccessfully = computed(() => {
     const state = this.loadState();
     return (
@@ -133,41 +106,11 @@ export class SelectedAyahSectionComponent {
     );
   });
 
-  constructor() {
-    if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver((entries) => this.onSectionResize(entries));
-      this.destroyRef.onDestroy(() => observer.disconnect());
-      effect(() => {
-        const element = this.sectionElement()?.nativeElement;
-        if (element) {
-          observer.disconnect();
-          observer.observe(element);
-        }
-      });
-    }
-  }
-
-  private onSectionResize(entries: ResizeObserverEntry[]): void {
-    const target = entries[entries.length - 1]?.target;
-    if (!target) {
-      return;
-    }
-    const rect = target.getBoundingClientRect();
-
-    if (this.isLoadedSuccessfully()) {
-      this.lastNaturalSize.set({ blockSize: rect.height, inlineSize: rect.width });
-      return;
-    }
-
-    const natural = this.lastNaturalSize();
-    if (
-      this.loadState().isLoading &&
-      natural !== null &&
-      Math.abs(natural.inlineSize - rect.width) > RESERVATION_INLINE_SIZE_TOLERANCE_PX
-    ) {
-      this.lastNaturalSize.set(null);
-    }
-  }
+  protected readonly reservedBlockSize = qdLoadingSizeReservation({
+    host: this.sectionElement,
+    isLoading: computed(() => this.loadState().isLoading),
+    isSettled: this.isLoadedSuccessfully,
+  }).reservedBlockSize;
 
   protected readonly displayAyahText = computed(() => {
     const text = this.study()?.ayah.textUthmani;
@@ -215,6 +158,11 @@ export class SelectedAyahSectionComponent {
       default:
         return null;
     }
+  }
+
+  protected tabCountLabel(tab: AyahStudyTab): string {
+    const count = this.tabCount(tab);
+    return count === null ? '' : `${count}`;
   }
 
   protected selectedAyahNavigateLabel(): string {

@@ -1,14 +1,33 @@
-import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { NgTemplateOutlet, isPlatformBrowser } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  PLATFORM_ID,
+  afterRenderEffect,
+  computed,
+  inject,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
 import { NavItem } from '../../navigation/nav-items';
 import { DASHBOARD_ROUTE_PATH } from '../../navigation/route-paths';
 import { QdActionDirective } from '../../../shared/ui/action/action.directive';
+import {
+  placeFloatingLayer,
+  resolveFloatingDirection,
+  resolveRootFontSize,
+} from '../../../shared/ui/floating-layer/floating-layer-placement';
 
 export type QdAppNavigationMode = 'desktop' | 'sheet';
 
 export const NAV_GROUP_ONLY_ROUTE = '';
+
+const NAV_MENU_ANCHOR_GAP = 0;
 
 @Component({
   selector: 'qd-app-navigation',
@@ -19,6 +38,8 @@ export const NAV_GROUP_ONLY_ROUTE = '';
 })
 export class AppNavigationComponent {
   private readonly router = inject(Router);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly mode = input.required<QdAppNavigationMode>();
   readonly items = input.required<readonly NavItem[]>();
@@ -31,6 +52,18 @@ export class AppNavigationComponent {
   readonly navigated = output<void>();
 
   protected readonly sheet = computed(() => this.mode() === 'sheet');
+
+  private readonly menuSurface = viewChild<ElementRef<HTMLElement>>('menuSurface');
+
+  constructor() {
+    afterRenderEffect(() => this.placeMenuSurface());
+
+    if (isPlatformBrowser(this.platformId)) {
+      const onViewportResize = (): void => this.placeMenuSurface();
+      window.addEventListener('resize', onViewportResize);
+      this.destroyRef.onDestroy(() => window.removeEventListener('resize', onViewportResize));
+    }
+  }
 
   protected hasMenu(item: NavItem): boolean {
     return !this.sheet() && item.children !== undefined;
@@ -76,6 +109,28 @@ export class AppNavigationComponent {
       return;
     }
     this.menuLinkActivated.emit(parent.key);
+  }
+
+  private placeMenuSurface(): void {
+    const menu = this.menuSurface()?.nativeElement;
+    const anchor = menu?.parentElement;
+    const view = menu?.ownerDocument.defaultView;
+    if (!menu || !anchor || !view) {
+      return;
+    }
+
+    const placement = placeFloatingLayer(
+      anchor.getBoundingClientRect(),
+      { width: menu.offsetWidth, height: menu.scrollHeight },
+      { width: view.innerWidth, height: view.innerHeight },
+      resolveFloatingDirection(menu),
+      resolveRootFontSize(menu),
+      NAV_MENU_ANCHOR_GAP,
+    );
+
+    menu.style.setProperty('inset-block-start', `${placement.top}px`);
+    menu.style.setProperty('left', `${placement.left}px`);
+    menu.style.setProperty('max-block-size', `${placement.maxBlockSize}px`);
   }
 
   private activeMatchRoutes(item: NavItem): string[] {

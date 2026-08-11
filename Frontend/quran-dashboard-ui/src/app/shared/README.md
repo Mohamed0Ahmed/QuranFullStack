@@ -4,7 +4,9 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
 
 ## What lives here
 
-- `layout/` — the responsive-band contract. `breakpoints.contract.json` is the **single neutral
+- `layout/` — the cross-feature layout contracts: the responsive bands, and the loading-geometry
+  reservation.
+- `layout/breakpoints*` — the responsive-band contract. `breakpoints.contract.json` is the **single neutral
   source** for Compact `≤767` / Medium `768–1079` / Wide `≥1080` / Wide-plus `≥1440`;
   `breakpoints.ts` imports it and derives every media-query string plus `qdBandForWidth()` and
   `qdIsWidePlus()`, and `tailwind.config.js` requires the same JSON for its named screens. It is a
@@ -16,17 +18,69 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   only: `qdBandForWidth(1440)` is deliberately `'wide'`, and `widePlusIsStructural` in the contract
   says so, because a fourth structural composition is exactly the drift the band vocabulary exists
   to prevent.
+- `layout/loading-size-reservation.ts` — `qdLoadingSizeReservation()`, the one loading-geometry
+  reservation. Called from a component's injection context with a host element signal, an
+  `isLoading` signal and an `isSettled` signal, it returns a `reservedBlockSize` signal the
+  template applies as a block-size **floor** — bound straight to `min-block-size` when the host has
+  no other minimum, or routed through a CSS custom property when the consumer must `max()` it
+  against a per-band baseline. A floor, never a clamp: content taller than the reservation still
+  renders at its own height. Its whole contract: hold the last known natural block size of a
+  content region while it is loading, release on settle, and **invalidate on an inline-size
+  change** (guarded `ResizeObserver`, 1px tolerance) so a reservation cannot outlive the width it
+  was measured at and strand the panel at a stale height. It retains **numeric geometry only** —
+  never markup, text, or Quran DOM. It deliberately owns none of the per-call-site decisions: the
+  reservation host, the meaning of "settled", and the per-band baseline floor the reservation is
+  `max()`-ed against in CSS all stay with the consumer. **Accepted trade-off it inherits from the
+  two Mushaf implementations it was extracted from:** the reservation holds the previous entity's
+  height while a *different* entity loads. **The natural size has two capture points, and it needs
+  both:** the observer callback records it whenever the region actually resizes, and a settle
+  effect promotes the size the observer last reported whenever `isSettled` turns true. Without the
+  second, a resource that settles at exactly the height its skeleton already had — a Words view
+  whose content matches its skeleton, or a Mushaf section sitting on its per-band baseline floor —
+  fires no callback, records nothing, and leaves the *next* load with no reservation to hold. The
+  settle effect reads no layout: it reuses the geometry the observer already delivered, so it
+  cannot force a reflow, and it re-runs only when `isSettled` changes, never per change-detection
+  cycle. Extracted per Mushaf decision **N3-a** (extract on a third consumer);
+  consumers are `features/mushaf/components/selected-word-section`,
+  `.../selected-ayah-section`, and the Words details shell's single `.qd-details-panel__content`
+  (`features/words/components/details-panel-shell`), which is the one reservation host for all
+  four Words details panels.
 - `ui/tabs/` — `qd-tabs` (the app-wide tablist) + the `qdTab` directive. `qd-tabs` owns no
   selection state: consumers project their own `<a routerLink>`/`<button>` tab elements marked
   with `qdTab [selected]="…"` and their own click/routerLink; `qd-tabs` supplies the
   `role="tablist"` wrapper and RTL-aware roving-tabindex keyboard nav (Arrow/Home/End) over
   them. Phase 3 added: a per-instance `instanceId` on the tablist, a generated per-tab `id`, an
-  optional `panelId`/`disabledReasonId` pair, count-driven layout (`qd-tabs--segmented` at three
-  tabs or fewer, `qd-tabs--scrollable` at four or more — D30), and selected-tab
-  scroll-into-view. The generated attributes are **fallbacks applied in `ngAfterViewInit` and only
+  optional `panelId`/`disabledReasonId` pair, and the count-driven `--segmented` track at three
+  tabs or fewer. The generated attributes are **fallbacks applied in `ngAfterViewInit` and only
   when the element carries none** — `abwab-move-picker` and `access-admin-page` bind their own
   `id`/`aria-controls`, and a host binding would have removed theirs. See `UI_STYLE_SYSTEM.md`
   §17 and §20.1.
+  `layout="tracks"` is the **opt-in** equal-width wrapping contract (`qd-tabs--tracks`):
+  `grid-template-columns: repeat(auto-fit, minmax(min(var(--qd-tabs-track-floor, 6.25rem), 100%), 1fr))`,
+  so the row always fills its container in equal tracks, wraps to another row instead of
+  scrolling, and never grows an `overflow-x`. The `min(…, 100%)` clamp is load-bearing and not
+  decoration: it is what guarantees at least one track always fits, so a container narrower than
+  the floor still lays out instead of overflowing. It is the floor, not a column cap, that decides
+  how many tabs share a row; a container wide enough for more equal tracks may use them. Labels
+  are `white-space: nowrap` in this mode as a **readability** choice, not a geometric necessity —
+  the widest-*word* intrinsic-width collapse is a property of the flex `inline`/`--segmented`
+  modes, whereas a fixed track minimum means no item's intrinsic width feeds track sizing at all,
+  so a wrapping label here would merely make the row taller. The cost of that choice is that the
+  fit obligation moves onto `--qd-tabs-track-floor` (default `6.25rem`, raised per call-site when
+  labels are longer — `word-type-details-panel` uses `9.5rem`), and `overflow: hidden` on the tab
+  is what keeps a missed floor from becoming a defect: an oversized label is clipped inside its
+  tab rather than spilling ink out of the strip. The tab's `:focus-visible` outline and the
+  selected state's `inset` thread are the tab's own paint and survive that clip.
+  `layout="inline"` (the default) now has exactly one rendered form, the `--segmented` track:
+  Phase 11 retired the four-or-more `--scrollable` mode, its `overflow-x` rules and the
+  selected-tab scroll-into-view `effect` that existed to serve it, because the inventory found no
+  consumer left that could resolve to it — every inline consumer is statically bounded at three
+  tabs (`unique-words-tabs` 2, `abwab-relations-modal` 3, `access-admin-page` 3) and every
+  variable-length strip migrated to `tracks` in Phases 8–10. `qdTab.scrollIntoView()` survives on
+  the directive and is still called on keyboard movement, which keeps a focused tab visible when
+  an *ancestor* scrolls; the primitive itself no longer scrolls. Nothing here caps the tab count:
+  a future inline strip past three would render as a plain `flex-wrap: nowrap` row, which is the
+  signal to pass `layout="tracks"` rather than to reintroduce a scroller.
 - `ui/chip/` — `qd-chip`, the one selectable/informational chip (button or anchor, optional
   trailing count) with an optional `variant` (`filter` / `taxonomy` / `alias`; `plain` default adds
   no class, so existing call-sites are untouched). It owns the **interactive** chip families only:
@@ -63,6 +117,9 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   formatter, route, or output — callers keep their own semantic wrapper (article/li), Quran
   renderer, and navigation. Consumers: Words `ayah-matches-list`, Mushaf `similar-ayahs-card`
   items and `mutashabihat-groups-card` occurrences. See `UI_STYLE_SYSTEM.md` §17.
+  The frame also declares `flex-shrink: 0`: a Quran card sizes to its text, so a height-constrained
+  column-flex list can never compress it into its content. That is a property of the card, not of
+  any one list, which is why it lives here rather than in a consumer stylesheet.
 - `ui/action/` — `qdAction`, the F05 action **directive** on a native `button`/`a`. Variants
   `primary | secondary | tertiary | danger | icon-only | toolbar | row-action`, sizes `sm|md|lg`
   mapped to the `32/40/48` control scale, and a `busy` input that sets `aria-busy` and reveals a
@@ -207,9 +264,27 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   optional `aria-posinset`/`aria-setsize`. It adds **no** `tabindex`: a row is focusable only when
   the consumer made it a real control (§8.1 disclosure ladder). Quran result rows keep their own
   renderer inside this frame (G11).
-- `ui/details-workspace/` — `qd-details-workspace` (F11), the projected details anatomy: identity,
-  metadata, actions, an optional tab zone, a permanently mounted polite status slot, exactly one
-  body scroller, and an optional footer. It carries **no** feature data — every zone is
+  **`qdResultItem` carries row geometry only in the row variants.** The frame's
+  `display`/`align-items`/`gap`/`padding`/borders/background live on
+  `:where(.qd-result-list--linked, --display-only, --master, --event) .qd-result-item`, never on
+  the bare `.qd-result-item`. The variant scope is wrapped in `:where()` deliberately: it selects
+  the row variants without raising specificity above a single class, so the frame still yields to
+  the detail-list row layouts in `styles/_explorer-detail-lists.scss` on document order the way it
+  always did. In `quran-result` the item therefore contributes list semantics and ARIA
+  only, and `qdAyahCard` on the same element is the single geometry owner — before this, the two
+  classes declared `display`, `align-items` and `padding` at equal specificity and the winner
+  depended on stylesheet injection order. The `--qd-hit-target-min` floor is likewise scoped to
+  the rows that are real touch targets (`--linked` rows and `--selectable` items), so a content
+  card can no longer inherit a 44px minimum it is not a target for; the Compact-band override that
+  raises that floor to `--qd-control-lg` carries the same scope.
+- `ui/details-workspace/` — `qd-details-workspace` (F11), the projected details anatomy: an
+  optional header (identity, metadata, actions), an optional tab zone, a permanently mounted polite
+  status slot, exactly one body scroller, and an optional footer. `hasHeader` defaults to `true`;
+  a consumer with no identity, metadata or actions to show — the frameless/overlay path of the five
+  Words entity panels — passes `[hasHeader]="false"` so the header element is not rendered at all,
+  rather than being hidden per-consumer in CSS. `aria-labelledby` on the shell and the identity
+  `<h2>` share one `showsIdentity` condition, so the label can never point at an id the header did
+  not render. It carries **no** feature data — every zone is
   `<ng-content>` — and it namespaces `identityId`, `statusId`, `tabId(key)` and `panelId(key)` per
   instance (D31) so an inline panel and the global overlay body cannot collide. `layout="no-selection"`
   renders the designed prompt instead of collapsing the split.
@@ -249,8 +324,10 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   existing `[qdModalShellHeaderExtra]` / `[qdModalShellFooter]`. A header with neither a visible
   title nor a Close renders bare — the labelling heading stays, the chrome does not.
 - `ui/floating-layer/` — `qdFloatingLayer` (F15 base) plus four helper modules it orchestrates:
-  `floating-layer-placement.ts` (the pure geometry, plus `repositionFloatingLayer()`, the one place
-  that measures the layer against its viewport and writes the result onto the element),
+  `floating-layer-placement.ts` (the pure geometry, plus `repositionFloatingLayer()`, the measure-
+  and-write entry point every directive-driven layer goes through — the navbar's Wide dropdown is
+  the one caller that reaches past it to `placeFloatingLayer()` directly, because it needs a zero
+  anchor gap and none of the directive's keyboard/focus semantics: see `core/README.md`),
   `floating-layer-keyboard.ts` (the key → intent table `resolveFloatingKeyAction()`, the type-ahead
   prefix accumulator and its match search, the wrap-around `stepIndex()`, and the item/text-entry
   selectors), `floating-layer-cursor.ts` (option ids, the cursor marker attribute and the

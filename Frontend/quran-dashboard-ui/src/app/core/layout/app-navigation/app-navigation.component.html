@@ -40,7 +40,7 @@
         </button>
 
         @if (openMenuKey() === item.key) {
-          <ul class="qd-nav__menu" [id]="item.key + '-menu'">
+          <ul class="qd-nav__menu" #menuSurface [id]="item.key + '-menu'">
             @for (child of item.children; track child.key) {
               <li>
                 <ng-container

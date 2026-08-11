@@ -1,7 +1,6 @@
 export interface Environment {
   production: boolean;
   apiBaseUrl: string;
-  devApiLatencyMs: number;
   logto: {
     endpoint: string;
     appId: string;

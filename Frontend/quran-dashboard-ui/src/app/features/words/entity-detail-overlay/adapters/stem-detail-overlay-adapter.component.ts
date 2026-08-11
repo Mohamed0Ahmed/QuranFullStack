@@ -8,6 +8,7 @@ import {
   input,
   untracked,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 
 import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import { DETAIL_OVERLAY_LINK_MODE } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
@@ -56,6 +57,7 @@ let nextSubViewInstance = 0;
   imports: [
     AyahMatchesListComponent,
     MissingSurahsListComponent,
+    NgTemplateOutlet,
     QdErrorStateComponent,
     QdTabDirective,
     QdTabsComponent,

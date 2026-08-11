@@ -67,6 +67,7 @@ export const ROOTS_EMPTY_SELECTION_LABEL = 'اختر جذرًا لعرض تفا�
 export const ROOTS_PANEL_LABEL = 'تفاصيل الجذر';
 export const ROOTS_CLOSE_PANEL_LABEL = 'إغلاق لوحة التفاصيل';
 export const ROOTS_EMPTY_VIEW_LABEL = 'لا توجد نتائج';
+export const ROOTS_LOADING_LABEL = 'جارٍ التحميل…';
 export const ROOTS_NOT_FOUND_LABEL = 'الجذر غير موجود';
 export const ROOTS_ERROR_LABEL = 'تعذّر تحميل تفاصيل الجذر. تحقّق من الاتصال ثم أعد المحاولة.';
 export const ROOTS_LIST_ERROR_LABEL = 'تعذّر تحميل الجذور. تحقّق من الاتصال ثم أعد المحاولة.';

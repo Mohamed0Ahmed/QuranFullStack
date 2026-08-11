@@ -87,7 +87,7 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   the two surfaces themselves are still reachable as `--qd-surface-sunken` / `--qd-bg-chrome`, which
   is how `.qd-tabs--segmented` and `.qd-data-table__header` take them. There is likewise no
   `.qd-selected-thread` utility: the logical 2px `border-inline-start` selection mark (D26) is
-  declared by the owners that actually draw it — `.qd-result-item` here, the explorer table row in
+  declared by the owners that actually draw it — the `.qd-result-item` row variants here, the explorer table row in
   `_explorer-tables.scss`, and `abwab-tree` / `abwab-cards` / `abwab-templates-page` in their own
   component stylesheets — all through `--qd-green-thread` / `--qd-green-thread-size`, because each
   needs the transparent-when-unselected reservation that a bare utility cannot express.
@@ -110,13 +110,20 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   zones, the F10 `.qd-result-list` / `.qd-result-item` frame, the F11 `.qd-details__*` anatomy, the
   F15 `.qd-floating-layer*` surface and item states, and the F17 static badges
   `.qd-badge--lifecycle-*` and `.qd-badge--membership-owner` — static because they carry no
-  interaction and therefore need no Angular owner. Two nominated owners here had no call-site and
+  interaction and therefore need no Angular owner. Within that F10 frame the row geometry
+  (`display`, `align-items`, `gap`, `padding`, borders, background) is scoped to the row variants
+  `--linked` / `--display-only` / `--master` / `--event`, and the `--qd-hit-target-min` floor is
+  scoped further to the interactive rows (`--linked` rows and `--selectable` items), so the
+  `quran-result` card list leaves geometry entirely to `qdAyahCard`. The variant scope is written
+  with `:where()` so the frame keeps single-class specificity and cannot out-cascade the detail-list
+  row layouts in `_explorer-detail-lists.scss`. Two nominated owners here had no call-site and
   are gone: the F15 danger item is `.qd-context-menu__item--danger` alone (the only danger item the
   app renders is an Abwab row-menu item, so the parallel `.qd-floating-layer__item--danger` selector
   was dead), and F17's `.qd-count-chip` had no consumer at all — a count today rides on `qd-chip`'s
   trailing count or on a feature-local chip. The F08 toolbar likewise keeps only `.qd-toolbar` and
-  `--taxonomy`; `--workspace` was a modifier no toolbar asked for. The `.qd-tabs*` family gained the count-driven `--segmented` / `--scrollable`
-  layouts and the Golden selected pill; `qd-modal-shell`'s own geometry lives in its component
+  `--taxonomy`; `--workspace` was a modifier no toolbar asked for. The `.qd-tabs*` family gained the count-driven `--segmented`
+  layout and the Golden selected pill (its `--scrollable` sibling, the one `overflow-x: auto` rule
+  in the family, was deleted in Phase 11 once `--tracks` left it without a consumer); `qd-modal-shell`'s own geometry lives in its component
   stylesheet, not here, because nothing projects into it from outside.
 - `_utilities.scss` — small utility classes such as screen-reader-only, flex, spacing, and stable
   scrollbars. Also holds `.qd-ltr-isolate` (the only sanctioned Latin island — applied to the value
@@ -146,6 +153,12 @@ Compiled through `../styles.scss`; component-specific styling stays beside each 
   `border-inline-start` would have shifted the body grid 2px out of alignment with the header row,
   which is a separate element. The pseudo-element is out of flow, so it creates no grid item.
 - `_explorer-detail-lists.scss` — shared detail-list layouts for roots/lemmas/stems/word-types panels.
+  It does **not** own `.ayah-matches-list__viewport` geometry: that lives in
+  `features/words/components/ayah-matches-list/ayah-matches-list.component.scss`, and
+  `.explorer-detail-modal` selects the drawer variant through
+  `--qd-ayah-matches-list-viewport-block-size` instead of re-declaring the block size. A global rule
+  that re-declares a component-owned property ties on specificity and loses on document order,
+  because Angular appends component styles after this layer.
 
 ## Import order
 

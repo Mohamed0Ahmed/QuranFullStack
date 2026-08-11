@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, debounceTime } from 'rxjs';
 
@@ -96,6 +97,7 @@ const DETAIL_KIND_BY_TABLE_VIEW: Record<WordTypeTableView, WordTypeDetailSelecti
     AyahMatchesListComponent,
     ExplorerToolbarComponent,
     MissingSurahsListComponent,
+    NgTemplateOutlet,
     PaginationComponent,
     SurahOccurrencesListComponent,
     WordTypeDetailsPanelComponent,

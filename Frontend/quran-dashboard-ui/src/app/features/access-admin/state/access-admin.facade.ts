@@ -7,19 +7,13 @@ import { WriteAuthFailureCoordinator } from '../../../core/auth/write-auth-failu
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AccessUserDetail } from '../../../core/api/generated/models/access-user-detail';
 import { AccessUserSummaryPagedResult } from '../../../core/api/generated/models/access-user-summary-paged-result';
-import { LogtoSubjectRelinkPreview } from '../../../core/api/generated/models/logto-subject-relink-preview';
-import { OwnerReconciliationStatus } from '../../../core/api/generated/models/owner-reconciliation-status';
 import { AccessAdminApi } from '../data-access/access-admin.api';
 import {
-  AccessAuditQuery,
-  AccessRelinkPreviewRequest,
   AccessUserListQuery,
-  AccessUserSearchState,
   canReplaceUserPermissions,
   canSelectUserPermissions,
 } from '../models/access-admin.models';
 import { ACCESS_ADMIN_LOAD_ERROR, failureMessage } from './access-admin-request-failure';
-import { AccessAuditStore } from './access-audit.store';
 import { AccessPermissionDraftStore } from './access-permission-draft.store';
 
 export type AccessAdminMutationOutcome =
@@ -50,7 +44,6 @@ export class AccessAdminFacade {
   private readonly currentUserStore = inject(CurrentUserStore);
   private readonly writeAuthFailureCoordinator = inject(WriteAuthFailureCoordinator);
   private readonly draft = new AccessPermissionDraftStore();
-  private readonly audit = new AccessAuditStore(this.api);
 
   private readonly usersState = signal<AccessUserSummaryPagedResult | null>(null);
   private readonly userQueryState = signal<AccessUserListQuery>(defaultUserQuery);
@@ -59,16 +52,10 @@ export class AccessAdminFacade {
   private readonly selectedUserState = signal<AccessUserDetail | null>(null);
   private readonly selectedUserLoadingState = signal(false);
   private readonly selectedUserErrorState = signal<string | null>(null);
-  private readonly reconciliationState = signal<OwnerReconciliationStatus | null>(null);
-  private readonly reconciliationLoadingState = signal(false);
-  private readonly reconciliationErrorState = signal<string | null>(null);
-  private readonly relinkPreviewState = signal<LogtoSubjectRelinkPreview | null>(null);
-  private readonly relinkEvidenceTokenState = signal<string | null>(null);
   private readonly mutationMessageState = signal<AccessAdminMessage | null>(null);
   private readonly busyActionState = signal<string | null>(null);
   private usersRequestVersion = 0;
   private selectedUserRequestVersion = 0;
-  private relinkPreviewRequestVersion = 0;
 
   readonly canAccess = computed(() => this.currentUserStore.isActive() && this.currentUserStore.isOwner());
   readonly accessStateKnown = computed(() => {
@@ -95,18 +82,6 @@ export class AccessAdminFacade {
   readonly selectedPermissionCodes = this.draft.codes;
   readonly selectedUserLoading = this.selectedUserLoadingState.asReadonly();
   readonly selectedUserError = this.selectedUserErrorState.asReadonly();
-  readonly auditEvents = this.audit.events;
-  readonly auditNextCursor = this.audit.nextCursor;
-  readonly auditQuery = this.audit.query;
-  readonly auditLoading = this.audit.loading;
-  readonly auditError = this.audit.error;
-  readonly auditAppending = this.audit.appending;
-  readonly auditAppendError = this.audit.appendError;
-  readonly auditAppendedCount = this.audit.appendedCount;
-  readonly reconciliationStatus = this.reconciliationState.asReadonly();
-  readonly reconciliationLoading = this.reconciliationLoadingState.asReadonly();
-  readonly reconciliationError = this.reconciliationErrorState.asReadonly();
-  readonly relinkPreview = this.relinkPreviewState.asReadonly();
   readonly mutationMessage = this.mutationMessageState.asReadonly();
   readonly busyAction = this.busyActionState.asReadonly();
   readonly permissionDiff = this.draft.diff;
@@ -118,12 +93,7 @@ export class AccessAdminFacade {
       return;
     }
 
-    await Promise.all([
-      this.loadUsers(),
-      this.loadPermissionCatalogue(),
-      this.loadAuditEvents(),
-      this.loadReconciliationStatus(),
-    ]);
+    await Promise.all([this.loadUsers(), this.loadPermissionCatalogue()]);
   }
 
   async updateUserQuery(query: Partial<AccessUserListQuery>): Promise<void> {
@@ -180,14 +150,6 @@ export class AccessAdminFacade {
     }
   }
 
-  async findUsers(search: string): Promise<AccessUserSearchState> {
-    if (!this.canAccess()) {
-      return { users: [], error: AccessAdminFacade.accessDeniedMessage, loading: false };
-    }
-
-    return this.audit.findUsers(search);
-  }
-
   async selectUser(userId: number): Promise<void> {
     if (!this.canAccess()) {
       return;
@@ -197,7 +159,6 @@ export class AccessAdminFacade {
     this.selectedUserLoadingState.set(true);
     this.selectedUserErrorState.set(null);
     this.mutationMessageState.set(null);
-    this.invalidateRelinkPreviewRequest();
     try {
       const [detailResponse, permissionsResponse] = await Promise.all([
         firstValueFrom(this.api.getUser(userId)),
@@ -237,10 +198,6 @@ export class AccessAdminFacade {
 
   discardDraft(): void {
     this.draft.discard();
-  }
-
-  clearMutationMessage(): void {
-    this.mutationMessageState.set(null);
   }
 
   async acceptSelectedUser(reason: string): Promise<AccessAdminMutationOutcome> {
@@ -306,122 +263,6 @@ export class AccessAdminFacade {
     );
   }
 
-  async previewSelectedUserRelink(
-    request: AccessRelinkPreviewRequest,
-  ): Promise<AccessAdminMutationOutcome> {
-    const user = this.selectedUserState();
-    if (!this.canAccess() || !user || !request.newSub.trim() || !request.evidenceToken.trim()) {
-      return 'invalid';
-    }
-
-    const requestVersion = ++this.relinkPreviewRequestVersion;
-    const targetUserId = user.id;
-    this.busyActionState.set('relink-preview');
-    this.mutationMessageState.set(null);
-    this.relinkPreviewState.set(null);
-    this.relinkEvidenceTokenState.set(null);
-    try {
-      const response = await firstValueFrom(
-        this.api.previewRelink(user.id, {
-          newSub: request.newSub.trim(),
-          evidenceToken: request.evidenceToken.trim(),
-        }),
-      );
-      if (!this.isCurrentRelinkPreviewRequest(requestVersion, targetUserId)) {
-        return 'invalid';
-      }
-      if (!response.isSuccess || !response.data) {
-        this.mutationMessageState.set({
-          text: response.message ?? AccessAdminFacade.writeErrorMessage,
-          tone: 'error',
-        });
-        return 'invalid';
-      }
-      this.relinkPreviewState.set(response.data);
-      this.relinkEvidenceTokenState.set(request.evidenceToken.trim());
-      return 'success';
-    } catch (error) {
-      if (!this.isCurrentRelinkPreviewRequest(requestVersion, targetUserId)) {
-        return 'invalid';
-      }
-      return this.handleMutationError(error);
-    } finally {
-      if (requestVersion === this.relinkPreviewRequestVersion && this.busyActionState() === 'relink-preview') {
-        this.busyActionState.set(null);
-      }
-    }
-  }
-
-  async confirmSelectedUserRelink(reason: string): Promise<AccessAdminMutationOutcome> {
-    const user = this.selectedUserState();
-    const preview = this.relinkPreviewState();
-    const evidenceToken = this.relinkEvidenceTokenState();
-    const normalizedReason = reason.trim();
-    if (!user || !preview || !evidenceToken || preview.userId !== user.id || !normalizedReason) {
-      return 'invalid';
-    }
-
-    return this.runMutation('relink-confirm', () =>
-      this.api.confirmRelink(user.id, {
-        expectedVersion: preview.version,
-        oldSub: preview.oldSub,
-        newSub: preview.newSub,
-        evidenceToken,
-        reason: normalizedReason,
-        confirmed: true,
-      }),
-    );
-  }
-
-  cancelSelectedUserRelink(): void {
-    if (this.busyActionState()) {
-      return;
-    }
-    this.invalidateRelinkPreviewRequest();
-  }
-
-  async updateAuditQuery(query: Partial<AccessAuditQuery>): Promise<void> {
-    this.audit.applyQuery(query);
-    await this.loadAuditEvents();
-  }
-
-  async loadNextAuditPage(): Promise<void> {
-    if (!this.canAccess()) {
-      return;
-    }
-
-    await this.audit.loadNextPage();
-  }
-
-  async loadAuditEvents(): Promise<void> {
-    if (!this.canAccess()) {
-      return;
-    }
-
-    await this.audit.load();
-  }
-
-  async loadReconciliationStatus(): Promise<void> {
-    if (!this.canAccess()) {
-      return;
-    }
-
-    this.reconciliationLoadingState.set(true);
-    this.reconciliationErrorState.set(null);
-    try {
-      const response = await firstValueFrom(this.api.getOwnerReconciliationStatus());
-      if (response.isSuccess && response.data) {
-        this.reconciliationState.set(response.data);
-        return;
-      }
-      this.reconciliationErrorState.set(response.message ?? ACCESS_ADMIN_LOAD_ERROR);
-    } catch (error) {
-      this.reconciliationErrorState.set(failureMessage(error, ACCESS_ADMIN_LOAD_ERROR));
-    } finally {
-      this.reconciliationLoadingState.set(false);
-    }
-  }
-
   private async runMutation<T>(
     action: string,
     request: () => Observable<ApiResponse<T>>,
@@ -485,13 +326,10 @@ export class AccessAdminFacade {
   }
 
   private async refreshAfterMutation(userId: number): Promise<void> {
-    this.relinkPreviewState.set(null);
-    this.relinkEvidenceTokenState.set(null);
     await Promise.all([
       this.selectUser(userId),
       this.loadUsers(),
       this.loadPermissionCatalogue(),
-      this.loadAuditEvents(),
     ]);
   }
 
@@ -521,28 +359,9 @@ export class AccessAdminFacade {
     );
   }
 
-  private isCurrentRelinkPreviewRequest(requestVersion: number, targetUserId: number): boolean {
-    return (
-      requestVersion === this.relinkPreviewRequestVersion &&
-      this.selectedUserState()?.id === targetUserId
-    );
-  }
-
-  private invalidateRelinkPreviewRequest(): void {
-    this.relinkPreviewRequestVersion += 1;
-    this.relinkPreviewState.set(null);
-    this.relinkEvidenceTokenState.set(null);
-    if (this.busyActionState() === 'relink-preview') {
-      this.busyActionState.set(null);
-    }
-  }
-
   private clearProtectedState(): void {
     this.usersState.set(null);
     this.selectedUserState.set(null);
     this.draft.clear();
-    this.audit.clear();
-    this.reconciliationState.set(null);
-    this.invalidateRelinkPreviewRequest();
   }
 }

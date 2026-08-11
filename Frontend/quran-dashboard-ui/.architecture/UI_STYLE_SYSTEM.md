@@ -712,15 +712,67 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Purpose:** the one tab-strip implementation app-wide (explorer view-mode tabs,
   mushaf ayah-section tabs, inline list tabs, and — at `layout='grid'` — a modal's
   section strip).
-- **Inputs / roles:** `ariaLabel`, `orientation?='horizontal'`, `layout?='inline'`;
+- **Inputs / roles:** `ariaLabel`, `orientation?='horizontal'`,
+  `layout?='inline'|'grid'|'tracks'`;
   container is `role="tablist"`; each item is `role="tab"` with `aria-selected`,
   roving tabindex, Arrow/Home/End keyboard nav (RTL-aware).
 - **Selected / hover / disabled:** selected per §16.1 (tint background +
   accent-text label + hairline/indicator edge); hover = `--qd-surface-hover`;
   disabled is non-interactive and drops out of the roving tab order.
 - **Backing classes:** `.qd-tabs`, `.qd-tabs--vertical`, `.qd-tabs--grid`,
-  `.qd-tabs__tab`, `.qd-tabs__tab.qd-is-selected`, `.qd-tabs__count`. Compose, do
-  not re-style.
+  `.qd-tabs--tracks`, `.qd-tabs__tab`, `.qd-tabs__tab.qd-is-selected`,
+  `.qd-tabs__count`. Compose, do not re-style.
+- **`.qd-tabs__count` is a reserved slot, not a number that sizes itself.** Its
+  `min-inline-size` is `calc(2ch + 2 * var(--qd-tabs-count-padding-inline))` — two tabular
+  digits plus the badge's own inline padding — so a count going **from one digit to two** moves
+  nothing in the strip that holds it. That is the exact guarantee, and no more: a third or fourth
+  digit does widen the badge. It is a real reservation only where counts stay small (the Mushaf
+  study strip's similarity counts). `abwab-toolbar`'s `totalRootCount()` badge is routinely three
+  or four digits, and the floor was deliberately not widened for it, because a 4ch floor would pad
+  every count badge in the app to fix one strip. It does not need to be: Phase 10 moved the Abwab
+  section strip off the count-driven `inline` modes onto `tracks`
+  (`--qd-tabs-track-floor: 8.5rem`), and track sizing ignores item intrinsic width entirely, so
+  that strip is count-independent regardless of this floor. `--empty` (known zero) and `--unknown` (value not yet
+  known) drop the pill background and keep the slot; `--unknown` also wins over the
+  selected-tab count treatment, because a selected tab can be the one still loading. A
+  count-bearing tab therefore keeps its badge element **mounted at all times** and varies only
+  its appearance; unmounting it is what made the Mushaf study strip shift sideways on every
+  ayah change.
+- **`layout='tracks'` — the equal-width wrapping strip (`.qd-tabs--tracks`).** The declared
+  alternative to the count-driven `inline` modes, and the one that satisfies the tabs contract:
+  `display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--qd-tabs-track-floor, 6.25rem), 100%), 1fr)); gap: var(--qd-space-2)`.
+  Three things are load-bearing:
+  - **`auto-fit` plus a floor, never a column count.** The floor decides how many equal tracks a
+    row holds and therefore when the strip wraps; a container with room for more balanced tracks
+    is free to use them. There is deliberately **no** maximum-columns rule — that would be a
+    second, invisible geometry contract, and it is `--grid` (fixed columns, tracks kept whether
+    filled or not) that a call-site wanting an exact count already asks for.
+  - **The floor is sized from the longest label**, not from a grid ideal: `6.25rem` clears the
+    widest details/study tab label plus the tab's own `--qd-space-3` inline padding. A call-site
+    with longer labels raises `--qd-tabs-track-floor` rather than adding local width CSS.
+  - **`white-space: nowrap` + `overflow: hidden` on the tab.** The nowrap is a **readability
+    choice, not a geometry requirement**. The widest-word collapse that folded `لم يذكر فيها` onto
+    two lines is a property of the old flex modes (`inline` / `--segmented`), where a tab's
+    *intrinsic* width feeds the layout; in `tracks` the track minimum is a fixed length, so no
+    item's intrinsic width participates in track sizing at all and a wrapping label would be
+    geometrically harmless — it would only grow the row's block size. Choosing nowrap therefore
+    transfers the fit obligation onto `--qd-tabs-track-floor`, and `overflow: hidden` is what keeps
+    that obligation from becoming a correctness bug: a label wider than its track is clipped inside
+    the tab instead of spilling ink into the ancestor scrollable-overflow region. The tab's own
+    `:focus-visible` outline and the selected state's `inset` box-shadow thread are painted by the
+    tab itself and are **not** clipped by its own `overflow`. The floor is thus a readability knob
+    — raise it when labels are long enough to be cut — never the thing that makes the mode
+    overflow-proof.
+  - **No `overflow-x` in this mode, ever** — wrapping is the overflow answer, so the strip never
+    grows an inline scroller. Since Phase 11 no `.qd-tabs*` rule carries `overflow-x` at all; the
+    RTL-hostile `--scrollable` mode this contract replaced no longer exists.
+  - **Consumers that raise the floor:** `word-type-details-panel` passes `tabsTrackFloor="9.5rem"`
+    to `qd-details-panel-shell`, which renders it as `[style.--qd-tabs-track-floor]` on the details
+    `qd-tabs[qdDetailsTabs]` host alone — no stylesheet rule sets the floor, so projected sub-tab
+    rows keep the `6.25rem` default. It is raised because its `lemma`/`stem` kinds render the longest labels in the
+    product (`كلمات الصيغة المعجمية`, 123.7 px at `--qd-type-body`, plus the tab's two
+    `--qd-space-3` insets = 147.7 px). At the `6.25rem` default those three tabs share one 319 px
+    row in the sub-1080 modal and each label overflows its tab by ~18–23 px per side.
 - **`layout='grid'` — the wrapping fixed-column strip (`.qd-tabs--grid`, added by
   ux-slice-m).** For a tablist that must show **every** option at once rather than
   one scrolling row: `display: grid; grid-template-columns: repeat(var(--qd-tabs-grid-columns, 5), minmax(0, 1fr)); gap: var(--qd-space-2)`.
@@ -750,7 +802,7 @@ fills, resting borders — stays **banned as solid green**: use a tint,
     `--qd-tabs-grid-columns` and records its own arithmetic the same way.
 - **Extending the tab's visual state:** a call-site adding a cue the primitive does
   not carry puts it on a **feature-local class beside** `.qd-tabs__tab`
-  (`lemma-details-panel__tab`, `abwab-move-picker__section`), never by re-styling
+  (`abwab-move-picker__section`), never by re-styling
   `.qd-tabs__tab` from the consumer's own stylesheet. The move picker's active cell
   adds `font-weight: 700` that way, because §17's tint-plus-accent-border selected
   state is a colour cue and an active state must not rest on colour alone.
@@ -1331,9 +1383,7 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   focusable owner and are correct**: a name truncating inside a `button`
   (`abwab-cards` card and crumbs, `access-user-list` row, `abwab-move-picker`'s two
   row kinds, `abwab-templates-page`'s list item, `word-type-filter`'s child chip), a
-  `role="treeitem"` with a roving tabindex (`abwab-tree`, `abwab-archive-view`), a
-  `role="option"` carrying the full value as its `aria-label` (`access-user-picker`'s
-  candidates), a row whose focusable check control carries the name
+  `role="treeitem"` with a roving tabindex (`abwab-tree`, `abwab-archive-view`), a row whose focusable check control carries the name
   (`abwab-door-picker`), an `aria-hidden` count inside a focusable tab
   (`abwab-toolbar`), a `<label>` wrapping a checkbox with no truncation
   (`access-permission-editor`), and one that is not the HTML attribute at all
@@ -1897,14 +1947,24 @@ selection. Phase 3 added, without changing any of that:
   `[attr.id]`/`[attr.aria-controls]`; a host binding on the directive would have won the update
   pass and removed theirs. `panelId` and `disabledReasonId` behave the same way.
 - **Layout by count, never by wrap** (D30). Three tabs or fewer render `qd-tabs--segmented` on the
-  sunken track with equal-width tabs; four or more render `qd-tabs--scrollable`, a single row with
-  its own inline scroller. `.qd-tabs` is `flex-wrap: nowrap` in both, so a tablist can no longer
-  form an accidental second row. An explicit `layout="grid"` opts out of the count-driven choice.
+  sunken track with equal-width tabs. `.qd-tabs` is `flex-wrap: nowrap`, so a tablist can no longer
+  form an accidental second row. An explicit `layout="grid"` or `layout="tracks"` opts out of the
+  count-driven choice — and since Phase 11 that opt-out is the *only* answer for four or more:
+  the `qd-tabs--scrollable` half of D30 is **retired**. It was a single row owning an
+  `overflow-x: auto` inline scroller, which is exactly the RTL-hostile behaviour §17 and the
+  `tracks` contract exist to remove, and by the end of the tabs migration no consumer could still
+  resolve to it — the three remaining `inline` tablists (`unique-words-tabs` 2 tabs,
+  `abwab-relations-modal` 3, `access-admin-page` 3) are statically bounded at the segmented
+  maximum, and every variable-length strip is `tracks`. The class, its rules and the
+  selected-tab `scrollIntoView` effect are gone; a strip that outgrows three tabs adopts
+  `layout="tracks"`, it does not get a scroller back.
 - **Selected treatment** is the Golden pill: green tint, `--qd-green-text`, and a 2px thread on the
   block-end edge (`box-shadow: inset`, because a border would change the tab's height). A vertical
   tablist gets the logical `border-inline-start` thread instead.
-- **Selected-tab scroll-into-view**, both on selection change and on keyboard move, so a scrolling
-  row never hides the current tab.
+- **Selected-tab scroll-into-view on keyboard move** (`{ block: 'nearest', inline: 'nearest' }`),
+  so a tab reached with Arrow/Home/End is brought into view by whatever ancestor scrolls. The
+  companion `effect` that re-scrolled on every selection change went with `--scrollable`: with no
+  scroller inside the primitive it could only ever move an ancestor the user did not ask to move.
 
 The RTL arrow mapping was already correct and is unchanged: ArrowLeft is the logical *next* tab in
 RTL because that is the next tab in visual order.

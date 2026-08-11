@@ -60,8 +60,11 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   stay shared, so the side panel and the overlay de-duplicate the same reads
   (`RootsCacheKeys` unchanged).
 - **Only the top layer traps focus**: the four mobile detail drawers
-  (`root`/`lemma`/`stem`/`word-type-details-panel`) and `word-drilldown-modal` all pass
-  `!DetailOverlayHistoryService.isOpen()` as `[trapFocus]` to their `qd-modal-shell`. The shell
+  (`root`/`lemma`/`stem`/`word-type-details-panel`, whose modal path is rendered by
+  `qd-details-panel-shell`) and `word-drilldown-modal` all pass
+  `!DetailOverlayHistoryService.isOpen()` as `[trapFocus]` to their `qd-modal-shell` — for the four
+  panels that predicate is the shell's own `drawerTrapEnabled` computed
+  (`details-panel-shell.component.ts`), not a per-panel binding. The shell
   additionally requires that it be the topmost open shell, so the two conditions agree. While the
   global dialog is open the drawers sit inside the inert app shell, so their traps stand down and
   exactly one trap is enabled. Never re-add an unconditional
@@ -80,7 +83,11 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   `untracked` so panel-state reads don't retrigger the effect).
 - All five entity panels expose a `frameless` input that renders only the view tablist +
   tabpanel body (no card, no header/close, no dialog/backdrop) for composition inside the
-  global shell, which owns all dialog chrome. Overlay content testids are prefixed
+  global shell, which owns all dialog chrome. Frameless binds
+  `[hasHeader]="!frameless()"` on `qd-details-workspace` (for the four explorer panels, through
+  `qd-details-panel-shell`), so the header element is absent in
+  that path for all five panels; the identity spans and close buttons the inline and modal
+  paths depend on are unaffected. Overlay content testids are prefixed
   `overlay-<entity>-*` (page testids unchanged). All five adapters are fully implemented:
   root/lemma/stem (controllers extracted from their facades — lemma/stem identity includes
   the ayahs `typeCode`), unique (drilldown controller extracted; `(mode, wordId, view,
@@ -118,11 +125,12 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   the shell already provides.
 - **The Compact/Medium detail drawer is the shared shell's `overlay` variant, not a fifth
   geometry.** Below Wide, `root` / `lemma` / `stem` / `word-type-details-panel` render their
-  `role="dialog"` surface by composing `qd-modal-shell` with `variant="overlay"`,
+  `role="dialog"` surface through `qd-details-panel-shell`, which composes `qd-modal-shell` with
+  `variant="overlay"`,
   `[showTitle]="false"`, `[showClose]="false"`, `[hasFooter]="false"` and `[flushBody]="true"`; the
-  shell owns the backdrop, the scroll lock, Escape/backdrop dismissal and the focus trap, and
-  `[trapFocus]="drawerTrapEnabled()"` still stands the drawer's trap down while the global detail
-  overlay is the top layer. The panel keeps its own header and close button, which is why the
+  shell owns the backdrop, the scroll lock, Escape/backdrop dismissal and the focus trap, and the
+  details shell's `[trapFocus]="drawerTrapEnabled()"` still stands the drawer's trap down while the
+  global detail overlay is the top layer. The panel keeps its own header and close button, which is why the
   shell's title is `qd-sr-only` — it is the dialog's accessible name, replacing the former
   `aria-label`. `.explorer-detail-modal` survives as a **content** class only (flex column,
   `min-block-size: 0`, the detail background); it declares no inline size, no block size and no
@@ -154,11 +162,40 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   `44px` sticky header, `40px` rows, internal table scrolling, and a fixed table pager. The page
   shell is the only route-gutter owner (`16/24/32/40px`), measured at 390/767/768/1024/1079/1080/1440.
 - **All five details use the shared F07/F10/F11 anatomy.** Root/Lemma/Stem/Word Type panels and the
-  Unique drilldown compose `qd-details-workspace` + `qd-tabs`, keep their `5/4/4/2-or-3/3` tab sets
-  and labeled tabpanels mounted, receive collision-free per-instance IDs, keep `notFound` inside the
+  Unique drilldown compose `qd-details-workspace` + `qd-tabs`, keep their `5/4/4/2-or-3/3` tab sets,
+  receive collision-free per-instance IDs, keep `notFound` inside the
   selected tabpanel (the other tabs are disabled while it holds), and use `.qd-details__body` as the
-  sole details scroller. Ordinary linked/display-only results use `qdResultList`/`qdResultItem`;
+  sole details scroller. The four Root/Lemma/Stem/Word Type panels mount **one** stable tabpanel
+  (`.qd-details-panel__surface`) that never unmounts across a tab switch; the projected view content
+  lives in a single always-mounted `.qd-details-panel__content` container inside it, hidden only for
+  the empty-selection and `notFound` states. Because only that one tabpanel exists, its id is the
+  view-independent `workspace.panelId('content')` and **every** tab — not only the selected one —
+  binds that same id as `[panelId]`, so the one-shot `aria-controls` `qdTab` writes in
+  `ngAfterViewInit` can never go stale or dangle. `aria-labelledby` still tracks the active tab
+  through `labelledTabKey()`, which falls back to the first rendered tab: the Word Type tab set is
+  kind-dependent, so `view()` can name a tab that the current kind does not render. Ordinary
+  linked/display-only results use `qdResultList`/`qdResultItem`;
   Quran results keep `qdAyahCard` and the existing highlighted-Quran renderer unchanged.
+- **One shell owns that anatomy for all four panels.** `components/details-panel-shell`
+  (`qd-details-panel-shell`) renders the three paths (frameless / inline / modal), the
+  `qd-details-workspace` composition, the header identity and close button, the tab loop, the single
+  content container, the per-instance ARIA ids, the `qdLoadingSizeReservation()` host, the
+  **tab-disabled predicate**, the view-selection guard and the
+  close/Escape wiring. It is entity-agnostic: a `testIdPrefix` (`root-details`, `lemma-details`,
+  `stem-details`, `word-type-details`) derives every `data-testid`, the `<x>-details-panel` block
+  class the `_explorer-detail-lists.scss` hook keys on, and the `<x>-details-modal` dialog id;
+  labels, aria strings, tab lists and the projected content — but **not** the disabled rule — stay
+  in the four entity components,
+  which keep their public inputs/outputs unchanged and now only compose the shell.
+  **The disabled predicate moved into the shell as an amendment to the plan's L6**, which had
+  scoped it to stay per-panel: `tabDisabled(key)` is `emptySelection() || (notFound() && key !==
+  view())` and reads only shell-owned state (`emptySelection`, `notFound`, `view`), so leaving it
+  in four entity components would have duplicated one rule over inputs the shell already holds.
+  The same three signals gate `selectView(...)`, so a disabled tab cannot switch the view by
+  click or by focus. Structural CSS
+  moved with the markup, so the panels' own stylesheets are one `:host` rule each. `word-drilldown-modal`
+  is deliberately **not** a consumer — it renders its views inline instead of projecting one
+  container, and folding it in is a separate decision.
 - **Every Words tablist is the F07 owner; no feature re-implements the keyboard contract.** The
   Roots/Lemmas/Stems explorer sub-tabs (`…-word-view-tabs` / `…-surah-view-tabs`), the three overlay
   adapters' sub-tabs, and `word-type-table-view-tabs` all compose `qd-tabs` + `qdTab`, so roving
@@ -172,6 +209,66 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   sub-tablist controls is a single swapping region carrying `role="tabpanel"` and a per-instance id
   (`.qd-explorer-subview-panel`), bound as `[panelId]` on every tab and as `aria-labelledby` back to
   the selected tab; the role is dropped on views that render no sub-tabs.
+- **Every Words tablist declares `layout="tracks"`.** The five details strips (Root/Lemma/Stem/Word
+  Type panels and the Unique drilldown) and all twelve explorer/overlay sub-tab rows opt into the
+  shared equal-width wrapping contract, so each row fills its slot in equal tracks, wraps to a
+  second row instead of growing an inline scroller, and keeps single-line labels. The floor lives in
+  the primitive (`--qd-tabs-track-floor`), raised to `9.5rem` only by `word-type-details-panel`
+  — through the shell's `tabsTrackFloor` input, which sets the custom property on the details
+  tablist alone so projected sub-tab rows keep the `6.25rem` default —
+  whose `lemma`/`stem` kinds carry the longest labels in the product; no Words panel carries local
+  tab width, alignment or truncation CSS, and `.qd-explorer-subtabs` is now **only**
+  `margin-block-end` — one declaration, on the host, never on the tablist inside it. Its former
+  `display: flex`, `gap` and `flex-shrink: 0` were deleted in Phase 10 once L14's proof-of-
+  irrelevance bar was met. `display` and `gap` never applied: the class sits on the `<qd-tabs>`
+  host, `tabs.component.scss`'s `:host { display: block }` ties on specificity and wins on document
+  order, so the host computed `display: block` and its single projected child made `gap`
+  meaningless either way. `flex-shrink: 0` did apply — the host *is* a flex item of the column-flex
+  `.qd-details-panel__content` — but changed nothing, because a flex item's automatic minimum size
+  already floors the row at its content height (measured identical at 1440 / 1080 / 390 with
+  `flex-shrink: 1` forced, and re-measured unchanged after the deletion).
+- **The details content switch is exhaustive in every explorer page and overlay adapter.** Each
+  page/adapter declares its per-view loading skeletons once, as a named template, and renders that
+  template from three places: the `loading` status branch, the terminal `@default` of the
+  `panelState().status` switch, and the terminal `@else` of the success view chain. No combination
+  of status and active view can therefore render nothing — an unmatched combination (the keyboard
+  focus preview that moves the active view before the load commits, `idle`, or a view whose data is
+  still `null`) degrades to that view's skeleton. Views that deliberately render their content
+  **outside** `.qd-explorer-subview-panel` (Lemma `stems`, Stem `lemmas`) are excluded from the two
+  fallback call sites exactly as they already are from the `empty` branch, and render nothing there.
+  The exclusion is not cosmetic: the terminal branch of those skeleton templates is an sr-only
+  `role="status" aria-live="polite"` node, so letting the settled `success`/`@default` states reach
+  it would leave a permanent, false "loading" announcement in the accessibility tree even though
+  nothing new is visible. The `loading` branch keeps that announcement, where it is true.
+  The Roots skeleton chain names every one of its five views explicitly and terminates in the same
+  sr-only status, so a future sixth view degrades to a neutral announcement instead of another
+  view's skeleton.
+- **The details content container holds its geometry across a load.** `.qd-details-panel__content`
+  — the single always-mounted content container in all four details panels — is the reservation
+  host for the shared `qdLoadingSizeReservation()` (`shared/layout/loading-size-reservation.ts`,
+  the third consumer that met Mushaf decision N3-a's extraction threshold). While the panel is
+  `loading` it carries the last settled natural block size as an inline `min-block-size`; the
+  reservation releases on settle and is invalidated by an inline-size change, so a width change
+  mid-load cannot strand the panel at a height measured at another width. It is a **floor, never a
+  clamp** — a skeleton taller than the reservation still renders at its own height, so nothing is
+  ever clipped. "Settled" here is *not loading, not not-found, not empty-selection*: the two
+  excluded states hide the container, and recording their zero height would make the reservation
+  inert. Measured on Roots at 1440px, root `1`, forward tab moves: الآيات 570.5 → الأصول skeleton
+  **570.5** (was 334) → الأصول loaded 1422. One transition instead of two; the skeleton still
+  appears on the first frame, and a cached tab still resolves with no skeleton and no reservation.
+  The reservation applies in all three render modes (inline panel, mobile modal, frameless overlay
+  adapter) because the container lives in the shell's one shared `#panelBody` template.
+  - **Accepted trade-off, inherited from the shared utility:** the reservation holds the
+    **previous** view's height while a **different** view loads. That is the point — the last
+    settled height is the only honest predictor available before the new one arrives.
+  - **Views that settle at their skeleton's height are covered too.** A view whose loading
+    skeleton is geometry-matched to its loaded content (the ayah and surah lists, by design)
+    settles without firing a resize, so the shared utility also captures the region's size on
+    settle rather than only inside the `ResizeObserver` callback. Before that second capture point
+    existed the Stems panel recorded nothing and its reservation was a permanent no-op: measured on
+    Stems at 1440px, stem `3`, forward moves collapsed to the new view's bare skeleton
+    (643 → 613.61 → 534.5 → **186** → 78.8). With it, each move holds the previous height for the
+    whole load (643 → 613.61 → 534.5 → 78.8, reservations `643px`, `613.609px`, `534.5px`).
 - **Zero-count detail triggers remain visible but inert across all five explorers.** Identity
   actions, count chips, mobile stat badges and Lemma/Stem ayah-type controls use
   `لا كلمات مرتبطة بهذا النوع، لذا لا تفاصيل لعرضها.` as the visible reason, reference it through
@@ -383,7 +480,22 @@ owns primary/dominant association selection, winner ordering, and server query s
   alternating row fill, no per-context recolors in `_explorer-detail-lists.scss`). Rows are
   **tracked by `verseKey`**, never `ayahId` — Word Type ayah rows all carry `ayahId: 0`.
   `HighlightedAyahComponent` (marker filtering, matched-ID set, untouched `textUthmani` spans,
-  Quran font) stays feature-owned and unchanged.
+  Quran font) stays feature-owned and unchanged. A card carries both `qdAyahCard` and
+  `qdResultItem`; **`qdAyahCard` is the geometry owner** and `qdResultItem` contributes the list
+  semantics/ARIA only (`listVariant="quran-result"` withholds the row frame — see
+  `../../shared/README.md`). The card's `flex-shrink: 0` is what keeps the Quran line at its
+  natural height inside the fixed-height viewport; the list scrolls, the card never compresses.
+- **`ayah-matches-list` owns its own viewport height policy.** `.ayah-matches-list__viewport` is
+  declared only in `ayah-matches-list.component.scss`: `flex: 0 0 auto`, `overflow: auto`,
+  `scrollbar-gutter: stable`, and `block-size: var(--qd-ayah-matches-list-viewport-block-size,
+  min(58vh, 30rem))`. All four details panels (Roots, Lemmas, Stems, Word Types) therefore resolve
+  to the same contained scroller in the inline and frameless paths. A context selects the other
+  variant by setting the custom property, never by writing a competing `block-size` rule:
+  `.explorer-detail-modal` sets it to `auto` so the Compact drawer keeps its single
+  `.qd-details__body` scroller. Global stylesheets must not re-declare the viewport's block size —
+  they tie on specificity with the component sheet and lose on document order, which is exactly the
+  silent divergence that left Stems and Word Types on a different `flex` value than Roots and
+  Lemmas.
 - **Words explainer hero + hub** (Feature 031, presentation-only, no backend/URL/cache change): each
   explorer page mounts the shared `qd-words-explainer` **inside `.uw-intro-band`, after
   `.qd-page-header` and above `.uw-toolbar-recess`**. It renders ordinal + eyebrow + tagline + body +

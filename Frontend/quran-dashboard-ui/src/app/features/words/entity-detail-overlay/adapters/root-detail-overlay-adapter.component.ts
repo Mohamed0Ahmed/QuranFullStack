@@ -8,6 +8,7 @@ import {
   input,
   untracked,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 
 import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import { DETAIL_OVERLAY_LINK_MODE } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
@@ -21,6 +22,7 @@ import { RootWordsListComponent } from '../../components/root-words-list/root-wo
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import {
   ROOTS_EMPTY_VIEW_LABEL,
+  ROOTS_LOADING_LABEL,
   ROOTS_NOT_FOUND_LABEL,
   ROOTS_SURAHS_TABLIST_LABEL,
   ROOTS_SURAHS_VIEW_LABELS,
@@ -55,6 +57,7 @@ let nextSubViewInstance = 0;
   imports: [
     AyahMatchesListComponent,
     MissingSurahsListComponent,
+    NgTemplateOutlet,
     QdErrorStateComponent,
     QdTabDirective,
     QdTabsComponent,
@@ -125,6 +128,10 @@ export class RootDetailOverlayAdapterComponent {
 
   protected get notFoundLabel() {
     return ROOTS_NOT_FOUND_LABEL;
+  }
+
+  protected get panelLoadingLabel() {
+    return ROOTS_LOADING_LABEL;
   }
 
   constructor() {

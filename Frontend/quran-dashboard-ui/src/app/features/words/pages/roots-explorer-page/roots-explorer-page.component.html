@@ -147,6 +147,7 @@
     @if (activeView() === 'words') {
       <qd-tabs
         class="roots-explorer__sub-tabs qd-explorer-subtabs"
+        layout="tracks"
         dir="rtl"
         [ariaLabel]="wordsTablistLabel"
         data-testid="roots-word-view-tabs"
@@ -169,6 +170,7 @@
     } @else if (activeView() === 'surahs') {
       <qd-tabs
         class="roots-explorer__sub-tabs qd-explorer-subtabs"
+        layout="tracks"
         dir="rtl"
         [ariaLabel]="surahsTablistLabel"
         data-testid="roots-surah-view-tabs"
@@ -190,6 +192,54 @@
       </qd-tabs>
     }
 
+    <ng-template #rootsViewSkeleton>
+      @if (activeView() === 'ayahs') {
+        <qd-ayah-matches-list
+          [loading]="true"
+          [page]="ayahsPageForView()"
+          [currentPage]="panelState().detailPage"
+          [parentFrame]="ayahParentFrame()"
+          data-testid="roots-ayahs-view"
+        />
+      } @else if (activeView() === 'words') {
+        <qd-root-words-list
+          [loading]="true"
+          [page]="emptyWordsPage"
+          [currentPage]="panelState().detailPage"
+          [wordView]="panelState().wordView"
+          data-testid="roots-words-view"
+        />
+      } @else if (activeView() === 'surahs' && panelState().surahView === 'missing') {
+        <qd-missing-surahs-list
+          [loading]="true"
+          [surahs]="[]"
+          data-testid="roots-missing-surahs-view"
+        />
+      } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned') {
+        <qd-surah-occurrences-list
+          [loading]="true"
+          [surahs]="[]"
+          data-testid="roots-mentioned-surahs-view"
+        />
+      } @else if (activeView() === 'lemmas') {
+        <qd-root-lemmas-list
+          [loading]="true"
+          [lemmas]="[]"
+          data-testid="roots-lemmas-view"
+        />
+      } @else if (activeView() === 'stems') {
+        <qd-root-stems-list
+          [loading]="true"
+          [stems]="[]"
+          data-testid="roots-stems-view"
+        />
+      } @else {
+        <p class="qd-sr-only" role="status" aria-live="polite" data-testid="roots-panel-loading">
+          {{ panelLoadingLabel }}
+        </p>
+      }
+    </ng-template>
+
     <div
       class="qd-explorer-subview-panel"
       [id]="subViewPanelId"
@@ -199,47 +249,7 @@
     >
     @switch (panelState().status) {
       @case ('loading') {
-        @if (activeView() === 'ayahs') {
-          <qd-ayah-matches-list
-            [loading]="true"
-            [page]="ayahsPageForView()"
-            [currentPage]="panelState().detailPage"
-            [parentFrame]="ayahParentFrame()"
-            data-testid="roots-ayahs-view"
-          />
-        } @else if (activeView() === 'words') {
-          <qd-root-words-list
-            [loading]="true"
-            [page]="emptyWordsPage"
-            [currentPage]="panelState().detailPage"
-            [wordView]="panelState().wordView"
-            data-testid="roots-words-view"
-          />
-        } @else if (activeView() === 'surahs' && panelState().surahView === 'mentioned') {
-          <qd-surah-occurrences-list
-            [loading]="true"
-            [surahs]="[]"
-            data-testid="roots-mentioned-surahs-view"
-          />
-        } @else if (activeView() === 'surahs' && panelState().surahView === 'missing') {
-          <qd-missing-surahs-list
-            [loading]="true"
-            [surahs]="[]"
-            data-testid="roots-missing-surahs-view"
-          />
-        } @else if (activeView() === 'lemmas') {
-          <qd-root-lemmas-list
-            [loading]="true"
-            [lemmas]="[]"
-            data-testid="roots-lemmas-view"
-          />
-        } @else if (activeView() === 'stems') {
-          <qd-root-stems-list
-            [loading]="true"
-            [stems]="[]"
-            data-testid="roots-stems-view"
-          />
-        }
+        <ng-container *ngTemplateOutlet="rootsViewSkeleton" />
       }
       @case ('error') {
         <div class="qd-error-state" role="alert" data-testid="roots-panel-error">
@@ -286,7 +296,12 @@
             [stems]="stems.stems"
             data-testid="roots-stems-view"
           />
+        } @else {
+          <ng-container *ngTemplateOutlet="rootsViewSkeleton" />
         }
+      }
+      @default {
+        <ng-container *ngTemplateOutlet="rootsViewSkeleton" />
       }
     }
     </div>

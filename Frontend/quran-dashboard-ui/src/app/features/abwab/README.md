@@ -67,6 +67,20 @@ Shared geometry and primitive mechanics live in `UI_STYLE_SYSTEM.md`.
   tree/cards toggle. There is no «الأبواب الرئيسية» tab. Archive mode hides section controls and
   the view toggle but retains search, because archive has no live section grouping; without a tab
   strip, archive also has no root-count badge.
+- **The component renders two rows, not one** (Phase 10). Row 1 is the `.qd-toolbar` proper and
+  holds only search (`qd-toolbar__filters`) and the tree/cards toggle (`qd-toolbar__actions`) —
+  that slot vocabulary is a single-row contract, and a variable-length section collection inside it
+  was what made the sections compete with the controls for width. Row 2 is the section tablist on
+  its own, below the toolbar, as `qd-tabs layout="tracks"` with `--qd-tabs-track-floor: 8.5rem`.
+  Tracks sizing means the sections are equal-width, fill the row, wrap to a further row as sections
+  are added, and never grow a horizontal or nested scroller — replacing the old behaviour where a
+  fourth section flipped the strip to `--scrollable`. Because track width is a floor, not an item
+  intrinsic width, a three- or four-digit count badge no longer reflows the strip.
+- **`hideSectionControls()` gates both rows' section-owned parts independently.** It wraps the
+  tablist (all of row 2) and the view toggle (inside row 1) in two separate `@if`s. The `@if` sits
+  *outside* `<qd-tabs>` rather than inside a sections wrapper, so archive mode drops row 2 entirely
+  instead of leaving an empty, gap-bearing row. Row 1 always renders, because search survives
+  archive mode.
 - Search has view-specific semantics:
   - The tree marks matches in place and hides nothing; zero matches leave the hierarchy visible
     with a zero count.

@@ -8,8 +8,6 @@ import { isAyahMarkerOnMushafPage } from './mushaf-reader-page.helpers';
 import { toWordAnalysisViewModel } from './mushaf-reader-view-mappers';
 import type { MushafPageViewModel } from '../models/mushaf.models';
 
-export const WORD_ANALYSIS_SWITCH_DELAY_MS = 700;
-
 export interface WordAnalysisLoadBindings {
   getPage(): MushafPageViewModel | null;
   setAnalysis(value: WordAnalysisViewModel | null): void;
@@ -21,7 +19,6 @@ export interface WordAnalysisLoadBindings {
 }
 
 export class WordAnalysisLoadRunner {
-  private timer: ReturnType<typeof setTimeout> | null = null;
   private activeSubscription: Subscription | null = null;
 
   constructor(private readonly bindings: WordAnalysisLoadBindings) {}
@@ -40,19 +37,10 @@ export class WordAnalysisLoadRunner {
     }
 
     const requestToken = this.bindings.bumpRequestToken();
-    this.bindings.setLoadState({ isLoading: true, isEmpty: false, errorMessage: null });
-    this.timer = setTimeout(() => {
-      this.timer = null;
-      this.runLoad(wordLocation, requestToken);
-    }, WORD_ANALYSIS_SWITCH_DELAY_MS);
+    this.runLoad(wordLocation, requestToken);
   }
 
   clearPending(): void {
-    if (this.timer !== null) {
-      clearTimeout(this.timer);
-      this.timer = null;
-    }
-
     if (this.activeSubscription !== null) {
       this.activeSubscription.unsubscribe();
       this.activeSubscription = null;
