@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { LinkingAyah } from '../models/linking-ayah.models';
 import { LinkingSourceDescriptor, LinkingSourceKind } from '../models/linking-source.models';
 import { UniqueWordLinkingSourceResolver } from './resolvers/unique-word-linking-source.resolver';
+import { MushafWordLinkingSourceResolver } from './resolvers/mushaf-word-linking-source.resolver';
 
 export interface LinkingSourceResolverRegistration {
   readonly kind: LinkingSourceKind;
@@ -16,10 +17,26 @@ export interface LinkingSourceResolverRegistration {
 @Injectable({ providedIn: 'root' })
 export class LinkingSourceResolverRegistry {
   private readonly uniqueWordResolver = inject(UniqueWordLinkingSourceResolver);
+  private readonly mushafWordResolver = inject(MushafWordLinkingSourceResolver);
   private readonly registrations: ReadonlyMap<LinkingSourceKind, LinkingSourceResolverRegistration> = new Map<
     LinkingSourceKind,
     LinkingSourceResolverRegistration
   >([
+    [
+      'mushaf-word',
+      {
+        kind: 'mushaf-word',
+        resolve: (
+          source: LinkingSourceDescriptor,
+          onProgress: (progress: { loaded: number; total: number }) => void,
+        ) => {
+          if (source.kind !== 'mushaf-word') {
+            throw new Error('مصدر الربط غير متوافق مع محلل كلمة المصحف.');
+          }
+          return this.mushafWordResolver.resolve(source, onProgress);
+        },
+      },
+    ],
     [
       'unique-word',
       {

@@ -43,6 +43,10 @@
       }
     </header>
 
+    @if (linkingSource(); as source) {
+      <qd-quran-source-linking-actions [source]="source" />
+    }
+
     <div class="selected-word-section__content">
       @if (loadState().isLoading) {
         <section class="selected-word-section__section" aria-label="قطع الكلمة والإعراب" aria-busy="true">

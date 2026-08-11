@@ -24,6 +24,8 @@ import { wordTypeDetailFrameFromAnalysis } from '../../utils/word-type-detail-fr
 import { SegmentDataRowsComponent } from '../segment-data-rows/segment-data-rows.component';
 import { SegmentRenderedWordComponent } from '../segment-rendered-word/segment-rendered-word.component';
 import { WordMorphologySummaryComponent } from '../word-morphology-summary/word-morphology-summary.component';
+import { QuranSourceLinkingActionsComponent } from '../../../linking/components/quran-source-linking-actions/quran-source-linking-actions.component';
+import { isLinkingSourceDescriptor, LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
 const FIRST_LOAD_SEGMENT_PLACEHOLDER_COUNT = 3;
 
@@ -37,6 +39,7 @@ const FIRST_LOAD_SEGMENT_PLACEHOLDER_COUNT = 3;
     SegmentRenderedWordComponent,
     WordMorphologySummaryComponent,
     SegmentDataRowsComponent,
+    QuranSourceLinkingActionsComponent,
   ],
   templateUrl: './selected-word-section.component.html',
   styleUrls: ['./selected-word-section.component.scss'],
@@ -86,8 +89,6 @@ export class SelectedWordSectionComponent {
     });
   }
 
-  // Detail-overlay frames (Feature 029, Change B): every identity link is a
-  // real anchor that opens a one-frame overlay stack over the Mushaf base.
   protected readonly rootFrame = computed<RootDetailFrame | null>(() => {
     const rootId = this.analysis()?.morphology.root?.id;
 
@@ -158,5 +159,21 @@ export class SelectedWordSectionComponent {
     const analysis = this.analysis();
 
     return analysis === null ? null : wordTypeDetailFrameFromAnalysis(analysis);
+  });
+
+  protected readonly linkingSource = computed<LinkingSourceDescriptor | null>(() => {
+    const analysis = this.analysis();
+    if (!this.isLoadedSuccessfully() || analysis === null || analysis.word.wordLocation !== this.selectedWordLocation()) {
+      return null;
+    }
+    const source: LinkingSourceDescriptor = {
+      kind: 'mushaf-word',
+      quranWordId: analysis.word.quranWordId,
+      wordLocation: analysis.word.wordLocation,
+      verseKey: analysis.word.verseKey,
+      pageNumber: analysis.word.pageNumber,
+      label: analysis.word.textUthmani,
+    };
+    return isLinkingSourceDescriptor(source) ? source : null;
   });
 }

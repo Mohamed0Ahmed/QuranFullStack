@@ -37,7 +37,7 @@ are never persisted.
 keeps the `simple` and `tashkeel` descriptor identities separate, adds idempotently to the workspace,
 and starts Direct Link without changing the detail overlay URL stack.
 
-The resolver registry currently supports only Unique Word descriptors. It sequentially loads every
+The resolver registry supports Unique Word descriptors and one selected Mushaf word occurrence. It sequentially loads every
 `UniqueWordsApi.getAyahMatches` page, rejects incomplete or inconsistent envelopes, de-duplicates
 only identical repeated `verseKey` rows, and maps exact Uthmani tokens plus canonical Quran word IDs
 to feature-owned `LinkingAyah` values. A successful workspace-backed load reconciles stored
@@ -49,3 +49,7 @@ uses the shared Arabic normalization helper only for comparison, so the renderer
 exact returned Uthmani text. The mock command port is an injectable, frontend-only boundary: it
 validates the active Owner, live Door, complete source, and nonempty selected ayahs before returning
 the one presentation-only success result. It sends no HTTP request and mutates no cache.
+
+The Mushaf source resolves exactly one selected occurrence through its descriptor's existing page
+read. It reconstructs only the matching `verseKey`, preserves the selected canonical Quran word ID,
+leaves sibling canonical IDs null, and marks the chosen `wordLocation` as the only source match.

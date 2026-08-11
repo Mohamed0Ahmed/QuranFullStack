@@ -115,6 +115,11 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   `qd-error-state severity="read"` (no `role="alert"`); loading keeps its own sr-only `role="status"`
   announcement, and empties render through `qd-empty-state`. The reader has never had a `qd-state`
   consumer and gained none.
+- **Selected-word Linking** appears only after the selected word analysis resolves and supplies its
+  canonical occurrence identity. The shared action component receives one `mushaf-word` descriptor;
+  it does not alter reader selection, route state, or the protected word renderer. Direct Link reads
+  the existing page, reconstructs only that descriptor's verse, and preserves the selected occurrence
+  as the sole highlighted word.
 - **D47 hit targets are overlays, not boxes.** The page-jump trigger keeps its printed `2.25rem`
   proportions and expands to `--qd-hit-target-min` through a transparent `::after`, and the
   previous/next actions carry `.qd-hit-target` for the same reason: growing the real box would
