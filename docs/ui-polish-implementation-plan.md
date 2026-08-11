@@ -1741,6 +1741,9 @@ rule. Theme: light and dark on any surface whose colour or border changed (Phase
   loading an ayah and observing that neither request fires until its tab is opened.
 - **No artificial 450 ms latency** — confirmed by request durations in DevTools.
 - **No unconditional 700 ms debounce** — confirmed by click-to-request timing.
+- **No count badge is clipped into a different number** — on the widest realistic count available in
+  the local data, confirm the `.qd-tabs__count` text is fully rendered inside its tab in `tracks`
+  mode (see §9.5; the tab carries `overflow: hidden`).
 - **No automated test was created, modified, or deleted** — confirmed by `git status` /
   `git diff --stat` showing no changes under any test path, and by `npm run check:no-unit-specs`.
 
@@ -1768,6 +1771,8 @@ oversight.
 | `.qd-result-list--linked .qd-result-item, .qd-result-item--selectable` at `_components.scss:921-924` and the Compact-band twin at `:1193-1196` remain unwrapped at (0,2,0), where the baseline blanket rule was (0,1,0). | Harmless today — nothing in `_explorer-detail-lists.scss` declares `min-block-size` on a linked row — but it is the same specificity-raising shape that caused review finding ER-1, surviving only because it currently has no competitor. Wrapping both in `:where()` would make the block uniform. Advisory; no behavioural defect. |
 | Inert residue in `_explorer-detail-lists.scss`: `.explorer-detail-modal .ayah-matches-list { gap: 0 }` and the two `__meta-row` / `__meta` gap rules lose to the component's own `gap`. | Not height policy, so outside Phase 5's proven-dead scope under L14. |
 | `/api/access/me` takes ~1017–1029 ms on every page load and is the only request over 400 ms. | Sits on the OIDC/auth bootstrap path, which **L4** puts entirely out of scope. Survived the dev-latency removal at the same magnitude, so it is unrelated to Phase 1. |
+| In `tracks` mode the `overflow: hidden` added for review finding ER-1 clips a `.qd-tabs__count` as well as a label. Clipping a label is cosmetic; clipping a **number** silently renders a *different* number — a 3-digit count cut to two digits reads as a smaller, wrong value. | Not currently reachable: the Mushaf strip measures 146.44 px against a 124 px floor and each extra digit adds ~7 px, so there is real slack. Recorded because it is the one place in this initiative where a layout guard could become a data-correctness issue, and it did not exist before Phase 7. **Carried as an explicit item in §9 Final Verification.** A surgical fix, if it ever becomes reachable, is to clip the *label* element rather than the whole tab, leaving the count unclipped. |
+| `unique-words-tabs` (the Unique Words route-mode switcher) stays `--segmented`, with `بدون تشكيل` still rendering two-line at 63 px against its 40.5 px neighbour. | It is a page mode switcher, not details navigation, so **L5**'s "do not force unrelated consumers into this layout merely because the primitive exists" applies. It does not scroll (185/185 at every width). Assigned to the Phase 11 inventory to be recorded, not migrated. |
 
 ---
 

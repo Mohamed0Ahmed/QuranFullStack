@@ -13,7 +13,7 @@ import {
 import { QD_TABS_INSTANCE, QdTabDirective } from './tab.directive';
 
 export type QdTabsOrientation = 'horizontal' | 'vertical';
-export type QdTabsLayout = 'inline' | 'grid';
+export type QdTabsLayout = 'inline' | 'grid' | 'tracks';
 
 export const QD_TABS_SEGMENTED_MAX = 3;
 

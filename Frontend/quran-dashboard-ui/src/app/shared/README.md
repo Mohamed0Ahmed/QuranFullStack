@@ -27,6 +27,23 @@ Reusable Angular primitives shared across features. If logic or UI is feature-ow
   when the element carries none** — `abwab-move-picker` and `access-admin-page` bind their own
   `id`/`aria-controls`, and a host binding would have removed theirs. See `UI_STYLE_SYSTEM.md`
   §17 and §20.1.
+  `layout="tracks"` is the **opt-in** equal-width wrapping contract (`qd-tabs--tracks`):
+  `grid-template-columns: repeat(auto-fit, minmax(min(var(--qd-tabs-track-floor, 6.25rem), 100%), 1fr))`,
+  so the row always fills its container in equal tracks, wraps to another row instead of
+  scrolling, and never grows an `overflow-x`. The `min(…, 100%)` clamp is load-bearing and not
+  decoration: it is what guarantees at least one track always fits, so a container narrower than
+  the floor still lays out instead of overflowing. It is the floor, not a column cap, that decides
+  how many tabs share a row; a container wide enough for more equal tracks may use them. Labels
+  are `white-space: nowrap` in this mode as a **readability** choice, not a geometric necessity —
+  the widest-*word* intrinsic-width collapse is a property of the flex `inline`/`--segmented`
+  modes, whereas a fixed track minimum means no item's intrinsic width feeds track sizing at all,
+  so a wrapping label here would merely make the row taller. The cost of that choice is that the
+  fit obligation moves onto `--qd-tabs-track-floor` (default `6.25rem`, raised per call-site when
+  labels are longer — `word-type-details-panel` uses `9.5rem`), and `overflow: hidden` on the tab
+  is what keeps a missed floor from becoming a defect: an oversized label is clipped inside its
+  tab rather than spilling ink out of the strip. The tab's `:focus-visible` outline and the
+  selected state's `inset` thread are the tab's own paint and survive that clip. Consumers that do
+  not pass `layout` keep the count-driven `inline` behaviour unchanged.
 - `ui/chip/` — `qd-chip`, the one selectable/informational chip (button or anchor, optional
   trailing count) with an optional `variant` (`filter` / `taxonomy` / `alias`; `plain` default adds
   no class, so existing call-sites are untouched). It owns the **interactive** chip families only:

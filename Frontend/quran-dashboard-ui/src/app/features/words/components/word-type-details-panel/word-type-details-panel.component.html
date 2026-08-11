@@ -30,7 +30,7 @@
       </button>
     }
 
-    <qd-tabs qdDetailsTabs [ariaLabel]="panelLabel" dir="rtl">
+    <qd-tabs qdDetailsTabs layout="tracks" [ariaLabel]="panelLabel" dir="rtl">
       @for (tab of tabs(); track tab.key) {
         <button
           qdTab

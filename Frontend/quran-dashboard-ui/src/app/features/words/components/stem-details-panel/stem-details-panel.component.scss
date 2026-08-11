@@ -31,11 +31,8 @@
 }
 
 .stem-details-panel__tab {
-  overflow: hidden;
   font-family: var(--qd-font-ui);
   font-size: var(--qd-type-body);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .stem-details-panel__content {

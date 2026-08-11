@@ -712,15 +712,64 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Purpose:** the one tab-strip implementation app-wide (explorer view-mode tabs,
   mushaf ayah-section tabs, inline list tabs, and — at `layout='grid'` — a modal's
   section strip).
-- **Inputs / roles:** `ariaLabel`, `orientation?='horizontal'`, `layout?='inline'`;
+- **Inputs / roles:** `ariaLabel`, `orientation?='horizontal'`,
+  `layout?='inline'|'grid'|'tracks'`;
   container is `role="tablist"`; each item is `role="tab"` with `aria-selected`,
   roving tabindex, Arrow/Home/End keyboard nav (RTL-aware).
 - **Selected / hover / disabled:** selected per §16.1 (tint background +
   accent-text label + hairline/indicator edge); hover = `--qd-surface-hover`;
   disabled is non-interactive and drops out of the roving tab order.
 - **Backing classes:** `.qd-tabs`, `.qd-tabs--vertical`, `.qd-tabs--grid`,
-  `.qd-tabs__tab`, `.qd-tabs__tab.qd-is-selected`, `.qd-tabs__count`. Compose, do
-  not re-style.
+  `.qd-tabs--tracks`, `.qd-tabs__tab`, `.qd-tabs__tab.qd-is-selected`,
+  `.qd-tabs__count`. Compose, do not re-style.
+- **`.qd-tabs__count` is a reserved slot, not a number that sizes itself.** Its
+  `min-inline-size` is `calc(2ch + 2 * var(--qd-tabs-count-padding-inline))` — two tabular
+  digits plus the badge's own inline padding — so a count going **from one digit to two** moves
+  nothing in the strip that holds it. That is the exact guarantee, and no more: a third or fourth
+  digit does widen the badge. It is a real reservation only where counts stay small (the Mushaf
+  study strip's similarity counts). `abwab-toolbar`'s `totalRootCount()` badge is routinely three
+  or four digits and sits on the still-`--segmented` Abwab strip, where badge width does feed tab
+  width — deliberately not widened here, because a 4ch floor would pad every count badge in the
+  app to fix one strip. Phase 10 migrates the Abwab sections to `tracks`, whose track sizing
+  ignores item intrinsic width entirely, which makes that strip count-independent regardless of
+  this floor. `--empty` (known zero) and `--unknown` (value not yet
+  known) drop the pill background and keep the slot; `--unknown` also wins over the
+  selected-tab count treatment, because a selected tab can be the one still loading. A
+  count-bearing tab therefore keeps its badge element **mounted at all times** and varies only
+  its appearance; unmounting it is what made the Mushaf study strip shift sideways on every
+  ayah change.
+- **`layout='tracks'` — the equal-width wrapping strip (`.qd-tabs--tracks`).** The declared
+  alternative to the count-driven `inline` modes, and the one that satisfies the tabs contract:
+  `display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--qd-tabs-track-floor, 6.25rem), 100%), 1fr)); gap: var(--qd-space-2)`.
+  Three things are load-bearing:
+  - **`auto-fit` plus a floor, never a column count.** The floor decides how many equal tracks a
+    row holds and therefore when the strip wraps; a container with room for more balanced tracks
+    is free to use them. There is deliberately **no** maximum-columns rule — that would be a
+    second, invisible geometry contract, and it is `--grid` (fixed columns, tracks kept whether
+    filled or not) that a call-site wanting an exact count already asks for.
+  - **The floor is sized from the longest label**, not from a grid ideal: `6.25rem` clears the
+    widest details/study tab label plus the tab's own `--qd-space-3` inline padding. A call-site
+    with longer labels raises `--qd-tabs-track-floor` rather than adding local width CSS.
+  - **`white-space: nowrap` + `overflow: hidden` on the tab.** The nowrap is a **readability
+    choice, not a geometry requirement**. The widest-word collapse that folded `لم يذكر فيها` onto
+    two lines is a property of the old flex modes (`inline` / `--segmented`), where a tab's
+    *intrinsic* width feeds the layout; in `tracks` the track minimum is a fixed length, so no
+    item's intrinsic width participates in track sizing at all and a wrapping label would be
+    geometrically harmless — it would only grow the row's block size. Choosing nowrap therefore
+    transfers the fit obligation onto `--qd-tabs-track-floor`, and `overflow: hidden` is what keeps
+    that obligation from becoming a correctness bug: a label wider than its track is clipped inside
+    the tab instead of spilling ink into the ancestor scrollable-overflow region. The tab's own
+    `:focus-visible` outline and the selected state's `inset` box-shadow thread are painted by the
+    tab itself and are **not** clipped by its own `overflow`. The floor is thus a readability knob
+    — raise it when labels are long enough to be cut — never the thing that makes the mode
+    overflow-proof.
+  - **No `overflow-x` in this mode, ever** — wrapping is the overflow answer, so the strip never
+    grows the RTL-hostile inline scroller `--scrollable` has.
+  - **Consumers that raise the floor:** `word-type-details-panel` sets `9.5rem` on its
+    `qd-tabs[qdDetailsTabs]`, because its `lemma`/`stem` kinds render the longest labels in the
+    product (`كلمات الصيغة المعجمية`, 123.7 px at `--qd-type-body`, plus the tab's two
+    `--qd-space-3` insets = 147.7 px). At the `6.25rem` default those three tabs share one 319 px
+    row in the sub-1080 modal and each label overflows its tab by ~18–23 px per side.
 - **`layout='grid'` — the wrapping fixed-column strip (`.qd-tabs--grid`, added by
   ux-slice-m).** For a tablist that must show **every** option at once rather than
   one scrolling row: `display: grid; grid-template-columns: repeat(var(--qd-tabs-grid-columns, 5), minmax(0, 1fr)); gap: var(--qd-space-2)`.

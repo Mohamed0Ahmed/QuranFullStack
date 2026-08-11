@@ -164,6 +164,17 @@ ayahs, and متشابهات groups. State (page, selected ayah/word, source sele
   and can never reserve *less* than the loaded floor. Accepted trade (as in U1):
   reserving the previous ayah's height while a **different** ayah loads holds stale
   geometry.
+- **The study tab strip holds its inline geometry too, and never shows a stale count.**
+  The strip is `qd-tabs layout="tracks"` with `--qd-tabs-track-floor: 7.75rem` on
+  `.selected-ayah-section__tabs` — the floor clears the widest label (`المتشابهات`) plus its
+  count slot, so the five tabs are equal grid tracks whose width never follows content, and a
+  container too narrow for five wraps a tab instead of growing a scroller. The two
+  count-bearing tabs keep their `.qd-tabs__count` **mounted at all times** and mark it
+  `--unknown` while the study loads: `tabCount()` still returns `null` for `isLoading`, so the
+  outgoing ayah's numbers are never repainted onto the incoming one, and the `null` = unknown /
+  `0` = known empty semantics the similarity placeholders read stay honest. The slot's own
+  two-digit floor lives in the golden layer (`.qd-tabs__count`), so a count crossing from one
+  digit to two moves nothing either.
 - **Word hover is CSS-only and word-scoped** (Feature 030 N7, rescoped by M1): hovering (or
   keyboard-focusing) a word paints `--qd-mushaf-word-hover-bg` behind **that one word** — it
   does **not** fan out across the ayah. There is deliberately **no hover state in TypeScript**:

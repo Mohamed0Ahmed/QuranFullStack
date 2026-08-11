@@ -55,6 +55,7 @@
   @if (frame().view === 'words') {
     <qd-tabs
       class="qd-explorer-subtabs"
+      layout="tracks"
       dir="rtl"
       [ariaLabel]="wordsTablistLabel"
       data-testid="overlay-stems-word-view-tabs"
@@ -76,6 +77,7 @@
   } @else if (frame().view === 'surahs') {
     <qd-tabs
       class="qd-explorer-subtabs"
+      layout="tracks"
       dir="rtl"
       [ariaLabel]="surahsTablistLabel"
       data-testid="overlay-stems-surah-view-tabs"

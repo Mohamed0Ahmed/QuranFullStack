@@ -30,7 +30,7 @@
       </button>
     }
 
-    <qd-tabs qdDetailsTabs [ariaLabel]="drilldownViewTablistLabel" dir="rtl">
+    <qd-tabs qdDetailsTabs layout="tracks" [ariaLabel]="drilldownViewTablistLabel" dir="rtl">
       @for (viewKey of drilldownViews; track viewKey) {
         <button
           qdTab

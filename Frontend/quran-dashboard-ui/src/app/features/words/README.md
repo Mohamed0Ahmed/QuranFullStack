@@ -181,6 +181,22 @@ shell holds the only `padding-inline: var(--qd-page-gutter)` declaration in the 
   sub-tablist controls is a single swapping region carrying `role="tabpanel"` and a per-instance id
   (`.qd-explorer-subview-panel`), bound as `[panelId]` on every tab and as `aria-labelledby` back to
   the selected tab; the role is dropped on views that render no sub-tabs.
+- **Every Words tablist declares `layout="tracks"`.** The five details strips (Root/Lemma/Stem/Word
+  Type panels and the Unique drilldown) and all twelve explorer/overlay sub-tab rows opt into the
+  shared equal-width wrapping contract, so each row fills its slot in equal tracks, wraps to a
+  second row instead of growing an inline scroller, and keeps single-line labels. The floor lives in
+  the primitive (`--qd-tabs-track-floor`), raised to `9.5rem` only by `word-type-details-panel`,
+  whose `lemma`/`stem` kinds carry the longest labels in the product; no Words panel carries local
+  tab width, alignment or truncation CSS, and `.qd-explorer-subtabs` styles only the host's block
+  margin, never the tablist inside it. Its `display: flex`, `gap` and `flex-shrink` are inert and
+  retained under L14. `display` and `gap` lose because the class sits on the `<qd-tabs>` host:
+  `tabs.component.scss`'s `:host { display: block }` ties on specificity and wins on document
+  order, so the host computes `display: block` and its single projected child makes `gap`
+  meaningless either way. `flex-shrink: 0` is live in the cascade — the host *is* a flex item of
+  the column-flex `.…-details-panel__content` — but changes nothing, because a flex item's
+  automatic minimum size already floors the row at its content height (measured identical at
+  1440 / 1080 / 390 with `flex-shrink: 1` forced). Only `margin-block-end` has an observable
+  effect.
 - **The details content switch is exhaustive in every explorer page and overlay adapter.** Each
   page/adapter declares its per-view loading skeletons once, as a named template, and renders that
   template from three places: the `loading` status branch, the terminal `@default` of the

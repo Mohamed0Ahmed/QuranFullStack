@@ -30,6 +30,10 @@
   border-radius: var(--qd-radius-sm);
 }
 
+qd-tabs[qdDetailsTabs] {
+  --qd-tabs-track-floor: 9.5rem;
+}
+
 .word-type-details-panel__tab {
   font-family: var(--qd-font-ui);
   font-size: var(--qd-type-body);

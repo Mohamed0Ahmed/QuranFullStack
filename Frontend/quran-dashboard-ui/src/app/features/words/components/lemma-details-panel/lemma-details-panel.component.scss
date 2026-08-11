@@ -31,13 +31,8 @@
 }
 
 .lemma-details-panel__tab {
-  inline-size: 100%;
-  justify-content: center;
-  overflow: hidden;
   font-family: var(--qd-font-ui);
   font-size: var(--qd-type-body);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .lemma-details-panel__tab:disabled {

@@ -147,6 +147,7 @@
     @if (activeView() === 'words') {
       <qd-tabs
         class="roots-explorer__sub-tabs qd-explorer-subtabs"
+        layout="tracks"
         dir="rtl"
         [ariaLabel]="wordsTablistLabel"
         data-testid="roots-word-view-tabs"
@@ -169,6 +170,7 @@
     } @else if (activeView() === 'surahs') {
       <qd-tabs
         class="roots-explorer__sub-tabs qd-explorer-subtabs"
+        layout="tracks"
         dir="rtl"
         [ariaLabel]="surahsTablistLabel"
         data-testid="roots-surah-view-tabs"

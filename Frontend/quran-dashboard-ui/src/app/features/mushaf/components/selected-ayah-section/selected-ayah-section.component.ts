@@ -217,6 +217,11 @@ export class SelectedAyahSectionComponent {
     }
   }
 
+  protected tabCountLabel(tab: AyahStudyTab): string {
+    const count = this.tabCount(tab);
+    return count === null ? '' : `${count}`;
+  }
+
   protected selectedAyahNavigateLabel(): string {
     const ayah = this.study()?.ayah;
     if (!ayah) {

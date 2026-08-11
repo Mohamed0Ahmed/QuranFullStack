@@ -328,6 +328,12 @@ button.qd-interactive-surface {
   gap: var(--qd-space-2);
 }
 
+.qd-tabs--tracks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(var(--qd-tabs-track-floor, 6.25rem), 100%), 1fr));
+  gap: var(--qd-space-2);
+}
+
 .qd-tabs__tab {
   display: inline-flex;
   align-items: center;
@@ -382,6 +388,12 @@ button.qd-interactive-surface {
   min-inline-size: 0;
 }
 
+.qd-tabs--tracks .qd-tabs__tab {
+  min-inline-size: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 @media (max-width: bp.$qd-bp-compact-max) {
   .qd-tabs__tab {
     min-block-size: var(--qd-control-lg);
@@ -389,11 +401,13 @@ button.qd-interactive-surface {
 }
 
 .qd-tabs__count {
+  --qd-tabs-count-padding-inline: 0.35rem;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-inline-size: 1.25rem;
-  padding-inline: 0.35rem;
+  min-inline-size: calc(2ch + 2 * var(--qd-tabs-count-padding-inline));
+  padding-inline: var(--qd-tabs-count-padding-inline);
   border-radius: var(--qd-radius-pill);
   background: var(--qd-surface-recessed);
   color: var(--qd-text-muted);
@@ -409,6 +423,12 @@ button.qd-interactive-surface {
 
 .qd-tabs__count--empty {
   background: transparent;
+}
+
+.qd-tabs__count--unknown,
+.qd-tabs__tab.qd-is-selected .qd-tabs__count--unknown {
+  background: transparent;
+  color: transparent;
 }
 
 
