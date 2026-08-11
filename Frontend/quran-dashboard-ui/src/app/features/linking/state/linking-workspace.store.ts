@@ -152,7 +152,7 @@ export class LinkingWorkspaceStore {
     }
 
     const item = this.itemsSignal()[index];
-    this.removedItemSignal.set({ item, index });
+    this.removedItemSignal.set({ item, index, wasChecked: this.checkedSourceKeysSignal().includes(sourceKey) });
     this.itemsSignal.update((items) => items.filter((candidate) => candidate.sourceKey !== sourceKey));
     this.checkedSourceKeysSignal.update((keys) => keys.filter((key) => key !== sourceKey));
     if (this.editorSourceKeySignal() === sourceKey) {
@@ -175,6 +175,9 @@ export class LinkingWorkspaceStore {
       removed.item,
       ...items.slice(removed.index),
     ]);
+    if (removed.wasChecked) {
+      this.checkedSourceKeysSignal.update((keys) => [...keys, removed.item.sourceKey]);
+    }
     this.removedItemSignal.set(null);
     this.persist();
   }

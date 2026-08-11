@@ -1,36 +1,22 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
-import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 import { QdNoticeComponent } from '../../../../shared/ui/notice/notice.component';
-import { arabicSearchIncludes } from '../../../../shared/quran/arabic-search-normalize';
-import { LinkingAyah } from '../../models/linking-ayah.models';
-import { LinkingWorkspaceStore } from '../../state/linking-workspace.store';
-import { LinkingWorkflowFacade } from '../../state/linking-workflow.facade';
+import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { LINKING_LABELS } from '../../models/linking.labels';
-import { DirectLinkStep } from '../../models/linking-workflow.models';
+import { LinkingWorkspaceStore } from '../../state/linking-workspace.store';
+import { LinkingWorkflowFacade, LinkingWorkflowStep } from '../../state/linking-workflow.facade';
 import { LinkingDoorStepComponent } from '../linking-door-step/linking-door-step.component';
 import { LinkingAyahCardComponent } from '../linking-ayah-card/linking-ayah-card.component';
-import { LinkingAyahSelectionComponent } from '../linking-ayah-selection/linking-ayah-selection.component';
 
-const WORKFLOW_STEPS: readonly DirectLinkStep[] = ['door', 'ayahs', 'highlight', 'review', 'result'];
-const AYAH_PAGE_SIZE = 12;
+const REVIEW_PAGE_SIZE = 12;
 
 @Component({
   selector: 'qd-direct-link-workflow',
   standalone: true,
-  imports: [
-    QdActionDirective,
-    QdEmptyStateComponent,
-    QdErrorStateComponent,
-    ExplorerPanelSkeletonComponent,
-    QdNoticeComponent,
-    LinkingDoorStepComponent,
-    LinkingAyahCardComponent,
-    LinkingAyahSelectionComponent,
-  ],
+  imports: [QdActionDirective, QdErrorStateComponent, ExplorerPanelSkeletonComponent, QdNoticeComponent, PaginationComponent, LinkingDoorStepComponent, LinkingAyahCardComponent],
   templateUrl: './direct-link-workflow.component.html',
   styleUrl: './direct-link-workflow.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,106 +26,44 @@ export class DirectLinkWorkflowComponent {
   private readonly workflow = inject(LinkingWorkflowFacade);
 
   readonly workspaceSourceKey = input<string | null>(null);
-
   protected readonly labels = LINKING_LABELS;
   protected readonly state = this.workflow.state;
   protected readonly currentStep = this.workflow.step;
-  protected readonly selectedDoor = this.workflow.selectedDoor;
+  protected readonly memberStates = this.workflow.memberStates;
+  protected readonly operation = this.workflow.operation;
   protected readonly canAdvanceDoor = this.workflow.canAdvanceDoor;
-  protected readonly sourceLoad = this.workflow.sourceLoad;
-  protected readonly allAyahs = this.workflow.allAyahs;
-  protected readonly selectedCount = this.workflow.selectedCount;
-  protected readonly selectedVerseKeys = this.workflow.selectedVerseKeys;
-  protected readonly selection = computed(() => this.state().selection);
-  protected readonly highlightSourceWords = this.workflow.highlightSourceWords;
-  protected readonly canAdvanceAyahs = this.workflow.canAdvanceAyahs;
-  protected readonly ayahQuery = signal('');
-  protected readonly ayahPage = signal(1);
-  protected readonly ayahPageSize = AYAH_PAGE_SIZE;
-  protected readonly filteredAyahs = computed(() =>
-    this.allAyahs().filter((ayah) => arabicSearchIncludes(directLinkSearchText(ayah), this.ayahQuery())),
-  );
-  protected readonly visibleAyahs = computed(() => {
-    const start = (this.ayahPage() - 1) * AYAH_PAGE_SIZE;
-    return this.filteredAyahs().slice(start, start + AYAH_PAGE_SIZE);
+  protected readonly canSubmit = this.workflow.canSubmit;
+  protected readonly directSource = this.workflow.directSource;
+  protected readonly directConfiguration = this.workflow.directConfiguration;
+  protected readonly directAutomaticConfiguration = computed(() => {
+    const configuration = this.directConfiguration();
+    return configuration?.kind === 'automatic' ? configuration : null;
   });
-  protected readonly selectedAyahs = computed<readonly LinkingAyah[]>(() => {
-    const selected = new Set(this.selectedVerseKeys());
-    return this.allAyahs().filter((ayah) => selected.has(ayah.verseKey));
-  });
-  protected readonly sourceLoadProgress = computed(() => {
-    const progress = this.sourceLoad().progress;
-    return progress.total === null ? `${progress.loaded}` : `${progress.loaded} / ${progress.total}`;
-  });
-  protected readonly steps = WORKFLOW_STEPS;
+  protected readonly reviewPage = signal(1);
+  protected readonly reviewPageSize = REVIEW_PAGE_SIZE;
+  protected readonly reviewAyahs = computed(() => this.operation()?.mergedSelection.ayahs ?? []);
+  protected readonly visibleReviewAyahs = computed(() => this.reviewAyahs().slice((this.reviewPage() - 1) * REVIEW_PAGE_SIZE, this.reviewPage() * REVIEW_PAGE_SIZE));
+  protected readonly steps: readonly LinkingWorkflowStep[] = ['configure-source', 'resolve', 'door', 'review'];
 
   constructor() {
     effect(() => {
       const sourceKey = this.workspaceSourceKey();
-      if (this.workspace.activeSurface() === 'linking-flow' && sourceKey !== null) {
-        this.workflow.startFromWorkspace(sourceKey);
+      if (this.workspace.activeSurface() === 'linking-flow' && sourceKey !== null && this.state().origin === null) {
+        this.workflow.startWorkspaceOperation();
       }
     });
     effect(() => {
-      this.allAyahs();
-      this.ayahQuery();
-      this.ayahPage.set(1);
+      this.operation();
+      this.reviewPage.set(1);
     });
   }
 
-  protected dismiss(): void {
-    this.workflow.dismiss();
-  }
-
-  protected back(): void {
-    this.workflow.back();
-  }
-
-  protected next(): void {
-    this.workflow.next();
-  }
-
-  protected retrySource(): void {
-    this.workflow.retrySource();
-  }
-
-  protected toggleAyah(verseKey: string): void {
-    this.workflow.toggleAyah(verseKey);
-  }
-
-  protected selectAllAyahs(): void {
-    this.workflow.selectAllAyahs();
-  }
-
-  protected clearAllAyahs(): void {
-    this.workflow.clearAllAyahs();
-  }
-
-  protected setAyahQuery(query: string): void {
-    this.ayahQuery.set(query);
-  }
-
-  protected setAyahPage(page: number): void {
-    this.ayahPage.set(page);
-  }
-
-  protected setHighlightSourceWords(event: Event): void {
-    this.workflow.setHighlightSourceWords((event.target as HTMLInputElement).checked);
-  }
-
-  protected confirm(): void {
-    this.workflow.confirm();
-  }
-
-  protected stepLabel(step: DirectLinkStep): string {
-    return this.labels.directLinkSteps[step];
-  }
-}
-
-function directLinkSearchText(ayah: LinkingAyah): string {
-  return [
-    ayah.verseKey,
-    ayah.surahNameArabic ?? '',
-    ...ayah.words.filter((word) => !word.isAyahMarker).map((word) => word.textUthmani),
-  ].join(' ');
+  protected next(): void { this.workflow.next(); }
+  protected back(): void { this.workflow.back(); }
+  protected retry(): void { this.workflow.retry(); }
+  protected submit(): void { this.workflow.submit(); }
+  protected acknowledge(): void { this.workflow.acknowledgeSuccess(); }
+  protected setReviewPage(page: number): void { this.reviewPage.set(page); }
+  protected setAutomaticWords(event: Event): void { this.workflow.setDirectAutomaticWords((event.target as HTMLInputElement).checked); }
+  protected stepLabel(step: LinkingWorkflowStep): string { return this.labels.operationSteps[step]; }
 }

@@ -9,6 +9,7 @@ import { DirectLinkWorkflowComponent } from '../direct-link-workflow/direct-link
 import { LinkingWorkflowFacade } from '../../state/linking-workflow.facade';
 import { LinkingSourceAyahEditorComponent } from '../linking-source-ayah-editor/linking-source-ayah-editor.component';
 import { LinkingManualWordEditorComponent } from '../linking-manual-word-editor/linking-manual-word-editor.component';
+import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'qd-linking-workspace-host',
@@ -19,6 +20,7 @@ import { LinkingManualWordEditorComponent } from '../linking-manual-word-editor/
     DirectLinkWorkflowComponent,
     LinkingSourceAyahEditorComponent,
     LinkingManualWordEditorComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './linking-workspace-host.component.html',
   styleUrl: './linking-workspace-host.component.scss',
@@ -50,6 +52,8 @@ export class LinkingWorkspaceHostComponent {
     return this.isLinkingFlow() ? this.labels.directLink : this.labels.workspace;
   });
   protected readonly activeSourceKey = this.workspace.activeSourceKey;
+  protected readonly clearAllRequested = this.workspace.clearAllRequested;
+  protected readonly itemCount = this.workspace.itemCount;
 
   constructor() {
     effect(() => {
@@ -89,4 +93,7 @@ export class LinkingWorkspaceHostComponent {
     this.workspace.returnToWorkspace();
     this.focus.restore(() => this.surfaceEntry()?.nativeElement ?? null);
   }
+
+  protected confirmClearAll(): void { this.workspace.confirmClearAll(); }
+  protected cancelClearAll(): void { this.workspace.cancelClearAll(); }
 }

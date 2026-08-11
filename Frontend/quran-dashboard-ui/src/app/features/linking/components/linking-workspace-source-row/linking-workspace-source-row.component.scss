@@ -1,0 +1,29 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host { display: block; }
+
+.linking-workspace-source-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) auto auto auto auto;
+  align-items: center;
+}
+
+.linking-workspace-source-row__identity { min-inline-size: 0; }
+.linking-workspace-source-row__identity p,
+.linking-workspace-source-row__identity h3,
+.linking-workspace-source-row__count span { margin: 0; }
+.linking-workspace-source-row__identity p,
+.linking-workspace-source-row__count span { color: var(--qd-ink-muted); font-size: var(--qd-type-meta); }
+.linking-workspace-source-row__identity h3 { font-family: var(--qd-font-naskh); font-size: var(--qd-type-h4); }
+.linking-workspace-source-row__count { display: grid; gap: var(--qd-space-1); }
+
+@media (max-width: bp.$qd-bp-medium-max) {
+  .linking-workspace-source-row { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+  .linking-workspace-source-row__count,
+  .linking-workspace-source-row__words,
+  .linking-workspace-source-row__membership { grid-column: span 1; }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .linking-workspace-source-row { grid-template-columns: 1fr; }
+}

@@ -9,7 +9,5 @@ qd-details-workspace {
   min-block-size: 0;
 }
 
-.linking-workspace__items {
-  display: grid;
-  gap: var(--qd-space-3);
-}
+.linking-workspace__top-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--qd-space-2); }
+.linking-workspace__items { margin: 0; }

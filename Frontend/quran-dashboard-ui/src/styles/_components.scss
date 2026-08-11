@@ -1027,6 +1027,12 @@ qd-notice {
   display: none;
 }
 
+.qd-details__status-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+}
+
 .qd-details__body {
   flex: 1 1 auto;
   min-block-size: 0;

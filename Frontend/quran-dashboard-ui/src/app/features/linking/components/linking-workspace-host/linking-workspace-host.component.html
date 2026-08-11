@@ -32,4 +32,16 @@
       }
     </div>
   </qd-modal-shell>
+  <qd-confirm-dialog
+    [open]="clearAllRequested()"
+    [titleText]="labels.removeAllTitle"
+    [confirmLabel]="labels.removeAllConfirm"
+    [cancelLabel]="labels.removeAllCancel"
+    tone="danger"
+    testIdPrefix="linking-remove-all"
+    (confirmed)="confirmClearAll()"
+    (cancelled)="cancelClearAll()"
+  >
+    <p>{{ itemCount() }} {{ labels.preparedSources }}</p>
+  </qd-confirm-dialog>
 }

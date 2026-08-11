@@ -42,6 +42,7 @@
     [attr.data-testid]="testIdPrefix() + '-status'"
   >
     <ng-content select="[qdDetailsStatus]" />
+    <span class="qd-details__status-actions"><ng-content select="[qdDetailsStatusActions]" /></span>
   </div>
 
   <div class="qd-details__body" [attr.data-testid]="testIdPrefix() + '-body'">

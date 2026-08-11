@@ -71,6 +71,17 @@ generation stays separate so grouped manual units cannot be reconstructed from t
 Operation state, resolved Quran text, provenance, and intents are transient; only a revision-matched
 workspace reconciliation can persist.
 
+Direct Link and checked workspace sources now use one transient operation workflow. It resolves an
+immutable member snapshot, validates a currently live Door, pages only review presentation, and
+sends the full merged selection plus source-owned intents to an Observable-based mock command port.
+The mock performs no HTTP write or durable side effect. Workspace success clears only transient
+checked membership after acknowledgement.
+
+The workspace renders dense flat result-list rows. Native checkboxes control operation membership
+only; ayah inclusion, automatic-word preference, manual words, and grouping remain independent row
+configuration. Removal keeps one transient Undo snapshot, while remove-all uses the shared
+confirmation dialog without clearing another actor's local-storage bucket.
+
 `QuranSourceLinkingActionsComponent` remains the shared Owner-only explorer seam. Add to Workspace
 is idempotent, preserves focus, and announces whether the row was added or already existed; it does
 not open the workspace. Direct Link remains a transient one-source shortcut and does not add a row.

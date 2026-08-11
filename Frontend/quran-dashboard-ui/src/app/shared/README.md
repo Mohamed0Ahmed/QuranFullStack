@@ -2,6 +2,9 @@
 
 Reusable Angular primitives shared across features. If logic or UI is feature-owned, it does not belong here.
 
+`qd-details-workspace` keeps projected `qdDetailsStatusActions` separate from its polite status
+content, so an ordinary Undo control is not announced as part of a live status message.
+
 ## What lives here
 
 - `layout/` — the cross-feature layout contracts: the responsive bands, and the loading-geometry

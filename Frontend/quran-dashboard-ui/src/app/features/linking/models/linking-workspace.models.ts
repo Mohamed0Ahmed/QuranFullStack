@@ -62,4 +62,5 @@ export interface LinkingWorkspacePersistedItem {
 export interface LinkingRemovedWorkspaceItem {
   item: LinkingWorkspaceItem;
   index: number;
+  wasChecked: boolean;
 }

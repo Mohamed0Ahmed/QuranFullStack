@@ -1,50 +1,46 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Subscription } from 'rxjs';
 
-import { DetailOverlayHistoryService } from '../../../core/navigation/detail-overlay/detail-overlay-history.service';
+import { AbwabNode } from '../../abwab/models/abwab.models';
 import { AbwabSnapshotFacade } from '../../abwab/state/abwab-snapshot.facade';
+import { DetailOverlayHistoryService } from '../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import { LINKING_COMMAND_PORT } from '../data-access/linking-command.port';
-import { LinkingSourceResolver } from '../data-access/linking-source-resolver';
 import { LINKING_LABELS } from '../models/linking.labels';
+import { LinkingOperationMember } from '../models/linking-operation.models';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
-import {
-  DirectLinkOrigin,
-  DirectLinkWorkflowState,
-  LinkingSourceLoadState,
-  previousDirectLinkStep,
-} from '../models/linking-workflow.models';
-import { LinkingSelection } from '../models/linking-workspace.models';
-import {
-  DEFAULT_LINKING_SELECTION,
-  clearLinkingAyahs,
-  reconcileLinkingSelection,
-  selectAllLinkingAyahs,
-  selectedLinkingAyahCount,
-  selectedLinkingVerseKeys,
-  toggleLinkingSelection,
-} from '../utils/linking-selection';
+import { LinkingSourceSetOperationResult } from '../models/linking-workflow.models';
+import { LinkingSourceConfiguration } from '../models/linking-workspace.models';
+import { ephemeralLinkingOperationMember } from '../utils/linking-operation-members';
+import { DEFAULT_LINKING_SELECTION } from '../utils/linking-selection';
 import { LinkingAccessService } from './linking-access.service';
+import { LinkingSourceSetCoordinator } from './linking-source-set.coordinator';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
 
-const INITIAL_SOURCE_LOAD: LinkingSourceLoadState = {
-  status: 'idle',
-  ayahs: [],
-  progress: { loaded: 0, total: null },
-  errorMessage: null,
-};
+export type LinkingWorkflowStep = 'configure-source' | 'resolve' | 'door' | 'review' | 'submitting' | 'success' | 'error';
+type LinkingWorkflowOrigin = 'workspace' | 'source';
 
-const INITIAL_WORKFLOW: DirectLinkWorkflowState = {
-  source: null,
-  sourceKey: null,
-  capturedConfigurationRevision: null,
+interface LinkingWorkflowState {
+  origin: LinkingWorkflowOrigin | null;
+  step: LinkingWorkflowStep;
+  members: readonly LinkingOperationMember[];
+  directConfiguration: LinkingSourceConfiguration | null;
+  operation: LinkingSourceSetOperationResult | null;
+  selectedDoorId: number | null;
+  errorMessage: string | null;
+  resultMessage: string | null;
+  operationGeneration: number;
+}
+
+const INITIAL_WORKFLOW: LinkingWorkflowState = {
   origin: null,
-  step: 'door',
+  step: 'configure-source',
+  members: [],
+  directConfiguration: null,
+  operation: null,
   selectedDoorId: null,
-  doorNotice: null,
-  selection: DEFAULT_LINKING_SELECTION,
-  highlightSourceWords: true,
-  sourceLoad: INITIAL_SOURCE_LOAD,
-  result: null,
+  errorMessage: null,
+  resultMessage: null,
+  operationGeneration: 0,
 };
 
 @Injectable({ providedIn: 'root' })
@@ -52,94 +48,50 @@ export class LinkingWorkflowFacade {
   private readonly access = inject(LinkingAccessService);
   private readonly workspace = inject(LinkingWorkspaceStore);
   private readonly overlay = inject(DetailOverlayHistoryService);
-  private readonly abwabSnapshot = inject(AbwabSnapshotFacade);
-  private readonly resolver = inject(LinkingSourceResolver);
+  private readonly doors = inject(AbwabSnapshotFacade);
+  private readonly sourceSet = inject(LinkingSourceSetCoordinator);
   private readonly commandPort = inject(LINKING_COMMAND_PORT);
-  private readonly workflowState = signal<DirectLinkWorkflowState>(INITIAL_WORKFLOW);
-  private pendingSourceStart: LinkingSourceDescriptor | null = null;
-  private pendingOrigin: DirectLinkOrigin | null = null;
-  private sourceLoadSubscription: Subscription | null = null;
+  private readonly stateSignal = signal<LinkingWorkflowState>(INITIAL_WORKFLOW);
+  private commandSubscription: Subscription | null = null;
+  private pendingSource: LinkingSourceDescriptor | null = null;
 
-  readonly state = this.workflowState.asReadonly();
-  readonly source = computed(() => this.workflowState().source);
-  readonly step = computed(() => this.workflowState().step);
-  readonly selectedDoorId = computed(() => this.workflowState().selectedDoorId);
-  readonly sourceLoad = computed(() => this.workflowState().sourceLoad);
-  readonly allAyahs = computed(() => this.sourceLoad().ayahs);
-  readonly selectedVerseKeys = computed(() => selectedLinkingVerseKeys(this.workflowState().selection, this.ayahVerseKeys()));
-  readonly selectedCount = computed(() => selectedLinkingAyahCount(this.workflowState().selection, this.ayahVerseKeys()));
-  readonly highlightSourceWords = computed(() => this.workflowState().highlightSourceWords);
-  readonly selectedDoor = computed(() => {
-    const doorId = this.selectedDoorId();
-    const snapshot = this.abwabSnapshot.snapshot();
-    if (doorId === null || snapshot === null) {
-      return null;
-    }
-    const door = snapshot.byId.get(doorId);
-    if (!door) {
-      return null;
-    }
-    return {
-      id: door.id,
-      name: door.name,
-      sectionName: snapshot.sections.find((section) => section.id === door.sectionId)?.name ?? null,
-    };
-  });
-  readonly canAdvanceDoor = computed(() => this.selectedDoor() !== null && this.access.canUseLinking());
-  readonly canAdvanceAyahs = computed(
-    () => this.access.canUseLinking() && this.sourceLoad().status === 'success' && this.selectedCount() > 0,
-  );
+  readonly state = this.stateSignal.asReadonly();
+  readonly step = computed(() => this.stateSignal().step);
+  readonly selectedDoorId = computed(() => this.stateSignal().selectedDoorId);
+  readonly sourceSetState = this.sourceSet.state;
+  readonly operation = computed(() => this.stateSignal().operation);
+  readonly memberStates = this.sourceSet.memberStates;
+  readonly directSource = computed(() => this.stateSignal().members[0]?.source ?? null);
+  readonly directConfiguration = computed(() => this.stateSignal().directConfiguration);
+  readonly canAdvanceDoor = computed(() => this.access.canUseLinking() && this.isLiveDoor(this.selectedDoorId()));
+  readonly canSubmit = computed(() => this.canAdvanceDoor() && this.operation()?.mergedSelection.ayahs.length !== 0);
 
   constructor() {
     effect(() => {
-      if (!this.access.canUseLinking() && this.workflowState().source !== null) {
-        untracked(() => this.resetAndClose());
+      const sourceSet = this.sourceSet.state();
+      const state = this.stateSignal();
+      if (state.step !== 'resolve' || sourceSet.generation !== state.operationGeneration) {
+        return;
+      }
+      if (sourceSet.result !== null) {
+        untracked(() => {
+          this.doors.load();
+          this.stateSignal.update((current) => ({ ...current, operation: sourceSet.result, step: 'door' }));
+        });
+      } else if (sourceSet.members.some((member) => member.status === 'error')) {
+        untracked(() => this.stateSignal.update((current) => ({ ...current, step: 'error', errorMessage: firstError(sourceSet.members) })));
       }
     });
     effect(() => {
-      const selectedDoorId = this.selectedDoorId();
-      if (selectedDoorId !== null && this.abwabSnapshot.snapshot() !== null && this.selectedDoor() === null) {
-        untracked(() =>
-          this.workflowState.update((state) => ({
-            ...state,
-            step: 'door',
-            selectedDoorId: null,
-            doorNotice: LINKING_LABELS.selectedDoorUnavailable,
-          })),
-        );
+      if (!this.access.canUseLinking() && this.stateSignal().origin !== null) {
+        untracked(() => this.dismiss());
+      }
+      if (this.pendingSource !== null && !this.overlay.isOpen()) {
+        const source = this.pendingSource;
+        this.pendingSource = null;
+        untracked(() => this.startFromSource(source));
       }
     });
-    effect(() => {
-      if (this.pendingSourceStart !== null && !this.overlay.isOpen()) {
-        const source = this.pendingSourceStart;
-        const origin = this.pendingOrigin;
-        this.pendingSourceStart = null;
-        this.pendingOrigin = null;
-        if (origin !== null) {
-          untracked(() => this.activate(source, origin));
-        }
-      }
-    });
-  }
-
-  startFromWorkspace(sourceKey: string): void {
-    const item = this.workspace.item(sourceKey);
-    if (!item || !this.access.canUseLinking()) {
-      this.workspace.openWorkspace();
-      return;
-    }
-    const state = this.workflowState();
-    if (state.origin === 'workspace' && state.sourceKey === sourceKey && state.source !== null) {
-      return;
-    }
-    this.activate(
-      item.source,
-      'workspace',
-      sourceKey,
-      item.selection,
-      item.highlightSourceWords,
-      item.configurationRevision,
-    );
   }
 
   startFromSource(source: LinkingSourceDescriptor): void {
@@ -147,262 +99,149 @@ export class LinkingWorkflowFacade {
       return;
     }
     if (this.overlay.isOpen()) {
-      this.pendingSourceStart = source;
-      this.pendingOrigin = 'source';
+      this.pendingSource = source;
       this.overlay.close();
       return;
     }
-    this.activate(source, 'source');
+    this.workspace.openEphemeralDirectLink();
+    const configuration = defaultConfiguration(source);
+    this.stateSignal.set({
+      ...INITIAL_WORKFLOW,
+      origin: 'source',
+      members: [ephemeralLinkingOperationMember(source, configuration)],
+      directConfiguration: configuration,
+    });
+  }
+
+  startWorkspaceOperation(): void {
+    const members = this.workspace.captureOperationMembers();
+    if (!this.access.canUseLinking() || members.length === 0) {
+      return;
+    }
+    this.workspace.openEphemeralDirectLink();
+    this.stateSignal.set({ ...INITIAL_WORKFLOW, origin: 'workspace', members });
+    this.resolve();
+  }
+
+  setDirectAutomaticWords(enabled: boolean): void {
+    const state = this.stateSignal();
+    if (state.origin !== 'source' || state.directConfiguration?.kind !== 'automatic') {
+      return;
+    }
+    const configuration = { ...state.directConfiguration, automaticWordMatchesEnabled: enabled };
+    this.stateSignal.set({
+      ...state,
+      directConfiguration: configuration,
+      members: [ephemeralLinkingOperationMember(state.members[0].source, configuration)],
+    });
+  }
+
+  resolve(): void {
+    const state = this.stateSignal();
+    if (!this.access.canUseLinking() || state.members.length === 0) {
+      return;
+    }
+    const generation = this.sourceSet.state().generation + 1;
+    this.stateSignal.update((current) => ({
+      ...current,
+      operation: null,
+      errorMessage: null,
+      step: 'resolve',
+      operationGeneration: generation,
+    }));
+    this.sourceSet.resolve(state.members);
+  }
+
+  retry(): void {
+    this.resolve();
   }
 
   loadDoors(): void {
-    if (this.access.canUseLinking() && this.step() === 'door') {
-      this.abwabSnapshot.load();
+    if (this.access.canUseLinking()) {
+      this.doors.load();
     }
   }
 
   selectDoor(doorId: number): void {
-    if (!this.access.canUseLinking() || !this.abwabSnapshot.snapshot()?.byId.has(doorId)) {
-      return;
+    if (this.access.canUseLinking() && this.isLiveDoor(doorId)) {
+      this.stateSignal.update((state) => ({ ...state, selectedDoorId: doorId }));
     }
-    this.workflowState.update((state) => ({
-      ...state,
-      selectedDoorId: state.selectedDoorId === doorId ? null : doorId,
-      doorNotice: null,
-    }));
   }
 
   next(): void {
-    if (!this.access.canUseLinking()) {
-      return;
-    }
-    switch (this.step()) {
-      case 'door':
-        if (this.canAdvanceDoor()) {
-          this.workflowState.update((state) => ({ ...state, step: 'ayahs' }));
-        }
-        return;
-      case 'ayahs':
-        if (this.canAdvanceAyahs()) {
-          this.workflowState.update((state) => ({ ...state, step: 'highlight' }));
-        }
-        return;
-      case 'highlight':
-        if (this.canAdvanceAyahs()) {
-          this.workflowState.update((state) => ({ ...state, step: 'review' }));
-        }
-        return;
-      default:
-        return;
-    }
-  }
-
-  toggleAyah(verseKey: string): void {
-    const state = this.workflowState();
-    if (!this.access.canUseLinking() || state.sourceLoad.status !== 'success') {
-      return;
-    }
-    this.setSelection(toggleLinkingSelection(state.selection, verseKey, this.ayahVerseKeys()));
-  }
-
-  selectAllAyahs(): void {
-    if (this.access.canUseLinking() && this.sourceLoad().status === 'success') {
-      this.setSelection(selectAllLinkingAyahs());
-    }
-  }
-
-  clearAllAyahs(): void {
-    if (this.access.canUseLinking() && this.sourceLoad().status === 'success') {
-      this.setSelection(clearLinkingAyahs());
-    }
-  }
-
-  setHighlightSourceWords(highlightSourceWords: boolean): void {
-    const state = this.workflowState();
-    if (!this.access.canUseLinking()) {
-      return;
-    }
-    this.workflowState.update((current) => ({ ...current, highlightSourceWords }));
-    if (state.sourceKey !== null) {
-      this.workspace.setHighlightSourceWords(state.sourceKey, highlightSourceWords);
-    }
-  }
-
-  confirm(): void {
-    const state = this.workflowState();
-    const door = this.selectedDoor();
-    if (
-      !this.access.canUseLinking() ||
-      state.step !== 'review' ||
-      state.source === null ||
-      state.sourceLoad.status !== 'success' ||
-      door === null ||
-      this.selectedVerseKeys().length === 0
-    ) {
-      return;
-    }
-    try {
-      const result = this.commandPort.execute({
-        source: state.source,
-        doorId: door.id,
-        selectedVerseKeys: this.selectedVerseKeys(),
-        highlightSourceWords: state.highlightSourceWords,
-      });
-      this.workflowState.update((current) => ({ ...current, step: 'result', result }));
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : LINKING_LABELS.sourceLoadError;
-      this.workflowState.update((current) => ({ ...current, doorNotice: message }));
+    if (this.step() === 'configure-source') {
+      this.resolve();
+    } else if (this.step() === 'door' && this.canAdvanceDoor()) {
+      this.stateSignal.update((state) => ({ ...state, step: 'review' }));
     }
   }
 
   back(): void {
-    const state = this.workflowState();
-    if (!this.access.canUseLinking()) {
-      this.resetAndClose();
+    const step = this.step();
+    if (step === 'review') {
+      this.stateSignal.update((state) => ({ ...state, step: 'door' }));
       return;
     }
-    if (state.step !== 'door') {
-      const nextStep = previousDirectLinkStep(state.step);
-      this.workflowState.update((current) => ({ ...current, step: nextStep }));
-      if (nextStep === 'door') {
-        this.loadDoors();
-      }
+    if (step === 'door' && this.state().origin === 'source') {
+      this.stateSignal.update((state) => ({ ...state, step: 'configure-source' }));
       return;
     }
     this.dismiss();
   }
 
-  dismiss(): void {
-    const origin = this.workflowState().origin;
-    this.reset();
-    if (origin === 'workspace') {
-      this.workspace.openWorkspace();
-    } else {
-      this.workspace.close();
-    }
-  }
-
-  retrySource(): void {
-    const state = this.workflowState();
-    if (state.source !== null && this.access.canUseLinking()) {
-      this.resolveSource(state.source, state.sourceKey, state.capturedConfigurationRevision);
-    }
-  }
-
-  private activate(
-    source: LinkingSourceDescriptor,
-    origin: DirectLinkOrigin,
-    sourceKey: string | null = null,
-    selection: LinkingSelection = DEFAULT_LINKING_SELECTION,
-    highlightSourceWords = true,
-    capturedConfigurationRevision: number | null = null,
-  ): void {
-    if (!this.access.canUseLinking()) {
+  submit(): void {
+    const operation = this.operation();
+    const doorId = this.selectedDoorId();
+    if (!this.canSubmit() || operation === null || doorId === null || this.commandSubscription !== null) {
       return;
     }
-    this.cancelSourceLoad();
-    this.workflowState.set({
-      source,
-      sourceKey,
-      capturedConfigurationRevision,
-      origin,
-      step: 'door',
-      selectedDoorId: null,
-      doorNotice: null,
-      selection,
-      highlightSourceWords,
-      sourceLoad: INITIAL_SOURCE_LOAD,
-      result: null,
-    });
-    if (origin === 'source') {
-      this.workspace.openEphemeralDirectLink();
-    }
-    this.loadDoors();
-    this.resolveSource(source, sourceKey, capturedConfigurationRevision);
-  }
-
-  private resolveSource(
-    source: LinkingSourceDescriptor,
-    sourceKey: string | null,
-    capturedConfigurationRevision: number | null,
-  ): void {
-    this.cancelSourceLoad();
-    this.workflowState.update((state) => ({
-      ...state,
-      sourceLoad: { status: 'loading', ayahs: [], progress: { loaded: 0, total: null }, errorMessage: null },
-    }));
-    try {
-      this.sourceLoadSubscription = this.resolver.resolve(source, (progress) => {
-        this.workflowState.update((state) => ({
-          ...state,
-          sourceLoad: { ...state.sourceLoad, progress, status: 'loading' },
-        }));
-      }).subscribe({
-        next: (ayahs) => {
-          const universe = ayahs.map((ayah) => ayah.verseKey);
-          if (
-            sourceKey !== null &&
-            capturedConfigurationRevision !== null &&
-            this.workspace.item(sourceKey)?.configurationRevision === capturedConfigurationRevision
-          ) {
-            this.workspace.reconcileResolvedSource(sourceKey, universe);
-          }
-          this.workflowState.update((state) => ({
-            ...state,
-            selection: reconcileLinkingSelection(state.selection, universe),
-            sourceLoad: {
-              status: 'success',
-              ayahs,
-              progress: { loaded: ayahs.length, total: ayahs.length },
-              errorMessage: null,
-            },
-          }));
-        },
-        error: (error: unknown) => {
-          const message = error instanceof Error ? error.message : 'تعذر تحميل نتائج المصدر كاملة.';
-          this.workflowState.update((state) => ({
-            ...state,
-            sourceLoad: { status: 'error', ayahs: [], progress: state.sourceLoad.progress, errorMessage: message },
-          }));
-        },
-      });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'تعذر تحميل نتائج المصدر كاملة.';
-      this.workflowState.update((state) => ({
+    this.stateSignal.update((state) => ({ ...state, step: 'submitting', errorMessage: null }));
+    this.commandSubscription = this.commandPort.execute({ doorId, operation }).subscribe({
+      next: (result) => this.stateSignal.update((state) => ({ ...state, step: 'success', resultMessage: result.message })),
+      error: (error: unknown) => this.stateSignal.update((state) => ({
         ...state,
-        sourceLoad: { status: 'unsupported', ayahs: [], progress: { loaded: 0, total: null }, errorMessage: message },
-      }));
+        step: 'error',
+        errorMessage: error instanceof Error ? error.message : LINKING_LABELS.sourceLoadError,
+      })),
+      complete: () => { this.commandSubscription = null; },
+    });
+  }
+
+  acknowledgeSuccess(): void {
+    if (this.step() !== 'success') {
+      return;
     }
-  }
-
-  private resetAndClose(): void {
-    this.reset();
-    this.workspace.close();
-  }
-
-  private setSelection(selection: LinkingSelection): void {
-    const state = this.workflowState();
-    const universe = this.ayahVerseKeys();
-    const reconciled = reconcileLinkingSelection(selection, universe);
-    this.workflowState.update((current) => ({ ...current, selection: reconciled }));
-    if (state.sourceKey !== null) {
-      this.workspace.updateSelection(state.sourceKey, reconciled, universe);
+    if (this.state().origin === 'workspace') {
+      this.workspace.clearCheckedSources();
     }
+    this.dismiss();
   }
 
-  private ayahVerseKeys(): readonly string[] {
-    return this.allAyahs().map((ayah) => ayah.verseKey);
+  dismiss(): void {
+    const origin = this.stateSignal().origin;
+    this.commandSubscription?.unsubscribe();
+    this.commandSubscription = null;
+    this.pendingSource = null;
+    this.sourceSet.cancel();
+    this.stateSignal.set(INITIAL_WORKFLOW);
+    origin === 'workspace' ? this.workspace.openWorkspace() : this.workspace.close();
   }
 
-  private reset(): void {
-    this.pendingSourceStart = null;
-    this.pendingOrigin = null;
-    this.cancelSourceLoad();
-    this.workflowState.set(INITIAL_WORKFLOW);
+  private isLiveDoor(doorId: number | null): boolean {
+    return doorId !== null && (this.doors.snapshot()?.liveRoots.some((node) => containsDoor(node, doorId)) ?? false);
   }
+}
 
-  private cancelSourceLoad(): void {
-    this.sourceLoadSubscription?.unsubscribe();
-    this.sourceLoadSubscription = null;
-  }
+function defaultConfiguration(source: LinkingSourceDescriptor): LinkingSourceConfiguration {
+  return source.kind === 'manual-mushaf-ayahs'
+    ? { kind: 'manual', ayahInclusion: DEFAULT_LINKING_SELECTION, wordLocationsByVerseKey: {}, linkShape: 'independent' }
+    : { kind: 'automatic', ayahInclusion: DEFAULT_LINKING_SELECTION, automaticWordMatchesEnabled: true };
+}
+
+function containsDoor(node: AbwabNode, doorId: number): boolean {
+  return node.id === doorId || node.children.some((child) => containsDoor(child, doorId));
+}
+
+function firstError(members: readonly { errorMessage: string | null }[]): string {
+  return members.find((member) => member.errorMessage !== null)?.errorMessage ?? LINKING_LABELS.sourceLoadError;
 }

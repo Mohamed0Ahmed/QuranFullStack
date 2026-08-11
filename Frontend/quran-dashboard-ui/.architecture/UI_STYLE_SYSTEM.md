@@ -1977,6 +1977,10 @@ master row, and optional set metadata. They add **no** `tabindex` — a truncate
 through the §8.1 ladder on the owning control, and manufacturing a tab stop per truncated node is
 explicitly prohibited.
 
+Dense workspace rows use the native membership control as the state authority. The logical
+inline-start selected thread is only visual reinforcement; flat result-list siblings must not add
+card elevation, nested list shells, or hover-only actions.
+
 `qd-details-workspace` is the projected details anatomy: identity, metadata, actions, an optional
 tab zone, a permanently mounted polite status slot with zero idle geometry, exactly one body
 scroller, and an optional footer. Every zone is `<ng-content>`; the shell holds no feature data and

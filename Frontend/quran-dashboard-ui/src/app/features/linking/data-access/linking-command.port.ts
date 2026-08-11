@@ -1,18 +1,16 @@
 import { InjectionToken, inject } from '@angular/core';
+import { Observable } from 'rxjs';
 
-import { LinkingSourceDescriptor } from '../models/linking-source.models';
-import { DirectLinkResult } from '../models/linking-workflow.models';
+import { LinkingSourceSetOperationResult } from '../models/linking-workflow.models';
 import { MockLinkingCommandPort } from './mock-linking-command.port';
 
 export interface LinkingCommand {
-  source: LinkingSourceDescriptor;
   doorId: number;
-  selectedVerseKeys: readonly string[];
-  highlightSourceWords: boolean;
+  operation: LinkingSourceSetOperationResult;
 }
 
 export interface LinkingCommandPort {
-  execute(command: LinkingCommand): DirectLinkResult;
+  execute(command: LinkingCommand): Observable<{ kind: 'linked'; message: string }>;
 }
 
 export const LINKING_COMMAND_PORT = new InjectionToken<LinkingCommandPort>('LINKING_COMMAND_PORT', {
