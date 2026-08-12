@@ -101,4 +101,4 @@ descriptor and is read-only thereafter.
 
 Checked/unchecked source state, active surface, search text, viewport/scroll, review position,
 selected Door — all remain client-side. The workspace is durable preparation state, **not** a
-UI-state sync channel, and **not a cache** (state this in `Persistence/Writes/Linking/README.md`).
+UI-state sync channel, and **not a cache**.

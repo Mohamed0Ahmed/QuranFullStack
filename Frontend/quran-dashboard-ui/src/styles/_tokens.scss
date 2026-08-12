@@ -165,8 +165,7 @@
   --qd-mushaf-panel-height: calc(100dvh - var(--qd-mushaf-sticky-top));
   --qd-mushaf-word-selection-indicator: var(--qd-accent);
   /* Measured in-browser and re-measured against the Golden light tokens; NOT derivable from these
-     declarations. Structure and rationale are in features/mushaf/README.md — these are only the
-     numbers. Re-measure, never nudge by eye:
+     declarations. Re-measure, never nudge by eye:
 
        light: canvas 0.961 -> hover 0.920 (ΔL 0.041) -> selection 0.846 (ΔL 0.074), text 10.09:1
        dark:  canvas 0.189 -> hover 0.235 (ΔL 0.046) -> selection 0.381 (ΔL 0.145), text 8.43:1

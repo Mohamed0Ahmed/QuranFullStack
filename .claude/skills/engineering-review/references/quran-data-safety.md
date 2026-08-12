@@ -3,10 +3,10 @@
 Conditional reference for source-sensitive or Quran-rendering scope. The canonical owners
 are `CODING_PRINCIPLES.md` §10 (source data: no invention or silent correction, provenance,
 staged imports, traceability, reports), `Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md`
-§13 (Quranic data display safety), and the nearest source-pipeline README under
-`Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/`. This file
-adds only the cross-area safeguards below; each consumer keeps its own severity and
-application wording.
+§13 (Quranic data display safety), and the implicated pipeline code and source manifests. The
+retained DataImporter README is consulted only for CLI operation and source-package safety. This
+file adds only the cross-area safeguards below; each consumer keeps its own severity and application
+wording.
 
 1. **Never trade Quran data safety for performance or convenience.** No optimization or
    "make it run" shortcut may weaken text integrity, source hashes or manifest checks,

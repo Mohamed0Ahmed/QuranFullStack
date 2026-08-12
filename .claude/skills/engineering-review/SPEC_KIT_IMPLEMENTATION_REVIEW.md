@@ -31,7 +31,8 @@ You cannot judge scope without knowing what was asked. First pin down:
    IDs and their file paths), the feature's planned contracts under `specs/<feature>/contracts/`
    (compare the implementation against what was specified), and `quickstart.md` when
    acceptance/verification is in question. Where a contract is now implemented, its
-   authoritative current truth is the code + nearest README (indexed by `docs/contracts/`).
+   authoritative current truth is the code plus the applicable architecture authority
+   (indexed by `docs/contracts/`).
 
 `tasks.md` is the spine: each task lists an **exact file path**, a phase, and often a
 User Story tag (US1–US5). That mapping is what makes the checks below objective rather
@@ -78,18 +79,21 @@ Make the mapping explicit so a reader can audit it:
 
 When a contract is relevant to what changed, compare the implementation against **both**
 (a) the feature's **planned** contract in `specs/<feature>/contracts/` — flag any drift
-from what was specified — and (b) the **implemented** truth in code + the nearest README
-(indexed by `docs/contracts/`). Compare against the artifacts directly, not memory:
+from what was specified — and (b) the **implemented** truth in code plus the applicable
+architecture authority (indexed by `docs/contracts/`). Compare against the artifacts directly,
+not memory:
 
 - **API endpoints changed** → planned: the feature's API contract under
-  `specs/<feature>/contracts/`; implemented: the endpoint's controller + `Controllers/README.md`
-  route family (indexed by `docs/contracts/http-api.md`).
+  `specs/<feature>/contracts/`; implemented: the endpoint's controller plus
+  `Backend/.architecture/API_GUIDELINES.md` (indexed by `docs/contracts/http-api.md`).
 - **Navigation changed** → planned: the feature's navigation contract under
-  `specs/<feature>/contracts/`; implemented: the frontend `core/README.md` (indexed by
+  `specs/<feature>/contracts/`; implemented: the implicated navigation code plus
+  `Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md` (indexed by
   `docs/contracts/frontend-shell.md`).
 - **Design tokens / styling changed** → planned: the feature's design-token contract under
-  `specs/<feature>/contracts/`; implemented: the frontend `styles/README.md` (indexed by
-  `docs/contracts/frontend-shell.md`); no raw `#fff`/`#000` where the styles README forbids it.
+  `specs/<feature>/contracts/`; implemented: the implicated style code plus
+  `Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md` (indexed by
+  `docs/contracts/frontend-shell.md`); no raw `#fff`/`#000` where that authority forbids it.
 - **API response shape changed** → compare against `Contracts/ApiResponse.cs` + `API_GUIDELINES.md` §5
   (the `{ IsSuccess, Message, Data, Errors }` envelope and its `Ok`/`Fail` helpers; indexed by `docs/contracts/response-envelope.md`).
 

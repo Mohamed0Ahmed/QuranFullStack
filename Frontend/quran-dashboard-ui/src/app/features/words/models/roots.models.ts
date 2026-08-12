@@ -165,7 +165,7 @@ export const TOTAL_SURAHS = 114;
 /**
  * The sortable Roots columns, in table-header order. Every one is a value the backend already has
  * on the summary row at the sort point. The related-entity text columns are deliberately absent —
- * they render as plain headers (see the reads README's ordering contract).
+ * they render as plain headers.
  */
 export const ROOT_SORT_COLUMNS = {
   alpha: { key: 'alpha', natural: 'asc', label: WORDS_SHARED_HEADERS.root },

@@ -82,7 +82,7 @@ internal static class LemmasListDerivation
         && filter.TashkeelWords.Includes(row.TashkeelWordsCount)
         && filter.Stems.Includes(row.StemsCount);
 
-    // Ordering is part of the read contract (see the reads README). Every allowlisted column is already
+    // Ordering is part of the read contract. Every allowlisted column is already
     // on the row, so no branch costs a join, and each tie-break chain is identical in BOTH directions —
     // reversing a column never reshuffles its ties, which keeps paging deterministic.
     private static IEnumerable<LemmaSummaryRow> ApplySort(IEnumerable<LemmaSummaryRow> rows, LemmaSortSpec sort) => sort.Column switch

@@ -31,8 +31,6 @@ Follow that canonical lifecycle before applying the Spec Kit-specific close step
 
 ## Current / steady-state truth lives elsewhere
 
-After a feature merges, the current contract truth is the **code** + the **nearest
-`README.md`**, indexed by the thin pointer layer
-[`../docs/contracts/`](../docs/contracts/README.md). That index covers steady-state
-truth; per-feature, planning-time contracts live in `specs/<feature>/contracts/` during a
-feature's development.
+After a feature merges, implemented contract truth is the **code**, indexed where useful by the
+thin pointer layer [`../docs/contracts/`](../docs/contracts/README.md). Per-feature,
+planning-time contracts live in `specs/<feature>/contracts/` during development.

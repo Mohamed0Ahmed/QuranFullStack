@@ -2,7 +2,7 @@
 
 This is Claude's only root repository entrypoint for the canonical FullStack monorepo.
 Repository instructions become more specific in this order: this root router, the native area
-router, the nearest relevant README, then a task-triggered neutral or specialist source. A more
+router, then a task-triggered neutral or specialist source. A more
 specific source controls unless it weakens the universal kernel below or conflicts with the
 user's explicit instruction.
 
@@ -14,8 +14,9 @@ user's explicit instruction.
   branch is `main`, stop before editing.
 - Never invent or silently correct Quran data. Preserve source provenance, and never mutate
   source resources without explicit authority.
-- Before changing an area, load its native area router when applicable and the nearest relevant
-  README. Update that README in the same change when its described truth changes.
+- Before changing an area, load its native area router when applicable and only the sources selected
+  by the matching trigger. Operational READMEs remain valid when the task actually concerns their
+  commands, fixtures, tooling, deployment, or provenance.
 - Do not commit, push, open or synchronize a PR, run a formal review, or deploy unless the user
   requests that action.
 
@@ -24,9 +25,9 @@ user's explicit instruction.
 1. For any `Backend/` path, read `Backend/CLAUDE.md`.
 2. For any `Frontend/quran-dashboard-ui/` path, read
    `Frontend/quran-dashboard-ui/CLAUDE.md`.
-3. Before specialist material, read the README in the target folder; if none exists, walk upward
-   to the nearest relevant parent README, ending at the area README.
-4. Load only the exact heading or specialist source whose trigger matches the task.
+3. Load only the exact heading or specialist source whose trigger matches the task.
+4. For active feature work, derive intent from its Spec Kit artifacts and implementation truth
+   from code; do not create or expect code-area READMEs.
 
 Claude does not load a different agent's repository entrypoint as part of this routing chain.
 
@@ -36,7 +37,7 @@ Claude does not load a different agent's repository entrypoint as part of this r
 | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Production-source implementation                          | Only the implicated headings of `CODING_PRINCIPLES.md`: §2 Clean Code and `Comment Policy`, §3 SOLID, §4 DRY/KISS/YAGNI, or §7 Focused Changes.                  |
 | Active phased, specification, or contract-bound work      | The active spec/task/contract plus the invoked native Spec Kit Skill. Stop before broadening either.                                                             |
-| Selecting, running, or reporting tests                    | Read `TESTING_CONSTITUTION.md`; use the nearest test README only for commands and fixtures.                                                                      |
+| Selecting, running, or reporting tests                    | Read `TESTING_CONSTITUTION.md`; use the retained Backend test or Frontend E2E README only for the applicable commands and fixtures.                              |
 | Writing or reviewing retained Backend or Playwright tests | Read `TESTING_CONSTITUTION.md`, then `.claude/skills/test-guard/SKILL.md` and only its relevant retained-stack reference.                                        |
 | Pre-delivery implementation self-check                    | `CODING_PRINCIPLES.md` §12 and production-code headings already implicated; add the area structure document's file-size heading only when its threshold applies. |
 | Git branch, stage, commit, push, or PR work               | `.claude/skills/commit-workflow/SKILL.md`.                                                                                                                       |
@@ -57,8 +58,8 @@ long-lived survivor list live in `docs/README.md` under _Where things live now_,
 
 ## Comments are forbidden by default
 
-The canonical production-source rule, its three-part exception, scope exclusions, directive
-exemptions, and README destination live in `CODING_PRINCIPLES.md` §2 `Comment Policy`. Load that
+The canonical production-source rule, its three-part exception, scope exclusions, and directive
+exemptions live in `CODING_PRINCIPLES.md` §2 `Comment Policy`. Load that
 heading when changing production-source code.
 
 <!-- SPECKIT START -->

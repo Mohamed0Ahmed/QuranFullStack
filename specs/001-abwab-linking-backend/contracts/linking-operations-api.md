@@ -225,5 +225,5 @@ idempotent replay returns.
 - Updated contribution keeps its `id`; `xmin` advances; no delete-and-recreate.
 - Grouped `[[A,B]]` + automatic `[[A],[C]]` persist as 3 units / 2 contributions, never merged.
 - One rejected source ⇒ database untouched.
-- Confirmation invalidates **no** cache entry — it writes no Quran data (record in the README so
-  nobody adds an invalidating decorator by analogy with Abwab).
+- Confirmation invalidates **no** cache entry — it writes no Quran data, so an invalidating
+  decorator by analogy with Abwab would be incorrect.

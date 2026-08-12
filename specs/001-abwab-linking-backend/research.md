@@ -168,8 +168,8 @@ documents now agree**; the R-entries keep the history of why each refinement was
 - **Rationale**: The shared `IMemoryCache` is registered size-less — adding `SizeLimit` would make
   every existing size-less `Set` throw (F7). `CacheLoadGate`'s own comment forbids unbounded or
   caller-supplied keys (F8). Compact form measured ≈210 KB vs ≈4 MB per 2,000-ayah source. The
-  README must record all three reasons (dedicated instance, no `CacheLoadGate`, no user in key) so
-  nobody "harmonizes" or "secures" it later.
+  All three reasons (dedicated instance, no `CacheLoadGate`, no user in key) remain deliberate
+  feature decisions so nobody "harmonizes" or "secures" them away later.
 - **Alternatives considered**: Shared `IMemoryCache` — rejected (F7); `CacheLoadGate` — rejected
   (F8); Redis — rejected (deferred §12.4, blocked upstream by single-instance Abwab cache
   generation); caching the full DTO — rejected (≈19× memory).
@@ -188,8 +188,8 @@ documents now agree**; the R-entries keep the history of why each refinement was
   ownership and history from their parent aggregate and carry no audit columns — the schema is
   not expanded to satisfy blanket "every row" wording.
 - **Rationale**: F10 is a hard wiring fact. Linking is the **first** area to actually populate the
-  attribution columns (no Abwab writer does, F11) — the writer README must state this so it is not
-  mistaken for an inconsistency.
+  attribution columns (no Abwab writer does, F11); this is a deliberate feature distinction, not
+  an inconsistency.
 - **Alternatives considered**: Copying an existing attribution helper — impossible, none exists
   (F11).
 
@@ -199,7 +199,8 @@ documents now agree**; the R-entries keep the history of why each refinement was
   `LinkingDuplicateContributionException` → `409`; `DbUpdateConcurrencyException` →
   `LinkingStaleVersionException` → `409`. Every save path in both writers translates; an
   untranslated save reaching the global handler as `500` is a defect.
-- **Rationale**: Matches every Abwab writer's contract (`Writes/Abwab/README.md`).
+- **Rationale**: Matches the transaction and exception-translation contract implemented by the
+  Abwab writers.
 - **Alternatives considered**: None viable — repo convention.
 
 ## R14 · DI registration convention (F13)
@@ -262,7 +263,7 @@ documents now agree**; the R-entries keep the history of why each refinement was
 
 - **Decision**: `LinkingSourceCache extends ApiResponseCache`, keyed
   `linking:source:{sourceIdentity}`, capped at **≈6 entries** with an explicit comment-exempt
-  rationale (README), not the `ApiResponseCache` default of 48. `MushafReaderCache` stays for
+  rationale, not the `ApiResponseCache` default of 48. `MushafReaderCache` stays for
   ordinary reader use and leaves the Linking resolution path.
 - **Rationale**: 48 complete sources would hold tens of MB in the heap; ~6 matches realistic
   working sets.

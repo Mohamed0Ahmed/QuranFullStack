@@ -30,7 +30,7 @@ All Linking code lives under
 | Data access | `linking-source-resolver.ts`, `linking-source-resolver.registry.ts`, `complete-paged-source.loader.ts`, `resolvers/{unique-word,root,lemma,stem,word-type,manual-mushaf-ayahs}-linking-source.resolver.ts`, `manual-mushaf-ayah.reader.ts`, `linking-workspace.repository.ts`, `local-storage-linking-workspace.repository.ts`, `linking-workspace.codec.ts`, `linking-command.port.ts`, `mock-linking-command.port.ts` |
 | Utils | `linking-source-key.ts`, `linking-selection.ts`, `linking-merge.ts`, `linking-source-intents.ts`, `linking-operation-members.ts`, `linking-verse-order.ts`, `manual-link-shape.ts`, `manual-mushaf-ayah-completeness.ts`, `linking-source-presentation.ts` |
 | Components | `linking-workspace-host`, `linking-workspace`, `linking-workspace-source-row`, `linking-source-ayah-editor`, `linking-manual-word-editor`, `linking-ayah-selection`, `linking-ayah-card`, `direct-link-workflow`, `linking-door-step`, `quran-source-linking-actions`, `mushaf-selection-status` |
-| Current-truth README | [features/linking/README.md](Frontend/quran-dashboard-ui/src/app/features/linking/README.md) |
+| Implementation source | `Frontend/quran-dashboard-ui/src/app/features/linking/` |
 
 Integration points outside the feature:
 
@@ -688,7 +688,7 @@ No schema is proposed here.
 | Selected-Mushaf-word Linking source (`kind: 'mushaf-word'`) | **Removed** | no `'mushaf-word'` string anywhere; `selected-word-section` contains no Linking import |
 | `MushafWordLinkingSourceResolver` | **Removed** | deleted in `9d637bfb`; not in `resolvers/` |
 | `state/linking-workspace-session.ts` (sessionStorage) | **Removed** | deleted in `9d637bfb`; no `sessionStorage` reference in `features/linking/` |
-| V1 storage key `qd-linking-workspace-v1` | **Removed, never migrated** | only `qd-linking-workspace:v2:` exists; the README states V1 is neither read nor migrated |
+| V1 storage key `qd-linking-workspace-v1` | **Removed, never migrated** | only `qd-linking-workspace:v2:` exists; the implementation neither reads nor migrates V1 |
 | `LinkingWorkspaceItemComponent` (large cards) | **Removed** | deleted in `ee1dc680`, replaced by `linking-workspace-source-row` on `qdResultItem` |
 | Scalar `highlightSourceWords` on the workspace item | **Removed** | replaced by per-source `automaticWordMatchesEnabled` / manual word locations |
 | `resultCount` field | **Renamed** | now `lastResolvedCount` + `lastResolvedCountIsStale` |
@@ -705,11 +705,10 @@ No schema is proposed here.
 | Dead V1 labels: `reviewIndependent`, `reviewHighlight`, `reviewTarget`, `editSelection`, `sourceReady` | **Present, unconsumed — cleanup candidates** | `reviewIndependent` is literally the V1 copy *"كل آية ستُربط بالباب بصورة مستقلة."* that contradicts grouped manual intent. It is not rendered, but it is still in `linking.labels.ts:64` |
 | Old highlight/global-selection semantics | **Removed** | there is no workflow-global highlight step; `LinkingAyahCardComponent.highlightSourceWords` is a per-render input, hardcoded `true` at the review site |
 | `mushaf-reader-session.ts` sessionStorage | **Unrelated, required** | Mushaf reader URL/session state, never Linking |
-| README claim of "temporary compatibility selectors" (`features/linking/README.md:21-22`) | **Stale documentation** | no compatibility adapter remains in the code; the README sentence outlived the migration |
+| Former claim of "temporary compatibility selectors" | **Retired documentation residue** | no compatibility adapter remains in the code; the obsolete prose has been removed |
 
 **Verdict on V1 retirement: complete.** No V1 model, key, resolver, session file, or scalar command
-path survives. The residue is dead labels, three unconsumed public members, and one stale README
-sentence.
+path survives. The remaining residue is dead labels and three unconsumed public members.
 
 ---
 
@@ -864,7 +863,7 @@ the entire persistence and command layer is deliberately local and mock-only.
 | G9 | Manual word editor does not scale — no chooser, no lazy per-ayah loading | §3.2 |
 | G10 | No canonical identity for Root/Lemma/Stem matched words, and none for manual words | §5 |
 | G11 | `isVerseKey` accepts impossible per-surah coordinates; membership is proven only by a successful read | §5 |
-| G12 | Dead V1 labels and three unconsumed public members remain; `features/linking/README.md:21-22` still claims compatibility selectors that no longer exist | §9 |
+| G12 | Dead V1 labels and three unconsumed public members remain | §9 |
 
 ## 5. Backend-relevant requirements extracted from the frontend
 

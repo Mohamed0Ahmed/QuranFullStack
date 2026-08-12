@@ -34,8 +34,7 @@ backend write.
   in memory.
 - Do not add, edit, delete, or rename automated tests. In particular, do not touch `*.spec.ts` or
   add a Playwright journey.
-- Keep changes inside the Angular frontend and the nearest truthful frontend READMEs. Do not modify
-  the backend or unrelated features.
+- Keep changes inside the Angular frontend. Do not modify the backend or unrelated features.
 
 ## Architectural Direction
 
@@ -101,7 +100,6 @@ callbacks from leaking into workspace persistence.
 
 **Files / areas**
 
-- New: `Frontend/quran-dashboard-ui/src/app/features/linking/README.md`
 - New: `Frontend/quran-dashboard-ui/src/app/features/linking/models/linking-source.models.ts`
 - New: `Frontend/quran-dashboard-ui/src/app/features/linking/models/linking-ayah.models.ts`
 - New: `Frontend/quran-dashboard-ui/src/app/features/linking/models/linking-workspace.models.ts`
@@ -130,8 +128,6 @@ callbacks from leaking into workspace persistence.
   the sole success text.
 - Derive a deterministic workspace key from the complete result-defining descriptor. Use explicit
   field ordering; do not depend on incidental object-property order.
-- Document ownership, storage exclusions, no-write behavior, resolver rules, and the future-only
-  Mushaf grouped seam in the new README.
 
 **Explicit non-goals**
 
@@ -160,7 +156,6 @@ decision before they expose behavior.
 
 - New: `Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-access.service.ts`
 - Existing authority, read only: `Frontend/quran-dashboard-ui/src/app/core/auth/current-user.store.ts`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/linking/README.md`
 
 **Implementation**
 
@@ -197,7 +192,6 @@ owner before UI wiring begins.
 - New: `Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-workspace.store.ts`
 - New: `Frontend/quran-dashboard-ui/src/app/features/linking/utils/linking-selection.ts`
 - Update: `Frontend/quran-dashboard-ui/src/app/features/linking/models/linking-workspace.models.ts`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/linking/README.md`
 
 **Implementation**
 
@@ -242,7 +236,6 @@ hydration timing or restoration behavior.
 - New: `Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-workspace-session.ts`
 - Update: `Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-workspace.store.ts`
 - Convention reference: `Frontend/quran-dashboard-ui/src/app/features/mushaf/state/mushaf-reader-session.ts`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/linking/README.md`
 
 **Implementation**
 
@@ -294,8 +287,6 @@ feature surfaces are populated.
 - New minimal shell: `Frontend/quran-dashboard-ui/src/app/features/linking/components/linking-workspace/linking-workspace.component.scss`
 - Update: `Frontend/quran-dashboard-ui/src/app/app.ts`
 - Existing convention: `Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/entity-detail-overlay-host.component.html`
-- Update: `Frontend/quran-dashboard-ui/src/app/core/README.md`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/linking/README.md`
 
 **Implementation**
 
@@ -339,7 +330,6 @@ becoming a state owner.
 - Update: `Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/top-navbar.component.ts`
 - Update: `Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/top-navbar.component.html`
 - Update: `Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/top-navbar.component.scss`
-- Update: `Frontend/quran-dashboard-ui/src/app/core/README.md`
 - Read-only state owners: `Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-access.service.ts`,
   `Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-workspace.store.ts`
 
@@ -389,7 +379,6 @@ that later source actions and resolvers populate.
 - New: `Frontend/quran-dashboard-ui/src/app/features/linking/components/linking-workspace-item/linking-workspace-item.component.html`
 - New: `Frontend/quran-dashboard-ui/src/app/features/linking/components/linking-workspace-item/linking-workspace-item.component.scss`
 - Update: `Frontend/quran-dashboard-ui/src/app/features/linking/models/linking.labels.ts`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/linking/README.md`
 - Reuse: `Frontend/quran-dashboard-ui/src/app/shared/ui/details-workspace/`, `action/`,
   `empty-state/`, `notice/`, `skeleton/`
 
@@ -490,8 +479,6 @@ source-resolution concerns.
 - Update: `Frontend/quran-dashboard-ui/src/app/features/linking/components/direct-link-workflow/direct-link-workflow.component.scss`
 - Reuse unchanged where possible: `Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-snapshot.facade.ts`
 - Reuse unchanged where possible: `Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-picker/abwab-door-picker.component.ts`
-- Update if its consumer truth changes: `Frontend/quran-dashboard-ui/src/app/features/abwab/README.md`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/linking/README.md`
 
 **Implementation**
 
@@ -537,8 +524,6 @@ source adapter.
 - Update: `Frontend/quran-dashboard-ui/src/app/features/words/components/word-drilldown-modal/word-drilldown-modal.component.html`
 - Update: `Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/unique-detail-overlay-adapter.component.ts`
 - Update: `Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/unique-detail-overlay-adapter.component.html`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/words/README.md`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/linking/README.md`
 
 **Implementation**
 
@@ -589,7 +574,6 @@ paging foundation is introduced at the moment it is needed, not earlier.
 - Update: `Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-workspace.store.ts`
 - Existing read only: `Frontend/quran-dashboard-ui/src/app/features/words/data-access/unique-words.api.ts`
 - Existing DTOs: `Frontend/quran-dashboard-ui/src/app/features/words/models/unique-words.models.ts`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/linking/README.md`
 
 **Implementation**
 
@@ -652,8 +636,6 @@ implemented and verified against live source results.
 - Update: `Frontend/quran-dashboard-ui/src/app/features/linking/components/direct-link-workflow/direct-link-workflow.component.ts`
 - Update: `Frontend/quran-dashboard-ui/src/app/features/linking/components/direct-link-workflow/direct-link-workflow.component.html`
 - Update: `Frontend/quran-dashboard-ui/src/app/features/linking/components/direct-link-workflow/direct-link-workflow.component.scss`
-- Update: `Frontend/quran-dashboard-ui/src/app/shared/README.md`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/mushaf/README.md`
 
 **Implementation**
 
@@ -710,7 +692,6 @@ forcing incompatible identity assumptions into existing Words/Mushaf renderers.
 - Update: `Frontend/quran-dashboard-ui/src/app/features/linking/components/direct-link-workflow/direct-link-workflow.component.scss`
 - Presentation references, do not repurpose identity: `Frontend/quran-dashboard-ui/src/app/features/words/components/highlighted-ayah/`,
   `Frontend/quran-dashboard-ui/src/app/shared/ui/ayah-card/`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/linking/README.md`
 
 **Implementation**
 
@@ -807,8 +788,6 @@ adapter without influencing paged-source or grouped-link semantics.
 - Update only if layout needs it: `Frontend/quran-dashboard-ui/src/app/features/mushaf/components/selected-word-section/selected-word-section.component.scss`
 - Existing reads: `Frontend/quran-dashboard-ui/src/app/features/mushaf/data-access/mushaf-pages.api.ts`,
   `Frontend/quran-dashboard-ui/src/app/features/mushaf/data-access/mushaf-word-analysis.api.ts`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/mushaf/README.md`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/linking/README.md`
 
 **Implementation**
 
@@ -859,7 +838,6 @@ Lemma, Stem, and Word Type will reuse.
 - Update: `Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/root-detail-overlay-adapter.component.ts`
 - Update: `Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/root-detail-overlay-adapter.component.html`
 - Existing read: `Frontend/quran-dashboard-ui/src/app/features/words/data-access/roots.api.ts`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/words/README.md`
 
 **Implementation**
 
@@ -907,7 +885,6 @@ so it merits a separate bounded slice.
 - Update: `Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/lemma-detail-overlay-adapter.component.ts`
 - Update: `Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/lemma-detail-overlay-adapter.component.html`
 - Existing read: `Frontend/quran-dashboard-ui/src/app/features/words/data-access/lemmas.api.ts`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/words/README.md`
 
 **Implementation**
 
@@ -955,7 +932,6 @@ the phase small and reviewable.
 - Update: `Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/stem-detail-overlay-adapter.component.ts`
 - Update: `Frontend/quran-dashboard-ui/src/app/features/words/entity-detail-overlay/adapters/stem-detail-overlay-adapter.component.html`
 - Existing read: `Frontend/quran-dashboard-ui/src/app/features/words/data-access/stems.api.ts`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/words/README.md`
 
 **Implementation**
 
@@ -1004,8 +980,6 @@ all stable generic behavior while keeping its raw-response mapping isolated.
 - Existing reads/models: `Frontend/quran-dashboard-ui/src/app/features/words/data-access/word-types.api.ts`,
   `Frontend/quran-dashboard-ui/src/app/features/words/models/word-types-detail.models.ts`
 - Raw generated result: `Frontend/quran-dashboard-ui/src/app/core/api/generated/models/word-type-ayah-match-dto.ts`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/words/README.md`
-- Update: `Frontend/quran-dashboard-ui/src/app/features/linking/README.md`
 
 **Implementation**
 
@@ -1051,8 +1025,8 @@ reveals duplication, ownership drift, accessibility gaps, or deferred-boundary l
 **Files / areas**
 
 - Review only files already changed under `Frontend/quran-dashboard-ui/src/app/features/linking/`
-- Review the touched Navbar, app root, Words detail/adapters, Mushaf selected-word section, shared
-  Arabic normalizer, and nearest READMEs
+- Review the touched Navbar, app root, Words detail/adapters, Mushaf selected-word section, and
+  shared Arabic normalizer
 - Verification authorities: `Frontend/quran-dashboard-ui/FRONTEND_UI_RULES.md`,
   `Frontend/quran-dashboard-ui/.architecture/golden-ui/GOLDEN_VISUAL_VERIFICATION.md`,
   `Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md`
@@ -1068,8 +1042,6 @@ reveals duplication, ownership drift, accessibility gaps, or deferred-boundary l
   responsibility boundary. Keep components on UI coordination and facades on orchestration.
 - Align Arabic copy, logical properties, focus order, visible labels, live regions, Compact/Medium/
   Wide behavior, light/dark token use, and one-primary-action discipline with existing primitives.
-- Confirm every changed area's nearest README describes the final ownership and cross-feature seam;
-  do not convert this plan or the architecture report into current-truth documentation.
 - Perform the targeted browser matrix below and fix only defects inside the locked prototype scope.
 
 **Explicit non-goals**

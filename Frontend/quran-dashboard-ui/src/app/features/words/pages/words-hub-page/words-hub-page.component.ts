@@ -46,7 +46,7 @@ const HUB_CARD_ROUTES: Record<WordsExplainerKey, string> = {
 export class WordsHubPageComponent {
   private cardsCache?: readonly WordsHubCardViewModel[];
 
-  // Content is read through TDZ-safe getters (words/README rule), never readonly field initialisers.
+  // Content is read through TDZ-safe getters, never readonly field initialisers.
   protected get title(): string {
     return WORDS_HUB_INTRO.title;
   }

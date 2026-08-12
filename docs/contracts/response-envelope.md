@@ -1,6 +1,6 @@
 # Response envelope
 
-Index only — defers to the linked code + README, which are the authority. See [docs/contracts/README.md](./README.md).
+Index only — defers to the linked code and API architecture authority. See [docs/contracts/README.md](./README.md).
 
 The success/failure envelope shape is the C# `ApiResponse<T>` record plus the API
 guidelines; the frontend mirror is the TypeScript model. This page does **not** restate

@@ -38,7 +38,7 @@ redesigned.
 
 **Performance Goals**: A ~2,000-ayah source resolves in **one** request with a bounded number of database commands (4–5, independent of ayah count — never one query per ayah); a warm repeat resolution issues **zero** SQL; the compact cached form is ≈210 KB per 2,000-ayah source (vs ≈4 MB full DTO); a warm set of ~8 large sources stays in the low tens of MB; the editor renders 2,000+ ayahs with bounded DOM via CDK virtualization
 
-**Constraints**: `LinkingSourceIdentity` must be **byte-identical** to the Frontend's `linkingSourceKey` (JavaScript `encodeURIComponent` escape set — `Uri.EscapeDataString` alone is wrong, see research.md R1); every contract-bearing phase must regenerate and commit `Frontend/quran-dashboard-ui/openapi/swagger.json` + `src/app/core/api/generated/models/**` (F1); the shared `IMemoryCache` must not gain a `SizeLimit` and no existing `Set` call may change (F7); `CacheLoadGate` must not be reused for caller-supplied keys (F8); `AbwabPermissionCatalogue` stays at exactly 19 codes (F9); actor identity flows from `IAuthorizationStateResolver`/`AuthorizationState.UserId`, never `ICurrentUser` (F10); every writer save translates `DbUpdateConcurrencyException` and Postgres `23505` to Abstractions exceptions (F12); DI follows the `Ef*` + `Cached*` decorator registration convention in a `LinkingDependencyInjection.cs` (F13); production-source comments are forbidden by default (`CODING_PRINCIPLES.md` §2); READMEs update in the same change that changes their truth
+**Constraints**: `LinkingSourceIdentity` must be **byte-identical** to the Frontend's `linkingSourceKey` (JavaScript `encodeURIComponent` escape set — `Uri.EscapeDataString` alone is wrong, see research.md R1); every contract-bearing phase must regenerate and commit `Frontend/quran-dashboard-ui/openapi/swagger.json` + `src/app/core/api/generated/models/**` (F1); the shared `IMemoryCache` must not gain a `SizeLimit` and no existing `Set` call may change (F7); `CacheLoadGate` must not be reused for caller-supplied keys (F8); `AbwabPermissionCatalogue` stays at exactly 19 codes (F9); actor identity flows from `IAuthorizationStateResolver`/`AuthorizationState.UserId`, never `ICurrentUser` (F10); every writer save translates `DbUpdateConcurrencyException` and Postgres `23505` to Abstractions exceptions (F12); DI follows the `Ef*` + `Cached*` decorator registration convention in a `LinkingDependencyInjection.cs` (F13); production-source comments are forbidden by default (`CODING_PRINCIPLES.md` §2)
 
 **Scale/Scope**: Single privileged actor (Owner) and a handful of users; 6,236 ayahs total in the corpus; largest legitimate source ≈2,200 ayahs; caps — 3,000 ayahs per resolution (clarified), 100 prepared sources per workspace, 10 descriptions × 2,000 chars per (source, ayah); 14 implementation phases; ~12 new tables, 4 API boundaries, ~10 new/changed Frontend files plus deletions
 
@@ -57,7 +57,7 @@ repository's actual governing law: the root `CLAUDE.md` kernel, `TESTING_CONSTIT
 | G3 | **Quran data integrity** — never invent or mutate Quran source data | PASS — all Quran/morphology access is read-only; every FK to `quran_*`/`access_*` is `RESTRICT`; word identity is canonical `quran_words.id` |
 | G4 | **Test Freeze** — no automated test created or modified | PASS — Testing Decision `none`; only gate re-runs (smoke dump regeneration per migration, F2); final check `git diff --stat -- Backend/tests Frontend/quran-dashboard-ui/e2e` must be empty |
 | G5 | **Contract gate** — swagger + generated models regenerated and committed with every contract change | PASS — named in every contract-bearing phase (2, 3, 5, 6, 8, 9); the single most frequently forgotten step (F1) |
-| G6 | **Comment policy & README truth** — comments forbidden by default; READMEs updated in the same change | PASS — plan phases name their README updates; cache READMEs must record the three deliberate divergences (research.md R11) |
+| G6 | **Comment policy** — production-source comments are forbidden by default | PASS — no feature-specific exception is required |
 | G7 | **Authorization boundary** — Owner-only; permission catalogue untouched | PASS — exactly one `[RequireOwner]` per route; no `linking.*` codes; catalogue stays 19 codes / 5 groups (F9) |
 
 **Post-Phase-1 re-check**: PASS — the design artifacts introduce no new scope, no test files, no
@@ -110,15 +110,15 @@ Backend/
 │   │                                                        #   .ManualMushaf partials),
 │   │                                                        #   LinkingAyahHydration,
 │   │                                                        #   EfLinkingWorkspaceReader,
-│   │                                                        #   EfLinkingConfirmedStateReader, README
+│   │                                                        #   EfLinkingConfirmedStateReader
 │   ├── Persistence/Writes/Linking/                          # NEW — EfLinkingWorkspaceWriter,
-│   │                                                        #   EfLinkingConfirmationWriter, README
+│   │                                                        #   EfLinkingConfirmationWriter
 │   ├── Persistence/Configurations/Linking/                  # NEW — 12 EF configurations
 │   ├── Persistence/Migrations/                              # M1, M2, M3 (EF tooling only)
 │   ├── Caching/Linking/                                     # NEW — LinkingSourceResolutionCache (own
 │   │                                                        #   MemoryCache), CachedLinkingSource-
 │   │                                                        #   ResolutionReader, compact value types,
-│   │                                                        #   LinkingAyahTextCache, README
+│   │                                                        #   LinkingAyahTextCache
 │   └── ServiceRegistration → DependencyInjection/           # MODIFY — add LinkingDependencyInjection.cs
 └── api/QuranDashboard.Api/
     ├── Controllers/Linking/                                 # NEW — LinkingSourcesController,
@@ -168,7 +168,7 @@ inside `features/linking/` and swaps adapters behind unchanged store/facade publ
 | 11 | FE: workspace adapter (replaces browser-local storage) | FE | 3-command gate |
 | 12 | FE: preflight step + real confirm (mock deleted) | FE | 4-command gate (golden-ui) |
 | 13 | FE: CDK virtualized list + descriptions UI + provenance | FE | 4-command gate |
-| 14 | Hardening checklist + current-truth READMEs + acceptance matrix | Both | full matrix §14 |
+| 14 | Hardening checklist + acceptance matrix | Both | full matrix §14 |
 
 Parallelizable: Phase 7 alongside 2–4; Phases 5–6 independent of Phase 8. Phases 10–13 strictly
 sequential. **Do not release Phase 12 without Phase 13** (a real write must not sit behind the old
@@ -179,4 +179,4 @@ paginated, description-less editor).
 No constitution-gate violations — no entries required. The two deliberate pattern divergences
 (dedicated `MemoryCache` instead of the shared singleton; `Task<T>`-in-entry instead of
 `CacheLoadGate`) are mandated by repo facts F7/F8, decided in research.md R11, and must be recorded
-in `Caching/Linking/README.md` so they are not "harmonized" away later.
+in research R11 and remain mandatory so they are not "harmonized" away later.

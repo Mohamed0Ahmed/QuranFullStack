@@ -1,7 +1,7 @@
 namespace QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 
-// Every member maps to a column both CTEs already project. The label columns are deliberately excluded
-// (see the reads README's ordering contract), and the grouped member-word detail read takes no sort.
+// Every member maps to a column both CTEs already project. The label columns are deliberately excluded,
+// and the grouped member-word detail read takes no sort.
 public enum WordTypeSortColumn
 {
     Occurrences,

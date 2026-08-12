@@ -3,7 +3,7 @@ using QuranDashboard.Domain.Abwab;
 
 namespace QuranDashboard.Tests.Abwab;
 
-// The writer owns the pair-and-direction contract (Writes/Abwab/README.md): a Comprehensiveness add
+// The writer owns the pair-and-direction contract: a Comprehensiveness add
 // whose direction is null must be refused at the seam, never silently stored as "target is broader".
 // The handler's own 400 for the same input is pinned by AddDoorRelationsHandlerTests; this asserts
 // the writer does not depend on that validation two layers up.

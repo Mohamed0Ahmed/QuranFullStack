@@ -36,7 +36,7 @@ Neither command reactivates it — retiring a still-referenced permission is an 
 reverse deliberately.
 
 **A normal deploy no longer needs `catalogue sync`.** The API host synchronizes the catalogue itself
-at startup (`api/QuranDashboard.Api/README.md`), so a migrated database populates `permissions`
+at startup through `Program.cs` and `SynchronizePermissionCatalogueAsync`, so a migrated database populates `permissions`
 without an operator running anything. This command stays the remedy for the cases the startup sync
 deliberately will not resolve: an unknown code left in the table, a retired canonical code, and any
 database the API cannot reach at boot. It is also the only way to sync a database whose API is

@@ -36,7 +36,7 @@ export class WordTypeScopeCountsComponent {
     }));
   });
 
-  // Labels read through getters, not readonly fields (see words README).
+  // Labels read through getters, not readonly fields.
   protected get ariaLabel() { return WORD_TYPES_SCOPE_COUNTS_LABEL; }
   protected get errorLabel() { return WORD_TYPES_SCOPE_COUNTS_ERROR_LABEL; }
   protected get retryLabel() { return WORD_TYPES_RETRY_LABEL; }

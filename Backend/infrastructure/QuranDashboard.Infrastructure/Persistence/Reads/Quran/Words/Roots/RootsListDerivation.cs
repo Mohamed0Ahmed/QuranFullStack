@@ -64,7 +64,7 @@ internal static class RootsListDerivation
         && filter.Lemmas.Includes(row.LemmasCount)
         && filter.Stems.Includes(row.StemsCount);
 
-    // Ordering is part of the read contract (see the reads README). Every allowlisted column is already
+    // Ordering is part of the read contract. Every allowlisted column is already
     // on the row, so no branch costs a join, and each tie-break chain is identical in BOTH directions —
     // reversing a column never reshuffles its ties, which keeps paging deterministic.
     private static IEnumerable<RootSummaryRow> ApplySort(IEnumerable<RootSummaryRow> rows, RootSortSpec sort) => sort.Column switch

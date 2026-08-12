@@ -38,7 +38,7 @@ slice. Conditionally load only:
   §§2–4 and §7.
 - **Area architecture:** the exact Backend **or** Frontend architecture/API/style
   headings for the scope's area — never both by default.
-- **Auth/access scope:** `docs/contracts/security-access.md`, the nearest auth README,
+- **Auth/access scope:** `docs/contracts/security-access.md`, the implicated auth/access code,
   and `Backend/.architecture/API_GUIDELINES.md` §11 Security and Safety.
 - **User-facing/product/visual scope only:** `PRODUCT.md`/`DESIGN.md`.
 - **Quran scope only:** Quran safety (`CODING_PRINCIPLES.md` §10) plus the nearest

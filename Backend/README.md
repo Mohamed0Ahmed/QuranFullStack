@@ -5,53 +5,8 @@
 also exposes permission-protected Abwab writes plus Owner-only access administration;
 bulk import and generation writes remain CLI-only.
 
-> HOW to work here (rules): `.architecture/BACKEND_STRUCTURE.md`,
-> `.architecture/CLEAN_ARCHITECTURE.md`, `.architecture/API_GUIDELINES.md`,
-> `.architecture/LOGGING_GUIDELINES.md`. This file is the WHAT (current truth + map).
-
-## Current scope
-
-- **Mushaf reader** — pages, ayah study, similar ayahs (متشابهات), word analysis, catalogs.
-- **Words explorers** — Roots, Lemmas, Stems, WordTypes, Unique Words (read-only).
-- **Import/generate pipelines** — foundation, morphology (+ enriched), simple/full إعراب,
-  mutashabihat, tafsirs, translations, navigation metadata, display-word rebuild.
-- **Access foundation** — normalized identity, the 19-code Abwab catalogue, direct-grant/audit
-  persistence, the operator conversion/preflight CLI, the request-scoped database authorization core, exact permission
-  metadata on all twenty-one Abwab writes, and fail-closed unsafe-endpoint startup validation. Active Owners
-  can administer non-Owner users, direct grants, audit history, and verified Logto-subject relinks through
-  transactional Backend APIs; Owner membership/configuration remains reconciliation-only. Public GETs,
-  including all four Abwab reads and the tree/template conditional requests, remain anonymous; production
-  activation is a separate deployment gate.
-
-## Layer map
-
-```text
-api/QuranDashboard.Api                 Controllers, ApiResponse contract, middleware
-application/QuranDashboard.Application  CQRS handlers: Quran/{DataPipelines, MushafReader, Words}
-  .Application.Abstractions             interfaces (persistence, data sources, services, paging)
-domain/QuranDashboard.Domain           entities, enums, value objects, events
-infrastructure/QuranDashboard.Infrastructure
-  Files/Quran/DataPipelines/**          source readers + assemblers (import inputs)
-  Persistence/DataPipelines/Quran/**    EF bulk writers (import outputs)      → see its README
-  Persistence/Reads/Quran/**            read-only EF readers                  → Words/README.md
-  Persistence/{Configurations,Migrations,QuranDashboardDbContext.cs}
-shared/QuranDashboard.Shared           Result/Error primitives
-tools/QuranDashboard.DataImporter      import/generate CLI                    → see its README
-tools/QuranDashboard.AccessAdmin       access conversion/preflight CLI         → see its README
-tests/QuranDashboard.Tests
-scripts/                               dev CLI shortcuts                      → see its README
-```
-
-## Sub-area READMEs (read the nearest before changing)
-
-- `infrastructure/.../Files/Quran/DataPipelines/Foundation/README.md`
-- `infrastructure/.../Files/Quran/DataPipelines/Words/MorphologyImporting/README.md`
-- `infrastructure/.../Files/Quran/DataPipelines/Words/SimpleI3rabGeneration/README.md`
-- `infrastructure/.../Persistence/DataPipelines/Quran/README.md`
-- `infrastructure/.../Persistence/Reads/Quran/Words/README.md`
-- `tools/QuranDashboard.DataImporter/README.md`
-- `tools/QuranDashboard.AccessAdmin/README.md`
-- `report/README.md` (report locations + filename conventions)
+> This is the operational build/run/deployment guide. Active Spec Kit artifacts own feature
+> intent, code owns implemented truth, and `.architecture/` owns Backend structure and API rules.
 
 ## Build / run
 
@@ -61,7 +16,7 @@ dotnet build
 dotnet run --project api/QuranDashboard.Api   # or: scripts/qd-api after scripts/qd-build
 ```
 
-Connection string via user secrets — see `api/QuranDashboard.Api/README.md`. Swagger at
+Connection string via user secrets — see `scripts/README.md` §Prerequisites. Swagger at
 `https://localhost:5015/swagger`, health at `/api/health`.
 
 ## Deployment (Docker / Railway)
@@ -121,7 +76,6 @@ exists; do not scale this service horizontally until one does.
 
 ## Invariants
 
-- Word identity keys on **clean imlaei-simple** (display stays Uthmani).
 - EF migrations are generated with EF tooling only. Add a migration only when explicitly
   requested, and do not apply one with `dotnet ef database update` without explicit authority.
 - Do not hand-write migration files or manually edit generated migration `.cs`, `.Designer.cs`,

@@ -207,7 +207,6 @@ The earlier V1 report and plan remain historical evidence only. Their scalar wor
 | MushafWordLinkingSourceResolver | Remove | Delete the resolver and registry registration |
 | Ordinary Mushaf word study | Keep | Preserve analysis, morphology, URL/session behavior, keyboard study navigation, and glyph/text/metric behavior; add only the explicit neutral selection-mode button state/ARIA seam |
 | Current Linking labels | Modify | Reuse canonical Words terminology and expose scope/mode discriminators |
-| Current feature READMEs | Modify during implementation | Update current-truth documentation in the later implementation, not in this report-only change |
 
 ## 5. Workspace V2 Information Architecture
 
@@ -1198,16 +1197,6 @@ In selection mode, the neutral word-button contract must provide an action-speci
 
 Add a thin Linking-owned Mushaf selection coordinator/store and workspace manual-source/editor UI. Keep Linking knowledge out of the glyph and line components.
 
-### 19.5 Current-truth documentation
-
-The later implementation should update:
-
-- features/linking/README.md;
-- features/mushaf/README.md;
-- app/core/shared current-truth documentation only where modal composition or storage ownership changes.
-
-This report-only change does not update those implementation-truth files.
-
 ## 20. Frontend-Only V2 Scope
 
 The next implementation may build only:
@@ -1226,7 +1215,6 @@ The next implementation may build only:
 - one live Door selection and frontend mock confirmation;
 - actor-bound versioned localStorage repository adapter;
 - one-primary-shell, remove-all alertdialog, one-scroll-owner, focus, responsive, accessible, and bounded-rendering corrections;
-- implementation-truth README updates required by those frontend changes.
 
 No automated tests are to be added, removed, or modified. Later implementation verification is limited to:
 
@@ -1411,9 +1399,8 @@ The later plan should use the following as bounded capability inputs, not as tas
 - own initial deferred-body focus plus surface/step/origin transitions;
 - correct semantic list/control relationships, target sizes, aria-current, live status, and source-qualified repeated actions.
 
-### Documentation and verification boundary
+### Verification boundary
 
-- update current-truth Linking/Mushaf/modal/persistence documentation affected by implementation;
 - make no automated test changes;
 - use only the permitted later code review, typecheck, production build, existing guards, and post-implementation manual verification.
 

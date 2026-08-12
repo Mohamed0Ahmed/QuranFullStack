@@ -6,21 +6,9 @@ Angular 20 (standalone components + Signals) frontend for the Quran Dashboard
 > HOW to work here (rules): **`FRONTEND_UI_RULES.md` first for any UI-visible change**, then
 > `.architecture/FRONTEND_STRUCTURE.md`, `.architecture/UI_STYLE_SYSTEM.md`,
 > `.architecture/API_INTEGRATION_GUIDELINES.md`, plus `../../PRODUCT.md` and `../../DESIGN.md`.
-> The permanent visual authority is `.architecture/golden-ui/`. This file is the WHAT
-> (current truth + map).
-
-## Feature map
-
-```text
-src/app/core       app-wide: ApiResponse, interceptors, cache, layout shell, routes, theme  → core/README.md
-src/app/features
-  access-admin     Owner-only security administration                                 → access-admin/README.md
-  words            Roots/Lemmas/Stems/WordTypes/Unique-Words explorers                       → words/README.md
-  mushaf           page-by-page Mushaf reader + ayah/word study context                      → mushaf/README.md
-  dashboard        home
-src/app/shared     pagination, skeletons, safe-html, deep-link, breakpoints
-src/styles         SCSS tokens/themes/components (see UI_STYLE_SYSTEM.md)
-```
+> The permanent visual authority is `.architecture/golden-ui/`. This file owns only operational
+> run/build, generated-contract, and verification guidance. Active Spec Kit artifacts own feature
+> intent and code owns implemented truth.
 
 ## Run / build
 
@@ -76,10 +64,3 @@ source database supplies the clone and is never the E2E write target. The run ne
 certificates and a prior `dotnet build Backend/QuranDashboard.sln`. Journey files live in `e2e/`
 and must be named `*.e2e.ts`; see `e2e/README.md` for the six retained journeys and runtime
 invariants.
-
-## Invariants
-
-- **Mushaf font is Amiri**, not `UthmanicHafs_V22` (which mis-renders U+06DF) — see
-  `src/app/features/mushaf/README.md`.
-- **Word identity is clean imlaei-simple** (display Uthmani) — mirrors the backend.
-- URL-state in explorers/reader is a shareable contract; keep params stable.

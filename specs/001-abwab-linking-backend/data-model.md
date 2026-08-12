@@ -138,7 +138,7 @@ raw `source_identity` as the final guard after the hash lookup.
 | Key | `id bigint` PK |
 | Columns | `source_contribution_id` FK RESTRICT; `order_value int`; `is_grouped bool` |
 | Unique | `UNIQUE (source_contribution_id, order_value)`; `UNIQUE (id, source_contribution_id)` (enables the composite FK below) |
-| CHECK / writer rule | `is_grouped = true` only when the parent contribution is `manual_grouped` — the cross-row half lives in the **writer** (this repository uses **no triggers**; record the honest limit in `Writes/Linking/README.md`) |
+| CHECK / writer rule | `is_grouped = true` only when the parent contribution is `manual_grouped` — the cross-row half lives in the **writer** (this repository uses **no triggers**) |
 
 ### 10. `linking_unit_ayahs`
 

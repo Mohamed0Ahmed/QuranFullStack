@@ -49,14 +49,14 @@ These live at the workspace root and apply across Backend + Frontend.
 | `TESTING_CONSTITUTION.md` | The sole testing-policy authority, including the Test Freeze; Backend lane mechanics live in the Backend test README and browser-journey mechanics live in the E2E README. | Every agent/human before selecting, writing, running, or judging verification. | Whenever tests or verification evidence are in scope. |
 | `PRODUCT.md` | Product strategy & context: register, users (Arabic-speaking admins/supervisors/teachers), product purpose (manage Quran research data, review ayah links, organize gates أبواب, publish), principles, anti-references. | Anyone doing user-facing/product or UI work. | Frontend/UX/product decisions and any backend change that affects user-facing behavior. |
 | `DESIGN.md` | Visual/design direction — the design system of record alongside `UI_STYLE_SYSTEM.md`'s token contract: Arabic-first RTL, restrained parchment/ink palette, calm typography; explicitly rejects generic SaaS, kitschy religious decor, gamified UI, enterprise greige. | Anyone doing UI/visual work. | Frontend visual/design tasks. For concrete tokens/classes use `UI_STYLE_SYSTEM.md`. |
-| `AGENTS.md` | Sol/Codex-native workspace router with the universal safety kernel, native area routes, nearest-README discovery, and trigger-scoped pointers. It does not route through Claude entrypoints. | Sol/Codex coding agents. | Loaded at session start for those agents. |
-| `CLAUDE.md` | Claude-native workspace router with the equivalent universal safety kernel, Claude area routes, nearest-README discovery, and trigger-scoped pointers. It does not route through Sol/Codex entrypoints. | Claude Code. | Loaded at session start. |
+| `AGENTS.md` | Sol/Codex-native workspace router with the universal safety kernel, native area routes, and trigger-scoped pointers. It does not route through Claude entrypoints. | Sol/Codex coding agents. | Loaded at session start for those agents. |
+| `CLAUDE.md` | Claude-native workspace router with the equivalent universal safety kernel, Claude area routes, and trigger-scoped pointers. It does not route through Sol/Codex entrypoints. | Claude Code. | Loaded at session start. |
 
 **What should NOT be duplicated into these files:**
 
 - Full clean-code / test-guard rule bodies (they live in the skills/references; the docs only *point* to them).
 - Architecture rules (those live in the Backend/Frontend `.architecture/` docs).
-- Spec Kit per-feature details (those live in the active feature's `specs/<feature>/`; merged features 001–019 had their `contracts/` removed, steady-state truth is code + README indexed by `docs/contracts/`).
+- Spec Kit per-feature details (those live in the active feature's `specs/<feature>/`; implemented steady-state truth is code, indexed by `docs/contracts/` where a pointer is useful).
 - Anything that would create a second, drifting copy of a rule that already has a home.
 
 ---
@@ -163,7 +163,7 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 ### B. During implementation
 
 - Implement **by phase/chunk**, not all tasks at once (see §7).
-- Follow your native root and area routers, then read the nearest relevant README and only the triggered headings of `CODING_PRINCIPLES.md`.
+- Follow your native root and area routers, the active feature artifacts when applicable, and only the triggered headings of `CODING_PRINCIPLES.md` and architecture authorities.
 - Use `TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` to select verification;
   the Backend test README and E2E README supply only operational commands and fixtures.
 - Read the Backend/Frontend `.architecture/` docs **for the area you're touching** (§3, §4).
@@ -217,8 +217,8 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 ### G. Before opening a PR
 
 - Confirm implementation already produced the fresh evidence selected by `TESTING_CONSTITUTION.md`
-  and the active plan's `Testing Decision`. Use the Backend test and API READMEs for route-smoke and
-  contract-command mechanics when those checks were selected. Missing or stale evidence
+  and the active plan's `Testing Decision`. Use the retained Backend test and scripts READMEs for
+  route-smoke and contract-command mechanics when those checks were selected. Missing or stale evidence
   returns to implementation; there is no CI, and PR preparation only packages what actually ran.
 - Optionally ask for `deploy-smoke` (explicit request) when you want a local runtime smoke, and `engineering-review` for the formal gate.
 - Then ask for `pr-context-prep` to package scope, invariants, evidence, and reviewer/CodeRabbit focus from what already ran.
@@ -286,9 +286,5 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 - Skills: `engineering-review/` (+ `SPEC_KIT_IMPLEMENTATION_REVIEW.md`, `references/clean-code-guard/` with `ai-failure-modes.md` + `review-checklist.md`, `references/quran-data-safety.md`), `focused-review/` (self-contained, no reference pack), `test-guard/` (+ `dotnet.md`), `backend-structure-review/`, `commit-workflow/`, `deploy-smoke/`, `pr-context-prep/`, `dependency-audit/`, `performance-backend-review/`, `performance-angular-review/`, `backend-global-usings-cleanup/` ✅; plus the `speckit-*` family ✅
 - Backend `.architecture/`: `BACKEND_STRUCTURE.md`, `CLEAN_ARCHITECTURE.md`, `API_GUIDELINES.md` ✅
 - Frontend `.architecture/`: `FRONTEND_STRUCTURE.md`, `UI_STYLE_SYSTEM.md`, `API_INTEGRATION_GUIDELINES.md` ✅
-
-**Gaps found:**
-
-- No workspace-root `README.md` — this guide partly fills the "what is here / how do I work" gap, but a short README pointing newcomers to this guide would help.
 
 **Recommended next action:** keep this guide as the onboarding map; review/update it whenever a skill or `.architecture/` doc is added or materially changed.

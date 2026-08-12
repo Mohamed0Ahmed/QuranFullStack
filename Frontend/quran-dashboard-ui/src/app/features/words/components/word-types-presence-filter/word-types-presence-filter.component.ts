@@ -24,7 +24,7 @@ export class WordTypesPresenceFilterComponent {
 
   readonly flagChange = output<WordTypePresenceFlagChange>();
 
-  // Labels read through getters, not readonly fields (see words README).
+  // Labels read through getters, not readonly fields.
   protected get labels() { return WORD_TYPES_PRESENCE_FILTER_LABELS; }
   protected get dimensions(): readonly WordTypePresenceDimension[] { return ['root', 'stem', 'lemma']; }
 

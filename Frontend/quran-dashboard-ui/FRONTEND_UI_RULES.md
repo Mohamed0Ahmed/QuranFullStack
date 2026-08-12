@@ -87,11 +87,11 @@ first three was deleted in Plan 7 Phase 11 at zero consumers; `npm run check:gol
 any `<qd-state` / `QdStateComponent` reference and on `src/app/shared/ui/state/` reappearing. Pick
 the owner, never a variant flag.
 
-## 9. Nearest README duty
+## 9. Authority boundary
 
-Before changing an area, read its nearest README, and update that README in the same change when the
-truth it describes moves. Production-source comments stay forbidden by default: durable rationale
-belongs in the nearest README or in this file.
+Active Spec Kit artifacts own feature intent, implementation code owns current behavior, and the
+triggered `.architecture/` sources own structural and visual rules. Production-source comments stay
+forbidden by default under `CODING_PRINCIPLES.md` §2. Do not create or update a code-area README.
 
 ## 10. The gate
 

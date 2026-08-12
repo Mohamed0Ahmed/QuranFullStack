@@ -166,10 +166,9 @@ not change, the rule is scoped to the conditional read:
   not given its RFC 9110 meaning — for a single first-party client, a mis-sent header should
   cost a body, never a stale representation.
 - A `404` carries no validator headers: an absence has no representation to validate.
-- The abwab reads are the implementation today. Their **single-instance constraint and its
-  migration path** live in
-  `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Abwab/README.md` —
-  read it before adding a second instance or a second conditional read; it is not restated here.
+- The abwab reads are the implementation today. The operational **single-instance constraint and
+  its migration path** live in `Backend/README.md` §Deployment; read that section before adding a
+  second instance or a second conditional read.
 
 ## 6. Error Handling
 

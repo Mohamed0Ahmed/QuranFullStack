@@ -11,7 +11,7 @@ was modified, no migration/API/test was created, no Frontend file was touched, n
 
 **Authority order used**
 1. `docs/abwab-linking-frontend-v2-current-state-report.md` (the product reference).
-2. Current Backend code and its nearest current-truth READMEs.
+2. Current Backend code and the applicable Backend architecture authorities.
 3. Current Frontend Linking contracts, only where needed to understand implemented product behaviour.
 
 Where an instruction in the brief assumed an existing Backend capability that does not exist, this
@@ -28,7 +28,7 @@ Everything in Part I is present in the repository today. Part II builds on it.
 ## A. Layering and conventions
 
 .NET 10 / ASP.NET Core / EF Core / PostgreSQL, Clean Architecture
-([Backend/README.md](Backend/README.md)).
+([BACKEND_STRUCTURE.md](../Backend/.architecture/BACKEND_STRUCTURE.md)).
 
 ```
 api/QuranDashboard.Api                    Controllers, ApiResponse, middleware, authorization
@@ -47,10 +47,10 @@ Conventions that a Linking area must inherit:
 | Convention | Evidence |
 | --- | --- |
 | snake_case tables/columns, explicit `HasColumnName` everywhere | [AbwabDoorConfiguration.cs:10-67](Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Abwab/AbwabDoorConfiguration.cs:10) |
-| Optimistic concurrency = PostgreSQL `xmin` mapped `IsRowVersion()`, applied as `Entry(x).Property(x => x.Version).OriginalValue` | [AbwabDoorConfiguration.cs:67](Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Abwab/AbwabDoorConfiguration.cs:67); `Writes/Abwab/README.md` §Optimistic concurrency |
+| Optimistic concurrency = PostgreSQL `xmin` mapped `IsRowVersion()`, applied as `Entry(x).Property(x => x.Version).OriginalValue` | [AbwabDoorConfiguration.cs:67](../Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Abwab/AbwabDoorConfiguration.cs:67); [EfAbwabDoorsWriter.cs](../Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Abwab/EfAbwabDoorsWriter.cs) |
 | Soft delete via `deleted_at` + partial unique indexes filtered `deleted_at IS NULL` | [AbwabDoorConfiguration.cs:84-88](Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Abwab/AbwabDoorConfiguration.cs:84) |
-| Application never references EF; each writer translates `DbUpdateConcurrencyException` and `23505` into plain Abstractions exception types | `Writes/Abwab/README.md` §One seam per aggregate |
-| Any write spanning more than one `SaveChangesAsync` opens an explicit transaction | `Writes/Abwab/README.md` |
+| Application never references EF; each writer translates `DbUpdateConcurrencyException` and `23505` into plain Abstractions exception types | Abwab writer implementations under `Persistence/Writes/Abwab/` |
+| Any write spanning more than one `SaveChangesAsync` opens an explicit transaction | Abwab writer implementations under `Persistence/Writes/Abwab/` |
 | `ApiResponse<T>` envelope `{isSuccess, message, data|errors}`; Arabic user-facing messages | `.architecture/API_GUIDELINES.md` §5 |
 | Every unsafe action carries exactly one `[RequirePermission]` **or** `[RequireOwner]`; validated at startup | `.architecture/API_GUIDELINES.md` §11; [UnsafeEndpointMetadataValidator.cs](Backend/api/QuranDashboard.Api/Authorization/Validation/UnsafeEndpointMetadataValidator.cs) |
 | `jsonb` + `CHECK` constraints + an in-document `schemaVersion` is an established pattern | [AccessAuditEventConfiguration.cs:16-36](Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Access/AccessAuditEventConfiguration.cs:16) |
@@ -129,7 +129,7 @@ This is a fact the plan must build on, not a gap this report invents around.
 ### B.5 Quran/Words read models — the exact identity availability
 
 The five automatic source families are backed by read-only EF readers under
-`Persistence/Reads/Quran/Words/**` (see its README). Their ayah-match DTOs:
+`Persistence/Reads/Quran/Words/**`. Their ayah-match DTOs:
 
 | DTO | Canonical word id? | Fields |
 | --- | --- | --- |
@@ -214,8 +214,8 @@ memory cache is currently unbounded.
 **No response compression is configured** — a grep for `AddResponseCompression`/`ResponseCompression`
 across `api/` returns nothing.
 
-**Single-instance constraint.** `Backend/README.md` §Deployment and `Reads/Abwab/README.md` both state
-it, load-bearing: the Abwab cache generation is per-process memory, so a second Railway instance would
+**Single-instance constraint.** `Backend/README.md` §Deployment states it, load-bearing: the Abwab
+cache generation is per-process memory, so a second Railway instance would
 serve stale bodies behind fresh-looking `304`s. **Do not scale horizontally until that generation is
 shared.** Any Linking cache design must not make this worse and must not silently assume it is fixed.
 
@@ -545,7 +545,7 @@ No change to the Abwab hierarchy is proposed. Notes:
   `deleted_at IS NULL`, checked by the writer at confirmation (the same way
   `MockLinkingCommandPort` validates against `liveRoots` today). Archiving a door with links must
   **not** cascade into linking rows: relations already set that precedent — *"Relations are attached
-  to doors, not to structure — and no door write touches them"* (`Writes/Abwab/README.md`), so
+  to doors, not to structure — and no door write touches them"*, as implemented by the Abwab writers, so
   restore has something to bring back. Linking should behave identically: archiving a door hides its
   links from a future read by joining on the door's liveness, and restoring brings them straight back.
 - **`RESTRICT`, not `CASCADE`.** Every Abwab FK in the repo is `OnDelete(DeleteBehavior.Restrict)`;
@@ -693,11 +693,11 @@ COMMIT
 ```
 
 - **Explicit transaction is mandatory** — this spans many `SaveChanges`-worth of inserts, and EF's
-  implicit transaction covers one call only (`Writes/Abwab/README.md`).
+  implicit transaction covers one call only.
 - **Exception translation is mandatory** — a `23505` from the `(door_id, source_identity)` index must
   become a plain Abstractions exception mapped to `409`, and any `DbUpdateConcurrencyException` must
   become a stale-token `409`. An untranslated save reaches the global handler as a `500`, which is the
-  exact defect the Abwab write README warns about.
+  exact defect the Abwab writer implementations avoid.
 - **Failure behaviour: all-or-nothing.** One rejected source fails the whole operation, matching both
   the Abwab bulk-write precedent and the Frontend's own atomic publication.
 - **Optimistic concurrency** applies to *update* paths (editing a live contribution) via that

@@ -7,7 +7,7 @@ Preflight stage, and one atomic confirmation/update command — without redesign
 **Authorities used**
 1. `docs/abwab-linking-backend-database-architecture-report.md`
 2. `docs/abwab-linking-frontend-v2-current-state-report.md`
-3. Current repository code and the nearest current-truth READMEs.
+3. Current repository code and the existing architecture and contract authorities.
 
 **This document is a plan.** Nothing was implemented, no production code was modified, no migration,
 API, or test was created, no Frontend file was touched, nothing was committed.
@@ -38,7 +38,7 @@ Verified in code during planning. Each one changes at least one phase's content.
 | F9 | `AbwabPermissionCatalogue` is the single allowlist consulted by `PermissionAuthorizationHandler:20` and `UnsafeEndpointMetadataValidator:93`; its static ctor asserts 19 codes / 5 groups. | Confirms the locked decision: `[RequireOwner]` only. The catalogue is not touched. |
 | F10 | `AuthorizationState(UserId, …)` exposes the internal `access_users.id`; `ICurrentUser` exposes only the Logto `Sub`. | Linking attribution and workspace ownership must flow from `IAuthorizationStateResolver`, **not** `ICurrentUser`. |
 | F11 | No Abwab writer assigns `CreatedBy`/`UpdatedBy` — those columns are always NULL. | Linking must actually populate them; there is no existing helper to copy. |
-| F12 | Every Abwab writer translates `DbUpdateConcurrencyException` and `23505` into plain Abstractions exception types; an untranslated save reaches the global handler as a `500` (`Writes/Abwab/README.md`). | Every Linking writer save must translate. |
+| F12 | Every Abwab writer translates `DbUpdateConcurrencyException` and `23505` into plain Abstractions exception types; an untranslated save reaches the global handler as a `500`. | Every Linking writer save must translate. |
 | F13 | Registration convention: `AddScoped<EfXReader>()` then `AddScoped<IXReader>(sp => new CachedXReader(...))` in a `*DependencyInjection.cs` under `Infrastructure/ServiceRegistration`. | Linking follows it verbatim. |
 | F14 | Frontend verification is three independent commands: `npm run check:no-unit-specs`, `npm run typecheck:app`, `npm run build:verify`; template/style changes add `npm run check:golden-ui` first. | Named per phase. |
 
@@ -131,7 +131,7 @@ manual-word draft save and keeps the per-source `xmin` meaningful.
 | 11 | FE: workspace persistence adapter | FE | — | — |
 | 12 | FE: preflight + confirm cutover | FE | — | — |
 | 13 | FE: CDK virtualized source list + descriptions UI + merged provenance | FE | — | — |
-| 14 | Integration hardening, current-truth docs, manual acceptance | Both | — | — |
+| 14 | Integration hardening and manual acceptance | Both | — | — |
 
 Phases 1–9 are Backend-only and ship no user-visible change. The Frontend keeps working on
 localStorage and the mock until Phase 10 begins. That is deliberate: it means Backend work can land and
@@ -282,8 +282,6 @@ Phase 1.
 - `infrastructure/.../DependencyInjection/` — add `LinkingDependencyInjection.cs`, call it from
   `PersistenceDependencyInjection`
 - `application/QuranDashboard.Application/DependencyInjection.cs` — register the handler
-- `api/QuranDashboard.Api/README.md`, `infrastructure/.../Persistence/Reads/Quran/Words/README.md`
-  (a "second consumer" note), and a new `Persistence/Reads/Linking/README.md`
 
 **Reuse without changing their contracts**
 - `AyahWordHydration` — but its marker filter must become a parameter (Unique Word / Manual Mushaf
@@ -383,7 +381,6 @@ Phase 2.
 
 **Modify**
 - `EfLinkingSourceResolutionReader.cs` — dispatch the sixth kind
-- `Persistence/Reads/Linking/README.md`
 
 **Read-only authority**
 - `Frontend/.../linking/utils/manual-mushaf-ayah-completeness.ts` and
@@ -469,7 +466,6 @@ Phases 2–3.
 
 **Modify**
 - `DependencyInjection/LinkingDependencyInjection.cs` (F13 pattern)
-- `Persistence/Reads/Linking/README.md` + a new `Caching/Linking/README.md`
 
 ### Cache design
 
@@ -482,7 +478,7 @@ Phases 2–3.
 | **Entry size** | `Size` = resolved ayah count, so `SizeLimit` is expressed in ayahs and is directly reasonable to configure. |
 | **Expiration** | **Both**: `SlidingExpiration = 30 min` **and** `AbsoluteExpirationRelativeToNow = 4 h`. The absolute bound is the locked requirement that a hot entry can never stay fresh forever. |
 | **Invalidation** | None write-driven; nothing in the API mutates Quran/morphology data. Restart clears. **No `quran_data_generation` marker** (locked). |
-| **Stampede** | Store `Task<LinkingResolvedSourceCompact>` in the entry so the entry itself is the gate and eviction is automatic. **`CacheLoadGate` is not reused** (F8) — record the reason in the README so a future reader does not "harmonize" it. |
+| **Stampede** | Store `Task<LinkingResolvedSourceCompact>` in the entry so the entry itself is the gate and eviction is automatic. **`CacheLoadGate` is not reused** (F8), so a future change must not "harmonize" it. |
 | **Failure** | A faulted task is never left in the cache; the entry is removed so the next caller retries. |
 
 Configuration lives in an options record with sane defaults, bound from `appsettings`, following
@@ -498,8 +494,8 @@ None.
 None.
 
 ### Authorization implications
-None — the cache is keyed on source truth only and is therefore safe to share across actors. Record
-that reasoning in the README so nobody later adds a user to the key "to be safe" and destroys reuse.
+None — the cache is keyed on source truth only and is therefore safe to share across actors. Adding
+a user to the key "to be safe" would destroy reuse and is outside this design.
 
 ### Concurrency implications
 Concurrent identical resolutions collapse to one database load. Concurrent *different* resolutions are
@@ -516,8 +512,8 @@ independent.
 ### Verification strategy
 `dotnet build`; local run with EF command logging at `Information` to prove the second call issues no
 SQL; a deliberate two-concurrent-request check to observe a single load; a memory reading before and
-after warming several large sources; engineering review of the decorator and the README's three
-recorded reasons (dedicated instance, no `CacheLoadGate`, no user in the key).
+after warming several large sources; engineering review of the decorator and the three deliberate
+decisions (dedicated instance, no `CacheLoadGate`, no user in the key).
 
 ### Explicit out-of-scope
 Redis. ETag. Frontend caching (Phase 10). Any table.
@@ -554,8 +550,7 @@ get, add source, remove source, reorder sources, replace source configuration, c
 **Add — API**: `Controllers/Linking/LinkingWorkspaceController.cs`
 
 **Modify**: `QuranDashboardDbContext` (five `DbSet`s), `LinkingDependencyInjection`,
-`Application/DependencyInjection.cs`, `Persistence/Writes/Linking/README.md` (new),
-`api/QuranDashboard.Api/README.md`
+`Application/DependencyInjection.cs`
 
 ### Database changes — **M1**
 
@@ -599,8 +594,7 @@ DELETE /api/linking/workspace/sources                     [RequireOwner]  clear 
   words is valid.
 
 ### Cache changes
-None. Workspace persistence is not a cache — state this in the README so the three concerns stay
-separate.
+None. Workspace persistence is not a cache; the three concerns stay separate.
 
 ### Frontend adapter changes
 None yet (Phase 11). Regenerate and commit contracts (F1).
@@ -662,7 +656,6 @@ Phase 5.
 - Migration `<ts>_AddLinkingWorkspaceDescriptions.cs` (**M2**)
 - Extend `ILinkingWorkspaceWriter` / `EfLinkingWorkspaceWriter` / `LinkingWorkspaceDto`
 - Extend the configuration-replacement command and its API contract
-- `Persistence/Writes/Linking/README.md`
 
 ### Database changes — **M2**
 
@@ -739,7 +732,6 @@ Phase 1. (Independent of 5–6, but sequenced after so the migration order is li
 - `Persistence/Configurations/Linking/` — six configurations
 - `Migrations/<ts>_AddLinkingConfirmedState.cs` (**M3**)
 - `QuranDashboardDbContext` — six `DbSet`s
-- `Persistence/Writes/Linking/README.md`
 
 ### Database changes — **M3**
 
@@ -773,8 +765,7 @@ scope-jsonb and kind/reference coherence CHECKs as the workspace table.
 **`linking_units`** — `id`; `source_contribution_id` FK RESTRICT; `order_value`; `is_grouped bool`.
 `UNIQUE (source_contribution_id, order_value)`; `UNIQUE (id, source_contribution_id)` (enables the
 composite FK below). CHECK: `is_grouped = false` unless the parent is a manual grouped contribution —
-enforced in the writer for the cross-row half (this repository uses **no triggers**; the limit is
-recorded honestly in the README).
+enforced in the writer for the cross-row half (this repository uses **no triggers**).
 
 **`linking_unit_ayahs`** — `id`; `unit_id`; `source_contribution_id` (denormalized); `ayah_id` FK
 RESTRICT; `order_value`. **Composite FK `(unit_id, source_contribution_id)` → `linking_units(id,
@@ -973,8 +964,6 @@ Phases 7 and 8.
 - Infrastructure `Persistence/Writes/Linking/EfLinkingConfirmationWriter.cs`
 - Application `Linking/Commands/ConfirmLinkingOperation/` — command, handler, outcome
 - API: the confirm action on `LinkingOperationsController`
-- `Persistence/Writes/Linking/README.md` — the full conventions record, in the style of
-  `Writes/Abwab/README.md`
 
 ### API / application changes
 
@@ -1070,11 +1059,11 @@ sources, workspace and confirmed descriptions, source contributions) plus operat
 `actor_user_id` + `confirmed_at`. Leaf relational rows (units, unit-ayahs, unit-ayah words, and
 the workspace manual-ayah/override/word children) inherit history from their parent aggregate and
 carry no audit columns of their own. Linking is the first area in this repository to actually populate
-these columns; note it in the README so it is not mistaken for an inconsistency with Abwab.
+these columns; this is a deliberate distinction from Abwab, not an inconsistency.
 
 ### Cache changes
-**None.** Confirmation writes no Quran data, so no source-resolution entry is invalidated. Record this
-in the README so nobody adds a pointless invalidating decorator by analogy with Abwab.
+**None.** Confirmation writes no Quran data, so no source-resolution entry is invalidated; an
+invalidating decorator by analogy with Abwab would be incorrect.
 
 ### Migration requirements
 None — Phase 7 created the schema.
@@ -1105,8 +1094,8 @@ lock (Phase B step 2), held until COMMIT/ROLLBACK; operations on different Doors
 `dotnet build`; contract gate; a scripted manual sequence through Swagger against a local database
 covering every acceptance row above, with `psql` inspection after each step; a deliberate concurrent
 double-confirm to observe `409`; a deliberate mid-operation invalid source to prove all-or-nothing;
-engineering review against `Writes/Abwab/README.md`'s conventions checklist (transaction, translation,
-attribution, no cache decorator).
+engineering review against the Abwab writer implementation and applicable architecture authorities
+(transaction, translation, attribution, no cache decorator).
 
 ### Explicit out-of-scope
 Door-links read model. Audit-event table. Any Frontend change. Restore/undelete endpoints (the schema
@@ -1138,7 +1127,6 @@ Phases 2–4.
 - `features/linking/utils/linking-source-intents.ts` — one branch
 - `features/linking/utils/linking-merge.ts` — merge by canonical id; the positional/text alignment guard
   is deleted
-- `features/linking/README.md`
 
 **Delete**
 - `features/linking/data-access/complete-paged-source.loader.ts`
@@ -1208,7 +1196,6 @@ Phases 5–6, Phase 10.
 - **Delete** `local-storage-linking-workspace.repository.ts`;
   keep or delete `linking-workspace.codec.ts` (recommend: **delete** — the server now owns validity and
   a second decoder is a divergence risk)
-- `features/linking/README.md`
 
 ### Concurrency
 Surface the `409` stale-token path as a real UX state: reload the workspace and tell the user, rather
@@ -1258,7 +1245,6 @@ Phases 8–9, Phase 11.
 - **Modify** `features/linking/models/linking.labels.ts` — Arabic copy for the six classifications,
   the no-op message, and the stale-preflight message
 - **Delete** `features/linking/data-access/mock-linking-command.port.ts`
-- `features/linking/README.md`
 
 ### Flow
 `configure-source → resolve → door → **preflight** → review → confirm → success`.
@@ -1321,7 +1307,6 @@ Phases 10–12.
 - **Modify** `features/linking/components/linking-ayah-card/` + `direct-link-workflow` review — render
   the already-computed `MergedAyahSelection.words` union and its `sourceKeys` provenance instead of the
   first contributor's flags (gap **G4**)
-- `features/linking/README.md`
 
 ### Notes the executor will need
 - `@angular/cdk ^20.2.14` is already a dependency, and `ScrollingModule` is already used by
@@ -1353,29 +1338,17 @@ locked direction).
 
 ---
 
-# PHASE 14 — Integration hardening, current-truth docs, manual acceptance
+# PHASE 14 — Integration hardening and manual acceptance
 
 ### Objective
-Close the loop: documentation reflects reality, gates pass, and the runtime matrix is executed.
+Close the loop: gates pass and the runtime matrix is executed.
 
 ### Dependencies
 All prior phases.
 
-### Exact areas / files
-- `Backend/README.md` §Current scope — Linking added
-- `Backend/infrastructure/.../Persistence/Reads/Linking/README.md`,
-  `Persistence/Writes/Linking/README.md`, `Caching/Linking/README.md` — final current truth
-- `Backend/api/QuranDashboard.Api/README.md` and `Controllers/README.md` — the four Linking routes and
-  their status mapping
-- `Frontend/quran-dashboard-ui/src/app/features/linking/README.md` — full rewrite to the post-cutover
-  truth
-- `Frontend/.../features/words/README.md`, `features/mushaf/README.md`, `core/README.md` — only where
-  their described truth changed
-- `docs/contracts/README.md` — pointer entry if the index warrants one
-- `CLAUDE.md` §Active Spec Kit Feature — records `001-abwab-linking-backend`; this work is driven
-  through the Spec Kit artifacts in `specs/001-abwab-linking-backend/`. The section is cleared
-  back to `None` in the same deletion commit that removes the feature's planning artifacts, per
-  `docs/README.md` §Lifecycle
+### Scope
+Hardening and runtime acceptance only. The retired code-area documentation work carries no
+functional requirement or verification gate.
 
 ### Hardening checklist
 - Confirm the shared `IMemoryCache` still has no `SizeLimit` and no existing `Set` was modified.

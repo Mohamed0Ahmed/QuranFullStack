@@ -18,8 +18,9 @@ complete. Every task still carries its user-story label for traceability.
 1. Before touching a file, read the **governing reference** named in the task. The task tells you
    *what*; the reference tells you *exactly how*. On any conflict between artifacts: **stop and
    report — do not pick silently.**
-2. Production-source comments are forbidden by default (`CODING_PRINCIPLES.md` §2). Do not
-   annotate code with explanations; the READMEs named in tasks are where reasoning lives.
+2. Production-source comments are forbidden by default (`CODING_PRINCIPLES.md` §2). Active
+   Spec Kit artifacts carry feature intent; implemented structure and behavior live in code and
+   the existing architecture/contract authorities named by the task.
 3. Follow existing neighbouring code patterns (registration, exception translation, envelope,
    naming). When a task says "match Abwab's pattern", open the named Abwab file and mirror it.
 4. Never touch: `Backend/tests/**`, `Frontend/quran-dashboard-ui/e2e/**`, `main` branch,
@@ -53,7 +54,7 @@ complete. Every task still carries its user-story label for traceability.
 - [X] T002 Read the governing artifacts in this order and keep them open throughout:
       `specs/001-abwab-linking-backend/spec.md` → `research.md` (R1–R22 are non-negotiable
       decisions) → `data-model.md` → all four files in `contracts/` → the docs plan phase named by
-      each task below. Also read `Backend/CLAUDE.md` and the READMEs nearest each area you touch.
+      each task below. Also follow `Backend/CLAUDE.md` and the then-current repository routing.
 
 ---
 
@@ -172,10 +173,9 @@ verify order, completeness, canonical ids, marker rules, and controlled failures
       `AddScoped<EfX>()` then interface factory) and call it from `PersistenceDependencyInjection`;
       register the handler in `Backend/application/QuranDashboard.Application/DependencyInjection.cs`.
       Depends on T019.
-- [X] T021 [US1] Update READMEs in the same change: `Backend/api/QuranDashboard.Api/README.md`
-      (new route), a "second consumer" note in
-      `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/README.md`,
-      and a new `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Linking/README.md`.
+- [X] T021 [US1] Complete the then-required code-area documentation update for the resolution
+      boundary and its second use of shared word hydration. This is completed historical work;
+      the code-area documentation policy was retired after Phase 6.
 - [X] T022 [US1] Run the **Contract gate ritual** (see Phase 0 rituals). Both artifacts committed
       together with this change.
 - [X] T023 [US1] **Checkpoint (US1)**: `dotnet build`; run every quickstart §1 probe: ~10/~200/
@@ -220,10 +220,10 @@ cached boundary (docs plan §13).
       `AddScoped<EfLinkingSourceResolutionReader>()` +
       `AddScoped<ILinkingSourceResolutionReader>(sp => new CachedLinkingSourceResolutionReader(...))`.
       Depends on T026+T027.
-- [X] T029 [US6] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Linking/README.md`
-      recording the THREE deliberate divergences so nobody "harmonizes" them later: dedicated
-      instance (not shared IMemoryCache, F7), `Task<T>`-in-entry (not `CacheLoadGate`, F8), no
-      user/Door in keys (safe cross-actor sharing). Update `Persistence/Reads/Linking/README.md`.
+- [X] T029 [US6] Complete the then-required code-area documentation update for the THREE deliberate
+      divergences: dedicated instance (not shared IMemoryCache, F7), `Task<T>`-in-entry (not
+      `CacheLoadGate`, F8), and no user/Door in keys (safe cross-actor sharing). This is completed
+      historical work; the decisions remain mandatory through research R11 and the implementation.
 - [X] T030 [US6] **Checkpoint (US6)**: warm repeat = zero SQL (EF logging); one-field scope change
       = different entry, no cross-serve; concurrent identical requests = one load; memory reading
       before/after warming ~8 large sources stays low tens of MB; `grep` proves no existing
@@ -282,10 +282,8 @@ constraint probes (quickstart §2).
 - [X] T038 [US2] Create `Backend/api/QuranDashboard.Api/Controllers/Linking/LinkingWorkspaceController.cs`
       with exactly the six routes, verbs, version placement, and status mapping from
       `contracts/linking-workspace-api.md` — each with exactly one `[RequireOwner]`. Depends on T037.
-- [X] T039 [US2] Register in DI (T020's files); create
-      `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Linking/README.md`
-      (state: workspace persistence is NOT a cache; attribution is a first — Abwab never populated
-      these columns; GET never writes); update the api README.
+- [X] T039 [US2] Register in DI (T020's files). Workspace persistence is NOT a cache; attribution
+      is a first — Abwab never populated these columns; GET never writes.
 - [X] T040 [US2] Run the **Contract gate ritual**.
 - [X] T041 [US2] **Checkpoint (US2)**: quickstart §2 probes — GET-as-fresh-user inserts zero rows
       (verify row count in `psql`); add 3 sources/configure/reorder/reload preserved; equivalent
@@ -344,8 +342,8 @@ the locked example with zero writes (quickstart §3).
       the composite FK `(unit_id, source_contribution_id)` → `linking_units`;
       `UNIQUE (source_contribution_id, ayah_id)`; **`UNIQUE (unit_ayah_id, order_value)`** on
       descriptions; the filtered per-dimension provenance indexes; `outcome` jsonb CHECK; `xmin`
-      on contributions. The `is_grouped` cross-row rule is writer-enforced (NO triggers — record
-      in the writer README). Depends on T047.
+      on contributions. The `is_grouped` cross-row rule is writer-enforced (NO triggers).
+      Depends on T047.
 - [ ] T049 [US4] Add the six `DbSet`s, then run the **Migration ritual** for
       `AddLinkingConfirmedState` (M3). Depends on T048.
 - [ ] T050 [US4] **Checkpoint (schema)**: migration applies to an empty DB and to an M2-head DB;
@@ -383,7 +381,7 @@ the locked example with zero writes (quickstart §3).
       `Backend/api/QuranDashboard.Api/Controllers/Linking/LinkingOperationsController.cs` with the
       `POST /api/linking/operations/preflight` action (`[RequireOwner]`; validation incl.
       FR-044a ≥1 ayah per source). Register in DI. Depends on T052–T054.
-- [ ] T056 [US4] Run the **Contract gate ritual**; update the api README.
+- [ ] T056 [US4] Run the **Contract gate ritual**.
 - [ ] T057 [US4] **Checkpoint (US4)**: quickstart §3 probes — the locked example («الرحمن» A,B,C
       vs «الرحيم» A,D,E → NEW_SOURCE; A overlap naming «الرحمن» with label+kind; D,E new; counts
       3 = 2+1); unchanged+new → not blocked, not no-op; all-identical → isNoOp; label-only rename
@@ -424,11 +422,6 @@ every step (quickstart §4).
 - [ ] T060 [US5] Create `Commands/ConfirmLinkingOperation/` (command/handler/outcome) and add the
       `POST /api/linking/operations` action to `LinkingOperationsController` (`[RequireOwner]`,
       status mapping 200/400/404/409 per contract). Register in DI. Depends on T059.
-- [ ] T061 [US5] Write the full conventions record in
-      `Persistence/Writes/Linking/README.md` in the style of `Writes/Abwab/README.md`:
-      transaction boundary + Door lock, translation, attribution scope, no cache invalidation
-      (confirmation writes no Quran data — record so nobody adds an invalidating decorator by
-      analogy with Abwab), no-triggers rule for `is_grouped`.
 - [ ] T062 [US5] Run the **Contract gate ritual**.
 - [ ] T063 [US5] **Checkpoint (US5)**: quickstart §4 — confirm without token → 400; locked example
       leaves «الرحمن» byte-identical; identical re-confirm → nothing written + no-op message;
@@ -450,7 +443,7 @@ every step (quickstart §4).
       calling the generated client for `POST /api/linking/sources/resolve`.
 - [ ] T065 [P] [US6] Create `Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-source.cache.ts`
       extending `ApiResponseCache`, keyed `linking:source:{sourceIdentity}`, cap **≈6 entries**
-      (NOT the default 48 — tens of MB; record why in the linking README, research R19).
+      (NOT the default 48 — tens of MB; research R19).
       `MushafReaderCache` stays for ordinary reader use and leaves the Linking path.
 - [ ] T066 [US1] Rewire `features/linking/data-access/linking-source-resolver.registry.ts` to ONE
       implementation for all six kinds; `resolve(source, onProgress)` keeps its signature with
@@ -466,7 +459,7 @@ every step (quickstart §4).
       `ManualMushafSelectionStore.readMetadata`'s "can this verse be added" gate at a light
       validation (the resolve endpoint or the existing ayah-study read) — that behavior must
       survive. Depends on T066.
-- [ ] T068 [US1] Update `features/linking/README.md`; run the **FE gate**; browser probes: opening
+- [ ] T068 [US1] Run the **FE gate**; browser probes: opening
       a source issues ONE request (was ceil(total/100)); reopening issues ZERO; a 2,000-ayah
       source and a manual source work end-to-end; `grep` proves `presentation-occurrence` and
       `manual-word-location` no longer exist anywhere.
@@ -494,7 +487,7 @@ every step (quickstart §4).
       bucket after the first successful server hydration — never migrate it. Depends on T069.
 - [ ] T071 [US2] Surface the 409 stale-version path as a visible, recoverable state via the
       store's existing persistence-warning signal — reload + inform, never silent overwrite.
-- [ ] T072 [US2] Update `features/linking/README.md`; run the **FE gate**; probes: two-browser
+- [ ] T072 [US2] Run the **FE gate**; probes: two-browser
       persistence (sources/config/order/descriptions reappear), two-tab 409 recovery, transient
       state (checked/search/scroll/Door) still client-side, no component file changed.
 
@@ -550,7 +543,7 @@ every step (quickstart §4).
       `direct-link-workflow` review render the already-computed `MergedAyahSelection.words` union
       and its `sourceKeys` provenance naming EVERY contributing source — not the first
       contributor's flags. Descriptions stay listed per source.
-- [ ] T083 [US7] Update `features/linking/README.md`; run `check:golden-ui` then the **FE gate**;
+- [ ] T083 [US7] Run `check:golden-ui` then the **FE gate**;
       browser verification at Wide/Medium/Compact: one scroll owner, keyboard reachability, glyph
       metrics unchanged; 2,000-ayah source scrolls continuously with bounded DOM node count;
       exclusion near the end survives scrolling away and back; two-source ayah shows union +
@@ -560,13 +553,9 @@ every step (quickstart §4).
 
 ## Phase 13: Polish & Final Acceptance (docs plan Phase 14)
 
-- [ ] T084 [P] Backend current-truth docs: `Backend/README.md` §Current scope (Linking added),
-      `Backend/api/QuranDashboard.Api/README.md` + `Controllers/README.md` (four Linking route
-      groups + status mapping), final pass over the three Linking READMEs (Reads / Writes / Caching).
-- [ ] T085 [P] Frontend current-truth docs: full rewrite of `features/linking/README.md` to the
-      post-cutover truth; touch `features/words/README.md`, `features/mushaf/README.md`,
-      `core/README.md` ONLY where their described truth changed; add a `docs/contracts/README.md`
-      pointer entry if the index warrants one.
+**Retired by the code-area documentation cutover:** T061, T084, and T085. Their IDs are not
+reused; they carried documentation-only work and no functional requirement or gate.
+
 - [ ] T086 Hardening sweep (each item verified, not assumed): shared `IMemoryCache` still has no
       `SizeLimit` and no existing `Set` changed; `AbwabPermissionCatalogue` untouched at 19 codes;
       every Linking route carries exactly one `[RequireOwner]`; every writer save translates
@@ -620,13 +609,13 @@ independently verifiable at its checkpoint.
 2. Continue strictly in phase order; **stop at every checkpoint** and run its probes before
    moving on. Each Backend phase is independently reviewable/mergeable.
 3. The user-visible cutover happens across Phases 9–12 and completes only with Phase 12.
-4. Phase 13 closes the loop: docs truth, hardening sweep, full acceptance matrix.
+4. Phase 13 closes the loop: hardening sweep and full acceptance matrix.
 5. Commit/PR only when the user asks; when asked, follow
    `.claude/skills/commit-workflow/SKILL.md` (branch model: PR into `dev`).
 
 ## Notes
 
-- 87 tasks; every task names exact file paths and its governing reference — read the reference
+- 84 executable tasks; every task names exact file paths and its governing reference — read the reference
   before writing code.
 - NO automated tests anywhere (Test Freeze). Checkpoints are builds + gates + manual probes.
 - The contract gate ritual (T022, T040, T045, T056, T062) is historically the most-forgotten step

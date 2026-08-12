@@ -8,8 +8,7 @@
  * labelled `مثال` illustrative morphology — never presented as Quranic quotations or queryable
  * counts (plan D10).
  *
- * Consumers read these records through getters, never `readonly` field initialisers
- * (`words/README.md`).
+ * Consumers read these records through getters, never `readonly` field initialisers.
  */
 
 export type WordsExplainerKey = 'unique' | 'roots' | 'lemmas' | 'stems' | 'word-types';

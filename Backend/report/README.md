@@ -2,10 +2,10 @@
 
 This folder is **evidence/reference only**, not the current-truth layer. Reserve it for
 durable, non-derivable records: audits, reviews, acceptance evidence, data-import outputs,
-diagnostics, database inventory, source-safety checks, and one-off investigations. Current
-truth of a code area lives in the local `README.md` near that code; plans/contracts live in
-`specs/`; route through `Backend/CLAUDE.md` for Claude or `Backend/AGENTS.md` for Sol/Codex,
-then load only the triggered `.architecture/*` source.
+diagnostics, database inventory, source-safety checks, and one-off investigations. Active feature
+intent and contracts live in `specs/`; implemented truth lives in code. Route through
+`Backend/CLAUDE.md` for Claude or `Backend/AGENTS.md` for Sol/Codex, then load only the triggered
+`.architecture/*` source.
 
 Do **not** spawn a per-feature report for routine work, and do not recreate the deleted
 feature-report indexes.

@@ -164,7 +164,7 @@ public sealed partial class EfUniqueWordsReader
         }
     }
 
-    // Ordering is part of the read contract (see the reads README) and runs BEFORE Count/Skip/Take, so it
+    // Ordering is part of the read contract and runs BEFORE Count/Skip/Take, so it
     // decides paging. Every branch now ends on Id: FirstWordOrderInMushaf is already effectively unique,
     // so this changes no existing result — it closes a DB-side non-determinism gap (unlike the in-memory
     // explorers, a LINQ-to-SQL ORDER BY has no stable-sort net). Each tie-break chain is identical in

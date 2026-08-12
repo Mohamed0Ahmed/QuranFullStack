@@ -28,7 +28,7 @@ Use these authorities in order:
 
 1. The attached V2 implementation-plan brief.
 2. docs/abwab-linking-frontend-prototype-v2-report.md.
-3. Current frontend code and the nearest current-truth READMEs.
+3. Current frontend code and the applicable frontend architecture authorities.
 4. docs/abwab-linking-frontend-prototype-implementation-plan.md as V1 historical context only.
 
 The new brief resolves one item that the report left for later discussion:
@@ -51,7 +51,7 @@ review and confirmation. Real backend representation remains deferred.
 
 ## Locked Scope
 
-- Modify only the Angular frontend and frontend current-truth READMEs during later implementation.
+- Modify only the Angular frontend during later implementation.
 - Reuse existing read APIs; do not add or alter API endpoints or generated API contracts.
 - Keep Linking fail-closed and Owner-only. Every state mutation and mock confirmation rechecks live
   access; visibility is not the only gate.
@@ -194,7 +194,7 @@ Identity rules:
 | 8. Converge Direct Link and workspace flow | Phases 4 and 7 | Shared Door/review/mock pipeline |
 | 9. Replace cards with the dense workspace | Phases 3, 5, 6, 8 | Complete multi-source composition surface |
 | 10. Add Mushaf ayah-selection mode | Phases 3, 4, 6, 8, 9 | Manual Mushaf entry into the complete pipeline |
-| 11. Harden integrations and current-truth docs | Phases 1–10 | Final implementation verification |
+| 11. Harden integrations | Phases 1–10 | Final implementation verification |
 
 ## Transitional Compatibility and Cutover Rules
 
@@ -260,8 +260,6 @@ Modify:
 - Frontend/quran-dashboard-ui/src/app/features/linking/models/linking.labels.ts
 - Frontend/quran-dashboard-ui/src/app/features/linking/utils/linking-source-key.ts
 - Frontend/quran-dashboard-ui/src/app/features/linking/data-access/linking-source-resolver.registry.ts
-- Frontend/quran-dashboard-ui/src/app/features/linking/README.md
-- Frontend/quran-dashboard-ui/src/app/features/mushaf/README.md
 
 Delete:
 
@@ -303,7 +301,7 @@ Preserve:
 - Unique/Root/Lemma/Stem/Word Type descriptors and actions still compile against their existing
   keys.
 - Selecting/studying a Mushaf word behaves exactly as before outside Linking.
-- Only the named production files and their truthful READMEs change; no tests or backend files do.
+- Only the named production files change; no tests or backend files do.
 
 ### Explicit Out-of-Scope Boundary
 
@@ -333,7 +331,6 @@ Modify:
 - Frontend/quran-dashboard-ui/src/app/features/linking/models/linking-workflow.models.ts
 - Frontend/quran-dashboard-ui/src/app/features/linking/models/linking.labels.ts
 - Frontend/quran-dashboard-ui/src/app/features/linking/utils/linking-source-key.ts
-- Frontend/quran-dashboard-ui/src/app/features/linking/README.md
 
 Add:
 
@@ -433,7 +430,6 @@ Modify:
 - Frontend/quran-dashboard-ui/src/app/features/linking/models/linking-workspace.models.ts
 - Frontend/quran-dashboard-ui/src/app/features/linking/utils/linking-selection.ts
 - Frontend/quran-dashboard-ui/src/app/features/linking/components/quran-source-linking-actions/quran-source-linking-actions.component.ts
-- Frontend/quran-dashboard-ui/src/app/features/linking/README.md
 
 Add:
 
@@ -544,9 +540,6 @@ Modify:
 - Frontend/quran-dashboard-ui/src/app/features/linking/components/linking-workspace-host/linking-workspace-host.component.scss
 - Frontend/quran-dashboard-ui/src/app/features/linking/models/linking-workspace.models.ts
 - Frontend/quran-dashboard-ui/src/styles/_tokens.scss
-- Frontend/quran-dashboard-ui/src/app/core/README.md
-- Frontend/quran-dashboard-ui/src/app/shared/README.md
-- Frontend/quran-dashboard-ui/src/app/features/linking/README.md
 
 Add:
 
@@ -640,7 +633,6 @@ Modify:
 - Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-workspace.store.ts
 - Frontend/quran-dashboard-ui/src/app/features/linking/models/linking-workflow.models.ts
 - Frontend/quran-dashboard-ui/src/app/features/linking/models/linking.labels.ts
-- Frontend/quran-dashboard-ui/src/app/features/linking/README.md
 
 Reuse:
 
@@ -748,7 +740,6 @@ Modify:
 - Frontend/quran-dashboard-ui/src/app/features/linking/components/linking-source-ayah-editor/linking-source-ayah-editor.component.html
 - Frontend/quran-dashboard-ui/src/app/features/linking/components/linking-workspace-host/linking-workspace-host.component.ts
 - Frontend/quran-dashboard-ui/src/app/features/linking/components/linking-workspace-host/linking-workspace-host.component.html
-- Frontend/quran-dashboard-ui/src/app/features/linking/README.md
 
 Reuse without changing their public read contracts:
 
@@ -893,7 +884,6 @@ Modify:
 - Frontend/quran-dashboard-ui/src/app/features/linking/data-access/linking-source-resolver.registry.ts
 - Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-workspace.store.ts
 - Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-workflow.facade.ts
-- Frontend/quran-dashboard-ui/src/app/features/linking/README.md
 
 Reuse:
 
@@ -1027,7 +1017,6 @@ Modify:
 - Frontend/quran-dashboard-ui/src/app/features/linking/components/quran-source-linking-actions/quran-source-linking-actions.component.ts
 - Frontend/quran-dashboard-ui/src/app/features/linking/components/quran-source-linking-actions/quran-source-linking-actions.component.html
 - Frontend/quran-dashboard-ui/src/app/features/linking/models/linking.labels.ts
-- Frontend/quran-dashboard-ui/src/app/features/linking/README.md
 
 Add only if the current Abwab store has no equivalent selector:
 
@@ -1168,9 +1157,7 @@ Modify:
 - Frontend/quran-dashboard-ui/src/app/shared/ui/details-workspace/details-workspace.component.ts
 - Frontend/quran-dashboard-ui/src/app/shared/ui/details-workspace/details-workspace.component.html
 - Frontend/quran-dashboard-ui/src/styles/_components.scss
-- Frontend/quran-dashboard-ui/src/app/shared/README.md
 - Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md
-- Frontend/quran-dashboard-ui/src/app/features/linking/README.md
 
 Delete after all callers migrate:
 
@@ -1322,8 +1309,6 @@ Modify:
 - Frontend/quran-dashboard-ui/src/app/features/mushaf/components/mushaf-word/mushaf-word.component.scss
 - Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-workspace.store.ts
 - Frontend/quran-dashboard-ui/src/app/features/linking/models/linking.labels.ts
-- Frontend/quran-dashboard-ui/src/app/features/linking/README.md
-- Frontend/quran-dashboard-ui/src/app/features/mushaf/README.md
 
 ### State / Model Changes
 
@@ -1410,13 +1395,12 @@ Modify:
 - No renderer redesign, ayah containers, URL-persisted draft, or automatic workspace opening.
 - No backend/API/schema/auth changes and no automated tests.
 
-## Phase 11 — Harden Words Integrations, Accessibility, Responsive Behavior, and Current Truth
+## Phase 11 — Harden Words Integrations, Accessibility, and Responsive Behavior
 
 ### Objective
 
-Finish every existing source entrance against the V2 contracts, remove transitional V1 paths, keep
-facades/components within current responsibility thresholds, and make the frontend READMEs state
-the delivered truth before final manual verification.
+Finish every existing source entrance against the V2 contracts, remove transitional V1 paths, and
+keep facades/components within current responsibility thresholds before final manual verification.
 
 ### Dependencies
 
@@ -1452,13 +1436,8 @@ Modify as required by the final descriptor/handoff signatures:
 - Frontend/quran-dashboard-ui/src/app/features/words/pages/word-types-explorer-page/word-types-detail-panel.view-model.ts
 - Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/top-navbar.component.ts
 - Frontend/quran-dashboard-ui/src/app/core/layout/top-navbar/top-navbar.component.html
-- Frontend/quran-dashboard-ui/src/app/features/linking/README.md
-- Frontend/quran-dashboard-ui/src/app/features/mushaf/README.md
-- Frontend/quran-dashboard-ui/src/app/features/words/README.md
-- Frontend/quran-dashboard-ui/src/app/core/README.md
-- Frontend/quran-dashboard-ui/src/app/shared/README.md
 
-Read-only terminology authority unless a current-truth defect is separately proven:
+Read-only terminology authority unless a terminology defect is separately proven:
 
 - Frontend/quran-dashboard-ui/src/app/features/words/models/words-shared.labels.ts
 
@@ -1520,8 +1499,6 @@ Retire after all V2 callers migrate:
 - No V1 selected-word, scalar workflow, generic active-source, or sessionStorage branch remains.
 - Automatic resolvers remain neutral and the operation coordinator remains the only set-aware
   boundary.
-- READMEs accurately describe V2 ownership, persistence, scroll/focus, manual-source identity, and
-  mock-only status.
 - The final implementation diff contains no Backend, generated API, schema, migration, test, or
   unrelated visual-system changes.
 
@@ -1616,7 +1593,7 @@ owner, and any pre-existing visual mismatch for each applicable row.
 
 | Area | Required scenarios and evidence |
 | --- | --- |
-| Static gates and scope | Run check:no-unit-specs, typecheck:app, check:golden-ui, and build:verify; inspect the final diff for frontend/README allowlist only and zero test/backend/generated-client changes. |
+| Static gates and scope | Run check:no-unit-specs, typecheck:app, check:golden-ui, and build:verify; inspect the final diff for the frontend allowlist only and zero test/backend/generated-client changes. |
 | Owner/access | Owner sees Navbar, Words, and Mushaf entry points; non-Owner and unresolved identity see none; direct method attempts fail closed; access loss during editor/load/review/mock closes and clears transient state without deleting the bucket. |
 | Persistence/reopen | Restart same Owner; logout/login same Owner; switch actor A to B to A; envelope-fatal malformed active bucket; mixed valid/invalid rows; duplicate key keeps first valid row; denied/quota storage; V1 session key present; rows restore in order unchecked/unresolved; document same-actor multi-tab last-successful-write-wins. |
 | Three orthogonal states | Independently change workspace membership, ayah inclusion, and automatic/manual word behavior; verify no action silently changes either other dimension. |
@@ -1643,8 +1620,7 @@ Do not call V2 complete merely because the shell or dense workspace renders. Com
 2. all existing static gates passing without test changes;
 3. the full manual/browser matrix recorded against representative real source overlaps and at least
    one source-backed page-spanning ayah;
-4. current-truth READMEs updated in the same implementation change;
-5. a final scope inspection proving no backend, generated API, schema, migration, permission,
+4. a final scope inspection proving no backend, generated API, schema, migration, permission,
    automated-test, deployment, or real-write work entered the diff.
 
 If any required behavior depends on a backend contract that does not exist—especially canonical

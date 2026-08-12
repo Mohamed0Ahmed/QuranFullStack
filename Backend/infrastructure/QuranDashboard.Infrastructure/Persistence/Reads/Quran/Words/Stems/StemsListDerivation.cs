@@ -86,7 +86,7 @@ internal static class StemsListDerivation
         && filter.SimpleWords.Includes(row.SimpleWordsCount)
         && filter.TashkeelWords.Includes(row.TashkeelWordsCount);
 
-    // Ordering is part of the read contract (see the reads README). Every allowlisted column is already
+    // Ordering is part of the read contract. Every allowlisted column is already
     // on the row, so no branch costs a join, and each tie-break chain is identical in BOTH directions —
     // reversing a column never reshuffles its ties, which keeps paging deterministic.
     private static IEnumerable<StemSummaryRow> ApplySort(IEnumerable<StemSummaryRow> rows, StemSortSpec sort) => sort.Column switch

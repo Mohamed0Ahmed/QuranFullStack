@@ -157,7 +157,7 @@ export const TOTAL_SURAHS = 114;
 
 /**
  * The sortable Lemmas columns, in table-header order. الجذر (root text) is excluded: it is a
- * related-entity text column and renders as a plain header (see the reads README).
+ * related-entity text column and renders as a plain header.
  */
 export const LEMMA_SORT_COLUMNS = {
   alpha: { key: 'alpha', natural: 'asc', label: WORDS_SHARED_HEADERS.lemma },

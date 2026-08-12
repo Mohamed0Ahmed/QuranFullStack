@@ -687,7 +687,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
             .Should().Be(1, "and no other root was shifted onto its slot");
     }
 
-    // Reads group and count by SectionId at any depth (`Reads/Abwab/README.md`) and nothing re-derives a
+    // Reads group and count by SectionId at any depth, and nothing re-derives a
     // nested door's section, so a door that changes section has to take its subtree with it. The archived
     // grandchild is the discriminating row: a live-only cascade satisfies every assertion that ignores it,
     // and then restores that grandchild into a section its parent left.

@@ -4,7 +4,7 @@ export type UniqueWordKind = 'tashkeel' | 'simple';
  * The Unique Words sort allowlist, split by column class because that decides the natural
  * direction a bare token means (counts descend, text ascends). `mushaf-order` is the default and
  * is not a column; نوع الكلمة/الجذر (page-only enrichments) and لم يذكر فيها (computed post-page,
- * and merely the inverse of السور) are excluded — see the reads README's ordering contract.
+ * and merely the inverse of السور) are excluded.
  */
 type UniqueWordCountSortColumn = 'occurrences' | 'ayahs' | 'surahs';
 type UniqueWordTextSortColumn = 'alpha';

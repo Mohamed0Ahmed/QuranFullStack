@@ -31,8 +31,8 @@ paths. If the diff is empty or the branch is ambiguous, say so instead of guessi
 
 Group the diff by area — Backend importer/DataPipeline, Backend API, Frontend Angular,
 specs/docs, cross-stack, history-preserving subtree import — and point each group's
-invariants at their owner instead of restating them: the matching `docs/contracts/*.md`
-contract, the nearest area README, and the implicated
+invariants at their owner instead of restating them: the active Spec Kit artifact when the feature
+is open, the matching `docs/contracts/*.md` pointer, the implicated code, and the applicable
 `Backend/.architecture/` / `Frontend/quran-dashboard-ui/.architecture/` heading.
 
 - **Quran-data flag:** if the diff touches Quran text, an ayah/word/root/morphology

@@ -104,8 +104,8 @@ Rules:
 > `_tokens.scss`, `_themes.scss`, `_typography.scss`, `_breakpoints.scss`,
 > `_layout.scss`, `_components.scss`, `_words-explorer-layout.scss`,
 > `_words-explainer.scss`, `_explorer-tables.scss`, `_explorer-detail-lists.scss`,
-> `_forms.scss`, `_utilities.scss` — see `src/styles/README.md` for the exact import order and
-> boundary. §16 (color doctrine) and §17 (component contracts) below are the live
+> `_forms.scss`, `_utilities.scss`; `src/styles.scss` is the executable import order. §16
+> (color doctrine) and §17 (component contracts) below are the live
 > contract for how these partials are consumed; this section still governs file
 > organization. Only add a new global partial when it holds a genuinely reusable,
 > app-wide pattern — do not scaffold speculative empty files.
@@ -927,8 +927,7 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   `prefers-reduced-motion`.
 - **`reserve` under an `@if` reserves nothing, and most abwab sites do exactly that —
   knowingly.** All but one abwab `[reserve]` error surface are guarded on a **non-empty
-  message**; the inventory is the grep `shared/README.md` already points at,
-  `grep -rn '\[reserve\]' src/app/`. Most take the direct shape
+  message**; inventory them with `grep -rn '\[reserve\]' src/app/`. Most take the direct shape
   `@if (message; as m) { <qd-error-state severity="write" [reserve]="true" [message]="m" /> }`;
   the two list-level page surfaces add a "nothing loaded yet" test to the same truthiness
   (`abwab-page.component.html`, `abwab-templates-page.component.html`); and
@@ -946,8 +945,8 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   danger box on every open of both modals — the quiet class is what makes a permanently-mounted
   reserve viable. `reserve` earns its keep where a box is **permanently mounted** and only its
   content arrives late. Do not delete a guarded site's `@if` without also giving it the
-  quiet-empty shape, and flip the operation's `announceFailure` if you change which shape a
-  surface has (`features/abwab/README.md`, the announcer entry).
+  quiet-empty shape, and flip the operation's `announceFailure` in the owning Abwab write/template
+  controller if you change which shape a surface has.
 
 ### `.qd-explorer-table`
 - **Purpose:** the one table implementation for all 5 explorer tables (roots,
@@ -985,8 +984,8 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   collapses to desc ⇄ asc.
 - **Behavior/URL live in the feature, not here:** the token grammar, cycle, and
   fail-closed guards are `features/words/models/explorer-sort.ts` +
-  `utils/explorer-table-sort.controller.ts`; see the words README for the URL
-  contract. Tables stay presentational and emit the next token (or `null`).
+  `utils/explorer-table-sort.controller.ts`. Tables stay presentational and emit the next token
+  (or `null`).
 - **≤1023px:** the header row is `display: none` in all five table SCSS files, so
   sorting is unreachable there. A compact `<select>` under
   `.qd-explorer-sort-fallback` (hidden ≥1024px) carries the same URL contract.
@@ -1190,9 +1189,8 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   open, so two traps are never live at once** — and no consumer arranges that itself:
   `qd-modal-shell` registers open shells in a stack and enables the topmost one's trap
   only, with `[trapFocus]="false"` available when a consumer must suspend its own.
-  `features/abwab/README.md` holds the reasoning (two live traps
-  fight over focus) and the limit (no second nesting level, no confirm above a
-  confirm). A modal that wants a control other than the first tabbable one marks that
+  Two live traps fight over focus, so there is no second nesting level and no confirm above a
+  confirm. A modal that wants a control other than the first tabbable one marks that
   control `cdkFocusInitial` rather than moving focus itself after the trap captures —
   one focus move. Focus return belongs to the shell (§20.9), which captures the
   pre-open `activeElement`; `cdkTrapFocusAutoCapture` is deliberately absent. The
@@ -1450,8 +1448,8 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **The class is a signal the host owns, not a self-clearing effect.** The consumer
   holds the marked id in a signal and clears it on a timer it also clears on destroy;
   the CSS only renders it. Keeping the timer with the host is what lets the same host
-  key the mark off the navigation that makes the destination exist (see the abwab
-  README's reveal note) instead of off the click.
+  key the mark off the navigation that makes the destination exist
+  (`features/abwab/state/abwab-reveal.controller.ts`) instead of off the click.
 - **The persistent variant: a search match mark (ux-slice-l).** The same "this row is the
   one" problem with a different lifetime — it holds for as long as the query does instead of
   decaying. Same reasoning rules out a tint (see above), so it is also outline-family, but it
@@ -1645,10 +1643,8 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   17's abwab stats bar) use the neutral `qd-result-count` selector.
 - **Its own labels are read through a TDZ-safe getter**
   (`result-count.labels.ts` → `protected get labels()`), never a `readonly` field —
-  a field initialiser can observe the label module inside its temporal dead zone.
-  This is the same rule `features/words/README.md` and
-  `features/abwab/README.md` state for their own `*.labels.ts` files; the promotion
-  preserved the idiom rather than dropping it on the move.
+  a field initialiser can observe the label module inside its temporal dead zone. The promotion
+  preserved the existing `*.labels.ts` idiom rather than dropping it on the move.
 - **Renders `labelPrefix()`: `count()` — a data-display idiom, not a counted-noun
   sentence.** Every consumer (the four words explorers' "عدد الجذور: 1642"-shaped
   copy, and item 17's abwab «كل الأبواب: N» / «أبواب هذا التبويب: N») passes a
@@ -1658,9 +1654,8 @@ fills, resting borders — stays **banned as solid green**: use a tint,
   count" rule targets sentence-shaped copy like `archiveConfirm`, not this shape.
 - **Item 17's second consumer, abwab's stats bar, is two instances above the
   toolbar** (`abwab-page.component.html`), both live-only and both derived from the
-  existing tree snapshot with no new backend read — see `features/abwab/README.md`
-  for the two numbers, the nullable-`sectionId` caveat, and why the stats stay
-  mounted through every tab switch.
+  existing tree snapshot with no new backend read. Their selectors and nullable-`sectionId`
+  handling live in the owning page code, and the stats stay mounted through every tab switch.
 
 ### `qd-nav-progress` (router navigation progress bar)
 - **Purpose:** the app-shell-level "the click was heard" affordance for lazy-route

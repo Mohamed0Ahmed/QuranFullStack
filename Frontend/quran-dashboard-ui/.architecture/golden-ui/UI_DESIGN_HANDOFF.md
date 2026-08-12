@@ -6,7 +6,7 @@
 
 - Snapshot: branch `audit/project-simplification`, commit `32547a82`, 2026-08-09.
 - Runtime evidence: the user's existing authenticated Google Chrome session, inspected without restarting Chrome, replacing the profile, re-authenticating, or submitting writes.
-- Source evidence: the Angular source at that snapshot, generated API models, feature READMEs, `PRODUCT.md`, `DESIGN.md`, and `.architecture/UI_STYLE_SYSTEM.md`, plus the then-active frontend architecture plan as engineering context only.
+- Source evidence: the Angular source at that snapshot, generated API models, `PRODUCT.md`, `DESIGN.md`, and `.architecture/UI_STYLE_SYSTEM.md`, plus the then-active frontend architecture plan as engineering context only.
 - Screenshot evidence: 44 accepted PNGs under `/tmp/quran-ui-design-handoff.L6BYle/current-ui/`. Access screenshots are redacted.
 - Surface count: **25 meaningful visual/operational rows**. This is 19 routed patterns expanded where valid query modes create materially different surfaces, plus the cross-route detail overlay. It is not a count of Angular route declarations.
 - Canonical-family count: **20 design-family candidates**, comprising 18 cross-cutting families and 2 high-value feature compositions. This is not a proposed Angular component count.
@@ -397,7 +397,7 @@ Keyboard behavior includes mirrored RTL arrows, Enter/Space selection or expansi
 
 Door view data includes identity, name, description, representative ayah free-text, aliases, section and retired-section, parent, section/global order, optimistic version, archived state, derived depth, child/descendant/max-depth counts, relation count, and children. Description, representative ayah, and aliases are authoring-only; there are no created-by, approved-by, or timestamp fields on the current door DTO.
 
-There is **no current protected/locked/pending door property or UI**. Current state is live/archived, live/retired section, selected/bulk/search/revealed, permission-hidden/static order, picker excluded/disabled, and request loading/error/conflict. Later README wording that says the tree renders `protected` conflicts with the DTO and the README's preceding explicit rule; Claude Design must not invent a lock state.
+There is **no current protected/locked/pending door property or UI**. Current state is live/archived, live/retired section, selected/bulk/search/revealed, permission-hidden/static order, picker excluded/disabled, and request loading/error/conflict. Later prose that said the tree renders `protected` conflicted with the DTO; Claude Design must not invent a lock state.
 
 ### Cards, archive, side panel, and templates
 
@@ -426,7 +426,7 @@ There are 19 independent write capabilities. Reads remain public. Most missing w
 - Source-only: populated archive/restore cases, retired section, all permission combinations, extreme depth/many siblings, tree/section/template order edits, no-section root creation, relation groups, move exclusions, dirty alerts, validation, busy, write errors, 401/403/409, bulk conflict, and template apply/copy results.
 - Unsafe: pressing Save/Add/Delete/Archive/door-or-archive Restore/Move/Apply or a server-write Confirm. Enter in tree/section/template order editors, new-template form, and template quick-add can write and was not used.
 
-Evidence: `features/abwab/README.md`, `models/abwab.models.ts`, `components/abwab-tree/*`, `abwab-cards/*`, `abwab-archive-view/*`, `abwab-side-panel/*`, `abwab-door-picker/*`, all six modal components, templates page/components, and generated Abwab DTOs.
+Evidence: `models/abwab.models.ts`, `components/abwab-tree/*`, `abwab-cards/*`, `abwab-archive-view/*`, `abwab-side-panel/*`, `abwab-door-picker/*`, all six modal components, templates page/components, and generated Abwab DTOs.
 
 ---
 

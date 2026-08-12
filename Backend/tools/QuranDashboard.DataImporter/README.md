@@ -45,13 +45,12 @@ Running with no verb or an unknown verb prints usage and exits non-zero.
 
 - Re-imports refuse to overwrite committed data unless `--force`; prefer a dry-validate
   (`validate-enriched-morphology`) first.
-- Do not modify staged source packages from here; corrections belong in the pipeline's
-  `Corrections/` (see
-  `../../infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/Words/MorphologyImporting/README.md`).
+- Do not modify staged source packages from here; corrections belong in the owning pipeline's
+  versioned `Corrections/` data.
 - Preserve traceability from every imported or generated result back to its staged package and
   upstream provenance.
 
 ## Related
 
 - Dev shortcut scripts: `Backend/scripts/README.md`.
-- Write mechanics: `.../Persistence/DataPipelines/Quran/README.md`.
+- Implementation mechanics: the corresponding source-reader and persistence pipeline code.

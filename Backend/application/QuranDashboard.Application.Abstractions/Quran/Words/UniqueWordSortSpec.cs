@@ -1,8 +1,7 @@
 namespace QuranDashboard.Application.Abstractions.Quran.Words;
 
 // Every member maps to a column the list query already projects at the sort point. Page-only chips
-// and the after-paging missing-surahs count (monotone inverse of السور) are deliberately excluded;
-// see the reads README's ordering contract.
+// and the after-paging missing-surahs count (monotone inverse of السور) are deliberately excluded.
 public enum UniqueWordSortColumn
 {
     MushafOrder,

@@ -32,6 +32,10 @@ Git tracking/staging state is never a finding, severity item, or verdict input. 
 concerns are noticed, mention them only in an optional `Commit workflow reminder` line
 outside the verdict.
 
+The absence of a code-area README is never a finding. Do not request, recreate, or treat one as
+implemented truth; use active Spec Kit artifacts for planned intent, code for implementation, and
+the applicable architecture/contract authorities for repository constraints.
+
 ## Initial formal review
 
 1. Establish the base and the complete cumulative current diff/content, including
