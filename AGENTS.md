@@ -33,16 +33,16 @@ adapters remain the native Skill route.
 
 ## Trigger routing
 
-| Trigger | Load |
-| --- | --- |
-| Production-source implementation | Only the needed headings of `CODING_PRINCIPLES.md`: §2 Clean Code and `Comment Policy`, §3 SOLID, §4 DRY/KISS/YAGNI, or §7 Focused Changes. |
-| Active phased, specification, or contract-bound work | The active spec/task/contract and the invoked native Spec Kit Skill. Stop before expanding either. |
-| Selecting, running, or reporting tests | Read `TESTING_CONSTITUTION.md`; use the nearest test README only for commands and fixtures. |
-| Writing or reviewing retained Backend or Playwright tests | Read `TESTING_CONSTITUTION.md`, then `.agents/skills/test-guard/SKILL.md` and only its relevant retained-stack reference. |
-| Pre-delivery implementation self-check | `CODING_PRINCIPLES.md` §12 and already-triggered production-code headings; include the area's file-size heading only when its threshold applies. |
-| Git branch, stage, commit, push, or PR work | `.agents/skills/commit-workflow/SKILL.md`. |
-| Deployment or runtime smoke | `Backend/README.md` §Deployment and `.agents/skills/deploy-smoke/SKILL.md`. |
-| Formal engineering, performance, or Spec Kit review | Only the explicitly invoked native Skill and its scoped references. |
+| Trigger                                                   | Load                                                                                                                                             |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Production-source implementation                          | Only the needed headings of `CODING_PRINCIPLES.md`: §2 Clean Code and `Comment Policy`, §3 SOLID, §4 DRY/KISS/YAGNI, or §7 Focused Changes.      |
+| Active phased, specification, or contract-bound work      | The active spec/task/contract and the invoked native Spec Kit Skill. Stop before expanding either.                                               |
+| Selecting, running, or reporting tests                    | Read `TESTING_CONSTITUTION.md`; use the nearest test README only for commands and fixtures.                                                      |
+| Writing or reviewing retained Backend or Playwright tests | Read `TESTING_CONSTITUTION.md`, then `.agents/skills/test-guard/SKILL.md` and only its relevant retained-stack reference.                        |
+| Pre-delivery implementation self-check                    | `CODING_PRINCIPLES.md` §12 and already-triggered production-code headings; include the area's file-size heading only when its threshold applies. |
+| Git branch, stage, commit, push, or PR work               | `.agents/skills/commit-workflow/SKILL.md`.                                                                                                       |
+| Deployment or runtime smoke                               | `Backend/README.md` §Deployment and `.agents/skills/deploy-smoke/SKILL.md`.                                                                      |
+| Formal engineering, performance, or Spec Kit review       | Only the explicitly invoked native Skill and its scoped references.                                                                              |
 
 ## Branching workflow
 
@@ -53,7 +53,7 @@ Deployment truth lives in `Backend/README.md` §Deployment.
 ## Workspace Path Conventions
 
 Planning/report locations, feature-artifact lifecycle and per-file gate, and the exact long-lived
-survivor list live in `docs/README.md` under *Where things live now*, §Lifecycle, and §Long-lived
+survivor list live in `docs/README.md` under _Where things live now_, §Lifecycle, and §Long-lived
 documentation. Steady-state contract pointers live in `docs/contracts/README.md`.
 
 ## Comments are forbidden by default
@@ -66,7 +66,11 @@ heading for production-source changes.
 
 ## Active Spec Kit Feature
 
-None.
+- Feature slug: `001-abwab-linking-backend` (spec: `specs/001-abwab-linking-backend/spec.md`)
+- Plan: `specs/001-abwab-linking-backend/plan.md` (with tasks in `tasks.md`)
+- Decision record: `docs/abwab-linking-backend-implementation-plan.md`, with
+  `docs/abwab-linking-backend-database-architecture-report.md` and
+  `docs/abwab-linking-frontend-v2-current-state-report.md`
 
 - When a feature opens, record it here as: feature slug, its `specs/<feature>/plan.md`, and
   its `docs/feature-XXX-*/` decision record. Clear this section back to "None" in the same

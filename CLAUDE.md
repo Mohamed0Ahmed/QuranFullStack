@@ -32,16 +32,16 @@ Claude does not load a different agent's repository entrypoint as part of this r
 
 ## Trigger routing
 
-| Trigger | Load |
-| --- | --- |
-| Production-source implementation | Only the implicated headings of `CODING_PRINCIPLES.md`: §2 Clean Code and `Comment Policy`, §3 SOLID, §4 DRY/KISS/YAGNI, or §7 Focused Changes. |
-| Active phased, specification, or contract-bound work | The active spec/task/contract plus the invoked native Spec Kit Skill. Stop before broadening either. |
-| Selecting, running, or reporting tests | Read `TESTING_CONSTITUTION.md`; use the nearest test README only for commands and fixtures. |
-| Writing or reviewing retained Backend or Playwright tests | Read `TESTING_CONSTITUTION.md`, then `.claude/skills/test-guard/SKILL.md` and only its relevant retained-stack reference. |
-| Pre-delivery implementation self-check | `CODING_PRINCIPLES.md` §12 and production-code headings already implicated; add the area structure document's file-size heading only when its threshold applies. |
-| Git branch, stage, commit, push, or PR work | `.claude/skills/commit-workflow/SKILL.md`. |
-| Deployment or runtime smoke | `Backend/README.md` §Deployment and `.claude/skills/deploy-smoke/SKILL.md`. |
-| Formal engineering, performance, or Spec Kit review | Only the explicitly invoked native Skill and its scoped references. |
+| Trigger                                                   | Load                                                                                                                                                             |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Production-source implementation                          | Only the implicated headings of `CODING_PRINCIPLES.md`: §2 Clean Code and `Comment Policy`, §3 SOLID, §4 DRY/KISS/YAGNI, or §7 Focused Changes.                  |
+| Active phased, specification, or contract-bound work      | The active spec/task/contract plus the invoked native Spec Kit Skill. Stop before broadening either.                                                             |
+| Selecting, running, or reporting tests                    | Read `TESTING_CONSTITUTION.md`; use the nearest test README only for commands and fixtures.                                                                      |
+| Writing or reviewing retained Backend or Playwright tests | Read `TESTING_CONSTITUTION.md`, then `.claude/skills/test-guard/SKILL.md` and only its relevant retained-stack reference.                                        |
+| Pre-delivery implementation self-check                    | `CODING_PRINCIPLES.md` §12 and production-code headings already implicated; add the area structure document's file-size heading only when its threshold applies. |
+| Git branch, stage, commit, push, or PR work               | `.claude/skills/commit-workflow/SKILL.md`.                                                                                                                       |
+| Deployment or runtime smoke                               | `Backend/README.md` §Deployment and `.claude/skills/deploy-smoke/SKILL.md`.                                                                                      |
+| Formal engineering, performance, or Spec Kit review       | Only the explicitly invoked native Skill and its scoped references.                                                                                              |
 
 ## Branching workflow
 
@@ -52,7 +52,7 @@ requested action. Deployment truth lives in `Backend/README.md` §Deployment.
 ## Workspace Path Conventions
 
 Planning/report locations, the feature-artifact lifecycle and per-file gate, and the exact
-long-lived survivor list live in `docs/README.md` under *Where things live now*, §Lifecycle, and
+long-lived survivor list live in `docs/README.md` under _Where things live now_, §Lifecycle, and
 §Long-lived documentation. Steady-state contract pointers live in `docs/contracts/README.md`.
 
 ## Comments are forbidden by default
@@ -65,7 +65,11 @@ heading when changing production-source code.
 
 ## Active Spec Kit Feature
 
-None.
+- Feature slug: `001-abwab-linking-backend` (spec: `specs/001-abwab-linking-backend/spec.md`)
+- Plan: `specs/001-abwab-linking-backend/plan.md` (with tasks in `tasks.md`)
+- Decision record: `docs/abwab-linking-backend-implementation-plan.md`, with
+  `docs/abwab-linking-backend-database-architecture-report.md` and
+  `docs/abwab-linking-frontend-v2-current-state-report.md`
 
 - When a feature opens, record it here as: feature slug, its `specs/<feature>/plan.md`, and
   its `docs/feature-XXX-*/` decision record. Clear this section back to "None" in the same
