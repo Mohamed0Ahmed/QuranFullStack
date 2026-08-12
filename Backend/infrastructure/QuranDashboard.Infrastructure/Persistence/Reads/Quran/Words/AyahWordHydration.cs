@@ -7,13 +7,21 @@ internal static class AyahWordHydration
         IReadOnlyList<TMeta> pageAyahs,
         Func<TMeta, int> ayahIdOf,
         Func<TMeta, IReadOnlyList<AyahWordRow>, short, TDto> project,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool includeAyahMarkers = false)
     {
         var pageAyahIds = pageAyahs.Select(ayahIdOf).ToList();
 
-        var wordsByAyah = await db.QuranWords
+        var wordsQuery = db.QuranWords
             .AsNoTracking()
-            .Where(w => pageAyahIds.Contains(w.AyahId) && !w.IsAyahMarker)
+            .Where(w => pageAyahIds.Contains(w.AyahId));
+
+        if (!includeAyahMarkers)
+        {
+            wordsQuery = wordsQuery.Where(w => !w.IsAyahMarker);
+        }
+
+        var wordsByAyah = await wordsQuery
             .OrderBy(w => w.SurahNumber)
             .ThenBy(w => w.AyahNumber)
             .ThenBy(w => w.WordNumber)
@@ -40,9 +48,6 @@ internal static class AyahWordHydration
             .ToList();
     }
 
-    // The hydration query above already filters markers out of `words`, so the non-marker branch always
-    // wins in practice and this only falls through to the "no words hydrated" case; kept explicit because
-    // it is the exact page-number algorithm every caller previously duplicated.
     private static short ResolveAyahPageNumber(IReadOnlyList<AyahWordRow> words)
     {
         var firstReadableWord = words.FirstOrDefault(w => !w.IsAyahMarker);

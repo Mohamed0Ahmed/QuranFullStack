@@ -42,10 +42,10 @@ public sealed partial class EfWordTypesReader
     // Grouped detail reads apply the identical five-field scope as the table row, so they build the
     // same WordTypeReadContext the list SQL uses — deliberately search-free: detail identity is the
     // numeric dimension id, so the list-scope search never narrows grouped detail reads.
-    private static WordTypeReadContext ToGroupedReadContext(WordTypeFilter filter) =>
+    internal static WordTypeReadContext ToGroupedReadContext(WordTypeFilter filter) =>
         new(NormalizeType(filter.Type), NormalizeChildCode(filter.ChildCode), filter.Case, filter.Tense, filter.Voice);
 
-    private static object[] BuildGroupedDetailParameters(WordTypeReadContext context, int dimensionId)
+    internal static object[] BuildGroupedDetailParameters(WordTypeReadContext context, int dimensionId)
     {
         var parameters = new List<object>
         {

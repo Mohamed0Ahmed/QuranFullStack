@@ -211,9 +211,27 @@ and Unique Words. They back the `application/.../Quran/Words/**` query handlers 
   (`MissingSurahs`) arrays ship in the same `WordTypeSurahsResponse`; `detailPage`/paging is not part of this
   read's contract.
 
+- **`AyahWordHydration` now has a second consumer outside this area.** Abwab Linking source resolution
+  (`Persistence/Reads/Linking/`) reuses it, so its marker filter is a parameter:
+  `ProjectAyahMatchesAsync(..., bool includeAyahMarkers = false)`. The default is `false` and the
+  filter is applied as a separate `Where` only on that branch, so the SQL and the projected rows for
+  every pre-existing caller — Roots, Lemmas, Stems, and **both** Word Types ayah reads — are unchanged.
+  All five keep today's marker-free shape by omitting the argument entirely; **only Linking ever passes
+  `true`, and only on its Unique Word and Manual Mushaf branches.** Linking's Root/Lemma/Stem and
+  **Word Type** branches pass `false`, precisely so they keep matching the explorer reads listed here:
+  a Word Type resolution must return the same word list the Word Types explorer returns, or the Phase 9
+  Frontend cutover would be visible. Note the consequence for `AyahWordRow.IsAyahMarker`: it is still
+  always `false` for the marker-free callers, but it is now genuinely load-bearing when markers are
+  included, and `ResolveAyahPageNumber`'s non-marker branch is what keeps the returned page number equal
+  to the first readable word's page in both modes. Unique Words does **not** use this helper — it
+  hydrates markers through its own private row type, and that divergence is pre-existing and deliberate;
+  it is also why Linking's Unique Word branch passes `true` while the Word Types callers here do not.
+
 ## Related
 
 - Handlers: `application/QuranDashboard.Application/Quran/Words/**`.
+- Second consumer of `AyahWordHydration` and of `EfWordTypesReader`'s occurrence base:
+  `../../Linking/README.md`.
 - Frontend consumers: `Frontend/quran-dashboard-ui/src/app/features/words/README.md`.
 - Contracts: this README + the handlers are the truth; the thin index is
   `docs/contracts/words-explorers.md`. The planning artifacts of the features that built

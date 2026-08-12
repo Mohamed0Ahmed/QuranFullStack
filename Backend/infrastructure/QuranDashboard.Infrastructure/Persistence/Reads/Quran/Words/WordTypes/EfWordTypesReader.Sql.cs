@@ -160,7 +160,7 @@ public sealed partial class EfWordTypesReader
         OFFSET @skip LIMIT @take
         """;
 
-    private static string BaseRowsSql(WordTypeReadContext context, WordTypeGroupedDimensionKind? groupedDimension = null) => $"""
+    internal static string BaseRowsSql(WordTypeReadContext context, WordTypeGroupedDimensionKind? groupedDimension = null) => $"""
         SELECT
             w.id AS quran_word_id,
             w.ayah_id,
@@ -430,7 +430,7 @@ public sealed partial class EfWordTypesReader
         _ => "اسم",
     };
 
-    private sealed record WordTypeReadContext(
+    internal sealed record WordTypeReadContext(
         string Type,
         string? ChildCode,
         string? Case,

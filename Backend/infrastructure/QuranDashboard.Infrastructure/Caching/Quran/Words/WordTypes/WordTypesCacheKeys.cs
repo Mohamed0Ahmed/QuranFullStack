@@ -92,7 +92,7 @@ public static class WordTypesCacheKeys
         identity.Tense,
         identity.Voice);
 
-    private static string HashParts(params string?[] parts)
+    internal static string HashParts(params string?[] parts)
     {
         var normalized = string.Join('|', parts.Select(EncodePart));
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(normalized));

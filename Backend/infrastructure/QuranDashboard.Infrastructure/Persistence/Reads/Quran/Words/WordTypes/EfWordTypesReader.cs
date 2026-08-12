@@ -193,7 +193,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
         }
 
         var rows = await (
-                from morphology in MatchedMorphologyQuery(identity)
+                from morphology in MatchedMorphologyQuery(_dbContext, identity)
                 join word in _dbContext.QuranWords.AsNoTracking() on morphology.QuranWordId equals word.Id
                 join uniqueWord in _dbContext.QuranWordsUniqueTashkeel.AsNoTracking()
                     on word.UniqueTashkeelWordId equals uniqueWord.Id
@@ -387,8 +387,10 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
 
     // Filters through the QuranWord navigation (not an explicit second join) so a matched-word projection
     // (MatchedWordsQuery) reuses this single quran_words join instead of re-joining on the same key.
-    private IQueryable<Domain.Quran.Words.Morphology.WordMorphology> MatchedMorphologyQuery(WordTypeRowIdentity identity) =>
-        from morphology in _dbContext.WordMorphologies.AsNoTracking()
+    internal static IQueryable<Domain.Quran.Words.Morphology.WordMorphology> MatchedMorphologyQuery(
+        QuranDashboardDbContext dbContext,
+        WordTypeRowIdentity identity) =>
+        from morphology in dbContext.WordMorphologies.AsNoTracking()
         where !morphology.QuranWord.IsAyahMarker
             && morphology.QuranWord.UniqueTashkeelWordId == identity.TashkeelWordId
             && (
@@ -414,7 +416,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
     // reuse a single quran_words join (via the QuranWord navigation) instead of re-joining it per read.
     // Returns the word entities themselves so each consumer composes its own aggregate/projection.
     private IQueryable<Domain.Quran.Words.QuranWord> MatchedWordsQuery(WordTypeRowIdentity identity) =>
-        MatchedMorphologyQuery(identity).Select(morphology => morphology.QuranWord);
+        MatchedMorphologyQuery(_dbContext, identity).Select(morphology => morphology.QuranWord);
 
     private async Task<int> CountRowsAsync(WordTypeReadContext context, CancellationToken cancellationToken)
     {
