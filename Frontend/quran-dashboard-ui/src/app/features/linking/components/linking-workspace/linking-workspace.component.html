@@ -1,6 +1,6 @@
 <qd-details-workspace [identity]="labels.preparedSources" variant="action-rail" testIdPrefix="linking-workspace-content">
   <div qdDetailsActions class="linking-workspace__top-actions">
-    <span>{{ labels.selectedCount }}: {{ selectedCount() }}</span>
+    <span>{{ labels.selectedSourcesCount }}: {{ selectedCount() }}</span>
     <button qdAction="primary" size="sm" type="button" [disabled]="selectedCount() === 0" (click)="linkSelected()">{{ labels.linkSelected }}</button>
     @if (selectedCount() > 0) { <button qdAction="tertiary" size="sm" type="button" (click)="clearSelection()">{{ labels.clearSelection }}</button> }
     <button qdAction="danger" size="sm" type="button" [disabled]="!hasRows()" (click)="removeAll()">{{ labels.removeAll }}</button>

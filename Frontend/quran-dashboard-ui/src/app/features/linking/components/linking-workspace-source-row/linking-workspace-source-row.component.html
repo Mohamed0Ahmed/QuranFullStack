@@ -11,7 +11,7 @@
     <h3>{{ row().item.source.label }}</h3>
   </div>
   <div class="linking-workspace-source-row__count">
-    <span>{{ labels.selectedCount }}</span>
+    <span>{{ labels.resolvedResultCount }}</span>
     <button qdAction="tertiary" size="sm" type="button" [attr.data-linking-editor-source-key]="row().item.sourceKey" (click)="editRequested.emit()">
       {{ row().countLabel }}
     </button>
