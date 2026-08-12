@@ -252,7 +252,7 @@ export class LinkingWorkflowFacade {
 
 function defaultConfiguration(source: LinkingSourceDescriptor): LinkingSourceConfiguration {
   return source.kind === 'manual-mushaf-ayahs'
-    ? { kind: 'manual', ayahInclusion: DEFAULT_LINKING_SELECTION, wordLocationsByVerseKey: {}, linkShape: 'independent' }
+    ? { kind: 'manual', ayahInclusion: DEFAULT_LINKING_SELECTION, quranWordIdsByVerseKey: {}, linkShape: 'independent' }
     : { kind: 'automatic', ayahInclusion: DEFAULT_LINKING_SELECTION, automaticWordMatchesEnabled: true };
 }
 

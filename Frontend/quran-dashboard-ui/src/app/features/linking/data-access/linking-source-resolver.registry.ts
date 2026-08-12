@@ -1,121 +1,83 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 
+import { LinkingResolvedAyahDto } from '../../../core/api/generated/models/linking-resolved-ayah-dto';
+import { LinkingResolvedSourceDto } from '../../../core/api/generated/models/linking-resolved-source-dto';
+import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { LinkingAyah } from '../models/linking-ayah.models';
-import { LinkingSourceDescriptor, LinkingSourceKind } from '../models/linking-source.models';
-import { UniqueWordLinkingSourceResolver } from './resolvers/unique-word-linking-source.resolver';
-import { RootLinkingSourceResolver } from './resolvers/root-linking-source.resolver';
-import { LemmaLinkingSourceResolver } from './resolvers/lemma-linking-source.resolver';
-import { StemLinkingSourceResolver } from './resolvers/stem-linking-source.resolver';
-import { WordTypeLinkingSourceResolver } from './resolvers/word-type-linking-source.resolver';
-import { ManualMushafAyahsLinkingSourceResolver } from './resolvers/manual-mushaf-ayahs-linking-source.resolver';
+import { LinkingSourceDescriptor } from '../models/linking-source.models';
+import { LinkingSourceCache, LinkingSourceCacheKeys } from '../state/linking-source.cache';
+import { linkingSourceKey } from '../utils/linking-source-key';
+import { LinkingSourceResolutionApi } from './linking-source-resolution.api';
 import type { LinkingSourceResolveProgress } from './linking-source-resolver';
-
-export interface LinkingSourceResolverRegistration {
-  readonly kind: LinkingSourceKind;
-  resolve(
-    source: LinkingSourceDescriptor,
-    onProgress: (progress: LinkingSourceResolveProgress) => void,
-  ): Observable<readonly LinkingAyah[]>;
-}
 
 @Injectable({ providedIn: 'root' })
 export class LinkingSourceResolverRegistry {
-  private readonly uniqueWordResolver = inject(UniqueWordLinkingSourceResolver);
-  private readonly rootResolver = inject(RootLinkingSourceResolver);
-  private readonly lemmaResolver = inject(LemmaLinkingSourceResolver);
-  private readonly stemResolver = inject(StemLinkingSourceResolver);
-  private readonly wordTypeResolver = inject(WordTypeLinkingSourceResolver);
-  private readonly manualMushafAyahsResolver = inject(ManualMushafAyahsLinkingSourceResolver);
-  private readonly registrations: ReadonlyMap<LinkingSourceKind, LinkingSourceResolverRegistration> = new Map<
-    LinkingSourceKind,
-    LinkingSourceResolverRegistration
-  >([
-    [
-      'manual-mushaf-ayahs',
-      {
-        kind: 'manual-mushaf-ayahs',
-        resolve: (source, onProgress) => {
-          if (source.kind !== 'manual-mushaf-ayahs') {
-            throw new Error('مصدر الربط غير متوافق مع آيات المصحف اليدوية.');
-          }
-          return this.manualMushafAyahsResolver.resolve(source, onProgress);
-        },
-      },
-    ],
-    [
-      'unique-word',
-      {
-        kind: 'unique-word',
-        resolve: (
-          source: LinkingSourceDescriptor,
-          onProgress: (progress: LinkingSourceResolveProgress) => void,
-        ) => {
-          if (source.kind !== 'unique-word') {
-            throw new Error('مصدر الربط غير متوافق مع محلل الآيات.');
-          }
-          return this.uniqueWordResolver.resolve(source, onProgress);
-        },
-      },
-    ],
-    [
-      'root',
-      {
-        kind: 'root',
-        resolve: (source, onProgress) => {
-          if (source.kind !== 'root') {
-            throw new Error('مصدر الربط غير متوافق مع محلل الجذر.');
-          }
-          return this.rootResolver.resolve(source, onProgress);
-        },
-      },
-    ],
-    [
-      'lemma',
-      {
-        kind: 'lemma',
-        resolve: (source, onProgress) => {
-          if (source.kind !== 'lemma') {
-            throw new Error('مصدر الربط غير متوافق مع محلل اللمة.');
-          }
-          return this.lemmaResolver.resolve(source, onProgress);
-        },
-      },
-    ],
-    [
-      'stem',
-      {
-        kind: 'stem',
-        resolve: (source, onProgress) => {
-          if (source.kind !== 'stem') {
-            throw new Error('مصدر الربط غير متوافق مع محلل الصيغة.');
-          }
-          return this.stemResolver.resolve(source, onProgress);
-        },
-      },
-    ],
-    [
-      'word-type',
-      {
-        kind: 'word-type',
-        resolve: (source, onProgress) => {
-          if (source.kind !== 'word-type') {
-            throw new Error('مصدر الربط غير متوافق مع محلل نوع الكلمة.');
-          }
-          return this.wordTypeResolver.resolve(source, onProgress);
-        },
-      },
-    ],
-  ]);
+  private readonly api = inject(LinkingSourceResolutionApi);
+  private readonly cache = inject(LinkingSourceCache);
 
   resolve(
     source: LinkingSourceDescriptor,
-    onProgress: (progress: { loaded: number; total: number }) => void,
+    onProgress: (progress: LinkingSourceResolveProgress) => void,
   ): Observable<readonly LinkingAyah[]> {
-    const registration = this.registrations.get(source.kind);
-    if (!registration) {
-      throw new Error('هذا المصدر غير مدعوم في الربط المباشر بعد.');
-    }
-    return registration.resolve(source, onProgress);
+    const sourceIdentity = linkingSourceKey(source);
+    return this.cache
+      .getOrLoad(LinkingSourceCacheKeys.source(sourceIdentity), () =>
+        this.api
+          .resolveSource(source)
+          .pipe(tap((response) => validateResolvedSource(response, sourceIdentity))),
+      )
+      .pipe(
+        map((response) => {
+          const ayahs = toLinkingAyahs(validateResolvedSource(response, sourceIdentity));
+          onProgress({ loaded: ayahs.length, total: ayahs.length });
+          return ayahs;
+        }),
+      );
   }
+}
+
+function validateResolvedSource(
+  response: ApiResponse<LinkingResolvedSourceDto>,
+  sourceIdentity: string,
+): LinkingResolvedSourceDto {
+  const resolved = response.data;
+  if (!response.isSuccess || !resolved) {
+    throw new Error(response.message || 'تعذر تحميل نتائج المصدر كاملة.');
+  }
+  if (resolved.sourceIdentity !== sourceIdentity) {
+    throw new Error('هوية المصدر المعادة لا تطابق المصدر المطلوب.');
+  }
+  if (resolved.totalAyahCount !== resolved.ayahs.length) {
+    throw new Error('بيانات نتائج المصدر غير مكتملة.');
+  }
+  if (resolved.ayahs.some(hasRepeatedQuranWordId)) {
+    throw new Error('تكررت معرّفات كلمات القرآن في نتائج المصدر.');
+  }
+  return resolved;
+}
+
+function hasRepeatedQuranWordId(ayah: LinkingResolvedAyahDto): boolean {
+  return new Set(ayah.words.map((word) => word.quranWordId)).size !== ayah.words.length;
+}
+
+function toLinkingAyahs(resolved: LinkingResolvedSourceDto): readonly LinkingAyah[] {
+  return resolved.ayahs.map((ayah) => {
+    const matchedQuranWordIds = new Set(ayah.matchedQuranWordIds);
+    return {
+      verseKey: ayah.verseKey,
+      ayahId: ayah.ayahId,
+      surahNumber: ayah.surahNumber,
+      surahNameArabic: ayah.surahNameArabic,
+      ayahNumber: ayah.ayahNumber,
+      pageNumber: ayah.pageFrom,
+      words: ayah.words.map((word) => ({
+        renderPosition: word.wordNumber,
+        canonicalQuranWordId: word.quranWordId,
+        textUthmani: word.textUthmani,
+        isAyahMarker: word.isAyahMarker,
+        isSourceMatch: matchedQuranWordIds.has(word.quranWordId),
+      })),
+    };
+  });
 }

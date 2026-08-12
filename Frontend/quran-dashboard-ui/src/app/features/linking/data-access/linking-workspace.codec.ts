@@ -1,7 +1,7 @@
 import {
   LinkingManualLinkShape,
-  LinkingManualWordLocationsByVerseKey,
-  isManualWordLocation,
+  LinkingManualWordIdsByVerseKey,
+  isCanonicalQuranWordId,
 } from '../models/linking-manual-mushaf.models';
 import { isLinkingSourceDescriptor, isVerseKey } from '../models/linking-source.models';
 import {
@@ -14,10 +14,10 @@ import {
 import { linkingSourceKey } from '../utils/linking-source-key';
 import { orderedUniqueLinkingVerseKeys } from '../utils/linking-verse-order';
 
-const WORKSPACE_VERSION = 2;
+const WORKSPACE_VERSION = 3;
 const MAX_WORKSPACE_ITEMS = 100;
 const MAX_SELECTION_KEYS = 10_000;
-const MAX_WORD_LOCATIONS_PER_AYAH = 500;
+const MAX_WORD_IDS_PER_AYAH = 500;
 const MAX_STRING_LENGTH = 1_000;
 const MAX_RESULT_COUNT = 1_000_000;
 
@@ -114,23 +114,23 @@ function decodeConfiguration(source: LinkingWorkspaceItem['source'], value: unkn
     if (
       value['kind'] !== 'manual' ||
       !isManualLinkShape(value['linkShape']) ||
-      !isManualWordLocationsByVerseKey(value['wordLocationsByVerseKey'])
+      !isManualWordIdsByVerseKey(value['quranWordIdsByVerseKey'])
     ) {
       return null;
     }
     const ayahInclusion = normalizeSelection(value['ayahInclusion']);
-    const wordLocationsByVerseKey = normalizeWordLocations(value['wordLocationsByVerseKey']);
+    const quranWordIdsByVerseKey = normalizeWordIds(value['quranWordIdsByVerseKey']);
     const manualVerseKeys = new Set(source.manualAyahs.map((ayah) => ayah.verseKey));
     if (
       ayahInclusion.verseKeys.some((verseKey) => !manualVerseKeys.has(verseKey)) ||
-      Object.keys(wordLocationsByVerseKey).some((verseKey) => !manualVerseKeys.has(verseKey))
+      Object.keys(quranWordIdsByVerseKey).some((verseKey) => !manualVerseKeys.has(verseKey))
     ) {
       return null;
     }
     return {
       kind: 'manual',
       ayahInclusion,
-      wordLocationsByVerseKey,
+      quranWordIdsByVerseKey,
       linkShape: value['linkShape'],
     };
   }
@@ -186,27 +186,27 @@ function normalizeSelection(selection: LinkingSelection): LinkingSelection {
   return { mode: selection.mode, verseKeys: orderedUniqueLinkingVerseKeys(selection.verseKeys) };
 }
 
-function isManualWordLocationsByVerseKey(value: unknown): value is LinkingManualWordLocationsByVerseKey {
+function isManualWordIdsByVerseKey(value: unknown): value is LinkingManualWordIdsByVerseKey {
   if (!isRecord(value) || Object.keys(value).length > MAX_SELECTION_KEYS) {
     return false;
   }
   return Object.entries(value).every(
-    ([verseKey, locations]) =>
+    ([verseKey, quranWordIds]) =>
       isVerseKey(verseKey) &&
-      Array.isArray(locations) &&
-      locations.length <= MAX_WORD_LOCATIONS_PER_AYAH &&
-      locations.every(isManualWordLocation),
+      Array.isArray(quranWordIds) &&
+      quranWordIds.length <= MAX_WORD_IDS_PER_AYAH &&
+      quranWordIds.every(isCanonicalQuranWordId),
   );
 }
 
-function normalizeWordLocations(
-  wordLocationsByVerseKey: LinkingManualWordLocationsByVerseKey,
-): LinkingManualWordLocationsByVerseKey {
+function normalizeWordIds(
+  quranWordIdsByVerseKey: LinkingManualWordIdsByVerseKey,
+): LinkingManualWordIdsByVerseKey {
   return Object.fromEntries(
-    Object.entries(wordLocationsByVerseKey)
+    Object.entries(quranWordIdsByVerseKey)
       .filter(([verseKey]) => isVerseKey(verseKey))
       .sort(([left], [right]) => left.localeCompare(right))
-      .map(([verseKey, locations]) => [verseKey, [...new Set(locations)]]),
+      .map(([verseKey, quranWordIds]) => [verseKey, [...new Set(quranWordIds)].sort((a, b) => a - b)]),
   );
 }
 

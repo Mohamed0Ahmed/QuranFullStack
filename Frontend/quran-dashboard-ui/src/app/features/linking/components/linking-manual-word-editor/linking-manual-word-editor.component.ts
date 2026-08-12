@@ -52,8 +52,8 @@ export class LinkingManualWordEditorComponent {
     }
   }
 
-  protected toggleWord(verseKey: string, wordLocation: string): void {
-    this.facade.toggleWord(verseKey, wordLocation);
+  protected toggleWord(verseKey: string, quranWordId: number): void {
+    this.facade.toggleWord(verseKey, quranWordId);
   }
 
   protected clearAyah(verseKey: string): void {

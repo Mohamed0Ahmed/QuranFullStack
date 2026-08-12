@@ -1,9 +1,10 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 
-import { ManualMushafAyahReader } from '../data-access/manual-mushaf-ayah.reader';
+import { LinkingSourceResolver } from '../data-access/linking-source-resolver';
 import { LinkingAyah } from '../models/linking-ayah.models';
-import { LinkingManualWordLocationsByVerseKey } from '../models/linking-manual-mushaf.models';
+import { LinkingManualWordIdsByVerseKey } from '../models/linking-manual-mushaf.models';
+import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import { selectedLinkingVerseKeys } from '../utils/linking-selection';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
@@ -15,7 +16,7 @@ interface ManualWordEditorState {
   capturedConfigurationRevision: number | null;
   status: ManualWordLoadStatus;
   ayahs: readonly LinkingAyah[];
-  draftLocations: LinkingManualWordLocationsByVerseKey;
+  draftWordIds: LinkingManualWordIdsByVerseKey;
   errorMessage: string | null;
 }
 
@@ -24,7 +25,7 @@ const INITIAL_STATE: ManualWordEditorState = {
   capturedConfigurationRevision: null,
   status: 'idle',
   ayahs: [],
-  draftLocations: {},
+  draftWordIds: {},
   errorMessage: null,
 };
 
@@ -32,7 +33,7 @@ const INITIAL_STATE: ManualWordEditorState = {
 export class LinkingManualWordEditorFacade {
   private readonly access = inject(LinkingAccessService);
   private readonly workspace = inject(LinkingWorkspaceStore);
-  private readonly reader = inject(ManualMushafAyahReader);
+  private readonly resolver = inject(LinkingSourceResolver);
   private readonly stateSignal = signal<ManualWordEditorState>(INITIAL_STATE);
   private subscription: Subscription | null = null;
   private generation = 0;
@@ -51,7 +52,7 @@ export class LinkingManualWordEditorFacade {
   readonly ayahs = computed(() => this.stateSignal().ayahs);
   readonly status = computed(() => this.stateSignal().status);
   readonly selectedWordCount = computed(() =>
-    Object.values(this.stateSignal().draftLocations).reduce((count, locations) => count + locations.length, 0),
+    Object.values(this.stateSignal().draftWordIds).reduce((count, quranWordIds) => count + quranWordIds.length, 0),
   );
 
   open(sourceKey: string | null): void {
@@ -72,10 +73,10 @@ export class LinkingManualWordEditorFacade {
       ...INITIAL_STATE,
       sourceKey,
       capturedConfigurationRevision: item.configurationRevision,
-      draftLocations: item.configuration.wordLocationsByVerseKey,
+      draftWordIds: item.configuration.quranWordIdsByVerseKey,
     });
     if (includedVerseKeys.length > 0) {
-      this.loadAyahs(includedVerseKeys);
+      this.loadAyahs(item.source, includedVerseKeys);
     }
   }
 
@@ -86,23 +87,27 @@ export class LinkingManualWordEditorFacade {
   }
 
   retry(): void {
+    const item = this.item();
     const verseKeys = this.includedVerseKeys();
-    if (verseKeys.length > 0) {
-      this.loadAyahs(verseKeys);
+    if (item !== null && verseKeys.length > 0) {
+      this.loadAyahs(item.source, verseKeys);
     }
   }
 
-  toggleWord(verseKey: string, wordLocation: string): void {
+  toggleWord(verseKey: string, quranWordId: number): void {
     const ayah = this.stateSignal().ayahs.find((candidate) => candidate.verseKey === verseKey);
-    if (ayah?.words.some((word) => !word.isAyahMarker && word.wordLocation === wordLocation) !== true) {
+    if (ayah?.words.some((word) => !word.isAyahMarker && word.canonicalQuranWordId === quranWordId) !== true) {
       return;
     }
     this.stateSignal.update((state) => {
-      const selected = new Set(state.draftLocations[verseKey] ?? []);
-      selected.has(wordLocation) ? selected.delete(wordLocation) : selected.add(wordLocation);
+      const selected = new Set(state.draftWordIds[verseKey] ?? []);
+      selected.has(quranWordId) ? selected.delete(quranWordId) : selected.add(quranWordId);
       return {
         ...state,
-        draftLocations: { ...state.draftLocations, [verseKey]: [...selected].sort() },
+        draftWordIds: {
+          ...state.draftWordIds,
+          [verseKey]: [...selected].sort((left, right) => left - right),
+        },
       };
     });
   }
@@ -113,7 +118,7 @@ export class LinkingManualWordEditorFacade {
     }
     this.stateSignal.update((state) => ({
       ...state,
-      draftLocations: { ...state.draftLocations, [verseKey]: [] },
+      draftWordIds: { ...state.draftWordIds, [verseKey]: [] },
     }));
   }
 
@@ -127,11 +132,11 @@ export class LinkingManualWordEditorFacade {
     ) {
       return false;
     }
-    this.workspace.setManualWordLocations(item.sourceKey, state.draftLocations);
+    this.workspace.setManualWordIds(item.sourceKey, state.draftWordIds);
     return true;
   }
 
-  private loadAyahs(verseKeys: readonly string[]): void {
+  private loadAyahs(source: LinkingSourceDescriptor, verseKeys: readonly string[]): void {
     this.cancelLoad();
     const generation = ++this.generation;
     this.stateSignal.update((state) => ({
@@ -140,7 +145,7 @@ export class LinkingManualWordEditorFacade {
       ayahs: [],
       errorMessage: null,
     }));
-    this.subscription = this.reader.readCompleteAyahs(verseKeys).subscribe({
+    this.subscription = this.resolver.resolve(source, () => undefined).subscribe({
       next: (ayahs) => {
         if (generation !== this.generation) {
           return;

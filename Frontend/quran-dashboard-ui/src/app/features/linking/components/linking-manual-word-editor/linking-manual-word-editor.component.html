@@ -44,16 +44,16 @@
                     </button>
                   </header>
                   <div class="linking-manual-word-editor__words" role="group" [attr.aria-label]="'كلمات ' + (ayah.surahNameArabic || ayah.verseKey) + '، الآية ' + ayah.ayahNumber">
-                    @for (word of ayah.words; track word.wordLocation) {
-                      @if (!word.isAyahMarker && word.wordLocation !== null) {
+                    @for (word of ayah.words; track word.canonicalQuranWordId) {
+                      @if (!word.isAyahMarker) {
                         <button
                           qdAction="secondary"
                           size="sm"
                           type="button"
-                          [attr.aria-pressed]="state().draftLocations[ayah.verseKey]?.includes(word.wordLocation) ?? false"
-                          [class.linking-manual-word-editor__word--selected]="state().draftLocations[ayah.verseKey]?.includes(word.wordLocation) ?? false"
+                          [attr.aria-pressed]="state().draftWordIds[ayah.verseKey]?.includes(word.canonicalQuranWordId) ?? false"
+                          [class.linking-manual-word-editor__word--selected]="state().draftWordIds[ayah.verseKey]?.includes(word.canonicalQuranWordId) ?? false"
                           [attr.aria-label]="'تحديد كلمة ' + word.textUthmani + ' في ' + (ayah.surahNameArabic || ayah.verseKey) + '، الآية ' + ayah.ayahNumber"
-                          (click)="toggleWord(ayah.verseKey, word.wordLocation)"
+                          (click)="toggleWord(ayah.verseKey, word.canonicalQuranWordId)"
                         >
                           {{ word.textUthmani }}
                         </button>

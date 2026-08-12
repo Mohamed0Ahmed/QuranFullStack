@@ -1,5 +1,4 @@
 import { LinkingAyah } from './linking-ayah.models';
-import { LinkingManualWordLocationsByVerseKey } from './linking-manual-mushaf.models';
 import { LinkingSourceDescriptor } from './linking-source.models';
 
 export interface MergedLinkingSelection {
@@ -17,8 +16,7 @@ export interface MergedLinkingWordSelection {
   renderPosition: number;
   textUthmani: string;
   sourceKeys: readonly string[];
-  canonicalQuranWordId: number | null;
-  wordLocation: string | null;
+  canonicalQuranWordId: number;
 }
 
 export interface LinkingSourceIntent {
@@ -37,11 +35,6 @@ export interface LinkingIntentAyah {
   wordContributions: readonly LinkingWordContribution[];
 }
 
-export type LinkingWordContribution =
-  | { identity: 'canonical-quran-word-id'; quranWordId: number }
-  | { identity: 'presentation-occurrence'; verseKey: string; renderPosition: number }
-  | { identity: 'manual-word-location'; wordLocation: string };
-
-export interface LinkingManualWordContributionSource {
-  wordLocationsByVerseKey: LinkingManualWordLocationsByVerseKey;
+export interface LinkingWordContribution {
+  quranWordId: number;
 }

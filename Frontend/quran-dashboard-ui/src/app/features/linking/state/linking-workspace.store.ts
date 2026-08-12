@@ -6,8 +6,8 @@ import { toWorkspaceItem } from '../data-access/linking-workspace.codec';
 import { LinkingWorkspaceRepository } from '../data-access/linking-workspace.repository';
 import {
   LinkingManualLinkShape,
-  LinkingManualWordLocationsByVerseKey,
-  isManualWordLocation,
+  LinkingManualWordIdsByVerseKey,
+  isCanonicalQuranWordId,
 } from '../models/linking-manual-mushaf.models';
 import { LinkingOperationMember } from '../models/linking-operation.models';
 import { isVerseKey, LinkingSourceDescriptor } from '../models/linking-source.models';
@@ -256,21 +256,21 @@ export class LinkingWorkspaceStore {
     );
   }
 
-  setManualWordLocations(
+  setManualWordIds(
     sourceKey: string,
-    wordLocationsByVerseKey: LinkingManualWordLocationsByVerseKey,
+    quranWordIdsByVerseKey: LinkingManualWordIdsByVerseKey,
   ): void {
     const item = this.findItem(sourceKey);
     if (item?.source.kind !== 'manual-mushaf-ayahs') {
       return;
     }
-    const normalized = normalizeManualWordLocations(item.source, wordLocationsByVerseKey);
+    const normalized = normalizeManualWordIds(item.source, quranWordIdsByVerseKey);
     if (normalized === null) {
       return;
     }
     this.updateConfiguration(sourceKey, (configuration) =>
       configuration.kind === 'manual'
-        ? { ...configuration, wordLocationsByVerseKey: normalized }
+        ? { ...configuration, quranWordIdsByVerseKey: normalized }
         : configuration,
     );
   }
@@ -509,7 +509,7 @@ function initialConfiguration(source: LinkingSourceDescriptor): LinkingSourceCon
     return {
       kind: 'manual',
       ayahInclusion: DEFAULT_LINKING_SELECTION,
-      wordLocationsByVerseKey: {},
+      quranWordIdsByVerseKey: {},
       linkShape: manualMushafVerseKeys(source).length > 1 ? 'grouped' : 'independent',
     };
   }
@@ -520,17 +520,17 @@ function initialConfiguration(source: LinkingSourceDescriptor): LinkingSourceCon
   };
 }
 
-function normalizeManualWordLocations(
+function normalizeManualWordIds(
   source: Extract<LinkingSourceDescriptor, { kind: 'manual-mushaf-ayahs' }>,
-  wordLocationsByVerseKey: LinkingManualWordLocationsByVerseKey,
-): LinkingManualWordLocationsByVerseKey | null {
+  quranWordIdsByVerseKey: LinkingManualWordIdsByVerseKey,
+): LinkingManualWordIdsByVerseKey | null {
   const manualVerseKeys = new Set(source.manualAyahs.map((ayah) => ayah.verseKey));
-  const normalized: Record<string, readonly string[]> = {};
-  for (const [verseKey, locations] of Object.entries(wordLocationsByVerseKey)) {
-    if (!isVerseKey(verseKey) || !manualVerseKeys.has(verseKey) || !locations.every(isManualWordLocation)) {
+  const normalized: Record<string, readonly number[]> = {};
+  for (const [verseKey, quranWordIds] of Object.entries(quranWordIdsByVerseKey)) {
+    if (!isVerseKey(verseKey) || !manualVerseKeys.has(verseKey) || !quranWordIds.every(isCanonicalQuranWordId)) {
       return null;
     }
-    normalized[verseKey] = [...new Set(locations)];
+    normalized[verseKey] = [...new Set(quranWordIds)].sort((left, right) => left - right);
   }
   return normalized;
 }

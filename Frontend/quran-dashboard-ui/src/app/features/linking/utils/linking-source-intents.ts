@@ -11,7 +11,7 @@ export function createLinkingSourceIntent(
   const orderedAyahs = [...ayahs].sort((left, right) => compareLinkingVerseKeys(left.verseKey, right.verseKey));
   const intentAyahs = orderedAyahs.map((ayah) => ({
     verseKey: ayah.verseKey,
-    wordContributions: wordContributionsFor(member, ayah),
+    wordContributions: wordContributionsFor(ayah),
   }));
   if (member.configuration.kind === 'automatic') {
     return {
@@ -30,23 +30,8 @@ export function createLinkingSourceIntent(
   };
 }
 
-function wordContributionsFor(
-  member: LinkingOperationMember,
-  ayah: LinkingAyah,
-): readonly LinkingWordContribution[] {
+function wordContributionsFor(ayah: LinkingAyah): readonly LinkingWordContribution[] {
   return ayah.words
     .filter((word) => !word.isAyahMarker && word.isSourceMatch)
-    .map((word) => {
-      if (member.configuration.kind === 'manual' && word.wordLocation !== null) {
-        return { identity: 'manual-word-location', wordLocation: word.wordLocation } as const;
-      }
-      if (word.canonicalQuranWordId !== null) {
-        return { identity: 'canonical-quran-word-id', quranWordId: word.canonicalQuranWordId } as const;
-      }
-      return {
-        identity: 'presentation-occurrence',
-        verseKey: ayah.verseKey,
-        renderPosition: word.renderPosition,
-      } as const;
-    });
+    .map((word) => ({ quranWordId: word.canonicalQuranWordId }));
 }

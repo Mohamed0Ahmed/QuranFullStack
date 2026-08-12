@@ -1,8 +1,8 @@
 export interface LinkingAyah {
   verseKey: string;
-  ayahId: number | null;
-  surahNumber: number | null;
-  surahNameArabic: string | null;
+  ayahId: number;
+  surahNumber: number;
+  surahNameArabic: string;
   ayahNumber: number;
   pageNumber: number;
   words: readonly LinkingAyahWord[];
@@ -10,8 +10,7 @@ export interface LinkingAyah {
 
 export interface LinkingAyahWord {
   renderPosition: number;
-  canonicalQuranWordId: number | null;
-  wordLocation: string | null;
+  canonicalQuranWordId: number;
   textUthmani: string;
   isAyahMarker: boolean;
   isSourceMatch: boolean;

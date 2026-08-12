@@ -10,7 +10,7 @@ export interface LinkingManualMushafAyahSource {
 
 export type LinkingManualLinkShape = 'grouped' | 'independent';
 
-export type LinkingManualWordLocationsByVerseKey = Readonly<Record<string, readonly string[]>>;
+export type LinkingManualWordIdsByVerseKey = Readonly<Record<string, readonly number[]>>;
 
 export function isLinkingManualMushafAyahSource(value: unknown): value is LinkingManualMushafAyahSource {
   if (!isRecord(value) || !Array.isArray(value['manualAyahs']) || value['manualAyahs'].length === 0) {
@@ -20,8 +20,8 @@ export function isLinkingManualMushafAyahSource(value: unknown): value is Linkin
   return value['manualAyahs'].every(isManualAyahReference);
 }
 
-export function isManualWordLocation(value: unknown): value is string {
-  return typeof value === 'string' && /^\d{1,3}:\d{1,3}:\d{1,2}$/.test(value);
+export function isCanonicalQuranWordId(value: unknown): value is number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 }
 
 function isManualAyahReference(value: unknown): value is LinkingManualMushafAyahReference {

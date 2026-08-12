@@ -2,7 +2,7 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 
 import { LinkingManualMushafAyahReference } from '../models/linking-manual-mushaf.models';
 import { LINKING_LABELS } from '../models/linking.labels';
-import { ManualMushafAyahReader } from '../data-access/manual-mushaf-ayah.reader';
+import { LinkingManualAyahMetadataReader } from '../data-access/linking-manual-ayah-metadata.reader';
 import { linkingSourceKey } from '../utils/linking-source-key';
 import { orderedUniqueLinkingVerseKeys } from '../utils/linking-verse-order';
 import { LinkingAccessService } from './linking-access.service';
@@ -21,7 +21,7 @@ export interface ManualMushafSelectionEntry {
 @Injectable({ providedIn: 'root' })
 export class ManualMushafSelectionStore {
   private readonly access = inject(LinkingAccessService);
-  private readonly reader = inject(ManualMushafAyahReader);
+  private readonly reader = inject(LinkingManualAyahMetadataReader);
   private readonly workspace = inject(LinkingWorkspaceStore);
   private readonly activeSignal = signal(false);
   private readonly currentPageSignal = signal<number | null>(null);

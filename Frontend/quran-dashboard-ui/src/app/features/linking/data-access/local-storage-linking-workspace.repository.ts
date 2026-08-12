@@ -24,5 +24,5 @@ export class LocalStorageLinkingWorkspaceRepository implements LinkingWorkspaceR
 }
 
 function storageKey(actorSub: string): string {
-  return `qd-linking-workspace:v2:${encodeURIComponent(actorSub)}`;
+  return `qd-linking-workspace:v3:${encodeURIComponent(actorSub)}`;
 }

@@ -5,7 +5,7 @@ import { ApiResponse } from '../data-access/api-response.model';
 const DEFAULT_MAX_ENTRIES = 48;
 
 export class ApiResponseCache {
-  private readonly maxEntries = DEFAULT_MAX_ENTRIES;
+  protected readonly maxEntries: number = DEFAULT_MAX_ENTRIES;
   private readonly cache = new Map<string, ApiResponse<unknown>>();
   private readonly inFlight = new Map<string, Observable<ApiResponse<unknown>>>();
 

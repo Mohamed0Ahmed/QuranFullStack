@@ -439,18 +439,18 @@ every step (quickstart §4).
 
 **Goal**: Point the Frontend at the Backend boundary; one request per source, zero on reopen.
 
-- [ ] T064 [P] [US1] Create `Frontend/quran-dashboard-ui/src/app/features/linking/data-access/linking-source-resolution.api.ts`
+- [X] T064 [P] [US1] Create `Frontend/quran-dashboard-ui/src/app/features/linking/data-access/linking-source-resolution.api.ts`
       calling the generated client for `POST /api/linking/sources/resolve`.
-- [ ] T065 [P] [US6] Create `Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-source.cache.ts`
+- [X] T065 [P] [US6] Create `Frontend/quran-dashboard-ui/src/app/features/linking/state/linking-source.cache.ts`
       extending `ApiResponseCache`, keyed `linking:source:{sourceIdentity}`, cap **≈6 entries**
       (NOT the default 48 — tens of MB; research R19).
       `MushafReaderCache` stays for ordinary reader use and leaves the Linking path.
-- [ ] T066 [US1] Rewire `features/linking/data-access/linking-source-resolver.registry.ts` to ONE
+- [X] T066 [US1] Rewire `features/linking/data-access/linking-source-resolver.registry.ts` to ONE
       implementation for all six kinds; `resolve(source, onProgress)` keeps its signature with
       `onProgress` reduced to a single 0→total tick (facades untouched). DELETE:
       `complete-paged-source.loader.ts` and the six per-family resolvers under
       `data-access/resolvers/`. Depends on T064+T065.
-- [ ] T067 [US1] Canonical identity collapse: `models/linking-ayah.models.ts`
+- [X] T067 [US1] Canonical identity collapse: `models/linking-ayah.models.ts`
       (`canonicalQuranWordId` non-nullable), `models/linking-merge.models.ts`
       (`LinkingWordContribution` canonical arm only), `utils/linking-source-intents.ts` (one
       branch), `utils/linking-merge.ts` (merge by canonical id; delete the positional/text

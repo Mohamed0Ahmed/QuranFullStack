@@ -1,6 +1,6 @@
 import {
   LinkingManualLinkShape,
-  LinkingManualWordLocationsByVerseKey,
+  LinkingManualWordIdsByVerseKey,
 } from './linking-manual-mushaf.models';
 import { LinkingSourceDescriptor } from './linking-source.models';
 
@@ -22,7 +22,7 @@ export type LinkingSourceConfiguration =
   | {
       kind: 'manual';
       ayahInclusion: LinkingSelection;
-      wordLocationsByVerseKey: LinkingManualWordLocationsByVerseKey;
+      quranWordIdsByVerseKey: LinkingManualWordIdsByVerseKey;
       linkShape: LinkingManualLinkShape;
     };
 
@@ -43,7 +43,7 @@ export interface LinkingWorkspaceItem {
 }
 
 export interface LinkingWorkspacePersistedEnvelope {
-  version: 2;
+  version: 3;
   actorSub: string;
   revision: number;
   items: readonly LinkingWorkspacePersistedItem[];

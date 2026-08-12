@@ -23,13 +23,12 @@ export function mergeLinkingSources(sources: readonly ResolvedLinkingSourceMembe
         continue;
       }
       assertCompatibleAyahs(existing.ayah, ayah);
-      const sourceKeys = unique([...existing.sourceKeys, source.member.sourceKey]);
-      const words = mergeWordSelections(existing.words, ayah.words, source.member.sourceKey);
+      const incoming = nonMarkerWords(ayah.words);
+      assertCompatibleWords(existing.words, incoming);
       mergedByVerseKey.set(ayah.verseKey, {
         ...existing,
-        ayah: enrichAyah(existing.ayah, ayah),
-        sourceKeys,
-        words,
+        sourceKeys: unique([...existing.sourceKeys, source.member.sourceKey]),
+        words: mergeWordSelections(existing.words, incoming, source.member.sourceKey),
       });
     }
   }
@@ -40,75 +39,71 @@ export function mergeLinkingSources(sources: readonly ResolvedLinkingSourceMembe
 
 function assertCompatibleAyahs(left: LinkingAyah, right: LinkingAyah): void {
   if (
-    conflicts(left.ayahId, right.ayahId) ||
-    conflicts(left.surahNumber, right.surahNumber) ||
-    conflicts(left.surahNameArabic, right.surahNameArabic) ||
-    left.pageNumber !== right.pageNumber ||
+    left.ayahId !== right.ayahId ||
+    left.surahNumber !== right.surahNumber ||
     left.ayahNumber !== right.ayahNumber ||
-    left.words.filter((word) => !word.isAyahMarker).length !== right.words.filter((word) => !word.isAyahMarker).length
+    left.surahNameArabic !== right.surahNameArabic ||
+    left.pageNumber !== right.pageNumber
   ) {
     throw new Error('تعارضت بيانات الآية بين مصادر الربط.');
   }
-  const leftWords = left.words.filter((word) => !word.isAyahMarker);
-  const rightWords = right.words.filter((word) => !word.isAyahMarker);
-  if (leftWords.some((word, index) => !sameOccurrence(word, rightWords[index]))) {
-    throw new Error('تعارض تسلسل كلمات الآية بين مصادر الربط.');
+}
+
+function assertCompatibleWords(
+  existing: readonly MergedLinkingWordSelection[],
+  incoming: readonly LinkingAyahWord[],
+): void {
+  const existingByQuranWordId = new Map(existing.map((word) => [word.canonicalQuranWordId, word]));
+  const incomingByQuranWordId = new Map(incoming.map((word) => [word.canonicalQuranWordId, word]));
+  if (
+    existingByQuranWordId.size !== existing.length ||
+    incomingByQuranWordId.size !== incoming.length ||
+    existingByQuranWordId.size !== incomingByQuranWordId.size
+  ) {
+    throw new Error('تعارضت كلمات الآية بين مصادر الربط.');
+  }
+  for (const [quranWordId, word] of incomingByQuranWordId) {
+    const known = existingByQuranWordId.get(quranWordId);
+    if (
+      known === undefined ||
+      known.renderPosition !== word.renderPosition ||
+      known.textUthmani !== word.textUthmani
+    ) {
+      throw new Error('تعارضت كلمات الآية بين مصادر الربط.');
+    }
   }
 }
 
+function nonMarkerWords(words: readonly LinkingAyahWord[]): readonly LinkingAyahWord[] {
+  return words.filter((word) => !word.isAyahMarker);
+}
+
 function mergeWords(words: readonly LinkingAyahWord[], sourceKey: string): readonly MergedLinkingWordSelection[] {
-  return words
-    .filter((word) => !word.isAyahMarker)
-    .map((word) => ({
-      renderPosition: word.renderPosition,
-      textUthmani: word.textUthmani,
-      sourceKeys: word.isSourceMatch ? [sourceKey] : [],
-      canonicalQuranWordId: word.canonicalQuranWordId,
-      wordLocation: word.wordLocation,
-    }));
+  return nonMarkerWords(words).map((word) => toWordSelection(word, sourceKey));
 }
 
 function mergeWordSelections(
   existing: readonly MergedLinkingWordSelection[],
-  words: readonly LinkingAyahWord[],
+  incoming: readonly LinkingAyahWord[],
   sourceKey: string,
 ): readonly MergedLinkingWordSelection[] {
-  const incoming = words.filter((word) => !word.isAyahMarker);
-  return existing.map((word, index) => {
-    const candidate = incoming[index];
-    if (candidate === undefined || !sameOccurrence(word, candidate)) {
-      throw new Error('تعارض ترتيب كلمات الآية بين مصادر الربط.');
-    }
-    return {
-      ...word,
-      sourceKeys: candidate.isSourceMatch ? unique([...word.sourceKeys, sourceKey]) : word.sourceKeys,
-      canonicalQuranWordId: word.canonicalQuranWordId ?? candidate.canonicalQuranWordId,
-      wordLocation: word.wordLocation ?? candidate.wordLocation,
-    };
-  });
-}
-
-function enrichAyah(left: LinkingAyah, right: LinkingAyah): LinkingAyah {
-  return {
-    ...left,
-    ayahId: left.ayahId ?? right.ayahId,
-    surahNumber: left.surahNumber ?? right.surahNumber,
-    surahNameArabic: left.surahNameArabic ?? right.surahNameArabic,
-  };
-}
-
-function sameOccurrence(
-  left: Pick<LinkingAyahWord, 'textUthmani' | 'canonicalQuranWordId'>,
-  right: Pick<LinkingAyahWord, 'textUthmani' | 'canonicalQuranWordId'>,
-): boolean {
-  return (
-    left.textUthmani === right.textUthmani &&
-    !conflicts(left.canonicalQuranWordId, right.canonicalQuranWordId)
+  const matchedQuranWordIds = new Set(
+    incoming.filter((word) => word.isSourceMatch).map((word) => word.canonicalQuranWordId),
+  );
+  return existing.map((word) =>
+    matchedQuranWordIds.has(word.canonicalQuranWordId)
+      ? { ...word, sourceKeys: unique([...word.sourceKeys, sourceKey]) }
+      : word,
   );
 }
 
-function conflicts<T>(left: T | null, right: T | null): boolean {
-  return left !== null && right !== null && left !== right;
+function toWordSelection(word: LinkingAyahWord, sourceKey: string): MergedLinkingWordSelection {
+  return {
+    renderPosition: word.renderPosition,
+    textUthmani: word.textUthmani,
+    sourceKeys: word.isSourceMatch ? [sourceKey] : [],
+    canonicalQuranWordId: word.canonicalQuranWordId,
+  };
 }
 
 function unique(values: readonly string[]): readonly string[] {

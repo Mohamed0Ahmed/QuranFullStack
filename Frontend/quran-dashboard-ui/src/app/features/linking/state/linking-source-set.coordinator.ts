@@ -3,6 +3,7 @@ import { Subscription, catchError, forkJoin, map, throwError } from 'rxjs';
 
 import { LinkingSourceResolver } from '../data-access/linking-source-resolver';
 import { LinkingAyah } from '../models/linking-ayah.models';
+import { LinkingManualWordIdsByVerseKey } from '../models/linking-manual-mushaf.models';
 import { LinkingSourceIntent } from '../models/linking-merge.models';
 import { LinkingOperationMember, LinkingOperationMemberLoadState } from '../models/linking-operation.models';
 import { LinkingSourceSetOperationResult } from '../models/linking-workflow.models';
@@ -10,7 +11,6 @@ import { createLinkingSourceIntent } from '../utils/linking-source-intents';
 import { mergeLinkingSources, ResolvedLinkingSourceMember } from '../utils/linking-merge';
 import { orderedOperationMembers } from '../utils/linking-operation-members';
 import { reconcileLinkingSelection, selectedLinkingVerseKeys } from '../utils/linking-selection';
-import { validateManualWordLocations } from '../utils/manual-mushaf-ayah-completeness';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
 
@@ -104,7 +104,7 @@ export class LinkingSourceSetCoordinator {
       this.workspace.reconcileResolvedSource(member.sourceKey, universe);
     }
     if (member.configuration.kind === 'manual') {
-      validateManualWordLocations(ayahs, member.configuration.wordLocationsByVerseKey);
+      assertKnownManualWordIds(ayahs, member.configuration.quranWordIdsByVerseKey);
     }
     const includedVerseKeys = new Set(selectedLinkingVerseKeys(selection, universe));
     return {
@@ -184,9 +184,27 @@ export class LinkingSourceSetCoordinator {
   }
 }
 
+function assertKnownManualWordIds(
+  ayahs: readonly LinkingAyah[],
+  quranWordIdsByVerseKey: LinkingManualWordIdsByVerseKey,
+): void {
+  const wordIdsByVerseKey = new Map(
+    ayahs.map((ayah) => [
+      ayah.verseKey,
+      new Set(ayah.words.filter((word) => !word.isAyahMarker).map((word) => word.canonicalQuranWordId)),
+    ]),
+  );
+  for (const [verseKey, quranWordIds] of Object.entries(quranWordIdsByVerseKey)) {
+    const knownWordIds = wordIdsByVerseKey.get(verseKey);
+    if (!knownWordIds || quranWordIds.some((quranWordId) => !knownWordIds.has(quranWordId))) {
+      throw new Error('الكلمات المحفوظة لهذا المصدر لم تعد صالحة.');
+    }
+  }
+}
+
 function applySourceConfiguration(member: LinkingOperationMember, ayah: LinkingAyah): LinkingAyah {
-  const wordLocations = member.configuration.kind === 'manual'
-    ? new Set(member.configuration.wordLocationsByVerseKey[ayah.verseKey] ?? [])
+  const selectedWordIds = member.configuration.kind === 'manual'
+    ? new Set(member.configuration.quranWordIdsByVerseKey[ayah.verseKey] ?? [])
     : null;
   return {
     ...ayah,
@@ -196,7 +214,7 @@ function applySourceConfiguration(member: LinkingOperationMember, ayah: LinkingA
         !word.isAyahMarker &&
         (member.configuration.kind === 'automatic'
           ? member.configuration.automaticWordMatchesEnabled && word.isSourceMatch
-          : word.wordLocation !== null && wordLocations!.has(word.wordLocation)),
+          : selectedWordIds!.has(word.canonicalQuranWordId)),
     })),
   };
 }
