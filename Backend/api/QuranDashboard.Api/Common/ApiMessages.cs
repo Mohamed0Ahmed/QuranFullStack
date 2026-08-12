@@ -247,6 +247,7 @@ public static class ApiMessages
     private const string LinkingWorkspaceLimitPrefix = "تجاوز عدد المصادر المحضّرة الحد الأقصى المسموح به";
     private const string LinkingWorkspaceInvalidPrefix = "طلب غير صالح — الحقل";
     private const string LinkingWorkspaceReferenceUnknown = "العنصر المشار إليه غير موجود";
+    private const string LinkingDescriptionLimitPrefix = "تجاوز عدد الأوصاف الحد الأقصى المسموح به";
 
     public static string LinkingWorkspaceViolationMessage(LinkingWorkspaceViolation violation) =>
         violation.Code switch
@@ -274,6 +275,14 @@ public static class ApiMessages
                 : $"{LinkingWorkspaceReferenceUnknown} — الحقل «{violation.Field}» بالقيمة «{violation.Value}»",
             LinkingWorkspaceViolationCode.SelectedWordAyahConflict =>
                 $"الكلمة «{violation.Value}» محددة على أكثر من آية",
+            LinkingWorkspaceViolationCode.DescriptionLimitExceeded =>
+                $"{LinkingDescriptionLimitPrefix} ({LinkingLimits.MaxDescriptionsPerSourceAyah} وصف) — الآية «{violation.Value}»",
+            LinkingWorkspaceViolationCode.DescriptionBodyInvalid =>
+                $"نص الوصف مطلوب ويجب ألا يتجاوز {LinkingLimits.MaxDescriptionLength} حرف — الآية «{violation.Value}»",
+            LinkingWorkspaceViolationCode.DescriptionOrderConflict =>
+                $"ترتيب الأوصاف يجب أن يكون فريدًا وموجبًا لكل آية — الآية «{violation.Value}»",
+            LinkingWorkspaceViolationCode.DescriptionAyahOutsideSource =>
+                $"الآية «{violation.Value}» ليست ضمن آيات هذا المصدر",
             _ => violation.Value is null
                 ? $"{LinkingWorkspaceInvalidPrefix} «{violation.Field}»"
                 : $"{LinkingWorkspaceInvalidPrefix} «{violation.Field}» بالقيمة «{violation.Value}»",

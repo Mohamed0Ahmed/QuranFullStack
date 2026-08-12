@@ -29,6 +29,8 @@ public sealed record LinkingWorkspaceConfigurationBody
     public bool? AutomaticWordMatchesEnabled { get; init; }
 
     public string? ManualLinkShape { get; init; }
+
+    public IReadOnlyList<LinkingDescriptionBody>? Descriptions { get; init; }
 }
 
 public sealed record LinkingSelectedWordBody
@@ -36,4 +38,13 @@ public sealed record LinkingSelectedWordBody
     public int? AyahId { get; init; }
 
     public int? QuranWordId { get; init; }
+}
+
+public sealed record LinkingDescriptionBody
+{
+    public int? AyahId { get; init; }
+
+    public int? OrderValue { get; init; }
+
+    public string? Body { get; init; }
 }

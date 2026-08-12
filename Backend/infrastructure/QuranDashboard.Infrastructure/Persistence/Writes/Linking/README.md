@@ -13,7 +13,9 @@ is `../Abwab/README.md` — read it first; only the deltas are recorded here.
 
 - `EfLinkingWorkspaceWriter.cs` — add / remove / reorder / clear, plus the shared helpers.
 - `EfLinkingWorkspaceWriter.Configuration.cs` — the wholesale per-source configuration replacement and
-  every validation it owns. Split by use case, not by size.
+  every validation it owns, including the description set. Split by use case, not by size: descriptions
+  are part of the configuration document, so they stay in this file rather than earning a partial of their
+  own.
 
 ## The workspace is NOT a cache
 
@@ -28,6 +30,16 @@ generation a workspace write could correctly bump. The workspace is also not a U
 sources, active surface, search text, scroll and review position, and the selected Door all stay
 client-side (spec FR-028).
 
+**The writer does, however, *read* through that cache — in exactly one place.** `EfLinkingWorkspaceWriter`
+takes `ILinkingSourceResolutionReader` (the DI-bound `CachedLinkingSourceResolutionReader`) so
+`LoadSourceAyahIdsAsync` can answer "is this ayah part of this source?" for an **automatic** source, which
+no workspace table knows. Read direction is the whole distinction: consuming a cached read is not cache
+maintenance, and none of the three statements above weakens. The call is **conditional** — it fires only
+when the submitted configuration carries selected words or descriptions, so an ordinary save that changes
+only label, inclusion mode or overrides still touches nothing but the workspace tables. It is also the
+same boundary preflight and confirm re-resolve through in Phases 8–9, so the membership answer cannot
+drift between preparation and confirmation.
+
 ## Attribution is populated here for the first time
 
 No Abwab writer assigns `created_by` / `updated_by`; those columns are always NULL there (repo fact F11),
@@ -38,10 +50,14 @@ always `AuthorizationState.UserId` resolved through `IAuthorizationStateResolver
 The columns are mapped **`NOT NULL`**, a deliberate strengthening of `data-model.md`, which specifies the
 audit columns without stating nullability. Because every write path here stamps them, a missing stamp is a
 defect, and a `NOT NULL` column fails that defect loudly at the INSERT instead of leaving a silent NULL
-that looks exactly like Abwab's unpopulated columns. Attribution lives only on the two audited aggregate
-tables — `linking_workspaces` and `linking_workspace_sources`. The three child tables (manual ayahs,
-overrides, words) carry no audit columns and inherit ownership from their parent source (research R12);
-do not "complete" them.
+that looks exactly like Abwab's unpopulated columns. Attribution lives on the **audited or authored**
+tables only — `linking_workspaces`, `linking_workspace_sources`, and `linking_workspace_source_descriptions`.
+The other three child tables (manual ayahs, overrides, words) carry no audit columns and inherit ownership
+from their parent source (research R12); do not "complete" them. Descriptions are on the attributed side of
+that line because they are **authored content**, not a derived selection: a body is prose the curator wrote,
+and `data-model.md` table 6 and research R12 both list the table among the attributed ones. An updated body
+re-stamps `updated_at`/`updated_by`; an untouched row is left alone, so the stamp records when that
+description actually changed rather than when its source was last saved.
 
 ## Reconciled artifact errors — verified against the live database
 
@@ -122,6 +138,12 @@ artifact's wording.
     `workspaceVersion` would guard nothing. Do not "optimize" the stamp away.
   - **Configuration replacement is guarded by the SOURCE row's `xmin` and deliberately does NOT touch the
     workspace row**, so two sources can be configured concurrently without a false conflict (spec FR-027).
+  - **Descriptions have no independent token.** `linking_workspace_source_descriptions` maps `xmin`
+    (`data-model.md` §Concurrency) but the writer never pins it: a description is only ever replaced as
+    part of its source's configuration document, so the source's token already serializes every writer
+    that could touch it. The mapped column is not dead weight — because it is `IsRowVersion()`, EF puts it
+    in the WHERE clause of every UPDATE and DELETE it issues against a row this request loaded, so a write
+    that raced past the source guard still fails loudly instead of silently overwriting.
 - **A missing version is refused, never defaulted.** `ApplyWorkspaceVersion` throws
   `LinkingStaleVersionException` when the caller sent no token but a workspace row exists, and add refuses
   a caller who sent a token when no workspace exists. Both directions are a genuine client/server
@@ -166,6 +188,34 @@ artifact's wording.
     duplicate (same word, same ayah) is still collapsed silently, because it asserts nothing new. The
     order matters: a plain `DistinctBy(quranWordId)` ahead of validation kept the first entry, validated it
     cleanly, and answered `200` to a request that carried an impossible claim.
+- **Descriptions ride inside the configuration document — there is no description route** (plan D9).
+  The document carries a flat `descriptions` list of `(ayahId, orderValue, body)`; the writer replaces the
+  source's whole description set from it, so an omitted entry is a **deletion**. Any client that saves a
+  configuration without echoing the descriptions it loaded erases them — that is why the Phase 11 Frontend
+  adapter round-trips the field verbatim from the day it is written, long before the Phase 12 editing UI
+  exists (`tasks.md` T070).
+  - **The document rules are validated in Abstractions, the membership rule here.**
+    `LinkingWorkspaceDescriptionValidation.TryNormalize` (pure — count ≤10 per `(source, ayah)`, positive
+    distinct order, trimmed non-blank body ≤2000) both validates and produces the per-ayah `1..N` body
+    lists this writer persists. Only **membership** stays here (spec FR-034 — the ayah must belong to the
+    source's own set), because only here can the set be looked up: for a **manual** source it is the
+    identity-bearing manual verse set, one query against `linking_workspace_source_manual_ayahs`; for an
+    **automatic** source it is the resolved ayah set, which nothing in the workspace tables knows, so
+    `LoadSourceAyahIdsAsync` resolves the decoded descriptor through the cached resolution boundary. The
+    same set answers the manual word check, so a manual source with both words and descriptions still
+    loads it once.
+  - **Both halves of the max-10 guarantee are real, and neither is decorative.** The database carries
+    `order_value BETWEEN 1 AND 10` **and** `UNIQUE (workspace_source_id, ayah_id, order_value)`; without the
+    uniqueness half, eleven rows could reuse one `order_value` and slip past the range check. Both CHECK
+    expressions are generated from `LinkingLimits`, so the constants cannot drift between the writer, the
+    validator, and the schema (spec FR-035).
+  - **Rows are aligned by position, never deleted-and-reinserted.** `ResequenceDescriptions` walks the
+    desired bodies against the ayah's existing rows in `order_value` order: it updates the overlap in
+    place, inserts the tail, and deletes the surplus. Because every set this writer leaves behind is
+    contiguous `1..N`, the overlap keeps its existing `order_value` and the unique index is never asked to
+    hold two rows on one position mid-save — which is exactly what a delete-then-insert of the same
+    `(source, ayah, order)` would risk, since EF is free to order the insert first. Update-in-place also
+    means an unchanged body keeps its `created_*` stamp and its id.
 - **Two coherence rules are enforced by the DATABASE, not only here** (spec FR-022) — see
   `../../Configurations/Linking/LinkingWorkspaceSourceConfiguration.cs`. `ck_..._kind_configuration_coherence`
   makes `automatic_word_matches_enabled IS NOT NULL` iff the kind is not manual and

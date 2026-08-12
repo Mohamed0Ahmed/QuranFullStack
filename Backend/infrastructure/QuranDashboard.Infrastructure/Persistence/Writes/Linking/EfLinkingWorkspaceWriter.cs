@@ -5,7 +5,9 @@ using QuranDashboard.Infrastructure.Persistence.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
-internal sealed partial class EfLinkingWorkspaceWriter(QuranDashboardDbContext db) : ILinkingWorkspaceWriter
+internal sealed partial class EfLinkingWorkspaceWriter(
+    QuranDashboardDbContext db,
+    ILinkingSourceResolutionReader resolution) : ILinkingWorkspaceWriter
 {
     private const string SelectionFieldPrefix = "selection.";
     private const string RootIdField = "rootId";

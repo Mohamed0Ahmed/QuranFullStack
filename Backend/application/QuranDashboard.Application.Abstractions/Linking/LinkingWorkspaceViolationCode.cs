@@ -13,4 +13,8 @@ public enum LinkingWorkspaceViolationCode
     VersionRequired = 9,
     ReferenceUnknown = 10,
     SelectedWordAyahConflict = 11,
+    DescriptionLimitExceeded = 12,
+    DescriptionBodyInvalid = 13,
+    DescriptionOrderConflict = 14,
+    DescriptionAyahOutsideSource = 15,
 }

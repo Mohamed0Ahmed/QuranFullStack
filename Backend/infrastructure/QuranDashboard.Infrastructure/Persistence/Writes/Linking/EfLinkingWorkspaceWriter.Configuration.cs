@@ -40,9 +40,18 @@ internal sealed partial class EfLinkingWorkspaceWriter
                 LinkingWorkspaceViolationCode.WordsNotAllowedOnAutomaticSource, "selectedWords", null));
         }
 
+        var descriptions = NormalizeDescriptions(configuration.Descriptions);
+
         var overrideAyahIds = configuration.AyahOverrides.Distinct().ToList();
         await EnsureAyahsExistAsync(overrideAyahIds, cancellationToken);
-        await EnsureSelectedWordsAsync(source.Id, selectedWords, cancellationToken);
+
+        var sourceAyahIds = selectedWords.Count > 0 || descriptions.Count > 0
+            ? await LoadSourceAyahIdsAsync(source, cancellationToken)
+            : [];
+
+        EnsureSelectedWordAyahs(selectedWords, sourceAyahIds);
+        await EnsureSelectedWordsAsync(selectedWords, cancellationToken);
+        EnsureDescriptionAyahs(descriptions, sourceAyahIds);
 
         var now = DateTimeOffset.UtcNow;
         source.Label = configuration.Label;
@@ -54,6 +63,7 @@ internal sealed partial class EfLinkingWorkspaceWriter
 
         await ReplaceOverridesAsync(source.Id, overrideAyahIds, cancellationToken);
         await ReplaceSelectedWordsAsync(source.Id, selectedWords, cancellationToken);
+        await ReplaceDescriptionsAsync(source.Id, descriptions, userId, now, cancellationToken);
 
         await SaveTranslatingWriteExceptionsAsync(cancellationToken);
 
@@ -135,30 +145,70 @@ internal sealed partial class EfLinkingWorkspaceWriter
         }
     }
 
+    private static List<LinkingWorkspaceAyahDescriptions> NormalizeDescriptions(
+        IReadOnlyList<LinkingWorkspaceDescriptionInput> descriptions)
+    {
+        var violation = LinkingWorkspaceDescriptionValidation.TryNormalize(descriptions, out var normalized);
+
+        return violation is null
+            ? [.. normalized]
+            : throw new LinkingWorkspaceViolationException(violation);
+    }
+
+    private async Task<HashSet<int>> LoadSourceAyahIdsAsync(
+        LinkingWorkspaceSource source,
+        CancellationToken cancellationToken)
+    {
+        if (source.SourceKind != LinkingSourceKind.ManualMushafAyahs)
+        {
+            var resolved = await resolution.ResolveAsync(
+                LinkingSourceStorage.Decode(source, []), cancellationToken);
+
+            return [.. resolved.Ayahs.Select(ayah => ayah.AyahId)];
+        }
+
+        var manualAyahIds = await db.LinkingWorkspaceSourceManualAyahs
+            .AsNoTracking()
+            .Where(manualAyah => manualAyah.WorkspaceSourceId == source.Id)
+            .Select(manualAyah => manualAyah.AyahId)
+            .ToListAsync(cancellationToken);
+
+        return [.. manualAyahIds];
+    }
+
+    private static void EnsureSelectedWordAyahs(
+        IReadOnlyList<LinkingWorkspaceSelectedWordInput> selectedWords,
+        HashSet<int> sourceAyahIds)
+    {
+        foreach (var selectedWord in selectedWords.Where(word => !sourceAyahIds.Contains(word.AyahId)))
+        {
+            throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
+                LinkingWorkspaceViolationCode.SelectedWordAyahOutsideManualSet,
+                "selectedWords.ayahId",
+                selectedWord.AyahId.ToString(CultureInfo.InvariantCulture)));
+        }
+    }
+
+    private static void EnsureDescriptionAyahs(
+        IReadOnlyList<LinkingWorkspaceAyahDescriptions> descriptions,
+        HashSet<int> sourceAyahIds)
+    {
+        foreach (var ayah in descriptions.Where(ayah => !sourceAyahIds.Contains(ayah.AyahId)))
+        {
+            throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
+                LinkingWorkspaceViolationCode.DescriptionAyahOutsideSource,
+                LinkingWorkspaceDescriptionValidation.DescriptionsField,
+                ayah.AyahId.ToString(CultureInfo.InvariantCulture)));
+        }
+    }
+
     private async Task EnsureSelectedWordsAsync(
-        long sourceId,
         IReadOnlyList<LinkingWorkspaceSelectedWordInput> selectedWords,
         CancellationToken cancellationToken)
     {
         if (selectedWords.Count == 0)
         {
             return;
-        }
-
-        var manualAyahIds = await db.LinkingWorkspaceSourceManualAyahs
-            .AsNoTracking()
-            .Where(manualAyah => manualAyah.WorkspaceSourceId == sourceId)
-            .Select(manualAyah => manualAyah.AyahId)
-            .ToListAsync(cancellationToken);
-
-        var manualAyahIdSet = manualAyahIds.ToHashSet();
-
-        foreach (var selectedWord in selectedWords.Where(word => !manualAyahIdSet.Contains(word.AyahId)))
-        {
-            throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
-                LinkingWorkspaceViolationCode.SelectedWordAyahOutsideManualSet,
-                "selectedWords.ayahId",
-                selectedWord.AyahId.ToString(CultureInfo.InvariantCulture)));
         }
 
         var wordIds = selectedWords.Select(word => word.QuranWordId).ToList();
@@ -234,6 +284,84 @@ internal sealed partial class EfLinkingWorkspaceWriter
                 QuranWordId = selectedWord.QuranWordId,
                 AyahId = selectedWord.AyahId,
             });
+        }
+    }
+
+    private async Task ReplaceDescriptionsAsync(
+        long sourceId,
+        IReadOnlyList<LinkingWorkspaceAyahDescriptions> descriptions,
+        int userId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var existing = await db.LinkingWorkspaceSourceDescriptions
+            .Where(description => description.WorkspaceSourceId == sourceId)
+            .ToListAsync(cancellationToken);
+
+        var existingByAyah = existing
+            .GroupBy(description => description.AyahId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.OrderBy(description => description.OrderValue).ToList());
+
+        foreach (var ayah in descriptions)
+        {
+            var rows = existingByAyah.GetValueOrDefault(ayah.AyahId, []);
+            existingByAyah.Remove(ayah.AyahId);
+
+            ResequenceDescriptions(sourceId, ayah, rows, userId, now);
+        }
+
+        foreach (var rows in existingByAyah.Values)
+        {
+            db.LinkingWorkspaceSourceDescriptions.RemoveRange(rows);
+        }
+    }
+
+    private void ResequenceDescriptions(
+        long sourceId,
+        LinkingWorkspaceAyahDescriptions ayah,
+        List<LinkingWorkspaceSourceDescription> rows,
+        int userId,
+        DateTimeOffset now)
+    {
+        for (var index = 0; index < ayah.Bodies.Count; index++)
+        {
+            var orderValue = index + 1;
+            var body = ayah.Bodies[index];
+
+            if (index >= rows.Count)
+            {
+                db.LinkingWorkspaceSourceDescriptions.Add(new LinkingWorkspaceSourceDescription
+                {
+                    WorkspaceSourceId = sourceId,
+                    AyahId = ayah.AyahId,
+                    OrderValue = orderValue,
+                    Body = body,
+                    CreatedAtUtc = now,
+                    CreatedBy = userId,
+                    UpdatedAtUtc = now,
+                    UpdatedBy = userId,
+                });
+
+                continue;
+            }
+
+            var row = rows[index];
+            if (row.OrderValue == orderValue && string.Equals(row.Body, body, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            row.OrderValue = orderValue;
+            row.Body = body;
+            row.UpdatedAtUtc = now;
+            row.UpdatedBy = userId;
+        }
+
+        if (rows.Count > ayah.Bodies.Count)
+        {
+            db.LinkingWorkspaceSourceDescriptions.RemoveRange(rows.Skip(ayah.Bodies.Count));
         }
     }
 }

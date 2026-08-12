@@ -84,6 +84,7 @@ export type { LemmaTableRowDto } from './models/lemma-table-row-dto';
 export type { LemmaWordItemDto } from './models/lemma-word-item-dto';
 export type { LemmaWordItemDtoPagedResult } from './models/lemma-word-item-dto-paged-result';
 export type { LemmaWordItemDtoPagedResultApiResponse } from './models/lemma-word-item-dto-paged-result-api-response';
+export type { LinkingDescriptionBody } from './models/linking-description-body';
 export type { LinkingManualAyahBody } from './models/linking-manual-ayah-body';
 export type { LinkingResolvedAyahDto } from './models/linking-resolved-ayah-dto';
 export type { LinkingResolvedSourceDto } from './models/linking-resolved-source-dto';

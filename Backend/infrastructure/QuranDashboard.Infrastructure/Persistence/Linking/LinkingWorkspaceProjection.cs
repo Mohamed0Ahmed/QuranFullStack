@@ -55,6 +55,18 @@ internal static class LinkingWorkspaceProjection
             .Select(word => new WordRow(word.WorkspaceSourceId, word.AyahId, word.QuranWordId))
             .ToListAsync(cancellationToken);
 
+        var descriptionRows = await db.LinkingWorkspaceSourceDescriptions
+            .AsNoTracking()
+            .Where(description => sourceIds.Contains(description.WorkspaceSourceId))
+            .OrderBy(description => description.AyahId)
+            .ThenBy(description => description.OrderValue)
+            .Select(description => new DescriptionRow(
+                description.WorkspaceSourceId,
+                description.AyahId,
+                description.OrderValue,
+                description.Body))
+            .ToListAsync(cancellationToken);
+
         var manualAyahsBySource = manualAyahRows
             .GroupBy(row => row.WorkspaceSourceId)
             .ToDictionary(group => group.Key, group => group.ToList());
@@ -64,6 +76,10 @@ internal static class LinkingWorkspaceProjection
             .ToDictionary(group => group.Key, group => group.ToList());
 
         var wordsBySource = wordRows
+            .GroupBy(row => row.WorkspaceSourceId)
+            .ToDictionary(group => group.Key, group => group.ToList());
+
+        var descriptionsBySource = descriptionRows
             .GroupBy(row => row.WorkspaceSourceId)
             .ToDictionary(group => group.Key, group => group.ToList());
 
@@ -93,7 +109,11 @@ internal static class LinkingWorkspaceProjection
                     .. manualAyahs.Select(row => new LinkingWorkspaceManualAyahDto(
                         row.AyahId, row.VerseKey, row.OrderValue, row.PageHint))
                 ],
-                [],
+                [
+                    .. descriptionsBySource.GetValueOrDefault(source.Id, [])
+                        .Select(row => new LinkingWorkspaceDescriptionDto(
+                            row.AyahId, row.OrderValue, row.Body))
+                ],
                 source.LastResolvedCount,
                 source.LastResolvedAtUtc));
         }
@@ -111,4 +131,10 @@ internal static class LinkingWorkspaceProjection
     private sealed record OverrideRow(long WorkspaceSourceId, int AyahId);
 
     private sealed record WordRow(long WorkspaceSourceId, int AyahId, int QuranWordId);
+
+    private sealed record DescriptionRow(
+        long WorkspaceSourceId,
+        int AyahId,
+        int OrderValue,
+        string Body);
 }

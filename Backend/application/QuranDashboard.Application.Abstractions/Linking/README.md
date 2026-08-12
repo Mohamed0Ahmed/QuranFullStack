@@ -2,8 +2,9 @@
 
 This folder defines the shared Abwab Linking contracts every Linking story consumes: the canonical
 source identity and its hash, the identity token vocabulary, the four product limits, the descriptor
-well-formedness gate, the manual-ayah completeness proof, the source-resolution reader abstraction with
-its response DTOs, and the five exception types the API boundary translates. It contains no reader
+well-formedness gate, the manual-ayah completeness proof, the workspace description-document validator,
+the source-resolution reader abstraction with its response DTOs, and the five exception types the API
+boundary translates. It contains no reader
 *implementation*, writer, cache, endpoint, or DI registration — those live in Infrastructure and the
 API, and the cache arrives in a later phase.
 
@@ -184,6 +185,33 @@ The Backend deliberately does **not** filter, at either gate. Silently dropping 
 for is the wrong answer; rejecting is the right one, and `TryValidate` already rejects this exact case.
 The residual divergence is fenced off by ordering the two calls, never by copying the Frontend's filter
 into the descriptor.
+
+## `LinkingWorkspaceDescriptionValidation` — the description document, normalized
+
+`TryNormalize(descriptions, out normalized)` returns `null` when the submitted per-ayah description
+document is well-formed, and a `LinkingWorkspaceViolation` naming the offending **ayah id** when it is
+not. It is pure — no database, no descriptor — and it does two jobs at once: it enforces the three
+document rules and it produces the state the writer persists, a per-ayah list of trimmed bodies in
+final `1..N` order. Grouping the submitted flat list by ayah is what makes the "≤10 per **(source,
+ayah)**" limit (FR-031) checkable at all; a flat count could not distinguish ten descriptions on one
+ayah from one description on ten ayahs.
+
+The three rules, checked in this order per ayah so the message names the first real offence: **count**
+against `LinkingLimits.MaxDescriptionsPerSourceAyah`; **order** — positive and distinct within the
+ayah; **body** — trimmed, non-blank, within `LinkingLimits.MaxDescriptionLength`. Both limits are read
+from `LinkingLimits`, never restated, which is what FR-035 means by a single authoritative definition:
+the same two constants also generate the two database CHECKs in
+`infrastructure/.../Persistence/Configurations/Linking/LinkingWorkspaceSourceDescriptionConfiguration.cs`.
+
+A duplicate `orderValue` inside one ayah is **rejected, not silently renumbered**, for the same reason
+`DistinctSelectedWords` rejects a word claimed on two ayahs: two descriptions claiming position 1 is a
+contradiction in the request, and picking a winner would answer `200` to a document the client did not
+mean. Resequencing to `1..N` (FR-033) applies to the *surviving order*, not to a contradiction —
+submitted positions `1, 3, 7` normalize to `1, 2, 3`, while `1, 1, 2` is refused.
+
+The **membership** rule (FR-034 — the ayah must belong to that source's own set) is deliberately **not**
+here: it needs the source's resolved ayah set, which is I/O. It lives in the writer, next to the query
+that answers it.
 
 ## `LinkingLimits` — exactly four numeric limits
 

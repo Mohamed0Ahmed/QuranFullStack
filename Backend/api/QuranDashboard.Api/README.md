@@ -127,9 +127,16 @@ The wire response is `Contracts/Linking/LinkingWorkspaceResponse`, mapped from t
 `LinkingWorkspaceDto` by `LinkingWorkspaceResponseMapper`. The mapping exists because the DTO carries the
 **typed Domain `LinkingSourceDescriptor`** while the wire carries `LinkingSourceDescriptorBody` — the same
 schema the resolve route accepts, so a client round-trips a prepared source straight back into
-`POST /api/linking/sources/resolve` without a second descriptor shape. `descriptions` is present on the
-response and always empty until Phase 6 adds the table; it is deliberately **absent** from the
-configuration request body until then, so no client can submit descriptions the server would silently drop.
+`POST /api/linking/sources/resolve` without a second descriptor shape. `descriptions` is carried on both
+sides of the configuration route — a flat `(ayahId, orderValue, body)` list on the request body and on
+each response source — and **replacement is wholesale**: the writer stores exactly the submitted set, so
+an omitted `descriptions` field deletes every description that source had. A client that edits any other
+part of the configuration must echo the descriptions it loaded. Body-shape failures (`descriptions.ayahId`,
+`descriptions.orderValue` non-positive) are refused by `LinkingWorkspaceConfigurationBodyMapper` as `400`
+naming the field; the four content rules — per-ayah count, order uniqueness, body length, and the ayah
+belonging to that source's own set — are refused deeper, as `LinkingWorkspaceViolationCode`
+`DescriptionLimitExceeded` / `DescriptionOrderConflict` / `DescriptionBodyInvalid` /
+`DescriptionAyahOutsideSource`, each rendering an Arabic message that names the offending **ayah id**.
 
 The API has a database-backed authorization core:
 `[RequirePermission(...)]` checks an active local user's exact direct grant, while an active local Owner

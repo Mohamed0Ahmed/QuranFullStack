@@ -68,13 +68,35 @@ internal static class LinkingWorkspaceConfigurationBodyMapper
             }
         }
 
+        var descriptions = new List<LinkingWorkspaceDescriptionInput>();
+        foreach (var description in body.Descriptions ?? [])
+        {
+            if (description?.AyahId is not > 0)
+            {
+                violation = LinkingBodyViolations.Malformed(
+                    "descriptions.ayahId", LinkingBodyViolations.Text(description?.AyahId));
+                return false;
+            }
+
+            if (description.OrderValue is not > 0)
+            {
+                violation = LinkingBodyViolations.Malformed(
+                    "descriptions.orderValue", LinkingBodyViolations.Text(description.OrderValue));
+                return false;
+            }
+
+            descriptions.Add(new LinkingWorkspaceDescriptionInput(
+                description.AyahId.Value, description.OrderValue.Value, description.Body ?? string.Empty));
+        }
+
         configuration = new LinkingWorkspaceConfigurationInput(
             body.Label ?? string.Empty,
             inclusionMode,
             [.. body.AyahOverrides ?? []],
             selectedWords,
             body.AutomaticWordMatchesEnabled,
-            manualLinkShape);
+            manualLinkShape,
+            descriptions);
 
         return true;
     }

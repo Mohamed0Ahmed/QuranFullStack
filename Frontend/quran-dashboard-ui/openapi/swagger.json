@@ -8470,6 +8470,31 @@
         },
         "additionalProperties": false
       },
+      "LinkingDescriptionBody": {
+        "required": [
+          "ayahId",
+          "body",
+          "orderValue"
+        ],
+        "type": "object",
+        "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "orderValue": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "body": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "LinkingManualAyahBody": {
         "required": [
           "verseKey"
@@ -8843,6 +8868,7 @@
         "required": [
           "automaticWordMatchesEnabled",
           "ayahOverrides",
+          "descriptions",
           "inclusionMode",
           "label",
           "manualLinkShape",
@@ -8885,6 +8911,13 @@
           },
           "manualLinkShape": {
             "type": "string",
+            "nullable": true
+          },
+          "descriptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingDescriptionBody"
+            },
             "nullable": true
           }
         },

@@ -71,6 +71,8 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<LinkingWorkspaceSourceAyahOverride> LinkingWorkspaceSourceAyahOverrides =>
         Set<LinkingWorkspaceSourceAyahOverride>();
     public DbSet<LinkingWorkspaceSourceWord> LinkingWorkspaceSourceWords => Set<LinkingWorkspaceSourceWord>();
+    public DbSet<LinkingWorkspaceSourceDescription> LinkingWorkspaceSourceDescriptions =>
+        Set<LinkingWorkspaceSourceDescription>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
