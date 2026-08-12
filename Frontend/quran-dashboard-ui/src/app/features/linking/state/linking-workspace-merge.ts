@@ -24,6 +24,7 @@ export function mergeWorkspaceSnapshot(
         ...item,
         ayahIdByVerseKey,
         configurationRevision: known.configurationRevision + 1,
+        lastResolvedCount: item.lastResolvedCount ?? known.lastResolvedCount,
         lastResolvedCountIsStale: known.lastResolvedCountIsStale,
         configuration: {
           ...item.configuration,

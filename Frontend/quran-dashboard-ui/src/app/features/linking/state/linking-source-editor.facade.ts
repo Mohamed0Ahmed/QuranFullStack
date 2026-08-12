@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal, untracked } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { arabicSearchIncludes } from '../../../shared/quran/arabic-search-normalize';
@@ -67,7 +67,10 @@ export class LinkingSourceEditorFacade {
       this.close();
       return;
     }
-    const item = this.workspace.item(sourceKey);
+    if (this.editorStateSignal().sourceKey === sourceKey) {
+      return;
+    }
+    const item = untracked(() => this.workspace.item(sourceKey));
     if (item === null) {
       this.close();
       return;
