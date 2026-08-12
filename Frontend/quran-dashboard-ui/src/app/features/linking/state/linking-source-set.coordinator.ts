@@ -99,13 +99,15 @@ export class LinkingSourceSetCoordinator {
 
   private resolveMember(member: LinkingOperationMember, ayahs: readonly LinkingAyah[]): ResolvedLinkingSourceMember {
     const universe = ayahs.map((ayah) => ayah.verseKey);
-    const selection = reconcileLinkingSelection(member.configuration.ayahInclusion, universe);
+    let ayahInclusion = member.configuration.ayahInclusion;
     if (member.origin === 'workspace' && this.workspace.item(member.sourceKey)?.configurationRevision === member.configurationRevision) {
       this.workspace.reconcileResolvedSource(
         member.sourceKey,
         ayahs.map((ayah) => ({ ayahId: ayah.ayahId, verseKey: ayah.verseKey })),
       );
+      ayahInclusion = this.workspace.item(member.sourceKey)?.configuration.ayahInclusion ?? ayahInclusion;
     }
+    const selection = reconcileLinkingSelection(ayahInclusion, universe);
     if (member.configuration.kind === 'manual') {
       assertKnownManualWordIds(ayahs, member.configuration.quranWordIdsByVerseKey);
     }

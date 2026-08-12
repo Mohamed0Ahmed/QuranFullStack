@@ -98,7 +98,7 @@ public static class LinkingOperationClassifier
         LinkingOperationSourceIntent source,
         LinkingConfirmedContribution? live) =>
         live is not null
-        && (live.ContributionMode != source.ContributionMode || live.OrderValue != source.OrderValue);
+        && live.ContributionMode != source.ContributionMode;
 
     private static LinkingPreflightClassification ClassifyAyah(
         LinkingOperationSourceIntent source,
