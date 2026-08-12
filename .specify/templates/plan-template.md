@@ -40,10 +40,7 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on the constitution file, IF ONE EXISTS. This repository has no
-`.specify/memory/constitution.md`; when it is absent, write "No constitution defined — no
-constitution gates." here and leave the Complexity Tracking section below empty. Do not invent
-gates from other documents.]
+[Gates determined based on constitution file]
 
 ## Project Structure
 

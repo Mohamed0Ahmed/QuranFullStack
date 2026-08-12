@@ -26,6 +26,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 - For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
   - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
   - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- When constructing slash commands from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `/speckit-git-commit`.
 - For each executable hook, output the following based on its `optional` flag:
   - **Optional hook** (`optional: true`):
     ```
@@ -48,6 +49,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 
     Wait for the result of the hook command before proceeding to the Goal.
     ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
 - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
 ## Goal
@@ -58,11 +60,7 @@ Identify inconsistencies, duplications, ambiguities, and underspecified items ac
 
 **STRICTLY READ-ONLY**: Do **not** modify any files. Output a structured analysis report. Offer an optional remediation plan (user must explicitly approve before any follow-up editing commands would be invoked manually).
 
-**Constitution Authority**: *If* a project constitution exists at `.specify/memory/constitution.md`, it is **non-negotiable** within this analysis scope: conflicts are automatically CRITICAL and require adjusting the spec, plan, or tasks — not dilution, reinterpretation, or silent ignoring of the principle. Changing a principle happens in a separate, explicit constitution update outside `/speckit-analyze`.
-
-**If there is no constitution, there is no constitution gate.** That covers both the file being absent and the file being present but still an unfilled template (placeholder tokens such as `[PROJECT_NAME]` / `[PRINCIPLE_1_NAME]`). Skip constitution checks entirely, note once in the output that no constitution is defined, and continue — **absence is not a finding and never fails the run**. Do not invent principles from placeholders, from this repository's other documents, or from your own judgement of what they ought to be.
-
-**This repository deliberately has none.** The file was deleted because an unfilled template held as non-negotiable law is a worse artifact than no law at all. Binding rules live in `CLAUDE.md` / `AGENTS.md`, `CODING_PRINCIPLES.md`, `TESTING_CONSTITUTION.md`, and the `.architecture/` documents; judge against those, and against the feature's own spec, not against a constitution. `/speckit-converge` states the same escape hatch.
+**Constitution Authority**: The project constitution (`.specify/memory/constitution.md`) is **non-negotiable** within this analysis scope. Constitution conflicts are automatically CRITICAL and require adjustment of the spec, plan, or tasks—not dilution, reinterpretation, or silent ignoring of the principle. If a principle itself needs to change, that must occur in a separate, explicit constitution update outside `/speckit-analyze`.
 
 ## Execution Steps
 
@@ -104,10 +102,9 @@ Load only the minimal necessary context from each artifact:
 - Parallel markers [P]
 - Referenced file paths
 
-**From constitution (only if one exists):**
+**From constitution:**
 
-- **IF EXISTS AND NOT A TEMPLATE**: load `.specify/memory/constitution.md` for principle
-  validation. Otherwise skip this input entirely — see *Constitution Authority* above.
+- Load `.specify/memory/constitution.md` for principle validation
 
 ### 3. Build Semantic Models
 
@@ -216,6 +213,7 @@ After reporting, check if `.specify/extensions.yml` exists in the project root.
 - For each remaining hook, do **not** attempt to interpret or evaluate hook `condition` expressions:
   - If the hook has no `condition` field, or it is null/empty, treat the hook as executable
   - If the hook defines a non-empty `condition`, skip the hook and leave condition evaluation to the HookExecutor implementation
+- When constructing slash commands from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `/speckit-git-commit`.
 - For each executable hook, output the following based on its `optional` flag:
   - **Optional hook** (`optional: true`):
     ```
@@ -236,6 +234,7 @@ After reporting, check if `.specify/extensions.yml` exists in the project root.
     Executing: `/{command}`
     EXECUTE_COMMAND: {command}
     ```
+    After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
 - If no hooks are registered or `.specify/extensions.yml` does not exist, skip silently
 
 ## Operating Principles
