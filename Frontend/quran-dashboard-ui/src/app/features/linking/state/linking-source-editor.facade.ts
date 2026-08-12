@@ -154,7 +154,10 @@ export class LinkingSourceEditorFacade {
           const uniqueAyahs = uniqueAyahsByVerseKey(ayahs);
           const universe = uniqueAyahs.map((ayah) => ayah.verseKey);
           if (this.workspace.item(sourceKey)?.configurationRevision === configurationRevision) {
-            this.workspace.reconcileResolvedSource(sourceKey, universe);
+            this.workspace.reconcileResolvedSource(
+              sourceKey,
+              uniqueAyahs.map((ayah) => ({ ayahId: ayah.ayahId, verseKey: ayah.verseKey })),
+            );
           }
           this.editorStateSignal.update((state) => ({
             ...state,

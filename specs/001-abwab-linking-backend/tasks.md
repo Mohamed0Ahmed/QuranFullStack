@@ -470,10 +470,10 @@ every step (quickstart §4).
 
 **Goal**: Replace browser-local persistence with the Backend workspace, store surface unchanged.
 
-- [ ] T069 [P] [US2] Create `features/linking/data-access/http-linking-workspace.repository.ts`
+- [X] T069 [P] [US2] Create `features/linking/data-access/http-linking-workspace.repository.ts`
       implementing the store's existing repository port against the six workspace routes
       (versions carried per `contracts/linking-workspace-api.md`).
-- [ ] T070 [US2] Swap `state/linking-workspace.store.ts` to the HTTP port (public API unchanged —
+- [X] T070 [US2] Swap `state/linking-workspace.store.ts` to the HTTP port (public API unchanged —
       no component edits); manual word selection saves canonical `quranWordId`
       (`state/linking-manual-word-editor.facade.ts`: draft becomes id-based; `wordLocation` is
       only the click coordinate resolved through the resolved source); update
@@ -485,7 +485,7 @@ every step (quickstart §4).
       `local-storage-linking-workspace.repository.ts` AND `linking-workspace.codec.ts` (server
       owns validity; a second decoder is divergence risk). Clear the old `qd-linking-workspace-v1`
       bucket after the first successful server hydration — never migrate it. Depends on T069.
-- [ ] T071 [US2] Surface the 409 stale-version path as a visible, recoverable state via the
+- [X] T071 [US2] Surface the 409 stale-version path as a visible, recoverable state via the
       store's existing persistence-warning signal — reload + inform, never silent overwrite.
 - [ ] T072 [US2] Run the **FE gate**; probes: two-browser
       persistence (sources/config/order/descriptions reappear), two-tab 409 recovery, transient

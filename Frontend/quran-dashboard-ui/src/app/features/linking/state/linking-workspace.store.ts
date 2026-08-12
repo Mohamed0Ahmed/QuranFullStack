@@ -1,8 +1,7 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 
 import { CurrentUserStore } from '../../../core/auth/current-user.store';
-import { LocalStorageLinkingWorkspaceRepository } from '../data-access/local-storage-linking-workspace.repository';
-import { toWorkspaceItem } from '../data-access/linking-workspace.codec';
+import { HttpLinkingWorkspaceRepository } from '../data-access/http-linking-workspace.repository';
 import { LinkingWorkspaceRepository } from '../data-access/linking-workspace.repository';
 import {
   LinkingManualLinkShape,
@@ -16,25 +15,31 @@ import {
   LinkingSelection,
   LinkingSourceConfiguration,
   LinkingWorkspaceItem,
+  LinkingWorkspaceSnapshot,
   LinkingWorkspaceSurface,
 } from '../models/linking-workspace.models';
 import { linkingSourceKey } from '../utils/linking-source-key';
-import { manualMushafVerseKeys } from '../utils/manual-link-shape';
 import {
-  DEFAULT_LINKING_SELECTION,
   clearLinkingAyahs,
   reconcileLinkingSelection,
   selectAllLinkingAyahs,
   toggleLinkingSelection,
 } from '../utils/linking-selection';
 import { LinkingAccessService } from './linking-access.service';
+import { mergeWorkspaceSnapshot, toAyahIds, toConfigurationRequest } from './linking-workspace-merge';
+import {
+  LinkingWorkspaceOperation,
+  LinkingWorkspaceSyncRunner,
+} from './linking-workspace-sync.runner';
 
 @Injectable({ providedIn: 'root' })
 export class LinkingWorkspaceStore {
   private readonly currentUserStore = inject(CurrentUserStore);
   private readonly linkingAccess = inject(LinkingAccessService);
-  private readonly repository: LinkingWorkspaceRepository = inject(LocalStorageLinkingWorkspaceRepository);
+  private readonly sync = inject(LinkingWorkspaceSyncRunner);
+  private readonly repository: LinkingWorkspaceRepository = inject(HttpLinkingWorkspaceRepository);
   private readonly itemsSignal = signal<readonly LinkingWorkspaceItem[]>([]);
+  private readonly workspaceVersionSignal = signal<number | null>(null);
   private readonly checkedSourceKeysSignal = signal<readonly string[]>([]);
   private readonly activeSurfaceSignal = signal<LinkingWorkspaceSurface>('closed');
   private readonly editorSourceKeySignal = signal<string | null>(null);
@@ -44,12 +49,8 @@ export class LinkingWorkspaceStore {
   private readonly currentActorSub = signal<string | null>(null);
   private readonly hydratedActorSub = signal<string | null>(null);
   private actorGeneration = 0;
-  private durableWorkspaceRevision = 0;
-  private saveQueue: Promise<void> = Promise.resolve();
 
-  readonly items = computed(() =>
-    this.isReadyForCurrentActor() ? this.itemsSignal() : [],
-  );
+  readonly items = computed(() => (this.isReadyForCurrentActor() ? this.itemsSignal() : []));
   readonly itemCount = computed(() => this.items().length);
   readonly checkedSourceKeys = computed(() =>
     this.isReadyForCurrentActor() ? this.checkedSourceKeysSignal() : [],
@@ -59,41 +60,36 @@ export class LinkingWorkspaceStore {
   readonly removedItem = this.removedItemSignal.asReadonly();
   readonly clearAllRequested = this.clearAllRequestedSignal.asReadonly();
   readonly persistenceWarning = this.persistenceWarningSignal.asReadonly();
-  readonly isOpen = computed(() =>
-    this.isReadyForCurrentActor() && this.activeSurfaceSignal() !== 'closed',
+  readonly isOpen = computed(
+    () => this.isReadyForCurrentActor() && this.activeSurfaceSignal() !== 'closed',
   );
 
   constructor() {
+    this.sync.connect({
+      isCurrentActor: (actorSub, actorGeneration) => this.isCurrentActor(actorSub, actorGeneration),
+      workspaceVersion: () => this.workspaceVersionSignal(),
+      items: () => this.itemsSignal(),
+      findItem: (sourceKey) => this.findItem(sourceKey),
+      applySnapshot: (snapshot) => this.applySnapshot(snapshot),
+      restoreChecked: (sourceKey) =>
+        this.checkedSourceKeysSignal.update((keys) =>
+          keys.includes(sourceKey) ? keys : [...keys, sourceKey],
+        ),
+      warn: (message) => this.persistenceWarningSignal.set(message),
+    });
     effect(() => this.synchronizeActorWorkspace());
+  }
+
+  dismissPersistenceWarning(): void {
+    this.persistenceWarningSignal.set(null);
   }
 
   addSource(source: LinkingSourceDescriptor): string | null {
     if (!this.canMutate()) {
       return null;
     }
-
     const sourceKey = linkingSourceKey(source);
-    const existing = this.findItem(sourceKey);
-    if (existing !== null) {
-      this.replaceItem(
-        sourceKey,
-        toWorkspaceItem(
-          sourceKey,
-          source,
-          existing.configuration,
-          existing.lastResolvedCount,
-          existing.lastResolvedCountIsStale,
-          existing.configurationRevision,
-        ),
-      );
-      return sourceKey;
-    }
-
-    this.itemsSignal.update((items) => [
-      ...items,
-      toWorkspaceItem(sourceKey, source, initialConfiguration(source), null, true),
-    ]);
-    this.persist();
+    this.enqueue((version) => this.repository.addSource(source, version));
     return sourceKey;
   }
 
@@ -133,18 +129,17 @@ export class LinkingWorkspaceStore {
 
   remove(sourceKey: string): void {
     const index = this.itemsSignal().findIndex((item) => item.sourceKey === sourceKey);
-    if (!this.canMutate() || index < 0) {
+    const item = this.findItem(sourceKey);
+    if (!this.canMutate() || index < 0 || item === null || item.sourceId === null) {
       return;
     }
-
-    const item = this.itemsSignal()[index];
+    const sourceId = item.sourceId;
     this.removedItemSignal.set({ item, index, wasChecked: this.checkedSourceKeysSignal().includes(sourceKey) });
-    this.itemsSignal.update((items) => items.filter((candidate) => candidate.sourceKey !== sourceKey));
     this.checkedSourceKeysSignal.update((keys) => keys.filter((key) => key !== sourceKey));
     if (this.editorSourceKeySignal() === sourceKey) {
       this.editorSourceKeySignal.set(null);
     }
-    this.persist();
+    this.enqueue((version) => this.repository.removeSource(sourceId, version));
   }
 
   undoRemove(): void {
@@ -152,16 +147,11 @@ export class LinkingWorkspaceStore {
     if (!this.canMutate() || removed === null || this.findItem(removed.item.sourceKey) !== null) {
       return;
     }
-    this.itemsSignal.update((items) => [
-      ...items.slice(0, removed.index),
-      removed.item,
-      ...items.slice(removed.index),
-    ]);
-    if (removed.wasChecked) {
-      this.checkedSourceKeysSignal.update((keys) => [...keys, removed.item.sourceKey]);
-    }
     this.removedItemSignal.set(null);
-    this.persist();
+    const actorSub = this.currentActorSub();
+    if (actorSub !== null) {
+      this.sync.restore(actorSub, this.actorGeneration, removed);
+    }
   }
 
   requestClearAll(): void {
@@ -174,12 +164,11 @@ export class LinkingWorkspaceStore {
     if (!this.canMutate() || !this.clearAllRequestedSignal()) {
       return;
     }
-    this.itemsSignal.set([]);
     this.checkedSourceKeysSignal.set([]);
     this.editorSourceKeySignal.set(null);
     this.removedItemSignal.set(null);
     this.clearAllRequestedSignal.set(false);
-    this.persist();
+    this.enqueue((version) => this.repository.clearSources(version));
   }
 
   cancelClearAll(): void {
@@ -256,10 +245,7 @@ export class LinkingWorkspaceStore {
     );
   }
 
-  setManualWordIds(
-    sourceKey: string,
-    quranWordIdsByVerseKey: LinkingManualWordIdsByVerseKey,
-  ): void {
+  setManualWordIds(sourceKey: string, quranWordIdsByVerseKey: LinkingManualWordIdsByVerseKey): void {
     const item = this.findItem(sourceKey);
     if (item?.source.kind !== 'manual-mushaf-ayahs') {
       return;
@@ -281,25 +267,34 @@ export class LinkingWorkspaceStore {
     );
   }
 
-  reconcileResolvedSource(sourceKey: string, universe: readonly string[]): void {
+  reconcileResolvedSource(
+    sourceKey: string,
+    resolvedAyahs: readonly { ayahId: number; verseKey: string }[],
+  ): void {
     const item = this.findItem(sourceKey);
     if (item === null) {
       return;
     }
-    const configuration: LinkingSourceConfiguration = {
-      ...item.configuration,
-      ayahInclusion: reconcileLinkingSelection(item.configuration.ayahInclusion, universe),
-    };
-    this.updateItem(sourceKey, (current) =>
-      toWorkspaceItem(
-        current.sourceKey,
-        current.source,
-        configuration,
-        universe.length,
-        false,
-        current.configurationRevision + 1,
-      ),
+    const ayahIdByVerseKey = Object.fromEntries(
+      resolvedAyahs.map((ayah) => [ayah.verseKey, ayah.ayahId]),
     );
+    const universe = resolvedAyahs.map((ayah) => ayah.verseKey);
+    const knownVerseKeys = new Map(resolvedAyahs.map((ayah) => [ayah.ayahId, ayah.verseKey]));
+    const verseKeys = item.ayahOverrideIds
+      .map((ayahId) => knownVerseKeys.get(ayahId))
+      .filter((verseKey): verseKey is string => verseKey !== undefined);
+    const ayahInclusion = reconcileLinkingSelection(
+      { mode: item.configuration.ayahInclusion.mode, verseKeys },
+      universe,
+    );
+    this.replaceItem(sourceKey, {
+      ...item,
+      ayahIdByVerseKey,
+      ayahOverrideIds: toAyahIds(ayahInclusion.verseKeys, ayahIdByVerseKey),
+      configuration: { ...item.configuration, ayahInclusion },
+      lastResolvedCount: universe.length,
+      lastResolvedCountIsStale: false,
+    });
   }
 
   captureOperationMembers(): readonly LinkingOperationMember[] {
@@ -313,7 +308,7 @@ export class LinkingWorkspaceStore {
         sourceKey: item.sourceKey,
         source: item.source,
         configuration: item.configuration,
-        origin: 'workspace',
+        origin: 'workspace' as const,
         configurationRevision: item.configurationRevision,
         operationOrder: this.itemsSignal().indexOf(item),
       }));
@@ -327,13 +322,11 @@ export class LinkingWorkspaceStore {
     if (!this.currentUserStore.authStateKnown() || this.currentUserStore.loadState() === 'loading') {
       return;
     }
-
     const currentUser = this.currentUserStore.currentUser();
     if (!this.linkingAccess.canUseLinking() || currentUser === null) {
       this.resetInMemoryWorkspace();
       return;
     }
-
     if (this.currentActorSub() !== currentUser.sub) {
       this.activateActor(currentUser.sub);
     }
@@ -343,39 +336,14 @@ export class LinkingWorkspaceStore {
     this.actorGeneration += 1;
     this.currentActorSub.set(actorSub);
     this.hydratedActorSub.set(null);
-    this.durableWorkspaceRevision = 0;
     this.resetWorkspaceSignals();
-    const actorGeneration = this.actorGeneration;
-    void this.hydrate(actorSub, actorGeneration);
+    void this.hydrate(actorSub, this.actorGeneration);
   }
 
   private async hydrate(actorSub: string, actorGeneration: number): Promise<void> {
-    try {
-      const result = await this.repository.load(actorSub);
-      if (!this.isCurrentActor(actorSub, actorGeneration)) {
-        return;
-      }
-      if (result.invalidPayload) {
-        void this.invalidateMalformedActor(actorSub, actorGeneration);
-      }
-      this.itemsSignal.set(result.items);
-      this.checkedSourceKeysSignal.set([]);
+    await this.sync.hydrate(actorSub, actorGeneration);
+    if (this.isCurrentActor(actorSub, actorGeneration)) {
       this.hydratedActorSub.set(actorSub);
-    } catch {
-      if (this.isCurrentActor(actorSub, actorGeneration)) {
-        this.hydratedActorSub.set(actorSub);
-        this.persistenceWarningSignal.set('تعذر استعادة مساحة الربط المحفوظة محلياً.');
-      }
-    }
-  }
-
-  private async invalidateMalformedActor(actorSub: string, actorGeneration: number): Promise<void> {
-    try {
-      await this.repository.invalidateActiveActor(actorSub);
-    } catch {
-      if (this.isCurrentActor(actorSub, actorGeneration)) {
-        this.persistenceWarningSignal.set('تعذر حذف بيانات الربط المحلية غير الصالحة.');
-      }
     }
   }
 
@@ -386,12 +354,12 @@ export class LinkingWorkspaceStore {
     this.actorGeneration += 1;
     this.currentActorSub.set(null);
     this.hydratedActorSub.set(null);
-    this.durableWorkspaceRevision = 0;
     this.resetWorkspaceSignals();
   }
 
   private resetWorkspaceSignals(): void {
     this.itemsSignal.set([]);
+    this.workspaceVersionSignal.set(null);
     this.checkedSourceKeysSignal.set([]);
     this.activeSurfaceSignal.set('closed');
     this.editorSourceKeySignal.set(null);
@@ -404,45 +372,48 @@ export class LinkingWorkspaceStore {
     sourceKey: string,
     update: (configuration: LinkingSourceConfiguration) => LinkingSourceConfiguration,
   ): void {
-    this.updateItem(sourceKey, (item) => {
-      const configuration = update(item.configuration);
-      if (configuration === item.configuration) {
-        return item;
-      }
-      return toWorkspaceItem(
-        item.sourceKey,
-        item.source,
-        configuration,
-        item.lastResolvedCount,
-        item.lastResolvedCountIsStale,
-        item.configurationRevision + 1,
-      );
-    });
+    const item = this.findItem(sourceKey);
+    if (!this.canMutate() || item === null || item.sourceId === null) {
+      return;
+    }
+    const configuration = update(item.configuration);
+    if (configuration === item.configuration) {
+      return;
+    }
+    const next: LinkingWorkspaceItem = {
+      ...item,
+      configuration,
+      configurationRevision: item.configurationRevision + 1,
+      ayahOverrideIds: toAyahIds(configuration.ayahInclusion.verseKeys, item.ayahIdByVerseKey),
+    };
+    this.replaceItem(sourceKey, next);
+    const request = toConfigurationRequest(next);
+    const sourceId = item.sourceId;
+    if (request === null) {
+      return;
+    }
+    this.enqueue(() => this.repository.replaceConfiguration(sourceId, request));
   }
 
-  private updateItem(
-    sourceKey: string,
-    update: (item: LinkingWorkspaceItem) => LinkingWorkspaceItem,
-  ): void {
-    if (!this.canMutate() || this.findItem(sourceKey) === null) {
-      return;
+  private enqueue(operation: LinkingWorkspaceOperation): void {
+    const actorSub = this.currentActorSub();
+    if (actorSub !== null) {
+      this.sync.run(actorSub, this.actorGeneration, operation);
     }
-    const current = this.findItem(sourceKey);
-    if (current === null) {
-      return;
-    }
-    const next = update(current);
-    if (next === current) {
-      return;
-    }
-    this.replaceItem(sourceKey, next);
+  }
+
+  private applySnapshot(snapshot: LinkingWorkspaceSnapshot): void {
+    const merged = mergeWorkspaceSnapshot(snapshot, this.itemsSignal());
+    this.itemsSignal.set(merged.items);
+    this.workspaceVersionSignal.set(merged.workspaceVersion);
+    const known = new Set(merged.items.map((item) => item.sourceKey));
+    this.checkedSourceKeysSignal.update((keys) => keys.filter((key) => known.has(key)));
   }
 
   private replaceItem(sourceKey: string, item: LinkingWorkspaceItem): void {
     this.itemsSignal.update((items) =>
       items.map((candidate) => (candidate.sourceKey === sourceKey ? item : candidate)),
     );
-    this.persist();
   }
 
   private findItem(sourceKey: string): LinkingWorkspaceItem | null {
@@ -458,30 +429,6 @@ export class LinkingWorkspaceStore {
       actorSub === this.currentActorSub() &&
       actorSub === this.hydratedActorSub()
     );
-  }
-
-  private persist(): void {
-    const actorSub = this.currentActorSub();
-    if (actorSub === null || !this.canMutate()) {
-      return;
-    }
-    const actorGeneration = this.actorGeneration;
-    const revision = ++this.durableWorkspaceRevision;
-    const items = this.itemsSignal();
-    this.saveQueue = this.saveQueue
-      .catch(() => undefined)
-      .then(async () => {
-        if (!this.isCurrentActor(actorSub, actorGeneration)) {
-          return;
-        }
-        try {
-          await this.repository.save(actorSub, revision, items);
-        } catch {
-          if (this.isCurrentActor(actorSub, actorGeneration)) {
-            this.persistenceWarningSignal.set('تعذر حفظ مساحة الربط محلياً.');
-          }
-        }
-      });
   }
 
   private isCurrentActor(actorSub: string, actorGeneration: number): boolean {
@@ -504,20 +451,21 @@ export class LinkingWorkspaceStore {
   }
 }
 
-function initialConfiguration(source: LinkingSourceDescriptor): LinkingSourceConfiguration {
-  if (source.kind === 'manual-mushaf-ayahs') {
-    return {
-      kind: 'manual',
-      ayahInclusion: DEFAULT_LINKING_SELECTION,
-      quranWordIdsByVerseKey: {},
-      linkShape: manualMushafVerseKeys(source).length > 1 ? 'grouped' : 'independent',
-    };
+function orderedSourceIdsWith(
+  items: readonly LinkingWorkspaceItem[],
+  removed: LinkingRemovedWorkspaceItem,
+): readonly number[] | null {
+  const restored = items.find((item) => item.sourceKey === removed.item.sourceKey);
+  if (restored?.sourceId == null) {
+    return null;
   }
-  return {
-    kind: 'automatic',
-    ayahInclusion: DEFAULT_LINKING_SELECTION,
-    automaticWordMatchesEnabled: true,
-  };
+  const others = items.filter((item) => item.sourceKey !== removed.item.sourceKey);
+  if (others.some((item) => item.sourceId === null)) {
+    return null;
+  }
+  const ordered = [...others];
+  ordered.splice(Math.min(removed.index, ordered.length), 0, restored);
+  return ordered.map((item) => item.sourceId!);
 }
 
 function normalizeManualWordIds(

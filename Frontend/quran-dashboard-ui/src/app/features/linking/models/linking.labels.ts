@@ -51,6 +51,7 @@ export const LINKING_LABELS = {
   mushafSelectionRemoved: 'أزيلت الآية من التحديد.',
   mushafSelectionCancelled: 'أُلغي تحديد آيات المصحف.',
   retry: 'إعادة المحاولة',
+  workspaceSyncDismiss: 'إخفاء التنبيه',
   selectAyahs: 'اختيار الآيات',
   searchAyahs: 'ابحث في الآيات',
   noAyahMatches: 'لا توجد آيات مطابقة للبحث.',

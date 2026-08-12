@@ -12,6 +12,14 @@
     testIdPrefix="linking-workspace"
     (dismissed)="close()"
   >
+    @if (persistenceWarning(); as warning) {
+      <qd-error-state
+        severity="write"
+        [message]="warning"
+        [actionLabel]="labels.workspaceSyncDismiss"
+        (action)="dismissPersistenceWarning()"
+      />
+    }
     <div #surfaceEntry class="linking-workspace-host__surface-entry" tabindex="-1">
       @defer (on idle) {
         @if (isWorkspace()) {

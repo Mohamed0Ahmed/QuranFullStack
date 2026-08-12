@@ -101,7 +101,10 @@ export class LinkingSourceSetCoordinator {
     const universe = ayahs.map((ayah) => ayah.verseKey);
     const selection = reconcileLinkingSelection(member.configuration.ayahInclusion, universe);
     if (member.origin === 'workspace' && this.workspace.item(member.sourceKey)?.configurationRevision === member.configurationRevision) {
-      this.workspace.reconcileResolvedSource(member.sourceKey, universe);
+      this.workspace.reconcileResolvedSource(
+        member.sourceKey,
+        ayahs.map((ayah) => ({ ayahId: ayah.ayahId, verseKey: ayah.verseKey })),
+      );
     }
     if (member.configuration.kind === 'manual') {
       assertKnownManualWordIds(ayahs, member.configuration.quranWordIdsByVerseKey);

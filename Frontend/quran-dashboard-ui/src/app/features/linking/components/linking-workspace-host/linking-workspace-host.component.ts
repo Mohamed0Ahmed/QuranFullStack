@@ -10,6 +10,7 @@ import { LinkingWorkflowFacade } from '../../state/linking-workflow.facade';
 import { LinkingSourceAyahEditorComponent } from '../linking-source-ayah-editor/linking-source-ayah-editor.component';
 import { LinkingManualWordEditorComponent } from '../linking-manual-word-editor/linking-manual-word-editor.component';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
+import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 
 @Component({
   selector: 'qd-linking-workspace-host',
@@ -21,6 +22,7 @@ import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/con
     LinkingSourceAyahEditorComponent,
     LinkingManualWordEditorComponent,
     ConfirmDialogComponent,
+    QdErrorStateComponent,
   ],
   templateUrl: './linking-workspace-host.component.html',
   styleUrl: './linking-workspace-host.component.scss',
@@ -54,6 +56,7 @@ export class LinkingWorkspaceHostComponent {
   protected readonly editorSourceKey = this.workspace.editorSourceKey;
   protected readonly clearAllRequested = this.workspace.clearAllRequested;
   protected readonly itemCount = this.workspace.itemCount;
+  protected readonly persistenceWarning = this.workspace.persistenceWarning;
 
   constructor() {
     effect(() => {
@@ -94,6 +97,7 @@ export class LinkingWorkspaceHostComponent {
     this.focus.restore(() => this.surfaceEntry()?.nativeElement ?? null);
   }
 
+  protected dismissPersistenceWarning(): void { this.workspace.dismissPersistenceWarning(); }
   protected confirmClearAll(): void { this.workspace.confirmClearAll(); }
   protected cancelClearAll(): void { this.workspace.cancelClearAll(); }
 }

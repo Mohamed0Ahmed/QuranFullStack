@@ -33,27 +33,29 @@ export type LinkingWorkspaceSurface =
   | 'manual-word-editor'
   | 'linking-flow';
 
+export interface LinkingWorkspaceDescription {
+  ayahId: number;
+  orderValue: number;
+  body: string;
+}
+
 export interface LinkingWorkspaceItem {
   sourceKey: string;
+  sourceId: number | null;
+  sourceVersion: number | null;
   source: LinkingSourceDescriptor;
   configuration: LinkingSourceConfiguration;
   configurationRevision: number;
+  ayahOverrideIds: readonly number[];
+  ayahIdByVerseKey: Readonly<Record<string, number>>;
+  descriptions: readonly LinkingWorkspaceDescription[];
   lastResolvedCount: number | null;
   lastResolvedCountIsStale: boolean;
 }
 
-export interface LinkingWorkspacePersistedEnvelope {
-  version: 3;
-  actorSub: string;
-  revision: number;
-  items: readonly LinkingWorkspacePersistedItem[];
-}
-
-export interface LinkingWorkspacePersistedItem {
-  sourceKey: string;
-  source: LinkingSourceDescriptor;
-  configuration: LinkingSourceConfiguration;
-  lastResolvedCount: number | null;
+export interface LinkingWorkspaceSnapshot {
+  workspaceVersion: number | null;
+  items: readonly LinkingWorkspaceItem[];
 }
 
 export interface LinkingRemovedWorkspaceItem {
