@@ -23,6 +23,7 @@ export interface LinkingSourceIntent {
   sourceKey: string;
   source: LinkingSourceDescriptor;
   contributionMode: 'automatic' | 'manual-single' | 'manual-independent' | 'manual-grouped';
+  automaticWordMatchesEnabled: boolean | null;
   units: readonly LinkingIntentUnit[];
 }
 
@@ -31,8 +32,10 @@ export interface LinkingIntentUnit {
 }
 
 export interface LinkingIntentAyah {
+  ayahId: number;
   verseKey: string;
   wordContributions: readonly LinkingWordContribution[];
+  descriptions: readonly string[];
 }
 
 export interface LinkingWordContribution {

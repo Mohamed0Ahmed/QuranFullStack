@@ -1,5 +1,5 @@
 import { LinkingSourceDescriptor } from './linking-source.models';
-import { LinkingSourceConfiguration } from './linking-workspace.models';
+import { LinkingSourceConfiguration, LinkingWorkspaceDescription } from './linking-workspace.models';
 
 export type LinkingOperationMemberOrigin = 'workspace' | 'direct-link';
 
@@ -7,6 +7,7 @@ export interface LinkingOperationMember {
   sourceKey: string;
   source: LinkingSourceDescriptor;
   configuration: LinkingSourceConfiguration;
+  descriptions: readonly LinkingWorkspaceDescription[];
   origin: LinkingOperationMemberOrigin;
   configurationRevision: number;
   operationOrder: number;

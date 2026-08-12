@@ -10,6 +10,7 @@ export function ephemeralLinkingOperationMember(
     sourceKey: `ephemeral:${source.kind}`,
     source,
     configuration,
+    descriptions: [],
     origin: 'direct-link',
     configurationRevision: 0,
     operationOrder: 0,

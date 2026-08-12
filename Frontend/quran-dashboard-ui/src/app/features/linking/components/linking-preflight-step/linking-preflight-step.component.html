@@ -1,0 +1,115 @@
+<section class="linking-preflight-step" aria-labelledby="linking-preflight-title">
+  <header class="linking-preflight-step__header">
+    <h3 id="linking-preflight-title">{{ labels.preflightTitle }}</h3>
+    <p>{{ labels.preflightHint }}</p>
+  </header>
+
+  @if (message(); as warning) {
+    <qd-notice [message]="warning" />
+  }
+
+  @switch (status()) {
+    @case ('loading') {
+      <qd-panel-skeleton shape="text" [loadingLabel]="labels.preflightLoading" />
+    }
+    @case ('error') {
+      <qd-error-state
+        severity="read"
+        [message]="message() || labels.sourceLoadError"
+        [actionLabel]="labels.retry"
+        (action)="retry()"
+      />
+    }
+    @case ('ready') {
+      @if (preflight(); as result) {
+        <p class="linking-preflight-step__door">{{ labels.chooseDoor }}: {{ result.doorName }}</p>
+
+        @if (isNoOp()) {
+          <qd-notice [message]="labels.preflightNoOp" />
+        }
+        @if (isBlocked()) {
+          <qd-error-state severity="write" [message]="labels.preflightBlocked" />
+        }
+
+        <dl class="linking-preflight-step__totals">
+          <div><dt>{{ labels.preflightCountRequested }}</dt><dd>{{ result.totals.requested }}</dd></div>
+          <div><dt>{{ labels.preflightCountNew }}</dt><dd>{{ result.totals.new }}</dd></div>
+          <div><dt>{{ labels.preflightCountOverlapping }}</dt><dd>{{ result.totals.overlapping }}</dd></div>
+          <div><dt>{{ labels.preflightCountUnchanged }}</dt><dd>{{ result.totals.unchanged }}</dd></div>
+          <div><dt>{{ labels.preflightCountUpdated }}</dt><dd>{{ result.totals.updated }}</dd></div>
+          <div><dt>{{ labels.preflightCountRemoved }}</dt><dd>{{ result.totals.removed }}</dd></div>
+          <div><dt>{{ labels.preflightCountInvalid }}</dt><dd>{{ result.totals.invalid }}</dd></div>
+        </dl>
+
+        <ul class="linking-preflight-step__sources">
+          @for (source of result.sources; track source.sourceIdentity) {
+            <li class="linking-preflight-step__source">
+              <div class="linking-preflight-step__source-head">
+                <div>
+                  <p class="linking-preflight-step__source-label">{{ source.label }}</p>
+                  <p class="linking-preflight-step__source-meta">
+                    {{ labels.sourceClassifications[source.classification] }}
+                    · {{ labels.preflightCountRequested }} {{ source.counts.requested }}
+                    · {{ labels.preflightCountNew }} {{ source.counts.new }}
+                    · {{ labels.preflightCountOverlapping }} {{ source.counts.overlapping }}
+                    · {{ labels.preflightCountUpdated }} {{ source.counts.updated }}
+                    · {{ labels.preflightCountRemoved }} {{ source.counts.removed }}
+                    · {{ labels.preflightCountInvalid }} {{ invalidAyahCount(source) }}
+                  </p>
+                </div>
+                <button
+                  qdAction="tertiary"
+                  size="sm"
+                  type="button"
+                  [attr.aria-expanded]="isExpanded(source.sourceIdentity)"
+                  (click)="toggleSource(source.sourceIdentity)"
+                >
+                  {{ isExpanded(source.sourceIdentity) ? labels.preflightHideAyahs : labels.preflightShowAyahs }}
+                </button>
+              </div>
+
+              @if (isExpanded(source.sourceIdentity)) {
+                <ul class="linking-preflight-step__ayahs">
+                  @for (ayah of source.ayahs; track ayah.ayahId) {
+                    <li class="linking-preflight-step__ayah">
+                      <p class="linking-preflight-step__ayah-head">
+                        <span class="qd-ltr-isolate">{{ ayah.verseKey }}</span>
+                        <span>{{ labels.ayahClassifications[ayah.classification] }}</span>
+                      </p>
+                      @if (ayah.overlappingSources.length > 0) {
+                        <p class="linking-preflight-step__overlap">
+                          {{ labels.preflightOverlapWith }}:
+                          @for (overlapping of ayah.overlappingSources; track overlapping.sourceIdentity) {
+                            <span class="linking-preflight-step__overlap-name">{{ overlapping.label }}</span>
+                          }
+                        </p>
+                      }
+                      @if (ayah.wordChanges.added.length > 0) {
+                        <p>{{ labels.preflightWordsAdded }}: {{ ayah.wordChanges.added.length }}</p>
+                      }
+                      @if (ayah.wordChanges.removed.length > 0) {
+                        <p>{{ labels.preflightWordsRemoved }}: {{ ayah.wordChanges.removed.length }}</p>
+                      }
+                      @if (ayah.descriptionChanges.added.length > 0) {
+                        <p>{{ labels.preflightDescriptionsAdded }}: {{ ayah.descriptionChanges.added.length }}</p>
+                      }
+                      @if (ayah.descriptionChanges.removed.length > 0) {
+                        <p>{{ labels.preflightDescriptionsRemoved }}: {{ ayah.descriptionChanges.removed.length }}</p>
+                      }
+                      @if (ayah.descriptionChanges.changed.length > 0) {
+                        <p>{{ labels.preflightDescriptionsChanged }}: {{ ayah.descriptionChanges.changed.length }}</p>
+                      }
+                      @if (ayah.invalidReason; as reason) {
+                        <p class="linking-preflight-step__invalid">{{ reason }}</p>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</section>

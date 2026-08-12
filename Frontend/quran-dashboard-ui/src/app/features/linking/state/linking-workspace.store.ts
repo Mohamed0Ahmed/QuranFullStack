@@ -308,6 +308,7 @@ export class LinkingWorkspaceStore {
         sourceKey: item.sourceKey,
         source: item.source,
         configuration: item.configuration,
+        descriptions: item.descriptions,
         origin: 'workspace' as const,
         configurationRevision: item.configurationRevision,
         operationOrder: this.itemsSignal().indexOf(item),

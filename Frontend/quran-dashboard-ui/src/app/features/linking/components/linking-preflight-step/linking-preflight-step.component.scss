@@ -1,0 +1,112 @@
+:host {
+  display: block;
+  min-block-size: 0;
+}
+
+.linking-preflight-step {
+  display: grid;
+  gap: var(--qd-space-4);
+  min-block-size: 0;
+}
+
+.linking-preflight-step__header {
+  display: grid;
+  gap: var(--qd-space-1);
+}
+
+.linking-preflight-step__header h3,
+.linking-preflight-step__header p {
+  margin: 0;
+}
+
+.linking-preflight-step__header p,
+.linking-preflight-step__door,
+.linking-preflight-step__source-meta {
+  color: var(--qd-color-text-muted);
+}
+
+.linking-preflight-step__door {
+  margin: 0;
+}
+
+.linking-preflight-step__totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-3);
+  margin: 0;
+}
+
+.linking-preflight-step__totals div {
+  display: grid;
+  gap: var(--qd-space-1);
+}
+
+.linking-preflight-step__totals dt {
+  color: var(--qd-color-text-muted);
+}
+
+.linking-preflight-step__totals dd {
+  margin: 0;
+}
+
+.linking-preflight-step__sources,
+.linking-preflight-step__ayahs {
+  display: grid;
+  gap: var(--qd-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linking-preflight-step__source {
+  display: grid;
+  gap: var(--qd-space-2);
+  padding: var(--qd-space-3);
+  border: var(--qd-border-width-thin) solid var(--qd-color-border-subtle);
+  border-radius: var(--qd-radius-md);
+}
+
+.linking-preflight-step__source-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+}
+
+.linking-preflight-step__source-label {
+  margin: 0;
+  font-weight: var(--qd-font-weight-medium);
+}
+
+.linking-preflight-step__source-meta {
+  margin: 0;
+}
+
+.linking-preflight-step__ayahs {
+  gap: var(--qd-space-2);
+}
+
+.linking-preflight-step__ayah {
+  display: grid;
+  gap: var(--qd-space-1);
+  padding-inline-start: var(--qd-space-3);
+  border-inline-start: var(--qd-border-width-thin) solid var(--qd-color-border-subtle);
+}
+
+.linking-preflight-step__ayah p {
+  margin: 0;
+}
+
+.linking-preflight-step__ayah-head {
+  display: flex;
+  gap: var(--qd-space-2);
+  justify-content: space-between;
+}
+
+.linking-preflight-step__overlap-name + .linking-preflight-step__overlap-name::before {
+  content: '، ';
+}
+
+.linking-preflight-step__invalid {
+  color: var(--qd-color-text-danger);
+}

@@ -497,20 +497,20 @@ every step (quickstart §4).
 
 **Goal**: Insert the mandatory preflight step and replace the mock with the real command.
 
-- [ ] T073 [P] [US4] Create `models/linking-preflight.models.ts` and
+- [X] T073 [P] [US4] Create `models/linking-preflight.models.ts` and
       `data-access/linking-preflight.api.ts` (structured `overlappingSources[]` with label+kind).
-- [ ] T074 [P] [US5] Create `data-access/http-linking-command.port.ts`; DELETE
+- [X] T074 [P] [US5] Create `data-access/http-linking-command.port.ts`; DELETE
       `data-access/mock-linking-command.port.ts`; swap the `LINKING_COMMAND_PORT` provider in
       `state/linking-workflow.facade.ts`.
-- [ ] T075 [US4] Add the `preflight` step to the workflow facade's step union (between `door` and
+- [X] T075 [US4] Add the `preflight` step to the workflow facade's step union (between `door` and
       `review`) and create `components/linking-preflight-step/` (component + template + styles):
       per-source classification + counts; expandable per-ayah items with classification,
       overlapping source LABELS (never raw keys), exact word/description diffs; INVALID disables
       Confirm with per-item reasons; render it in `components/direct-link-workflow/`. Depends on T073.
-- [ ] T076 [P] [US4] Add Arabic copy to `models/linking.labels.ts`: the six classifications, the
+- [X] T076 [P] [US4] Add Arabic copy to `models/linking.labels.ts`: the six classifications, the
       no-op success «لا توجد تغييرات جديدة لتنفيذها» (rendered as SUCCESS, flow completes), and
       the stale-preflight message.
-- [ ] T077 [US5] Confirm wiring: carry `preflightToken` (REQUIRED) and each
+- [X] T077 [US5] Confirm wiring: carry `preflightToken` (REQUIRED) and each
       `existingContributionId`/`existingContributionVersion` from preflight into confirm; one
       `idempotencyKey` per attempt, reused across retries; on 409 PreflightStale auto re-run
       preflight and re-present the fresh classification instead of failing. Depends on T074+T075.

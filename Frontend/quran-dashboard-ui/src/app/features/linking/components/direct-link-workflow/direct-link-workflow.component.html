@@ -36,6 +36,7 @@
         }
       }
       @case ('door') { <qd-linking-door-step /> }
+      @case ('preflight') { <qd-linking-preflight-step /> }
       @case ('review') {
         @if (operation(); as resolved) {
           <section class="direct-link-workflow__review">
@@ -52,17 +53,18 @@
         }
       }
       @case ('submitting') { <qd-panel-skeleton shape="text" [loadingLabel]="labels.submitting" /> }
-      @case ('success') { <qd-notice [message]="labels.mockSuccess + ': ' + (state().resultMessage || labels.success)" [dismissLabel]="labels.close" (dismiss)="acknowledge()" /> }
+      @case ('success') { <qd-notice [message]="state().resultMessage || labels.success" [dismissLabel]="labels.close" (dismiss)="acknowledge()" /> }
       @case ('error') { <qd-error-state severity="read" [message]="state().errorMessage || labels.sourceLoadError" [actionLabel]="labels.retry" (action)="retry()" /> }
     }
   </div>
 
   <footer class="direct-link-workflow__footer">
-    @if (currentStep() === 'configure-source' || currentStep() === 'door' || currentStep() === 'review') {
+    @if (currentStep() === 'configure-source' || currentStep() === 'door' || currentStep() === 'preflight' || currentStep() === 'review') {
       <button qdAction="secondary" type="button" (click)="back()">{{ labels.back }}</button>
     }
     @if (currentStep() === 'configure-source') { <button qdAction="primary" type="button" (click)="next()">{{ labels.resolve }}</button> }
-    @if (currentStep() === 'door') { <button qdAction="primary" type="button" [disabled]="!canAdvanceDoor()" (click)="next()">{{ labels.review }}</button> }
+    @if (currentStep() === 'door') { <button qdAction="primary" type="button" [disabled]="!canAdvanceDoor()" (click)="next()">{{ labels.preflightTitle }}</button> }
+    @if (currentStep() === 'preflight') { <button qdAction="primary" type="button" [disabled]="!canAdvancePreflight()" (click)="next()">{{ labels.review }}</button> }
     @if (currentStep() === 'review') { <button qdAction="primary" type="button" [disabled]="!canSubmit()" (click)="submit()">{{ labels.confirm }}</button> }
   </footer>
 </section>

@@ -4,7 +4,9 @@ import { Subscription } from 'rxjs';
 import { AbwabNode } from '../../abwab/models/abwab.models';
 import { AbwabSnapshotFacade } from '../../abwab/state/abwab-snapshot.facade';
 import { DetailOverlayHistoryService } from '../../../core/navigation/detail-overlay/detail-overlay-history.service';
-import { LINKING_COMMAND_PORT } from '../data-access/linking-command.port';
+import { LINKING_COMMAND_PORT, LinkingPreflightStaleError } from '../data-access/linking-command.port';
+import { LinkingPreflightApi } from '../data-access/linking-preflight.api';
+import { LinkingPreflightResult } from '../models/linking-preflight.models';
 import { LINKING_LABELS } from '../models/linking.labels';
 import { LinkingOperationMember } from '../models/linking-operation.models';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
@@ -17,8 +19,17 @@ import { LinkingFocusCoordinator } from './linking-focus.coordinator';
 import { LinkingSourceSetCoordinator } from './linking-source-set.coordinator';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
 
-export type LinkingWorkflowStep = 'configure-source' | 'resolve' | 'door' | 'review' | 'submitting' | 'success' | 'error';
+export type LinkingWorkflowStep =
+  | 'configure-source'
+  | 'resolve'
+  | 'door'
+  | 'preflight'
+  | 'review'
+  | 'submitting'
+  | 'success'
+  | 'error';
 type LinkingWorkflowOrigin = 'workspace' | 'source';
+type LinkingPreflightStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 interface LinkingWorkflowState {
   origin: LinkingWorkflowOrigin | null;
@@ -27,6 +38,9 @@ interface LinkingWorkflowState {
   directConfiguration: LinkingSourceConfiguration | null;
   operation: LinkingSourceSetOperationResult | null;
   selectedDoorId: number | null;
+  preflightStatus: LinkingPreflightStatus;
+  preflight: LinkingPreflightResult | null;
+  preflightMessage: string | null;
   errorMessage: string | null;
   resultMessage: string | null;
   operationGeneration: number;
@@ -39,6 +53,9 @@ const INITIAL_WORKFLOW: LinkingWorkflowState = {
   directConfiguration: null,
   operation: null,
   selectedDoorId: null,
+  preflightStatus: 'idle',
+  preflight: null,
+  preflightMessage: null,
   errorMessage: null,
   resultMessage: null,
   operationGeneration: 0,
@@ -53,10 +70,13 @@ export class LinkingWorkflowFacade {
   private readonly doors = inject(AbwabSnapshotFacade);
   private readonly sourceSet = inject(LinkingSourceSetCoordinator);
   private readonly commandPort = inject(LINKING_COMMAND_PORT);
+  private readonly preflightApi = inject(LinkingPreflightApi);
   private readonly stateSignal = signal<LinkingWorkflowState>(INITIAL_WORKFLOW);
   private commandSubscription: Subscription | null = null;
+  private preflightSubscription: Subscription | null = null;
   private pendingSource: LinkingSourceDescriptor | null = null;
   private restoreOverlayFocus = false;
+  private attemptIdempotencyKey: string | null = null;
 
   readonly state = this.stateSignal.asReadonly();
   readonly step = computed(() => this.stateSignal().step);
@@ -67,7 +87,19 @@ export class LinkingWorkflowFacade {
   readonly directSource = computed(() => this.stateSignal().members[0]?.source ?? null);
   readonly directConfiguration = computed(() => this.stateSignal().directConfiguration);
   readonly canAdvanceDoor = computed(() => this.access.canUseLinking() && this.isLiveDoor(this.selectedDoorId()));
-  readonly canSubmit = computed(() => this.canAdvanceDoor() && this.operation()?.mergedSelection.ayahs.length !== 0);
+  readonly preflight = computed(() => this.stateSignal().preflight);
+  readonly preflightStatus = computed(() => this.stateSignal().preflightStatus);
+  readonly preflightMessage = computed(() => this.stateSignal().preflightMessage);
+  readonly canAdvancePreflight = computed(() => {
+    const preflight = this.stateSignal().preflight;
+    return this.stateSignal().preflightStatus === 'ready' && preflight !== null && !preflight.isBlocked;
+  });
+  readonly canSubmit = computed(
+    () =>
+      this.canAdvanceDoor() &&
+      this.canAdvancePreflight() &&
+      this.operation()?.mergedSelection.ayahs.length !== 0,
+  );
 
   constructor() {
     effect(() => {
@@ -176,17 +208,41 @@ export class LinkingWorkflowFacade {
   }
 
   next(): void {
-    if (this.step() === 'configure-source') {
+    const step = this.step();
+    if (step === 'configure-source') {
       this.resolve();
-    } else if (this.step() === 'door' && this.canAdvanceDoor()) {
+      return;
+    }
+    if (step === 'door' && this.canAdvanceDoor()) {
+      this.runPreflight();
+      return;
+    }
+    if (step === 'preflight' && this.canAdvancePreflight()) {
       this.stateSignal.update((state) => ({ ...state, step: 'review' }));
+    }
+  }
+
+  retryPreflight(): void {
+    if (this.step() === 'preflight') {
+      this.runPreflight();
     }
   }
 
   back(): void {
     const step = this.step();
     if (step === 'review') {
-      this.stateSignal.update((state) => ({ ...state, step: 'door' }));
+      this.stateSignal.update((state) => ({ ...state, step: 'preflight' }));
+      return;
+    }
+    if (step === 'preflight') {
+      this.cancelPreflight();
+      this.stateSignal.update((state) => ({
+        ...state,
+        step: 'door',
+        preflight: null,
+        preflightStatus: 'idle',
+        preflightMessage: null,
+      }));
       return;
     }
     if (step === 'door' && this.state().origin === 'source') {
@@ -197,21 +253,96 @@ export class LinkingWorkflowFacade {
   }
 
   submit(): void {
-    const operation = this.operation();
-    const doorId = this.selectedDoorId();
-    if (!this.canSubmit() || operation === null || doorId === null || this.commandSubscription !== null) {
+    const state = this.stateSignal();
+    const operation = state.operation;
+    const doorId = state.selectedDoorId;
+    const preflight = state.preflight;
+    if (
+      !this.canSubmit() ||
+      operation === null ||
+      doorId === null ||
+      preflight === null ||
+      this.commandSubscription !== null
+    ) {
       return;
     }
-    this.stateSignal.update((state) => ({ ...state, step: 'submitting', errorMessage: null }));
-    this.commandSubscription = this.commandPort.execute({ doorId, operation }).subscribe({
-      next: (result) => this.stateSignal.update((state) => ({ ...state, step: 'success', resultMessage: result.message })),
-      error: (error: unknown) => this.stateSignal.update((state) => ({
-        ...state,
-        step: 'error',
-        errorMessage: error instanceof Error ? error.message : LINKING_LABELS.sourceLoadError,
-      })),
-      complete: () => { this.commandSubscription = null; },
-    });
+    this.attemptIdempotencyKey ??= crypto.randomUUID();
+    this.stateSignal.update((current) => ({ ...current, step: 'submitting', errorMessage: null }));
+    this.commandSubscription = this.commandPort
+      .execute({
+        doorId,
+        operation,
+        preflightToken: preflight.preflightToken,
+        idempotencyKey: this.attemptIdempotencyKey,
+        preflightSources: preflight.sources,
+      })
+      .subscribe({
+        next: (result) => {
+          this.attemptIdempotencyKey = null;
+          this.stateSignal.update((current) => ({
+            ...current,
+            step: 'success',
+            resultMessage: result.message,
+          }));
+        },
+        error: (error: unknown) => {
+          this.commandSubscription = null;
+          if (error instanceof LinkingPreflightStaleError) {
+            this.runPreflight(error.message);
+            return;
+          }
+          this.stateSignal.update((current) => ({
+            ...current,
+            step: 'error',
+            errorMessage: error instanceof Error ? error.message : LINKING_LABELS.sourceLoadError,
+          }));
+        },
+        complete: () => {
+          this.commandSubscription = null;
+        },
+      });
+  }
+
+  private runPreflight(staleMessage: string | null = null): void {
+    const state = this.stateSignal();
+    const operation = state.operation;
+    const doorId = state.selectedDoorId;
+    if (!this.access.canUseLinking() || operation === null || doorId === null) {
+      return;
+    }
+    this.cancelPreflight();
+    this.stateSignal.update((current) => ({
+      ...current,
+      step: 'preflight',
+      preflightStatus: 'loading',
+      preflight: null,
+      preflightMessage: staleMessage,
+      errorMessage: null,
+    }));
+    this.preflightSubscription = this.preflightApi
+      .preflight(doorId, operation.sourceIntents)
+      .subscribe({
+        next: (preflight) =>
+          this.stateSignal.update((current) => ({
+            ...current,
+            preflight,
+            preflightStatus: 'ready',
+          })),
+        error: (error: unknown) =>
+          this.stateSignal.update((current) => ({
+            ...current,
+            preflightStatus: 'error',
+            preflightMessage: error instanceof Error ? error.message : LINKING_LABELS.sourceLoadError,
+          })),
+        complete: () => {
+          this.preflightSubscription = null;
+        },
+      });
+  }
+
+  private cancelPreflight(): void {
+    this.preflightSubscription?.unsubscribe();
+    this.preflightSubscription = null;
   }
 
   acknowledgeSuccess(): void {
@@ -228,6 +359,8 @@ export class LinkingWorkflowFacade {
     const origin = this.stateSignal().origin;
     this.commandSubscription?.unsubscribe();
     this.commandSubscription = null;
+    this.cancelPreflight();
+    this.attemptIdempotencyKey = null;
     this.pendingSource = null;
     this.sourceSet.cancel();
     this.stateSignal.set(INITIAL_WORKFLOW);
