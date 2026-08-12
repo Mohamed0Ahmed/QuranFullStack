@@ -459,7 +459,7 @@ every step (quickstart §4).
       `ManualMushafSelectionStore.readMetadata`'s "can this verse be added" gate at a light
       validation (the resolve endpoint or the existing ayah-study read) — that behavior must
       survive. Depends on T066.
-- [ ] T068 [US1] Run the **FE gate**; browser probes: opening
+- [X] T068 [US1] Run the **FE gate**; browser probes: opening
       a source issues ONE request (was ceil(total/100)); reopening issues ZERO; a 2,000-ayah
       source and a manual source work end-to-end; `grep` proves `presentation-occurrence` and
       `manual-word-location` no longer exist anywhere.
@@ -556,7 +556,7 @@ every step (quickstart §4).
 **Retired by the code-area documentation cutover:** T061, T084, and T085. Their IDs are not
 reused; they carried documentation-only work and no functional requirement or gate.
 
-- [ ] T086 Hardening sweep (each item verified, not assumed): shared `IMemoryCache` still has no
+- [X] T086 Hardening sweep (each item verified, not assumed): shared `IMemoryCache` still has no
       `SizeLimit` and no existing `Set` changed; `AbwabPermissionCatalogue` untouched at 19 codes;
       every Linking route carries exactly one `[RequireOwner]`; every writer save translates
       exceptions; no cache key contains user/Door/configuration; `check-pending-model` clean and
@@ -566,6 +566,17 @@ reused; they carried documentation-only work and no functional requirement or ga
       maps them) — against a local database, recording A3's payload size and wall time. All four
       final gates green: `dotnet build`, `check-api-contract`, `check-pending-model`, the FE
       four-command gate.
+      PASSED so far: A1–A7, B3, B4, C1–C4, C6, D1–D4, E1, E2, E4, E5, F1–F4.
+      A3 recorded: 1,879 ayahs / 36,772 words / 3.38 MB / 371 ms cold, 119 ms cached.
+      OUTSTANDING: C5, D5, D6, D7, D8, D9, E3 (Medium/Compact bands), E6.
+      NOT REACHABLE against this corpus, verified rather than assumed:
+      A7's cap needs >3000 ayahs but the largest source is 2,023 (unique-word `من`);
+      it was proven instead by temporarily lowering `MaxResolvedAyahs` to 1000 → controlled
+      400, 111-byte body, then reverting. A6's "page-spanning ayah" does not exist —
+      every ayah has `pageFrom == pageTo`; a page-crossing selection (2:282→2:283) was used.
+      B4 passes via the Owner-permission gate (403, no payload), so per-owner workspace
+      filtering is evidenced statically (reader/writer both scope by `UserId`), not at runtime —
+      a second Owner account would be needed for that.
 
 ---
 
