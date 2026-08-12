@@ -303,21 +303,21 @@ workspace configuration document.
 **Independent Test**: Swagger round-trip + deliberate 11th-row and duplicate-order INSERTs in
 `psql` that must fail (quickstart §2).
 
-- [ ] T042 [P] [US3] Create `Backend/domain/QuranDashboard.Domain/Linking/LinkingWorkspaceSourceDescription.cs`
+- [X] T042 [P] [US3] Create `Backend/domain/QuranDashboard.Domain/Linking/LinkingWorkspaceSourceDescription.cs`
       and its configuration in `Persistence/Configurations/Linking/` per data-model.md table 6:
       CHECKs `btrim(body) <> ''` and `order_value BETWEEN 1 AND 10`, and
       **`UNIQUE (workspace_source_id, ayah_id, order_value)`** — the uniqueness is half of the
       hard max-10 guarantee; a plain index is wrong.
-- [ ] T043 [US3] Add the `DbSet`, then run the **Migration ritual** for
+- [X] T043 [US3] Add the `DbSet`, then run the **Migration ritual** for
       `AddLinkingWorkspaceDescriptions` (M2). Depends on T042.
-- [ ] T044 [US3] Extend `ILinkingWorkspaceWriter`/`EfLinkingWorkspaceWriter`,
+- [X] T044 [US3] Extend `ILinkingWorkspaceWriter`/`EfLinkingWorkspaceWriter`,
       `LinkingWorkspaceDto`, and the replace-configuration command + API contract so descriptions
       ride inside the existing per-source configuration document (no new route): writer diffs,
       resequences 1..N, hard-deletes absent rows; validates ≤10 per (source, ayah), 1–2000 trimmed
       chars, plain text, ayah belongs to that source's own set — all limits referenced from
       `LinkingLimits` (single definition). Depends on T043.
-- [ ] T045 [US3] Run the **Contract gate ritual**.
-- [ ] T046 [US3] **Checkpoint (US3)**: 11th description refused by writer AND database (bad INSERT
+- [X] T045 [US3] Run the **Contract gate ritual**.
+- [X] T046 [US3] **Checkpoint (US3)**: 11th description refused by writer AND database (bad INSERT
       reusing an order_value fails on the UNIQUE); 2001-char and blank bodies refused;
       reorder/remove resequences contiguously; two sources sharing an ayah keep separate lists
       (verified by inspection); `check-pending-model` clean.
