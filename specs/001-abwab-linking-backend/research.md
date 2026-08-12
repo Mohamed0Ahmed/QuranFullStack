@@ -330,8 +330,9 @@ documents now agree**; the R-entries keep the history of why each refinement was
 
 - Reuse the existing 4–5-command hydration pattern with `Skip/Take` removed — command count is
   bounded and independent of ayah count; never one query per ayah.
-- `AyahWordHydration`'s marker filter becomes a parameter: Unique Word / Word Type keep markers,
-  Root / Lemma / Stem stay marker-free — today's shapes preserved exactly.
+- `AyahWordHydration`'s marker filter becomes a parameter: Unique Word / Manual Mushaf keep markers,
+  Root / Lemma / Stem / Word Type stay marker-free — today's shapes preserved exactly. (Both Word
+  Types explorer ayah reads are marker-free, so Word Type resolution must be too.)
 - Reuse `WordMorphologies` id predicates and the Word Type shared `BaseRowsSql` occurrence base
   (`EfWordTypesReader.Sql.cs`).
 - `quran_words.location` carries a UNIQUE index (F6) — `wordLocation → quran_word_id` resolution

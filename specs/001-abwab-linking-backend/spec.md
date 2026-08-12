@@ -367,8 +367,9 @@ descriptions, and the merged review display.
   manually chosen ayah with zero selected words is valid and still contributes the ayah, and its
   complete canonical word list is returned regardless.
 - **FR-009**: Ayah-marker inclusion MUST match today's explorer behavior per family: Unique Word
-  and Word Type results include markers (flagged as markers); Root, Lemma, and Stem results
-  exclude them.
+  results include markers (flagged as markers); Root, Lemma, Stem, and Word Type results exclude
+  them. (Manual Mushaf has no explorer counterpart and includes markers, flagged, because its
+  completeness proof counts non-marker words and the manual reader renders markers deliberately.)
 - **FR-010**: Manual Mushaf verses MUST be validated by the system of record before being served:
   the verse exists; its full word list is present, in order, and contiguous; the word count
   matches the canonical count; every word's placement is consistent with the verse. Any failure

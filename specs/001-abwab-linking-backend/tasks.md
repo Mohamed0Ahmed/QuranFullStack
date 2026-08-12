@@ -29,7 +29,7 @@ complete. Every task still carries its user-story label for traceability.
      run `npm run generate:api` → stage BOTH `Frontend/quran-dashboard-ui/openapi/swagger.json`
      and `src/app/core/api/generated/models/**` with the change → `Backend/scripts/check-api-contract` passes.
    - **Migration ritual**: `Backend/scripts/add-mig <Name>` (EF tooling only — never hand-write) →
-     `Backend/scripts/check-pending-model` (no drift) → `Backend/scripts/create-smoke-dump`
+     `Backend/scripts/check-pending-model --no-build` (no drift) → `Backend/scripts/create-smoke-dump`
      (re-pins `SmokeDumpGate`) → report migration name, files, build status, whether `update-db` ran.
    - **FE gate**: `npm run check:no-unit-specs` → `npm run typecheck:app` → `npm run build:verify`,
      run as three independent commands, in that order. Template/style changes add
@@ -46,11 +46,11 @@ complete. Every task still carries its user-story label for traceability.
 
 **Purpose**: Verify the working environment before any change.
 
-- [ ] T001 Verify baseline health: `cd Backend && dotnet build` succeeds;
-      `Backend/scripts/check-pending-model` reports no pending changes; local PostgreSQL is
+- [X] T001 Verify baseline health: `cd Backend && dotnet build` succeeds;
+      `Backend/scripts/check-pending-model --no-build` reports no pending changes; local PostgreSQL is
       restored per `Backend/scripts/README.md`; `Frontend/quran-dashboard-ui/` has `npm ci` done
       and the FE gate passes untouched. Fix nothing yet — if baseline is red, stop and report.
-- [ ] T002 Read the governing artifacts in this order and keep them open throughout:
+- [X] T002 Read the governing artifacts in this order and keep them open throughout:
       `specs/001-abwab-linking-backend/spec.md` → `research.md` (R1–R22 are non-negotiable
       decisions) → `data-model.md` → all four files in `contracts/` → the docs plan phase named by
       each task below. Also read `Backend/CLAUDE.md` and the READMEs nearest each area you touch.
@@ -62,35 +62,35 @@ complete. Every task still carries its user-story label for traceability.
 **Purpose**: The shared Linking contracts every story consumes. No database, no endpoint, no DI,
 no behavior. **Blocks all user stories.**
 
-- [ ] T003 [P] Create the six enums in `Backend/domain/QuranDashboard.Domain/Linking/`:
+- [X] T003 [P] Create the six enums in `Backend/domain/QuranDashboard.Domain/Linking/`:
       `LinkingSourceKind.cs` (UniqueWord, Root, Lemma, Stem, WordType, ManualMushafAyahs),
       `LinkingUniqueWordMode.cs` (Simple, Tashkeel), `LinkingWordTypeSelectionKind.cs` (Word,
       Root, Stem, Lemma), `LinkingManualLinkShape.cs` (Grouped, Independent),
       `LinkingContributionMode.cs` (Automatic, ManualSingle, ManualIndependent, ManualGrouped).
       Note: identity strings use kebab tokens, DB columns use snake tokens — the enum↔token maps
       live where they are used, never guessed (data-model.md §vocabularies).
-- [ ] T004 [P] Create `Backend/domain/QuranDashboard.Domain/Linking/LinkingWordTypeScope.cs` —
+- [X] T004 [P] Create `Backend/domain/QuranDashboard.Domain/Linking/LinkingWordTypeScope.cs` —
       value object `(Type, ChildCode, Case, Tense, Voice)` with the exact token vocabularies from
       `contracts/source-identity.md` §Enum vocabularies (note: the literal string `null` is a
       valid *case token*, distinct from an absent value).
-- [ ] T005 Create `Backend/domain/QuranDashboard.Domain/Linking/LinkingSourceDescriptor.cs` — a
+- [X] T005 Create `Backend/domain/QuranDashboard.Domain/Linking/LinkingSourceDescriptor.cs` — a
       discriminated value object per docs plan Phase 1 (never a bag of nullables): Kind +
       per-family data (UniqueWord: mode+wordId; Root: rootId; Lemma/Stem: id+optional typeCode;
       WordType: selection union + scope; ManualMushafAyahs: ordered de-duplicated verse-key set)
       + Label (display snapshot, never identity). Impossible descriptors (Word Type without a
       selection, manual source with zero verses) must be **unconstructable**. Depends on T003+T004.
-- [ ] T006 [P] Create `Backend/application/QuranDashboard.Application.Abstractions/Linking/LinkingLimits.cs`
+- [X] T006 [P] Create `Backend/application/QuranDashboard.Application.Abstractions/Linking/LinkingLimits.cs`
       with exactly four numeric limits: `MaxDescriptionsPerSourceAyah = 10`,
       `MaxDescriptionLength = 2000`, `MaxResolvedAyahs = 3000`, `MaxPreparedSources = 100`.
       Do NOT add per-operation ayah/source caps — they were explicitly removed (research.md, docs
       plan Phase 1).
-- [ ] T007 [P] Create the five exception types in
+- [X] T007 [P] Create the five exception types in
       `Backend/application/QuranDashboard.Application.Abstractions/Linking/`:
       `LinkingSourceNotFoundException`, `LinkingInvalidDescriptorException`,
       `LinkingStaleVersionException`, `LinkingDuplicateContributionException`,
       `LinkingPreflightStaleException` — following the existing Abwab Abstractions exception
       precedent (find and mirror one).
-- [ ] T008 Create `Backend/application/QuranDashboard.Application.Abstractions/Linking/LinkingSourceIdentity.cs`
+- [X] T008 Create `Backend/application/QuranDashboard.Application.Abstractions/Linking/LinkingSourceIdentity.cs`
       — the static, pure canonicalizer. **Highest-risk item in the feature.** Implement exactly
       per `contracts/source-identity.md`: parts joined `|`, JavaScript `encodeURIComponent`
       escape set (`Uri.EscapeDataString` then un-escape `%21 %27 %28 %29 %2A` → `! ' ( ) *`),
@@ -98,11 +98,11 @@ no behavior. **Blocks all user stories.**
       (surah, ayah), Word Type part orders (12 parts for word selection, 8 for root/stem/lemma).
       Also expose the 32-byte SHA-256 hash of the UTF-8 identity (`source_identity_hash`,
       research.md R20). Depends on T005.
-- [ ] T009 Create `Backend/application/QuranDashboard.Application.Abstractions/Linking/LinkingSourceDescriptorValidation.cs`
+- [X] T009 Create `Backend/application/QuranDashboard.Application.Abstractions/Linking/LinkingSourceDescriptorValidation.cs`
       — descriptor well-formedness per `contracts/linking-sources-api.md` §Request: positive ids,
       exact enum tokens, verse keys `^\d{1,3}:\d{1,3}$` (surah 1–114, ayah 1–286), manual set ≥1
       verse (NO manual-specific size cap), label non-blank. Depends on T005.
-- [ ] T010 **Checkpoint (Foundational)**: `cd Backend && dotnet build` passes. Hand-verify all 8
+- [X] T010 **Checkpoint (Foundational)**: `cd Backend && dotnet build` passes. Hand-verify all 8
       worked examples from `contracts/source-identity.md` §Worked examples produce byte-identical
       output to the table (write a throwaway console check locally; do NOT add a test). Verify:
       no `linking_*` table, endpoint, or DI registration exists yet; DTO/contract files < 150
@@ -118,7 +118,7 @@ families with canonical word ids, in one call.
 **Independent Test**: Via Swagger/`curl` as an Owner — resolve one source of each family and
 verify order, completeness, canonical ids, marker rules, and controlled failures (quickstart §1).
 
-- [ ] T011 [P] [US1] Create resolution abstractions in
+- [X] T011 [P] [US1] Create resolution abstractions in
       `Backend/application/QuranDashboard.Application.Abstractions/Linking/`:
       `ILinkingSourceResolutionReader.cs` and `Responses/LinkingResolvedSourceDto.cs`,
       `Responses/LinkingResolvedAyahDto.cs`, `Responses/LinkingResolvedWordDto.cs` — field-exact
@@ -126,27 +126,28 @@ verify order, completeness, canonical ids, marker rules, and controlled failures
       totalAyahCount; ayah: ayahId, verseKey, surahNumber, ayahNumber, surahNameArabic, pageFrom,
       pageTo, matchedQuranWordIds[], words[]; word: quranWordId, wordNumber, textUthmani,
       isAyahMarker).
-- [ ] T012 [P] [US1] Modify `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/AyahWordHydration.cs`:
+- [X] T012 [P] [US1] Modify `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/AyahWordHydration.cs`:
       make the ayah-marker filter a parameter. Existing consumers keep today's exact shapes
-      (Root/Lemma/Stem marker-free; Unique Word/Word Type keep markers). `AyahWordRow` already
+      (Root/Lemma/Stem/Word Type marker-free — all five pre-existing callers omit the flag; only
+      Linking's Unique Word and Manual Mushaf branches pass `true`). `AyahWordRow` already
       carries `QuranWordId` (repo fact F4) — no query change, projection only.
-- [ ] T013 [P] [US1] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Linking/LinkingAyahHydration.cs`
+- [X] T013 [P] [US1] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Linking/LinkingAyahHydration.cs`
       — shared ayah-level hydration (verse key, surah name, pageFrom/pageTo from `quran_ayahs`)
       reusing the existing bounded 4–5-command pattern with `Skip/Take` removed (research.md
       §query-shape). Never one query per ayah.
-- [ ] T014 [US1] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Linking/EfLinkingSourceResolutionReader.cs`
+- [X] T014 [US1] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Linking/EfLinkingSourceResolutionReader.cs`
       (dispatch by descriptor kind) and partial `EfLinkingSourceResolutionReader.Automatic.cs`
       (Root/Lemma/Stem via `WordMorphologies` id predicates). Order: ayahs by
       (surah_number, ayah_number), words by word_number — always (spec FR-006). Enforce
       `MaxResolvedAyahs` → `LinkingInvalidDescriptorException`; unknown dimension id →
       `LinkingSourceNotFoundException`. Depends on T011–T013.
-- [ ] T015 [US1] Create partial `EfLinkingSourceResolutionReader.UniqueWord.cs` (simple/tashkeel
+- [X] T015 [US1] Create partial `EfLinkingSourceResolutionReader.UniqueWord.cs` (simple/tashkeel
       modes; markers included and flagged) in the same folder. Depends on T014.
-- [ ] T016 [US1] Create partial `EfLinkingSourceResolutionReader.WordType.cs` reusing the shared
+- [X] T016 [US1] Create partial `EfLinkingSourceResolutionReader.WordType.cs` reusing the shared
       `BaseRowsSql` occurrence base from
       `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/WordTypes/EfWordTypesReader.Sql.cs`
       (read it first; do not fork its SQL). Depends on T014.
-- [ ] T017 [US1] Create partial `EfLinkingSourceResolutionReader.ManualMushaf.cs` plus pure
+- [X] T017 [US1] Create partial `EfLinkingSourceResolutionReader.ManualMushaf.cs` plus pure
       `Backend/application/QuranDashboard.Application.Abstractions/Linking/LinkingManualAyahCompleteness.cs`.
       Completeness proof per verse (docs plan Phase 3 / research R9): ayah exists + verse_key
       matches; non-marker word_numbers contiguous 1..N; N == `quran_ayahs.words_count_real`;
@@ -154,30 +155,30 @@ verify order, completeness, canonical ids, marker rules, and controlled failures
       WHOLE resolution naming the exact verse. `matchedQuranWordIds` MAY be empty for manual
       ayahs (spec FR-008) — the ayah still returns with its complete word list. NO Mushaf page
       assembly anywhere. Depends on T014.
-- [ ] T018 [US1] Create `Backend/application/QuranDashboard.Application/Linking/Queries/ResolveLinkingSource/`
+- [X] T018 [US1] Create `Backend/application/QuranDashboard.Application/Linking/Queries/ResolveLinkingSource/`
       — `ResolveLinkingSourceQuery.cs`, `ResolveLinkingSourceHandler.cs`,
       `ResolveLinkingSourceOutcome.cs`, matching the existing Quran query-handler pattern in the
       same project. Depends on T014–T017.
-- [ ] T019 [US1] Create `Backend/api/QuranDashboard.Api/Contracts/Linking/LinkingSourceDescriptorBody.cs`
+- [X] T019 [US1] Create `Backend/api/QuranDashboard.Api/Contracts/Linking/LinkingSourceDescriptorBody.cs`
       (discriminated body mirroring the TS union — see `contracts/linking-sources-api.md`
       §Request for all six JSON shapes) and
       `Backend/api/QuranDashboard.Api/Controllers/Linking/LinkingSourcesController.cs` with
       exactly one action: `POST /api/linking/sources/resolve`, exactly one `[RequireOwner]`,
       `ApiResponse<T>` envelope, Arabic messages, status mapping 200/400/404 per the contract.
       Depends on T018.
-- [ ] T020 [US1] Register everything: create `LinkingDependencyInjection.cs` next to the existing
+- [X] T020 [US1] Register everything: create `LinkingDependencyInjection.cs` next to the existing
       `PersistenceDependencyInjection` (search
       `Backend/infrastructure/QuranDashboard.Infrastructure/` for it; F13 convention:
       `AddScoped<EfX>()` then interface factory) and call it from `PersistenceDependencyInjection`;
       register the handler in `Backend/application/QuranDashboard.Application/DependencyInjection.cs`.
       Depends on T019.
-- [ ] T021 [US1] Update READMEs in the same change: `Backend/api/QuranDashboard.Api/README.md`
+- [X] T021 [US1] Update READMEs in the same change: `Backend/api/QuranDashboard.Api/README.md`
       (new route), a "second consumer" note in
       `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/README.md`,
       and a new `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Linking/README.md`.
-- [ ] T022 [US1] Run the **Contract gate ritual** (see Phase 0 rituals). Both artifacts committed
+- [X] T022 [US1] Run the **Contract gate ritual** (see Phase 0 rituals). Both artifacts committed
       together with this change.
-- [ ] T023 [US1] **Checkpoint (US1)**: `dotnet build`; run every quickstart §1 probe: ~10/~200/
+- [X] T023 [US1] **Checkpoint (US1)**: `dotnet build`; run every quickstart §1 probe: ~10/~200/
       ~2,000-ayah roots (record payload size + wall time for the final matrix), manual source with
       a page-spanning ayah, manual ayah with empty matched set, unknown verse/dimension → 400/404
       naming the offense, cap guard by lowering `MaxResolvedAyahs` locally, existing explorer
@@ -195,35 +196,35 @@ issues zero SQL; two concurrent identical requests collapse to one load (quickst
 **⚠ Sequencing note**: runs before US2–US5 because preflight/confirm re-resolve through this
 cached boundary (docs plan §13).
 
-- [ ] T024 [P] [US6] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Linking/LinkingResolvedSourceCompact.cs`
+- [X] T024 [P] [US6] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Linking/LinkingResolvedSourceCompact.cs`
       — compact cached value: per ayah `{ayahId, quranWordIds[], matchedQuranWordIds[]}` + ordered
       ayah-id list (≈210 KB per 2,000-ayah source vs ≈4 MB full DTO — research R11).
-- [ ] T025 [P] [US6] Create `LinkingSourceCacheKeys.cs` and `LinkingSourceCacheEntryOptions.cs` in
+- [X] T025 [P] [US6] Create `LinkingSourceCacheKeys.cs` and `LinkingSourceCacheEntryOptions.cs` in
       the same folder: key `linking:source:v1:{kind}:{sha256(canonicalScope)[..16]}` derived ONLY
       from the typed descriptor (reuse `WordTypesCacheKeys.HashParts` delimiter escaping);
       options record with defaults `SlidingExpiration = 30 min` AND
       `AbsoluteExpirationRelativeToNow = 4 h`, bound from appsettings following
       `MushafReaderOptions`' precedent. NEVER in key or value: user, Door, inclusion, words,
       descriptions, workspace or preflight state.
-- [ ] T026 [US6] Create `LinkingSourceResolutionCache.cs` owning its **own**
+- [X] T026 [US6] Create `LinkingSourceResolutionCache.cs` owning its **own**
       `new MemoryCache(new MemoryCacheOptions { SizeLimit = … })` — the shared `IMemoryCache` is
       size-less and must not be touched (repo fact F7). Entry `Size` = resolved ayah count.
       Stampede control: store `Task<LinkingResolvedSourceCompact>` in the entry; evict faulted
       tasks immediately so the next caller retries. `CacheLoadGate` is FORBIDDEN here (F8).
       Depends on T024+T025.
-- [ ] T027 [P] [US6] Create `LinkingAyahTextCache.cs` in the same folder — Uthmani text + display
+- [X] T027 [P] [US6] Create `LinkingAyahTextCache.cs` in the same folder — Uthmani text + display
       metadata keyed by ayah id, deduplicating hydration across overlapping sources; same
       expiration policy.
-- [ ] T028 [US6] Create `CachedLinkingSourceResolutionReader.cs` decorator (wire-invisible: same
+- [X] T028 [US6] Create `CachedLinkingSourceResolutionReader.cs` decorator (wire-invisible: same
       DTO out) and switch DI in `LinkingDependencyInjection.cs` to the F13 decorator pattern:
       `AddScoped<EfLinkingSourceResolutionReader>()` +
       `AddScoped<ILinkingSourceResolutionReader>(sp => new CachedLinkingSourceResolutionReader(...))`.
       Depends on T026+T027.
-- [ ] T029 [US6] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Linking/README.md`
+- [X] T029 [US6] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Caching/Linking/README.md`
       recording the THREE deliberate divergences so nobody "harmonizes" them later: dedicated
       instance (not shared IMemoryCache, F7), `Task<T>`-in-entry (not `CacheLoadGate`, F8), no
       user/Door in keys (safe cross-actor sharing). Update `Persistence/Reads/Linking/README.md`.
-- [ ] T030 [US6] **Checkpoint (US6)**: warm repeat = zero SQL (EF logging); one-field scope change
+- [X] T030 [US6] **Checkpoint (US6)**: warm repeat = zero SQL (EF logging); one-field scope change
       = different entry, no cross-serve; concurrent identical requests = one load; memory reading
       before/after warming ~8 large sources stays low tens of MB; `grep` proves no existing
       `IMemoryCache` `Set` call changed and no `SizeLimit` was added to the shared instance.
@@ -238,33 +239,33 @@ cached boundary (docs plan §13).
 **Independent Test**: Swagger round-trip of all six routes + two-tab stale-version probe + `psql`
 constraint probes (quickstart §2).
 
-- [ ] T031 [P] [US2] Create the five workspace entities in
+- [X] T031 [P] [US2] Create the five workspace entities in
       `Backend/domain/QuranDashboard.Domain/Linking/`: `LinkingWorkspace.cs`,
       `LinkingWorkspaceSource.cs`, `LinkingWorkspaceSourceManualAyah.cs`,
       `LinkingWorkspaceSourceAyahOverride.cs`, `LinkingWorkspaceSourceWord.cs` — columns exactly
       per data-model.md tables 1–5 (including `source_identity` raw text AND
       `source_identity_hash bytea`).
-- [ ] T032 [US2] Create the five EF configurations in
+- [X] T032 [US2] Create the five EF configurations in
       `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Linking/`
       — every key, FK behavior (source→children CASCADE; all Quran/Access FKs RESTRICT), CHECK,
       and index from data-model.md tables 1–5, including `UNIQUE (user_id)`,
       `UNIQUE (workspace_id, source_identity_hash)`, kind/configuration coherence CHECK,
       kind/reference coherence CHECK, and `xmin` mapped as the concurrency token exactly as Abwab
       maps it. Depends on T031.
-- [ ] T033 [US2] Add the five `DbSet`s to `QuranDashboardDbContext`, then run the **Migration
+- [X] T033 [US2] Add the five `DbSet`s to `QuranDashboardDbContext`, then run the **Migration
       ritual** for `AddLinkingWorkspace` (M1). Depends on T032.
-- [ ] T034 [P] [US2] Create abstractions `ILinkingWorkspaceReader.cs`, `ILinkingWorkspaceWriter.cs`,
+- [X] T034 [P] [US2] Create abstractions `ILinkingWorkspaceReader.cs`, `ILinkingWorkspaceWriter.cs`,
       `Responses/LinkingWorkspaceDto.cs` in
       `Backend/application/QuranDashboard.Application.Abstractions/Linking/` — DTO field-exact to
       `contracts/linking-workspace-api.md` (workspaceVersion nullable; per source: id,
       sourceVersion, orderValue, descriptor, sourceIdentity, inclusionMode, ayahOverrides,
       selectedWords [manual only], automaticWordMatchesEnabled/manualLinkShape, manualAyahs,
       descriptions, lastResolvedCount/AtUtc).
-- [ ] T035 [US2] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Linking/EfLinkingWorkspaceReader.cs`
+- [X] T035 [US2] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Linking/EfLinkingWorkspaceReader.cs`
       — **strictly read-only** (spec FR-019, research R21): no row → empty representation with
       `workspaceVersion = null`, ZERO inserts. Scoped to `AuthorizationState.UserId` (F10) — never
       a request-supplied user. Depends on T033+T034.
-- [ ] T036 [US2] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Linking/EfLinkingWorkspaceWriter.cs`:
+- [X] T036 [US2] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Linking/EfLinkingWorkspaceWriter.cs`:
       first mutation creates the workspace row atomically (serialized by `UNIQUE (user_id)`); add
       idempotent by identity-hash + raw-identity final guard (label refresh only on re-add);
       remove/reorder/clear under workspace `xmin`; replace-configuration wholesale under source
@@ -273,20 +274,20 @@ constraint probes (quickstart §2).
       → reject outright); EVERY save translates `DbUpdateConcurrencyException` →
       `LinkingStaleVersionException` and `23505` → `LinkingDuplicateContributionException` (F12);
       attribution stamped from the resolved actor (F11). Depends on T033+T034.
-- [ ] T037 [US2] Create the Application layer in
+- [X] T037 [US2] Create the Application layer in
       `Backend/application/QuranDashboard.Application/Linking/`:
       `Queries/GetLinkingWorkspace/` + `Commands/` for add-source, remove-source, reorder-sources,
       replace-source-configuration, clear-all — thin handlers over reader/writer, `MaxPreparedSources`
       enforced on add. Depends on T035+T036.
-- [ ] T038 [US2] Create `Backend/api/QuranDashboard.Api/Controllers/Linking/LinkingWorkspaceController.cs`
+- [X] T038 [US2] Create `Backend/api/QuranDashboard.Api/Controllers/Linking/LinkingWorkspaceController.cs`
       with exactly the six routes, verbs, version placement, and status mapping from
       `contracts/linking-workspace-api.md` — each with exactly one `[RequireOwner]`. Depends on T037.
-- [ ] T039 [US2] Register in DI (T020's files); create
+- [X] T039 [US2] Register in DI (T020's files); create
       `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Linking/README.md`
       (state: workspace persistence is NOT a cache; attribution is a first — Abwab never populated
       these columns; GET never writes); update the api README.
-- [ ] T040 [US2] Run the **Contract gate ritual**.
-- [ ] T041 [US2] **Checkpoint (US2)**: quickstart §2 probes — GET-as-fresh-user inserts zero rows
+- [X] T040 [US2] Run the **Contract gate ritual**.
+- [X] T041 [US2] **Checkpoint (US2)**: quickstart §2 probes — GET-as-fresh-user inserts zero rows
       (verify row count in `psql`); add 3 sources/configure/reorder/reload preserved; equivalent
       re-add refreshes label only; two-tab stale version → 409 Arabic envelope; second user sees
       nothing; `selectedWords` on an automatic source → 400; each CHECK exercised once by a

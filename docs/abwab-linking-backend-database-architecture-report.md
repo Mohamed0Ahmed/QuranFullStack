@@ -154,8 +154,11 @@ Other relevant facts:
   count, page metadata, matched rows) plus one hydration query
   ([EfRootsReader.cs:114-190](Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/Roots/EfRootsReader.cs:114)).
   There is no N+1.
-- `AyahWordHydration` **excludes ayah markers** (`!w.IsAyahMarker`), which is why Root/Lemma/Stem
-  results carry no marker tokens at all while Unique Word / Word Type do.
+- `AyahWordHydration` **excludes ayah markers by default** (`!w.IsAyahMarker`; since Phase 3 the filter
+  is a parameter defaulting to exclusion), which is why Root/Lemma/Stem **and Word Type** results carry
+  no marker tokens at all. Unique Word keeps its markers through its own reader
+  ([EfUniqueWordsReader.cs:227](Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Quran/Words/EfUniqueWordsReader.cs:227)),
+  never through this hydration path.
 - `quran_words.location` carries a **UNIQUE index**
   ([QuranWordConfiguration.cs:85](Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/Quran/QuranWordConfiguration.cs:85)) —
   a `wordLocation → quran_word_id` resolution is one indexed lookup, batchable with `= ANY(...)`.
@@ -342,8 +345,10 @@ a *second* consumer of the same underlying readers, not a replacement.
 per-family queries. Those queries should reuse the existing predicate bases rather than re-deriving
 them — `WordMorphologies.Where(m => m.RootId == id)`, the shared `BaseRowsSql` occurrence base for
 Word Type, `AyahWordHydration` for word projection — with the page `Skip/Take` removed and
-`AyahWordHydration`'s marker filter made a parameter so Unique Word / Word Type keep their markers and
-Root/Lemma/Stem keep their current marker-free shape. Expect the reader to exceed the 400-line soft
+`AyahWordHydration`'s marker filter made a parameter. Only the Linking Unique Word and Manual Mushaf
+families pass `true`; Root/Lemma/Stem **and Word Type** keep their current marker-free shape, matching
+their explorers (see `specs/001-abwab-linking-backend/contracts/linking-sources-api.md` for the
+normative per-family marker rule). Expect the reader to exceed the 400-line soft
 threshold and need a partial split by family, matching `EfWordTypesReader`'s existing precedent.
 
 ## 4. Caching (mandatory) — three separate concerns

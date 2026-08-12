@@ -86,7 +86,9 @@ Domain value object — the body maps into it or fails with 400.
   unstable order corrupts the viewport. Order ayahs `(surah_number, ayah_number)`, words
   `word_number`, always.
 - **Marker behavior per family unchanged from today's explorer reads** (spec FR-009): Unique Word
-  and Word Type include markers (flagged `isAyahMarker`); Root/Lemma/Stem exclude them.
+  includes markers (flagged `isAyahMarker`); Root/Lemma/Stem **and Word Type** exclude them — all
+  five pre-existing `AyahWordHydration` callers, both Word Types ayah reads included, are marker-free.
+  Manual Mushaf, which has no explorer counterpart, includes markers flagged.
   `AyahWordHydration`'s marker filter becomes a parameter; existing consumers keep their shapes.
 - **Bounded query shape**: the existing 4–5-command hydration pattern with `Skip/Take` removed;
   command count independent of ayah count. Never one query per ayah.

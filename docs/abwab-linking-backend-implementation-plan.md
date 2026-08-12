@@ -286,8 +286,9 @@ Phase 1.
   (a "second consumer" note), and a new `Persistence/Reads/Linking/README.md`
 
 **Reuse without changing their contracts**
-- `AyahWordHydration` — but its marker filter must become a parameter (Unique Word / Word Type keep
-  markers; Root / Lemma / Stem stay marker-free, preserving today's shapes)
+- `AyahWordHydration` — but its marker filter must become a parameter (Unique Word / Manual Mushaf
+  keep markers; Root / Lemma / Stem / Word Type stay marker-free, preserving today's shapes — both
+  Word Types explorer ayah reads are marker-free)
 - `WordMorphologies.Where(m => m.RootId|LemmaId|StemId == id)` predicates
 - the Word Type shared `BaseRowsSql` occurrence base (`EfWordTypesReader.Sql.cs`)
 
