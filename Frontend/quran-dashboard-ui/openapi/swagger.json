@@ -2746,6 +2746,126 @@
         }
       }
     },
+    "/api/linking/operations": {
+      "post": {
+        "tags": [
+          "LinkingOperations"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingConfirmationBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingConfirmationBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingConfirmationBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingConfirmationResultDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingConfirmationResultDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingConfirmationResultDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreflightResultDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreflightResultDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreflightResultDtoApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/linking/sources/resolve": {
       "post": {
         "tags": [
@@ -8625,6 +8745,187 @@
           "invalidReason": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingConfirmationBody": {
+        "required": [
+          "doorId",
+          "idempotencyKey",
+          "preflightToken",
+          "sources"
+        ],
+        "type": "object",
+        "properties": {
+          "doorId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "preflightToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingConfirmationSourceBody"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingConfirmationResultDto": {
+        "required": [
+          "doorId",
+          "isNoOp",
+          "sources",
+          "totals"
+        ],
+        "type": "object",
+        "properties": {
+          "doorId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isNoOp": {
+            "type": "boolean"
+          },
+          "totals": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingPreflightCountsDto"
+              }
+            ]
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingConfirmationSourceResultDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingConfirmationResultDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingConfirmationResultDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingConfirmationSourceBody": {
+        "required": [
+          "automaticWordMatchesEnabled",
+          "contributionMode",
+          "descriptor",
+          "existingContributionId",
+          "existingContributionVersion",
+          "orderValue",
+          "units"
+        ],
+        "type": "object",
+        "properties": {
+          "descriptor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingSourceDescriptorBody"
+              }
+            ],
+            "nullable": true
+          },
+          "contributionMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "automaticWordMatchesEnabled": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "orderValue": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "existingContributionId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "existingContributionVersion": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "units": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingOperationUnitBody"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingConfirmationSourceResultDto": {
+        "required": [
+          "classification",
+          "contributionId",
+          "counts",
+          "sourceIdentity"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceIdentity": {
+            "type": "string"
+          },
+          "classification": {
+            "type": "string"
+          },
+          "contributionId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "counts": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingPreflightCountsDto"
+              }
+            ]
           }
         },
         "additionalProperties": false

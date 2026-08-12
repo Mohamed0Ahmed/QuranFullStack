@@ -14,6 +14,8 @@ public sealed record LinkingOperationSourceIntent(
     LinkingContributionMode ContributionMode,
     bool? AutomaticWordMatchesEnabled,
     int OrderValue,
+    int ResolvedAyahCount,
+    DateTimeOffset ResolvedAtUtc,
     IReadOnlyList<LinkingOperationUnitIntent> Units,
     LinkingPreflightInvalidReason? InvalidReason);
 

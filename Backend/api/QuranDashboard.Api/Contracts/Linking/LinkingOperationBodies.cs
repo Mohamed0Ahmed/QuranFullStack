@@ -33,3 +33,31 @@ public sealed record LinkingOperationAyahBody
 
     public IReadOnlyList<string>? Descriptions { get; init; }
 }
+
+public sealed record LinkingConfirmationBody
+{
+    public int? DoorId { get; init; }
+
+    public string? PreflightToken { get; init; }
+
+    public Guid? IdempotencyKey { get; init; }
+
+    public IReadOnlyList<LinkingConfirmationSourceBody>? Sources { get; init; }
+}
+
+public sealed record LinkingConfirmationSourceBody
+{
+    public LinkingSourceDescriptorBody? Descriptor { get; init; }
+
+    public string? ContributionMode { get; init; }
+
+    public bool? AutomaticWordMatchesEnabled { get; init; }
+
+    public int? OrderValue { get; init; }
+
+    public long? ExistingContributionId { get; init; }
+
+    public uint? ExistingContributionVersion { get; init; }
+
+    public IReadOnlyList<LinkingOperationUnitBody>? Units { get; init; }
+}

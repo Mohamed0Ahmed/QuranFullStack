@@ -13,7 +13,7 @@ public static class LinkingOperationClassifier
         ArgumentNullException.ThrowIfNull(state);
 
         var sources = intent.Sources
-            .Select(source => ClassifySource(source, state))
+            .Select(source => ClassifySource(WithDoorState(source, intent, state), state))
             .ToList();
 
         return new LinkingOperationClassification(
@@ -22,6 +22,14 @@ public static class LinkingOperationClassifier
             Total(sources.Select(source => source.Counts)),
             sources);
     }
+
+    private static LinkingOperationSourceIntent WithDoorState(
+        LinkingOperationSourceIntent source,
+        LinkingOperationIntent intent,
+        LinkingConfirmedDoorState state) =>
+        intent.IsDoorArchived || state.IsArchived
+            ? source with { InvalidReason = LinkingPreflightInvalidReason.DoorArchived }
+            : source;
 
     private static LinkingSourceClassification ClassifySource(
         LinkingOperationSourceIntent source,

@@ -17,6 +17,23 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(state);
 
+        return await PrepareCoreAsync(request, state, cancellationToken);
+    }
+
+    public Task<LinkingOperationIntent> PrepareConfirmationAsync(
+        LinkingOperationRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return PrepareCoreAsync(request, null, cancellationToken);
+    }
+
+    private async Task<LinkingOperationIntent> PrepareCoreAsync(
+        LinkingOperationRequest request,
+        LinkingConfirmedDoorState? state,
+        CancellationToken cancellationToken)
+    {
         var sources = new List<LinkingOperationSourceIntent>(request.Sources.Count);
 
         foreach (var source in request.Sources)
@@ -24,12 +41,12 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
             sources.Add(await PrepareSourceAsync(source, state, cancellationToken));
         }
 
-        return new LinkingOperationIntent(state.DoorId, state.IsArchived, sources);
+        return new LinkingOperationIntent(request.DoorId, state?.IsArchived ?? false, sources);
     }
 
     private async Task<LinkingOperationSourceIntent> PrepareSourceAsync(
         LinkingOperationSourceRequest source,
-        LinkingConfirmedDoorState state,
+        LinkingConfirmedDoorState? state,
         CancellationToken cancellationToken)
     {
         if (!LinkingSourceDescriptorValidation.TryValidate(source.Descriptor, out _))
@@ -41,7 +58,7 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
         var identity = LinkingSourceIdentity.For(source.Descriptor);
         var resolved = await resolution.ResolveAsync(source.Descriptor, cancellationToken);
         var members = resolved.Ayahs.ToDictionary(ayah => ayah.AyahId);
-        var confirmed = ConfirmedAyahMetadataOf(state, identity);
+        var confirmed = state is null ? [] : ConfirmedAyahMetadataOf(state, identity);
 
         var units = source.Units
             .Select(unit => new LinkingOperationUnitIntent(
@@ -58,8 +75,10 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
             source.ContributionMode,
             source.AutomaticWordMatchesEnabled,
             source.OrderValue,
+            resolved.TotalAyahCount,
+            resolved.ResolvedAtUtc,
             units,
-            state.IsArchived ? LinkingPreflightInvalidReason.DoorArchived : null);
+            state?.IsArchived == true ? LinkingPreflightInvalidReason.DoorArchived : null);
     }
 
     private static LinkingOperationAyahIntent PrepareAyah(

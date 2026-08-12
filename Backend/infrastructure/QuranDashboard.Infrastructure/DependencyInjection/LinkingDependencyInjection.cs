@@ -28,6 +28,7 @@ internal static class LinkingDependencyInjection
         services.AddScoped<ILinkingWorkspaceReader, EfLinkingWorkspaceReader>();
         services.AddScoped<ILinkingWorkspaceWriter, EfLinkingWorkspaceWriter>();
         services.AddScoped<ILinkingConfirmedStateReader, EfLinkingConfirmedStateReader>();
+        services.AddScoped<ILinkingConfirmationWriter, EfLinkingConfirmationWriter>();
 
         return services;
     }

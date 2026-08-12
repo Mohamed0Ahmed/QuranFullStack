@@ -301,7 +301,14 @@ public static class ApiMessages
         };
 
     public const string LinkingOperationPreflighted = "تم فحص العملية قبل التنفيذ";
+    public const string LinkingOperationConfirmed = "تم تنفيذ عملية الربط بنجاح";
+    public const string LinkingOperationNoChanges = "لا توجد تغييرات جديدة لتنفيذها";
     public const string LinkingOperationDoorNotFound = "الباب غير موجود";
+    public const string LinkingOperationInvalidClassification = "تعذر تنفيذ العملية لوجود عناصر غير صالحة";
+    public const string LinkingOperationStaleVersion = "تغيرت مساهمة مرتبطة منذ آخر قراءة؛ أعد الفحص وحاول مجددًا";
+    public const string LinkingOperationStalePreflight = "تغيرت حالة الربط منذ الفحص؛ راجع النتيجة المحدثة";
+    public const string LinkingOperationDuplicateContribution = "توجد مساهمة حية لهذا المصدر داخل الباب";
+    public const string LinkingOperationIdempotencyConflict = "مفتاح العملية مستخدم لمحاولة تأكيد مختلفة";
 
     private const string LinkingOperationInvalidPrefix = "طلب غير صالح — الحقل";
 
@@ -314,6 +321,8 @@ public static class ApiMessages
                 "يجب أن يضم كل مصدر آية واحدة على الأقل",
             LinkingOperationViolationCode.DuplicateAyah =>
                 $"الآية «{violation.Value}» مكررة داخل المصدر نفسه",
+            LinkingOperationViolationCode.DuplicateSource =>
+                "لا يمكن تكرار المصدر نفسه داخل العملية",
             LinkingOperationViolationCode.GroupingInvalid =>
                 $"تجميع الآيات لا يتوافق مع نمط الربط «{violation.Value}»",
             LinkingOperationViolationCode.ContributionModeInvalid =>
@@ -328,6 +337,18 @@ public static class ApiMessages
                 $"{LinkingDescriptionLimitPrefix} ({LinkingLimits.MaxDescriptionsPerSourceAyah} وصف) — الآية «{violation.Value}»",
             LinkingOperationViolationCode.DescriptionBodyInvalid =>
                 $"نص الوصف مطلوب ويجب ألا يتجاوز {LinkingLimits.MaxDescriptionLength} حرف — الآية «{violation.Value}»",
+            LinkingOperationViolationCode.PreflightTokenRequired =>
+                "رمز الفحص المسبق مطلوب قبل تنفيذ العملية",
+            LinkingOperationViolationCode.IdempotencyKeyRequired =>
+                "مفتاح العملية مطلوب ويجب أن يكون صالحًا",
+            LinkingOperationViolationCode.ExistingContributionPairInvalid =>
+                "معرف المساهمة الحالية وإصدارها مطلوبان معًا",
+            LinkingOperationViolationCode.ExistingContributionIdInvalid =>
+                "معرف المساهمة الحالية يجب أن يكون رقمًا موجبًا",
+            LinkingOperationViolationCode.ExistingContributionVersionInvalid =>
+                "إصدار المساهمة الحالية يجب أن يكون رقمًا موجبًا",
+            LinkingOperationViolationCode.PreparedIntentInvalid =>
+                $"تحتوي العملية على عنصر غير صالح «{violation.Value}»",
             _ => violation.Value is null
                 ? $"{LinkingOperationInvalidPrefix} «{violation.Field}»"
                 : $"{LinkingOperationInvalidPrefix} «{violation.Field}» بالقيمة «{violation.Value}»",

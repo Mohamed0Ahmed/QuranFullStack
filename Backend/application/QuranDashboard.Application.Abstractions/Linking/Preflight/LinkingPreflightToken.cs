@@ -108,7 +108,7 @@ public static class LinkingPreflightToken
         $"{Number(Encoding.UTF8.GetByteCount(value))}:{value}";
 
     private static string Texts(IReadOnlyList<string> values) =>
-        string.Join(',', values.Select(Text));
+        string.Join(',', values.Select(value => Text(value.Trim())));
 }
 
 public sealed record LinkingPreflightDoorComponent(int DoorId, uint Version);

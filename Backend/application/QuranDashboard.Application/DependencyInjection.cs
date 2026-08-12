@@ -101,6 +101,7 @@ using QuranDashboard.Application.Linking.Queries.ResolveLinkingSource;
 using QuranDashboard.Application.Linking.Queries.GetLinkingWorkspace;
 using QuranDashboard.Application.Linking.Commands.AddLinkingWorkspaceSource;
 using QuranDashboard.Application.Linking.Commands.ClearLinkingWorkspaceSources;
+using QuranDashboard.Application.Linking.Commands.ConfirmLinkingOperation;
 using QuranDashboard.Application.Linking.Commands.RemoveLinkingWorkspaceSource;
 using QuranDashboard.Application.Linking.Commands.ReorderLinkingWorkspaceSources;
 using QuranDashboard.Application.Linking.Commands.ReplaceLinkingWorkspaceSourceConfiguration;
@@ -220,6 +221,7 @@ public static class DependencyInjection
         services.AddScoped<ClearLinkingWorkspaceSourcesHandler>();
         services.AddScoped<LinkingOperationPreparation>();
         services.AddScoped<PreflightLinkingOperationHandler>();
+        services.AddScoped<ConfirmLinkingOperationHandler>();
 
         return services;
     }

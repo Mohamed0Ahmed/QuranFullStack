@@ -16,9 +16,73 @@ public static class LinkingOperationValidation
             return new LinkingOperationViolation(LinkingOperationViolationCode.SourcesRequired, "sources", null);
         }
 
-        return request.Sources
-            .Select(ValidateSource)
-            .FirstOrDefault(violation => violation is not null);
+        return ValidateDistinctSources(request.Sources)
+            ?? request.Sources
+                .Select(ValidateSource)
+                .FirstOrDefault(violation => violation is not null);
+    }
+
+    public static LinkingOperationViolation? ValidateConfirmation(LinkingOperationRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (string.IsNullOrWhiteSpace(request.PreflightToken))
+        {
+            return new LinkingOperationViolation(
+                LinkingOperationViolationCode.PreflightTokenRequired, "preflightToken", null);
+        }
+
+        if (request.IdempotencyKey is null || request.IdempotencyKey == Guid.Empty)
+        {
+            return new LinkingOperationViolation(
+                LinkingOperationViolationCode.IdempotencyKeyRequired, "idempotencyKey", null);
+        }
+
+        var invalidId = request.Sources.FirstOrDefault(source => source.ExistingContributionId is <= 0);
+        if (invalidId is not null)
+        {
+            return new LinkingOperationViolation(
+                LinkingOperationViolationCode.ExistingContributionIdInvalid,
+                "sources.existingContributionId",
+                invalidId.ExistingContributionId?.ToString(CultureInfo.InvariantCulture));
+        }
+
+        var invalidVersion = request.Sources.FirstOrDefault(source => source.ExistingContributionVersion is 0);
+        if (invalidVersion is not null)
+        {
+            return new LinkingOperationViolation(
+                LinkingOperationViolationCode.ExistingContributionVersionInvalid,
+                "sources.existingContributionVersion",
+                invalidVersion.ExistingContributionVersion?.ToString(CultureInfo.InvariantCulture));
+        }
+
+        var incoherent = request.Sources.FirstOrDefault(source =>
+            source.ExistingContributionId.HasValue != source.ExistingContributionVersion.HasValue);
+
+        if (incoherent is not null)
+        {
+            return new LinkingOperationViolation(
+                LinkingOperationViolationCode.ExistingContributionPairInvalid,
+                "sources.existingContributionVersion",
+                null);
+        }
+
+        return Validate(request);
+    }
+
+    private static LinkingOperationViolation? ValidateDistinctSources(
+        IReadOnlyList<LinkingOperationSourceRequest> sources)
+    {
+        var duplicate = sources
+            .GroupBy(source => LinkingSourceIdentity.For(source.Descriptor), StringComparer.Ordinal)
+            .FirstOrDefault(group => group.Count() > 1);
+
+        return duplicate is null
+            ? null
+            : new LinkingOperationViolation(
+                LinkingOperationViolationCode.DuplicateSource,
+                "sources.descriptor",
+                duplicate.Key);
     }
 
     private static LinkingOperationViolation? ValidateSource(LinkingOperationSourceRequest source)

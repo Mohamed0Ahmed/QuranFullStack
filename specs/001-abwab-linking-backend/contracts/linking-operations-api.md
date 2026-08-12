@@ -42,7 +42,8 @@ fields marked *(confirm)*:
 - Grouping (FR-046): `automatic` / `manual_single` / `manual_independent` ⇒ **every unit has
   exactly one ayah**; `manual_grouped` ⇒ **exactly one unit**. Manual modes only with
   `manual-mushaf-ayahs` descriptors; `automatic` only with the five automatic families.
-- No duplicate ayah within a source; descriptions ≤10 × ≤2000 trimmed non-blank per ayah.
+- No duplicate source identity within one operation; no duplicate ayah within a source;
+  descriptions ≤10 × ≤2000 trimmed non-blank per ayah.
 - **Word authorship per family** (spec FR-021, research.md R22): `selectedWordIds` is legal only
   on manual sources — any authored word on an automatic source ⇒ 400. Automatic sources carry
   `automaticWordMatchesEnabled` instead (required non-null for automatic, must be null for

@@ -13,4 +13,11 @@ public enum LinkingOperationViolationCode
     DescriptionLimitExceeded = 9,
     DescriptionBodyInvalid = 10,
     MalformedBody = 11,
+    PreflightTokenRequired = 12,
+    IdempotencyKeyRequired = 13,
+    ExistingContributionPairInvalid = 14,
+    PreparedIntentInvalid = 15,
+    DuplicateSource = 16,
+    ExistingContributionIdInvalid = 17,
+    ExistingContributionVersionInvalid = 18,
 }

@@ -398,12 +398,12 @@ Door-row serialization, idempotent replay, and the finalize-once operation recor
 **Independent Test**: Scripted Swagger sequence against a local Door with `psql` inspection after
 every step (quickstart §4).
 
-- [ ] T058 [P] [US5] Create `ILinkingConfirmationWriter.cs` and
+- [X] T058 [P] [US5] Create `ILinkingConfirmationWriter.cs` and
       `Responses/LinkingConfirmationResultDto.cs` in
       `Backend/application/QuranDashboard.Application.Abstractions/Linking/` (result carries per
       source: identity, final classification, contributionId, counts; totals; equals the stored
       replay outcome).
-- [ ] T059 [US5] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Linking/EfLinkingConfirmationWriter.cs`
+- [X] T059 [US5] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Linking/EfLinkingConfirmationWriter.cs`
       implementing `contracts/linking-operations-api.md` §Validation & transaction boundary
       EXACTLY: **Phase A** outside the transaction (structure incl. REQUIRED preflightToken,
       actor/owner, descriptors, cached-boundary re-resolution + membership anti-tamper, manual-only
@@ -419,11 +419,11 @@ every step (quickstart §4).
       re-point operation_id) → finalize outcome exactly once with final contribution ids → COMMIT
       (row immutable forever after). Every save translates exceptions (F12); attribution on all
       audited records (F11). Depends on T052+T054+T058.
-- [ ] T060 [US5] Create `Commands/ConfirmLinkingOperation/` (command/handler/outcome) and add the
+- [X] T060 [US5] Create `Commands/ConfirmLinkingOperation/` (command/handler/outcome) and add the
       `POST /api/linking/operations` action to `LinkingOperationsController` (`[RequireOwner]`,
       status mapping 200/400/404/409 per contract). Register in DI. Depends on T059.
-- [ ] T062 [US5] Run the **Contract gate ritual**.
-- [ ] T063 [US5] **Checkpoint (US5)**: quickstart §4 — confirm without token → 400; locked example
+- [X] T062 [US5] Run the **Contract gate ritual**.
+- [X] T063 [US5] **Checkpoint (US5)**: quickstart §4 — confirm without token → 400; locked example
       leaves «الرحمن» byte-identical; identical re-confirm → nothing written + no-op message;
       changed source → same id, advanced xmin, replaced children ([w1,w2]→[] ⇒ none); idempotency
       replay writes nothing; two concurrent same-Door confirms serialize on the lock → one wins,
