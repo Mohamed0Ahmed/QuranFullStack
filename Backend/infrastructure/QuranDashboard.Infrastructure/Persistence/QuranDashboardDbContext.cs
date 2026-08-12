@@ -74,6 +74,13 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<LinkingWorkspaceSourceDescription> LinkingWorkspaceSourceDescriptions =>
         Set<LinkingWorkspaceSourceDescription>();
 
+    public DbSet<LinkingOperation> LinkingOperations => Set<LinkingOperation>();
+    public DbSet<LinkingSourceContribution> LinkingSourceContributions => Set<LinkingSourceContribution>();
+    public DbSet<LinkingUnit> LinkingUnits => Set<LinkingUnit>();
+    public DbSet<LinkingUnitAyah> LinkingUnitAyahs => Set<LinkingUnitAyah>();
+    public DbSet<LinkingUnitAyahWord> LinkingUnitAyahWords => Set<LinkingUnitAyahWord>();
+    public DbSet<LinkingUnitAyahDescription> LinkingUnitAyahDescriptions => Set<LinkingUnitAyahDescription>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasPostgresExtension("pg_trgm");

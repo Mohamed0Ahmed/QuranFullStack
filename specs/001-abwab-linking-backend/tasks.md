@@ -331,12 +331,12 @@ required-but-untrusted freshness token.
 **Independent Test**: Hand-built Door state in `psql`, then preflight through Swagger reproduces
 the locked example with zero writes (quickstart §3).
 
-- [ ] T047 [P] [US4] Create the six confirmed entities in
+- [X] T047 [P] [US4] Create the six confirmed entities in
       `Backend/domain/QuranDashboard.Domain/Linking/`: `LinkingOperation.cs`,
       `LinkingSourceContribution.cs`, `LinkingUnit.cs`, `LinkingUnitAyah.cs`,
       `LinkingUnitAyahWord.cs`, `LinkingUnitAyahDescription.cs` — columns exactly per
       data-model.md tables 7–12.
-- [ ] T048 [US4] Create the six EF configurations in `Persistence/Configurations/Linking/` with
+- [X] T048 [US4] Create the six EF configurations in `Persistence/Configurations/Linking/` with
       EVERY constraint from data-model.md tables 7–12 — notably `UNIQUE (idempotency_key)`;
       **`UNIQUE (door_id, source_identity_hash) WHERE deleted_at IS NULL`**; `UNIQUE (id, door_id)`;
       the composite FK `(unit_id, source_contribution_id)` → `linking_units`;
@@ -344,21 +344,21 @@ the locked example with zero writes (quickstart §3).
       descriptions; the filtered per-dimension provenance indexes; `outcome` jsonb CHECK; `xmin`
       on contributions. The `is_grouped` cross-row rule is writer-enforced (NO triggers).
       Depends on T047.
-- [ ] T049 [US4] Add the six `DbSet`s, then run the **Migration ritual** for
+- [X] T049 [US4] Add the six `DbSet`s, then run the **Migration ritual** for
       `AddLinkingConfirmedState` (M3). Depends on T048.
-- [ ] T050 [US4] **Checkpoint (schema)**: migration applies to an empty DB and to an M2-head DB;
+- [X] T050 [US4] **Checkpoint (schema)**: migration applies to an empty DB and to an M2-head DB;
       every constraint verified in `psql` per docs plan Phase 7 acceptance (duplicate live
       contribution fails; soft-delete-then-insert succeeds; composite-FK mismatch fails);
       `AbwabSchemaTests` untouched and still green via its lane (it queries per named `abwab_*`
       table — repo fact F3); `check-pending-model` clean.
-- [ ] T051 [P] [US4] Create preflight abstractions in
+- [X] T051 [P] [US4] Create preflight abstractions in
       `Backend/application/QuranDashboard.Application.Abstractions/Linking/Preflight/`:
       `LinkingOperationRequest.cs`, `LinkingPreflightResultDto.cs`, `LinkingSourcePreflightDto.cs`,
       `LinkingAyahPreflightDto.cs`, `LinkingPreflightClassification.cs`, `LinkingPreflightToken.cs`
       — field-exact to `contracts/linking-operations-api.md`, including structured
       `overlappingSources[]` `{sourceIdentity, label, sourceKind}` (NEVER a bare key list) and
       per-source `automaticWordMatchesEnabled`.
-- [ ] T052 [US4] Create `Backend/application/QuranDashboard.Application/Linking/LinkingOperationClassifier.cs`
+- [X] T052 [US4] Create `Backend/application/QuranDashboard.Application/Linking/LinkingOperationClassifier.cs`
       — **pure and shared with Confirm** (state in → classification out; zero repository access;
       the design's load-bearing choice). Implement the exact tables in
       `contracts/linking-operations-api.md`: source NEW_SOURCE/UNCHANGED/UPDATE/INVALID; ayah
@@ -367,22 +367,22 @@ the locked example with zero writes (quickstart §3).
       change wins, overlap only where otherwise NEW_AYAH; label EXCLUDED from comparison
       (spec FR-004); effective word sets (manual authored / automatic derived per toggle); exact
       word + description diffs; only INVALID blocks. Depends on T051.
-- [ ] T053 [US4] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Linking/EfLinkingConfirmedStateReader.cs`
+- [X] T053 [US4] Create `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Reads/Linking/EfLinkingConfirmedStateReader.cs`
       — loads a Door's live contributions + children in bounded batched queries (never cached —
       per-Door mutable state). Depends on T049 (M3 tables + DbSets); may run in parallel with
       T051/T052 once T049 is done.
-- [ ] T054 [US4] Implement the preflight token canonicalizer (inside `LinkingPreflightToken.cs`):
+- [X] T054 [US4] Implement the preflight token canonicalizer (inside `LinkingPreflightToken.cs`):
       hash(Door identity + live state, each affected contribution `(id, xmin)`, canonical
       **operation intent**) — inclusions/exclusions EXACTLY per `contracts/linking-operations-api.md`
       §Preflight token composition (NO resolvedAtUtc, NO idempotencyKey, NO existing* fields, NO
       label; deterministic ordering). One function used by BOTH preflight and confirm. Depends on T051.
-- [ ] T055 [US4] Create `Queries/PreflightLinkingOperation/` (query/handler/outcome — performs NO
+- [X] T055 [US4] Create `Queries/PreflightLinkingOperation/` (query/handler/outcome — performs NO
       writes, resolves sources through the cached boundary, reads confirmed state fresh) and
       `Backend/api/QuranDashboard.Api/Controllers/Linking/LinkingOperationsController.cs` with the
       `POST /api/linking/operations/preflight` action (`[RequireOwner]`; validation incl.
       FR-044a ≥1 ayah per source). Register in DI. Depends on T052–T054.
-- [ ] T056 [US4] Run the **Contract gate ritual**.
-- [ ] T057 [US4] **Checkpoint (US4)**: quickstart §3 probes — the locked example («الرحمن» A,B,C
+- [X] T056 [US4] Run the **Contract gate ritual**.
+- [X] T057 [US4] **Checkpoint (US4)**: quickstart §3 probes — the locked example («الرحمن» A,B,C
       vs «الرحيم» A,D,E → NEW_SOURCE; A overlap naming «الرحمن» with label+kind; D,E new; counts
       3 = 2+1); unchanged+new → not blocked, not no-op; all-identical → isNoOp; label-only rename
       → UNCHANGED; REMOVE scoped to one source; archived Door/marker/foreign word/zero-ayah →

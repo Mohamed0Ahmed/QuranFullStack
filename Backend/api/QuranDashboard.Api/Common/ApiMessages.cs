@@ -299,4 +299,37 @@ public static class ApiMessages
                 ? $"{LinkingSourceDescriptorInvalidPrefix} «{violation.Field}»"
                 : $"{LinkingSourceDescriptorInvalidPrefix} «{violation.Field}» بالقيمة «{violation.Value}»",
         };
+
+    public const string LinkingOperationPreflighted = "تم فحص العملية قبل التنفيذ";
+    public const string LinkingOperationDoorNotFound = "الباب غير موجود";
+
+    private const string LinkingOperationInvalidPrefix = "طلب غير صالح — الحقل";
+
+    public static string LinkingOperationViolationMessage(LinkingOperationViolation violation) =>
+        violation.Code switch
+        {
+            LinkingOperationViolationCode.SourcesRequired =>
+                "يجب أن تضم العملية مصدرًا واحدًا على الأقل",
+            LinkingOperationViolationCode.AyahRequired =>
+                "يجب أن يضم كل مصدر آية واحدة على الأقل",
+            LinkingOperationViolationCode.DuplicateAyah =>
+                $"الآية «{violation.Value}» مكررة داخل المصدر نفسه",
+            LinkingOperationViolationCode.GroupingInvalid =>
+                $"تجميع الآيات لا يتوافق مع نمط الربط «{violation.Value}»",
+            LinkingOperationViolationCode.ContributionModeInvalid =>
+                $"نمط الربط «{violation.Value}» لا يتوافق مع نوع المصدر",
+            LinkingOperationViolationCode.WordsNotAllowedOnAutomaticSource =>
+                $"لا يمكن تحديد كلمات يدويًا على مصدر تلقائي — الآية «{violation.Value}»",
+            LinkingOperationViolationCode.AutomaticWordMatchesRequired =>
+                "إعداد مطابقة الكلمات التلقائية مطلوب للمصادر التلقائية",
+            LinkingOperationViolationCode.AutomaticWordMatchesNotAllowed =>
+                "إعداد مطابقة الكلمات التلقائية غير مسموح على المصادر اليدوية",
+            LinkingOperationViolationCode.DescriptionLimitExceeded =>
+                $"{LinkingDescriptionLimitPrefix} ({LinkingLimits.MaxDescriptionsPerSourceAyah} وصف) — الآية «{violation.Value}»",
+            LinkingOperationViolationCode.DescriptionBodyInvalid =>
+                $"نص الوصف مطلوب ويجب ألا يتجاوز {LinkingLimits.MaxDescriptionLength} حرف — الآية «{violation.Value}»",
+            _ => violation.Value is null
+                ? $"{LinkingOperationInvalidPrefix} «{violation.Field}»"
+                : $"{LinkingOperationInvalidPrefix} «{violation.Field}» بالقيمة «{violation.Value}»",
+        };
 }

@@ -95,6 +95,8 @@ using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupe
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSummary;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTree;
+using QuranDashboard.Application.Linking;
+using QuranDashboard.Application.Linking.Queries.PreflightLinkingOperation;
 using QuranDashboard.Application.Linking.Queries.ResolveLinkingSource;
 using QuranDashboard.Application.Linking.Queries.GetLinkingWorkspace;
 using QuranDashboard.Application.Linking.Commands.AddLinkingWorkspaceSource;
@@ -216,6 +218,8 @@ public static class DependencyInjection
         services.AddScoped<ReorderLinkingWorkspaceSourcesHandler>();
         services.AddScoped<ReplaceLinkingWorkspaceSourceConfigurationHandler>();
         services.AddScoped<ClearLinkingWorkspaceSourcesHandler>();
+        services.AddScoped<LinkingOperationPreparation>();
+        services.AddScoped<PreflightLinkingOperationHandler>();
 
         return services;
     }

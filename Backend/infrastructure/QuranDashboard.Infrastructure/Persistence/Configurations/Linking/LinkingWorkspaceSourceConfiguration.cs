@@ -14,22 +14,19 @@ public sealed class LinkingWorkspaceSourceConfiguration : IEntityTypeConfigurati
         {
             table.HasCheckConstraint(
                 "ck_linking_workspace_sources_source_kind",
-                $"source_kind IN ({QuotedList(LinkingSourceKindColumn.Tokens)})");
+                LinkingDescriptorCheckConstraints.TokenIn("source_kind", LinkingSourceKindColumn.Tokens));
             table.HasCheckConstraint(
                 "ck_linking_workspace_sources_inclusion_mode",
-                $"inclusion_mode IN ({QuotedList(LinkingWorkspaceTokens.InclusionModeTokens)})");
+                LinkingDescriptorCheckConstraints.TokenIn(
+                    "inclusion_mode", LinkingWorkspaceTokens.InclusionModeTokens));
             table.HasCheckConstraint(
                 "ck_linking_workspace_sources_manual_link_shape",
-                $"manual_link_shape IS NULL OR manual_link_shape IN ({QuotedList(LinkingWorkspaceTokens.ManualLinkShapeTokens)})");
+                "manual_link_shape IS NULL OR "
+                + LinkingDescriptorCheckConstraints.TokenIn(
+                    "manual_link_shape", LinkingWorkspaceTokens.ManualLinkShapeTokens));
             table.HasCheckConstraint(
                 "ck_linking_workspace_sources_scope_schema_version",
-                """
-                jsonb_typeof(scope) = 'object'
-                AND jsonb_exists(scope, 'schemaVersion')
-                AND jsonb_typeof(scope -> 'schemaVersion') = 'number'
-                AND (scope ->> 'schemaVersion') ~ '^[1-9][0-9]*$'
-                AND (scope ->> 'schemaVersion')::numeric <= 2147483647
-                """);
+                LinkingDescriptorCheckConstraints.JsonbSchemaVersion("scope"));
             table.HasCheckConstraint(
                 "ck_linking_workspace_sources_kind_configuration_coherence",
                 $"""
@@ -42,25 +39,7 @@ public sealed class LinkingWorkspaceSourceConfiguration : IEntityTypeConfigurati
                 """);
             table.HasCheckConstraint(
                 "ck_linking_workspace_sources_kind_reference_coherence",
-                """
-                (source_kind = 'root'
-                    AND root_id IS NOT NULL
-                    AND num_nonnulls(lemma_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)
-                OR (source_kind = 'lemma'
-                    AND lemma_id IS NOT NULL
-                    AND num_nonnulls(root_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)
-                OR (source_kind = 'stem'
-                    AND stem_id IS NOT NULL
-                    AND num_nonnulls(root_id, lemma_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)
-                OR (source_kind = 'unique_word'
-                    AND num_nonnulls(unique_simple_word_id, unique_tashkeel_word_id) = 1
-                    AND num_nonnulls(root_id, lemma_id, stem_id, word_type_tashkeel_word_id) = 0)
-                OR (source_kind = 'word_type'
-                    AND num_nonnulls(root_id, lemma_id, stem_id, word_type_tashkeel_word_id) = 1
-                    AND num_nonnulls(unique_simple_word_id, unique_tashkeel_word_id) = 0)
-                OR (source_kind = 'manual_mushaf_ayahs'
-                    AND num_nonnulls(root_id, lemma_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)
-                """);
+                LinkingDescriptorCheckConstraints.KindReferenceCoherence);
         });
 
         builder.HasKey(source => source.Id);
@@ -226,7 +205,4 @@ public sealed class LinkingWorkspaceSourceConfiguration : IEntityTypeConfigurati
             ? shape
             : throw new ArgumentOutOfRangeException(nameof(token), token, "Unknown linking manual link shape column value.");
     }
-
-    private static string QuotedList(IReadOnlyList<string> tokens) =>
-        string.Join(", ", tokens.Select(token => $"'{token}'"));
 }
