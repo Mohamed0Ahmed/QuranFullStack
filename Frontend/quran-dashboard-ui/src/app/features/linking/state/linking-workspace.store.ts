@@ -11,9 +11,12 @@ import {
 import { LinkingOperationMember } from '../models/linking-operation.models';
 import { isVerseKey, LinkingSourceDescriptor } from '../models/linking-source.models';
 import {
+  LINKING_MAX_DESCRIPTIONS_PER_AYAH,
+  LINKING_MAX_DESCRIPTION_LENGTH,
   LinkingRemovedWorkspaceItem,
   LinkingSelection,
   LinkingSourceConfiguration,
+  LinkingWorkspaceDescription,
   LinkingWorkspaceItem,
   LinkingWorkspaceSnapshot,
   LinkingWorkspaceSurface,
@@ -261,6 +264,21 @@ export class LinkingWorkspaceStore {
     );
   }
 
+  setAyahDescriptions(sourceKey: string, ayahId: number, bodies: readonly string[]): void {
+    this.updateItem(sourceKey, (item) => {
+      const replacement = normalizeAyahDescriptions(ayahId, bodies);
+      return replacement === null
+        ? item
+        : {
+            ...item,
+            descriptions: orderedDescriptions([
+              ...item.descriptions.filter((description) => description.ayahId !== ayahId),
+              ...replacement,
+            ]),
+          };
+    });
+  }
+
   setManualLinkShape(sourceKey: string, linkShape: LinkingManualLinkShape): void {
     this.updateConfiguration(sourceKey, (configuration) =>
       configuration.kind === 'manual' ? { ...configuration, linkShape } : configuration,
@@ -373,19 +391,33 @@ export class LinkingWorkspaceStore {
     sourceKey: string,
     update: (configuration: LinkingSourceConfiguration) => LinkingSourceConfiguration,
   ): void {
+    this.updateItem(sourceKey, (item) => {
+      const configuration = update(item.configuration);
+      return configuration === item.configuration
+        ? item
+        : {
+            ...item,
+            configuration,
+            ayahOverrideIds: toAyahIds(configuration.ayahInclusion.verseKeys, item.ayahIdByVerseKey),
+          };
+    });
+  }
+
+  private updateItem(
+    sourceKey: string,
+    update: (item: LinkingWorkspaceItem) => LinkingWorkspaceItem,
+  ): void {
     const item = this.findItem(sourceKey);
     if (!this.canMutate() || item === null || item.sourceId === null) {
       return;
     }
-    const configuration = update(item.configuration);
-    if (configuration === item.configuration) {
+    const updated = update(item);
+    if (updated === item) {
       return;
     }
     const next: LinkingWorkspaceItem = {
-      ...item,
-      configuration,
+      ...updated,
       configurationRevision: item.configurationRevision + 1,
-      ayahOverrideIds: toAyahIds(configuration.ayahInclusion.verseKeys, item.ayahIdByVerseKey),
     };
     this.replaceItem(sourceKey, next);
     const request = toConfigurationRequest(next);
@@ -467,6 +499,32 @@ function orderedSourceIdsWith(
   const ordered = [...others];
   ordered.splice(Math.min(removed.index, ordered.length), 0, restored);
   return ordered.map((item) => item.sourceId!);
+}
+
+function normalizeAyahDescriptions(
+  ayahId: number,
+  bodies: readonly string[],
+): readonly LinkingWorkspaceDescription[] | null {
+  if (!Number.isSafeInteger(ayahId) || ayahId <= 0 || bodies.length > LINKING_MAX_DESCRIPTIONS_PER_AYAH) {
+    return null;
+  }
+  const normalized: LinkingWorkspaceDescription[] = [];
+  for (const body of bodies) {
+    const trimmed = body.trim();
+    if (trimmed === '' || trimmed.length > LINKING_MAX_DESCRIPTION_LENGTH) {
+      return null;
+    }
+    normalized.push({ ayahId, orderValue: normalized.length + 1, body: trimmed });
+  }
+  return normalized;
+}
+
+function orderedDescriptions(
+  descriptions: readonly LinkingWorkspaceDescription[],
+): readonly LinkingWorkspaceDescription[] {
+  return [...descriptions].sort(
+    (left, right) => left.ayahId - right.ayahId || left.orderValue - right.orderValue,
+  );
 }
 
 function normalizeManualWordIds(

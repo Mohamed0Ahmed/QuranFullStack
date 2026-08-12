@@ -46,7 +46,26 @@
               @for (intent of resolved.sourceIntents; track intent.sourceKey) { <li>{{ intent.source.label }} — {{ labels.intentModes[intent.contributionMode] }}</li> }
             </ul>
             @for (ayah of visibleReviewAyahs(); track ayah.verseKey) {
-              <qd-linking-ayah-card [ayah]="ayah.ayah" [highlightSourceWords]="true" />
+              <div class="direct-link-workflow__review-ayah">
+                <qd-linking-ayah-card
+                  [ayah]="ayah.ayah"
+                  [highlightSourceWords]="true"
+                  [mergedWords]="ayah.words"
+                  [sourceLabels]="sourceLabelsFor(ayah)"
+                />
+                @for (group of descriptionGroupsFor(ayah.verseKey); track $index) {
+                  <div class="direct-link-workflow__review-descriptions">
+                    <p class="direct-link-workflow__review-descriptions-source">
+                      {{ group.sourceLabel }} — {{ labels.descriptions }}
+                    </p>
+                    <ol>
+                      @for (body of group.descriptions; track $index) {
+                        <li>{{ body }}</li>
+                      }
+                    </ol>
+                  </div>
+                }
+              </div>
             }
             <qd-pagination [currentPage]="reviewPage()" [pageSize]="reviewPageSize" [totalCount]="reviewAyahs().length" [ariaLabel]="labels.reviewPagination" (pageChange)="setReviewPage($event)" />
           </section>

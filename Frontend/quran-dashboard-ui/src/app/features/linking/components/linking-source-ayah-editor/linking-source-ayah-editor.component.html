@@ -51,22 +51,26 @@
           {{ labels.sourceEditorReady }}: {{ state().universe.length }}
         </p>
         <qd-linking-ayah-selection
-          [ayahs]="visibleAyahs()"
+          [ayahs]="filteredAyahs()"
           [selection]="selection()"
           [selectedCount]="selectedCount()"
           [query]="state().query"
-          [page]="state().page"
-          [pageSize]="pageSize"
-          [filteredCount]="filteredAyahs().length"
           [focusOnEntry]="true"
           [disabled]="false"
-          [paginationLabel]="labels.sourceEditorPagination"
+          [listLabel]="labels.sourceEditorAyahList"
           (queryChanged)="setQuery($event)"
-          (pageChanged)="setPage($event)"
           (selectionToggled)="toggleAyah($event)"
           (selectAllRequested)="selectAll()"
           (clearAllRequested)="clearAll()"
-        />
+        >
+          <ng-template #ayahExtraTemplate let-ayah>
+            <qd-linking-ayah-descriptions
+              [verseKey]="ayah.verseKey"
+              [descriptions]="descriptionsFor(ayah)"
+              (changed)="setDescriptions(ayah, $event)"
+            />
+          </ng-template>
+        </qd-linking-ayah-selection>
       } @else {
         <qd-empty-state [message]="labels.noAyahMatches" />
       }

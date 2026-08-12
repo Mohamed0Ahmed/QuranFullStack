@@ -6,13 +6,11 @@ import { LinkingSourceResolver } from '../data-access/linking-source-resolver';
 import { LinkingAyah } from '../models/linking-ayah.models';
 import { LINKING_LABELS } from '../models/linking.labels';
 import { LinkingSourceEditorState } from '../models/linking-workflow.models';
-import { LinkingSelection } from '../models/linking-workspace.models';
+import { LinkingSelection, LinkingWorkspaceItem } from '../models/linking-workspace.models';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import { selectedLinkingAyahCount } from '../utils/linking-selection';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
-
-const EDITOR_PAGE_SIZE = 12;
 
 const INITIAL_EDITOR_STATE: LinkingSourceEditorState = {
   sourceKey: null,
@@ -23,7 +21,6 @@ const INITIAL_EDITOR_STATE: LinkingSourceEditorState = {
   rawProgress: { loaded: 0, total: null },
   universe: [],
   query: '',
-  page: 1,
   errorMessage: null,
 };
 
@@ -37,7 +34,6 @@ export class LinkingSourceEditorFacade {
   private generation = 0;
 
   readonly state = this.editorStateSignal.asReadonly();
-  readonly pageSize = EDITOR_PAGE_SIZE;
   readonly selection = computed<LinkingSelection>(() => {
     const sourceKey = this.editorStateSignal().sourceKey;
     return sourceKey === null
@@ -51,16 +47,11 @@ export class LinkingSourceEditorFacade {
     const query = this.editorStateSignal().query;
     return this.editorStateSignal().ayahs.filter((ayah) => arabicSearchIncludes(searchText(ayah), query));
   });
-  readonly pageCount = computed(() => Math.max(1, Math.ceil(this.filteredAyahs().length / EDITOR_PAGE_SIZE)));
-  readonly visibleAyahs = computed(() => {
-    const page = Math.min(this.editorStateSignal().page, this.pageCount());
-    const start = (page - 1) * EDITOR_PAGE_SIZE;
-    return this.filteredAyahs().slice(start, start + EDITOR_PAGE_SIZE);
-  });
   readonly currentItem = computed(() => {
     const sourceKey = this.editorStateSignal().sourceKey;
     return sourceKey === null ? null : this.workspace.item(sourceKey);
   });
+  readonly descriptionsByAyahId = computed(() => descriptionBodiesByAyahId(this.currentItem()));
 
   open(sourceKey: string | null): void {
     if (sourceKey === null || !this.access.canUseLinking()) {
@@ -93,12 +84,17 @@ export class LinkingSourceEditorFacade {
   }
 
   setQuery(query: string): void {
-    this.editorStateSignal.update((state) => ({ ...state, query, page: 1 }));
+    this.editorStateSignal.update((state) => ({ ...state, query }));
   }
 
-  setPage(page: number): void {
-    if (Number.isSafeInteger(page) && page >= 1 && page <= this.pageCount()) {
-      this.editorStateSignal.update((state) => ({ ...state, page }));
+  descriptionsFor(ayahId: number): readonly string[] {
+    return this.descriptionsByAyahId().get(ayahId) ?? [];
+  }
+
+  setDescriptions(ayahId: number, bodies: readonly string[]): void {
+    const state = this.editorStateSignal();
+    if (state.sourceKey !== null && state.status === 'success') {
+      this.workspace.setAyahDescriptions(state.sourceKey, ayahId, bodies);
     }
   }
 
@@ -193,6 +189,19 @@ export class LinkingSourceEditorFacade {
     this.loadSubscription?.unsubscribe();
     this.loadSubscription = null;
   }
+}
+
+function descriptionBodiesByAyahId(
+  item: LinkingWorkspaceItem | null,
+): ReadonlyMap<number, readonly string[]> {
+  const byAyahId = new Map<number, string[]>();
+  const ordered = [...(item?.descriptions ?? [])].sort((left, right) => left.orderValue - right.orderValue);
+  for (const description of ordered) {
+    const bodies = byAyahId.get(description.ayahId) ?? [];
+    bodies.push(description.body);
+    byAyahId.set(description.ayahId, bodies);
+  }
+  return byAyahId;
 }
 
 function uniqueAyahsByVerseKey(ayahs: readonly LinkingAyah[]): readonly LinkingAyah[] {

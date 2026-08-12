@@ -5,6 +5,7 @@ import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-s
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 import { QdNoticeComponent } from '../../../../shared/ui/notice/notice.component';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
+import { MergedAyahSelection } from '../../models/linking-merge.models';
 import { LINKING_LABELS } from '../../models/linking.labels';
 import { LinkingWorkflowFacade, LinkingWorkflowStep } from '../../state/linking-workflow.facade';
 import { LinkingDoorStepComponent } from '../linking-door-step/linking-door-step.component';
@@ -43,6 +44,25 @@ export class DirectLinkWorkflowComponent {
   protected readonly reviewAyahs = computed(() => this.operation()?.mergedSelection.ayahs ?? []);
   protected readonly visibleReviewAyahs = computed(() => this.reviewAyahs().slice((this.reviewPage() - 1) * REVIEW_PAGE_SIZE, this.reviewPage() * REVIEW_PAGE_SIZE));
   protected readonly steps: readonly LinkingWorkflowStep[] = ['configure-source', 'resolve', 'door', 'preflight', 'review'];
+  private readonly sourceLabelByKey = computed(
+    () => new Map((this.operation()?.sourceIntents ?? []).map((intent) => [intent.sourceKey, intent.source.label])),
+  );
+  private readonly descriptionGroupsByVerseKey = computed(() => {
+    const groups = new Map<string, { sourceLabel: string; descriptions: readonly string[] }[]>();
+    for (const intent of this.operation()?.sourceIntents ?? []) {
+      for (const unit of intent.units) {
+        for (const ayah of unit.ayahs) {
+          if (ayah.descriptions.length === 0) {
+            continue;
+          }
+          const listed = groups.get(ayah.verseKey) ?? [];
+          listed.push({ sourceLabel: intent.source.label, descriptions: ayah.descriptions });
+          groups.set(ayah.verseKey, listed);
+        }
+      }
+    }
+    return groups;
+  });
 
   constructor() {
     effect(() => {
@@ -57,6 +77,18 @@ export class DirectLinkWorkflowComponent {
   protected submit(): void { this.workflow.submit(); }
   protected acknowledge(): void { this.workflow.acknowledgeSuccess(); }
   protected setReviewPage(page: number): void { this.reviewPage.set(page); }
+
+  protected sourceLabelsFor(ayah: MergedAyahSelection): readonly string[] {
+    const labels = this.sourceLabelByKey();
+    return ayah.sourceKeys.map((sourceKey) => labels.get(sourceKey) ?? sourceKey);
+  }
+
+  protected descriptionGroupsFor(
+    verseKey: string,
+  ): readonly { sourceLabel: string; descriptions: readonly string[] }[] {
+    return this.descriptionGroupsByVerseKey().get(verseKey) ?? [];
+  }
+
   protected setAutomaticWords(event: Event): void { this.workflow.setDirectAutomaticWords((event.target as HTMLInputElement).checked); }
   protected stepLabel(step: LinkingWorkflowStep): string { return this.labels.operationSteps[step]; }
 }

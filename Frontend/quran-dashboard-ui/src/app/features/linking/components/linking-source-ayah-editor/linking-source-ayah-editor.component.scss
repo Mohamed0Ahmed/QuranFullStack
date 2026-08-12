@@ -6,13 +6,18 @@
 }
 
 .linking-source-ayah-editor {
-  display: grid;
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
   gap: var(--qd-space-4);
   min-block-size: 0;
-  overflow: auto;
+  overflow: hidden;
   padding: var(--qd-space-4);
-  scrollbar-gutter: stable;
+}
+
+qd-linking-ayah-descriptions {
+  grid-column: 1 / -1;
+  min-inline-size: 0;
 }
 
 .linking-source-ayah-editor__header {

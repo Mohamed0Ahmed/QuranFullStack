@@ -33,6 +33,9 @@ export type LinkingWorkspaceSurface =
   | 'manual-word-editor'
   | 'linking-flow';
 
+export const LINKING_MAX_DESCRIPTIONS_PER_AYAH = 10;
+export const LINKING_MAX_DESCRIPTION_LENGTH = 2000;
+
 export interface LinkingWorkspaceDescription {
   ayahId: number;
   orderValue: number;

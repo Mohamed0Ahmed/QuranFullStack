@@ -7,8 +7,16 @@
     @for (word of displayWords(); track word.renderPosition) {
       <span
         class="linking-ayah-card__word"
-        [class.linking-ayah-card__word--matched]="isMatched(word.isSourceMatch)"
+        [class.linking-ayah-card__word--matched]="isMatched(word.isMatched)"
       >{{ word.textUthmani }}</span>
     }
   </p>
+  @if (sourceLabels().length > 0) {
+    <p class="linking-ayah-card__provenance">
+      <span>{{ labels.ayahSources }}:</span>
+      @for (label of sourceLabels(); track $index) {
+        <span class="linking-ayah-card__provenance-name">{{ label }}</span>
+      }
+    </p>
+  }
 </article>

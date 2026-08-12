@@ -526,20 +526,20 @@ every step (quickstart §4).
 
 **Goal**: Virtualized continuous editor list, descriptions UI, merged provenance display.
 
-- [ ] T079 [US7] Replace the `<ul>` + pagination in `components/linking-ayah-selection/` with
+- [X] T079 [US7] Replace the `<ul>` + pagination in `components/linking-ayah-selection/` with
       `<cdk-virtual-scroll-viewport>` (ScrollingModule already a dependency via
       `shared/ui/data-table` — CDK ^20.2.14). Quran text wraps ⇒ VARIABLE row heights: use
       autosize/measured rows, never a fixed `itemSize`. The viewport becomes the surface's SINGLE
       vertical scroll owner (the editor's own `overflow: auto` must yield, not nest).
-- [ ] T080 [US7] Remove pagination from state: delete `EDITOR_PAGE_SIZE`, `page`, `setPage`,
+- [X] T080 [US7] Remove pagination from state: delete `EDITOR_PAGE_SIZE`, `page`, `setPage`,
       `pageCount`, `visibleAyahs` from `state/linking-source-editor.facade.ts`, expose
       `filteredAyahs`; drop `page` from `LinkingSourceEditorState` in
       `models/linking-workflow.models.ts`. Selection/search/select-all/clear-all already operate
       on the complete universe — rendering only. Depends on T079.
-- [ ] T081 [US7] Descriptions editor in `components/linking-source-ayah-editor/`: add / edit /
+- [X] T081 [US7] Descriptions editor in `components/linking-source-ayah-editor/`: add / edit /
       reorder / remove per ayah, client-enforced ≤10 × ≤2000 plain text, riding the existing
       configuration-replacement save; extend `models/linking-workspace.models.ts`.
-- [ ] T082 [US7] Merged provenance (gap G4): `components/linking-ayah-card/` + the
+- [X] T082 [US7] Merged provenance (gap G4): `components/linking-ayah-card/` + the
       `direct-link-workflow` review render the already-computed `MergedAyahSelection.words` union
       and its `sourceKeys` provenance naming EVERY contributing source — not the first
       contributor's flags. Descriptions stay listed per source.

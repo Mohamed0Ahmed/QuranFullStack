@@ -1,0 +1,48 @@
+:host {
+  display: block;
+}
+
+.linking-ayah-descriptions {
+  display: grid;
+  gap: var(--qd-space-2);
+  justify-items: start;
+}
+
+.linking-ayah-descriptions__list {
+  display: grid;
+  gap: var(--qd-space-2);
+  inline-size: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.linking-ayah-descriptions__item,
+.linking-ayah-descriptions__add {
+  display: grid;
+  gap: var(--qd-space-1);
+  inline-size: 100%;
+}
+
+.linking-ayah-descriptions__item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+}
+
+.linking-ayah-descriptions__add {
+  justify-items: start;
+}
+
+.linking-ayah-descriptions__empty,
+.linking-ayah-descriptions__limit {
+  color: var(--qd-text-muted);
+  font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
+  margin: 0;
+}
+
+.linking-ayah-descriptions textarea {
+  inline-size: 100%;
+  resize: vertical;
+}

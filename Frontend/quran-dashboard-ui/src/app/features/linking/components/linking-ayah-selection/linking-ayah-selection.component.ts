@@ -1,7 +1,11 @@
+import { ScrollingModule, VIRTUAL_SCROLL_STRATEGY } from '@angular/cdk/scrolling';
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  TemplateRef,
+  contentChild,
   effect,
   inject,
   input,
@@ -9,7 +13,6 @@ import {
   viewChild,
 } from '@angular/core';
 
-import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
 import { QdFormFieldComponent } from '../../../../shared/ui/form-field/form-field.component';
@@ -18,7 +21,11 @@ import { LINKING_LABELS } from '../../models/linking.labels';
 import { LinkingSelection } from '../../models/linking-workspace.models';
 import { LinkingFocusCoordinator } from '../../state/linking-focus.coordinator';
 import { isVerseSelected } from '../../utils/linking-selection';
+import { MeasuredRowVirtualScrollStrategy } from '../../utils/measured-row-virtual-scroll.strategy';
 import { LinkingAyahCardComponent } from '../linking-ayah-card/linking-ayah-card.component';
+
+const ESTIMATED_AYAH_ROW_SIZE = 168;
+const AYAH_ROW_BUFFER = 720;
 
 let nextSelectionId = 0;
 
@@ -26,11 +33,19 @@ let nextSelectionId = 0;
   selector: 'qd-linking-ayah-selection',
   standalone: true,
   imports: [
-    PaginationComponent,
+    NgTemplateOutlet,
+    ScrollingModule,
     QdActionDirective,
     QdControlDirective,
     QdFormFieldComponent,
     LinkingAyahCardComponent,
+  ],
+  providers: [
+    {
+      provide: VIRTUAL_SCROLL_STRATEGY,
+      useFactory: (): MeasuredRowVirtualScrollStrategy =>
+        new MeasuredRowVirtualScrollStrategy(ESTIMATED_AYAH_ROW_SIZE, AYAH_ROW_BUFFER),
+    },
   ],
   templateUrl: './linking-ayah-selection.component.html',
   styleUrl: './linking-ayah-selection.component.scss',
@@ -46,20 +61,20 @@ export class LinkingAyahSelectionComponent {
   readonly highlightSourceWords = input(true);
   readonly selectedCount = input.required<number>();
   readonly query = input('');
-  readonly page = input(1);
-  readonly pageSize = input(12);
-  readonly filteredCount = input<number | null>(null);
   readonly disabled = input(false);
   readonly focusOnEntry = input(false);
-  readonly paginationLabel = input(LINKING_LABELS.sourceEditorPagination);
+  readonly listLabel = input<string>(LINKING_LABELS.selectAyahs);
 
   readonly selectionToggled = output<string>();
   readonly selectAllRequested = output<void>();
   readonly clearAllRequested = output<void>();
   readonly queryChanged = output<string>();
-  readonly pageChanged = output<number>();
 
   protected readonly labels = LINKING_LABELS;
+  protected readonly ayahExtraTemplate = contentChild<TemplateRef<{ $implicit: LinkingAyah }>>(
+    'ayahExtraTemplate',
+  );
+  protected readonly trackAyah = (_index: number, ayah: LinkingAyah): string => ayah.verseKey;
 
   constructor() {
     effect(() => {
@@ -79,9 +94,5 @@ export class LinkingAyahSelectionComponent {
 
   protected isSelected(verseKey: string): boolean {
     return isVerseSelected(this.selection(), verseKey);
-  }
-
-  protected totalCount(): number {
-    return this.filteredCount() ?? this.ayahs().length;
   }
 }

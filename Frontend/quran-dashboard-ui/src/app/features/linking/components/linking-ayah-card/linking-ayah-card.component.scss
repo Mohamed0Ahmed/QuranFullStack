@@ -27,3 +27,13 @@
   border-block-end: 2px solid var(--qd-accent);
   font-weight: 700;
 }
+
+.linking-ayah-card__provenance {
+  color: var(--qd-text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--qd-type-meta);
+  gap: var(--qd-space-2);
+  line-height: var(--qd-type-meta-lh);
+  margin: 0;
+}

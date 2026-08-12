@@ -22,9 +22,13 @@
     />
   </qd-form-field>
 
-  <ul class="linking-ayah-selection__list">
-    @for (ayah of ayahs(); track ayah.verseKey) {
-      <li class="linking-ayah-selection__row">
+  @if (ayahs().length > 0) {
+    <cdk-virtual-scroll-viewport
+      class="linking-ayah-selection__viewport"
+      role="group"
+      [attr.aria-label]="listLabel()"
+    >
+      <div *cdkVirtualFor="let ayah of ayahs(); trackBy: trackAyah" class="linking-ayah-selection__row">
         <input
           class="qd-checkbox"
           type="checkbox"
@@ -37,20 +41,12 @@
           {{ labels.selectAyahs }}: {{ ayah.verseKey }}
         </label>
         <qd-linking-ayah-card [ayah]="ayah" [highlightSourceWords]="highlightSourceWords()" />
-      </li>
-    } @empty {
-      <li class="linking-ayah-selection__empty" role="status">{{ labels.noAyahMatches }}</li>
-    }
-  </ul>
-
-  @if (totalCount() > pageSize()) {
-    <qd-pagination
-      [currentPage]="page()"
-      [pageSize]="pageSize()"
-      [totalCount]="totalCount()"
-      [disabled]="disabled()"
-      [ariaLabel]="paginationLabel()"
-      (pageChange)="pageChanged.emit($event)"
-    />
+        @if (ayahExtraTemplate(); as extraTemplate) {
+          <ng-container *ngTemplateOutlet="extraTemplate; context: { $implicit: ayah }" />
+        }
+      </div>
+    </cdk-virtual-scroll-viewport>
+  } @else {
+    <p class="linking-ayah-selection__empty" role="status">{{ labels.noAyahMatches }}</p>
   }
 </section>

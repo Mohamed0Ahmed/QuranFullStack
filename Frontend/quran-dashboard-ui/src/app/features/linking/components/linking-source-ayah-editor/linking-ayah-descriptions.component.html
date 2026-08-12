@@ -1,0 +1,87 @@
+<section class="linking-ayah-descriptions" [attr.aria-label]="labels.descriptions + ' ' + verseKey()">
+  <button
+    qdAction="tertiary"
+    size="sm"
+    type="button"
+    [attr.aria-expanded]="expanded()"
+    (click)="toggle()"
+  >
+    {{ expanded() ? labels.descriptionsHide : labels.descriptionsShow }} ({{ descriptions().length }})
+  </button>
+
+  @if (expanded()) {
+    @if (descriptions().length === 0) {
+      <p class="linking-ayah-descriptions__empty">{{ labels.descriptionsEmpty }}</p>
+    } @else {
+      <ol class="linking-ayah-descriptions__list">
+        @for (body of descriptions(); track $index) {
+          <li class="linking-ayah-descriptions__item">
+            <textarea
+              qdControl
+              rows="2"
+              [attr.aria-label]="labels.descriptionsBody"
+              [attr.maxlength]="maxLength"
+              [disabled]="disabled()"
+              [value]="body"
+              (change)="commit($index, $event)"
+            ></textarea>
+            <div class="linking-ayah-descriptions__item-actions">
+              <button
+                qdAction="tertiary"
+                size="sm"
+                type="button"
+                [disabled]="disabled() || $first"
+                (click)="move($index, -1)"
+              >
+                {{ labels.descriptionsMoveUp }}
+              </button>
+              <button
+                qdAction="tertiary"
+                size="sm"
+                type="button"
+                [disabled]="disabled() || $last"
+                (click)="move($index, 1)"
+              >
+                {{ labels.descriptionsMoveDown }}
+              </button>
+              <button
+                qdAction="tertiary"
+                size="sm"
+                type="button"
+                [disabled]="disabled()"
+                (click)="remove($index)"
+              >
+                {{ labels.descriptionsRemove }}
+              </button>
+            </div>
+          </li>
+        }
+      </ol>
+    }
+
+    @if (canAdd()) {
+      <div class="linking-ayah-descriptions__add">
+        <textarea
+          qdControl
+          rows="2"
+          [attr.aria-label]="labels.descriptionsAdd"
+          [attr.maxlength]="maxLength"
+          [disabled]="disabled()"
+          [value]="draft()"
+          (input)="setDraft($event)"
+        ></textarea>
+        <button
+          qdAction="secondary"
+          size="sm"
+          type="button"
+          [disabled]="!canSubmitDraft()"
+          (click)="add()"
+        >
+          {{ labels.descriptionsAdd }}
+        </button>
+      </div>
+    } @else {
+      <p class="linking-ayah-descriptions__limit" role="status">{{ labels.descriptionsLimitReached }}</p>
+    }
+  }
+</section>

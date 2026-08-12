@@ -80,3 +80,22 @@
 .direct-link-workflow__review p {
   margin: 0;
 }
+
+.direct-link-workflow__review-ayah,
+.direct-link-workflow__review-descriptions {
+  display: grid;
+  gap: var(--qd-space-2);
+}
+
+.direct-link-workflow__review-descriptions-source {
+  color: var(--qd-color-text-muted);
+  font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
+}
+
+.direct-link-workflow__review-descriptions ol {
+  display: grid;
+  gap: var(--qd-space-1);
+  margin: 0;
+  padding-inline-start: var(--qd-space-4);
+}

@@ -17,7 +17,6 @@ export interface LinkingSourceEditorState {
   rawProgress: LinkingSourceLoadProgress;
   universe: readonly string[];
   query: string;
-  page: number;
   errorMessage: string | null;
 }
 
