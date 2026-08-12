@@ -12,6 +12,7 @@ using QuranDashboard.Domain.Quran.Translations;
 using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Domain.Abwab;
+using QuranDashboard.Domain.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence;
 
@@ -62,6 +63,14 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<AbwabDoorRelation> AbwabDoorRelations => Set<AbwabDoorRelation>();
     public DbSet<AbwabTemplate> AbwabTemplates => Set<AbwabTemplate>();
     public DbSet<AbwabTemplateNode> AbwabTemplateNodes => Set<AbwabTemplateNode>();
+
+    public DbSet<LinkingWorkspace> LinkingWorkspaces => Set<LinkingWorkspace>();
+    public DbSet<LinkingWorkspaceSource> LinkingWorkspaceSources => Set<LinkingWorkspaceSource>();
+    public DbSet<LinkingWorkspaceSourceManualAyah> LinkingWorkspaceSourceManualAyahs =>
+        Set<LinkingWorkspaceSourceManualAyah>();
+    public DbSet<LinkingWorkspaceSourceAyahOverride> LinkingWorkspaceSourceAyahOverrides =>
+        Set<LinkingWorkspaceSourceAyahOverride>();
+    public DbSet<LinkingWorkspaceSourceWord> LinkingWorkspaceSourceWords => Set<LinkingWorkspaceSourceWord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

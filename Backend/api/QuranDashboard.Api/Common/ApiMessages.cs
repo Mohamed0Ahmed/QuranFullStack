@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Abwab;
+using QuranDashboard.Application.Abstractions.Linking;
 
 namespace QuranDashboard.Api.Common;
 
@@ -219,4 +220,74 @@ public static class ApiMessages
         collisions.Count == 0
             ? AbwabTemplateApplyCollision
             : $"{AbwabTemplateApplyCollisionPrefix}: {string.Join("، ", collisions.Select(c => $"«{c.TargetName}» ← «{c.ChildName}»"))}";
+
+    public const string LinkingSourceResolved = "تم تحميل آيات المصدر";
+    public const string LinkingSourceNotFound = "المصدر المشار إليه غير موجود";
+
+    private const string LinkingSourceDescriptorInvalidPrefix = "بيانات المصدر غير صالحة — الحقل";
+    private const string LinkingSourceAyahLimitPrefix = "تجاوز عدد آيات المصدر الحد الأقصى المسموح به";
+    private const string LinkingManualAyahIncompletePrefix = "تعذر التحقق من اكتمال كلمات الآية";
+
+    public static string LinkingSourceNotFoundMessage(string? reference) =>
+        string.IsNullOrWhiteSpace(reference)
+            ? LinkingSourceNotFound
+            : $"{LinkingSourceNotFound} «{reference}»";
+
+    public const string LinkingWorkspaceLoaded = "تم تحميل مساحة العمل";
+    public const string LinkingWorkspaceSourceAdded = "تمت إضافة المصدر إلى مساحة العمل";
+    public const string LinkingWorkspaceSourceRemoved = "تم حذف المصدر من مساحة العمل";
+    public const string LinkingWorkspaceSourcesReordered = "تم تحديث ترتيب المصادر";
+    public const string LinkingWorkspaceConfigurationSaved = "تم حفظ إعدادات المصدر";
+    public const string LinkingWorkspaceCleared = "تم إفراغ مساحة العمل";
+    public const string LinkingWorkspaceSourceNotFound = "المصدر غير موجود في مساحة العمل";
+    public const string LinkingWorkspaceStaleVersion =
+        "تم تعديل البيانات من نافذة أخرى — أعد التحميل ثم أعد المحاولة";
+    public const string LinkingWorkspaceDuplicateSource = "هذا المصدر مضاف مسبقًا إلى مساحة العمل";
+
+    private const string LinkingWorkspaceLimitPrefix = "تجاوز عدد المصادر المحضّرة الحد الأقصى المسموح به";
+    private const string LinkingWorkspaceInvalidPrefix = "طلب غير صالح — الحقل";
+    private const string LinkingWorkspaceReferenceUnknown = "العنصر المشار إليه غير موجود";
+
+    public static string LinkingWorkspaceViolationMessage(LinkingWorkspaceViolation violation) =>
+        violation.Code switch
+        {
+            LinkingWorkspaceViolationCode.PreparedSourceLimitExceeded =>
+                $"{LinkingWorkspaceLimitPrefix} ({LinkingLimits.MaxPreparedSources} مصدر)",
+            LinkingWorkspaceViolationCode.WordsNotAllowedOnAutomaticSource =>
+                "لا يمكن تحديد كلمات يدويًا على مصدر تلقائي",
+            LinkingWorkspaceViolationCode.SelectedWordInvalid =>
+                $"كلمة محددة غير صالحة «{violation.Value}»",
+            LinkingWorkspaceViolationCode.SelectedWordAyahOutsideManualSet =>
+                $"الآية «{violation.Value}» ليست ضمن آيات المصدر اليدوي",
+            LinkingWorkspaceViolationCode.AyahReferenceUnknown =>
+                $"الآية المشار إليها غير موجودة «{violation.Value}»",
+            LinkingWorkspaceViolationCode.ConfigurationIncoherent =>
+                $"إعدادات المصدر لا تتوافق مع نوعه — الحقل «{violation.Field}»",
+            LinkingWorkspaceViolationCode.ReorderSetMismatch =>
+                "قائمة الترتيب يجب أن تضم مصادر مساحة العمل نفسها دون زيادة أو نقصان",
+            LinkingWorkspaceViolationCode.LabelInvalid =>
+                "اسم المصدر مطلوب",
+            LinkingWorkspaceViolationCode.VersionRequired =>
+                "رقم الإصدار مطلوب مع كل عملية تعديل",
+            LinkingWorkspaceViolationCode.ReferenceUnknown => violation.Field is null
+                ? LinkingWorkspaceReferenceUnknown
+                : $"{LinkingWorkspaceReferenceUnknown} — الحقل «{violation.Field}» بالقيمة «{violation.Value}»",
+            LinkingWorkspaceViolationCode.SelectedWordAyahConflict =>
+                $"الكلمة «{violation.Value}» محددة على أكثر من آية",
+            _ => violation.Value is null
+                ? $"{LinkingWorkspaceInvalidPrefix} «{violation.Field}»"
+                : $"{LinkingWorkspaceInvalidPrefix} «{violation.Field}» بالقيمة «{violation.Value}»",
+        };
+
+    public static string LinkingDescriptorViolationMessage(LinkingDescriptorViolation violation) =>
+        violation.Code switch
+        {
+            LinkingDescriptorViolationCode.ResolvedAyahLimitExceeded =>
+                $"{LinkingSourceAyahLimitPrefix} ({LinkingLimits.MaxResolvedAyahs} آية)",
+            LinkingDescriptorViolationCode.ManualAyahCompletenessFailed =>
+                $"{LinkingManualAyahIncompletePrefix} «{violation.Value}»",
+            _ => violation.Value is null
+                ? $"{LinkingSourceDescriptorInvalidPrefix} «{violation.Field}»"
+                : $"{LinkingSourceDescriptorInvalidPrefix} «{violation.Field}» بالقيمة «{violation.Value}»",
+        };
 }

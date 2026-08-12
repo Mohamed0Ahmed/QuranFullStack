@@ -95,6 +95,13 @@ using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupe
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSummary;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs;
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTree;
+using QuranDashboard.Application.Linking.Queries.ResolveLinkingSource;
+using QuranDashboard.Application.Linking.Queries.GetLinkingWorkspace;
+using QuranDashboard.Application.Linking.Commands.AddLinkingWorkspaceSource;
+using QuranDashboard.Application.Linking.Commands.ClearLinkingWorkspaceSources;
+using QuranDashboard.Application.Linking.Commands.RemoveLinkingWorkspaceSource;
+using QuranDashboard.Application.Linking.Commands.ReorderLinkingWorkspaceSources;
+using QuranDashboard.Application.Linking.Commands.ReplaceLinkingWorkspaceSourceConfiguration;
 
 namespace QuranDashboard.Application;
 
@@ -201,6 +208,14 @@ public static class DependencyInjection
         services.AddScoped<ReorderTemplateNodeHandler>();
         services.AddScoped<DeleteTemplateNodeHandler>();
         services.AddScoped<ApplyTemplateHandler>();
+
+        services.AddScoped<ResolveLinkingSourceHandler>();
+        services.AddScoped<GetLinkingWorkspaceHandler>();
+        services.AddScoped<AddLinkingWorkspaceSourceHandler>();
+        services.AddScoped<RemoveLinkingWorkspaceSourceHandler>();
+        services.AddScoped<ReorderLinkingWorkspaceSourcesHandler>();
+        services.AddScoped<ReplaceLinkingWorkspaceSourceConfigurationHandler>();
+        services.AddScoped<ClearLinkingWorkspaceSourcesHandler>();
 
         return services;
     }

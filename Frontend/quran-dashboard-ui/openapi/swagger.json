@@ -2646,6 +2646,651 @@
         }
       }
     },
+    "/api/linking/sources/resolve": {
+      "post": {
+        "tags": [
+          "LinkingSources"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingSourceDescriptorBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingSourceDescriptorBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingSourceDescriptorBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingResolvedSourceDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingResolvedSourceDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingResolvedSourceDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/linking/workspace": {
+      "get": {
+        "tags": [
+          "LinkingWorkspace"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/linking/workspace/sources": {
+      "post": {
+        "tags": [
+          "LinkingWorkspace"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceAddSourceBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceAddSourceBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceAddSourceBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "LinkingWorkspace"
+        ],
+        "parameters": [
+          {
+            "name": "workspaceVersion",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/linking/workspace/sources/{id}": {
+      "delete": {
+        "tags": [
+          "LinkingWorkspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "workspaceVersion",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/linking/workspace/sources/order": {
+      "put": {
+        "tags": [
+          "LinkingWorkspace"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceReorderBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceReorderBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceReorderBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/linking/workspace/sources/{id}/configuration": {
+      "put": {
+        "tags": [
+          "LinkingWorkspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceConfigurationBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceConfigurationBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceConfigurationBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/mushaf/ayahs/{verseKey}/mutashabihat": {
       "get": {
         "tags": [
@@ -7825,6 +8470,644 @@
         },
         "additionalProperties": false
       },
+      "LinkingManualAyahBody": {
+        "required": [
+          "verseKey"
+        ],
+        "type": "object",
+        "properties": {
+          "verseKey": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingResolvedAyahDto": {
+        "required": [
+          "ayahId",
+          "ayahNumber",
+          "matchedQuranWordIds",
+          "pageFrom",
+          "pageTo",
+          "surahNameArabic",
+          "surahNumber",
+          "verseKey",
+          "words"
+        ],
+        "type": "object",
+        "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "verseKey": {
+            "type": "string"
+          },
+          "surahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ayahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "surahNameArabic": {
+            "type": "string"
+          },
+          "pageFrom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageTo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matchedQuranWordIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingResolvedWordDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingResolvedSourceDto": {
+        "required": [
+          "ayahs",
+          "resolvedAtUtc",
+          "sourceIdentity",
+          "totalAyahCount"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceIdentity": {
+            "type": "string"
+          },
+          "resolvedAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalAyahCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ayahs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingResolvedAyahDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingResolvedSourceDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingResolvedSourceDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingResolvedWordDto": {
+        "required": [
+          "isAyahMarker",
+          "quranWordId",
+          "textUthmani",
+          "wordNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "quranWordId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "wordNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "textUthmani": {
+            "type": "string"
+          },
+          "isAyahMarker": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingSelectedWordBody": {
+        "required": [
+          "ayahId",
+          "quranWordId"
+        ],
+        "type": "object",
+        "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "quranWordId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingSourceDescriptorBody": {
+        "required": [
+          "kind",
+          "label",
+          "lemmaId",
+          "manualAyahs",
+          "mode",
+          "rootId",
+          "selection",
+          "stemId",
+          "typeCode",
+          "wordId"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "mode": {
+            "type": "string",
+            "nullable": true
+          },
+          "wordId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "rootId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "lemmaId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "stemId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "typeCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "selection": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingWordTypeSelectionBody"
+              }
+            ],
+            "nullable": true
+          },
+          "manualAyahs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingManualAyahBody"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWordTypeScopeBody": {
+        "required": [
+          "case",
+          "childCode",
+          "tense",
+          "type",
+          "voice"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "childCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "case": {
+            "type": "string",
+            "nullable": true
+          },
+          "tense": {
+            "type": "string",
+            "nullable": true
+          },
+          "voice": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWordTypeSelectionBody": {
+        "required": [
+          "case",
+          "contextCode",
+          "kind",
+          "lemmaId",
+          "rootId",
+          "scope",
+          "stemId",
+          "tashkeelWordId",
+          "tense",
+          "voice"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "tashkeelWordId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "contextCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "case": {
+            "type": "string",
+            "nullable": true
+          },
+          "tense": {
+            "type": "string",
+            "nullable": true
+          },
+          "voice": {
+            "type": "string",
+            "nullable": true
+          },
+          "rootId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "stemId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "lemmaId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "scope": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingWordTypeScopeBody"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceAddSourceBody": {
+        "required": [
+          "descriptor",
+          "workspaceVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "descriptor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingSourceDescriptorBody"
+              }
+            ],
+            "nullable": true
+          },
+          "workspaceVersion": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceConfigurationBody": {
+        "required": [
+          "automaticWordMatchesEnabled",
+          "ayahOverrides",
+          "inclusionMode",
+          "label",
+          "manualLinkShape",
+          "selectedWords",
+          "sourceVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceVersion": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "inclusionMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "ayahOverrides": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          },
+          "selectedWords": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingSelectedWordBody"
+            },
+            "nullable": true
+          },
+          "automaticWordMatchesEnabled": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "manualLinkShape": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceDescriptionResponse": {
+        "required": [
+          "ayahId",
+          "body",
+          "orderValue"
+        ],
+        "type": "object",
+        "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "orderValue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "body": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceManualAyahResponse": {
+        "required": [
+          "ayahId",
+          "orderValue",
+          "pageHint",
+          "verseKey"
+        ],
+        "type": "object",
+        "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "verseKey": {
+            "type": "string"
+          },
+          "orderValue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageHint": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceReorderBody": {
+        "required": [
+          "sourceIds",
+          "workspaceVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "nullable": true
+          },
+          "workspaceVersion": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceResponse": {
+        "required": [
+          "sources",
+          "workspaceVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "workspaceVersion": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingWorkspaceSourceResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceResponseApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingWorkspaceResponse"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceSourceResponse": {
+        "required": [
+          "automaticWordMatchesEnabled",
+          "ayahOverrides",
+          "descriptions",
+          "descriptor",
+          "id",
+          "inclusionMode",
+          "lastResolvedAtUtc",
+          "lastResolvedCount",
+          "manualAyahs",
+          "manualLinkShape",
+          "orderValue",
+          "selectedWords",
+          "sourceIdentity",
+          "sourceVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sourceVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "orderValue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "descriptor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingSourceDescriptorBody"
+              }
+            ]
+          },
+          "sourceIdentity": {
+            "type": "string"
+          },
+          "inclusionMode": {
+            "type": "string"
+          },
+          "ayahOverrides": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "selectedWords": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingSelectedWordBody"
+            }
+          },
+          "automaticWordMatchesEnabled": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "manualLinkShape": {
+            "type": "string",
+            "nullable": true
+          },
+          "manualAyahs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingWorkspaceManualAyahResponse"
+            }
+          },
+          "descriptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingWorkspaceDescriptionResponse"
+            }
+          },
+          "lastResolvedCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "lastResolvedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "LocalizedLabel": {
         "required": [
           "ar",
@@ -12689,6 +13972,12 @@
     },
     {
       "name": "Lemmas"
+    },
+    {
+      "name": "LinkingSources"
+    },
+    {
+      "name": "LinkingWorkspace"
     },
     {
       "name": "MushafAyahMutashabihat"

@@ -62,6 +62,75 @@ users, direct grants, audit history, relink preview/confirm, catalogue, and reco
 Owner configuration. The twenty-one Abwab write endpoints each carry an exact granular permission
 requirement; there is **no global fallback policy**, so public content GETs remain anonymous.
 
+`POST /api/linking/sources/resolve` (`Controllers/Linking/LinkingSourcesController.cs`) carries exactly
+one `[RequireOwner]` and is the single boundary that resolves all six Abwab linking source families into
+their complete ayah set. It is a **POST used as a read** — deliberate, because the request body is a
+discriminated descriptor union too large and too structured for a query string, and the route is
+Owner-only so it is metadata-valid. It never pages: the whole set comes back in one response, bounded by
+`LinkingLimits.MaxResolvedAyahs`. Status mapping is `200` resolved, `400` invalid descriptor / resolved-ayah
+cap exceeded / manual completeness failure naming the offending verse, `404` referenced dimension id not
+found. **Both failure statuses name the offence, and both do it in Arabic.** The `400` is produced from the
+structured `LinkingDescriptorViolation` via `ApiMessages.LinkingDescriptorViolationMessage`; the `404` is
+produced from `ResolveLinkingSourceOutcome.NotFound.Reference` via `ApiMessages.LinkingSourceNotFoundMessage`,
+which renders the reference the reader built (`rootId=999999`, `tashkeelWordId=…`) into the Arabic constant —
+`المصدر المشار إليه غير موجود «rootId=999999»`. That `Reference` is a structured `field=id` pair assembled by
+`EfLinkingSourceResolutionReader.NotFound`, never an exception `.Message`: the English text carried by
+`LinkingSourceDescriptorValidation` and by the exception types is developer diagnostics for logs and must
+never reach the envelope. A blank reference falls back to the bare `ApiMessages.LinkingSourceNotFound`
+constant, so the envelope is never left with a dangling quotation. The request body is validated field-by-field in
+`Contracts/Linking/LinkingSourceDescriptorBodyMapper.cs` **before** the Domain descriptor is constructed,
+so a malformed body is a controlled `400` naming the field rather than a caught `ArgumentException`.
+
+`Controllers/Linking/LinkingWorkspaceController.cs` carries the six per-user workspace routes — `GET
+/api/linking/workspace`, `POST|DELETE /api/linking/workspace/sources`, `DELETE
+/api/linking/workspace/sources/{id}`, `PUT /api/linking/workspace/sources/order`, and `PUT
+/api/linking/workspace/sources/{id}/configuration` — each with exactly one `[RequireOwner]`. Four rules
+govern this controller and none of them is optional:
+
+- **The workspace is always the caller's own.** The owning user is `AuthorizationState.UserId`, re-resolved
+  through `AuthorizationStateAccessEvaluator.ResolveActiveStateAsync` — the same seam `[RequireOwner]` just
+  used, so the two can never disagree, and the per-scope memoization in `AuthorizationStateResolver` makes
+  the second call free rather than a second query. There is no `?userId=`, no admin view, and no body field
+  naming a user (spec FR-026). A request-supplied user id would be a cross-user leak; the id is never read
+  from the wire.
+- **`GET` is strictly read-only** (spec FR-019, research R21). No workspace row means an empty
+  representation — `workspaceVersion: null`, empty `sources` — and **zero inserts**. The row is created by
+  the first mutation, not by loading.
+- **Every modifying route carries the version the client last read** (FR-027). Structural routes (add,
+  remove, reorder, clear) carry `workspaceVersion`; the configuration route carries `sourceVersion`, so
+  edits to two different sources never falsely conflict. On the two `DELETE`s the token is a **required
+  query parameter** bound as `uint?` and refused with a `400` when absent — deliberately nullable, because a
+  non-nullable `uint` would silently bind a missing token as `0`, a real-looking version that would then be
+  compared and answered `409` instead of the honest "you sent no version".
+  **The controller enforces this on four of the five modifying routes, not five.** `RemoveSource`,
+  `ReorderSources`, `ReplaceSourceConfiguration` and `ClearSources` each call `VersionRequired()` up front;
+  `AddSource`
+  deliberately does not, because `workspaceVersion` is legitimately `null` on the very first add, when no
+  workspace row exists yet and the client has no token to send. The rule is not weaker there, only enforced
+  one layer down: `EfLinkingWorkspaceWriter.AddSourceAsync` refuses a token when no workspace exists and
+  `ApplyWorkspaceVersion` refuses a missing token when one does, both with `LinkingStaleVersionException`
+  → `409`. So an add that omits the token against an existing workspace is still refused; read the
+  asymmetry as controller-plus-writer, not as a gap.
+- **Status mapping**: `200` success, `400` validation failure, `404` a source id absent from *the caller's
+  own* workspace, `409` stale version or duplicate identity. A descriptor naming a **non-existent dimension
+  id** is `400` here (`LinkingWorkspaceViolationCode.ReferenceUnknown`), not the `404` the resolve route
+  returns for the same id — on resolve the descriptor is the addressed resource, on add it is a field of a
+  create request whose addressed resource exists. The reasoning is recorded in
+  `infrastructure/QuranDashboard.Infrastructure/Persistence/Writes/Linking/README.md`. Every message is composed in Arabic at this
+  boundary from the structured `LinkingWorkspaceViolation.Code` via
+  `ApiMessages.LinkingWorkspaceViolationMessage` (or from `LinkingDescriptorViolation` for descriptor and
+  body-shape failures). **No exception `.Message` ever reaches the envelope** — the English text on
+  `LinkingStaleVersionException`, `LinkingWorkspaceViolationException`, and the rest is developer
+  diagnostics for logs only.
+
+The wire response is `Contracts/Linking/LinkingWorkspaceResponse`, mapped from the Application
+`LinkingWorkspaceDto` by `LinkingWorkspaceResponseMapper`. The mapping exists because the DTO carries the
+**typed Domain `LinkingSourceDescriptor`** while the wire carries `LinkingSourceDescriptorBody` — the same
+schema the resolve route accepts, so a client round-trips a prepared source straight back into
+`POST /api/linking/sources/resolve` without a second descriptor shape. `descriptions` is present on the
+response and always empty until Phase 6 adds the table; it is deliberately **absent** from the
+configuration request body until then, so no client can submit descriptions the server would silently drop.
+
 The API has a database-backed authorization core:
 `[RequirePermission(...)]` checks an active local user's exact direct grant, while an active local Owner
 bypasses that exact check; `[RequireOwner]` accepts only an active local Owner. Both resolve the `sub`

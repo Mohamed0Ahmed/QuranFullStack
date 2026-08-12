@@ -24,6 +24,7 @@ public static class DependencyInjection
         services.AddFullI3rabImport();
         services.AddSimpleI3rabGeneration();
         services.AddAbwab();
+        services.AddLinking(configuration);
 
         return services;
     }
