@@ -6,6 +6,7 @@ import { LinkingAyah } from '../models/linking-ayah.models';
 import {
   LinkingAyahClassification,
   LinkingAyahPreflight,
+  LinkingPreflightAyahFilter,
   LinkingPreflightResult,
   LinkingSourcePreflight,
 } from '../models/linking-preflight.models';
@@ -13,7 +14,6 @@ import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import { LinkingSourceSetOperationResult } from '../models/linking-workflow.models';
 import { LINKING_LABELS } from '../models/linking.labels';
 
-export type LinkingPreflightAyahFilter = 'ALL' | LinkingAyahClassification;
 export type LinkingPreflightPreviewStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 export interface LinkingPreflightAyahView {

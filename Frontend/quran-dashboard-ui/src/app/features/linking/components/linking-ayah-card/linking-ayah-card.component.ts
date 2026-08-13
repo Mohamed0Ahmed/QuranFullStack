@@ -5,7 +5,6 @@ import { AyahCardComponent } from '../../../../shared/ui/ayah-card/ayah-card.com
 import { LinkingAyah } from '../../models/linking-ayah.models';
 import { MergedLinkingWordSelection } from '../../models/linking-merge.models';
 import { LinkingDoorWordImpact } from '../../models/linking-preflight.models';
-import { LINKING_LABELS } from '../../models/linking.labels';
 
 type LinkingAyahWordHighlight = 'selected' | 'added' | 'existing' | 'removed' | null;
 
@@ -27,10 +26,9 @@ export class LinkingAyahCardComponent {
   readonly ayah = input.required<LinkingAyah>();
   readonly highlightSourceWords = input(true);
   readonly mergedWords = input<readonly MergedLinkingWordSelection[] | null>(null);
-  readonly sourceLabels = input<readonly string[]>([]);
   readonly wordImpact = input<LinkingDoorWordImpact | null>(null);
+  readonly statusLabel = input<string | null>(null);
 
-  protected readonly labels = LINKING_LABELS;
   protected readonly displayWords = computed<readonly LinkingAyahCardWord[]>(() => {
     const wordImpact = this.wordImpact();
     const impactByWordId = wordImpact === null ? null : toImpactByWordId(wordImpact);
@@ -43,16 +41,18 @@ export class LinkingAyahCardComponent {
               .filter((word) => word.sourceKeys.length > 0)
               .map((word) => word.canonicalQuranWordId),
           );
-    return this.ayah().words.map((word) => ({
-      renderPosition: word.renderPosition,
-      textUthmani: toQuranWordDisplayText(word.textUthmani),
-      highlight:
-        impactByWordId === null
-          ? this.isSelectedWord(word.isSourceMatch, mergedMatches, word.canonicalQuranWordId)
-            ? 'selected'
-            : null
-          : (impactByWordId.get(word.canonicalQuranWordId) ?? null),
-    }));
+    return this.ayah().words
+      .filter((word) => !word.isAyahMarker)
+      .map((word) => ({
+        renderPosition: word.renderPosition,
+        textUthmani: toQuranWordDisplayText(word.textUthmani),
+        highlight:
+          impactByWordId === null
+            ? this.isSelectedWord(word.isSourceMatch, mergedMatches, word.canonicalQuranWordId)
+              ? 'selected'
+              : null
+            : (impactByWordId.get(word.canonicalQuranWordId) ?? null),
+      }));
   });
 
   private isSelectedWord(

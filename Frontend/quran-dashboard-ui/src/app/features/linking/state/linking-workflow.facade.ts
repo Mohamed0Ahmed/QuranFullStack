@@ -24,7 +24,6 @@ export type LinkingWorkflowStep =
   | 'resolve'
   | 'door'
   | 'preflight'
-  | 'review'
   | 'submitting'
   | 'success'
   | 'error';
@@ -61,6 +60,13 @@ const INITIAL_WORKFLOW: LinkingWorkflowState = {
   operationGeneration: 0,
 };
 
+const PROGRESS_STEPS: readonly LinkingWorkflowStep[] = [
+  'configure-source',
+  'resolve',
+  'door',
+  'preflight',
+];
+
 @Injectable({ providedIn: 'root' })
 export class LinkingWorkflowFacade {
   private readonly access = inject(LinkingAccessService);
@@ -84,7 +90,6 @@ export class LinkingWorkflowFacade {
   readonly sourceSetState = this.sourceSet.state;
   readonly operation = computed(() => this.stateSignal().operation);
   readonly memberStates = this.sourceSet.memberStates;
-  readonly directSource = computed(() => this.stateSignal().members[0]?.source ?? null);
   readonly directConfiguration = computed(() => this.stateSignal().directConfiguration);
   readonly canAdvanceDoor = computed(() => this.access.canUseLinking() && this.isLiveDoor(this.selectedDoorId()));
   readonly preflight = computed(() => this.stateSignal().preflight);
@@ -92,7 +97,10 @@ export class LinkingWorkflowFacade {
   readonly preflightMessage = computed(() => this.stateSignal().preflightMessage);
   readonly canAdvancePreflight = computed(() => {
     const preflight = this.stateSignal().preflight;
-    return this.stateSignal().preflightStatus === 'ready' && preflight !== null && !preflight.isBlocked;
+    return this.stateSignal().preflightStatus === 'ready' &&
+      preflight !== null &&
+      !preflight.isBlocked &&
+      !preflight.isNoOp;
   });
   readonly canSubmit = computed(
     () =>
@@ -180,10 +188,14 @@ export class LinkingWorkflowFacade {
     if (!this.access.canUseLinking() || state.members.length === 0) {
       return;
     }
+    this.cancelPreflight();
     const generation = this.sourceSet.state().generation + 1;
     this.stateSignal.update((current) => ({
       ...current,
       operation: null,
+      preflightStatus: 'idle',
+      preflight: null,
+      preflightMessage: null,
       errorMessage: null,
       step: 'resolve',
       operationGeneration: generation,
@@ -217,9 +229,6 @@ export class LinkingWorkflowFacade {
       this.runPreflight();
       return;
     }
-    if (step === 'preflight' && this.canAdvancePreflight()) {
-      this.stateSignal.update((state) => ({ ...state, step: 'review' }));
-    }
   }
 
   retryPreflight(): void {
@@ -228,28 +237,67 @@ export class LinkingWorkflowFacade {
     }
   }
 
-  back(): void {
-    const step = this.step();
-    if (step === 'review') {
-      this.stateSignal.update((state) => ({ ...state, step: 'preflight' }));
+  canNavigateTo(target: LinkingWorkflowStep): boolean {
+    const state = this.stateSignal();
+    const currentIndex = PROGRESS_STEPS.indexOf(state.step);
+    const targetIndex = PROGRESS_STEPS.indexOf(target);
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= currentIndex) {
+      return false;
+    }
+
+    switch (target) {
+      case 'configure-source':
+        return state.origin === 'source';
+      case 'resolve':
+        return state.members.length > 0;
+      case 'door':
+        return state.operation !== null;
+      case 'preflight':
+        return state.preflightStatus === 'ready' && state.preflight !== null;
+      default:
+        return false;
+    }
+  }
+
+  navigateTo(target: LinkingWorkflowStep): void {
+    if (!this.canNavigateTo(target)) {
       return;
     }
-    if (step === 'preflight') {
+
+    if (target === 'resolve') {
+      this.resolve();
+      return;
+    }
+
+    if (target === 'configure-source') {
+      this.sourceSet.cancel();
       this.cancelPreflight();
       this.stateSignal.update((state) => ({
         ...state,
-        step: 'door',
-        preflight: null,
+        step: target,
+        operation: null,
         preflightStatus: 'idle',
+        preflight: null,
         preflightMessage: null,
+        errorMessage: null,
       }));
       return;
     }
-    if (step === 'door' && this.state().origin === 'source') {
-      this.stateSignal.update((state) => ({ ...state, step: 'configure-source' }));
+
+    if (target === 'door') {
+      this.cancelPreflight();
+      this.stateSignal.update((state) => ({
+        ...state,
+        step: target,
+        preflightStatus: 'idle',
+        preflight: null,
+        preflightMessage: null,
+        errorMessage: null,
+      }));
       return;
     }
-    this.dismiss();
+
+    this.stateSignal.update((state) => ({ ...state, step: target }));
   }
 
   submit(): void {
@@ -259,6 +307,7 @@ export class LinkingWorkflowFacade {
     const preflight = state.preflight;
     if (
       !this.canSubmit() ||
+      state.step !== 'preflight' ||
       operation === null ||
       doorId === null ||
       preflight === null ||

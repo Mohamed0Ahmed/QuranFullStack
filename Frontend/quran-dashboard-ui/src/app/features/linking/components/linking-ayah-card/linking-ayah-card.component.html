@@ -3,6 +3,9 @@
   class="linking-ayah-card"
   [attr.aria-label]="'سورة ' + ayah().surahNameArabic + '، الآية ' + ayah().ayahNumber"
 >
+  @if (statusLabel(); as status) {
+    <span class="qd-badge qd-badge--accent linking-ayah-card__status">{{ status }}</span>
+  }
   <header class="linking-ayah-card__meta">
     <span>{{ ayah().surahNameArabic }}</span>
     <span aria-hidden="true">—</span>
@@ -19,12 +22,4 @@
       >{{ word.textUthmani }}</span>
     }
   </p>
-  @if (sourceLabels().length > 0) {
-    <p class="linking-ayah-card__provenance">
-      <span>{{ labels.ayahSources }}:</span>
-      @for (label of sourceLabels(); track $index) {
-        <span class="linking-ayah-card__provenance-name">{{ label }}</span>
-      }
-    </p>
-  }
 </article>

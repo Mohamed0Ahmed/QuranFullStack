@@ -1,0 +1,57 @@
+<section class="linking-preflight-merged-ayah-viewer" [attr.aria-label]="labels.preflightMergedAyahs">
+  <div class="linking-preflight-merged-ayah-viewer__filters" role="group" [attr.aria-label]="labels.preflightAyahFilters">
+    @for (filter of filters(); track filter.value) {
+      <qd-chip
+        variant="filter"
+        [selected]="selectedFilter() === filter.value"
+        [count]="filter.count"
+        [ariaLabel]="filter.label + '، ' + filter.count + ' ' + labels.ayahUnit"
+        (chipClick)="selectFilter(filter.value)"
+      >
+        {{ filter.label }}
+      </qd-chip>
+    }
+  </div>
+
+  <div class="linking-preflight-merged-ayah-viewer__legend" [attr.aria-label]="labels.preflightWordLegend">
+    <span>
+      <span class="linking-preflight-merged-ayah-viewer__legend-swatch linking-preflight-merged-ayah-viewer__legend-swatch--added" aria-hidden="true"></span>
+      {{ labels.preflightWordsAddedToDoor }}
+    </span>
+    <span>
+      <span class="linking-preflight-merged-ayah-viewer__legend-swatch linking-preflight-merged-ayah-viewer__legend-swatch--existing" aria-hidden="true"></span>
+      {{ labels.preflightWordsExistingInDoor }}
+    </span>
+    <span>
+      <span class="linking-preflight-merged-ayah-viewer__legend-swatch linking-preflight-merged-ayah-viewer__legend-swatch--removed" aria-hidden="true"></span>
+      {{ labels.preflightWordsRemovedFromDoor }}
+    </span>
+  </div>
+
+  @if (visibleViews().length === 0) {
+    <qd-empty-state [message]="labels.preflightAyahPreviewEmpty" />
+  } @else {
+    <cdk-virtual-scroll-viewport
+      class="linking-preflight-merged-ayah-viewer__viewport"
+      role="list"
+      [attr.aria-label]="labels.preflightMergedAyahs"
+    >
+      <div
+        *cdkVirtualFor="let item of visibleViews(); let index = index; trackBy: trackAyah"
+        class="linking-preflight-merged-ayah-viewer__ayah"
+        role="listitem"
+        [attr.aria-posinset]="index + 1"
+        [attr.aria-setsize]="visibleViews().length"
+      >
+        <qd-linking-ayah-card
+          [ayah]="item.selection.ayah"
+          [wordImpact]="item.wordImpact"
+          [statusLabel]="item.classification === null ? null : labels.ayahClassifications[item.classification]"
+        />
+        @if (item.invalidReason; as reason) {
+          <p class="linking-preflight-merged-ayah-viewer__invalid">{{ reason }}</p>
+        }
+      </div>
+    </cdk-virtual-scroll-viewport>
+  }
+</section>

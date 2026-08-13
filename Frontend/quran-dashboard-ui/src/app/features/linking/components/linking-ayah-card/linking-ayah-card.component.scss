@@ -2,6 +2,16 @@
   display: block;
 }
 
+.linking-ayah-card {
+  position: relative;
+}
+
+.linking-ayah-card__status {
+  position: absolute;
+  inset-block-start: var(--qd-space-2);
+  inset-inline-start: var(--qd-space-3);
+}
+
 .linking-ayah-card__meta {
   align-items: center;
   color: var(--qd-text-muted);
@@ -52,14 +62,4 @@
   background-color: var(--qd-danger-tint);
   border-radius: var(--qd-radius-sm);
   box-shadow: inset 0 0 0 1px var(--qd-danger-hairline);
-}
-
-.linking-ayah-card__provenance {
-  color: var(--qd-text-muted);
-  display: flex;
-  flex-wrap: wrap;
-  font-size: var(--qd-type-meta);
-  gap: var(--qd-space-2);
-  line-height: var(--qd-type-meta-lh);
-  margin: 0;
 }

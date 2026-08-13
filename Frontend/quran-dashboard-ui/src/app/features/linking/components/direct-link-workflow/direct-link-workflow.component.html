@@ -1,15 +1,23 @@
-<section class="direct-link-workflow" aria-labelledby="direct-link-workflow-title">
+<section class="direct-link-workflow" [attr.aria-label]="labels.operation">
   <header class="direct-link-workflow__header">
-    <div>
-      <h2 id="direct-link-workflow-title">{{ labels.operation }}</h2>
-      @if (directSource(); as source) { <p>{{ labels.directLinkSource }}: {{ source.label }}</p> }
-    </div>
-    <button qdAction="tertiary" size="sm" type="button" (click)="back()">{{ labels.cancel }}</button>
+    <button qdAction="tertiary" size="sm" type="button" (click)="cancel()">{{ labels.cancel }}</button>
   </header>
 
   <ol class="direct-link-workflow__steps" aria-label="مراحل الربط">
     @for (step of steps; track step) {
-      <li [attr.aria-current]="currentStep() === step ? 'step' : null">{{ stepLabel(step) }}</li>
+      <li
+        [class.direct-link-workflow__step--current]="currentStep() === step"
+        [class.direct-link-workflow__step--available]="canNavigateTo(step)"
+      >
+        <button
+          type="button"
+          [disabled]="!canNavigateTo(step)"
+          [attr.aria-current]="currentStep() === step ? 'step' : null"
+          (click)="navigateTo(step)"
+        >
+          {{ stepLabel(step) }}
+        </button>
+      </li>
     }
   </ol>
 
@@ -37,28 +45,6 @@
       }
       @case ('door') { <qd-linking-door-step /> }
       @case ('preflight') { <qd-linking-preflight-step /> }
-      @case ('review') {
-        @if (operation(); as resolved) {
-          <section class="direct-link-workflow__review">
-            <h2>{{ labels.reviewTitle }}</h2>
-            <p>{{ labels.reviewSelection }}: {{ resolved.mergedSelection.ayahs.length }}</p>
-            <ul class="direct-link-workflow__intents">
-              @for (intent of resolved.sourceIntents; track intent.sourceKey) { <li>{{ intent.source.label }} — {{ labels.intentModes[intent.contributionMode] }}</li> }
-            </ul>
-            @for (ayah of visibleReviewAyahs(); track ayah.verseKey) {
-              <div class="direct-link-workflow__review-ayah">
-                <qd-linking-ayah-card
-                  [ayah]="ayah.ayah"
-                  [highlightSourceWords]="true"
-                  [mergedWords]="ayah.words"
-                  [sourceLabels]="sourceLabelsFor(ayah)"
-                />
-              </div>
-            }
-            <qd-pagination [currentPage]="reviewPage()" [pageSize]="reviewPageSize" [totalCount]="reviewAyahs().length" [ariaLabel]="labels.reviewPagination" (pageChange)="setReviewPage($event)" />
-          </section>
-        }
-      }
       @case ('submitting') { <qd-panel-skeleton shape="text" [loadingLabel]="labels.submitting" /> }
       @case ('success') { <qd-notice [message]="state().resultMessage || labels.success" [dismissLabel]="labels.close" (dismiss)="acknowledge()" /> }
       @case ('error') { <qd-error-state severity="read" [message]="state().errorMessage || labels.sourceLoadError" [actionLabel]="labels.retry" (action)="retry()" /> }
@@ -66,12 +52,8 @@
   </div>
 
   <footer class="direct-link-workflow__footer">
-    @if (currentStep() === 'configure-source' || currentStep() === 'door' || currentStep() === 'preflight' || currentStep() === 'review') {
-      <button qdAction="secondary" type="button" (click)="back()">{{ labels.back }}</button>
-    }
     @if (currentStep() === 'configure-source') { <button qdAction="primary" type="button" (click)="next()">{{ labels.resolve }}</button> }
     @if (currentStep() === 'door') { <button qdAction="primary" type="button" [disabled]="!canAdvanceDoor()" (click)="next()">{{ labels.preflightTitle }}</button> }
-    @if (currentStep() === 'preflight') { <button qdAction="primary" type="button" [disabled]="!canAdvancePreflight()" (click)="next()">{{ labels.review }}</button> }
-    @if (currentStep() === 'review') { <button qdAction="primary" type="button" [disabled]="!canSubmit()" (click)="submit()">{{ labels.confirm }}</button> }
+    @if (currentStep() === 'preflight') { <button qdAction="primary" type="button" [disabled]="!canSubmit()" (click)="submit()">{{ labels.confirm }}</button> }
   </footer>
 </section>

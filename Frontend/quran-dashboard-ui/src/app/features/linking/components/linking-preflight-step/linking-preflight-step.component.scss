@@ -7,50 +7,39 @@
 
 .linking-preflight-step {
   display: grid;
-  gap: var(--qd-space-4);
+  gap: var(--qd-space-2);
   min-block-size: 0;
   align-content: start;
 }
 
 .linking-preflight-step__header {
-  display: grid;
-  gap: var(--qd-space-1);
-}
-
-.linking-preflight-step__context {
   display: flex;
-  align-items: start;
-  justify-content: end;
-  gap: var(--qd-space-4);
-  padding: var(--qd-space-3) var(--qd-space-4);
-  background: var(--qd-section-bg);
-  border: var(--qd-hairline);
+  align-items: baseline;
+  gap: var(--qd-space-2);
 }
 
 .linking-preflight-step__header h3,
-.linking-preflight-step__header p,
-.linking-preflight-step__context p {
+.linking-preflight-step__header p {
   margin: 0;
 }
 
 .linking-preflight-step__header p,
-.linking-preflight-step__door,
 .linking-preflight-step__source-meta {
   color: var(--qd-ink-muted);
   font-size: var(--qd-type-meta);
   line-height: var(--qd-type-meta-lh);
 }
 
-.linking-preflight-step__door {
-  display: grid;
-  justify-items: end;
-  gap: var(--qd-space-1);
-  flex: 0 0 auto;
+.linking-preflight-step__no-op {
+  margin: 0;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border: 1px solid var(--qd-green-quiet);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-mutation-success-tint);
+  color: var(--qd-mutation-success);
   font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
 }
-
-.linking-preflight-step__door span { color: var(--qd-ink-muted); }
-.linking-preflight-step__door strong { color: var(--qd-ink); font-size: var(--qd-type-body); font-weight: 600; }
 
 .linking-preflight-step__totals {
   display: grid;
@@ -64,7 +53,7 @@
   display: grid;
   gap: var(--qd-space-1);
   min-inline-size: 0;
-  padding: var(--qd-space-3);
+  padding: var(--qd-space-2) var(--qd-space-3);
   border-inline-start: var(--qd-hairline);
 }
 
@@ -87,26 +76,54 @@
 
 .linking-preflight-step__sources {
   display: grid;
-  gap: var(--qd-space-3);
+  gap: var(--qd-space-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.linking-preflight-step__source {
+.linking-preflight-step__source,
+.linking-preflight-step__merged-ayahs {
   display: grid;
-  gap: var(--qd-space-3);
-  padding: var(--qd-space-4);
+  gap: 0;
+  padding: 0;
   border: var(--qd-hairline);
   border-radius: var(--qd-radius-md);
   background: var(--qd-surface);
 }
 
-.linking-preflight-step__source-head {
+.linking-preflight-step__source-trigger {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--qd-space-3);
+  gap: var(--qd-space-2);
+  inline-size: 100%;
+  min-block-size: var(--qd-hit-target-min);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border: 0;
+  border-radius: var(--qd-radius-md);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: start;
+  transition: background-color var(--qd-t-state), color var(--qd-t-state);
+}
+
+.linking-preflight-step__source-trigger:hover {
+  background: var(--qd-surface-quiet);
+}
+
+.linking-preflight-step__source-trigger:focus-visible {
+  outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+  outline-offset: calc(-1 * var(--qd-focus-ring-offset));
+}
+
+.linking-preflight-step__source-action {
+  flex: 0 0 auto;
+  color: var(--qd-accent-text);
+  font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
 }
 
 .linking-preflight-step__source-label {
@@ -120,12 +137,9 @@
 }
 
 @media (max-width: bp.$qd-bp-compact-max) {
-  .linking-preflight-step__context { align-items: stretch; justify-content: start; }
-  .linking-preflight-step__door { justify-items: start; }
   .linking-preflight-step__totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .linking-preflight-step__totals div { border-block-start: var(--qd-hairline); }
   .linking-preflight-step__totals div:nth-child(odd) { border-inline-start: 0; }
   .linking-preflight-step__totals div:nth-child(-n + 2) { border-block-start: 0; }
-  .linking-preflight-step__source-head { align-items: stretch; flex-direction: column; }
-  .linking-preflight-step__source-head button { align-self: start; }
+  .linking-preflight-step__source-trigger { align-items: flex-start; }
 }

@@ -8,6 +8,8 @@ export type LinkingAyahClassification =
   | 'REMOVE'
   | 'INVALID';
 
+export type LinkingPreflightAyahFilter = 'ALL' | LinkingAyahClassification;
+
 export interface LinkingPreflightCounts {
   requested: number;
   new: number;

@@ -24,6 +24,7 @@ export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
 
   attach(viewport: CdkVirtualScrollViewport): void {
     this.viewport = viewport;
+    this.renderedRange = { start: 0, end: 0 };
     this.resetSizes(viewport.getDataLength());
     this.update();
   }

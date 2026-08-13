@@ -22,12 +22,8 @@
     }
     @case ('ready') {
       @if (preflight(); as result) {
-        <div class="linking-preflight-step__context">
-          <p class="linking-preflight-step__door"><span>{{ labels.chooseDoor }}</span><strong>{{ result.doorName }}</strong></p>
-        </div>
-
         @if (isNoOp()) {
-          <qd-notice [message]="labels.preflightNoOp" />
+          <p class="linking-preflight-step__no-op" role="status">{{ labels.preflightNoOp }}</p>
         }
         @if (isBlocked()) {
           <qd-error-state severity="write" [message]="labels.preflightBlocked" />
@@ -40,33 +36,60 @@
           <div><dt>{{ labels.preflightCountUpdated }}</dt><dd>{{ result.totals.updated + result.totals.overlapping }}</dd></div>
         </dl>
 
-        <ul class="linking-preflight-step__sources">
-          @for (source of result.sources; track source.sourceIdentity) {
-            <li class="linking-preflight-step__source">
-              <div class="linking-preflight-step__source-head">
-                <div>
-                  <p class="linking-preflight-step__source-label">{{ source.label }}</p>
-                  <p class="linking-preflight-step__source-meta">
-                    {{ labels.sourceClassifications[source.classification] }} · {{ labels.preflightCountRequested }} {{ source.counts.requested }} {{ labels.ayahUnit }}
-                  </p>
-                </div>
+        <section class="linking-preflight-step__merged-ayahs">
+          <button
+            class="linking-preflight-step__source-trigger"
+            type="button"
+            [attr.aria-expanded]="mergedAyahsExpanded()"
+            (click)="toggleMergedAyahs()"
+          >
+            <div>
+              <p class="linking-preflight-step__source-label">{{ labels.preflightMergedAyahs }}</p>
+              <p class="linking-preflight-step__source-meta">
+                {{ mergedAyahs().length }} {{ labels.ayahUnit }} {{ labels.preflightAfterMerge }}
+              </p>
+            </div>
+            <span class="linking-preflight-step__source-action">
+              {{ mergedAyahsExpanded() ? labels.preflightHideAllAyahs : labels.preflightShowAllAyahs }}
+            </span>
+          </button>
+
+          @if (mergedAyahsExpanded()) {
+            <qd-linking-preflight-merged-ayah-viewer
+              [preflight]="result"
+              [ayahs]="mergedAyahs()"
+            />
+          }
+        </section>
+
+        @if (!mergedAyahsExpanded()) {
+          <ul class="linking-preflight-step__sources">
+            @for (source of result.sources; track source.sourceIdentity) {
+              <li class="linking-preflight-step__source">
                 <button
-                  qdAction="secondary"
-                  size="sm"
+                  class="linking-preflight-step__source-trigger"
                   type="button"
                   [attr.aria-expanded]="isExpanded(source.sourceIdentity)"
                   (click)="toggleSource(source)"
                 >
-                  {{ isExpanded(source.sourceIdentity) ? labels.preflightHideAyahs : labels.preflightShowAyahs }}
+                  <div>
+                    <p class="linking-preflight-step__source-label">{{ source.label }}</p>
+                    <p class="linking-preflight-step__source-meta">
+                      {{ contributionModeLabel(source.contributionMode) }} · {{ labels.sourceClassifications[source.classification] }} · {{ labels.preflightCountRequested }} {{ source.counts.requested }} {{ labels.ayahUnit }}
+                    </p>
+                  </div>
+                  <span class="linking-preflight-step__source-action">
+                    {{ isExpanded(source.sourceIdentity) ? labels.preflightHideAyahs : labels.preflightShowAyahs }}
+                  </span>
                 </button>
-              </div>
 
-              @if (isExpanded(source.sourceIdentity)) {
-                <qd-linking-preflight-ayah-viewer [source]="source" />
-              }
-            </li>
-          }
-        </ul>
+                @if (isExpanded(source.sourceIdentity)) {
+                  <qd-linking-preflight-ayah-viewer [source]="source" />
+                }
+              </li>
+            }
+          </ul>
+        }
       }
     }
   }

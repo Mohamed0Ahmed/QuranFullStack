@@ -4,12 +4,13 @@ import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
-import { LinkingAyahClassification, LinkingSourcePreflight } from '../../models/linking-preflight.models';
-import { LINKING_LABELS } from '../../models/linking.labels';
 import {
+  LinkingAyahClassification,
   LinkingPreflightAyahFilter,
-  LinkingPreflightPreviewFacade,
-} from '../../state/linking-preflight-preview.facade';
+  LinkingSourcePreflight,
+} from '../../models/linking-preflight.models';
+import { LINKING_LABELS } from '../../models/linking.labels';
+import { LinkingPreflightPreviewFacade } from '../../state/linking-preflight-preview.facade';
 import { LinkingAyahCardComponent } from '../linking-ayah-card/linking-ayah-card.component';
 
 interface LinkingPreflightFilterOption {

@@ -50,49 +50,14 @@
         <ul class="linking-preflight-ayah-viewer__ayahs">
           @for (item of ayahs(); track item.preflight.ayahId) {
             <li class="linking-preflight-ayah-viewer__ayah">
-              <div class="linking-preflight-ayah-viewer__classification">
-                <span class="qd-badge qd-badge--accent">
-                  {{ labels.ayahClassifications[item.preflight.classification] }}
-                </span>
-              </div>
-
               <qd-linking-ayah-card
                 [ayah]="item.ayah"
                 [wordImpact]="item.preflight.doorWordImpact"
+                [statusLabel]="labels.ayahClassifications[item.preflight.classification]"
               />
 
-              @if (
-                item.preflight.overlappingSources.length > 0 ||
-                item.preflight.doorWordImpact.added.length > 0 ||
-                item.preflight.doorWordImpact.existing.length > 0 ||
-                item.preflight.doorWordImpact.removed.length > 0 ||
-                item.preflight.invalidReason
-              ) {
-                <div class="linking-preflight-ayah-viewer__details">
-                  @if (item.preflight.overlappingSources.length > 0) {
-                    <p class="linking-preflight-ayah-viewer__overlap">
-                      <span>{{ labels.preflightOverlapWith }}:</span>
-                      @for (
-                        overlapping of item.preflight.overlappingSources;
-                        track overlapping.sourceIdentity
-                      ) {
-                        <span class="linking-preflight-ayah-viewer__overlap-name">{{ overlapping.label }}</span>
-                      }
-                    </p>
-                  }
-                  @if (item.preflight.doorWordImpact.added.length > 0) {
-                    <p>{{ labels.preflightWordsAddedToDoor }}: {{ item.preflight.doorWordImpact.added.length }}</p>
-                  }
-                  @if (item.preflight.doorWordImpact.existing.length > 0) {
-                    <p>{{ labels.preflightWordsExistingInDoor }}: {{ item.preflight.doorWordImpact.existing.length }}</p>
-                  }
-                  @if (item.preflight.doorWordImpact.removed.length > 0) {
-                    <p>{{ labels.preflightWordsRemovedFromDoor }}: {{ item.preflight.doorWordImpact.removed.length }}</p>
-                  }
-                  @if (item.preflight.invalidReason; as reason) {
-                    <p class="linking-preflight-ayah-viewer__invalid">{{ reason }}</p>
-                  }
-                </div>
+              @if (item.preflight.invalidReason; as reason) {
+                <p class="linking-preflight-ayah-viewer__invalid">{{ reason }}</p>
               }
             </li>
           }
