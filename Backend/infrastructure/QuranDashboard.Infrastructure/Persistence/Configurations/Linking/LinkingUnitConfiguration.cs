@@ -1,4 +1,6 @@
 using QuranDashboard.Domain.Linking;
+using QuranDashboard.Domain.Abwab;
+using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Infrastructure.Persistence.Configurations.Linking;
 
@@ -13,26 +15,41 @@ public sealed class LinkingUnitConfiguration : IEntityTypeConfiguration<LinkingU
             .ValueGeneratedOnAdd()
             .HasColumnName("id");
 
-        builder.Property(unit => unit.SourceContributionId)
+        builder.Property(unit => unit.DoorId)
             .IsRequired()
-            .HasColumnName("source_contribution_id");
+            .HasColumnName("door_id");
 
-        builder.Property(unit => unit.OrderValue)
+        builder.Property(unit => unit.Identity)
             .IsRequired()
-            .HasColumnName("order_value");
+            .HasColumnName("identity");
+
+        builder.Property(unit => unit.IdentityHash)
+            .IsRequired()
+            .HasColumnName("identity_hash");
 
         builder.Property(unit => unit.IsGrouped)
             .IsRequired()
             .HasColumnName("is_grouped");
 
-        builder.HasAlternateKey(unit => new { unit.Id, unit.SourceContributionId });
+        builder.Property(unit => unit.CreatedAtUtc)
+            .IsRequired()
+            .HasColumnName("created_at");
 
-        builder.HasOne<LinkingSourceContribution>()
+        builder.Property(unit => unit.CreatedBy)
+            .IsRequired()
+            .HasColumnName("created_by");
+
+        builder.HasOne<AbwabDoor>()
             .WithMany()
-            .HasForeignKey(unit => unit.SourceContributionId)
+            .HasForeignKey(unit => unit.DoorId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(unit => new { unit.SourceContributionId, unit.OrderValue })
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(unit => unit.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(unit => new { unit.DoorId, unit.IdentityHash })
             .IsUnique();
     }
 }

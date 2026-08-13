@@ -46,17 +46,22 @@ internal sealed partial class EfLinkingConfirmationWriter
             .ThenBy(contribution => contribution.Id)
             .ToListAsync(cancellationToken);
         var contributionIds = contributions.Select(contribution => contribution.Id).ToList();
-        var units = contributionIds.Count == 0
+        var contributionUnits = contributionIds.Count == 0
             ? []
-            : await db.LinkingUnits
-                .Where(unit => contributionIds.Contains(unit.SourceContributionId))
-                .OrderBy(unit => unit.SourceContributionId)
-                .ThenBy(unit => unit.OrderValue)
+            : await db.LinkingSourceContributionUnits
+                .Where(link => contributionIds.Contains(link.SourceContributionId))
+                .OrderBy(link => link.SourceContributionId)
+                .ThenBy(link => link.OrderValue)
                 .ToListAsync(cancellationToken);
-        var unitAyahs = contributionIds.Count == 0
+        var units = await db.LinkingUnits
+            .Where(unit => unit.DoorId == doorId)
+            .OrderBy(unit => unit.Id)
+            .ToListAsync(cancellationToken);
+        var unitIds = units.Select(unit => unit.Id).ToList();
+        var unitAyahs = unitIds.Count == 0
             ? []
             : await db.LinkingUnitAyahs
-                .Where(unitAyah => contributionIds.Contains(unitAyah.SourceContributionId))
+                .Where(unitAyah => unitIds.Contains(unitAyah.UnitId))
                 .OrderBy(unitAyah => unitAyah.UnitId)
                 .ThenBy(unitAyah => unitAyah.OrderValue)
                 .ThenBy(unitAyah => unitAyah.Id)
@@ -94,7 +99,14 @@ internal sealed partial class EfLinkingConfirmationWriter
             door.DeletedAtUtc is not null,
             door.Version,
             AssembleDoorState(doorAyahs, doorWords, ayahs),
-            AssembleContributionState(contributions, units, unitAyahs, words, descriptions, ayahs));
+            AssembleContributionState(
+                contributions,
+                contributionUnits,
+                units,
+                unitAyahs,
+                words,
+                descriptions,
+                ayahs));
 
         return new LockedConfirmationState(
             door,
@@ -102,6 +114,7 @@ internal sealed partial class EfLinkingConfirmationWriter
             doorAyahs,
             doorWords,
             contributions.ToDictionary(contribution => contribution.Id),
+            contributionUnits,
             units,
             unitAyahs,
             words,
@@ -136,6 +149,7 @@ internal sealed partial class EfLinkingConfirmationWriter
 
     private static IReadOnlyList<LinkingConfirmedContribution> AssembleContributionState(
         IReadOnlyList<LinkingSourceContribution> contributions,
+        IReadOnlyList<LinkingSourceContributionUnit> contributionUnits,
         IReadOnlyList<LinkingUnit> units,
         IReadOnlyList<LinkingUnitAyah> unitAyahs,
         IReadOnlyList<LinkingUnitAyahWord> words,
@@ -166,15 +180,22 @@ internal sealed partial class EfLinkingConfirmationWriter
                         wordsByAyah.GetValueOrDefault(unitAyah.Id, []),
                         descriptionsByAyah.GetValueOrDefault(unitAyah.Id, []));
                 }).ToList());
-        var unitsByContribution = units
-            .GroupBy(unit => unit.SourceContributionId)
+        var unitsById = units.ToDictionary(unit => unit.Id);
+        var unitsByContribution = contributionUnits
+            .GroupBy(link => link.SourceContributionId)
             .ToDictionary(
                 group => group.Key,
-                group => group.Select(unit => new LinkingConfirmedUnit(
+                group => group.Select(link =>
+                {
+                    var unit = unitsById[link.UnitId];
+
+                    return new LinkingConfirmedUnit(
                     unit.Id,
-                    unit.OrderValue,
+                    unit.Identity,
+                    link.OrderValue,
                     unit.IsGrouped,
-                    ayahsByUnit.GetValueOrDefault(unit.Id, []))).ToList());
+                    ayahsByUnit.GetValueOrDefault(unit.Id, []));
+                }).ToList());
 
         return
         [
@@ -196,6 +217,7 @@ internal sealed partial class EfLinkingConfirmationWriter
         IReadOnlyList<LinkingDoorAyah> DoorAyahs,
         IReadOnlyList<LinkingDoorAyahWord> DoorWords,
         IReadOnlyDictionary<long, LinkingSourceContribution> ContributionsById,
+        IReadOnlyList<LinkingSourceContributionUnit> ContributionUnits,
         IReadOnlyList<LinkingUnit> Units,
         IReadOnlyList<LinkingUnitAyah> UnitAyahs,
         IReadOnlyList<LinkingUnitAyahWord> Words,

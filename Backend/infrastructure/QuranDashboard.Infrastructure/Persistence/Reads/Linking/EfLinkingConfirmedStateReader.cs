@@ -66,19 +66,26 @@ internal sealed class EfLinkingConfirmedStateReader(QuranDashboardDbContext db) 
         }
 
         var contributionIds = contributions.Select(contribution => contribution.Id).ToList();
+        var contributionUnits = await db.LinkingSourceContributionUnits
+            .AsNoTracking()
+            .Where(link => contributionIds.Contains(link.SourceContributionId))
+            .OrderBy(link => link.SourceContributionId)
+            .ThenBy(link => link.OrderValue)
+            .Select(link => new ContributionUnitRow(link.SourceContributionId, link.UnitId, link.OrderValue))
+            .ToListAsync(cancellationToken);
+        var unitIds = contributionUnits.Select(link => link.UnitId).Distinct().ToList();
 
         var units = await db.LinkingUnits
             .AsNoTracking()
-            .Where(unit => contributionIds.Contains(unit.SourceContributionId))
-            .OrderBy(unit => unit.SourceContributionId)
-            .ThenBy(unit => unit.OrderValue)
-            .Select(unit => new UnitRow(unit.Id, unit.SourceContributionId, unit.OrderValue, unit.IsGrouped))
+            .Where(unit => unitIds.Contains(unit.Id))
+            .OrderBy(unit => unit.Id)
+            .Select(unit => new UnitRow(unit.Id, unit.Identity, unit.IsGrouped))
             .ToListAsync(cancellationToken);
 
         var unitAyahs = await (
             from unitAyah in db.LinkingUnitAyahs.AsNoTracking()
             join ayah in db.QuranAyahs.AsNoTracking() on unitAyah.AyahId equals ayah.Id
-            where contributionIds.Contains(unitAyah.SourceContributionId)
+            where unitIds.Contains(unitAyah.UnitId)
             orderby unitAyah.UnitId, unitAyah.OrderValue, unitAyah.Id
             select new UnitAyahRow(
                 unitAyah.Id,
@@ -114,7 +121,7 @@ internal sealed class EfLinkingConfirmedStateReader(QuranDashboardDbContext db) 
             door.IsArchived,
             door.Version,
             confirmedDoorAyahs,
-            Assemble(contributions, units, unitAyahs, words, descriptions));
+            Assemble(contributions, contributionUnits, units, unitAyahs, words, descriptions));
     }
 
     private static List<LinkingConfirmedDoorAyah> AssembleDoorAyahs(
@@ -139,6 +146,7 @@ internal sealed class EfLinkingConfirmedStateReader(QuranDashboardDbContext db) 
 
     private static List<LinkingConfirmedContribution> Assemble(
         IReadOnlyList<ContributionRow> contributions,
+        IReadOnlyList<ContributionUnitRow> contributionUnits,
         IReadOnlyList<UnitRow> units,
         IReadOnlyList<UnitAyahRow> unitAyahs,
         IReadOnlyList<WordRow> words,
@@ -168,16 +176,23 @@ internal sealed class EfLinkingConfirmedStateReader(QuranDashboardDbContext db) 
                         descriptionsByUnitAyah.GetValueOrDefault(unitAyah.Id, [])))
                     .ToList());
 
-        var unitsByContribution = units
-            .GroupBy(unit => unit.SourceContributionId)
+        var unitsById = units.ToDictionary(unit => unit.Id);
+        var unitsByContribution = contributionUnits
+            .GroupBy(link => link.SourceContributionId)
             .ToDictionary(
                 group => group.Key,
                 group => group
-                    .Select(unit => new LinkingConfirmedUnit(
+                    .Select(link =>
+                    {
+                        var unit = unitsById[link.UnitId];
+
+                        return new LinkingConfirmedUnit(
                         unit.Id,
-                        unit.OrderValue,
+                        unit.Identity,
+                        link.OrderValue,
                         unit.IsGrouped,
-                        ayahsByUnit.GetValueOrDefault(unit.Id, [])))
+                        ayahsByUnit.GetValueOrDefault(unit.Id, []));
+                    })
                     .ToList());
 
         return
@@ -214,7 +229,9 @@ internal sealed class EfLinkingConfirmedStateReader(QuranDashboardDbContext db) 
         LinkingContributionMode ContributionMode,
         int OrderValue);
 
-    private sealed record UnitRow(long Id, long SourceContributionId, int OrderValue, bool IsGrouped);
+    private sealed record ContributionUnitRow(long SourceContributionId, long UnitId, int OrderValue);
+
+    private sealed record UnitRow(long Id, string Identity, bool IsGrouped);
 
     private sealed record UnitAyahRow(
         long Id,

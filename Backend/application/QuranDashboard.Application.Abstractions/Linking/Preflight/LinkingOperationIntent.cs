@@ -19,7 +19,10 @@ public sealed record LinkingOperationSourceIntent(
     IReadOnlyList<LinkingOperationUnitIntent> Units,
     LinkingPreflightInvalidReason? InvalidReason);
 
-public sealed record LinkingOperationUnitIntent(IReadOnlyList<LinkingOperationAyahIntent> Ayahs);
+public sealed record LinkingOperationUnitIntent(
+    string Identity,
+    bool IsGrouped,
+    IReadOnlyList<LinkingOperationAyahIntent> Ayahs);
 
 public sealed record LinkingOperationAyahIntent(
     int AyahId,

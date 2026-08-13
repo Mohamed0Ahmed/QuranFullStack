@@ -74,7 +74,9 @@ public static class LinkingOperationValidation
         IReadOnlyList<LinkingOperationSourceRequest> sources)
     {
         var duplicate = sources
-            .GroupBy(source => LinkingSourceIdentity.For(source.Descriptor), StringComparer.Ordinal)
+            .GroupBy(
+                source => LinkingContributionIdentity.For(source.Descriptor, source.ContributionMode),
+                StringComparer.Ordinal)
             .FirstOrDefault(group => group.Count() > 1);
 
         return duplicate is null

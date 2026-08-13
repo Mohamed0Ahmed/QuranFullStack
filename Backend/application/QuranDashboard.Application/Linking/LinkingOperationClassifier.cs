@@ -16,26 +16,32 @@ public static class LinkingOperationClassifier
         ArgumentNullException.ThrowIfNull(state);
 
         var confirmedAyahs = state.Ayahs.ToDictionary(ayah => ayah.AyahId);
-        var doorWordImpacts = DoorWordImpactsOf(intent, confirmedAyahs);
-        var sources = intent.Sources
+        var confirmedUnits = state.Contributions
+            .SelectMany(contribution => contribution.Units)
+            .GroupBy(unit => unit.Identity, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+        var doorWordImpacts = DoorWordImpactsOf(intent, state);
+        var results = intent.Sources
             .Select(source => ClassifySource(
                 WithDoorState(source, intent, state),
                 state,
+                confirmedUnits,
                 confirmedAyahs,
                 doorWordImpacts))
             .ToList();
-        var totals = TotalsOf(intent, confirmedAyahs);
-        var isBlocked = sources.Any(source => source.Classification == LinkingPreflightClassification.Invalid);
-
-        var hasSourceChanges = sources.Any(source =>
-            source.Classification is LinkingPreflightClassification.NewSource
-                or LinkingPreflightClassification.Update);
+        var totals = TotalsOf(results);
+        var isBlocked = results.Any(result =>
+            result.Classification.Classification == LinkingPreflightClassification.Invalid);
 
         return new LinkingOperationClassification(
-            !isBlocked && !hasSourceChanges && totals.New == 0 && totals.Updated == 0,
+            !isBlocked
+                && totals.New == 0
+                && totals.Updated == 0
+                && results.All(result =>
+                    result.Classification.Classification == LinkingPreflightClassification.Unchanged),
             isBlocked,
             totals,
-            sources);
+            results.Select(result => result.Classification).ToList());
     }
 
     private static LinkingOperationSourceIntent WithDoorState(
@@ -46,54 +52,99 @@ public static class LinkingOperationClassifier
             ? source with { InvalidReason = LinkingPreflightInvalidReason.DoorArchived }
             : source;
 
-    private static LinkingSourceClassification ClassifySource(
+    private static SourceClassificationResult ClassifySource(
         LinkingOperationSourceIntent source,
         LinkingConfirmedDoorState state,
+        IReadOnlyDictionary<string, LinkingConfirmedUnit> confirmedUnits,
         IReadOnlyDictionary<int, LinkingConfirmedDoorAyah> confirmedAyahs,
         IReadOnlyDictionary<int, LinkingDoorWordImpact> doorWordImpacts)
     {
         var live = state.Contributions.FirstOrDefault(contribution =>
             string.Equals(contribution.SourceIdentity, source.SourceIdentity, StringComparison.Ordinal));
-        var ayahs = SubmittedAyahsOf(source)
-            .Select(ayah => ClassifyAyah(source, ayah, state, live, confirmedAyahs, doorWordImpacts))
+        var unitResults = source.Units
+            .Select((unit, index) => ClassifyUnit(
+                source,
+                unit,
+                live,
+                index,
+                confirmedUnits,
+                state,
+                doorWordImpacts))
             .ToList();
-        var counts = CountsOf(ayahs.Count, ayahs);
+        var unitClassifications = unitResults.Select(result => result.Classification).ToList();
+        var counts = CountsOf(unitClassifications.Count, unitClassifications);
+        var sourceClassification = ClassifySourceState(source, live, unitResults);
 
-        return new LinkingSourceClassification(
-            source,
-            ClassifySourceState(source, live, counts),
-            live?.Id,
-            live?.Version,
-            counts,
-            ayahs);
+        return new SourceClassificationResult(
+            new LinkingSourceClassification(
+                source,
+                sourceClassification,
+                live?.Id,
+                live?.Version,
+                counts,
+                unitResults.SelectMany(result => result.Ayahs).ToList()),
+            unitResults);
+    }
+
+    private static UnitClassificationResult ClassifyUnit(
+        LinkingOperationSourceIntent source,
+        LinkingOperationUnitIntent unit,
+        LinkingConfirmedContribution? live,
+        int unitIndex,
+        IReadOnlyDictionary<string, LinkingConfirmedUnit> confirmedUnits,
+        LinkingConfirmedDoorState state,
+        IReadOnlyDictionary<int, LinkingDoorWordImpact> doorWordImpacts)
+    {
+        var liveUnit = live?.Units.ElementAtOrDefault(unitIndex);
+        var exactUnit = confirmedUnits.GetValueOrDefault(unit.Identity);
+        var invalidReason = source.InvalidReason
+            ?? unit.Ayahs.Select(ayah => ayah.InvalidReason).FirstOrDefault(reason => reason is not null);
+        var classification = invalidReason is not null
+            ? LinkingPreflightClassification.Invalid
+            : liveUnit is not null
+                ? string.Equals(liveUnit.Identity, unit.Identity, StringComparison.Ordinal)
+                    ? LinkingPreflightClassification.Unchanged
+                    : LinkingPreflightClassification.Update
+                : live is not null
+                    ? LinkingPreflightClassification.Update
+                    : exactUnit is not null
+                        ? LinkingPreflightClassification.Unchanged
+                        : LinkingPreflightClassification.NewAyah;
+        var comparisonUnit = liveUnit ?? exactUnit;
+        var ayahs = unit.Ayahs
+            .Select(ayah => ClassifyAyah(
+                source,
+                ayah,
+                classification,
+                comparisonUnit,
+                state,
+                live,
+                doorWordImpacts))
+            .ToList();
+
+        return new UnitClassificationResult(unit.Identity, classification, ayahs);
     }
 
     private static LinkingAyahClassification ClassifyAyah(
         LinkingOperationSourceIntent source,
         LinkingOperationAyahIntent ayah,
+        LinkingPreflightClassification unitClassification,
+        LinkingConfirmedUnit? comparisonUnit,
         LinkingConfirmedDoorState state,
         LinkingConfirmedContribution? live,
-        IReadOnlyDictionary<int, LinkingConfirmedDoorAyah> confirmedAyahs,
         IReadOnlyDictionary<int, LinkingDoorWordImpact> doorWordImpacts)
     {
-        var confirmed = confirmedAyahs.GetValueOrDefault(ayah.AyahId);
-        var wordChanges = WordChangesOf(confirmed?.QuranWordIds ?? [], ayah.WordIds);
-        var classification = source.InvalidReason is not null || ayah.InvalidReason is not null
-            ? LinkingPreflightClassification.Invalid
-            : confirmed is null
-                ? LinkingPreflightClassification.NewAyah
-                : wordChanges.Added.Count > 0
-                    ? LinkingPreflightClassification.Update
-                    : LinkingPreflightClassification.Unchanged;
+        var confirmedUnitAyah = comparisonUnit?.Ayahs.FirstOrDefault(candidate => candidate.AyahId == ayah.AyahId);
+        var confirmedWords = confirmedUnitAyah?.QuranWordIds ?? [];
 
         return new LinkingAyahClassification(
             ayah.AyahId,
             ayah.VerseKey,
             ayah.SurahNumber,
             ayah.AyahNumber,
-            classification,
+            unitClassification,
             OverlappingSourcesOf(state, live, ayah.AyahId),
-            wordChanges,
+            WordChangesOf(confirmedWords, ayah.WordIds),
             doorWordImpacts.GetValueOrDefault(ayah.AyahId, new LinkingDoorWordImpact([], [], [])),
             NoDescriptionChanges,
             source.InvalidReason ?? ayah.InvalidReason);
@@ -102,64 +153,25 @@ public static class LinkingOperationClassifier
     private static LinkingPreflightClassification ClassifySourceState(
         LinkingOperationSourceIntent source,
         LinkingConfirmedContribution? live,
-        LinkingClassificationCounts counts)
+        IReadOnlyList<UnitClassificationResult> units)
     {
-        if (source.InvalidReason is not null || counts.Invalid > 0)
+        if (source.InvalidReason is not null
+            || units.Any(unit => unit.Classification == LinkingPreflightClassification.Invalid))
         {
             return LinkingPreflightClassification.Invalid;
         }
 
         if (live is null)
         {
-            return LinkingPreflightClassification.NewSource;
+            return units.All(unit => unit.Classification == LinkingPreflightClassification.Unchanged)
+                ? LinkingPreflightClassification.Unchanged
+                : LinkingPreflightClassification.NewSource;
         }
 
-        return ContributionChanged(source, live)
+        return live.Units.Count != units.Count
+            || units.Any(unit => unit.Classification != LinkingPreflightClassification.Unchanged)
             ? LinkingPreflightClassification.Update
             : LinkingPreflightClassification.Unchanged;
-    }
-
-    private static bool ContributionChanged(
-        LinkingOperationSourceIntent source,
-        LinkingConfirmedContribution live)
-    {
-        if (source.ContributionMode != live.ContributionMode
-            || source.OrderValue != live.OrderValue
-            || !string.Equals(source.Label, live.Label, StringComparison.Ordinal)
-            || source.Units.Count != live.Units.Count)
-        {
-            return true;
-        }
-
-        for (var unitIndex = 0; unitIndex < source.Units.Count; unitIndex++)
-        {
-            var submittedUnit = source.Units[unitIndex];
-            var confirmedUnit = live.Units[unitIndex];
-            var grouped = source.ContributionMode == LinkingContributionMode.ManualGrouped;
-
-            if (confirmedUnit.OrderValue != unitIndex + 1
-                || confirmedUnit.IsGrouped != grouped
-                || submittedUnit.Ayahs.Count != confirmedUnit.Ayahs.Count)
-            {
-                return true;
-            }
-
-            for (var ayahIndex = 0; ayahIndex < submittedUnit.Ayahs.Count; ayahIndex++)
-            {
-                var submittedAyah = submittedUnit.Ayahs[ayahIndex];
-                var confirmedAyah = confirmedUnit.Ayahs[ayahIndex];
-
-                if (confirmedAyah.OrderValue != ayahIndex + 1
-                    || submittedAyah.AyahId != confirmedAyah.AyahId
-                    || !submittedAyah.WordIds.SequenceEqual(confirmedAyah.QuranWordIds)
-                    || !submittedAyah.Descriptions.SequenceEqual(confirmedAyah.Descriptions))
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     private static IReadOnlyList<LinkingOverlappingSource> OverlappingSourcesOf(
@@ -178,10 +190,6 @@ public static class LinkingOperationClassifier
                 LinkingSourceTokens.ToToken(contribution.SourceKind)))
     ];
 
-    private static IReadOnlyList<LinkingOperationAyahIntent> SubmittedAyahsOf(
-        LinkingOperationSourceIntent source) =>
-        [.. source.Units.SelectMany(unit => unit.Ayahs)];
-
     private static LinkingWordChanges WordChangesOf(
         IReadOnlyList<int> confirmed,
         IReadOnlyList<int> submitted)
@@ -191,68 +199,72 @@ public static class LinkingOperationClassifier
 
         return new LinkingWordChanges(
             [.. submittedWords.Except(confirmedWords).Order()],
-            [],
+            [.. confirmedWords.Except(submittedWords).Order()],
             [.. submittedWords.Intersect(confirmedWords).Order()]);
     }
 
     private static IReadOnlyDictionary<int, LinkingDoorWordImpact> DoorWordImpactsOf(
         LinkingOperationIntent intent,
-        IReadOnlyDictionary<int, LinkingConfirmedDoorAyah> confirmedAyahs)
+        LinkingConfirmedDoorState state)
     {
-        var submittedWords = intent.Sources
+        var replacedContributionIds = intent.Sources
+            .Select(source => state.Contributions.FirstOrDefault(contribution =>
+                string.Equals(contribution.SourceIdentity, source.SourceIdentity, StringComparison.Ordinal))?.Id)
+            .Where(id => id is not null)
+            .Select(id => id!.Value)
+            .ToHashSet();
+        var projectedAyahs = state.Contributions
+            .Where(contribution => !replacedContributionIds.Contains(contribution.Id))
+            .SelectMany(contribution => contribution.Units)
+            .SelectMany(unit => unit.Ayahs.Select(ayah => new ProjectedAyah(ayah.AyahId, ayah.QuranWordIds)))
+            .Concat(intent.Sources
             .SelectMany(source => source.Units)
             .SelectMany(unit => unit.Ayahs)
+            .Select(ayah => new ProjectedAyah(ayah.AyahId, ayah.WordIds)))
             .GroupBy(ayah => ayah.AyahId)
             .ToDictionary(
                 group => group.Key,
                 group => group.SelectMany(ayah => ayah.WordIds).ToHashSet());
-        var ayahIds = confirmedAyahs.Keys.Concat(submittedWords.Keys).Distinct();
+        var confirmedAyahs = state.Ayahs.ToDictionary(ayah => ayah.AyahId);
+        var ayahIds = confirmedAyahs.Keys.Concat(projectedAyahs.Keys).Distinct();
 
         return ayahIds.ToDictionary(
             ayahId => ayahId,
             ayahId =>
             {
                 var existing = confirmedAyahs.GetValueOrDefault(ayahId)?.QuranWordIds.ToHashSet() ?? [];
-                var submitted = submittedWords.GetValueOrDefault(ayahId, []);
+                var projected = projectedAyahs.GetValueOrDefault(ayahId, []);
 
                 return new LinkingDoorWordImpact(
-                    [.. submitted.Except(existing).Order()],
-                    [.. existing.Order()],
-                    []);
+                    [.. projected.Except(existing).Order()],
+                    [.. projected.Intersect(existing).Order()],
+                    [.. existing.Except(projected).Order()]);
             });
     }
 
     private static LinkingClassificationCounts TotalsOf(
-        LinkingOperationIntent intent,
-        IReadOnlyDictionary<int, LinkingConfirmedDoorAyah> confirmedAyahs)
+        IReadOnlyList<SourceClassificationResult> sources)
     {
-        var ayahs = intent.Sources
-            .SelectMany(source => source.Units.SelectMany(unit => unit.Ayahs)
-                .Select(ayah => new SubmittedDoorAyah(source.InvalidReason, ayah)))
-            .GroupBy(entry => entry.Ayah.AyahId)
-            .Select(group =>
-            {
-                var confirmed = confirmedAyahs.GetValueOrDefault(group.Key);
-                var invalid = group.Any(entry => entry.SourceInvalidReason is not null || entry.Ayah.InvalidReason is not null);
-                var submittedWords = group.SelectMany(entry => entry.Ayah.WordIds).Distinct().ToList();
-
-                return invalid
-                    ? LinkingPreflightClassification.Invalid
-                    : confirmed is null
-                        ? LinkingPreflightClassification.NewAyah
-                        : submittedWords.Except(confirmed.QuranWordIds).Any()
-                            ? LinkingPreflightClassification.Update
-                            : LinkingPreflightClassification.Unchanged;
-            })
+        var classifications = sources
+            .SelectMany(source => source.Units)
+            .GroupBy(unit => unit.Identity, StringComparer.Ordinal)
+            .Select(group => group
+                .Select(unit => unit.Classification)
+                .OrderByDescending(PriorityOf)
+                .First())
             .ToList();
 
-        return CountsOf(ayahs.Count, ayahs);
+        return CountsOf(classifications.Count, classifications);
     }
 
-    private static LinkingClassificationCounts CountsOf(
-        int requested,
-        IReadOnlyList<LinkingAyahClassification> ayahs) =>
-        CountsOf(requested, ayahs.Select(ayah => ayah.Classification).ToList());
+    private static int PriorityOf(LinkingPreflightClassification classification) =>
+        classification switch
+        {
+            LinkingPreflightClassification.Invalid => 4,
+            LinkingPreflightClassification.Update => 3,
+            LinkingPreflightClassification.NewAyah => 2,
+            _ => 1,
+        };
 
     private static LinkingClassificationCounts CountsOf(
         int requested,
@@ -266,7 +278,14 @@ public static class LinkingOperationClassifier
             0,
             classifications.Count(value => value == LinkingPreflightClassification.Invalid));
 
-    private sealed record SubmittedDoorAyah(
-        LinkingPreflightInvalidReason? SourceInvalidReason,
-        LinkingOperationAyahIntent Ayah);
+    private sealed record SourceClassificationResult(
+        LinkingSourceClassification Classification,
+        IReadOnlyList<UnitClassificationResult> Units);
+
+    private sealed record UnitClassificationResult(
+        string Identity,
+        LinkingPreflightClassification Classification,
+        IReadOnlyList<LinkingAyahClassification> Ayahs);
+
+    private sealed record ProjectedAyah(int AyahId, IReadOnlyList<int> WordIds);
 }

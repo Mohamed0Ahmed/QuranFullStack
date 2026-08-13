@@ -139,7 +139,8 @@ internal sealed partial class EfLinkingConfirmationWriter(QuranDashboardDbContex
             }
         }
 
-        await ApplyDoorStateAsync(actorUserId, intent, loaded, now, cancellationToken);
+        await RemoveOrphanUnitsAsync(request.DoorId, cancellationToken);
+        await ApplyDoorStateAsync(actorUserId, request.DoorId, loaded, now, cancellationToken);
 
         var result = CreateResult(request.DoorId, false, classification, contributionIds);
         operation.OutcomeJson = SerializeOutcome(result);
@@ -184,7 +185,8 @@ internal sealed partial class EfLinkingConfirmationWriter(QuranDashboardDbContex
         [
             .. request.Sources.Select(source => new ExpectedVersionCheck(
                 source,
-                liveByIdentity.GetValueOrDefault(LinkingSourceIdentity.For(source.Descriptor))))
+                liveByIdentity.GetValueOrDefault(
+                    LinkingContributionIdentity.For(source.Descriptor, source.ContributionMode))))
         ];
     }
 

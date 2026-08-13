@@ -603,6 +603,36 @@ namespace QuranDashboard.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "linking_units",
+                columns: table => new
+                {
+                    id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    door_id = table.Column<int>(type: "integer", nullable: false),
+                    identity = table.Column<string>(type: "text", nullable: false),
+                    identity_hash = table.Column<byte[]>(type: "bytea", nullable: false),
+                    is_grouped = table.Column<bool>(type: "boolean", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    created_by = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_linking_units", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_linking_units_abwab_doors_door_id",
+                        column: x => x.door_id,
+                        principalTable: "abwab_doors",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_linking_units_users_created_by",
+                        column: x => x.created_by,
+                        principalTable: "users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "linking_workspaces",
                 columns: table => new
                 {
@@ -720,6 +750,25 @@ namespace QuranDashboard.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "linking_source_contribution_units",
+                columns: table => new
+                {
+                    source_contribution_id = table.Column<long>(type: "bigint", nullable: false),
+                    unit_id = table.Column<long>(type: "bigint", nullable: false),
+                    order_value = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_linking_source_contribution_units", x => new { x.source_contribution_id, x.unit_id });
+                    table.ForeignKey(
+                        name: "FK_linking_source_contribution_units_linking_units_unit_id",
+                        column: x => x.unit_id,
+                        principalTable: "linking_units",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "linking_source_contributions",
                 columns: table => new
                 {
@@ -810,28 +859,6 @@ namespace QuranDashboard.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "linking_units",
-                columns: table => new
-                {
-                    id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    source_contribution_id = table.Column<long>(type: "bigint", nullable: false),
-                    order_value = table.Column<int>(type: "integer", nullable: false),
-                    is_grouped = table.Column<bool>(type: "boolean", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_linking_units", x => x.id);
-                    table.UniqueConstraint("AK_linking_units_id_source_contribution_id", x => new { x.id, x.source_contribution_id });
-                    table.ForeignKey(
-                        name: "FK_linking_units_linking_source_contributions_source_contribut~",
-                        column: x => x.source_contribution_id,
-                        principalTable: "linking_source_contributions",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "linking_unit_ayah_descriptions",
                 columns: table => new
                 {
@@ -884,7 +911,6 @@ namespace QuranDashboard.Infrastructure.Migrations
                     id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     unit_id = table.Column<long>(type: "bigint", nullable: false),
-                    source_contribution_id = table.Column<long>(type: "bigint", nullable: false),
                     ayah_id = table.Column<int>(type: "integer", nullable: false),
                     order_value = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -892,10 +918,10 @@ namespace QuranDashboard.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_linking_unit_ayahs", x => x.id);
                     table.ForeignKey(
-                        name: "FK_linking_unit_ayahs_linking_units_unit_id_source_contributio~",
-                        columns: x => new { x.unit_id, x.source_contribution_id },
+                        name: "FK_linking_unit_ayahs_linking_units_unit_id",
+                        column: x => x.unit_id,
                         principalTable: "linking_units",
-                        principalColumns: new[] { "id", "source_contribution_id" },
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -1966,6 +1992,17 @@ namespace QuranDashboard.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_linking_source_contribution_units_source_contribution_id_or~",
+                table: "linking_source_contribution_units",
+                columns: new[] { "source_contribution_id", "order_value" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_linking_source_contribution_units_unit_id",
+                table: "linking_source_contribution_units",
+                column: "unit_id");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_linking_source_contributions_created_by",
                 table: "linking_source_contributions",
                 column: "created_by");
@@ -2066,25 +2103,26 @@ namespace QuranDashboard.Infrastructure.Migrations
                 column: "ayah_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_linking_unit_ayahs_source_contribution_id_ayah_id",
+                name: "IX_linking_unit_ayahs_unit_id_ayah_id",
                 table: "linking_unit_ayahs",
-                columns: new[] { "source_contribution_id", "ayah_id" },
+                columns: new[] { "unit_id", "ayah_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_linking_unit_ayahs_unit_id_order_value",
                 table: "linking_unit_ayahs",
-                columns: new[] { "unit_id", "order_value" });
+                columns: new[] { "unit_id", "order_value" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_linking_unit_ayahs_unit_id_source_contribution_id",
-                table: "linking_unit_ayahs",
-                columns: new[] { "unit_id", "source_contribution_id" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_linking_units_source_contribution_id_order_value",
+                name: "IX_linking_units_created_by",
                 table: "linking_units",
-                columns: new[] { "source_contribution_id", "order_value" },
+                column: "created_by");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_linking_units_door_id_identity_hash",
+                table: "linking_units",
+                columns: new[] { "door_id", "identity_hash" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -2866,6 +2904,14 @@ namespace QuranDashboard.Infrastructure.Migrations
                 onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
+                name: "FK_linking_source_contribution_units_linking_source_contributi~",
+                table: "linking_source_contribution_units",
+                column: "source_contribution_id",
+                principalTable: "linking_source_contributions",
+                principalColumn: "id",
+                onDelete: ReferentialAction.Restrict);
+
+            migrationBuilder.AddForeignKey(
                 name: "FK_linking_source_contributions_quran_words_unique_simple_uniq~",
                 table: "linking_source_contributions",
                 column: "unique_simple_word_id",
@@ -3093,6 +3139,9 @@ namespace QuranDashboard.Infrastructure.Migrations
                 name: "linking_door_ayah_words");
 
             migrationBuilder.DropTable(
+                name: "linking_source_contribution_units");
+
+            migrationBuilder.DropTable(
                 name: "linking_unit_ayah_descriptions");
 
             migrationBuilder.DropTable(
@@ -3156,6 +3205,9 @@ namespace QuranDashboard.Infrastructure.Migrations
                 name: "linking_door_ayahs");
 
             migrationBuilder.DropTable(
+                name: "linking_source_contributions");
+
+            migrationBuilder.DropTable(
                 name: "linking_unit_ayahs");
 
             migrationBuilder.DropTable(
@@ -3183,22 +3235,13 @@ namespace QuranDashboard.Infrastructure.Migrations
                 name: "permissions");
 
             migrationBuilder.DropTable(
+                name: "linking_operations");
+
+            migrationBuilder.DropTable(
                 name: "linking_units");
 
             migrationBuilder.DropTable(
                 name: "linking_workspaces");
-
-            migrationBuilder.DropTable(
-                name: "quran_full_i3rab_sources");
-
-            migrationBuilder.DropTable(
-                name: "quran_tafsir_sources");
-
-            migrationBuilder.DropTable(
-                name: "linking_source_contributions");
-
-            migrationBuilder.DropTable(
-                name: "linking_operations");
 
             migrationBuilder.DropTable(
                 name: "quran_lemmas");
@@ -3211,6 +3254,12 @@ namespace QuranDashboard.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "quran_words_unique_tashkeel");
+
+            migrationBuilder.DropTable(
+                name: "quran_full_i3rab_sources");
+
+            migrationBuilder.DropTable(
+                name: "quran_tafsir_sources");
 
             migrationBuilder.DropTable(
                 name: "abwab_doors");

@@ -12,7 +12,7 @@ using QuranDashboard.Infrastructure.Persistence;
 namespace QuranDashboard.Infrastructure.Migrations
 {
     [DbContext(typeof(QuranDashboardDbContext))]
-    [Migration("20260813124531_InitialBaseline")]
+    [Migration("20260813153400_InitialBaseline")]
     partial class InitialBaseline
     {
         /// <inheritdoc />
@@ -1047,6 +1047,30 @@ namespace QuranDashboard.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingSourceContributionUnit", b =>
+                {
+                    b.Property<long>("SourceContributionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_contribution_id");
+
+                    b.Property<long>("UnitId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("unit_id");
+
+                    b.Property<int>("OrderValue")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_value");
+
+                    b.HasKey("SourceContributionId", "UnitId");
+
+                    b.HasIndex("UnitId");
+
+                    b.HasIndex("SourceContributionId", "OrderValue")
+                        .IsUnique();
+
+                    b.ToTable("linking_source_contribution_units", (string)null);
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingUnit", b =>
                 {
                     b.Property<long>("Id")
@@ -1056,21 +1080,37 @@ namespace QuranDashboard.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("DoorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("door_id");
+
+                    b.Property<string>("Identity")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("identity");
+
+                    b.Property<byte[]>("IdentityHash")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("identity_hash");
+
                     b.Property<bool>("IsGrouped")
                         .HasColumnType("boolean")
                         .HasColumnName("is_grouped");
 
-                    b.Property<int>("OrderValue")
-                        .HasColumnType("integer")
-                        .HasColumnName("order_value");
-
-                    b.Property<long>("SourceContributionId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("source_contribution_id");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("SourceContributionId", "OrderValue")
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DoorId", "IdentityHash")
                         .IsUnique();
 
                     b.ToTable("linking_units", (string)null);
@@ -1093,10 +1133,6 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("order_value");
 
-                    b.Property<long>("SourceContributionId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("source_contribution_id");
-
                     b.Property<long>("UnitId")
                         .HasColumnType("bigint")
                         .HasColumnName("unit_id");
@@ -1105,12 +1141,11 @@ namespace QuranDashboard.Infrastructure.Migrations
 
                     b.HasIndex("AyahId");
 
-                    b.HasIndex("SourceContributionId", "AyahId")
+                    b.HasIndex("UnitId", "AyahId")
                         .IsUnique();
 
-                    b.HasIndex("UnitId", "OrderValue");
-
-                    b.HasIndex("UnitId", "SourceContributionId");
+                    b.HasIndex("UnitId", "OrderValue")
+                        .IsUnique();
 
                     b.ToTable("linking_unit_ayahs", (string)null);
                 });
@@ -3848,11 +3883,32 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
-            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingUnit", b =>
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingSourceContributionUnit", b =>
                 {
                     b.HasOne("QuranDashboard.Domain.Linking.LinkingSourceContribution", null)
                         .WithMany()
                         .HasForeignKey("SourceContributionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Linking.LinkingUnit", null)
+                        .WithMany()
+                        .HasForeignKey("UnitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingUnit", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Access.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoor", null)
+                        .WithMany()
+                        .HasForeignKey("DoorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -3867,8 +3923,7 @@ namespace QuranDashboard.Infrastructure.Migrations
 
                     b.HasOne("QuranDashboard.Domain.Linking.LinkingUnit", null)
                         .WithMany()
-                        .HasForeignKey("UnitId", "SourceContributionId")
-                        .HasPrincipalKey("Id", "SourceContributionId")
+                        .HasForeignKey("UnitId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

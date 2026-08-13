@@ -36,19 +36,8 @@ export class HttpLinkingCommandPort implements LinkingCommandPort {
 }
 
 function toConfirmationSourceBodies(command: LinkingCommand) {
-  const existingBySourceIdentity = new Map(
-    command.preflightSources.map((source) => [
-      source.sourceIdentity,
-      {
-        existingContributionId: source.existingContributionId,
-        existingContributionVersion: source.existingContributionVersion,
-      },
-    ]),
-  );
   return toPreflightSourceBodies(command.operation.sourceIntents).map((source, index) => {
-    const existing = existingBySourceIdentity.get(
-      command.operation.sourceIntents[index]?.sourceKey ?? '',
-    );
+    const existing = command.preflightSources[index];
     return {
       ...source,
       existingContributionId: existing?.existingContributionId ?? null,

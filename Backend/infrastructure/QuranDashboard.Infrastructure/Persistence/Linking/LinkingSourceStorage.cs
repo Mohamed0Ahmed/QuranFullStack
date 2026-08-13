@@ -14,11 +14,13 @@ internal static class LinkingSourceStorage
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    public static LinkingSourceStorageForm Encode(LinkingSourceDescriptor descriptor)
+    public static LinkingSourceStorageForm Encode(
+        LinkingSourceDescriptor descriptor,
+        string? storedIdentity = null)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
 
-        var identity = LinkingSourceIdentity.For(descriptor);
+        var identity = storedIdentity ?? LinkingSourceIdentity.For(descriptor);
         var form = new LinkingSourceStorageForm
         {
             Kind = descriptor.Kind,

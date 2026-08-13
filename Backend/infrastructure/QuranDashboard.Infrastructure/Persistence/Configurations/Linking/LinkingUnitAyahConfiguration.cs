@@ -18,10 +18,6 @@ public sealed class LinkingUnitAyahConfiguration : IEntityTypeConfiguration<Link
             .IsRequired()
             .HasColumnName("unit_id");
 
-        builder.Property(unitAyah => unitAyah.SourceContributionId)
-            .IsRequired()
-            .HasColumnName("source_contribution_id");
-
         builder.Property(unitAyah => unitAyah.AyahId)
             .IsRequired()
             .HasColumnName("ayah_id");
@@ -32,8 +28,7 @@ public sealed class LinkingUnitAyahConfiguration : IEntityTypeConfiguration<Link
 
         builder.HasOne<LinkingUnit>()
             .WithMany()
-            .HasForeignKey(unitAyah => new { unitAyah.UnitId, unitAyah.SourceContributionId })
-            .HasPrincipalKey(unit => new { unit.Id, unit.SourceContributionId })
+            .HasForeignKey(unitAyah => unitAyah.UnitId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<Ayah>()
@@ -41,10 +36,11 @@ public sealed class LinkingUnitAyahConfiguration : IEntityTypeConfiguration<Link
             .HasForeignKey(unitAyah => unitAyah.AyahId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(unitAyah => new { unitAyah.SourceContributionId, unitAyah.AyahId })
+        builder.HasIndex(unitAyah => new { unitAyah.UnitId, unitAyah.AyahId })
             .IsUnique();
 
-        builder.HasIndex(unitAyah => new { unitAyah.UnitId, unitAyah.OrderValue });
+        builder.HasIndex(unitAyah => new { unitAyah.UnitId, unitAyah.OrderValue })
+            .IsUnique();
 
         builder.HasIndex(unitAyah => unitAyah.AyahId);
     }

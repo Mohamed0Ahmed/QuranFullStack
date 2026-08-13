@@ -79,6 +79,7 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<LinkingDoorAyahWord> LinkingDoorAyahWords => Set<LinkingDoorAyahWord>();
     public DbSet<LinkingSourceContribution> LinkingSourceContributions => Set<LinkingSourceContribution>();
     public DbSet<LinkingUnit> LinkingUnits => Set<LinkingUnit>();
+    public DbSet<LinkingSourceContributionUnit> LinkingSourceContributionUnits => Set<LinkingSourceContributionUnit>();
     public DbSet<LinkingUnitAyah> LinkingUnitAyahs => Set<LinkingUnitAyah>();
     public DbSet<LinkingUnitAyahWord> LinkingUnitAyahWords => Set<LinkingUnitAyahWord>();
     public DbSet<LinkingUnitAyahDescription> LinkingUnitAyahDescriptions => Set<LinkingUnitAyahDescription>();

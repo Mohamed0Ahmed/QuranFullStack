@@ -55,17 +55,25 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
                 LinkingDescriptorViolationCode.MalformedDescriptor, DescriptorField, null));
         }
 
-        var identity = LinkingSourceIdentity.For(source.Descriptor);
+        var identity = LinkingContributionIdentity.For(source.Descriptor, source.ContributionMode);
         var resolved = await resolution.ResolveAsync(source.Descriptor, cancellationToken);
         var members = resolved.Ayahs.ToDictionary(ayah => ayah.AyahId);
         var confirmed = state is null ? [] : ConfirmedAyahMetadataOf(state);
 
+        var grouped = source.ContributionMode == LinkingContributionMode.ManualGrouped;
         var units = source.Units
-            .Select(unit => new LinkingOperationUnitIntent(
-                [
-                    .. unit.Ayahs.Select(ayah =>
+            .Select(unit =>
+            {
+                var ayahs = unit.Ayahs
+                    .Select(ayah =>
                         PrepareAyah(source, ayah, members.GetValueOrDefault(ayah.AyahId), confirmed))
-                ]))
+                    .ToList();
+
+                return new LinkingOperationUnitIntent(
+                    LinkingUnitIdentity.For(grouped, ayahs),
+                    grouped,
+                    ayahs);
+            })
             .ToList();
 
         return new LinkingOperationSourceIntent(

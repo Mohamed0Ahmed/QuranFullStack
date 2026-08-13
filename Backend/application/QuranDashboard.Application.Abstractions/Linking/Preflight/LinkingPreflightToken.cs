@@ -28,7 +28,9 @@ public static class LinkingPreflightToken
 
         var sources = request.Sources
             .OrderBy(source => source.OrderValue)
-            .ThenBy(source => LinkingSourceIdentity.For(source.Descriptor), StringComparer.Ordinal);
+            .ThenBy(
+                source => LinkingContributionIdentity.For(source.Descriptor, source.ContributionMode),
+                StringComparer.Ordinal);
 
         foreach (var source in sources)
         {
@@ -36,7 +38,7 @@ public static class LinkingPreflightToken
                 canonical,
                 "source",
                 Number(source.OrderValue),
-                Text(LinkingSourceIdentity.For(source.Descriptor)),
+                Text(LinkingContributionIdentity.For(source.Descriptor, source.ContributionMode)),
                 LinkingOperationTokens.ToToken(source.ContributionMode),
                 Flag(source.AutomaticWordMatchesEnabled));
 

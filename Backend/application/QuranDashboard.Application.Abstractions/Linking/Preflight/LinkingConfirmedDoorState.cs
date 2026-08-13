@@ -30,6 +30,7 @@ public sealed record LinkingConfirmedContribution(
 
 public sealed record LinkingConfirmedUnit(
     long Id,
+    string Identity,
     int OrderValue,
     bool IsGrouped,
     IReadOnlyList<LinkingConfirmedAyah> Ayahs);

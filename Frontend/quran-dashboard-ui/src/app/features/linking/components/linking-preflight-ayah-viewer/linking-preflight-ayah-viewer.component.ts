@@ -74,7 +74,7 @@ export class LinkingPreflightAyahViewerComponent {
   private filterCount(filter: LinkingPreflightAyahFilter): number {
     switch (filter) {
       case 'ALL':
-        return this.source().ayahs.length;
+        return this.source().counts.requested;
       case 'NEW_AYAH':
         return this.source().counts.new;
       case 'UNCHANGED':

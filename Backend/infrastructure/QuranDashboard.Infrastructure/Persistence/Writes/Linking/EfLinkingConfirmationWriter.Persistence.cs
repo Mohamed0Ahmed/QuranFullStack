@@ -18,7 +18,13 @@ internal sealed partial class EfLinkingConfirmationWriter
         var contribution = NewContribution(operationId, doorId, actorUserId, request, source, now);
         db.LinkingSourceContributions.Add(contribution);
         await SaveTranslatingWriteExceptionsAsync(cancellationToken);
-        await InsertChildrenAsync(contribution.Id, actorUserId, source, now, cancellationToken);
+        await SynchronizeContributionUnitsAsync(
+            contribution.Id,
+            doorId,
+            actorUserId,
+            source,
+            now,
+            cancellationToken);
 
         return contribution;
     }
@@ -33,26 +39,18 @@ internal sealed partial class EfLinkingConfirmationWriter
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
-        var units = loaded.Units
-            .Where(unit => unit.SourceContributionId == contribution.Id)
-            .ToList();
-        var unitIds = units.Select(unit => unit.Id).ToHashSet();
-        var unitAyahs = loaded.UnitAyahs
-            .Where(unitAyah => unitIds.Contains(unitAyah.UnitId))
-            .ToList();
-        var unitAyahIds = unitAyahs.Select(unitAyah => unitAyah.Id).ToHashSet();
-
-        db.LinkingUnitAyahDescriptions.RemoveRange(
-            loaded.Descriptions.Where(description => unitAyahIds.Contains(description.UnitAyahId)));
-        db.LinkingUnitAyahWords.RemoveRange(
-            loaded.Words.Where(word => unitAyahIds.Contains(word.UnitAyahId)));
-        db.LinkingUnitAyahs.RemoveRange(unitAyahs);
-        db.LinkingUnits.RemoveRange(units);
-        await SaveTranslatingWriteExceptionsAsync(cancellationToken);
+        db.LinkingSourceContributionUnits.RemoveRange(
+            loaded.ContributionUnits.Where(link => link.SourceContributionId == contribution.Id));
 
         StampContribution(contribution, operationId, actorUserId, request, source, now);
         await SaveTranslatingWriteExceptionsAsync(cancellationToken);
-        await InsertChildrenAsync(contribution.Id, actorUserId, source, now, cancellationToken);
+        await SynchronizeContributionUnitsAsync(
+            contribution.Id,
+            contribution.DoorId,
+            actorUserId,
+            source,
+            now,
+            cancellationToken);
     }
 
     private static LinkingSourceContribution NewContribution(
@@ -63,7 +61,7 @@ internal sealed partial class EfLinkingConfirmationWriter
         LinkingOperationSourceIntent source,
         DateTimeOffset now)
     {
-        var form = LinkingSourceStorage.Encode(request.Descriptor);
+        var form = LinkingSourceStorage.Encode(request.Descriptor, source.SourceIdentity);
 
         return new LinkingSourceContribution
         {
@@ -99,7 +97,7 @@ internal sealed partial class EfLinkingConfirmationWriter
         LinkingOperationSourceIntent source,
         DateTimeOffset now)
     {
-        var form = LinkingSourceStorage.Encode(request.Descriptor);
+        var form = LinkingSourceStorage.Encode(request.Descriptor, source.SourceIdentity);
 
         contribution.OperationId = operationId;
         contribution.OrderValue = source.OrderValue;
@@ -121,57 +119,98 @@ internal sealed partial class EfLinkingConfirmationWriter
         contribution.UpdatedBy = actorUserId;
     }
 
-    private async Task InsertChildrenAsync(
+    private async Task SynchronizeContributionUnitsAsync(
         long contributionId,
+        int doorId,
         int actorUserId,
         LinkingOperationSourceIntent source,
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
-        var units = source.Units
-            .Select((_, index) => new LinkingUnit
+        for (var index = 0; index < source.Units.Count; index++)
+        {
+            var unitIntent = source.Units[index];
+            var identityHash = LinkingUnitIdentity.HashOf(unitIntent.Identity);
+            var unit = await db.LinkingUnits
+                .FirstOrDefaultAsync(candidate =>
+                    candidate.DoorId == doorId && candidate.IdentityHash == identityHash,
+                    cancellationToken);
+
+            if (unit is not null
+                && !string.Equals(unit.Identity, unitIntent.Identity, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("A linking unit identity hash collision was detected.");
+            }
+
+            if (unit is null)
+            {
+                unit = await InsertUnitAsync(
+                    doorId,
+                    actorUserId,
+                    unitIntent,
+                    now,
+                    cancellationToken);
+            }
+
+            db.LinkingSourceContributionUnits.Add(new LinkingSourceContributionUnit
             {
                 SourceContributionId = contributionId,
+                UnitId = unit.Id,
                 OrderValue = index + 1,
-                IsGrouped = source.ContributionMode == LinkingContributionMode.ManualGrouped,
-            })
-            .ToList();
+            });
+        }
 
-        db.LinkingUnits.AddRange(units);
+        await SaveTranslatingWriteExceptionsAsync(cancellationToken);
+    }
+
+    private async Task<LinkingUnit> InsertUnitAsync(
+        int doorId,
+        int actorUserId,
+        LinkingOperationUnitIntent intent,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var unit = new LinkingUnit
+        {
+            DoorId = doorId,
+            Identity = intent.Identity,
+            IdentityHash = LinkingUnitIdentity.HashOf(intent.Identity),
+            IsGrouped = intent.IsGrouped,
+            CreatedAtUtc = now,
+            CreatedBy = actorUserId,
+        };
+
+        db.LinkingUnits.Add(unit);
         await SaveTranslatingWriteExceptionsAsync(cancellationToken);
 
         var createdAyahs = new List<(LinkingUnitAyah Entity, LinkingOperationAyahIntent Intent)>();
 
-        for (var unitIndex = 0; unitIndex < source.Units.Count; unitIndex++)
+        for (var index = 0; index < intent.Ayahs.Count; index++)
         {
-            for (var ayahIndex = 0; ayahIndex < source.Units[unitIndex].Ayahs.Count; ayahIndex++)
+            var ayahIntent = intent.Ayahs[index];
+            var entity = new LinkingUnitAyah
             {
-                var intent = source.Units[unitIndex].Ayahs[ayahIndex];
-                var entity = new LinkingUnitAyah
-                {
-                    UnitId = units[unitIndex].Id,
-                    SourceContributionId = contributionId,
-                    AyahId = intent.AyahId,
-                    OrderValue = ayahIndex + 1,
-                };
+                UnitId = unit.Id,
+                AyahId = ayahIntent.AyahId,
+                OrderValue = index + 1,
+            };
 
-                db.LinkingUnitAyahs.Add(entity);
-                createdAyahs.Add((entity, intent));
-            }
+            db.LinkingUnitAyahs.Add(entity);
+            createdAyahs.Add((entity, ayahIntent));
         }
 
         await SaveTranslatingWriteExceptionsAsync(cancellationToken);
 
-        foreach (var (entity, intent) in createdAyahs)
+        foreach (var (entity, ayahIntent) in createdAyahs)
         {
-            db.LinkingUnitAyahWords.AddRange(intent.WordIds.Select(wordId => new LinkingUnitAyahWord
+            db.LinkingUnitAyahWords.AddRange(ayahIntent.WordIds.Select(wordId => new LinkingUnitAyahWord
             {
                 UnitAyahId = entity.Id,
                 QuranWordId = wordId,
-                AyahId = intent.AyahId,
+                AyahId = ayahIntent.AyahId,
             }));
 
-            db.LinkingUnitAyahDescriptions.AddRange(intent.Descriptions.Select((body, index) =>
+            db.LinkingUnitAyahDescriptions.AddRange(ayahIntent.Descriptions.Select((body, index) =>
                 new LinkingUnitAyahDescription
                 {
                     UnitAyahId = entity.Id,
@@ -184,6 +223,38 @@ internal sealed partial class EfLinkingConfirmationWriter
                 }));
         }
 
+        await SaveTranslatingWriteExceptionsAsync(cancellationToken);
+        return unit;
+    }
+
+    private async Task RemoveOrphanUnitsAsync(int doorId, CancellationToken cancellationToken)
+    {
+        var orphanUnits = await db.LinkingUnits
+            .Where(unit => unit.DoorId == doorId)
+            .Where(unit => !db.LinkingSourceContributionUnits.Any(link => link.UnitId == unit.Id))
+            .ToListAsync(cancellationToken);
+
+        if (orphanUnits.Count == 0)
+        {
+            return;
+        }
+
+        var unitIds = orphanUnits.Select(unit => unit.Id).ToList();
+        var unitAyahs = await db.LinkingUnitAyahs
+            .Where(ayah => unitIds.Contains(ayah.UnitId))
+            .ToListAsync(cancellationToken);
+        var unitAyahIds = unitAyahs.Select(ayah => ayah.Id).ToList();
+        var words = await db.LinkingUnitAyahWords
+            .Where(word => unitAyahIds.Contains(word.UnitAyahId))
+            .ToListAsync(cancellationToken);
+        var descriptions = await db.LinkingUnitAyahDescriptions
+            .Where(description => unitAyahIds.Contains(description.UnitAyahId))
+            .ToListAsync(cancellationToken);
+
+        db.LinkingUnitAyahDescriptions.RemoveRange(descriptions);
+        db.LinkingUnitAyahWords.RemoveRange(words);
+        db.LinkingUnitAyahs.RemoveRange(unitAyahs);
+        db.LinkingUnits.RemoveRange(orphanUnits);
         await SaveTranslatingWriteExceptionsAsync(cancellationToken);
     }
 }
