@@ -75,7 +75,7 @@ internal sealed partial class EfLinkingConfirmationWriter(QuranDashboardDbContex
                 classification,
                 classification.Sources.ToDictionary(
                     source => source.Source.SourceIdentity,
-                    source => source.ExistingContributionId!.Value,
+                    source => source.ExistingContributionId,
                     StringComparer.Ordinal));
 
             await transaction.CommitAsync(cancellationToken);
@@ -97,7 +97,7 @@ internal sealed partial class EfLinkingConfirmationWriter(QuranDashboardDbContex
         db.LinkingOperations.Add(operation);
         await SaveTranslatingWriteExceptionsAsync(cancellationToken);
 
-        var contributionIds = new Dictionary<string, long>(StringComparer.Ordinal);
+        var contributionIds = new Dictionary<string, long?>(StringComparer.Ordinal);
 
         for (var index = 0; index < classification.Sources.Count; index++)
         {
@@ -107,7 +107,7 @@ internal sealed partial class EfLinkingConfirmationWriter(QuranDashboardDbContex
             switch (source.Classification)
             {
                 case LinkingPreflightClassification.Unchanged:
-                    contributionIds.Add(source.Source.SourceIdentity, source.ExistingContributionId!.Value);
+                    contributionIds.Add(source.Source.SourceIdentity, source.ExistingContributionId);
                     break;
                 case LinkingPreflightClassification.NewSource:
                     var created = await InsertContributionAsync(
@@ -138,6 +138,8 @@ internal sealed partial class EfLinkingConfirmationWriter(QuranDashboardDbContex
                         $"Confirmation cannot apply source classification '{source.Classification}'.");
             }
         }
+
+        await ApplyDoorStateAsync(actorUserId, intent, loaded, now, cancellationToken);
 
         var result = CreateResult(request.DoorId, false, classification, contributionIds);
         operation.OutcomeJson = SerializeOutcome(result);

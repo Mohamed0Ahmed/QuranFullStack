@@ -58,7 +58,7 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
         var identity = LinkingSourceIdentity.For(source.Descriptor);
         var resolved = await resolution.ResolveAsync(source.Descriptor, cancellationToken);
         var members = resolved.Ayahs.ToDictionary(ayah => ayah.AyahId);
-        var confirmed = state is null ? [] : ConfirmedAyahMetadataOf(state, identity);
+        var confirmed = state is null ? [] : ConfirmedAyahMetadataOf(state);
 
         var units = source.Units
             .Select(unit => new LinkingOperationUnitIntent(
@@ -147,23 +147,11 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
     }
 
     private static Dictionary<int, AyahMetadata> ConfirmedAyahMetadataOf(
-        LinkingConfirmedDoorState state,
-        string sourceIdentity)
-    {
-        var contribution = state.Contributions.FirstOrDefault(candidate =>
-            string.Equals(candidate.SourceIdentity, sourceIdentity, StringComparison.Ordinal));
-
-        if (contribution is null)
-        {
-            return [];
-        }
-
-        return contribution.Units
-            .SelectMany(unit => unit.Ayahs)
+        LinkingConfirmedDoorState state) =>
+        state.Ayahs
             .ToDictionary(
                 ayah => ayah.AyahId,
                 ayah => new AyahMetadata(ayah.VerseKey, ayah.SurahNumber, ayah.AyahNumber));
-    }
 
     private sealed record AyahMetadata(string VerseKey, int SurahNumber, int AyahNumber);
 }

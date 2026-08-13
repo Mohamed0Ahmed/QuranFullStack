@@ -20,6 +20,30 @@ internal sealed class EfLinkingConfirmedStateReader(QuranDashboardDbContext db) 
             return null;
         }
 
+        var doorAyahs = await (
+            from doorAyah in db.LinkingDoorAyahs.AsNoTracking()
+            join ayah in db.QuranAyahs.AsNoTracking() on doorAyah.AyahId equals ayah.Id
+            where doorAyah.DoorId == doorId
+            orderby ayah.SurahNumber, ayah.AyahNumber
+            select new DoorAyahRow(
+                doorAyah.Id,
+                doorAyah.AyahId,
+                ayah.VerseKey,
+                ayah.SurahNumber,
+                ayah.AyahNumber))
+            .ToListAsync(cancellationToken);
+        var doorAyahIds = doorAyahs.Select(ayah => ayah.Id).ToList();
+        var doorWords = doorAyahIds.Count == 0
+            ? []
+            : await db.LinkingDoorAyahWords
+                .AsNoTracking()
+                .Where(word => doorAyahIds.Contains(word.DoorAyahId))
+                .OrderBy(word => word.DoorAyahId)
+                .ThenBy(word => word.QuranWordId)
+                .Select(word => new DoorWordRow(word.DoorAyahId, word.QuranWordId))
+                .ToListAsync(cancellationToken);
+        var confirmedDoorAyahs = AssembleDoorAyahs(doorAyahs, doorWords);
+
         var contributions = await db.LinkingSourceContributions
             .AsNoTracking()
             .Where(contribution => contribution.DoorId == doorId && contribution.DeletedAtUtc == null)
@@ -37,7 +61,8 @@ internal sealed class EfLinkingConfirmedStateReader(QuranDashboardDbContext db) 
 
         if (contributions.Count == 0)
         {
-            return new LinkingConfirmedDoorState(door.Id, door.Name, door.IsArchived, door.Version, []);
+            return new LinkingConfirmedDoorState(
+                door.Id, door.Name, door.IsArchived, door.Version, confirmedDoorAyahs, []);
         }
 
         var contributionIds = contributions.Select(contribution => contribution.Id).ToList();
@@ -88,7 +113,28 @@ internal sealed class EfLinkingConfirmedStateReader(QuranDashboardDbContext db) 
             door.Name,
             door.IsArchived,
             door.Version,
+            confirmedDoorAyahs,
             Assemble(contributions, units, unitAyahs, words, descriptions));
+    }
+
+    private static List<LinkingConfirmedDoorAyah> AssembleDoorAyahs(
+        IReadOnlyList<DoorAyahRow> ayahs,
+        IReadOnlyList<DoorWordRow> words)
+    {
+        var wordsByAyah = words
+            .GroupBy(word => word.DoorAyahId)
+            .ToDictionary(group => group.Key, group => group.Select(word => word.QuranWordId).ToList());
+
+        return
+        [
+            .. ayahs.Select(ayah => new LinkingConfirmedDoorAyah(
+                ayah.Id,
+                ayah.AyahId,
+                ayah.VerseKey,
+                ayah.SurahNumber,
+                ayah.AyahNumber,
+                wordsByAyah.GetValueOrDefault(ayah.Id, [])))
+        ];
     }
 
     private static List<LinkingConfirmedContribution> Assemble(
@@ -149,6 +195,15 @@ internal sealed class EfLinkingConfirmedStateReader(QuranDashboardDbContext db) 
     }
 
     private sealed record DoorRow(int Id, string Name, bool IsArchived, uint Version);
+
+    private sealed record DoorAyahRow(
+        long Id,
+        int AyahId,
+        string VerseKey,
+        short SurahNumber,
+        short AyahNumber);
+
+    private sealed record DoorWordRow(long DoorAyahId, int QuranWordId);
 
     private sealed record ContributionRow(
         long Id,

@@ -18,7 +18,7 @@ internal sealed partial class EfLinkingConfirmationWriter
         int doorId,
         bool isNoOp,
         LinkingOperationClassification classification,
-        IReadOnlyDictionary<string, long> contributionIds) =>
+        IReadOnlyDictionary<string, long?> contributionIds) =>
         new(
             doorId,
             isNoOp,

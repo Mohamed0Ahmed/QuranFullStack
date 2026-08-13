@@ -11,5 +11,5 @@ public sealed record LinkingConfirmationResultDto(
 public sealed record LinkingConfirmationSourceResultDto(
     string SourceIdentity,
     string Classification,
-    long ContributionId,
+    long? ContributionId,
     LinkingPreflightCountsDto Counts);

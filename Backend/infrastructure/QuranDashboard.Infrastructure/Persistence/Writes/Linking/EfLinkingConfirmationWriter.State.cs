@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Linking.Preflight;
+using QuranDashboard.Domain.Abwab;
 using QuranDashboard.Domain.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
@@ -27,62 +28,79 @@ internal sealed partial class EfLinkingConfirmationWriter
             return null;
         }
 
+        var doorAyahs = await db.LinkingDoorAyahs
+            .Where(ayah => ayah.DoorId == doorId)
+            .OrderBy(ayah => ayah.AyahId)
+            .ToListAsync(cancellationToken);
+        var doorAyahIds = doorAyahs.Select(ayah => ayah.Id).ToList();
+        var doorWords = doorAyahIds.Count == 0
+            ? []
+            : await db.LinkingDoorAyahWords
+                .Where(word => doorAyahIds.Contains(word.DoorAyahId))
+                .OrderBy(word => word.DoorAyahId)
+                .ThenBy(word => word.QuranWordId)
+                .ToListAsync(cancellationToken);
         var contributions = await db.LinkingSourceContributions
             .Where(contribution => contribution.DoorId == doorId && contribution.DeletedAtUtc == null)
             .OrderBy(contribution => contribution.OrderValue)
             .ThenBy(contribution => contribution.Id)
             .ToListAsync(cancellationToken);
-
-        if (contributions.Count == 0)
-        {
-            return new LockedConfirmationState(
-                new LinkingConfirmedDoorState(
-                    door.Id, door.Name, door.DeletedAtUtc is not null, door.Version, []),
-                new Dictionary<long, LinkingSourceContribution>(),
-                [],
-                [],
-                [],
-                []);
-        }
-
         var contributionIds = contributions.Select(contribution => contribution.Id).ToList();
-        var units = await db.LinkingUnits
-            .Where(unit => contributionIds.Contains(unit.SourceContributionId))
-            .OrderBy(unit => unit.SourceContributionId)
-            .ThenBy(unit => unit.OrderValue)
-            .ToListAsync(cancellationToken);
-        var unitAyahs = await db.LinkingUnitAyahs
-            .Where(unitAyah => contributionIds.Contains(unitAyah.SourceContributionId))
-            .OrderBy(unitAyah => unitAyah.UnitId)
-            .ThenBy(unitAyah => unitAyah.OrderValue)
-            .ThenBy(unitAyah => unitAyah.Id)
-            .ToListAsync(cancellationToken);
+        var units = contributionIds.Count == 0
+            ? []
+            : await db.LinkingUnits
+                .Where(unit => contributionIds.Contains(unit.SourceContributionId))
+                .OrderBy(unit => unit.SourceContributionId)
+                .ThenBy(unit => unit.OrderValue)
+                .ToListAsync(cancellationToken);
+        var unitAyahs = contributionIds.Count == 0
+            ? []
+            : await db.LinkingUnitAyahs
+                .Where(unitAyah => contributionIds.Contains(unitAyah.SourceContributionId))
+                .OrderBy(unitAyah => unitAyah.UnitId)
+                .ThenBy(unitAyah => unitAyah.OrderValue)
+                .ThenBy(unitAyah => unitAyah.Id)
+                .ToListAsync(cancellationToken);
         var unitAyahIds = unitAyahs.Select(unitAyah => unitAyah.Id).ToList();
-        var words = await db.LinkingUnitAyahWords
-            .Where(word => unitAyahIds.Contains(word.UnitAyahId))
-            .OrderBy(word => word.UnitAyahId)
-            .ThenBy(word => word.QuranWordId)
-            .ToListAsync(cancellationToken);
-        var descriptions = await db.LinkingUnitAyahDescriptions
-            .Where(description => unitAyahIds.Contains(description.UnitAyahId))
-            .OrderBy(description => description.UnitAyahId)
-            .ThenBy(description => description.OrderValue)
-            .ToListAsync(cancellationToken);
-        var ayahIds = unitAyahs.Select(unitAyah => unitAyah.AyahId).Distinct().ToList();
-        var ayahs = await db.QuranAyahs
-            .AsNoTracking()
-            .Where(ayah => ayahIds.Contains(ayah.Id))
-            .Select(ayah => new AyahRow(
-                ayah.Id, ayah.VerseKey, ayah.SurahNumber, ayah.AyahNumber))
-            .ToDictionaryAsync(ayah => ayah.Id, cancellationToken);
+        var words = unitAyahIds.Count == 0
+            ? []
+            : await db.LinkingUnitAyahWords
+                .Where(word => unitAyahIds.Contains(word.UnitAyahId))
+                .OrderBy(word => word.UnitAyahId)
+                .ThenBy(word => word.QuranWordId)
+                .ToListAsync(cancellationToken);
+        var descriptions = unitAyahIds.Count == 0
+            ? []
+            : await db.LinkingUnitAyahDescriptions
+                .Where(description => unitAyahIds.Contains(description.UnitAyahId))
+                .OrderBy(description => description.UnitAyahId)
+                .ThenBy(description => description.OrderValue)
+                .ToListAsync(cancellationToken);
+        var ayahIds = doorAyahs.Select(ayah => ayah.AyahId)
+            .Concat(unitAyahs.Select(ayah => ayah.AyahId))
+            .Distinct()
+            .ToList();
+        var ayahs = ayahIds.Count == 0
+            ? []
+            : await db.QuranAyahs
+                .AsNoTracking()
+                .Where(ayah => ayahIds.Contains(ayah.Id))
+                .Select(ayah => new AyahRow(
+                    ayah.Id, ayah.VerseKey, ayah.SurahNumber, ayah.AyahNumber))
+                .ToDictionaryAsync(ayah => ayah.Id, cancellationToken);
+        var state = new LinkingConfirmedDoorState(
+            door.Id,
+            door.Name,
+            door.DeletedAtUtc is not null,
+            door.Version,
+            AssembleDoorState(doorAyahs, doorWords, ayahs),
+            AssembleContributionState(contributions, units, unitAyahs, words, descriptions, ayahs));
 
         return new LockedConfirmationState(
-            new LinkingConfirmedDoorState(
-                door.Id,
-                door.Name,
-                door.DeletedAtUtc is not null,
-                door.Version,
-                AssembleConfirmedState(contributions, units, unitAyahs, words, descriptions, ayahs)),
+            door,
+            state,
+            doorAyahs,
+            doorWords,
             contributions.ToDictionary(contribution => contribution.Id),
             units,
             unitAyahs,
@@ -90,7 +108,33 @@ internal sealed partial class EfLinkingConfirmationWriter
             descriptions);
     }
 
-    private static IReadOnlyList<LinkingConfirmedContribution> AssembleConfirmedState(
+    private static IReadOnlyList<LinkingConfirmedDoorAyah> AssembleDoorState(
+        IReadOnlyList<LinkingDoorAyah> doorAyahs,
+        IReadOnlyList<LinkingDoorAyahWord> words,
+        IReadOnlyDictionary<int, AyahRow> ayahs)
+    {
+        var wordsByAyah = words
+            .GroupBy(word => word.DoorAyahId)
+            .ToDictionary(group => group.Key, group => group.Select(word => word.QuranWordId).ToList());
+
+        return
+        [
+            .. doorAyahs.Select(doorAyah =>
+            {
+                var ayah = ayahs[doorAyah.AyahId];
+
+                return new LinkingConfirmedDoorAyah(
+                    doorAyah.Id,
+                    doorAyah.AyahId,
+                    ayah.VerseKey,
+                    ayah.SurahNumber,
+                    ayah.AyahNumber,
+                    wordsByAyah.GetValueOrDefault(doorAyah.Id, []));
+            })
+        ];
+    }
+
+    private static IReadOnlyList<LinkingConfirmedContribution> AssembleContributionState(
         IReadOnlyList<LinkingSourceContribution> contributions,
         IReadOnlyList<LinkingUnit> units,
         IReadOnlyList<LinkingUnitAyah> unitAyahs,
@@ -147,7 +191,10 @@ internal sealed partial class EfLinkingConfirmationWriter
     }
 
     private sealed record LockedConfirmationState(
+        AbwabDoor Door,
         LinkingConfirmedDoorState State,
+        IReadOnlyList<LinkingDoorAyah> DoorAyahs,
+        IReadOnlyList<LinkingDoorAyahWord> DoorWords,
         IReadOnlyDictionary<long, LinkingSourceContribution> ContributionsById,
         IReadOnlyList<LinkingUnit> Units,
         IReadOnlyList<LinkingUnitAyah> UnitAyahs,

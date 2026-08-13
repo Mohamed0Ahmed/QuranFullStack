@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 using QuranDashboard.Tests.TestSupport.Process;
 using AccessAdminProgram = QuranDashboard.AccessAdmin.Program;
@@ -37,12 +35,6 @@ public sealed class AccessMigrationTestFixture : IAsyncLifetime
             await PostgreSqlSchemaLease.CreateAsync(database, nameof(AccessMigrationTestFixture)));
     }
 
-    public async Task MigrateToAsync(QuranDashboardDbContext db, string migrationName)
-    {
-        var migrationId = db.Database.GetMigrations()
-            .Single(migration => migration.EndsWith($"_{migrationName}", StringComparison.Ordinal));
-        await db.Database.GetService<IMigrator>().MigrateAsync(migrationId);
-    }
 }
 
 public sealed class AccessMigrationDatabase : IAsyncDisposable

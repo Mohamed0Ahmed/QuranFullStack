@@ -4,7 +4,7 @@
 import { LinkingPreflightCountsDto } from '../models/linking-preflight-counts-dto';
 export interface LinkingConfirmationSourceResultDto {
   classification: string;
-  contributionId: number;
+  contributionId: number | null;
   counts: LinkingPreflightCountsDto;
   sourceIdentity: string;
 }

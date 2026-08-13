@@ -7,7 +7,16 @@ public sealed record LinkingConfirmedDoorState(
     string DoorName,
     bool IsArchived,
     uint DoorVersion,
+    IReadOnlyList<LinkingConfirmedDoorAyah> Ayahs,
     IReadOnlyList<LinkingConfirmedContribution> Contributions);
+
+public sealed record LinkingConfirmedDoorAyah(
+    long Id,
+    int AyahId,
+    string VerseKey,
+    int SurahNumber,
+    int AyahNumber,
+    IReadOnlyList<int> QuranWordIds);
 
 public sealed record LinkingConfirmedContribution(
     long Id,

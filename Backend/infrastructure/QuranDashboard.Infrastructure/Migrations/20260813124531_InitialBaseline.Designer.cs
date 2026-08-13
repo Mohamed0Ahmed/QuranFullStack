@@ -12,8 +12,8 @@ using QuranDashboard.Infrastructure.Persistence;
 namespace QuranDashboard.Infrastructure.Migrations
 {
     [DbContext(typeof(QuranDashboardDbContext))]
-    [Migration("20260812085511_AddLinkingWorkspace")]
-    partial class AddLinkingWorkspace
+    [Migration("20260813124531_InitialBaseline")]
+    partial class InitialBaseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -759,6 +759,441 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.ToTable("user_permissions", (string)null);
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingDoorAyah", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("AyahId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ayah_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("DoorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("door_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AyahId");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DoorId", "AyahId")
+                        .IsUnique();
+
+                    b.ToTable("linking_door_ayahs", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingDoorAyahWord", b =>
+                {
+                    b.Property<long>("DoorAyahId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("door_ayah_id");
+
+                    b.Property<int>("QuranWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("quran_word_id");
+
+                    b.Property<int>("AyahId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ayah_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.HasKey("DoorAyahId", "QuranWordId");
+
+                    b.HasIndex("AyahId");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("QuranWordId");
+
+                    b.ToTable("linking_door_ayah_words", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingOperation", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("ActorUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<int>("AyahCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("ayah_count");
+
+                    b.Property<DateTimeOffset>("ConfirmedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("confirmed_at");
+
+                    b.Property<int>("DoorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("door_id");
+
+                    b.Property<Guid>("IdempotencyKey")
+                        .HasColumnType("uuid")
+                        .HasColumnName("idempotency_key");
+
+                    b.Property<string>("OutcomeJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("outcome");
+
+                    b.Property<int>("SourceCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_count");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorUserId");
+
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("DoorId", "ConfirmedAtUtc")
+                        .IsDescending(false, true);
+
+                    b.ToTable("linking_operations", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_linking_operations_outcome_schema_version", "jsonb_typeof(outcome) = 'object'\nAND jsonb_exists(outcome, 'schemaVersion')\nAND jsonb_typeof(outcome -> 'schemaVersion') = 'number'\nAND (outcome ->> 'schemaVersion') ~ '^[1-9][0-9]*$'\nAND (outcome ->> 'schemaVersion')::numeric <= 2147483647");
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingSourceContribution", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ContributionMode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("contribution_mode");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<int>("DoorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("door_id");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("label");
+
+                    b.Property<int?>("LemmaId")
+                        .HasColumnType("integer")
+                        .HasColumnName("lemma_id");
+
+                    b.Property<long>("OperationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("operation_id");
+
+                    b.Property<int>("OrderValue")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_value");
+
+                    b.Property<DateTimeOffset>("ResolvedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at_utc");
+
+                    b.Property<int>("ResolvedAyahCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("resolved_ayah_count");
+
+                    b.Property<int?>("RootId")
+                        .HasColumnType("integer")
+                        .HasColumnName("root_id");
+
+                    b.Property<string>("ScopeJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("scope");
+
+                    b.Property<string>("SourceIdentity")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source_identity");
+
+                    b.Property<byte[]>("SourceIdentityHash")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("source_identity_hash");
+
+                    b.Property<string>("SourceKind")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("source_kind");
+
+                    b.Property<int?>("StemId")
+                        .HasColumnType("integer")
+                        .HasColumnName("stem_id");
+
+                    b.Property<int?>("UniqueSimpleWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("unique_simple_word_id");
+
+                    b.Property<int?>("UniqueTashkeelWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("unique_tashkeel_word_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<int?>("WordTypeTashkeelWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("word_type_tashkeel_word_id");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "DoorId");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DeletedBy");
+
+                    b.HasIndex("DoorId")
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.HasIndex("LemmaId")
+                        .HasFilter("lemma_id IS NOT NULL");
+
+                    b.HasIndex("RootId")
+                        .HasFilter("root_id IS NOT NULL");
+
+                    b.HasIndex("StemId")
+                        .HasFilter("stem_id IS NOT NULL");
+
+                    b.HasIndex("UniqueSimpleWordId")
+                        .HasFilter("unique_simple_word_id IS NOT NULL");
+
+                    b.HasIndex("UniqueTashkeelWordId")
+                        .HasFilter("unique_tashkeel_word_id IS NOT NULL");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.HasIndex("WordTypeTashkeelWordId")
+                        .HasFilter("word_type_tashkeel_word_id IS NOT NULL");
+
+                    b.HasIndex("DoorId", "SourceIdentityHash")
+                        .IsUnique()
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.HasIndex("OperationId", "OrderValue");
+
+                    b.ToTable("linking_source_contributions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_linking_source_contributions_contribution_mode", "contribution_mode IN ('automatic', 'manual_single', 'manual_independent', 'manual_grouped')");
+
+                            t.HasCheckConstraint("ck_linking_source_contributions_kind_reference_coherence", "(source_kind = 'root'\n    AND root_id IS NOT NULL\n    AND num_nonnulls(lemma_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)\nOR (source_kind = 'lemma'\n    AND lemma_id IS NOT NULL\n    AND num_nonnulls(root_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)\nOR (source_kind = 'stem'\n    AND stem_id IS NOT NULL\n    AND num_nonnulls(root_id, lemma_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)\nOR (source_kind = 'unique_word'\n    AND num_nonnulls(unique_simple_word_id, unique_tashkeel_word_id) = 1\n    AND num_nonnulls(root_id, lemma_id, stem_id, word_type_tashkeel_word_id) = 0)\nOR (source_kind = 'word_type'\n    AND num_nonnulls(root_id, lemma_id, stem_id, word_type_tashkeel_word_id) = 1\n    AND num_nonnulls(unique_simple_word_id, unique_tashkeel_word_id) = 0)\nOR (source_kind = 'manual_mushaf_ayahs'\n    AND num_nonnulls(root_id, lemma_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)");
+
+                            t.HasCheckConstraint("ck_linking_source_contributions_manual_mode_coherence", "(source_kind = 'manual_mushaf_ayahs'\n    AND contribution_mode IN ('manual_single', 'manual_independent', 'manual_grouped'))\nOR (source_kind <> 'manual_mushaf_ayahs'\n    AND contribution_mode = 'automatic')");
+
+                            t.HasCheckConstraint("ck_linking_source_contributions_scope_schema_version", "jsonb_typeof(scope) = 'object'\nAND jsonb_exists(scope, 'schemaVersion')\nAND jsonb_typeof(scope -> 'schemaVersion') = 'number'\nAND (scope ->> 'schemaVersion') ~ '^[1-9][0-9]*$'\nAND (scope ->> 'schemaVersion')::numeric <= 2147483647");
+
+                            t.HasCheckConstraint("ck_linking_source_contributions_source_kind", "source_kind IN ('unique_word', 'root', 'lemma', 'stem', 'word_type', 'manual_mushaf_ayahs')");
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingUnit", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("IsGrouped")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_grouped");
+
+                    b.Property<int>("OrderValue")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_value");
+
+                    b.Property<long>("SourceContributionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_contribution_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceContributionId", "OrderValue")
+                        .IsUnique();
+
+                    b.ToTable("linking_units", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingUnitAyah", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("AyahId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ayah_id");
+
+                    b.Property<int>("OrderValue")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_value");
+
+                    b.Property<long>("SourceContributionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_contribution_id");
+
+                    b.Property<long>("UnitId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("unit_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AyahId");
+
+                    b.HasIndex("SourceContributionId", "AyahId")
+                        .IsUnique();
+
+                    b.HasIndex("UnitId", "OrderValue");
+
+                    b.HasIndex("UnitId", "SourceContributionId");
+
+                    b.ToTable("linking_unit_ayahs", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingUnitAyahDescription", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("OrderValue")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_value");
+
+                    b.Property<long>("UnitAyahId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("unit_ayah_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.HasIndex("UnitAyahId", "OrderValue")
+                        .IsUnique();
+
+                    b.ToTable("linking_unit_ayah_descriptions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_linking_unit_ayah_descriptions_body_not_blank", "btrim(body) <> ''");
+
+                            t.HasCheckConstraint("ck_linking_unit_ayah_descriptions_order_value", "order_value BETWEEN 1 AND 10");
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingUnitAyahWord", b =>
+                {
+                    b.Property<long>("UnitAyahId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("unit_ayah_id");
+
+                    b.Property<int>("QuranWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("quran_word_id");
+
+                    b.Property<int>("AyahId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ayah_id");
+
+                    b.HasKey("UnitAyahId", "QuranWordId");
+
+                    b.HasIndex("AyahId");
+
+                    b.HasIndex("QuranWordId");
+
+                    b.ToTable("linking_unit_ayah_words", (string)null);
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingWorkspace", b =>
                 {
                     b.Property<long>("Id")
@@ -969,6 +1404,74 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.HasIndex("AyahId");
 
                     b.ToTable("linking_workspace_source_ayah_overrides", (string)null);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingWorkspaceSourceDescription", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("AyahId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ayah_id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("OrderValue")
+                        .HasColumnType("integer")
+                        .HasColumnName("order_value");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UpdatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<long>("WorkspaceSourceId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("workspace_source_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AyahId");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.HasIndex("WorkspaceSourceId", "AyahId", "OrderValue")
+                        .IsUnique();
+
+                    b.ToTable("linking_workspace_source_descriptions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_linking_workspace_source_descriptions_body_not_blank", "btrim(body) <> ''");
+
+                            t.HasCheckConstraint("ck_linking_workspace_source_descriptions_order_value", "order_value BETWEEN 1 AND 10");
+                        });
                 });
 
             modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingWorkspaceSourceManualAyah", b =>
@@ -3220,6 +3723,198 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingDoorAyah", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", null)
+                        .WithMany()
+                        .HasForeignKey("AyahId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Access.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoor", null)
+                        .WithMany()
+                        .HasForeignKey("DoorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingDoorAyahWord", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", null)
+                        .WithMany()
+                        .HasForeignKey("AyahId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Access.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Linking.LinkingDoorAyah", null)
+                        .WithMany()
+                        .HasForeignKey("DoorAyahId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.QuranWord", null)
+                        .WithMany()
+                        .HasForeignKey("QuranWordId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingOperation", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Access.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoor", null)
+                        .WithMany()
+                        .HasForeignKey("DoorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingSourceContribution", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Access.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Access.User", null)
+                        .WithMany()
+                        .HasForeignKey("DeletedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoor", null)
+                        .WithMany()
+                        .HasForeignKey("DoorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.Morphology.QuranLemma", null)
+                        .WithMany()
+                        .HasForeignKey("LemmaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("QuranDashboard.Domain.Linking.LinkingOperation", null)
+                        .WithMany()
+                        .HasForeignKey("OperationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.Morphology.QuranRoot", null)
+                        .WithMany()
+                        .HasForeignKey("RootId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.Morphology.QuranStem", null)
+                        .WithMany()
+                        .HasForeignKey("StemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.Display.UniqueSimpleWord", null)
+                        .WithMany()
+                        .HasForeignKey("UniqueSimpleWordId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.Display.UniqueTashkeelWord", null)
+                        .WithMany()
+                        .HasForeignKey("UniqueTashkeelWordId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("QuranDashboard.Domain.Access.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.Display.UniqueTashkeelWord", null)
+                        .WithMany()
+                        .HasForeignKey("WordTypeTashkeelWordId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingUnit", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Linking.LinkingSourceContribution", null)
+                        .WithMany()
+                        .HasForeignKey("SourceContributionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingUnitAyah", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", null)
+                        .WithMany()
+                        .HasForeignKey("AyahId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Linking.LinkingUnit", null)
+                        .WithMany()
+                        .HasForeignKey("UnitId", "SourceContributionId")
+                        .HasPrincipalKey("Id", "SourceContributionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingUnitAyahDescription", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Access.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Linking.LinkingUnitAyah", null)
+                        .WithMany()
+                        .HasForeignKey("UnitAyahId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Access.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingUnitAyahWord", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", null)
+                        .WithMany()
+                        .HasForeignKey("AyahId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.QuranWord", null)
+                        .WithMany()
+                        .HasForeignKey("QuranWordId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Linking.LinkingUnitAyah", null)
+                        .WithMany()
+                        .HasForeignKey("UnitAyahId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingWorkspace", b =>
                 {
                     b.HasOne("QuranDashboard.Domain.Access.User", null)
@@ -3297,6 +3992,33 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", null)
                         .WithMany()
                         .HasForeignKey("AyahId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Linking.LinkingWorkspaceSource", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceSourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Linking.LinkingWorkspaceSourceDescription", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", null)
+                        .WithMany()
+                        .HasForeignKey("AyahId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Access.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Access.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
