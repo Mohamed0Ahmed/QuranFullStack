@@ -311,7 +311,6 @@ export class LinkingWorkspaceStore {
       ayahOverrideIds: toAyahIds(ayahInclusion.verseKeys, ayahIdByVerseKey),
       configuration: { ...item.configuration, ayahInclusion },
       lastResolvedCount: universe.length,
-      lastResolvedCountIsStale: false,
     });
   }
 

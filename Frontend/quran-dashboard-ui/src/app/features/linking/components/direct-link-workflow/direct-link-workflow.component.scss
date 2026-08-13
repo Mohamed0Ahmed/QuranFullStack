@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: flex;
   flex: 1 1 auto;
@@ -30,33 +32,39 @@
 .direct-link-workflow__header p,
 .direct-link-workflow__selection,
 .direct-link-workflow__notice {
-  color: var(--qd-color-text-muted);
+  color: var(--qd-ink-muted);
 }
 
-.direct-link-workflow__header .direct-link-workflow__title {
-  color: var(--qd-color-text);
+.direct-link-workflow__header h2 {
+  margin: 0;
+  color: var(--qd-ink);
   font-family: var(--qd-font-naskh);
-  font-size: var(--qd-type-h4);
-  line-height: var(--qd-type-h4-lh);
+  font-size: var(--qd-type-h3);
+  line-height: var(--qd-type-h3-lh);
 }
 
 .direct-link-workflow__steps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--qd-space-2);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--qd-space-3);
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 var(--qd-space-1);
 }
 
 .direct-link-workflow__steps li {
-  color: var(--qd-color-text-muted);
-  font-size: var(--qd-font-size-sm);
+  min-inline-size: 0;
+  padding-block-end: var(--qd-space-2);
+  color: var(--qd-ink-muted);
+  border-block-end: 2px solid var(--qd-border);
+  font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
 }
 
-.direct-link-workflow__steps .direct-link-workflow__step--active {
-  color: var(--qd-color-text);
-  font-weight: var(--qd-font-weight-semibold);
+.direct-link-workflow__steps li[aria-current='step'] {
+  color: var(--qd-accent-text);
+  border-block-end-color: var(--qd-accent);
+  font-weight: 600;
 }
 
 .direct-link-workflow__body {
@@ -66,6 +74,11 @@
 
 .direct-link-workflow__source-status {
   min-block-size: 0;
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .direct-link-workflow { gap: var(--qd-space-3); padding: var(--qd-space-3); }
+  .direct-link-workflow__steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 .direct-link-workflow__highlight-step,
@@ -88,7 +101,7 @@
 }
 
 .direct-link-workflow__review-descriptions-source {
-  color: var(--qd-color-text-muted);
+  color: var(--qd-ink-muted);
   font-size: var(--qd-type-meta);
   line-height: var(--qd-type-meta-lh);
 }

@@ -30,4 +30,12 @@ export class LinkingWorkspaceSourceRowComponent {
     const configuration = this.row().item.configuration;
     return configuration.kind === 'automatic' ? configuration : null;
   });
+
+  protected toggleMembershipFromRow(event: MouseEvent): void {
+    if (event.target instanceof Element && event.target.closest('a, button, input, label, select, textarea')) {
+      return;
+    }
+
+    this.membershipChanged.emit(!this.row().checked);
+  }
 }

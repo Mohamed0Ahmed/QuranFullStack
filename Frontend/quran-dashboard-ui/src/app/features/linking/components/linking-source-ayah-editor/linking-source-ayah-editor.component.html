@@ -4,9 +4,6 @@
       @if (state().sourceLabel; as sourceLabel) {
         <p class="linking-source-ayah-editor__source">{{ sourceLabel }}</p>
       }
-      @if (currentItem()?.lastResolvedCountIsStale && currentItem()?.lastResolvedCount !== null) {
-        <p class="linking-source-ayah-editor__stale-count">{{ labels.sourceEditorPreviousCount }}</p>
-      }
     </div>
     <button qdAction="tertiary" size="sm" type="button" (click)="dismiss()">
       {{ labels.sourceEditorBack }}

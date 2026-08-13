@@ -22,7 +22,9 @@
     }
     @case ('ready') {
       @if (preflight(); as result) {
-        <p class="linking-preflight-step__door">{{ labels.chooseDoor }}: {{ result.doorName }}</p>
+        <div class="linking-preflight-step__context">
+          <p class="linking-preflight-step__door"><span>{{ labels.chooseDoor }}</span><strong>{{ result.doorName }}</strong></p>
+        </div>
 
         @if (isNoOp()) {
           <qd-notice [message]="labels.preflightNoOp" />
@@ -31,8 +33,8 @@
           <qd-error-state severity="write" [message]="labels.preflightBlocked" />
         }
 
-        <dl class="linking-preflight-step__totals">
-          <div><dt>{{ labels.preflightCountRequested }}</dt><dd>{{ result.totals.requested }}</dd></div>
+        <dl class="linking-preflight-step__totals" aria-label="ملخص أثر الربط">
+          <div class="linking-preflight-step__total linking-preflight-step__total--requested"><dt>{{ labels.preflightCountRequested }}</dt><dd>{{ result.totals.requested }}</dd></div>
           <div><dt>{{ labels.preflightCountNew }}</dt><dd>{{ result.totals.new }}</dd></div>
           <div><dt>{{ labels.preflightCountOverlapping }}</dt><dd>{{ result.totals.overlapping }}</dd></div>
           <div><dt>{{ labels.preflightCountUnchanged }}</dt><dd>{{ result.totals.unchanged }}</dd></div>
@@ -48,13 +50,7 @@
                 <div>
                   <p class="linking-preflight-step__source-label">{{ source.label }}</p>
                   <p class="linking-preflight-step__source-meta">
-                    {{ labels.sourceClassifications[source.classification] }}
-                    · {{ labels.preflightCountRequested }} {{ source.counts.requested }}
-                    · {{ labels.preflightCountNew }} {{ source.counts.new }}
-                    · {{ labels.preflightCountOverlapping }} {{ source.counts.overlapping }}
-                    · {{ labels.preflightCountUpdated }} {{ source.counts.updated }}
-                    · {{ labels.preflightCountRemoved }} {{ source.counts.removed }}
-                    · {{ labels.preflightCountInvalid }} {{ invalidAyahCount(source) }}
+                    {{ labels.sourceClassifications[source.classification] }} · {{ labels.preflightCountRequested }} {{ source.counts.requested }} {{ labels.ayahUnit }}
                   </p>
                 </div>
                 <button

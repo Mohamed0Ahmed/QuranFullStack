@@ -29,7 +29,6 @@ export class LinkingWorkspaceComponent {
     return this.workspace.items().map((item) => ({
       item,
       checked: checked.has(item.sourceKey),
-      countStatus: item.lastResolvedCount === null ? 'unresolved' : item.lastResolvedCountIsStale ? 'stale' : 'ready',
       countLabel: item.lastResolvedCount === null ? this.labels.unresolvedResultCount : `${item.lastResolvedCount} ${this.labels.ayahUnit}`,
     }));
   });

@@ -53,7 +53,6 @@ export interface LinkingWorkspaceItem {
   ayahIdByVerseKey: Readonly<Record<string, number>>;
   descriptions: readonly LinkingWorkspaceDescription[];
   lastResolvedCount: number | null;
-  lastResolvedCountIsStale: boolean;
 }
 
 export interface LinkingWorkspaceSnapshot {

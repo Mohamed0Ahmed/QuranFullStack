@@ -1,32 +1,59 @@
-<article
-  qdResultItem
-  [selectable]="true"
-  [selected]="row().checked"
-  [position]="position()"
-  [setSize]="setSize()"
-  class="linking-workspace-source-row"
->
-  <div class="linking-workspace-source-row__identity">
-    <p>{{ sourceKind() }}</p>
-    <h3>{{ row().item.source.label }}</h3>
+<!-- impeccable-variants-start 9b3d80ea -->
+<div data-impeccable-variants="9b3d80ea" data-impeccable-variant-count="3" style="display: contents">
+  <!-- Variants: insert below this line -->
+  <style data-impeccable-css="9b3d80ea">
+    @scope ([data-impeccable-variant="1"]) {
+      :scope > .linking-workspace-source-row { grid-template-columns: minmax(12rem, 1.4fr) auto auto; gap: var(--qd-space-3); padding: var(--qd-space-4); border: var(--qd-hairline); background: var(--qd-surface); }
+      :scope > .linking-workspace-source-row .linking-workspace-source-row__identity { display: grid; gap: var(--qd-space-1); }
+      :scope > .linking-workspace-source-row .linking-workspace-source-row__identity h3 { font-size: var(--qd-type-h3); }
+      :scope > .linking-workspace-source-row .linking-workspace-source-row__count { border-inline-start: var(--qd-hairline); padding-inline-start: var(--qd-space-3); }
+      :scope[data-p-density="airy"] > .linking-workspace-source-row { gap: var(--qd-space-5); padding-block: var(--qd-space-5); }
+    }
+    @scope ([data-impeccable-variant="2"]) {
+      :scope > .linking-workspace-source-row { grid-template-columns: minmax(10rem, 1fr) minmax(13rem, 1.6fr) auto; gap: var(--qd-space-3); padding: var(--qd-space-4); border: var(--qd-hairline); background: var(--qd-surface); }
+      :scope > .linking-workspace-source-row .linking-workspace-source-row__identity { grid-row: span 2; align-self: center; }
+      :scope > .linking-workspace-source-row .linking-workspace-source-row__count { grid-column: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--qd-space-3); }
+      :scope > .linking-workspace-source-row .linking-workspace-source-row__words { grid-column: 2; }
+      :scope > .linking-workspace-source-row .linking-workspace-source-row__membership { grid-column: 3; grid-row: 1; }
+      :scope > .linking-workspace-source-row .qd-action--danger { grid-column: 3; grid-row: 2; }
+      :scope[data-p-context="compact"] > .linking-workspace-source-row .linking-workspace-source-row__count > span { display: none; }
+    }
+    @scope ([data-impeccable-variant="3"]) {
+      :scope > .linking-workspace-source-row { grid-template-columns: minmax(12rem, 1fr) auto; gap: var(--qd-space-3); padding: var(--qd-space-4); border: var(--qd-hairline); background: var(--qd-section-bg); }
+      :scope > .linking-workspace-source-row .linking-workspace-source-row__identity { padding-block-end: var(--qd-space-3); border-block-end: var(--qd-hairline); }
+      :scope > .linking-workspace-source-row .linking-workspace-source-row__count { grid-column: 1; display: flex; align-items: center; justify-content: space-between; gap: var(--qd-space-3); }
+      :scope > .linking-workspace-source-row .linking-workspace-source-row__words { grid-column: 1; }
+      :scope > .linking-workspace-source-row .linking-workspace-source-row__membership { grid-column: 2; grid-row: 1; }
+      :scope > .linking-workspace-source-row .qd-action--danger { grid-column: 2; grid-row: 2 / span 2; align-self: end; }
+      :scope[data-p-actions="quiet"] > .linking-workspace-source-row .qd-action--danger { color: var(--qd-danger); background: transparent; border-color: var(--qd-danger-hairline); }
+    }
+  </style>
+  <div data-impeccable-variant="1" data-impeccable-params='[{"id":"density","kind":"steps","default":"snug","label":"كثافة الصف","options":[{"value":"snug","label":"متوازن"},{"value":"airy","label":"أوسع"}]}]'>
+    <article qdResultItem [selectable]="true" [selected]="row().checked" [position]="position()" [setSize]="setSize()" class="linking-workspace-source-row" (click)="toggleMembershipFromRow($event)">
+      <div class="linking-workspace-source-row__identity"><p>{{ sourceKind() }}</p><h3>{{ row().item.source.label }}</h3></div>
+      <div class="linking-workspace-source-row__count"><span>{{ labels.resolvedResultCount }}</span><button qdAction="tertiary" size="sm" type="button" [attr.data-linking-editor-source-key]="row().item.sourceKey" (click)="editRequested.emit()">{{ row().countLabel }}</button></div>
+      @if (automaticConfiguration(); as configuration) { <label class="qd-check-row linking-workspace-source-row__words"><input class="qd-checkbox" type="checkbox" [checked]="configuration.automaticWordMatchesEnabled" (change)="automaticWordsChanged.emit($any($event.target).checked)" /><span>{{ labels.highlightStep }}</span></label> } @else { <button qdAction="tertiary" size="sm" type="button" (click)="manualWordsRequested.emit()">{{ labels.manualWords }}</button> }
+      <button qdAction="danger" size="sm" type="button" (click)="removeRequested.emit()">{{ labels.removeSource }}</button>
+      <label class="qd-check-row linking-workspace-source-row__membership"><input class="qd-checkbox" type="checkbox" [checked]="row().checked" (change)="membershipChanged.emit($any($event.target).checked)" /><span>{{ labels.selectForOperation }}</span></label>
+    </article>
   </div>
-  <div class="linking-workspace-source-row__count">
-    <span>{{ labels.resolvedResultCount }}</span>
-    <button qdAction="tertiary" size="sm" type="button" [attr.data-linking-editor-source-key]="row().item.sourceKey" (click)="editRequested.emit()">
-      {{ row().countLabel }}
-    </button>
+  <div data-impeccable-variant="2" style="display: none" data-impeccable-params='[{"id":"context","kind":"steps","default":"complete","label":"سياق النتائج","options":[{"value":"complete","label":"كامل"},{"value":"compact","label":"مكثف"}]}]'>
+    <article qdResultItem [selectable]="true" [selected]="row().checked" [position]="position()" [setSize]="setSize()" class="linking-workspace-source-row" (click)="toggleMembershipFromRow($event)">
+      <div class="linking-workspace-source-row__identity"><p>{{ sourceKind() }}</p><h3>{{ row().item.source.label }}</h3></div>
+      <div class="linking-workspace-source-row__count"><span>{{ labels.resolvedResultCount }}</span><button qdAction="tertiary" size="sm" type="button" [attr.data-linking-editor-source-key]="row().item.sourceKey" (click)="editRequested.emit()">{{ row().countLabel }}</button></div>
+      @if (automaticConfiguration(); as configuration) { <label class="qd-check-row linking-workspace-source-row__words"><input class="qd-checkbox" type="checkbox" [checked]="configuration.automaticWordMatchesEnabled" (change)="automaticWordsChanged.emit($any($event.target).checked)" /><span>{{ labels.highlightStep }}</span></label> } @else { <button qdAction="tertiary" size="sm" type="button" (click)="manualWordsRequested.emit()">{{ labels.manualWords }}</button> }
+      <button qdAction="danger" size="sm" type="button" (click)="removeRequested.emit()">{{ labels.removeSource }}</button>
+      <label class="qd-check-row linking-workspace-source-row__membership"><input class="qd-checkbox" type="checkbox" [checked]="row().checked" (change)="membershipChanged.emit($any($event.target).checked)" /><span>{{ labels.selectForOperation }}</span></label>
+    </article>
   </div>
-  @if (automaticConfiguration(); as configuration) {
-    <label class="qd-check-row linking-workspace-source-row__words">
-      <input class="qd-checkbox" type="checkbox" [checked]="configuration.automaticWordMatchesEnabled" (change)="automaticWordsChanged.emit($any($event.target).checked)" />
-      <span>{{ labels.highlightStep }}</span>
-    </label>
-  } @else {
-    <button qdAction="tertiary" size="sm" type="button" (click)="manualWordsRequested.emit()">{{ labels.manualWords }}</button>
-  }
-  <button qdAction="danger" size="sm" type="button" (click)="removeRequested.emit()">{{ labels.removeSource }}</button>
-  <label class="qd-check-row linking-workspace-source-row__membership">
-    <input class="qd-checkbox" type="checkbox" [checked]="row().checked" (change)="membershipChanged.emit($any($event.target).checked)" />
-    <span>{{ labels.selectForOperation }}</span>
-  </label>
-</article>
+  <div data-impeccable-variant="3" style="display: none" data-impeccable-params='[{"id":"actions","kind":"steps","default":"clear","label":"إبراز الإزالة","options":[{"value":"clear","label":"واضح"},{"value":"quiet","label":"هادئ"}]}]'>
+    <article qdResultItem [selectable]="true" [selected]="row().checked" [position]="position()" [setSize]="setSize()" class="linking-workspace-source-row" (click)="toggleMembershipFromRow($event)">
+      <div class="linking-workspace-source-row__identity"><p>{{ sourceKind() }}</p><h3>{{ row().item.source.label }}</h3></div>
+      <div class="linking-workspace-source-row__count"><span>{{ labels.resolvedResultCount }}</span><button qdAction="tertiary" size="sm" type="button" [attr.data-linking-editor-source-key]="row().item.sourceKey" (click)="editRequested.emit()">{{ row().countLabel }}</button></div>
+      @if (automaticConfiguration(); as configuration) { <label class="qd-check-row linking-workspace-source-row__words"><input class="qd-checkbox" type="checkbox" [checked]="configuration.automaticWordMatchesEnabled" (change)="automaticWordsChanged.emit($any($event.target).checked)" /><span>{{ labels.highlightStep }}</span></label> } @else { <button qdAction="tertiary" size="sm" type="button" (click)="manualWordsRequested.emit()">{{ labels.manualWords }}</button> }
+      <button qdAction="danger" size="sm" type="button" (click)="removeRequested.emit()">{{ labels.removeSource }}</button>
+      <label class="qd-check-row linking-workspace-source-row__membership"><input class="qd-checkbox" type="checkbox" [checked]="row().checked" (change)="membershipChanged.emit($any($event.target).checked)" /><span>{{ labels.selectForOperation }}</span></label>
+    </article>
+  </div>
+</div>
+<!-- impeccable-variants-end 9b3d80ea -->

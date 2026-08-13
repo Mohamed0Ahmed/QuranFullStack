@@ -109,7 +109,6 @@ export const LINKING_LABELS = {
   sourceEditorBack: 'العودة إلى مساحة الربط',
   sourceEditorLoading: 'يجري تحميل آيات المصدر كاملة',
   sourceEditorReady: 'آية متاحة للاختيار',
-  sourceEditorPreviousCount: 'العدد السابق يحتاج إلى تحديث',
   sourceEditorUnsupported: 'لا يمكن تحرير هذا المصدر قبل اكتمال مصدر المصحف اليدوي.',
   sourceEditorAyahList: 'قائمة آيات المصدر',
   descriptions: 'الأوصاف',

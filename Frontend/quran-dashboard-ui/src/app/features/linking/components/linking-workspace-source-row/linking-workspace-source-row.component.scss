@@ -6,6 +6,7 @@
   display: grid;
   grid-template-columns: minmax(0, 2fr) auto auto auto auto;
   align-items: center;
+  cursor: pointer;
 }
 
 .linking-workspace-source-row__identity { min-inline-size: 0; }

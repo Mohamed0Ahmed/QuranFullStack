@@ -166,7 +166,6 @@ function toWorkspaceItem(source: LinkingWorkspaceSourceResponse): LinkingWorkspa
       body: description.body,
     })),
     lastResolvedCount: source.lastResolvedCount,
-    lastResolvedCountIsStale: true,
   };
 }
 

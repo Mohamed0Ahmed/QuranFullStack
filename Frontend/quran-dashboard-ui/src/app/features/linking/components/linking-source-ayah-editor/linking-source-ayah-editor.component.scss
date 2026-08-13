@@ -42,7 +42,6 @@ qd-linking-ayah-descriptions {
 }
 
 .linking-source-ayah-editor__source,
-.linking-source-ayah-editor__stale-count,
 .linking-source-ayah-editor__ready-count {
   margin: 0;
 }
@@ -52,12 +51,6 @@ qd-linking-ayah-descriptions {
   font-family: var(--qd-font-naskh);
   font-size: var(--qd-type-h4);
   line-height: var(--qd-type-h4-lh);
-}
-
-.linking-source-ayah-editor__stale-count {
-  color: var(--qd-text-muted);
-  font-size: var(--qd-type-meta);
-  line-height: var(--qd-type-meta-lh);
 }
 
 .linking-source-ayah-editor__ready-count {

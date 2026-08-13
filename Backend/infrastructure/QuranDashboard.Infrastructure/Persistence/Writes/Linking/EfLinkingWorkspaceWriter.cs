@@ -80,6 +80,7 @@ internal sealed partial class EfLinkingWorkspaceWriter(
                 LinkingLimits.MaxPreparedSources.ToString(CultureInfo.InvariantCulture)));
         }
 
+        var resolved = await resolution.ResolveAsync(descriptor, cancellationToken);
         var isManual = form.Kind == LinkingSourceKind.ManualMushafAyahs;
 
         var source = new LinkingWorkspaceSource
@@ -100,6 +101,8 @@ internal sealed partial class EfLinkingWorkspaceWriter(
             InclusionMode = LinkingInclusionMode.AllExcept,
             AutomaticWordMatchesEnabled = isManual ? null : true,
             ManualLinkShape = isManual ? LinkingManualLinkShape.Independent : null,
+            LastResolvedCount = resolved.TotalAyahCount,
+            LastResolvedAtUtc = resolved.ResolvedAtUtc,
             CreatedAtUtc = now,
             CreatedBy = userId,
             UpdatedAtUtc = now,
