@@ -67,14 +67,6 @@ heading for production-source changes.
 
 ## Active Spec Kit Feature
 
-- Feature slug: `001-abwab-linking-backend` (spec: `specs/001-abwab-linking-backend/spec.md`)
-- Plan: `specs/001-abwab-linking-backend/plan.md` (with tasks in `tasks.md`)
-- Decision record: `docs/abwab-linking-backend-implementation-plan.md`, with
-  `docs/abwab-linking-backend-database-architecture-report.md` and
-  `docs/abwab-linking-frontend-v2-current-state-report.md`
-
-- When a feature opens, record it here as: feature slug, its `specs/<feature>/plan.md`, and
-  its `docs/feature-XXX-*/` decision record. Clear this section back to "None" in the same
-  deletion commit that removes those artifacts, per the lifecycle rule above.
+None.
 
 <!-- SPECKIT END -->
