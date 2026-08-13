@@ -5,9 +5,15 @@ import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-s
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 import { QdNoticeComponent } from '../../../../shared/ui/notice/notice.component';
 import { LINKING_LABELS } from '../../models/linking.labels';
+import { LinkingManualLinkShape } from '../../models/linking-manual-mushaf.models';
 import { LinkingWorkflowFacade, LinkingWorkflowStep } from '../../state/linking-workflow.facade';
+import {
+  LinkingAyahSelectionComponent,
+  LinkingWordToggle,
+} from '../linking-ayah-selection/linking-ayah-selection.component';
 import { LinkingDirectSourcePreviewComponent } from '../linking-direct-source-preview/linking-direct-source-preview.component';
 import { LinkingDoorStepComponent } from '../linking-door-step/linking-door-step.component';
+import { LinkingManualShapeSelectorComponent } from '../linking-manual-shape-selector/linking-manual-shape-selector.component';
 import { LinkingPreflightStepComponent } from '../linking-preflight-step/linking-preflight-step.component';
 
 @Component({
@@ -18,8 +24,10 @@ import { LinkingPreflightStepComponent } from '../linking-preflight-step/linking
     QdErrorStateComponent,
     ExplorerPanelSkeletonComponent,
     QdNoticeComponent,
+    LinkingAyahSelectionComponent,
     LinkingDirectSourcePreviewComponent,
     LinkingDoorStepComponent,
+    LinkingManualShapeSelectorComponent,
     LinkingPreflightStepComponent,
   ],
   templateUrl: './direct-link-workflow.component.html',
@@ -37,16 +45,23 @@ export class DirectLinkWorkflowComponent {
   protected readonly canSubmit = this.workflow.canSubmit;
   protected readonly directConfiguration = this.workflow.directConfiguration;
   protected readonly directPreviewAyahs = this.workflow.directPreviewAyahs;
+  protected readonly directSelectedCount = this.workflow.directSelectedCount;
+  protected readonly directManualGrouped = this.workflow.directManualGrouped;
   protected readonly canAdvanceSource = this.workflow.canAdvanceSource;
   protected readonly directAutomaticConfiguration = computed(() => {
     const configuration = this.directConfiguration();
     return configuration?.kind === 'automatic' ? configuration : null;
   });
-  protected readonly steps = computed<readonly LinkingWorkflowStep[]>(() =>
-    this.directConfiguration()?.kind === 'manual'
-      ? ['resolve', 'door', 'preflight']
-      : ['configure-source', 'resolve', 'door', 'preflight'],
-  );
+  protected readonly directManualConfiguration = computed(() => {
+    const configuration = this.directConfiguration();
+    return configuration?.kind === 'manual' ? configuration : null;
+  });
+  protected readonly steps: readonly LinkingWorkflowStep[] = [
+    'configure-source',
+    'resolve',
+    'door',
+    'preflight',
+  ];
 
   protected next(): void { this.workflow.next(); }
   protected cancel(): void { this.workflow.dismiss(); }
@@ -62,5 +77,26 @@ export class DirectLinkWorkflowComponent {
       this.workflow.setDirectAutomaticWords(!configuration.automaticWordMatchesEnabled);
     }
   }
+
+  protected toggleManualAyah(verseKey: string): void {
+    this.workflow.toggleDirectManualAyah(verseKey);
+  }
+
+  protected toggleManualWord(toggle: LinkingWordToggle): void {
+    this.workflow.toggleDirectManualWord(toggle.verseKey, toggle.quranWordId);
+  }
+
+  protected selectAllManualAyahs(): void {
+    this.workflow.selectAllDirectAyahs();
+  }
+
+  protected clearAllManualAyahs(): void {
+    this.workflow.clearAllDirectAyahs();
+  }
+
+  protected setManualLinkShape(linkShape: LinkingManualLinkShape): void {
+    this.workflow.setDirectManualLinkShape(linkShape);
+  }
+
   protected stepLabel(step: LinkingWorkflowStep): string { return this.labels.operationSteps[step]; }
 }

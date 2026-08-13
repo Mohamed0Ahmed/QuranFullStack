@@ -40,6 +40,11 @@ export class LinkingSourceSetCoordinator {
 
   readonly state = this.stateSignal.asReadonly();
   readonly memberStates = computed(() => this.stateSignal().members);
+  readonly firstMemberResolvedAyahs = computed(() => {
+    this.stateSignal();
+    const sourceKey = this.members[0]?.sourceKey;
+    return sourceKey === undefined ? [] : (this.rawAyahsBySourceKey.get(sourceKey) ?? []);
+  });
   readonly result = computed(() => this.stateSignal().result);
   readonly canContinue = computed(() => this.result() !== null && this.result()!.mergedSelection.ayahs.length > 0);
 

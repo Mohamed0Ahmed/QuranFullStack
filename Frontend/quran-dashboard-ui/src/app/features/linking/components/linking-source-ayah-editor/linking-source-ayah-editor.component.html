@@ -18,45 +18,11 @@
 
   @if (currentItem(); as item) {
     @if (item.configuration.kind === 'manual') {
-      <section class="linking-source-ayah-editor__manual-options" [attr.aria-label]="labels.manualShape">
-        @if (selectedCount() > 1) {
-          <fieldset class="linking-source-ayah-editor__shape">
-            <legend>{{ labels.manualShape }}</legend>
-            <div class="linking-source-ayah-editor__shape-buttons">
-              <button
-                qdAction="secondary"
-                size="sm"
-                type="button"
-                class="linking-source-ayah-editor__shape-button"
-                [class.qd-is-selected]="item.configuration.linkShape === 'grouped'"
-                [attr.aria-pressed]="item.configuration.linkShape === 'grouped'"
-                (click)="setManualLinkShape('grouped')"
-              >
-                <span class="linking-source-ayah-editor__shape-mark" aria-hidden="true">
-                  {{ item.configuration.linkShape === 'grouped' ? '✓' : '' }}
-                </span>
-                <span>{{ labels.manualShapeGrouped }}</span>
-              </button>
-              <button
-                qdAction="secondary"
-                size="sm"
-                type="button"
-                class="linking-source-ayah-editor__shape-button"
-                [class.qd-is-selected]="item.configuration.linkShape === 'independent'"
-                [attr.aria-pressed]="item.configuration.linkShape === 'independent'"
-                (click)="setManualLinkShape('independent')"
-              >
-                <span class="linking-source-ayah-editor__shape-mark" aria-hidden="true">
-                  {{ item.configuration.linkShape === 'independent' ? '✓' : '' }}
-                </span>
-                <span>{{ labels.manualShapeIndependent }}</span>
-              </button>
-            </div>
-          </fieldset>
-        } @else {
-          <p class="linking-source-ayah-editor__shape-hint">{{ labels.manualShapeSingle }}</p>
-        }
-      </section>
+      <qd-linking-manual-shape-selector
+        [selectedCount]="selectedCount()"
+        [linkShape]="item.configuration.linkShape"
+        (linkShapeChanged)="setManualLinkShape($event)"
+      />
     }
   }
 
@@ -97,7 +63,7 @@
               [attr.aria-pressed]="configuration.automaticWordMatchesEnabled"
               (click)="setAutomaticWordMatches(!configuration.automaticWordMatchesEnabled)"
             >
-              <span class="linking-source-ayah-editor__shape-mark" aria-hidden="true">
+              <span class="linking-source-ayah-editor__words-toggle-mark" aria-hidden="true">
                 {{ configuration.automaticWordMatchesEnabled ? '✓' : '' }}
               </span>
               <span>{{ labels.highlightStep }}</span>

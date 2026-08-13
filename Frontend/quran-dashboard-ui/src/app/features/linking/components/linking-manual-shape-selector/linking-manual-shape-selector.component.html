@@ -1,0 +1,39 @@
+<section class="linking-manual-shape-selector" [attr.aria-label]="labels.manualShape">
+  @if (selectedCount() > 1) {
+    <fieldset class="linking-manual-shape-selector__fieldset">
+      <legend>{{ labels.manualShape }}</legend>
+      <div class="linking-manual-shape-selector__buttons">
+        <button
+          qdAction="secondary"
+          size="sm"
+          type="button"
+          class="linking-manual-shape-selector__button"
+          [class.qd-is-selected]="linkShape() === 'grouped'"
+          [attr.aria-pressed]="linkShape() === 'grouped'"
+          (click)="linkShapeChanged.emit('grouped')"
+        >
+          <span class="linking-manual-shape-selector__mark" aria-hidden="true">
+            {{ linkShape() === 'grouped' ? '✓' : '' }}
+          </span>
+          <span>{{ labels.manualShapeGrouped }}</span>
+        </button>
+        <button
+          qdAction="secondary"
+          size="sm"
+          type="button"
+          class="linking-manual-shape-selector__button"
+          [class.qd-is-selected]="linkShape() === 'independent'"
+          [attr.aria-pressed]="linkShape() === 'independent'"
+          (click)="linkShapeChanged.emit('independent')"
+        >
+          <span class="linking-manual-shape-selector__mark" aria-hidden="true">
+            {{ linkShape() === 'independent' ? '✓' : '' }}
+          </span>
+          <span>{{ labels.manualShapeIndependent }}</span>
+        </button>
+      </div>
+    </fieldset>
+  } @else {
+    <p class="linking-manual-shape-selector__hint">{{ labels.manualShapeSingle }}</p>
+  }
+</section>

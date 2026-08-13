@@ -29,53 +29,18 @@
   min-inline-size: 11rem;
 }
 
-.linking-source-ayah-editor__manual-options {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: end;
-  gap: var(--qd-space-3);
-  padding: var(--qd-space-3);
-  border: var(--qd-hairline);
-  background: var(--qd-surface-quiet);
-}
-
-.linking-source-ayah-editor__words-button {
-  min-inline-size: 10rem;
-}
-
-.linking-source-ayah-editor__shape {
-  display: grid;
-  gap: var(--qd-space-1);
-  min-inline-size: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.linking-source-ayah-editor__shape-buttons {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--qd-space-2);
-}
-
-.linking-source-ayah-editor__shape-button {
-  inline-size: 100%;
-  white-space: nowrap;
-}
-
 .linking-source-ayah-editor__words-toggle {
   min-inline-size: 8rem;
   white-space: nowrap;
 }
 
-.linking-source-ayah-editor__shape-button.qd-is-selected:hover,
 .linking-source-ayah-editor__words-toggle.qd-is-selected:hover {
   border-color: var(--qd-accent);
   background: var(--qd-accent-tint);
   color: var(--qd-accent-text);
 }
 
-.linking-source-ayah-editor__shape-mark {
+.linking-source-ayah-editor__words-toggle-mark {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -88,21 +53,10 @@
   line-height: 1;
 }
 
-.linking-source-ayah-editor__shape-button.qd-is-selected .linking-source-ayah-editor__shape-mark,
-.linking-source-ayah-editor__words-toggle.qd-is-selected .linking-source-ayah-editor__shape-mark {
+.linking-source-ayah-editor__words-toggle.qd-is-selected .linking-source-ayah-editor__words-toggle-mark {
   border-color: var(--qd-accent);
   background: var(--qd-accent);
   color: var(--qd-accent-fg);
-}
-
-.linking-source-ayah-editor__shape-hint {
-  align-self: center;
-  margin: 0;
-  color: var(--qd-text-muted);
-}
-
-.linking-source-ayah-editor__manual-options legend {
-  margin: 0;
 }
 
 .linking-source-ayah-editor__source,
@@ -124,26 +78,8 @@
 }
 
 @media (max-width: bp.$qd-bp-compact-max) {
-  .linking-source-ayah-editor__manual-options {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: stretch;
-  }
-
-  .linking-source-ayah-editor__words-button {
-    inline-size: 100%;
-    min-inline-size: 0;
-  }
-
-  .linking-source-ayah-editor__shape-buttons {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .linking-source-ayah-editor__shape-button,
   .linking-source-ayah-editor__words-toggle {
     white-space: normal;
-  }
-
-  .linking-source-ayah-editor__words-toggle {
     min-inline-size: 0;
   }
 }

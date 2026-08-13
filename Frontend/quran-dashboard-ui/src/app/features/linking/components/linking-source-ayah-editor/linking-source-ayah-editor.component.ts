@@ -20,6 +20,7 @@ import {
   LinkingAyahSelectionComponent,
   type LinkingWordToggle,
 } from '../linking-ayah-selection/linking-ayah-selection.component';
+import { LinkingManualShapeSelectorComponent } from '../linking-manual-shape-selector/linking-manual-shape-selector.component';
 
 @Component({
   selector: 'qd-linking-source-ayah-editor',
@@ -30,6 +31,7 @@ import {
     QdErrorStateComponent,
     ExplorerPanelSkeletonComponent,
     LinkingAyahSelectionComponent,
+    LinkingManualShapeSelectorComponent,
   ],
   templateUrl: './linking-source-ayah-editor.component.html',
   styleUrl: './linking-source-ayah-editor.component.scss',

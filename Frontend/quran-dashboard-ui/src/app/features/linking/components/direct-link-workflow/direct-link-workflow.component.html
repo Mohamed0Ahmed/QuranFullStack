@@ -4,7 +4,7 @@
   </header>
 
   <ol class="direct-link-workflow__steps" aria-label="مراحل الربط">
-    @for (step of steps(); track step) {
+    @for (step of steps; track step) {
       <li
         [class.direct-link-workflow__step--current]="currentStep() === step"
         [class.direct-link-workflow__step--available]="canNavigateTo(step)"
@@ -43,32 +43,55 @@
               </button>
               <p>{{ labels.configureSourceHint }}</p>
             </header>
+          } @else if (directManualConfiguration(); as configuration) {
+            <qd-linking-manual-shape-selector
+              [selectedCount]="directSelectedCount()"
+              [linkShape]="configuration.linkShape"
+              (linkShapeChanged)="setManualLinkShape($event)"
+            />
+          }
 
-            @if (memberStates()[0]; as member) {
-              @switch (member.status) {
-                @case ('loading') {
-                  <qd-panel-skeleton
-                    shape="rows"
-                    [loadingLabel]="labels.sourceLoading + ' (' + member.progress.loaded + (member.progress.total === null ? '' : ' / ' + member.progress.total) + ')'"
-                  />
-                }
-                @case ('error') {
-                  <qd-error-state
-                    severity="read"
-                    [message]="member.errorMessage || labels.sourceLoadError"
-                    [actionLabel]="labels.retry"
-                    (action)="retry()"
-                  />
-                }
-                @case ('ready') {
+          @if (memberStates()[0]; as member) {
+            @switch (member.status) {
+              @case ('loading') {
+                <qd-panel-skeleton
+                  shape="rows"
+                  [loadingLabel]="labels.sourceLoading + ' (' + member.progress.loaded + (member.progress.total === null ? '' : ' / ' + member.progress.total) + ')'"
+                />
+              }
+              @case ('error') {
+                <qd-error-state
+                  severity="read"
+                  [message]="member.errorMessage || labels.sourceLoadError"
+                  [actionLabel]="labels.retry"
+                  (action)="retry()"
+                />
+              }
+              @case ('ready') {
+                @if (directAutomaticConfiguration(); as configuration) {
                   <qd-linking-direct-source-preview
                     [ayahs]="directPreviewAyahs()"
                     [highlightSourceWords]="configuration.automaticWordMatchesEnabled"
                   />
+                } @else if (directManualConfiguration(); as configuration) {
+                  <qd-linking-ayah-selection
+                    [ayahs]="directPreviewAyahs()"
+                    [selection]="configuration.ayahInclusion"
+                    [selectedCount]="directSelectedCount()"
+                    [focusOnEntry]="true"
+                    [disabled]="false"
+                    [wordSelectable]="true"
+                    [grouped]="directManualGrouped()"
+                    [listLabel]="labels.sourceEditorAyahList"
+                    (selectionToggled)="toggleManualAyah($event)"
+                    (wordToggled)="toggleManualWord($event)"
+                    (selectAllRequested)="selectAllManualAyahs()"
+                    (clearAllRequested)="clearAllManualAyahs()"
+                  />
                 }
-                @default {
-                  <qd-panel-skeleton shape="rows" [loadingLabel]="labels.sourceLoading" />
-                }
+              }
+              @default {
+                <qd-panel-skeleton shape="rows" [loadingLabel]="labels.sourceLoading" />
               }
             }
           }
