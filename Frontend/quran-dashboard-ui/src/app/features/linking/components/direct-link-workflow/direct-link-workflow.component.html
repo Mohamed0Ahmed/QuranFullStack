@@ -4,7 +4,7 @@
   </header>
 
   <ol class="direct-link-workflow__steps" aria-label="مراحل الربط">
-    @for (step of steps; track step) {
+    @for (step of steps(); track step) {
       <li
         [class.direct-link-workflow__step--current]="currentStep() === step"
         [class.direct-link-workflow__step--available]="canNavigateTo(step)"
@@ -24,14 +24,54 @@
   <div class="direct-link-workflow__body">
     @switch (currentStep()) {
       @case ('configure-source') {
-        <section>
+        <section class="direct-link-workflow__configuration">
           @if (directAutomaticConfiguration(); as configuration) {
-            <label class="qd-check-row">
-              <input class="qd-checkbox" type="checkbox" [checked]="configuration.automaticWordMatchesEnabled" (change)="setAutomaticWords($event)" />
-              <span>{{ labels.highlightDescription }}</span>
-            </label>
+            <header class="direct-link-workflow__configuration-toolbar">
+              <button
+                qdAction="secondary"
+                size="sm"
+                type="button"
+                class="direct-link-workflow__word-toggle"
+                [class.direct-link-workflow__word-toggle--active]="configuration.automaticWordMatchesEnabled"
+                [attr.aria-pressed]="configuration.automaticWordMatchesEnabled"
+                (click)="toggleAutomaticWords()"
+              >
+                <span class="direct-link-workflow__word-toggle-mark" aria-hidden="true">
+                  {{ configuration.automaticWordMatchesEnabled ? '✓' : '' }}
+                </span>
+                <span>{{ labels.highlightStep }}</span>
+              </button>
+              <p>{{ labels.configureSourceHint }}</p>
+            </header>
+
+            @if (memberStates()[0]; as member) {
+              @switch (member.status) {
+                @case ('loading') {
+                  <qd-panel-skeleton
+                    shape="rows"
+                    [loadingLabel]="labels.sourceLoading + ' (' + member.progress.loaded + (member.progress.total === null ? '' : ' / ' + member.progress.total) + ')'"
+                  />
+                }
+                @case ('error') {
+                  <qd-error-state
+                    severity="read"
+                    [message]="member.errorMessage || labels.sourceLoadError"
+                    [actionLabel]="labels.retry"
+                    (action)="retry()"
+                  />
+                }
+                @case ('ready') {
+                  <qd-linking-direct-source-preview
+                    [ayahs]="directPreviewAyahs()"
+                    [highlightSourceWords]="configuration.automaticWordMatchesEnabled"
+                  />
+                }
+                @default {
+                  <qd-panel-skeleton shape="rows" [loadingLabel]="labels.sourceLoading" />
+                }
+              }
+            }
           }
-          <p>{{ labels.configureSourceHint }}</p>
         </section>
       }
       @case ('resolve') {
@@ -52,7 +92,7 @@
   </div>
 
   <footer class="direct-link-workflow__footer">
-    @if (currentStep() === 'configure-source') { <button qdAction="primary" type="button" (click)="next()">{{ labels.resolve }}</button> }
+    @if (currentStep() === 'configure-source') { <button qdAction="primary" type="button" [disabled]="!canAdvanceSource()" (click)="next()">{{ labels.chooseDoor }}</button> }
     @if (currentStep() === 'door') { <button qdAction="primary" type="button" [disabled]="!canAdvanceDoor()" (click)="next()">{{ labels.preflightTitle }}</button> }
     @if (currentStep() === 'preflight') { <button qdAction="primary" type="button" [disabled]="!canSubmit()" (click)="submit()">{{ labels.confirm }}</button> }
   </footer>

@@ -7,7 +7,7 @@
 
 .linking-preflight-step {
   display: grid;
-  gap: var(--qd-space-2);
+  gap: var(--qd-space-1);
   min-block-size: 0;
   align-content: start;
 }
@@ -53,7 +53,7 @@
   display: grid;
   gap: var(--qd-space-1);
   min-inline-size: 0;
-  padding: var(--qd-space-2) var(--qd-space-3);
+  padding: var(--qd-space-1) var(--qd-space-2);
   border-inline-start: var(--qd-hairline);
 }
 

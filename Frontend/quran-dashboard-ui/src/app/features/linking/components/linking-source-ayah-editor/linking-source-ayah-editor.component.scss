@@ -63,7 +63,13 @@
   white-space: nowrap;
 }
 
-.linking-source-ayah-editor__shape-button.qd-is-selected:hover {
+.linking-source-ayah-editor__words-toggle {
+  min-inline-size: 8rem;
+  white-space: nowrap;
+}
+
+.linking-source-ayah-editor__shape-button.qd-is-selected:hover,
+.linking-source-ayah-editor__words-toggle.qd-is-selected:hover {
   border-color: var(--qd-accent);
   background: var(--qd-accent-tint);
   color: var(--qd-accent-text);
@@ -82,7 +88,8 @@
   line-height: 1;
 }
 
-.linking-source-ayah-editor__shape-button.qd-is-selected .linking-source-ayah-editor__shape-mark {
+.linking-source-ayah-editor__shape-button.qd-is-selected .linking-source-ayah-editor__shape-mark,
+.linking-source-ayah-editor__words-toggle.qd-is-selected .linking-source-ayah-editor__shape-mark {
   border-color: var(--qd-accent);
   background: var(--qd-accent);
   color: var(--qd-accent-fg);
@@ -131,7 +138,12 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .linking-source-ayah-editor__shape-button {
+  .linking-source-ayah-editor__shape-button,
+  .linking-source-ayah-editor__words-toggle {
     white-space: normal;
+  }
+
+  .linking-source-ayah-editor__words-toggle {
+    min-inline-size: 0;
   }
 }

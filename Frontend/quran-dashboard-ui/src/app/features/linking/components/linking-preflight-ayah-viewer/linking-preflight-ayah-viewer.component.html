@@ -47,21 +47,28 @@
           </span>
         </div>
 
-        <ul class="linking-preflight-ayah-viewer__ayahs">
-          @for (item of ayahs(); track item.preflight.ayahId) {
-            <li class="linking-preflight-ayah-viewer__ayah">
-              <qd-linking-ayah-card
-                [ayah]="item.ayah"
-                [wordImpact]="item.preflight.doorWordImpact"
-                [statusLabel]="labels.ayahClassifications[item.preflight.classification]"
-              />
+        @if (grouped()) {
+          <qd-linking-preflight-ayah-group
+            [items]="ayahs()"
+            [statusLabel]="labels.sourceClassifications[source().classification]"
+          />
+        } @else {
+          <ul class="linking-preflight-ayah-viewer__ayahs">
+            @for (item of ayahs(); track item.preflight.ayahId) {
+              <li class="linking-preflight-ayah-viewer__ayah">
+                <qd-linking-ayah-card
+                  [ayah]="item.ayah"
+                  [wordImpact]="item.preflight.doorWordImpact"
+                  [statusLabel]="labels.ayahClassifications[item.preflight.classification]"
+                />
 
-              @if (item.preflight.invalidReason; as reason) {
-                <p class="linking-preflight-ayah-viewer__invalid">{{ reason }}</p>
-              }
-            </li>
-          }
-        </ul>
+                @if (item.preflight.invalidReason; as reason) {
+                  <p class="linking-preflight-ayah-viewer__invalid">{{ reason }}</p>
+                }
+              </li>
+            }
+          </ul>
+        }
       }
     }
   }

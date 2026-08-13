@@ -1,0 +1,34 @@
+<article
+  qdAyahCard
+  class="linking-preflight-ayah-group"
+  [attr.aria-label]="labels.groupedAyahs + ': ' + rangeLabel()"
+>
+  <span class="qd-badge qd-badge--accent linking-preflight-ayah-group__status">
+    {{ statusLabel() }}
+  </span>
+  <header class="linking-preflight-ayah-group__meta">
+    <span>{{ labels.groupedAyahs }}</span>
+    <span aria-hidden="true">—</span>
+    <span>{{ rangeLabel() }}</span>
+  </header>
+  <div class="linking-preflight-ayah-group__verses" dir="rtl">
+    @for (segment of segments(); track segment.verseKey) {
+      <p class="linking-preflight-ayah-group__text">
+        @for (word of segment.words; track word.key) {
+          <span
+            class="linking-preflight-ayah-group__word"
+            [class.linking-preflight-ayah-group__word--added]="word.highlight === 'added'"
+            [class.linking-preflight-ayah-group__word--existing]="word.highlight === 'existing'"
+            [class.linking-preflight-ayah-group__word--removed]="word.highlight === 'removed'"
+          >{{ word.textUthmani }}</span>
+        }
+        <span
+          class="linking-preflight-ayah-group__marker"
+          [attr.aria-label]="'نهاية سورة ' + segment.surahNameArabic + '، الآية ' + segment.ayahNumber"
+        >
+          {{ segment.ayahNumber }}
+        </span>
+      </p>
+    }
+  </div>
+</article>

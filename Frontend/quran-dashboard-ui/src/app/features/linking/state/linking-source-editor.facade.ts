@@ -1,7 +1,6 @@
 import { Injectable, computed, inject, signal, untracked } from '@angular/core';
 import { Subscription } from 'rxjs';
 
-import { arabicSearchIncludes } from '../../../shared/quran/arabic-search-normalize';
 import { LinkingSourceResolver } from '../data-access/linking-source-resolver';
 import { LinkingAyah } from '../models/linking-ayah.models';
 import { LINKING_LABELS } from '../models/linking.labels';
@@ -21,7 +20,6 @@ const INITIAL_EDITOR_STATE: LinkingSourceEditorState = {
   ayahs: [],
   rawProgress: { loaded: 0, total: null },
   universe: [],
-  query: '',
   errorMessage: null,
 };
 
@@ -55,10 +53,6 @@ export class LinkingSourceEditorFacade {
       ? ayahs
       : ayahs.map((ayah) => applyLinkingSourceConfiguration(item.configuration, ayah));
   });
-  readonly filteredAyahs = computed(() => {
-    const query = this.editorStateSignal().query;
-    return this.configuredAyahs().filter((ayah) => arabicSearchIncludes(searchText(ayah), query));
-  });
 
   open(sourceKey: string | null): void {
     if (sourceKey === null || !this.access.canUseLinking()) {
@@ -90,10 +84,6 @@ export class LinkingSourceEditorFacade {
     }
   }
 
-  setQuery(query: string): void {
-    this.editorStateSignal.update((state) => ({ ...state, query }));
-  }
-
   toggleAyah(verseKey: string): void {
     const state = this.editorStateSignal();
     if (state.sourceKey !== null && state.status === 'success') {
@@ -112,6 +102,26 @@ export class LinkingSourceEditorFacade {
     const state = this.editorStateSignal();
     if (state.sourceKey !== null && state.status === 'success') {
       this.workspace.clearAll(state.sourceKey);
+    }
+  }
+
+  toggleManualWord(verseKey: string, quranWordId: number): void {
+    const item = this.currentItem();
+    if (item?.configuration.kind !== 'manual') {
+      return;
+    }
+    const selected = new Set(item.configuration.quranWordIdsByVerseKey[verseKey] ?? []);
+    selected.has(quranWordId) ? selected.delete(quranWordId) : selected.add(quranWordId);
+    this.workspace.setManualWordIds(item.sourceKey, {
+      ...item.configuration.quranWordIdsByVerseKey,
+      [verseKey]: [...selected].sort((left, right) => left - right),
+    });
+  }
+
+  setAutomaticWordMatches(enabled: boolean): void {
+    const item = this.currentItem();
+    if (item?.configuration.kind === 'automatic') {
+      this.workspace.setAutomaticWordMatchesEnabled(item.sourceKey, enabled);
     }
   }
 
@@ -195,12 +205,4 @@ function uniqueAyahsByVerseKey(ayahs: readonly LinkingAyah[]): readonly LinkingA
     }
   }
   return [...byVerseKey.values()];
-}
-
-function searchText(ayah: LinkingAyah): string {
-  return [
-    ayah.verseKey,
-    ayah.surahNameArabic ?? '',
-    ...ayah.words.filter((word) => !word.isAyahMarker).map((word) => word.textUthmani),
-  ].join(' ');
 }

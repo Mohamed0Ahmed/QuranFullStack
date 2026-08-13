@@ -13,13 +13,24 @@
   </header>
   <p class="linking-ayah-card__text" dir="rtl">
     @for (word of displayWords(); track word.renderPosition) {
-      <span
-        class="linking-ayah-card__word"
-        [class.linking-ayah-card__word--selected]="word.highlight === 'selected'"
-        [class.linking-ayah-card__word--added]="word.highlight === 'added'"
-        [class.linking-ayah-card__word--existing]="word.highlight === 'existing'"
-        [class.linking-ayah-card__word--removed]="word.highlight === 'removed'"
-      >{{ word.textUthmani }}</span>
+      @if (wordSelectable()) {
+        <button
+          type="button"
+          class="linking-ayah-card__word linking-ayah-card__word--selectable"
+          [class.linking-ayah-card__word--selected]="word.highlight === 'selected'"
+          [attr.aria-pressed]="word.highlight === 'selected'"
+          [attr.aria-label]="labels.toggleWord + ' ' + word.textUthmani"
+          (click)="wordToggled.emit(word.canonicalQuranWordId)"
+        >{{ word.textUthmani }}</button>
+      } @else {
+        <span
+          class="linking-ayah-card__word"
+          [class.linking-ayah-card__word--selected]="word.highlight === 'selected'"
+          [class.linking-ayah-card__word--added]="word.highlight === 'added'"
+          [class.linking-ayah-card__word--existing]="word.highlight === 'existing'"
+          [class.linking-ayah-card__word--removed]="word.highlight === 'removed'"
+        >{{ word.textUthmani }}</span>
+      }
     }
   </p>
 </article>

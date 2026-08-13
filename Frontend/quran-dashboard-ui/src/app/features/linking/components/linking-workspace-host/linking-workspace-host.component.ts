@@ -8,7 +8,6 @@ import { LinkingWorkspaceComponent } from '../linking-workspace/linking-workspac
 import { DirectLinkWorkflowComponent } from '../direct-link-workflow/direct-link-workflow.component';
 import { LinkingWorkflowFacade } from '../../state/linking-workflow.facade';
 import { LinkingSourceAyahEditorComponent } from '../linking-source-ayah-editor/linking-source-ayah-editor.component';
-import { LinkingManualWordEditorComponent } from '../linking-manual-word-editor/linking-manual-word-editor.component';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 
@@ -20,7 +19,6 @@ import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-s
     LinkingWorkspaceComponent,
     DirectLinkWorkflowComponent,
     LinkingSourceAyahEditorComponent,
-    LinkingManualWordEditorComponent,
     ConfirmDialogComponent,
     QdErrorStateComponent,
   ],
@@ -40,16 +38,10 @@ export class LinkingWorkspaceHostComponent {
   protected readonly isSourceAyahEditor = computed(
     () => this.workspace.activeSurface() === 'source-ayah-editor',
   );
-  protected readonly isManualWordEditor = computed(
-    () => this.workspace.activeSurface() === 'manual-word-editor',
-  );
   protected readonly isLinkingFlow = computed(() => this.workspace.activeSurface() === 'linking-flow');
   protected readonly modalTitle = computed(() => {
     if (this.isSourceAyahEditor()) {
       return this.labels.sourceEditor;
-    }
-    if (this.isManualWordEditor()) {
-      return this.labels.manualWords;
     }
     return this.isLinkingFlow() ? this.labels.directLink : this.labels.workspace;
   });
@@ -83,17 +75,6 @@ export class LinkingWorkspaceHostComponent {
   protected closeSourceEditor(): void {
     this.workspace.returnToWorkspace();
     this.focus.restore(() => this.surfaceEntry()?.nativeElement ?? null);
-  }
-
-  protected openManualWordEditor(): void {
-    const sourceKey = this.editorSourceKey();
-    if (sourceKey !== null) {
-      this.workspace.openManualWordEditor(sourceKey);
-    }
-  }
-
-  protected returnToSourceEditor(): void {
-    this.workspace.returnToSourceAyahEditor();
   }
 
   protected dismissPersistenceWarning(): void { this.workspace.dismissPersistenceWarning(); }

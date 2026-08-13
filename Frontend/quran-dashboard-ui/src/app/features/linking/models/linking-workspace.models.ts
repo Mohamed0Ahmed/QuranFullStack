@@ -30,7 +30,6 @@ export type LinkingWorkspaceSurface =
   | 'closed'
   | 'workspace'
   | 'source-ayah-editor'
-  | 'manual-word-editor'
   | 'linking-flow';
 
 export interface LinkingWorkspaceItem {

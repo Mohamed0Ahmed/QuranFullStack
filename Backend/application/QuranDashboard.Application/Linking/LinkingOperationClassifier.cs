@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Application.Abstractions.Linking.Preflight;
+using QuranDashboard.Domain.Linking;
 
 namespace QuranDashboard.Application.Linking;
 
@@ -26,8 +27,12 @@ public static class LinkingOperationClassifier
         var totals = TotalsOf(intent, confirmedAyahs);
         var isBlocked = sources.Any(source => source.Classification == LinkingPreflightClassification.Invalid);
 
+        var hasSourceChanges = sources.Any(source =>
+            source.Classification is LinkingPreflightClassification.NewSource
+                or LinkingPreflightClassification.Update);
+
         return new LinkingOperationClassification(
-            !isBlocked && totals.New == 0 && totals.Updated == 0,
+            !isBlocked && !hasSourceChanges && totals.New == 0 && totals.Updated == 0,
             isBlocked,
             totals,
             sources);
@@ -104,14 +109,57 @@ public static class LinkingOperationClassifier
             return LinkingPreflightClassification.Invalid;
         }
 
-        if (counts.New == 0 && counts.Updated == 0)
+        if (live is null)
         {
-            return LinkingPreflightClassification.Unchanged;
+            return LinkingPreflightClassification.NewSource;
         }
 
-        return live is null
-            ? LinkingPreflightClassification.NewSource
-            : LinkingPreflightClassification.Update;
+        return ContributionChanged(source, live)
+            ? LinkingPreflightClassification.Update
+            : LinkingPreflightClassification.Unchanged;
+    }
+
+    private static bool ContributionChanged(
+        LinkingOperationSourceIntent source,
+        LinkingConfirmedContribution live)
+    {
+        if (source.ContributionMode != live.ContributionMode
+            || source.OrderValue != live.OrderValue
+            || !string.Equals(source.Label, live.Label, StringComparison.Ordinal)
+            || source.Units.Count != live.Units.Count)
+        {
+            return true;
+        }
+
+        for (var unitIndex = 0; unitIndex < source.Units.Count; unitIndex++)
+        {
+            var submittedUnit = source.Units[unitIndex];
+            var confirmedUnit = live.Units[unitIndex];
+            var grouped = source.ContributionMode == LinkingContributionMode.ManualGrouped;
+
+            if (confirmedUnit.OrderValue != unitIndex + 1
+                || confirmedUnit.IsGrouped != grouped
+                || submittedUnit.Ayahs.Count != confirmedUnit.Ayahs.Count)
+            {
+                return true;
+            }
+
+            for (var ayahIndex = 0; ayahIndex < submittedUnit.Ayahs.Count; ayahIndex++)
+            {
+                var submittedAyah = submittedUnit.Ayahs[ayahIndex];
+                var confirmedAyah = confirmedUnit.Ayahs[ayahIndex];
+
+                if (confirmedAyah.OrderValue != ayahIndex + 1
+                    || submittedAyah.AyahId != confirmedAyah.AyahId
+                    || !submittedAyah.WordIds.SequenceEqual(confirmedAyah.QuranWordIds)
+                    || !submittedAyah.Descriptions.SequenceEqual(confirmedAyah.Descriptions))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static IReadOnlyList<LinkingOverlappingSource> OverlappingSourcesOf(

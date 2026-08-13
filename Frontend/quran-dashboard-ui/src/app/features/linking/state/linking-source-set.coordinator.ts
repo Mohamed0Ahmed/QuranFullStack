@@ -21,6 +21,11 @@ interface LinkingSourceSetState {
   result: LinkingSourceSetOperationResult | null;
 }
 
+interface LinkingResolvedSource {
+  sourceKey: string;
+  ayahs: readonly LinkingAyah[];
+}
+
 const INITIAL_STATE: LinkingSourceSetState = { generation: 0, members: [], result: null };
 
 @Injectable({ providedIn: 'root' })
@@ -31,6 +36,7 @@ export class LinkingSourceSetCoordinator {
   private readonly stateSignal = signal<LinkingSourceSetState>(INITIAL_STATE);
   private subscription: Subscription | null = null;
   private members: readonly LinkingOperationMember[] = [];
+  private rawAyahsBySourceKey = new Map<string, readonly LinkingAyah[]>();
 
   readonly state = this.stateSignal.asReadonly();
   readonly memberStates = computed(() => this.stateSignal().members);
@@ -55,6 +61,7 @@ export class LinkingSourceSetCoordinator {
     const operationMembers = orderedOperationMembers(members);
     const generation = this.stateSignal().generation + 1;
     this.members = operationMembers;
+    this.rawAyahsBySourceKey.clear();
     this.stateSignal.set({
       generation,
       result: null,
@@ -73,16 +80,34 @@ export class LinkingSourceSetCoordinator {
       this.subscription = forkJoin(
         operationMembers.map((member) =>
           this.resolver.resolve(member.source, (progress) => this.publishProgress(generation, member.sourceKey, progress)).pipe(
-            map((ayahs) => this.resolveMember(member, ayahs)),
+            map((ayahs) => ({ sourceKey: member.sourceKey, ayahs })),
             catchError((error: unknown) => throwError(() => new MemberResolutionError(member.sourceKey, error))),
           ),
         ),
       ).subscribe({
-        next: (resolvedMembers) => this.publishSuccess(generation, resolvedMembers),
+        next: (resolvedSources) => this.publishResolvedSources(generation, resolvedSources),
         error: (error: unknown) => this.publishFailure(generation, error),
       });
     } catch (error: unknown) {
       this.publishFailure(generation, error);
+    }
+  }
+
+  reconfigure(members: readonly LinkingOperationMember[]): void {
+    const operationMembers = orderedOperationMembers(members);
+    if (!sameSourceKeys(this.members, operationMembers)) {
+      return;
+    }
+    this.members = operationMembers;
+    this.stateSignal.update((state) => ({
+      ...state,
+      members: state.members.map((entry) => {
+        const member = operationMembers.find((candidate) => candidate.sourceKey === entry.member.sourceKey);
+        return member === undefined ? entry : { ...entry, member };
+      }),
+    }));
+    if (operationMembers.every((member) => this.rawAyahsBySourceKey.has(member.sourceKey))) {
+      this.publishConfiguredMembers(this.stateSignal().generation);
     }
   }
 
@@ -95,6 +120,7 @@ export class LinkingSourceSetCoordinator {
   cancel(): void {
     this.cancelSubscription();
     this.members = [];
+    this.rawAyahsBySourceKey.clear();
     this.stateSignal.set({ ...INITIAL_STATE, generation: this.stateSignal().generation + 1 });
   }
 
@@ -139,6 +165,34 @@ export class LinkingSourceSetCoordinator {
     }));
   }
 
+  private publishResolvedSources(
+    generation: number,
+    resolvedSources: readonly LinkingResolvedSource[],
+  ): void {
+    if (generation !== this.stateSignal().generation) {
+      return;
+    }
+    this.rawAyahsBySourceKey = new Map(
+      resolvedSources.map((resolved) => [resolved.sourceKey, resolved.ayahs]),
+    );
+    this.publishConfiguredMembers(generation);
+  }
+
+  private publishConfiguredMembers(generation: number): void {
+    try {
+      const resolvedMembers = this.members.map((member) => {
+        const ayahs = this.rawAyahsBySourceKey.get(member.sourceKey);
+        if (ayahs === undefined) {
+          throw new Error('تعذر تحميل المصدر كاملاً.');
+        }
+        return this.resolveMember(member, ayahs);
+      });
+      this.publishSuccess(generation, resolvedMembers);
+    } catch (error: unknown) {
+      this.publishFailure(generation, error);
+    }
+  }
+
   private publishSuccess(generation: number, resolvedMembers: readonly ResolvedLinkingSourceMember[]): void {
     if (generation !== this.stateSignal().generation || !this.access.canUseLinking()) {
       return;
@@ -156,6 +210,7 @@ export class LinkingSourceSetCoordinator {
             ? {
                 ...entry,
                 status: 'ready',
+                errorMessage: null,
                 contributedAyahCount: resolved.ayahs.length,
               }
             : entry;
@@ -188,6 +243,14 @@ export class LinkingSourceSetCoordinator {
     this.subscription?.unsubscribe();
     this.subscription = null;
   }
+}
+
+function sameSourceKeys(
+  current: readonly LinkingOperationMember[],
+  incoming: readonly LinkingOperationMember[],
+): boolean {
+  return current.length === incoming.length &&
+    current.every((member, index) => member.sourceKey === incoming[index]?.sourceKey);
 }
 
 function assertKnownManualWordIds(

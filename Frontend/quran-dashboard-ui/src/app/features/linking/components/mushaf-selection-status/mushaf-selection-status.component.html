@@ -11,8 +11,11 @@
       <button #cancelButton qdAction="tertiary" size="sm" type="button" (click)="cancel()">
         {{ labels.mushafSelectionCancel }}
       </button>
-      <button qdAction="primary" size="sm" type="button" [disabled]="!selection.canAddToWorkspace()" (click)="addToWorkspace()">
+      <button qdAction="secondary" size="sm" type="button" [disabled]="!selection.canHandoff()" (click)="addToWorkspace()">
         {{ labels.addToWorkspace }}
+      </button>
+      <button qdAction="primary" size="sm" type="button" [disabled]="!selection.canHandoff()" (click)="startDirectLink()">
+        {{ labels.directLink }}
       </button>
     </div>
     @if (selection.failedEntry(); as failedEntry) {

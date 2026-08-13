@@ -37,6 +37,10 @@ export class MushafSelectionStatusComponent {
     this.selection.addToWorkspace();
   }
 
+  protected startDirectLink(): void {
+    this.selection.startDirectLink();
+  }
+
   protected retry(verseKey: string): void {
     this.selection.retry(verseKey);
   }

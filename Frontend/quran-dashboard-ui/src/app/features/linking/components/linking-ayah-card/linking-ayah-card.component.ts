@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import { toQuranWordDisplayText } from '../../../../shared/quran/quran-word-display-text';
 import { AyahCardComponent } from '../../../../shared/ui/ayah-card/ayah-card.component';
 import { LinkingAyah } from '../../models/linking-ayah.models';
+import { LINKING_LABELS } from '../../models/linking.labels';
 import { MergedLinkingWordSelection } from '../../models/linking-merge.models';
 import { LinkingDoorWordImpact } from '../../models/linking-preflight.models';
 
@@ -10,6 +11,7 @@ type LinkingAyahWordHighlight = 'selected' | 'added' | 'existing' | 'removed' | 
 
 interface LinkingAyahCardWord {
   renderPosition: number;
+  canonicalQuranWordId: number;
   textUthmani: string;
   highlight: LinkingAyahWordHighlight;
 }
@@ -28,7 +30,10 @@ export class LinkingAyahCardComponent {
   readonly mergedWords = input<readonly MergedLinkingWordSelection[] | null>(null);
   readonly wordImpact = input<LinkingDoorWordImpact | null>(null);
   readonly statusLabel = input<string | null>(null);
+  readonly wordSelectable = input(false);
+  readonly wordToggled = output<number>();
 
+  protected readonly labels = LINKING_LABELS;
   protected readonly displayWords = computed<readonly LinkingAyahCardWord[]>(() => {
     const wordImpact = this.wordImpact();
     const impactByWordId = wordImpact === null ? null : toImpactByWordId(wordImpact);
@@ -45,6 +50,7 @@ export class LinkingAyahCardComponent {
       .filter((word) => !word.isAyahMarker)
       .map((word) => ({
         renderPosition: word.renderPosition,
+        canonicalQuranWordId: word.canonicalQuranWordId,
         textUthmani: toQuranWordDisplayText(word.textUthmani),
         highlight:
           impactByWordId === null

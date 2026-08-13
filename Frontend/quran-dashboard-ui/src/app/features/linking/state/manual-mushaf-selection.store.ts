@@ -2,10 +2,12 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 
 import { LinkingManualMushafAyahReference } from '../models/linking-manual-mushaf.models';
 import { LINKING_LABELS } from '../models/linking.labels';
+import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import { LinkingManualAyahMetadataReader } from '../data-access/linking-manual-ayah-metadata.reader';
 import { linkingSourceKey } from '../utils/linking-source-key';
 import { orderedUniqueLinkingVerseKeys } from '../utils/linking-verse-order';
 import { LinkingAccessService } from './linking-access.service';
+import { LinkingWorkflowFacade } from './linking-workflow.facade';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
 
 export type ManualMushafSelectionLoadStatus = 'loading' | 'ready' | 'error';
@@ -22,6 +24,7 @@ export interface ManualMushafSelectionEntry {
 export class ManualMushafSelectionStore {
   private readonly access = inject(LinkingAccessService);
   private readonly reader = inject(LinkingManualAyahMetadataReader);
+  private readonly workflow = inject(LinkingWorkflowFacade);
   private readonly workspace = inject(LinkingWorkspaceStore);
   private readonly activeSignal = signal(false);
   private readonly currentPageSignal = signal<number | null>(null);
@@ -37,7 +40,7 @@ export class ManualMushafSelectionStore {
   readonly operationGeneration = this.operationGenerationSignal.asReadonly();
   readonly statusMessage = this.statusMessageSignal.asReadonly();
   readonly failedEntry = computed(() => this.entries().find((entry) => entry.status === 'error') ?? null);
-  readonly canAddToWorkspace = computed(
+  readonly canHandoff = computed(
     () =>
       this.active() &&
       this.entries().length > 0 &&
@@ -148,17 +151,14 @@ export class ManualMushafSelectionStore {
   }
 
   addToWorkspace(): void {
-    if (!this.requireOwner() || !this.canAddToWorkspace()) {
+    if (!this.requireOwner()) {
       return;
     }
 
-    const source = {
-      kind: 'manual-mushaf-ayahs' as const,
-      label: LINKING_LABELS.mushafSelectionSource,
-      manualAyahs: this.entries()
-        .map((entry) => entry.reference)
-        .filter((reference): reference is LinkingManualMushafAyahReference => reference !== null),
-    };
+    const source = this.readySource();
+    if (source === null) {
+      return;
+    }
     const existing = this.workspace.items().some((item) => item.sourceKey === linkingSourceKey(source));
     const sourceKey = this.workspace.addSource(source);
     if (sourceKey === null) {
@@ -169,12 +169,38 @@ export class ManualMushafSelectionStore {
     this.reset(existing ? LINKING_LABELS.alreadyInWorkspace : LINKING_LABELS.addedToWorkspace);
   }
 
+  startDirectLink(): void {
+    if (!this.requireOwner()) {
+      return;
+    }
+
+    const source = this.readySource();
+    if (source === null || !this.workflow.startFromSource(source)) {
+      this.statusMessageSignal.set(LINKING_LABELS.mushafSelectionDirectLinkError);
+      return;
+    }
+    this.reset(LINKING_LABELS.mushafSelectionDirectLinkStarted);
+  }
+
   reset(statusMessage: string | null = null): void {
     this.nextOperationGeneration();
     this.activeSignal.set(false);
     this.entriesSignal.set([]);
     this.currentPageSignal.set(null);
     this.statusMessageSignal.set(statusMessage);
+  }
+
+  private readySource(): LinkingSourceDescriptor | null {
+    if (!this.canHandoff()) {
+      return null;
+    }
+    return {
+      kind: 'manual-mushaf-ayahs',
+      label: LINKING_LABELS.mushafSelectionSource,
+      manualAyahs: this.entries()
+        .map((entry) => entry.reference)
+        .filter((reference): reference is LinkingManualMushafAyahReference => reference !== null),
+    };
   }
 
   private completeMetadataLoad(

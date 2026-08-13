@@ -21,7 +21,6 @@ export class LinkingWorkspaceSourceRowComponent {
   readonly membershipChanged = output<boolean>();
   readonly editRequested = output<void>();
   readonly automaticWordsChanged = output<boolean>();
-  readonly manualWordsRequested = output<void>();
   readonly removeRequested = output<void>();
   protected readonly labels = LINKING_LABELS;
   protected readonly sourceKind = computed(() => linkingSourcePresentation(this.row().item.source));

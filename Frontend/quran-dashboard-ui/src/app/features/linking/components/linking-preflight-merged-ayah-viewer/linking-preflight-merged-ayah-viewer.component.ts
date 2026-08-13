@@ -14,9 +14,14 @@ import {
 import { LINKING_LABELS } from '../../models/linking.labels';
 import { MeasuredRowVirtualScrollStrategy } from '../../utils/measured-row-virtual-scroll.strategy';
 import { LinkingAyahCardComponent } from '../linking-ayah-card/linking-ayah-card.component';
+import {
+  LinkingPreflightAyahGroupComponent,
+  LinkingPreflightGroupedAyahView,
+} from '../linking-preflight-ayah-group/linking-preflight-ayah-group.component';
 
 interface LinkingMergedPreflightAyahView {
   selection: MergedAyahSelection;
+  preflight: LinkingAyahPreflight | null;
   classification: LinkingAyahClassification | null;
   wordImpact: LinkingDoorWordImpact;
   invalidReason: string | null;
@@ -48,7 +53,13 @@ const CLASSIFICATION_PRIORITY: Readonly<Record<LinkingAyahClassification, number
 @Component({
   selector: 'qd-linking-preflight-merged-ayah-viewer',
   standalone: true,
-  imports: [ScrollingModule, QdChipComponent, QdEmptyStateComponent, LinkingAyahCardComponent],
+  imports: [
+    ScrollingModule,
+    QdChipComponent,
+    QdEmptyStateComponent,
+    LinkingAyahCardComponent,
+    LinkingPreflightAyahGroupComponent,
+  ],
   providers: [
     {
       provide: VIRTUAL_SCROLL_STRATEGY,
@@ -69,6 +80,19 @@ export class LinkingPreflightMergedAyahViewerComponent {
   protected readonly allViews = computed(() => mergePreflightAyahs(this.ayahs(), this.preflight()));
   protected readonly visibleViews = computed(() =>
     this.allViews().filter((view) => matchesFilter(view.classification, this.selectedFilter())),
+  );
+  protected readonly groupedSource = computed(() => {
+    const sources = this.preflight().sources;
+    return sources.length === 1 && sources[0]?.contributionMode === 'manual_grouped'
+      ? sources[0]
+      : null;
+  });
+  protected readonly groupedItems = computed<readonly LinkingPreflightGroupedAyahView[]>(() =>
+    this.visibleViews().flatMap((view) =>
+      view.preflight === null
+        ? []
+        : [{ ayah: view.selection.ayah, preflight: view.preflight }],
+    ),
   );
   protected readonly filters = computed<readonly LinkingMergedPreflightFilterOption[]>(() =>
     AYAH_FILTERS
@@ -106,6 +130,7 @@ function mergePreflightAyahs(
     const matches = preflightByVerseKey.get(selection.verseKey) ?? [];
     return {
       selection,
+      preflight: matches.at(0) ?? null,
       classification: strongestClassification(matches),
       wordImpact: mergeWordImpact(matches),
       invalidReason: matches.find((match) => match.invalidReason !== null)?.invalidReason ?? null,

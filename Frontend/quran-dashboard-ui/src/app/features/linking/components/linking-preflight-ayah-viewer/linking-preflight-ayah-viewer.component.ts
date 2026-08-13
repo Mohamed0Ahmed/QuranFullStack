@@ -12,6 +12,7 @@ import {
 import { LINKING_LABELS } from '../../models/linking.labels';
 import { LinkingPreflightPreviewFacade } from '../../state/linking-preflight-preview.facade';
 import { LinkingAyahCardComponent } from '../linking-ayah-card/linking-ayah-card.component';
+import { LinkingPreflightAyahGroupComponent } from '../linking-preflight-ayah-group/linking-preflight-ayah-group.component';
 
 interface LinkingPreflightFilterOption {
   value: LinkingPreflightAyahFilter;
@@ -35,6 +36,7 @@ const AYAH_FILTERS: readonly LinkingPreflightAyahFilter[] = [
     QdErrorStateComponent,
     ExplorerPanelSkeletonComponent,
     LinkingAyahCardComponent,
+    LinkingPreflightAyahGroupComponent,
   ],
   templateUrl: './linking-preflight-ayah-viewer.component.html',
   styleUrl: './linking-preflight-ayah-viewer.component.scss',
@@ -50,6 +52,7 @@ export class LinkingPreflightAyahViewerComponent {
   protected readonly errorMessage = computed(() => this.preview.errorFor(this.source().sourceIdentity));
   protected readonly selectedFilter = computed(() => this.preview.filterFor(this.source().sourceIdentity));
   protected readonly ayahs = computed(() => this.preview.viewsFor(this.source()));
+  protected readonly grouped = computed(() => this.source().contributionMode === 'manual_grouped');
   protected readonly filters = computed<readonly LinkingPreflightFilterOption[]>(() =>
     AYAH_FILTERS
       .map((filter) => ({

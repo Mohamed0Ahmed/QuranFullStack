@@ -6,6 +6,7 @@ import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-p
 import { QdNoticeComponent } from '../../../../shared/ui/notice/notice.component';
 import { LINKING_LABELS } from '../../models/linking.labels';
 import { LinkingWorkflowFacade, LinkingWorkflowStep } from '../../state/linking-workflow.facade';
+import { LinkingDirectSourcePreviewComponent } from '../linking-direct-source-preview/linking-direct-source-preview.component';
 import { LinkingDoorStepComponent } from '../linking-door-step/linking-door-step.component';
 import { LinkingPreflightStepComponent } from '../linking-preflight-step/linking-preflight-step.component';
 
@@ -17,6 +18,7 @@ import { LinkingPreflightStepComponent } from '../linking-preflight-step/linking
     QdErrorStateComponent,
     ExplorerPanelSkeletonComponent,
     QdNoticeComponent,
+    LinkingDirectSourcePreviewComponent,
     LinkingDoorStepComponent,
     LinkingPreflightStepComponent,
   ],
@@ -34,11 +36,17 @@ export class DirectLinkWorkflowComponent {
   protected readonly canAdvanceDoor = this.workflow.canAdvanceDoor;
   protected readonly canSubmit = this.workflow.canSubmit;
   protected readonly directConfiguration = this.workflow.directConfiguration;
+  protected readonly directPreviewAyahs = this.workflow.directPreviewAyahs;
+  protected readonly canAdvanceSource = this.workflow.canAdvanceSource;
   protected readonly directAutomaticConfiguration = computed(() => {
     const configuration = this.directConfiguration();
     return configuration?.kind === 'automatic' ? configuration : null;
   });
-  protected readonly steps: readonly LinkingWorkflowStep[] = ['configure-source', 'resolve', 'door', 'preflight'];
+  protected readonly steps = computed<readonly LinkingWorkflowStep[]>(() =>
+    this.directConfiguration()?.kind === 'manual'
+      ? ['resolve', 'door', 'preflight']
+      : ['configure-source', 'resolve', 'door', 'preflight'],
+  );
 
   protected next(): void { this.workflow.next(); }
   protected cancel(): void { this.workflow.dismiss(); }
@@ -48,6 +56,11 @@ export class DirectLinkWorkflowComponent {
   protected canNavigateTo(step: LinkingWorkflowStep): boolean { return this.workflow.canNavigateTo(step); }
   protected navigateTo(step: LinkingWorkflowStep): void { this.workflow.navigateTo(step); }
 
-  protected setAutomaticWords(event: Event): void { this.workflow.setDirectAutomaticWords((event.target as HTMLInputElement).checked); }
+  protected toggleAutomaticWords(): void {
+    const configuration = this.directAutomaticConfiguration();
+    if (configuration !== null) {
+      this.workflow.setDirectAutomaticWords(!configuration.automaticWordMatchesEnabled);
+    }
+  }
   protected stepLabel(step: LinkingWorkflowStep): string { return this.labels.operationSteps[step]; }
 }

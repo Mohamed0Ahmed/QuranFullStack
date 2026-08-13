@@ -2,17 +2,7 @@
   display: block;
 }
 
-.linking-ayah-card {
-  position: relative;
-}
-
-.linking-ayah-card__status {
-  position: absolute;
-  inset-block-start: var(--qd-space-2);
-  inset-inline-start: var(--qd-space-3);
-}
-
-.linking-ayah-card__meta {
+.linking-ayah-group__meta {
   align-items: center;
   color: var(--qd-text-muted);
   display: flex;
@@ -24,7 +14,12 @@
   text-align: center;
 }
 
-.linking-ayah-card__text {
+.linking-ayah-group__verses {
+  display: grid;
+  gap: var(--qd-space-1);
+}
+
+.linking-ayah-group__text {
   align-items: baseline;
   column-gap: 0.24em;
   display: flex;
@@ -35,7 +30,7 @@
   text-align: center;
 }
 
-.linking-ayah-card__word {
+.linking-ayah-group__word {
   display: inline;
   color: inherit;
   font-family: var(--qd-font-quran);
@@ -45,7 +40,7 @@
   white-space: normal;
 }
 
-.linking-ayah-card__word--selectable {
+.linking-ayah-group__word--selectable {
   margin: 0;
   padding: 0;
   border: 0;
@@ -54,26 +49,34 @@
   text-align: inherit;
 }
 
-.linking-ayah-card__word--selectable:not(.linking-ayah-card__word--selected):hover {
+.linking-ayah-group__word--selectable:not(.linking-ayah-group__word--selected):hover {
   background-color: var(--qd-surface-quiet);
   border-radius: var(--qd-radius-sm);
 }
 
-.linking-ayah-card__word--selected,
-.linking-ayah-card__word--added {
+.linking-ayah-group__word--selected {
   background-color: var(--qd-mushaf-word-selection-bg);
   border-radius: var(--qd-radius-sm);
   box-shadow: inset 0 0 0 1px var(--qd-mushaf-word-selection-ring);
 }
 
-.linking-ayah-card__word--existing {
-  background-color: var(--qd-warning-tint);
-  border-radius: var(--qd-radius-sm);
-  box-shadow: inset 0 0 0 1px var(--qd-warning-hairline);
+.linking-ayah-group__marker {
+  align-items: center;
+  align-self: center;
+  background: none;
+  border: 1px solid var(--qd-border-accent);
+  border-radius: var(--qd-radius-pill);
+  color: var(--qd-accent-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--qd-type-caption);
+  font-variant-numeric: tabular-nums;
+  justify-content: center;
+  margin-inline: 0.24em;
+  min-inline-size: 1.75rem;
+  padding-inline: var(--qd-space-1);
 }
 
-.linking-ayah-card__word--removed {
-  background-color: var(--qd-danger-tint);
-  border-radius: var(--qd-radius-sm);
-  box-shadow: inset 0 0 0 1px var(--qd-danger-hairline);
+.linking-ayah-group__marker:hover {
+  background-color: var(--qd-accent-tint);
 }

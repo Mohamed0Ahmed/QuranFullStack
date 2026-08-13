@@ -60,9 +60,15 @@ export class LinkingWorkspaceStore {
   readonly removedItem = this.removedItemSignal.asReadonly();
   readonly clearAllRequested = this.clearAllRequestedSignal.asReadonly();
   readonly persistenceWarning = this.persistenceWarningSignal.asReadonly();
-  readonly isOpen = computed(
-    () => this.isReadyForCurrentActor() && this.activeSurfaceSignal() !== 'closed',
-  );
+  readonly isOpen = computed(() => {
+    const activeSurface = this.activeSurfaceSignal();
+    if (activeSurface === 'closed') {
+      return false;
+    }
+    return activeSurface === 'linking-flow'
+      ? this.linkingAccess.canUseLinking()
+      : this.isReadyForCurrentActor();
+  });
 
   constructor() {
     this.sync.connect({
@@ -116,14 +122,6 @@ export class LinkingWorkspaceStore {
     if (this.canMutate() && this.findItem(sourceKey) !== null) {
       this.editorSourceKeySignal.set(sourceKey);
       this.activeSurfaceSignal.set('source-ayah-editor');
-    }
-  }
-
-  openManualWordEditor(sourceKey: string): void {
-    const item = this.findItem(sourceKey);
-    if (this.canMutate() && item?.configuration.kind === 'manual') {
-      this.editorSourceKeySignal.set(sourceKey);
-      this.activeSurfaceSignal.set('manual-word-editor');
     }
   }
 
@@ -190,11 +188,13 @@ export class LinkingWorkspaceStore {
     this.activeSurfaceSignal.set('closed');
   }
 
-  openOperationFlow(): void {
-    if (this.canMutate()) {
-      this.editorSourceKeySignal.set(null);
-      this.activeSurfaceSignal.set('linking-flow');
+  openOperationFlow(): boolean {
+    if (!this.linkingAccess.canUseLinking()) {
+      return false;
     }
+    this.editorSourceKeySignal.set(null);
+    this.activeSurfaceSignal.set('linking-flow');
+    return true;
   }
 
   returnToWorkspace(): void {

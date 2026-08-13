@@ -43,16 +43,6 @@
         </span>
         <span>{{ labels.highlightStep }}</span>
       </button>
-    } @else {
-      <button
-        qdAction="secondary"
-        size="sm"
-        type="button"
-        class="linking-workspace-source-row__toggle"
-        (click)="manualWordsRequested.emit()"
-      >
-        {{ labels.manualWords }}
-      </button>
     }
 
     <button

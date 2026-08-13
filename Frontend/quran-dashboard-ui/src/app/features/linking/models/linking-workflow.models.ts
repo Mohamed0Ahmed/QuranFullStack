@@ -16,7 +16,6 @@ export interface LinkingSourceEditorState {
   ayahs: readonly LinkingAyah[];
   rawProgress: LinkingSourceLoadProgress;
   universe: readonly string[];
-  query: string;
   errorMessage: string | null;
 }
 

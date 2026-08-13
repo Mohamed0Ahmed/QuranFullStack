@@ -41,7 +41,6 @@ export class LinkingWorkspaceComponent {
   }
   protected edit(sourceKey: string): void { this.focus.capture('workspace-row'); this.workspace.openAyahEditor(sourceKey); }
   protected automaticWords(sourceKey: string, enabled: boolean): void { this.workspace.setAutomaticWordMatchesEnabled(sourceKey, enabled); }
-  protected manualWords(sourceKey: string): void { this.focus.capture('workspace-row'); this.workspace.openManualWordEditor(sourceKey); }
   protected remove(sourceKey: string): void { this.workspace.remove(sourceKey); }
   protected clearSelection(): void { this.workspace.clearCheckedSources(); }
   protected linkSelected(): void { this.workflow.startWorkspaceOperation(); }

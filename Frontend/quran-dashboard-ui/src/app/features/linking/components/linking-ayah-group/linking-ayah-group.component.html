@@ -1,0 +1,36 @@
+<article qdAyahCard class="linking-ayah-group" [attr.aria-label]="labels.groupedAyahs + ': ' + rangeLabel()">
+  <header class="linking-ayah-group__meta">
+    <span>{{ labels.groupedAyahs }}</span>
+    <span aria-hidden="true">—</span>
+    <span>{{ rangeLabel() }}</span>
+  </header>
+  <div class="linking-ayah-group__verses" dir="rtl">
+    @for (segment of segments(); track segment.verseKey) {
+      <p class="linking-ayah-group__text">
+        @for (word of segment.words; track word.key) {
+          @if (wordSelectable()) {
+            <button
+              type="button"
+              class="linking-ayah-group__word linking-ayah-group__word--selectable"
+              [class.linking-ayah-group__word--selected]="word.selected"
+              [attr.aria-pressed]="word.selected"
+              [attr.aria-label]="labels.toggleWord + ' ' + word.textUthmani"
+              (click)="wordToggled.emit({ verseKey: word.verseKey, quranWordId: word.canonicalQuranWordId })"
+            >{{ word.textUthmani }}</button>
+          } @else {
+            <span
+              class="linking-ayah-group__word"
+              [class.linking-ayah-group__word--selected]="word.selected"
+            >{{ word.textUthmani }}</span>
+          }
+        }
+        <button
+          type="button"
+          class="linking-ayah-group__marker"
+          [attr.aria-label]="labels.removeAyahFromGroup + ' ' + segment.surahNameArabic + ' ' + segment.ayahNumber"
+          (click)="ayahRemoved.emit(segment.verseKey)"
+        >{{ segment.ayahNumber }}</button>
+      </p>
+    }
+  </div>
+</article>

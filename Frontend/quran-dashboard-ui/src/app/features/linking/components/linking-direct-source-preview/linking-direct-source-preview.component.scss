@@ -1,0 +1,35 @@
+:host {
+  display: block;
+  min-block-size: 0;
+}
+
+.linking-direct-source-preview {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--qd-space-2);
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.linking-direct-source-preview__count {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  margin: 0;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
+}
+
+.linking-direct-source-preview__count strong {
+  color: var(--qd-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.linking-direct-source-preview__viewport {
+  min-block-size: 0;
+}
+
+.linking-direct-source-preview__ayah {
+  padding-block-end: var(--qd-space-1);
+}

@@ -80,7 +80,7 @@ export class LinkingWorkflowFacade {
   private readonly stateSignal = signal<LinkingWorkflowState>(INITIAL_WORKFLOW);
   private commandSubscription: Subscription | null = null;
   private preflightSubscription: Subscription | null = null;
-  private pendingSource: LinkingSourceDescriptor | null = null;
+  private readonly pendingSourceSignal = signal<LinkingSourceDescriptor | null>(null);
   private restoreOverlayFocus = false;
   private attemptIdempotencyKey: string | null = null;
 
@@ -91,6 +91,17 @@ export class LinkingWorkflowFacade {
   readonly operation = computed(() => this.stateSignal().operation);
   readonly memberStates = this.sourceSet.memberStates;
   readonly directConfiguration = computed(() => this.stateSignal().directConfiguration);
+  readonly directPreviewAyahs = computed(() =>
+    this.stateSignal().origin === 'source'
+      ? (this.sourceSet.result()?.mergedSelection.ayahs.map((selection) => selection.ayah) ?? [])
+      : [],
+  );
+  readonly canAdvanceSource = computed(() =>
+    this.stateSignal().origin === 'source' &&
+    this.stateSignal().directConfiguration?.kind === 'automatic' &&
+    this.sourceSet.result() !== null &&
+    this.directPreviewAyahs().length > 0,
+  );
   readonly canAdvanceDoor = computed(() => this.access.canUseLinking() && this.isLiveDoor(this.selectedDoorId()));
   readonly preflight = computed(() => this.stateSignal().preflight);
   readonly preflightStatus = computed(() => this.stateSignal().preflightStatus);
@@ -126,31 +137,36 @@ export class LinkingWorkflowFacade {
       }
     });
     effect(() => {
+      const overlayOpen = this.overlay.isOpen();
+      const pendingSource = this.pendingSourceSignal();
       if (!this.access.canUseLinking() && this.stateSignal().origin !== null) {
         untracked(() => this.dismiss());
       }
-      if (this.pendingSource !== null && !this.overlay.isOpen()) {
-        const source = this.pendingSource;
-        this.pendingSource = null;
-        untracked(() => this.startFromSource(source));
+      if (pendingSource !== null && !overlayOpen) {
+        untracked(() => {
+          this.pendingSourceSignal.set(null);
+          this.startFromSource(pendingSource);
+        });
       }
-      if (this.restoreOverlayFocus && this.overlay.isOpen()) {
+      if (this.restoreOverlayFocus && overlayOpen) {
         this.restoreOverlayFocus = false;
         untracked(() => this.focus.restore());
       }
     });
   }
 
-  startFromSource(source: LinkingSourceDescriptor): void {
+  startFromSource(source: LinkingSourceDescriptor): boolean {
     if (!this.access.canUseLinking()) {
-      return;
+      return false;
     }
     if (this.overlay.isOpen()) {
-      this.pendingSource = source;
+      this.pendingSourceSignal.set(source);
       this.overlay.close();
-      return;
+      return true;
     }
-    this.workspace.openOperationFlow();
+    if (!this.workspace.openOperationFlow()) {
+      return false;
+    }
     const configuration = defaultConfiguration(source);
     this.stateSignal.set({
       ...INITIAL_WORKFLOW,
@@ -158,6 +174,12 @@ export class LinkingWorkflowFacade {
       members: [ephemeralLinkingOperationMember(source, configuration)],
       directConfiguration: configuration,
     });
+    if (configuration.kind === 'manual') {
+      this.resolve();
+    } else {
+      this.prepareDirectSource();
+    }
+    return true;
   }
 
   startWorkspaceOperation(): void {
@@ -165,7 +187,9 @@ export class LinkingWorkflowFacade {
     if (!this.access.canUseLinking() || members.length === 0) {
       return;
     }
-    this.workspace.openOperationFlow();
+    if (!this.workspace.openOperationFlow()) {
+      return;
+    }
     this.stateSignal.set({ ...INITIAL_WORKFLOW, origin: 'workspace', members });
     this.resolve();
   }
@@ -181,6 +205,7 @@ export class LinkingWorkflowFacade {
       directConfiguration: configuration,
       members: [ephemeralLinkingOperationMember(state.members[0].source, configuration)],
     });
+    this.sourceSet.reconfigure(this.stateSignal().members);
   }
 
   resolve(): void {
@@ -204,6 +229,10 @@ export class LinkingWorkflowFacade {
   }
 
   retry(): void {
+    if (this.step() === 'configure-source') {
+      this.prepareDirectSource();
+      return;
+    }
     this.resolve();
   }
 
@@ -222,7 +251,12 @@ export class LinkingWorkflowFacade {
   next(): void {
     const step = this.step();
     if (step === 'configure-source') {
-      this.resolve();
+      const result = this.sourceSet.result();
+      if (!this.canAdvanceSource() || result === null) {
+        return;
+      }
+      this.doors.load();
+      this.stateSignal.update((state) => ({ ...state, operation: result, step: 'door' }));
       return;
     }
     if (step === 'door' && this.canAdvanceDoor()) {
@@ -270,7 +304,6 @@ export class LinkingWorkflowFacade {
     }
 
     if (target === 'configure-source') {
-      this.sourceSet.cancel();
       this.cancelPreflight();
       this.stateSignal.update((state) => ({
         ...state,
@@ -298,6 +331,26 @@ export class LinkingWorkflowFacade {
     }
 
     this.stateSignal.update((state) => ({ ...state, step: target }));
+  }
+
+  private prepareDirectSource(): void {
+    const state = this.stateSignal();
+    if (
+      !this.access.canUseLinking() ||
+      state.origin !== 'source' ||
+      state.directConfiguration?.kind !== 'automatic' ||
+      state.members.length === 0
+    ) {
+      return;
+    }
+    const generation = this.sourceSet.state().generation + 1;
+    this.stateSignal.update((current) => ({
+      ...current,
+      operation: null,
+      errorMessage: null,
+      operationGeneration: generation,
+    }));
+    this.sourceSet.resolve(state.members);
   }
 
   submit(): void {
@@ -410,7 +463,7 @@ export class LinkingWorkflowFacade {
     this.commandSubscription = null;
     this.cancelPreflight();
     this.attemptIdempotencyKey = null;
-    this.pendingSource = null;
+    this.pendingSourceSignal.set(null);
     this.sourceSet.cancel();
     this.stateSignal.set(INITIAL_WORKFLOW);
     if (origin === 'workspace') {

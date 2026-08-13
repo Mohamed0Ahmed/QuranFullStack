@@ -1,0 +1,85 @@
+:host {
+  display: block;
+  min-inline-size: 0;
+}
+
+.linking-preflight-ayah-group {
+  position: relative;
+}
+
+.linking-preflight-ayah-group__status {
+  position: absolute;
+  inset-block-start: var(--qd-space-2);
+  inset-inline-start: var(--qd-space-3);
+}
+
+.linking-preflight-ayah-group__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--qd-space-2);
+  color: var(--qd-text-muted);
+  font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
+  text-align: center;
+}
+
+.linking-preflight-ayah-group__verses {
+  display: grid;
+  gap: var(--qd-space-1);
+}
+
+.linking-preflight-ayah-group__text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  column-gap: 0.24em;
+  row-gap: 0;
+  margin: 0;
+  text-align: center;
+}
+
+.linking-preflight-ayah-group__word {
+  display: inline;
+  color: inherit;
+  font-family: var(--qd-font-quran);
+  font-size: var(--qd-mushaf-word-font-size);
+  font-weight: 400;
+  line-height: 1.9;
+  white-space: normal;
+}
+
+.linking-preflight-ayah-group__word--added {
+  border-radius: var(--qd-radius-sm);
+  background-color: var(--qd-mushaf-word-selection-bg);
+  box-shadow: inset 0 0 0 1px var(--qd-mushaf-word-selection-ring);
+}
+
+.linking-preflight-ayah-group__word--existing {
+  border-radius: var(--qd-radius-sm);
+  background-color: var(--qd-warning-tint);
+  box-shadow: inset 0 0 0 1px var(--qd-warning-hairline);
+}
+
+.linking-preflight-ayah-group__word--removed {
+  border-radius: var(--qd-radius-sm);
+  background-color: var(--qd-danger-tint);
+  box-shadow: inset 0 0 0 1px var(--qd-danger-hairline);
+}
+
+.linking-preflight-ayah-group__marker {
+  display: inline-flex;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 1.75rem;
+  margin-inline: 0.24em;
+  padding-inline: var(--qd-space-1);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-pill);
+  color: var(--qd-text-muted);
+  font-size: var(--qd-type-caption);
+  font-variant-numeric: tabular-nums;
+}

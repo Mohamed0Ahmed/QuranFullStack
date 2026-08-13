@@ -51,6 +51,7 @@ export class QdModalShellComponent {
   readonly closeAction = input<QdActionVariant>('tertiary');
   readonly hasFooter = input(true);
   readonly flushBody = input(false);
+  readonly compactHeader = input(false);
   readonly balancedHeader = input(false);
   readonly dismissOnBackdrop = input(true);
   readonly dismissOnEscape = input(true);

@@ -24,7 +24,11 @@
       [cdkTrapFocus]="trapEnabled()"
       (keydown.escape)="onEscape($event)"
     >
-      <header class="qd-modal-shell__header" [class.qd-modal-shell__header--bare]="bareHeader()">
+      <header
+        class="qd-modal-shell__header"
+        [class.qd-modal-shell__header--bare]="bareHeader()"
+        [class.qd-modal-shell__header--compact]="compactHeader()"
+      >
         <div
           class="qd-modal-shell__header-row"
           [class.qd-modal-shell__header-row--balanced]="balancedHeader()"

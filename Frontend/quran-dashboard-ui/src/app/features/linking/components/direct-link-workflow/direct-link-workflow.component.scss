@@ -9,10 +9,10 @@
 .direct-link-workflow {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: var(--qd-space-2);
+  gap: var(--qd-space-1);
   flex: 1 1 auto;
   min-block-size: 0;
-  padding: var(--qd-space-3);
+  padding: var(--qd-space-2);
 }
 
 .direct-link-workflow__header,
@@ -43,10 +43,10 @@
 .direct-link-workflow__steps {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--qd-space-2);
+  gap: var(--qd-space-1);
   list-style: none;
   margin: 0;
-  padding: 0 var(--qd-space-1);
+  padding: 0;
 }
 
 .direct-link-workflow__steps li {
@@ -58,7 +58,7 @@
 .direct-link-workflow__steps button {
   inline-size: 100%;
   min-block-size: var(--qd-hit-target-min);
-  padding: 0 var(--qd-space-2) var(--qd-space-1);
+  padding: 0 var(--qd-space-1);
   border: 0;
   border-radius: var(--qd-radius-sm);
   background: transparent;
@@ -105,7 +105,55 @@
   min-block-size: 0;
 }
 
+.direct-link-workflow__configuration {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--qd-space-2);
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.direct-link-workflow__configuration-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--qd-space-2) var(--qd-space-3);
+}
+
+.direct-link-workflow__configuration-toolbar p {
+  margin: 0;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
+}
+
+.direct-link-workflow__word-toggle--active,
+.direct-link-workflow__word-toggle--active:hover {
+  border-color: var(--qd-border-accent);
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+}
+
+.direct-link-workflow__word-toggle-mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1rem;
+  block-size: 1rem;
+  border: var(--qd-hairline-strong);
+  border-radius: var(--qd-radius-xs);
+  font-size: var(--qd-type-caption);
+  line-height: 1;
+}
+
+.direct-link-workflow__word-toggle--active .direct-link-workflow__word-toggle-mark {
+  border-color: var(--qd-accent);
+  background: var(--qd-accent);
+  color: var(--qd-accent-fg);
+}
+
 @media (max-width: bp.$qd-bp-compact-max) {
-  .direct-link-workflow { gap: var(--qd-space-2); padding: var(--qd-space-2); }
+  .direct-link-workflow { gap: var(--qd-space-1); padding: var(--qd-space-2); }
   .direct-link-workflow__steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

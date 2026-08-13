@@ -30,6 +30,13 @@
 
   @if (visibleViews().length === 0) {
     <qd-empty-state [message]="labels.preflightAyahPreviewEmpty" />
+  } @else if (groupedSource(); as source) {
+    <div class="linking-preflight-merged-ayah-viewer__group">
+      <qd-linking-preflight-ayah-group
+        [items]="groupedItems()"
+        [statusLabel]="labels.sourceClassifications[source.classification]"
+      />
+    </div>
   } @else {
     <cdk-virtual-scroll-viewport
       class="linking-preflight-merged-ayah-viewer__viewport"

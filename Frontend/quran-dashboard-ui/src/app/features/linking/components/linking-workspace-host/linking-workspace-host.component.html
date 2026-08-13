@@ -9,6 +9,7 @@
     [open]="isOpen()"
     [hasFooter]="false"
     [flushBody]="true"
+    [compactHeader]="isLinkingFlow()"
     [returnFocus]="false"
     testIdPrefix="linking-workspace"
     (dismissed)="close()"
@@ -29,10 +30,7 @@
           <qd-linking-source-ayah-editor
             [sourceKey]="editorSourceKey()"
             (dismissed)="closeSourceEditor()"
-            (manualWordsRequested)="openManualWordEditor()"
           />
-        } @else if (isManualWordEditor()) {
-          <qd-linking-manual-word-editor [sourceKey]="editorSourceKey()" (dismissed)="returnToSourceEditor()" />
         } @else if (isLinkingFlow()) {
           <qd-direct-link-workflow />
         }

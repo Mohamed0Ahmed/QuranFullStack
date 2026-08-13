@@ -102,6 +102,10 @@
   border-block-end: 0;
 }
 
+.qd-modal-shell__header--compact:not(.qd-modal-shell__header--bare) {
+  padding: var(--qd-space-2) var(--qd-space-3);
+}
+
 .qd-modal-shell__title {
   flex: 1 1 0;
   min-inline-size: 0;
@@ -169,6 +173,10 @@
   .qd-modal-shell__header,
   .qd-modal-shell__footer {
     padding-inline: var(--qd-space-4);
+  }
+
+  .qd-modal-shell__header--compact:not(.qd-modal-shell__header--bare) {
+    padding-inline: var(--qd-space-3);
   }
 
   .qd-modal-shell__body {
