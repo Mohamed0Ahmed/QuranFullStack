@@ -92,9 +92,8 @@ export class LinkingWorkspaceHostComponent {
     }
   }
 
-  protected closeManualWordEditor(): void {
-    this.workspace.returnToWorkspace();
-    this.focus.restore(() => this.surfaceEntry()?.nativeElement ?? null);
+  protected returnToSourceEditor(): void {
+    this.workspace.returnToSourceAyahEditor();
   }
 
   protected dismissPersistenceWarning(): void { this.workspace.dismissPersistenceWarning(); }

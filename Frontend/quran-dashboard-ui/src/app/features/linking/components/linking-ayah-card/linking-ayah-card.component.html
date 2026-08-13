@@ -1,13 +1,21 @@
-<article qdAyahCard class="linking-ayah-card" [attr.aria-label]="ayah().verseKey">
+<article
+  qdAyahCard
+  class="linking-ayah-card"
+  [attr.aria-label]="'سورة ' + ayah().surahNameArabic + '، الآية ' + ayah().ayahNumber"
+>
   <header class="linking-ayah-card__meta">
-    <span>{{ ayah().surahNameArabic || ayah().verseKey }}</span>
-    <span class="qd-ltr-isolate">{{ ayah().verseKey }}</span>
+    <span>{{ ayah().surahNameArabic }}</span>
+    <span aria-hidden="true">—</span>
+    <span>الآية {{ ayah().ayahNumber }}</span>
   </header>
   <p class="linking-ayah-card__text" dir="rtl">
     @for (word of displayWords(); track word.renderPosition) {
       <span
         class="linking-ayah-card__word"
-        [class.linking-ayah-card__word--matched]="isMatched(word.isMatched)"
+        [class.linking-ayah-card__word--selected]="word.highlight === 'selected'"
+        [class.linking-ayah-card__word--added]="word.highlight === 'added'"
+        [class.linking-ayah-card__word--existing]="word.highlight === 'existing'"
+        [class.linking-ayah-card__word--removed]="word.highlight === 'removed'"
       >{{ word.textUthmani }}</span>
     }
   </p>

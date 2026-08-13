@@ -8696,6 +8696,7 @@
           "ayahNumber",
           "classification",
           "descriptionChanges",
+          "doorWordImpact",
           "invalidReason",
           "overlappingSources",
           "surahNumber",
@@ -8732,6 +8733,13 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/LinkingWordChangesDto"
+              }
+            ]
+          },
+          "doorWordImpact": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingDoorWordImpactDto"
               }
             ]
           },
@@ -8986,6 +8994,38 @@
             "type": "array",
             "items": {
               "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingDoorWordImpactDto": {
+        "required": [
+          "added",
+          "existing",
+          "removed"
+        ],
+        "type": "object",
+        "properties": {
+          "added": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "existing": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "removed": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
             }
           }
         },

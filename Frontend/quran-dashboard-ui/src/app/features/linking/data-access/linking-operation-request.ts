@@ -21,7 +21,7 @@ function toUnitBodies(intent: LinkingSourceIntent): LinkingOperationUnitBody[] {
   return intent.units.map((unit) => ({
     ayahs: unit.ayahs.map((ayah) => ({
       ayahId: ayah.ayahId,
-      descriptions: [...ayah.descriptions],
+      descriptions: [],
       selectedWordIds: isManual
         ? ayah.wordContributions.map((contribution) => contribution.quranWordId)
         : null,

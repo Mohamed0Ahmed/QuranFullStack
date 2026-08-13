@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
+import { toQuranWordDisplayText } from '../../../../shared/quran/quran-word-display-text';
 import { MushafWordDto } from '../../models/mushaf.models';
-import { toMushafWordDisplayText } from './mushaf-word-display-text';
 
 @Component({
   selector: 'qd-mushaf-word',
@@ -20,7 +20,7 @@ export class MushafWordComponent {
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
 
-  protected readonly displayText = computed(() => toMushafWordDisplayText(this.word().textUthmani));
+  protected readonly displayText = computed(() => toQuranWordDisplayText(this.word().textUthmani));
 
   protected readonly isSelectedAyah = computed(
     () => this.ayahSelectionMode() && this.selectedVerseKeys().includes(this.word().verseKey),

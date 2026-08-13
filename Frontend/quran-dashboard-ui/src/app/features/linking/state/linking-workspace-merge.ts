@@ -72,7 +72,6 @@ export function toConfigurationRequest(item: LinkingWorkspaceItem): LinkingWorks
     selectedWords: isManual ? toSelectedWords(item) : [],
     automaticWordMatchesEnabled: isManual ? null : configuration.automaticWordMatchesEnabled,
     manualLinkShape: isManual ? configuration.linkShape : null,
-    descriptions: item.descriptions,
   };
 }
 

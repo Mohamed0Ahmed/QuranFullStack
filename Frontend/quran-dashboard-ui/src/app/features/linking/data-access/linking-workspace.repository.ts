@@ -11,7 +11,6 @@ export interface LinkingWorkspaceConfigurationRequest {
   selectedWords: readonly { ayahId: number; quranWordId: number }[];
   automaticWordMatchesEnabled: boolean | null;
   manualLinkShape: 'grouped' | 'independent' | null;
-  descriptions: readonly { ayahId: number; orderValue: number; body: string }[];
 }
 
 export interface LinkingWorkspaceRepository {

@@ -35,7 +35,6 @@ export interface LinkingIntentAyah {
   ayahId: number;
   verseKey: string;
   wordContributions: readonly LinkingWordContribution[];
-  descriptions: readonly string[];
 }
 
 export interface LinkingWordContribution {

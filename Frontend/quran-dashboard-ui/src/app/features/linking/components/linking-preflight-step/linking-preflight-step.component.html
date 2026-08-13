@@ -36,11 +36,8 @@
         <dl class="linking-preflight-step__totals" aria-label="ملخص أثر الربط">
           <div class="linking-preflight-step__total linking-preflight-step__total--requested"><dt>{{ labels.preflightCountRequested }}</dt><dd>{{ result.totals.requested }}</dd></div>
           <div><dt>{{ labels.preflightCountNew }}</dt><dd>{{ result.totals.new }}</dd></div>
-          <div><dt>{{ labels.preflightCountOverlapping }}</dt><dd>{{ result.totals.overlapping }}</dd></div>
           <div><dt>{{ labels.preflightCountUnchanged }}</dt><dd>{{ result.totals.unchanged }}</dd></div>
-          <div><dt>{{ labels.preflightCountUpdated }}</dt><dd>{{ result.totals.updated }}</dd></div>
-          <div><dt>{{ labels.preflightCountRemoved }}</dt><dd>{{ result.totals.removed }}</dd></div>
-          <div><dt>{{ labels.preflightCountInvalid }}</dt><dd>{{ result.totals.invalid }}</dd></div>
+          <div><dt>{{ labels.preflightCountUpdated }}</dt><dd>{{ result.totals.updated + result.totals.overlapping }}</dd></div>
         </dl>
 
         <ul class="linking-preflight-step__sources">
@@ -54,53 +51,18 @@
                   </p>
                 </div>
                 <button
-                  qdAction="tertiary"
+                  qdAction="secondary"
                   size="sm"
                   type="button"
                   [attr.aria-expanded]="isExpanded(source.sourceIdentity)"
-                  (click)="toggleSource(source.sourceIdentity)"
+                  (click)="toggleSource(source)"
                 >
                   {{ isExpanded(source.sourceIdentity) ? labels.preflightHideAyahs : labels.preflightShowAyahs }}
                 </button>
               </div>
 
               @if (isExpanded(source.sourceIdentity)) {
-                <ul class="linking-preflight-step__ayahs">
-                  @for (ayah of source.ayahs; track ayah.ayahId) {
-                    <li class="linking-preflight-step__ayah">
-                      <p class="linking-preflight-step__ayah-head">
-                        <span class="qd-ltr-isolate">{{ ayah.verseKey }}</span>
-                        <span>{{ labels.ayahClassifications[ayah.classification] }}</span>
-                      </p>
-                      @if (ayah.overlappingSources.length > 0) {
-                        <p class="linking-preflight-step__overlap">
-                          {{ labels.preflightOverlapWith }}:
-                          @for (overlapping of ayah.overlappingSources; track overlapping.sourceIdentity) {
-                            <span class="linking-preflight-step__overlap-name">{{ overlapping.label }}</span>
-                          }
-                        </p>
-                      }
-                      @if (ayah.wordChanges.added.length > 0) {
-                        <p>{{ labels.preflightWordsAdded }}: {{ ayah.wordChanges.added.length }}</p>
-                      }
-                      @if (ayah.wordChanges.removed.length > 0) {
-                        <p>{{ labels.preflightWordsRemoved }}: {{ ayah.wordChanges.removed.length }}</p>
-                      }
-                      @if (ayah.descriptionChanges.added.length > 0) {
-                        <p>{{ labels.preflightDescriptionsAdded }}: {{ ayah.descriptionChanges.added.length }}</p>
-                      }
-                      @if (ayah.descriptionChanges.removed.length > 0) {
-                        <p>{{ labels.preflightDescriptionsRemoved }}: {{ ayah.descriptionChanges.removed.length }}</p>
-                      }
-                      @if (ayah.descriptionChanges.changed.length > 0) {
-                        <p>{{ labels.preflightDescriptionsChanged }}: {{ ayah.descriptionChanges.changed.length }}</p>
-                      }
-                      @if (ayah.invalidReason; as reason) {
-                        <p class="linking-preflight-step__invalid">{{ reason }}</p>
-                      }
-                    </li>
-                  }
-                </ul>
+                <qd-linking-preflight-ayah-viewer [source]="source" />
               }
             </li>
           }

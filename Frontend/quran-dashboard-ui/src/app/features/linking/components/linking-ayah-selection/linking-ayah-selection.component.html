@@ -1,11 +1,14 @@
 <section class="linking-ayah-selection" aria-label="اختيار الآيات">
   <header class="linking-ayah-selection__header">
-    <p>{{ labels.selectedCount }}: {{ selectedCount() }}</p>
+    <p class="linking-ayah-selection__summary">
+      <span>{{ labels.selectedCount }}</span>
+      <strong>{{ selectedCount() }}</strong>
+    </p>
     <div class="linking-ayah-selection__bulk-actions">
-      <button qdAction="tertiary" size="sm" type="button" [disabled]="disabled()" (click)="selectAllRequested.emit()">
+      <button qdAction="secondary" size="sm" type="button" [disabled]="disabled()" (click)="selectAllRequested.emit()">
         {{ labels.selectAll }}
       </button>
-      <button qdAction="tertiary" size="sm" type="button" [disabled]="disabled()" (click)="clearAllRequested.emit()">
+      <button qdAction="secondary" size="sm" type="button" [disabled]="disabled()" (click)="clearAllRequested.emit()">
         {{ labels.clearAll }}
       </button>
     </div>
@@ -33,17 +36,17 @@
           class="qd-checkbox"
           type="checkbox"
           [id]="inputId(ayah.verseKey)"
+          [attr.aria-label]="labels.selectAyahs + ': سورة ' + ayah.surahNameArabic + '، الآية ' + ayah.ayahNumber"
           [checked]="isSelected(ayah.verseKey)"
           [disabled]="disabled()"
           (change)="selectionToggled.emit(ayah.verseKey)"
         />
-        <label class="linking-ayah-selection__activation" [for]="inputId(ayah.verseKey)">
-          {{ labels.selectAyahs }}: {{ ayah.verseKey }}
-        </label>
-        <qd-linking-ayah-card [ayah]="ayah" [highlightSourceWords]="highlightSourceWords()" />
-        @if (ayahExtraTemplate(); as extraTemplate) {
-          <ng-container *ngTemplateOutlet="extraTemplate; context: { $implicit: ayah }" />
-        }
+        <div class="linking-ayah-selection__content">
+          <qd-linking-ayah-card [ayah]="ayah" [highlightSourceWords]="highlightSourceWords()" />
+          @if (ayahExtraTemplate(); as extraTemplate) {
+            <ng-container *ngTemplateOutlet="extraTemplate; context: { $implicit: ayah }" />
+          }
+        </div>
       </div>
     </cdk-virtual-scroll-viewport>
   } @else {

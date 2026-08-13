@@ -44,6 +44,10 @@ public static class LinkingPreflightProjection
             ],
             new LinkingWordChangesDto(
                 ayah.WordChanges.Added, ayah.WordChanges.Removed, ayah.WordChanges.Unchanged),
+            new LinkingDoorWordImpactDto(
+                ayah.DoorWordImpact.Added,
+                ayah.DoorWordImpact.Existing,
+                ayah.DoorWordImpact.Removed),
             new LinkingDescriptionChangesDto(
                 ayah.DescriptionChanges.Added,
                 ayah.DescriptionChanges.Removed,

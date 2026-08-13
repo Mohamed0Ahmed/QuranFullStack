@@ -33,15 +33,6 @@ export type LinkingWorkspaceSurface =
   | 'manual-word-editor'
   | 'linking-flow';
 
-export const LINKING_MAX_DESCRIPTIONS_PER_AYAH = 10;
-export const LINKING_MAX_DESCRIPTION_LENGTH = 2000;
-
-export interface LinkingWorkspaceDescription {
-  ayahId: number;
-  orderValue: number;
-  body: string;
-}
-
 export interface LinkingWorkspaceItem {
   sourceKey: string;
   sourceId: number | null;
@@ -51,7 +42,6 @@ export interface LinkingWorkspaceItem {
   configurationRevision: number;
   ayahOverrideIds: readonly number[];
   ayahIdByVerseKey: Readonly<Record<string, number>>;
-  descriptions: readonly LinkingWorkspaceDescription[];
   lastResolvedCount: number | null;
 }
 

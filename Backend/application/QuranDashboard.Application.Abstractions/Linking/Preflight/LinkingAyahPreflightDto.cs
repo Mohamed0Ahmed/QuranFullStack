@@ -8,6 +8,7 @@ public sealed record LinkingAyahPreflightDto(
     string Classification,
     IReadOnlyList<LinkingOverlappingSourceDto> OverlappingSources,
     LinkingWordChangesDto WordChanges,
+    LinkingDoorWordImpactDto DoorWordImpact,
     LinkingDescriptionChangesDto DescriptionChanges,
     string? InvalidReason);
 
@@ -20,6 +21,11 @@ public sealed record LinkingWordChangesDto(
     IReadOnlyList<int> Added,
     IReadOnlyList<int> Removed,
     IReadOnlyList<int> Unchanged);
+
+public sealed record LinkingDoorWordImpactDto(
+    IReadOnlyList<int> Added,
+    IReadOnlyList<int> Existing,
+    IReadOnlyList<int> Removed);
 
 public sealed record LinkingDescriptionChangesDto(
     IReadOnlyList<string> Added,

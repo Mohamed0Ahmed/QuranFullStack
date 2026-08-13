@@ -1,30 +1,141 @@
 @use '../../../../../styles/breakpoints' as bp;
 
-:host { display: block; }
+:host {
+  display: block;
+}
 
 .linking-workspace-source-row {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) auto auto auto auto;
+  grid-template-areas:
+    'identity count toggles'
+    'identity count remove';
+  grid-template-columns: minmax(12rem, 1fr) auto minmax(20rem, auto);
   align-items: center;
+  gap: var(--qd-space-2) var(--qd-space-4);
+  padding: var(--qd-space-4);
+  border: var(--qd-hairline);
+  background: var(--qd-surface);
   cursor: pointer;
 }
 
-.linking-workspace-source-row__identity { min-inline-size: 0; }
+.linking-workspace-source-row__identity {
+  grid-area: identity;
+  display: grid;
+  gap: var(--qd-space-1);
+  min-inline-size: 0;
+}
+
 .linking-workspace-source-row__identity p,
 .linking-workspace-source-row__identity h3,
-.linking-workspace-source-row__count span { margin: 0; }
+.linking-workspace-source-row__count-label {
+  margin: 0;
+}
+
 .linking-workspace-source-row__identity p,
-.linking-workspace-source-row__count span { color: var(--qd-ink-muted); font-size: var(--qd-type-meta); }
-.linking-workspace-source-row__identity h3 { font-family: var(--qd-font-naskh); font-size: var(--qd-type-h4); }
-.linking-workspace-source-row__count { display: grid; gap: var(--qd-space-1); }
+.linking-workspace-source-row__count-label {
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+}
+
+.linking-workspace-source-row__identity h3 {
+  font-family: var(--qd-font-naskh);
+  font-size: var(--qd-type-h4);
+}
+
+.linking-workspace-source-row__count {
+  grid-area: count;
+  display: grid;
+  gap: var(--qd-space-1);
+  padding-inline-start: var(--qd-space-4);
+  border-inline-start: var(--qd-hairline);
+}
+
+.linking-workspace-source-row__ayahs-button {
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+  min-inline-size: 11rem;
+}
+
+.linking-workspace-source-row__ayahs-count {
+  padding-inline: var(--qd-space-2);
+  border-radius: var(--qd-radius-pill);
+  background: var(--qd-surface-quiet);
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.linking-workspace-source-row__toggles {
+  grid-area: toggles;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--qd-space-2);
+  min-inline-size: 20rem;
+}
+
+.linking-workspace-source-row__toggle {
+  inline-size: 100%;
+  white-space: nowrap;
+}
+
+.linking-workspace-source-row__toggle--active,
+.linking-workspace-source-row__toggle--active:hover {
+  border-color: var(--qd-border-accent);
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+}
+
+.linking-workspace-source-row__toggle-mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1rem;
+  block-size: 1rem;
+  border: var(--qd-hairline-strong);
+  border-radius: var(--qd-radius-xs);
+  font-size: var(--qd-type-caption);
+  line-height: 1;
+}
+
+.linking-workspace-source-row__toggle--active .linking-workspace-source-row__toggle-mark {
+  border-color: var(--qd-accent);
+  background: var(--qd-accent);
+  color: var(--qd-accent-fg);
+}
+
+.linking-workspace-source-row__remove {
+  grid-area: remove;
+  inline-size: 100%;
+}
 
 @media (max-width: bp.$qd-bp-medium-max) {
-  .linking-workspace-source-row { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
-  .linking-workspace-source-row__count,
-  .linking-workspace-source-row__words,
-  .linking-workspace-source-row__membership { grid-column: span 1; }
+  .linking-workspace-source-row {
+    grid-template-areas:
+      'identity count'
+      'toggles toggles'
+      'remove remove';
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .linking-workspace-source-row__toggles {
+    min-inline-size: 0;
+  }
 }
 
 @media (max-width: bp.$qd-bp-compact-max) {
-  .linking-workspace-source-row { grid-template-columns: 1fr; }
+  .linking-workspace-source-row {
+    grid-template-areas:
+      'identity'
+      'count'
+      'toggles'
+      'remove';
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .linking-workspace-source-row__count {
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
 }

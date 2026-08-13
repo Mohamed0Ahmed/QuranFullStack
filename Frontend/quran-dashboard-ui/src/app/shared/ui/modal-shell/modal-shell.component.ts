@@ -14,7 +14,7 @@ import {
   viewChild,
 } from '@angular/core';
 
-import { QdActionDirective } from '../action/action.directive';
+import { QdActionDirective, type QdActionVariant } from '../action/action.directive';
 import { ScrollLockHandle, ScrollLockService } from '../modal-scroll-lock/scroll-lock.service';
 
 export type QdModalShellVariant = 'confirm' | 'form' | 'wide' | 'overlay';
@@ -48,6 +48,7 @@ export class QdModalShellComponent {
   readonly showTitle = input(true);
   readonly showClose = input(true);
   readonly closeLabel = input('إغلاق');
+  readonly closeAction = input<QdActionVariant>('tertiary');
   readonly hasFooter = input(true);
   readonly flushBody = input(false);
   readonly balancedHeader = input(false);

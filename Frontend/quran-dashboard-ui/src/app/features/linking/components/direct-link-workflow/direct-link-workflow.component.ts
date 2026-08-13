@@ -47,22 +47,6 @@ export class DirectLinkWorkflowComponent {
   private readonly sourceLabelByKey = computed(
     () => new Map((this.operation()?.sourceIntents ?? []).map((intent) => [intent.sourceKey, intent.source.label])),
   );
-  private readonly descriptionGroupsByVerseKey = computed(() => {
-    const groups = new Map<string, { sourceLabel: string; descriptions: readonly string[] }[]>();
-    for (const intent of this.operation()?.sourceIntents ?? []) {
-      for (const unit of intent.units) {
-        for (const ayah of unit.ayahs) {
-          if (ayah.descriptions.length === 0) {
-            continue;
-          }
-          const listed = groups.get(ayah.verseKey) ?? [];
-          listed.push({ sourceLabel: intent.source.label, descriptions: ayah.descriptions });
-          groups.set(ayah.verseKey, listed);
-        }
-      }
-    }
-    return groups;
-  });
 
   constructor() {
     effect(() => {
@@ -81,12 +65,6 @@ export class DirectLinkWorkflowComponent {
   protected sourceLabelsFor(ayah: MergedAyahSelection): readonly string[] {
     const labels = this.sourceLabelByKey();
     return ayah.sourceKeys.map((sourceKey) => labels.get(sourceKey) ?? sourceKey);
-  }
-
-  protected descriptionGroupsFor(
-    verseKey: string,
-  ): readonly { sourceLabel: string; descriptions: readonly string[] }[] {
-    return this.descriptionGroupsByVerseKey().get(verseKey) ?? [];
   }
 
   protected setAutomaticWords(event: Event): void { this.workflow.setDirectAutomaticWords((event.target as HTMLInputElement).checked); }

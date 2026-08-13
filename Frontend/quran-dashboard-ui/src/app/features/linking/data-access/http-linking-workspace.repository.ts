@@ -81,7 +81,7 @@ export class HttpLinkingWorkspaceRepository implements LinkingWorkspaceRepositor
           selectedWords: configuration.selectedWords.map((word) => ({ ...word })),
           automaticWordMatchesEnabled: configuration.automaticWordMatchesEnabled,
           manualLinkShape: configuration.manualLinkShape,
-          descriptions: configuration.descriptions.map((description) => ({ ...description })),
+          descriptions: [],
         },
       ),
     );
@@ -160,11 +160,6 @@ function toWorkspaceItem(source: LinkingWorkspaceSourceResponse): LinkingWorkspa
     configurationRevision: 0,
     ayahOverrideIds: source.ayahOverrides,
     ayahIdByVerseKey,
-    descriptions: source.descriptions.map((description) => ({
-      ayahId: description.ayahId,
-      orderValue: description.orderValue,
-      body: description.body,
-    })),
     lastResolvedCount: source.lastResolvedCount,
   };
 }

@@ -6,8 +6,9 @@ import { LinkingSourceResolver } from '../data-access/linking-source-resolver';
 import { LinkingAyah } from '../models/linking-ayah.models';
 import { LINKING_LABELS } from '../models/linking.labels';
 import { LinkingSourceEditorState } from '../models/linking-workflow.models';
-import { LinkingSelection, LinkingWorkspaceItem } from '../models/linking-workspace.models';
+import { LinkingSelection } from '../models/linking-workspace.models';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
+import { applyLinkingSourceConfiguration } from '../utils/apply-linking-source-configuration';
 import { selectedLinkingAyahCount } from '../utils/linking-selection';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
@@ -43,15 +44,21 @@ export class LinkingSourceEditorFacade {
   readonly selectedCount = computed(() =>
     selectedLinkingAyahCount(this.selection(), this.editorStateSignal().universe),
   );
-  readonly filteredAyahs = computed(() => {
-    const query = this.editorStateSignal().query;
-    return this.editorStateSignal().ayahs.filter((ayah) => arabicSearchIncludes(searchText(ayah), query));
-  });
   readonly currentItem = computed(() => {
     const sourceKey = this.editorStateSignal().sourceKey;
     return sourceKey === null ? null : this.workspace.item(sourceKey);
   });
-  readonly descriptionsByAyahId = computed(() => descriptionBodiesByAyahId(this.currentItem()));
+  readonly configuredAyahs = computed(() => {
+    const item = this.currentItem();
+    const ayahs = this.editorStateSignal().ayahs;
+    return item === null
+      ? ayahs
+      : ayahs.map((ayah) => applyLinkingSourceConfiguration(item.configuration, ayah));
+  });
+  readonly filteredAyahs = computed(() => {
+    const query = this.editorStateSignal().query;
+    return this.configuredAyahs().filter((ayah) => arabicSearchIncludes(searchText(ayah), query));
+  });
 
   open(sourceKey: string | null): void {
     if (sourceKey === null || !this.access.canUseLinking()) {
@@ -85,17 +92,6 @@ export class LinkingSourceEditorFacade {
 
   setQuery(query: string): void {
     this.editorStateSignal.update((state) => ({ ...state, query }));
-  }
-
-  descriptionsFor(ayahId: number): readonly string[] {
-    return this.descriptionsByAyahId().get(ayahId) ?? [];
-  }
-
-  setDescriptions(ayahId: number, bodies: readonly string[]): void {
-    const state = this.editorStateSignal();
-    if (state.sourceKey !== null && state.status === 'success') {
-      this.workspace.setAyahDescriptions(state.sourceKey, ayahId, bodies);
-    }
   }
 
   toggleAyah(verseKey: string): void {
@@ -189,19 +185,6 @@ export class LinkingSourceEditorFacade {
     this.loadSubscription?.unsubscribe();
     this.loadSubscription = null;
   }
-}
-
-function descriptionBodiesByAyahId(
-  item: LinkingWorkspaceItem | null,
-): ReadonlyMap<number, readonly string[]> {
-  const byAyahId = new Map<number, string[]>();
-  const ordered = [...(item?.descriptions ?? [])].sort((left, right) => left.orderValue - right.orderValue);
-  for (const description of ordered) {
-    const bodies = byAyahId.get(description.ayahId) ?? [];
-    bodies.push(description.body);
-    byAyahId.set(description.ayahId, bodies);
-  }
-  return byAyahId;
 }
 
 function uniqueAyahsByVerseKey(ayahs: readonly LinkingAyah[]): readonly LinkingAyah[] {

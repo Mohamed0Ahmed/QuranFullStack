@@ -24,17 +24,10 @@ export interface LinkingOverlappingSource {
   sourceKind: string;
 }
 
-export interface LinkingWordChanges {
+export interface LinkingDoorWordImpact {
   added: readonly number[];
+  existing: readonly number[];
   removed: readonly number[];
-  unchanged: readonly number[];
-}
-
-export interface LinkingDescriptionChanges {
-  added: readonly string[];
-  removed: readonly string[];
-  changed: readonly string[];
-  unchanged: readonly string[];
 }
 
 export interface LinkingAyahPreflight {
@@ -44,8 +37,7 @@ export interface LinkingAyahPreflight {
   ayahNumber: number;
   classification: LinkingAyahClassification;
   overlappingSources: readonly LinkingOverlappingSource[];
-  wordChanges: LinkingWordChanges;
-  descriptionChanges: LinkingDescriptionChanges;
+  doorWordImpact: LinkingDoorWordImpact;
   invalidReason: string | null;
 }
 

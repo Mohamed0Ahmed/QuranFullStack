@@ -89,8 +89,7 @@ function toAyahPreflight(ayah: LinkingAyahPreflightDto): LinkingAyahPreflight {
     ayahNumber: ayah.ayahNumber,
     classification: toAyahClassification(ayah.classification),
     overlappingSources: ayah.overlappingSources,
-    wordChanges: ayah.wordChanges,
-    descriptionChanges: ayah.descriptionChanges,
+    doorWordImpact: ayah.doorWordImpact,
     invalidReason: ayah.invalidReason,
   };
 }

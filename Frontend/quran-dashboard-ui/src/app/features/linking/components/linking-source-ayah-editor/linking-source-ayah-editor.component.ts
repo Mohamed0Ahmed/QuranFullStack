@@ -12,11 +12,10 @@ import { QdActionDirective } from '../../../../shared/ui/action/action.directive
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
-import { LinkingAyah } from '../../models/linking-ayah.models';
 import { LINKING_LABELS } from '../../models/linking.labels';
+import { type LinkingManualLinkShape } from '../../models/linking-manual-mushaf.models';
 import { LinkingSourceEditorFacade } from '../../state/linking-source-editor.facade';
 import { LinkingAyahSelectionComponent } from '../linking-ayah-selection/linking-ayah-selection.component';
-import { LinkingAyahDescriptionsComponent } from './linking-ayah-descriptions.component';
 
 @Component({
   selector: 'qd-linking-source-ayah-editor',
@@ -27,7 +26,6 @@ import { LinkingAyahDescriptionsComponent } from './linking-ayah-descriptions.co
     QdErrorStateComponent,
     ExplorerPanelSkeletonComponent,
     LinkingAyahSelectionComponent,
-    LinkingAyahDescriptionsComponent,
   ],
   templateUrl: './linking-source-ayah-editor.component.html',
   styleUrl: './linking-source-ayah-editor.component.scss',
@@ -66,14 +64,6 @@ export class LinkingSourceAyahEditorComponent {
     this.facade.setQuery(query);
   }
 
-  protected descriptionsFor(ayah: LinkingAyah): readonly string[] {
-    return this.facade.descriptionsFor(ayah.ayahId);
-  }
-
-  protected setDescriptions(ayah: LinkingAyah, bodies: readonly string[]): void {
-    this.facade.setDescriptions(ayah.ayahId, bodies);
-  }
-
   protected toggleAyah(verseKey: string): void {
     this.facade.toggleAyah(verseKey);
   }
@@ -86,7 +76,7 @@ export class LinkingSourceAyahEditorComponent {
     this.facade.clearAll();
   }
 
-  protected setManualLinkShape(event: Event): void {
-    this.facade.setManualLinkShape((event.target as HTMLInputElement).value as 'grouped' | 'independent');
+  protected setManualLinkShape(linkShape: LinkingManualLinkShape): void {
+    this.facade.setManualLinkShape(linkShape);
   }
 }

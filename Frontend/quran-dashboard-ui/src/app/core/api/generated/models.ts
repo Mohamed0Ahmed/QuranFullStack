@@ -92,6 +92,7 @@ export type { LinkingConfirmationSourceBody } from './models/linking-confirmatio
 export type { LinkingConfirmationSourceResultDto } from './models/linking-confirmation-source-result-dto';
 export type { LinkingDescriptionBody } from './models/linking-description-body';
 export type { LinkingDescriptionChangesDto } from './models/linking-description-changes-dto';
+export type { LinkingDoorWordImpactDto } from './models/linking-door-word-impact-dto';
 export type { LinkingManualAyahBody } from './models/linking-manual-ayah-body';
 export type { LinkingOperationAyahBody } from './models/linking-operation-ayah-body';
 export type { LinkingOperationUnitBody } from './models/linking-operation-unit-body';

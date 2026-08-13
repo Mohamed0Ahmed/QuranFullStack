@@ -5,6 +5,7 @@
     [wideBlockSize]="'var(--qd-linking-workspace-modal-block-size)'"
     [titleText]="modalTitle()"
     closeLabel="إغلاق"
+    [closeAction]="isSourceAyahEditor() ? 'secondary' : 'tertiary'"
     [open]="isOpen()"
     [hasFooter]="false"
     [flushBody]="true"
@@ -31,7 +32,7 @@
             (manualWordsRequested)="openManualWordEditor()"
           />
         } @else if (isManualWordEditor()) {
-          <qd-linking-manual-word-editor [sourceKey]="editorSourceKey()" (dismissed)="closeManualWordEditor()" />
+          <qd-linking-manual-word-editor [sourceKey]="editorSourceKey()" (dismissed)="returnToSourceEditor()" />
         } @else if (isLinkingFlow()) {
           <qd-direct-link-workflow />
         }

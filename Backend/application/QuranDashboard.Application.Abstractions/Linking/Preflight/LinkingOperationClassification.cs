@@ -22,6 +22,7 @@ public sealed record LinkingAyahClassification(
     LinkingPreflightClassification Classification,
     IReadOnlyList<LinkingOverlappingSource> OverlappingSources,
     LinkingWordChanges WordChanges,
+    LinkingDoorWordImpact DoorWordImpact,
     LinkingDescriptionChanges DescriptionChanges,
     LinkingPreflightInvalidReason? InvalidReason);
 
@@ -34,6 +35,11 @@ public sealed record LinkingWordChanges(
     IReadOnlyList<int> Added,
     IReadOnlyList<int> Removed,
     IReadOnlyList<int> Unchanged);
+
+public sealed record LinkingDoorWordImpact(
+    IReadOnlyList<int> Added,
+    IReadOnlyList<int> Existing,
+    IReadOnlyList<int> Removed);
 
 public sealed record LinkingDescriptionChanges(
     IReadOnlyList<string> Added,

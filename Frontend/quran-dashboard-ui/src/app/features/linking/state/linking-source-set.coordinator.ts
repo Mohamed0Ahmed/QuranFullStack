@@ -7,6 +7,7 @@ import { LinkingManualWordIdsByVerseKey } from '../models/linking-manual-mushaf.
 import { LinkingSourceIntent } from '../models/linking-merge.models';
 import { LinkingOperationMember, LinkingOperationMemberLoadState } from '../models/linking-operation.models';
 import { LinkingSourceSetOperationResult } from '../models/linking-workflow.models';
+import { applyLinkingSourceConfiguration } from '../utils/apply-linking-source-configuration';
 import { createLinkingSourceIntent } from '../utils/linking-source-intents';
 import { mergeLinkingSources, ResolvedLinkingSourceMember } from '../utils/linking-merge';
 import { orderedOperationMembers } from '../utils/linking-operation-members';
@@ -116,7 +117,7 @@ export class LinkingSourceSetCoordinator {
       member,
       ayahs: ayahs
         .filter((ayah) => includedVerseKeys.has(ayah.verseKey))
-        .map((ayah) => applySourceConfiguration(member, ayah)),
+        .map((ayah) => applyLinkingSourceConfiguration(member.configuration, ayah)),
     };
   }
 
@@ -205,23 +206,6 @@ function assertKnownManualWordIds(
       throw new Error('الكلمات المحفوظة لهذا المصدر لم تعد صالحة.');
     }
   }
-}
-
-function applySourceConfiguration(member: LinkingOperationMember, ayah: LinkingAyah): LinkingAyah {
-  const selectedWordIds = member.configuration.kind === 'manual'
-    ? new Set(member.configuration.quranWordIdsByVerseKey[ayah.verseKey] ?? [])
-    : null;
-  return {
-    ...ayah,
-    words: ayah.words.map((word) => ({
-      ...word,
-      isSourceMatch:
-        !word.isAyahMarker &&
-        (member.configuration.kind === 'automatic'
-          ? member.configuration.automaticWordMatchesEnabled && word.isSourceMatch
-          : selectedWordIds!.has(word.canonicalQuranWordId)),
-    })),
-  };
 }
 
 class MemberResolutionError extends Error {

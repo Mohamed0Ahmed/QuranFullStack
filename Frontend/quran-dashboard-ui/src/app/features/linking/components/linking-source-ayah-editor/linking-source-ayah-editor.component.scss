@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: flex;
   flex: 1 1 auto;
@@ -15,11 +17,6 @@
   padding: var(--qd-space-4);
 }
 
-qd-linking-ayah-descriptions {
-  grid-column: 1 / -1;
-  min-inline-size: 0;
-}
-
 .linking-source-ayah-editor__header {
   display: flex;
   align-items: center;
@@ -27,16 +24,76 @@ qd-linking-ayah-descriptions {
   gap: var(--qd-space-3);
 }
 
-.linking-source-ayah-editor__manual-options,
-.linking-source-ayah-editor__manual-options fieldset {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--qd-space-2);
-  margin: 0;
+.linking-source-ayah-editor__back {
+  flex: 0 0 auto;
+  min-inline-size: 11rem;
 }
 
-.linking-source-ayah-editor__manual-options p,
+.linking-source-ayah-editor__manual-options {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
+  gap: var(--qd-space-3);
+  padding: var(--qd-space-3);
+  border: var(--qd-hairline);
+  background: var(--qd-surface-quiet);
+}
+
+.linking-source-ayah-editor__words-button {
+  min-inline-size: 10rem;
+}
+
+.linking-source-ayah-editor__shape {
+  display: grid;
+  gap: var(--qd-space-1);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.linking-source-ayah-editor__shape-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--qd-space-2);
+}
+
+.linking-source-ayah-editor__shape-button {
+  inline-size: 100%;
+  white-space: nowrap;
+}
+
+.linking-source-ayah-editor__shape-button.qd-is-selected:hover {
+  border-color: var(--qd-accent);
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+}
+
+.linking-source-ayah-editor__shape-mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  inline-size: 1rem;
+  block-size: 1rem;
+  border: var(--qd-hairline-strong);
+  border-radius: var(--qd-radius-xs);
+  font-size: var(--qd-type-caption);
+  line-height: 1;
+}
+
+.linking-source-ayah-editor__shape-button.qd-is-selected .linking-source-ayah-editor__shape-mark {
+  border-color: var(--qd-accent);
+  background: var(--qd-accent);
+  color: var(--qd-accent-fg);
+}
+
+.linking-source-ayah-editor__shape-hint {
+  align-self: center;
+  margin: 0;
+  color: var(--qd-text-muted);
+}
+
 .linking-source-ayah-editor__manual-options legend {
   margin: 0;
 }
@@ -57,4 +114,24 @@ qd-linking-ayah-descriptions {
   color: var(--qd-text-muted);
   font-size: var(--qd-type-meta);
   line-height: var(--qd-type-meta-lh);
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .linking-source-ayah-editor__manual-options {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .linking-source-ayah-editor__words-button {
+    inline-size: 100%;
+    min-inline-size: 0;
+  }
+
+  .linking-source-ayah-editor__shape-buttons {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .linking-source-ayah-editor__shape-button {
+    white-space: normal;
+  }
 }
