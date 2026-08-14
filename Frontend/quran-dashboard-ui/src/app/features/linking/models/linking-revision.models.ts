@@ -10,3 +10,12 @@ export class LinkingDataStaleError extends Error {
     super(message);
   }
 }
+
+export class LinkingLifecycleError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+  }
+}

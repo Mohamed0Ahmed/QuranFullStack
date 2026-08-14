@@ -24,99 +24,91 @@
   <div class="direct-link-workflow__body">
     @switch (currentStep()) {
       @case ('configure-source') {
-        <section class="direct-link-workflow__configuration">
-          @if (directAutomaticConfiguration(); as configuration) {
+        @if (directDraft(); as draft) {
+          <section class="direct-link-workflow__configuration">
             <header class="direct-link-workflow__configuration-toolbar">
-              <button
-                qdAction="secondary"
-                size="sm"
-                type="button"
-                class="direct-link-workflow__word-toggle"
-                [class.direct-link-workflow__word-toggle--active]="configuration.automaticWordMatchesEnabled"
-                [attr.aria-pressed]="configuration.automaticWordMatchesEnabled"
-                (click)="toggleAutomaticWords()"
-              >
-                <span class="direct-link-workflow__word-toggle-mark" aria-hidden="true">
-                  {{ configuration.automaticWordMatchesEnabled ? '✓' : '' }}
-                </span>
-                <span>{{ labels.highlightStep }}</span>
+              @if (isAutomatic()) {
+                <button
+                  qdAction="secondary"
+                  size="sm"
+                  type="button"
+                  [class.qd-is-selected]="draft.automaticWordMatchesEnabled"
+                  [attr.aria-pressed]="draft.automaticWordMatchesEnabled"
+                  (click)="workflow.setDirectAutomaticWords(!draft.automaticWordMatchesEnabled)"
+                >
+                  {{ labels.highlightStep }}
+                </button>
+              } @else {
+                <qd-linking-manual-shape-selector
+                  [selectedCount]="directSelectedCount()"
+                  [linkShape]="draft.manualLinkShape ?? 'independent'"
+                  (linkShapeChanged)="setManualLinkShape($event)"
+                />
+              }
+              <button qdAction="secondary" size="sm" type="button" (click)="workflow.selectAllDirectAyahs()">
+                {{ labels.selectAll }}
               </button>
-              <p>{{ labels.configureSourceHint }}</p>
+              <button qdAction="secondary" size="sm" type="button" (click)="workflow.clearAllDirectAyahs()">
+                {{ labels.clearAll }}
+              </button>
             </header>
-          } @else if (directManualConfiguration(); as configuration) {
-            <qd-linking-manual-shape-selector
-              [selectedCount]="directSelectedCount()"
-              [linkShape]="configuration.linkShape"
-              (linkShapeChanged)="setManualLinkShape($event)"
-            />
-          }
-
-          @if (memberStates()[0]; as member) {
-            @switch (member.status) {
-              @case ('loading') {
-                <qd-panel-skeleton
-                  shape="rows"
-                  [loadingLabel]="labels.sourceLoading + ' (' + member.progress.loaded + (member.progress.total === null ? '' : ' / ' + member.progress.total) + ')'"
-                />
-              }
-              @case ('error') {
-                <qd-error-state
-                  severity="read"
-                  [message]="member.errorMessage || labels.sourceLoadError"
-                  [actionLabel]="labels.retry"
-                  (action)="retry()"
-                />
-              }
-              @case ('ready') {
-                @if (directAutomaticConfiguration(); as configuration) {
-                  <qd-linking-direct-source-preview
-                    [ayahs]="directPreviewAyahs()"
-                    [highlightSourceWords]="configuration.automaticWordMatchesEnabled"
-                  />
-                } @else if (directManualConfiguration(); as configuration) {
-                  <qd-linking-ayah-selection
-                    [ayahs]="directPreviewAyahs()"
-                    [selection]="configuration.ayahInclusion"
-                    [selectedCount]="directSelectedCount()"
-                    [focusOnEntry]="true"
-                    [disabled]="false"
-                    [wordSelectable]="true"
-                    [grouped]="directManualGrouped()"
-                    [listLabel]="labels.sourceEditorAyahList"
-                    (selectionToggled)="toggleManualAyah($event)"
-                    (wordToggled)="toggleManualWord($event)"
-                    (selectAllRequested)="selectAllManualAyahs()"
-                    (clearAllRequested)="clearAllManualAyahs()"
-                  />
-                }
-              }
-              @default {
-                <qd-panel-skeleton shape="rows" [loadingLabel]="labels.sourceLoading" />
-              }
+            @if (directRequest(); as request) {
+              <qd-linking-virtual-ayah-list
+                scope="direct-linking-source"
+                [sourceRequest]="request"
+                [selectedAyahIds]="draft.selection.ayahIds"
+                [selectionMode]="draft.selection.mode"
+                [selectedWordIdsByAyahId]="draft.selectedWordIdsByAyahId"
+                [selectionEnabled]="!isAutomatic()"
+                [wordSelectable]="!isAutomatic()"
+                [highlightSourceWords]="draft.automaticWordMatchesEnabled ?? true"
+                [grouped]="directManualGrouped()"
+                [listLabel]="labels.sourceEditorAyahList"
+                (ayahToggled)="workflow.toggleDirectAyah($event)"
+                (wordToggled)="toggleManualWord($event)"
+                (pageReady)="workflow.directPageReady($event.linkingDataRevision, $event.totalItems)"
+              />
             }
-          }
-        </section>
-      }
-      @case ('resolve') {
-        @for (member of memberStates(); track member.member.sourceKey) {
-          <section class="direct-link-workflow__source-status">
-            <p>{{ member.member.source.label }}</p>
-            @if (member.status === 'loading') { <qd-panel-skeleton shape="text" [loadingLabel]="labels.sourceLoading" /> }
-            @if (member.status === 'error') { <qd-error-state severity="read" [message]="member.errorMessage || labels.sourceLoadError" [actionLabel]="labels.retry" (action)="retry()" /> }
           </section>
         }
       }
       @case ('door') { <qd-linking-door-step /> }
-      @case ('preflight') { <qd-linking-preflight-step /> }
+      @case ('preflighting') { <qd-linking-preflight-step /> }
+      @case ('ready') { <qd-linking-preflight-step /> }
       @case ('submitting') { <qd-panel-skeleton shape="text" [loadingLabel]="labels.submitting" /> }
-      @case ('success') { <qd-notice [message]="state().resultMessage || labels.success" [dismissLabel]="labels.close" (dismiss)="acknowledge()" /> }
-      @case ('error') { <qd-error-state severity="read" [message]="state().errorMessage || labels.sourceLoadError" [actionLabel]="labels.retry" (action)="retry()" /> }
+      @case ('queued') {
+        <p role="status">{{ execution().job?.stage }} · {{ execution().job?.processedItems }} / {{ execution().job?.totalItems }}</p>
+      }
+      @case ('running') {
+        <p role="status">{{ execution().job?.stage }} · {{ execution().job?.processedItems }} / {{ execution().job?.totalItems }}</p>
+      }
+      @case ('finalizing') {
+        <p role="status">{{ execution().job?.stage }} · {{ execution().job?.processedItems }} / {{ execution().job?.totalItems }}</p>
+      }
+      @case ('succeeded') {
+        <qd-notice [message]="labels.success" [dismissLabel]="labels.close" (dismiss)="acknowledge()" />
+      }
+      @case ('failed') {
+        <qd-error-state severity="write" [message]="state().errorMessage || labels.sourceLoadError" [actionLabel]="labels.retry" (action)="retryPreflight()" />
+      }
+      @case ('cancelled') {
+        <qd-notice [message]="labels.cancel" [dismissLabel]="labels.close" (dismiss)="cancel()" />
+      }
     }
   </div>
 
   <footer class="direct-link-workflow__footer">
-    @if (currentStep() === 'configure-source') { <button qdAction="primary" type="button" [disabled]="!canAdvanceSource()" (click)="next()">{{ labels.chooseDoor }}</button> }
-    @if (currentStep() === 'door') { <button qdAction="primary" type="button" [disabled]="!canAdvanceDoor()" (click)="next()">{{ labels.preflightTitle }}</button> }
-    @if (currentStep() === 'preflight') { <button qdAction="primary" type="button" [disabled]="!canSubmit()" (click)="submit()">{{ labels.confirm }}</button> }
+    @if (currentStep() === 'configure-source') {
+      <button qdAction="primary" type="button" [disabled]="!canAdvanceSource()" (click)="next()">{{ labels.chooseDoor }}</button>
+    }
+    @if (currentStep() === 'door') {
+      <button qdAction="primary" type="button" [disabled]="!canAdvanceDoor()" (click)="next()">{{ labels.preflightTitle }}</button>
+    }
+    @if (currentStep() === 'ready') {
+      <button qdAction="primary" type="button" [disabled]="!canSubmit()" (click)="submit()">{{ labels.confirm }}</button>
+    }
+    @if (workflow.canCancelExecution()) {
+      <button qdAction="secondary" type="button" (click)="cancelExecution()">{{ labels.cancel }}</button>
+    }
   </footer>
 </section>

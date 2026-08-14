@@ -1,0 +1,53 @@
+.linking-virtual-ayah-list,
+.linking-virtual-ayah-list__viewport {
+  min-block-size: 18rem;
+  block-size: 100%;
+}
+
+.linking-virtual-ayah-list__row {
+  padding: var(--qd-space-2) var(--qd-space-3);
+}
+
+.linking-virtual-ayah-list__content {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--qd-space-3);
+  align-items: start;
+}
+
+.linking-virtual-ayah-list__group {
+  margin: 0 0 var(--qd-space-2);
+  color: var(--qd-color-text-muted);
+  font-weight: 700;
+}
+
+.linking-virtual-ayah-list__skeleton {
+  min-block-size: 8rem;
+  display: grid;
+  align-content: center;
+  gap: var(--qd-space-2);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-color-surface-subtle);
+  padding: var(--qd-space-4);
+}
+
+.linking-virtual-ayah-list__skeleton span {
+  display: block;
+  block-size: 0.75rem;
+  border-radius: 999px;
+  background: var(--qd-color-border);
+}
+
+.linking-virtual-ayah-list__skeleton span:nth-child(2) {
+  inline-size: 82%;
+}
+
+.linking-virtual-ayah-list__skeleton span:nth-child(3) {
+  inline-size: 64%;
+}
+
+.linking-virtual-ayah-list__error {
+  margin: 0;
+  padding: var(--qd-space-3);
+  color: var(--qd-color-danger-text);
+}

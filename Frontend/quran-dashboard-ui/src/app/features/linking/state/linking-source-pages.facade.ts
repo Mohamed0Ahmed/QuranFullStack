@@ -188,6 +188,7 @@ export class LinkingSourcePagesFacade {
     this.entities.insertPage(dto.linkingDataRevision, dto.items, lease);
     if (!this.cache.set(key, page, page.weight)) {
       this.transientLeases.set(page, lease);
+      queueMicrotask(() => this.releaseTransient(page));
     }
     return page;
   }

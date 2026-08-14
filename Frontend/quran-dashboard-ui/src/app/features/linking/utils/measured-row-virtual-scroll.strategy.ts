@@ -4,13 +4,35 @@ import { Observable, Subject, distinctUntilChanged } from 'rxjs';
 
 const CONTENT_WRAPPER_SELECTOR = '.cdk-virtual-scroll-content-wrapper';
 
+class FenwickDeltaTree {
+  private values: number[] = [0];
+
+  reset(length: number): void {
+    this.values = new Array(length + 1).fill(0);
+  }
+
+  add(index: number, delta: number): void {
+    for (let position = index + 1; position < this.values.length; position += position & -position) {
+      this.values[position] += delta;
+    }
+  }
+
+  prefix(length: number): number {
+    let total = 0;
+    for (let position = length; position > 0; position -= position & -position) {
+      total += this.values[position];
+    }
+    return total;
+  }
+}
+
 export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
   private readonly scrolledIndex = new Subject<number>();
+  private readonly deltas = new FenwickDeltaTree();
   private viewport: CdkVirtualScrollViewport | null = null;
   private contentWrapper: HTMLElement | null = null;
   private resizeObserver: ResizeObserver | null = null;
-  private measuredSizes: (number | null)[] = [];
-  private offsets: readonly number[] = [0];
+  private measuredSizes: number[] = [];
   private renderedRange: ListRange = { start: 0, end: 0 };
   private updating = false;
   private skipNextMeasure = false;
@@ -52,12 +74,13 @@ export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
   onRenderedOffsetChanged(): void {}
 
   scrollToIndex(index: number, behavior: ScrollBehavior): void {
-    const bounded = Math.min(Math.max(index, 0), this.offsets.length - 1);
-    this.viewport?.scrollToOffset(this.offsets[bounded], behavior);
+    const bounded = Math.min(Math.max(index, 0), this.measuredSizes.length);
+    this.viewport?.scrollToOffset(this.offsetFor(bounded), behavior);
   }
 
   private resetSizes(length: number): void {
-    this.measuredSizes = new Array<number | null>(length).fill(null);
+    this.measuredSizes = new Array(length).fill(0);
+    this.deltas.reset(length);
     this.skipNextMeasure = true;
   }
 
@@ -70,9 +93,8 @@ export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
     try {
       this.observeContent(viewport);
       this.measureRenderedRows();
-      this.recomputeOffsets();
       const length = this.measuredSizes.length;
-      viewport.setTotalContentSize(this.offsets[length]);
+      viewport.setTotalContentSize(this.offsetFor(length));
       if (length === 0) {
         this.applyRange({ start: 0, end: 0 });
         return;
@@ -82,7 +104,7 @@ export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
       const start = this.indexAt(scrollOffset - this.bufferSize);
       const end = Math.min(length, this.indexAt(scrollOffset + viewportSize + this.bufferSize) + 1);
       this.applyRange({ start, end });
-      viewport.setRenderedContentOffset(this.offsets[start]);
+      viewport.setRenderedContentOffset(this.offsetFor(start));
       this.scrolledIndex.next(this.indexAt(scrollOffset));
     } finally {
       this.updating = false;
@@ -126,46 +148,33 @@ export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
         return;
       }
       const size = (rows[position] as HTMLElement).offsetHeight;
-      if (size > 0) {
-        this.measuredSizes[index] = size;
+      if (size <= 0 || size === this.measuredSizes[index]) {
+        continue;
       }
+      const previousDelta = this.measuredSizes[index] === 0
+        ? 0
+        : this.measuredSizes[index] - this.estimatedRowSize;
+      this.measuredSizes[index] = size;
+      this.deltas.add(index, size - this.estimatedRowSize - previousDelta);
     }
   }
 
-  private recomputeOffsets(): void {
-    const estimate = this.estimatedSize();
-    const offsets = new Array<number>(this.measuredSizes.length + 1);
-    offsets[0] = 0;
-    for (let index = 0; index < this.measuredSizes.length; index += 1) {
-      offsets[index + 1] = offsets[index] + (this.measuredSizes[index] ?? estimate);
-    }
-    this.offsets = offsets;
-  }
-
-  private estimatedSize(): number {
-    let total = 0;
-    let count = 0;
-    for (const size of this.measuredSizes) {
-      if (size !== null) {
-        total += size;
-        count += 1;
-      }
-    }
-    return count === 0 ? this.estimatedRowSize : total / count;
+  private offsetFor(index: number): number {
+    return index * this.estimatedRowSize + this.deltas.prefix(index);
   }
 
   private indexAt(offset: number): number {
     const target = Math.max(offset, 0);
     let low = 0;
-    let high = this.measuredSizes.length - 1;
+    let high = Math.max(this.measuredSizes.length - 1, 0);
     while (low < high) {
       const middle = Math.ceil((low + high) / 2);
-      if (this.offsets[middle] <= target) {
+      if (this.offsetFor(middle) <= target) {
         low = middle;
       } else {
         high = middle - 1;
       }
     }
-    return Math.max(low, 0);
+    return low;
   }
 }

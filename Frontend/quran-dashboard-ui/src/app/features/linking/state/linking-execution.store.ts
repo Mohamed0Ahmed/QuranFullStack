@@ -11,6 +11,7 @@ import {
 } from '../models/linking-execution.models';
 import { LinkingRecoveryStore } from './linking-recovery.store';
 import { LinkingStatusPollRunner } from './linking-status-poll.runner';
+import { LinkingLifecycleError } from '../models/linking-revision.models';
 
 export interface LinkingExecutionState {
   status: 'idle' | 'submitting' | 'polling' | 'succeeded' | 'failed';
@@ -18,6 +19,7 @@ export interface LinkingExecutionState {
   outcome: LinkingDurableConfirmationOutcome | null;
   idempotencyKey: string | null;
   errorMessage: string | null;
+  failureCode: string | null;
   generation: number;
 }
 
@@ -27,6 +29,7 @@ const INITIAL_STATE: LinkingExecutionState = {
   outcome: null,
   idempotencyKey: null,
   errorMessage: null,
+  failureCode: null,
   generation: 0,
 };
 
@@ -132,6 +135,7 @@ export class LinkingExecutionStore {
       status: terminal ? (job.status.toLowerCase() === 'succeeded' ? 'succeeded' : 'failed') : 'polling',
       job,
       errorMessage: job.failureCode,
+      failureCode: job.failureCode,
     }));
     if (terminal) {
       void this.recovery.markTerminal(this.requireActor(), 'confirmation', this.requireIdempotencyKey());
@@ -170,6 +174,7 @@ export class LinkingExecutionStore {
         ...state,
         status: 'failed',
         errorMessage: error instanceof Error ? error.message : 'تعذر تنفيذ الربط.',
+        failureCode: error instanceof LinkingLifecycleError ? error.code : null,
       }));
     }
   }

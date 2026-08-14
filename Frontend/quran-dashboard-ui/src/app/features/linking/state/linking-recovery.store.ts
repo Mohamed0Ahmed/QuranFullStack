@@ -14,6 +14,7 @@ import {
 } from '../linking.policy';
 import { isConfirmationJobTerminal } from '../models/linking-execution.models';
 import { LinkingPreparedPreflightRequest } from '../models/linking-prepared-preflight.models';
+import { LinkingAccessService } from './linking-access.service';
 
 type LinkingRecoveryState = 'open' | 'terminal-unacknowledged';
 
@@ -56,12 +57,14 @@ export class LinkingRecoveryCapacityError extends Error {}
 @Injectable({ providedIn: 'root' })
 export class LinkingRecoveryStore {
   private readonly currentUser = inject(CurrentUserStore);
+  private readonly access = inject(LinkingAccessService);
   private readonly preflights = inject(LinkingPreparedPreflightApi);
   private readonly executions = inject(LinkingExecutionApi);
   private readonly jobs = inject(LinkingJobStatusApi);
   private readonly ownerId = crypto.randomUUID();
   private readonly recordsSignal = signal<readonly LinkingRecoveryReceipt[]>([]);
   private readonly recoveringSignal = signal(false);
+  private readonly queuedActors = new Set<string>();
   private recoveryQueue: Promise<void> = Promise.resolve();
   private channel: BroadcastChannel | null = null;
 
@@ -79,7 +82,9 @@ export class LinkingRecoveryStore {
       };
     }
     effect(() => {
-      const actorSub = this.currentUser.currentUser()?.sub ?? null;
+      const actorSub = this.access.canUseLinking()
+        ? this.currentUser.currentUser()?.sub ?? null
+        : null;
       if (actorSub === null) {
         this.recordsSignal.set([]);
         return;
@@ -202,9 +207,18 @@ export class LinkingRecoveryStore {
   }
 
   recover(actorSub: string): void {
+    if (!this.access.canUseLinking() || this.currentUser.currentUser()?.sub !== actorSub) {
+      return;
+    }
+    if (this.queuedActors.has(actorSub)) {
+      return;
+    }
+    this.queuedActors.add(actorSub);
     this.recoveryQueue = this.recoveryQueue
       .catch(() => undefined)
-      .then(() => this.recoverAsLeader(actorSub));
+      .then(() => this.recoverAsLeader(actorSub))
+      .catch(() => undefined)
+      .finally(() => this.queuedActors.delete(actorSub));
   }
 
   private async recoverAsLeader(actorSub: string): Promise<void> {

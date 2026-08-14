@@ -10,11 +10,13 @@ import {
 } from '../models/linking-prepared-preflight.models';
 import { LinkingRecoveryStore } from './linking-recovery.store';
 import { LinkingStatusPollRunner } from './linking-status-poll.runner';
+import { LinkingLifecycleError } from '../models/linking-revision.models';
 
 export interface LinkingPreparedPreflightState {
   status: 'idle' | 'submitting' | 'polling' | 'ready' | 'error';
   resource: LinkingPreparedPreflightStatus | null;
   errorMessage: string | null;
+  failureCode: string | null;
   generation: number;
 }
 
@@ -22,6 +24,7 @@ const INITIAL_STATE: LinkingPreparedPreflightState = {
   status: 'idle',
   resource: null,
   errorMessage: null,
+  failureCode: null,
   generation: 0,
 };
 
@@ -54,7 +57,7 @@ export class LinkingPreparedPreflightFacade {
     const preparationKey = requirePreparationKey(request);
     const state = this.stateSignal(preparationKey);
     const generation = state().generation + 1;
-    state.set({ status: 'submitting', resource: null, errorMessage: null, generation });
+    state.set({ status: 'submitting', resource: null, errorMessage: null, failureCode: null, generation });
     try {
       await this.recovery.appendPreparation(actorSub, request);
       const resource = await firstValueFrom(this.api.create(request));
@@ -70,7 +73,7 @@ export class LinkingPreparedPreflightFacade {
   open(preparationKey: string, preflightId: string): void {
     const state = this.stateSignal(preparationKey);
     const generation = state().generation + 1;
-    state.set({ status: 'polling', resource: null, errorMessage: null, generation });
+    state.set({ status: 'polling', resource: null, errorMessage: null, failureCode: null, generation });
     this.startPolling(preparationKey, generation, preflightId);
   }
 
@@ -121,6 +124,7 @@ export class LinkingPreparedPreflightFacade {
       status: terminal ? 'ready' : 'polling',
       resource,
       errorMessage: null,
+      failureCode: resource.failureCode,
       generation,
     });
     if (terminal) {
@@ -152,6 +156,7 @@ export class LinkingPreparedPreflightFacade {
         ...state(),
         status: 'error',
         errorMessage: error instanceof Error ? error.message : 'تعذر تحضير مراجعة الربط.',
+        failureCode: error instanceof LinkingLifecycleError ? error.code : null,
       });
     }
   }

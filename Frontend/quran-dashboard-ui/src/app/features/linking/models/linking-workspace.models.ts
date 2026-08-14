@@ -41,6 +41,7 @@ export interface LinkingWorkspaceItem {
   configurationRevision: number;
   linkingDataRevision: number | null;
   ayahOverrideIds: readonly number[];
+  selectedWordIdsByAyahId: Readonly<Record<number, readonly number[]>>;
   ayahIdByVerseKey: Readonly<Record<string, number>>;
   lastResolvedCount: number | null;
 }

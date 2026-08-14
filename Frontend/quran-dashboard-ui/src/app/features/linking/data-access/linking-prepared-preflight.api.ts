@@ -1,6 +1,6 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, catchError, map, throwError } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { LinkingPreparedDetailPageDto } from '../../../core/api/generated/models/linking-prepared-detail-page-dto';
@@ -12,6 +12,8 @@ import {
   LinkingPreparedPreflightStatus,
 } from '../models/linking-prepared-preflight.models';
 import { LinkingPreparedDetailRequest } from '../models/linking-page.models';
+import { LinkingLifecycleError } from '../models/linking-revision.models';
+import { ApiResponse } from '../../../core/data-access/api-response.model';
 
 @Injectable({ providedIn: 'root' })
 export class LinkingPreparedPreflightApi {
@@ -21,19 +23,19 @@ export class LinkingPreparedPreflightApi {
   create(request: LinkingPreparedPreflightRequest): Observable<LinkingPreparedPreflightStatus> {
     return this.http
       .post<LinkingPreparedPreflightStatusDtoApiResponse>(this.baseUrl, request)
-      .pipe(map(requireStatus));
+      .pipe(map(requireStatus), catchError(rethrowLifecycle));
   }
 
   get(preflightId: string): Observable<LinkingPreparedPreflightStatus> {
     return this.http
       .get<LinkingPreparedPreflightStatusDtoApiResponse>(`${this.baseUrl}/${preflightId}`)
-      .pipe(map(requireStatus));
+      .pipe(map(requireStatus), catchError(rethrowLifecycle));
   }
 
   cancel(preflightId: string): Observable<LinkingPreparedPreflightStatus> {
     return this.http
       .delete<LinkingPreparedPreflightStatusDtoApiResponse>(`${this.baseUrl}/${preflightId}`)
-      .pipe(map(requireStatus));
+      .pipe(map(requireStatus), catchError(rethrowLifecycle));
   }
 
   loadDetails(request: LinkingPreparedDetailRequest): Observable<LinkingPreparedDetailPageDto> {
@@ -47,8 +49,23 @@ export class LinkingPreparedPreflightApi {
       .set('pageSize', request.pageSize);
     return this.http
       .get<LinkingPreparedDetailPageDtoApiResponse>(path, { params })
-      .pipe(map((response) => requireData(response, 'تعذر تحميل تفاصيل المراجعة.')));
+      .pipe(
+        map((response) => requireData(response, 'تعذر تحميل تفاصيل المراجعة.')),
+        catchError(rethrowLifecycle),
+      );
   }
+}
+
+function rethrowLifecycle(error: unknown): Observable<never> {
+  if (error instanceof HttpErrorResponse) {
+    const response = error.error as ApiResponse<{ code?: string }> | null;
+    const code = response?.data?.code;
+    if (typeof code === 'string') {
+      return throwError(() => new LinkingLifecycleError(code, response?.message ?? 'تعارضت حالة عملية الربط.'));
+    }
+    return throwError(() => new Error(response?.message ?? 'تعذر تحميل عملية الربط.'));
+  }
+  return throwError(() => error instanceof Error ? error : new Error('تعذر تحميل عملية الربط.'));
 }
 
 function requireStatus(response: LinkingPreparedPreflightStatusDtoApiResponse): LinkingPreparedPreflightStatusDto {

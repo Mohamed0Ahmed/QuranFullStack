@@ -29,6 +29,7 @@ import {
 } from '../utils/linking-selection';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingOperationDraftStore } from './linking-operation-draft.store';
+import { LinkingRecoveryStore } from './linking-recovery.store';
 import { LinkingSourceCache } from './linking-source.cache';
 import { LinkingSourcePagesFacade } from './linking-source-pages.facade';
 import { mergeWorkspaceSnapshot, toAyahIds } from './linking-workspace-merge';
@@ -45,6 +46,7 @@ export class LinkingWorkspaceStore {
   private readonly sync = inject(LinkingWorkspaceSyncRunner);
   private readonly configurationSync = inject(LinkingWorkspaceConfigurationSyncRunner);
   private readonly operationDraft = inject(LinkingOperationDraftStore);
+  private readonly recovery = inject(LinkingRecoveryStore);
   private readonly sourceCache = inject(LinkingSourceCache);
   private readonly sourcePages = inject(LinkingSourcePagesFacade);
   private readonly repository: LinkingWorkspaceRepository = inject(HttpLinkingWorkspaceRepository);
@@ -134,6 +136,7 @@ export class LinkingWorkspaceStore {
         ...item,
         linkingDataRevision: null,
         ayahOverrideIds: [],
+        selectedWordIdsByAyahId: {},
         ayahIdByVerseKey: {},
         configurationRevision: item.configurationRevision + 1,
         configuration:
@@ -234,6 +237,10 @@ export class LinkingWorkspaceStore {
     if (!this.canMutate()) {
       return;
     }
+    const actorSub = this.currentActorSub();
+    if (actorSub !== null) {
+      this.recovery.recover(actorSub);
+    }
     void this.leaveEditor('workspace');
   }
 
@@ -247,6 +254,10 @@ export class LinkingWorkspaceStore {
     }
     this.editorSourceKeySignal.set(null);
     this.activeSurfaceSignal.set('linking-flow');
+    const actorSub = this.currentActorSub();
+    if (actorSub !== null) {
+      this.recovery.recover(actorSub);
+    }
     return true;
   }
 
@@ -332,6 +343,87 @@ export class LinkingWorkspaceStore {
     );
   }
 
+  toggleAyahId(sourceKey: string, ayahId: number): void {
+    this.updateItem(sourceKey, (item) => {
+      const overrides = new Set(item.ayahOverrideIds);
+      overrides.has(ayahId) ? overrides.delete(ayahId) : overrides.add(ayahId);
+      return { ...item, ayahOverrideIds: [...overrides].sort((left, right) => left - right) };
+    });
+  }
+
+  selectAllAyahIds(sourceKey: string): void {
+    this.updateItem(sourceKey, (item) => ({
+      ...item,
+      ayahOverrideIds: [],
+      configuration: {
+        ...item.configuration,
+        ayahInclusion: { mode: 'all-except', verseKeys: [] },
+      },
+    }));
+  }
+
+  clearAllAyahIds(sourceKey: string): void {
+    this.updateItem(sourceKey, (item) => ({
+      ...item,
+      ayahOverrideIds: [],
+      configuration: {
+        ...item.configuration,
+        ayahInclusion: { mode: 'only', verseKeys: [] },
+      },
+    }));
+  }
+
+  toggleManualWordId(sourceKey: string, ayahId: number, quranWordId: number): void {
+    this.updateItem(sourceKey, (item) => {
+      if (item.configuration.kind !== 'manual') {
+        return item;
+      }
+      const selected = new Set(item.selectedWordIdsByAyahId[ayahId] ?? []);
+      selected.has(quranWordId) ? selected.delete(quranWordId) : selected.add(quranWordId);
+      return {
+        ...item,
+        selectedWordIdsByAyahId: {
+          ...item.selectedWordIdsByAyahId,
+          [ayahId]: [...selected].sort((left, right) => left - right),
+        },
+      };
+    });
+  }
+
+  setManualWordIdsByAyahId(
+    sourceKey: string,
+    selectedWordIdsByAyahId: Readonly<Record<number, readonly number[]>>,
+  ): void {
+    this.updateItem(sourceKey, (item) =>
+      item.configuration.kind === 'manual'
+        ? { ...item, selectedWordIdsByAyahId }
+        : item,
+    );
+  }
+
+  reconcilePage(sourceKey: string, linkingDataRevision: number, totalAyahCount: number): void {
+    const item = this.findItem(sourceKey);
+    if (item === null) {
+      return;
+    }
+    if (item.linkingDataRevision === linkingDataRevision) {
+      if (item.lastResolvedCount !== totalAyahCount) {
+        this.replaceItem(sourceKey, { ...item, lastResolvedCount: totalAyahCount });
+      }
+      return;
+    }
+    const reconciled = {
+      ...item,
+      linkingDataRevision,
+      lastResolvedCount: totalAyahCount,
+    };
+    this.replaceItem(sourceKey, reconciled);
+    if (reconciled.sourceVersion !== null) {
+      this.configurationSync.resume();
+      this.configurationSync.track(toOperationDraft(reconciled));
+    }
+  }
+
   reconcileResolvedSource(
     sourceKey: string,
     resolvedAyahs: readonly { ayahId: number; verseKey: string }[],
@@ -412,6 +504,7 @@ export class LinkingWorkspaceStore {
     this.currentActorSub.set(actorSub);
     this.hydratedActorSub.set(null);
     this.resetWorkspaceSignals();
+    this.recovery.recover(actorSub);
     void this.hydrate(actorSub, this.actorGeneration);
   }
 
@@ -563,15 +656,6 @@ function toOperationDraft(item: LinkingWorkspaceItem): LinkingOperationSourceDra
   if (item.linkingDataRevision === null) {
     throw new Error('مراجعة بيانات الربط غير متاحة للمصدر.');
   }
-  const selectedWordIdsByAyahId: Record<number, readonly number[]> = {};
-  if (item.configuration.kind === 'manual') {
-    for (const [verseKey, wordIds] of Object.entries(item.configuration.quranWordIdsByVerseKey)) {
-      const ayahId = item.ayahIdByVerseKey[verseKey];
-      if (ayahId !== undefined) {
-        selectedWordIdsByAyahId[ayahId] = wordIds;
-      }
-    }
-  }
   return {
     sourceKey: item.sourceKey,
     sourceId: item.sourceId,
@@ -583,7 +667,7 @@ function toOperationDraft(item: LinkingWorkspaceItem): LinkingOperationSourceDra
       mode: item.configuration.ayahInclusion.mode,
       ayahIds: item.ayahOverrideIds,
     },
-    selectedWordIdsByAyahId,
+    selectedWordIdsByAyahId: item.selectedWordIdsByAyahId,
     descriptions: [],
     automaticWordMatchesEnabled:
       item.configuration.kind === 'automatic'

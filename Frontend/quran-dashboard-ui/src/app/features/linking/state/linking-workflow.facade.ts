@@ -1,81 +1,65 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
-import { Subscription } from 'rxjs';
-
-import { AbwabNode } from '../../abwab/models/abwab.models';
 import { AbwabSnapshotFacade } from '../../abwab/state/abwab-snapshot.facade';
 import { DetailOverlayHistoryService } from '../../../core/navigation/detail-overlay/detail-overlay-history.service';
-import { LINKING_COMMAND_PORT, LinkingPreflightStaleError } from '../data-access/linking-command.port';
-import { LinkingPreflightApi } from '../data-access/linking-preflight.api';
-import { LinkingPreflightResult } from '../models/linking-preflight.models';
-import { LINKING_LABELS } from '../models/linking.labels';
-import { LinkingManualLinkShape } from '../models/linking-manual-mushaf.models';
-import { LinkingOperationMember } from '../models/linking-operation.models';
+import { LinkingPreparedPreflightStatusDto } from '../../../core/api/generated/models/linking-prepared-preflight-status-dto';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
-import { LinkingSourceSetOperationResult } from '../models/linking-workflow.models';
-import { LinkingSourceConfiguration } from '../models/linking-workspace.models';
-import { applyLinkingSourceConfiguration } from '../utils/apply-linking-source-configuration';
-import { ephemeralLinkingOperationMember } from '../utils/linking-operation-members';
-import {
-  clearLinkingAyahs,
-  DEFAULT_LINKING_SELECTION,
-  selectAllLinkingAyahs,
-  selectedLinkingAyahCount,
-  toggleLinkingSelection,
-} from '../utils/linking-selection';
+import { LinkingManualLinkShape } from '../models/linking-manual-mushaf.models';
+import { LinkingOperationSourceDraft } from '../models/linking-operation-draft.models';
+import { LinkingSourcePageRequest } from '../models/linking-page.models';
+import { LINKING_LABELS } from '../models/linking.labels';
 import { LinkingAccessService } from './linking-access.service';
+import { LinkingExecutionStore } from './linking-execution.store';
 import { LinkingFocusCoordinator } from './linking-focus.coordinator';
-import { LinkingSourceSetCoordinator } from './linking-source-set.coordinator';
+import {
+  LinkingOperationDraftStore,
+  createPreparedLinkingRequest,
+  createInlineLinkingDraft,
+} from './linking-operation-draft.store';
+import { LinkingPreflightDetailsFacade } from './linking-preflight-details.facade';
+import { LinkingPreparedPreflightFacade } from './linking-prepared-preflight.facade';
+import { LinkingSourcePagesFacade } from './linking-source-pages.facade';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
-import { LinkingDataStaleError } from '../models/linking-revision.models';
-
 export type LinkingWorkflowStep =
   | 'configure-source'
-  | 'resolve'
   | 'door'
-  | 'preflight'
+  | 'preflighting'
+  | 'ready'
   | 'submitting'
-  | 'success'
-  | 'error';
+  | 'queued'
+  | 'running'
+  | 'finalizing'
+  | 'succeeded'
+  | 'failed'
+  | 'cancelled';
 type LinkingWorkflowOrigin = 'workspace' | 'source';
-type LinkingPreflightStatus = 'idle' | 'loading' | 'ready' | 'error';
-
 interface LinkingWorkflowState {
   origin: LinkingWorkflowOrigin | null;
   step: LinkingWorkflowStep;
-  members: readonly LinkingOperationMember[];
-  directConfiguration: LinkingSourceConfiguration | null;
-  operation: LinkingSourceSetOperationResult | null;
+  directDraft: LinkingOperationSourceDraft | null;
+  directTotalAyahCount: number;
   selectedDoorId: number | null;
-  preflightStatus: LinkingPreflightStatus;
-  preflight: LinkingPreflightResult | null;
-  preflightMessage: string | null;
+  preparationKey: string | null;
+  prepared: LinkingPreparedPreflightStatusDto | null;
   errorMessage: string | null;
-  resultMessage: string | null;
   operationGeneration: number;
 }
-
 const INITIAL_WORKFLOW: LinkingWorkflowState = {
   origin: null,
   step: 'configure-source',
-  members: [],
-  directConfiguration: null,
-  operation: null,
+  directDraft: null,
+  directTotalAyahCount: 0,
   selectedDoorId: null,
-  preflightStatus: 'idle',
-  preflight: null,
-  preflightMessage: null,
+  preparationKey: null,
+  prepared: null,
   errorMessage: null,
-  resultMessage: null,
   operationGeneration: 0,
 };
-
-const PROGRESS_STEPS: readonly LinkingWorkflowStep[] = [
+const NAVIGABLE_STEPS: readonly LinkingWorkflowStep[] = [
   'configure-source',
-  'resolve',
   'door',
-  'preflight',
+  'preflighting',
+  'ready',
 ];
-
 @Injectable({ providedIn: 'root' })
 export class LinkingWorkflowFacade {
   private readonly access = inject(LinkingAccessService);
@@ -83,95 +67,88 @@ export class LinkingWorkflowFacade {
   private readonly overlay = inject(DetailOverlayHistoryService);
   private readonly focus = inject(LinkingFocusCoordinator);
   private readonly doors = inject(AbwabSnapshotFacade);
-  private readonly sourceSet = inject(LinkingSourceSetCoordinator);
-  private readonly commandPort = inject(LINKING_COMMAND_PORT);
-  private readonly preflightApi = inject(LinkingPreflightApi);
+  private readonly drafts = inject(LinkingOperationDraftStore);
+  private readonly preparedFacade = inject(LinkingPreparedPreflightFacade);
+  private readonly details = inject(LinkingPreflightDetailsFacade);
+  private readonly execution = inject(LinkingExecutionStore);
+  private readonly sourcePages = inject(LinkingSourcePagesFacade);
   private readonly stateSignal = signal<LinkingWorkflowState>(INITIAL_WORKFLOW);
-  private commandSubscription: Subscription | null = null;
-  private preflightSubscription: Subscription | null = null;
   private readonly pendingSourceSignal = signal<LinkingSourceDescriptor | null>(null);
   private restoreOverlayFocus = false;
-  private attemptIdempotencyKey: string | null = null;
-
   readonly state = this.stateSignal.asReadonly();
   readonly step = computed(() => this.stateSignal().step);
   readonly selectedDoorId = computed(() => this.stateSignal().selectedDoorId);
-  readonly sourceSetState = this.sourceSet.state;
-  readonly operation = computed(() => this.stateSignal().operation);
-  readonly memberStates = this.sourceSet.memberStates;
-  readonly directConfiguration = computed(() => this.stateSignal().directConfiguration);
-  readonly directSourceAyahs = computed(() =>
-    this.stateSignal().origin === 'source' ? this.sourceSet.firstMemberResolvedAyahs() : [],
-  );
-  readonly directPreviewAyahs = computed(() => {
-    const configuration = this.directConfiguration();
-    return configuration === null
-      ? []
-      : this.directSourceAyahs().map((ayah) => applyLinkingSourceConfiguration(configuration, ayah));
+  readonly directDraft = computed(() => this.stateSignal().directDraft);
+  readonly prepared = computed(() => this.stateSignal().prepared);
+  readonly executionState = this.execution.state;
+  readonly directSourceRequest = computed<Omit<LinkingSourcePageRequest, 'page'> | null>(() => {
+    const draft = this.stateSignal().directDraft;
+    if (draft === null) {
+      return null;
+    }
+    return {
+      source: draft.descriptor,
+      expectedLinkingDataRevision:
+        draft.linkingDataRevision > 0 ? draft.linkingDataRevision : null,
+      expectedSourceViewIdentity: null,
+      view: {
+        segment: 'all',
+        inclusionMode: draft.selection.mode === 'all-except' ? 'all_except' : 'only',
+        ayahOverrideIds: [...draft.selection.ayahIds],
+      },
+      pageSize: 100,
+      draftGeneration: this.stateSignal().operationGeneration,
+    };
   });
   readonly directSelectedCount = computed(() => {
-    const configuration = this.directConfiguration();
-    return configuration === null
-      ? 0
-      : selectedLinkingAyahCount(
-          configuration.ayahInclusion,
-          this.directSourceAyahs().map((ayah) => ayah.verseKey),
-        );
+    const draft = this.stateSignal().directDraft;
+    if (draft === null) {
+      return 0;
+    }
+    return draft.selection.mode === 'all-except'
+      ? Math.max(this.stateSignal().directTotalAyahCount - draft.selection.ayahIds.length, 0)
+      : draft.selection.ayahIds.length;
   });
-  readonly directManualGrouped = computed(() => {
-    const configuration = this.directConfiguration();
-    return configuration?.kind === 'manual' &&
-      configuration.linkShape === 'grouped' &&
-      this.directSelectedCount() > 1;
-  });
+  readonly directManualGrouped = computed(() =>
+    this.stateSignal().directDraft?.manualLinkShape === 'grouped' && this.directSelectedCount() > 1,
+  );
   readonly canAdvanceSource = computed(() =>
     this.stateSignal().origin === 'source' &&
-    this.stateSignal().directConfiguration !== null &&
-    this.sourceSet.result() !== null &&
+    (this.stateSignal().directDraft?.linkingDataRevision ?? 0) > 0 &&
     this.directSelectedCount() > 0,
   );
-  readonly canAdvanceDoor = computed(() => this.access.canUseLinking() && this.isLiveDoor(this.selectedDoorId()));
-  readonly preflight = computed(() => this.stateSignal().preflight);
-  readonly preflightStatus = computed(() => this.stateSignal().preflightStatus);
-  readonly preflightMessage = computed(() => this.stateSignal().preflightMessage);
-  readonly canAdvancePreflight = computed(() => {
-    const preflight = this.stateSignal().preflight;
-    return this.stateSignal().preflightStatus === 'ready' &&
-      preflight !== null &&
-      !preflight.isBlocked &&
-      !preflight.isNoOp;
-  });
-  readonly canSubmit = computed(
-    () =>
-      this.canAdvanceDoor() &&
-      this.canAdvancePreflight() &&
-      this.operation()?.mergedSelection.ayahs.length !== 0,
+  readonly canAdvanceDoor = computed(() =>
+    this.access.canUseLinking() && this.isLiveDoor(this.selectedDoorId()),
   );
+  readonly preflightStatus = computed(() => {
+    const step = this.step();
+    if (step === 'preflighting') {
+      return 'loading' as const;
+    }
+    if (step === 'failed' && this.execution.state().job === null) {
+      return 'error' as const;
+    }
+    return this.prepared() === null ? 'idle' as const : 'ready' as const;
+  });
+  readonly preflightMessage = computed(() => this.stateSignal().errorMessage);
+  readonly canSubmit = computed(() => {
+    const prepared = this.prepared();
+    return this.step() === 'ready' &&
+      prepared !== null &&
+      prepared.preflightToken !== null &&
+      prepared.isBlocked !== true &&
+      prepared.isNoOp !== true;
+  });
+  readonly canCancelExecution = computed(() => {
+    const job = this.execution.state().job;
+    return job !== null &&
+      !['succeeded', 'failed', 'cancelled'].includes(job.status.toLowerCase()) &&
+      job.stage.toLowerCase() !== 'finalizing';
+  });
 
   constructor() {
-    effect(() => {
-      const sourceSet = this.sourceSet.state();
-      const state = this.stateSignal();
-      if (state.step !== 'resolve' || sourceSet.generation !== state.operationGeneration) {
-        return;
-      }
-      if (sourceSet.result !== null) {
-        untracked(() => {
-          this.doors.load();
-          this.stateSignal.update((current) => ({ ...current, operation: sourceSet.result, step: 'door' }));
-        });
-      } else if (sourceSet.members.some((member) => member.status === 'error')) {
-        untracked(() => {
-          const message = firstError(sourceSet.members);
-          if (sourceSet.staleGeneration) {
-            this.invalidateStaleGeneration(message);
-            return;
-          }
-
-          this.stateSignal.update((current) => ({ ...current, step: 'error', errorMessage: message }));
-        });
-      }
-    });
+    effect(() => this.synchronizePrepared());
+    effect(() => this.synchronizeExecution());
     effect(() => {
       const overlayOpen = this.overlay.isOpen();
       const pendingSource = this.pendingSourceSignal();
@@ -203,131 +180,82 @@ export class LinkingWorkflowFacade {
     if (!this.workspace.openOperationFlow()) {
       return false;
     }
-    const configuration = defaultConfiguration(source);
+    const generation = this.stateSignal().operationGeneration + 1;
     this.stateSignal.set({
       ...INITIAL_WORKFLOW,
       origin: 'source',
-      members: [ephemeralLinkingOperationMember(source, configuration)],
-      directConfiguration: configuration,
+      directDraft: createInlineLinkingDraft(source),
+      operationGeneration: generation,
     });
-    this.prepareDirectSource();
     return true;
   }
 
   startWorkspaceOperation(): void {
-    void this.startWorkspaceOperationAfterFlush();
+    void this.startWorkspaceAfterFlush();
   }
 
-  private async startWorkspaceOperationAfterFlush(): Promise<void> {
-    const members = this.workspace.captureOperationMembers();
-    if (!this.access.canUseLinking() || members.length === 0) {
+  directPageReady(linkingDataRevision: number, totalAyahCount: number): void {
+    const draft = this.stateSignal().directDraft;
+    if (draft === null) {
       return;
     }
-    try {
-      await this.workspace.flushSelectedSources();
-    } catch {
+    if (
+      draft.linkingDataRevision === linkingDataRevision &&
+      this.stateSignal().directTotalAyahCount === totalAyahCount
+    ) {
       return;
     }
-    if (!this.access.canUseLinking()) {
-      return;
-    }
-    if (!this.workspace.openOperationFlow()) {
-      return;
-    }
-    const refreshedMembers = this.workspace.captureOperationMembers();
-    if (refreshedMembers.length === 0) {
-      return;
-    }
-    this.stateSignal.set({ ...INITIAL_WORKFLOW, origin: 'workspace', members: refreshedMembers });
-    this.resolve();
+    const updated = { ...draft, linkingDataRevision };
+    this.stateSignal.update((state) => ({
+      ...state,
+      directDraft: updated,
+      directTotalAyahCount: totalAyahCount,
+    }));
+    this.drafts.replace([updated], linkingDataRevision, this.selectedDoorId());
   }
 
-  setDirectAutomaticWords(enabled: boolean): void {
-    const state = this.stateSignal();
-    if (!this.access.canUseLinking() || state.origin !== 'source' || state.directConfiguration?.kind !== 'automatic') {
-      return;
-    }
-    this.updateDirectConfiguration({
-      ...state.directConfiguration,
-      automaticWordMatchesEnabled: enabled,
-    });
-  }
-
-  toggleDirectManualAyah(verseKey: string): void {
-    const configuration = this.directConfiguration();
-    if (configuration?.kind !== 'manual') {
-      return;
-    }
-    const universe = this.directSourceAyahs().map((ayah) => ayah.verseKey);
-    this.updateDirectConfiguration({
-      ...configuration,
-      ayahInclusion: toggleLinkingSelection(configuration.ayahInclusion, verseKey, universe),
+  toggleDirectAyah(ayahId: number): void {
+    this.updateDirectView((draft) => {
+      const overrides = new Set(draft.selection.ayahIds);
+      overrides.has(ayahId) ? overrides.delete(ayahId) : overrides.add(ayahId);
+      return {
+        ...draft,
+        selection: { ...draft.selection, ayahIds: [...overrides].sort((left, right) => left - right) },
+      };
     });
   }
 
   selectAllDirectAyahs(): void {
-    const configuration = this.directConfiguration();
-    if (configuration?.kind === 'manual') {
-      this.updateDirectConfiguration({ ...configuration, ayahInclusion: selectAllLinkingAyahs() });
-    }
+    this.updateDirectView((draft) => ({
+      ...draft,
+      selection: { mode: 'all-except', ayahIds: [] },
+    }));
   }
 
   clearAllDirectAyahs(): void {
-    const configuration = this.directConfiguration();
-    if (configuration?.kind === 'manual') {
-      this.updateDirectConfiguration({ ...configuration, ayahInclusion: clearLinkingAyahs() });
-    }
+    this.updateDirectView((draft) => ({ ...draft, selection: { mode: 'only', ayahIds: [] } }));
   }
 
-  toggleDirectManualWord(verseKey: string, quranWordId: number): void {
-    const configuration = this.directConfiguration();
-    if (configuration?.kind !== 'manual') {
-      return;
-    }
-    const selected = new Set(configuration.quranWordIdsByVerseKey[verseKey] ?? []);
-    selected.has(quranWordId) ? selected.delete(quranWordId) : selected.add(quranWordId);
-    this.updateDirectConfiguration({
-      ...configuration,
-      quranWordIdsByVerseKey: {
-        ...configuration.quranWordIdsByVerseKey,
-        [verseKey]: [...selected].sort((left, right) => left - right),
-      },
+  toggleDirectManualWord(ayahId: number, quranWordId: number): void {
+    this.updateDirectDraft((draft) => {
+      const selected = new Set(draft.selectedWordIdsByAyahId[ayahId] ?? []);
+      selected.has(quranWordId) ? selected.delete(quranWordId) : selected.add(quranWordId);
+      return {
+        ...draft,
+        selectedWordIdsByAyahId: {
+          ...draft.selectedWordIdsByAyahId,
+          [ayahId]: [...selected].sort((left, right) => left - right),
+        },
+      };
     });
   }
 
+  setDirectAutomaticWords(enabled: boolean): void {
+    this.updateDirectDraft((draft) => ({ ...draft, automaticWordMatchesEnabled: enabled }));
+  }
+
   setDirectManualLinkShape(linkShape: LinkingManualLinkShape): void {
-    const configuration = this.directConfiguration();
-    if (configuration?.kind === 'manual') {
-      this.updateDirectConfiguration({ ...configuration, linkShape });
-    }
-  }
-
-  resolve(): void {
-    const state = this.stateSignal();
-    if (!this.access.canUseLinking() || state.members.length === 0) {
-      return;
-    }
-    this.cancelPreflight();
-    const generation = this.sourceSet.state().generation + 1;
-    this.stateSignal.update((current) => ({
-      ...current,
-      operation: null,
-      preflightStatus: 'idle',
-      preflight: null,
-      preflightMessage: null,
-      errorMessage: null,
-      step: 'resolve',
-      operationGeneration: generation,
-    }));
-    this.sourceSet.resolve(state.members);
-  }
-
-  retry(): void {
-    if (this.step() === 'configure-source') {
-      this.prepareDirectSource();
-      return;
-    }
-    this.resolve();
+    this.updateDirectDraft((draft) => ({ ...draft, manualLinkShape: linkShape }));
   }
 
   loadDoors(): void {
@@ -339,311 +267,332 @@ export class LinkingWorkflowFacade {
   selectDoor(doorId: number): void {
     if (this.access.canUseLinking() && this.isLiveDoor(doorId)) {
       this.stateSignal.update((state) => ({ ...state, selectedDoorId: doorId }));
+      this.drafts.setDoor(doorId);
     }
   }
 
   next(): void {
-    const step = this.step();
-    if (step === 'configure-source') {
-      const result = this.sourceSet.result();
-      if (!this.canAdvanceSource() || result === null) {
-        return;
-      }
+    if (this.step() === 'configure-source' && this.canAdvanceSource()) {
       this.doors.load();
-      this.stateSignal.update((state) => ({ ...state, operation: result, step: 'door' }));
+      this.stateSignal.update((state) => ({ ...state, step: 'door' }));
       return;
     }
-    if (step === 'door' && this.canAdvanceDoor()) {
-      this.runPreflight();
-      return;
+    if (this.step() === 'door' && this.canAdvanceDoor()) {
+      void this.runPreflight();
     }
   }
 
   retryPreflight(): void {
-    if (this.step() === 'preflight') {
-      this.runPreflight();
+    if (this.stateSignal().origin !== null && this.selectedDoorId() !== null) {
+      const execution = this.execution.state();
+      if (execution.job !== null && ['failed', 'cancelled'].includes(execution.job.status.toLowerCase())) {
+        void this.execution.acknowledge().finally(() => {
+          this.execution.dismiss();
+          void this.runPreflight();
+        });
+        return;
+      }
+      void this.runPreflight();
+    }
+  }
+
+  submit(): void {
+    const prepared = this.prepared();
+    const preparationKey = this.stateSignal().preparationKey;
+    if (
+      !this.canSubmit() ||
+      prepared === null ||
+      prepared.preflightToken === null ||
+      preparationKey === null
+    ) {
+      return;
+    }
+    this.stateSignal.update((state) => ({ ...state, step: 'submitting', errorMessage: null }));
+    void this.execution.execute(
+      preparationKey,
+      prepared.preflightId,
+      prepared.preflightToken,
+      crypto.randomUUID(),
+    );
+  }
+
+  cancelExecution(): void {
+    if (this.canCancelExecution()) {
+      void this.execution.cancel();
     }
   }
 
   canNavigateTo(target: LinkingWorkflowStep): boolean {
-    const state = this.stateSignal();
-    const currentIndex = PROGRESS_STEPS.indexOf(state.step);
-    const targetIndex = PROGRESS_STEPS.indexOf(target);
-    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= currentIndex) {
-      return false;
-    }
-
-    switch (target) {
-      case 'configure-source':
-        return state.origin === 'source';
-      case 'resolve':
-        return state.members.length > 0;
-      case 'door':
-        return state.operation !== null;
-      case 'preflight':
-        return state.preflightStatus === 'ready' && state.preflight !== null;
-      default:
-        return false;
-    }
+    const currentIndex = NAVIGABLE_STEPS.indexOf(this.step());
+    const targetIndex = NAVIGABLE_STEPS.indexOf(target);
+    return targetIndex >= 0 && currentIndex >= 0 && targetIndex < currentIndex;
   }
 
   navigateTo(target: LinkingWorkflowStep): void {
     if (!this.canNavigateTo(target)) {
       return;
     }
-
-    if (target === 'resolve') {
-      this.resolve();
+    if (target === 'configure-source' && this.stateSignal().origin !== 'source') {
       return;
     }
-
-    if (target === 'configure-source') {
-      this.cancelPreflight();
-      this.stateSignal.update((state) => ({
-        ...state,
-        step: target,
-        operation: null,
-        preflightStatus: 'idle',
-        preflight: null,
-        preflightMessage: null,
-        errorMessage: null,
-      }));
-      return;
+    const preparationKey = this.stateSignal().preparationKey;
+    if (preparationKey !== null) {
+      this.preparedFacade.dismiss(preparationKey);
+      this.details.evict(this.stateSignal().prepared?.preflightId ?? '');
     }
-
-    if (target === 'door') {
-      this.cancelPreflight();
-      this.stateSignal.update((state) => ({
-        ...state,
-        step: target,
-        preflightStatus: 'idle',
-        preflight: null,
-        preflightMessage: null,
-        errorMessage: null,
-      }));
-      return;
-    }
-
-    this.stateSignal.update((state) => ({ ...state, step: target }));
-  }
-
-  private prepareDirectSource(): void {
-    const state = this.stateSignal();
-    if (
-      !this.access.canUseLinking() ||
-      state.origin !== 'source' ||
-      state.directConfiguration === null ||
-      state.members.length === 0
-    ) {
-      return;
-    }
-    const generation = this.sourceSet.state().generation + 1;
-    this.stateSignal.update((current) => ({
-      ...current,
-      operation: null,
-      errorMessage: null,
-      operationGeneration: generation,
-    }));
-    this.sourceSet.resolve(state.members);
-  }
-
-  private updateDirectConfiguration(configuration: LinkingSourceConfiguration): void {
-    const state = this.stateSignal();
-    const member = state.members[0];
-    if (!this.access.canUseLinking() || state.origin !== 'source' || member === undefined) {
-      return;
-    }
-    const members = [ephemeralLinkingOperationMember(member.source, configuration)];
-    this.stateSignal.set({ ...state, directConfiguration: configuration, members });
-    this.sourceSet.reconfigure(members);
-  }
-
-  submit(): void {
-    const state = this.stateSignal();
-    const operation = state.operation;
-    const doorId = state.selectedDoorId;
-    const preflight = state.preflight;
-    if (
-      !this.canSubmit() ||
-      state.step !== 'preflight' ||
-      operation === null ||
-      doorId === null ||
-      preflight === null ||
-      this.commandSubscription !== null
-    ) {
-      return;
-    }
-    this.attemptIdempotencyKey ??= crypto.randomUUID();
-    this.stateSignal.update((current) => ({ ...current, step: 'submitting', errorMessage: null }));
-    this.commandSubscription = this.commandPort
-      .execute({
-        doorId,
-        operation,
-        preflightToken: preflight.preflightToken,
-        expectedLinkingDataRevision: preflight.linkingDataRevision,
-        idempotencyKey: this.attemptIdempotencyKey,
-        preflightSources: preflight.sources,
-      })
-      .subscribe({
-        next: (result) => {
-          this.attemptIdempotencyKey = null;
-          this.stateSignal.update((current) => ({
-            ...current,
-            step: 'success',
-            resultMessage: result.message,
-          }));
-        },
-        error: (error: unknown) => {
-          this.commandSubscription = null;
-          if (error instanceof LinkingDataStaleError) {
-            this.invalidateStaleGeneration(error.message);
-            return;
-          }
-          if (error instanceof LinkingPreflightStaleError) {
-            this.runPreflight(error.message);
-            return;
-          }
-          this.stateSignal.update((current) => ({
-            ...current,
-            step: 'error',
-            errorMessage: error instanceof Error ? error.message : LINKING_LABELS.sourceLoadError,
-          }));
-        },
-        complete: () => {
-          this.commandSubscription = null;
-        },
-      });
-  }
-
-  private runPreflight(staleMessage: string | null = null): void {
-    const state = this.stateSignal();
-    const operation = state.operation;
-    const doorId = state.selectedDoorId;
-    if (!this.access.canUseLinking() || operation === null || doorId === null) {
-      return;
-    }
-    this.cancelPreflight();
-    this.stateSignal.update((current) => ({
-      ...current,
-      step: 'preflight',
-      preflightStatus: 'loading',
-      preflight: null,
-      preflightMessage: staleMessage,
+    this.stateSignal.update((state) => ({
+      ...state,
+      step: target,
+      preparationKey: null,
+      prepared: null,
       errorMessage: null,
     }));
-    this.preflightSubscription = this.preflightApi
-      .preflight(doorId, operation.sourceIntents, operation.linkingDataRevision)
-      .subscribe({
-        next: (preflight) =>
-          this.stateSignal.update((current) => ({
-            ...current,
-            preflight,
-            preflightStatus: 'ready',
-          })),
-        error: (error: unknown) => {
-          this.preflightSubscription = null;
-          if (error instanceof LinkingDataStaleError) {
-            this.invalidateStaleGeneration(error.message);
-            return;
-          }
-          this.stateSignal.update((current) => ({
-            ...current,
-            preflightStatus: 'error',
-            preflightMessage: error instanceof Error ? error.message : LINKING_LABELS.sourceLoadError,
-          }));
-        },
-        complete: () => {
-          this.preflightSubscription = null;
-        },
-      });
   }
 
-  private cancelPreflight(): void {
-    this.preflightSubscription?.unsubscribe();
-    this.preflightSubscription = null;
-  }
-
-  private invalidateStaleGeneration(message: string): void {
-    this.workspace.invalidateLinkingDataRevision();
-    this.sourceSet.cancel();
-    this.attemptIdempotencyKey = null;
-    this.stateSignal.update((state) => {
-      const members = state.members.map((member) => ({
-        ...member,
-        configuration: withoutQuranIds(member.configuration),
-      }));
-      return {
-        ...state,
-        step: 'error',
-        members,
-        directConfiguration:
-          state.directConfiguration === null
-            ? null
-            : withoutQuranIds(state.directConfiguration),
-        operation: null,
-        preflightStatus: 'idle',
-        preflight: null,
-        preflightMessage: null,
-        errorMessage: message,
-        operationGeneration: this.sourceSet.state().generation,
-      };
-    });
-  }
-
-  acknowledgeSuccess(): void {
-    if (!this.access.canUseLinking() || this.step() !== 'success') {
-      return;
-    }
-    if (this.state().origin === 'workspace') {
+  async acknowledgeSuccess(): Promise<void> {
+    await this.execution.acknowledge();
+    if (this.stateSignal().origin === 'workspace') {
       this.workspace.clearCheckedSources();
     }
     this.dismiss();
   }
 
   dismiss(): void {
-    const origin = this.stateSignal().origin;
-    this.commandSubscription?.unsubscribe();
-    this.commandSubscription = null;
-    this.cancelPreflight();
-    this.attemptIdempotencyKey = null;
+    const state = this.stateSignal();
+    const acceptedJob = this.execution.state().job !== null || this.execution.state().outcome !== null;
+    if (!acceptedJob && state.preparationKey !== null && state.prepared !== null) {
+      void this.preparedFacade.cancel(state.preparationKey).finally(() =>
+        this.preparedFacade.dismiss(state.preparationKey!),
+      );
+    } else if (state.preparationKey !== null) {
+      this.preparedFacade.dismiss(state.preparationKey);
+    }
+    if (state.prepared !== null) {
+      this.details.evict(state.prepared.preflightId);
+    }
+    this.sourcePages.cancel('direct-linking-source');
+    this.execution.dismiss();
+    this.drafts.reset();
     this.pendingSourceSignal.set(null);
-    this.sourceSet.cancel();
-    this.stateSignal.set(INITIAL_WORKFLOW);
-    if (origin === 'workspace') {
+    this.stateSignal.set({ ...INITIAL_WORKFLOW, operationGeneration: state.operationGeneration + 1 });
+    if (state.origin === 'workspace') {
       this.workspace.openWorkspace();
       return;
     }
-
     this.workspace.close();
     if (this.overlay.isRetainedClosed()) {
       this.restoreOverlayFocus = true;
       this.overlay.restore();
+    } else {
+      this.focus.restore();
+    }
+  }
+
+  private async startWorkspaceAfterFlush(): Promise<void> {
+    if (!this.access.canUseLinking() || this.workspace.checkedSourceKeys().length === 0) {
       return;
     }
-    this.focus.restore();
+    try {
+      await this.workspace.flushSelectedSources();
+    } catch {
+      return;
+    }
+    if (!this.workspace.openOperationFlow()) {
+      return;
+    }
+    this.doors.load();
+    this.stateSignal.set({
+      ...INITIAL_WORKFLOW,
+      origin: 'workspace',
+      step: 'door',
+      operationGeneration: this.stateSignal().operationGeneration + 1,
+    });
+  }
+
+  private async runPreflight(): Promise<void> {
+    const doorId = this.selectedDoorId();
+    if (doorId === null) {
+      return;
+    }
+    if (this.stateSignal().origin === 'workspace') {
+      try {
+        await this.workspace.flushSelectedSources();
+      } catch {
+        return;
+      }
+    }
+    const preparationKey = crypto.randomUUID();
+    const request = createPreparedLinkingRequest(
+      preparationKey,
+      doorId,
+      this.stateSignal().origin === 'source' ? requireDirectDraft(this.stateSignal()) : null,
+      this.workspace.items(),
+      this.workspace.checkedSourceKeys(),
+    );
+    this.stateSignal.update((state) => ({
+      ...state,
+      step: 'preflighting',
+      preparationKey,
+      prepared: null,
+      errorMessage: null,
+    }));
+    await this.preparedFacade.create(request);
+  }
+
+  private synchronizePrepared(): void {
+    const key = this.stateSignal().preparationKey;
+    if (key === null) {
+      return;
+    }
+    const preparedState = this.preparedFacade.stateFor(key)();
+    const resource = preparedState.resource;
+    if (resource === null) {
+      if (preparedState.status === 'error') {
+        if (isStaleFailure(preparedState.failureCode)) {
+          untracked(() => this.invalidatePreparedGeneration(preparedState.failureCode!));
+          return;
+        }
+        untracked(() => this.stateSignal.update((state) => ({
+          ...state,
+          step: 'failed',
+          errorMessage: preparedState.errorMessage,
+        })));
+      }
+      return;
+    }
+    const status = resource.status.toLowerCase();
+    if (isStaleFailure(resource.failureCode)) {
+      untracked(() => this.invalidatePreparedGeneration(resource.failureCode!));
+      return;
+    }
+    const nextStep: LinkingWorkflowStep = status === 'succeeded'
+      ? 'ready'
+      : ['failed', 'cancelled', 'expired'].includes(status)
+        ? status === 'cancelled' ? 'cancelled' : 'failed'
+        : 'preflighting';
+    if (
+      this.stateSignal().prepared === resource &&
+      this.stateSignal().step === nextStep &&
+      this.stateSignal().errorMessage === resource.failureCode
+    ) {
+      return;
+    }
+    untracked(() => this.stateSignal.update((state) => ({
+      ...state,
+      prepared: resource,
+      step: nextStep,
+      errorMessage: resource.failureCode,
+    })));
+  }
+
+  private synchronizeExecution(): void {
+    const execution = this.execution.state();
+    if (execution.generation === 0 || this.stateSignal().origin === null) {
+      return;
+    }
+    const job = execution.job;
+    const failureCode = job?.failureCode ?? execution.failureCode;
+    if (isStaleFailure(failureCode)) {
+      untracked(() => this.invalidatePreparedGeneration(failureCode!));
+      return;
+    }
+    let step = this.stateSignal().step;
+    if (execution.status === 'submitting') {
+      step = 'submitting';
+    } else if (execution.status === 'succeeded') {
+      step = 'succeeded';
+    } else if (execution.status === 'failed') {
+      step = job?.status.toLowerCase() === 'cancelled' ? 'cancelled' : 'failed';
+    } else if (job !== null) {
+      const stage = job.stage.toLowerCase();
+      step = stage === 'finalizing' ? 'finalizing' : stage === 'running' ? 'running' : 'queued';
+    }
+    if (step !== this.stateSignal().step || execution.errorMessage !== this.stateSignal().errorMessage) {
+      untracked(() => this.stateSignal.update((state) => ({
+        ...state,
+        step,
+        errorMessage: execution.errorMessage,
+      })));
+    }
+  }
+
+  private updateDirectView(
+    update: (draft: LinkingOperationSourceDraft) => LinkingOperationSourceDraft,
+  ): void {
+    const generation = this.stateSignal().operationGeneration + 1;
+    this.updateDirectDraft(update, generation);
+  }
+
+  private invalidatePreparedGeneration(message: string): void {
+    const state = this.stateSignal();
+    if (state.prepared !== null) {
+      this.details.evict(state.prepared.preflightId);
+    }
+    if (state.preparationKey !== null) {
+      void this.preparedFacade.acknowledge(state.preparationKey);
+      this.preparedFacade.dismiss(state.preparationKey);
+    }
+    this.workspace.invalidateLinkingDataRevision();
+    this.sourcePages.cancel('direct-linking-source');
+    this.drafts.requireFreshGeneration();
+    this.stateSignal.set({
+      ...state,
+      step: state.origin === 'source' ? 'configure-source' : 'failed',
+      directDraft:
+        state.directDraft === null
+          ? null
+          : {
+              ...state.directDraft,
+              linkingDataRevision: 0,
+              selection: { mode: 'all-except', ayahIds: [] },
+              selectedWordIdsByAyahId: {},
+            },
+      directTotalAyahCount: 0,
+      preparationKey: null,
+      prepared: null,
+      errorMessage: message,
+      operationGeneration: state.operationGeneration + 1,
+    });
+  }
+
+  private updateDirectDraft(
+    update: (draft: LinkingOperationSourceDraft) => LinkingOperationSourceDraft,
+    generation = this.stateSignal().operationGeneration,
+  ): void {
+    const draft = this.stateSignal().directDraft;
+    if (draft === null) {
+      return;
+    }
+    const updated = update(draft);
+    this.stateSignal.update((state) => ({
+      ...state,
+      directDraft: updated,
+      operationGeneration: generation,
+    }));
+    if (updated.linkingDataRevision > 0) {
+      this.drafts.replace([updated], updated.linkingDataRevision, this.selectedDoorId());
+    }
   }
 
   private isLiveDoor(doorId: number | null): boolean {
-    return doorId !== null && (this.doors.snapshot()?.liveRoots.some((node) => containsDoor(node, doorId)) ?? false);
+    if (doorId === null) {
+      return false;
+    }
+    const door = this.doors.snapshot()?.byId.get(doorId);
+    return door !== undefined && !door.isArchived && !door.sectionRetired;
   }
 }
-
-function withoutQuranIds(configuration: LinkingSourceConfiguration): LinkingSourceConfiguration {
-  return configuration.kind === 'manual'
-    ? { ...configuration, quranWordIdsByVerseKey: {} }
-    : configuration;
+function requireDirectDraft(state: LinkingWorkflowState): LinkingOperationSourceDraft {
+  if (state.directDraft === null) {
+    throw new Error('إعداد المصدر المباشر غير متاح.');
+  }
+  return state.directDraft;
 }
-
-function defaultConfiguration(source: LinkingSourceDescriptor): LinkingSourceConfiguration {
-  return source.kind === 'manual-mushaf-ayahs'
-    ? { kind: 'manual', ayahInclusion: DEFAULT_LINKING_SELECTION, quranWordIdsByVerseKey: {}, linkShape: 'independent' }
-    : { kind: 'automatic', ayahInclusion: DEFAULT_LINKING_SELECTION, automaticWordMatchesEnabled: true };
-}
-
-function containsDoor(node: AbwabNode, doorId: number): boolean {
-  return node.id === doorId || node.children.some((child) => containsDoor(child, doorId));
-}
-
-function firstError(members: readonly { errorMessage: string | null }[]): string {
-  return members.find((member) => member.errorMessage !== null)?.errorMessage ?? LINKING_LABELS.sourceLoadError;
+function isStaleFailure(code: string | null): boolean {
+  return code !== null && [
+    'LINKING_DATA_STALE',
+    'SOURCE_VIEW_STALE',
+    'WORKSPACE_SOURCE_STALE',
+    'PREFLIGHT_STALE',
+  ].includes(code);
 }

@@ -1,0 +1,48 @@
+<section class="linking-virtual-ayah-list" [attr.aria-label]="listLabel()">
+  @if (status() === 'error') {
+    <p class="linking-virtual-ayah-list__error" role="alert">{{ errorMessage() }}</p>
+    <button type="button" (click)="retry()">{{ labels.retry }}</button>
+  }
+  <cdk-virtual-scroll-viewport
+    class="linking-virtual-ayah-list__viewport"
+    role="list"
+    [attr.aria-label]="listLabel()"
+  >
+    <div
+      *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRow"
+      class="linking-virtual-ayah-list__row"
+      role="listitem"
+      [attr.aria-posinset]="index + 1"
+      [attr.aria-setsize]="rows().length"
+    >
+      @if (row.groupLabel; as label) {
+        <p class="linking-virtual-ayah-list__group">{{ label }}</p>
+      }
+      @if (ayahFor(row); as ayah) {
+        <div class="linking-virtual-ayah-list__content">
+          @if (selectionEnabled()) {
+            <input
+              class="qd-checkbox"
+              type="checkbox"
+              [checked]="isSelected(ayah.ayahId)"
+              [attr.aria-label]="'تحديد سورة ' + ayah.surahNameArabic + '، الآية ' + ayah.ayahNumber"
+              (change)="ayahToggled.emit(ayah.ayahId)"
+            />
+          }
+          <qd-linking-ayah-card
+            [ayah]="ayah"
+            [highlightSourceWords]="highlightSourceWords()"
+            [wordSelectable]="wordSelectable()"
+            [wordImpact]="overlayFor(row)?.doorWordImpact ?? null"
+            [statusLabel]="statusLabel(row)"
+            (wordToggled)="wordToggled.emit({ ayahId: ayah.ayahId, quranWordId: $event })"
+          />
+        </div>
+      } @else {
+        <div class="linking-virtual-ayah-list__skeleton" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+      }
+    </div>
+  </cdk-virtual-scroll-viewport>
+</section>

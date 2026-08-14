@@ -22,6 +22,10 @@ export function mergeWorkspaceSnapshot(
           : known.ayahIdByVerseKey;
       return {
         ...item,
+        selectedWordIdsByAyahId:
+          Object.keys(item.selectedWordIdsByAyahId).length > 0
+            ? item.selectedWordIdsByAyahId
+            : known.selectedWordIdsByAyahId,
         ayahIdByVerseKey,
         configurationRevision: known.configurationRevision + 1,
         linkingDataRevision: known.linkingDataRevision,

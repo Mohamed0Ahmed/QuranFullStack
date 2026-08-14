@@ -166,9 +166,28 @@ function toWorkspaceItem(source: LinkingWorkspaceSourceResponse): LinkingWorkspa
     configurationRevision: 0,
     linkingDataRevision: null,
     ayahOverrideIds: source.ayahOverrides,
+    selectedWordIdsByAyahId: toWordIdsByAyahId(source),
     ayahIdByVerseKey,
     lastResolvedCount: source.lastResolvedCount,
   };
+}
+
+function toWordIdsByAyahId(
+  source: LinkingWorkspaceSourceResponse,
+): Readonly<Record<number, readonly number[]>> {
+  const grouped: Record<number, number[]> = {};
+  for (const selectedWord of source.selectedWords) {
+    if (selectedWord.ayahId === null || selectedWord.quranWordId === null) {
+      continue;
+    }
+    grouped[selectedWord.ayahId] = [...(grouped[selectedWord.ayahId] ?? []), selectedWord.quranWordId];
+  }
+  return Object.fromEntries(
+    Object.entries(grouped).map(([ayahId, wordIds]) => [
+      ayahId,
+      [...new Set(wordIds)].sort((left, right) => left - right),
+    ]),
+  );
 }
 
 function toConfiguration(

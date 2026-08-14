@@ -12,7 +12,7 @@
     <span>الآية {{ ayah().ayahNumber }}</span>
   </header>
   <p class="linking-ayah-card__text" dir="rtl">
-    @for (word of displayWords(); track word.renderPosition) {
+    @for (word of displayWords(); track word.canonicalQuranWordId) {
       @if (wordSelectable()) {
         <button
           type="button"

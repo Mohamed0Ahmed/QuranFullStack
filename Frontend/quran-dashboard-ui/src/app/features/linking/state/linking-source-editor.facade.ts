@@ -1,121 +1,139 @@
-import { Injectable, computed, inject, signal, untracked } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Injectable, computed, inject, signal } from '@angular/core';
 
-import { LinkingSourceResolver } from '../data-access/linking-source-resolver';
-import { LinkingAyah } from '../models/linking-ayah.models';
-import { LINKING_LABELS } from '../models/linking.labels';
-import { LinkingSourceEditorState } from '../models/linking-workflow.models';
-import { LinkingSelection } from '../models/linking-workspace.models';
-import { LinkingSourceDescriptor } from '../models/linking-source.models';
-import { applyLinkingSourceConfiguration } from '../utils/apply-linking-source-configuration';
-import { selectedLinkingAyahCount } from '../utils/linking-selection';
+import { LinkingSourcePageRequest } from '../models/linking-page.models';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
 
-const INITIAL_EDITOR_STATE: LinkingSourceEditorState = {
+interface LinkingSourceEditorState {
+  sourceKey: string | null;
+  sourceLabel: string | null;
+  status: 'idle' | 'preparing' | 'ready' | 'error';
+  totalAyahCount: number;
+  errorMessage: string | null;
+  generation: number;
+}
+
+const INITIAL_STATE: LinkingSourceEditorState = {
   sourceKey: null,
   sourceLabel: null,
-  capturedConfigurationRevision: null,
   status: 'idle',
-  ayahs: [],
-  rawProgress: { loaded: 0, total: null },
-  universe: [],
+  totalAyahCount: 0,
   errorMessage: null,
+  generation: 0,
 };
 
 @Injectable({ providedIn: 'root' })
 export class LinkingSourceEditorFacade {
   private readonly access = inject(LinkingAccessService);
   private readonly workspace = inject(LinkingWorkspaceStore);
-  private readonly resolver = inject(LinkingSourceResolver);
-  private readonly editorStateSignal = signal<LinkingSourceEditorState>(INITIAL_EDITOR_STATE);
-  private loadSubscription: Subscription | null = null;
-  private generation = 0;
+  private readonly stateSignal = signal<LinkingSourceEditorState>(INITIAL_STATE);
 
-  readonly state = this.editorStateSignal.asReadonly();
-  readonly selection = computed<LinkingSelection>(() => {
-    const sourceKey = this.editorStateSignal().sourceKey;
-    return sourceKey === null
-      ? { mode: 'all-except', verseKeys: [] }
-      : this.workspace.item(sourceKey)?.configuration.ayahInclusion ?? { mode: 'all-except', verseKeys: [] };
-  });
-  readonly selectedCount = computed(() =>
-    selectedLinkingAyahCount(this.selection(), this.editorStateSignal().universe),
-  );
+  readonly state = this.stateSignal.asReadonly();
   readonly currentItem = computed(() => {
-    const sourceKey = this.editorStateSignal().sourceKey;
+    const sourceKey = this.stateSignal().sourceKey;
     return sourceKey === null ? null : this.workspace.item(sourceKey);
   });
-  readonly configuredAyahs = computed(() => {
+  readonly request = computed<Omit<LinkingSourcePageRequest, 'page'> | null>(() => {
     const item = this.currentItem();
-    const ayahs = this.editorStateSignal().ayahs;
-    return item === null
-      ? ayahs
-      : ayahs.map((ayah) => applyLinkingSourceConfiguration(item.configuration, ayah));
+    if (item === null) {
+      return null;
+    }
+    return {
+      source: item.source,
+      expectedLinkingDataRevision: item.linkingDataRevision,
+      expectedSourceViewIdentity: null,
+      view: {
+        segment: 'all',
+        inclusionMode:
+          item.configuration.ayahInclusion.mode === 'all-except' ? 'all_except' : 'only',
+        ayahOverrideIds: [...item.ayahOverrideIds],
+      },
+      pageSize: 100,
+      draftGeneration: this.stateSignal().generation,
+    };
+  });
+  readonly selectedCount = computed(() => {
+    const item = this.currentItem();
+    const total = this.stateSignal().totalAyahCount;
+    if (item === null) {
+      return 0;
+    }
+    return item.configuration.ayahInclusion.mode === 'all-except'
+      ? Math.max(total - item.ayahOverrideIds.length, 0)
+      : item.ayahOverrideIds.length;
   });
 
   open(sourceKey: string | null): void {
-    if (sourceKey === null || !this.access.canUseLinking()) {
+    const item = sourceKey === null ? null : this.workspace.item(sourceKey);
+    if (!this.access.canUseLinking() || item === null) {
       this.close();
       return;
     }
-    if (this.editorStateSignal().sourceKey === sourceKey) {
+    if (this.stateSignal().sourceKey === sourceKey) {
       return;
     }
-    const item = untracked(() => this.workspace.item(sourceKey));
-    if (item === null) {
-      this.close();
-      return;
-    }
-    this.resolve(item.sourceKey, item.source, item.configurationRevision);
+    this.stateSignal.set({
+      ...INITIAL_STATE,
+      sourceKey,
+      sourceLabel: item.source.label,
+      status: 'preparing',
+      generation: this.stateSignal().generation + 1,
+    });
   }
 
   close(): void {
-    this.generation += 1;
-    this.cancelLoad();
-    this.editorStateSignal.set(INITIAL_EDITOR_STATE);
+    this.stateSignal.set({ ...INITIAL_STATE, generation: this.stateSignal().generation + 1 });
   }
 
   retry(): void {
-    const state = this.editorStateSignal();
-    const item = state.sourceKey === null ? null : this.workspace.item(state.sourceKey);
-    if (item !== null) {
-      this.resolve(item.sourceKey, item.source, item.configurationRevision);
+    if (this.currentItem() !== null) {
+      this.stateSignal.update((state) => ({
+        ...state,
+        status: 'preparing',
+        errorMessage: null,
+        generation: state.generation + 1,
+      }));
     }
   }
 
-  toggleAyah(verseKey: string): void {
-    const state = this.editorStateSignal();
-    if (state.sourceKey !== null && state.status === 'success') {
-      this.workspace.toggleSelection(state.sourceKey, verseKey, state.universe);
+  pageReady(linkingDataRevision: number, totalAyahCount: number): void {
+    const sourceKey = this.stateSignal().sourceKey;
+    if (sourceKey === null) {
+      return;
+    }
+    this.workspace.reconcilePage(sourceKey, linkingDataRevision, totalAyahCount);
+    this.stateSignal.update((state) => ({ ...state, status: 'ready', totalAyahCount }));
+  }
+
+  toggleAyah(ayahId: number): void {
+    const sourceKey = this.stateSignal().sourceKey;
+    if (sourceKey !== null) {
+      this.workspace.toggleAyahId(sourceKey, ayahId);
+      this.bumpViewGeneration();
     }
   }
 
   selectAll(): void {
-    const state = this.editorStateSignal();
-    if (state.sourceKey !== null && state.status === 'success') {
-      this.workspace.selectAll(state.sourceKey);
+    const sourceKey = this.stateSignal().sourceKey;
+    if (sourceKey !== null) {
+      this.workspace.selectAllAyahIds(sourceKey);
+      this.bumpViewGeneration();
     }
   }
 
   clearAll(): void {
-    const state = this.editorStateSignal();
-    if (state.sourceKey !== null && state.status === 'success') {
-      this.workspace.clearAll(state.sourceKey);
+    const sourceKey = this.stateSignal().sourceKey;
+    if (sourceKey !== null) {
+      this.workspace.clearAllAyahIds(sourceKey);
+      this.bumpViewGeneration();
     }
   }
 
-  toggleManualWord(verseKey: string, quranWordId: number): void {
-    const item = this.currentItem();
-    if (item?.configuration.kind !== 'manual') {
-      return;
+  toggleManualWord(ayahId: number, quranWordId: number): void {
+    const sourceKey = this.stateSignal().sourceKey;
+    if (sourceKey !== null) {
+      this.workspace.toggleManualWordId(sourceKey, ayahId, quranWordId);
     }
-    const selected = new Set(item.configuration.quranWordIdsByVerseKey[verseKey] ?? []);
-    selected.has(quranWordId) ? selected.delete(quranWordId) : selected.add(quranWordId);
-    this.workspace.setManualWordIds(item.sourceKey, {
-      ...item.configuration.quranWordIdsByVerseKey,
-      [verseKey]: [...selected].sort((left, right) => left - right),
-    });
   }
 
   setAutomaticWordMatches(enabled: boolean): void {
@@ -132,78 +150,11 @@ export class LinkingSourceEditorFacade {
     }
   }
 
-  private resolve(
-    sourceKey: string,
-    source: LinkingSourceDescriptor,
-    configurationRevision: number,
-  ): void {
-    this.cancelLoad();
-    const generation = ++this.generation;
-    this.editorStateSignal.set({
-      ...INITIAL_EDITOR_STATE,
-      sourceKey,
-      sourceLabel: source.label,
-      capturedConfigurationRevision: configurationRevision,
-      status: 'loading',
-    });
-    try {
-      this.loadSubscription = this.resolver.resolveRevisioned(source, (rawProgress) => {
-        if (generation === this.generation) {
-          this.editorStateSignal.update((state) => ({ ...state, rawProgress, status: 'loading' }));
-        }
-      }).subscribe({
-        next: (resolved) => {
-          if (generation !== this.generation) {
-            return;
-          }
-          const uniqueAyahs = uniqueAyahsByVerseKey(resolved.ayahs);
-          const universe = uniqueAyahs.map((ayah) => ayah.verseKey);
-          if (this.workspace.item(sourceKey)?.configurationRevision === configurationRevision) {
-            this.workspace.reconcileResolvedSource(
-              sourceKey,
-              uniqueAyahs.map((ayah) => ({ ayahId: ayah.ayahId, verseKey: ayah.verseKey })),
-              resolved.linkingDataRevision,
-            );
-          }
-          this.editorStateSignal.update((state) => ({
-            ...state,
-            status: 'success',
-            ayahs: uniqueAyahs,
-            universe,
-            errorMessage: null,
-          }));
-        },
-        error: (error: unknown) => this.publishError(generation, error, 'error'),
-      });
-    } catch (error: unknown) {
-      this.publishError(generation, error, 'unsupported');
-    }
+  private bumpViewGeneration(): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      status: 'preparing',
+      generation: state.generation + 1,
+    }));
   }
-
-  private publishError(
-    generation: number,
-    error: unknown,
-    status: 'error' | 'unsupported',
-  ): void {
-    if (generation !== this.generation) {
-      return;
-    }
-    const errorMessage = error instanceof Error ? error.message : LINKING_LABELS.sourceLoadError;
-    this.editorStateSignal.update((state) => ({ ...state, status, errorMessage }));
-  }
-
-  private cancelLoad(): void {
-    this.loadSubscription?.unsubscribe();
-    this.loadSubscription = null;
-  }
-}
-
-function uniqueAyahsByVerseKey(ayahs: readonly LinkingAyah[]): readonly LinkingAyah[] {
-  const byVerseKey = new Map<string, LinkingAyah>();
-  for (const ayah of ayahs) {
-    if (!byVerseKey.has(ayah.verseKey)) {
-      byVerseKey.set(ayah.verseKey, ayah);
-    }
-  }
-  return [...byVerseKey.values()];
 }

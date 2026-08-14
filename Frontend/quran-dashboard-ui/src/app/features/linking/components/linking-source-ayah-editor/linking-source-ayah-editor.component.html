@@ -4,89 +4,58 @@
       @if (state().sourceLabel; as sourceLabel) {
         <p class="linking-source-ayah-editor__source">{{ sourceLabel }}</p>
       }
+      <p class="linking-source-ayah-editor__ready-count">
+        {{ labels.sourceEditorReady }}: {{ selectedCount() }}
+      </p>
     </div>
-    <button
-      qdAction="secondary"
-      size="sm"
-      type="button"
-      class="linking-source-ayah-editor__back"
-      (click)="dismiss()"
-    >
+    <button qdAction="secondary" size="sm" type="button" (click)="dismiss()">
       {{ labels.sourceEditorBack }}
     </button>
   </header>
 
   @if (currentItem(); as item) {
-    @if (item.configuration.kind === 'manual') {
-      <qd-linking-manual-shape-selector
-        [selectedCount]="selectedCount()"
-        [linkShape]="item.configuration.linkShape"
-        (linkShapeChanged)="setManualLinkShape($event)"
-      />
-    }
-  }
-
-  @switch (state().status) {
-    @case ('loading') {
-      <qd-panel-skeleton
-        shape="text"
-        [loadingLabel]="labels.sourceEditorLoading + ' (' + state().rawProgress.loaded + (state().rawProgress.total === null ? '' : ' / ' + state().rawProgress.total) + ')'"
-      />
-    }
-    @case ('success') {
-      @if (state().ayahs.length > 0) {
-        <p class="linking-source-ayah-editor__ready-count">
-          {{ labels.sourceEditorReady }}: {{ state().universe.length }}
-        </p>
-        <qd-linking-ayah-selection
-          [ayahs]="configuredAyahs()"
-          [selection]="selection()"
+    <div class="linking-source-ayah-editor__toolbar">
+      @if (item.configuration.kind === 'manual') {
+        <qd-linking-manual-shape-selector
           [selectedCount]="selectedCount()"
-          [focusOnEntry]="true"
-          [disabled]="false"
-          [wordSelectable]="isManual()"
-          [grouped]="isManualGrouped()"
-          [listLabel]="labels.sourceEditorAyahList"
-          (selectionToggled)="toggleAyah($event)"
-          (wordToggled)="toggleWord($event)"
-          (selectAllRequested)="selectAll()"
-          (clearAllRequested)="clearAll()"
+          [linkShape]="item.configuration.linkShape"
+          (linkShapeChanged)="setManualLinkShape($event)"
+        />
+      } @else if (automaticConfiguration(); as configuration) {
+        <button
+          qdAction="secondary"
+          size="sm"
+          type="button"
+          [class.qd-is-selected]="configuration.automaticWordMatchesEnabled"
+          [attr.aria-pressed]="configuration.automaticWordMatchesEnabled"
+          (click)="facade.setAutomaticWordMatches(!configuration.automaticWordMatchesEnabled)"
         >
-          @if (automaticConfiguration(); as configuration) {
-            <button
-              bulkActions
-              qdAction="secondary"
-              size="sm"
-              type="button"
-              class="linking-source-ayah-editor__words-toggle"
-              [class.qd-is-selected]="configuration.automaticWordMatchesEnabled"
-              [attr.aria-pressed]="configuration.automaticWordMatchesEnabled"
-              (click)="setAutomaticWordMatches(!configuration.automaticWordMatchesEnabled)"
-            >
-              <span class="linking-source-ayah-editor__words-toggle-mark" aria-hidden="true">
-                {{ configuration.automaticWordMatchesEnabled ? '✓' : '' }}
-              </span>
-              <span>{{ labels.highlightStep }}</span>
-            </button>
-          }
-        </qd-linking-ayah-selection>
-      } @else {
-        <qd-empty-state [message]="labels.noAyahMatches" />
+          {{ labels.highlightStep }}
+        </button>
       }
-    }
-    @case ('error') {
-      <qd-error-state
-        severity="read"
-        [message]="state().errorMessage || labels.sourceLoadError"
-        [actionLabel]="labels.retry"
-        (action)="retry()"
+      <button qdAction="secondary" size="sm" type="button" (click)="facade.selectAll()">
+        {{ labels.selectAll }}
+      </button>
+      <button qdAction="secondary" size="sm" type="button" (click)="facade.clearAll()">
+        {{ labels.clearAll }}
+      </button>
+    </div>
+    @if (request(); as pageRequest) {
+      <qd-linking-virtual-ayah-list
+        [scope]="'workspace-editor:' + item.sourceKey"
+        [sourceRequest]="pageRequest"
+        [selectedAyahIds]="item.ayahOverrideIds"
+        [selectionMode]="item.configuration.ayahInclusion.mode"
+        [selectedWordIdsByAyahId]="item.selectedWordIdsByAyahId"
+        [selectionEnabled]="true"
+        [wordSelectable]="item.configuration.kind === 'manual'"
+        [highlightSourceWords]="item.configuration.kind === 'automatic' ? item.configuration.automaticWordMatchesEnabled : true"
+        [grouped]="item.configuration.kind === 'manual' && item.configuration.linkShape === 'grouped' && selectedCount() > 1"
+        [listLabel]="labels.sourceEditorAyahList"
+        (ayahToggled)="facade.toggleAyah($event)"
+        (wordToggled)="toggleWord($event)"
+        (pageReady)="facade.pageReady($event.linkingDataRevision, $event.totalItems)"
       />
-    }
-    @case ('unsupported') {
-      <qd-error-state severity="read" [message]="state().errorMessage || labels.sourceEditorUnsupported" />
-    }
-    @default {
-      <qd-panel-skeleton shape="text" [loadingLabel]="labels.sourceEditorLoading" />
     }
   }
 </section>

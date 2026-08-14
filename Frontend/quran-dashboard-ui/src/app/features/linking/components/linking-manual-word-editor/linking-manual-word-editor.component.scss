@@ -30,6 +30,11 @@
   padding-block-end: var(--qd-space-3);
 }
 
+qd-linking-virtual-ayah-list {
+  display: block;
+  min-block-size: 0;
+}
+
 .linking-manual-word-editor__summary,
 .linking-manual-word-editor__hint {
   margin: 0;

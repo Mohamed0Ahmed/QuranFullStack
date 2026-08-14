@@ -113,6 +113,13 @@ export class LinkingPreflightDetailsFacade {
     this.entities.insertPage(dto.linkingDataRevision, dto.items.map((item) => item.ayah), lease);
     if (!this.cache.set(key, page, page.weight)) {
       this.transientLeases.set(page, lease);
+      queueMicrotask(() => {
+        const transientLease = this.transientLeases.get(page);
+        if (transientLease !== undefined) {
+          this.transientLeases.delete(page);
+          this.entities.release(transientLease);
+        }
+      });
     }
     return page;
   }

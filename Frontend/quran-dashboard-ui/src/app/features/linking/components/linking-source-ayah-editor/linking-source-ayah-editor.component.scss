@@ -24,6 +24,18 @@
   gap: var(--qd-space-3);
 }
 
+.linking-source-ayah-editor__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+}
+
+qd-linking-virtual-ayah-list {
+  display: block;
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
 .linking-source-ayah-editor__back {
   flex: 0 0 auto;
   min-inline-size: 11rem;

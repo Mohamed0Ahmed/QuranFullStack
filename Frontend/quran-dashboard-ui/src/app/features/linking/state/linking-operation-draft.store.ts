@@ -1,10 +1,15 @@
 import { Injectable, computed, signal } from '@angular/core';
 
+import { LinkingPreparedSourceBody } from '../../../core/api/generated/models/linking-prepared-source-body';
+import { CreateLinkingPreparedPreflightBody } from '../../../core/api/generated/models/create-linking-prepared-preflight-body';
 import {
   LinkingAyahIdSelection,
   LinkingOperationDraft,
   LinkingOperationSourceDraft,
 } from '../models/linking-operation-draft.models';
+import { LinkingSourceDescriptor } from '../models/linking-source.models';
+import { LinkingWorkspaceItem } from '../models/linking-workspace.models';
+import { toLinkingSourceDescriptorBody } from '../utils/linking-source-descriptor-body';
 
 const EMPTY_DRAFT: LinkingOperationDraft = {
   generation: 0,
@@ -87,6 +92,81 @@ export class LinkingOperationDraftStore {
       };
     });
   }
+}
+
+export function createInlineLinkingDraft(source: LinkingSourceDescriptor): LinkingOperationSourceDraft {
+  const manual = source.kind === 'manual-mushaf-ayahs';
+  return {
+    sourceKey: `inline:${crypto.randomUUID()}`,
+    sourceId: null,
+    sourceVersion: null,
+    linkingDataRevision: 0,
+    descriptor: source,
+    label: source.label,
+    selection: { mode: 'all-except', ayahIds: [] },
+    selectedWordIdsByAyahId: {},
+    descriptions: [],
+    automaticWordMatchesEnabled: manual ? null : true,
+    manualLinkShape: manual ? 'independent' : null,
+  };
+}
+
+export function toInlinePreparedSource(
+  draft: LinkingOperationSourceDraft,
+  orderValue: number,
+): LinkingPreparedSourceBody {
+  return {
+    orderValue,
+    workspaceSource: null,
+    inlineSource: {
+      descriptor: toLinkingSourceDescriptorBody(draft.descriptor),
+      configuration: {
+        inclusionMode: draft.selection.mode === 'all-except' ? 'all_except' : 'only',
+        ayahOverrideIds: [...draft.selection.ayahIds],
+        selectedWords: Object.entries(draft.selectedWordIdsByAyahId).flatMap(
+          ([ayahId, wordIds]) => wordIds.map((quranWordId) => ({ ayahId: Number(ayahId), quranWordId })),
+        ),
+        automaticWordMatchesEnabled: draft.automaticWordMatchesEnabled,
+        manualLinkShape: draft.manualLinkShape,
+        descriptions: draft.descriptions.map((description) => ({ ...description })),
+      },
+    },
+  };
+}
+
+export function createPreparedLinkingRequest(
+  preparationKey: string,
+  doorId: number,
+  directDraft: LinkingOperationSourceDraft | null,
+  workspaceItems: readonly LinkingWorkspaceItem[],
+  checkedSourceKeys: readonly string[],
+): CreateLinkingPreparedPreflightBody {
+  const checked = new Set(checkedSourceKeys);
+  const selectedItems = workspaceItems.filter((item) => checked.has(item.sourceKey));
+  const sources = directDraft === null
+    ? selectedItems.flatMap((item, index): LinkingPreparedSourceBody[] =>
+        item.sourceId === null || item.sourceVersion === null
+          ? []
+          : [{
+              orderValue: index + 1,
+              workspaceSource: { sourceId: item.sourceId, sourceVersion: item.sourceVersion },
+              inlineSource: null,
+            }],
+      )
+    : [toInlinePreparedSource(directDraft, 1)];
+  const revisions = new Set(
+    directDraft === null
+      ? selectedItems.flatMap((item) =>
+          item.linkingDataRevision === null ? [] : [item.linkingDataRevision],
+        )
+      : [directDraft.linkingDataRevision],
+  );
+  return {
+    preparationKey,
+    doorId,
+    expectedLinkingDataRevision: revisions.size === 1 ? [...revisions][0]! : null,
+    sources,
+  };
 }
 
 function freezeSource(source: LinkingOperationSourceDraft): LinkingOperationSourceDraft {

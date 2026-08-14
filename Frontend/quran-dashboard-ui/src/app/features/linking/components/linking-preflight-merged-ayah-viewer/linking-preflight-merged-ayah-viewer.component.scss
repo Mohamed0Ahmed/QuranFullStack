@@ -3,6 +3,11 @@
   min-inline-size: 0;
 }
 
+qd-linking-virtual-ayah-list {
+  display: block;
+  block-size: var(--qd-linking-preflight-viewport-block-size);
+}
+
 .linking-preflight-merged-ayah-viewer {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
