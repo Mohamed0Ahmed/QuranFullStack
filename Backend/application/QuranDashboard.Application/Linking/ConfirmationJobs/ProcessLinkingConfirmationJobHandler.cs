@@ -102,15 +102,16 @@ public sealed class ProcessLinkingConfirmationJobHandler(
 
         try
         {
-            var execution = await store.LoadExecutionAsync(lease, workCancellation.Token)
-                ?? throw new LinkingConfirmationJobLeaseLostException();
             if (lease.Status != LinkingConfirmationJobStatus.Finalizing)
             {
-                if (!await leaseService.PublishProgressAsync(
+                if (!await store.PrepareExecutionAsync(
                         lease,
-                        LinkingConfirmationJobStage.ApplyingUnitDiff,
-                        execution.TotalItems,
-                        execution.TotalItems,
+                        (processedItems, totalItems, token) => leaseService.PublishProgressAsync(
+                            lease,
+                            LinkingConfirmationJobStage.ApplyingUnitDiff,
+                            processedItems,
+                            totalItems,
+                            token),
                         workCancellation.Token))
                 {
                     throw new LinkingConfirmationJobLeaseLostException();
@@ -124,9 +125,6 @@ public sealed class ProcessLinkingConfirmationJobHandler(
 
             var write = await writer.ConfirmPreparedAsync(
                 lease with { Status = LinkingConfirmationJobStatus.Finalizing },
-                execution.Request,
-                execution.Intent,
-                LinkingOperationClassifier.Classify,
                 workCancellation.Token);
             if (write is LinkingConfirmationWriteResult.DoorNotFound)
             {
@@ -135,12 +133,6 @@ public sealed class ProcessLinkingConfirmationJobHandler(
                     LinkingConfirmationJobFailureCode.DoorNotFound);
             }
 
-            if (write is LinkingConfirmationWriteResult.InvalidClassification)
-            {
-                throw new LinkingConfirmationTerminalException(
-                    LinkingConfirmationJobStatus.Stale,
-                    LinkingConfirmationJobFailureCode.PreflightBlocked);
-            }
         }
         catch (Exception exception)
         {

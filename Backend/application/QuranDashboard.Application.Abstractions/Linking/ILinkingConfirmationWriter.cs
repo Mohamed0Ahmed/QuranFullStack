@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Linking.Preflight;
 using QuranDashboard.Application.Abstractions.Linking.Responses;
 using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
 
@@ -8,9 +7,6 @@ public interface ILinkingConfirmationWriter
 {
     Task<LinkingConfirmationWriteResult> ConfirmPreparedAsync(
         LinkingConfirmationJobLease lease,
-        LinkingOperationRequest request,
-        LinkingOperationIntent intent,
-        Func<LinkingOperationIntent, LinkingConfirmedDoorState, LinkingOperationClassification> classify,
         CancellationToken cancellationToken);
 }
 
@@ -32,7 +28,4 @@ public abstract record LinkingConfirmationWriteResult
         bool IsReplay) : LinkingConfirmationWriteResult;
 
     public sealed record DoorNotFound(int DoorId) : LinkingConfirmationWriteResult;
-
-    public sealed record InvalidClassification(
-        LinkingOperationClassification Classification) : LinkingConfirmationWriteResult;
 }

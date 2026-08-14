@@ -26,8 +26,9 @@ public interface ILinkingConfirmationJobStore
 
     Task<LinkingConfirmationJobLease?> ClaimAsync(CancellationToken cancellationToken);
 
-    Task<LinkingPreparedConfirmationExecution?> LoadExecutionAsync(
+    Task<bool> PrepareExecutionAsync(
         LinkingConfirmationJobLease lease,
+        Func<int, int, CancellationToken, Task<bool>> publishProgress,
         CancellationToken cancellationToken);
 
     Task<bool> PublishProgressAsync(

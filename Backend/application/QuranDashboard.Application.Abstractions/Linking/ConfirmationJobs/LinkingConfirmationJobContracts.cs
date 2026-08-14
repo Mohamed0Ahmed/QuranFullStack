@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Linking.Preflight;
 using QuranDashboard.Application.Abstractions.Linking.Responses;
 using QuranDashboard.Domain.Linking;
 
@@ -65,11 +64,6 @@ public sealed record LinkingConfirmationJobLease(
     Guid LeaseOwner,
     int AttemptCount,
     LinkingConfirmationJobStatus Status);
-
-public sealed record LinkingPreparedConfirmationExecution(
-    LinkingOperationRequest Request,
-    LinkingOperationIntent Intent,
-    int TotalItems);
 
 public enum LinkingConfirmationJobConflictKind
 {

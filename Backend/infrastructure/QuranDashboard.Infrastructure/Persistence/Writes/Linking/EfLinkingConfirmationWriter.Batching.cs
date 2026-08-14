@@ -4,6 +4,13 @@ internal sealed partial class EfLinkingConfirmationWriter
 {
     private const int PersistenceBatchSize = 500;
 
+    private static async Task ExecuteBatchesAsync(Func<Task<int>> writeBatch)
+    {
+        while (await writeBatch() > 0)
+        {
+        }
+    }
+
     private static IEnumerable<T[]> BatchesOf<T>(IEnumerable<T> values) =>
         values.Chunk(PersistenceBatchSize);
 

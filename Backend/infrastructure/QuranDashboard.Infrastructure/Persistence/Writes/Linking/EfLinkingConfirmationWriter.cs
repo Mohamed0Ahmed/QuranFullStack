@@ -10,6 +10,12 @@ internal sealed partial class EfLinkingConfirmationWriter(
     ILinkingDataRevisionWriterStore revisionStore) : ILinkingConfirmationWriter
 {
     private const int IdempotencyLockNamespace = 193648319;
+    private const int JobLockNamespace = 193648321;
+
+    private async Task TakeJobLockAsync(Guid jobId, CancellationToken cancellationToken) =>
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({JobLockNamespace}, {LockKey(jobId)})",
+            cancellationToken);
 
     private async Task TakeIdempotencyLockAsync(Guid idempotencyKey, CancellationToken cancellationToken) =>
         await db.Database.ExecuteSqlInterpolatedAsync(
