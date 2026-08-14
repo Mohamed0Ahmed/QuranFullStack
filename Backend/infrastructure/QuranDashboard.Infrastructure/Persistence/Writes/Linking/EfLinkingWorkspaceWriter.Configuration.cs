@@ -7,113 +7,6 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 internal sealed partial class EfLinkingWorkspaceWriter
 {
-    public async Task<LinkingWorkspaceDto> ReplaceSourceConfigurationAsync(
-        int userId,
-        long sourceId,
-        LinkingWorkspaceConfigurationInput configuration,
-        uint expectedSourceVersion,
-        long expectedLinkingDataRevision,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(configuration);
-
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var linkingDataRevision = await LockLinkingDataForReadAsync(transaction, cancellationToken);
-        if (linkingDataRevision != expectedLinkingDataRevision)
-        {
-            throw new LinkingDataStaleException(expectedLinkingDataRevision, linkingDataRevision);
-        }
-
-        var workspace = await LoadWorkspaceAsync(userId, cancellationToken)
-            ?? throw new LinkingWorkspaceSourceNotFoundException(sourceId);
-
-        var source = await db.LinkingWorkspaceSources
-            .FromSqlInterpolated(
-                $"SELECT source.*, source.xmin FROM linking_workspace_sources source WHERE id = {sourceId} FOR UPDATE")
-            .FirstOrDefaultAsync(
-                candidate => candidate.Id == sourceId && candidate.WorkspaceId == workspace.Id,
-                cancellationToken)
-            ?? throw new LinkingWorkspaceSourceNotFoundException(sourceId);
-
-        if (source.Version != expectedSourceVersion)
-        {
-            throw new LinkingStaleVersionException();
-        }
-
-        db.Entry(source).Property(entity => entity.Version).OriginalValue = expectedSourceVersion;
-
-        var isManual = source.SourceKind == LinkingSourceKind.ManualMushafAyahs;
-
-        EnsureLabel(configuration.Label);
-        EnsureConfigurationCoherence(isManual, configuration);
-
-        var selectedWords = DistinctSelectedWords(configuration.SelectedWords);
-
-        if (!isManual && selectedWords.Count > 0)
-        {
-            throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
-                LinkingWorkspaceViolationCode.WordsNotAllowedOnAutomaticSource, "selectedWords", null));
-        }
-
-        var descriptions = NormalizeDescriptions(configuration.Descriptions);
-
-        var overrideAyahIds = configuration.AyahOverrides.Distinct().ToList();
-        await EnsureAyahsExistAsync(overrideAyahIds, cancellationToken);
-
-        var sourceAyahIds = selectedWords.Count > 0 || descriptions.Count > 0
-            ? await LoadSourceAyahIdsAsync(source, linkingDataRevision, cancellationToken)
-            : [];
-
-        EnsureSelectedWordAyahs(selectedWords, sourceAyahIds);
-        await EnsureSelectedWordsAsync(selectedWords, cancellationToken);
-        EnsureDescriptionAyahs(descriptions, sourceAyahIds);
-
-        var now = DateTimeOffset.UtcNow;
-        source.Label = configuration.Label;
-        source.InclusionMode = configuration.InclusionMode;
-        source.AutomaticWordMatchesEnabled = configuration.AutomaticWordMatchesEnabled;
-        source.ManualLinkShape = configuration.ManualLinkShape;
-        source.UpdatedAtUtc = now;
-        source.UpdatedBy = userId;
-
-        await ReplaceOverridesAsync(source.Id, overrideAyahIds, cancellationToken);
-        await ReplaceSelectedWordsAsync(source.Id, selectedWords, cancellationToken);
-        await ReplaceDescriptionsAsync(source.Id, descriptions, userId, now, cancellationToken);
-
-        await SaveTranslatingWriteExceptionsAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-
-        return await LinkingWorkspaceProjection.ProjectAsync(db, workspace, cancellationToken);
-    }
-
-    private static List<LinkingWorkspaceSelectedWordInput> DistinctSelectedWords(
-        IReadOnlyList<LinkingWorkspaceSelectedWordInput> selectedWords)
-    {
-        var ayahIdByWordId = new Dictionary<int, int>();
-        var distinct = new List<LinkingWorkspaceSelectedWordInput>();
-
-        foreach (var selectedWord in selectedWords)
-        {
-            if (!ayahIdByWordId.TryGetValue(selectedWord.QuranWordId, out var firstAyahId))
-            {
-                ayahIdByWordId.Add(selectedWord.QuranWordId, selectedWord.AyahId);
-                distinct.Add(selectedWord);
-
-                continue;
-            }
-
-            if (firstAyahId != selectedWord.AyahId)
-            {
-                throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
-                    LinkingWorkspaceViolationCode.SelectedWordAyahConflict,
-                    "selectedWords.quranWordId",
-                    selectedWord.QuranWordId.ToString(CultureInfo.InvariantCulture)));
-            }
-        }
-
-        return distinct;
-    }
-
     private static void EnsureLabel(string label)
     {
         if (string.IsNullOrWhiteSpace(label))
@@ -138,29 +31,6 @@ internal sealed partial class EfLinkingWorkspaceWriter
         }
     }
 
-    private async Task EnsureAyahsExistAsync(IReadOnlyList<int> ayahIds, CancellationToken cancellationToken)
-    {
-        if (ayahIds.Count == 0)
-        {
-            return;
-        }
-
-        var existing = await db.QuranAyahs
-            .AsNoTracking()
-            .Where(ayah => ayahIds.Contains(ayah.Id))
-            .Select(ayah => ayah.Id)
-            .ToListAsync(cancellationToken);
-
-        var missing = ayahIds.Except(existing).ToList();
-        if (missing.Count > 0)
-        {
-            throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
-                LinkingWorkspaceViolationCode.AyahReferenceUnknown,
-                "ayahOverrides",
-                missing[0].ToString(CultureInfo.InvariantCulture)));
-        }
-    }
-
     private static List<LinkingWorkspaceAyahDescriptions> NormalizeDescriptions(
         IReadOnlyList<LinkingWorkspaceDescriptionInput> descriptions)
     {
@@ -169,56 +39,6 @@ internal sealed partial class EfLinkingWorkspaceWriter
         return violation is null
             ? [.. normalized]
             : throw new LinkingWorkspaceViolationException(violation);
-    }
-
-    private async Task<HashSet<int>> LoadSourceAyahIdsAsync(
-        LinkingWorkspaceSource source,
-        long linkingDataRevision,
-        CancellationToken cancellationToken)
-    {
-        if (source.SourceKind != LinkingSourceKind.ManualMushafAyahs)
-        {
-            var resolved = await resolution.ResolveAsync(
-                LinkingSourceStorage.Decode(source, []),
-                linkingDataRevision,
-                cancellationToken);
-
-            return [.. resolved.Ayahs.Select(ayah => ayah.AyahId)];
-        }
-
-        var manualAyahIds = await db.LinkingWorkspaceSourceManualAyahs
-            .AsNoTracking()
-            .Where(manualAyah => manualAyah.WorkspaceSourceId == source.Id)
-            .Select(manualAyah => manualAyah.AyahId)
-            .ToListAsync(cancellationToken);
-
-        return [.. manualAyahIds];
-    }
-
-    private static void EnsureSelectedWordAyahs(
-        IReadOnlyList<LinkingWorkspaceSelectedWordInput> selectedWords,
-        HashSet<int> sourceAyahIds)
-    {
-        foreach (var selectedWord in selectedWords.Where(word => !sourceAyahIds.Contains(word.AyahId)))
-        {
-            throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
-                LinkingWorkspaceViolationCode.SelectedWordAyahOutsideManualSet,
-                "selectedWords.ayahId",
-                selectedWord.AyahId.ToString(CultureInfo.InvariantCulture)));
-        }
-    }
-
-    private static void EnsureDescriptionAyahs(
-        IReadOnlyList<LinkingWorkspaceAyahDescriptions> descriptions,
-        HashSet<int> sourceAyahIds)
-    {
-        foreach (var ayah in descriptions.Where(ayah => !sourceAyahIds.Contains(ayah.AyahId)))
-        {
-            throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
-                LinkingWorkspaceViolationCode.DescriptionAyahOutsideSource,
-                LinkingWorkspaceDescriptionValidation.DescriptionsField,
-                ayah.AyahId.ToString(CultureInfo.InvariantCulture)));
-        }
     }
 
     private async Task EnsureSelectedWordsAsync(

@@ -33,10 +33,6 @@ internal static class LinkingDependencyInjection
         services.AddScoped<ILinkingDataRevisionReader, EfLinkingDataRevisionReader>();
 
         services.AddScoped<EfLinkingSourceResolutionReader>();
-        services.AddScoped<ILinkingSourceResolutionReader>(sp => new CachedLinkingSourceResolutionReader(
-            sp.GetRequiredService<EfLinkingSourceResolutionReader>(),
-            sp.GetRequiredService<LinkingSourceResolutionCache>(),
-            sp.GetRequiredService<LinkingAyahTextCache>()));
         services.AddScoped<ILinkingSourcePageReader, CachedLinkingSourcePageReader>();
         services.AddScoped<ILinkingSourcePreparationReader, CachedLinkingSourcePreparationReader>();
         services.AddScoped<ILinkingPreparedPreflightStore, EfLinkingPreparedPreflightStore>();

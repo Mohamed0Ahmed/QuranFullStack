@@ -6,21 +6,6 @@ namespace QuranDashboard.Application.Abstractions.Linking;
 
 public interface ILinkingConfirmationWriter
 {
-    Task<LinkingConfirmationResultDto?> FindLegacyReplayAsync(
-        int actorUserId,
-        int doorId,
-        Guid idempotencyKey,
-        LinkingConfirmationRequestContract requestContract,
-        CancellationToken cancellationToken);
-
-    Task<LinkingConfirmationWriteResult> ConfirmAsync(
-        int actorUserId,
-        LinkingOperationRequest request,
-        LinkingOperationIntent intent,
-        LinkingConfirmationRequestContract requestContract,
-        Func<LinkingOperationIntent, LinkingConfirmedDoorState, LinkingOperationClassification> classify,
-        CancellationToken cancellationToken);
-
     Task<LinkingConfirmationWriteResult> ConfirmPreparedAsync(
         LinkingConfirmationJobLease lease,
         LinkingOperationRequest request,

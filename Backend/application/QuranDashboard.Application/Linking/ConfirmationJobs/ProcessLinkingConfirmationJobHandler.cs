@@ -35,8 +35,7 @@ public sealed class ProcessLinkingConfirmationJobHandler(
                 false,
                 cancellationToken);
         }
-        catch (Exception exception) when (exception is LinkingPreflightStaleException
-            or LinkingStaleVersionException)
+        catch (LinkingStaleVersionException)
         {
             await store.CompleteFailureAsync(
                 lease,

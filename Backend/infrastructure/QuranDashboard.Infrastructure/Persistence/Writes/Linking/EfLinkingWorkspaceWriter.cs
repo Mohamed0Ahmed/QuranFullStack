@@ -10,7 +10,6 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 internal sealed partial class EfLinkingWorkspaceWriter(
     QuranDashboardDbContext db,
-    ILinkingSourceResolutionReader resolution,
     ILinkingDataRevisionWriterStore revisionStore,
     EfLinkingSourceResolutionReader efResolution,
     LinkingSourceResolutionCache sourceCache) : ILinkingWorkspaceWriter
@@ -86,9 +85,11 @@ internal sealed partial class EfLinkingWorkspaceWriter(
                 LinkingLimits.MaxPreparedSources.ToString(CultureInfo.InvariantCulture)));
         }
 
-        var resolved = await resolution.ResolveAsync(
-            descriptor,
-            linkingDataRevision,
+        var sourceIdentity = LinkingSourceIdentity.For(descriptor);
+        var compact = await sourceCache.GetOrLoadAsync(
+            LinkingSourceCacheKeys.For(descriptor.Kind, sourceIdentity, linkingDataRevision),
+            sourceIdentity,
+            token => efResolution.ResolveCompactAsync(descriptor, token),
             cancellationToken);
         var isManual = form.Kind == LinkingSourceKind.ManualMushafAyahs;
 
@@ -110,8 +111,8 @@ internal sealed partial class EfLinkingWorkspaceWriter(
             InclusionMode = LinkingInclusionMode.AllExcept,
             AutomaticWordMatchesEnabled = isManual ? null : true,
             ManualLinkShape = isManual ? LinkingManualLinkShape.Independent : null,
-            LastResolvedCount = resolved.TotalAyahCount,
-            LastResolvedAtUtc = resolved.ResolvedAtUtc,
+            LastResolvedCount = compact.AyahCount,
+            LastResolvedAtUtc = now,
             CreatedAtUtc = now,
             CreatedBy = userId,
             UpdatedAtUtc = now,

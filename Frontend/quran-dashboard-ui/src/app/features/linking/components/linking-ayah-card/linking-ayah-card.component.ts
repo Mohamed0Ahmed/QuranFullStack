@@ -4,10 +4,14 @@ import { toQuranWordDisplayText } from '../../../../shared/quran/quran-word-disp
 import { AyahCardComponent } from '../../../../shared/ui/ayah-card/ayah-card.component';
 import { LinkingAyah } from '../../models/linking-ayah.models';
 import { LINKING_LABELS } from '../../models/linking.labels';
-import { MergedLinkingWordSelection } from '../../models/linking-merge.models';
-import { LinkingDoorWordImpact } from '../../models/linking-preflight.models';
 
 type LinkingAyahWordHighlight = 'selected' | 'added' | 'existing' | 'removed' | null;
+
+interface LinkingDoorWordImpact {
+  added: readonly number[];
+  existing: readonly number[];
+  removed: readonly number[];
+}
 
 interface LinkingAyahCardWord {
   renderPosition: number;
@@ -27,7 +31,6 @@ interface LinkingAyahCardWord {
 export class LinkingAyahCardComponent {
   readonly ayah = input.required<LinkingAyah>();
   readonly highlightSourceWords = input(true);
-  readonly mergedWords = input<readonly MergedLinkingWordSelection[] | null>(null);
   readonly wordImpact = input<LinkingDoorWordImpact | null>(null);
   readonly statusLabel = input<string | null>(null);
   readonly wordSelectable = input(false);
@@ -37,15 +40,6 @@ export class LinkingAyahCardComponent {
   protected readonly displayWords = computed<readonly LinkingAyahCardWord[]>(() => {
     const wordImpact = this.wordImpact();
     const impactByWordId = wordImpact === null ? null : toImpactByWordId(wordImpact);
-    const merged = this.mergedWords();
-    const mergedMatches =
-      merged === null
-        ? null
-        : new Set(
-            merged
-              .filter((word) => word.sourceKeys.length > 0)
-              .map((word) => word.canonicalQuranWordId),
-          );
     return this.ayah().words
       .filter((word) => !word.isAyahMarker)
       .map((word) => ({
@@ -54,21 +48,13 @@ export class LinkingAyahCardComponent {
         textUthmani: toQuranWordDisplayText(word.textUthmani),
         highlight:
           impactByWordId === null
-            ? this.isSelectedWord(word.isSourceMatch, mergedMatches, word.canonicalQuranWordId)
+            ? this.highlightSourceWords() && word.isSourceMatch
               ? 'selected'
               : null
             : (impactByWordId.get(word.canonicalQuranWordId) ?? null),
       }));
   });
 
-  private isSelectedWord(
-    isSourceMatch: boolean,
-    mergedMatches: ReadonlySet<number> | null,
-    quranWordId: number,
-  ): boolean {
-    return this.highlightSourceWords() &&
-      (mergedMatches === null ? isSourceMatch : mergedMatches.has(quranWordId));
-  }
 }
 
 function toImpactByWordId(

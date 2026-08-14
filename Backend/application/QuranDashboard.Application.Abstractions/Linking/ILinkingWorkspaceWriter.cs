@@ -23,14 +23,6 @@ public interface ILinkingWorkspaceWriter
         uint expectedWorkspaceVersion,
         CancellationToken cancellationToken);
 
-    Task<LinkingWorkspaceDto> ReplaceSourceConfigurationAsync(
-        int userId,
-        long sourceId,
-        LinkingWorkspaceConfigurationInput configuration,
-        uint expectedSourceVersion,
-        long expectedLinkingDataRevision,
-        CancellationToken cancellationToken);
-
     Task<LinkingWorkspaceDto> ClearSourcesAsync(
         int userId,
         uint expectedWorkspaceVersion,

@@ -20,7 +20,6 @@ import {
   toLinkingSourceDescriptorBody,
 } from '../utils/linking-source-descriptor-body';
 import {
-  LinkingWorkspaceConfigurationRequest,
   LinkingWorkspaceRepository,
   LinkingWorkspaceStaleVersionError,
 } from './linking-workspace.repository';
@@ -64,28 +63,6 @@ export class HttpLinkingWorkspaceRepository implements LinkingWorkspaceRepositor
         sourceIds: [...sourceIds],
         workspaceVersion,
       }),
-    );
-  }
-
-  replaceConfiguration(
-    sourceId: number,
-    configuration: LinkingWorkspaceConfigurationRequest,
-  ): Observable<LinkingWorkspaceSnapshot> {
-    return this.request(
-      this.http.put<ApiResponse<LinkingWorkspaceResponse>>(
-        `${this.baseUrl}/sources/${sourceId}/configuration`,
-        {
-          sourceVersion: configuration.sourceVersion,
-          expectedLinkingDataRevision: configuration.expectedLinkingDataRevision,
-          label: configuration.label,
-          inclusionMode: toWireInclusionMode(configuration.inclusionMode),
-          ayahOverrides: [...configuration.ayahOverrideIds],
-          selectedWords: configuration.selectedWords.map((word) => ({ ...word })),
-          automaticWordMatchesEnabled: configuration.automaticWordMatchesEnabled,
-          manualLinkShape: configuration.manualLinkShape,
-          descriptions: [],
-        },
-      ),
     );
   }
 
@@ -268,10 +245,6 @@ function toManualReference(ayah: {
   pageHint: number | null;
 }): LinkingManualMushafAyahReference {
   return { verseKey: ayah.verseKey, pageNumber: ayah.pageHint, displayHint: ayah.verseKey };
-}
-
-function toWireInclusionMode(mode: 'all-except' | 'only'): string {
-  return mode === 'all-except' ? 'all_except' : 'only';
 }
 
 function fromWireInclusionMode(mode: string): 'all-except' | 'only' | null {

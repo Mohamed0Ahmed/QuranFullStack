@@ -1,4 +1,3 @@
-import { LinkingWorkspaceConfigurationRequest } from '../data-access/linking-workspace.repository';
 import {
   LinkingWorkspaceItem,
   LinkingWorkspaceSnapshot,
@@ -61,41 +60,4 @@ export function toAyahIds(
   return verseKeys
     .map((verseKey) => ayahIdByVerseKey[verseKey])
     .filter((ayahId): ayahId is number => ayahId !== undefined);
-}
-
-export function toConfigurationRequest(item: LinkingWorkspaceItem): LinkingWorkspaceConfigurationRequest | null {
-  if (item.sourceVersion === null || item.linkingDataRevision === null) {
-    return null;
-  }
-  const configuration = item.configuration;
-  const isManual = configuration.kind === 'manual';
-  return {
-    sourceVersion: item.sourceVersion,
-    expectedLinkingDataRevision: item.linkingDataRevision,
-    label: item.source.label,
-    inclusionMode: configuration.ayahInclusion.mode,
-    ayahOverrideIds: item.ayahOverrideIds,
-    selectedWords: isManual ? toSelectedWords(item) : [],
-    automaticWordMatchesEnabled: isManual ? null : configuration.automaticWordMatchesEnabled,
-    manualLinkShape: isManual ? configuration.linkShape : null,
-  };
-}
-
-function toSelectedWords(
-  item: LinkingWorkspaceItem,
-): readonly { ayahId: number; quranWordId: number }[] {
-  if (item.configuration.kind !== 'manual') {
-    return [];
-  }
-  const selectedWords: { ayahId: number; quranWordId: number }[] = [];
-  for (const [verseKey, quranWordIds] of Object.entries(item.configuration.quranWordIdsByVerseKey)) {
-    const ayahId = item.ayahIdByVerseKey[verseKey];
-    if (ayahId === undefined) {
-      continue;
-    }
-    for (const quranWordId of quranWordIds) {
-      selectedWords.push({ ayahId, quranWordId });
-    }
-  }
-  return selectedWords;
 }

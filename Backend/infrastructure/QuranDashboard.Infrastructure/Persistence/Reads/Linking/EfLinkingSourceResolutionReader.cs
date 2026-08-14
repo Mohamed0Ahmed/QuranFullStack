@@ -6,30 +6,10 @@ using QuranDashboard.Infrastructure.Caching.Linking;
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Linking;
 
 public sealed partial class EfLinkingSourceResolutionReader(QuranDashboardDbContext dbContext)
-    : ILinkingSourceResolutionReader
 {
-    private const string ResolvedAyahsField = "ayahs";
     private const string StemSegmentKind = "STEM";
 
     private readonly QuranDashboardDbContext _dbContext = dbContext;
-
-    public async Task<LinkingResolvedSourceDto> ResolveAsync(
-        LinkingSourceDescriptor descriptor,
-        long linkingDataRevision,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(descriptor);
-
-        var compact = await ResolveCompactAsync(descriptor, cancellationToken);
-        var ayahs = await HydrateAsync(compact, compact.AyahIds, cancellationToken);
-
-        return new LinkingResolvedSourceDto(
-            compact.SourceIdentity,
-            linkingDataRevision,
-            DateTimeOffset.UtcNow,
-            compact.AyahCount,
-            ayahs);
-    }
 
     public async Task<LinkingResolvedSourceCompact> ResolveCompactAsync(
         LinkingSourceDescriptor descriptor,
@@ -162,19 +142,7 @@ public sealed partial class EfLinkingSourceResolutionReader(QuranDashboardDbCont
         bool includeAyahMarkers)
     {
         var ayahIds = matches.Select(match => match.AyahId).Distinct().ToList();
-        GuardResolvedAyahCount(ayahIds.Count);
         return new LinkingSourceReferenceSet(ayahIds, matches, includeAyahMarkers);
-    }
-
-    private static void GuardResolvedAyahCount(int ayahCount)
-    {
-        if (ayahCount > LinkingLimits.MaxResolvedAyahs)
-        {
-            throw new LinkingInvalidDescriptorException(new LinkingDescriptorViolation(
-                LinkingDescriptorViolationCode.ResolvedAyahLimitExceeded,
-                ResolvedAyahsField,
-                ayahCount.ToString(CultureInfo.InvariantCulture)));
-        }
     }
 
     private static IReadOnlyDictionary<int, IReadOnlyList<int>> GroupMatchedWordIds(

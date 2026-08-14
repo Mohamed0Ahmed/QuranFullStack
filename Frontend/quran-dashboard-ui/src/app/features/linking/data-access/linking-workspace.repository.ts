@@ -4,17 +4,6 @@ import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import { LinkingWorkspaceSnapshot } from '../models/linking-workspace.models';
 export { LinkingDataStaleError } from '../models/linking-revision.models';
 
-export interface LinkingWorkspaceConfigurationRequest {
-  sourceVersion: number;
-  expectedLinkingDataRevision: number;
-  label: string;
-  inclusionMode: 'all-except' | 'only';
-  ayahOverrideIds: readonly number[];
-  selectedWords: readonly { ayahId: number; quranWordId: number }[];
-  automaticWordMatchesEnabled: boolean | null;
-  manualLinkShape: 'grouped' | 'independent' | null;
-}
-
 export interface LinkingWorkspaceRepository {
   load(): Observable<LinkingWorkspaceSnapshot>;
   addSource(
@@ -25,10 +14,6 @@ export interface LinkingWorkspaceRepository {
   reorderSources(
     sourceIds: readonly number[],
     workspaceVersion: number | null,
-  ): Observable<LinkingWorkspaceSnapshot>;
-  replaceConfiguration(
-    sourceId: number,
-    configuration: LinkingWorkspaceConfigurationRequest,
   ): Observable<LinkingWorkspaceSnapshot>;
   clearSources(workspaceVersion: number | null): Observable<LinkingWorkspaceSnapshot>;
 }

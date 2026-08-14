@@ -12,7 +12,6 @@ import {
   LinkingWorkspaceItem,
   LinkingWorkspaceSnapshot,
 } from '../models/linking-workspace.models';
-import { toConfigurationRequest } from './linking-workspace-merge';
 
 const RELOAD_WARNING = 'تعذر حفظ التغيير، وأُعيد تحميل مساحة الربط من الخادم.';
 const LOAD_WARNING = 'تعذر تحميل مساحة الربط من الخادم.';
@@ -24,6 +23,7 @@ export interface LinkingWorkspaceSyncBindings {
   findItem(sourceKey: string): LinkingWorkspaceItem | null;
   applySnapshot(snapshot: LinkingWorkspaceSnapshot): void;
   restoreChecked(sourceKey: string): void;
+  restoreConfiguration(removed: LinkingRemovedWorkspaceItem): Promise<void>;
   warn(message: string): void;
   invalidateLinkingDataRevision(): void;
 }
@@ -89,21 +89,7 @@ export class LinkingWorkspaceSyncRunner {
     bindings: LinkingWorkspaceSyncBindings,
     removed: LinkingRemovedWorkspaceItem,
   ): Promise<void> {
-    const restored = bindings.findItem(removed.item.sourceKey);
-    if (restored?.sourceId == null) {
-      return;
-    }
-    const request = toConfigurationRequest({
-      ...removed.item,
-      sourceId: restored.sourceId,
-      sourceVersion: restored.sourceVersion,
-    });
-    if (request === null) {
-      return;
-    }
-    bindings.applySnapshot(
-      await firstValueFrom(this.repository.replaceConfiguration(restored.sourceId, request)),
-    );
+    await bindings.restoreConfiguration(removed);
   }
 
   private async restoreOrder(

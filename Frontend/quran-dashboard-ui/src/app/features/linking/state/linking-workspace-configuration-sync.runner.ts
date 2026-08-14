@@ -106,6 +106,15 @@ export class LinkingWorkspaceConfigurationSyncRunner {
     this.stopped = false;
   }
 
+  async restore(
+    acknowledged: LinkingOperationSourceDraft,
+    desired: LinkingOperationSourceDraft,
+  ): Promise<void> {
+    this.track(acknowledged);
+    this.schedule(desired);
+    await this.flush([desired.sourceKey]);
+  }
+
   private flushSource(sourceKey: string): Promise<void> {
     const state = this.states.get(sourceKey);
     if (state === undefined || sameDraft(state.acknowledged, state.latest)) {

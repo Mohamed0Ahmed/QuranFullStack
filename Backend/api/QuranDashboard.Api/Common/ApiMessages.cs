@@ -225,7 +225,6 @@ public static class ApiMessages
     public const string LinkingSourceNotFound = "المصدر المشار إليه غير موجود";
 
     private const string LinkingSourceDescriptorInvalidPrefix = "بيانات المصدر غير صالحة — الحقل";
-    private const string LinkingSourceAyahLimitPrefix = "تجاوز عدد آيات المصدر الحد الأقصى المسموح به";
     private const string LinkingManualAyahIncompletePrefix = "تعذر التحقق من اكتمال كلمات الآية";
 
     public static string LinkingSourceNotFoundMessage(string? reference) =>
@@ -291,8 +290,6 @@ public static class ApiMessages
     public static string LinkingDescriptorViolationMessage(LinkingDescriptorViolation violation) =>
         violation.Code switch
         {
-            LinkingDescriptorViolationCode.ResolvedAyahLimitExceeded =>
-                $"{LinkingSourceAyahLimitPrefix} ({LinkingLimits.MaxResolvedAyahs} آية)",
             LinkingDescriptorViolationCode.ManualAyahCompletenessFailed =>
                 $"{LinkingManualAyahIncompletePrefix} «{violation.Value}»",
             _ => violation.Value is null
@@ -300,18 +297,13 @@ public static class ApiMessages
                 : $"{LinkingSourceDescriptorInvalidPrefix} «{violation.Field}» بالقيمة «{violation.Value}»",
         };
 
-    public const string LinkingOperationPreflighted = "تم فحص العملية قبل التنفيذ";
-    public const string LinkingOperationConfirmed = "تم تنفيذ عملية الربط بنجاح";
-    public const string LinkingOperationNoChanges = "لا توجد تغييرات جديدة لتنفيذها";
     public const string LinkingOperationDoorNotFound = "الباب غير موجود";
     public const string LinkingOperationInvalidClassification = "تعذر تنفيذ العملية لوجود عناصر غير صالحة";
-    public const string LinkingOperationStaleVersion = "تغيرت مساهمة مرتبطة منذ آخر قراءة؛ أعد الفحص وحاول مجددًا";
     public const string LinkingOperationStalePreflight = "تغيرت حالة الربط منذ الفحص؛ راجع النتيجة المحدثة";
     public const string LinkingDataStale = "تغيرت بيانات الربط القرآنية؛ أعد تحميل المصدر ثم راجع العملية";
     public const string LinkingSourceViewStale = "تغير عرض المصدر؛ أعد تحميله قبل متابعة التصفح";
     public const string LinkingSourcePageInvalid = "طلب صفحة المصدر غير صالح";
     public const string LinkingSourceReadTransientFailure = "تعذر تثبيت قراءة بيانات الربط مؤقتًا؛ حاول مجددًا";
-    public const string LinkingOperationDuplicateContribution = "توجد مساهمة حية لهذا المصدر داخل الباب";
     public const string LinkingOperationIdempotencyConflict = "مفتاح العملية مستخدم لمحاولة تأكيد مختلفة";
     public const string LinkingPreparedPreflightAccepted = "تم قبول الفحص المسبق للتحضير";
     public const string LinkingPreparedPreflightLoaded = "تم تحميل حالة الفحص المسبق";

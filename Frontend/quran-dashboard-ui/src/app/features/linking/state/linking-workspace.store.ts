@@ -4,35 +4,21 @@ import { firstValueFrom } from 'rxjs';
 import { CurrentUserStore } from '../../../core/auth/current-user.store';
 import { HttpLinkingWorkspaceRepository } from '../data-access/http-linking-workspace.repository';
 import { LinkingWorkspaceRepository } from '../data-access/linking-workspace.repository';
-import {
-  LinkingManualLinkShape,
-  LinkingManualWordIdsByVerseKey,
-  isCanonicalQuranWordId,
-} from '../models/linking-manual-mushaf.models';
-import { LinkingOperationMember } from '../models/linking-operation.models';
+import { LinkingManualLinkShape } from '../models/linking-manual-mushaf.models';
 import { LinkingOperationSourceDraft } from '../models/linking-operation-draft.models';
-import { isVerseKey, LinkingSourceDescriptor } from '../models/linking-source.models';
+import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import {
   LinkingRemovedWorkspaceItem,
-  LinkingSelection,
-  LinkingSourceConfiguration,
   LinkingWorkspaceItem,
   LinkingWorkspaceSnapshot,
   LinkingWorkspaceSurface,
 } from '../models/linking-workspace.models';
 import { linkingSourceKey } from '../utils/linking-source-key';
-import {
-  clearLinkingAyahs,
-  reconcileLinkingSelection,
-  selectAllLinkingAyahs,
-  toggleLinkingSelection,
-} from '../utils/linking-selection';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingOperationDraftStore } from './linking-operation-draft.store';
 import { LinkingRecoveryStore } from './linking-recovery.store';
-import { LinkingSourceCache } from './linking-source.cache';
 import { LinkingSourcePagesFacade } from './linking-source-pages.facade';
-import { mergeWorkspaceSnapshot, toAyahIds } from './linking-workspace-merge';
+import { mergeWorkspaceSnapshot } from './linking-workspace-merge';
 import { LinkingWorkspaceConfigurationSyncRunner } from './linking-workspace-configuration-sync.runner';
 import {
   LinkingWorkspaceOperation,
@@ -47,7 +33,6 @@ export class LinkingWorkspaceStore {
   private readonly configurationSync = inject(LinkingWorkspaceConfigurationSyncRunner);
   private readonly operationDraft = inject(LinkingOperationDraftStore);
   private readonly recovery = inject(LinkingRecoveryStore);
-  private readonly sourceCache = inject(LinkingSourceCache);
   private readonly sourcePages = inject(LinkingSourcePagesFacade);
   private readonly repository: LinkingWorkspaceRepository = inject(HttpLinkingWorkspaceRepository);
   private readonly itemsSignal = signal<readonly LinkingWorkspaceItem[]>([]);
@@ -93,6 +78,7 @@ export class LinkingWorkspaceStore {
         this.checkedSourceKeysSignal.update((keys) =>
           keys.includes(sourceKey) ? keys : [...keys, sourceKey],
         ),
+      restoreConfiguration: (removed) => this.restoreConfiguration(removed),
       warn: (message) => this.persistenceWarningSignal.set(message),
       invalidateLinkingDataRevision: () => this.invalidateLinkingDataRevision(),
     });
@@ -123,7 +109,6 @@ export class LinkingWorkspaceStore {
   }
 
   invalidateLinkingDataRevision(): void {
-    this.sourceCache.evictResolvedSources();
     for (const item of this.itemsSignal()) {
       if (item.linkingDataRevision !== null) {
         this.sourcePages.evictRevision(item.linkingDataRevision);
@@ -281,65 +266,22 @@ export class LinkingWorkspaceStore {
     this.activeSurfaceSignal.set('source-ayah-editor');
   }
 
-  updateSelection(sourceKey: string, selection: LinkingSelection, universe: readonly string[]): void {
-    this.updateConfiguration(sourceKey, (configuration) => ({
-      ...configuration,
-      ayahInclusion: reconcileLinkingSelection(selection, universe),
-    }));
-  }
-
-  toggleSelection(sourceKey: string, verseKey: string, universe: readonly string[]): void {
-    const item = this.findItem(sourceKey);
-    if (item !== null) {
-      this.updateSelection(
-        sourceKey,
-        toggleLinkingSelection(item.configuration.ayahInclusion, verseKey, universe),
-        universe,
-      );
-    }
-  }
-
-  selectAll(sourceKey: string): void {
-    this.updateConfiguration(sourceKey, (configuration) => ({
-      ...configuration,
-      ayahInclusion: selectAllLinkingAyahs(),
-    }));
-  }
-
-  clearAll(sourceKey: string): void {
-    this.updateConfiguration(sourceKey, (configuration) => ({
-      ...configuration,
-      ayahInclusion: clearLinkingAyahs(),
-    }));
-  }
-
   setAutomaticWordMatchesEnabled(sourceKey: string, enabled: boolean): void {
-    this.updateConfiguration(sourceKey, (configuration) =>
-      configuration.kind === 'automatic'
-        ? { ...configuration, automaticWordMatchesEnabled: enabled }
-        : configuration,
-    );
-  }
-
-  setManualWordIds(sourceKey: string, quranWordIdsByVerseKey: LinkingManualWordIdsByVerseKey): void {
-    const item = this.findItem(sourceKey);
-    if (item?.source.kind !== 'manual-mushaf-ayahs') {
-      return;
-    }
-    const normalized = normalizeManualWordIds(item.source, quranWordIdsByVerseKey);
-    if (normalized === null) {
-      return;
-    }
-    this.updateConfiguration(sourceKey, (configuration) =>
-      configuration.kind === 'manual'
-        ? { ...configuration, quranWordIdsByVerseKey: normalized }
-        : configuration,
+    this.updateItem(sourceKey, (item) =>
+      item.configuration.kind === 'automatic'
+        ? {
+            ...item,
+            configuration: { ...item.configuration, automaticWordMatchesEnabled: enabled },
+          }
+        : item,
     );
   }
 
   setManualLinkShape(sourceKey: string, linkShape: LinkingManualLinkShape): void {
-    this.updateConfiguration(sourceKey, (configuration) =>
-      configuration.kind === 'manual' ? { ...configuration, linkShape } : configuration,
+    this.updateItem(sourceKey, (item) =>
+      item.configuration.kind === 'manual'
+        ? { ...item, configuration: { ...item.configuration, linkShape } }
+        : item,
     );
   }
 
@@ -424,59 +366,6 @@ export class LinkingWorkspaceStore {
     }
   }
 
-  reconcileResolvedSource(
-    sourceKey: string,
-    resolvedAyahs: readonly { ayahId: number; verseKey: string }[],
-    linkingDataRevision: number,
-  ): void {
-    const item = this.findItem(sourceKey);
-    if (item === null) {
-      return;
-    }
-    const ayahIdByVerseKey = Object.fromEntries(
-      resolvedAyahs.map((ayah) => [ayah.verseKey, ayah.ayahId]),
-    );
-    const universe = resolvedAyahs.map((ayah) => ayah.verseKey);
-    const knownVerseKeys = new Map(resolvedAyahs.map((ayah) => [ayah.ayahId, ayah.verseKey]));
-    const verseKeys = item.ayahOverrideIds
-      .map((ayahId) => knownVerseKeys.get(ayahId))
-      .filter((verseKey): verseKey is string => verseKey !== undefined);
-    const ayahInclusion = reconcileLinkingSelection(
-      { mode: item.configuration.ayahInclusion.mode, verseKeys },
-      universe,
-    );
-    const reconciled: LinkingWorkspaceItem = {
-      ...item,
-      ayahIdByVerseKey,
-      ayahOverrideIds: toAyahIds(ayahInclusion.verseKeys, ayahIdByVerseKey),
-      configuration: { ...item.configuration, ayahInclusion },
-      lastResolvedCount: universe.length,
-      linkingDataRevision,
-    };
-    this.replaceItem(sourceKey, reconciled);
-    if (reconciled.sourceVersion !== null) {
-      this.configurationSync.resume();
-      this.configurationSync.track(toOperationDraft(reconciled));
-    }
-  }
-
-  captureOperationMembers(): readonly LinkingOperationMember[] {
-    if (!this.canMutate()) {
-      return [];
-    }
-    const checked = new Set(this.checkedSourceKeysSignal());
-    return this.itemsSignal()
-      .filter((item) => checked.has(item.sourceKey))
-      .map((item) => ({
-        sourceKey: item.sourceKey,
-        source: item.source,
-        configuration: item.configuration,
-        origin: 'workspace' as const,
-        configurationRevision: item.configurationRevision,
-        operationOrder: this.itemsSignal().indexOf(item),
-      }));
-  }
-
   flushSelectedSources(): Promise<void> {
     return this.configurationSync.flush(this.checkedSourceKeysSignal());
   }
@@ -537,22 +426,6 @@ export class LinkingWorkspaceStore {
     this.persistenceWarningSignal.set(null);
   }
 
-  private updateConfiguration(
-    sourceKey: string,
-    update: (configuration: LinkingSourceConfiguration) => LinkingSourceConfiguration,
-  ): void {
-    this.updateItem(sourceKey, (item) => {
-      const configuration = update(item.configuration);
-      return configuration === item.configuration
-        ? item
-        : {
-            ...item,
-            configuration,
-            ayahOverrideIds: toAyahIds(configuration.ayahInclusion.verseKeys, item.ayahIdByVerseKey),
-          };
-    });
-  }
-
   private async leaveEditor(surface: 'closed' | 'workspace'): Promise<void> {
     const sourceKey = this.editorSourceKeySignal();
     if (sourceKey !== null) {
@@ -567,6 +440,27 @@ export class LinkingWorkspaceStore {
     }
     this.editorSourceKeySignal.set(null);
     this.activeSurfaceSignal.set(surface);
+  }
+
+  private async restoreConfiguration(removed: LinkingRemovedWorkspaceItem): Promise<void> {
+    const restored = this.findItem(removed.item.sourceKey);
+    const linkingDataRevision = removed.item.linkingDataRevision;
+    if (restored?.sourceId == null || restored.sourceVersion === null || linkingDataRevision === null) {
+      return;
+    }
+    const acknowledged = toOperationDraft({ ...restored, linkingDataRevision });
+    const desiredItem: LinkingWorkspaceItem = {
+      ...removed.item,
+      sourceId: restored.sourceId,
+      sourceVersion: restored.sourceVersion,
+      linkingDataRevision,
+    };
+    await this.configurationSync.restore(acknowledged, toOperationDraft(desiredItem));
+    const current = this.findItem(desiredItem.sourceKey);
+    this.replaceItem(desiredItem.sourceKey, {
+      ...desiredItem,
+      sourceVersion: current?.sourceVersion ?? desiredItem.sourceVersion,
+    });
   }
 
   private updateItem(
@@ -676,36 +570,4 @@ function toOperationDraft(item: LinkingWorkspaceItem): LinkingOperationSourceDra
     manualLinkShape:
       item.configuration.kind === 'manual' ? item.configuration.linkShape : null,
   };
-}
-
-function orderedSourceIdsWith(
-  items: readonly LinkingWorkspaceItem[],
-  removed: LinkingRemovedWorkspaceItem,
-): readonly number[] | null {
-  const restored = items.find((item) => item.sourceKey === removed.item.sourceKey);
-  if (restored?.sourceId == null) {
-    return null;
-  }
-  const others = items.filter((item) => item.sourceKey !== removed.item.sourceKey);
-  if (others.some((item) => item.sourceId === null)) {
-    return null;
-  }
-  const ordered = [...others];
-  ordered.splice(Math.min(removed.index, ordered.length), 0, restored);
-  return ordered.map((item) => item.sourceId!);
-}
-
-function normalizeManualWordIds(
-  source: Extract<LinkingSourceDescriptor, { kind: 'manual-mushaf-ayahs' }>,
-  quranWordIdsByVerseKey: LinkingManualWordIdsByVerseKey,
-): LinkingManualWordIdsByVerseKey | null {
-  const manualVerseKeys = new Set(source.manualAyahs.map((ayah) => ayah.verseKey));
-  const normalized: Record<string, readonly number[]> = {};
-  for (const [verseKey, quranWordIds] of Object.entries(quranWordIdsByVerseKey)) {
-    if (!isVerseKey(verseKey) || !manualVerseKeys.has(verseKey) || !quranWordIds.every(isCanonicalQuranWordId)) {
-      return null;
-    }
-    normalized[verseKey] = [...new Set(quranWordIds)].sort((left, right) => left - right);
-  }
-  return normalized;
 }

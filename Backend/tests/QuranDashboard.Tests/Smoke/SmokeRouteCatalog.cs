@@ -234,21 +234,6 @@ internal static class SmokeRouteCatalog
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.EchoedKey("word", "wordLocation", "1:1:1")),
         },
 
-        new("api/linking/sources/resolve", "/api/linking/sources/resolve", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
-        {
-            Method = HttpMethod.Post,
-            ParityOnly = true,
-        },
-        new("api/linking/operations/preflight", "/api/linking/operations/preflight", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
-        {
-            Method = HttpMethod.Post,
-            ParityOnly = true,
-        },
-        new("api/linking/operations", "/api/linking/operations", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
-        {
-            Method = HttpMethod.Post,
-            ParityOnly = true,
-        },
         new("api/linking/workspace", "/api/linking/workspace", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
         {
             ParityOnly = true,
@@ -264,11 +249,6 @@ internal static class SmokeRouteCatalog
             ParityOnly = true,
         },
         new("api/linking/workspace/sources/order", "/api/linking/workspace/sources/order", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
-        {
-            Method = HttpMethod.Put,
-            ParityOnly = true,
-        },
-        new("api/linking/workspace/sources/{id:long}/configuration", "/api/linking/workspace/sources/1/configuration", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
         {
             Method = HttpMethod.Put,
             ParityOnly = true,

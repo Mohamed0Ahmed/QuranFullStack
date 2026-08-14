@@ -9,8 +9,6 @@ public sealed partial class EfLinkingSourceResolutionReader
         LinkingSourceDescriptor.ManualMushafAyahs source,
         CancellationToken cancellationToken)
     {
-        GuardResolvedAyahCount(source.VerseKeys.Count);
-
         var requestedVerseKeys = source.VerseKeys.Select(verseKey => verseKey.Value).ToList();
 
         var ayahs = await LinkingAyahHydration.LoadByVerseKeysAsync(

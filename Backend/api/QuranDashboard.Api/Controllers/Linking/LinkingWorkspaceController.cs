@@ -7,7 +7,6 @@ using QuranDashboard.Application.Linking.Commands.AddLinkingWorkspaceSource;
 using QuranDashboard.Application.Linking.Commands.ClearLinkingWorkspaceSources;
 using QuranDashboard.Application.Linking.Commands.RemoveLinkingWorkspaceSource;
 using QuranDashboard.Application.Linking.Commands.ReorderLinkingWorkspaceSources;
-using QuranDashboard.Application.Linking.Commands.ReplaceLinkingWorkspaceSourceConfiguration;
 using QuranDashboard.Application.Linking.Commands.ApplyLinkingWorkspaceSourceDelta;
 using QuranDashboard.Application.Linking.Queries.GetLinkingWorkspace;
 
@@ -21,7 +20,6 @@ public sealed class LinkingWorkspaceController(
     AddLinkingWorkspaceSourceHandler addHandler,
     RemoveLinkingWorkspaceSourceHandler removeHandler,
     ReorderLinkingWorkspaceSourcesHandler reorderHandler,
-    ReplaceLinkingWorkspaceSourceConfigurationHandler configurationHandler,
     ApplyLinkingWorkspaceSourceDeltaHandler deltaHandler,
     ClearLinkingWorkspaceSourcesHandler clearHandler) : ControllerBase
 {
@@ -109,42 +107,6 @@ public sealed class LinkingWorkspaceController(
             cancellationToken);
 
         return Respond(outcome, ApiMessages.LinkingWorkspaceSourcesReordered);
-    }
-
-    [HttpPut("sources/{id:long}/configuration")]
-    [RequireOwner]
-    [ProducesResponseType(typeof(ApiResponse<LinkingWorkspaceResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<ApiResponse<LinkingWorkspaceResponse>>> ReplaceSourceConfiguration(
-        long id,
-        [FromBody] LinkingWorkspaceConfigurationBody body,
-        CancellationToken cancellationToken)
-    {
-        if (body?.SourceVersion is null || body.ExpectedLinkingDataRevision is null or <= 0)
-        {
-            return VersionRequired();
-        }
-
-        if (!LinkingWorkspaceConfigurationBodyMapper.TryMap(body, out var configuration, out var violation))
-        {
-            return BadRequest(ApiResponse<LinkingWorkspaceResponse>.Fail(
-                ApiMessages.LinkingDescriptorViolationMessage(violation)));
-        }
-
-        var userId = await ResolveUserIdAsync();
-
-        var outcome = await configurationHandler.HandleAsync(
-            new ReplaceLinkingWorkspaceSourceConfigurationCommand(
-                userId,
-                id,
-                configuration,
-                body.SourceVersion.Value,
-                body.ExpectedLinkingDataRevision.Value),
-            cancellationToken);
-
-        return Respond(outcome, ApiMessages.LinkingWorkspaceConfigurationSaved);
     }
 
     [HttpPatch("sources/{id:long}/configuration")]

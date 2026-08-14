@@ -6,7 +6,5 @@ public static class LinkingLimits
 
     public const int MaxDescriptionLength = 2000;
 
-    public const int MaxResolvedAyahs = 3000;
-
     public const int MaxPreparedSources = 100;
 }
