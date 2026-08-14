@@ -35,6 +35,24 @@ public sealed class ConfirmLinkingOperationHandler(
 
         try
         {
+            var idempotencyKey = command.Request.IdempotencyKey
+                ?? throw new InvalidOperationException("A validated confirmation requires an idempotency key.");
+            var requestContract = new LinkingConfirmationRequestContract(
+                LinkingConfirmationRequestContracts.LegacyExpanded,
+                LinkingConfirmationRequestContracts.SchemaVersion,
+                LinkingConfirmationRequestHasher.ComputeLegacy(command.Request),
+                command.Request.ExpectedLinkingDataRevision);
+            var replay = await writer.FindLegacyReplayAsync(
+                command.Actor.UserId,
+                command.Request.DoorId,
+                idempotencyKey,
+                requestContract,
+                cancellationToken);
+            if (replay is not null)
+            {
+                return Complete(command.Request.DoorId, replay, true);
+            }
+
             var intent = await revisionScope.ExecuteAsync(
                 policy.MaximumAutomaticAttempts,
                 (revision, token) =>
@@ -65,6 +83,7 @@ public sealed class ConfirmLinkingOperationHandler(
                 command.Actor.UserId,
                 command.Request,
                 intent,
+                requestContract,
                 LinkingOperationClassifier.Classify,
                 cancellationToken);
 

@@ -119,6 +119,10 @@ internal sealed partial class EfLinkingPreparedPreflightStore
                 WHERE status IN ('stale', 'failed', 'cancelled', 'expired', 'confirmed')
                   AND completed_at_utc < {cutoff}
                   AND (cleanup_started_at_utc IS NULL OR cleanup_lease_expires_at_utc < CURRENT_TIMESTAMP)
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM linking_confirmation_jobs job
+                      WHERE job.preflight_id = preflight.id)
                 ORDER BY completed_at_utc, id
                 FOR UPDATE SKIP LOCKED
                 LIMIT 1

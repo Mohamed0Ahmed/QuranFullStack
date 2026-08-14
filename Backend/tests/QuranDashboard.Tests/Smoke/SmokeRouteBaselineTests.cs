@@ -9,10 +9,10 @@ public sealed class SmokeRouteBaselineTests
             .Select(route => (route.Method.Method, route.Template, route.Access.Kind, route.Access.PermissionCode))
             .ToArray();
 
-        snapshot.Should().HaveCount(101);
+        snapshot.Should().HaveCount(105);
         snapshot.Count(route => route.Kind is SmokeRouteAccessKind.AuthenticatedOnly).Should().Be(1);
         snapshot.Count(route => route.Kind is SmokeRouteAccessKind.Permission).Should().Be(21);
-        snapshot.Count(route => route.Kind is SmokeRouteAccessKind.OwnerOnly).Should().Be(28);
+        snapshot.Count(route => route.Kind is SmokeRouteAccessKind.OwnerOnly).Should().Be(32);
         snapshot.Should().Contain(("GET", "api/access/me", SmokeRouteAccessKind.AuthenticatedOnly, null));
         snapshot.Should().Contain(("GET", "api/access/users", SmokeRouteAccessKind.OwnerOnly, null));
         snapshot.Should().OnlyContain(route =>

@@ -12,6 +12,7 @@ public sealed record LinkingScalabilityOptions : ILinkingScalabilityPolicy
     public TimeSpan CacheSlidingExpiration { get; init; } = TimeSpan.FromMinutes(30);
     public TimeSpan CacheAbsoluteExpiration { get; init; } = TimeSpan.FromHours(4);
     public int PreflightProcessorConcurrency { get; init; } = 2;
+    public int ConfirmationProcessorConcurrency { get; init; } = 2;
     public int ActiveWorkflowsPerActor { get; init; } = 4;
     public int PersistenceBatchSize { get; init; } = 500;
     public TimeSpan WorkerLease { get; init; } = TimeSpan.FromMinutes(2);
@@ -56,6 +57,7 @@ public sealed record LinkingScalabilityOptions : ILinkingScalabilityPolicy
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(CacheAbsoluteExpiration, TimeSpan.Zero);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(CacheSlidingExpiration, CacheAbsoluteExpiration);
         ArgumentOutOfRangeException.ThrowIfLessThan(PreflightProcessorConcurrency, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(ConfirmationProcessorConcurrency, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(ActiveWorkflowsPerActor, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(PersistenceBatchSize, 1);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(WorkerLease, TimeSpan.Zero);

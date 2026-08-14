@@ -318,6 +318,13 @@ public static class ApiMessages
     public const string LinkingPreparedPreflightCancelled = "تم إلغاء الفحص المسبق";
     public const string LinkingPreparedPreflightNotFound = "الفحص المسبق غير موجود";
     public const string LinkingPreparedPreflightInvalid = "طلب الفحص المسبق غير صالح";
+    public const string LinkingConfirmationJobAccepted = "تم قبول مهمة تأكيد الربط";
+    public const string LinkingConfirmationJobLoaded = "تم تحميل حالة مهمة تأكيد الربط";
+    public const string LinkingConfirmationJobCancelled = "تم طلب إلغاء مهمة تأكيد الربط";
+    public const string LinkingConfirmationJobNotFound = "مهمة تأكيد الربط غير موجودة";
+    public const string LinkingConfirmationJobInvalid = "طلب مهمة تأكيد الربط غير صالح";
+    public const string LinkingConfirmationOutcomeLoaded = "تم تحميل نتيجة تأكيد الربط";
+    public const string LinkingConfirmationOutcomeNotFound = "نتيجة تأكيد الربط غير موجودة";
 
     public static string LinkingLifecycleMessage(string code) => code switch
     {
@@ -329,6 +336,11 @@ public static class ApiMessages
         "PREFLIGHT_BLOCKED" => LinkingOperationInvalidClassification,
         "PREFLIGHT_CANCELLED" => "تم إلغاء الفحص المسبق",
         "PREFLIGHT_ALREADY_CONFIRMED" => "تم تأكيد هذا الفحص المسبق مسبقًا",
+        "PREFLIGHT_STALE" => LinkingOperationStalePreflight,
+        "CANCELLATION_TOO_LATE" => "بدأ تثبيت نتيجة الربط ولم يعد الإلغاء ممكنًا",
+        "CONFIRMATION_CANCELLED" => "تم إلغاء مهمة تأكيد الربط",
+        "CONFIRMATION_FAILED" => "تعذر إكمال مهمة تأكيد الربط",
+        "DOOR_NOT_FOUND" => LinkingOperationDoorNotFound,
         "ACTIVE_LINKING_WORKFLOW_LIMIT" => "بلغت عمليات الربط النشطة الحد الأقصى المسموح به",
         "IDEMPOTENCY_CONFLICT" => LinkingOperationIdempotencyConflict,
         _ => "تعذر متابعة عملية الربط في حالتها الحالية",

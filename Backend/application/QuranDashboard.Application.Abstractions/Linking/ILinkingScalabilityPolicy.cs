@@ -8,6 +8,8 @@ public interface ILinkingScalabilityPolicy
 
     int PreflightProcessorConcurrency { get; }
 
+    int ConfirmationProcessorConcurrency { get; }
+
     int MaximumAutomaticAttempts { get; }
 
     int PollAfterMilliseconds { get; }

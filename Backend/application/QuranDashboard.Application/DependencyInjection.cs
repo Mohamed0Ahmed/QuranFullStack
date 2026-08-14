@@ -109,6 +109,8 @@ using QuranDashboard.Application.Linking.Commands.ReplaceLinkingWorkspaceSourceC
 using QuranDashboard.Application.Linking.Commands.ApplyLinkingWorkspaceSourceDelta;
 using QuranDashboard.Application.Linking.PreparedPreflights;
 using QuranDashboard.Application.Abstractions.Linking.PreparedPreflights;
+using QuranDashboard.Application.Linking.ConfirmationJobs;
+using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
 
 namespace QuranDashboard.Application;
 
@@ -236,6 +238,13 @@ public static class DependencyInjection
         services.AddScoped<ILinkingPreparedPreflightProcessor, ProcessLinkingPreparedPreflightHandler>();
         services.AddSingleton<LinkingPreparedPreflightLeaseService>();
         services.AddScoped<LinkingPreparedPreflightInputBuilder>();
+        services.AddScoped<CreateLinkingConfirmationJobHandler>();
+        services.AddScoped<GetLinkingConfirmationJobHandler>();
+        services.AddScoped<CancelLinkingConfirmationJobHandler>();
+        services.AddScoped<GetLinkingConfirmationOutcomeHandler>();
+        services.AddScoped<ProcessLinkingConfirmationJobHandler>();
+        services.AddScoped<ILinkingConfirmationJobProcessor, ProcessLinkingConfirmationJobHandler>();
+        services.AddSingleton<LinkingConfirmationJobLeaseService>();
 
         return services;
     }

@@ -75,6 +75,7 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
         Set<LinkingWorkspaceSourceDescription>();
 
     public DbSet<LinkingOperation> LinkingOperations => Set<LinkingOperation>();
+    public DbSet<LinkingConfirmationJob> LinkingConfirmationJobs => Set<LinkingConfirmationJob>();
     public DbSet<LinkingDoorAyah> LinkingDoorAyahs => Set<LinkingDoorAyah>();
     public DbSet<LinkingDoorAyahWord> LinkingDoorAyahWords => Set<LinkingDoorAyahWord>();
     public DbSet<LinkingSourceContribution> LinkingSourceContributions => Set<LinkingSourceContribution>();

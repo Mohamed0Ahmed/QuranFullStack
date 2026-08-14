@@ -50,6 +50,7 @@ export type { BulkArchiveDoorsCommand } from './models/bulk-archive-doors-comman
 export type { BulkMoveDoorsCommand } from './models/bulk-move-doors-command';
 export type { ConfirmLogtoSubjectRelinkBody } from './models/confirm-logto-subject-relink-body';
 export type { CreateDoorCommand } from './models/create-door-command';
+export type { CreateLinkingConfirmationJobBody } from './models/create-linking-confirmation-job-body';
 export type { CreateLinkingPreparedPreflightBody } from './models/create-linking-prepared-preflight-body';
 export type { CreateSectionCommand } from './models/create-section-command';
 export type { CreateTemplateBody } from './models/create-template-body';
@@ -87,13 +88,19 @@ export type { LemmaWordItemDtoPagedResult } from './models/lemma-word-item-dto-p
 export type { LemmaWordItemDtoPagedResultApiResponse } from './models/lemma-word-item-dto-paged-result-api-response';
 export type { LinkingAyahPreflightDto } from './models/linking-ayah-preflight-dto';
 export type { LinkingConfirmationBody } from './models/linking-confirmation-body';
+export type { LinkingConfirmationJobStatusDto } from './models/linking-confirmation-job-status-dto';
+export type { LinkingConfirmationJobStatusDtoApiResponse } from './models/linking-confirmation-job-status-dto-api-response';
 export type { LinkingConfirmationResultDto } from './models/linking-confirmation-result-dto';
 export type { LinkingConfirmationResultDtoApiResponse } from './models/linking-confirmation-result-dto-api-response';
 export type { LinkingConfirmationSourceBody } from './models/linking-confirmation-source-body';
 export type { LinkingConfirmationSourceResultDto } from './models/linking-confirmation-source-result-dto';
+export type { LinkingConfirmationSubmissionResponse } from './models/linking-confirmation-submission-response';
+export type { LinkingConfirmationSubmissionResponseApiResponse } from './models/linking-confirmation-submission-response-api-response';
 export type { LinkingDescriptionBody } from './models/linking-description-body';
 export type { LinkingDescriptionChangesDto } from './models/linking-description-changes-dto';
 export type { LinkingDoorWordImpactDto } from './models/linking-door-word-impact-dto';
+export type { LinkingDurableConfirmationOutcomeDto } from './models/linking-durable-confirmation-outcome-dto';
+export type { LinkingDurableConfirmationOutcomeDtoApiResponse } from './models/linking-durable-confirmation-outcome-dto-api-response';
 export type { LinkingLifecycleErrorData } from './models/linking-lifecycle-error-data';
 export type { LinkingLifecycleErrorDataApiResponse } from './models/linking-lifecycle-error-data-api-response';
 export type { LinkingManualAyahBody } from './models/linking-manual-ayah-body';

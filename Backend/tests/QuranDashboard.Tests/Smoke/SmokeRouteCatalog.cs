@@ -302,6 +302,24 @@ internal static class SmokeRouteCatalog
             Method = HttpMethod.Delete,
             ParityOnly = true,
         },
+        new("api/linking/preflights/{preflightId:guid}/confirmation-jobs", "/api/linking/preflights/00000000-0000-0000-0000-000000000001/confirmation-jobs", HttpStatusCode.Accepted, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/linking/confirmation-jobs/{jobId:guid}", "/api/linking/confirmation-jobs/00000000-0000-0000-0000-000000000001", HttpStatusCode.NotFound, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/linking/confirmation-jobs/{jobId:guid}", "/api/linking/confirmation-jobs/00000000-0000-0000-0000-000000000001", HttpStatusCode.NotFound, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Delete,
+            ParityOnly = true,
+        },
+        new("api/linking/confirmation-outcomes/{idempotencyKey:guid}", "/api/linking/confirmation-outcomes/00000000-0000-0000-0000-000000000001", HttpStatusCode.NotFound, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
         new("api/linking/preflights/{preflightId:guid}/sources/{preparedSourceId:long}/ayahs", "/api/linking/preflights/00000000-0000-0000-0000-000000000001/sources/1/ayahs", HttpStatusCode.NotFound, SmokeRouteAccess.OwnerOnly)
         {
             ParityOnly = true,

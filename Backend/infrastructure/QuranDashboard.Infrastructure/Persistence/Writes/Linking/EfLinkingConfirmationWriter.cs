@@ -1,9 +1,12 @@
+using System.Security.Cryptography;
+using Microsoft.EntityFrameworkCore.Storage;
 using QuranDashboard.Application.Abstractions.Linking;
+using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
+using QuranDashboard.Application.Abstractions.Linking.PreparedPreflights;
 using QuranDashboard.Application.Abstractions.Linking.Preflight;
 using QuranDashboard.Application.Abstractions.Linking.Responses;
 using QuranDashboard.Domain.Linking;
 using QuranDashboard.Infrastructure.Persistence.Linking;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
@@ -11,177 +14,181 @@ internal sealed partial class EfLinkingConfirmationWriter(
     QuranDashboardDbContext db,
     ILinkingDataRevisionWriterStore revisionStore) : ILinkingConfirmationWriter
 {
+    private const int IdempotencyLockNamespace = 193648319;
+
+    public async Task<LinkingConfirmationResultDto?> FindLegacyReplayAsync(
+        int actorUserId,
+        int doorId,
+        Guid idempotencyKey,
+        LinkingConfirmationRequestContract requestContract,
+        CancellationToken cancellationToken)
+    {
+        db.ChangeTracker.Clear();
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        await TakeIdempotencyLockAsync(idempotencyKey, cancellationToken);
+        var replay = await FindLegacyReplayUnderLockAsync(
+            actorUserId,
+            doorId,
+            idempotencyKey,
+            requestContract,
+            cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return replay;
+    }
+
     public async Task<LinkingConfirmationWriteResult> ConfirmAsync(
         int actorUserId,
         LinkingOperationRequest request,
         LinkingOperationIntent intent,
+        LinkingConfirmationRequestContract requestContract,
         Func<LinkingOperationIntent, LinkingConfirmedDoorState, LinkingOperationClassification> classify,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(intent);
+        ArgumentNullException.ThrowIfNull(requestContract);
         ArgumentNullException.ThrowIfNull(classify);
 
         var idempotencyKey = request.IdempotencyKey
             ?? throw new ArgumentException("A confirmation idempotency key is required.", nameof(request));
         var suppliedToken = request.PreflightToken
             ?? throw new ArgumentException("A confirmation preflight token is required.", nameof(request));
+        RequireLegacyContract(request, requestContract);
 
+        db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var connection = db.Database.GetDbConnection() as NpgsqlConnection
-            ?? throw new InvalidOperationException("Expected an Npgsql linking confirmation connection.");
-        var npgsqlTransaction = transaction.GetDbTransaction() as NpgsqlTransaction
-            ?? throw new InvalidOperationException("Expected an Npgsql linking confirmation transaction.");
-        var revision = await revisionStore.LockForReadAsync(
-            connection,
-            npgsqlTransaction,
+        await TakeIdempotencyLockAsync(idempotencyKey, cancellationToken);
+        var replay = await FindLegacyReplayUnderLockAsync(
+            actorUserId,
+            request.DoorId,
+            idempotencyKey,
+            requestContract,
             cancellationToken);
+        if (replay is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return new LinkingConfirmationWriteResult.Success(replay, true);
+        }
+
+        var revision = await LockRevisionAsync(transaction, cancellationToken);
         if (revision != request.ExpectedLinkingDataRevision)
         {
             throw new LinkingDataStaleException(request.ExpectedLinkingDataRevision, revision);
         }
 
-        var replay = await FindReplayAsync(
-            idempotencyKey, actorUserId, request.DoorId, cancellationToken);
-        if (replay is not null)
-        {
-            await transaction.CommitAsync(cancellationToken);
-            return new LinkingConfirmationWriteResult.Success(replay, true);
-        }
-
         var loaded = await LoadLockedStateAsync(request.DoorId, cancellationToken);
         if (loaded is null)
         {
+            await transaction.RollbackAsync(cancellationToken);
             return new LinkingConfirmationWriteResult.DoorNotFound(request.DoorId);
         }
 
-        replay = await FindReplayAsync(idempotencyKey, actorUserId, request.DoorId, cancellationToken);
-        if (replay is not null)
-        {
-            await transaction.CommitAsync(cancellationToken);
-            return new LinkingConfirmationWriteResult.Success(replay, true);
-        }
-
         var versionChecks = BuildExpectedVersionChecks(request, loaded.State);
-
+        intent = intent with { IsDoorArchived = loaded.State.IsArchived };
         var classification = classify(intent, loaded.State);
         var freshToken = LinkingPreflightToken.Compute(
             request,
             new LinkingPreflightDoorComponent(loaded.State.DoorId, loaded.State.DoorVersion),
             LinkingPreflightToken.AffectedContributionsOf(loaded.State, classification));
-
         if (!string.Equals(suppliedToken, freshToken, StringComparison.Ordinal))
         {
             throw new LinkingPreflightStaleException(loaded.State, classification, freshToken);
         }
 
         EnsureExpectedVersions(versionChecks);
-
         if (classification.IsBlocked)
         {
+            await transaction.RollbackAsync(cancellationToken);
             return new LinkingConfirmationWriteResult.InvalidClassification(classification);
         }
 
-        if (classification.IsNoOp)
-        {
-            var noOp = CreateResult(
-                request.DoorId,
-                true,
-                classification,
-                classification.Sources.ToDictionary(
-                    source => source.Source.SourceIdentity,
-                    source => source.ExistingContributionId,
-                    StringComparer.Ordinal));
-
-            await transaction.CommitAsync(cancellationToken);
-            return new LinkingConfirmationWriteResult.Success(noOp, false);
-        }
-
-        var workset = BuildWorkset(request, classification, loaded.State);
-        var now = DateTimeOffset.UtcNow;
-        var operation = new LinkingOperation
-        {
-            DoorId = request.DoorId,
-            ActorUserId = actorUserId,
-            IdempotencyKey = idempotencyKey,
-            ConfirmedAtUtc = now,
-            SourceCount = classification.Sources.Count,
-            AyahCount = classification.Totals.Requested,
-            OutcomeJson = EmptyOutcomeJson,
-        };
-
-        db.LinkingOperations.Add(operation);
-        await SaveTranslatingWriteExceptionsAsync(cancellationToken);
-
-        var unitIds = await EnsureUnitsAsync(
-            request.DoorId,
+        var result = await PersistOperationAsync(
             actorUserId,
-            workset,
-            now,
-            cancellationToken);
-        var changedContributionIds = await PersistContributionsAsync(
-            operation.Id,
-            request.DoorId,
-            actorUserId,
-            workset,
+            request,
+            classification,
             loaded,
-            now,
+            requestContract,
             cancellationToken);
-        var contributionIds = classification.Sources.ToDictionary(
-            source => source.Source.SourceIdentity,
-            source => source.ExistingContributionId,
-            StringComparer.Ordinal);
-
-        foreach (var (sourceIdentity, contributionId) in changedContributionIds)
-        {
-            contributionIds[sourceIdentity] = contributionId;
-        }
-
-        var orphanCandidates = await SynchronizeContributionLinksAsync(
-            workset,
-            changedContributionIds,
-            unitIds,
-            loaded,
-            cancellationToken);
-        await RemoveNewlyOrphanedUnitsAsync(orphanCandidates, cancellationToken);
-        await ApplyDoorStateAsync(
-            actorUserId,
-            request.DoorId,
-            workset.AffectedAyahIds,
-            loaded,
-            now,
-            cancellationToken);
-
-        var result = CreateResult(request.DoorId, false, classification, contributionIds);
-        operation.OutcomeJson = SerializeOutcome(result);
-        await SaveTranslatingWriteExceptionsAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-
         return new LinkingConfirmationWriteResult.Success(result, false);
     }
 
-    private async Task<LinkingConfirmationResultDto?> FindReplayAsync(
-        Guid idempotencyKey,
+    private async Task<LinkingConfirmationResultDto?> FindLegacyReplayUnderLockAsync(
         int actorUserId,
         int doorId,
+        Guid idempotencyKey,
+        LinkingConfirmationRequestContract requestContract,
         CancellationToken cancellationToken)
     {
-        var operation = await db.LinkingOperations
-            .AsNoTracking()
-            .FirstOrDefaultAsync(candidate => candidate.IdempotencyKey == idempotencyKey, cancellationToken);
+        if (await db.LinkingConfirmationJobs.AsNoTracking().AnyAsync(
+                job => job.IdempotencyKey == idempotencyKey,
+                cancellationToken))
+        {
+            throw new LinkingIdempotencyConflictException();
+        }
 
+        var operation = await db.LinkingOperations.AsNoTracking().SingleOrDefaultAsync(
+            candidate => candidate.IdempotencyKey == idempotencyKey,
+            cancellationToken);
         if (operation is null)
         {
             return null;
         }
 
-        if (operation.ActorUserId != actorUserId || operation.DoorId != doorId)
+        if (operation.ActorUserId != actorUserId
+            || operation.DoorId != doorId
+            || !string.Equals(operation.RequestContractKind, requestContract.Kind, StringComparison.Ordinal)
+            || operation.RequestSchemaVersion != requestContract.SchemaVersion
+            || !string.Equals(operation.RequestHash, requestContract.RequestHash, StringComparison.Ordinal)
+            || operation.LinkingDataRevision != requestContract.LinkingDataRevision)
         {
             throw new LinkingIdempotencyConflictException();
         }
 
         return DeserializeOutcome(operation.OutcomeJson);
     }
+
+    private static void RequireLegacyContract(
+        LinkingOperationRequest request,
+        LinkingConfirmationRequestContract requestContract)
+    {
+        if (!string.Equals(
+                requestContract.Kind,
+                LinkingConfirmationRequestContracts.LegacyExpanded,
+                StringComparison.Ordinal)
+            || requestContract.SchemaVersion != LinkingConfirmationRequestContracts.SchemaVersion
+            || requestContract.LinkingDataRevision != request.ExpectedLinkingDataRevision
+            || !string.Equals(
+                requestContract.RequestHash,
+                LinkingConfirmationRequestHasher.ComputeLegacy(request),
+                StringComparison.Ordinal))
+        {
+            throw new LinkingIdempotencyConflictException();
+        }
+    }
+
+    private async Task TakeIdempotencyLockAsync(Guid idempotencyKey, CancellationToken cancellationToken) =>
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock({IdempotencyLockNamespace}, {LockKey(idempotencyKey)})",
+            cancellationToken);
+
+    private async Task<long> LockRevisionAsync(
+        IDbContextTransaction transaction,
+        CancellationToken cancellationToken)
+    {
+        var connection = db.Database.GetDbConnection() as NpgsqlConnection
+            ?? throw new InvalidOperationException("Expected an Npgsql linking confirmation connection.");
+        var npgsqlTransaction = transaction.GetDbTransaction() as NpgsqlTransaction
+            ?? throw new InvalidOperationException("Expected an Npgsql linking confirmation transaction.");
+        return await revisionStore.LockForReadAsync(connection, npgsqlTransaction, cancellationToken);
+    }
+
+    private async Task<DateTimeOffset> DatabaseNowAsync(CancellationToken cancellationToken) =>
+        await db.Database.SqlQuery<DateTimeOffset>($"SELECT CURRENT_TIMESTAMP AS \"Value\"")
+            .SingleAsync(cancellationToken);
+
+    private static int LockKey(Guid key) =>
+        BitConverter.ToInt32(SHA256.HashData(key.ToByteArray()), 0);
 
     private static IReadOnlyList<ExpectedVersionCheck> BuildExpectedVersionChecks(
         LinkingOperationRequest request,
@@ -190,7 +197,6 @@ internal sealed partial class EfLinkingConfirmationWriter(
         var liveByIdentity = state.Contributions.ToDictionary(
             contribution => contribution.SourceIdentity,
             StringComparer.Ordinal);
-
         return
         [
             .. request.Sources.Select(source => new ExpectedVersionCheck(
@@ -206,7 +212,6 @@ internal sealed partial class EfLinkingConfirmationWriter(
         {
             var source = check.Source;
             var live = check.Live;
-
             if (live is null)
             {
                 if (source.ExistingContributionId is not null || source.ExistingContributionVersion is not null)

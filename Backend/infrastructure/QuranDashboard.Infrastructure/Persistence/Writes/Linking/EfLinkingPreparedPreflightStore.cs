@@ -52,14 +52,20 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
             return new LinkingPreparedPreflightReceipt(status, false);
         }
 
-        var activeCount = await db.LinkingPreparedPreflights.CountAsync(
+        var activePreflightCount = await db.LinkingPreparedPreflights.CountAsync(
             candidate => candidate.ActorUserId == actorUserId
                 && candidate.ConfirmationAcceptedAtUtc == null
                 && (candidate.Status == LinkingPreparedPreflightStatus.Queued
                     || candidate.Status == LinkingPreparedPreflightStatus.Preparing
                     || candidate.Status == LinkingPreparedPreflightStatus.Ready),
             cancellationToken);
-        if (activeCount >= policy.ActiveWorkflowsPerActor)
+        var activeJobCount = await db.LinkingConfirmationJobs.CountAsync(
+            candidate => candidate.ActorUserId == actorUserId
+                && (candidate.Status == LinkingConfirmationJobStatus.Queued
+                    || candidate.Status == LinkingConfirmationJobStatus.Running
+                    || candidate.Status == LinkingConfirmationJobStatus.Finalizing),
+            cancellationToken);
+        if (activePreflightCount + activeJobCount >= policy.ActiveWorkflowsPerActor)
         {
             throw new LinkingPreparedPreflightLifecycleException(
                 LinkingPreparedPreflightFailureCode.ActiveLinkingWorkflowLimit);
@@ -160,6 +166,15 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
         }
 
         var now = await DatabaseNowAsync(cancellationToken);
+        if (preflight.ConfirmationAcceptedAtUtc is not null
+            || await db.LinkingConfirmationJobs.AsNoTracking().AnyAsync(
+                job => job.PreflightId == preflight.Id,
+                cancellationToken))
+        {
+            throw new LinkingPreparedPreflightLifecycleException(
+                LinkingPreparedPreflightFailureCode.CancellationTooLate);
+        }
+
         if (preflight.Status == LinkingPreparedPreflightStatus.Ready
             && preflight.ExpiresAtUtc <= now)
         {

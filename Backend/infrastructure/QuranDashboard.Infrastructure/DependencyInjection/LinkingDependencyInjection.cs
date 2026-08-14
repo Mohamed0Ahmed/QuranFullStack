@@ -6,6 +6,7 @@ using QuranDashboard.Infrastructure.Persistence.Linking;
 using QuranDashboard.Infrastructure.Persistence.Reads.Linking;
 using QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 using QuranDashboard.Application.Abstractions.Linking.PreparedPreflights;
+using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
 using QuranDashboard.Infrastructure.Background;
 
 namespace QuranDashboard.Infrastructure.ServiceRegistration;
@@ -41,6 +42,9 @@ internal static class LinkingDependencyInjection
         services.AddScoped<ILinkingPreparedPreflightStore, EfLinkingPreparedPreflightStore>();
         services.AddHostedService<LinkingPreparedPreflightProcessorService>();
         services.AddHostedService<LinkingPreparedPreflightCleanupService>();
+        services.AddScoped<ILinkingConfirmationJobStore, EfLinkingConfirmationJobStore>();
+        services.AddHostedService<LinkingConfirmationJobProcessorService>();
+        services.AddHostedService<LinkingConfirmationJobCleanupService>();
 
         services.AddScoped<ILinkingWorkspaceReader, EfLinkingWorkspaceReader>();
         services.AddScoped<ILinkingWorkspaceWriter, EfLinkingWorkspaceWriter>();

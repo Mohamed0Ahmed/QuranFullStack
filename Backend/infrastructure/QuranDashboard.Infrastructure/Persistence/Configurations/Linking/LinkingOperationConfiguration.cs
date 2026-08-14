@@ -9,9 +9,26 @@ public sealed class LinkingOperationConfiguration : IEntityTypeConfiguration<Lin
     public void Configure(EntityTypeBuilder<LinkingOperation> builder)
     {
         builder.ToTable("linking_operations", table =>
+        {
             table.HasCheckConstraint(
                 "ck_linking_operations_outcome_schema_version",
-                LinkingDescriptorCheckConstraints.JsonbSchemaVersion("outcome")));
+                LinkingDescriptorCheckConstraints.JsonbSchemaVersion("outcome"));
+            table.HasCheckConstraint(
+                "ck_linking_operations_request_hash",
+                LinkingPreparedSchemaConstraints.OptionalHexHash("request_hash"));
+            table.HasCheckConstraint(
+                "ck_linking_operations_request_contract",
+                "(request_contract_kind IS NULL AND request_schema_version IS NULL AND request_hash IS NULL "
+                + "AND linking_data_revision IS NULL AND prepared_preflight_reference_id IS NULL "
+                + "AND confirmation_job_reference_id IS NULL AND prepared_preflight_id IS NULL) OR "
+                + "(request_contract_kind = 'prepared_job' AND request_schema_version > 0 "
+                + "AND request_hash IS NOT NULL AND linking_data_revision > 0 "
+                + "AND prepared_preflight_reference_id IS NOT NULL AND confirmation_job_reference_id IS NOT NULL) OR "
+                + "(request_contract_kind = 'legacy_expanded' AND request_schema_version > 0 "
+                + "AND request_hash IS NOT NULL AND linking_data_revision > 0 "
+                + "AND prepared_preflight_reference_id IS NULL AND confirmation_job_reference_id IS NULL "
+                + "AND prepared_preflight_id IS NULL)");
+        });
 
         builder.HasKey(operation => operation.Id);
         builder.Property(operation => operation.Id)
@@ -29,6 +46,29 @@ public sealed class LinkingOperationConfiguration : IEntityTypeConfiguration<Lin
         builder.Property(operation => operation.IdempotencyKey)
             .IsRequired()
             .HasColumnName("idempotency_key");
+
+        builder.Property(operation => operation.PreparedPreflightId)
+            .HasColumnName("prepared_preflight_id");
+
+        builder.Property(operation => operation.PreparedPreflightReferenceId)
+            .HasColumnName("prepared_preflight_reference_id");
+
+        builder.Property(operation => operation.ConfirmationJobReferenceId)
+            .HasColumnName("confirmation_job_reference_id");
+
+        builder.Property(operation => operation.RequestContractKind)
+            .HasMaxLength(32)
+            .HasColumnName("request_contract_kind");
+
+        builder.Property(operation => operation.RequestSchemaVersion)
+            .HasColumnName("request_schema_version");
+
+        builder.Property(operation => operation.RequestHash)
+            .HasMaxLength(64)
+            .HasColumnName("request_hash");
+
+        builder.Property(operation => operation.LinkingDataRevision)
+            .HasColumnName("linking_data_revision");
 
         builder.Property(operation => operation.ConfirmedAtUtc)
             .IsRequired()
@@ -56,6 +96,11 @@ public sealed class LinkingOperationConfiguration : IEntityTypeConfiguration<Lin
             .WithMany()
             .HasForeignKey(operation => operation.ActorUserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<LinkingPreparedPreflight>()
+            .WithMany()
+            .HasForeignKey(operation => operation.PreparedPreflightId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(operation => operation.IdempotencyKey)
             .IsUnique();

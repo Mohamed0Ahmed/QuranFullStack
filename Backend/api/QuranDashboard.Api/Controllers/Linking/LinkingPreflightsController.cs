@@ -2,6 +2,8 @@ using QuranDashboard.Api.Authorization;
 using QuranDashboard.Api.Authorization.Metadata;
 using QuranDashboard.Api.Contracts.Linking;
 using QuranDashboard.Application.Abstractions.Linking.PreparedPreflights;
+using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
+using QuranDashboard.Application.Linking.ConfirmationJobs;
 using QuranDashboard.Application.Linking.PreparedPreflights;
 
 namespace QuranDashboard.Api.Controllers.Linking;
@@ -13,7 +15,8 @@ public sealed class LinkingPreflightsController(
     CreateLinkingPreparedPreflightHandler createHandler,
     GetLinkingPreparedPreflightHandler getHandler,
     CancelLinkingPreparedPreflightHandler cancelHandler,
-    GetLinkingPreparedDetailPageHandler detailHandler) : ControllerBase
+    GetLinkingPreparedDetailPageHandler detailHandler,
+    CreateLinkingConfirmationJobHandler createConfirmationHandler) : ControllerBase
 {
     [HttpPost]
     [RequireOwner]
@@ -56,6 +59,45 @@ public sealed class LinkingPreflightsController(
                 Conflict(LifecycleError(conflict.FailureCode)),
             _ => throw new InvalidOperationException(
                 $"Unhandled {nameof(CreateLinkingPreparedPreflightOutcome)} variant."),
+        };
+    }
+
+    [HttpPost("{preflightId:guid}/confirmation-jobs")]
+    [RequireOwner]
+    [ProducesResponseType(typeof(ApiResponse<LinkingConfirmationSubmissionResponse>), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ApiResponse<LinkingConfirmationSubmissionResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<LinkingLifecycleErrorData>), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateConfirmationJob(
+        Guid preflightId,
+        [FromBody] CreateLinkingConfirmationJobBody? body,
+        CancellationToken cancellationToken)
+    {
+        if (!LinkingConfirmationJobBodyMapper.TryMap(preflightId, body, out var request))
+        {
+            return BadRequest(ApiResponse<object>.Fail(ApiMessages.LinkingConfirmationJobInvalid));
+        }
+
+        var outcome = await createConfirmationHandler.HandleAsync(
+            await ResolveUserIdAsync(),
+            request,
+            cancellationToken);
+        return outcome switch
+        {
+            CreateLinkingConfirmationJobOutcome.Success success when success.Receipt.IsNew =>
+                Accepted(ApiResponse<LinkingConfirmationSubmissionResponse>.Ok(
+                    LinkingConfirmationJobBodyMapper.ToResponse(success.Receipt.Submission),
+                    ApiMessages.LinkingConfirmationJobAccepted)),
+            CreateLinkingConfirmationJobOutcome.Success success =>
+                Ok(ApiResponse<LinkingConfirmationSubmissionResponse>.Ok(
+                    LinkingConfirmationJobBodyMapper.ToResponse(success.Receipt.Submission),
+                    ApiMessages.LinkingConfirmationJobLoaded)),
+            CreateLinkingConfirmationJobOutcome.InvalidRequest =>
+                BadRequest(ApiResponse<object>.Fail(ApiMessages.LinkingConfirmationJobInvalid)),
+            CreateLinkingConfirmationJobOutcome.Conflict conflict =>
+                Conflict(LifecycleError(conflict.FailureCode)),
+            _ => throw new InvalidOperationException(
+                $"Unhandled {nameof(CreateLinkingConfirmationJobOutcome)} variant."),
         };
     }
 
