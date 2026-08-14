@@ -234,6 +234,83 @@ internal static class SmokeRouteCatalog
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.EchoedKey("word", "wordLocation", "1:1:1")),
         },
 
+        new("api/linking/sources/resolve", "/api/linking/sources/resolve", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/linking/operations/preflight", "/api/linking/operations/preflight", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/linking/operations", "/api/linking/operations", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/linking/workspace", "/api/linking/workspace", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/linking/workspace/sources", "/api/linking/workspace/sources", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/linking/workspace/sources/{id:long}", "/api/linking/workspace/sources/1", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Delete,
+            ParityOnly = true,
+        },
+        new("api/linking/workspace/sources/order", "/api/linking/workspace/sources/order", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Put,
+            ParityOnly = true,
+        },
+        new("api/linking/workspace/sources/{id:long}/configuration", "/api/linking/workspace/sources/1/configuration", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Put,
+            ParityOnly = true,
+        },
+        new("api/linking/workspace/sources", "/api/linking/workspace/sources", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Delete,
+            ParityOnly = true,
+        },
+        new("api/linking/sources/resolve-page", "/api/linking/sources/resolve-page", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/linking/workspace/sources/{id:long}/configuration", "/api/linking/workspace/sources/1/configuration", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Patch,
+            ParityOnly = true,
+        },
+        new("api/linking/preflights", "/api/linking/preflights", HttpStatusCode.Accepted, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/linking/preflights/{preflightId:guid}", "/api/linking/preflights/00000000-0000-0000-0000-000000000001", HttpStatusCode.NotFound, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/linking/preflights/{preflightId:guid}", "/api/linking/preflights/00000000-0000-0000-0000-000000000001", HttpStatusCode.NotFound, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Delete,
+            ParityOnly = true,
+        },
+        new("api/linking/preflights/{preflightId:guid}/sources/{preparedSourceId:long}/ayahs", "/api/linking/preflights/00000000-0000-0000-0000-000000000001/sources/1/ayahs", HttpStatusCode.NotFound, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+        new("api/linking/preflights/{preflightId:guid}/merged-ayahs", "/api/linking/preflights/00000000-0000-0000-0000-000000000001/merged-ayahs", HttpStatusCode.NotFound, SmokeRouteAccess.OwnerOnly)
+        {
+            ParityOnly = true,
+        },
+
         // System routes. Health answers 503 when the container-backed check fails, so 200 is real
         // evidence; access/me is the tree's only [Authorize] endpoint (AccessController class level).
         new("api/health", "/api/health", HttpStatusCode.OK),
