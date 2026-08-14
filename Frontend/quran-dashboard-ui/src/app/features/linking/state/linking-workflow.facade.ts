@@ -215,14 +215,30 @@ export class LinkingWorkflowFacade {
   }
 
   startWorkspaceOperation(): void {
+    void this.startWorkspaceOperationAfterFlush();
+  }
+
+  private async startWorkspaceOperationAfterFlush(): Promise<void> {
     const members = this.workspace.captureOperationMembers();
     if (!this.access.canUseLinking() || members.length === 0) {
+      return;
+    }
+    try {
+      await this.workspace.flushSelectedSources();
+    } catch {
+      return;
+    }
+    if (!this.access.canUseLinking()) {
       return;
     }
     if (!this.workspace.openOperationFlow()) {
       return;
     }
-    this.stateSignal.set({ ...INITIAL_WORKFLOW, origin: 'workspace', members });
+    const refreshedMembers = this.workspace.captureOperationMembers();
+    if (refreshedMembers.length === 0) {
+      return;
+    }
+    this.stateSignal.set({ ...INITIAL_WORKFLOW, origin: 'workspace', members: refreshedMembers });
     this.resolve();
   }
 

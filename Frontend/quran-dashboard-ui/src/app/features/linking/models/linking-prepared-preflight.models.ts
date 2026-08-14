@@ -1,0 +1,9 @@
+import { CreateLinkingPreparedPreflightBody } from '../../../core/api/generated/models/create-linking-prepared-preflight-body';
+import { LinkingPreparedPreflightStatusDto } from '../../../core/api/generated/models/linking-prepared-preflight-status-dto';
+
+export type LinkingPreparedPreflightRequest = CreateLinkingPreparedPreflightBody;
+export type LinkingPreparedPreflightStatus = LinkingPreparedPreflightStatusDto;
+
+export function isPreparedPreflightTerminal(status: LinkingPreparedPreflightStatus): boolean {
+  return ['succeeded', 'failed', 'cancelled', 'expired'].includes(status.status.toLowerCase());
+}

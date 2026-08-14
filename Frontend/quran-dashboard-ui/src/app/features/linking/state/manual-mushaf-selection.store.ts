@@ -1,4 +1,5 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
 
 import { LinkingManualMushafAyahReference } from '../models/linking-manual-mushaf.models';
 import { LINKING_LABELS } from '../models/linking.labels';
@@ -31,6 +32,7 @@ export class ManualMushafSelectionStore {
   private readonly entriesSignal = signal<readonly ManualMushafSelectionEntry[]>([]);
   private readonly operationGenerationSignal = signal(0);
   private readonly statusMessageSignal = signal<string | null>(null);
+  private readonly metadataSubscriptions = new Map<string, Subscription>();
 
   readonly active = this.activeSignal.asReadonly();
   readonly currentPage = this.currentPageSignal.asReadonly();
@@ -83,6 +85,7 @@ export class ManualMushafSelectionStore {
       return;
     }
 
+    this.cancelAllMetadata();
     this.entriesSignal.set([]);
     this.statusMessageSignal.set(LINKING_LABELS.mushafSelectionCleared);
   }
@@ -110,10 +113,7 @@ export class ManualMushafSelectionStore {
       },
     ]);
     this.statusMessageSignal.set(LINKING_LABELS.mushafSelectionLoading);
-    this.reader.readMetadata(verseKey).subscribe({
-      next: (reference) => this.completeMetadataLoad(verseKey, operationGeneration, reference),
-      error: () => this.failMetadataLoad(verseKey, operationGeneration),
-    });
+    this.startMetadataLoad(verseKey, operationGeneration);
   }
 
   retry(verseKey: string): void {
@@ -127,6 +127,7 @@ export class ManualMushafSelectionStore {
     }
 
     const operationGeneration = this.nextOperationGeneration();
+    this.cancelMetadata(verseKey);
     this.entriesSignal.update((entries) =>
       entries.map((candidate) =>
         candidate.verseKey === verseKey
@@ -135,10 +136,7 @@ export class ManualMushafSelectionStore {
       ),
     );
     this.statusMessageSignal.set(LINKING_LABELS.mushafSelectionLoading);
-    this.reader.readMetadata(verseKey).subscribe({
-      next: (reference) => this.completeMetadataLoad(verseKey, operationGeneration, reference),
-      error: () => this.failMetadataLoad(verseKey, operationGeneration),
-    });
+    this.startMetadataLoad(verseKey, operationGeneration);
   }
 
   remove(verseKey: string): void {
@@ -146,6 +144,7 @@ export class ManualMushafSelectionStore {
       return;
     }
 
+    this.cancelMetadata(verseKey);
     this.entriesSignal.update((entries) => entries.filter((entry) => entry.verseKey !== verseKey));
     this.statusMessageSignal.set(LINKING_LABELS.mushafSelectionRemoved);
   }
@@ -184,6 +183,7 @@ export class ManualMushafSelectionStore {
 
   reset(statusMessage: string | null = null): void {
     this.nextOperationGeneration();
+    this.cancelAllMetadata();
     this.activeSignal.set(false);
     this.entriesSignal.set([]);
     this.currentPageSignal.set(null);
@@ -220,6 +220,31 @@ export class ManualMushafSelectionStore {
       ),
     );
     this.statusMessageSignal.set(LINKING_LABELS.mushafSelectionReady);
+  }
+
+  private startMetadataLoad(verseKey: string, operationGeneration: number): void {
+    this.cancelMetadata(verseKey);
+    const subscription = this.reader.readMetadata(verseKey).subscribe({
+      next: (reference) => this.completeMetadataLoad(verseKey, operationGeneration, reference),
+      error: () => {
+        this.metadataSubscriptions.delete(verseKey);
+        this.failMetadataLoad(verseKey, operationGeneration);
+      },
+      complete: () => this.metadataSubscriptions.delete(verseKey),
+    });
+    if (!subscription.closed) {
+      this.metadataSubscriptions.set(verseKey, subscription);
+    }
+  }
+
+  private cancelMetadata(verseKey: string): void {
+    this.metadataSubscriptions.get(verseKey)?.unsubscribe();
+    this.metadataSubscriptions.delete(verseKey);
+  }
+
+  private cancelAllMetadata(): void {
+    this.metadataSubscriptions.forEach((subscription) => subscription.unsubscribe());
+    this.metadataSubscriptions.clear();
   }
 
   private failMetadataLoad(verseKey: string, operationGeneration: number): void {
