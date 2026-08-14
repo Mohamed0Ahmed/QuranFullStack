@@ -1,6 +1,7 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
+using QuranDashboard.Infrastructure.Persistence.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 
@@ -10,21 +11,35 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
     private const string FailVerdict = MorphologyImportConstants.FailVerdict;
     private const string HardSeverity = MorphologyImportConstants.HardSeverity;
 
+    private const string AnyTargetTableHasDataSql =
+        """
+        SELECT EXISTS (SELECT 1 FROM quran_word_morphology)
+            OR EXISTS (SELECT 1 FROM quran_word_morphology_segments)
+            OR EXISTS (SELECT 1 FROM quran_roots)
+            OR EXISTS (SELECT 1 FROM quran_lemmas)
+            OR EXISTS (SELECT 1 FROM quran_lemma_analyses)
+            OR EXISTS (SELECT 1 FROM quran_stems)
+            OR EXISTS (SELECT 1 FROM quran_pos_tags)
+        """;
+
     private readonly QuranDashboardDbContext dbContext;
     private readonly SegmentArabicRenderer renderer;
     private readonly IWordLemmaNormalizationReader normalizationReader;
     private readonly ISegmentStemCorrectionReader segmentStemCorrectionReader;
+    private readonly ILinkingDataRevisionWriterStore revisionStore;
 
     public EfBulkMorphologyWriter(
         QuranDashboardDbContext dbContext,
         SegmentArabicRenderer renderer,
         IWordLemmaNormalizationReader normalizationReader,
-        ISegmentStemCorrectionReader segmentStemCorrectionReader)
+        ISegmentStemCorrectionReader segmentStemCorrectionReader,
+        ILinkingDataRevisionWriterStore? revisionStore = null)
     {
         this.dbContext = dbContext;
         this.renderer = renderer;
         this.normalizationReader = normalizationReader;
         this.segmentStemCorrectionReader = segmentStemCorrectionReader;
+        this.revisionStore = revisionStore ?? new LinkingDataRevisionStore();
     }
 
     public async Task<bool> AnyTargetTableHasDataAsync(CancellationToken ct)
@@ -48,13 +63,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(sourceUnchangedCheck);
 
-        if (!force && await AnyTargetTableHasDataAsync(ct))
-        {
-            throw new InvalidOperationException(MorphologyInvariants.TargetsNotEmpty);
-        }
-
         var runAtUtc = DateTimeOffset.UtcNow;
-        var wordIdsByLocation = await ReadReadableWordIdsAsync(ct);
         var connection = dbContext.Database.GetDbConnection();
 
         if (connection.State != ConnectionState.Open)
@@ -75,6 +84,15 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
 
         try
         {
+            await revisionStore.LockForWriteAsync(npgsqlConnection, transaction, ct);
+
+            if (!force && await AnyTargetTableHasDataAsync(npgsqlConnection, transaction, ct))
+            {
+                throw new InvalidOperationException(MorphologyInvariants.TargetsNotEmpty);
+            }
+
+            var wordIdsByLocation = await ReadReadableWordIdsAsync(npgsqlConnection, transaction, ct);
+
             if (force)
             {
                 await MorphologyCommandExecutor.ExecuteNonQueryAsync(
@@ -91,7 +109,6 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             await MorphologyBulkCopier.CopyPosTagsAsync(npgsqlConnection, ct);
             await MorphologyBulkCopier.CopyRootsAsync(npgsqlConnection, source, ct);
             await MorphologyBulkCopier.CopyLemmasAsync(npgsqlConnection, source, ct);
-            // After lemmas + roots (FK targets): per-buckwalter analytical breakdown under each display lemma.
             await MorphologyBulkCopier.CopyLemmaAnalysesAsync(npgsqlConnection, source, ct);
             await MorphologyBulkCopier.CopyStemsAsync(npgsqlConnection, source, ct);
             await MorphologyBulkCopier.CopyMorphologyAsync(npgsqlConnection, source, wordIdsByLocation, ct);
@@ -124,6 +141,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
 
             if (allHardPassed)
             {
+                await revisionStore.IncrementAsync(npgsqlConnection, transaction, ct);
                 await transaction.CommitAsync(ct);
 
                 return new MorphologyImportResult(
@@ -165,14 +183,32 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
         }
     }
 
-    private async Task<Dictionary<string, int>> ReadReadableWordIdsAsync(CancellationToken ct)
+    private static async Task<bool> AnyTargetTableHasDataAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        CancellationToken ct)
     {
-        var rows = await dbContext.QuranWords
-            .AsNoTracking()
-            .Where(word => !word.IsAyahMarker)
-            .Select(word => new { word.Location, word.Id })
-            .ToListAsync(ct);
+        await using var command = new NpgsqlCommand(AnyTargetTableHasDataSql, connection, transaction);
+        command.CommandTimeout = MorphologyCommandExecutor.CommandTimeoutSeconds;
+        return Convert.ToBoolean(await command.ExecuteScalarAsync(ct), CultureInfo.InvariantCulture);
+    }
 
-        return rows.ToDictionary(row => row.Location, row => row.Id, StringComparer.Ordinal);
+    private static async Task<Dictionary<string, int>> ReadReadableWordIdsAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        CancellationToken ct)
+    {
+        const string sql = "SELECT location, id FROM quran_words WHERE is_ayah_marker = false";
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        command.CommandTimeout = MorphologyCommandExecutor.CommandTimeoutSeconds;
+        await using var reader = await command.ExecuteReaderAsync(ct);
+        var result = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        while (await reader.ReadAsync(ct))
+        {
+            result.Add(reader.GetString(0), reader.GetInt32(1));
+        }
+
+        return result;
     }
 }

@@ -83,6 +83,16 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<LinkingUnitAyah> LinkingUnitAyahs => Set<LinkingUnitAyah>();
     public DbSet<LinkingUnitAyahWord> LinkingUnitAyahWords => Set<LinkingUnitAyahWord>();
     public DbSet<LinkingUnitAyahDescription> LinkingUnitAyahDescriptions => Set<LinkingUnitAyahDescription>();
+    public DbSet<LinkingDataState> LinkingDataStates => Set<LinkingDataState>();
+    public DbSet<LinkingPreparedPreflight> LinkingPreparedPreflights => Set<LinkingPreparedPreflight>();
+    public DbSet<LinkingPreparedSource> LinkingPreparedSources => Set<LinkingPreparedSource>();
+    public DbSet<LinkingPreparedUnit> LinkingPreparedUnits => Set<LinkingPreparedUnit>();
+    public DbSet<LinkingPreparedAyah> LinkingPreparedAyahs => Set<LinkingPreparedAyah>();
+    public DbSet<LinkingPreparedAyahWord> LinkingPreparedAyahWords => Set<LinkingPreparedAyahWord>();
+    public DbSet<LinkingPreparedAyahDescription> LinkingPreparedAyahDescriptions =>
+        Set<LinkingPreparedAyahDescription>();
+    public DbSet<LinkingPreparedAffectedContribution> LinkingPreparedAffectedContributions =>
+        Set<LinkingPreparedAffectedContribution>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

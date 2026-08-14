@@ -3,16 +3,30 @@ using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
+using QuranDashboard.Infrastructure.Persistence.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Foundation;
 
 public sealed class EfBulkQuranImportWriter : IQuranImportWriter
 {
-    private readonly QuranDashboardDbContext dbContext;
+    private const string AnyTargetTableHasDataSql =
+        """
+        SELECT EXISTS (SELECT 1 FROM quran_surahs)
+            OR EXISTS (SELECT 1 FROM quran_ayahs)
+            OR EXISTS (SELECT 1 FROM quran_mushaf_pages)
+            OR EXISTS (SELECT 1 FROM quran_mushaf_lines)
+            OR EXISTS (SELECT 1 FROM quran_words)
+        """;
 
-    public EfBulkQuranImportWriter(QuranDashboardDbContext dbContext)
+    private readonly QuranDashboardDbContext dbContext;
+    private readonly ILinkingDataRevisionWriterStore revisionStore;
+
+    public EfBulkQuranImportWriter(
+        QuranDashboardDbContext dbContext,
+        ILinkingDataRevisionWriterStore? revisionStore = null)
     {
         this.dbContext = dbContext;
+        this.revisionStore = revisionStore ?? new LinkingDataRevisionStore();
     }
 
     public async Task<bool> AnyTargetTableHasDataAsync(CancellationToken ct)
@@ -38,15 +52,17 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
             throw new InvalidOperationException("Expected an Npgsql connection for bulk import.");
         }
 
-        if (!force && await AnyTargetTableHasDataAsync(ct))
-        {
-            throw new InvalidOperationException(ImportRefusalMessages.TablesNotEmpty);
-        }
-
         await using var transaction = await npgsqlConnection.BeginTransactionAsync(ct);
 
         try
         {
+            await revisionStore.LockForWriteAsync(npgsqlConnection, transaction, ct);
+
+            if (!force && await AnyTargetTableHasDataAsync(npgsqlConnection, transaction, ct))
+            {
+                throw new InvalidOperationException(ImportRefusalMessages.TablesNotEmpty);
+            }
+
             if (force)
             {
                 await TruncateTargetTablesAsync(npgsqlConnection, ct);
@@ -58,6 +74,7 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
             await CopyWordsAsync(npgsqlConnection, data.Words, ct);
             await CopyLinesAsync(npgsqlConnection, data.Lines, ct);
 
+            await revisionStore.IncrementAsync(npgsqlConnection, transaction, ct);
             await transaction.CommitAsync(ct);
         }
         catch
@@ -209,6 +226,15 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
         command.CommandText =
             "TRUNCATE quran_words, quran_mushaf_lines, quran_mushaf_pages, quran_ayahs, quran_surahs RESTART IDENTITY CASCADE";
         await command.ExecuteNonQueryAsync(ct);
+    }
+
+    private static async Task<bool> AnyTargetTableHasDataAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        CancellationToken ct)
+    {
+        await using var command = new NpgsqlCommand(AnyTargetTableHasDataSql, connection, transaction);
+        return Convert.ToBoolean(await command.ExecuteScalarAsync(ct), CultureInfo.InvariantCulture);
     }
 
     private static string ToRevelationPlaceValue(RevelationPlace value) => value switch

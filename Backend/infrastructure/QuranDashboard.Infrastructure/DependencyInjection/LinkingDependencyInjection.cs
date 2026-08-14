@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Infrastructure.Caching.Linking;
+using QuranDashboard.Infrastructure.Persistence.Linking;
 using QuranDashboard.Infrastructure.Persistence.Reads.Linking;
 using QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
@@ -18,6 +19,9 @@ internal static class LinkingDependencyInjection
 
         services.AddSingleton<LinkingSourceResolutionCache>();
         services.AddSingleton<LinkingAyahTextCache>();
+        services.AddSingleton<ILinkingDataRevisionWriterStore, LinkingDataRevisionStore>();
+        services.AddScoped<ILinkingDataRevisionReadScope, EfLinkingDataRevisionReadScope>();
+        services.AddScoped<ILinkingDataRevisionReader, EfLinkingDataRevisionReader>();
 
         services.AddScoped<EfLinkingSourceResolutionReader>();
         services.AddScoped<ILinkingSourceResolutionReader>(sp => new CachedLinkingSourceResolutionReader(
