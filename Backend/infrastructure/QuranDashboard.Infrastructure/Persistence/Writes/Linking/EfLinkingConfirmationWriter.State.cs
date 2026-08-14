@@ -29,6 +29,7 @@ internal sealed partial class EfLinkingConfirmationWriter
         }
 
         var doorAyahs = await db.LinkingDoorAyahs
+            .AsNoTracking()
             .Where(ayah => ayah.DoorId == doorId)
             .OrderBy(ayah => ayah.AyahId)
             .ToListAsync(cancellationToken);
@@ -36,11 +37,13 @@ internal sealed partial class EfLinkingConfirmationWriter
         var doorWords = doorAyahIds.Count == 0
             ? []
             : await db.LinkingDoorAyahWords
+                .AsNoTracking()
                 .Where(word => doorAyahIds.Contains(word.DoorAyahId))
                 .OrderBy(word => word.DoorAyahId)
                 .ThenBy(word => word.QuranWordId)
                 .ToListAsync(cancellationToken);
         var contributions = await db.LinkingSourceContributions
+            .AsNoTracking()
             .Where(contribution => contribution.DoorId == doorId && contribution.DeletedAtUtc == null)
             .OrderBy(contribution => contribution.OrderValue)
             .ThenBy(contribution => contribution.Id)
@@ -49,11 +52,13 @@ internal sealed partial class EfLinkingConfirmationWriter
         var contributionUnits = contributionIds.Count == 0
             ? []
             : await db.LinkingSourceContributionUnits
+                .AsNoTracking()
                 .Where(link => contributionIds.Contains(link.SourceContributionId))
                 .OrderBy(link => link.SourceContributionId)
                 .ThenBy(link => link.OrderValue)
                 .ToListAsync(cancellationToken);
         var units = await db.LinkingUnits
+            .AsNoTracking()
             .Where(unit => unit.DoorId == doorId)
             .OrderBy(unit => unit.Id)
             .ToListAsync(cancellationToken);
@@ -61,6 +66,7 @@ internal sealed partial class EfLinkingConfirmationWriter
         var unitAyahs = unitIds.Count == 0
             ? []
             : await db.LinkingUnitAyahs
+                .AsNoTracking()
                 .Where(unitAyah => unitIds.Contains(unitAyah.UnitId))
                 .OrderBy(unitAyah => unitAyah.UnitId)
                 .ThenBy(unitAyah => unitAyah.OrderValue)
@@ -70,6 +76,7 @@ internal sealed partial class EfLinkingConfirmationWriter
         var words = unitAyahIds.Count == 0
             ? []
             : await db.LinkingUnitAyahWords
+                .AsNoTracking()
                 .Where(word => unitAyahIds.Contains(word.UnitAyahId))
                 .OrderBy(word => word.UnitAyahId)
                 .ThenBy(word => word.QuranWordId)
@@ -77,6 +84,7 @@ internal sealed partial class EfLinkingConfirmationWriter
         var descriptions = unitAyahIds.Count == 0
             ? []
             : await db.LinkingUnitAyahDescriptions
+                .AsNoTracking()
                 .Where(description => unitAyahIds.Contains(description.UnitAyahId))
                 .OrderBy(description => description.UnitAyahId)
                 .ThenBy(description => description.OrderValue)

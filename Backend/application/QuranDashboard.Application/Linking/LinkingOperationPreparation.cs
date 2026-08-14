@@ -35,10 +35,11 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
         CancellationToken cancellationToken)
     {
         var sources = new List<LinkingOperationSourceIntent>(request.Sources.Count);
+        var confirmedAyahs = state is null ? [] : ConfirmedAyahMetadataOf(state);
 
         foreach (var source in request.Sources)
         {
-            sources.Add(await PrepareSourceAsync(source, state, cancellationToken));
+            sources.Add(await PrepareSourceAsync(source, state, confirmedAyahs, cancellationToken));
         }
 
         return new LinkingOperationIntent(request.DoorId, state?.IsArchived ?? false, sources);
@@ -47,6 +48,7 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
     private async Task<LinkingOperationSourceIntent> PrepareSourceAsync(
         LinkingOperationSourceRequest source,
         LinkingConfirmedDoorState? state,
+        IReadOnlyDictionary<int, AyahMetadata> confirmedAyahs,
         CancellationToken cancellationToken)
     {
         if (!LinkingSourceDescriptorValidation.TryValidate(source.Descriptor, out _))
@@ -58,7 +60,6 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
         var identity = LinkingContributionIdentity.For(source.Descriptor, source.ContributionMode);
         var resolved = await resolution.ResolveAsync(source.Descriptor, cancellationToken);
         var members = resolved.Ayahs.ToDictionary(ayah => ayah.AyahId);
-        var confirmed = state is null ? [] : ConfirmedAyahMetadataOf(state);
 
         var grouped = source.ContributionMode == LinkingContributionMode.ManualGrouped;
         var units = source.Units
@@ -66,7 +67,7 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
             {
                 var ayahs = unit.Ayahs
                     .Select(ayah =>
-                        PrepareAyah(source, ayah, members.GetValueOrDefault(ayah.AyahId), confirmed))
+                        PrepareAyah(source, ayah, members.GetValueOrDefault(ayah.AyahId), confirmedAyahs))
                     .ToList();
 
                 return new LinkingOperationUnitIntent(

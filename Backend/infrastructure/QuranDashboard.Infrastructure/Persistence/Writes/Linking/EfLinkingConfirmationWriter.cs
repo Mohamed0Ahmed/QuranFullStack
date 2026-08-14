@@ -47,7 +47,6 @@ internal sealed partial class EfLinkingConfirmationWriter(QuranDashboardDbContex
         }
 
         var versionChecks = BuildExpectedVersionChecks(request, loaded.State);
-        ApplyExpectedVersions(versionChecks, loaded);
 
         var classification = classify(intent, loaded.State);
         var freshToken = LinkingPreflightToken.Compute(
@@ -82,6 +81,7 @@ internal sealed partial class EfLinkingConfirmationWriter(QuranDashboardDbContex
             return new LinkingConfirmationWriteResult.Success(noOp, false);
         }
 
+        var workset = BuildWorkset(request, classification, loaded.State);
         var now = DateTimeOffset.UtcNow;
         var operation = new LinkingOperation
         {
@@ -97,50 +97,44 @@ internal sealed partial class EfLinkingConfirmationWriter(QuranDashboardDbContex
         db.LinkingOperations.Add(operation);
         await SaveTranslatingWriteExceptionsAsync(cancellationToken);
 
-        var contributionIds = new Dictionary<string, long?>(StringComparer.Ordinal);
+        var unitIds = await EnsureUnitsAsync(
+            request.DoorId,
+            actorUserId,
+            workset,
+            now,
+            cancellationToken);
+        var changedContributionIds = await PersistContributionsAsync(
+            operation.Id,
+            request.DoorId,
+            actorUserId,
+            workset,
+            loaded,
+            now,
+            cancellationToken);
+        var contributionIds = classification.Sources.ToDictionary(
+            source => source.Source.SourceIdentity,
+            source => source.ExistingContributionId,
+            StringComparer.Ordinal);
 
-        for (var index = 0; index < classification.Sources.Count; index++)
+        foreach (var (sourceIdentity, contributionId) in changedContributionIds)
         {
-            var source = classification.Sources[index];
-            var sourceRequest = request.Sources[index];
-
-            switch (source.Classification)
-            {
-                case LinkingPreflightClassification.Unchanged:
-                    contributionIds.Add(source.Source.SourceIdentity, source.ExistingContributionId);
-                    break;
-                case LinkingPreflightClassification.NewSource:
-                    var created = await InsertContributionAsync(
-                        operation.Id,
-                        request.DoorId,
-                        actorUserId,
-                        sourceRequest,
-                        source.Source,
-                        now,
-                        cancellationToken);
-                    contributionIds.Add(source.Source.SourceIdentity, created.Id);
-                    break;
-                case LinkingPreflightClassification.Update:
-                    var existing = loaded.ContributionsById[source.ExistingContributionId!.Value];
-                    await ReplaceContributionAsync(
-                        operation.Id,
-                        actorUserId,
-                        existing,
-                        sourceRequest,
-                        source.Source,
-                        loaded,
-                        now,
-                        cancellationToken);
-                    contributionIds.Add(source.Source.SourceIdentity, existing.Id);
-                    break;
-                default:
-                    throw new InvalidOperationException(
-                        $"Confirmation cannot apply source classification '{source.Classification}'.");
-            }
+            contributionIds[sourceIdentity] = contributionId;
         }
 
-        await RemoveOrphanUnitsAsync(request.DoorId, cancellationToken);
-        await ApplyDoorStateAsync(actorUserId, request.DoorId, loaded, now, cancellationToken);
+        var orphanCandidates = await SynchronizeContributionLinksAsync(
+            workset,
+            changedContributionIds,
+            unitIds,
+            loaded,
+            cancellationToken);
+        await RemoveNewlyOrphanedUnitsAsync(orphanCandidates, cancellationToken);
+        await ApplyDoorStateAsync(
+            actorUserId,
+            request.DoorId,
+            workset.AffectedAyahIds,
+            loaded,
+            now,
+            cancellationToken);
 
         var result = CreateResult(request.DoorId, false, classification, contributionIds);
         operation.OutcomeJson = SerializeOutcome(result);
@@ -188,28 +182,6 @@ internal sealed partial class EfLinkingConfirmationWriter(QuranDashboardDbContex
                 liveByIdentity.GetValueOrDefault(
                     LinkingContributionIdentity.For(source.Descriptor, source.ContributionMode))))
         ];
-    }
-
-    private void ApplyExpectedVersions(
-        IReadOnlyList<ExpectedVersionCheck> versionChecks,
-        LockedConfirmationState loaded)
-    {
-        foreach (var check in versionChecks)
-        {
-            var source = check.Source;
-            var live = check.Live;
-
-            if (live is null
-                || source.ExistingContributionId != live.Id
-                || source.ExistingContributionVersion is not { } expectedVersion)
-            {
-                continue;
-            }
-
-            db.Entry(loaded.ContributionsById[live.Id])
-                .Property(contribution => contribution.Version)
-                .OriginalValue = expectedVersion;
-        }
     }
 
     private static void EnsureExpectedVersions(IReadOnlyList<ExpectedVersionCheck> versionChecks)

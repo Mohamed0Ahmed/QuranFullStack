@@ -7,91 +7,153 @@ internal sealed partial class EfLinkingConfirmationWriter
     private async Task ApplyDoorStateAsync(
         int actorUserId,
         int doorId,
+        IReadOnlySet<int> affectedAyahIds,
         LockedConfirmationState loaded,
         DateTimeOffset now,
         CancellationToken cancellationToken)
     {
-        var unitIds = await db.LinkingUnits
-            .Where(unit => unit.DoorId == doorId)
-            .Select(unit => unit.Id)
-            .ToListAsync(cancellationToken);
-        var unitAyahs = await db.LinkingUnitAyahs
-            .Where(ayah => unitIds.Contains(ayah.UnitId))
-            .Select(ayah => new UnitAyahRow(ayah.Id, ayah.AyahId))
-            .ToListAsync(cancellationToken);
-        var unitAyahIds = unitAyahs.Select(ayah => ayah.Id).ToList();
-        var unitWords = await db.LinkingUnitAyahWords
-            .Where(word => unitAyahIds.Contains(word.UnitAyahId))
-            .Select(word => new UnitWordRow(word.UnitAyahId, word.QuranWordId))
-            .ToListAsync(cancellationToken);
-        var desiredWords = unitAyahs
-            .GroupJoin(
-                unitWords,
-                ayah => ayah.Id,
-                word => word.UnitAyahId,
-                (ayah, words) => new { ayah.AyahId, WordIds = words.Select(word => word.QuranWordId) })
-            .GroupBy(entry => entry.AyahId)
-            .ToDictionary(
-                group => group.Key,
-                group => group.SelectMany(entry => entry.WordIds).ToHashSet());
-        var doorAyahsByAyahId = loaded.DoorAyahs.ToDictionary(ayah => ayah.AyahId);
+        var desiredWordsByAyahId = await LoadDesiredDoorWordsAsync(
+            doorId,
+            affectedAyahIds,
+            cancellationToken);
+        var doorAyahsByAyahId = loaded.DoorAyahs
+            .Where(ayah => affectedAyahIds.Contains(ayah.AyahId))
+            .ToDictionary(ayah => ayah.AyahId);
 
-        foreach (var ayahId in desiredWords.Keys.Where(ayahId => !doorAyahsByAyahId.ContainsKey(ayahId)))
+        foreach (var batch in BatchesOf(desiredWordsByAyahId.Keys
+                     .Where(ayahId => !doorAyahsByAyahId.ContainsKey(ayahId))))
         {
-            var doorAyah = new LinkingDoorAyah
+            var entities = batch.Select(ayahId => new LinkingDoorAyah
             {
                 DoorId = doorId,
                 AyahId = ayahId,
                 CreatedAtUtc = now,
                 CreatedBy = actorUserId,
-            };
+            }).ToList();
 
-            db.LinkingDoorAyahs.Add(doorAyah);
-            doorAyahsByAyahId.Add(ayahId, doorAyah);
-        }
+            db.LinkingDoorAyahs.AddRange(entities);
+            await SaveTranslatingWriteExceptionsAsync(cancellationToken);
 
-        await SaveTranslatingWriteExceptionsAsync(cancellationToken);
-
-        var existingWords = loaded.DoorWords
-            .ToDictionary(word => (word.DoorAyahId, word.QuranWordId));
-
-        foreach (var word in loaded.DoorWords)
-        {
-            var doorAyah = loaded.DoorAyahs.First(ayah => ayah.Id == word.DoorAyahId);
-
-            if (!desiredWords.GetValueOrDefault(doorAyah.AyahId, []).Contains(word.QuranWordId))
+            foreach (var entity in entities)
             {
-                db.LinkingDoorAyahWords.Remove(word);
+                doorAyahsByAyahId.Add(entity.AyahId, entity);
             }
+
+            DetachRange(entities);
         }
 
-        foreach (var (ayahId, wordIds) in desiredWords)
+        var ayahIdByDoorAyahId = doorAyahsByAyahId.Values.ToDictionary(ayah => ayah.Id, ayah => ayah.AyahId);
+        var existingWords = loaded.DoorWords
+            .Where(word => ayahIdByDoorAyahId.ContainsKey(word.DoorAyahId))
+            .ToDictionary(word => (word.DoorAyahId, word.QuranWordId));
+        var removedWords = existingWords.Values.Where(word =>
         {
-            var doorAyah = doorAyahsByAyahId[ayahId];
+            var ayahId = ayahIdByDoorAyahId[word.DoorAyahId];
+            return desiredWordsByAyahId.ContainsKey(ayahId)
+                && !desiredWordsByAyahId[ayahId].Contains(word.QuranWordId);
+        });
 
-            db.LinkingDoorAyahWords.AddRange(wordIds
+        foreach (var batch in BatchesOf(removedWords))
+        {
+            db.LinkingDoorAyahWords.AttachRange(batch);
+            db.LinkingDoorAyahWords.RemoveRange(batch);
+            await SaveTranslatingWriteExceptionsAsync(cancellationToken);
+        }
+
+        var addedWords = desiredWordsByAyahId.SelectMany(entry =>
+        {
+            var doorAyah = doorAyahsByAyahId[entry.Key];
+            return entry.Value
                 .Where(wordId => !existingWords.ContainsKey((doorAyah.Id, wordId)))
                 .Select(wordId => new LinkingDoorAyahWord
                 {
                     DoorAyahId = doorAyah.Id,
                     QuranWordId = wordId,
-                    AyahId = ayahId,
+                    AyahId = entry.Key,
                     CreatedAtUtc = now,
                     CreatedBy = actorUserId,
-                }));
+                });
+        });
+
+        foreach (var batch in BatchesOf(addedWords))
+        {
+            db.LinkingDoorAyahWords.AddRange(batch);
+            await SaveTranslatingWriteExceptionsAsync(cancellationToken);
+            DetachRange(batch);
         }
 
-        await SaveTranslatingWriteExceptionsAsync(cancellationToken);
+        var removedDoorAyahs = loaded.DoorAyahs
+            .Where(ayah => affectedAyahIds.Contains(ayah.AyahId))
+            .Where(ayah => !desiredWordsByAyahId.ContainsKey(ayah.AyahId));
 
-        db.LinkingDoorAyahs.RemoveRange(
-            loaded.DoorAyahs.Where(ayah => !desiredWords.ContainsKey(ayah.AyahId)));
+        foreach (var batch in BatchesOf(removedDoorAyahs))
+        {
+            db.LinkingDoorAyahs.AttachRange(batch);
+            db.LinkingDoorAyahs.RemoveRange(batch);
+            await SaveTranslatingWriteExceptionsAsync(cancellationToken);
+        }
 
         loaded.Door.UpdatedAtUtc = now;
         loaded.Door.UpdatedBy = actorUserId;
         await SaveTranslatingWriteExceptionsAsync(cancellationToken);
     }
 
-    private sealed record UnitAyahRow(long Id, int AyahId);
+    private async Task<IReadOnlyDictionary<int, HashSet<int>>> LoadDesiredDoorWordsAsync(
+        int doorId,
+        IReadOnlySet<int> affectedAyahIds,
+        CancellationToken cancellationToken)
+    {
+        var desiredWordsByAyahId = new Dictionary<int, HashSet<int>>();
 
-    private sealed record UnitWordRow(long UnitAyahId, int QuranWordId);
+        foreach (var batch in BatchesOf(affectedAyahIds))
+        {
+            var ayahIds = await (
+                    from unitAyah in db.LinkingUnitAyahs
+                    join unit in db.LinkingUnits on unitAyah.UnitId equals unit.Id
+                    join link in db.LinkingSourceContributionUnits on unit.Id equals link.UnitId
+                    join contribution in db.LinkingSourceContributions
+                        on link.SourceContributionId equals contribution.Id
+                    where unit.DoorId == doorId
+                          && contribution.DoorId == doorId
+                          && contribution.DeletedAtUtc == null
+                          && batch.Contains(unitAyah.AyahId)
+                    select unitAyah.AyahId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            foreach (var ayahId in ayahIds)
+            {
+                desiredWordsByAyahId.TryAdd(ayahId, []);
+            }
+
+            if (ayahIds.Count == 0)
+            {
+                continue;
+            }
+
+            var words = await (
+                    from word in db.LinkingUnitAyahWords
+                    join unitAyah in db.LinkingUnitAyahs on word.UnitAyahId equals unitAyah.Id
+                    join unit in db.LinkingUnits on unitAyah.UnitId equals unit.Id
+                    join link in db.LinkingSourceContributionUnits on unit.Id equals link.UnitId
+                    join contribution in db.LinkingSourceContributions
+                        on link.SourceContributionId equals contribution.Id
+                    where unit.DoorId == doorId
+                          && contribution.DoorId == doorId
+                          && contribution.DeletedAtUtc == null
+                          && batch.Contains(unitAyah.AyahId)
+                    select new UnitWordRow(unitAyah.AyahId, word.QuranWordId))
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            foreach (var word in words)
+            {
+                desiredWordsByAyahId[word.AyahId].Add(word.QuranWordId);
+            }
+        }
+
+        return desiredWordsByAyahId;
+    }
+
+    private sealed record UnitWordRow(int AyahId, int QuranWordId);
 }
