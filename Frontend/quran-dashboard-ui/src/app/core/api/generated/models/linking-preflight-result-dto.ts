@@ -8,6 +8,7 @@ export interface LinkingPreflightResultDto {
   doorName: string;
   isBlocked: boolean;
   isNoOp: boolean;
+  linkingDataRevision: number;
   preflightToken: string;
   sources: Array<LinkingSourcePreflightDto>;
   totals: LinkingPreflightCountsDto;

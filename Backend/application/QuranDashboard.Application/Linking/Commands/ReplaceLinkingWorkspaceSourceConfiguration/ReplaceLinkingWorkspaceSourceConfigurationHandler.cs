@@ -23,6 +23,7 @@ public sealed class ReplaceLinkingWorkspaceSourceConfigurationHandler(
                 command.SourceId,
                 command.Configuration,
                 command.SourceVersion,
+                command.ExpectedLinkingDataRevision,
                 cancellationToken));
     }
 }

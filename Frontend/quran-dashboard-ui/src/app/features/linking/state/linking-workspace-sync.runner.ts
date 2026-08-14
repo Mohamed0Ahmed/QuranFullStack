@@ -6,6 +6,7 @@ import {
   LinkingWorkspaceRepository,
   LinkingWorkspaceStaleVersionError,
 } from '../data-access/linking-workspace.repository';
+import { LinkingDataStaleError } from '../models/linking-revision.models';
 import {
   LinkingRemovedWorkspaceItem,
   LinkingWorkspaceItem,
@@ -24,6 +25,7 @@ export interface LinkingWorkspaceSyncBindings {
   applySnapshot(snapshot: LinkingWorkspaceSnapshot): void;
   restoreChecked(sourceKey: string): void;
   warn(message: string): void;
+  invalidateLinkingDataRevision(): void;
 }
 
 export type LinkingWorkspaceOperation = (
@@ -153,6 +155,11 @@ export class LinkingWorkspaceSyncRunner {
       error instanceof LinkingWorkspaceStaleVersionError || error instanceof Error
         ? error.message
         : RELOAD_WARNING;
+    if (error instanceof LinkingDataStaleError) {
+      bindings.invalidateLinkingDataRevision();
+      bindings.warn(message);
+      return;
+    }
     try {
       const snapshot = await firstValueFrom(this.repository.load());
       if (bindings.isCurrentActor(actorSub, actorGeneration)) {

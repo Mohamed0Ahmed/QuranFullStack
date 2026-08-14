@@ -6,7 +6,9 @@ namespace QuranDashboard.Application.Linking.Queries.PreflightLinkingOperation;
 public sealed class PreflightLinkingOperationHandler(
     ILogger<PreflightLinkingOperationHandler> logger,
     ILinkingConfirmedStateReader confirmedState,
-    LinkingOperationPreparation preparation)
+    LinkingOperationPreparation preparation,
+    ILinkingDataRevisionReadScope revisionScope,
+    ILinkingScalabilityPolicy policy)
 {
     private const string FeatureName = "Linking";
     private const string OperationName = "PreflightLinkingOperation";
@@ -34,36 +36,54 @@ public sealed class PreflightLinkingOperationHandler(
             return new PreflightLinkingOperationOutcome.InvalidRequest(violation);
         }
 
-        var state = await confirmedState.LoadAsync(request.DoorId, cancellationToken);
-
-        if (state is null)
-        {
-            logger.LogWarning(
-                "Not found {feature} {operation} {doorId}", FeatureName, OperationName, request.DoorId);
-
-            return new PreflightLinkingOperationOutcome.DoorNotFound(request.DoorId);
-        }
-
         try
         {
-            var intent = await preparation.PrepareAsync(request, state, cancellationToken);
-            var classification = LinkingOperationClassifier.Classify(intent, state);
-            var token = LinkingPreflightToken.Compute(
-                request,
-                new LinkingPreflightDoorComponent(state.DoorId, state.DoorVersion),
-                LinkingPreflightToken.AffectedContributionsOf(state, classification));
+            return await revisionScope.ExecuteAsync<PreflightLinkingOperationOutcome>(
+                policy.MaximumAutomaticAttempts,
+                async (revision, token) =>
+                {
+                    if (revision != request.ExpectedLinkingDataRevision)
+                    {
+                        throw new LinkingDataStaleException(
+                            request.ExpectedLinkingDataRevision,
+                            revision);
+                    }
 
-            logger.LogInformation(
-                "Completed {feature} {operation} {doorId} {sourceCount} {isNoOp} {isBlocked}",
-                FeatureName,
-                OperationName,
-                request.DoorId,
-                request.Sources.Count,
-                classification.IsNoOp,
-                classification.IsBlocked);
+                    var state = await confirmedState.LoadAsync(request.DoorId, token);
+                    if (state is null)
+                    {
+                        logger.LogWarning(
+                            "Not found {feature} {operation} {doorId}",
+                            FeatureName,
+                            OperationName,
+                            request.DoorId);
+                        return new PreflightLinkingOperationOutcome.DoorNotFound(request.DoorId);
+                    }
 
-            return new PreflightLinkingOperationOutcome.Success(
-                LinkingPreflightProjection.ToResult(state, classification, token));
+                    var intent = await preparation.PrepareAsync(request, state, token);
+                    var classification = LinkingOperationClassifier.Classify(intent, state);
+                    var preflightToken = LinkingPreflightToken.Compute(
+                        request,
+                        new LinkingPreflightDoorComponent(state.DoorId, state.DoorVersion),
+                        LinkingPreflightToken.AffectedContributionsOf(state, classification));
+
+                    logger.LogInformation(
+                        "Completed {feature} {operation} {doorId} {sourceCount} {isNoOp} {isBlocked}",
+                        FeatureName,
+                        OperationName,
+                        request.DoorId,
+                        request.Sources.Count,
+                        classification.IsNoOp,
+                        classification.IsBlocked);
+
+                    return new PreflightLinkingOperationOutcome.Success(
+                        LinkingPreflightProjection.ToResult(
+                            state,
+                            classification,
+                            preflightToken,
+                            revision));
+                },
+                cancellationToken);
         }
         catch (LinkingInvalidDescriptorException exception)
         {
@@ -89,6 +109,10 @@ public sealed class PreflightLinkingOperationHandler(
                 exception.Reference);
 
             return new PreflightLinkingOperationOutcome.SourceNotFound(exception.Reference);
+        }
+        catch (LinkingDataStaleException)
+        {
+            return new PreflightLinkingOperationOutcome.LinkingDataStale();
         }
     }
 }

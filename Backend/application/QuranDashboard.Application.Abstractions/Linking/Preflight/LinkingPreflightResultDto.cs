@@ -3,6 +3,7 @@ namespace QuranDashboard.Application.Abstractions.Linking.Preflight;
 public sealed record LinkingPreflightResultDto(
     int DoorId,
     string DoorName,
+    long LinkingDataRevision,
     bool IsNoOp,
     bool IsBlocked,
     string PreflightToken,

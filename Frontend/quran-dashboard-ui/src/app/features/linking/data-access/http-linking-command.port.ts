@@ -7,6 +7,7 @@ import { environment } from '../../../../environments/environment';
 import { LinkingConfirmationResultDto } from '../../../core/api/generated/models/linking-confirmation-result-dto';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { LINKING_LABELS } from '../models/linking.labels';
+import { LinkingDataStaleError } from '../models/linking-revision.models';
 import {
   LinkingCommand,
   LinkingCommandPort,
@@ -25,6 +26,7 @@ export class HttpLinkingCommandPort implements LinkingCommandPort {
       .post<ApiResponse<LinkingConfirmationResultDto>>(`${this.baseUrl}/api/linking/operations`, {
         doorId: command.doorId,
         preflightToken: command.preflightToken,
+        expectedLinkingDataRevision: command.expectedLinkingDataRevision,
         idempotencyKey: command.idempotencyKey,
         sources: toConfirmationSourceBodies(command),
       })
@@ -56,7 +58,11 @@ function toCommandResult(response: ApiResponse<LinkingConfirmationResultDto>): L
 
 function toCommandError(error: unknown): Error {
   if (error instanceof HttpErrorResponse) {
-    const message = (error.error as ApiResponse<unknown> | null)?.message;
+    const response = error.error as ApiResponse<{ code?: string }> | null;
+    const message = response?.message;
+    if (error.status === 409 && response?.data?.code === 'LINKING_DATA_STALE') {
+      return new LinkingDataStaleError(message || LINKING_LABELS.sourceLoadError);
+    }
     if (error.status === 409) {
       return new LinkingPreflightStaleError(message || LINKING_LABELS.preflightStale);
     }

@@ -2866,6 +2866,599 @@
         }
       }
     },
+    "/api/linking/preflights": {
+      "post": {
+        "tags": [
+          "LinkingPreflights"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateLinkingPreparedPreflightBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateLinkingPreparedPreflightBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreateLinkingPreparedPreflightBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedPreflightStatusDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedPreflightStatusDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedPreflightStatusDtoApiResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedPreflightStatusDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedPreflightStatusDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedPreflightStatusDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/linking/preflights/{preflightId}": {
+      "get": {
+        "tags": [
+          "LinkingPreflights"
+        ],
+        "parameters": [
+          {
+            "name": "preflightId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedPreflightStatusDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedPreflightStatusDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedPreflightStatusDtoApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "LinkingPreflights"
+        ],
+        "parameters": [
+          {
+            "name": "preflightId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedPreflightStatusDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedPreflightStatusDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedPreflightStatusDtoApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/linking/preflights/{preflightId}/sources/{preparedSourceId}/ayahs": {
+      "get": {
+        "tags": [
+          "LinkingPreflights"
+        ],
+        "parameters": [
+          {
+            "name": "preflightId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "preparedSourceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedDetailPageDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedDetailPageDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedDetailPageDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/linking/preflights/{preflightId}/merged-ayahs": {
+      "get": {
+        "tags": [
+          "LinkingPreflights"
+        ],
+        "parameters": [
+          {
+            "name": "preflightId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedDetailPageDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedDetailPageDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingPreparedDetailPageDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/linking/sources/resolve": {
       "post": {
         "tags": [
@@ -2959,6 +3552,126 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/linking/sources/resolve-page": {
+      "post": {
+        "tags": [
+          "LinkingSources"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingSourcePageBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingSourcePageBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingSourcePageBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingResolvedSourcePageDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingResolvedSourcePageDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingResolvedSourcePageDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
                 }
               }
             }
@@ -3444,6 +4157,135 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "LinkingWorkspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceDeltaBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceDeltaBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceDeltaBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceDeltaResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceDeltaResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceDeltaResponseApiResponse"
                 }
               }
             }
@@ -7675,6 +8517,40 @@
         },
         "additionalProperties": false
       },
+      "CreateLinkingPreparedPreflightBody": {
+        "required": [
+          "doorId",
+          "expectedLinkingDataRevision",
+          "preparationKey",
+          "sources"
+        ],
+        "type": "object",
+        "properties": {
+          "preparationKey": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "doorId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "expectedLinkingDataRevision": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingPreparedSourceBody"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateSectionCommand": {
         "required": [
           "name"
@@ -8760,6 +9636,7 @@
       "LinkingConfirmationBody": {
         "required": [
           "doorId",
+          "expectedLinkingDataRevision",
           "idempotencyKey",
           "preflightToken",
           "sources"
@@ -8769,6 +9646,11 @@
           "doorId": {
             "type": "integer",
             "format": "int32",
+            "nullable": true
+          },
+          "expectedLinkingDataRevision": {
+            "type": "integer",
+            "format": "int64",
             "nullable": true
           },
           "preflightToken": {
@@ -9032,6 +9914,52 @@
         },
         "additionalProperties": false
       },
+      "LinkingLifecycleErrorData": {
+        "required": [
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingLifecycleErrorDataApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingLifecycleErrorData"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "LinkingManualAyahBody": {
         "required": [
           "verseKey"
@@ -9115,6 +10043,7 @@
       "LinkingPreflightBody": {
         "required": [
           "doorId",
+          "expectedLinkingDataRevision",
           "sources"
         ],
         "type": "object",
@@ -9122,6 +10051,11 @@
           "doorId": {
             "type": "integer",
             "format": "int32",
+            "nullable": true
+          },
+          "expectedLinkingDataRevision": {
+            "type": "integer",
+            "format": "int64",
             "nullable": true
           },
           "sources": {
@@ -9183,6 +10117,7 @@
           "doorName",
           "isBlocked",
           "isNoOp",
+          "linkingDataRevision",
           "preflightToken",
           "sources",
           "totals"
@@ -9195,6 +10130,10 @@
           },
           "doorName": {
             "type": "string"
+          },
+          "linkingDataRevision": {
+            "type": "integer",
+            "format": "int64"
           },
           "isNoOp": {
             "type": "boolean"
@@ -9296,6 +10235,557 @@
         },
         "additionalProperties": false
       },
+      "LinkingPreparedAyahOverlayDto": {
+        "required": [
+          "ayahOrder",
+          "classification",
+          "descriptionChanges",
+          "descriptions",
+          "doorWordImpact",
+          "invalidReason",
+          "isGrouped",
+          "isRequested",
+          "matchedQuranWordIds",
+          "overlappingSources",
+          "preparedSourceId",
+          "preparedUnitId",
+          "requestedQuranWordIds",
+          "sourceOrder",
+          "unitOrder",
+          "wordChanges"
+        ],
+        "type": "object",
+        "properties": {
+          "preparedSourceId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sourceOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "preparedUnitId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "isRequested": {
+            "type": "boolean"
+          },
+          "unitOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ayahOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isGrouped": {
+            "type": "boolean"
+          },
+          "classification": {
+            "type": "string"
+          },
+          "invalidReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "matchedQuranWordIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "requestedQuranWordIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "descriptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "overlappingSources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingOverlappingSourceDto"
+            }
+          },
+          "wordChanges": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingWordChangesDto"
+              }
+            ]
+          },
+          "doorWordImpact": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingDoorWordImpactDto"
+              }
+            ]
+          },
+          "descriptionChanges": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingDescriptionChangesDto"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingPreparedConfigurationBody": {
+        "required": [
+          "automaticWordMatchesEnabled",
+          "ayahOverrideIds",
+          "descriptions",
+          "inclusionMode",
+          "manualLinkShape",
+          "selectedWords"
+        ],
+        "type": "object",
+        "properties": {
+          "inclusionMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "ayahOverrideIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          },
+          "selectedWords": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingSelectedWordBody"
+            },
+            "nullable": true
+          },
+          "automaticWordMatchesEnabled": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "manualLinkShape": {
+            "type": "string",
+            "nullable": true
+          },
+          "descriptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingDescriptionBody"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingPreparedDetailItemDto": {
+        "required": [
+          "ayah",
+          "sourceOverlays"
+        ],
+        "type": "object",
+        "properties": {
+          "ayah": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingResolvedAyahDto"
+              }
+            ]
+          },
+          "sourceOverlays": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingPreparedAyahOverlayDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingPreparedDetailPageDto": {
+        "required": [
+          "detailKind",
+          "filter",
+          "items",
+          "linkingDataRevision",
+          "page",
+          "pageSize",
+          "preflightId",
+          "preparedSourceId",
+          "totalItems",
+          "totalPages"
+        ],
+        "type": "object",
+        "properties": {
+          "preflightId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "linkingDataRevision": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "detailKind": {
+            "type": "string"
+          },
+          "preparedSourceId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "filter": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalItems": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingPreparedDetailItemDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingPreparedDetailPageDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingPreparedDetailPageDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingPreparedInlineSourceBody": {
+        "required": [
+          "configuration",
+          "descriptor"
+        ],
+        "type": "object",
+        "properties": {
+          "descriptor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingSourceDescriptorBody"
+              }
+            ],
+            "nullable": true
+          },
+          "configuration": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingPreparedConfigurationBody"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingPreparedPreflightStatusDto": {
+        "required": [
+          "createdAtUtc",
+          "expiresAtUtc",
+          "failureCode",
+          "isBlocked",
+          "isNoOp",
+          "linkingDataRevision",
+          "pollAfterMs",
+          "preflightId",
+          "preflightToken",
+          "processedAyahs",
+          "processedSources",
+          "sources",
+          "stage",
+          "status",
+          "totalAyahs",
+          "totals",
+          "totalSources"
+        ],
+        "type": "object",
+        "properties": {
+          "preflightId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "processedSources": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalSources": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "processedAyahs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalAyahs": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "pollAfterMs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "linkingDataRevision": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "isNoOp": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "isBlocked": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "preflightToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "totals": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingPreflightCountsDto"
+              }
+            ],
+            "nullable": true
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingPreparedSourceSummaryDto"
+            }
+          },
+          "failureCode": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingPreparedPreflightStatusDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingPreparedPreflightStatusDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingPreparedSourceBody": {
+        "required": [
+          "inlineSource",
+          "orderValue",
+          "workspaceSource"
+        ],
+        "type": "object",
+        "properties": {
+          "orderValue": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "workspaceSource": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingPreparedWorkspaceSourceBody"
+              }
+            ],
+            "nullable": true
+          },
+          "inlineSource": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingPreparedInlineSourceBody"
+              }
+            ],
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingPreparedSourceSummaryDto": {
+        "required": [
+          "automaticWordMatchesEnabled",
+          "classification",
+          "contributionMode",
+          "counts",
+          "existingContributionId",
+          "expectedContributionVersion",
+          "label",
+          "orderValue",
+          "preparedSourceId",
+          "resolutionIdentity",
+          "sourceKind",
+          "totalAyahCount"
+        ],
+        "type": "object",
+        "properties": {
+          "preparedSourceId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "orderValue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resolutionIdentity": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "sourceKind": {
+            "type": "string"
+          },
+          "contributionMode": {
+            "type": "string"
+          },
+          "automaticWordMatchesEnabled": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "classification": {
+            "type": "string",
+            "nullable": true
+          },
+          "counts": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingPreflightCountsDto"
+              }
+            ],
+            "nullable": true
+          },
+          "existingContributionId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "expectedContributionVersion": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "totalAyahCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingPreparedWorkspaceSourceBody": {
+        "required": [
+          "sourceId",
+          "sourceVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "sourceVersion": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "LinkingResolvedAyahDto": {
         "required": [
           "ayahId",
@@ -9355,6 +10845,7 @@
       "LinkingResolvedSourceDto": {
         "required": [
           "ayahs",
+          "linkingDataRevision",
           "resolvedAtUtc",
           "sourceIdentity",
           "totalAyahCount"
@@ -9363,6 +10854,10 @@
         "properties": {
           "sourceIdentity": {
             "type": "string"
+          },
+          "linkingDataRevision": {
+            "type": "integer",
+            "format": "int64"
           },
           "resolvedAtUtc": {
             "type": "string",
@@ -9401,6 +10896,88 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/LinkingResolvedSourceDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingResolvedSourcePageDto": {
+        "required": [
+          "items",
+          "linkingDataRevision",
+          "page",
+          "pageSize",
+          "resolutionIdentity",
+          "sourceViewIdentity",
+          "totalAyahCount",
+          "totalPages"
+        ],
+        "type": "object",
+        "properties": {
+          "resolutionIdentity": {
+            "type": "string"
+          },
+          "sourceViewIdentity": {
+            "type": "string"
+          },
+          "linkingDataRevision": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalAyahCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingResolvedAyahDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingResolvedSourcePageDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingResolvedSourcePageDto"
               }
             ],
             "nullable": true
@@ -9524,6 +11101,82 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/LinkingManualAyahBody"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingSourcePageBody": {
+        "required": [
+          "descriptor",
+          "expectedLinkingDataRevision",
+          "expectedSourceViewIdentity",
+          "page",
+          "pageSize",
+          "view"
+        ],
+        "type": "object",
+        "properties": {
+          "descriptor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingSourceDescriptorBody"
+              }
+            ],
+            "nullable": true
+          },
+          "expectedLinkingDataRevision": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "expectedSourceViewIdentity": {
+            "type": "string",
+            "nullable": true
+          },
+          "view": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingSourcePageViewBody"
+              }
+            ],
+            "nullable": true
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingSourcePageViewBody": {
+        "required": [
+          "ayahOverrideIds",
+          "inclusionMode",
+          "segment"
+        ],
+        "type": "object",
+        "properties": {
+          "segment": {
+            "type": "string",
+            "nullable": true
+          },
+          "inclusionMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "ayahOverrideIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
             },
             "nullable": true
           }
@@ -9749,6 +11402,7 @@
           "automaticWordMatchesEnabled",
           "ayahOverrides",
           "descriptions",
+          "expectedLinkingDataRevision",
           "inclusionMode",
           "label",
           "manualLinkShape",
@@ -9760,6 +11414,11 @@
           "sourceVersion": {
             "type": "integer",
             "format": "int32",
+            "nullable": true
+          },
+          "expectedLinkingDataRevision": {
+            "type": "integer",
+            "format": "int64",
             "nullable": true
           },
           "label": {
@@ -9797,6 +11456,246 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/LinkingDescriptionBody"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceDeltaBody": {
+        "required": [
+          "changes",
+          "expectedLinkingDataRevision",
+          "sourceVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceVersion": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "expectedLinkingDataRevision": {
+            "type": "integer",
+            "format": "int64",
+            "nullable": true
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingWorkspaceDeltaChangeBody"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceDeltaChangeBody": {
+        "required": [
+          "ayahId",
+          "ayahOverrideIds",
+          "descriptions",
+          "enabled",
+          "included",
+          "kind",
+          "label",
+          "mode",
+          "quranWordId",
+          "selected",
+          "shape"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "nullable": true
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "ayahId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "included": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "mode": {
+            "type": "string",
+            "nullable": true
+          },
+          "ayahOverrideIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          },
+          "quranWordId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "selected": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "enabled": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "shape": {
+            "type": "string",
+            "nullable": true
+          },
+          "descriptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceDeltaChangeResponse": {
+        "required": [
+          "ayahId",
+          "ayahOverrideIds",
+          "descriptions",
+          "enabled",
+          "included",
+          "kind",
+          "label",
+          "mode",
+          "quranWordId",
+          "selected",
+          "shape"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "nullable": true
+          },
+          "ayahId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "included": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "mode": {
+            "type": "string",
+            "nullable": true
+          },
+          "ayahOverrideIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          },
+          "quranWordId": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "selected": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "enabled": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "shape": {
+            "type": "string",
+            "nullable": true
+          },
+          "descriptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceDeltaResponse": {
+        "required": [
+          "linkingDataRevision",
+          "normalizedAppliedChanges",
+          "sourceId",
+          "sourceVersion",
+          "workspaceVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "workspaceVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sourceId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sourceVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "linkingDataRevision": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "normalizedAppliedChanges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingWorkspaceDeltaChangeResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceDeltaResponseApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingWorkspaceDeltaResponse"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
             },
             "nullable": true
           }
@@ -14888,6 +16787,9 @@
     },
     {
       "name": "LinkingOperations"
+    },
+    {
+      "name": "LinkingPreflights"
     },
     {
       "name": "LinkingSources"

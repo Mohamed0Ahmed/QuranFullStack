@@ -4,6 +4,7 @@ namespace QuranDashboard.Application.Abstractions.Linking.Preflight;
 
 public sealed record LinkingOperationRequest(
     int DoorId,
+    long ExpectedLinkingDataRevision,
     string? PreflightToken,
     Guid? IdempotencyKey,
     IReadOnlyList<LinkingOperationSourceRequest> Sources);

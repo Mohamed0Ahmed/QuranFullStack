@@ -32,4 +32,6 @@ public abstract record ConfirmLinkingOperationOutcome
     public sealed record DuplicateContribution : ConfirmLinkingOperationOutcome;
 
     public sealed record IdempotencyConflict : ConfirmLinkingOperationOutcome;
+
+    public sealed record LinkingDataStale : ConfirmLinkingOperationOutcome;
 }

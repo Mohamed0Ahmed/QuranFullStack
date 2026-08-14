@@ -22,4 +22,5 @@ export interface LinkingSourceEditorState {
 export interface LinkingSourceSetOperationResult {
   mergedSelection: MergedLinkingSelection;
   sourceIntents: readonly LinkingSourceIntent[];
+  linkingDataRevision: number;
 }

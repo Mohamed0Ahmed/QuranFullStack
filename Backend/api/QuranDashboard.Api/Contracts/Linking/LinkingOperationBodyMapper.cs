@@ -26,6 +26,14 @@ internal static class LinkingOperationBodyMapper
             return false;
         }
 
+        if (body.ExpectedLinkingDataRevision is null or <= 0)
+        {
+            violation = Malformed(
+                "expectedLinkingDataRevision",
+                body.ExpectedLinkingDataRevision?.ToString(CultureInfo.InvariantCulture));
+            return false;
+        }
+
         var sources = new List<LinkingOperationSourceRequest>(body.Sources?.Count ?? 0);
 
         foreach (var source in body.Sources ?? [])
@@ -38,7 +46,12 @@ internal static class LinkingOperationBodyMapper
             sources.Add(mapped);
         }
 
-        request = new LinkingOperationRequest(body.DoorId.Value, null, null, sources);
+        request = new LinkingOperationRequest(
+            body.DoorId.Value,
+            body.ExpectedLinkingDataRevision.Value,
+            null,
+            null,
+            sources);
 
         return true;
     }
@@ -60,6 +73,14 @@ internal static class LinkingOperationBodyMapper
         if (body.DoorId is null or <= 0)
         {
             violation = Malformed("doorId", Text(body.DoorId));
+            return false;
+        }
+
+        if (body.ExpectedLinkingDataRevision is null or <= 0)
+        {
+            violation = Malformed(
+                "expectedLinkingDataRevision",
+                body.ExpectedLinkingDataRevision?.ToString(CultureInfo.InvariantCulture));
             return false;
         }
 
@@ -91,6 +112,7 @@ internal static class LinkingOperationBodyMapper
 
         request = new LinkingOperationRequest(
             body.DoorId.Value,
+            body.ExpectedLinkingDataRevision.Value,
             body.PreflightToken,
             body.IdempotencyKey,
             sources);

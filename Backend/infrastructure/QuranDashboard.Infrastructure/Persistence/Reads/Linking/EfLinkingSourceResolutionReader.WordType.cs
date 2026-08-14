@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Linking.Responses;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Domain.Linking;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.WordTypes;
@@ -7,11 +6,11 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Linking;
 
 public sealed partial class EfLinkingSourceResolutionReader
 {
-    private async Task<IReadOnlyList<LinkingResolvedAyahDto>> ResolveWordTypeAsync(
+    private async Task<IReadOnlyList<LinkingMatchedWordRow>> ResolveWordTypeAsync(
         LinkingSourceDescriptor.WordType source,
         CancellationToken cancellationToken)
     {
-        var matches = source.Selection switch
+        return source.Selection switch
         {
             LinkingWordTypeSelection.Word selection =>
                 await ResolveWordTypeWordAsync(selection, cancellationToken),
@@ -22,8 +21,6 @@ public sealed partial class EfLinkingSourceResolutionReader
                 source.Selection.Kind,
                 "Unknown word type selection kind."),
         };
-
-        return await HydrateMatchesAsync(matches, includeAyahMarkers: false, cancellationToken);
     }
 
     private async Task<IReadOnlyList<LinkingMatchedWordRow>> ResolveWordTypeWordAsync(

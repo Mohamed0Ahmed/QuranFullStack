@@ -4,7 +4,9 @@ namespace QuranDashboard.Application.Linking.Queries.ResolveLinkingSource;
 
 public sealed class ResolveLinkingSourceHandler(
     ILogger<ResolveLinkingSourceHandler> logger,
-    ILinkingSourceResolutionReader reader)
+    ILinkingSourceResolutionReader reader,
+    ILinkingDataRevisionReadScope revisionScope,
+    ILinkingScalabilityPolicy policy)
 {
     private const string FeatureName = "Linking";
     private const string OperationName = "ResolveLinkingSource";
@@ -34,7 +36,10 @@ public sealed class ResolveLinkingSourceHandler(
 
         try
         {
-            var source = await reader.ResolveAsync(query.Descriptor, cancellationToken);
+            var source = await revisionScope.ExecuteAsync(
+                policy.MaximumAutomaticAttempts,
+                (revision, token) => reader.ResolveAsync(query.Descriptor, revision, token),
+                cancellationToken);
 
             return new ResolveLinkingSourceOutcome.Success(source);
         }

@@ -59,6 +59,7 @@ export interface LinkingSourcePreflight {
 export interface LinkingPreflightResult {
   doorId: number;
   doorName: string;
+  linkingDataRevision: number;
   isNoOp: boolean;
   isBlocked: boolean;
   preflightToken: string;

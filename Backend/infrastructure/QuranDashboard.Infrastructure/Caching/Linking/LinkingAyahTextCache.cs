@@ -4,14 +4,13 @@ namespace QuranDashboard.Infrastructure.Caching.Linking;
 
 public sealed class LinkingAyahTextCache : IDisposable
 {
-    private const long AyahEntrySize = 1;
     private const int MergeLockCount = 64;
 
-    private readonly LinkingSourceCacheEntryOptions _options;
+    private readonly LinkingScalabilityOptions _options;
     private readonly MemoryCache _cache;
     private readonly Lock[] _mergeLocks = CreateMergeLocks();
 
-    public LinkingAyahTextCache(LinkingSourceCacheEntryOptions options)
+    public LinkingAyahTextCache(LinkingScalabilityOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
         options.Validate();
@@ -19,40 +18,91 @@ public sealed class LinkingAyahTextCache : IDisposable
         _options = options;
         _cache = new MemoryCache(new MemoryCacheOptions
         {
-            SizeLimit = options.AyahTextSizeLimitAyahs,
+            SizeLimit = options.AyahTextCacheBudgetReferences,
         });
     }
 
-    public CachedAyahText? Get(int ayahId) =>
-        _cache.TryGetValue(LinkingSourceCacheKeys.AyahText(ayahId), out CachedAyahText? cached)
+    public CachedAyahText? Get(int ayahId, long linkingDataRevision) =>
+        _cache.TryGetValue(
+            LinkingSourceCacheKeys.AyahText(ayahId, linkingDataRevision),
+            out CachedAyahText? cached)
             ? cached
             : null;
 
-    public void Store(LinkingResolvedAyahDto ayah)
+    public void Store(LinkingResolvedAyahDto ayah, long linkingDataRevision)
     {
         ArgumentNullException.ThrowIfNull(ayah);
 
-        if (Covers(Get(ayah.AyahId), ayah.Words))
+        if (Covers(Get(ayah.AyahId, linkingDataRevision), ayah.Words))
         {
             return;
         }
 
         lock (MergeLockFor(ayah.AyahId))
         {
-            var existing = Get(ayah.AyahId);
+            var existing = Get(ayah.AyahId, linkingDataRevision);
             if (Covers(existing, ayah.Words))
             {
                 return;
             }
 
             var absoluteExpiration = existing?.AbsoluteExpiration
-                ?? DateTimeOffset.UtcNow.Add(_options.AbsoluteExpirationRelativeToNow);
+                ?? DateTimeOffset.UtcNow.Add(_options.CacheAbsoluteExpiration);
+
+            var merged = Merge(existing, ayah, absoluteExpiration);
+            var weight = 1L + merged.WordsById.Count;
+            if (weight > _options.AyahTextCacheBudgetReferences)
+            {
+                return;
+            }
 
             _cache.Set(
-                LinkingSourceCacheKeys.AyahText(ayah.AyahId),
-                Merge(existing, ayah, absoluteExpiration),
-                _options.Entry(AyahEntrySize, absoluteExpiration));
+                LinkingSourceCacheKeys.AyahText(ayah.AyahId, linkingDataRevision),
+                merged,
+                _options.CacheEntry(weight, absoluteExpiration));
         }
+    }
+
+    public IReadOnlyList<LinkingResolvedAyahDto>? TryHydrate(
+        IReadOnlyList<LinkingResolvedSourceCompact.CompactAyah> ayahs,
+        long linkingDataRevision)
+    {
+        ArgumentNullException.ThrowIfNull(ayahs);
+
+        var hydrated = new LinkingResolvedAyahDto[ayahs.Count];
+        for (var index = 0; index < ayahs.Count; index++)
+        {
+            var compact = ayahs[index];
+            var text = Get(compact.AyahId, linkingDataRevision);
+            if (text is null)
+            {
+                return null;
+            }
+
+            var words = new LinkingResolvedWordDto[compact.QuranWordIds.Count];
+            for (var wordIndex = 0; wordIndex < compact.QuranWordIds.Count; wordIndex++)
+            {
+                if (!text.WordsById.TryGetValue(compact.QuranWordIds[wordIndex], out var word))
+                {
+                    return null;
+                }
+
+                words[wordIndex] = word;
+            }
+
+            hydrated[index] = new LinkingResolvedAyahDto(
+                text.AyahId,
+                text.VerseKey,
+                text.SurahNumber,
+                text.AyahNumber,
+                text.SurahNameArabic,
+                text.PageFrom,
+                text.PageTo,
+                compact.MatchedQuranWordIds,
+                words);
+        }
+
+        return hydrated;
     }
 
     public void Dispose() => _cache.Dispose();

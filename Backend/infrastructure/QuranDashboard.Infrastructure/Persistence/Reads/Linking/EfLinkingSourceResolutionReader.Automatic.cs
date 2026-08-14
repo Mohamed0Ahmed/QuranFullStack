@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Linking.Responses;
 using QuranDashboard.Domain.Linking;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
@@ -6,7 +5,7 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Linking;
 
 public sealed partial class EfLinkingSourceResolutionReader
 {
-    private async Task<IReadOnlyList<LinkingResolvedAyahDto>> ResolveRootAsync(
+    private async Task<IReadOnlyList<LinkingMatchedWordRow>> ResolveRootAsync(
         LinkingSourceDescriptor.Root source,
         CancellationToken cancellationToken)
     {
@@ -18,18 +17,16 @@ public sealed partial class EfLinkingSourceResolutionReader
             throw NotFound("rootId", source.RootId);
         }
 
-        var matches = await (
+        return await (
             from morphology in _dbContext.WordMorphologies.AsNoTracking()
             join word in _dbContext.QuranWords.AsNoTracking() on morphology.QuranWordId equals word.Id
             where morphology.RootId == source.RootId && !word.IsAyahMarker
             select new LinkingMatchedWordRow(word.AyahId, word.Id, word.WordNumber))
             .Distinct()
             .ToListAsync(cancellationToken);
-
-        return await HydrateMatchesAsync(matches, includeAyahMarkers: false, cancellationToken);
     }
 
-    private async Task<IReadOnlyList<LinkingResolvedAyahDto>> ResolveLemmaAsync(
+    private async Task<IReadOnlyList<LinkingMatchedWordRow>> ResolveLemmaAsync(
         LinkingSourceDescriptor.Lemma source,
         CancellationToken cancellationToken)
     {
@@ -43,7 +40,7 @@ public sealed partial class EfLinkingSourceResolutionReader
             throw NotFound("lemmaId", source.LemmaId);
         }
 
-        var matches = await (
+        return await (
             from segment in _dbContext.WordMorphologySegments.AsNoTracking()
             join word in _dbContext.QuranWords.AsNoTracking() on segment.QuranWordId equals word.Id
             where segment.LemmaId == source.LemmaId
@@ -52,11 +49,9 @@ public sealed partial class EfLinkingSourceResolutionReader
             select new LinkingMatchedWordRow(word.AyahId, word.Id, word.WordNumber))
             .Distinct()
             .ToListAsync(cancellationToken);
-
-        return await HydrateMatchesAsync(matches, includeAyahMarkers: false, cancellationToken);
     }
 
-    private async Task<IReadOnlyList<LinkingResolvedAyahDto>> ResolveStemAsync(
+    private async Task<IReadOnlyList<LinkingMatchedWordRow>> ResolveStemAsync(
         LinkingSourceDescriptor.Stem source,
         CancellationToken cancellationToken)
     {
@@ -70,7 +65,7 @@ public sealed partial class EfLinkingSourceResolutionReader
             throw NotFound("stemId", source.StemId);
         }
 
-        var matches = await (
+        return await (
             from segment in _dbContext.WordMorphologySegments.AsNoTracking()
             join word in _dbContext.QuranWords.AsNoTracking() on segment.QuranWordId equals word.Id
             where segment.Kind == StemSegmentKind
@@ -80,7 +75,5 @@ public sealed partial class EfLinkingSourceResolutionReader
             select new LinkingMatchedWordRow(word.AyahId, word.Id, word.WordNumber))
             .Distinct()
             .ToListAsync(cancellationToken);
-
-        return await HydrateMatchesAsync(matches, includeAyahMarkers: false, cancellationToken);
     }
 }

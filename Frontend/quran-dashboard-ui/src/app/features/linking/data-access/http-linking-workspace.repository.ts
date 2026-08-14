@@ -24,6 +24,7 @@ import {
   LinkingWorkspaceRepository,
   LinkingWorkspaceStaleVersionError,
 } from './linking-workspace.repository';
+import { LinkingDataStaleError } from '../models/linking-revision.models';
 
 @Injectable({ providedIn: 'root' })
 export class HttpLinkingWorkspaceRepository implements LinkingWorkspaceRepository {
@@ -75,6 +76,7 @@ export class HttpLinkingWorkspaceRepository implements LinkingWorkspaceRepositor
         `${this.baseUrl}/sources/${sourceId}/configuration`,
         {
           sourceVersion: configuration.sourceVersion,
+          expectedLinkingDataRevision: configuration.expectedLinkingDataRevision,
           label: configuration.label,
           inclusionMode: toWireInclusionMode(configuration.inclusionMode),
           ayahOverrides: [...configuration.ayahOverrideIds],
@@ -113,7 +115,11 @@ function versionParams(workspaceVersion: number | null): HttpParams {
 
 function toWorkspaceError(error: unknown): Error {
   if (error instanceof HttpErrorResponse) {
-    const message = (error.error as ApiResponse<unknown> | null)?.message;
+    const response = error.error as ApiResponse<{ code?: string }> | null;
+    const message = response?.message;
+    if (error.status === 409 && response?.data?.code === 'LINKING_DATA_STALE') {
+      return new LinkingDataStaleError(message || 'تغيّرت بيانات الربط؛ أعد تحميل المصدر.');
+    }
     if (error.status === 409) {
       return new LinkingWorkspaceStaleVersionError(message || 'تغيّرت مساحة الربط في مكان آخر.');
     }
@@ -158,6 +164,7 @@ function toWorkspaceItem(source: LinkingWorkspaceSourceResponse): LinkingWorkspa
     source: descriptor,
     configuration,
     configurationRevision: 0,
+    linkingDataRevision: null,
     ayahOverrideIds: source.ayahOverrides,
     ayahIdByVerseKey,
     lastResolvedCount: source.lastResolvedCount,

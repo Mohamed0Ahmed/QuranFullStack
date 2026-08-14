@@ -17,6 +17,11 @@ public static class LinkingPreflightToken
 
         var canonical = new StringBuilder();
 
+        AppendLine(
+            canonical,
+            "schema",
+            "2",
+            Number(request.ExpectedLinkingDataRevision));
         AppendLine(canonical, "door", Number(door.DoorId), Number(door.Version));
 
         foreach (var contribution in contributions.OrderBy(candidate => candidate.Id))

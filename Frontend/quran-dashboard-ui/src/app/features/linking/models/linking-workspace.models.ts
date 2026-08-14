@@ -39,6 +39,7 @@ export interface LinkingWorkspaceItem {
   source: LinkingSourceDescriptor;
   configuration: LinkingSourceConfiguration;
   configurationRevision: number;
+  linkingDataRevision: number | null;
   ayahOverrideIds: readonly number[];
   ayahIdByVerseKey: Readonly<Record<string, number>>;
   lastResolvedCount: number | null;

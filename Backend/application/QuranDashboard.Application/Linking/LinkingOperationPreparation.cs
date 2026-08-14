@@ -39,7 +39,12 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
 
         foreach (var source in request.Sources)
         {
-            sources.Add(await PrepareSourceAsync(source, state, confirmedAyahs, cancellationToken));
+            sources.Add(await PrepareSourceAsync(
+                source,
+                request.ExpectedLinkingDataRevision,
+                state,
+                confirmedAyahs,
+                cancellationToken));
         }
 
         return new LinkingOperationIntent(request.DoorId, state?.IsArchived ?? false, sources);
@@ -47,6 +52,7 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
 
     private async Task<LinkingOperationSourceIntent> PrepareSourceAsync(
         LinkingOperationSourceRequest source,
+        long linkingDataRevision,
         LinkingConfirmedDoorState? state,
         IReadOnlyDictionary<int, AyahMetadata> confirmedAyahs,
         CancellationToken cancellationToken)
@@ -58,7 +64,10 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
         }
 
         var identity = LinkingContributionIdentity.For(source.Descriptor, source.ContributionMode);
-        var resolved = await resolution.ResolveAsync(source.Descriptor, cancellationToken);
+        var resolved = await resolution.ResolveAsync(
+            source.Descriptor,
+            linkingDataRevision,
+            cancellationToken);
         var members = resolved.Ayahs.ToDictionary(ayah => ayah.AyahId);
 
         var grouped = source.ContributionMode == LinkingContributionMode.ManualGrouped;
@@ -109,7 +118,8 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
                 fallback?.AyahNumber ?? 0,
                 [.. ayah.SelectedWordIds.Distinct().Order()],
                 descriptions,
-                LinkingPreflightInvalidReason.AyahOutsideSource);
+                LinkingPreflightInvalidReason.AyahOutsideSource,
+                []);
         }
 
         var (wordIds, invalidReason) = EffectiveWordsOf(source, ayah, member);
@@ -121,7 +131,8 @@ public sealed class LinkingOperationPreparation(ILinkingSourceResolutionReader r
             member.AyahNumber,
             wordIds,
             descriptions,
-            invalidReason);
+            invalidReason,
+            member.MatchedQuranWordIds);
     }
 
     private static (IReadOnlyList<int> WordIds, LinkingPreflightInvalidReason? InvalidReason) EffectiveWordsOf(

@@ -4,6 +4,8 @@ public sealed record LinkingPreflightBody
 {
     public int? DoorId { get; init; }
 
+    public long? ExpectedLinkingDataRevision { get; init; }
+
     public IReadOnlyList<LinkingPreflightSourceBody>? Sources { get; init; }
 }
 
@@ -37,6 +39,8 @@ public sealed record LinkingOperationAyahBody
 public sealed record LinkingConfirmationBody
 {
     public int? DoorId { get; init; }
+
+    public long? ExpectedLinkingDataRevision { get; init; }
 
     public string? PreflightToken { get; init; }
 

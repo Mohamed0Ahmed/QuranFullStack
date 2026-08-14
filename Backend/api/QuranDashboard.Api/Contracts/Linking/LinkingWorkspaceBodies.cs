@@ -18,6 +18,8 @@ public sealed record LinkingWorkspaceConfigurationBody
 {
     public uint? SourceVersion { get; init; }
 
+    public long? ExpectedLinkingDataRevision { get; init; }
+
     public string? Label { get; init; }
 
     public string? InclusionMode { get; init; }

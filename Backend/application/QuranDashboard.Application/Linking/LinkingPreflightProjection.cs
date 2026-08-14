@@ -8,10 +8,12 @@ public static class LinkingPreflightProjection
     public static LinkingPreflightResultDto ToResult(
         LinkingConfirmedDoorState state,
         LinkingOperationClassification classification,
-        string preflightToken) =>
+        string preflightToken,
+        long linkingDataRevision) =>
         new(
             state.DoorId,
             state.DoorName,
+            linkingDataRevision,
             classification.IsNoOp,
             classification.IsBlocked,
             preflightToken,

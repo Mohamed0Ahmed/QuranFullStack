@@ -51,6 +51,8 @@ public sealed class LinkingOperationsController(
             PreflightLinkingOperationOutcome.SourceNotFound notFound =>
                 NotFound(ApiResponse<LinkingPreflightResultDto>.Fail(
                     ApiMessages.LinkingSourceNotFoundMessage(notFound.Reference))),
+            PreflightLinkingOperationOutcome.LinkingDataStale =>
+                Conflict(LinkingDataStaleResponse()),
             _ => throw new InvalidOperationException(
                 $"Unhandled {nameof(PreflightLinkingOperationOutcome)} variant."),
         };
@@ -119,8 +121,18 @@ public sealed class LinkingOperationsController(
             ConfirmLinkingOperationOutcome.IdempotencyConflict =>
                 Conflict(ApiResponse<LinkingConfirmationResultDto>.Fail(
                     ApiMessages.LinkingOperationIdempotencyConflict)),
+            ConfirmLinkingOperationOutcome.LinkingDataStale =>
+                Conflict(LinkingDataStaleResponse()),
             _ => throw new InvalidOperationException(
                 $"Unhandled {nameof(ConfirmLinkingOperationOutcome)} variant."),
         };
     }
+
+    private static ApiResponse<LinkingLifecycleErrorData> LinkingDataStaleResponse() => new()
+    {
+        IsSuccess = false,
+        Message = ApiMessages.LinkingDataStale,
+        Data = new LinkingLifecycleErrorData("LINKING_DATA_STALE"),
+        Errors = [],
+    };
 }

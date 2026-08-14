@@ -147,21 +147,22 @@ export class LinkingSourceEditorFacade {
       status: 'loading',
     });
     try {
-      this.loadSubscription = this.resolver.resolve(source, (rawProgress) => {
+      this.loadSubscription = this.resolver.resolveRevisioned(source, (rawProgress) => {
         if (generation === this.generation) {
           this.editorStateSignal.update((state) => ({ ...state, rawProgress, status: 'loading' }));
         }
       }).subscribe({
-        next: (ayahs) => {
+        next: (resolved) => {
           if (generation !== this.generation) {
             return;
           }
-          const uniqueAyahs = uniqueAyahsByVerseKey(ayahs);
+          const uniqueAyahs = uniqueAyahsByVerseKey(resolved.ayahs);
           const universe = uniqueAyahs.map((ayah) => ayah.verseKey);
           if (this.workspace.item(sourceKey)?.configurationRevision === configurationRevision) {
             this.workspace.reconcileResolvedSource(
               sourceKey,
               uniqueAyahs.map((ayah) => ({ ayahId: ayah.ayahId, verseKey: ayah.verseKey })),
+              resolved.linkingDataRevision,
             );
           }
           this.editorStateSignal.update((state) => ({

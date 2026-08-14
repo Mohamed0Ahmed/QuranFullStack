@@ -6,11 +6,11 @@ public sealed class LinkingSourceResolutionCache : IDisposable
 {
     private const int MaxSharedLoadAttempts = 2;
 
-    private readonly LinkingSourceCacheEntryOptions _options;
+    private readonly LinkingScalabilityOptions _options;
     private readonly MemoryCache _cache;
     private readonly Lock _pendingLock = new();
 
-    public LinkingSourceResolutionCache(LinkingSourceCacheEntryOptions options)
+    public LinkingSourceResolutionCache(LinkingScalabilityOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
         options.Validate();
@@ -18,7 +18,7 @@ public sealed class LinkingSourceResolutionCache : IDisposable
         _options = options;
         _cache = new MemoryCache(new MemoryCacheOptions
         {
-            SizeLimit = options.ResolvedSourceSizeLimitAyahs,
+            SizeLimit = options.CompactSourceCacheBudgetReferences,
         });
     }
 
@@ -88,7 +88,7 @@ public sealed class LinkingSourceResolutionCache : IDisposable
             var completion = new TaskCompletionSource<LinkingResolvedSourceCompact>(
                 TaskCreationOptions.RunContinuationsAsynchronously);
 
-            _ = _cache.Set(key, completion.Task, _options.Entry(LinkingLimits.MaxResolvedAyahs));
+            _ = _cache.Set(key, completion.Task, _options.CacheEntry(1));
             _ = RunAsync(key, completion, load, cancellationToken);
 
             return completion.Task;
@@ -107,7 +107,15 @@ public sealed class LinkingSourceResolutionCache : IDisposable
 
             lock (_pendingLock)
             {
-                _ = _cache.Set(key, completion.Task, _options.Entry(Math.Max(1, compact.AyahCount)));
+                var weight = compact.ReferenceWeight;
+                if (weight <= _options.CompactSourceCacheBudgetReferences)
+                {
+                    _ = _cache.Set(key, completion.Task, _options.CacheEntry(Math.Max(1, weight)));
+                }
+                else
+                {
+                    _cache.Remove(key);
+                }
             }
 
             completion.SetResult(compact);

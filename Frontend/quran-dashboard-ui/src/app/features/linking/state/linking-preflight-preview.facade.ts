@@ -40,6 +40,7 @@ export class LinkingPreflightPreviewFacade {
   );
   private readonly subscriptions = new Map<string, Subscription>();
   private preflightToken: string | null = null;
+  private preflightRevision: number | null = null;
   private generation = 0;
 
   constructor() {
@@ -57,6 +58,7 @@ export class LinkingPreflightPreviewFacade {
 
     this.cancelSubscriptions();
     this.preflightToken = nextToken;
+    this.preflightRevision = preflight?.linkingDataRevision ?? null;
     this.generation += 1;
 
     if (preflight === null) {
@@ -170,7 +172,7 @@ export class LinkingPreflightPreviewFacade {
     }));
 
     const requests = chunk(missingVerseKeys, PREVIEW_CHUNK_SIZE).map((verseKeys) =>
-      this.resolver.resolve(manualPreviewSource(verseKeys), () => undefined),
+      this.resolver.resolveRevisioned(manualPreviewSource(verseKeys), () => undefined),
     );
     const requestGeneration = this.generation;
     const subscription = forkJoin(requests).subscribe({
@@ -178,9 +180,17 @@ export class LinkingPreflightPreviewFacade {
         if (requestGeneration !== this.generation) {
           return;
         }
+        if (chunks.some((chunk) => chunk.linkingDataRevision !== this.preflightRevision)) {
+          this.updateSource(source.sourceIdentity, (state) => ({
+            ...state,
+            status: 'error',
+            errorMessage: LINKING_LABELS.preflightAyahPreviewError,
+          }));
+          return;
+        }
         this.updateSource(source.sourceIdentity, (state) => {
           const ayahsByVerseKey = new Map(state.ayahsByVerseKey);
-          for (const ayah of chunks.flat()) {
+          for (const ayah of chunks.flatMap((chunk) => chunk.ayahs)) {
             ayahsByVerseKey.set(ayah.verseKey, ayah);
           }
           return { ...state, status: 'ready', errorMessage: null, ayahsByVerseKey };

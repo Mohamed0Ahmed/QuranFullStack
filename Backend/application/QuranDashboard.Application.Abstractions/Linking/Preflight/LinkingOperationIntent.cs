@@ -31,4 +31,5 @@ public sealed record LinkingOperationAyahIntent(
     int AyahNumber,
     IReadOnlyList<int> WordIds,
     IReadOnlyList<string> Descriptions,
-    LinkingPreflightInvalidReason? InvalidReason);
+    LinkingPreflightInvalidReason? InvalidReason,
+    IReadOnlyList<int> SourceMatchedWordIds);

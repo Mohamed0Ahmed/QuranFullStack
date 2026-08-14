@@ -26,6 +26,7 @@ import {
   toggleLinkingSelection,
 } from '../utils/linking-selection';
 import { LinkingAccessService } from './linking-access.service';
+import { LinkingSourceCache } from './linking-source.cache';
 import { mergeWorkspaceSnapshot, toAyahIds, toConfigurationRequest } from './linking-workspace-merge';
 import {
   LinkingWorkspaceOperation,
@@ -37,6 +38,7 @@ export class LinkingWorkspaceStore {
   private readonly currentUserStore = inject(CurrentUserStore);
   private readonly linkingAccess = inject(LinkingAccessService);
   private readonly sync = inject(LinkingWorkspaceSyncRunner);
+  private readonly sourceCache = inject(LinkingSourceCache);
   private readonly repository: LinkingWorkspaceRepository = inject(HttpLinkingWorkspaceRepository);
   private readonly itemsSignal = signal<readonly LinkingWorkspaceItem[]>([]);
   private readonly workspaceVersionSignal = signal<number | null>(null);
@@ -82,12 +84,30 @@ export class LinkingWorkspaceStore {
           keys.includes(sourceKey) ? keys : [...keys, sourceKey],
         ),
       warn: (message) => this.persistenceWarningSignal.set(message),
+      invalidateLinkingDataRevision: () => this.invalidateLinkingDataRevision(),
     });
     effect(() => this.synchronizeActorWorkspace());
   }
 
   dismissPersistenceWarning(): void {
     this.persistenceWarningSignal.set(null);
+  }
+
+  invalidateLinkingDataRevision(): void {
+    this.sourceCache.evictResolvedSources();
+    this.itemsSignal.update((items) =>
+      items.map((item) => ({
+        ...item,
+        linkingDataRevision: null,
+        ayahOverrideIds: [],
+        ayahIdByVerseKey: {},
+        configurationRevision: item.configurationRevision + 1,
+        configuration:
+          item.configuration.kind === 'manual'
+            ? { ...item.configuration, quranWordIdsByVerseKey: {} }
+            : item.configuration,
+      })),
+    );
   }
 
   addSource(source: LinkingSourceDescriptor): string | null {
@@ -283,6 +303,7 @@ export class LinkingWorkspaceStore {
   reconcileResolvedSource(
     sourceKey: string,
     resolvedAyahs: readonly { ayahId: number; verseKey: string }[],
+    linkingDataRevision: number,
   ): void {
     const item = this.findItem(sourceKey);
     if (item === null) {
@@ -306,6 +327,7 @@ export class LinkingWorkspaceStore {
       ayahOverrideIds: toAyahIds(ayahInclusion.verseKeys, ayahIdByVerseKey),
       configuration: { ...item.configuration, ayahInclusion },
       lastResolvedCount: universe.length,
+      linkingDataRevision,
     });
   }
 

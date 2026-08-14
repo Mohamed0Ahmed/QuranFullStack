@@ -7,5 +7,6 @@ public interface ILinkingSourceResolutionReader
 {
     Task<LinkingResolvedSourceDto> ResolveAsync(
         LinkingSourceDescriptor descriptor,
+        long linkingDataRevision,
         CancellationToken cancellationToken);
 }

@@ -28,10 +28,17 @@ public interface ILinkingWorkspaceWriter
         long sourceId,
         LinkingWorkspaceConfigurationInput configuration,
         uint expectedSourceVersion,
+        long expectedLinkingDataRevision,
         CancellationToken cancellationToken);
 
     Task<LinkingWorkspaceDto> ClearSourcesAsync(
         int userId,
         uint expectedWorkspaceVersion,
+        CancellationToken cancellationToken);
+
+    Task<LinkingWorkspaceDeltaAcknowledgement> ApplyDeltaAsync(
+        int userId,
+        long sourceId,
+        LinkingWorkspaceDeltaInput delta,
         CancellationToken cancellationToken);
 }

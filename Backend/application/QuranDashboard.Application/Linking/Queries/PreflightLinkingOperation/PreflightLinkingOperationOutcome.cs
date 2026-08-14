@@ -16,4 +16,6 @@ public abstract record PreflightLinkingOperationOutcome
     public sealed record DoorNotFound(int DoorId) : PreflightLinkingOperationOutcome;
 
     public sealed record SourceNotFound(string Reference) : PreflightLinkingOperationOutcome;
+
+    public sealed record LinkingDataStale : PreflightLinkingOperationOutcome;
 }

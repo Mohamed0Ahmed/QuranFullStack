@@ -4,6 +4,7 @@
 import { LinkingResolvedAyahDto } from '../models/linking-resolved-ayah-dto';
 export interface LinkingResolvedSourceDto {
   ayahs: Array<LinkingResolvedAyahDto>;
+  linkingDataRevision: number;
   resolvedAtUtc: string;
   sourceIdentity: string;
   totalAyahCount: number;

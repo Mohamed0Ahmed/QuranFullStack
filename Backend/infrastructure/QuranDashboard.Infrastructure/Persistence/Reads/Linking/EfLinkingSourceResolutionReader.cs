@@ -1,6 +1,7 @@
 using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Application.Abstractions.Linking.Responses;
 using QuranDashboard.Domain.Linking;
+using QuranDashboard.Infrastructure.Caching.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Linking;
 
@@ -10,29 +11,44 @@ public sealed partial class EfLinkingSourceResolutionReader(QuranDashboardDbCont
     private const string ResolvedAyahsField = "ayahs";
     private const string StemSegmentKind = "STEM";
 
-    private static readonly IReadOnlyDictionary<int, IReadOnlyList<int>> NoMatchedWords =
-        new Dictionary<int, IReadOnlyList<int>>();
-
     private readonly QuranDashboardDbContext _dbContext = dbContext;
 
     public async Task<LinkingResolvedSourceDto> ResolveAsync(
+        LinkingSourceDescriptor descriptor,
+        long linkingDataRevision,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+
+        var compact = await ResolveCompactAsync(descriptor, cancellationToken);
+        var ayahs = await HydrateAsync(compact, compact.AyahIds, cancellationToken);
+
+        return new LinkingResolvedSourceDto(
+            compact.SourceIdentity,
+            linkingDataRevision,
+            DateTimeOffset.UtcNow,
+            compact.AyahCount,
+            ayahs);
+    }
+
+    public async Task<LinkingResolvedSourceCompact> ResolveCompactAsync(
         LinkingSourceDescriptor descriptor,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
 
-        var ayahs = descriptor switch
+        var references = descriptor switch
         {
             LinkingSourceDescriptor.Root source =>
-                await ResolveRootAsync(source, cancellationToken),
+                FromMatches(await ResolveRootAsync(source, cancellationToken), false),
             LinkingSourceDescriptor.Lemma source =>
-                await ResolveLemmaAsync(source, cancellationToken),
+                FromMatches(await ResolveLemmaAsync(source, cancellationToken), false),
             LinkingSourceDescriptor.Stem source =>
-                await ResolveStemAsync(source, cancellationToken),
+                FromMatches(await ResolveStemAsync(source, cancellationToken), false),
             LinkingSourceDescriptor.UniqueWord source =>
-                await ResolveUniqueWordAsync(source, cancellationToken),
+                FromMatches(await ResolveUniqueWordAsync(source, cancellationToken), true),
             LinkingSourceDescriptor.WordType source =>
-                await ResolveWordTypeAsync(source, cancellationToken),
+                FromMatches(await ResolveWordTypeAsync(source, cancellationToken), false),
             LinkingSourceDescriptor.ManualMushafAyahs source =>
                 await ResolveManualMushafAsync(source, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(
@@ -41,11 +57,113 @@ public sealed partial class EfLinkingSourceResolutionReader(QuranDashboardDbCont
                 "Unknown linking source kind."),
         };
 
-        return new LinkingResolvedSourceDto(
+        var orderedAyahIds = await _dbContext.QuranAyahs
+            .AsNoTracking()
+            .Where(ayah => references.AyahIds.Contains(ayah.Id))
+            .OrderBy(ayah => ayah.SurahNumber)
+            .ThenBy(ayah => ayah.AyahNumber)
+            .Select(ayah => ayah.Id)
+            .ToListAsync(cancellationToken);
+        var wordRows = await _dbContext.QuranWords
+            .AsNoTracking()
+            .Where(word =>
+                references.AyahIds.Contains(word.AyahId)
+                && (references.IncludeAyahMarkers || !word.IsAyahMarker))
+            .OrderBy(word => word.AyahId)
+            .ThenBy(word => word.WordNumber)
+            .ThenBy(word => word.Id)
+            .Select(word => new { word.AyahId, QuranWordId = word.Id })
+            .ToListAsync(cancellationToken);
+        var wordIdsByAyah = wordRows
+            .GroupBy(word => word.AyahId)
+            .ToDictionary(
+                group => group.Key,
+                group => (IReadOnlyList<int>)[.. group.Select(word => word.QuranWordId)]);
+        var matchesByAyah = GroupMatchedWordIds(references.Matches);
+        var compactAyahs = orderedAyahIds
+            .Select(ayahId => new LinkingResolvedSourceCompact.CompactAyah(
+                ayahId,
+                wordIdsByAyah.GetValueOrDefault(ayahId, []),
+                matchesByAyah.GetValueOrDefault(ayahId, [])))
+            .ToList();
+
+        return LinkingResolvedSourceCompact.Create(
             LinkingSourceIdentity.For(descriptor),
-            DateTimeOffset.UtcNow,
-            ayahs.Count,
-            ayahs);
+            compactAyahs,
+            references.IncludeAyahMarkers);
+    }
+
+    public async Task<IReadOnlyList<LinkingResolvedAyahDto>> HydrateAsync(
+        LinkingResolvedSourceCompact compact,
+        IReadOnlyList<int> ayahIds,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(compact);
+        ArgumentNullException.ThrowIfNull(ayahIds);
+
+        if (ayahIds.Count == 0)
+        {
+            return [];
+        }
+
+        var selected = ayahIds.ToHashSet();
+        var compactAyahs = compact.Ayahs.Where(ayah => selected.Contains(ayah.AyahId)).ToList();
+        var orderedAyahs = await LinkingAyahHydration.LoadByIdsAsync(
+            _dbContext,
+            ayahIds,
+            cancellationToken);
+        var matches = compactAyahs.ToDictionary(
+            ayah => ayah.AyahId,
+            ayah => ayah.MatchedQuranWordIds);
+
+        return await LinkingAyahHydration.ProjectAsync(
+            _dbContext,
+            orderedAyahs,
+            matches,
+            compact.IncludesAyahMarkers,
+            cancellationToken);
+    }
+
+    public async Task<LinkingCompactSourcePage> ResolveCompactPageAsync(
+        LinkingResolvedSourceCompact compact,
+        LinkingSourcePageView view,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var query = _dbContext.QuranAyahs
+            .AsNoTracking()
+            .Where(ayah => compact.AyahIds.Contains(ayah.Id));
+        if (view.Segment != LinkingSourcePageSegment.All)
+        {
+            var includedByOverride = view.InclusionMode == LinkingInclusionMode.Only;
+            var requestIncluded = view.Segment == LinkingSourcePageSegment.Included;
+            var requireOverride = includedByOverride == requestIncluded;
+            query = requireOverride
+                ? query.Where(ayah => view.AyahOverrideIds.Contains(ayah.Id))
+                : query.Where(ayah => !view.AyahOverrideIds.Contains(ayah.Id));
+        }
+
+        var total = await query.CountAsync(cancellationToken);
+        var ids = await query
+            .OrderBy(ayah => ayah.SurahNumber)
+            .ThenBy(ayah => ayah.AyahNumber)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ayah => ayah.Id)
+            .ToListAsync(cancellationToken);
+        return new LinkingCompactSourcePage(
+            total,
+            [.. ids.Select(id => compact.AyahsById[id])]);
+    }
+
+    private static LinkingSourceReferenceSet FromMatches(
+        IReadOnlyList<LinkingMatchedWordRow> matches,
+        bool includeAyahMarkers)
+    {
+        var ayahIds = matches.Select(match => match.AyahId).Distinct().ToList();
+        GuardResolvedAyahCount(ayahIds.Count);
+        return new LinkingSourceReferenceSet(ayahIds, matches, includeAyahMarkers);
     }
 
     private static void GuardResolvedAyahCount(int ayahCount)
@@ -73,34 +191,17 @@ public sealed partial class EfLinkingSourceResolutionReader(QuranDashboardDbCont
                         .Select(match => match.QuranWordId)
                 ]);
 
-    private async Task<IReadOnlyList<LinkingResolvedAyahDto>> HydrateMatchesAsync(
-        IReadOnlyList<LinkingMatchedWordRow> matches,
-        bool includeAyahMarkers,
-        CancellationToken cancellationToken)
-    {
-        var matchedWordIdsByAyah = GroupMatchedWordIds(matches);
-        GuardResolvedAyahCount(matchedWordIdsByAyah.Count);
-
-        if (matchedWordIdsByAyah.Count == 0)
-        {
-            return [];
-        }
-
-        var ayahs = await LinkingAyahHydration.LoadByIdsAsync(
-            _dbContext,
-            [.. matchedWordIdsByAyah.Keys],
-            cancellationToken);
-
-        return await LinkingAyahHydration.ProjectAsync(
-            _dbContext,
-            ayahs,
-            matchedWordIdsByAyah,
-            includeAyahMarkers,
-            cancellationToken);
-    }
-
     private static LinkingSourceNotFoundException NotFound(string field, int id) =>
         new(string.Create(CultureInfo.InvariantCulture, $"{field}={id}"));
 
     internal sealed record LinkingMatchedWordRow(int AyahId, int QuranWordId, int WordNumber);
+
+    private sealed record LinkingSourceReferenceSet(
+        IReadOnlyList<int> AyahIds,
+        IReadOnlyList<LinkingMatchedWordRow> Matches,
+        bool IncludeAyahMarkers);
+
+    public sealed record LinkingCompactSourcePage(
+        int TotalAyahs,
+        IReadOnlyList<LinkingResolvedSourceCompact.CompactAyah> Ayahs);
 }

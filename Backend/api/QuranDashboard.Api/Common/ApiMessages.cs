@@ -307,8 +307,32 @@ public static class ApiMessages
     public const string LinkingOperationInvalidClassification = "تعذر تنفيذ العملية لوجود عناصر غير صالحة";
     public const string LinkingOperationStaleVersion = "تغيرت مساهمة مرتبطة منذ آخر قراءة؛ أعد الفحص وحاول مجددًا";
     public const string LinkingOperationStalePreflight = "تغيرت حالة الربط منذ الفحص؛ راجع النتيجة المحدثة";
+    public const string LinkingDataStale = "تغيرت بيانات الربط القرآنية؛ أعد تحميل المصدر ثم راجع العملية";
+    public const string LinkingSourceViewStale = "تغير عرض المصدر؛ أعد تحميله قبل متابعة التصفح";
+    public const string LinkingSourcePageInvalid = "طلب صفحة المصدر غير صالح";
+    public const string LinkingSourceReadTransientFailure = "تعذر تثبيت قراءة بيانات الربط مؤقتًا؛ حاول مجددًا";
     public const string LinkingOperationDuplicateContribution = "توجد مساهمة حية لهذا المصدر داخل الباب";
     public const string LinkingOperationIdempotencyConflict = "مفتاح العملية مستخدم لمحاولة تأكيد مختلفة";
+    public const string LinkingPreparedPreflightAccepted = "تم قبول الفحص المسبق للتحضير";
+    public const string LinkingPreparedPreflightLoaded = "تم تحميل حالة الفحص المسبق";
+    public const string LinkingPreparedPreflightCancelled = "تم إلغاء الفحص المسبق";
+    public const string LinkingPreparedPreflightNotFound = "الفحص المسبق غير موجود";
+    public const string LinkingPreparedPreflightInvalid = "طلب الفحص المسبق غير صالح";
+
+    public static string LinkingLifecycleMessage(string code) => code switch
+    {
+        "LINKING_DATA_STALE" => LinkingDataStale,
+        "SOURCE_VIEW_STALE" => LinkingSourceViewStale,
+        "WORKSPACE_SOURCE_STALE" => LinkingWorkspaceStaleVersion,
+        "PREFLIGHT_EXPIRED" => "انتهت صلاحية الفحص المسبق؛ أنشئ فحصًا جديدًا",
+        "PREFLIGHT_NOT_READY" => "لم يكتمل تحضير الفحص المسبق بعد",
+        "PREFLIGHT_BLOCKED" => LinkingOperationInvalidClassification,
+        "PREFLIGHT_CANCELLED" => "تم إلغاء الفحص المسبق",
+        "PREFLIGHT_ALREADY_CONFIRMED" => "تم تأكيد هذا الفحص المسبق مسبقًا",
+        "ACTIVE_LINKING_WORKFLOW_LIMIT" => "بلغت عمليات الربط النشطة الحد الأقصى المسموح به",
+        "IDEMPOTENCY_CONFLICT" => LinkingOperationIdempotencyConflict,
+        _ => "تعذر متابعة عملية الربط في حالتها الحالية",
+    };
 
     private const string LinkingOperationInvalidPrefix = "طلب غير صالح — الحقل";
 

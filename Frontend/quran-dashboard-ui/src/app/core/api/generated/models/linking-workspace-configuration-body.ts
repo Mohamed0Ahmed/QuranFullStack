@@ -7,6 +7,7 @@ export interface LinkingWorkspaceConfigurationBody {
   automaticWordMatchesEnabled: boolean | null;
   ayahOverrides: Array<number> | null;
   descriptions: Array<LinkingDescriptionBody> | null;
+  expectedLinkingDataRevision: number | null;
   inclusionMode: string | null;
   label: string | null;
   manualLinkShape: string | null;

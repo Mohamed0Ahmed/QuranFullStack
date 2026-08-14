@@ -2,12 +2,18 @@ using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Application.Abstractions.Linking.Responses;
 using QuranDashboard.Domain.Linking;
 using QuranDashboard.Infrastructure.Persistence.Linking;
+using QuranDashboard.Infrastructure.Persistence.Reads.Linking;
+using QuranDashboard.Infrastructure.Caching.Linking;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 internal sealed partial class EfLinkingWorkspaceWriter(
     QuranDashboardDbContext db,
-    ILinkingSourceResolutionReader resolution) : ILinkingWorkspaceWriter
+    ILinkingSourceResolutionReader resolution,
+    ILinkingDataRevisionWriterStore revisionStore,
+    EfLinkingSourceResolutionReader efResolution,
+    LinkingSourceResolutionCache sourceCache) : ILinkingWorkspaceWriter
 {
     private const string SelectionFieldPrefix = "selection.";
     private const string RootIdField = "rootId";
@@ -25,11 +31,11 @@ internal sealed partial class EfLinkingWorkspaceWriter(
         ArgumentNullException.ThrowIfNull(descriptor);
 
         var form = LinkingSourceStorage.Encode(descriptor);
-        await EnsureDimensionReferencesExistAsync(form, cancellationToken);
-
         var now = DateTimeOffset.UtcNow;
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var linkingDataRevision = await LockLinkingDataForReadAsync(transaction, cancellationToken);
+        await EnsureDimensionReferencesExistAsync(form, cancellationToken);
 
         var workspace = await LoadWorkspaceAsync(userId, cancellationToken);
         if (workspace is null)
@@ -80,7 +86,10 @@ internal sealed partial class EfLinkingWorkspaceWriter(
                 LinkingLimits.MaxPreparedSources.ToString(CultureInfo.InvariantCulture)));
         }
 
-        var resolved = await resolution.ResolveAsync(descriptor, cancellationToken);
+        var resolved = await resolution.ResolveAsync(
+            descriptor,
+            linkingDataRevision,
+            cancellationToken);
         var isManual = form.Kind == LinkingSourceKind.ManualMushafAyahs;
 
         var source = new LinkingWorkspaceSource
@@ -379,5 +388,16 @@ internal sealed partial class EfLinkingWorkspaceWriter(
             throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
                 LinkingWorkspaceViolationCode.ReferenceUnknown, null, null));
         }
+    }
+
+    private async Task<long> LockLinkingDataForReadAsync(
+        IDbContextTransaction transaction,
+        CancellationToken cancellationToken)
+    {
+        var connection = db.Database.GetDbConnection() as NpgsqlConnection
+            ?? throw new InvalidOperationException("Expected an Npgsql linking workspace connection.");
+        var npgsqlTransaction = transaction.GetDbTransaction() as NpgsqlTransaction
+            ?? throw new InvalidOperationException("Expected an Npgsql linking workspace transaction.");
+        return await revisionStore.LockForReadAsync(connection, npgsqlTransaction, cancellationToken);
     }
 }

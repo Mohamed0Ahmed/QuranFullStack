@@ -12,18 +12,33 @@ internal sealed partial class EfLinkingWorkspaceWriter
         long sourceId,
         LinkingWorkspaceConfigurationInput configuration,
         uint expectedSourceVersion,
+        long expectedLinkingDataRevision,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var linkingDataRevision = await LockLinkingDataForReadAsync(transaction, cancellationToken);
+        if (linkingDataRevision != expectedLinkingDataRevision)
+        {
+            throw new LinkingDataStaleException(expectedLinkingDataRevision, linkingDataRevision);
+        }
 
         var workspace = await LoadWorkspaceAsync(userId, cancellationToken)
             ?? throw new LinkingWorkspaceSourceNotFoundException(sourceId);
 
         var source = await db.LinkingWorkspaceSources
+            .FromSqlInterpolated(
+                $"SELECT source.*, source.xmin FROM linking_workspace_sources source WHERE id = {sourceId} FOR UPDATE")
             .FirstOrDefaultAsync(
                 candidate => candidate.Id == sourceId && candidate.WorkspaceId == workspace.Id,
                 cancellationToken)
             ?? throw new LinkingWorkspaceSourceNotFoundException(sourceId);
+
+        if (source.Version != expectedSourceVersion)
+        {
+            throw new LinkingStaleVersionException();
+        }
 
         db.Entry(source).Property(entity => entity.Version).OriginalValue = expectedSourceVersion;
 
@@ -46,7 +61,7 @@ internal sealed partial class EfLinkingWorkspaceWriter
         await EnsureAyahsExistAsync(overrideAyahIds, cancellationToken);
 
         var sourceAyahIds = selectedWords.Count > 0 || descriptions.Count > 0
-            ? await LoadSourceAyahIdsAsync(source, cancellationToken)
+            ? await LoadSourceAyahIdsAsync(source, linkingDataRevision, cancellationToken)
             : [];
 
         EnsureSelectedWordAyahs(selectedWords, sourceAyahIds);
@@ -66,6 +81,7 @@ internal sealed partial class EfLinkingWorkspaceWriter
         await ReplaceDescriptionsAsync(source.Id, descriptions, userId, now, cancellationToken);
 
         await SaveTranslatingWriteExceptionsAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return await LinkingWorkspaceProjection.ProjectAsync(db, workspace, cancellationToken);
     }
@@ -157,12 +173,15 @@ internal sealed partial class EfLinkingWorkspaceWriter
 
     private async Task<HashSet<int>> LoadSourceAyahIdsAsync(
         LinkingWorkspaceSource source,
+        long linkingDataRevision,
         CancellationToken cancellationToken)
     {
         if (source.SourceKind != LinkingSourceKind.ManualMushafAyahs)
         {
             var resolved = await resolution.ResolveAsync(
-                LinkingSourceStorage.Decode(source, []), cancellationToken);
+                LinkingSourceStorage.Decode(source, []),
+                linkingDataRevision,
+                cancellationToken);
 
             return [.. resolved.Ayahs.Select(ayah => ayah.AyahId)];
         }

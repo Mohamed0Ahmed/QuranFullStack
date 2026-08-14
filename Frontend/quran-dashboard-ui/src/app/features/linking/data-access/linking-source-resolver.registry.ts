@@ -6,6 +6,7 @@ import { LinkingResolvedSourceDto } from '../../../core/api/generated/models/lin
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { LinkingAyah } from '../models/linking-ayah.models';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
+import { LinkingResolvedSourceRevision } from '../models/linking-revision.models';
 import { LinkingSourceCache, LinkingSourceCacheKeys } from '../state/linking-source.cache';
 import { linkingSourceKey } from '../utils/linking-source-key';
 import { LinkingSourceResolutionApi } from './linking-source-resolution.api';
@@ -20,18 +21,26 @@ export class LinkingSourceResolverRegistry {
     source: LinkingSourceDescriptor,
     onProgress: (progress: LinkingSourceResolveProgress) => void,
   ): Observable<readonly LinkingAyah[]> {
+    return this.resolveRevisioned(source, onProgress).pipe(map((resolved) => resolved.ayahs));
+  }
+
+  resolveRevisioned(
+    source: LinkingSourceDescriptor,
+    onProgress: (progress: LinkingSourceResolveProgress) => void,
+  ): Observable<LinkingResolvedSourceRevision> {
     const sourceIdentity = linkingSourceKey(source);
     return this.cache
-      .getOrLoad(LinkingSourceCacheKeys.source(sourceIdentity), () =>
+      .getOrLoadSource(sourceIdentity, () =>
         this.api
           .resolveSource(source)
           .pipe(tap((response) => validateResolvedSource(response, sourceIdentity))),
       )
       .pipe(
         map((response) => {
-          const ayahs = toLinkingAyahs(validateResolvedSource(response, sourceIdentity));
+          const resolved = validateResolvedSource(response, sourceIdentity);
+          const ayahs = toLinkingAyahs(resolved);
           onProgress({ loaded: ayahs.length, total: ayahs.length });
-          return ayahs;
+          return { ayahs, linkingDataRevision: resolved.linkingDataRevision };
         }),
       );
   }

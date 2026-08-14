@@ -24,6 +24,7 @@ export function mergeWorkspaceSnapshot(
         ...item,
         ayahIdByVerseKey,
         configurationRevision: known.configurationRevision + 1,
+        linkingDataRevision: known.linkingDataRevision,
         lastResolvedCount: item.lastResolvedCount ?? known.lastResolvedCount,
         configuration: {
           ...item.configuration,
@@ -59,13 +60,14 @@ export function toAyahIds(
 }
 
 export function toConfigurationRequest(item: LinkingWorkspaceItem): LinkingWorkspaceConfigurationRequest | null {
-  if (item.sourceVersion === null) {
+  if (item.sourceVersion === null || item.linkingDataRevision === null) {
     return null;
   }
   const configuration = item.configuration;
   const isManual = configuration.kind === 'manual';
   return {
     sourceVersion: item.sourceVersion,
+    expectedLinkingDataRevision: item.linkingDataRevision,
     label: item.source.label,
     inclusionMode: configuration.ayahInclusion.mode,
     ayahOverrideIds: item.ayahOverrideIds,

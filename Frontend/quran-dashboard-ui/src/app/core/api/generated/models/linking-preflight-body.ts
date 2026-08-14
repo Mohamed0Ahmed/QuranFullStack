@@ -4,5 +4,6 @@
 import { LinkingPreflightSourceBody } from '../models/linking-preflight-source-body';
 export interface LinkingPreflightBody {
   doorId: number | null;
+  expectedLinkingDataRevision: number | null;
   sources: Array<LinkingPreflightSourceBody> | null;
 }

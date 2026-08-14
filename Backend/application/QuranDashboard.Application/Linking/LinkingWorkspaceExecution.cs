@@ -85,5 +85,9 @@ internal static class LinkingWorkspaceExecution
 
             return new LinkingWorkspaceOutcome.DuplicateSource();
         }
+        catch (LinkingDataStaleException)
+        {
+            return new LinkingWorkspaceOutcome.LinkingDataStale();
+        }
     }
 }

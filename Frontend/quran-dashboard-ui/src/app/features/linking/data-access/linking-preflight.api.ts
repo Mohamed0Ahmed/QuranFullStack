@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, catchError, throwError } from 'rxjs';
 
 import { environment } from '../../../../environments/environment';
 import { LinkingAyahPreflightDto } from '../../../core/api/generated/models/linking-ayah-preflight-dto';
@@ -16,6 +16,8 @@ import {
   LinkingSourcePreflight,
 } from '../models/linking-preflight.models';
 import { toPreflightSourceBodies } from './linking-operation-request';
+import { HttpErrorResponse } from '@angular/common/http';
+import { LinkingDataStaleError } from '../models/linking-revision.models';
 
 const SOURCE_CLASSIFICATIONS: readonly LinkingSourceClassification[] = [
   'NEW_SOURCE',
@@ -40,14 +42,30 @@ export class LinkingPreflightApi {
   preflight(
     doorId: number,
     sourceIntents: readonly LinkingSourceIntent[],
+    expectedLinkingDataRevision: number,
   ): Observable<LinkingPreflightResult> {
     return this.http
       .post<ApiResponse<LinkingPreflightResultDto>>(`${this.baseUrl}/api/linking/operations/preflight`, {
         doorId,
+        expectedLinkingDataRevision,
         sources: toPreflightSourceBodies(sourceIntents),
       })
-      .pipe(map((response) => toPreflightResult(response)));
+      .pipe(
+        map((response) => toPreflightResult(response)),
+        catchError((error: unknown) => throwError(() => toPreflightError(error))),
+      );
   }
+}
+
+function toPreflightError(error: unknown): Error {
+  if (error instanceof HttpErrorResponse) {
+    const response = error.error as ApiResponse<{ code?: string }> | null;
+    if (error.status === 409 && response?.data?.code === 'LINKING_DATA_STALE') {
+      return new LinkingDataStaleError(response.message || 'تغيّرت بيانات الربط؛ أعد تحميل المصادر.');
+    }
+    return new Error(response?.message || 'تعذر تحضير مراجعة الربط.');
+  }
+  return error instanceof Error ? error : new Error('تعذر تحضير مراجعة الربط.');
 }
 
 function toPreflightResult(response: ApiResponse<LinkingPreflightResultDto>): LinkingPreflightResult {
@@ -58,6 +76,7 @@ function toPreflightResult(response: ApiResponse<LinkingPreflightResultDto>): Li
   return {
     doorId: result.doorId,
     doorName: result.doorName,
+    linkingDataRevision: result.linkingDataRevision,
     isNoOp: result.isNoOp,
     isBlocked: result.isBlocked,
     preflightToken: result.preflightToken,

@@ -26,6 +26,7 @@ import { LinkingAccessService } from './linking-access.service';
 import { LinkingFocusCoordinator } from './linking-focus.coordinator';
 import { LinkingSourceSetCoordinator } from './linking-source-set.coordinator';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
+import { LinkingDataStaleError } from '../models/linking-revision.models';
 
 export type LinkingWorkflowStep =
   | 'configure-source'
@@ -160,7 +161,15 @@ export class LinkingWorkflowFacade {
           this.stateSignal.update((current) => ({ ...current, operation: sourceSet.result, step: 'door' }));
         });
       } else if (sourceSet.members.some((member) => member.status === 'error')) {
-        untracked(() => this.stateSignal.update((current) => ({ ...current, step: 'error', errorMessage: firstError(sourceSet.members) })));
+        untracked(() => {
+          const message = firstError(sourceSet.members);
+          if (sourceSet.staleGeneration) {
+            this.invalidateStaleGeneration(message);
+            return;
+          }
+
+          this.stateSignal.update((current) => ({ ...current, step: 'error', errorMessage: message }));
+        });
       }
     });
     effect(() => {
@@ -455,6 +464,7 @@ export class LinkingWorkflowFacade {
         doorId,
         operation,
         preflightToken: preflight.preflightToken,
+        expectedLinkingDataRevision: preflight.linkingDataRevision,
         idempotencyKey: this.attemptIdempotencyKey,
         preflightSources: preflight.sources,
       })
@@ -469,6 +479,10 @@ export class LinkingWorkflowFacade {
         },
         error: (error: unknown) => {
           this.commandSubscription = null;
+          if (error instanceof LinkingDataStaleError) {
+            this.invalidateStaleGeneration(error.message);
+            return;
+          }
           if (error instanceof LinkingPreflightStaleError) {
             this.runPreflight(error.message);
             return;
@@ -502,7 +516,7 @@ export class LinkingWorkflowFacade {
       errorMessage: null,
     }));
     this.preflightSubscription = this.preflightApi
-      .preflight(doorId, operation.sourceIntents)
+      .preflight(doorId, operation.sourceIntents, operation.linkingDataRevision)
       .subscribe({
         next: (preflight) =>
           this.stateSignal.update((current) => ({
@@ -510,12 +524,18 @@ export class LinkingWorkflowFacade {
             preflight,
             preflightStatus: 'ready',
           })),
-        error: (error: unknown) =>
+        error: (error: unknown) => {
+          this.preflightSubscription = null;
+          if (error instanceof LinkingDataStaleError) {
+            this.invalidateStaleGeneration(error.message);
+            return;
+          }
           this.stateSignal.update((current) => ({
             ...current,
             preflightStatus: 'error',
             preflightMessage: error instanceof Error ? error.message : LINKING_LABELS.sourceLoadError,
-          })),
+          }));
+        },
         complete: () => {
           this.preflightSubscription = null;
         },
@@ -525,6 +545,33 @@ export class LinkingWorkflowFacade {
   private cancelPreflight(): void {
     this.preflightSubscription?.unsubscribe();
     this.preflightSubscription = null;
+  }
+
+  private invalidateStaleGeneration(message: string): void {
+    this.workspace.invalidateLinkingDataRevision();
+    this.sourceSet.cancel();
+    this.attemptIdempotencyKey = null;
+    this.stateSignal.update((state) => {
+      const members = state.members.map((member) => ({
+        ...member,
+        configuration: withoutQuranIds(member.configuration),
+      }));
+      return {
+        ...state,
+        step: 'error',
+        members,
+        directConfiguration:
+          state.directConfiguration === null
+            ? null
+            : withoutQuranIds(state.directConfiguration),
+        operation: null,
+        preflightStatus: 'idle',
+        preflight: null,
+        preflightMessage: null,
+        errorMessage: message,
+        operationGeneration: this.sourceSet.state().generation,
+      };
+    });
   }
 
   acknowledgeSuccess(): void {
@@ -563,6 +610,12 @@ export class LinkingWorkflowFacade {
   private isLiveDoor(doorId: number | null): boolean {
     return doorId !== null && (this.doors.snapshot()?.liveRoots.some((node) => containsDoor(node, doorId)) ?? false);
   }
+}
+
+function withoutQuranIds(configuration: LinkingSourceConfiguration): LinkingSourceConfiguration {
+  return configuration.kind === 'manual'
+    ? { ...configuration, quranWordIdsByVerseKey: {} }
+    : configuration;
 }
 
 function defaultConfiguration(source: LinkingSourceDescriptor): LinkingSourceConfiguration {

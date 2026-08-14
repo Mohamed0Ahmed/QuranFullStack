@@ -8,7 +8,9 @@ namespace QuranDashboard.Application.Linking.Commands.ConfirmLinkingOperation;
 public sealed class ConfirmLinkingOperationHandler(
     ILogger<ConfirmLinkingOperationHandler> logger,
     LinkingOperationPreparation preparation,
-    ILinkingConfirmationWriter writer)
+    ILinkingConfirmationWriter writer,
+    ILinkingDataRevisionReadScope revisionScope,
+    ILinkingScalabilityPolicy policy)
 {
     private const string FeatureName = "Linking";
     private const string OperationName = "ConfirmLinkingOperation";
@@ -33,7 +35,20 @@ public sealed class ConfirmLinkingOperationHandler(
 
         try
         {
-            var intent = await preparation.PrepareConfirmationAsync(command.Request, cancellationToken);
+            var intent = await revisionScope.ExecuteAsync(
+                policy.MaximumAutomaticAttempts,
+                (revision, token) =>
+                {
+                    if (revision != command.Request.ExpectedLinkingDataRevision)
+                    {
+                        throw new LinkingDataStaleException(
+                            command.Request.ExpectedLinkingDataRevision,
+                            revision);
+                    }
+
+                    return preparation.PrepareConfirmationAsync(command.Request, token);
+                },
+                cancellationToken);
             var invalidReason = InvalidPreparedReasonOf(intent);
 
             if (invalidReason is not null)
@@ -113,7 +128,8 @@ public sealed class ConfirmLinkingOperationHandler(
                 LinkingPreflightProjection.ToResult(
                     exception.State,
                     exception.Classification,
-                    exception.FreshToken));
+                    exception.FreshToken,
+                    command.Request.ExpectedLinkingDataRevision));
         }
         catch (LinkingDuplicateContributionException)
         {
@@ -136,6 +152,10 @@ public sealed class ConfirmLinkingOperationHandler(
                 command.Request.DoorId);
 
             return new ConfirmLinkingOperationOutcome.IdempotencyConflict();
+        }
+        catch (LinkingDataStaleException)
+        {
+            return new ConfirmLinkingOperationOutcome.LinkingDataStale();
         }
     }
 

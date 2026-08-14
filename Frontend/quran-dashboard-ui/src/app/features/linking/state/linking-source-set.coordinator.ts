@@ -6,6 +6,7 @@ import { LinkingAyah } from '../models/linking-ayah.models';
 import { LinkingManualWordIdsByVerseKey } from '../models/linking-manual-mushaf.models';
 import { LinkingSourceIntent } from '../models/linking-merge.models';
 import { LinkingOperationMember, LinkingOperationMemberLoadState } from '../models/linking-operation.models';
+import { LinkingDataStaleError } from '../models/linking-revision.models';
 import { LinkingSourceSetOperationResult } from '../models/linking-workflow.models';
 import { applyLinkingSourceConfiguration } from '../utils/apply-linking-source-configuration';
 import { createLinkingSourceIntent } from '../utils/linking-source-intents';
@@ -19,14 +20,21 @@ interface LinkingSourceSetState {
   generation: number;
   members: readonly LinkingOperationMemberLoadState[];
   result: LinkingSourceSetOperationResult | null;
+  staleGeneration: boolean;
 }
 
 interface LinkingResolvedSource {
   sourceKey: string;
   ayahs: readonly LinkingAyah[];
+  linkingDataRevision: number;
 }
 
-const INITIAL_STATE: LinkingSourceSetState = { generation: 0, members: [], result: null };
+const INITIAL_STATE: LinkingSourceSetState = {
+  generation: 0,
+  members: [],
+  result: null,
+  staleGeneration: false,
+};
 
 @Injectable({ providedIn: 'root' })
 export class LinkingSourceSetCoordinator {
@@ -37,6 +45,7 @@ export class LinkingSourceSetCoordinator {
   private subscription: Subscription | null = null;
   private members: readonly LinkingOperationMember[] = [];
   private rawAyahsBySourceKey = new Map<string, readonly LinkingAyah[]>();
+  private linkingDataRevision: number | null = null;
 
   readonly state = this.stateSignal.asReadonly();
   readonly memberStates = computed(() => this.stateSignal().members);
@@ -67,9 +76,11 @@ export class LinkingSourceSetCoordinator {
     const generation = this.stateSignal().generation + 1;
     this.members = operationMembers;
     this.rawAyahsBySourceKey.clear();
+    this.linkingDataRevision = null;
     this.stateSignal.set({
       generation,
       result: null,
+      staleGeneration: false,
       members: operationMembers.map((member) => ({
         member,
         status: 'loading',
@@ -84,8 +95,12 @@ export class LinkingSourceSetCoordinator {
     try {
       this.subscription = forkJoin(
         operationMembers.map((member) =>
-          this.resolver.resolve(member.source, (progress) => this.publishProgress(generation, member.sourceKey, progress)).pipe(
-            map((ayahs) => ({ sourceKey: member.sourceKey, ayahs })),
+          this.resolver.resolveRevisioned(member.source, (progress) => this.publishProgress(generation, member.sourceKey, progress)).pipe(
+            map((resolved) => ({
+              sourceKey: member.sourceKey,
+              ayahs: resolved.ayahs,
+              linkingDataRevision: resolved.linkingDataRevision,
+            })),
             catchError((error: unknown) => throwError(() => new MemberResolutionError(member.sourceKey, error))),
           ),
         ),
@@ -126,6 +141,7 @@ export class LinkingSourceSetCoordinator {
     this.cancelSubscription();
     this.members = [];
     this.rawAyahsBySourceKey.clear();
+    this.linkingDataRevision = null;
     this.stateSignal.set({ ...INITIAL_STATE, generation: this.stateSignal().generation + 1 });
   }
 
@@ -136,6 +152,7 @@ export class LinkingSourceSetCoordinator {
       this.workspace.reconcileResolvedSource(
         member.sourceKey,
         ayahs.map((ayah) => ({ ayahId: ayah.ayahId, verseKey: ayah.verseKey })),
+        this.linkingDataRevision!,
       );
       ayahInclusion = this.workspace.item(member.sourceKey)?.configuration.ayahInclusion ?? ayahInclusion;
     }
@@ -177,6 +194,15 @@ export class LinkingSourceSetCoordinator {
     if (generation !== this.stateSignal().generation) {
       return;
     }
+    const revisions = new Set(resolvedSources.map((source) => source.linkingDataRevision));
+    if (revisions.size !== 1) {
+      this.publishFailure(
+        generation,
+        new LinkingDataStaleError('تغيّرت بيانات الربط أثناء تحميل المصادر؛ أعد المحاولة.'),
+      );
+      return;
+    }
+    this.linkingDataRevision = resolvedSources[0]!.linkingDataRevision;
     this.rawAyahsBySourceKey = new Map(
       resolvedSources.map((resolved) => [resolved.sourceKey, resolved.ayahs]),
     );
@@ -220,7 +246,8 @@ export class LinkingSourceSetCoordinator {
               }
             : entry;
         }),
-        result: { mergedSelection, sourceIntents },
+        result: { mergedSelection, sourceIntents, linkingDataRevision: this.linkingDataRevision! },
+        staleGeneration: false,
       }));
     } catch (error: unknown) {
       this.publishFailure(generation, error);
@@ -236,6 +263,7 @@ export class LinkingSourceSetCoordinator {
     this.stateSignal.update((state) => ({
       ...state,
       result: null,
+      staleGeneration: error instanceof LinkingDataStaleError,
       members: state.members.map((entry) =>
         failedSourceKey === null || entry.member.sourceKey === failedSourceKey
           ? { ...entry, status: 'error', errorMessage: message }

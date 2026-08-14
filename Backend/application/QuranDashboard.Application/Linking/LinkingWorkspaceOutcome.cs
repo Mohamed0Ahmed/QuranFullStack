@@ -18,4 +18,6 @@ public abstract record LinkingWorkspaceOutcome
     public sealed record StaleVersion : LinkingWorkspaceOutcome;
 
     public sealed record DuplicateSource : LinkingWorkspaceOutcome;
+
+    public sealed record LinkingDataStale : LinkingWorkspaceOutcome;
 }

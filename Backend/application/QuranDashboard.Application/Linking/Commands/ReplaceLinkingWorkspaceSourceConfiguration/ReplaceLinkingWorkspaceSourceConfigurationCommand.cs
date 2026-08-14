@@ -6,4 +6,5 @@ public sealed record ReplaceLinkingWorkspaceSourceConfigurationCommand(
     int UserId,
     long SourceId,
     LinkingWorkspaceConfigurationInput Configuration,
-    uint SourceVersion);
+    uint SourceVersion,
+    long ExpectedLinkingDataRevision);

@@ -5,6 +5,8 @@ using QuranDashboard.Infrastructure.Caching.Linking;
 using QuranDashboard.Infrastructure.Persistence.Linking;
 using QuranDashboard.Infrastructure.Persistence.Reads.Linking;
 using QuranDashboard.Infrastructure.Persistence.Writes.Linking;
+using QuranDashboard.Application.Abstractions.Linking.PreparedPreflights;
+using QuranDashboard.Infrastructure.Background;
 
 namespace QuranDashboard.Infrastructure.ServiceRegistration;
 
@@ -12,10 +14,16 @@ internal static class LinkingDependencyInjection
 {
     public static IServiceCollection AddLinking(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<LinkingSourceCacheEntryOptions>(
-            configuration.GetSection(LinkingSourceCacheEntryOptions.SectionName));
+        services.Configure<LinkingScalabilityOptions>(
+            configuration.GetSection(LinkingScalabilityOptions.SectionName));
         services.AddSingleton(sp =>
-            sp.GetRequiredService<IOptions<LinkingSourceCacheEntryOptions>>().Value);
+        {
+            var options = sp.GetRequiredService<IOptions<LinkingScalabilityOptions>>().Value;
+            options.Validate();
+            return options;
+        });
+        services.AddSingleton<ILinkingScalabilityPolicy>(sp =>
+            sp.GetRequiredService<LinkingScalabilityOptions>());
 
         services.AddSingleton<LinkingSourceResolutionCache>();
         services.AddSingleton<LinkingAyahTextCache>();
@@ -28,6 +36,11 @@ internal static class LinkingDependencyInjection
             sp.GetRequiredService<EfLinkingSourceResolutionReader>(),
             sp.GetRequiredService<LinkingSourceResolutionCache>(),
             sp.GetRequiredService<LinkingAyahTextCache>()));
+        services.AddScoped<ILinkingSourcePageReader, CachedLinkingSourcePageReader>();
+        services.AddScoped<ILinkingSourcePreparationReader, CachedLinkingSourcePreparationReader>();
+        services.AddScoped<ILinkingPreparedPreflightStore, EfLinkingPreparedPreflightStore>();
+        services.AddHostedService<LinkingPreparedPreflightProcessorService>();
+        services.AddHostedService<LinkingPreparedPreflightCleanupService>();
 
         services.AddScoped<ILinkingWorkspaceReader, EfLinkingWorkspaceReader>();
         services.AddScoped<ILinkingWorkspaceWriter, EfLinkingWorkspaceWriter>();

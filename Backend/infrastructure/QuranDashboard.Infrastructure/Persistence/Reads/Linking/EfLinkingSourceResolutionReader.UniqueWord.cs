@@ -1,11 +1,10 @@
-using QuranDashboard.Application.Abstractions.Linking.Responses;
 using QuranDashboard.Domain.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Linking;
 
 public sealed partial class EfLinkingSourceResolutionReader
 {
-    private async Task<IReadOnlyList<LinkingResolvedAyahDto>> ResolveUniqueWordAsync(
+    private async Task<IReadOnlyList<LinkingMatchedWordRow>> ResolveUniqueWordAsync(
         LinkingSourceDescriptor.UniqueWord source,
         CancellationToken cancellationToken)
     {
@@ -29,11 +28,9 @@ public sealed partial class EfLinkingSourceResolutionReader
             : _dbContext.QuranWords.AsNoTracking()
                 .Where(word => !word.IsAyahMarker && word.UniqueSimpleWordId == source.WordId);
 
-        var matches = await readableMatches
+        return await readableMatches
             .Select(word => new LinkingMatchedWordRow(word.AyahId, word.Id, word.WordNumber))
             .Distinct()
             .ToListAsync(cancellationToken);
-
-        return await HydrateMatchesAsync(matches, includeAyahMarkers: true, cancellationToken);
     }
 }

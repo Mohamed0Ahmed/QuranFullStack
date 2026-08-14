@@ -2,10 +2,14 @@ using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Application.Abstractions.Linking.Preflight;
 using QuranDashboard.Application.Abstractions.Linking.Responses;
 using QuranDashboard.Domain.Linking;
+using QuranDashboard.Infrastructure.Persistence.Linking;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
-internal sealed partial class EfLinkingConfirmationWriter(QuranDashboardDbContext db) : ILinkingConfirmationWriter
+internal sealed partial class EfLinkingConfirmationWriter(
+    QuranDashboardDbContext db,
+    ILinkingDataRevisionWriterStore revisionStore) : ILinkingConfirmationWriter
 {
     public async Task<LinkingConfirmationWriteResult> ConfirmAsync(
         int actorUserId,
@@ -24,6 +28,18 @@ internal sealed partial class EfLinkingConfirmationWriter(QuranDashboardDbContex
             ?? throw new ArgumentException("A confirmation preflight token is required.", nameof(request));
 
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        var connection = db.Database.GetDbConnection() as NpgsqlConnection
+            ?? throw new InvalidOperationException("Expected an Npgsql linking confirmation connection.");
+        var npgsqlTransaction = transaction.GetDbTransaction() as NpgsqlTransaction
+            ?? throw new InvalidOperationException("Expected an Npgsql linking confirmation transaction.");
+        var revision = await revisionStore.LockForReadAsync(
+            connection,
+            npgsqlTransaction,
+            cancellationToken);
+        if (revision != request.ExpectedLinkingDataRevision)
+        {
+            throw new LinkingDataStaleException(request.ExpectedLinkingDataRevision, revision);
+        }
 
         var replay = await FindReplayAsync(
             idempotencyKey, actorUserId, request.DoorId, cancellationToken);

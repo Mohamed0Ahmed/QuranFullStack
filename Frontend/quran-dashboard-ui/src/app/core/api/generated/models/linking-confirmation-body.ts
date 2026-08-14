@@ -4,6 +4,7 @@
 import { LinkingConfirmationSourceBody } from '../models/linking-confirmation-source-body';
 export interface LinkingConfirmationBody {
   doorId: number | null;
+  expectedLinkingDataRevision: number | null;
   idempotencyKey: string | null;
   preflightToken: string | null;
   sources: Array<LinkingConfirmationSourceBody> | null;

@@ -1,12 +1,11 @@
 using QuranDashboard.Application.Abstractions.Linking;
-using QuranDashboard.Application.Abstractions.Linking.Responses;
 using QuranDashboard.Domain.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Linking;
 
 public sealed partial class EfLinkingSourceResolutionReader
 {
-    private async Task<IReadOnlyList<LinkingResolvedAyahDto>> ResolveManualMushafAsync(
+    private async Task<LinkingSourceReferenceSet> ResolveManualMushafAsync(
         LinkingSourceDescriptor.ManualMushafAyahs source,
         CancellationToken cancellationToken)
     {
@@ -67,12 +66,7 @@ public sealed partial class EfLinkingSourceResolutionReader
             }
         }
 
-        return await LinkingAyahHydration.ProjectAsync(
-            _dbContext,
-            ayahs,
-            NoMatchedWords,
-            includeAyahMarkers: true,
-            cancellationToken);
+        return new LinkingSourceReferenceSet(ayahIds, [], true);
     }
 
     private sealed record ManualProofWordRow(

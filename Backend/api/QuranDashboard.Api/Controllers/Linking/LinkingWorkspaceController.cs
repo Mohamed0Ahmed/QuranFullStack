@@ -8,6 +8,7 @@ using QuranDashboard.Application.Linking.Commands.ClearLinkingWorkspaceSources;
 using QuranDashboard.Application.Linking.Commands.RemoveLinkingWorkspaceSource;
 using QuranDashboard.Application.Linking.Commands.ReorderLinkingWorkspaceSources;
 using QuranDashboard.Application.Linking.Commands.ReplaceLinkingWorkspaceSourceConfiguration;
+using QuranDashboard.Application.Linking.Commands.ApplyLinkingWorkspaceSourceDelta;
 using QuranDashboard.Application.Linking.Queries.GetLinkingWorkspace;
 
 namespace QuranDashboard.Api.Controllers.Linking;
@@ -21,6 +22,7 @@ public sealed class LinkingWorkspaceController(
     RemoveLinkingWorkspaceSourceHandler removeHandler,
     ReorderLinkingWorkspaceSourcesHandler reorderHandler,
     ReplaceLinkingWorkspaceSourceConfigurationHandler configurationHandler,
+    ApplyLinkingWorkspaceSourceDeltaHandler deltaHandler,
     ClearLinkingWorkspaceSourcesHandler clearHandler) : ControllerBase
 {
     [HttpGet]
@@ -120,7 +122,7 @@ public sealed class LinkingWorkspaceController(
         [FromBody] LinkingWorkspaceConfigurationBody body,
         CancellationToken cancellationToken)
     {
-        if (body?.SourceVersion is null)
+        if (body?.SourceVersion is null || body.ExpectedLinkingDataRevision is null or <= 0)
         {
             return VersionRequired();
         }
@@ -135,10 +137,61 @@ public sealed class LinkingWorkspaceController(
 
         var outcome = await configurationHandler.HandleAsync(
             new ReplaceLinkingWorkspaceSourceConfigurationCommand(
-                userId, id, configuration, body.SourceVersion.Value),
+                userId,
+                id,
+                configuration,
+                body.SourceVersion.Value,
+                body.ExpectedLinkingDataRevision.Value),
             cancellationToken);
 
         return Respond(outcome, ApiMessages.LinkingWorkspaceConfigurationSaved);
+    }
+
+    [HttpPatch("sources/{id:long}/configuration")]
+    [RequireOwner]
+    [ProducesResponseType(typeof(ApiResponse<LinkingWorkspaceDeltaResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ApplySourceConfigurationDelta(
+        long id,
+        [FromBody] LinkingWorkspaceDeltaBody? body,
+        CancellationToken cancellationToken)
+    {
+        if (!LinkingWorkspaceDeltaBodyMapper.TryMap(body, out var delta))
+        {
+            return BadRequest(ApiResponse<object>.Fail(ApiMessages.LinkingSourcePageInvalid));
+        }
+
+        var userId = await ResolveUserIdAsync();
+        var outcome = await deltaHandler.HandleAsync(
+            new ApplyLinkingWorkspaceSourceDeltaCommand(userId, id, delta),
+            cancellationToken);
+
+        return outcome switch
+        {
+            ApplyLinkingWorkspaceSourceDeltaOutcome.Success success =>
+                Ok(ApiResponse<LinkingWorkspaceDeltaResponse>.Ok(
+                    LinkingWorkspaceDeltaBodyMapper.ToResponse(success.Acknowledgement),
+                    ApiMessages.LinkingWorkspaceConfigurationSaved)),
+            ApplyLinkingWorkspaceSourceDeltaOutcome.InvalidRequest invalid =>
+                BadRequest(ApiResponse<object>.Fail(
+                    ApiMessages.LinkingWorkspaceViolationMessage(invalid.Violation))),
+            ApplyLinkingWorkspaceSourceDeltaOutcome.SourceNotFound =>
+                NotFound(ApiResponse<object>.Fail(ApiMessages.LinkingWorkspaceSourceNotFound)),
+            ApplyLinkingWorkspaceSourceDeltaOutcome.StaleVersion =>
+                Conflict(ApiResponse<object>.Fail(ApiMessages.LinkingWorkspaceStaleVersion)),
+            ApplyLinkingWorkspaceSourceDeltaOutcome.LinkingDataStale =>
+                Conflict(new ApiResponse<LinkingLifecycleErrorData>
+                {
+                    IsSuccess = false,
+                    Message = ApiMessages.LinkingDataStale,
+                    Data = new LinkingLifecycleErrorData("LINKING_DATA_STALE"),
+                    Errors = [],
+                }),
+            _ => throw new InvalidOperationException(
+                $"Unhandled {nameof(ApplyLinkingWorkspaceSourceDeltaOutcome)} variant."),
+        };
     }
 
     [HttpDelete("sources")]
@@ -201,6 +254,14 @@ public sealed class LinkingWorkspaceController(
             LinkingWorkspaceOutcome.DuplicateSource =>
                 Conflict(ApiResponse<LinkingWorkspaceResponse>.Fail(
                     ApiMessages.LinkingWorkspaceDuplicateSource)),
+            LinkingWorkspaceOutcome.LinkingDataStale =>
+                Conflict(new ApiResponse<LinkingLifecycleErrorData>
+                {
+                    IsSuccess = false,
+                    Message = ApiMessages.LinkingDataStale,
+                    Data = new LinkingLifecycleErrorData("LINKING_DATA_STALE"),
+                    Errors = [],
+                }),
             _ => throw new InvalidOperationException($"Unhandled {nameof(LinkingWorkspaceOutcome)} variant."),
         };
 }

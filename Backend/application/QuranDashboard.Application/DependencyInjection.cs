@@ -98,6 +98,7 @@ using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTree;
 using QuranDashboard.Application.Linking;
 using QuranDashboard.Application.Linking.Queries.PreflightLinkingOperation;
 using QuranDashboard.Application.Linking.Queries.ResolveLinkingSource;
+using QuranDashboard.Application.Linking.Queries.ResolveLinkingSourcePage;
 using QuranDashboard.Application.Linking.Queries.GetLinkingWorkspace;
 using QuranDashboard.Application.Linking.Commands.AddLinkingWorkspaceSource;
 using QuranDashboard.Application.Linking.Commands.ClearLinkingWorkspaceSources;
@@ -105,6 +106,9 @@ using QuranDashboard.Application.Linking.Commands.ConfirmLinkingOperation;
 using QuranDashboard.Application.Linking.Commands.RemoveLinkingWorkspaceSource;
 using QuranDashboard.Application.Linking.Commands.ReorderLinkingWorkspaceSources;
 using QuranDashboard.Application.Linking.Commands.ReplaceLinkingWorkspaceSourceConfiguration;
+using QuranDashboard.Application.Linking.Commands.ApplyLinkingWorkspaceSourceDelta;
+using QuranDashboard.Application.Linking.PreparedPreflights;
+using QuranDashboard.Application.Abstractions.Linking.PreparedPreflights;
 
 namespace QuranDashboard.Application;
 
@@ -213,15 +217,25 @@ public static class DependencyInjection
         services.AddScoped<ApplyTemplateHandler>();
 
         services.AddScoped<ResolveLinkingSourceHandler>();
+        services.AddScoped<ResolveLinkingSourcePageHandler>();
         services.AddScoped<GetLinkingWorkspaceHandler>();
         services.AddScoped<AddLinkingWorkspaceSourceHandler>();
         services.AddScoped<RemoveLinkingWorkspaceSourceHandler>();
         services.AddScoped<ReorderLinkingWorkspaceSourcesHandler>();
         services.AddScoped<ReplaceLinkingWorkspaceSourceConfigurationHandler>();
+        services.AddScoped<ApplyLinkingWorkspaceSourceDeltaHandler>();
         services.AddScoped<ClearLinkingWorkspaceSourcesHandler>();
         services.AddScoped<LinkingOperationPreparation>();
         services.AddScoped<PreflightLinkingOperationHandler>();
         services.AddScoped<ConfirmLinkingOperationHandler>();
+        services.AddScoped<CreateLinkingPreparedPreflightHandler>();
+        services.AddScoped<GetLinkingPreparedPreflightHandler>();
+        services.AddScoped<CancelLinkingPreparedPreflightHandler>();
+        services.AddScoped<GetLinkingPreparedDetailPageHandler>();
+        services.AddScoped<ProcessLinkingPreparedPreflightHandler>();
+        services.AddScoped<ILinkingPreparedPreflightProcessor, ProcessLinkingPreparedPreflightHandler>();
+        services.AddSingleton<LinkingPreparedPreflightLeaseService>();
+        services.AddScoped<LinkingPreparedPreflightInputBuilder>();
 
         return services;
     }
