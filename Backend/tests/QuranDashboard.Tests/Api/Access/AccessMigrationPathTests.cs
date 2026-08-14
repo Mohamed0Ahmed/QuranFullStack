@@ -15,8 +15,7 @@ public sealed class AccessMigrationPathTests(AccessMigrationTestFixture fixture)
         await db.Database.MigrateAsync();
 
         (await db.Database.GetAppliedMigrationsAsync())
-            .Should().ContainSingle()
-            .Which.Should().EndWith("_InitialBaseline");
+            .Should().ContainSingle(migration => migration.EndsWith("_InitialBaseline"));
         (await db.Database.GetPendingMigrationsAsync()).Should().BeEmpty();
         (await RelationExistsAsync(database.ConnectionString, "users")).Should().BeTrue();
         (await RelationExistsAsync(database.ConnectionString, "linking_door_ayahs")).Should().BeTrue();
