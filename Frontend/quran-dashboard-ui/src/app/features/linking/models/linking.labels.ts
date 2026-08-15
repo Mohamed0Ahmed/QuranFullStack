@@ -51,6 +51,12 @@ export const LINKING_LABELS = {
   },
   executionProgress: 'تقدم تنفيذ الربط',
   executionProgressItems: 'عناصر الربط',
+  copyBatchProgress: (batch: number, total: number): string => `دفعة النسخ ${batch} من ${total}`,
+  copyStopped: 'توقفت دفعة النسخ. عد إلى روابط الباب للمراجعة وإعادة المحاولة.',
+  copyReturn: 'العودة إلى خيارات النسخ',
+  copyTargetUnavailable: 'باب النسخ المستهدف لم يعد متاحًا.',
+  copyBatchInvalid: 'تعذر تحضير دفعة النسخ ضمن الحد المسموح.',
+  copyBatchAcknowledge: 'اعتماد نتيجة الدفعة',
   executionStages: {
     queued: 'في انتظار بدء التنفيذ',
     loadingPrepared: 'تحميل نتيجة الفحص',

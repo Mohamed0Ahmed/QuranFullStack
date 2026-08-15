@@ -1,0 +1,94 @@
+<section class="abwab-door-link-copy" [attr.aria-label]="labels.doorLinksCopyHeading">
+  <header class="abwab-door-link-copy__header">
+    <h5>{{ labels.doorLinksCopyHeading }}</h5>
+    <button
+      qdAction="tertiary"
+      size="sm"
+      type="button"
+      [disabled]="state().copy.status === 'running'"
+      (click)="controller.close()"
+    >
+      {{ labels.doorLinksCopyClose }}
+    </button>
+  </header>
+
+  @if (state().copy.status === 'choosing') {
+    <div class="abwab-door-link-copy__target">
+      <div>
+        <strong>{{ labels.doorLinksCopyTarget }}</strong>
+        <p class="qd-text-muted">{{ labels.doorLinksCopyTargetHint }}</p>
+      </div>
+      <qd-abwab-door-picker
+        [nodes]="snapshot()?.liveRoots ?? []"
+        [pickedIds]="pickedIds()"
+        [excludedIds]="excludedIds()"
+        [disabledIds]="disabledIds()"
+        [excludedTag]="labels.doorLinksCopySourceDoorTag"
+        [disabledTag]="labels.doorLinksCopyUnavailableTag"
+        [single]="true"
+        [status]="pickerStatus()"
+        [errorMessage]="doors.errorMessage() ?? ''"
+        [emptyMessage]="labels.doorLinksCopyTargetEmpty"
+        [searchPlaceholder]="labels.doorLinksCopyTargetSearch"
+        testIdPrefix="abwab-door-links-copy-target"
+        (toggled)="controller.selectTarget($event)"
+        (retry)="retryDoors()"
+      />
+    </div>
+
+    @if (state().copy.targetDoorId !== null) {
+      <fieldset class="abwab-door-link-copy__scope">
+        <legend>{{ labels.doorLinksCopyScope }}</legend>
+        <button
+          qdAction="secondary"
+          size="sm"
+          type="button"
+          [class.qd-is-selected]="state().copy.scope === 'all'"
+          [attr.aria-pressed]="state().copy.scope === 'all'"
+          (click)="selectScope('all')"
+        >
+          {{ labels.doorLinksCopyAllScope(state().records.totalCount) }}
+        </button>
+        <button
+          qdAction="secondary"
+          size="sm"
+          type="button"
+          [disabled]="links.selectedCount() === 0"
+          [class.qd-is-selected]="state().copy.scope === 'selected'"
+          [attr.aria-pressed]="state().copy.scope === 'selected'"
+          (click)="selectScope('selected')"
+        >
+          {{ labels.doorLinksCopySelectedScope(links.selectedCount()) }}
+        </button>
+      </fieldset>
+      <button qdAction="primary" type="button" [disabled]="!canStart()" (click)="controller.start()">
+        {{ labels.doorLinksCopyStart }}
+      </button>
+    }
+  } @else if (state().copy.status === 'enumerating') {
+    <qd-skeleton-rows [count]="2" rowTemplate="1fr auto" [loadingLabel]="labels.doorLinksCopyEnumerating" />
+  } @else if (state().copy.status === 'preparing') {
+    @if (batchLabel(); as batch) {
+      <strong class="abwab-door-link-copy__batch">{{ batch }}</strong>
+    }
+    <qd-skeleton-rows [count]="2" rowTemplate="1fr auto" [loadingLabel]="labels.doorLinksCopyPreparing" />
+  } @else if (state().copy.status === 'running') {
+    <qd-notice
+      [message]="(batchLabel() ?? '') + '، ' + labels.doorLinksCopyRunning"
+      [dismissLabel]="null"
+      testId="abwab-door-links-copy-running"
+    />
+  } @else if (state().copy.status === 'stopped') {
+    @if (batchLabel(); as batch) {
+      <strong class="abwab-door-link-copy__batch">{{ batch }}</strong>
+    }
+    <qd-error-state
+      severity="write"
+      [message]="state().copy.errorMessage ?? labels.doorLinksCopyStopped"
+      [actionLabel]="labels.doorLinksCopyRetry"
+      testId="abwab-door-links-copy-error"
+      actionTestId="abwab-door-links-copy-retry"
+      (action)="controller.retry()"
+    />
+  }
+</section>

@@ -137,13 +137,13 @@ export function toInlinePreparedSource(
 export function createPreparedLinkingRequest(
   preparationKey: string,
   doorId: number,
-  directDraft: LinkingOperationSourceDraft | null,
+  inlineDrafts: readonly LinkingOperationSourceDraft[] | null,
   workspaceItems: readonly LinkingWorkspaceItem[],
   checkedSourceKeys: readonly string[],
 ): CreateLinkingPreparedPreflightBody {
   const checked = new Set(checkedSourceKeys);
   const selectedItems = workspaceItems.filter((item) => checked.has(item.sourceKey));
-  const sources = directDraft === null
+  const sources = inlineDrafts === null
     ? selectedItems.flatMap((item, index): LinkingPreparedSourceBody[] =>
         item.sourceId === null || item.sourceVersion === null
           ? []
@@ -153,13 +153,13 @@ export function createPreparedLinkingRequest(
               inlineSource: null,
             }],
       )
-    : [toInlinePreparedSource(directDraft, 1)];
+    : inlineDrafts.map((draft, index) => toInlinePreparedSource(draft, index + 1));
   const revisions = new Set(
-    directDraft === null
+    inlineDrafts === null
       ? selectedItems.flatMap((item) =>
           item.linkingDataRevision === null ? [] : [item.linkingDataRevision],
         )
-      : [directDraft.linkingDataRevision],
+      : inlineDrafts.map((draft) => draft.linkingDataRevision),
   );
   return {
     preparationKey,

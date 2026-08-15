@@ -64,16 +64,16 @@ internal sealed class EfDoorLinkRecordsReader(QuranDashboardDbContext db) : IDoo
                 where unitIds.Contains(mapping.UnitId)
                     && contribution.DoorId == doorId
                     && contribution.DeletedAtUtc == null
-                select new SourceLabelRow(mapping.UnitId, contribution.Label))
+                select new { mapping.UnitId, contribution.Label })
             .Distinct()
-            .OrderBy(row => row.UnitId)
-            .ThenBy(row => row.Label)
             .ToListAsync(cancellationToken);
         var sourceLabelsByUnit = sourceLabelRows
             .GroupBy(row => row.UnitId)
             .ToDictionary(
                 group => group.Key,
-                group => (IReadOnlyList<string>)[.. group.Select(row => row.Label)]);
+                group => (IReadOnlyList<string>)[.. group
+                    .Select(row => row.Label)
+                    .Order(StringComparer.Ordinal)]);
 
         var items = rows
             .Select(row => new DoorLinkRecordSummaryDto(
@@ -270,7 +270,6 @@ internal sealed class EfDoorLinkRecordsReader(QuranDashboardDbContext db) : IDoo
     private sealed record UnitAyahRow(long UnitAyahId, int AyahId);
     private sealed record SelectedWordRow(long UnitAyahId, int QuranWordId);
     private sealed record DescriptionRow(long UnitAyahId, string Body);
-    private sealed record SourceLabelRow(long UnitId, string Label);
     private sealed record RecordSummaryRow(
         long UnitId,
         bool IsGrouped,

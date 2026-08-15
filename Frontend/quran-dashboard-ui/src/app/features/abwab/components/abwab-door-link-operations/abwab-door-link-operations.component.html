@@ -26,13 +26,16 @@
     <button
       type="button"
       qdAction="tertiary"
-      [disabled]="!canUseSelection()"
+      [disabled]="!canCopy() || state().copy.open"
       data-testid="abwab-door-link-operation-copy"
-      (click)="copyRequested.emit()"
+      (click)="copyController.open()"
     >
       {{ copyLabel }}
     </button>
   </div>
+  @if (state().copy.open) {
+    <qd-abwab-door-link-copy />
+  }
 </section>
 
 <qd-confirm-dialog

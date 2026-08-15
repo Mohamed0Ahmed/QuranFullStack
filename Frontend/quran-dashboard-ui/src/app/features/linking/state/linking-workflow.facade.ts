@@ -3,41 +3,35 @@ import { AbwabSnapshotFacade } from '../../abwab/state/abwab-snapshot.facade';
 import { DetailOverlayHistoryService } from '../../../core/navigation/detail-overlay/detail-overlay-history.service';
 import { LinkingPreparedPreflightStatusDto } from '../../../core/api/generated/models/linking-prepared-preflight-status-dto';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
+import {
+  LinkingCopyBatchCallbacks,
+  LinkingCopyBatchInfo,
+  LinkingOperationSourceDraft,
+} from '../models/linking-operation-draft.models';
 import { LinkingManualLinkShape } from '../models/linking-manual-mushaf.models';
-import { LinkingOperationSourceDraft } from '../models/linking-operation-draft.models';
-import { LinkingSourcePageRequest } from '../models/linking-page.models';
 import { isPreparedPreflightReady } from '../models/linking-prepared-preflight.models';
 import { LINKING_LABELS } from '../models/linking.labels';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingExecutionStore } from './linking-execution.store';
 import { LinkingFocusCoordinator } from './linking-focus.coordinator';
+import { LinkingInlineSourceWorkflowController } from './linking-inline-source-workflow.controller';
 import {
   LinkingOperationDraftStore,
   createPreparedLinkingRequest,
-  createInlineLinkingDraft,
 } from './linking-operation-draft.store';
 import { LinkingPreflightDetailsFacade } from './linking-preflight-details.facade';
 import { LinkingPreparedPreflightFacade } from './linking-prepared-preflight.facade';
 import { LinkingSourcePagesFacade } from './linking-source-pages.facade';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
 export type LinkingWorkflowStep =
-  | 'configure-source'
-  | 'door'
-  | 'preflighting'
-  | 'ready'
-  | 'submitting'
-  | 'queued'
-  | 'running'
-  | 'finalizing'
-  | 'succeeded'
-  | 'failed'
-  | 'cancelled';
-type LinkingWorkflowOrigin = 'workspace' | 'source';
+  | 'configure-source' | 'door' | 'preflighting' | 'ready'
+  | 'submitting' | 'queued' | 'running' | 'finalizing'
+  | 'succeeded' | 'failed' | 'cancelled';
+type LinkingWorkflowOrigin = 'workspace' | 'source' | 'copy';
 interface LinkingWorkflowState {
   origin: LinkingWorkflowOrigin | null;
   step: LinkingWorkflowStep;
-  directDraft: LinkingOperationSourceDraft | null;
-  directTotalAyahCount: number;
+  copyBatch: LinkingCopyBatchInfo | null;
   selectedDoorId: number | null;
   preparationKey: string | null;
   prepared: LinkingPreparedPreflightStatusDto | null;
@@ -47,20 +41,14 @@ interface LinkingWorkflowState {
 const INITIAL_WORKFLOW: LinkingWorkflowState = {
   origin: null,
   step: 'configure-source',
-  directDraft: null,
-  directTotalAyahCount: 0,
+  copyBatch: null,
   selectedDoorId: null,
   preparationKey: null,
   prepared: null,
   errorMessage: null,
   operationGeneration: 0,
 };
-const NAVIGABLE_STEPS: readonly LinkingWorkflowStep[] = [
-  'configure-source',
-  'door',
-  'preflighting',
-  'ready',
-];
+const NAVIGABLE_STEPS: readonly LinkingWorkflowStep[] = ['configure-source', 'door', 'preflighting', 'ready'];
 @Injectable({ providedIn: 'root' })
 export class LinkingWorkflowFacade {
   private readonly access = inject(LinkingAccessService);
@@ -69,52 +57,29 @@ export class LinkingWorkflowFacade {
   private readonly focus = inject(LinkingFocusCoordinator);
   private readonly doors = inject(AbwabSnapshotFacade);
   private readonly drafts = inject(LinkingOperationDraftStore);
+  private readonly inlineSource = inject(LinkingInlineSourceWorkflowController);
   private readonly preparedFacade = inject(LinkingPreparedPreflightFacade);
   private readonly details = inject(LinkingPreflightDetailsFacade);
   private readonly execution = inject(LinkingExecutionStore);
   private readonly sourcePages = inject(LinkingSourcePagesFacade);
   private readonly stateSignal = signal<LinkingWorkflowState>(INITIAL_WORKFLOW);
   private readonly pendingSourceSignal = signal<LinkingSourceDescriptor | null>(null);
+  private copyBatchCallbacks: LinkingCopyBatchCallbacks | null = null;
   private restoreOverlayFocus = false;
   readonly state = this.stateSignal.asReadonly();
   readonly step = computed(() => this.stateSignal().step);
   readonly selectedDoorId = computed(() => this.stateSignal().selectedDoorId);
-  readonly directDraft = computed(() => this.stateSignal().directDraft);
+  readonly directDraft = this.inlineSource.draft;
+  readonly copyBatch = computed(() => this.stateSignal().copyBatch);
   readonly prepared = computed(() => this.stateSignal().prepared);
   readonly executionState = this.execution.state;
-  readonly directSourceRequest = computed<Omit<LinkingSourcePageRequest, 'page'> | null>(() => {
-    const draft = this.stateSignal().directDraft;
-    if (draft === null) {
-      return null;
-    }
-    return {
-      source: draft.descriptor,
-      expectedLinkingDataRevision: null,
-      expectedSourceViewIdentity: null,
-      view: {
-        segment: 'all',
-        inclusionMode: null,
-        ayahOverrideIds: [],
-      },
-      pageSize: 100,
-      draftGeneration: this.stateSignal().operationGeneration,
-    };
-  });
-  readonly directSelectedCount = computed(() => {
-    const draft = this.stateSignal().directDraft;
-    if (draft === null) {
-      return 0;
-    }
-    return draft.selection.mode === 'all-except'
-      ? Math.max(this.stateSignal().directTotalAyahCount - draft.selection.ayahIds.length, 0)
-      : draft.selection.ayahIds.length;
-  });
-  readonly directManualGrouped = computed(() =>
-    this.stateSignal().directDraft?.manualLinkShape === 'grouped' && this.directSelectedCount() > 1,
-  );
+  readonly directSourceRequest = this.inlineSource.sourceRequest;
+  readonly directTotalAyahCount = this.inlineSource.totalAyahCount;
+  readonly directSelectedCount = this.inlineSource.selectedCount;
+  readonly directManualGrouped = this.inlineSource.manualGrouped;
   readonly canAdvanceSource = computed(() =>
     this.stateSignal().origin === 'source' &&
-    (this.stateSignal().directDraft?.linkingDataRevision ?? 0) > 0 &&
+    (this.inlineSource.draft()?.linkingDataRevision ?? 0) > 0 &&
     this.directSelectedCount() > 0,
   );
   readonly canAdvanceDoor = computed(() =>
@@ -181,12 +146,45 @@ export class LinkingWorkflowFacade {
       return false;
     }
     const generation = this.stateSignal().operationGeneration + 1;
+    this.copyBatchCallbacks = null;
+    this.inlineSource.start(source, generation);
     this.stateSignal.set({
       ...INITIAL_WORKFLOW,
       origin: 'source',
-      directDraft: createInlineLinkingDraft(source),
       operationGeneration: generation,
     });
+    return true;
+  }
+
+  startFromPreparedInlineSources(
+    sources: readonly LinkingOperationSourceDraft[],
+    targetDoorId: number,
+    batch: LinkingCopyBatchInfo,
+    callbacks: LinkingCopyBatchCallbacks,
+  ): boolean {
+    if (
+      !this.access.canUseLinking()
+      || !this.isLiveDoor(targetDoorId)
+      || sources.length === 0
+      || sources.length > 100
+      || !this.workspace.openOperationFlow()
+    ) {
+      return false;
+    }
+    const generation = this.stateSignal().operationGeneration + 1;
+    const revisions = new Set(sources.map((source) => source.linkingDataRevision));
+    this.copyBatchCallbacks = callbacks;
+    this.inlineSource.reset(generation);
+    this.drafts.replace(sources, revisions.size === 1 ? [...revisions][0]! : null, targetDoorId);
+    this.stateSignal.set({
+      ...INITIAL_WORKFLOW,
+      origin: 'copy',
+      step: 'preflighting',
+      copyBatch: batch,
+      selectedDoorId: targetDoorId,
+      operationGeneration: generation,
+    });
+    void this.runPreflight();
     return true;
   }
 
@@ -195,67 +193,31 @@ export class LinkingWorkflowFacade {
   }
 
   directPageReady(linkingDataRevision: number, totalAyahCount: number): void {
-    const draft = this.stateSignal().directDraft;
-    if (draft === null) {
-      return;
-    }
-    if (
-      draft.linkingDataRevision === linkingDataRevision &&
-      this.stateSignal().directTotalAyahCount === totalAyahCount
-    ) {
-      return;
-    }
-    const updated = { ...draft, linkingDataRevision };
-    this.stateSignal.update((state) => ({
-      ...state,
-      directDraft: updated,
-      directTotalAyahCount: totalAyahCount,
-    }));
-    this.drafts.replace([updated], linkingDataRevision, this.selectedDoorId());
+    this.inlineSource.pageReady(linkingDataRevision, totalAyahCount, this.selectedDoorId());
   }
 
   toggleDirectAyah(ayahId: number): void {
-    this.updateDirectDraft((draft) => {
-      const overrides = new Set(draft.selection.ayahIds);
-      overrides.has(ayahId) ? overrides.delete(ayahId) : overrides.add(ayahId);
-      return {
-        ...draft,
-        selection: { ...draft.selection, ayahIds: [...overrides].sort((left, right) => left - right) },
-      };
-    });
+    this.inlineSource.toggleAyah(ayahId, this.selectedDoorId());
   }
 
   selectAllDirectAyahs(): void {
-    this.updateDirectDraft((draft) => ({
-      ...draft,
-      selection: { mode: 'all-except', ayahIds: [] },
-    }));
+    this.inlineSource.selectAllAyahs(this.selectedDoorId());
   }
 
   clearAllDirectAyahs(): void {
-    this.updateDirectDraft((draft) => ({ ...draft, selection: { mode: 'only', ayahIds: [] } }));
+    this.inlineSource.clearAllAyahs(this.selectedDoorId());
   }
 
   toggleDirectManualWord(ayahId: number, quranWordId: number): void {
-    this.updateDirectDraft((draft) => {
-      const selected = new Set(draft.selectedWordIdsByAyahId[ayahId] ?? []);
-      selected.has(quranWordId) ? selected.delete(quranWordId) : selected.add(quranWordId);
-      return {
-        ...draft,
-        selectedWordIdsByAyahId: {
-          ...draft.selectedWordIdsByAyahId,
-          [ayahId]: [...selected].sort((left, right) => left - right),
-        },
-      };
-    });
+    this.inlineSource.toggleManualWord(ayahId, quranWordId, this.selectedDoorId());
   }
 
   setDirectAutomaticWords(enabled: boolean): void {
-    this.updateDirectDraft((draft) => ({ ...draft, automaticWordMatchesEnabled: enabled }));
+    this.inlineSource.setAutomaticWords(enabled, this.selectedDoorId());
   }
 
   setDirectManualLinkShape(linkShape: LinkingManualLinkShape): void {
-    this.updateDirectDraft((draft) => ({ ...draft, manualLinkShape: linkShape }));
+    this.inlineSource.setManualLinkShape(linkShape, this.selectedDoorId());
   }
 
   loadDoors(): void {
@@ -283,7 +245,11 @@ export class LinkingWorkflowFacade {
   }
 
   retryPreflight(): void {
-    if (this.stateSignal().origin !== null && this.selectedDoorId() !== null) {
+    if (
+      this.stateSignal().origin !== null
+      && this.stateSignal().origin !== 'copy'
+      && this.selectedDoorId() !== null
+    ) {
       const execution = this.execution.state();
       if (execution.job !== null && ['failed', 'cancelled'].includes(execution.job.status.toLowerCase())) {
         void this.execution.acknowledge().finally(() => {
@@ -323,6 +289,9 @@ export class LinkingWorkflowFacade {
   }
 
   canNavigateTo(target: LinkingWorkflowStep): boolean {
+    if (this.stateSignal().origin === 'copy') {
+      return false;
+    }
     const currentIndex = NAVIGABLE_STEPS.indexOf(this.step());
     const targetIndex = NAVIGABLE_STEPS.indexOf(target);
     return targetIndex >= 0 && currentIndex >= 0 && targetIndex < currentIndex;
@@ -351,14 +320,26 @@ export class LinkingWorkflowFacade {
 
   async acknowledgeSuccess(): Promise<void> {
     await this.execution.acknowledge();
-    if (this.stateSignal().origin === 'workspace') {
+    const origin = this.stateSignal().origin;
+    if (origin === 'workspace') {
       this.workspace.clearCheckedSources();
     }
-    this.dismiss();
+    const acknowledged = origin === 'copy' ? this.copyBatchCallbacks?.acknowledged ?? null : null;
+    this.copyBatchCallbacks = null;
+    this.dismiss(false);
+    acknowledged?.();
   }
 
-  dismiss(): void {
+  dismiss(notifyCopyStop = true): void {
     const state = this.stateSignal();
+    if (state.origin === 'copy' && this.canCancelExecution()) {
+      void this.execution.cancel();
+    }
+    if (notifyCopyStop && state.origin === 'copy') {
+      this.stopCopyBatch(LINKING_LABELS.copyStopped);
+    } else {
+      this.copyBatchCallbacks = null;
+    }
     const acceptedJob = this.execution.state().job !== null || this.execution.state().outcome !== null;
     if (!acceptedJob && state.preparationKey !== null && state.prepared !== null) {
       void this.preparedFacade.cancel(state.preparationKey).finally(() =>
@@ -373,6 +354,7 @@ export class LinkingWorkflowFacade {
     this.sourcePages.cancel('direct-linking-source');
     this.execution.dismiss();
     this.drafts.reset();
+    this.inlineSource.reset(state.operationGeneration + 1);
     this.pendingSourceSignal.set(null);
     this.stateSignal.set({ ...INITIAL_WORKFLOW, operationGeneration: state.operationGeneration + 1 });
     if (state.origin === 'workspace') {
@@ -401,6 +383,8 @@ export class LinkingWorkflowFacade {
       return;
     }
     this.doors.load();
+    this.copyBatchCallbacks = null;
+    this.inlineSource.reset(this.stateSignal().operationGeneration + 1);
     this.stateSignal.set({
       ...INITIAL_WORKFLOW,
       origin: 'workspace',
@@ -422,10 +406,24 @@ export class LinkingWorkflowFacade {
       }
     }
     const preparationKey = crypto.randomUUID();
+    const origin = this.stateSignal().origin;
+    if (origin === 'copy' && !this.isLiveDoor(doorId)) {
+      this.failCopyWorkflow(LINKING_LABELS.copyTargetUnavailable);
+      return;
+    }
+    const inlineDrafts = origin === 'source'
+      ? [this.inlineSource.requireDraft()]
+      : origin === 'copy'
+        ? this.currentPreparedInlineSources()
+        : null;
+    if (origin === 'copy' && (inlineDrafts === null || inlineDrafts.length === 0 || inlineDrafts.length > 100)) {
+      this.failCopyWorkflow(LINKING_LABELS.copyBatchInvalid);
+      return;
+    }
     const request = createPreparedLinkingRequest(
       preparationKey,
       doorId,
-      this.stateSignal().origin === 'source' ? requireDirectDraft(this.stateSignal()) : null,
+      inlineDrafts,
       this.workspace.items(),
       this.workspace.checkedSourceKeys(),
     );
@@ -461,6 +459,7 @@ export class LinkingWorkflowFacade {
           step: 'failed',
           errorMessage: preparedState.errorMessage,
         })));
+        untracked(() => this.stopCopyBatch(preparedState.errorMessage ?? LINKING_LABELS.sourceLoadError));
       }
       return;
     }
@@ -487,6 +486,9 @@ export class LinkingWorkflowFacade {
       step: nextStep,
       errorMessage: resource.failureCode,
     })));
+    if (nextStep === 'failed' || nextStep === 'cancelled') {
+      untracked(() => this.stopCopyBatch(resource.failureCode ?? LINKING_LABELS.sourceLoadError));
+    }
   }
 
   private synchronizeExecution(): void {
@@ -522,6 +524,9 @@ export class LinkingWorkflowFacade {
         errorMessage: execution.errorMessage,
       })));
     }
+    if (step === 'failed' || step === 'cancelled') {
+      untracked(() => this.stopCopyBatch(execution.errorMessage ?? LINKING_LABELS.copyStopped));
+    }
   }
 
   private invalidatePreparedGeneration(message: string): void {
@@ -536,43 +541,39 @@ export class LinkingWorkflowFacade {
     this.workspace.invalidateLinkingDataRevision();
     this.sourcePages.cancel('direct-linking-source');
     this.drafts.requireFreshGeneration();
+    this.inlineSource.invalidate(state.operationGeneration + 1);
     this.stateSignal.set({
       ...state,
       step: state.origin === 'source' ? 'configure-source' : 'failed',
-      directDraft:
-        state.directDraft === null
-          ? null
-          : {
-              ...state.directDraft,
-              linkingDataRevision: 0,
-              selection: { mode: 'all-except', ayahIds: [] },
-              selectedWordIdsByAyahId: {},
-            },
-      directTotalAyahCount: 0,
       preparationKey: null,
       prepared: null,
       errorMessage: message,
       operationGeneration: state.operationGeneration + 1,
     });
+    this.stopCopyBatch(message);
   }
 
-  private updateDirectDraft(
-    update: (draft: LinkingOperationSourceDraft) => LinkingOperationSourceDraft,
-    generation = this.stateSignal().operationGeneration,
-  ): void {
-    const draft = this.stateSignal().directDraft;
-    if (draft === null) {
+  private currentPreparedInlineSources(): readonly LinkingOperationSourceDraft[] {
+    const draft = this.drafts.draft();
+    return draft.sourceOrder.flatMap((sourceKey) => {
+      const source = draft.sources[sourceKey];
+      return source === undefined ? [] : [source];
+    });
+  }
+
+  private failCopyWorkflow(message: string): void {
+    this.stateSignal.update((state) => ({ ...state, step: 'failed', errorMessage: message }));
+    this.stopCopyBatch(message);
+  }
+
+  private stopCopyBatch(message: string): void {
+    if (this.stateSignal().origin !== 'copy') {
       return;
     }
-    const updated = update(draft);
-    this.stateSignal.update((state) => ({
-      ...state,
-      directDraft: updated,
-      operationGeneration: generation,
-    }));
-    if (updated.linkingDataRevision > 0) {
-      this.drafts.replace([updated], updated.linkingDataRevision, this.selectedDoorId());
-    }
+    const stopped = this.copyBatchCallbacks?.stopped ?? null;
+    this.copyBatchCallbacks = null;
+    this.drafts.reset();
+    stopped?.(message);
   }
 
   private isLiveDoor(doorId: number | null): boolean {
@@ -582,12 +583,6 @@ export class LinkingWorkflowFacade {
     const door = this.doors.snapshot()?.byId.get(doorId);
     return door !== undefined && !door.isArchived && !door.sectionRetired;
   }
-}
-function requireDirectDraft(state: LinkingWorkflowState): LinkingOperationSourceDraft {
-  if (state.directDraft === null) {
-    throw new Error('إعداد المصدر المباشر غير متاح.');
-  }
-  return state.directDraft;
 }
 function isStaleFailure(code: string | null): boolean {
   return code !== null && [

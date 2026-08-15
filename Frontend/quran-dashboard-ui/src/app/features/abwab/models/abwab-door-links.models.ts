@@ -17,7 +17,13 @@ export type AbwabDoorLinkEditStatus =
   | 'save-error';
 export type AbwabDoorLinkSelectionMode = 'only' | 'all-except';
 export type AbwabDoorLinkCopyScope = 'selected' | 'all';
-export type AbwabDoorLinkCopyBatchStatus = 'pending' | 'preparing' | 'ready' | 'completed' | 'error';
+export type AbwabDoorLinkCopyStatus =
+  | 'choosing'
+  | 'enumerating'
+  | 'preparing'
+  | 'running'
+  | 'stopped';
+export type AbwabDoorLinkCopyBatchStatus = 'pending' | 'preparing' | 'running' | 'completed' | 'error';
 
 export interface AbwabDoorLinkRecordPage {
   readonly page: number;
@@ -81,11 +87,16 @@ export interface AbwabDoorLinkCopyBatch {
 
 export interface AbwabDoorLinkCopyState {
   readonly open: boolean;
+  readonly status: AbwabDoorLinkCopyStatus;
   readonly scope: AbwabDoorLinkCopyScope | null;
+  readonly sourceDoorId: number | null;
+  readonly expectedSourceDoorVersion: number | null;
+  readonly expectedLinkingDataRevision: number | null;
+  readonly sourceSelection: AbwabDoorLinkSelectionState | null;
   readonly targetDoorId: number | null;
   readonly batches: readonly AbwabDoorLinkCopyBatch[];
   readonly currentBatchNumber: number;
-  readonly errors: readonly string[];
+  readonly errorMessage: string | null;
 }
 
 export interface AbwabDoorLinksState {

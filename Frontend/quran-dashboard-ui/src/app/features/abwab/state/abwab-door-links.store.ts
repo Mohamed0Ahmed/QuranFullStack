@@ -9,6 +9,7 @@ import {
   AbwabDoorLinkCopyBatch,
   AbwabDoorLinkCopyScope,
   AbwabDoorLinkExpandedState,
+  AbwabDoorLinkSelectionState,
   AbwabDoorLinkSelectionMode,
   AbwabDoorLinksState,
   EMPTY_ABWAB_DOOR_LINK_SELECTION,
@@ -38,11 +39,16 @@ function initialState(openDoorId: number | null = null): AbwabDoorLinksState {
     deletion: { confirmationOpen: false, status: 'idle', errorMessage: null },
     copy: {
       open: false,
+      status: 'choosing',
       scope: null,
+      sourceDoorId: null,
+      expectedSourceDoorVersion: null,
+      expectedLinkingDataRevision: null,
+      sourceSelection: null,
       targetDoorId: null,
       batches: [],
       currentBatchNumber: 0,
-      errors: [],
+      errorMessage: null,
     },
     staleMessage: null,
     noticeMessage: null,
@@ -339,10 +345,10 @@ export class AbwabDoorLinksStore {
     }));
   }
 
-  openCopy(scope: AbwabDoorLinkCopyScope): void {
+  openCopy(): void {
     this.stateSignal.update((state) => ({
       ...state,
-      copy: { ...initialState().copy, open: true, scope },
+      copy: { ...initialState().copy, open: true },
     }));
   }
 
@@ -350,10 +356,56 @@ export class AbwabDoorLinksStore {
     this.stateSignal.update((state) => ({ ...state, copy: { ...state.copy, targetDoorId } }));
   }
 
+  setCopyScope(scope: AbwabDoorLinkCopyScope): void {
+    this.stateSignal.update((state) => ({ ...state, copy: { ...state.copy, scope } }));
+  }
+
+  beginCopyPreparation(
+    sourceDoorId: number,
+    expectedSourceDoorVersion: number,
+    sourceSelection: AbwabDoorLinkSelectionState,
+  ): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      copy: {
+        ...state.copy,
+        status: 'enumerating',
+        sourceDoorId,
+        expectedSourceDoorVersion,
+        expectedLinkingDataRevision: null,
+        sourceSelection: { ...sourceSelection, unitIds: [...sourceSelection.unitIds] },
+        batches: [],
+        currentBatchNumber: 0,
+        errorMessage: null,
+      },
+    }));
+  }
+
+  setCopySourceDoorVersion(expectedSourceDoorVersion: number): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      copy: { ...state.copy, expectedSourceDoorVersion },
+    }));
+  }
+
+  setCopyLinkingDataRevision(expectedLinkingDataRevision: number | null): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      copy: { ...state.copy, expectedLinkingDataRevision },
+    }));
+  }
+
+  setCopyStatus(status: 'enumerating' | 'preparing' | 'running'): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      copy: { ...state.copy, status, errorMessage: null },
+    }));
+  }
+
   setCopyBatches(batches: readonly AbwabDoorLinkCopyBatch[]): void {
     this.stateSignal.update((state) => ({
       ...state,
-      copy: { ...state.copy, batches, currentBatchNumber: batches.length === 0 ? 0 : 1, errors: [] },
+      copy: { ...state.copy, batches, currentBatchNumber: batches.length === 0 ? 0 : 1, errorMessage: null },
     }));
   }
 
@@ -376,15 +428,32 @@ export class AbwabDoorLinksStore {
     }));
   }
 
-  addCopyError(message: string): void {
+  stopCopy(batchNumber: number, message: string): void {
     this.stateSignal.update((state) => ({
       ...state,
-      copy: { ...state.copy, errors: [...state.copy.errors, message] },
+      copy: {
+        ...state.copy,
+        status: 'stopped',
+        errorMessage: message,
+        batches: state.copy.batches.map((batch) =>
+          batch.batchNumber === batchNumber
+            ? { ...batch, sources: [], status: 'error', errorMessage: message }
+            : batch,
+        ),
+      },
     }));
   }
 
   closeCopy(): void {
     this.stateSignal.update((state) => ({ ...state, copy: initialState().copy }));
+  }
+
+  completeCopy(noticeMessage: string): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      copy: initialState().copy,
+      noticeMessage,
+    }));
   }
 
   completeMutation(doorVersion: number, noticeMessage: string | null): void {

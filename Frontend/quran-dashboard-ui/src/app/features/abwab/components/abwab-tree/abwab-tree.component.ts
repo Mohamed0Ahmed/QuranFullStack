@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdFloatingLayerDirective } from '../../../../shared/ui/floating-layer/floating-layer.directive';
 import { QdHierarchyKeyboardDirective } from '../../../../shared/ui/hierarchy/hierarchy-keyboard.directive';
 
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
@@ -34,7 +35,12 @@ export interface AbwabTreeMenuRequest {
 @Component({
   selector: 'qd-abwab-tree',
   standalone: true,
-  imports: [AbwabDoorLinksPanelComponent, QdActionDirective, QdHierarchyKeyboardDirective],
+  imports: [
+    AbwabDoorLinksPanelComponent,
+    QdActionDirective,
+    QdFloatingLayerDirective,
+    QdHierarchyKeyboardDirective,
+  ],
   templateUrl: './abwab-tree.component.html',
   styleUrl: './abwab-tree.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -174,6 +180,12 @@ export class AbwabTreeComponent {
   protected onLinksClick(event: Event, id: number): void {
     event.stopPropagation();
     this.linksToggled.emit(id);
+  }
+
+  protected onLinksDismissed(id: number): void {
+    if (this.openLinksDoorId() === id) {
+      this.linksToggled.emit(id);
+    }
   }
 
   protected linksAriaLabel(node: AbwabNode): string {

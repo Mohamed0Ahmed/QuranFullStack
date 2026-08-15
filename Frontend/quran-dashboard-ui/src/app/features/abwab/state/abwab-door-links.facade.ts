@@ -6,19 +6,12 @@ import { DoorLinkRecordSummaryDto } from '../../../core/api/generated/models/doo
 import { AbwabDoorLinksApi } from '../data-access/abwab-door-links.api';
 import {
   ABWAB_DOOR_LINK_AYAH_PAGE_SIZE,
-  ABWAB_DOOR_LINK_COPY_BATCH_SIZE,
   ABWAB_DOOR_LINK_RECORD_PAGE_SIZE,
-  AbwabDoorLinkCopyRecord,
-  AbwabDoorLinkCopyScope,
 } from '../models/abwab-door-links.models';
 import { ABWAB_LABELS } from '../models/abwab.labels';
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabDoorLinkEditController } from './abwab-door-link-edit.controller';
 import { AbwabDoorLinksStore } from './abwab-door-links.store';
-import {
-  mapAbwabDoorLinkCopyRecords,
-  partitionAbwabDoorLinkCopyUnits,
-} from './abwab-door-link-copy.mapper';
 
 @Injectable({ providedIn: 'root' })
 export class AbwabDoorLinksFacade {
@@ -40,7 +33,9 @@ export class AbwabDoorLinksFacade {
   readonly hasMoreExpandedAyahs = this.store.hasMoreExpandedAyahs;
   readonly selectedCount = this.store.selectedCount;
   readonly interactionLocked = computed(() =>
-    this.state().edit.status === 'saving' || this.state().deletion.status === 'writing',
+    this.state().edit.status === 'saving'
+    || this.state().deletion.status === 'writing'
+    || this.state().copy.open && this.state().copy.status !== 'choosing',
   );
   readonly selectedRecord = computed(() => {
     const state = this.state();
@@ -295,57 +290,6 @@ export class AbwabDoorLinksFacade {
       },
       error: (error: unknown) => this.handleMutationError('delete', error, generation),
     });
-  }
-
-  beginCopy(scope: AbwabDoorLinkCopyScope): void {
-    this.store.openCopy(scope);
-    if (scope === 'selected' && this.state().selection.mode === 'only') {
-      this.store.setCopyBatches(partitionAbwabDoorLinkCopyUnits(this.state().selection.unitIds));
-    }
-  }
-
-  setCopyTarget(targetDoorId: number | null): void {
-    const sourceDoorId = this.openDoorId();
-    this.store.setCopyTarget(targetDoorId === sourceDoorId ? null : targetDoorId);
-  }
-
-  queueCopyUnits(unitIds: readonly number[]): void {
-    this.store.setCopyBatches(partitionAbwabDoorLinkCopyUnits(unitIds));
-  }
-
-  prepareCopyBatch(
-    batchNumber: number,
-    records: readonly AbwabDoorLinkCopyRecord[],
-    sourceLabel: string,
-  ): boolean {
-    const sources = mapAbwabDoorLinkCopyRecords(records, sourceLabel);
-    if (sources.length > ABWAB_DOOR_LINK_COPY_BATCH_SIZE) {
-      this.store.updateCopyBatch(batchNumber, { status: 'error', errorMessage: ABWAB_LABELS.writeInvalidFallback });
-      return false;
-    }
-    this.store.updateCopyBatch(batchNumber, { sources, status: 'ready', errorMessage: null });
-    return true;
-  }
-
-  markCopyBatchPreparing(batchNumber: number): void {
-    this.store.updateCopyBatch(batchNumber, { status: 'preparing', errorMessage: null });
-  }
-
-  markCopyBatchCompleted(batchNumber: number): void {
-    this.store.updateCopyBatch(batchNumber, { status: 'completed', errorMessage: null });
-  }
-
-  failCopyBatch(batchNumber: number, message: string): void {
-    this.store.updateCopyBatch(batchNumber, { status: 'error', errorMessage: message });
-    this.store.addCopyError(message);
-  }
-
-  setCurrentCopyBatch(batchNumber: number): void {
-    this.store.setCurrentCopyBatch(batchNumber);
-  }
-
-  closeCopy(): void {
-    this.store.closeCopy();
   }
 
   clearNotice(): void {

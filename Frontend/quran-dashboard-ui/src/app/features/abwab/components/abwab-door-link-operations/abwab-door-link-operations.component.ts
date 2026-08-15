@@ -1,27 +1,28 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabDoorLinksFacade } from '../../state/abwab-door-links.facade';
+import { AbwabDoorLinkCopyController } from '../../state/abwab-door-link-copy.controller';
+import { AbwabDoorLinkCopyComponent } from '../abwab-door-link-copy/abwab-door-link-copy.component';
 import { ABWAB_DOOR_LINK_OPERATIONS_LABELS } from './abwab-door-link-operations.labels';
 
 @Component({
   selector: 'qd-abwab-door-link-operations',
   standalone: true,
-  imports: [ConfirmDialogComponent, QdActionDirective, QdErrorStateComponent],
+  imports: [AbwabDoorLinkCopyComponent, ConfirmDialogComponent, QdActionDirective, QdErrorStateComponent],
   templateUrl: './abwab-door-link-operations.component.html',
   styleUrl: './abwab-door-link-operations.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AbwabDoorLinkOperationsComponent {
   protected readonly facade = inject(AbwabDoorLinksFacade);
+  protected readonly copyController = inject(AbwabDoorLinkCopyController);
 
   readonly doorOpen = input(false);
   readonly selectedCount = input(0);
-
-  readonly copyRequested = output<void>();
 
   protected readonly state = this.facade.state;
   protected readonly preparingEdit = computed(() => this.state().edit.status === 'preparing');
@@ -29,15 +30,23 @@ export class AbwabDoorLinkOperationsComponent {
   protected readonly canEdit = computed(() =>
     this.doorOpen()
       && this.facade.selectedRecord() !== null
-      && ['idle', 'load-error'].includes(this.state().edit.status),
+      && ['idle', 'load-error'].includes(this.state().edit.status)
+      && !this.state().copy.open,
   );
   protected readonly canDelete = computed(() =>
     this.doorOpen()
       && this.selectedCount() > 0
       && this.state().edit.status === 'idle'
-      && !this.deleteBusy(),
+      && !this.deleteBusy()
+      && !this.state().copy.open,
   );
-  protected readonly canUseSelection = computed(() => this.doorOpen() && this.selectedCount() > 0);
+  protected readonly canCopy = computed(() =>
+    this.doorOpen()
+      && this.state().records.totalCount > 0
+      && this.state().edit.status === 'idle'
+      && this.state().deletion.status !== 'writing'
+      && !this.state().deletion.confirmationOpen,
+  );
   protected readonly deleteMessage = computed(() => {
     const selectedCount = this.selectedCount();
     const totalCount = this.state().records.totalCount;

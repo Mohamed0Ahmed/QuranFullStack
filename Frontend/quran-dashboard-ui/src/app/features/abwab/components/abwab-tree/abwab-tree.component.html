@@ -22,6 +22,7 @@
     @let node = nodesById().get(row.id);
     @if (node) {
       <div
+        #doorRow
         class="abwab-tree__row"
         [class.abwab-tree__row--revealed]="revealedId() === node.id"
         [class.abwab-tree__row--match]="matchedIds().has(node.id)"
@@ -104,6 +105,7 @@
 
         <span class="abwab-tree__count-cell">
           <button
+            #linksTrigger
             type="button"
             qdAction="row-action"
             size="sm"
@@ -203,9 +205,13 @@
       </div>
       @if (openLinksDoorId() === node.id) {
         <qd-abwab-door-links-panel
+          qdFloatingLayer="disclosure-popover"
           role="group"
+          [anchorElement]="doorRow"
+          [controlElement]="linksTrigger"
           [doorId]="node.id"
           [doorName]="node.name"
+          (dismissed)="onLinksDismissed(node.id)"
           (click)="$event.stopPropagation()"
           (keydown)="$event.stopPropagation()"
         />

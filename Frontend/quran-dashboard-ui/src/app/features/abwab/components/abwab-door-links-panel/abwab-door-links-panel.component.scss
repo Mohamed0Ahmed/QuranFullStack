@@ -1,9 +1,16 @@
 :host {
   display: block;
-  grid-column: 1 / -1;
   min-inline-size: 0;
-  margin-block: var(--qd-space-2);
   color: var(--qd-text);
+}
+
+:host.qd-floating-layer {
+  inline-size: min(
+    var(--qd-abwab-door-links-layer-inline-size),
+    calc(100vi - (var(--qd-space-4) * 2))
+  );
+  max-inline-size: calc(100vi - (var(--qd-space-4) * 2));
+  padding: 0;
 }
 
 .abwab-door-links-panel {
@@ -14,7 +21,7 @@
   padding: var(--qd-space-3);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
-  background: var(--qd-section-bg);
+  background: var(--qd-surface);
 }
 
 .abwab-door-links-panel__header,
