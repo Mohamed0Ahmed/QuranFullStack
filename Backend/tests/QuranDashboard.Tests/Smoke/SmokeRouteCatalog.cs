@@ -310,10 +310,20 @@ internal static class SmokeRouteCatalog
         },
 
         // System routes. Health answers 503 when the container-backed check fails, so 200 is real
-        // evidence; access/me is the tree's only [Authorize] endpoint (AccessController class level).
+        // evidence; session mutations use their dedicated authenticated-action classifications.
         new("api/health", "/api/health", HttpStatusCode.OK),
         new("api/dashboard/info", "/api/dashboard/info", HttpStatusCode.OK),
         new("api/access/me", "/api/access/me", HttpStatusCode.Unauthorized, SmokeRouteAccess.AuthenticatedOnly),
+        new("api/auth/sessions", "/api/auth/sessions", HttpStatusCode.OK, SmokeRouteAccess.AuthenticatedOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/auth/sessions/current", "/api/auth/sessions/current", HttpStatusCode.NoContent, SmokeRouteAccess.AuthenticatedOnly)
+        {
+            Method = HttpMethod.Delete,
+            ParityOnly = true,
+        },
         new("api/access/users", "/api/access/users", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
         {
             ParityOnly = true,

@@ -18,6 +18,7 @@ public sealed class AccessMigrationPathTests(AccessMigrationTestFixture fixture)
             .Should().ContainSingle(migration => migration.EndsWith("_InitialBaseline"));
         (await db.Database.GetPendingMigrationsAsync()).Should().BeEmpty();
         (await RelationExistsAsync(database.ConnectionString, "users")).Should().BeTrue();
+        (await RelationExistsAsync(database.ConnectionString, "user_device_sessions")).Should().BeTrue();
         (await RelationExistsAsync(database.ConnectionString, "linking_door_ayahs")).Should().BeTrue();
         (await RelationExistsAsync(database.ConnectionString, "linking_door_ayah_words")).Should().BeTrue();
         (await IndexIsUniqueAsync(

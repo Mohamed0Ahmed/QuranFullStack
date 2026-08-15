@@ -14,7 +14,7 @@ public sealed class UnsafeEndpointMetadataValidatorTests
 {
     public static TheoryData<string, object[]> InvalidUnsafeMetadata => new()
     {
-        { "has no permission or Owner classification", [] },
+        { "has no unsafe-action authorization classification", [] },
         { "unknown permission code", [new RequirePermissionAttribute("abwab.unknown.create")] },
         {
             "multiple permission classifications",
@@ -46,6 +46,10 @@ public sealed class UnsafeEndpointMetadataValidatorTests
             ]
         },
         { "authenticated-only metadata", [new AuthorizeAttribute()] },
+        {
+            "multiple authorization classifications",
+            [new RequireSessionBootstrapAttribute(), new RequireCurrentSessionAttribute()]
+        },
     };
 
     [Theory]
@@ -61,15 +65,18 @@ public sealed class UnsafeEndpointMetadataValidatorTests
     }
 
     [Fact]
-    public void Validate_AcceptsOneKnownPermissionOrOwnerClassification()
+    public void Validate_AcceptsOneKnownUnsafeActionClassification()
     {
         var validator = new UnsafeEndpointMetadataValidator();
         var permissionEndpoint = CreateEndpoint(
             HttpMethods.Post,
             [new RequirePermissionAttribute(AbwabPermissions.Doors.Create)]);
         var ownerEndpoint = CreateEndpoint(HttpMethods.Delete, [new RequireOwnerAttribute()]);
+        var bootstrapEndpoint = CreateEndpoint(HttpMethods.Post, [new RequireSessionBootstrapAttribute()]);
+        var currentSessionEndpoint = CreateEndpoint(HttpMethods.Delete, [new RequireCurrentSessionAttribute()]);
 
-        var validate = () => validator.Validate([permissionEndpoint, ownerEndpoint]);
+        var validate = () => validator.Validate(
+            [permissionEndpoint, ownerEndpoint, bootstrapEndpoint, currentSessionEndpoint]);
 
         validate.Should().NotThrow();
     }

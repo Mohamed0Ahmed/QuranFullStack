@@ -14,7 +14,6 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
-import { map } from 'rxjs';
 
 import { AppNavigationComponent, NAV_GROUP_ONLY_ROUTE } from '../app-navigation/app-navigation.component';
 import { NavItem } from '../../navigation/nav-items';
@@ -71,6 +70,7 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
   protected readonly openMenuKey = signal<string | null>(null);
   protected readonly wide = signal(true);
   protected readonly canUseLinking = this.linkingAccess.canUseLinking;
+  protected readonly linkingAccessResolving = this.linkingAccess.isResolving;
   protected readonly linkingItemCount = this.linkingWorkspace.itemCount;
   protected readonly linkingWorkspaceAriaLabel = computed(() => {
     const count = this.linkingItemCount();
@@ -100,10 +100,7 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
 
   protected readonly isDark = toSignal(this.themeService.isDark$, { initialValue: false });
 
-  protected readonly isAuthenticated = toSignal(
-    this.oidcSecurityService.isAuthenticated$.pipe(map((result) => result.isAuthenticated)),
-    { initialValue: false },
-  );
+  protected readonly isAuthenticated = this.currentUserStore.isAuthenticated;
 
   ngOnInit(): void {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -213,10 +210,13 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
     this.oidcSecurityService.authorize();
   }
 
-  signOut(): void {
-    this.currentUserStore.clear();
-    this.authReturnLocationStore.clear();
-    this.oidcSecurityService.logoff().subscribe();
+  async signOut(): Promise<void> {
+    try {
+      await this.currentUserStore.revokeCurrentSession();
+    } finally {
+      this.authReturnLocationStore.clear();
+      this.oidcSecurityService.logoff().subscribe();
+    }
   }
 
   private applyWide(matches: boolean): void {

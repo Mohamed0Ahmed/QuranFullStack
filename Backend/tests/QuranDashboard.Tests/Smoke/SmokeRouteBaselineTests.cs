@@ -9,11 +9,13 @@ public sealed class SmokeRouteBaselineTests
             .Select(route => (route.Method.Method, route.Template, route.Access.Kind, route.Access.PermissionCode))
             .ToArray();
 
-        snapshot.Should().HaveCount(106);
-        snapshot.Count(route => route.Kind is SmokeRouteAccessKind.AuthenticatedOnly).Should().Be(1);
+        snapshot.Should().HaveCount(108);
+        snapshot.Count(route => route.Kind is SmokeRouteAccessKind.AuthenticatedOnly).Should().Be(3);
         snapshot.Count(route => route.Kind is SmokeRouteAccessKind.Permission).Should().Be(21);
         snapshot.Count(route => route.Kind is SmokeRouteAccessKind.OwnerOnly).Should().Be(30);
         snapshot.Should().Contain(("GET", "api/access/me", SmokeRouteAccessKind.AuthenticatedOnly, null));
+        snapshot.Should().Contain(("POST", "api/auth/sessions", SmokeRouteAccessKind.AuthenticatedOnly, null));
+        snapshot.Should().Contain(("DELETE", "api/auth/sessions/current", SmokeRouteAccessKind.AuthenticatedOnly, null));
         snapshot.Should().Contain(("GET", "api/access/users", SmokeRouteAccessKind.OwnerOnly, null));
         snapshot.Should().OnlyContain(route =>
             route.Kind == SmokeRouteAccessKind.Public
@@ -27,7 +29,9 @@ public sealed class SmokeRouteBaselineTests
                 || route.Method.Method == "DELETE")
             .Should().OnlyContain(route =>
                 route.Access.Kind == SmokeRouteAccessKind.Permission
-                || route.Access.Kind == SmokeRouteAccessKind.OwnerOnly);
+                || route.Access.Kind == SmokeRouteAccessKind.OwnerOnly
+                || route.Template == "api/auth/sessions"
+                || route.Template == "api/auth/sessions/current");
         SmokeRouteCatalog.Routes
             .Where(route => route.Method == HttpMethod.Get && route.Access.Kind == SmokeRouteAccessKind.Public)
             .Should()

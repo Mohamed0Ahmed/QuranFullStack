@@ -25,6 +25,8 @@ using QuranDashboard.Application.Abwab.Queries.GetTemplates;
 using QuranDashboard.Application.Abwab.Commands.Relations.AddDoorRelations;
 using QuranDashboard.Application.Abwab.Commands.Relations.DeleteDoorRelation;
 using QuranDashboard.Application.Access.Commands.ProvisionCurrentUser;
+using QuranDashboard.Application.Access.Commands.CreateDeviceSession;
+using QuranDashboard.Application.Access.Commands.RevokeDeviceSession;
 using QuranDashboard.Application.Access.Commands.AcceptAccessUser;
 using QuranDashboard.Application.Access.Commands.DisableAccessUser;
 using QuranDashboard.Application.Access.Commands.ReactivateAccessUser;
@@ -176,6 +178,8 @@ public static class DependencyInjection
         services.AddScoped<GetWordTypeSurahsHandler>();
 
         services.AddScoped<ProvisionCurrentUserHandler>();
+        services.AddScoped<CreateDeviceSessionHandler>();
+        services.AddScoped<RevokeDeviceSessionHandler>();
         services.AddScoped<ListAccessUsersHandler>();
         services.AddScoped<GetAccessUserHandler>();
         services.AddScoped<AcceptAccessUserHandler>();

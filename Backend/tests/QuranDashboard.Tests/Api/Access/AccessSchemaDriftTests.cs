@@ -31,6 +31,7 @@ public sealed class AccessSchemaDriftTests
         ["ALTER TABLE permissions DROP CONSTRAINT ck_permissions_code_format;", "missing_constraint=permissions.ck_permissions_code_format"],
         ["ALTER TABLE user_permissions DROP CONSTRAINT \"FK_user_permissions_users_user_id\";", "missing_constraint=user_permissions.FK_user_permissions_users_user_id"],
         ["DROP TABLE access_audit_events;", "missing_table=access_audit_events"],
+        ["DROP TABLE user_device_sessions;", "missing_table=user_device_sessions"],
         [
             """
             ALTER TABLE permissions DROP CONSTRAINT ck_permissions_code_format;

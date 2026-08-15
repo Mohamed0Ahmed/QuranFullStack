@@ -56,6 +56,7 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<Permission> AccessPermissions => Set<Permission>();
     public DbSet<UserPermission> AccessUserPermissions => Set<UserPermission>();
     public DbSet<AccessAuditEvent> AccessAuditEvents => Set<AccessAuditEvent>();
+    public DbSet<UserDeviceSession> AccessUserDeviceSessions => Set<UserDeviceSession>();
 
     public DbSet<AbwabSection> AbwabSections => Set<AbwabSection>();
     public DbSet<AbwabDoor> AbwabDoors => Set<AbwabDoor>();

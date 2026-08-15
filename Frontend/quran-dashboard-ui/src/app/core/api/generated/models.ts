@@ -59,6 +59,8 @@ export type { CurrentUserResponse } from './models/current-user-response';
 export type { CurrentUserResponseApiResponse } from './models/current-user-response-api-response';
 export type { DeleteAbwabDoorLinksBody } from './models/delete-abwab-door-links-body';
 export type { DeleteDoorBody } from './models/delete-door-body';
+export type { DeviceSessionResponse } from './models/device-session-response';
+export type { DeviceSessionResponseApiResponse } from './models/device-session-response-api-response';
 export type { DisableAccessUserBody } from './models/disable-access-user-body';
 export type { DoorLinkAyahDto } from './models/door-link-ayah-dto';
 export type { DoorLinkAyahsPageDto } from './models/door-link-ayahs-page-dto';

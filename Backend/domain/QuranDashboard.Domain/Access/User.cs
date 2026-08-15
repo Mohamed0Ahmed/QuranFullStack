@@ -18,6 +18,7 @@ public sealed class User
 
     public ICollection<UserPermission> UserPermissions { get; } = new List<UserPermission>();
     public ICollection<UserPermission> GrantedUserPermissions { get; } = new List<UserPermission>();
+    public ICollection<UserDeviceSession> DeviceSessions { get; } = new List<UserDeviceSession>();
 
     public UserStatus Status { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }

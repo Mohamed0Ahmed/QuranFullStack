@@ -15,11 +15,11 @@ public sealed class AccessCollectionResetContractTests(AccessTestFixture fixture
         var targetId = await fixture.InsertPersonaAsync("ReadOnly");
         await DirtyEveryMutatedTableAsync(actorId, targetId);
 
-        await AssertRowCountsAsync(users: 2, permissions: 1, userPermissions: 1, auditEvents: 1);
+        await AssertRowCountsAsync(users: 2, permissions: 1, userPermissions: 1, deviceSessions: 1, auditEvents: 1);
 
         await fixture.ResetAsync();
 
-        await AssertRowCountsAsync(users: 0, permissions: 0, userPermissions: 0, auditEvents: 0);
+        await AssertRowCountsAsync(users: 0, permissions: 0, userPermissions: 0, deviceSessions: 0, auditEvents: 0);
         await using var scope = fixture.QueryServices.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         (await db.AccessRoles.AsNoTracking().Select(role => role.Name).ToListAsync())
@@ -66,6 +66,15 @@ public sealed class AccessCollectionResetContractTests(AccessTestFixture fixture
             GrantedByUserId = actorId,
             GrantedAtUtc = DateTimeOffset.UtcNow,
         });
+        db.AccessUserDeviceSessions.Add(new UserDeviceSession
+        {
+            Id = Guid.NewGuid(),
+            UserId = actorId,
+            TokenHash = new string('a', 64),
+            CsrfTokenHash = new string('b', 64),
+            CreatedAtUtc = DateTimeOffset.UtcNow,
+            ExpiresAtUtc = DateTimeOffset.UtcNow.AddDays(90),
+        });
         db.AccessAuditEvents.Add(new AccessAuditEvent(
             DateTimeOffset.UtcNow,
             AccessAuditActionType.PermissionGranted,
@@ -86,6 +95,7 @@ public sealed class AccessCollectionResetContractTests(AccessTestFixture fixture
         int users,
         int permissions,
         int userPermissions,
+        int deviceSessions,
         int auditEvents)
     {
         await using var scope = fixture.QueryServices.CreateAsyncScope();
@@ -94,6 +104,7 @@ public sealed class AccessCollectionResetContractTests(AccessTestFixture fixture
         (await db.AccessUsers.CountAsync()).Should().Be(users);
         (await db.AccessPermissions.CountAsync()).Should().Be(permissions);
         (await db.AccessUserPermissions.CountAsync()).Should().Be(userPermissions);
+        (await db.AccessUserDeviceSessions.CountAsync()).Should().Be(deviceSessions);
         (await db.AccessAuditEvents.CountAsync()).Should().Be(auditEvents);
     }
 }

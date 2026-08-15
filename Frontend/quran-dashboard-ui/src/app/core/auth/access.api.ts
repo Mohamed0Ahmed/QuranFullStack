@@ -13,13 +13,20 @@ export class AccessApi {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiBaseUrl;
 
-  getMe(identityEvidenceToken: string): Observable<ApiResponse<CurrentUserResponse>> {
-    const headers = identityEvidenceToken
-      ? { [INTERACTIVE_IDENTITY_EVIDENCE_HEADER]: identityEvidenceToken }
-      : undefined;
+  getMe(): Observable<ApiResponse<CurrentUserResponse>> {
+    return this.http.get<ApiResponse<CurrentUserResponse>>(`${this.baseUrl}/api/access/me`);
+  }
 
-    return this.http.get<ApiResponse<CurrentUserResponse>>(`${this.baseUrl}/api/access/me`, {
-      headers,
-    });
+  createDeviceSession(accessToken: string, identityEvidenceToken: string): Observable<ApiResponse<unknown>> {
+    const headers: Record<string, string> = { Authorization: `Bearer ${accessToken}` };
+    if (identityEvidenceToken) {
+      headers[INTERACTIVE_IDENTITY_EVIDENCE_HEADER] = identityEvidenceToken;
+    }
+
+    return this.http.post<ApiResponse<unknown>>(`${this.baseUrl}/api/auth/sessions`, null, { headers });
+  }
+
+  revokeCurrentSession(): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/api/auth/sessions/current`);
   }
 }

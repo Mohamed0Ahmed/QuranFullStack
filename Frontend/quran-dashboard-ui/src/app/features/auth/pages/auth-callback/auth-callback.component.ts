@@ -34,8 +34,7 @@ export class AuthCallbackComponent implements OnInit {
       .pipe(take(1), takeUntilDestroyed(this.destroyRef))
       .subscribe(({ isAuthenticated }) => {
         if (isAuthenticated) {
-          void this.currentUserStore.ensureLoaded();
-          this.router.navigateByUrl(this.authReturnLocationStore.consume(DASHBOARD_ROUTE_PATH));
+          void this.completeSignIn();
           return;
         }
 
@@ -53,5 +52,14 @@ export class AuthCallbackComponent implements OnInit {
 
   retry(): void {
     this.oidcSecurityService.authorize();
+  }
+
+  private async completeSignIn(): Promise<void> {
+    await this.currentUserStore.completeInteractiveSignIn();
+    if (!this.currentUserStore.isAuthenticated()) {
+      this.status.set('error');
+      return;
+    }
+    await this.router.navigateByUrl(this.authReturnLocationStore.consume(DASHBOARD_ROUTE_PATH));
   }
 }

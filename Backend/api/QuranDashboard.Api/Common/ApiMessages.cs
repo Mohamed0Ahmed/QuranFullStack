@@ -20,6 +20,8 @@ public static class ApiMessages
     public const string AuthorizationUnavailable = "تعذّر التحقق من صلاحيات الوصول. يرجى المحاولة لاحقًا.";
     public const string ValidationFailed = "الطلب غير صالح";
     public const string EmailAlreadyRegistered = "هذا البريد الإلكتروني مسجَّل بالفعل لحساب آخر";
+    public const string DeviceSessionCreated = "تم حفظ جلسة تسجيل الدخول على هذا الجهاز";
+    public const string InvalidCsrfToken = "تعذّر التحقق من أمان الطلب. أعد تحميل الصفحة ثم حاول مرة أخرى.";
 
     public const string NotFound = "المورد غير موجود";
 
