@@ -25,6 +25,8 @@ using QuranDashboard.Application.Abwab.Queries.GetTemplates;
 using QuranDashboard.Application.Abwab.Commands.Relations.AddDoorRelations;
 using QuranDashboard.Application.Abwab.Commands.Relations.DeleteDoorRelation;
 using QuranDashboard.Application.Access.Commands.ProvisionCurrentUser;
+using QuranDashboard.Application.Access.Commands.CreateDeviceSession;
+using QuranDashboard.Application.Access.Commands.RevokeDeviceSession;
 using QuranDashboard.Application.Access.Commands.AcceptAccessUser;
 using QuranDashboard.Application.Access.Commands.DisableAccessUser;
 using QuranDashboard.Application.Access.Commands.ReactivateAccessUser;
@@ -97,6 +99,11 @@ using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs
 using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTree;
 using QuranDashboard.Application.Linking.Queries.ResolveLinkingSourcePage;
 using QuranDashboard.Application.Linking.Queries.GetLinkingWorkspace;
+using QuranDashboard.Application.Linking.DoorLinks.Queries.GetDoorLinkAyahs;
+using QuranDashboard.Application.Linking.DoorLinks.Queries.GetDoorLinkRecords;
+using QuranDashboard.Application.Linking.DoorLinks.Queries.GetDoorLinkSnapshot;
+using QuranDashboard.Application.Linking.DoorLinks.Commands.DeleteDoorLinks;
+using QuranDashboard.Application.Linking.DoorLinks.Commands.ReplaceDoorLinkWords;
 using QuranDashboard.Application.Linking.Commands.AddLinkingWorkspaceSource;
 using QuranDashboard.Application.Linking.Commands.ClearLinkingWorkspaceSources;
 using QuranDashboard.Application.Linking.Commands.RemoveLinkingWorkspaceSource;
@@ -171,6 +178,8 @@ public static class DependencyInjection
         services.AddScoped<GetWordTypeSurahsHandler>();
 
         services.AddScoped<ProvisionCurrentUserHandler>();
+        services.AddScoped<CreateDeviceSessionHandler>();
+        services.AddScoped<RevokeDeviceSessionHandler>();
         services.AddScoped<ListAccessUsersHandler>();
         services.AddScoped<GetAccessUserHandler>();
         services.AddScoped<AcceptAccessUserHandler>();
@@ -215,6 +224,11 @@ public static class DependencyInjection
 
         services.AddScoped<ResolveLinkingSourcePageHandler>();
         services.AddScoped<GetLinkingWorkspaceHandler>();
+        services.AddScoped<GetDoorLinkRecordsHandler>();
+        services.AddScoped<GetDoorLinkSnapshotHandler>();
+        services.AddScoped<GetDoorLinkAyahsHandler>();
+        services.AddScoped<ReplaceDoorLinkWordsHandler>();
+        services.AddScoped<DeleteDoorLinksHandler>();
         services.AddScoped<AddLinkingWorkspaceSourceHandler>();
         services.AddScoped<RemoveLinkingWorkspaceSourceHandler>();
         services.AddScoped<ReorderLinkingWorkspaceSourcesHandler>();

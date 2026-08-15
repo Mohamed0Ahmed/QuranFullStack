@@ -16,7 +16,7 @@ public sealed class CreateLinkingPreparedPreflightHandler(ILinkingPreparedPrefli
         if (request.PreparationKey == Guid.Empty
             || request.DoorId <= 0
             || request.ExpectedLinkingDataRevision is <= 0
-            || request.Sources.Count is < 1 or > LinkingLimits.MaxPreparedSources
+            || request.Sources.Count < 1
             || !request.Sources.Select(source => source.OrderValue).Order()
                 .SequenceEqual(Enumerable.Range(1, request.Sources.Count))
             || request.Sources.Any(source =>

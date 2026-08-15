@@ -15,7 +15,7 @@
 .linking-ayah-card__status {
   position: absolute;
   inset-block-start: var(--qd-space-2);
-  inset-inline-start: var(--qd-space-3);
+  inset-inline-end: var(--qd-space-3);
 }
 
 .linking-ayah-card__meta {
@@ -28,6 +28,11 @@
   justify-content: center;
   line-height: var(--qd-type-meta-lh);
   text-align: center;
+}
+
+.linking-ayah-card__meta--start {
+  justify-content: flex-start;
+  text-align: start;
 }
 
 .linking-ayah-card__text {

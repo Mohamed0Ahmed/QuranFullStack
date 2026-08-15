@@ -19,6 +19,7 @@ export interface LinkingPreparedPreflightStatusDto {
   stage: string;
   status: string;
   totalAyahs: number | null;
+  totalLinkCount: number | null;
   totalSources: number;
   totals: LinkingPreflightCountsDto | null;
 }

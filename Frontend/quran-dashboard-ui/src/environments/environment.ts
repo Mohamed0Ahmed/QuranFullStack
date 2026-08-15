@@ -2,7 +2,7 @@ import type { Environment } from './environment.model';
 
 export const environment: Environment = {
   production: true,
-  apiBaseUrl: 'https://quranfullstack-production.up.railway.app',
+  apiBaseUrl: '',
 
   logto: {
     endpoint: 'https://a8kvwi.logto.app',

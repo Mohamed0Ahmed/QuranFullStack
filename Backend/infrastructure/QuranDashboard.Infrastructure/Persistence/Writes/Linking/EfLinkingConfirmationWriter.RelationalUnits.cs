@@ -129,11 +129,13 @@ internal sealed partial class EfLinkingConfirmationWriter
                       ON persisted_word.unit_ayah_id = persisted_ayah.id
                     WHERE NOT EXISTS (
                         SELECT 1
-                        FROM linking_prepared_ayahs prepared_ayah
+                        FROM linking_confirmation_units desired_unit
+                        JOIN linking_prepared_ayahs prepared_ayah
+                          ON prepared_ayah.unit_id = desired_unit.prepared_unit_id
                         JOIN linking_prepared_ayah_words prepared_word
                           ON prepared_word.prepared_ayah_id = prepared_ayah.id
                          AND prepared_word.is_requested
-                        WHERE prepared_ayah.unit_id = unit.prepared_unit_id
+                        WHERE desired_unit.unit_id = unit.unit_id
                           AND prepared_ayah.ayah_id = persisted_ayah.ayah_id
                           AND prepared_word.quran_word_id = persisted_word.quran_word_id)
                     LIMIT {PersistenceBatchSize}
@@ -221,11 +223,13 @@ internal sealed partial class EfLinkingConfirmationWriter
                       ON persisted_word.unit_ayah_id = persisted_ayah.id
                     WHERE NOT EXISTS (
                         SELECT 1
-                        FROM linking_prepared_ayahs prepared_ayah
+                        FROM linking_confirmation_units desired_unit
+                        JOIN linking_prepared_ayahs prepared_ayah
+                          ON prepared_ayah.unit_id = desired_unit.prepared_unit_id
                         JOIN linking_prepared_ayah_words prepared_word
                           ON prepared_word.prepared_ayah_id = prepared_ayah.id
                          AND prepared_word.is_requested
-                        WHERE prepared_ayah.unit_id = unit.prepared_unit_id
+                        WHERE desired_unit.unit_id = unit.unit_id
                           AND prepared_ayah.ayah_id = persisted_ayah.ayah_id
                           AND prepared_word.quran_word_id = persisted_word.quran_word_id)
                     UNION ALL

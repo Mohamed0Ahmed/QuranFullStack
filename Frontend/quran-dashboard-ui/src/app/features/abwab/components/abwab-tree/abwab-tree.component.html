@@ -1,9 +1,7 @@
 <div class="abwab-tree-frame" [class.abwab-tree-frame--bulk]="bulkMode()">
   <div class="abwab-tree__header" aria-hidden="true" data-testid="abwab-tree-header">
-    @if (bulkMode()) {
-      <span></span>
-    }
     <span></span>
+    <span class="abwab-tree__header-cell">{{ headerLinksLabel }}</span>
     <span class="abwab-tree__header-cell">{{ headerDirectLabel }}</span>
     <span class="abwab-tree__header-cell abwab-tree__count--wide">{{ headerTotalLabel }}</span>
     <span class="abwab-tree__header-cell abwab-tree__count--wide">{{ headerDepthLabel }}</span>
@@ -41,6 +39,10 @@
         (keydown)="onKeydown($event)"
       >
         <span class="abwab-tree__lead">
+          <qd-abwab-tree-branches
+            [guides]="branchGuidesById().get(node.id) ?? []"
+            [expanded]="row.isExpanded"
+          />
         @if (bulkMode()) {
           <input
             type="checkbox"
@@ -83,7 +85,7 @@
           } @else {
             <button
               type="button"
-              class="abwab-tree__order qd-chip qd-chip--pill"
+              class="abwab-tree__order qd-chip qd-is-selected"
               [attr.aria-label]="orderEditAriaLabel(node)"
               [attr.data-testid]="'abwab-tree-order-' + node.id"
               [attr.tabindex]="rovingId() === node.id ? 0 : -1"
@@ -94,7 +96,7 @@
           }
         } @else {
           <span
-            class="abwab-tree__order qd-chip qd-chip--pill qd-chip--static"
+            class="abwab-tree__order qd-chip qd-chip--static qd-is-selected"
             [attr.data-testid]="'abwab-tree-order-' + node.id"
           >
             {{ displayOrder(node) }}
@@ -102,6 +104,28 @@
         }
 
         <span class="abwab-tree__name qd-truncate" [title]="node.name">{{ node.name }}</span>
+        </span>
+
+        <span class="abwab-tree__count-cell">
+          <button
+            type="button"
+            qdAction="row-action"
+            size="sm"
+            class="abwab-tree__links-count abwab-tree__count"
+            [class.text-qd-ink-muted]="node.linkCount === 0"
+            [class.text-qd-green-text]="node.linkCount !== 0"
+            [class.bg-qd-green-tint]="openLinksDoorId() === node.id"
+            [class.border-qd-green-quiet]="openLinksDoorId() === node.id"
+            [attr.aria-label]="linksAriaLabel(node)"
+            aria-haspopup="dialog"
+            [attr.aria-expanded]="openLinksDoorId() === node.id"
+            [attr.aria-controls]="'abwab-door-links-panel-' + node.id"
+            [attr.data-testid]="'abwab-tree-links-' + node.id"
+            (click)="onLinksClick($event, node.id)"
+            (keydown)="$event.stopPropagation()"
+          >
+            {{ node.linkCount }}
+          </button>
         </span>
 
         <span class="abwab-tree__count-cell">
@@ -182,6 +206,14 @@
           </span>
         }
       </div>
+      @if (openLinksDoorId() === node.id) {
+        <qd-abwab-door-links-panel
+          [doorId]="node.id"
+          [doorName]="node.name"
+          (dismissed)="linksToggled.emit(node.id)"
+          (keydown)="$event.stopPropagation()"
+        />
+      }
     }
   }
 </div>

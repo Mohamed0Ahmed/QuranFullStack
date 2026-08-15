@@ -13,12 +13,13 @@ public static class LinkingUnitIdentity
         ArgumentNullException.ThrowIfNull(ayahs);
 
         var identity = new StringBuilder(isGrouped ? "grouped" : "independent");
-        foreach (var ayah in ayahs)
+        foreach (var ayah in ayahs
+                     .OrderBy(ayah => ayah.SurahNumber)
+                     .ThenBy(ayah => ayah.AyahNumber)
+                     .ThenBy(ayah => ayah.AyahId))
         {
             identity.Append('|');
             identity.Append(ayah.AyahId.ToString(CultureInfo.InvariantCulture));
-            identity.Append(':');
-            identity.AppendJoin(',', ayah.WordIds.Distinct().Order());
         }
 
         return identity.ToString();

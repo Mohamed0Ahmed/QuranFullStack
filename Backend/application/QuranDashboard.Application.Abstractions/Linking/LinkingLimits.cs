@@ -6,5 +6,5 @@ public static class LinkingLimits
 
     public const int MaxDescriptionLength = 2000;
 
-    public const int MaxPreparedSources = 100;
+    public const int MaxWorkspaceSources = 100;
 }

@@ -15,4 +15,5 @@ export interface LinkingPreparedSourceSummaryDto {
   resolutionIdentity: string;
   sourceKind: string;
   totalAyahCount: number | null;
+  totalLinkCount: number;
 }

@@ -77,12 +77,12 @@ internal sealed partial class EfLinkingWorkspaceWriter(
 
         var sourceCount = await db.LinkingWorkspaceSources
             .CountAsync(source => source.WorkspaceId == workspace.Id, cancellationToken);
-        if (sourceCount >= LinkingLimits.MaxPreparedSources)
+        if (sourceCount >= LinkingLimits.MaxWorkspaceSources)
         {
             throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
                 LinkingWorkspaceViolationCode.PreparedSourceLimitExceeded,
                 "sources",
-                LinkingLimits.MaxPreparedSources.ToString(CultureInfo.InvariantCulture)));
+                LinkingLimits.MaxWorkspaceSources.ToString(CultureInfo.InvariantCulture)));
         }
 
         var sourceIdentity = LinkingSourceIdentity.For(descriptor);

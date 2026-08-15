@@ -8,6 +8,7 @@ export interface AbwabTreeDoorDto {
   globalOrderValue: number | null;
   id: number;
   isArchived: boolean;
+  linkCount: number;
   name: string;
   orderValue: number;
   parentId: number | null;

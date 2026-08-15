@@ -1,10 +1,12 @@
 <section class="direct-link-workflow" [attr.aria-label]="labels.operation">
   <header class="direct-link-workflow__header">
-    <button qdAction="tertiary" size="sm" type="button" (click)="cancel()">{{ labels.cancel }}</button>
+    @if (currentStep() !== 'succeeded') {
+      <button qdAction="tertiary" size="sm" type="button" (click)="cancel()">{{ labels.cancel }}</button>
+    }
   </header>
 
   <ol class="direct-link-workflow__steps" aria-label="مراحل الربط">
-    @for (step of steps; track step) {
+    @for (step of steps(); track step) {
       <li
         [class.direct-link-workflow__step--current]="currentStep() === step"
         [class.direct-link-workflow__step--available]="canNavigateTo(step)"
@@ -97,7 +99,7 @@
               </button>
               <p role="status">
                 {{ labels.totalAyahs }}:
-                <strong class="qd-ltr-isolate tabular-nums">{{ state().directTotalAyahCount || '—' }}</strong>
+                <strong class="qd-ltr-isolate tabular-nums">{{ directTotalAyahCount() || '—' }}</strong>
                 <span aria-hidden="true">·</span>
                 {{ labels.selectedCount }}:
                 <strong class="qd-ltr-isolate tabular-nums">{{ directSelectedCount() }}</strong>
@@ -131,7 +133,12 @@
         <qd-notice [message]="labels.success" [dismissLabel]="labels.close" (dismiss)="acknowledge()" />
       }
       @case ('failed') {
-        <qd-error-state severity="write" [message]="state().errorMessage || labels.sourceLoadError" [actionLabel]="labels.retry" (action)="retryPreflight()" />
+        <qd-error-state
+          severity="write"
+          [message]="state().errorMessage || labels.sourceLoadError"
+          [actionLabel]="isCopy() ? labels.copyReturn : labels.retry"
+          (action)="isCopy() ? cancel() : retryPreflight()"
+        />
       }
       @case ('cancelled') {
         <qd-notice [message]="labels.cancel" [dismissLabel]="labels.close" (dismiss)="cancel()" />
@@ -148,7 +155,11 @@
       <button qdAction="primary" type="button" [disabled]="!canAdvanceDoor()" (click)="next()">{{ labels.preflightTitle }}</button>
     }
     @if (currentStep() === 'ready') {
-      <button qdAction="primary" type="button" [disabled]="!canSubmit()" (click)="submit()">{{ labels.confirm }}</button>
+      @if (isCopy() && isNoOp()) {
+        <button qdAction="secondary" type="button" (click)="acknowledge()">{{ labels.copyAcknowledge }}</button>
+      } @else {
+        <button qdAction="primary" type="button" [disabled]="!canSubmit()" (click)="submit()">{{ labels.confirm }}</button>
+      }
     }
     @if (workflow.canCancelExecution()) {
       <button qdAction="secondary" type="button" (click)="cancelExecution()">{{ labels.cancel }}</button>

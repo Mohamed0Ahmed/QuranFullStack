@@ -1,9 +1,4 @@
-<section class="linking-preflight-step" aria-labelledby="linking-preflight-title">
-  <header class="linking-preflight-step__header">
-    <h3 id="linking-preflight-title">{{ labels.preflightTitle }}</h3>
-    <p>{{ labels.preflightHint }}</p>
-  </header>
-
+<section class="linking-preflight-step" [attr.aria-label]="labels.preflightTitle">
   @if (message(); as warning) { <qd-notice [message]="warning" /> }
 
   @switch (status()) {
@@ -48,54 +43,15 @@
       @if (preflight(); as result) {
         @if (isNoOp()) { <qd-notice [message]="labels.preflightNoOp" /> }
         @if (isBlocked()) { <qd-error-state severity="write" [message]="labels.preflightBlocked" /> }
-        @if (result.totals; as totals) {
-          <dl class="linking-preflight-step__totals" aria-label="ملخص أثر الربط">
-            <div class="linking-preflight-step__total linking-preflight-step__total--requested">
-              <dt>{{ labels.preflightCountRequested }}</dt><dd>{{ totals.requested }}</dd>
-            </div>
-            <div class="linking-preflight-step__total">
-              <dt>{{ labels.preflightCountNew }}</dt><dd>{{ totals.new }}</dd>
-            </div>
-            <div class="linking-preflight-step__total">
-              <dt>{{ labels.preflightCountUnchanged }}</dt><dd>{{ totals.unchanged }}</dd>
-            </div>
-            <div class="linking-preflight-step__total">
-              <dt>{{ labels.preflightCountUpdated }}</dt><dd>{{ totals.updated + totals.overlapping }}</dd>
-            </div>
-          </dl>
-        }
-        <section
-          class="linking-preflight-step__merged-ayahs"
-          [class.linking-preflight-step__merged-ayahs--expanded]="mergedAyahsExpanded()"
-        >
+        <section class="linking-preflight-step__merged-ayahs">
           <header class="linking-preflight-step__collection-header">
             <div>
               <h4>{{ labels.preflightMergedAyahs }}</h4>
               <p>{{ result.totalAyahs ?? result.totals?.requested ?? 0 }} {{ labels.ayahUnit }} · {{ labels.preflightAfterMerge }}</p>
             </div>
-            <button qdAction="tertiary" size="sm" type="button" [attr.aria-expanded]="mergedAyahsExpanded()" (click)="toggleMergedAyahs()">
-              {{ mergedAyahsExpanded() ? labels.preflightHideAllAyahs : labels.preflightShowAllAyahs }}
-            </button>
           </header>
-          @if (mergedAyahsExpanded()) {
-            <qd-linking-preflight-merged-ayah-viewer [preflight]="result" [generation]="stateGeneration()" />
-          }
+          <qd-linking-preflight-merged-ayah-viewer [preflight]="result" [generation]="stateGeneration()" />
         </section>
-        @if (!mergedAyahsExpanded()) {
-          <ul class="linking-preflight-step__sources">
-            @for (source of result.sources; track source.preparedSourceId) {
-              <li class="linking-preflight-step__source" [class.linking-preflight-step__source--expanded]="expandedSourceId() === source.preparedSourceId">
-                <button class="linking-preflight-step__source-trigger" type="button" [attr.aria-expanded]="expandedSourceId() === source.preparedSourceId" (click)="toggleSource(source)">
-                  <span>{{ source.label }} · {{ contributionModeLabel(source.contributionMode) }}</span>
-                  <span>{{ source.counts?.requested ?? 0 }} {{ labels.ayahUnit }}</span>
-                </button>
-                @if (expandedSourceId() === source.preparedSourceId) {
-                  <qd-linking-preflight-ayah-viewer [preflight]="result" [source]="source" [generation]="stateGeneration()" />
-                }
-              </li>
-            }
-          </ul>
-        }
       }
     }
   }

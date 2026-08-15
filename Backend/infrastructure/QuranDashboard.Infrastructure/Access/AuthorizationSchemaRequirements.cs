@@ -8,6 +8,7 @@ internal static class AuthorizationSchemaRequirements
         "users",
         "permissions",
         "user_permissions",
+        "user_device_sessions",
         "access_audit_events",
     ];
 
@@ -30,6 +31,13 @@ internal static class AuthorizationSchemaRequirements
         new("user_permissions", "permission_id", false, "integer", NoIdentity),
         new("user_permissions", "granted_by_user_id", false, "integer", NoIdentity),
         new("user_permissions", "granted_at", false, "timestamp with time zone", NoIdentity),
+        new("user_device_sessions", "id", false, "uuid", NoIdentity),
+        new("user_device_sessions", "user_id", false, "integer", NoIdentity),
+        new("user_device_sessions", "token_hash", false, "character varying(64)", NoIdentity),
+        new("user_device_sessions", "csrf_token_hash", false, "character varying(64)", NoIdentity),
+        new("user_device_sessions", "created_at", false, "timestamp with time zone", NoIdentity),
+        new("user_device_sessions", "expires_at", false, "timestamp with time zone", NoIdentity),
+        new("user_device_sessions", "revoked_at", true, "timestamp with time zone", NoIdentity),
         new("access_audit_events", "id", false, "bigint", IdentityByDefault),
         new("access_audit_events", "occurred_at", false, "timestamp with time zone", NoIdentity),
         new("access_audit_events", "action_type", false, "character varying(64)", NoIdentity),
@@ -70,6 +78,18 @@ internal static class AuthorizationSchemaRequirements
             """),
         new("user_permissions", "FK_user_permissions_users_user_id", """
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
+            """),
+        new("user_device_sessions", "PK_user_device_sessions", """
+            PRIMARY KEY (id)
+            """),
+        new("user_device_sessions", "FK_user_device_sessions_users_user_id", """
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            """),
+        new("user_device_sessions", "ck_user_device_sessions_expiry", """
+            CHECK ((expires_at > created_at))
+            """),
+        new("user_device_sessions", "ck_user_device_sessions_revocation", """
+            CHECK (((revoked_at IS NULL) OR (revoked_at >= created_at)))
             """),
         new("access_audit_events", "PK_access_audit_events", """
             PRIMARY KEY (id)
@@ -132,6 +152,18 @@ internal static class AuthorizationSchemaRequirements
         new("user_permissions", "IX_user_permissions_granted_by_user_id", """
             CREATE INDEX "IX_user_permissions_granted_by_user_id" ON user_permissions
             USING btree (granted_by_user_id)
+            """),
+        new("user_device_sessions", "PK_user_device_sessions", """
+            CREATE UNIQUE INDEX "PK_user_device_sessions" ON user_device_sessions USING btree (id)
+            """),
+        new("user_device_sessions", "IX_user_device_sessions_token_hash", """
+            CREATE UNIQUE INDEX "IX_user_device_sessions_token_hash" ON user_device_sessions USING btree (token_hash)
+            """),
+        new("user_device_sessions", "IX_user_device_sessions_user_id_expires_at", """
+            CREATE INDEX "IX_user_device_sessions_user_id_expires_at" ON user_device_sessions USING btree (user_id, expires_at)
+            """),
+        new("user_device_sessions", "IX_user_device_sessions_revoked_at_expires_at", """
+            CREATE INDEX "IX_user_device_sessions_revoked_at_expires_at" ON user_device_sessions USING btree (revoked_at, expires_at)
             """),
         new("access_audit_events", "PK_access_audit_events", """
             CREATE UNIQUE INDEX "PK_access_audit_events" ON access_audit_events USING btree (id)

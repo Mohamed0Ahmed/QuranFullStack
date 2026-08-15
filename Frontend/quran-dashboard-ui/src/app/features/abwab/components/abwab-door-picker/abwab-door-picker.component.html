@@ -23,9 +23,19 @@
   />
 }
 <div class="abwab-door-picker__list qd-scroll-stable">
+  @if (rows().length > 0) {
+    <div class="abwab-door-picker__header" aria-hidden="true">
+      <span></span>
+      <span class="abwab-door-picker__header-cell">{{ linksLabel }}</span>
+      <span class="abwab-door-picker__header-cell">{{ directChildrenLabel }}</span>
+      <span class="abwab-door-picker__header-cell abwab-door-picker__count--wide">{{ allDescendantsLabel }}</span>
+      <span class="abwab-door-picker__header-cell abwab-door-picker__count--wide">{{ depthLabel }}</span>
+      <span class="abwab-door-picker__header-cell">{{ relationsLabel }}</span>
+    </div>
+  }
   @for (row of rows(); track row.node.id) {
     <div
-      class="abwab-door-picker__row qd-check-row"
+      class="abwab-door-picker__row"
       [class.abwab-door-picker__row--disabled]="row.isDisabled"
       [class.abwab-door-picker__row--excluded]="row.isExcluded"
       [style.--abwab-door-picker-depth]="row.depth"
@@ -36,55 +46,81 @@
       [attr.data-testid]="testIdPrefix() + (row.isExcluded ? '-excluded-' : '-pick-') + row.node.id"
       (click)="togglePicked(row)"
     >
-      <button
-        type="button"
-        qdAction="row-action"
-        class="abwab-door-picker__chevron qd-hit-target"
-        [class.abwab-door-picker__chevron--leaf]="!row.hasChildren"
-        [attr.tabindex]="row.hasChildren ? null : -1"
-        [attr.aria-hidden]="row.hasChildren ? null : true"
-        [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
-        [attr.aria-label]="row.hasChildren ? expandAriaLabel(row) : null"
-        [attr.data-testid]="testIdPrefix() + '-pick-chevron-' + row.node.id"
-        (click)="toggleExpanded($event, row)"
-      >
-        @if (row.hasChildren) {
-          <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
+      <span class="abwab-door-picker__lead">
+        <button
+          type="button"
+          qdAction="row-action"
+          class="abwab-door-picker__chevron qd-hit-target"
+          [class.abwab-door-picker__chevron--leaf]="!row.hasChildren"
+          [attr.tabindex]="row.hasChildren ? null : -1"
+          [attr.aria-hidden]="row.hasChildren ? null : true"
+          [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
+          [attr.aria-label]="row.hasChildren ? expandAriaLabel(row) : null"
+          [attr.data-testid]="testIdPrefix() + '-pick-chevron-' + row.node.id"
+          (click)="toggleExpanded($event, row)"
+        >
+          @if (row.hasChildren) {
+            <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
+          }
+        </button>
+        @if (row.isExcluded) {
+          <span class="abwab-door-picker__control-gap" aria-hidden="true"></span>
+        } @else {
+          <input
+            class="qd-checkbox"
+            [attr.type]="single() ? 'radio' : 'checkbox'"
+            [attr.name]="single() ? pickerName : null"
+            [checked]="isPicked(row.node.id)"
+            [disabled]="row.isDisabled"
+            [attr.aria-label]="rowAriaLabel(row)"
+            [attr.data-testid]="testIdPrefix() + '-pick-checkbox-' + row.node.id"
+            (click)="$event.preventDefault()"
+          />
         }
-      </button>
-      @if (row.isExcluded) {
-        <span class="abwab-door-picker__control-gap" aria-hidden="true"></span>
-      } @else {
-        <input
-          class="qd-checkbox"
-          [attr.type]="single() ? 'radio' : 'checkbox'"
-          [attr.name]="single() ? pickerName : null"
-          [checked]="isPicked(row.node.id)"
-          [disabled]="row.isDisabled"
-          [attr.aria-label]="rowAriaLabel(row)"
-          [attr.data-testid]="testIdPrefix() + '-pick-checkbox-' + row.node.id"
-          (click)="$event.preventDefault()"
-        />
-      }
-      <span class="abwab-door-picker__name qd-truncate">{{ row.node.name }}</span>
-      @if (row.isExcluded && excludedTag()) {
-        <span class="abwab-door-picker__tag">{{ excludedTag() }}</span>
-      } @else if (row.isDisabled && disabledTag()) {
-        <span class="abwab-door-picker__tag">{{ disabledTag() }}</span>
-      }
+        <span class="abwab-door-picker__name qd-truncate">{{ row.node.name }}</span>
+        @if (row.isExcluded && excludedTag()) {
+          <span class="abwab-door-picker__tag">{{ excludedTag() }}</span>
+        } @else if (row.isDisabled && disabledTag()) {
+          <span class="abwab-door-picker__tag">{{ disabledTag() }}</span>
+        }
+      </span>
+
+      <span class="abwab-door-picker__count" [attr.aria-label]="linksAriaLabel(row.node)">
+        {{ row.node.linkCount }}
+      </span>
+      <span class="abwab-door-picker__count" [attr.aria-label]="childCountAriaLabel(row.node.liveChildCount)">
+        {{ row.node.liveChildCount }}
+      </span>
+      <span
+        class="abwab-door-picker__count abwab-door-picker__count--wide"
+        [attr.aria-label]="descendantCountAriaLabel(row.node.liveDescendantCount)"
+      >
+        {{ row.node.liveDescendantCount }}
+      </span>
+      <span
+        class="abwab-door-picker__count abwab-door-picker__count--wide"
+        [attr.aria-label]="depthAriaLabel(row.node.maxRelativeDepth)"
+      >
+        {{ row.node.maxRelativeDepth }}
+      </span>
+      <span class="abwab-door-picker__count" [attr.aria-label]="relationsAriaLabel(row.node)">
+        {{ row.node.relationCount }}
+      </span>
     </div>
   } @empty {
-    @if (status() === 'loading') {
-      <qd-skeleton-rows
-        [count]="6"
-        rowTemplate="1.1rem 0.9375rem 1fr"
-        [loadingLabel]="loadingLabel"
-        [attr.data-testid]="testIdPrefix() + '-loading'"
-      />
-    } @else if (searchFoundNothing()) {
-      <qd-empty-state [message]="noMatchesLabel" testId="qd-state-empty" [attr.data-testid]="testIdPrefix() + '-no-matches'" />
-    } @else if (doorsErrorMessage() === '') {
-      <qd-empty-state [message]="emptyMessage()" testId="qd-state-empty" [attr.data-testid]="testIdPrefix() + '-doors-empty'" />
-    }
+    <div class="abwab-door-picker__state">
+      @if (status() === 'loading') {
+        <qd-skeleton-rows
+          [count]="6"
+          rowTemplate="1.1rem 0.9375rem 1fr"
+          [loadingLabel]="loadingLabel"
+          [attr.data-testid]="testIdPrefix() + '-loading'"
+        />
+      } @else if (searchFoundNothing()) {
+        <qd-empty-state [message]="noMatchesLabel" testId="qd-state-empty" [attr.data-testid]="testIdPrefix() + '-no-matches'" />
+      } @else if (doorsErrorMessage() === '') {
+        <qd-empty-state [message]="emptyMessage()" testId="qd-state-empty" [attr.data-testid]="testIdPrefix() + '-doors-empty'" />
+      }
+    </div>
   }
 </div>

@@ -35,10 +35,13 @@
 
   --qd-danger: oklch(0.682 0.116 20.5);
   --qd-warning: oklch(0.75 0.14 75);
+  --qd-info: oklch(0.755 0.105 249.9);
   --qd-success: oklch(0.761 0.072 152.1);
   --qd-danger-tint: oklch(0.305 0.045 23);
   --qd-success-tint: oklch(0.305 0.035 163);
   --qd-warning-tint: oklch(0.320 0.045 75);
+  --qd-info-tint: oklch(0.290 0.040 249.9);
+  --qd-info-hairline: oklch(0.455 0.065 249.9);
 
   --qd-focus-ring: oklch(0.78 0.10 82);
   --qd-ring: 0 0 0 4px oklch(0.772 0.098 82 / 0.22);

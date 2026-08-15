@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Infrastructure.Caching.Linking;
 using QuranDashboard.Infrastructure.Persistence.Linking;
@@ -7,6 +8,7 @@ using QuranDashboard.Infrastructure.Persistence.Reads.Linking;
 using QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 using QuranDashboard.Application.Abstractions.Linking.PreparedPreflights;
 using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
+using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
 using QuranDashboard.Infrastructure.Background;
 
 namespace QuranDashboard.Infrastructure.ServiceRegistration;
@@ -43,9 +45,17 @@ internal static class LinkingDependencyInjection
         services.AddHostedService<LinkingConfirmationJobCleanupService>();
 
         services.AddScoped<ILinkingWorkspaceReader, EfLinkingWorkspaceReader>();
+        services.AddScoped<IDoorLinkRecordsReader, EfDoorLinkRecordsReader>();
+        services.AddScoped<EfDoorLinkRecordsWriter>();
+        services.AddScoped<IDoorLinkRecordsWriter>(sp => new InvalidatingDoorLinkRecordsWriter(
+            sp.GetRequiredService<EfDoorLinkRecordsWriter>(),
+            sp.GetRequiredService<IAbwabCacheInvalidator>()));
         services.AddScoped<ILinkingWorkspaceWriter, EfLinkingWorkspaceWriter>();
         services.AddScoped<ILinkingConfirmedStateReader, EfLinkingConfirmedStateReader>();
-        services.AddScoped<ILinkingConfirmationWriter, EfLinkingConfirmationWriter>();
+        services.AddScoped<EfLinkingConfirmationWriter>();
+        services.AddScoped<ILinkingConfirmationWriter>(sp => new InvalidatingLinkingConfirmationWriter(
+            sp.GetRequiredService<EfLinkingConfirmationWriter>(),
+            sp.GetRequiredService<IAbwabCacheInvalidator>()));
 
         return services;
     }

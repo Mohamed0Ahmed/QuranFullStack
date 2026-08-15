@@ -9,5 +9,6 @@ public sealed record LinkingSourcePreflightDto(
     string Classification,
     long? ExistingContributionId,
     uint? ExistingContributionVersion,
+    int TotalLinkCount,
     LinkingPreflightCountsDto Counts,
     IReadOnlyList<LinkingAyahPreflightDto> Ayahs);

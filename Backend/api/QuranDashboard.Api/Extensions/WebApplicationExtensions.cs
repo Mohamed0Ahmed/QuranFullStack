@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Net.Sockets;
 using Microsoft.EntityFrameworkCore;
 using QuranDashboard.Api.Access;
+using QuranDashboard.Api.Authentication;
 using QuranDashboard.Api.Authorization.Validation;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Infrastructure.Persistence;
@@ -78,6 +79,7 @@ public static class WebApplicationExtensions
         app.UseCors("AngularDev");
         app.UseRateLimiter();
         app.UseAuthentication();
+        app.UseMiddleware<DeviceSessionAntiforgeryMiddleware>();
         app.UseAuthorization();
         app.MapControllers();
         app.Services.GetRequiredService<UnsafeEndpointMetadataValidator>()

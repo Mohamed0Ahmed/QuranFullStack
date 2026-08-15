@@ -1,0 +1,54 @@
+<article
+  class="abwab-door-link-record"
+  [class.abwab-door-link-record--grouped]="record().isGrouped"
+  [class.abwab-door-link-record--selected]="selected()"
+  [attr.data-testid]="'abwab-door-link-record-' + record().unitId"
+>
+  @if (editing()) {
+    <qd-abwab-door-link-editor [record]="record()" />
+  } @else {
+    <section
+      class="abwab-door-link-record__ayahs"
+      [class.abwab-door-link-record__ayahs--grouped]="record().isGrouped"
+      [id]="'abwab-door-link-record-ayahs-' + record().unitId"
+    >
+      @if (displayAyahs().length === 0) {
+        <qd-empty-state [message]="emptyLabel" [testId]="'abwab-door-link-ayahs-empty-' + record().unitId" />
+      } @else {
+        @for (ayah of displayAyahs(); track ayah.ayahId; let isFirst = $first) {
+          <qd-linking-ayah-card
+            class="abwab-door-link-record__card"
+            [class.abwab-door-link-record__card--selectable]="selectable() && !interactionDisabled()"
+            [ayah]="ayah"
+            [highlightSourceWords]="true"
+            [grouped]="record().isGrouped"
+            metaAlignment="start"
+            [resultPosition]="recordPosition()"
+            [resultCount]="totalRecords()"
+            (click)="toggleSelection()"
+          >
+            @if (isFirst && (selectable() || record().isGrouped)) {
+              <ng-container qdLinkingAyahCardMetaStart>
+                @if (selectable()) {
+                  <input
+                    type="checkbox"
+                    class="qd-checkbox"
+                    [checked]="selected()"
+                    [disabled]="interactionDisabled()"
+                    [attr.aria-label]="kindLabel() + ' ' + recordPosition()"
+                    [attr.data-testid]="'abwab-door-link-record-checkbox-' + record().unitId"
+                    (click)="$event.stopPropagation()"
+                    (change)="toggleSelection()"
+                  />
+                }
+                @if (record().isGrouped) {
+                  <span class="qd-badge">{{ kindLabel() }}</span>
+                }
+              </ng-container>
+            }
+          </qd-linking-ayah-card>
+        }
+      }
+    </section>
+  }
+</article>

@@ -38,6 +38,7 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
         var retiredSections = retiredSectionIds.ToHashSet();
 
         var relationCounts = await GetLiveRelationCountsAsync(cancellationToken);
+        var linkCounts = await GetLiveLinkCountsAsync(cancellationToken);
 
         var sectionDtos = sections
             .Select(s => new AbwabTreeSectionDto(
@@ -49,6 +50,7 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
                 d.Id, d.SectionId, retiredSections.Contains(d.SectionId), d.ParentId, d.Name, d.Description, d.RepresentativeAyahText,
                 d.OrderValue, d.GlobalOrderValue, d.Version, d.DeletedAtUtc != null, liveChildCounts.GetValueOrDefault(d.Id),
                 relationCounts.GetValueOrDefault(d.Id),
+                linkCounts.GetValueOrDefault(d.Id),
                 aliasesByDoor.GetValueOrDefault(d.Id, [])))
             .ToList();
 
@@ -78,6 +80,23 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
 
         return counts;
     }
+
+    private async Task<Dictionary<int, int>> GetLiveLinkCountsAsync(CancellationToken cancellationToken) =>
+        await (
+            from unit in db.LinkingUnits.AsNoTracking()
+            join mapping in db.LinkingSourceContributionUnits.AsNoTracking()
+                on unit.Id equals mapping.UnitId
+            join contribution in db.LinkingSourceContributions.AsNoTracking()
+                on mapping.SourceContributionId equals contribution.Id
+            where contribution.DeletedAtUtc == null && contribution.DoorId == unit.DoorId
+            group unit by unit.DoorId
+            into unitsByDoor
+            select new
+            {
+                DoorId = unitsByDoor.Key,
+                Count = unitsByDoor.Select(unit => unit.Id).Distinct().Count(),
+            })
+        .ToDictionaryAsync(count => count.DoorId, count => count.Count, cancellationToken);
 
     private async Task<DateTimeOffset?> GetSnapshotVersionAsync(CancellationToken cancellationToken)
     {

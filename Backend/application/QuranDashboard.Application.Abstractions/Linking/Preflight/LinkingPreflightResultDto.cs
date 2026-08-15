@@ -7,6 +7,7 @@ public sealed record LinkingPreflightResultDto(
     bool IsNoOp,
     bool IsBlocked,
     string PreflightToken,
+    int TotalLinkCount,
     LinkingPreflightCountsDto Totals,
     IReadOnlyList<LinkingSourcePreflightDto> Sources);
 

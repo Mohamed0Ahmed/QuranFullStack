@@ -727,6 +727,57 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Access.UserDeviceSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CsrfTokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("csrf_token_hash");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("RevokedAtUtc", "ExpiresAtUtc");
+
+                    b.HasIndex("UserId", "ExpiresAtUtc");
+
+                    b.ToTable("user_device_sessions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_user_device_sessions_expiry", "expires_at > created_at");
+
+                            t.HasCheckConstraint("ck_user_device_sessions_revocation", "revoked_at IS NULL OR revoked_at >= created_at");
+                        });
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Access.UserPermission", b =>
                 {
                     b.Property<int>("UserId")
@@ -4581,6 +4632,17 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Access.UserDeviceSession", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Access.User", "User")
+                        .WithMany("DeviceSessions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Access.UserPermission", b =>
                 {
                     b.HasOne("QuranDashboard.Domain.Access.User", "GrantedByUser")
@@ -5494,6 +5556,8 @@ namespace QuranDashboard.Infrastructure.Migrations
 
             modelBuilder.Entity("QuranDashboard.Domain.Access.User", b =>
                 {
+                    b.Navigation("DeviceSessions");
+
                     b.Navigation("GrantedUserPermissions");
 
                     b.Navigation("UserPermissions");

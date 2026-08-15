@@ -50,6 +50,9 @@ export class AbwabPermissionsController {
 
     return !this.currentUserStore.isAuthenticated() || this.currentUserStore.loadState() !== 'loading';
   });
+  readonly isOwner = computed(
+    () => this.currentUserStore.isActive() && this.currentUserStore.isOwner(),
+  );
 
   readonly canCreateDoor = computed(() => this.can(ABWAB_WRITE_PERMISSIONS.createDoor));
   readonly canEditDoor = computed(() => this.can(ABWAB_WRITE_PERMISSIONS.editDoor));

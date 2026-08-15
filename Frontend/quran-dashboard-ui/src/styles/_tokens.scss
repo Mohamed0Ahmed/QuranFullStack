@@ -79,12 +79,15 @@
 
   --qd-danger: #8c2f22;
   --qd-warning: #8a5a12;
+  --qd-info: oklch(0.455 0.072 249.9);
   --qd-success: #1b5e46;
   --qd-danger-tint: #f7e9e5;
   --qd-success-tint: #e7f0ea;
   --qd-warning-tint: #f7eedc;
+  --qd-info-tint: oklch(0.955 0.018 249.9);
   --qd-danger-hairline: #e4c9c1;
   --qd-warning-hairline: #e3d3ae;
+  --qd-info-hairline: oklch(0.840 0.034 249.9);
 
   --qd-neutral: #5b5548;
   --qd-neutral-tint: #edeae1;
@@ -247,6 +250,7 @@
   --qd-linking-workspace-modal-block-size: 88dvh;
   --qd-linking-preflight-viewport-block-size: min(42dvh, 26rem);
   --qd-floating-max-block-size: min(60vh, 24rem);
+  --qd-abwab-door-links-layer-inline-size: 72rem;
 
   --qd-btn-font-size: 0.9375rem;
   --qd-btn-line-height: 1.5;

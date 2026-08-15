@@ -17,8 +17,11 @@ import { QdHierarchyKeyboardDirective } from '../../../../shared/ui/hierarchy/hi
 
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { AbwabDoorLinksPanelComponent } from '../abwab-door-links-panel/abwab-door-links-panel.component';
+import { AbwabTreeBranchesComponent } from './abwab-tree-branches.component';
 import {
   AbwabTreeRow,
+  buildAbwabTreeBranchGuides,
   flattenVisibleAbwabRows,
   isNativeButtonActivation,
   resolveAbwabTreeKeyboardIntent,
@@ -33,7 +36,7 @@ export interface AbwabTreeMenuRequest {
 @Component({
   selector: 'qd-abwab-tree',
   standalone: true,
-  imports: [QdActionDirective, QdHierarchyKeyboardDirective],
+  imports: [AbwabDoorLinksPanelComponent, AbwabTreeBranchesComponent, QdActionDirective, QdHierarchyKeyboardDirective],
   templateUrl: './abwab-tree.component.html',
   styleUrl: './abwab-tree.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,6 +57,7 @@ export class AbwabTreeComponent {
   readonly revealedId = input<number | null>(null);
   readonly canCreateDoor = input(false);
   readonly canReorderDoor = input(false);
+  readonly openLinksDoorId = input<number | null>(null);
 
   readonly selected = output<number>();
   readonly bulkToggled = output<number>();
@@ -61,6 +65,7 @@ export class AbwabTreeComponent {
   readonly menuRequested = output<AbwabTreeMenuRequest>();
   readonly orderCommitted = output<{ id: number; position: number; scope: AbwabOrderScope }>();
   readonly relationsRequested = output<number>();
+  readonly linksToggled = output<number>();
 
   private readonly manuallyExpandedIds = signal<ReadonlySet<number>>(new Set());
   private readonly manualFocusId = signal<number | null>(null);
@@ -91,11 +96,10 @@ export class AbwabTreeComponent {
     this.roots().forEach(walk);
     return map;
   });
-
   protected readonly visibleRows = computed<AbwabTreeRow[]>(() =>
     flattenVisibleAbwabRows(this.roots(), this.effectiveExpandedIds()),
   );
-
+  protected readonly branchGuidesById = computed(() => buildAbwabTreeBranchGuides(this.roots(), 6));
   protected readonly rovingId = computed(() => {
     const rows = this.visibleRows();
     if (rows.length === 0) {
@@ -150,6 +154,7 @@ export class AbwabTreeComponent {
   }
 
   protected get headerDirectLabel(): string { return ABWAB_LABELS.rowHeaderDirect; }
+  protected get headerLinksLabel(): string { return ABWAB_LABELS.rowHeaderLinks; }
   protected get headerTotalLabel(): string { return ABWAB_LABELS.rowHeaderTotal; }
   protected get headerDepthLabel(): string { return ABWAB_LABELS.rowHeaderDepth; }
 
@@ -165,6 +170,15 @@ export class AbwabTreeComponent {
     }
     this.manualFocusId.set(id);
     this.relationsRequested.emit(id);
+  }
+
+  protected onLinksClick(event: Event, id: number): void {
+    event.stopPropagation();
+    this.linksToggled.emit(id);
+  }
+
+  protected linksAriaLabel(node: AbwabNode): string {
+    return ABWAB_LABELS.rowLinksAriaLabel(node.name, node.linkCount);
   }
 
   protected addChildAriaLabel(name: string): string {
@@ -362,6 +376,10 @@ export class AbwabTreeComponent {
       }
       return next;
     });
+    const openLinksDoorId = this.openLinksDoorId();
+    if (!expanded && openLinksDoorId !== null && !this.visibleRows().some((row) => row.id === openLinksDoorId)) {
+      this.linksToggled.emit(openLinksDoorId);
+    }
   }
 
   private rowElement(id: number): HTMLElement | null {

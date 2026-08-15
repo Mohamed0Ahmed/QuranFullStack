@@ -1,0 +1,34 @@
+:host {
+  display: block;
+  min-inline-size: 0;
+}
+
+.abwab-door-link-record {
+  min-inline-size: 0;
+  border-inline-start: var(--qd-green-thread-size) solid transparent;
+  border-radius: var(--qd-radius-sm);
+}
+
+.abwab-door-link-record--grouped {
+  border: 1px solid var(--qd-border);
+  border-inline-start-width: var(--qd-green-thread-size);
+  background: var(--qd-section-bg);
+}
+
+.abwab-door-link-record--selected {
+  border-inline-start-color: var(--qd-green-thread);
+}
+
+.abwab-door-link-record__ayahs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-2);
+}
+
+.abwab-door-link-record__ayahs--grouped {
+  padding: var(--qd-space-2);
+}
+
+.abwab-door-link-record__card--selectable {
+  cursor: pointer;
+}

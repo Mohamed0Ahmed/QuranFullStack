@@ -5,6 +5,682 @@
     "version": "v1"
   },
   "paths": {
+    "/api/abwab/doors/{doorId}/links/snapshot": {
+      "get": {
+        "tags": [
+          "AbwabDoorLinks"
+        ],
+        "parameters": [
+          {
+            "name": "doorId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkSnapshotDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkSnapshotDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkSnapshotDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/doors/{doorId}/links": {
+      "get": {
+        "tags": [
+          "AbwabDoorLinks"
+        ],
+        "parameters": [
+          {
+            "name": "doorId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ExpectedDoorVersion",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkRecordsPageDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkRecordsPageDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkRecordsPageDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/doors/{doorId}/links/{unitId}/ayahs": {
+      "get": {
+        "tags": [
+          "AbwabDoorLinks"
+        ],
+        "parameters": [
+          {
+            "name": "doorId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "unitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ExpectedDoorVersion",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "ExpectedLinkingDataRevision",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkAyahsPageDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkAyahsPageDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkAyahsPageDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/doors/{doorId}/links/{unitId}/words": {
+      "patch": {
+        "tags": [
+          "AbwabDoorLinks"
+        ],
+        "parameters": [
+          {
+            "name": "doorId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "unitId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ReplaceAbwabDoorLinkWordsBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ReplaceAbwabDoorLinkWordsBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ReplaceAbwabDoorLinkWordsBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkMutationDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkMutationDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkMutationDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/abwab/doors/{doorId}/links/bulk-delete": {
+      "post": {
+        "tags": [
+          "AbwabDoorLinks"
+        ],
+        "parameters": [
+          {
+            "name": "doorId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DeleteAbwabDoorLinksBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DeleteAbwabDoorLinksBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DeleteAbwabDoorLinksBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkMutationDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkMutationDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkMutationDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/abwab/doors/{doorId}/relations": {
       "get": {
         "tags": [
@@ -2161,6 +2837,47 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/auth/sessions": {
+      "post": {
+        "tags": [
+          "DeviceSessions"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSessionResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSessionResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSessionResponseApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/sessions/current": {
+      "delete": {
+        "tags": [
+          "DeviceSessions"
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -6901,6 +7618,24 @@
         },
         "additionalProperties": false
       },
+      "AbwabDoorLinkSelectedWordBody": {
+        "required": [
+          "ayahId",
+          "quranWordId"
+        ],
+        "type": "object",
+        "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "quranWordId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "AbwabDoorRelationDto": {
         "required": [
           "direction",
@@ -7259,6 +7994,7 @@
           "globalOrderValue",
           "id",
           "isArchived",
+          "linkCount",
           "name",
           "orderValue",
           "parentId",
@@ -7318,6 +8054,10 @@
             "format": "int32"
           },
           "relationCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "linkCount": {
             "type": "integer",
             "format": "int32"
           },
@@ -8582,6 +9322,34 @@
         },
         "additionalProperties": false
       },
+      "DeleteAbwabDoorLinksBody": {
+        "required": [
+          "expectedDoorVersion",
+          "selectionMode",
+          "unitIds"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedDoorVersion": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "selectionMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "unitIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "DeleteDoorBody": {
         "required": [
           "version"
@@ -8591,6 +9359,53 @@
           "version": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeviceSessionResponse": {
+        "required": [
+          "expiresAtUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "expiresAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DeviceSessionResponseApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DeviceSessionResponse"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -8609,6 +9424,494 @@
           "reason": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkAyahDto": {
+        "required": [
+          "ayahId",
+          "ayahNumber",
+          "descriptions",
+          "pageFrom",
+          "pageTo",
+          "selectedWordIds",
+          "surahNameArabic",
+          "surahNumber",
+          "verseKey",
+          "words"
+        ],
+        "type": "object",
+        "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "verseKey": {
+            "type": "string"
+          },
+          "surahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ayahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "surahNameArabic": {
+            "type": "string"
+          },
+          "pageFrom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageTo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "selectedWordIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "descriptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingResolvedWordDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkAyahsPageDto": {
+        "required": [
+          "doorId",
+          "doorVersion",
+          "isGrouped",
+          "items",
+          "linkingDataRevision",
+          "page",
+          "pageSize",
+          "totalCount",
+          "unitId"
+        ],
+        "type": "object",
+        "properties": {
+          "doorId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "doorVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unitId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isGrouped": {
+            "type": "boolean"
+          },
+          "linkingDataRevision": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoorLinkAyahDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkAyahsPageDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DoorLinkAyahsPageDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkMutationDto": {
+        "required": [
+          "affectedCount",
+          "doorVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "affectedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "doorVersion": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkMutationDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DoorLinkMutationDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkRecordSummaryDto": {
+        "required": [
+          "ayahCount",
+          "descriptionCount",
+          "firstVerseKey",
+          "isGrouped",
+          "lastVerseKey",
+          "selectedWordCount",
+          "unitId"
+        ],
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isGrouped": {
+            "type": "boolean"
+          },
+          "ayahCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "selectedWordCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "descriptionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstVerseKey": {
+            "type": "string"
+          },
+          "lastVerseKey": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkRecordsPageDto": {
+        "required": [
+          "doorId",
+          "doorVersion",
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "doorId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "doorVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoorLinkRecordSummaryDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkRecordsPageDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DoorLinkRecordsPageDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkSnapshotAyahDto": {
+        "required": [
+          "ayahId",
+          "ayahNumber",
+          "pageFrom",
+          "pageTo",
+          "surahNameArabic",
+          "surahNumber",
+          "verseKey",
+          "words"
+        ],
+        "type": "object",
+        "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "verseKey": {
+            "type": "string"
+          },
+          "surahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ayahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "surahNameArabic": {
+            "type": "string"
+          },
+          "pageFrom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageTo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingResolvedWordDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkSnapshotDto": {
+        "required": [
+          "ayahs",
+          "doorId",
+          "doorVersion",
+          "linkingDataRevision",
+          "records"
+        ],
+        "type": "object",
+        "properties": {
+          "doorId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "doorVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "linkingDataRevision": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoorLinkSnapshotRecordDto"
+            }
+          },
+          "ayahs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoorLinkSnapshotAyahDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkSnapshotDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DoorLinkSnapshotDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkSnapshotRecordAyahDto": {
+        "required": [
+          "ayahId",
+          "descriptions",
+          "selectedWordIds"
+        ],
+        "type": "object",
+        "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "selectedWordIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "descriptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkSnapshotRecordDto": {
+        "required": [
+          "ayahs",
+          "isGrouped",
+          "unitId"
+        ],
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isGrouped": {
+            "type": "boolean"
+          },
+          "ayahs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoorLinkSnapshotRecordAyahDto"
+            }
           }
         },
         "additionalProperties": false
@@ -10326,6 +11629,7 @@
           "stage",
           "status",
           "totalAyahs",
+          "totalLinkCount",
           "totals",
           "totalSources"
         ],
@@ -10354,6 +11658,11 @@
             "format": "int32"
           },
           "totalAyahs": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "totalLinkCount": {
             "type": "integer",
             "format": "int32",
             "nullable": true
@@ -10487,7 +11796,8 @@
           "preparedSourceId",
           "resolutionIdentity",
           "sourceKind",
-          "totalAyahCount"
+          "totalAyahCount",
+          "totalLinkCount"
         ],
         "type": "object",
         "properties": {
@@ -10541,6 +11851,10 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          },
+          "totalLinkCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -12548,6 +13862,28 @@
           "position": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReplaceAbwabDoorLinkWordsBody": {
+        "required": [
+          "expectedDoorVersion",
+          "selectedWords"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedDoorVersion": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "selectedWords": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbwabDoorLinkSelectedWordBody"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -16324,6 +17660,9 @@
   },
   "tags": [
     {
+      "name": "AbwabDoorLinks"
+    },
+    {
       "name": "AbwabDoorRelations"
     },
     {
@@ -16364,6 +17703,9 @@
     },
     {
       "name": "Dashboard"
+    },
+    {
+      "name": "DeviceSessions"
     },
     {
       "name": "Health"

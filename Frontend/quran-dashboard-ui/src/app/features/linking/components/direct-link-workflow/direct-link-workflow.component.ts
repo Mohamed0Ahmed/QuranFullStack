@@ -39,8 +39,11 @@ export class DirectLinkWorkflowComponent {
   protected readonly currentStep = this.workflow.step;
   protected readonly canAdvanceDoor = this.workflow.canAdvanceDoor;
   protected readonly canSubmit = this.workflow.canSubmit;
+  protected readonly isNoOp = this.workflow.isNoOp;
   protected readonly directDraft = this.workflow.directDraft;
+  protected readonly isCopy = this.workflow.isCopy;
   protected readonly directRequest = this.workflow.directSourceRequest;
+  protected readonly directTotalAyahCount = this.workflow.directTotalAyahCount;
   protected readonly directSelectedCount = this.workflow.directSelectedCount;
   protected readonly directManualGrouped = this.workflow.directManualGrouped;
   protected readonly canAdvanceSource = this.workflow.canAdvanceSource;
@@ -70,12 +73,11 @@ export class DirectLinkWorkflowComponent {
   protected readonly isAutomatic = computed(() =>
     this.directDraft()?.automaticWordMatchesEnabled !== null,
   );
-  protected readonly steps: readonly LinkingWorkflowStep[] = [
-    'configure-source',
-    'door',
-    'preflighting',
-    'ready',
-  ];
+  protected readonly steps = computed<readonly LinkingWorkflowStep[]>(() =>
+    this.isCopy()
+      ? ['preflighting', 'ready']
+      : ['configure-source', 'door', 'preflighting', 'ready'],
+  );
 
   protected next(): void { this.workflow.next(); }
   protected cancel(): void { this.workflow.dismiss(); }

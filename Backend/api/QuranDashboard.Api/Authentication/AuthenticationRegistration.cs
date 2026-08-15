@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -37,7 +38,15 @@ internal static class AuthenticationRegistration
             ?? new JwtAuthenticationOptions();
         var e2eTestIssuerTrust = E2ETestIssuerTrust.Create(environment.EnvironmentName, configuration);
 
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        services.AddAuthentication(options =>
+            {
+                options.DefaultScheme = ApplicationAuthentication.Scheme;
+                options.DefaultChallengeScheme = ApplicationAuthentication.Scheme;
+            })
+            .AddPolicyScheme(ApplicationAuthentication.Scheme, null, options =>
+            {
+                options.ForwardDefaultSelector = ApplicationAuthentication.SelectScheme;
+            })
             .AddJwtBearer(options =>
             {
                 ConfigureBearer(options, authOptions, authOptions.Audience, e2eTestIssuerTrust);
@@ -45,7 +54,10 @@ internal static class AuthenticationRegistration
             .AddJwtBearer(InteractiveIdentityEvidenceAuthentication.Scheme, options =>
             {
                 ConfigureBearer(options, authOptions, authOptions.InteractiveClientId, e2eTestIssuerTrust);
-            });
+            })
+            .AddScheme<AuthenticationSchemeOptions, DeviceSessionAuthenticationHandler>(
+                DeviceSessionAuthentication.Scheme,
+                null);
 
         services.AddAuthorization();
 

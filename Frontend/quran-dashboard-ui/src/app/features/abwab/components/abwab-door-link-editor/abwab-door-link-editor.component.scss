@@ -1,0 +1,43 @@
+:host {
+  display: block;
+}
+
+.abwab-door-link-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+  padding: var(--qd-space-3);
+  border-block-start: 1px solid var(--qd-border);
+  background: var(--qd-section-bg);
+}
+
+.abwab-door-link-editor__header,
+.abwab-door-link-editor__header > div,
+.abwab-door-link-editor__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+}
+
+.abwab-door-link-editor__header {
+  justify-content: space-between;
+}
+
+.abwab-door-link-editor__header h4 {
+  margin: 0;
+  font-size: var(--qd-type-body);
+}
+
+.abwab-door-link-editor__ayahs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-2);
+  min-inline-size: 0;
+}
+
+.abwab-door-link-editor__actions {
+  justify-content: flex-end;
+  padding-block-start: var(--qd-space-2);
+  border-block-start: 1px solid var(--qd-border);
+}

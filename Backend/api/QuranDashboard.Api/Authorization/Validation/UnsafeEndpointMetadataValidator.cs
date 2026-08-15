@@ -53,7 +53,13 @@ public sealed class UnsafeEndpointMetadataValidator
 
         var permissions = endpoint.Metadata.OfType<RequirePermissionAttribute>().ToArray();
         var owners = endpoint.Metadata.OfType<RequireOwnerAttribute>().ToArray();
-        if (permissions.Length == 0 && owners.Length == 0)
+        var sessionBootstraps = endpoint.Metadata.OfType<RequireSessionBootstrapAttribute>().ToArray();
+        var currentSessions = endpoint.Metadata.OfType<RequireCurrentSessionAttribute>().ToArray();
+        var classificationCount = permissions.Length
+                                  + owners.Length
+                                  + sessionBootstraps.Length
+                                  + currentSessions.Length;
+        if (classificationCount == 0)
         {
             var hasAuthorizeData = endpoint.Metadata.OfType<IAuthorizeData>().Any();
             return Invalid(
@@ -61,8 +67,8 @@ public sealed class UnsafeEndpointMetadataValidator
                 unsafeMethod,
                 action,
                 hasAuthorizeData
-                    ? "has authenticated-only metadata without a permission or Owner classification"
-                    : "has no permission or Owner classification");
+                    ? "has authenticated-only metadata without a recognized unsafe-action classification"
+                    : "has no unsafe-action authorization classification");
         }
 
         if (permissions.Length != 0 && owners.Length != 0)
@@ -70,14 +76,22 @@ public sealed class UnsafeEndpointMetadataValidator
             return Invalid(route, unsafeMethod, action, "declares both permission and Owner classifications");
         }
 
+        if (classificationCount > 1 && permissions.Length + owners.Length < 2)
+        {
+            return Invalid(route, unsafeMethod, action, "declares multiple authorization classifications");
+        }
+
         if (endpoint.Metadata.OfType<IAuthorizeData>().Any(metadata =>
-                metadata is not RequirePermissionAttribute and not RequireOwnerAttribute))
+                metadata is not RequirePermissionAttribute
+                and not RequireOwnerAttribute
+                and not RequireSessionBootstrapAttribute
+                and not RequireCurrentSessionAttribute))
         {
             return Invalid(
                 route,
                 unsafeMethod,
                 action,
-                "declares additional authorization metadata outside its permission or Owner classification");
+                "declares additional authorization metadata outside its unsafe-action classification");
         }
 
         if (permissions.Length > 1)

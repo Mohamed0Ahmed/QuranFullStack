@@ -28,6 +28,7 @@ internal static class AccessDependencyInjection
         services.AddMemoryCache();
 
         services.AddScoped<IUserProvisioningService, UserProvisioningService>();
+        services.AddScoped<IUserDeviceSessionStore, EfUserDeviceSessionStore>();
         services.AddScoped<IAuthorizationStateResolver, AuthorizationStateResolver>();
         services.AddScoped<IOwnerBootstrapConfigurationSource, OwnerBootstrapConfigurationSource>();
         services.AddScoped<IOwnerReconciliationStore, OwnerReconciliationStore>();

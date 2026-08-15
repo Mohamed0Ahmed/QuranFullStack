@@ -1,0 +1,57 @@
+<section class="abwab-door-link-operations" [attr.aria-label]="heading" data-testid="abwab-door-link-operations">
+  <div class="abwab-door-link-operations__header">
+    <h4>{{ heading }}</h4>
+    <span class="qd-text-muted">{{ doorOpen() ? selectedLabel() : noDoorHint }}</span>
+  </div>
+  <div class="abwab-door-link-operations__actions">
+    <button
+      type="button"
+      qdAction="warning"
+      [busy]="preparingEdit()"
+      [disabled]="!canEdit()"
+      data-testid="abwab-door-link-operation-edit"
+      (click)="requestEdit()"
+    >
+      {{ editLabel }}
+    </button>
+    <button
+      type="button"
+      qdAction="danger"
+      [disabled]="!canDelete()"
+      data-testid="abwab-door-link-operation-delete"
+      (click)="requestDelete()"
+    >
+      {{ deleteLabel }}
+    </button>
+    <button
+      type="button"
+      qdAction="info"
+      [disabled]="!canCopy() || state().copy.open"
+      data-testid="abwab-door-link-operation-copy"
+      (click)="copyController.open()"
+    >
+      {{ copyLabel }}
+    </button>
+  </div>
+  @if (state().copy.open) {
+    <qd-abwab-door-link-copy />
+  }
+</section>
+
+<qd-confirm-dialog
+  testIdPrefix="abwab-door-links-delete-confirm"
+  [open]="state().deletion.confirmationOpen"
+  [titleText]="deleteTitle"
+  [confirmLabel]="deleteConfirmLabel"
+  [cancelLabel]="cancelLabel"
+  tone="danger"
+  [busy]="deleteBusy()"
+  [confirmDisabled]="selectedCount() === 0"
+  (confirmed)="facade.confirmDelete()"
+  (cancelled)="facade.cancelDelete()"
+>
+  <p>{{ deleteMessage() }}</p>
+  @if (state().deletion.errorMessage; as message) {
+    <qd-error-state severity="write" [message]="message" testId="abwab-door-links-delete-error" />
+  }
+</qd-confirm-dialog>

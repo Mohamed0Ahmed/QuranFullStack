@@ -242,8 +242,10 @@ message rules. `Backend/AGENTS.md` and `Backend/CLAUDE.md` point here.
 ### Authorization classification
 
 - Every `POST`, `PUT`, `PATCH`, and `DELETE` controller action must carry exactly one known
-  `[RequirePermission(...)]` or `[RequireOwner]` requirement. Bare `[Authorize]`, an unknown
-  permission code, conflicting authorization metadata, and an anonymous unsafe action are invalid.
+  `[RequirePermission(...)]`, `[RequireOwner]`, `[RequireSessionBootstrap]`, or
+  `[RequireCurrentSession]` classification. The session classifications are reserved for creating
+  a device session from a validated Bearer identity and revoking that same device session. Bare
+  `[Authorize]`, an unknown permission code, conflicting authorization metadata, and an anonymous unsafe action are invalid.
   Startup metadata validation and route-smoke parity tests enforce that classification.
 - Public content `GET`s remain the exception. `GET /api/access/me` is authenticated-only, and every
   access-administration endpoint, including security `GET`s, is Owner-only.

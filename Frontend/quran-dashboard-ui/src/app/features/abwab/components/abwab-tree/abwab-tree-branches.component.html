@@ -1,0 +1,12 @@
+<span class="abwab-tree-branches">
+  @for (continues of guides(); track $index) {
+    <span
+      class="abwab-tree-branch"
+      [class.abwab-tree-branch--continues]="continues"
+      [class.abwab-tree-branch--current]="$last"
+    ></span>
+  }
+</span>
+@if (expanded()) {
+  <span class="abwab-tree-child-stem"></span>
+}

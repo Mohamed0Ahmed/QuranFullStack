@@ -20,6 +20,8 @@ public static class ApiMessages
     public const string AuthorizationUnavailable = "تعذّر التحقق من صلاحيات الوصول. يرجى المحاولة لاحقًا.";
     public const string ValidationFailed = "الطلب غير صالح";
     public const string EmailAlreadyRegistered = "هذا البريد الإلكتروني مسجَّل بالفعل لحساب آخر";
+    public const string DeviceSessionCreated = "تم حفظ جلسة تسجيل الدخول على هذا الجهاز";
+    public const string InvalidCsrfToken = "تعذّر التحقق من أمان الطلب. أعد تحميل الصفحة ثم حاول مرة أخرى.";
 
     public const string NotFound = "المورد غير موجود";
 
@@ -174,6 +176,15 @@ public static class ApiMessages
 
     public const string AbwabTreeLoaded = "تم تحميل شجرة الأبواب";
 
+    public const string AbwabDoorLinkRecordsLoaded = "تم تحميل روابط الباب";
+    public const string AbwabDoorLinkAyahsLoaded = "تم تحميل آيات الرابط";
+    public const string AbwabDoorLinkWordsReplaced = "تم تحديث الكلمات المحددة للرابط";
+    public const string AbwabDoorLinksDeleted = "تم حذف روابط الباب المحددة";
+    public const string AbwabDoorLinksInvalidRequest = "طلب روابط الباب غير صالح";
+    public const string AbwabDoorLinkNotFound = "الرابط غير موجود في الباب";
+    public const string AbwabDoorLinksArchived = "لا يمكن إدارة روابط باب مؤرشف";
+    public const string AbwabDoorLinksStale = "تغيرت روابط الباب؛ أعد تحميلها ثم حاول مجددًا";
+
     public const string AbwabDoorRelationsLoaded = "تم تحميل علاقات الباب";
     public const string AbwabDoorRelationsCreated = "تم إنشاء العلاقات";
     public const string AbwabDoorRelationsInvalidRequest = "يجب اختيار باب واحد على الأقل";
@@ -252,7 +263,7 @@ public static class ApiMessages
         violation.Code switch
         {
             LinkingWorkspaceViolationCode.PreparedSourceLimitExceeded =>
-                $"{LinkingWorkspaceLimitPrefix} ({LinkingLimits.MaxPreparedSources} مصدر)",
+                $"{LinkingWorkspaceLimitPrefix} ({LinkingLimits.MaxWorkspaceSources} مصدر)",
             LinkingWorkspaceViolationCode.WordsNotAllowedOnAutomaticSource =>
                 "لا يمكن تحديد كلمات يدويًا على مصدر تلقائي",
             LinkingWorkspaceViolationCode.SelectedWordInvalid =>

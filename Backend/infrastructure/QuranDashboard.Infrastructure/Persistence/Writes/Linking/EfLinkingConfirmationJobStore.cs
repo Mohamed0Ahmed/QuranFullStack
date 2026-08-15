@@ -83,7 +83,7 @@ internal sealed partial class EfLinkingConfirmationJobStore(
             cancellationToken);
         if (existingForPreflight is not null)
         {
-            RequireExactJobRequest(existingForPreflight, preflight, actorUserId, request);
+            RequireSamePreflightRequest(existingForPreflight, preflight, actorUserId, request);
             var existingStatus = ToStatus(existingForPreflight);
             await transaction.CommitAsync(cancellationToken);
             return new LinkingConfirmationJobReceipt(
@@ -304,19 +304,42 @@ internal sealed partial class EfLinkingConfirmationJobStore(
         int actorUserId,
         CreateLinkingConfirmationJobRequest request)
     {
-        var hash = LinkingConfirmationRequestHasher.ComputePrepared(
-            request.PreflightId,
-            request.PreflightToken,
-            preflight.LinkingDataRevision);
-        if (job.ActorUserId != actorUserId
-            || job.PreflightId != request.PreflightId
-            || job.IdempotencyKey != request.IdempotencyKey
-            || !string.Equals(job.RequestHash, hash, StringComparison.Ordinal))
+        if (job.IdempotencyKey != request.IdempotencyKey
+            || !MatchesPreflightRequest(job, preflight, actorUserId, request))
         {
             throw Conflict(
                 LinkingConfirmationJobConflictKind.IdempotencyConflict,
                 LinkingPreparedPreflightFailureCode.IdempotencyConflict);
         }
+    }
+
+    private static void RequireSamePreflightRequest(
+        LinkingConfirmationJob job,
+        LinkingPreparedPreflight preflight,
+        int actorUserId,
+        CreateLinkingConfirmationJobRequest request)
+    {
+        if (!MatchesPreflightRequest(job, preflight, actorUserId, request))
+        {
+            throw Conflict(
+                LinkingConfirmationJobConflictKind.IdempotencyConflict,
+                LinkingPreparedPreflightFailureCode.IdempotencyConflict);
+        }
+    }
+
+    private static bool MatchesPreflightRequest(
+        LinkingConfirmationJob job,
+        LinkingPreparedPreflight preflight,
+        int actorUserId,
+        CreateLinkingConfirmationJobRequest request)
+    {
+        var hash = LinkingConfirmationRequestHasher.ComputePrepared(
+            request.PreflightId,
+            request.PreflightToken,
+            preflight.LinkingDataRevision);
+        return job.ActorUserId == actorUserId
+            && job.PreflightId == request.PreflightId
+            && string.Equals(job.RequestHash, hash, StringComparison.Ordinal);
     }
 
     private static void RequireReadyPreflight(

@@ -20,7 +20,8 @@ public sealed class UserProvisioningService(
             .SingleOrDefaultAsync(u => u.LogtoSub == logtoSub, ct);
         if (existing is not null)
         {
-            if (bootstrapConfigurationSource.GetCurrent().NormalizedEmails.Contains(existing.NormalizedEmail))
+            if (identity.EmailVerified
+                && bootstrapConfigurationSource.GetCurrent().NormalizedEmails.Contains(existing.NormalizedEmail))
             {
                 await ownerReconciliationService.ReconcileInteractiveSignInAsync(identity, ct);
             }

@@ -26,4 +26,5 @@ public sealed record AbwabTreeDoorDto(
     bool IsArchived,
     int DirectChildCount,
     int RelationCount,
+    int LinkCount,
     IReadOnlyList<string> Aliases);

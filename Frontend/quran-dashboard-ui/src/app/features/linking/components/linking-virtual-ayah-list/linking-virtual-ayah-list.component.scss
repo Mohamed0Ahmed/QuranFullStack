@@ -24,6 +24,10 @@
   inline-size: 100%;
 }
 
+.linking-virtual-ayah-list__content--with-selection qd-linking-ayah-card {
+  cursor: pointer;
+}
+
 .linking-virtual-ayah-list__row--grouped {
   padding-block: 0;
 }

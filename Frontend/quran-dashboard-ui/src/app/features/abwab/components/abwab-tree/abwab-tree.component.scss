@@ -2,17 +2,18 @@
 
 .abwab-tree-frame {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) repeat(3, var(--abwab-tree-count-col)) auto auto;
+  grid-template-columns: minmax(0, 1fr) repeat(4, var(--abwab-tree-count-col)) auto auto;
   column-gap: var(--qd-space-2);
 }
 
 .abwab-tree-frame--bulk {
-  grid-template-columns: auto minmax(0, 1fr) repeat(3, var(--abwab-tree-count-col)) auto;
+  grid-template-columns: minmax(0, 1fr) repeat(4, var(--abwab-tree-count-col)) auto;
 }
 
 .abwab-tree-frame {
   --abwab-tree-count-col: 1.75rem;
   --abwab-tree-depth-budget: 6;
+  --abwab-tree-indent-step: var(--qd-space-4);
   --abwab-tree-row-control: 1.25rem;
 }
 
@@ -35,12 +36,15 @@
 }
 
 .abwab-tree__lead {
+  position: relative;
   display: flex;
+  align-self: stretch;
   align-items: center;
   gap: var(--qd-space-2);
   min-inline-size: 0;
   padding-inline-start: calc(
-    min(var(--abwab-tree-depth, 0), var(--abwab-tree-depth-budget)) * var(--qd-space-5) +
+    min(var(--abwab-tree-depth, 0), var(--abwab-tree-depth-budget)) *
+      var(--abwab-tree-indent-step) +
       var(--qd-space-2)
   );
 }
@@ -150,9 +154,11 @@
 }
 
 .abwab-tree__order {
-  min-inline-size: 1.5rem;
+  min-inline-size: 1.75rem;
+  block-size: 1.75rem;
   justify-content: center;
-  color: var(--qd-text-muted);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .abwab-tree__order-input {
@@ -180,11 +186,11 @@
   }
 
   .abwab-tree-frame {
-    grid-template-columns: minmax(0, 1fr) var(--abwab-tree-count-col) auto auto;
+    grid-template-columns: minmax(0, 1fr) repeat(2, var(--abwab-tree-count-col)) auto auto;
   }
 
   .abwab-tree-frame--bulk {
-    grid-template-columns: auto minmax(0, 1fr) var(--abwab-tree-count-col) auto;
+    grid-template-columns: minmax(0, 1fr) repeat(2, var(--abwab-tree-count-col)) auto;
   }
 }
 
@@ -222,16 +228,10 @@
 @media (max-width: bp.$qd-bp-compact-max) {
   .abwab-tree-frame {
     --abwab-tree-row-control: var(--qd-control-lg);
+    --abwab-tree-indent-step: var(--qd-space-3);
   }
 
   .abwab-tree__row {
     min-block-size: var(--qd-control-lg);
-  }
-
-  .abwab-tree__lead {
-    padding-inline-start: calc(
-      min(var(--abwab-tree-depth, 0), var(--abwab-tree-depth-budget)) * var(--qd-space-3) +
-        var(--qd-space-2)
-    );
   }
 }

@@ -183,6 +183,12 @@ export class LinkingVirtualAyahListComponent {
     return this.grouped() ? null : row.groupLabel;
   }
 
+  protected toggleAyah(ayahId: number): void {
+    if (this.selectionEnabled()) {
+      this.ayahToggled.emit(ayahId);
+    }
+  }
+
   protected retry(): void {
     this.requestIdentity = '';
     this.scheduleMount(requestKey(this.sourceRequest(), this.preparedRequest()));

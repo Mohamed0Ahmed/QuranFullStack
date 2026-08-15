@@ -17,6 +17,7 @@ public static class LinkingPreflightProjection
             classification.IsNoOp,
             classification.IsBlocked,
             preflightToken,
+            classification.TotalLinkCount,
             ToCounts(classification.Totals),
             [.. classification.Sources.Select(ToSource)]);
 
@@ -30,6 +31,7 @@ public static class LinkingPreflightProjection
             LinkingPreflightTokens.ToToken(source.Classification),
             source.ExistingContributionId,
             source.ExistingContributionVersion,
+            source.TotalLinkCount,
             ToCounts(source.Counts),
             [.. source.Ayahs.Select(ToAyah)]);
 

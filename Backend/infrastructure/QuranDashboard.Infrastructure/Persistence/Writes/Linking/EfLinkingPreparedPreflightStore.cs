@@ -236,6 +236,14 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
                 .OrderBy(source => source.OrderValue)
                 .ToListAsync(cancellationToken)
             : [];
+        var linkCountsBySourceId = ready
+            ? await db.LinkingPreparedUnits
+                .AsNoTracking()
+                .Where(unit => unit.PreflightId == preflight.Id)
+                .GroupBy(unit => unit.SourceId)
+                .Select(group => new { SourceId = group.Key, Count = group.Count() })
+                .ToDictionaryAsync(item => item.SourceId, item => item.Count, cancellationToken)
+            : [];
         var sources = sourceRows
             .Select(source => new LinkingPreparedSourceSummaryDto(
                     source.Id,
@@ -249,7 +257,8 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
                     source.RequestedCount == null ? null : CountsOf(source),
                     source.ExistingContributionId,
                     source.ExpectedContributionVersion,
-                    source.TotalAyahCount))
+                    source.TotalAyahCount,
+                    linkCountsBySourceId.GetValueOrDefault(source.Id)))
             .ToList();
 
         return new LinkingPreparedPreflightStatusDto(
@@ -260,6 +269,7 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
             preflight.TotalSources,
             preflight.ProcessedAyahs,
             preflight.TotalAyahs,
+            ready ? linkCountsBySourceId.Values.Sum() : null,
             policy.PollAfterMilliseconds,
             preflight.LinkingDataRevision,
             preflight.CreatedAtUtc,

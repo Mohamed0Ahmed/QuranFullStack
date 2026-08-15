@@ -310,10 +310,20 @@ internal static class SmokeRouteCatalog
         },
 
         // System routes. Health answers 503 when the container-backed check fails, so 200 is real
-        // evidence; access/me is the tree's only [Authorize] endpoint (AccessController class level).
+        // evidence; session mutations use their dedicated authenticated-action classifications.
         new("api/health", "/api/health", HttpStatusCode.OK),
         new("api/dashboard/info", "/api/dashboard/info", HttpStatusCode.OK),
         new("api/access/me", "/api/access/me", HttpStatusCode.Unauthorized, SmokeRouteAccess.AuthenticatedOnly),
+        new("api/auth/sessions", "/api/auth/sessions", HttpStatusCode.OK, SmokeRouteAccess.AuthenticatedOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+        new("api/auth/sessions/current", "/api/auth/sessions/current", HttpStatusCode.NoContent, SmokeRouteAccess.AuthenticatedOnly)
+        {
+            Method = HttpMethod.Delete,
+            ParityOnly = true,
+        },
         new("api/access/users", "/api/access/users", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
         {
             ParityOnly = true,
@@ -485,6 +495,29 @@ internal static class SmokeRouteCatalog
         // an empty snapshot against the migrated-but-empty schema regardless of what any other test left
         // behind — order-independent by construction, not by convention like the write routes above.
         new("api/abwab/tree", "/api/abwab/tree", HttpStatusCode.OK),
+
+        new("api/abwab/doors/{doorId:int}/links/snapshot", "/api/abwab/doors/1/links/snapshot", HttpStatusCode.NotFound)
+        {
+            ParityOnly = true,
+        },
+        new("api/abwab/doors/{doorId:int}/links", "/api/abwab/doors/1/links?page=1&pageSize=100", HttpStatusCode.NotFound)
+        {
+            ParityOnly = true,
+        },
+        new("api/abwab/doors/{doorId:int}/links/{unitId:long}/ayahs", "/api/abwab/doors/1/links/1/ayahs?page=1&pageSize=100", HttpStatusCode.NotFound)
+        {
+            ParityOnly = true,
+        },
+        new("api/abwab/doors/{doorId:int}/links/{unitId:long}/words", "/api/abwab/doors/1/links/1/words", HttpStatusCode.BadRequest, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Patch,
+            ParityOnly = true,
+        },
+        new("api/abwab/doors/{doorId:int}/links/bulk-delete", "/api/abwab/doors/1/links/bulk-delete", HttpStatusCode.BadRequest, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
 
         // api/abwab/templates — AbwabTemplatesController. BOTH reads are ParityOnly, unlike
         // api/abwab/tree above. The tree read is order-independent by construction; these are not.

@@ -16,6 +16,26 @@ export function flattenVisibleAbwabRows(
   return flattenQdHierarchyRows(roots, (node) => node.children, expandedIds);
 }
 
+export function buildAbwabTreeBranchGuides(
+  roots: readonly AbwabNode[],
+  maxVisibleDepth: number,
+): ReadonlyMap<number, readonly boolean[]> {
+  const guidesById = new Map<number, readonly boolean[]>();
+  const walkChildren = (parent: AbwabNode, parentGuides: readonly boolean[]): void => {
+    parent.children.forEach((child, index, siblings) => {
+      const guides = [...parentGuides, index < siblings.length - 1].slice(-maxVisibleDepth);
+      guidesById.set(child.id, guides);
+      walkChildren(child, guides);
+    });
+  };
+
+  roots.forEach((root) => {
+    guidesById.set(root.id, []);
+    walkChildren(root, []);
+  });
+  return guidesById;
+}
+
 export type AbwabTreeDirection = QdHierarchyDirection;
 
 export type AbwabTreeKeyboardIntent =

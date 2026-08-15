@@ -32,3 +32,9 @@ export interface LinkingOperationDraft {
   sourceOrder: readonly string[];
   sources: Readonly<Record<string, LinkingOperationSourceDraft>>;
 }
+
+export interface LinkingCopyCallbacks {
+  readonly acknowledged: () => void;
+  readonly cancelled: () => void;
+  readonly stopped: (message: string) => void;
+}
