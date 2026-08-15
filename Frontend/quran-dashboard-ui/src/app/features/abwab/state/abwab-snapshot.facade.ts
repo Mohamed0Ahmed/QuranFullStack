@@ -35,6 +35,13 @@ export class AbwabSnapshotFacade {
     this.fetch();
   }
 
+  ensureLoaded(): void {
+    if (this.rawTree() !== null || this.loadingState()) {
+      return;
+    }
+    this.fetch();
+  }
+
   refresh(): Observable<AbwabTreeSnapshotVm | null> {
     return this.fetch();
   }

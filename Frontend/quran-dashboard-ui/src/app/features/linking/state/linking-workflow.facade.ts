@@ -96,13 +96,27 @@ export class LinkingWorkflowFacade {
     return this.prepared() === null ? 'idle' as const : 'ready' as const;
   });
   readonly preflightMessage = computed(() => this.stateSignal().errorMessage);
+  readonly isNoOp = computed(() => {
+    const prepared = this.prepared();
+    if (prepared === null || prepared.isNoOp === true) {
+      return prepared?.isNoOp === true;
+    }
+    const totals = prepared.totals;
+    return this.stateSignal().origin === 'copy'
+      && prepared.isBlocked !== true
+      && totals !== null
+      && totals.new === 0
+      && totals.updated === 0
+      && totals.removed === 0
+      && totals.invalid === 0;
+  });
   readonly canSubmit = computed(() => {
     const prepared = this.prepared();
     return this.step() === 'ready' &&
       prepared !== null &&
       prepared.preflightToken !== null &&
       prepared.isBlocked !== true &&
-      prepared.isNoOp !== true;
+      !this.isNoOp();
   });
   readonly canCancelExecution = computed(() => {
     const job = this.execution.state().job;
@@ -235,7 +249,7 @@ export class LinkingWorkflowFacade {
 
   next(): void {
     if (this.step() === 'configure-source' && this.canAdvanceSource()) {
-      this.doors.load();
+      this.doors.ensureLoaded();
       this.stateSignal.update((state) => ({ ...state, step: 'door' }));
       return;
     }
@@ -386,7 +400,7 @@ export class LinkingWorkflowFacade {
     if (!this.workspace.openOperationFlow()) {
       return;
     }
-    this.doors.load();
+    this.doors.ensureLoaded();
     this.copyBatchCallbacks = null;
     this.inlineSource.reset(this.stateSignal().operationGeneration + 1);
     this.stateSignal.set({
@@ -510,7 +524,8 @@ export class LinkingWorkflowFacade {
       untracked(() => this.invalidatePreparedGeneration(failureCode!));
       return;
     }
-    let step = this.stateSignal().step;
+    const previousStep = this.stateSignal().step;
+    let step = previousStep;
     if (execution.status === 'submitting') {
       step = 'submitting';
     } else if (execution.status === 'succeeded') {
@@ -527,6 +542,9 @@ export class LinkingWorkflowFacade {
         step,
         errorMessage: execution.errorMessage,
       })));
+    }
+    if (step === 'succeeded' && previousStep !== 'succeeded') {
+      untracked(() => this.doors.refresh());
     }
     if (step === 'failed' || step === 'cancelled') {
       untracked(() => this.stopCopyBatch(execution.errorMessage ?? LINKING_LABELS.copyStopped));

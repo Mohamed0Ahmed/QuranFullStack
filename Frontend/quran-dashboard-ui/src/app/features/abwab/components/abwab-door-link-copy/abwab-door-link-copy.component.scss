@@ -3,8 +3,7 @@
 }
 
 .abwab-door-link-copy,
-.abwab-door-link-copy__target,
-.abwab-door-link-copy__scope {
+.abwab-door-link-copy__target {
   display: flex;
   flex-direction: column;
   gap: var(--qd-space-2);
@@ -25,25 +24,6 @@
 .abwab-door-link-copy__header h5,
 .abwab-door-link-copy__target p {
   margin: 0;
-}
-
-.abwab-door-link-copy__scope {
-  min-inline-size: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.abwab-door-link-copy__scope legend {
-  margin-block-end: var(--qd-space-1);
-  color: var(--qd-text-muted);
-  font-size: var(--qd-type-caption);
-}
-
-.abwab-door-link-copy__scope button {
-  inline-size: 100%;
-  justify-content: flex-start;
-  text-align: start;
 }
 
 .abwab-door-link-copy__batch {

@@ -1,6 +1,7 @@
 @use '../../../../../styles/breakpoints' as bp;
 
 :host {
+  --abwab-door-picker-count-col: 2.75rem;
   --abwab-door-picker-row-control: 1rem;
 
   display: block;
@@ -15,12 +16,49 @@
   margin-block-start: var(--qd-space-2);
 }
 
+.abwab-door-picker__list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(5, var(--abwab-door-picker-count-col));
+  column-gap: var(--qd-space-2);
+}
+
+.abwab-door-picker__header,
+.abwab-door-picker__row {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: center;
+}
+
+.abwab-door-picker__header {
+  padding-block: var(--qd-space-1);
+}
+
+.abwab-door-picker__header-cell {
+  color: var(--qd-text-muted);
+  font-size: 0.6875rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .abwab-door-picker__row {
   min-block-size: var(--qd-hit-target-min);
-  padding: var(--qd-space-1) var(--qd-space-2);
-  padding-inline-start: calc(var(--abwab-door-picker-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
+  padding-block: var(--qd-space-1);
   border-radius: var(--qd-radius-sm);
   cursor: pointer;
+}
+
+.abwab-door-picker__lead {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
+  min-inline-size: 0;
+  padding-inline-start: calc(var(--abwab-door-picker-depth, 0) * var(--qd-space-5) + var(--qd-space-2));
+}
+
+.abwab-door-picker__row > *:last-child,
+.abwab-door-picker__header > *:last-child {
+  padding-inline-end: var(--qd-space-2);
 }
 
 .abwab-door-picker__row:hover {
@@ -50,7 +88,7 @@
   flex: none;
 }
 
-.abwab-door-picker__row > .qd-checkbox {
+.abwab-door-picker__lead > .qd-checkbox {
   position: relative;
 }
 
@@ -68,6 +106,7 @@
 }
 
 .abwab-door-picker__name {
+  min-inline-size: 0;
   flex: 1;
   font-size: 0.8125rem;
 }
@@ -77,6 +116,27 @@
   font-size: 0.6875rem;
 }
 
+.abwab-door-picker__count {
+  color: var(--qd-text);
+  font-size: 0.6875rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.abwab-door-picker__state {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: bp.$qd-bp-medium-max) {
+  .abwab-door-picker__count--wide {
+    display: none;
+  }
+
+  .abwab-door-picker__list {
+    grid-template-columns: minmax(0, 1fr) repeat(3, var(--abwab-door-picker-count-col));
+  }
+}
+
 @media (max-width: bp.$qd-bp-compact-max) {
   :host {
     --abwab-door-picker-row-control: var(--qd-control-lg);
@@ -84,5 +144,9 @@
 
   .abwab-door-picker__row {
     min-block-size: var(--qd-control-lg);
+  }
+
+  .abwab-door-picker__lead {
+    padding-inline-start: calc(var(--abwab-door-picker-depth, 0) * var(--qd-space-3) + var(--qd-space-2));
   }
 }

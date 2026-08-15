@@ -15,7 +15,6 @@ export type AbwabDoorLinkEditStatus =
   | 'load-error'
   | 'save-error';
 export type AbwabDoorLinkSelectionMode = 'only' | 'all-except';
-export type AbwabDoorLinkCopyScope = 'selected' | 'all';
 export type AbwabDoorLinkCopyStatus =
   | 'choosing'
   | 'enumerating'
@@ -67,7 +66,6 @@ export interface AbwabDoorLinkCopyBatch {
 export interface AbwabDoorLinkCopyState {
   readonly open: boolean;
   readonly status: AbwabDoorLinkCopyStatus;
-  readonly scope: AbwabDoorLinkCopyScope | null;
   readonly sourceDoorId: number | null;
   readonly expectedSourceDoorVersion: number | null;
   readonly expectedLinkingDataRevision: number | null;

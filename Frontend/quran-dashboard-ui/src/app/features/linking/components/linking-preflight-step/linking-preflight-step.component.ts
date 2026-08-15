@@ -29,7 +29,7 @@ export class LinkingPreflightStepComponent {
   protected readonly message = this.workflow.preflightMessage;
   protected readonly stateGeneration = computed(() => this.workflow.state().operationGeneration);
   protected readonly isBlocked = computed(() => this.preflight()?.isBlocked === true);
-  protected readonly isNoOp = computed(() => this.preflight()?.isNoOp === true);
+  protected readonly isNoOp = this.workflow.isNoOp;
   protected readonly progressValue = computed(() => calculateProgress(this.preflight()));
   protected readonly progressStageLabel = computed(() => {
     switch (this.preflight()?.stage.toLowerCase()) {

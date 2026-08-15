@@ -4,7 +4,6 @@ import { DoorLinkAyahDto } from '../../../core/api/generated/models/door-link-ay
 import { DoorLinkSnapshotDto } from '../../../core/api/generated/models/door-link-snapshot-dto';
 import {
   AbwabDoorLinkCopyBatch,
-  AbwabDoorLinkCopyScope,
   AbwabDoorLinkSelectionState,
   AbwabDoorLinkSelectionMode,
   AbwabDoorLinksState,
@@ -35,7 +34,6 @@ function initialState(openDoorId: number | null = null): AbwabDoorLinksState {
     copy: {
       open: false,
       status: 'choosing',
-      scope: null,
       sourceDoorId: null,
       expectedSourceDoorVersion: null,
       expectedLinkingDataRevision: null,
@@ -253,19 +251,19 @@ export class AbwabDoorLinksStore {
     }));
   }
 
-  openCopy(): void {
+  openCopy(sourceSelection: AbwabDoorLinkSelectionState): void {
     this.stateSignal.update((state) => ({
       ...state,
-      copy: { ...initialState().copy, open: true },
+      copy: {
+        ...initialState().copy,
+        open: true,
+        sourceSelection: { ...sourceSelection, unitIds: [...sourceSelection.unitIds] },
+      },
     }));
   }
 
   setCopyTarget(targetDoorId: number | null): void {
     this.stateSignal.update((state) => ({ ...state, copy: { ...state.copy, targetDoorId } }));
-  }
-
-  setCopyScope(scope: AbwabDoorLinkCopyScope): void {
-    this.stateSignal.update((state) => ({ ...state, copy: { ...state.copy, scope } }));
   }
 
   beginCopyPreparation(

@@ -39,6 +39,7 @@ export class DirectLinkWorkflowComponent {
   protected readonly currentStep = this.workflow.step;
   protected readonly canAdvanceDoor = this.workflow.canAdvanceDoor;
   protected readonly canSubmit = this.workflow.canSubmit;
+  protected readonly isNoOp = this.workflow.isNoOp;
   protected readonly directDraft = this.workflow.directDraft;
   protected readonly copyBatch = this.workflow.copyBatch;
   protected readonly directRequest = this.workflow.directSourceRequest;

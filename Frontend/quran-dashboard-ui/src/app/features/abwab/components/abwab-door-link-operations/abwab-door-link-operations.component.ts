@@ -42,7 +42,7 @@ export class AbwabDoorLinkOperationsComponent {
   );
   protected readonly canCopy = computed(() =>
     this.doorOpen()
-      && this.state().records.totalCount > 0
+      && this.selectedCount() > 0
       && this.state().edit.status === 'idle'
       && this.state().deletion.status !== 'writing'
       && !this.state().deletion.confirmationOpen,

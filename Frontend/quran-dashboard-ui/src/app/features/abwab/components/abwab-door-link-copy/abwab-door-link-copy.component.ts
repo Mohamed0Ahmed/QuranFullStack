@@ -4,10 +4,8 @@ import { QdActionDirective } from '../../../../shared/ui/action/action.directive
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { QdNoticeComponent } from '../../../../shared/ui/notice/notice.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
-import { AbwabDoorLinkCopyScope } from '../../models/abwab-door-links.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabDoorLinkCopyController } from '../../state/abwab-door-link-copy.controller';
-import { AbwabDoorLinksFacade } from '../../state/abwab-door-links.facade';
 import { AbwabSnapshotFacade } from '../../state/abwab-snapshot.facade';
 import { AbwabDoorPickerComponent } from '../abwab-door-picker/abwab-door-picker.component';
 
@@ -27,7 +25,6 @@ import { AbwabDoorPickerComponent } from '../abwab-door-picker/abwab-door-picker
 })
 export class AbwabDoorLinkCopyComponent {
   protected readonly controller = inject(AbwabDoorLinkCopyController);
-  protected readonly links = inject(AbwabDoorLinksFacade);
   protected readonly doors = inject(AbwabSnapshotFacade);
 
   protected readonly labels = ABWAB_LABELS;
@@ -60,10 +57,15 @@ export class AbwabDoorLinkCopyComponent {
   });
   protected readonly canStart = computed(() => {
     const copy = this.state().copy;
+    const selection = copy.sourceSelection;
+    const selectedCount = selection === null
+      ? 0
+      : selection.mode === 'only'
+        ? selection.unitIds.length
+        : Math.max(this.state().records.totalCount - selection.unitIds.length, 0);
     return copy.status === 'choosing'
       && copy.targetDoorId !== null
-      && copy.scope !== null
-      && (copy.scope === 'all' || this.links.selectedCount() > 0);
+      && selectedCount > 0;
   });
   protected readonly batchLabel = computed(() => {
     const copy = this.state().copy;
@@ -71,10 +73,6 @@ export class AbwabDoorLinkCopyComponent {
       ? this.labels.doorLinksCopyBatch(copy.currentBatchNumber, copy.batches.length)
       : null;
   });
-
-  protected selectScope(scope: AbwabDoorLinkCopyScope): void {
-    this.controller.selectScope(scope);
-  }
 
   protected retryDoors(): void {
     this.doors.load();

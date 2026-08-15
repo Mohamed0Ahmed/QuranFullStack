@@ -65,6 +65,11 @@ export class AbwabDoorPickerComponent {
   protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
   protected get loadingLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
   protected get noMatchesLabel(): string { return ABWAB_LABELS.pickerNoMatches; }
+  protected get linksLabel(): string { return ABWAB_LABELS.rowHeaderLinks; }
+  protected get directChildrenLabel(): string { return ABWAB_LABELS.rowHeaderDirect; }
+  protected get allDescendantsLabel(): string { return ABWAB_LABELS.rowHeaderTotal; }
+  protected get depthLabel(): string { return ABWAB_LABELS.rowHeaderDepth; }
+  protected get relationsLabel(): string { return ABWAB_LABELS.relationsFlagLabel; }
 
   protected readonly pickerName = `abwab-door-picker-${nextPickerId++}`;
 
@@ -121,6 +126,26 @@ export class AbwabDoorPickerComponent {
       return null;
     }
     return tag === '' ? row.node.name : `${row.node.name} — ${tag}`;
+  }
+
+  protected linksAriaLabel(node: AbwabNode): string {
+    return ABWAB_LABELS.rowLinksAriaLabel(node.name, node.linkCount);
+  }
+
+  protected childCountAriaLabel(count: number): string {
+    return ABWAB_LABELS.rowChildCountAriaLabel(count);
+  }
+
+  protected descendantCountAriaLabel(count: number): string {
+    return ABWAB_LABELS.rowDescendantCountAriaLabel(count);
+  }
+
+  protected depthAriaLabel(depth: number): string {
+    return ABWAB_LABELS.rowDepthAriaLabel(depth);
+  }
+
+  protected relationsAriaLabel(node: AbwabNode): string {
+    return ABWAB_LABELS.rowRelationsAriaLabel(node.name, node.relationCount);
   }
 
   protected expandAriaLabel(row: AbwabDoorPickerRow): string {

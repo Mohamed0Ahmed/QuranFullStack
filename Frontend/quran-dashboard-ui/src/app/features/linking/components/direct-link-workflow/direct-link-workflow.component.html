@@ -160,8 +160,8 @@
       <button qdAction="primary" type="button" [disabled]="!canAdvanceDoor()" (click)="next()">{{ labels.preflightTitle }}</button>
     }
     @if (currentStep() === 'ready') {
-      @if (copyBatch() !== null && state().prepared?.isNoOp === true) {
-        <button qdAction="primary" type="button" (click)="acknowledge()">{{ labels.copyBatchAcknowledge }}</button>
+      @if (copyBatch() !== null && isNoOp()) {
+        <button qdAction="secondary" type="button" (click)="acknowledge()">{{ labels.copyBatchAcknowledge }}</button>
       } @else {
         <button qdAction="primary" type="button" [disabled]="!canSubmit()" (click)="submit()">{{ labels.confirm }}</button>
       }

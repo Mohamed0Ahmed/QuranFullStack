@@ -55,7 +55,7 @@ export const LINKING_LABELS = {
   copyReturn: 'العودة إلى خيارات النسخ',
   copyTargetUnavailable: 'باب النسخ المستهدف لم يعد متاحًا.',
   copyBatchInvalid: 'تعذر تحضير دفعة النسخ ضمن الحد المسموح.',
-  copyBatchAcknowledge: 'اعتماد نتيجة الدفعة',
+  copyBatchAcknowledge: 'تخطي الدفعة بدون تنفيذ',
   executionStages: {
     queued: 'في انتظار بدء التنفيذ',
     loadingPrepared: 'تحميل نتيجة الفحص',
