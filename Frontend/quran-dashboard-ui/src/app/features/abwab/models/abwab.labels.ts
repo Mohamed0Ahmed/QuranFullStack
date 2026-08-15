@@ -117,6 +117,7 @@ export const ABWAB_LABELS = {
   rowDepthBadge: (depth: number): string => `${depth}`,
 
   rowHeaderDirect: 'مباشر',
+  rowHeaderLinks: 'الروابط',
   rowHeaderTotal: 'الكل',
   rowHeaderDepth: 'عمق',
 
@@ -203,6 +204,12 @@ export const ABWAB_LABELS = {
   emptyTreeMessage: 'لا توجد أبواب بعد.',
   noSearchMatchesMessage: 'لا يوجد باب مطابق لبحثك.',
   loadingTreeMessage: 'جارٍ تحميل شجرة الأبواب...',
+
+  doorLinksLoadError: 'تعذر تحميل روابط الباب.',
+  doorLinkAyahsLoadError: 'تعذر تحميل آيات الرابط.',
+  doorLinksStale: 'تغيرت روابط الباب. تم تحديث البيانات، فراجعها قبل إعادة المحاولة.',
+  doorLinkWordsSaveError: 'تعذر حفظ الكلمات المحددة.',
+  doorLinksDeleteError: 'تعذر حذف روابط الباب.',
 
   relationsOp: 'العلاقات',
   relationsFlagLabel: 'علاقات',
@@ -356,6 +363,8 @@ export const ABWAB_LABELS = {
   sectionDeletedAnnouncement: 'حُذف القسم',
   relationsAddedAnnouncement: (count: number): string => `تمت إضافة ${countPhrase(count, RELATION_FORMS)}`,
   relationDeletedAnnouncement: 'حُذفت العلاقة',
+  doorLinkWordsUpdatedAnnouncement: 'تم تحديث كلمات الرابط',
+  doorLinksDeletedAnnouncement: 'تم حذف الروابط المحددة',
 
   writeConflictFallback: 'حدث تعارض أثناء الحفظ. يرجى تحديث البيانات والمحاولة مرة أخرى.',
   writeInvalidFallback: 'تعذر تنفيذ العملية. تحقق من البيانات وحاول مرة أخرى.',

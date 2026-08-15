@@ -1,0 +1,347 @@
+import { Injectable, computed, signal } from '@angular/core';
+
+import { DoorLinkAyahsPageDto } from '../../../core/api/generated/models/door-link-ayahs-page-dto';
+import { DoorLinkRecordsPageDto } from '../../../core/api/generated/models/door-link-records-page-dto';
+import {
+  ABWAB_DOOR_LINK_AYAH_PAGE_SIZE,
+  ABWAB_DOOR_LINK_RECORD_PAGE_SIZE,
+  AbwabDoorLinkCopyBatch,
+  AbwabDoorLinkCopyScope,
+  AbwabDoorLinkExpandedState,
+  AbwabDoorLinkSelectionMode,
+  AbwabDoorLinksState,
+  EMPTY_ABWAB_DOOR_LINK_SELECTION,
+} from '../models/abwab-door-links.models';
+
+function initialState(openDoorId: number | null = null): AbwabDoorLinksState {
+  return {
+    openDoorId,
+    doorVersion: null,
+    records: {
+      status: 'idle',
+      pages: {},
+      requestedPage: 0,
+      pageSize: ABWAB_DOOR_LINK_RECORD_PAGE_SIZE,
+      totalCount: 0,
+      errorMessage: null,
+    },
+    expanded: null,
+    selection: EMPTY_ABWAB_DOOR_LINK_SELECTION,
+    edit: { unitId: null, selectedWordIdsByAyahId: {}, status: 'idle', errorMessage: null },
+    deletion: { confirmationOpen: false, status: 'idle', errorMessage: null },
+    copy: {
+      open: false,
+      scope: null,
+      targetDoorId: null,
+      batches: [],
+      currentBatchNumber: 0,
+      errors: [],
+    },
+    staleMessage: null,
+    noticeMessage: null,
+  };
+}
+
+function sortedUnique(values: readonly number[]): readonly number[] {
+  return [...new Set(values)].sort((left, right) => left - right);
+}
+
+@Injectable({ providedIn: 'root' })
+export class AbwabDoorLinksStore {
+  private readonly stateSignal = signal<AbwabDoorLinksState>(initialState());
+
+  readonly state = this.stateSignal.asReadonly();
+  readonly openDoorId = computed(() => this.stateSignal().openDoorId);
+  readonly doorVersion = computed(() => this.stateSignal().doorVersion);
+  readonly records = computed(() =>
+    Object.values(this.stateSignal().records.pages)
+      .sort((left, right) => left.page - right.page)
+      .flatMap((page) => page.items),
+  );
+  readonly hasMoreRecords = computed(() => this.records().length < this.stateSignal().records.totalCount);
+  readonly expandedAyahs = computed(() => {
+    const expanded = this.stateSignal().expanded;
+    return expanded === null
+      ? []
+      : Object.values(expanded.pages)
+          .sort((left, right) => left.page - right.page)
+          .flatMap((page) => page.items);
+  });
+  readonly hasMoreExpandedAyahs = computed(() => {
+    const expanded = this.stateSignal().expanded;
+    return expanded !== null && this.expandedAyahs().length < expanded.totalCount;
+  });
+  readonly selectedCount = computed(() => {
+    const { selection, records } = this.stateSignal();
+    return selection.mode === 'only'
+      ? selection.unitIds.length
+      : Math.max(records.totalCount - selection.unitIds.length, 0);
+  });
+
+  open(doorId: number): boolean {
+    if (this.stateSignal().openDoorId === doorId) {
+      return false;
+    }
+    this.stateSignal.set(initialState(doorId));
+    return true;
+  }
+
+  close(): void {
+    this.stateSignal.set(initialState());
+  }
+
+  beginRecordsLoad(page: number, refreshing: boolean): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      records: {
+        ...state.records,
+        status: refreshing && Object.keys(state.records.pages).length > 0 ? 'refreshing' : 'loading',
+        requestedPage: page,
+        errorMessage: null,
+      },
+    }));
+  }
+
+  receiveRecords(page: DoorLinkRecordsPageDto): void {
+    this.stateSignal.update((state) => {
+      if (state.openDoorId !== page.doorId) {
+        return state;
+      }
+      const pages = page.page === 1
+        ? { [page.page]: { page: page.page, pageSize: page.pageSize, items: page.items } }
+        : { ...state.records.pages, [page.page]: { page: page.page, pageSize: page.pageSize, items: page.items } };
+      return {
+        ...state,
+        doorVersion: page.doorVersion,
+        records: {
+          status: page.totalCount === 0 ? 'empty' : 'ready',
+          pages,
+          requestedPage: page.page,
+          pageSize: page.pageSize,
+          totalCount: page.totalCount,
+          errorMessage: null,
+        },
+      };
+    });
+  }
+
+  failRecords(message: string): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      records: { ...state.records, status: 'error', errorMessage: message },
+    }));
+  }
+
+  expand(unitId: number, isGrouped: boolean | null): void {
+    const current = this.stateSignal().expanded;
+    if (current?.unitId === unitId) {
+      this.stateSignal.update((state) => ({ ...state, expanded: null, edit: initialState().edit }));
+      return;
+    }
+    this.stateSignal.update((state) => ({
+      ...state,
+      expanded: {
+        unitId,
+        isGrouped,
+        linkingDataRevision: null,
+        status: 'idle',
+        pages: {},
+        requestedPage: 0,
+        pageSize: ABWAB_DOOR_LINK_AYAH_PAGE_SIZE,
+        totalCount: 0,
+        errorMessage: null,
+      },
+      edit: initialState().edit,
+    }));
+  }
+
+  beginAyahsLoad(page: number): void {
+    this.updateExpanded((expanded) => ({
+      ...expanded,
+      status: Object.keys(expanded.pages).length > 0 ? 'refreshing' : 'loading',
+      requestedPage: page,
+      errorMessage: null,
+    }));
+  }
+
+  receiveAyahs(page: DoorLinkAyahsPageDto): void {
+    this.stateSignal.update((state) => {
+      const expanded = state.expanded;
+      if (state.openDoorId !== page.doorId || expanded?.unitId !== page.unitId) {
+        return state;
+      }
+      const pages = page.page === 1
+        ? { [page.page]: { page: page.page, pageSize: page.pageSize, items: page.items } }
+        : { ...expanded.pages, [page.page]: { page: page.page, pageSize: page.pageSize, items: page.items } };
+      return {
+        ...state,
+        doorVersion: page.doorVersion,
+        expanded: {
+          ...expanded,
+          isGrouped: page.isGrouped,
+          linkingDataRevision: page.linkingDataRevision,
+          status: page.totalCount === 0 ? 'empty' : 'ready',
+          pages,
+          requestedPage: page.page,
+          pageSize: page.pageSize,
+          totalCount: page.totalCount,
+          errorMessage: null,
+        },
+      };
+    });
+  }
+
+  failAyahs(message: string): void {
+    this.updateExpanded((expanded) => ({ ...expanded, status: 'error', errorMessage: message }));
+  }
+
+  setSelectionMode(mode: AbwabDoorLinkSelectionMode, unitIds: readonly number[] = []): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      selection: { mode, unitIds: sortedUnique(unitIds) },
+      edit: initialState().edit,
+      deletion: initialState().deletion,
+    }));
+  }
+
+  toggleSelected(unitId: number): void {
+    this.stateSignal.update((state) => {
+      const ids = new Set(state.selection.unitIds);
+      ids.has(unitId) ? ids.delete(unitId) : ids.add(unitId);
+      return { ...state, selection: { ...state.selection, unitIds: sortedUnique([...ids]) } };
+    });
+  }
+
+  selectUnits(unitIds: readonly number[]): void {
+    this.stateSignal.update((state) => {
+      const ids = new Set(state.selection.unitIds);
+      if (state.selection.mode === 'only') {
+        unitIds.forEach((unitId) => ids.add(unitId));
+      } else {
+        unitIds.forEach((unitId) => ids.delete(unitId));
+      }
+      return { ...state, selection: { ...state.selection, unitIds: sortedUnique([...ids]) } };
+    });
+  }
+
+  clearSelection(): void {
+    this.setSelectionMode('only');
+  }
+
+  beginEdit(unitId: number, selectedWordIdsByAyahId: Readonly<Record<number, readonly number[]>>): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      edit: { unitId, selectedWordIdsByAyahId, status: 'idle', errorMessage: null },
+    }));
+  }
+
+  setEditWord(ayahId: number, quranWordId: number, selected: boolean): void {
+    this.stateSignal.update((state) => {
+      if (state.edit.unitId === null) {
+        return state;
+      }
+      const wordIds = new Set(state.edit.selectedWordIdsByAyahId[ayahId] ?? []);
+      selected ? wordIds.add(quranWordId) : wordIds.delete(quranWordId);
+      return {
+        ...state,
+        edit: {
+          ...state.edit,
+          selectedWordIdsByAyahId: {
+            ...state.edit.selectedWordIdsByAyahId,
+            [ayahId]: sortedUnique([...wordIds]),
+          },
+        },
+      };
+    });
+  }
+
+  setEditWriteState(status: 'writing' | 'error', errorMessage: string | null): void {
+    this.stateSignal.update((state) => ({ ...state, edit: { ...state.edit, status, errorMessage } }));
+  }
+
+  openDeleteConfirmation(): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      deletion: { confirmationOpen: true, status: 'idle', errorMessage: null },
+    }));
+  }
+
+  closeDeleteConfirmation(): void {
+    this.stateSignal.update((state) => ({ ...state, deletion: initialState().deletion }));
+  }
+
+  setDeleteWriteState(status: 'writing' | 'error', errorMessage: string | null): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      deletion: { ...state.deletion, status, errorMessage },
+    }));
+  }
+
+  openCopy(scope: AbwabDoorLinkCopyScope): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      copy: { ...initialState().copy, open: true, scope },
+    }));
+  }
+
+  setCopyTarget(targetDoorId: number | null): void {
+    this.stateSignal.update((state) => ({ ...state, copy: { ...state.copy, targetDoorId } }));
+  }
+
+  setCopyBatches(batches: readonly AbwabDoorLinkCopyBatch[]): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      copy: { ...state.copy, batches, currentBatchNumber: batches.length === 0 ? 0 : 1, errors: [] },
+    }));
+  }
+
+  updateCopyBatch(batchNumber: number, update: Partial<AbwabDoorLinkCopyBatch>): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      copy: {
+        ...state.copy,
+        batches: state.copy.batches.map((batch) =>
+          batch.batchNumber === batchNumber ? { ...batch, ...update, batchNumber } : batch,
+        ),
+      },
+    }));
+  }
+
+  setCurrentCopyBatch(batchNumber: number): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      copy: { ...state.copy, currentBatchNumber: batchNumber },
+    }));
+  }
+
+  addCopyError(message: string): void {
+    this.stateSignal.update((state) => ({
+      ...state,
+      copy: { ...state.copy, errors: [...state.copy.errors, message] },
+    }));
+  }
+
+  closeCopy(): void {
+    this.stateSignal.update((state) => ({ ...state, copy: initialState().copy }));
+  }
+
+  completeMutation(doorVersion: number, noticeMessage: string | null): void {
+    const doorId = this.stateSignal().openDoorId;
+    this.stateSignal.set({ ...initialState(doorId), doorVersion, noticeMessage });
+  }
+
+  markStale(message: string): void {
+    const doorId = this.stateSignal().openDoorId;
+    this.stateSignal.set({ ...initialState(doorId), staleMessage: message });
+  }
+
+  clearNotice(): void {
+    this.stateSignal.update((state) => ({ ...state, noticeMessage: null, staleMessage: null }));
+  }
+
+  private updateExpanded(update: (state: AbwabDoorLinkExpandedState) => AbwabDoorLinkExpandedState): void {
+    this.stateSignal.update((state) =>
+      state.expanded === null ? state : { ...state, expanded: update(state.expanded) },
+    );
+  }
+}

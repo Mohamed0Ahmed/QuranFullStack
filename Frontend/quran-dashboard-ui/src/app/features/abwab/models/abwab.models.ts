@@ -138,6 +138,7 @@ export interface AbwabNode {
   readonly liveDescendantCount: number;
   readonly maxRelativeDepth: number;
   readonly relationCount: number;
+  readonly linkCount: number;
   readonly children: readonly AbwabNode[];
 }
 

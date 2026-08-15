@@ -62,6 +62,7 @@ export function buildAbwabTreeSnapshot(dto: AbwabTreeDto): AbwabTreeSnapshotVm {
         0,
       ),
       relationCount: doorDto.relationCount,
+      linkCount: doorDto.linkCount,
       children,
     };
     byId.set(node.id, node);
