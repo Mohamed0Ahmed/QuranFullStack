@@ -33,6 +33,7 @@ public static class LinkingOperationClassifier
                 && results.All(result =>
                     result.Classification.Classification == LinkingPreflightClassification.Unchanged),
             isBlocked,
+            results.Sum(result => result.Classification.TotalLinkCount),
             totals,
             results.Select(result => result.Classification).ToList());
     }
@@ -70,6 +71,7 @@ public static class LinkingOperationClassifier
                 sourceClassification,
                 live?.Id,
                 live?.Version,
+                source.Units.Count,
                 counts,
                 ayahs));
     }
@@ -105,6 +107,7 @@ public static class LinkingOperationClassifier
                 ayah,
                 comparisonUnit,
                 live,
+                classification,
                 index))
             .ToList();
 
@@ -116,6 +119,7 @@ public static class LinkingOperationClassifier
         LinkingOperationAyahIntent ayah,
         ConfirmedUnitIndex? comparisonUnit,
         LinkingConfirmedContribution? live,
+        LinkingPreflightClassification unitClassification,
         ClassificationIndex index)
     {
         var confirmedUnitAyah = comparisonUnit?.AyahsById.GetValueOrDefault(ayah.AyahId);
@@ -131,7 +135,9 @@ public static class LinkingOperationClassifier
                 ? LinkingPreflightClassification.NewAyah
                 : sourceWordsChanged || doorWordImpact.Added.Count > 0 || doorWordImpact.Removed.Count > 0
                     ? LinkingPreflightClassification.Update
-                    : LinkingPreflightClassification.Unchanged;
+                    : unitClassification == LinkingPreflightClassification.NewAyah
+                        ? LinkingPreflightClassification.OverlapOtherSource
+                        : LinkingPreflightClassification.Unchanged;
 
         return new LinkingAyahClassification(
             ayah.AyahId,

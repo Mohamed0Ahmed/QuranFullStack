@@ -38,6 +38,7 @@ public sealed record LinkingPreparedPreflightStatusDto(
     int TotalSources,
     int ProcessedAyahs,
     int? TotalAyahs,
+    int? TotalLinkCount,
     int PollAfterMs,
     long LinkingDataRevision,
     DateTimeOffset CreatedAtUtc,
@@ -61,7 +62,8 @@ public sealed record LinkingPreparedSourceSummaryDto(
     LinkingPreflightCountsDto? Counts,
     long? ExistingContributionId,
     uint? ExpectedContributionVersion,
-    int? TotalAyahCount);
+    int? TotalAyahCount,
+    int TotalLinkCount);
 
 public sealed record LinkingPreparedDetailPageDto(
     Guid PreflightId,

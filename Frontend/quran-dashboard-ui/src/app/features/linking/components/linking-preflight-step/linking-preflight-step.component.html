@@ -50,6 +50,9 @@
         @if (isBlocked()) { <qd-error-state severity="write" [message]="labels.preflightBlocked" /> }
         @if (result.totals; as totals) {
           <dl class="linking-preflight-step__totals" aria-label="ملخص أثر الربط">
+            <div class="linking-preflight-step__total linking-preflight-step__total--links">
+              <dt>{{ labels.preflightCountLinks }}</dt><dd>{{ result.totalLinkCount ?? 0 }}</dd>
+            </div>
             <div class="linking-preflight-step__total linking-preflight-step__total--requested">
               <dt>{{ labels.preflightCountRequested }}</dt><dd>{{ totals.requested }}</dd>
             </div>
@@ -57,10 +60,13 @@
               <dt>{{ labels.preflightCountNew }}</dt><dd>{{ totals.new }}</dd>
             </div>
             <div class="linking-preflight-step__total">
+              <dt>{{ labels.preflightCountOverlapping }}</dt><dd>{{ totals.overlapping }}</dd>
+            </div>
+            <div class="linking-preflight-step__total">
               <dt>{{ labels.preflightCountUnchanged }}</dt><dd>{{ totals.unchanged }}</dd>
             </div>
             <div class="linking-preflight-step__total">
-              <dt>{{ labels.preflightCountUpdated }}</dt><dd>{{ totals.updated + totals.overlapping }}</dd>
+              <dt>{{ labels.preflightCountUpdated }}</dt><dd>{{ totals.updated }}</dd>
             </div>
           </dl>
         }
@@ -87,7 +93,10 @@
               <li class="linking-preflight-step__source" [class.linking-preflight-step__source--expanded]="expandedSourceId() === source.preparedSourceId">
                 <button class="linking-preflight-step__source-trigger" type="button" [attr.aria-expanded]="expandedSourceId() === source.preparedSourceId" (click)="toggleSource(source)">
                   <span>{{ source.label }} · {{ contributionModeLabel(source.contributionMode) }}</span>
-                  <span>{{ source.counts?.requested ?? 0 }} {{ labels.ayahUnit }}</span>
+                  <span>
+                    {{ source.totalLinkCount }} {{ labels.linkUnit }}
+                    · {{ source.counts?.requested ?? 0 }} {{ labels.ayahUnit }}
+                  </span>
                 </button>
                 @if (expandedSourceId() === source.preparedSourceId) {
                   <qd-linking-preflight-ayah-viewer [preflight]="result" [source]="source" [generation]="stateGeneration()" />

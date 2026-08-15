@@ -83,6 +83,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+.linking-preflight-step__total--links {
+  padding-inline-end: var(--qd-space-4);
+  border-inline-end: var(--qd-hairline);
+}
+
+.linking-preflight-step__total--links dd,
 .linking-preflight-step__total--requested dd {
   color: var(--qd-accent-text);
 }

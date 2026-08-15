@@ -10326,6 +10326,7 @@
           "stage",
           "status",
           "totalAyahs",
+          "totalLinkCount",
           "totals",
           "totalSources"
         ],
@@ -10354,6 +10355,11 @@
             "format": "int32"
           },
           "totalAyahs": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "totalLinkCount": {
             "type": "integer",
             "format": "int32",
             "nullable": true
@@ -10487,7 +10493,8 @@
           "preparedSourceId",
           "resolutionIdentity",
           "sourceKind",
-          "totalAyahCount"
+          "totalAyahCount",
+          "totalLinkCount"
         ],
         "type": "object",
         "properties": {
@@ -10541,6 +10548,10 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          },
+          "totalLinkCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false

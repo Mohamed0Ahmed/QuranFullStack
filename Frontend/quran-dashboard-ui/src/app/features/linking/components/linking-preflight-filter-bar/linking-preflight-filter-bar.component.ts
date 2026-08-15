@@ -4,7 +4,12 @@ import { LinkingPreflightCountsDto } from '../../../../core/api/generated/models
 import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
 import { LINKING_LABELS } from '../../models/linking.labels';
 
-export type LinkingPreflightAyahFilter = 'ALL' | 'NEW_AYAH' | 'UNCHANGED' | 'UPDATE';
+export type LinkingPreflightAyahFilter =
+  | 'ALL'
+  | 'NEW_AYAH'
+  | 'OVERLAP_OTHER_SOURCE'
+  | 'UNCHANGED'
+  | 'UPDATE';
 
 interface LinkingPreflightFilterOption {
   value: LinkingPreflightAyahFilter;
@@ -31,11 +36,16 @@ export class LinkingPreflightFilterBarComponent {
     return [
       { value: 'ALL', label: this.labels.preflightAyahFilterAll, count: counts.requested },
       { value: 'NEW_AYAH', label: this.labels.ayahClassifications.NEW_AYAH, count: counts.new },
+      {
+        value: 'OVERLAP_OTHER_SOURCE',
+        label: this.labels.ayahClassifications.OVERLAP_OTHER_SOURCE,
+        count: counts.overlapping,
+      },
       { value: 'UNCHANGED', label: this.labels.ayahClassifications.UNCHANGED, count: counts.unchanged },
       {
         value: 'UPDATE',
         label: this.labels.ayahClassifications.UPDATE,
-        count: counts.updated + counts.overlapping,
+        count: counts.updated,
       },
     ];
   });

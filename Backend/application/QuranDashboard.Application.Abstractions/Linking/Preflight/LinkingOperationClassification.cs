@@ -3,6 +3,7 @@ namespace QuranDashboard.Application.Abstractions.Linking.Preflight;
 public sealed record LinkingOperationClassification(
     bool IsNoOp,
     bool IsBlocked,
+    int TotalLinkCount,
     LinkingClassificationCounts Totals,
     IReadOnlyList<LinkingSourceClassification> Sources);
 
@@ -11,6 +12,7 @@ public sealed record LinkingSourceClassification(
     LinkingPreflightClassification Classification,
     long? ExistingContributionId,
     uint? ExistingContributionVersion,
+    int TotalLinkCount,
     LinkingClassificationCounts Counts,
     IReadOnlyList<LinkingAyahClassification> Ayahs);
 
