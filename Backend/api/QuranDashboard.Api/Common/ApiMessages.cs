@@ -174,6 +174,13 @@ public static class ApiMessages
 
     public const string AbwabTreeLoaded = "تم تحميل شجرة الأبواب";
 
+    public const string AbwabDoorLinkRecordsLoaded = "تم تحميل روابط الباب";
+    public const string AbwabDoorLinkAyahsLoaded = "تم تحميل آيات الرابط";
+    public const string AbwabDoorLinksInvalidRequest = "طلب روابط الباب غير صالح";
+    public const string AbwabDoorLinkNotFound = "الرابط غير موجود في الباب";
+    public const string AbwabDoorLinksArchived = "لا يمكن إدارة روابط باب مؤرشف";
+    public const string AbwabDoorLinksStale = "تغيرت روابط الباب؛ أعد تحميلها ثم حاول مجددًا";
+
     public const string AbwabDoorRelationsLoaded = "تم تحميل علاقات الباب";
     public const string AbwabDoorRelationsCreated = "تم إنشاء العلاقات";
     public const string AbwabDoorRelationsInvalidRequest = "يجب اختيار باب واحد على الأقل";
