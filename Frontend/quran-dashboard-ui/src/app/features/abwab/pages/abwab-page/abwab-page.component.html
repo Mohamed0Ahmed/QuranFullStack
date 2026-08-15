@@ -169,12 +169,14 @@
                   [revealedId]="revealedId()"
                   [canCreateDoor]="permissions.canCreateDoor()"
                   [canReorderDoor]="permissions.canReorderDoor()"
+                  [openLinksDoorId]="doorLinks.openDoorId()"
                   (selected)="interactions.onTreeSelected($event)"
                   (bulkToggled)="interactions.onBulkToggled($event)"
                   (addChildRequested)="interactions.onTreeAddChildRequested($event)"
                   (menuRequested)="interactions.onMenuRequested($event)"
                   (orderCommitted)="interactions.onOrderCommitted($event)"
                   (relationsRequested)="interactions.onRelationsRequested($event)"
+                  (linksToggled)="doorLinks.toggleDoor($event)"
                 />
               }
               @if (permissions.canCreateDoor()) {
@@ -215,6 +217,11 @@
             (bulkRelationsRequested)="overlays.openBulkRelations()"
             (bulkArchiveRequested)="overlays.requestBulkArchive()"
             (bulkClearRequested)="interactions.onBulkClearRequested()"
+          />
+          <qd-abwab-door-link-operations
+            class="abwab-page__link-operations"
+            [doorOpen]="doorLinks.openDoorId() !== null"
+            [selectedCount]="doorLinks.selectedCount()"
           />
         </aside>
       </div>

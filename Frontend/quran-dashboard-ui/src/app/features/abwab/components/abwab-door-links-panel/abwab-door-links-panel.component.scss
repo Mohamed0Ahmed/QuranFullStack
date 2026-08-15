@@ -1,0 +1,54 @@
+:host {
+  display: block;
+  grid-column: 1 / -1;
+  min-inline-size: 0;
+  margin-block: var(--qd-space-2);
+  color: var(--qd-text);
+}
+
+.abwab-door-links-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+  min-inline-size: 0;
+  padding: var(--qd-space-3);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-section-bg);
+}
+
+.abwab-door-links-panel__header,
+.abwab-door-links-panel__identity,
+.abwab-door-links-panel__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.abwab-door-links-panel__header {
+  justify-content: space-between;
+  gap: var(--qd-space-2) var(--qd-space-4);
+  padding-block-end: var(--qd-space-2);
+  border-block-end: 1px solid var(--qd-border);
+}
+
+.abwab-door-links-panel__identity,
+.abwab-door-links-panel__actions {
+  gap: var(--qd-space-2);
+}
+
+.abwab-door-links-panel__identity h3 {
+  margin: 0;
+  font-size: var(--qd-type-body);
+}
+
+.abwab-door-links-panel__records {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-2);
+  min-inline-size: 0;
+}
+
+.abwab-door-links-panel__load-more {
+  align-self: center;
+}

@@ -1,9 +1,7 @@
 <div class="abwab-tree-frame" [class.abwab-tree-frame--bulk]="bulkMode()">
   <div class="abwab-tree__header" aria-hidden="true" data-testid="abwab-tree-header">
-    @if (bulkMode()) {
-      <span></span>
-    }
     <span></span>
+    <span class="abwab-tree__header-cell">{{ headerLinksLabel }}</span>
     <span class="abwab-tree__header-cell">{{ headerDirectLabel }}</span>
     <span class="abwab-tree__header-cell abwab-tree__count--wide">{{ headerTotalLabel }}</span>
     <span class="abwab-tree__header-cell abwab-tree__count--wide">{{ headerDepthLabel }}</span>
@@ -105,6 +103,27 @@
         </span>
 
         <span class="abwab-tree__count-cell">
+          <button
+            type="button"
+            qdAction="row-action"
+            size="sm"
+            class="abwab-tree__links-count abwab-tree__count"
+            [class.text-qd-ink-muted]="node.linkCount === 0"
+            [class.text-qd-green-text]="node.linkCount !== 0"
+            [class.bg-qd-green-tint]="openLinksDoorId() === node.id"
+            [class.border-qd-green-quiet]="openLinksDoorId() === node.id"
+            [attr.aria-label]="linksAriaLabel(node)"
+            [attr.aria-expanded]="openLinksDoorId() === node.id"
+            [attr.aria-controls]="'abwab-door-links-panel-' + node.id"
+            [attr.data-testid]="'abwab-tree-links-' + node.id"
+            (click)="onLinksClick($event, node.id)"
+            (keydown)="$event.stopPropagation()"
+          >
+            {{ node.linkCount }}
+          </button>
+        </span>
+
+        <span class="abwab-tree__count-cell">
           @if (row.hasChildren) {
             <span
               class="abwab-tree__count qd-chip__count"
@@ -182,6 +201,15 @@
           </span>
         }
       </div>
+      @if (openLinksDoorId() === node.id) {
+        <qd-abwab-door-links-panel
+          role="group"
+          [doorId]="node.id"
+          [doorName]="node.name"
+          (click)="$event.stopPropagation()"
+          (keydown)="$event.stopPropagation()"
+        />
+      }
     }
   }
 </div>

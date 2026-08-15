@@ -1,0 +1,35 @@
+<section class="qd-card abwab-door-link-operations" [attr.aria-label]="heading" data-testid="abwab-door-link-operations">
+  <div class="abwab-door-link-operations__header">
+    <h4>{{ heading }}</h4>
+    <span class="qd-text-muted">{{ doorOpen() ? selectedLabel() : noDoorHint }}</span>
+  </div>
+  <div class="abwab-door-link-operations__actions">
+    <button
+      type="button"
+      qdAction="tertiary"
+      [disabled]="!canEdit()"
+      data-testid="abwab-door-link-operation-edit"
+      (click)="editRequested.emit()"
+    >
+      {{ editLabel }}
+    </button>
+    <button
+      type="button"
+      qdAction="danger"
+      [disabled]="!canUseSelection()"
+      data-testid="abwab-door-link-operation-delete"
+      (click)="deleteRequested.emit()"
+    >
+      {{ deleteLabel }}
+    </button>
+    <button
+      type="button"
+      qdAction="tertiary"
+      [disabled]="!canUseSelection()"
+      data-testid="abwab-door-link-operation-copy"
+      (click)="copyRequested.emit()"
+    >
+      {{ copyLabel }}
+    </button>
+  </div>
+</section>

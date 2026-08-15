@@ -1,0 +1,35 @@
+:host {
+  display: block;
+}
+
+.abwab-door-link-operations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-2);
+}
+
+.abwab-door-link-operations__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--qd-space-2);
+  flex-wrap: wrap;
+}
+
+.abwab-door-link-operations__header h4 {
+  margin: 0;
+  color: var(--qd-text-muted);
+  font-size: var(--qd-type-caption);
+}
+
+.abwab-door-link-operations__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-1);
+}
+
+.abwab-door-link-operations__actions button {
+  inline-size: 100%;
+  justify-content: flex-start;
+  text-align: start;
+}

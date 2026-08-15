@@ -22,6 +22,7 @@ import { AbwabModalUrlController } from '../../state/abwab-modal-url.controller'
 import { AbwabPermissionsController } from '../../state/abwab-permissions.controller';
 import { AbwabRevealController } from '../../state/abwab-reveal.controller';
 import { AbwabPageInteractionsController } from '../../state/abwab-page-interactions.controller';
+import { AbwabDoorLinksFacade } from '../../state/abwab-door-links.facade';
 import {
   countAbwabDoorsInOpenScope,
   countLiveAbwabDoors,
@@ -48,6 +49,7 @@ import { AbwabDoorRestoreModalComponent } from '../../components/abwab-door-rest
 import { AbwabSectionsModalComponent } from '../../components/abwab-sections-modal/abwab-sections-modal.component';
 import { AbwabModalRestoreComponent } from '../../components/abwab-modal-restore/abwab-modal-restore.component';
 import { AbwabRelationsModalComponent } from '../../components/abwab-relations-modal/abwab-relations-modal.component';
+import { AbwabDoorLinkOperationsComponent } from '../../components/abwab-door-link-operations/abwab-door-link-operations.component';
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
 import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
@@ -77,6 +79,7 @@ const NO_ROOTS: readonly AbwabNode[] = [];
     AbwabDoorRestoreModalComponent,
     AbwabSectionsModalComponent,
     AbwabRelationsModalComponent,
+    AbwabDoorLinkOperationsComponent,
     AbwabModalRestoreComponent,
     QdContextMenuComponent,
     ExplorerResultCountComponent,
@@ -110,6 +113,7 @@ export class AbwabPageComponent implements OnInit {
   protected readonly permissions = inject(AbwabPermissionsController);
   protected readonly reveal = inject(AbwabRevealController);
   protected readonly interactions = inject(AbwabPageInteractionsController);
+  protected readonly doorLinks = inject(AbwabDoorLinksFacade);
 
   protected readonly templatesRoutePath = `/${ABWAB_ROUTE_PATH}/templates`;
 
@@ -281,6 +285,18 @@ export class AbwabPageComponent implements OnInit {
         this.interactions.clearSectionQueryParam();
       });
     });
+
+    effect(() => {
+      const openDoorId = this.doorLinks.openDoorId();
+      const openDoor = openDoorId === null ? null : this.byId().get(openDoorId);
+      const activeSectionId = this.activeSectionId();
+      if (openDoorId !== null && (
+        this.archiveParam() || this.viewParam() !== 'tree' || !openDoor
+        || (activeSectionId !== null && openDoor.sectionId !== activeSectionId)
+      )) {
+        untracked(() => this.doorLinks.close());
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -303,7 +319,10 @@ export class AbwabPageComponent implements OnInit {
 
       this.reveal.syncFromUrl(door, this.elementRef.nativeElement);
     });
-    this.destroyRef.onDestroy(() => this.reveal.destroy());
+    this.destroyRef.onDestroy(() => {
+      this.reveal.destroy();
+      this.doorLinks.close();
+    });
   }
 
   protected confirmArchiveAndClearUrl(): void {
