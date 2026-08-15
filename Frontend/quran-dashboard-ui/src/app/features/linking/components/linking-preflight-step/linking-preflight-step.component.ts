@@ -1,25 +1,20 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
-import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 import { QdNoticeComponent } from '../../../../shared/ui/notice/notice.component';
 import { LinkingPreparedPreflightStatusDto } from '../../../../core/api/generated/models/linking-prepared-preflight-status-dto';
-import { LinkingPreparedSourceSummaryDto } from '../../../../core/api/generated/models/linking-prepared-source-summary-dto';
 import { LINKING_LABELS } from '../../models/linking.labels';
 import { LinkingWorkflowFacade } from '../../state/linking-workflow.facade';
-import { LinkingPreflightAyahViewerComponent } from '../linking-preflight-ayah-viewer/linking-preflight-ayah-viewer.component';
 import { LinkingPreflightMergedAyahViewerComponent } from '../linking-preflight-merged-ayah-viewer/linking-preflight-merged-ayah-viewer.component';
 
 @Component({
   selector: 'qd-linking-preflight-step',
   standalone: true,
   imports: [
-    QdActionDirective,
     QdErrorStateComponent,
     ExplorerPanelSkeletonComponent,
     QdNoticeComponent,
-    LinkingPreflightAyahViewerComponent,
     LinkingPreflightMergedAyahViewerComponent,
   ],
   templateUrl: './linking-preflight-step.component.html',
@@ -32,8 +27,6 @@ export class LinkingPreflightStepComponent {
   protected readonly status = this.workflow.preflightStatus;
   protected readonly preflight = this.workflow.prepared;
   protected readonly message = this.workflow.preflightMessage;
-  protected readonly expandedSourceId = signal<number | null>(null);
-  protected readonly mergedAyahsExpanded = signal(false);
   protected readonly stateGeneration = computed(() => this.workflow.state().operationGeneration);
   protected readonly isBlocked = computed(() => this.preflight()?.isBlocked === true);
   protected readonly isNoOp = computed(() => this.preflight()?.isNoOp === true);
@@ -46,28 +39,6 @@ export class LinkingPreflightStepComponent {
       default: return this.labels.preflightStages.unknown;
     }
   });
-
-  protected toggleSource(source: LinkingPreparedSourceSummaryDto): void {
-    this.mergedAyahsExpanded.set(false);
-    this.expandedSourceId.update((current) =>
-      current === source.preparedSourceId ? null : source.preparedSourceId,
-    );
-  }
-
-  protected toggleMergedAyahs(): void {
-    this.expandedSourceId.set(null);
-    this.mergedAyahsExpanded.update((expanded) => !expanded);
-  }
-
-  protected contributionModeLabel(contributionMode: string): string {
-    switch (contributionMode) {
-      case 'automatic': return this.labels.preflightContributionAutomatic;
-      case 'manual_single': return this.labels.preflightContributionManualSingle;
-      case 'manual_independent': return this.labels.preflightContributionManualIndependent;
-      case 'manual_grouped': return this.labels.preflightContributionManualGrouped;
-      default: return this.labels.preflightContributionUnknown;
-    }
-  }
 
   protected retry(): void {
     this.workflow.retryPreflight();

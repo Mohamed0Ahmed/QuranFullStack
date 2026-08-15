@@ -35,6 +35,10 @@
   min-block-size: var(--qd-control-sm);
 }
 
+.direct-link-workflow__header:empty {
+  display: none;
+}
+
 .direct-link-workflow__selection,
 .direct-link-workflow__notice {
   color: var(--qd-ink-muted);

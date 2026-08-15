@@ -278,7 +278,7 @@ export class LinkingWorkflowFacade {
       preparationKey,
       prepared.preflightId,
       prepared.preflightToken,
-      crypto.randomUUID(),
+      preparationKey,
     );
   }
 
@@ -332,6 +332,10 @@ export class LinkingWorkflowFacade {
 
   dismiss(notifyCopyStop = true): void {
     const state = this.stateSignal();
+    if (notifyCopyStop && state.step === 'succeeded') {
+      void this.acknowledgeSuccess();
+      return;
+    }
     if (state.origin === 'copy' && this.canCancelExecution()) {
       void this.execution.cancel();
     }

@@ -35,7 +35,7 @@ export class LinkingAyahCardComponent {
   readonly statusLabel = input<string | null>(null);
   readonly wordSelectable = input(false);
   readonly grouped = input(false);
-  readonly metaAlignment = input<'center' | 'start'>('center');
+  readonly metaAlignment = input<'center' | 'start'>('start');
   readonly resultPosition = input.required<number>();
   readonly resultCount = input.required<number>();
   readonly wordToggled = output<number>();

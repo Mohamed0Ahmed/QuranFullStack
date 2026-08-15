@@ -27,7 +27,7 @@
           [class.linking-ayah-card__word--selected]="word.highlight === 'selected'"
           [attr.aria-pressed]="word.highlight === 'selected'"
           [attr.aria-label]="labels.toggleWord + ' ' + word.textUthmani"
-          (click)="wordToggled.emit(word.canonicalQuranWordId)"
+          (click)="$event.stopPropagation(); wordToggled.emit(word.canonicalQuranWordId)"
         >{{ word.textUthmani }}</button>
       } @else {
         <span

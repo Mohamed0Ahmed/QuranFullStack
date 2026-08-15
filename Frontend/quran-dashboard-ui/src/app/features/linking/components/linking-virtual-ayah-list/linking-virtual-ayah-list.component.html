@@ -45,6 +45,7 @@
             [wordImpact]="overlayFor(row)?.doorWordImpact ?? null"
             [statusLabel]="statusLabel(row)"
             [grouped]="isGroupedRow(row)"
+            (click)="toggleAyah(ayah.ayahId)"
             (wordToggled)="wordToggled.emit({ ayahId: ayah.ayahId, quranWordId: $event })"
           />
         </div>
