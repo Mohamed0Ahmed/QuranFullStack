@@ -176,6 +176,8 @@ public static class ApiMessages
 
     public const string AbwabDoorLinkRecordsLoaded = "تم تحميل روابط الباب";
     public const string AbwabDoorLinkAyahsLoaded = "تم تحميل آيات الرابط";
+    public const string AbwabDoorLinkWordsReplaced = "تم تحديث الكلمات المحددة للرابط";
+    public const string AbwabDoorLinksDeleted = "تم حذف روابط الباب المحددة";
     public const string AbwabDoorLinksInvalidRequest = "طلب روابط الباب غير صالح";
     public const string AbwabDoorLinkNotFound = "الرابط غير موجود في الباب";
     public const string AbwabDoorLinksArchived = "لا يمكن إدارة روابط باب مؤرشف";

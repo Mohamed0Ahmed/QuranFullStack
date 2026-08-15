@@ -15,6 +15,25 @@ public sealed record AbwabDoorLinkAyahsQueryBody
     public long? ExpectedLinkingDataRevision { get; init; }
 }
 
+public sealed record ReplaceAbwabDoorLinkWordsBody
+{
+    public uint? ExpectedDoorVersion { get; init; }
+    public IReadOnlyList<AbwabDoorLinkSelectedWordBody?>? SelectedWords { get; init; }
+}
+
+public sealed record AbwabDoorLinkSelectedWordBody
+{
+    public int AyahId { get; init; }
+    public int QuranWordId { get; init; }
+}
+
+public sealed record DeleteAbwabDoorLinksBody
+{
+    public uint? ExpectedDoorVersion { get; init; }
+    public string? SelectionMode { get; init; }
+    public IReadOnlyList<long>? UnitIds { get; init; }
+}
+
 internal static class AbwabDoorLinkConflictCodes
 {
     internal const string DoorArchived = "DOOR_ARCHIVED";

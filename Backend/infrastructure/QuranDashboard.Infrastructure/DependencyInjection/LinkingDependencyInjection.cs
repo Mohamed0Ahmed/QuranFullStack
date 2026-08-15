@@ -46,6 +46,10 @@ internal static class LinkingDependencyInjection
 
         services.AddScoped<ILinkingWorkspaceReader, EfLinkingWorkspaceReader>();
         services.AddScoped<IDoorLinkRecordsReader, EfDoorLinkRecordsReader>();
+        services.AddScoped<EfDoorLinkRecordsWriter>();
+        services.AddScoped<IDoorLinkRecordsWriter>(sp => new InvalidatingDoorLinkRecordsWriter(
+            sp.GetRequiredService<EfDoorLinkRecordsWriter>(),
+            sp.GetRequiredService<IAbwabCacheInvalidator>()));
         services.AddScoped<ILinkingWorkspaceWriter, EfLinkingWorkspaceWriter>();
         services.AddScoped<ILinkingConfirmedStateReader, EfLinkingConfirmedStateReader>();
         services.AddScoped<EfLinkingConfirmationWriter>();
