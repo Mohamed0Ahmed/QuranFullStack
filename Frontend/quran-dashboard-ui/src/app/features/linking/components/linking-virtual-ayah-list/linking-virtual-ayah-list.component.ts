@@ -45,6 +45,7 @@ interface LinkingVirtualAyahRow {
   position: number;
   ayahId: number | null;
   linkingDataRevision: number | null;
+  wordIds: readonly number[];
   matchedWordIds: readonly number[];
   overlays: readonly LinkingPreparedAyahOverlayDto[];
   groupLabel: string | null;
@@ -124,7 +125,7 @@ export class LinkingVirtualAyahListComponent {
     const matches = new Set(
       this.wordSelectable() ? selectedWords ?? [] : selectedWords ?? row.matchedWordIds,
     );
-    const words = ayah.wordIds.flatMap((wordId) => {
+    const words = row.wordIds.flatMap((wordId) => {
       const word = this.entities.word(row.linkingDataRevision!, wordId);
       return word === null
         ? []
@@ -159,6 +160,27 @@ export class LinkingVirtualAyahListComponent {
   protected isSelected(ayahId: number): boolean {
     const overridden = this.selectedAyahIds().includes(ayahId);
     return this.selectionMode() === 'all-except' ? !overridden : overridden;
+  }
+
+  protected isGroupedRow(row: LinkingVirtualAyahRow): boolean {
+    return this.grouped() && row.ayahId !== null && this.isSelected(row.ayahId);
+  }
+
+  protected isGroupedStart(index: number): boolean {
+    const rows = this.rowsSignal();
+    return this.isGroupedRow(rows[index]) && (index === 0 || !this.isGroupedRow(rows[index - 1]));
+  }
+
+  protected isGroupedEnd(index: number): boolean {
+    const rows = this.rowsSignal();
+    return (
+      this.isGroupedRow(rows[index]) &&
+      (index === rows.length - 1 || !this.isGroupedRow(rows[index + 1]))
+    );
+  }
+
+  protected displayGroupLabel(row: LinkingVirtualAyahRow): string | null {
+    return this.grouped() ? null : row.groupLabel;
   }
 
   protected retry(): void {
@@ -257,6 +279,7 @@ export class LinkingVirtualAyahListComponent {
           position: offset + index,
           ayahId,
           linkingDataRevision: page.linkingDataRevision,
+          wordIds: page.wordIdsByAyahId[ayahId] ?? [],
           matchedWordIds:
             'matchedWordIdsByAyahId' in page ? page.matchedWordIdsByAyahId[ayahId] ?? [] : [],
           overlays,
@@ -310,6 +333,7 @@ function ensureRows(
       position,
       ayahId: null,
       linkingDataRevision: null,
+      wordIds: [],
       matchedWordIds: [],
       overlays: [],
       groupLabel: null,

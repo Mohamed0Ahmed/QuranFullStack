@@ -124,8 +124,10 @@ export class LinkingWorkspaceConfigurationSyncRunner {
       clearTimeout(state.timer);
       state.timer = null;
     }
-    this.enqueue(sourceKey);
-    return new Promise((resolve) => state.flushWaiters.push(resolve));
+    return new Promise((resolve) => {
+      state.flushWaiters.push(resolve);
+      this.enqueue(sourceKey);
+    });
   }
 
   private enqueue(sourceKey: string): void {
@@ -178,6 +180,7 @@ export class LinkingWorkspaceConfigurationSyncRunner {
         }),
       );
       state.acknowledged = { ...sent, sourceVersion: response.sourceVersion };
+      state.latest = { ...state.latest, sourceVersion: response.sourceVersion };
       state.rebaseAttempted = false;
       this.bindings?.acknowledge(sourceKey, response);
     } catch (error: unknown) {

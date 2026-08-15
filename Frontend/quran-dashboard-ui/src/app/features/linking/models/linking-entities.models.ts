@@ -14,7 +14,6 @@ export interface LinkingQuranAyahEntity {
   ayahNumber: number;
   pageFrom: number;
   pageTo: number;
-  wordIds: readonly number[];
 }
 
 export interface LinkingSourceAyahOverlay {

@@ -29,6 +29,7 @@
         } @else if (isSourceAyahEditor()) {
           <qd-linking-source-ayah-editor
             [sourceKey]="editorSourceKey()"
+            [dismissPending]="editorExitPending()"
             (dismissed)="closeSourceEditor()"
           />
         } @else if (isLinkingFlow()) {

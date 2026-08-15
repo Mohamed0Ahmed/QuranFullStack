@@ -36,6 +36,7 @@ export class LinkingSourceAyahEditorComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly sourceKey = input<string | null>(null);
+  readonly dismissPending = input(false);
   readonly dismissed = output<void>();
 
   protected readonly labels = LINKING_LABELS;
@@ -54,8 +55,9 @@ export class LinkingSourceAyahEditorComponent {
   }
 
   protected dismiss(): void {
-    this.facade.close();
-    this.dismissed.emit();
+    if (!this.dismissPending()) {
+      this.dismissed.emit();
+    }
   }
 
   protected retry(): void {

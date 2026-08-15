@@ -28,7 +28,6 @@ export class LinkingQuranEntityStore {
     const pageWords = new Map<string, LinkingQuranWordEntity>();
     const entityKeys: string[] = [];
     for (const dto of ayahs) {
-      const wordIds = dto.words.map((word) => word.quranWordId);
       const ayah: LinkingQuranAyahEntity = Object.freeze({
         id: dto.ayahId,
         verseKey: dto.verseKey,
@@ -37,10 +36,10 @@ export class LinkingQuranEntityStore {
         ayahNumber: dto.ayahNumber,
         pageFrom: dto.pageFrom,
         pageTo: dto.pageTo,
-        wordIds: Object.freeze(wordIds),
       });
       const ayahKey = this.ayahKey(linkingDataRevision, dto.ayahId);
       this.assertEntity(pageAyahs, ayahKey, ayah, sameAyah);
+      pageAyahs.set(ayahKey, ayah);
       entityKeys.push(ayahKey);
       for (const wordDto of dto.words) {
         const word: LinkingQuranWordEntity = Object.freeze({
@@ -52,6 +51,7 @@ export class LinkingQuranEntityStore {
         });
         const wordKey = this.wordKey(linkingDataRevision, wordDto.quranWordId);
         this.assertEntity(pageWords, wordKey, word, sameWord);
+        pageWords.set(wordKey, word);
         entityKeys.push(wordKey);
       }
     }
@@ -73,6 +73,7 @@ export class LinkingQuranEntityStore {
   retainPage(
     linkingDataRevision: number,
     ayahIds: readonly number[],
+    wordIdsByAyahId: Readonly<Record<number, readonly number[]>>,
     leaseId: string,
   ): void {
     if (this.entitiesByLease.has(leaseId)) {
@@ -85,7 +86,12 @@ export class LinkingQuranEntityStore {
       if (ayah === undefined) {
         throw new LinkingCanonicalDataConflictError('بيانات صفحة الربط غير مكتملة.');
       }
-      keys.push(ayahKey, ...ayah.wordIds.map((wordId) => this.wordKey(linkingDataRevision, wordId)));
+      const wordKeys = (wordIdsByAyahId[ayahId] ?? []).map((wordId) =>
+        this.wordKey(linkingDataRevision, wordId));
+      if (wordKeys.some((wordKey) => !this.words.has(wordKey))) {
+        throw new LinkingCanonicalDataConflictError('بيانات صفحة الربط غير مكتملة.');
+      }
+      keys.push(ayahKey, ...wordKeys);
     }
     this.retainLease(leaseId, keys);
   }
@@ -152,8 +158,7 @@ function sameAyah(left: LinkingQuranAyahEntity, right: LinkingQuranAyahEntity): 
     left.surahNameArabic === right.surahNameArabic &&
     left.ayahNumber === right.ayahNumber &&
     left.pageFrom === right.pageFrom &&
-    left.pageTo === right.pageTo &&
-    sameNumbers(left.wordIds, right.wordIds)
+    left.pageTo === right.pageTo
   );
 }
 
@@ -165,8 +170,4 @@ function sameWord(left: LinkingQuranWordEntity, right: LinkingQuranWordEntity): 
     left.textUthmani === right.textUthmani &&
     left.isAyahMarker === right.isAyahMarker
   );
-}
-
-function sameNumbers(left: readonly number[], right: readonly number[]): boolean {
-  return left.length === right.length && left.every((value, index) => value === right[index]);
 }

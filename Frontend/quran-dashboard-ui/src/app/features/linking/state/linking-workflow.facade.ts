@@ -88,13 +88,12 @@ export class LinkingWorkflowFacade {
     }
     return {
       source: draft.descriptor,
-      expectedLinkingDataRevision:
-        draft.linkingDataRevision > 0 ? draft.linkingDataRevision : null,
+      expectedLinkingDataRevision: null,
       expectedSourceViewIdentity: null,
       view: {
         segment: 'all',
-        inclusionMode: draft.selection.mode === 'all-except' ? 'all_except' : 'only',
-        ayahOverrideIds: [...draft.selection.ayahIds],
+        inclusionMode: null,
+        ayahOverrideIds: [],
       },
       pageSize: 100,
       draftGeneration: this.stateSignal().operationGeneration,
@@ -215,7 +214,7 @@ export class LinkingWorkflowFacade {
   }
 
   toggleDirectAyah(ayahId: number): void {
-    this.updateDirectView((draft) => {
+    this.updateDirectDraft((draft) => {
       const overrides = new Set(draft.selection.ayahIds);
       overrides.has(ayahId) ? overrides.delete(ayahId) : overrides.add(ayahId);
       return {
@@ -226,14 +225,14 @@ export class LinkingWorkflowFacade {
   }
 
   selectAllDirectAyahs(): void {
-    this.updateDirectView((draft) => ({
+    this.updateDirectDraft((draft) => ({
       ...draft,
       selection: { mode: 'all-except', ayahIds: [] },
     }));
   }
 
   clearAllDirectAyahs(): void {
-    this.updateDirectView((draft) => ({ ...draft, selection: { mode: 'only', ayahIds: [] } }));
+    this.updateDirectDraft((draft) => ({ ...draft, selection: { mode: 'only', ayahIds: [] } }));
   }
 
   toggleDirectManualWord(ayahId: number, quranWordId: number): void {
@@ -514,13 +513,6 @@ export class LinkingWorkflowFacade {
         errorMessage: execution.errorMessage,
       })));
     }
-  }
-
-  private updateDirectView(
-    update: (draft: LinkingOperationSourceDraft) => LinkingOperationSourceDraft,
-  ): void {
-    const generation = this.stateSignal().operationGeneration + 1;
-    this.updateDirectDraft(update, generation);
   }
 
   private invalidatePreparedGeneration(message: string): void {

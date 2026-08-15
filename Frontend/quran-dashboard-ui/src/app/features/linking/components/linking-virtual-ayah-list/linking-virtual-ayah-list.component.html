@@ -11,15 +11,21 @@
     <div
       *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRow"
       class="linking-virtual-ayah-list__row"
+      [class.linking-virtual-ayah-list__row--grouped]="isGroupedRow(row)"
+      [class.linking-virtual-ayah-list__row--grouped-start]="isGroupedStart(index)"
+      [class.linking-virtual-ayah-list__row--grouped-end]="isGroupedEnd(index)"
       role="listitem"
       [attr.aria-posinset]="index + 1"
       [attr.aria-setsize]="rows().length"
     >
-      @if (row.groupLabel; as label) {
+      @if (displayGroupLabel(row); as label) {
         <p class="linking-virtual-ayah-list__group">{{ label }}</p>
       }
       @if (ayahFor(row); as ayah) {
-        <div class="linking-virtual-ayah-list__content">
+        <div
+          class="linking-virtual-ayah-list__content"
+          [class.linking-virtual-ayah-list__content--grouped]="isGroupedRow(row)"
+        >
           @if (selectionEnabled()) {
             <input
               class="qd-checkbox"
@@ -35,6 +41,7 @@
             [wordSelectable]="wordSelectable()"
             [wordImpact]="overlayFor(row)?.doorWordImpact ?? null"
             [statusLabel]="statusLabel(row)"
+            [grouped]="isGroupedRow(row)"
             (wordToggled)="wordToggled.emit({ ayahId: ayah.ayahId, quranWordId: $event })"
           />
         </div>

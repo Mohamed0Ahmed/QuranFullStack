@@ -1,6 +1,7 @@
 <article
   qdAyahCard
   class="linking-ayah-card"
+  [class.linking-ayah-card--grouped]="grouped()"
   [attr.aria-label]="'سورة ' + ayah().surahNameArabic + '، الآية ' + ayah().ayahNumber"
 >
   @if (statusLabel(); as status) {

@@ -1,7 +1,7 @@
 <section class="linking-manual-shape-selector" [attr.aria-label]="labels.manualShape">
   @if (selectedCount() > 1) {
     <fieldset class="linking-manual-shape-selector__fieldset">
-      <legend>{{ labels.manualShape }}</legend>
+      <legend class="qd-sr-only">{{ labels.manualShape }}</legend>
       <div class="linking-manual-shape-selector__buttons">
         <button
           qdAction="secondary"

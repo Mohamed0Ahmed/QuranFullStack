@@ -21,6 +21,7 @@ export interface LinkingSourcePage {
   totalAyahCount: number;
   totalPages: number;
   ayahIds: readonly number[];
+  wordIdsByAyahId: Readonly<Record<number, readonly number[]>>;
   matchedWordIdsByAyahId: Readonly<Record<number, readonly number[]>>;
   weight: number;
 }
@@ -49,6 +50,7 @@ export interface LinkingPreparedDetailPage {
   totalItems: number;
   totalPages: number;
   ayahIds: readonly number[];
+  wordIdsByAyahId: Readonly<Record<number, readonly number[]>>;
   overlaysByAyahId: Readonly<Record<number, readonly LinkingPreparedAyahOverlayDto[]>>;
   weight: number;
 }

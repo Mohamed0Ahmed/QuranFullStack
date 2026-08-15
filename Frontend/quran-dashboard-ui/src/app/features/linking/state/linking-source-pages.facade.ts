@@ -110,7 +110,7 @@ export class LinkingSourcePagesFacade {
       return null;
     }
     const matches = new Set(page.matchedWordIdsByAyahId[ayahId] ?? []);
-    const words = ayah.wordIds
+    const words = (page.wordIdsByAyahId[ayahId] ?? [])
       .map((wordId) => this.entities.word(page.linkingDataRevision, wordId))
       .filter((word) => word !== null)
       .map((word) => ({
@@ -200,7 +200,12 @@ export class LinkingSourcePagesFacade {
     this.activeRanges.get(scope)?.release();
     const leaseIds = pages.map((page) => {
       const lease = `range:${crypto.randomUUID()}`;
-      this.entities.retainPage(page.linkingDataRevision, page.ayahIds, lease);
+      this.entities.retainPage(
+        page.linkingDataRevision,
+        page.ayahIds,
+        page.wordIdsByAyahId,
+        lease,
+      );
       this.releaseTransient(page);
       return lease;
     });
@@ -330,6 +335,14 @@ function toPage(dto: LinkingResolvedSourcePageDto): LinkingSourcePage {
     totalAyahCount: dto.totalAyahCount,
     totalPages: dto.totalPages,
     ayahIds: Object.freeze(dto.items.map((ayah) => ayah.ayahId)),
+    wordIdsByAyahId: Object.freeze(
+      Object.fromEntries(
+        dto.items.map((ayah) => [
+          ayah.ayahId,
+          Object.freeze(ayah.words.map((word) => word.quranWordId)),
+        ]),
+      ),
+    ),
     matchedWordIdsByAyahId: Object.freeze(
       Object.fromEntries(dto.items.map((ayah) => [ayah.ayahId, Object.freeze([...ayah.matchedQuranWordIds])])),
     ),

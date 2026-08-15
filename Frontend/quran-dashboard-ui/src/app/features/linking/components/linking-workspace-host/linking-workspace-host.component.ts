@@ -49,6 +49,7 @@ export class LinkingWorkspaceHostComponent {
   protected readonly clearAllRequested = this.workspace.clearAllRequested;
   protected readonly itemCount = this.workspace.itemCount;
   protected readonly persistenceWarning = this.workspace.persistenceWarning;
+  protected readonly editorExitPending = this.workspace.editorExitPending;
 
   constructor() {
     effect(() => {
@@ -72,9 +73,10 @@ export class LinkingWorkspaceHostComponent {
     this.focus.restore();
   }
 
-  protected closeSourceEditor(): void {
-    this.workspace.returnToWorkspace();
-    this.focus.restore(() => this.surfaceEntry()?.nativeElement ?? null);
+  protected async closeSourceEditor(): Promise<void> {
+    if (await this.workspace.returnToWorkspace()) {
+      this.focus.restore(() => this.surfaceEntry()?.nativeElement ?? null);
+    }
   }
 
   protected dismissPersistenceWarning(): void { this.workspace.dismissPersistenceWarning(); }

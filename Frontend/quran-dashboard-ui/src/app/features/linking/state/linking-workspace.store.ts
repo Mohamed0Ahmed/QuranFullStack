@@ -43,8 +43,10 @@ export class LinkingWorkspaceStore {
   private readonly removedItemSignal = signal<LinkingRemovedWorkspaceItem | null>(null);
   private readonly clearAllRequestedSignal = signal(false);
   private readonly persistenceWarningSignal = signal<string | null>(null);
+  private readonly editorExitPendingSignal = signal(false);
   private readonly currentActorSub = signal<string | null>(null);
   private readonly hydratedActorSub = signal<string | null>(null);
+  private editorExitTask: Promise<boolean> | null = null;
   private actorGeneration = 0;
 
   readonly items = computed(() => (this.isReadyForCurrentActor() ? this.itemsSignal() : []));
@@ -57,6 +59,7 @@ export class LinkingWorkspaceStore {
   readonly removedItem = this.removedItemSignal.asReadonly();
   readonly clearAllRequested = this.clearAllRequestedSignal.asReadonly();
   readonly persistenceWarning = this.persistenceWarningSignal.asReadonly();
+  readonly editorExitPending = this.editorExitPendingSignal.asReadonly();
   readonly isOpen = computed(() => {
     const activeSurface = this.activeSurfaceSignal();
     if (activeSurface === 'closed') {
@@ -246,11 +249,11 @@ export class LinkingWorkspaceStore {
     return true;
   }
 
-  returnToWorkspace(): void {
+  returnToWorkspace(): Promise<boolean> {
     if (!this.canMutate()) {
-      return;
+      return Promise.resolve(false);
     }
-    void this.leaveEditor('workspace');
+    return this.leaveEditor('workspace');
   }
 
   returnToSourceAyahEditor(): void {
@@ -426,20 +429,38 @@ export class LinkingWorkspaceStore {
     this.persistenceWarningSignal.set(null);
   }
 
-  private async leaveEditor(surface: 'closed' | 'workspace'): Promise<void> {
+  private leaveEditor(surface: 'closed' | 'workspace'): Promise<boolean> {
+    if (this.editorExitTask !== null) {
+      return this.editorExitTask;
+    }
+    this.editorExitPendingSignal.set(true);
+    const task = this.performEditorExit(surface).finally(() => {
+      if (this.editorExitTask === task) {
+        this.editorExitTask = null;
+        this.editorExitPendingSignal.set(false);
+      }
+    });
+    this.editorExitTask = task;
+    return task;
+  }
+
+  private async performEditorExit(surface: 'closed' | 'workspace'): Promise<boolean> {
     const sourceKey = this.editorSourceKeySignal();
     if (sourceKey !== null) {
       try {
         await this.configurationSync.flush([sourceKey]);
-      } catch {
-        return;
+      } catch (error: unknown) {
+        this.persistenceWarningSignal.set(
+          error instanceof Error ? error.message : 'تعذر مزامنة إعدادات المصدر.',
+        );
       }
     }
     if (surface === 'workspace' && !this.canMutate()) {
-      return;
+      return false;
     }
     this.editorSourceKeySignal.set(null);
     this.activeSurfaceSignal.set(surface);
+    return true;
   }
 
   private async restoreConfiguration(removed: LinkingRemovedWorkspaceItem): Promise<void> {

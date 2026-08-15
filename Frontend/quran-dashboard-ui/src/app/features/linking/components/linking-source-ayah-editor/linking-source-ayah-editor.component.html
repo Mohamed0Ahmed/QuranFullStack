@@ -8,7 +8,14 @@
         {{ labels.sourceEditorReady }}: {{ selectedCount() }}
       </p>
     </div>
-    <button qdAction="secondary" size="sm" type="button" (click)="dismiss()">
+    <button
+      qdAction="secondary"
+      size="sm"
+      type="button"
+      [busy]="dismissPending()"
+      [disabled]="dismissPending()"
+      (click)="dismiss()"
+    >
       {{ labels.sourceEditorBack }}
     </button>
   </header>

@@ -40,13 +40,12 @@ export class LinkingSourceEditorFacade {
     }
     return {
       source: item.source,
-      expectedLinkingDataRevision: item.linkingDataRevision,
+      expectedLinkingDataRevision: null,
       expectedSourceViewIdentity: null,
       view: {
         segment: 'all',
-        inclusionMode:
-          item.configuration.ayahInclusion.mode === 'all-except' ? 'all_except' : 'only',
-        ayahOverrideIds: [...item.ayahOverrideIds],
+        inclusionMode: null,
+        ayahOverrideIds: [],
       },
       pageSize: 100,
       draftGeneration: this.stateSignal().generation,
@@ -109,7 +108,6 @@ export class LinkingSourceEditorFacade {
     const sourceKey = this.stateSignal().sourceKey;
     if (sourceKey !== null) {
       this.workspace.toggleAyahId(sourceKey, ayahId);
-      this.bumpViewGeneration();
     }
   }
 
@@ -117,7 +115,6 @@ export class LinkingSourceEditorFacade {
     const sourceKey = this.stateSignal().sourceKey;
     if (sourceKey !== null) {
       this.workspace.selectAllAyahIds(sourceKey);
-      this.bumpViewGeneration();
     }
   }
 
@@ -125,7 +122,6 @@ export class LinkingSourceEditorFacade {
     const sourceKey = this.stateSignal().sourceKey;
     if (sourceKey !== null) {
       this.workspace.clearAllAyahIds(sourceKey);
-      this.bumpViewGeneration();
     }
   }
 
@@ -150,11 +146,4 @@ export class LinkingSourceEditorFacade {
     }
   }
 
-  private bumpViewGeneration(): void {
-    this.stateSignal.update((state) => ({
-      ...state,
-      status: 'preparing',
-      generation: state.generation + 1,
-    }));
-  }
 }

@@ -131,7 +131,12 @@ export class LinkingPreflightDetailsFacade {
     this.activeRanges.get(scope)?.release();
     const leases = pages.map((page) => {
       const lease = `prepared-range:${crypto.randomUUID()}`;
-      this.entities.retainPage(page.linkingDataRevision, page.ayahIds, lease);
+      this.entities.retainPage(
+        page.linkingDataRevision,
+        page.ayahIds,
+        page.wordIdsByAyahId,
+        lease,
+      );
       const transientLease = this.transientLeases.get(page);
       if (transientLease !== undefined) {
         this.transientLeases.delete(page);
@@ -236,6 +241,14 @@ function toPage(dto: LinkingPreparedDetailPageDto): LinkingPreparedDetailPage {
     totalItems: dto.totalItems,
     totalPages: dto.totalPages,
     ayahIds: Object.freeze(dto.items.map((item) => item.ayah.ayahId)),
+    wordIdsByAyahId: Object.freeze(
+      Object.fromEntries(
+        dto.items.map((item) => [
+          item.ayah.ayahId,
+          Object.freeze(item.ayah.words.map((word) => word.quranWordId)),
+        ]),
+      ),
+    ),
     overlaysByAyahId: Object.freeze(
       Object.fromEntries(dto.items.map((item) => [item.ayah.ayahId, Object.freeze(item.sourceOverlays)])),
     ),

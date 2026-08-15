@@ -34,6 +34,7 @@ export class LinkingAyahCardComponent {
   readonly wordImpact = input<LinkingDoorWordImpact | null>(null);
   readonly statusLabel = input<string | null>(null);
   readonly wordSelectable = input(false);
+  readonly grouped = input(false);
   readonly wordToggled = output<number>();
 
   protected readonly labels = LINKING_LABELS;
