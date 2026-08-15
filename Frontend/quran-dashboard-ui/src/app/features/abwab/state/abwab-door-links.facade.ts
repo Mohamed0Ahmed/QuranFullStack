@@ -13,6 +13,7 @@ import {
 } from '../models/abwab-door-links.models';
 import { ABWAB_LABELS } from '../models/abwab.labels';
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
+import { AbwabDoorLinkEditController } from './abwab-door-link-edit.controller';
 import { AbwabDoorLinksStore } from './abwab-door-links.store';
 import {
   mapAbwabDoorLinkCopyRecords,
@@ -24,6 +25,7 @@ export class AbwabDoorLinksFacade {
   private readonly api = inject(AbwabDoorLinksApi);
   private readonly store = inject(AbwabDoorLinksStore);
   private readonly tree = inject(AbwabSnapshotFacade);
+  private readonly editController = inject(AbwabDoorLinkEditController);
   private recordsRequest: Subscription | null = null;
   private ayahsRequest: Subscription | null = null;
   private mutationRequest: Subscription | null = null;
@@ -37,16 +39,31 @@ export class AbwabDoorLinksFacade {
   readonly expandedAyahs = this.store.expandedAyahs;
   readonly hasMoreExpandedAyahs = this.store.hasMoreExpandedAyahs;
   readonly selectedCount = this.store.selectedCount;
+  readonly interactionLocked = computed(() =>
+    this.state().edit.status === 'saving' || this.state().deletion.status === 'writing',
+  );
   readonly selectedRecord = computed(() => {
-    const selection = this.state().selection;
-    if (selection.mode !== 'only' || selection.unitIds.length !== 1) {
+    const state = this.state();
+    const selection = state.selection;
+    if (this.selectedCount() !== 1) {
       return null;
     }
-    const unitId = selection.unitIds[0];
-    return this.records().find((record) => record.unitId === unitId) ?? null;
+    if (selection.mode === 'only') {
+      const unitId = selection.unitIds[0];
+      return this.records().find((record) => record.unitId === unitId) ?? null;
+    }
+    const records = this.records();
+    if (records.length !== state.records.totalCount) {
+      return null;
+    }
+    const excluded = new Set(selection.unitIds);
+    return records.find((record) => !excluded.has(record.unitId)) ?? null;
   });
 
   toggleDoor(doorId: number): void {
+    if (this.interactionLocked()) {
+      return;
+    }
     if (this.openDoorId() === doorId) {
       this.close();
       return;
@@ -68,23 +85,40 @@ export class AbwabDoorLinksFacade {
   }
 
   refresh(): void {
+    if (this.interactionLocked()) {
+      return;
+    }
+    this.editController.cancel();
     this.loadRecords(1, true);
   }
 
   retryRecords(): void {
+    if (this.interactionLocked()) {
+      return;
+    }
+    this.editController.cancel();
     const page = Math.max(this.state().records.requestedPage, 1);
     this.loadRecords(page, page === 1);
   }
 
   loadNextRecords(): void {
     const records = this.state().records;
-    if (!this.hasMoreRecords() || records.status === 'loading' || records.status === 'refreshing') {
+    if (
+      this.interactionLocked()
+      || !this.hasMoreRecords()
+      || records.status === 'loading'
+      || records.status === 'refreshing'
+    ) {
       return;
     }
     this.loadRecords(Math.max(...Object.keys(records.pages).map(Number), 0) + 1);
   }
 
   toggleExpanded(record: DoorLinkRecordSummaryDto): void {
+    if (this.interactionLocked()) {
+      return;
+    }
+    this.editController.cancel();
     this.ayahsRequest?.unsubscribe();
     const wasExpanded = this.state().expanded?.unitId === record.unitId;
     this.store.expand(record.unitId, record.isGrouped);
@@ -112,37 +146,70 @@ export class AbwabDoorLinksFacade {
   }
 
   toggleSelected(unitId: number): void {
+    if (this.interactionLocked()) {
+      return;
+    }
+    this.editController.cancel();
     this.store.toggleSelected(unitId);
   }
 
   selectPage(page: number): void {
+    if (this.interactionLocked()) {
+      return;
+    }
+    this.editController.cancel();
     const items = this.state().records.pages[page]?.items ?? [];
     this.store.selectUnits(items.map((record) => record.unitId));
   }
 
   selectAll(): void {
+    if (this.interactionLocked()) {
+      return;
+    }
+    this.editController.cancel();
     this.store.setSelectionMode('all-except');
   }
 
   clearSelection(): void {
+    if (this.interactionLocked()) {
+      return;
+    }
+    this.editController.cancel();
     this.store.clearSelection();
   }
 
   startEdit(): boolean {
     const record = this.selectedRecord();
-    const expanded = this.state().expanded;
+    const state = this.state();
     if (
-      record === null ||
-      expanded?.unitId !== record.unitId ||
-      this.expandedAyahs().length !== expanded.totalCount
+      record === null
+      || state.openDoorId === null
+      || state.doorVersion === null
+      || state.deletion.status === 'writing'
+      || !['idle', 'load-error'].includes(state.edit.status)
     ) {
       return false;
     }
-    this.store.beginEdit(
+    this.ayahsRequest?.unsubscribe();
+    this.ayahsRequest = null;
+    this.store.collapseExpanded();
+    this.editController.start(
+      state.openDoorId,
+      state.doorVersion,
       record.unitId,
-      Object.fromEntries(this.expandedAyahs().map((ayah) => [ayah.ayahId, [...ayah.selectedWordIds]])),
+      () => this.loadRecords(1, true),
     );
     return true;
+  }
+
+  retryEdit(): void {
+    this.startEdit();
+  }
+
+  cancelEdit(): void {
+    if (this.state().edit.status !== 'saving') {
+      this.editController.cancel();
+    }
   }
 
   setEditWord(ayahId: number, quranWordId: number, selected: boolean): void {
@@ -153,19 +220,19 @@ export class AbwabDoorLinksFacade {
     const state = this.state();
     if (
       state.openDoorId === null ||
-      state.doorVersion === null ||
       state.edit.unitId === null ||
-      state.edit.status === 'writing'
+      state.edit.expectedDoorVersion === null ||
+      !['ready', 'save-error'].includes(state.edit.status)
     ) {
       return;
     }
     this.mutationRequest?.unsubscribe();
-    this.store.setEditWriteState('writing', null);
+    this.store.setEditWriteState('saving', null);
     const generation = this.generation;
     this.mutationRequest = this.api.replaceWords(state.openDoorId, state.edit.unitId, {
-      expectedDoorVersion: state.doorVersion,
-      selectedWords: Object.entries(state.edit.selectedWordIdsByAyahId).flatMap(([ayahId, wordIds]) =>
-        wordIds.map((quranWordId) => ({ ayahId: Number(ayahId), quranWordId })),
+      expectedDoorVersion: state.edit.expectedDoorVersion,
+      selectedWords: state.edit.ayahs.flatMap((ayah) =>
+        ayah.selectedWordIds.map((quranWordId) => ({ ayahId: ayah.ayahId, quranWordId })),
       ),
     }).subscribe({
       next: (response) => {
@@ -173,7 +240,7 @@ export class AbwabDoorLinksFacade {
           return;
         }
         if (!response.isSuccess || response.data == null) {
-          this.store.setEditWriteState('error', response.message ?? ABWAB_LABELS.doorLinkWordsSaveError);
+          this.store.setEditWriteState('save-error', response.message ?? ABWAB_LABELS.doorLinkWordsSaveError);
           return;
         }
         this.completeMutation(response.data.doorVersion, response.message ?? ABWAB_LABELS.doorLinkWordsUpdatedAnnouncement);
@@ -183,7 +250,11 @@ export class AbwabDoorLinksFacade {
   }
 
   requestDelete(): void {
-    if (this.selectedCount() > 0) {
+    if (
+      this.selectedCount() > 0
+      && this.state().edit.status === 'idle'
+      && this.state().deletion.status !== 'writing'
+    ) {
       this.store.openDeleteConfirmation();
     }
   }
@@ -349,10 +420,10 @@ export class AbwabDoorLinksFacade {
     if (!this.isCurrent(generation)) {
       return;
     }
-    const message = responseMessage(error) ?? (
+    const message = doorLinkResponseMessage(error) ?? (
       kind === 'records' ? ABWAB_LABELS.doorLinksLoadError : ABWAB_LABELS.doorLinkAyahsLoadError
     );
-    if (isStaleResponse(error)) {
+    if (isDoorLinkStaleResponse(error)) {
       this.ayahsRequest?.unsubscribe();
       this.store.markStale(message || ABWAB_LABELS.doorLinksStale);
       this.loadRecords(1, true);
@@ -366,14 +437,14 @@ export class AbwabDoorLinksFacade {
       return;
     }
     const fallback = kind === 'edit' ? ABWAB_LABELS.doorLinkWordsSaveError : ABWAB_LABELS.doorLinksDeleteError;
-    const message = responseMessage(error) ?? fallback;
-    if (isStaleResponse(error)) {
+    const message = doorLinkResponseMessage(error) ?? fallback;
+    if (isDoorLinkStaleResponse(error)) {
       this.store.markStale(message || ABWAB_LABELS.doorLinksStale);
       this.loadRecords(1, true);
       return;
     }
     kind === 'edit'
-      ? this.store.setEditWriteState('error', message)
+      ? this.store.setEditWriteState('save-error', message)
       : this.store.setDeleteWriteState('error', message);
   }
 
@@ -388,6 +459,7 @@ export class AbwabDoorLinksFacade {
   }
 
   private cancelRequests(): void {
+    this.editController.cancel();
     this.recordsRequest?.unsubscribe();
     this.ayahsRequest?.unsubscribe();
     this.mutationRequest?.unsubscribe();
@@ -397,7 +469,7 @@ export class AbwabDoorLinksFacade {
   }
 }
 
-function responseMessage(error: unknown): string | null {
+function doorLinkResponseMessage(error: unknown): string | null {
   if (!(error instanceof HttpErrorResponse) || typeof error.error !== 'object' || error.error === null) {
     return null;
   }
@@ -405,7 +477,7 @@ function responseMessage(error: unknown): string | null {
   return typeof message === 'string' && message.trim().length > 0 ? message : null;
 }
 
-function isStaleResponse(error: unknown): boolean {
+function isDoorLinkStaleResponse(error: unknown): boolean {
   if (!(error instanceof HttpErrorResponse) || error.status !== HttpStatusCode.Conflict) {
     return false;
   }

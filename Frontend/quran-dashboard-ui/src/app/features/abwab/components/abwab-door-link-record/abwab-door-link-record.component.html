@@ -8,6 +8,7 @@
       type="checkbox"
       class="qd-checkbox"
       [checked]="selected()"
+      [disabled]="interactionDisabled()"
       [attr.aria-label]="kindLabel() + ' ' + recordPosition()"
       [attr.data-testid]="'abwab-door-link-record-checkbox-' + record().unitId"
       (change)="selectionToggled.emit(record().unitId)"
@@ -28,6 +29,7 @@
       class="abwab-door-link-record__expand qd-hit-target"
       [attr.aria-label]="expandLabel()"
       [attr.aria-expanded]="expanded()"
+      [disabled]="interactionDisabled()"
       [attr.aria-controls]="'abwab-door-link-record-ayahs-' + record().unitId"
       [attr.data-testid]="'abwab-door-link-record-expand-' + record().unitId"
       (click)="expansionToggled.emit(record())"
@@ -36,7 +38,9 @@
     </button>
   </div>
 
-  @if (expanded()) {
+  @if (editing()) {
+    <qd-abwab-door-link-editor [record]="record()" />
+  } @else if (expanded()) {
     <section
       class="abwab-door-link-record__ayahs"
       [class.abwab-door-link-record__ayahs--grouped]="record().isGrouped"

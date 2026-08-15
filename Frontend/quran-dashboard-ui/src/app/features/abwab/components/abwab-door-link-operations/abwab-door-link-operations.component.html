@@ -7,18 +7,19 @@
     <button
       type="button"
       qdAction="tertiary"
+      [busy]="preparingEdit()"
       [disabled]="!canEdit()"
       data-testid="abwab-door-link-operation-edit"
-      (click)="editRequested.emit()"
+      (click)="requestEdit()"
     >
       {{ editLabel }}
     </button>
     <button
       type="button"
       qdAction="danger"
-      [disabled]="!canUseSelection()"
+      [disabled]="!canDelete()"
       data-testid="abwab-door-link-operation-delete"
-      (click)="deleteRequested.emit()"
+      (click)="requestDelete()"
     >
       {{ deleteLabel }}
     </button>
@@ -33,3 +34,21 @@
     </button>
   </div>
 </section>
+
+<qd-confirm-dialog
+  testIdPrefix="abwab-door-links-delete-confirm"
+  [open]="state().deletion.confirmationOpen"
+  [titleText]="deleteTitle"
+  [confirmLabel]="deleteConfirmLabel"
+  [cancelLabel]="cancelLabel"
+  tone="danger"
+  [busy]="deleteBusy()"
+  [confirmDisabled]="selectedCount() === 0"
+  (confirmed)="facade.confirmDelete()"
+  (cancelled)="facade.cancelDelete()"
+>
+  <p>{{ deleteMessage() }}</p>
+  @if (state().deletion.errorMessage; as message) {
+    <qd-error-state severity="write" [message]="message" testId="abwab-door-links-delete-error" />
+  }
+</qd-confirm-dialog>

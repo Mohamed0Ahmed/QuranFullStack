@@ -17,7 +17,7 @@
         type="button"
         qdAction="tertiary"
         size="sm"
-        [disabled]="recordEntries().length === 0"
+        [disabled]="recordEntries().length === 0 || facade.interactionLocked()"
         data-testid="abwab-door-links-select-page"
         (click)="facade.selectPage(activePage())"
       >
@@ -27,7 +27,7 @@
         type="button"
         qdAction="tertiary"
         size="sm"
-        [disabled]="state().records.totalCount === 0"
+        [disabled]="state().records.totalCount === 0 || facade.interactionLocked()"
         data-testid="abwab-door-links-select-all"
         (click)="facade.selectAll()"
       >
@@ -37,7 +37,7 @@
         type="button"
         qdAction="tertiary"
         size="sm"
-        [disabled]="facade.selectedCount() === 0"
+        [disabled]="facade.selectedCount() === 0 || facade.interactionLocked()"
         data-testid="abwab-door-links-clear-selection"
         (click)="facade.clearSelection()"
       >
@@ -75,7 +75,7 @@
       <qd-error-state
         severity="read"
         [message]="state().records.errorMessage ?? ''"
-        [actionLabel]="retryLabel"
+        [actionLabel]="facade.interactionLocked() ? null : retryLabel"
         testId="abwab-door-links-error"
         actionTestId="abwab-door-links-retry"
         (action)="facade.retryRecords()"
@@ -95,6 +95,8 @@
             [expandedState]="state().expanded?.unitId === entry.record.unitId ? state().expanded : null"
             [ayahEntries]="state().expanded?.unitId === entry.record.unitId ? ayahEntries() : []"
             [hasMoreAyahs]="state().expanded?.unitId === entry.record.unitId && facade.hasMoreExpandedAyahs()"
+            [editing]="state().edit.unitId === entry.record.unitId"
+            [interactionDisabled]="facade.interactionLocked()"
             (selectionToggled)="facade.toggleSelected($event)"
             (expansionToggled)="facade.toggleExpanded($event)"
             (retryAyahs)="facade.retryExpandedAyahs()"
@@ -111,7 +113,11 @@
         size="sm"
         class="abwab-door-links-panel__load-more"
         [busy]="state().records.status === 'loading'"
-        [disabled]="state().records.status === 'loading' || state().records.status === 'refreshing'"
+        [disabled]="
+          facade.interactionLocked()
+          || state().records.status === 'loading'
+          || state().records.status === 'refreshing'
+        "
         data-testid="abwab-door-links-load-more"
         (click)="facade.loadNextRecords()"
       >

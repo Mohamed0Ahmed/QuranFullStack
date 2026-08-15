@@ -1,5 +1,6 @@
 import { Injectable, computed, signal } from '@angular/core';
 
+import { DoorLinkAyahDto } from '../../../core/api/generated/models/door-link-ayah-dto';
 import { DoorLinkAyahsPageDto } from '../../../core/api/generated/models/door-link-ayahs-page-dto';
 import { DoorLinkRecordsPageDto } from '../../../core/api/generated/models/door-link-records-page-dto';
 import {
@@ -27,7 +28,13 @@ function initialState(openDoorId: number | null = null): AbwabDoorLinksState {
     },
     expanded: null,
     selection: EMPTY_ABWAB_DOOR_LINK_SELECTION,
-    edit: { unitId: null, selectedWordIdsByAyahId: {}, status: 'idle', errorMessage: null },
+    edit: {
+      unitId: null,
+      expectedDoorVersion: null,
+      ayahs: [],
+      status: 'idle',
+      errorMessage: null,
+    },
     deletion: { confirmationOpen: false, status: 'idle', errorMessage: null },
     copy: {
       open: false,
@@ -42,7 +49,7 @@ function initialState(openDoorId: number | null = null): AbwabDoorLinksState {
   };
 }
 
-function sortedUnique(values: readonly number[]): readonly number[] {
+function sortedUnique(values: readonly number[]): number[] {
   return [...new Set(values)].sort((left, right) => left - right);
 }
 
@@ -155,6 +162,10 @@ export class AbwabDoorLinksStore {
     }));
   }
 
+  collapseExpanded(): void {
+    this.stateSignal.update((state) => ({ ...state, expanded: null }));
+  }
+
   beginAyahsLoad(page: number): void {
     this.updateExpanded((expanded) => ({
       ...expanded,
@@ -208,7 +219,12 @@ export class AbwabDoorLinksStore {
     this.stateSignal.update((state) => {
       const ids = new Set(state.selection.unitIds);
       ids.has(unitId) ? ids.delete(unitId) : ids.add(unitId);
-      return { ...state, selection: { ...state.selection, unitIds: sortedUnique([...ids]) } };
+      return {
+        ...state,
+        selection: { ...state.selection, unitIds: sortedUnique([...ids]) },
+        edit: initialState().edit,
+        deletion: initialState().deletion,
+      };
     });
   }
 
@@ -220,7 +236,12 @@ export class AbwabDoorLinksStore {
       } else {
         unitIds.forEach((unitId) => ids.delete(unitId));
       }
-      return { ...state, selection: { ...state.selection, unitIds: sortedUnique([...ids]) } };
+      return {
+        ...state,
+        selection: { ...state.selection, unitIds: sortedUnique([...ids]) },
+        edit: initialState().edit,
+        deletion: initialState().deletion,
+      };
     });
   }
 
@@ -228,34 +249,75 @@ export class AbwabDoorLinksStore {
     this.setSelectionMode('only');
   }
 
-  beginEdit(unitId: number, selectedWordIdsByAyahId: Readonly<Record<number, readonly number[]>>): void {
+  beginEditPreparation(unitId: number, expectedDoorVersion: number): void {
     this.stateSignal.update((state) => ({
       ...state,
-      edit: { unitId, selectedWordIdsByAyahId, status: 'idle', errorMessage: null },
+      edit: {
+        unitId,
+        expectedDoorVersion,
+        ayahs: [],
+        status: 'preparing',
+        errorMessage: null,
+      },
     }));
   }
 
-  setEditWord(ayahId: number, quranWordId: number, selected: boolean): void {
+  completeEditPreparation(
+    unitId: number,
+    expectedDoorVersion: number,
+    ayahs: readonly DoorLinkAyahDto[],
+  ): void {
     this.stateSignal.update((state) => {
-      if (state.edit.unitId === null) {
+      if (state.edit.unitId !== unitId || state.edit.status !== 'preparing') {
         return state;
       }
-      const wordIds = new Set(state.edit.selectedWordIdsByAyahId[ayahId] ?? []);
-      selected ? wordIds.add(quranWordId) : wordIds.delete(quranWordId);
       return {
         ...state,
         edit: {
-          ...state.edit,
-          selectedWordIdsByAyahId: {
-            ...state.edit.selectedWordIdsByAyahId,
-            [ayahId]: sortedUnique([...wordIds]),
-          },
+          unitId,
+          expectedDoorVersion,
+          ayahs: ayahs.map((ayah) => ({ ...ayah, selectedWordIds: sortedUnique(ayah.selectedWordIds) })),
+          status: 'ready',
+          errorMessage: null,
         },
       };
     });
   }
 
-  setEditWriteState(status: 'writing' | 'error', errorMessage: string | null): void {
+  failEditPreparation(unitId: number, message: string): void {
+    this.stateSignal.update((state) => state.edit.unitId !== unitId ? state : ({
+      ...state,
+      edit: { ...state.edit, status: 'load-error', errorMessage: message },
+    }));
+  }
+
+  cancelEdit(): void {
+    this.stateSignal.update((state) => ({ ...state, edit: initialState().edit }));
+  }
+
+  setEditWord(ayahId: number, quranWordId: number, selected: boolean): void {
+    this.stateSignal.update((state) => {
+      if (state.edit.unitId === null || !['ready', 'save-error'].includes(state.edit.status)) {
+        return state;
+      }
+      return {
+        ...state,
+        edit: {
+          ...state.edit,
+          ayahs: state.edit.ayahs.map((ayah) => {
+            if (ayah.ayahId !== ayahId) {
+              return ayah;
+            }
+            const wordIds = new Set(ayah.selectedWordIds);
+            selected ? wordIds.add(quranWordId) : wordIds.delete(quranWordId);
+            return { ...ayah, selectedWordIds: sortedUnique([...wordIds]) };
+          }),
+        },
+      };
+    });
+  }
+
+  setEditWriteState(status: 'saving' | 'save-error', errorMessage: string | null): void {
     this.stateSignal.update((state) => ({ ...state, edit: { ...state.edit, status, errorMessage } }));
   }
 

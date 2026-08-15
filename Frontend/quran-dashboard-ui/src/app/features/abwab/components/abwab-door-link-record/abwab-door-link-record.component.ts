@@ -8,9 +8,10 @@ import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-s
 import { QdRefreshingIndicatorComponent } from '../../../../shared/ui/refreshing-indicator/refreshing-indicator.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { LinkingAyahCardComponent } from '../../../linking/components/linking-ayah-card/linking-ayah-card.component';
-import { LinkingAyah } from '../../../linking/models/linking-ayah.models';
 import { AbwabDoorLinkExpandedState } from '../../models/abwab-door-links.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { toAbwabLinkingAyah } from '../abwab-door-link-editor/abwab-door-link-ayah.mapper';
+import { AbwabDoorLinkEditorComponent } from '../abwab-door-link-editor/abwab-door-link-editor.component';
 
 export interface AbwabDoorLinkAyahEntry {
   readonly ayah: DoorLinkAyahDto;
@@ -18,7 +19,7 @@ export interface AbwabDoorLinkAyahEntry {
 }
 
 interface AbwabDoorLinkDisplayAyah {
-  readonly ayah: LinkingAyah;
+  readonly ayah: ReturnType<typeof toAbwabLinkingAyah>;
   readonly position: number;
 }
 
@@ -27,6 +28,7 @@ interface AbwabDoorLinkDisplayAyah {
   standalone: true,
   imports: [
     LinkingAyahCardComponent,
+    AbwabDoorLinkEditorComponent,
     QdActionDirective,
     QdEmptyStateComponent,
     QdErrorStateComponent,
@@ -46,6 +48,8 @@ export class AbwabDoorLinkRecordComponent {
   readonly expandedState = input<AbwabDoorLinkExpandedState | null>(null);
   readonly ayahEntries = input<readonly AbwabDoorLinkAyahEntry[]>([]);
   readonly hasMoreAyahs = input(false);
+  readonly editing = input(false);
+  readonly interactionDisabled = input(false);
 
   readonly selectionToggled = output<number>();
   readonly expansionToggled = output<DoorLinkRecordSummaryDto>();
@@ -53,7 +57,7 @@ export class AbwabDoorLinkRecordComponent {
   readonly loadMoreAyahs = output<void>();
 
   protected readonly displayAyahs = computed<readonly AbwabDoorLinkDisplayAyah[]>(() =>
-    this.ayahEntries().map(({ ayah, position }) => ({ ayah: toLinkingAyah(ayah), position })),
+    this.ayahEntries().map(({ ayah, position }) => ({ ayah: toAbwabLinkingAyah(ayah), position })),
   );
   protected readonly initialLoading = computed(
     () => this.displayAyahs().length === 0 && this.expandedState()?.status === 'loading',
@@ -90,23 +94,4 @@ export class AbwabDoorLinkRecordComponent {
       ? ABWAB_LABELS.doorLinksCollapseRecord(this.recordPosition())
       : ABWAB_LABELS.doorLinksExpandRecord(this.recordPosition());
   }
-}
-
-function toLinkingAyah(source: DoorLinkAyahDto): LinkingAyah {
-  const selectedWordIds = new Set(source.selectedWordIds);
-  return {
-    verseKey: source.verseKey,
-    ayahId: source.ayahId,
-    surahNumber: source.surahNumber,
-    surahNameArabic: source.surahNameArabic,
-    ayahNumber: source.ayahNumber,
-    pageNumber: source.pageFrom,
-    words: source.words.map((word) => ({
-      renderPosition: word.wordNumber,
-      canonicalQuranWordId: word.quranWordId,
-      textUthmani: word.textUthmani,
-      isAyahMarker: word.isAyahMarker,
-      isSourceMatch: selectedWordIds.has(word.quranWordId),
-    })),
-  };
 }

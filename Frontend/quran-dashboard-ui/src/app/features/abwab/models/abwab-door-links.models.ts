@@ -8,6 +8,13 @@ export const ABWAB_DOOR_LINK_COPY_BATCH_SIZE = 100;
 
 export type AbwabDoorLinksLoadStatus = 'idle' | 'loading' | 'refreshing' | 'ready' | 'empty' | 'error';
 export type AbwabDoorLinksWriteStatus = 'idle' | 'writing' | 'error';
+export type AbwabDoorLinkEditStatus =
+  | 'idle'
+  | 'preparing'
+  | 'ready'
+  | 'saving'
+  | 'load-error'
+  | 'save-error';
 export type AbwabDoorLinkSelectionMode = 'only' | 'all-except';
 export type AbwabDoorLinkCopyScope = 'selected' | 'all';
 export type AbwabDoorLinkCopyBatchStatus = 'pending' | 'preparing' | 'ready' | 'completed' | 'error';
@@ -52,8 +59,9 @@ export interface AbwabDoorLinkSelectionState {
 
 export interface AbwabDoorLinkEditState {
   readonly unitId: number | null;
-  readonly selectedWordIdsByAyahId: Readonly<Record<number, readonly number[]>>;
-  readonly status: AbwabDoorLinksWriteStatus;
+  readonly expectedDoorVersion: number | null;
+  readonly ayahs: readonly DoorLinkAyahDto[];
+  readonly status: AbwabDoorLinkEditStatus;
   readonly errorMessage: string | null;
 }
 

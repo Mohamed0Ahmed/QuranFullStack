@@ -1,0 +1,84 @@
+<section
+  class="abwab-door-link-editor"
+  [attr.aria-label]="heading"
+  [attr.aria-busy]="preparing() || saving()"
+  [attr.data-testid]="'abwab-door-link-editor-' + record().unitId"
+>
+  <header class="abwab-door-link-editor__header">
+    <div>
+      <h4>{{ heading }}</h4>
+      @if (!preparing()) {
+        <span class="qd-text-muted">{{ selectedCountLabel() }}</span>
+      }
+    </div>
+    <span class="qd-badge">
+      {{ kindLabel() }}
+    </span>
+  </header>
+
+  @if (preparing()) {
+    <qd-skeleton-rows [count]="3" rowTemplate="1fr" [loadingLabel]="preparingLabel" />
+  } @else if (edit().status === 'load-error') {
+    <qd-error-state
+      severity="read"
+      [message]="edit().errorMessage ?? ''"
+      [actionLabel]="retryLabel"
+      testId="abwab-door-link-editor-load-error"
+      actionTestId="abwab-door-link-editor-retry"
+      (action)="facade.retryEdit()"
+    />
+    <div class="abwab-door-link-editor__actions">
+      <button type="button" qdAction="tertiary" (click)="facade.cancelEdit()">
+        {{ cancelLabel }}
+      </button>
+    </div>
+  } @else {
+    @if (editableAyahs().length === 0) {
+      <qd-empty-state [message]="emptyLabel" testId="abwab-door-link-editor-empty" />
+    } @else {
+      <div class="abwab-door-link-editor__ayahs">
+        @for (entry of editableAyahs(); track entry.ayahId) {
+          <qd-linking-ayah-card
+            [ayah]="entry.ayah"
+            [highlightSourceWords]="true"
+            [wordSelectable]="!saving()"
+            [grouped]="record().isGrouped"
+            [resultPosition]="entry.position"
+            [resultCount]="editableAyahs().length"
+            (wordToggled)="toggleWord(entry.ayahId, $event)"
+          />
+        }
+      </div>
+    }
+
+    @if (edit().status === 'save-error') {
+      <qd-error-state
+        severity="write"
+        [message]="edit().errorMessage ?? ''"
+        testId="abwab-door-link-editor-save-error"
+      />
+    }
+
+    <div class="abwab-door-link-editor__actions">
+      <button
+        type="button"
+        qdAction="primary"
+        [busy]="saving()"
+        [disabled]="!canSave()"
+        data-testid="abwab-door-link-editor-save"
+        (click)="facade.saveEdit()"
+      >
+        {{ saveLabel }}
+      </button>
+      <button
+        type="button"
+        qdAction="tertiary"
+        [disabled]="saving()"
+        data-testid="abwab-door-link-editor-cancel"
+        (click)="facade.cancelEdit()"
+      >
+        {{ cancelLabel }}
+      </button>
+    </div>
+  }
+</section>
