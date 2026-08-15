@@ -35,5 +35,6 @@ export interface LinkingOperationDraft {
 
 export interface LinkingCopyCallbacks {
   readonly acknowledged: () => void;
+  readonly cancelled: () => void;
   readonly stopped: (message: string) => void;
 }

@@ -50,6 +50,12 @@ export class LinkingWorkflowCompletionController {
     stopped?.(message);
   }
 
+  cancelCopy(): void {
+    const cancelled = this.copyCallbacks?.cancelled ?? null;
+    this.copyCallbacks = null;
+    cancelled?.();
+  }
+
   private async completeAcknowledgement(
     origin: LinkingWorkflowState['origin'],
     acknowledged: (() => void) | null,

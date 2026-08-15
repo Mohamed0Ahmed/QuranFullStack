@@ -152,6 +152,7 @@ export class AbwabDoorLinkCopyController {
         copy.targetDoorId,
         {
           acknowledged: () => this.copyAcknowledged(generation),
+          cancelled: () => this.copyCancelled(generation),
           stopped: (message) => this.stop(generation, safeWorkflowMessage(message)),
         },
       );
@@ -169,6 +170,14 @@ export class AbwabDoorLinkCopyController {
     }
     this.generation++;
     this.store.completeCopy(ABWAB_LABELS.doorLinksCopyCompleted);
+  }
+
+  private copyCancelled(generation: number): void {
+    if (!this.isCurrent(generation)) {
+      return;
+    }
+    this.generation++;
+    this.store.closeCopy();
   }
 
   private stop(generation: number, message: string): void {

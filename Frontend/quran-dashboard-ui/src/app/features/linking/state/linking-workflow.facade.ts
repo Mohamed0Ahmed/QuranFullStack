@@ -257,7 +257,8 @@ export class LinkingWorkflowFacade {
     ) {
       return;
     }
-    const confirmationIdempotencyKey = crypto.randomUUID();
+    const confirmationIdempotencyKey =
+      this.stateSignal().confirmationIdempotencyKey ?? crypto.randomUUID();
     this.stateSignal.update((state) => ({
       ...state,
       step: 'submitting',
@@ -335,7 +336,7 @@ export class LinkingWorkflowFacade {
       void this.execution.cancel();
     }
     if (notifyCopyStop && state.origin === 'copy') {
-      this.stopCopy(LINKING_LABELS.copyStopped);
+      this.completion.cancelCopy();
     } else {
       this.completion.clearCopyCallbacks();
     }
@@ -534,8 +535,10 @@ export class LinkingWorkflowFacade {
     if (step === 'succeeded' && previousStep !== 'succeeded') {
       untracked(() => this.doors.refresh());
     }
-    if (step === 'failed' || step === 'cancelled') {
+    if (step === 'failed') {
       untracked(() => this.stopCopy(execution.errorMessage ?? LINKING_LABELS.copyStopped));
+    } else if (step === 'cancelled' && this.stateSignal().origin === 'copy') {
+      untracked(() => this.dismiss());
     }
   }
 
