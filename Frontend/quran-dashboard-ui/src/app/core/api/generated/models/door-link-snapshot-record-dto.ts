@@ -5,6 +5,5 @@ import { DoorLinkSnapshotRecordAyahDto } from '../models/door-link-snapshot-reco
 export interface DoorLinkSnapshotRecordDto {
   ayahs: Array<DoorLinkSnapshotRecordAyahDto>;
   isGrouped: boolean;
-  sourceLabels: Array<string>;
   unitId: number;
 }

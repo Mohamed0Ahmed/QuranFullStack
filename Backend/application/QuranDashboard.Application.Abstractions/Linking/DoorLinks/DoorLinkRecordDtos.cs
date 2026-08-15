@@ -16,7 +16,6 @@ public sealed record DoorLinkRecordSummaryDto(
     int AyahCount,
     int SelectedWordCount,
     int DescriptionCount,
-    IReadOnlyList<string> SourceLabels,
     string FirstVerseKey,
     string LastVerseKey);
 
@@ -53,7 +52,6 @@ public sealed record DoorLinkSnapshotDto(
 public sealed record DoorLinkSnapshotRecordDto(
     long UnitId,
     bool IsGrouped,
-    IReadOnlyList<string> SourceLabels,
     IReadOnlyList<DoorLinkSnapshotRecordAyahDto> Ayahs);
 
 public sealed record DoorLinkSnapshotRecordAyahDto(

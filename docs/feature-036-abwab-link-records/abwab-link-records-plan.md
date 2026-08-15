@@ -23,7 +23,8 @@ lifecycle. It must not add a copy route or change that route's request contract.
 3. Every independent unit counts as one record.
 4. The count is `COUNT(DISTINCT linking_units.id)` after the live-contribution filter. It is not an
    ayah count and does not count contribution-to-unit mappings twice.
-5. A record can be shared by several source contributions. Its summary shows their distinct labels.
+5. A record can be shared by several internal source contributions, but source metadata is not
+   exposed, displayed, or counted as part of the link.
 6. Deleting a record means removing that unit from the door, including every contribution mapping
    to it in that door. It does not delete or archive the door.
 7. Editing replaces the complete selected-word set for the record's ayahs. It does not change the
@@ -67,14 +68,14 @@ items[]:
   ayahCount
   selectedWordCount
   descriptionCount
-  sourceLabels[]
   firstVerseKey
   lastVerseKey
 ```
 
-Ordering is stable by `LinkingUnit.Id`. Page size is positive and no greater than the existing
-linking page-size maximum of 100. Page 1 captures `doorVersion`; later pages send it back and receive
-409 if the door's link state changed.
+Ordering is Quranic by surah number and ayah number, with `LinkingUnit.Id` used only as a stable
+tiebreaker. Page size is positive and no greater than the existing linking page-size maximum of
+100. Page 1 captures `doorVersion`; later pages send it back and receive 409 if the door's link
+state changed.
 
 ### 3.3 Record ayah page
 
@@ -127,9 +128,10 @@ GET /api/abwab/doors/{doorId}/links/snapshot
 ```
 
 The response returns every live record for the door, one deduplicated hydrated Quran ayah catalog,
-and each record's ordered ayah references with selected word IDs and descriptions. It captures one
-`doorVersion` and one `linkingDataRevision` for the complete response. The endpoint uses set-based
-reads inside the existing revision scope and does not issue one query per record.
+and each record's Quran-ordered ayah references with selected word IDs and descriptions. It does
+not return source metadata. It captures one `doorVersion` and one `linkingDataRevision` for the
+complete response. The endpoint uses set-based reads inside the existing revision scope and does
+not issue one query per record.
 
 ### 3.6 Delete selected records
 
@@ -206,7 +208,7 @@ are public; the replace and delete actions are Owner-only.
 1. Keep list and ayah-detail queries behind one focused Application abstraction.
 2. Verify the door exists, is live, and matches `expectedDoorVersion` before returning later pages.
 3. Read only distinct units that still have a live contribution mapping in the requested door.
-4. Aggregate counts and distinct source labels in SQL; do not materialize the complete link graph.
+4. Aggregate counts in SQL without exposing source metadata or materializing the complete link graph.
 5. Page unit ayahs before Quran hydration and hydrate only that page.
 6. Load selected word IDs and descriptions only for the returned unit-ayah IDs.
 7. Execute Quran hydration inside the current linking-data revision read scope and return stable

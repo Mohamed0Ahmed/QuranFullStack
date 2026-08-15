@@ -41,7 +41,6 @@ function toSummary(
     ayahCount: ayahs.length,
     selectedWordCount: ayahs.reduce((count, ayah) => count + ayah.selectedWordIds.length, 0),
     descriptionCount: ayahs.reduce((count, ayah) => count + ayah.descriptions.length, 0),
-    sourceLabels: [...record.sourceLabels],
     firstVerseKey: ayahs[0]?.verseKey ?? '',
     lastVerseKey: ayahs.at(-1)?.verseKey ?? '',
   };

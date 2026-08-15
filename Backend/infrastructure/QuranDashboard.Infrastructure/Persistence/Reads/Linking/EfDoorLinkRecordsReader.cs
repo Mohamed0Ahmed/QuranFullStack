@@ -24,7 +24,19 @@ internal sealed partial class EfDoorLinkRecordsReader(QuranDashboardDbContext db
         var liveUnits = LiveUnits(doorId);
         var totalCount = await liveUnits.CountAsync(cancellationToken);
         var rows = await liveUnits
-            .OrderBy(unit => unit.Id)
+            .OrderBy(unit => (
+                from unitAyah in db.LinkingUnitAyahs
+                join ayah in db.QuranAyahs on unitAyah.AyahId equals ayah.Id
+                where unitAyah.UnitId == unit.Id
+                orderby ayah.SurahNumber, ayah.AyahNumber
+                select ayah.SurahNumber).First())
+            .ThenBy(unit => (
+                from unitAyah in db.LinkingUnitAyahs
+                join ayah in db.QuranAyahs on unitAyah.AyahId equals ayah.Id
+                where unitAyah.UnitId == unit.Id
+                orderby ayah.SurahNumber, ayah.AyahNumber
+                select ayah.AyahNumber).First())
+            .ThenBy(unit => unit.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(unit => new RecordSummaryRow(
@@ -46,34 +58,15 @@ internal sealed partial class EfDoorLinkRecordsReader(QuranDashboardDbContext db
                     from unitAyah in db.LinkingUnitAyahs
                     join ayah in db.QuranAyahs on unitAyah.AyahId equals ayah.Id
                     where unitAyah.UnitId == unit.Id
-                    orderby unitAyah.OrderValue, unitAyah.Id
+                    orderby ayah.SurahNumber, ayah.AyahNumber, unitAyah.Id
                     select ayah.VerseKey).First(),
                 (
                     from unitAyah in db.LinkingUnitAyahs
                     join ayah in db.QuranAyahs on unitAyah.AyahId equals ayah.Id
                     where unitAyah.UnitId == unit.Id
-                    orderby unitAyah.OrderValue descending, unitAyah.Id descending
+                    orderby ayah.SurahNumber descending, ayah.AyahNumber descending, unitAyah.Id descending
                     select ayah.VerseKey).First()))
             .ToListAsync(cancellationToken);
-
-        var unitIds = rows.Select(row => row.UnitId).ToList();
-        var sourceLabelRows = await (
-                from mapping in db.LinkingSourceContributionUnits.AsNoTracking()
-                join contribution in db.LinkingSourceContributions.AsNoTracking()
-                    on mapping.SourceContributionId equals contribution.Id
-                where unitIds.Contains(mapping.UnitId)
-                    && contribution.DoorId == doorId
-                    && contribution.DeletedAtUtc == null
-                select new { mapping.UnitId, contribution.Label })
-            .Distinct()
-            .ToListAsync(cancellationToken);
-        var sourceLabelsByUnit = sourceLabelRows
-            .GroupBy(row => row.UnitId)
-            .ToDictionary(
-                group => group.Key,
-                group => (IReadOnlyList<string>)[.. group
-                    .Select(row => row.Label)
-                    .Order(StringComparer.Ordinal)]);
 
         var items = rows
             .Select(row => new DoorLinkRecordSummaryDto(
@@ -82,7 +75,6 @@ internal sealed partial class EfDoorLinkRecordsReader(QuranDashboardDbContext db
                 row.AyahCount,
                 row.SelectedWordCount,
                 row.DescriptionCount,
-                sourceLabelsByUnit.GetValueOrDefault(row.UnitId, []),
                 row.FirstVerseKey,
                 row.LastVerseKey))
             .ToList();
@@ -123,15 +115,19 @@ internal sealed partial class EfDoorLinkRecordsReader(QuranDashboardDbContext db
             return new DoorLinkAyahsReadResult.UnitNotFound();
         }
 
-        var unitAyahs = db.LinkingUnitAyahs.AsNoTracking()
-            .Where(unitAyah => unitAyah.UnitId == unitId);
+        var unitAyahs =
+            from unitAyah in db.LinkingUnitAyahs.AsNoTracking()
+            join ayah in db.QuranAyahs.AsNoTracking() on unitAyah.AyahId equals ayah.Id
+            where unitAyah.UnitId == unitId
+            select new { UnitAyah = unitAyah, ayah.SurahNumber, ayah.AyahNumber };
         var totalCount = await unitAyahs.CountAsync(cancellationToken);
         var pageRows = await unitAyahs
-            .OrderBy(unitAyah => unitAyah.OrderValue)
-            .ThenBy(unitAyah => unitAyah.Id)
+            .OrderBy(row => row.SurahNumber)
+            .ThenBy(row => row.AyahNumber)
+            .ThenBy(row => row.UnitAyah.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(unitAyah => new UnitAyahRow(unitAyah.Id, unitAyah.AyahId))
+            .Select(row => new UnitAyahRow(row.UnitAyah.Id, row.UnitAyah.AyahId))
             .ToListAsync(cancellationToken);
         var unitAyahIds = pageRows.Select(row => row.UnitAyahId).ToList();
         var ayahIds = pageRows.Select(row => row.AyahId).ToList();

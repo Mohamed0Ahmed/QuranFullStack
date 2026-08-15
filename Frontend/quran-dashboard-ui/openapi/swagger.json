@@ -9551,7 +9551,6 @@
           "isGrouped",
           "lastVerseKey",
           "selectedWordCount",
-          "sourceLabels",
           "unitId"
         ],
         "type": "object",
@@ -9574,12 +9573,6 @@
           "descriptionCount": {
             "type": "integer",
             "format": "int32"
-          },
-          "sourceLabels": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           },
           "firstVerseKey": {
             "type": "string"
@@ -9815,7 +9808,6 @@
         "required": [
           "ayahs",
           "isGrouped",
-          "sourceLabels",
           "unitId"
         ],
         "type": "object",
@@ -9826,12 +9818,6 @@
           },
           "isGrouped": {
             "type": "boolean"
-          },
-          "sourceLabels": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
           },
           "ayahs": {
             "type": "array",

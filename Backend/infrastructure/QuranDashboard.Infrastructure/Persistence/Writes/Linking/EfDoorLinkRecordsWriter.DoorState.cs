@@ -86,23 +86,6 @@ internal sealed partial class EfDoorLinkRecordsWriter
             : null;
     }
 
-    private async Task<LinkingUnit?> LockIdentityCollisionAsync(
-        int doorId,
-        long excludedUnitId,
-        byte[] identityHash,
-        CancellationToken cancellationToken) =>
-        (await db.LinkingUnits.FromSqlInterpolated(
-                $"""
-                SELECT id, door_id, identity, identity_hash, is_grouped, created_at, created_by
-                FROM linking_units
-                WHERE door_id = {doorId}
-                  AND identity_hash = {identityHash}
-                  AND id <> {excludedUnitId}
-                FOR UPDATE
-                """)
-            .ToListAsync(cancellationToken))
-        .SingleOrDefault();
-
     private async Task<IReadOnlyList<long>> LoadMappedContributionIdsAsync(
         int doorId,
         long unitId,

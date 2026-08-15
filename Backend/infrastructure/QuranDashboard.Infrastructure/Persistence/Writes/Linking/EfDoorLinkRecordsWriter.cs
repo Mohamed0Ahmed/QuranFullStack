@@ -1,5 +1,4 @@
 using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
-using QuranDashboard.Application.Abstractions.Linking.Preflight;
 using QuranDashboard.Domain.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
@@ -47,48 +46,11 @@ internal sealed partial class EfDoorLinkRecordsWriter(QuranDashboardDbContext db
                 true);
         }
 
-        var identity = BuildIdentity(unitState.Unit.IsGrouped, unitState.Ayahs, normalizedWords);
-        var identityHash = LinkingUnitIdentity.HashOf(identity);
-        var collision = await LockIdentityCollisionAsync(
-            doorId,
-            unitId,
-            identityHash,
-            cancellationToken);
-        if (collision is not null && !string.Equals(collision.Identity, identity, StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException("A linking unit identity hash collision was detected.");
-        }
-
-        if (collision is not null
-            && await HasCrossDoorMappingsAsync(
-                doorId,
-                new HashSet<long> { collision.Id },
-                cancellationToken))
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            return new DoorLinkMutationWriteResult.UnitNotFound();
-        }
-
         var affectedContributionIds = await LoadMappedContributionIdsAsync(
             doorId,
             unitId,
             cancellationToken);
-        if (collision is null)
-        {
-            await ReplaceUnitWordsAsync(unitState.Ayahs, normalizedWords, cancellationToken);
-            unitState.Unit.Identity = identity;
-            unitState.Unit.IdentityHash = identityHash;
-            await SaveChangesAsync(cancellationToken);
-        }
-        else
-        {
-            await MergeUnitAsync(
-                doorId,
-                unitId,
-                collision.Id,
-                affectedContributionIds,
-                cancellationToken);
-        }
+        await ReplaceUnitWordsAsync(unitState.Ayahs, normalizedWords, cancellationToken);
 
         var now = DateTimeOffset.UtcNow;
         await TouchLiveContributionsAsync(
@@ -147,31 +109,6 @@ internal sealed partial class EfDoorLinkRecordsWriter(QuranDashboardDbContext db
                 select new DoorLinkSelectedWord(word.AyahId, word.QuranWordId))
             .ToListAsync(cancellationToken);
 
-    private static string BuildIdentity(
-        bool isGrouped,
-        IReadOnlyList<LinkingUnitAyah> unitAyahs,
-        IReadOnlyList<DoorLinkSelectedWord> selectedWords)
-    {
-        var wordsByAyah = selectedWords
-            .GroupBy(word => word.AyahId)
-            .ToDictionary(group => group.Key, group => (IReadOnlyList<int>)[.. group.Select(word => word.QuranWordId)]);
-        var ayahs = unitAyahs
-            .OrderBy(ayah => ayah.OrderValue)
-            .ThenBy(ayah => ayah.Id)
-            .Select(ayah => new LinkingOperationAyahIntent(
-                ayah.AyahId,
-                string.Empty,
-                0,
-                0,
-                wordsByAyah.GetValueOrDefault(ayah.AyahId, []),
-                [],
-                null,
-                []))
-            .ToList();
-
-        return LinkingUnitIdentity.For(isGrouped, ayahs);
-    }
-
     private async Task ReplaceUnitWordsAsync(
         IReadOnlyList<LinkingUnitAyah> unitAyahs,
         IReadOnlyList<DoorLinkSelectedWord> selectedWords,
@@ -191,39 +128,6 @@ internal sealed partial class EfDoorLinkRecordsWriter(QuranDashboardDbContext db
             QuranWordId = word.QuranWordId,
         }));
         await SaveChangesAsync(cancellationToken);
-    }
-
-    private async Task MergeUnitAsync(
-        int doorId,
-        long orphanUnitId,
-        long survivingUnitId,
-        IReadOnlyList<long> affectedContributionIds,
-        CancellationToken cancellationToken)
-    {
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-            DELETE FROM linking_source_contribution_units orphan
-            USING linking_source_contribution_units survivor,
-                  linking_source_contributions contribution
-            WHERE orphan.unit_id = {orphanUnitId}
-              AND survivor.source_contribution_id = orphan.source_contribution_id
-              AND survivor.unit_id = {survivingUnitId}
-              AND contribution.id = orphan.source_contribution_id
-              AND contribution.door_id = {doorId}
-            """,
-            cancellationToken);
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-            UPDATE linking_source_contribution_units mapping
-            SET unit_id = {survivingUnitId}
-            FROM linking_source_contributions contribution
-            WHERE mapping.unit_id = {orphanUnitId}
-              AND contribution.id = mapping.source_contribution_id
-              AND contribution.door_id = {doorId}
-            """,
-            cancellationToken);
-        await NormalizeContributionOrdersAsync(affectedContributionIds, cancellationToken);
-        await DeleteUnitsAsync([orphanUnitId], cancellationToken);
     }
 
     private async Task TouchLiveContributionsAsync(

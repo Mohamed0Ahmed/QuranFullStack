@@ -20,39 +20,33 @@ internal sealed partial class EfDoorLinkRecordsReader
         }
 
         var units = await LiveUnits(doorId)
-            .OrderBy(unit => unit.Id)
+            .OrderBy(unit => (
+                from unitAyah in db.LinkingUnitAyahs
+                join ayah in db.QuranAyahs on unitAyah.AyahId equals ayah.Id
+                where unitAyah.UnitId == unit.Id
+                orderby ayah.SurahNumber, ayah.AyahNumber
+                select ayah.SurahNumber).First())
+            .ThenBy(unit => (
+                from unitAyah in db.LinkingUnitAyahs
+                join ayah in db.QuranAyahs on unitAyah.AyahId equals ayah.Id
+                where unitAyah.UnitId == unit.Id
+                orderby ayah.SurahNumber, ayah.AyahNumber
+                select ayah.AyahNumber).First())
+            .ThenBy(unit => unit.Id)
             .Select(unit => new SnapshotUnitRow(unit.Id, unit.IsGrouped))
             .ToListAsync(cancellationToken);
         var unitIds = units.Select(unit => unit.UnitId).ToList();
-        var unitAyahs = await db.LinkingUnitAyahs.AsNoTracking()
-            .Where(unitAyah => unitIds.Contains(unitAyah.UnitId))
-            .OrderBy(unitAyah => unitAyah.UnitId)
-            .ThenBy(unitAyah => unitAyah.OrderValue)
-            .ThenBy(unitAyah => unitAyah.Id)
-            .Select(unitAyah => new SnapshotUnitAyahRow(
-                unitAyah.Id,
-                unitAyah.UnitId,
-                unitAyah.AyahId))
+        var unitAyahs = await (
+                from unitAyah in db.LinkingUnitAyahs.AsNoTracking()
+                join ayah in db.QuranAyahs.AsNoTracking() on unitAyah.AyahId equals ayah.Id
+                where unitIds.Contains(unitAyah.UnitId)
+                orderby unitAyah.UnitId, ayah.SurahNumber, ayah.AyahNumber, unitAyah.Id
+                select new SnapshotUnitAyahRow(
+                    unitAyah.Id,
+                    unitAyah.UnitId,
+                    unitAyah.AyahId))
             .ToListAsync(cancellationToken);
         var unitAyahIds = unitAyahs.Select(row => row.UnitAyahId).ToList();
-
-        var sourceLabelRows = await (
-                from mapping in db.LinkingSourceContributionUnits.AsNoTracking()
-                join contribution in db.LinkingSourceContributions.AsNoTracking()
-                    on mapping.SourceContributionId equals contribution.Id
-                where unitIds.Contains(mapping.UnitId)
-                    && contribution.DoorId == doorId
-                    && contribution.DeletedAtUtc == null
-                select new { mapping.UnitId, contribution.Label })
-            .Distinct()
-            .ToListAsync(cancellationToken);
-        var sourceLabelsByUnit = sourceLabelRows
-            .GroupBy(row => row.UnitId)
-            .ToDictionary(
-                group => group.Key,
-                group => (IReadOnlyList<string>)[.. group
-                    .Select(row => row.Label)
-                    .Order(StringComparer.Ordinal)]);
 
         var selectedWords = await (
                 from word in db.LinkingUnitAyahWords.AsNoTracking()
@@ -116,7 +110,6 @@ internal sealed partial class EfDoorLinkRecordsReader
             .Select(unit => new DoorLinkSnapshotRecordDto(
                 unit.UnitId,
                 unit.IsGrouped,
-                sourceLabelsByUnit.GetValueOrDefault(unit.UnitId, []),
                 unitAyahsByUnit.GetValueOrDefault(unit.UnitId, [])))
             .ToList();
 

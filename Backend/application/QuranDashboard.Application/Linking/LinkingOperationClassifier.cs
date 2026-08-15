@@ -30,8 +30,7 @@ public static class LinkingOperationClassifier
             !isBlocked
                 && totals.New == 0
                 && totals.Updated == 0
-                && results.All(result =>
-                    result.Classification.Classification == LinkingPreflightClassification.Unchanged),
+                && totals.Removed == 0,
             isBlocked,
             results.Sum(result => result.Classification.TotalLinkCount),
             totals,

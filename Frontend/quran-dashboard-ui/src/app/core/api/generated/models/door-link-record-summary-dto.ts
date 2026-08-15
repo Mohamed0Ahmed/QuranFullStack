@@ -8,6 +8,5 @@ export interface DoorLinkRecordSummaryDto {
   isGrouped: boolean;
   lastVerseKey: string;
   selectedWordCount: number;
-  sourceLabels: Array<string>;
   unitId: number;
 }
