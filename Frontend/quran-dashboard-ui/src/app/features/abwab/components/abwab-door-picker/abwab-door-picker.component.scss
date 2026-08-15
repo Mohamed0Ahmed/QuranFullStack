@@ -20,6 +20,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) repeat(5, var(--abwab-door-picker-count-col));
   column-gap: var(--qd-space-2);
+  max-block-size: var(--qd-floating-max-block-size);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .abwab-door-picker__header,
