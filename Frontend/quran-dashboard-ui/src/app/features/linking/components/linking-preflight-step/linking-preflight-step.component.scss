@@ -30,6 +30,23 @@
   line-height: var(--qd-type-meta-lh);
 }
 
+.linking-preflight-step__progress-bar {
+  &::-webkit-progress-bar {
+    border-radius: var(--qd-radius-pill);
+    background: var(--qd-surface-recessed);
+  }
+
+  &::-webkit-progress-value,
+  &::-moz-progress-bar {
+    border-radius: var(--qd-radius-pill);
+    background: var(--qd-accent);
+  }
+}
+
+.linking-preflight-step__progress-details {
+  border-block-start: var(--qd-hairline);
+}
+
 .linking-preflight-step__no-op {
   margin: 0;
   padding: var(--qd-space-2) var(--qd-space-3);

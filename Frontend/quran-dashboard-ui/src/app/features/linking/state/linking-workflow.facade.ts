@@ -6,6 +6,7 @@ import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import { LinkingManualLinkShape } from '../models/linking-manual-mushaf.models';
 import { LinkingOperationSourceDraft } from '../models/linking-operation-draft.models';
 import { LinkingSourcePageRequest } from '../models/linking-page.models';
+import { isPreparedPreflightReady } from '../models/linking-prepared-preflight.models';
 import { LINKING_LABELS } from '../models/linking.labels';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingExecutionStore } from './linking-execution.store';
@@ -439,6 +440,10 @@ export class LinkingWorkflowFacade {
   }
 
   private synchronizePrepared(): void {
+    const step = this.stateSignal().step;
+    if (step !== 'preflighting' && step !== 'ready') {
+      return;
+    }
     const key = this.stateSignal().preparationKey;
     if (key === null) {
       return;
@@ -464,7 +469,7 @@ export class LinkingWorkflowFacade {
       untracked(() => this.invalidatePreparedGeneration(resource.failureCode!));
       return;
     }
-    const nextStep: LinkingWorkflowStep = status === 'succeeded'
+    const nextStep: LinkingWorkflowStep = isPreparedPreflightReady(resource)
       ? 'ready'
       : ['failed', 'cancelled', 'expired'].includes(status)
         ? status === 'cancelled' ? 'cancelled' : 'failed'

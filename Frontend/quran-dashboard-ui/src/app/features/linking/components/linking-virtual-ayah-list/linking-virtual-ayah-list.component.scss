@@ -10,9 +10,18 @@
 
 .linking-virtual-ayah-list__content {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--qd-space-3);
   align-items: start;
+}
+
+.linking-virtual-ayah-list__content--with-selection {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.linking-virtual-ayah-list__content qd-linking-ayah-card {
+  min-inline-size: 0;
+  inline-size: 100%;
 }
 
 .linking-virtual-ayah-list__row--grouped {

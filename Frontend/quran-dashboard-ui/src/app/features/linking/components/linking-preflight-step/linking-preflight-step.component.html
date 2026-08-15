@@ -9,7 +9,34 @@
   @switch (status()) {
     @case ('loading') {
       @if (preflight(); as resource) {
-        <p role="status">{{ resource.stage }} · {{ resource.processedSources }} / {{ resource.totalSources }} · {{ resource.processedAyahs }} / {{ resource.totalAyahs ?? '—' }}</p>
+        <section
+          class="grid gap-qd-12 rounded-qd-md border border-qd-hairline bg-qd-surface-quiet p-qd-16 compact:p-qd-12"
+          [attr.aria-label]="labels.preflightProgress"
+        >
+          <header class="flex items-baseline justify-between gap-qd-12">
+            <p id="linking-preflight-progress-stage" class="m-0 text-qd-body-lg font-semibold text-qd-ink" role="status">
+              {{ progressStageLabel() }}
+            </p>
+            <strong class="qd-ltr-isolate m-0 text-qd-body font-semibold text-qd-green-text tabular-nums">
+              {{ progressValue() }}%
+            </strong>
+          </header>
+          <progress
+            class="linking-preflight-step__progress-bar block h-qd-8 w-full appearance-none overflow-hidden rounded-qd-pill border-0 bg-qd-surface-sunken"
+            [attr.aria-describedby]="'linking-preflight-progress-stage'"
+            [attr.aria-label]="labels.preflightProgress"
+            [attr.value]="resource.totalAyahs === null ? null : resource.processedAyahs"
+            [attr.max]="resource.totalAyahs ?? 1"
+          ></progress>
+          <dl class="linking-preflight-step__progress-details m-0 pt-qd-12">
+            <div class="flex min-w-0 items-baseline justify-between gap-qd-8">
+              <dt class="text-qd-meta text-qd-ink-muted">{{ labels.preflightProgressAyahs }}</dt>
+              <dd class="qd-ltr-isolate m-0 text-qd-body font-semibold text-qd-ink tabular-nums">
+                {{ resource.processedAyahs }} / {{ resource.totalAyahs ?? '—' }}
+              </dd>
+            </div>
+          </dl>
+        </section>
       } @else {
         <qd-panel-skeleton shape="text" [loadingLabel]="labels.preflightLoading" />
       }

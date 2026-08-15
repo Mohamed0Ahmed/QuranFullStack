@@ -22,7 +22,48 @@
   </ol>
 
   <div class="direct-link-workflow__body">
-    @switch (currentStep()) {
+    @if (showExecutionProgress()) {
+      @if (execution().job; as job) {
+        <section
+          class="grid gap-qd-12 rounded-qd-md border border-qd-hairline bg-qd-surface-quiet p-qd-16 compact:p-qd-12"
+          [attr.aria-label]="labels.executionProgress"
+        >
+          <header class="flex items-baseline justify-between gap-qd-12">
+            <p id="linking-execution-progress-stage" class="m-0 text-qd-body-lg font-semibold text-qd-ink" role="status">
+              {{ executionStageLabel() }}
+            </p>
+            <strong class="qd-ltr-isolate m-0 text-qd-body font-semibold text-qd-green-text tabular-nums">
+              {{ executionProgress() }}%
+            </strong>
+          </header>
+          <div
+            class="h-qd-8 w-full overflow-hidden rounded-qd-pill bg-qd-surface-sunken"
+            role="progressbar"
+            [attr.aria-describedby]="'linking-execution-progress-stage'"
+            [attr.aria-label]="labels.executionProgress"
+            [attr.aria-valuenow]="executionProgress()"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <span
+              class="block h-full rounded-qd-pill bg-qd-green"
+              [style.inline-size.%]="executionProgress()"
+            ></span>
+          </div>
+          <dl class="m-0 grid grid-cols-1 border-t border-qd-hairline pt-qd-12">
+            <div class="flex min-w-0 items-baseline justify-between gap-qd-8">
+              <dt class="text-qd-meta text-qd-ink-muted">{{ labels.executionProgressItems }}</dt>
+              <dd class="qd-ltr-isolate m-0 text-qd-body font-semibold text-qd-ink tabular-nums">
+                {{ job.processedItems }} / {{ job.totalItems || '—' }}
+              </dd>
+            </div>
+          </dl>
+        </section>
+      } @else {
+        <qd-panel-skeleton shape="text" [loadingLabel]="labels.submitting" />
+      }
+    } @else {
+      @switch (currentStep()) {
       @case ('configure-source') {
         @if (directDraft(); as draft) {
           <section class="direct-link-workflow__configuration">
@@ -76,15 +117,6 @@
       @case ('preflighting') { <qd-linking-preflight-step /> }
       @case ('ready') { <qd-linking-preflight-step /> }
       @case ('submitting') { <qd-panel-skeleton shape="text" [loadingLabel]="labels.submitting" /> }
-      @case ('queued') {
-        <p role="status">{{ execution().job?.stage }} · {{ execution().job?.processedItems }} / {{ execution().job?.totalItems }}</p>
-      }
-      @case ('running') {
-        <p role="status">{{ execution().job?.stage }} · {{ execution().job?.processedItems }} / {{ execution().job?.totalItems }}</p>
-      }
-      @case ('finalizing') {
-        <p role="status">{{ execution().job?.stage }} · {{ execution().job?.processedItems }} / {{ execution().job?.totalItems }}</p>
-      }
       @case ('succeeded') {
         <qd-notice [message]="labels.success" [dismissLabel]="labels.close" (dismiss)="acknowledge()" />
       }
@@ -93,6 +125,7 @@
       }
       @case ('cancelled') {
         <qd-notice [message]="labels.cancel" [dismissLabel]="labels.close" (dismiss)="cancel()" />
+      }
       }
     }
   </div>

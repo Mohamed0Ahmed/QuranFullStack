@@ -7,5 +7,5 @@ export type LinkingConfirmationSubmission = LinkingConfirmationSubmissionRespons
 export type LinkingDurableConfirmationOutcome = LinkingDurableConfirmationOutcomeDto;
 
 export function isConfirmationJobTerminal(status: LinkingConfirmationJobStatus): boolean {
-  return ['succeeded', 'failed', 'cancelled'].includes(status.status.toLowerCase());
+  return ['succeeded', 'stale', 'failed', 'cancelled'].includes(status.status.toLowerCase());
 }

@@ -6,6 +6,7 @@ import { LinkingPreparedPreflightApi } from '../data-access/linking-prepared-pre
 import {
   LinkingPreparedPreflightRequest,
   LinkingPreparedPreflightStatus,
+  isPreparedPreflightReady,
   isPreparedPreflightTerminal,
 } from '../models/linking-prepared-preflight.models';
 import { LinkingRecoveryStore } from './linking-recovery.store';
@@ -103,7 +104,7 @@ export class LinkingPreparedPreflightFacade {
     if (
       resource !== null &&
       isPreparedPreflightTerminal(resource) &&
-      resource.status.toLowerCase() !== 'succeeded'
+      !isPreparedPreflightReady(resource)
     ) {
       await this.recovery.acknowledge(actorSub, 'preparation', preparationKey);
     }
@@ -128,7 +129,7 @@ export class LinkingPreparedPreflightFacade {
       generation,
     });
     if (terminal) {
-      if (resource.status.toLowerCase() !== 'succeeded') {
+      if (!isPreparedPreflightReady(resource)) {
         void this.recovery.markTerminal(this.requireActor(), 'preparation', preparationKey);
       }
       this.poller.cancel(this.pollKey(preparationKey));

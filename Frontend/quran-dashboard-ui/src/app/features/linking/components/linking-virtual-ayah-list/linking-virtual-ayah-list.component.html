@@ -24,6 +24,7 @@
       @if (ayahFor(row); as ayah) {
         <div
           class="linking-virtual-ayah-list__content"
+          [class.linking-virtual-ayah-list__content--with-selection]="selectionEnabled()"
           [class.linking-virtual-ayah-list__content--grouped]="isGroupedRow(row)"
         >
           @if (selectionEnabled()) {

@@ -45,6 +45,28 @@ export class DirectLinkWorkflowComponent {
   protected readonly directManualGrouped = this.workflow.directManualGrouped;
   protected readonly canAdvanceSource = this.workflow.canAdvanceSource;
   protected readonly execution = this.workflow.executionState;
+  protected readonly showExecutionProgress = computed(() =>
+    ['queued', 'running', 'finalizing'].includes(this.currentStep()),
+  );
+  protected readonly executionProgress = computed(() => calculateExecutionProgress(
+    this.execution().job?.status ?? null,
+    this.execution().job?.stage ?? null,
+    this.execution().job?.processedItems ?? 0,
+    this.execution().job?.totalItems ?? 0,
+  ));
+  protected readonly executionStageLabel = computed(() => {
+    const job = this.execution().job;
+    if (job?.status.toLowerCase() === 'queued') {
+      return this.labels.executionStages.queued;
+    }
+    switch (job?.stage.toLowerCase()) {
+      case 'loading-prepared': return this.labels.executionStages.loadingPrepared;
+      case 'applying-unit-diff': return this.labels.executionStages.applyingUnitDiff;
+      case 'synchronizing-door': return this.labels.executionStages.synchronizingDoor;
+      case 'committing': return this.labels.executionStages.committing;
+      default: return this.labels.executionStages.unknown;
+    }
+  });
   protected readonly isAutomatic = computed(() =>
     this.directDraft()?.automaticWordMatchesEnabled !== null,
   );
@@ -75,4 +97,29 @@ export class DirectLinkWorkflowComponent {
   protected stepLabel(step: LinkingWorkflowStep): string {
     return this.labels.operationSteps[step];
   }
+}
+
+function calculateExecutionProgress(
+  status: string | null,
+  stage: string | null,
+  processedItems: number,
+  totalItems: number,
+): number {
+  if (status?.toLowerCase() === 'queued') {
+    return 5;
+  }
+  switch (stage?.toLowerCase()) {
+    case 'loading-prepared': return 10;
+    case 'applying-unit-diff': return 15 + Math.round(65 * progressRatio(processedItems, totalItems));
+    case 'synchronizing-door': return 88;
+    case 'committing': return 96;
+    default: return 10;
+  }
+}
+
+function progressRatio(processed: number, total: number): number {
+  if (total <= 0) {
+    return 0;
+  }
+  return Math.min(Math.max(processed / total, 0), 1);
 }

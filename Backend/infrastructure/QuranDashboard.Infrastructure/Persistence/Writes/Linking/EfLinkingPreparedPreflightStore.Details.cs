@@ -60,7 +60,7 @@ internal sealed partial class EfLinkingPreparedPreflightStore
         }
 
         var candidates = candidateRows
-            .Select(ayah => new DetailAyahKey(ayah.QuranOrder, ayah.AyahId))
+            .Select(ayah => new { ayah.QuranOrder, ayah.AyahId })
             .Distinct();
         var totalItems = await candidates.CountAsync(cancellationToken);
         var totalPages = totalItems == 0 ? 0 : (totalItems + pageSize - 1) / pageSize;
@@ -218,6 +218,4 @@ internal sealed partial class EfLinkingPreparedPreflightStore
                 impact.DescriptionChanges.Changed,
                 impact.DescriptionChanges.Unchanged));
     }
-
-    private sealed record DetailAyahKey(int QuranOrder, int AyahId);
 }

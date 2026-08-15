@@ -38,6 +38,9 @@ export class LinkingAyahCardComponent {
   readonly wordToggled = output<number>();
 
   protected readonly labels = LINKING_LABELS;
+  protected readonly displayStatusLabel = computed(() =>
+    localizeAyahClassification(this.statusLabel()),
+  );
   protected readonly displayWords = computed<readonly LinkingAyahCardWord[]>(() => {
     const wordImpact = this.wordImpact();
     const impactByWordId = wordImpact === null ? null : toImpactByWordId(wordImpact);
@@ -55,7 +58,18 @@ export class LinkingAyahCardComponent {
             : (impactByWordId.get(word.canonicalQuranWordId) ?? null),
       }));
   });
+}
 
+function localizeAyahClassification(classification: string | null): string | null {
+  switch (classification?.toUpperCase()) {
+    case 'NEW_AYAH': return LINKING_LABELS.ayahClassifications.NEW_AYAH;
+    case 'OVERLAP_OTHER_SOURCE': return LINKING_LABELS.ayahClassifications.OVERLAP_OTHER_SOURCE;
+    case 'UNCHANGED': return LINKING_LABELS.ayahClassifications.UNCHANGED;
+    case 'UPDATE': return LINKING_LABELS.ayahClassifications.UPDATE;
+    case 'REMOVE': return LINKING_LABELS.ayahClassifications.REMOVE;
+    case 'INVALID': return LINKING_LABELS.ayahClassifications.INVALID;
+    default: return classification;
+  }
 }
 
 function toImpactByWordId(

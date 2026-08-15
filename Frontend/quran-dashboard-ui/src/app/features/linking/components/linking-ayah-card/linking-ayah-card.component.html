@@ -4,7 +4,7 @@
   [class.linking-ayah-card--grouped]="grouped()"
   [attr.aria-label]="'سورة ' + ayah().surahNameArabic + '، الآية ' + ayah().ayahNumber"
 >
-  @if (statusLabel(); as status) {
+  @if (displayStatusLabel(); as status) {
     <span class="qd-badge qd-badge--accent linking-ayah-card__status">{{ status }}</span>
   }
   <header class="linking-ayah-card__meta">
