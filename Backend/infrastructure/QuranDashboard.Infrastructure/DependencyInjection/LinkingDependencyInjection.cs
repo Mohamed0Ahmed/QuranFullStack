@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Infrastructure.Caching.Linking;
 using QuranDashboard.Infrastructure.Persistence.Linking;
@@ -45,7 +46,10 @@ internal static class LinkingDependencyInjection
         services.AddScoped<ILinkingWorkspaceReader, EfLinkingWorkspaceReader>();
         services.AddScoped<ILinkingWorkspaceWriter, EfLinkingWorkspaceWriter>();
         services.AddScoped<ILinkingConfirmedStateReader, EfLinkingConfirmedStateReader>();
-        services.AddScoped<ILinkingConfirmationWriter, EfLinkingConfirmationWriter>();
+        services.AddScoped<EfLinkingConfirmationWriter>();
+        services.AddScoped<ILinkingConfirmationWriter>(sp => new InvalidatingLinkingConfirmationWriter(
+            sp.GetRequiredService<EfLinkingConfirmationWriter>(),
+            sp.GetRequiredService<IAbwabCacheInvalidator>()));
 
         return services;
     }
