@@ -101,6 +101,16 @@
   overflow: auto;
 }
 
+.direct-link-workflow__body--preflight {
+  overflow: hidden;
+}
+
+.direct-link-workflow__body--preflight > qd-linking-preflight-step {
+  display: block;
+  block-size: 100%;
+  min-block-size: 0;
+}
+
 .direct-link-workflow__source-status {
   min-block-size: 0;
 }

@@ -1,5 +1,12 @@
-<qd-linking-virtual-ayah-list
-  [scope]="'prepared-merged:' + preflight().preflightId"
-  [preparedRequest]="request()"
-  [listLabel]="labels.preflightMergedAyahs"
-/>
+<section class="linking-preflight-merged-ayah-viewer" [attr.aria-label]="labels.preflightMergedAyahs">
+  <qd-linking-preflight-filter-bar
+    [counts]="counts()"
+    [selectedFilter]="selectedFilter()"
+    (filterChanged)="selectFilter($event)"
+  />
+  <qd-linking-virtual-ayah-list
+    [scope]="'prepared-merged:' + preflight().preflightId"
+    [preparedRequest]="request()"
+    [listLabel]="labels.preflightMergedAyahs"
+  />
+</section>

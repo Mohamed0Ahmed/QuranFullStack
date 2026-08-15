@@ -21,7 +21,10 @@
     }
   </ol>
 
-  <div class="direct-link-workflow__body">
+  <div
+    class="direct-link-workflow__body"
+    [class.direct-link-workflow__body--preflight]="currentStep() === 'preflighting' || currentStep() === 'ready'"
+  >
     @if (showExecutionProgress()) {
       @if (execution().job; as job) {
         <section

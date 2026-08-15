@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 import { QdNoticeComponent } from '../../../../shared/ui/notice/notice.component';
@@ -14,6 +15,7 @@ import { LinkingPreflightMergedAyahViewerComponent } from '../linking-preflight-
   selector: 'qd-linking-preflight-step',
   standalone: true,
   imports: [
+    QdActionDirective,
     QdErrorStateComponent,
     ExplorerPanelSkeletonComponent,
     QdNoticeComponent,

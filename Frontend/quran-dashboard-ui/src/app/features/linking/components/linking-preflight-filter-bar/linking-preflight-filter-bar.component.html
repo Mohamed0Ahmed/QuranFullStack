@@ -1,0 +1,31 @@
+<section class="linking-preflight-filter-bar" [attr.aria-label]="labels.preflightAyahFilters">
+  <div class="linking-preflight-filter-bar__filters" role="group" [attr.aria-label]="labels.preflightAyahFilters">
+    @for (filter of filters(); track filter.value) {
+      <qd-chip
+        variant="filter"
+        [selected]="selectedFilter() === filter.value"
+        [disabled]="filter.count === 0"
+        [count]="filter.count"
+        [ariaLabel]="filter.label + '، ' + filter.count + ' ' + labels.ayahUnit"
+        (chipClick)="selectFilter(filter.value)"
+      >
+        {{ filter.label }}
+      </qd-chip>
+    }
+  </div>
+
+  <div class="linking-preflight-filter-bar__legend" [attr.aria-label]="labels.preflightWordLegend">
+    <span>
+      <span class="linking-preflight-filter-bar__swatch linking-preflight-filter-bar__swatch--added" aria-hidden="true"></span>
+      {{ labels.preflightWordsAddedToDoor }}
+    </span>
+    <span>
+      <span class="linking-preflight-filter-bar__swatch linking-preflight-filter-bar__swatch--existing" aria-hidden="true"></span>
+      {{ labels.preflightWordsExistingInDoor }}
+    </span>
+    <span>
+      <span class="linking-preflight-filter-bar__swatch linking-preflight-filter-bar__swatch--removed" aria-hidden="true"></span>
+      {{ labels.preflightWordsRemovedFromDoor }}
+    </span>
+  </div>
+</section>

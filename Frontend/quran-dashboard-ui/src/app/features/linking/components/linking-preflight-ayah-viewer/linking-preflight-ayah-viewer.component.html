@@ -1,6 +1,13 @@
-<qd-linking-virtual-ayah-list
-  [scope]="'prepared-source:' + source().preparedSourceId"
-  [preparedRequest]="request()"
-  [preparedSourceId]="source().preparedSourceId"
-  [listLabel]="source().label"
-/>
+<section class="linking-preflight-ayah-viewer" [attr.aria-label]="source().label">
+  <qd-linking-preflight-filter-bar
+    [counts]="counts()"
+    [selectedFilter]="selectedFilter()"
+    (filterChanged)="selectFilter($event)"
+  />
+  <qd-linking-virtual-ayah-list
+    [scope]="'prepared-source:' + source().preparedSourceId"
+    [preparedRequest]="request()"
+    [preparedSourceId]="source().preparedSourceId"
+    [listLabel]="source().label"
+  />
+</section>

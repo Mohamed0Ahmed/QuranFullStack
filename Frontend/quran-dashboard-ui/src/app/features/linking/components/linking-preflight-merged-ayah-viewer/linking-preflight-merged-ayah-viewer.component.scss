@@ -1,86 +1,14 @@
-:host {
-  display: block;
-  min-inline-size: 0;
-}
-
+:host,
+.linking-preflight-merged-ayah-viewer,
 qd-linking-virtual-ayah-list {
   display: block;
-  block-size: var(--qd-linking-preflight-viewport-block-size);
+  block-size: 100%;
+  min-block-size: 0;
+  min-inline-size: 0;
 }
 
 .linking-preflight-merged-ayah-viewer {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: var(--qd-space-2);
-  block-size: var(--qd-linking-preflight-viewport-block-size);
-  min-inline-size: 0;
-  padding: var(--qd-space-2) var(--qd-space-3) var(--qd-space-3);
-  border-block-start: var(--qd-hairline);
-}
-
-.linking-preflight-merged-ayah-viewer__filters,
-.linking-preflight-merged-ayah-viewer__legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.linking-preflight-merged-ayah-viewer__filters {
-  gap: var(--qd-space-2);
-}
-
-.linking-preflight-merged-ayah-viewer__legend {
-  gap: var(--qd-space-1) var(--qd-space-3);
-  color: var(--qd-ink-muted);
-  font-size: var(--qd-type-meta);
-  line-height: var(--qd-type-meta-lh);
-}
-
-.linking-preflight-merged-ayah-viewer__legend > span {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--qd-space-1);
-}
-
-.linking-preflight-merged-ayah-viewer__legend-swatch {
-  inline-size: 1rem;
-  block-size: 1rem;
-  border-radius: var(--qd-radius-xs);
-}
-
-.linking-preflight-merged-ayah-viewer__legend-swatch--added {
-  background: var(--qd-mushaf-word-selection-bg);
-  box-shadow: inset 0 0 0 1px var(--qd-mushaf-word-selection-ring);
-}
-
-.linking-preflight-merged-ayah-viewer__legend-swatch--existing {
-  background: var(--qd-warning-tint);
-  box-shadow: inset 0 0 0 1px var(--qd-warning-hairline);
-}
-
-.linking-preflight-merged-ayah-viewer__legend-swatch--removed {
-  background: var(--qd-danger-tint);
-  box-shadow: inset 0 0 0 1px var(--qd-danger-hairline);
-}
-
-.linking-preflight-merged-ayah-viewer__viewport {
-  min-block-size: 0;
-}
-
-.linking-preflight-merged-ayah-viewer__group {
-  min-block-size: 0;
-  overflow: auto;
-}
-
-.linking-preflight-merged-ayah-viewer__ayah {
-  display: grid;
-  gap: var(--qd-space-1);
-  padding-block-end: var(--qd-space-1);
-}
-
-.linking-preflight-merged-ayah-viewer__invalid {
-  margin: 0;
-  color: var(--qd-danger);
-  font-size: var(--qd-type-meta);
-  line-height: var(--qd-type-meta-lh);
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
 }
