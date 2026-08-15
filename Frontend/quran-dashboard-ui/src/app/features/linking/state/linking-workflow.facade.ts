@@ -491,7 +491,11 @@ export class LinkingWorkflowFacade {
 
   private synchronizeExecution(): void {
     const execution = this.execution.state();
-    if (execution.generation === 0 || this.stateSignal().origin === null) {
+    if (
+      execution.generation === 0 ||
+      this.stateSignal().origin === null ||
+      !['submitting', 'queued', 'running', 'finalizing'].includes(this.stateSignal().step)
+    ) {
       return;
     }
     const job = execution.job;

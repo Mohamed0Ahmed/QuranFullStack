@@ -8,6 +8,8 @@
     <span class="qd-badge qd-badge--accent linking-ayah-card__status">{{ status }}</span>
   }
   <header class="linking-ayah-card__meta">
+    <span>{{ labels.resultPosition }} {{ resultPosition() }} {{ labels.of }} {{ resultCount() }}</span>
+    <span aria-hidden="true">·</span>
     <span>{{ ayah().surahNameArabic }}</span>
     <span aria-hidden="true">—</span>
     <span>الآية {{ ayah().ayahNumber }}</span>

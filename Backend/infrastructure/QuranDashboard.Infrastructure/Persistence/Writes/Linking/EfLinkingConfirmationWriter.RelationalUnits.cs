@@ -51,6 +51,7 @@ internal sealed partial class EfLinkingConfirmationWriter
         CancellationToken cancellationToken)
     {
         await InsertPreparedUnitAyahsAsync(cancellationToken);
+        await RemoveUnrequestedPreparedUnitWordsAsync(cancellationToken);
         await InsertPreparedUnitWordsAsync(cancellationToken);
         await InsertPreparedUnitDescriptionsAsync(actorUserId, cancellationToken);
         await ValidatePreparedUnitChildrenAsync(cancellationToken);
@@ -100,10 +101,10 @@ internal sealed partial class EfLinkingConfirmationWriter
                      AND ayah.is_requested
                     JOIN linking_prepared_ayah_words word
                       ON word.prepared_ayah_id = ayah.id
+                     AND word.is_requested
                     JOIN linking_unit_ayahs unit_ayah
                       ON unit_ayah.unit_id = unit.unit_id
                      AND unit_ayah.ayah_id = ayah.ayah_id
-                    WHERE unit.is_new
                 ) candidate
                 WHERE NOT EXISTS (
                     SELECT 1
@@ -112,6 +113,34 @@ internal sealed partial class EfLinkingConfirmationWriter
                       AND existing.quran_word_id = candidate.quran_word_id)
                 ORDER BY candidate.unit_ayah_id, candidate.quran_word_id
                 LIMIT {PersistenceBatchSize}
+                """,
+                cancellationToken));
+
+    private async Task RemoveUnrequestedPreparedUnitWordsAsync(CancellationToken cancellationToken) =>
+        await ExecuteBatchesAsync(
+            () => db.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                WITH batch AS (
+                    SELECT DISTINCT persisted_word.ctid
+                    FROM linking_confirmation_units unit
+                    JOIN linking_unit_ayahs persisted_ayah
+                      ON persisted_ayah.unit_id = unit.unit_id
+                    JOIN linking_unit_ayah_words persisted_word
+                      ON persisted_word.unit_ayah_id = persisted_ayah.id
+                    WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM linking_prepared_ayahs prepared_ayah
+                        JOIN linking_prepared_ayah_words prepared_word
+                          ON prepared_word.prepared_ayah_id = prepared_ayah.id
+                         AND prepared_word.is_requested
+                        WHERE prepared_ayah.unit_id = unit.prepared_unit_id
+                          AND prepared_ayah.ayah_id = persisted_ayah.ayah_id
+                          AND prepared_word.quran_word_id = persisted_word.quran_word_id)
+                    LIMIT {PersistenceBatchSize}
+                )
+                DELETE FROM linking_unit_ayah_words persisted_word
+                USING batch
+                WHERE persisted_word.ctid = batch.ctid
                 """,
                 cancellationToken));
 
@@ -175,14 +204,30 @@ internal sealed partial class EfLinkingConfirmationWriter
                      AND ayah.is_requested
                     JOIN linking_prepared_ayah_words word
                       ON word.prepared_ayah_id = ayah.id
+                     AND word.is_requested
                     JOIN linking_unit_ayahs persisted_ayah
                       ON persisted_ayah.unit_id = unit.unit_id
                      AND persisted_ayah.ayah_id = ayah.ayah_id
                     LEFT JOIN linking_unit_ayah_words persisted_word
                       ON persisted_word.unit_ayah_id = persisted_ayah.id
                      AND persisted_word.quran_word_id = word.quran_word_id
-                    WHERE unit.is_new
-                      AND persisted_word.unit_ayah_id IS NULL
+                    WHERE persisted_word.unit_ayah_id IS NULL
+                    UNION ALL
+                    SELECT 1
+                    FROM linking_confirmation_units unit
+                    JOIN linking_unit_ayahs persisted_ayah
+                      ON persisted_ayah.unit_id = unit.unit_id
+                    JOIN linking_unit_ayah_words persisted_word
+                      ON persisted_word.unit_ayah_id = persisted_ayah.id
+                    WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM linking_prepared_ayahs prepared_ayah
+                        JOIN linking_prepared_ayah_words prepared_word
+                          ON prepared_word.prepared_ayah_id = prepared_ayah.id
+                         AND prepared_word.is_requested
+                        WHERE prepared_ayah.unit_id = unit.prepared_unit_id
+                          AND prepared_ayah.ayah_id = persisted_ayah.ayah_id
+                          AND prepared_word.quran_word_id = persisted_word.quran_word_id)
                     UNION ALL
                     SELECT 1
                     FROM linking_confirmation_units unit

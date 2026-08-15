@@ -120,13 +120,16 @@ public static class LinkingOperationClassifier
     {
         var confirmedUnitAyah = comparisonUnit?.AyahsById.GetValueOrDefault(ayah.AyahId);
         var confirmedWords = confirmedUnitAyah?.QuranWordIds ?? [];
+        var wordChanges = WordChangesOf(confirmedWords, ayah.WordIds);
+        var sourceWordsChanged = live is not null
+            && (wordChanges.Added.Count > 0 || wordChanges.Removed.Count > 0);
         var doorWordImpact = index.DoorWordImpacts.GetValueOrDefault(ayah.AyahId, NoDoorWordImpact);
         var invalidReason = source.InvalidReason ?? ayah.InvalidReason;
         var classification = invalidReason is not null
             ? LinkingPreflightClassification.Invalid
             : !index.ConfirmedAyahIds.Contains(ayah.AyahId)
                 ? LinkingPreflightClassification.NewAyah
-                : doorWordImpact.Added.Count > 0 || doorWordImpact.Removed.Count > 0
+                : sourceWordsChanged || doorWordImpact.Added.Count > 0 || doorWordImpact.Removed.Count > 0
                     ? LinkingPreflightClassification.Update
                     : LinkingPreflightClassification.Unchanged;
 
@@ -137,7 +140,7 @@ public static class LinkingOperationClassifier
             ayah.AyahNumber,
             classification,
             OverlappingSourcesOf(index, live, ayah.AyahId),
-            WordChangesOf(confirmedWords, ayah.WordIds),
+            wordChanges,
             doorWordImpact,
             NoDescriptionChanges,
             invalidReason);
@@ -160,10 +163,15 @@ public static class LinkingOperationClassifier
         }
 
         return live.Units.Count != units.Count
-            || units.Any(unit => unit.Classification != LinkingPreflightClassification.Unchanged)
+            || units.Any(unit =>
+                unit.Classification != LinkingPreflightClassification.Unchanged
+                || unit.Ayahs.Any(HasSourceWordChanges))
             ? LinkingPreflightClassification.Update
             : LinkingPreflightClassification.Unchanged;
     }
+
+    private static bool HasSourceWordChanges(LinkingAyahClassification ayah) =>
+        ayah.WordChanges.Added.Count > 0 || ayah.WordChanges.Removed.Count > 0;
 
     private static IReadOnlyList<LinkingOverlappingSource> OverlappingSourcesOf(
         ClassificationIndex index,

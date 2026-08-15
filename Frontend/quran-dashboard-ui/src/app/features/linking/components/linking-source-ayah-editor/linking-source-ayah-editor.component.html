@@ -5,7 +5,11 @@
         <p class="linking-source-ayah-editor__source">{{ sourceLabel }}</p>
       }
       <p class="linking-source-ayah-editor__ready-count">
-        {{ labels.sourceEditorReady }}: {{ selectedCount() }}
+        {{ labels.totalAyahs }}:
+        <strong class="qd-ltr-isolate tabular-nums">{{ state().totalAyahCount || '—' }}</strong>
+        <span aria-hidden="true">·</span>
+        {{ labels.selectedCount }}:
+        <strong class="qd-ltr-isolate tabular-nums">{{ selectedCount() }}</strong>
       </p>
     </div>
     <button

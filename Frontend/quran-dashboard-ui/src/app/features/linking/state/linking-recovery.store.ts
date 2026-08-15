@@ -303,16 +303,29 @@ export class LinkingRecoveryStore {
 
   private async putBounded(receipt: LinkingRecoveryReceipt): Promise<void> {
     const db = await openRecoveryDatabase();
-    await transactionDone(db, ['receipts'], 'readwrite', async (transaction) => {
+    await transactionDone(db, ['receipts'], 'readwrite', (transaction) => {
       const store = transaction.objectStore('receipts');
-      const existing = (await requestResult(store.index('actorSub').getAll(receipt.actorSub))) as LinkingRecoveryReceipt[];
-      const withoutCurrent = existing.filter((candidate) => candidate.id !== receipt.id);
-      const count = withoutCurrent.length + 1;
-      const bytes = serializedBytes([...withoutCurrent, receipt]);
-      if (count > LINKING_RECOVERY_MAX_RECORDS || bytes > LINKING_RECOVERY_MAX_BYTES) {
-        throw new LinkingRecoveryCapacityError('سجل استعادة الربط ممتلئ؛ أكمل أو ألغِ العمليات السابقة أولاً.');
-      }
-      store.put(receipt);
+      return mutateRequest(
+        store.index('actorSub').getAll(receipt.actorSub),
+        (existing: LinkingRecoveryReceipt[]) => {
+          const retained = existing.filter((candidate) => candidate.id !== receipt.id);
+          const discardable = retained
+            .filter((candidate) => candidate.state === 'terminal-unacknowledged' || candidate.kind === 'preparation')
+            .sort((left, right) =>
+              Number(right.state === 'terminal-unacknowledged') - Number(left.state === 'terminal-unacknowledged') ||
+              left.updatedAtUtc.localeCompare(right.updatedAtUtc),
+            );
+          while (exceedsRecoveryCapacity(retained, receipt) && discardable.length > 0) {
+            const discarded = discardable.shift()!;
+            retained.splice(retained.findIndex((candidate) => candidate.id === discarded.id), 1);
+            store.delete(discarded.id);
+          }
+          if (exceedsRecoveryCapacity(retained, receipt)) {
+            throw new LinkingRecoveryCapacityError('سجل استعادة الربط ممتلئ؛ أكمل أو ألغِ العمليات السابقة أولاً.');
+          }
+          store.put(receipt);
+        },
+      );
     });
   }
 
@@ -382,36 +395,39 @@ export class LinkingRecoveryStore {
   private async acquireLease(actorSub: string): Promise<boolean> {
     const db = await openRecoveryDatabase();
     let acquired = false;
-    await transactionDone(db, ['leases'], 'readwrite', async (transaction) => {
+    await transactionDone(db, ['leases'], 'readwrite', (transaction) => {
       const store = transaction.objectStore('leases');
-      const existing = (await requestResult(store.get(actorSub))) as LinkingRecoveryLease | undefined;
-      if (existing === undefined || existing.expiresAt <= Date.now() || existing.ownerId === this.ownerId) {
-        store.put({ actorSub, ownerId: this.ownerId, expiresAt: Date.now() + LINKING_RECOVERY_LEASE_MS });
-        acquired = true;
-      }
+      return mutateRequest(store.get(actorSub), (existing: LinkingRecoveryLease | undefined) => {
+        if (existing === undefined || existing.expiresAt <= Date.now() || existing.ownerId === this.ownerId) {
+          store.put({ actorSub, ownerId: this.ownerId, expiresAt: Date.now() + LINKING_RECOVERY_LEASE_MS });
+          acquired = true;
+        }
+      });
     });
     return acquired;
   }
 
   private async renewLease(actorSub: string): Promise<void> {
     const db = await openRecoveryDatabase();
-    await transactionDone(db, ['leases'], 'readwrite', async (transaction) => {
+    await transactionDone(db, ['leases'], 'readwrite', (transaction) => {
       const store = transaction.objectStore('leases');
-      const existing = (await requestResult(store.get(actorSub))) as LinkingRecoveryLease | undefined;
-      if (existing?.ownerId === this.ownerId) {
-        store.put({ ...existing, expiresAt: Date.now() + LINKING_RECOVERY_LEASE_MS });
-      }
+      return mutateRequest(store.get(actorSub), (existing: LinkingRecoveryLease | undefined) => {
+        if (existing?.ownerId === this.ownerId) {
+          store.put({ ...existing, expiresAt: Date.now() + LINKING_RECOVERY_LEASE_MS });
+        }
+      });
     });
   }
 
   private async releaseLease(actorSub: string): Promise<void> {
     const db = await openRecoveryDatabase();
-    await transactionDone(db, ['leases'], 'readwrite', async (transaction) => {
+    await transactionDone(db, ['leases'], 'readwrite', (transaction) => {
       const store = transaction.objectStore('leases');
-      const existing = (await requestResult(store.get(actorSub))) as LinkingRecoveryLease | undefined;
-      if (existing?.ownerId === this.ownerId) {
-        store.delete(actorSub);
-      }
+      return mutateRequest(store.get(actorSub), (existing: LinkingRecoveryLease | undefined) => {
+        if (existing?.ownerId === this.ownerId) {
+          store.delete(actorSub);
+        }
+      });
     });
   }
 }
@@ -446,7 +462,10 @@ async function transactionDone(
     await work(transaction);
     await completion;
   } catch (error: unknown) {
-    transaction.abort();
+    try {
+      transaction.abort();
+    } catch {}
+    await completion.catch(() => undefined);
     throw error;
   }
 }
@@ -466,6 +485,20 @@ function requestResult<T>(request: IDBRequest<T>): Promise<T> {
   });
 }
 
+function mutateRequest<T>(request: IDBRequest<T>, mutate: (value: T) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      try {
+        mutate(request.result);
+        resolve();
+      } catch (error: unknown) {
+        reject(error);
+      }
+    };
+    request.onerror = () => reject(request.error ?? new Error('تعذر تحديث سجل استعادة الربط.'));
+  });
+}
+
 function receiptId(actorSub: string, kind: LinkingRecoveryReceipt['kind'], key: string): string {
   return `${actorSub}:${kind}:${key}`;
 }
@@ -479,6 +512,14 @@ function requireKey(value: string | null, message: string): string {
 
 function serializedBytes(value: unknown): number {
   return new TextEncoder().encode(JSON.stringify(value)).byteLength;
+}
+
+function exceedsRecoveryCapacity(
+  retained: readonly LinkingRecoveryReceipt[],
+  receipt: LinkingRecoveryReceipt,
+): boolean {
+  const records = [...retained, receipt];
+  return records.length > LINKING_RECOVERY_MAX_RECORDS || serializedBytes(records) > LINKING_RECOVERY_MAX_BYTES;
 }
 
 function canonicalJson(value: unknown): string {

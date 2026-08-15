@@ -95,6 +95,13 @@
               <button qdAction="secondary" size="sm" type="button" (click)="workflow.clearAllDirectAyahs()">
                 {{ labels.clearAll }}
               </button>
+              <p role="status">
+                {{ labels.totalAyahs }}:
+                <strong class="qd-ltr-isolate tabular-nums">{{ state().directTotalAyahCount || '—' }}</strong>
+                <span aria-hidden="true">·</span>
+                {{ labels.selectedCount }}:
+                <strong class="qd-ltr-isolate tabular-nums">{{ directSelectedCount() }}</strong>
+              </p>
             </header>
             @if (directRequest(); as request) {
               <qd-linking-virtual-ayah-list
@@ -103,7 +110,7 @@
                 [selectedAyahIds]="draft.selection.ayahIds"
                 [selectionMode]="draft.selection.mode"
                 [selectedWordIdsByAyahId]="draft.selectedWordIdsByAyahId"
-                [selectionEnabled]="!isAutomatic()"
+                [selectionEnabled]="true"
                 [wordSelectable]="!isAutomatic()"
                 [highlightSourceWords]="draft.automaticWordMatchesEnabled ?? true"
                 [grouped]="directManualGrouped()"

@@ -104,11 +104,6 @@ public sealed class ResolveLinkingSourcePageHandler(
             return "expectedLinkingDataRevision";
         }
 
-        if (query.ExpectedLinkingDataRevision is <= 0)
-        {
-            return "expectedLinkingDataRevision";
-        }
-
         if (query.View.AyahOverrideIds.Any(id => id <= 0))
         {
             return "view.ayahOverrideIds";

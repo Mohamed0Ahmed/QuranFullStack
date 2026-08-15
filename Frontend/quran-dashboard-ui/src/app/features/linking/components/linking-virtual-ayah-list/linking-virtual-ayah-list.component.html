@@ -38,6 +38,8 @@
           }
           <qd-linking-ayah-card
             [ayah]="ayah"
+            [resultPosition]="row.position + 1"
+            [resultCount]="rows().length"
             [highlightSourceWords]="highlightSourceWords()"
             [wordSelectable]="wordSelectable()"
             [wordImpact]="overlayFor(row)?.doorWordImpact ?? null"
