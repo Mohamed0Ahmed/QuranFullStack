@@ -2,14 +2,14 @@
 
 - Status: ready for phased implementation
 - Delivery: Backend contracts and persistence, generated API models, Angular UI, then verification
-- Access: active Owner only for record reads and mutations
+- Access: public record reads; active Owner only for selection and mutations
 - Database: no schema change and no database reset
 
 ## 1. Required outcome
 
 The Abwab tree must show the number of confirmed link records for every door. Selecting that number
-opens a wide inline panel under the same tree row. From the panel, the Owner can inspect complete
-ayahs, select records, replace selected words, delete records from the door, and copy all or selected
+opens a wide inline panel under the same tree row. Every user can inspect complete ayahs. The Owner
+can select records, replace selected words, delete records from the door, and copy all or selected
 records to another door.
 
 Copying must use the existing direct Quran-link request and its current prepare, review, and confirm
@@ -120,7 +120,18 @@ selectedWords[]: { ayahId, quranWordId }
 The list is a full replacement, not an add/remove delta. The Backend validates that every ayah
 belongs to the unit and every word belongs to that ayah.
 
-### 3.5 Delete selected records
+### 3.5 Complete door-link snapshot
+
+```text
+GET /api/abwab/doors/{doorId}/links/snapshot
+```
+
+The response returns every live record for the door, one deduplicated hydrated Quran ayah catalog,
+and each record's ordered ayah references with selected word IDs and descriptions. It captures one
+`doorVersion` and one `linkingDataRevision` for the complete response. The endpoint uses set-based
+reads inside the existing revision scope and does not issue one query per record.
+
+### 3.6 Delete selected records
 
 ```text
 POST /api/abwab/doors/{doorId}/links/bulk-delete
@@ -140,8 +151,8 @@ uses the same command with `only` and one ID.
 
 Mutation responses return the affected count and the new door version. Invalid shapes return 400,
 missing doors/records return 404, stale versions or archived doors return 409, and successful reads
-or writes use the existing `ApiResponse<T>` envelope and localized messages. Every new action is
-Owner-only.
+or writes use the existing `ApiResponse<T>` envelope and localized messages. All three read actions
+are public; the replace and delete actions are Owner-only.
 
 ## 4. Phase 1 — Backend tree count and cache correctness
 
@@ -275,6 +286,7 @@ Owner-only.
 - `Frontend/quran-dashboard-ui/src/app/features/abwab/data-access/abwab-door-links.api.ts`
 - `Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-door-links.store.ts`
 - `Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-door-links.facade.ts`
+- `Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-door-link-snapshot.mapper.ts`
 - `Frontend/quran-dashboard-ui/src/app/features/abwab/state/abwab-door-link-copy.mapper.ts`
 
 ### Files to change
@@ -288,21 +300,22 @@ Owner-only.
 The dedicated store owns:
 
 - open door ID and captured door version;
-- record page, total count, loading, refresh, empty, and error states;
-- one expanded unit ID and its paged ayah cache;
+- complete normalized record/ayah snapshot, total count, linking-data revision, loading, refresh,
+  empty, and error states;
 - record selection as `only` or `all-except` plus exception IDs;
 - edit draft and write state;
 - delete confirmation and write state; and
 - copy scope, target door, batch queue, current batch number, and errors.
 
 Changing the open door, receiving a stale response, completing a mutation, or closing the panel
-clears incompatible pages and selections. Presentational components never call HTTP directly.
+clears incompatible snapshots and selections. Presentational components never call HTTP directly.
 
 ## 8. Phase 5 — Inline tree panel and link operations
 
 ### Files to add
 
 - `Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-links-panel/*`
+- `Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-links-list/*`
 - `Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-link-record/*`
 - `Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-link-operations/*`
 - `Frontend/quran-dashboard-ui/src/app/features/abwab/components/abwab-door-link-editor/*`
@@ -322,18 +335,17 @@ clears incompatible pages and selections. Presentational components never call H
    visible with muted treatment.
 2. A single click opens or closes the active door panel and stops row-selection propagation. Only
    one panel can be open.
-3. Render the panel directly after its tree row and span the full tree grid width; do not use modal,
-   overlay history, floating shadows, or page-level horizontal scrolling.
-4. Show a compact header with door name, total record count, selection count, select-page, select-
-   all, and clear actions.
+3. Render the panel as one anchored floating layer so opening it never pushes later tree rows.
+4. Show a compact header with door name, total record count, selection count, select-all, and clear
+   actions.
 5. Render numbered record rows with checkbox, `grouped`/`independent` Arabic label, ayah count,
    selected-word count, descriptions count, and source labels.
-6. Expand one record at a time. Reuse the established linking ayah-card renderer so complete Quran
-   text, numbering, and selected-word presentation match the linking workspace.
-7. Load more record and ayah pages explicitly; never render or cache every ayah merely because the
-   panel opened.
-8. Place a separate `Link operations` card below the existing door-operation card. Enable edit for
-   exactly one selected record, delete for one or more, and copy for one or more or all.
+6. Show every record's ayahs immediately. Reuse the established linking ayah-card renderer so
+   complete Quran text, numbering, and selected-word presentation match the linking workspace.
+7. Fetch the complete door snapshot once and virtualize the record rows so all records are available
+   without load-more controls while the DOM remains bounded.
+8. Place `Link operations` inside the same floating layer. Enable edit for exactly one selected
+   record, delete for one or more, and copy for one or more or all.
 9. Use controlled skeleton, refreshing, empty, error, and notice owners. All layout uses logical
    properties, existing tokens, RTL order, and flat bordered surfaces.
 
@@ -347,14 +359,14 @@ controllers.
 ### Phase gate
 
 - The count opens and closes on the first click without changing the selected door accidentally.
-- The panel is inline and full-width under the correct row at every supported responsive band.
+- The panel is anchored to the correct row without changing tree layout at every supported band.
 - Full ayah text and selected words match their linking-workspace presentation.
-- Record and ayah numbering remain globally correct across pages.
+- Record and ayah numbering remain globally correct across the complete snapshot.
 
 ## 9. Phase 6 — Edit and delete UI
 
-1. Edit opens the selected record inside the inline panel, loads every ayah page for that record,
-   and enables word selection using canonical word IDs.
+1. Edit opens the selected record inside the floating panel from the already loaded snapshot and
+   enables word selection using canonical word IDs.
 2. Saving sends a complete selected-word replacement with the captured door version.
 3. Delete shows a confirmation naming the selected count and whether all records are selected.
 4. Successful edit/delete refreshes the tree and the open panel, clears stale selection, preserves
@@ -416,7 +428,8 @@ test requires separate Owner approval.
 
 ### Required verification
 
-1. Update the retained smoke route catalogue for the new Owner-only GET, PATCH, and POST actions.
+1. Update the retained smoke route catalogue for the new public GET and Owner-only PATCH and POST
+   actions.
 2. Run the Backend build.
 3. Run the retained Backend smoke lane to validate route discovery, binding, envelopes, and Owner
    authorization.

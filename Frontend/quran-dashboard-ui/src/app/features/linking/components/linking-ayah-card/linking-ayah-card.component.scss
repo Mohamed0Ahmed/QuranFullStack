@@ -30,6 +30,11 @@
   text-align: center;
 }
 
+.linking-ayah-card__meta--start {
+  justify-content: flex-start;
+  text-align: start;
+}
+
 .linking-ayah-card__text {
   align-items: baseline;
   column-gap: 0.24em;

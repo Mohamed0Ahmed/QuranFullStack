@@ -1,0 +1,23 @@
+<cdk-virtual-scroll-viewport
+  class="abwab-door-links-list"
+  role="list"
+  [attr.aria-label]="listLabel"
+  data-testid="abwab-door-links-list"
+>
+  <qd-abwab-door-link-record
+    *cdkVirtualFor="let entry of records(); let index = index; trackBy: trackRecord"
+    role="listitem"
+    class="abwab-door-links-list__record"
+    [attr.aria-posinset]="index + 1"
+    [attr.aria-setsize]="records().length"
+    [record]="entry.summary"
+    [ayahs]="entry.ayahs"
+    [recordPosition]="index + 1"
+    [totalRecords]="records().length"
+    [selected]="isSelected(entry.summary.unitId)"
+    [editing]="canSelect() && state().edit.unitId === entry.summary.unitId"
+    [selectable]="canSelect()"
+    [interactionDisabled]="!canSelect() || facade.interactionLocked()"
+    (selectionToggled)="facade.toggleSelected($event)"
+  />
+</cdk-virtual-scroll-viewport>

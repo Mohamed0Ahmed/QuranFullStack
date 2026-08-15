@@ -7,7 +7,11 @@
   @if (displayStatusLabel(); as status) {
     <span class="qd-badge qd-badge--accent linking-ayah-card__status">{{ status }}</span>
   }
-  <header class="linking-ayah-card__meta">
+  <header
+    class="linking-ayah-card__meta"
+    [class.linking-ayah-card__meta--start]="metaAlignment() === 'start'"
+  >
+    <ng-content select="[qdLinkingAyahCardMetaStart]" />
     <span>{{ labels.resultPosition }} {{ resultPosition() }} {{ labels.of }} {{ resultCount() }}</span>
     <span aria-hidden="true">·</span>
     <span>{{ ayah().surahNameArabic }}</span>

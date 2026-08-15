@@ -486,6 +486,29 @@ internal static class SmokeRouteCatalog
         // behind — order-independent by construction, not by convention like the write routes above.
         new("api/abwab/tree", "/api/abwab/tree", HttpStatusCode.OK),
 
+        new("api/abwab/doors/{doorId:int}/links/snapshot", "/api/abwab/doors/1/links/snapshot", HttpStatusCode.NotFound)
+        {
+            ParityOnly = true,
+        },
+        new("api/abwab/doors/{doorId:int}/links", "/api/abwab/doors/1/links?page=1&pageSize=100", HttpStatusCode.NotFound)
+        {
+            ParityOnly = true,
+        },
+        new("api/abwab/doors/{doorId:int}/links/{unitId:long}/ayahs", "/api/abwab/doors/1/links/1/ayahs?page=1&pageSize=100", HttpStatusCode.NotFound)
+        {
+            ParityOnly = true,
+        },
+        new("api/abwab/doors/{doorId:int}/links/{unitId:long}/words", "/api/abwab/doors/1/links/1/words", HttpStatusCode.BadRequest, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Patch,
+            ParityOnly = true,
+        },
+        new("api/abwab/doors/{doorId:int}/links/bulk-delete", "/api/abwab/doors/1/links/bulk-delete", HttpStatusCode.BadRequest, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
+
         // api/abwab/templates — AbwabTemplatesController. BOTH reads are ParityOnly, unlike
         // api/abwab/tree above. The tree read is order-independent by construction; these are not.
         // The templates workshop is the first feature whose own future smoke tests would create

@@ -2,7 +2,6 @@ import type { DoorLinkAyahDto } from '../../../core/api/generated/models/door-li
 import type { DoorLinkRecordSummaryDto } from '../../../core/api/generated/models/door-link-record-summary-dto';
 import type { LinkingOperationSourceDraft } from '../../linking/models/linking-operation-draft.models';
 
-export const ABWAB_DOOR_LINK_RECORD_PAGE_SIZE = 50;
 export const ABWAB_DOOR_LINK_AYAH_PAGE_SIZE = 50;
 export const ABWAB_DOOR_LINK_COPY_BATCH_SIZE = 100;
 
@@ -25,35 +24,15 @@ export type AbwabDoorLinkCopyStatus =
   | 'stopped';
 export type AbwabDoorLinkCopyBatchStatus = 'pending' | 'preparing' | 'running' | 'completed' | 'error';
 
-export interface AbwabDoorLinkRecordPage {
-  readonly page: number;
-  readonly pageSize: number;
-  readonly items: readonly DoorLinkRecordSummaryDto[];
+export interface AbwabDoorLinkRecordView {
+  readonly summary: DoorLinkRecordSummaryDto;
+  readonly ayahs: readonly DoorLinkAyahDto[];
 }
 
 export interface AbwabDoorLinkRecordsState {
   readonly status: AbwabDoorLinksLoadStatus;
-  readonly pages: Readonly<Record<number, AbwabDoorLinkRecordPage>>;
-  readonly requestedPage: number;
-  readonly pageSize: number;
-  readonly totalCount: number;
-  readonly errorMessage: string | null;
-}
-
-export interface AbwabDoorLinkAyahPage {
-  readonly page: number;
-  readonly pageSize: number;
-  readonly items: readonly DoorLinkAyahDto[];
-}
-
-export interface AbwabDoorLinkExpandedState {
-  readonly unitId: number;
-  readonly isGrouped: boolean | null;
+  readonly items: readonly AbwabDoorLinkRecordView[];
   readonly linkingDataRevision: number | null;
-  readonly status: AbwabDoorLinksLoadStatus;
-  readonly pages: Readonly<Record<number, AbwabDoorLinkAyahPage>>;
-  readonly requestedPage: number;
-  readonly pageSize: number;
   readonly totalCount: number;
   readonly errorMessage: string | null;
 }
@@ -103,7 +82,6 @@ export interface AbwabDoorLinksState {
   readonly openDoorId: number | null;
   readonly doorVersion: number | null;
   readonly records: AbwabDoorLinkRecordsState;
-  readonly expanded: AbwabDoorLinkExpandedState | null;
   readonly selection: AbwabDoorLinkSelectionState;
   readonly edit: AbwabDoorLinkEditState;
   readonly deletion: AbwabDoorLinkDeleteState;

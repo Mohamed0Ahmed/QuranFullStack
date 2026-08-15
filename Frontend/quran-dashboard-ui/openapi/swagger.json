@@ -5,6 +5,126 @@
     "version": "v1"
   },
   "paths": {
+    "/api/abwab/doors/{doorId}/links/snapshot": {
+      "get": {
+        "tags": [
+          "AbwabDoorLinks"
+        ],
+        "parameters": [
+          {
+            "name": "doorId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkSnapshotDtoApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkSnapshotDtoApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoorLinkSnapshotDtoApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingLifecycleErrorDataApiResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/abwab/doors/{doorId}/links": {
       "get": {
         "tags": [
@@ -9540,6 +9660,184 @@
               "type": "string"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkSnapshotAyahDto": {
+        "required": [
+          "ayahId",
+          "ayahNumber",
+          "pageFrom",
+          "pageTo",
+          "surahNameArabic",
+          "surahNumber",
+          "verseKey",
+          "words"
+        ],
+        "type": "object",
+        "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "verseKey": {
+            "type": "string"
+          },
+          "surahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ayahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "surahNameArabic": {
+            "type": "string"
+          },
+          "pageFrom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageTo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingResolvedWordDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkSnapshotDto": {
+        "required": [
+          "ayahs",
+          "doorId",
+          "doorVersion",
+          "linkingDataRevision",
+          "records"
+        ],
+        "type": "object",
+        "properties": {
+          "doorId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "doorVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "linkingDataRevision": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoorLinkSnapshotRecordDto"
+            }
+          },
+          "ayahs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoorLinkSnapshotAyahDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkSnapshotDtoApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DoorLinkSnapshotDto"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkSnapshotRecordAyahDto": {
+        "required": [
+          "ayahId",
+          "descriptions",
+          "selectedWordIds"
+        ],
+        "type": "object",
+        "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "selectedWordIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "descriptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DoorLinkSnapshotRecordDto": {
+        "required": [
+          "ayahs",
+          "isGrouped",
+          "sourceLabels",
+          "unitId"
+        ],
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isGrouped": {
+            "type": "boolean"
+          },
+          "sourceLabels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ayahs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoorLinkSnapshotRecordAyahDto"
+            }
           }
         },
         "additionalProperties": false

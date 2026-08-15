@@ -2,7 +2,7 @@ using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Linking;
 
-internal sealed class EfDoorLinkRecordsReader(QuranDashboardDbContext db) : IDoorLinkRecordsReader
+internal sealed partial class EfDoorLinkRecordsReader(QuranDashboardDbContext db) : IDoorLinkRecordsReader
 {
     public async Task<DoorLinkRecordsReadResult> ReadRecordsAsync(
         int doorId,

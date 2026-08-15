@@ -123,7 +123,9 @@ public sealed class SmokeCoverageParityTests(SmokeApiFixture fixture)
     public void LiveAbwabWrites_MatchTheCompletePhaseFivePermissionMatrix()
     {
         var actual = LiveRoutes()
-            .Where(pair => IsAbwabUnsafeRoute(pair.Key))
+            .Where(pair =>
+                IsAbwabUnsafeRoute(pair.Key)
+                && !pair.Value.Metadata.OfType<RequireOwnerAttribute>().Any())
             .Select(pair =>
             {
                 var permission = pair.Value.Metadata.OfType<RequirePermissionAttribute>().Single();

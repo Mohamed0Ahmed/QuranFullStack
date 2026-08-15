@@ -1,19 +1,16 @@
 import { Injectable, computed, signal } from '@angular/core';
 
 import { DoorLinkAyahDto } from '../../../core/api/generated/models/door-link-ayah-dto';
-import { DoorLinkAyahsPageDto } from '../../../core/api/generated/models/door-link-ayahs-page-dto';
-import { DoorLinkRecordsPageDto } from '../../../core/api/generated/models/door-link-records-page-dto';
+import { DoorLinkSnapshotDto } from '../../../core/api/generated/models/door-link-snapshot-dto';
 import {
-  ABWAB_DOOR_LINK_AYAH_PAGE_SIZE,
-  ABWAB_DOOR_LINK_RECORD_PAGE_SIZE,
   AbwabDoorLinkCopyBatch,
   AbwabDoorLinkCopyScope,
-  AbwabDoorLinkExpandedState,
   AbwabDoorLinkSelectionState,
   AbwabDoorLinkSelectionMode,
   AbwabDoorLinksState,
   EMPTY_ABWAB_DOOR_LINK_SELECTION,
 } from '../models/abwab-door-links.models';
+import { mapDoorLinkSnapshot } from './abwab-door-link-snapshot.mapper';
 
 function initialState(openDoorId: number | null = null): AbwabDoorLinksState {
   return {
@@ -21,13 +18,11 @@ function initialState(openDoorId: number | null = null): AbwabDoorLinksState {
     doorVersion: null,
     records: {
       status: 'idle',
-      pages: {},
-      requestedPage: 0,
-      pageSize: ABWAB_DOOR_LINK_RECORD_PAGE_SIZE,
+      items: [],
+      linkingDataRevision: null,
       totalCount: 0,
       errorMessage: null,
     },
-    expanded: null,
     selection: EMPTY_ABWAB_DOOR_LINK_SELECTION,
     edit: {
       unitId: null,
@@ -66,24 +61,8 @@ export class AbwabDoorLinksStore {
   readonly state = this.stateSignal.asReadonly();
   readonly openDoorId = computed(() => this.stateSignal().openDoorId);
   readonly doorVersion = computed(() => this.stateSignal().doorVersion);
-  readonly records = computed(() =>
-    Object.values(this.stateSignal().records.pages)
-      .sort((left, right) => left.page - right.page)
-      .flatMap((page) => page.items),
-  );
-  readonly hasMoreRecords = computed(() => this.records().length < this.stateSignal().records.totalCount);
-  readonly expandedAyahs = computed(() => {
-    const expanded = this.stateSignal().expanded;
-    return expanded === null
-      ? []
-      : Object.values(expanded.pages)
-          .sort((left, right) => left.page - right.page)
-          .flatMap((page) => page.items);
-  });
-  readonly hasMoreExpandedAyahs = computed(() => {
-    const expanded = this.stateSignal().expanded;
-    return expanded !== null && this.expandedAyahs().length < expanded.totalCount;
-  });
+  readonly recordViews = computed(() => this.stateSignal().records.items);
+  readonly records = computed(() => this.recordViews().map((record) => record.summary));
   readonly selectedCount = computed(() => {
     const { selection, records } = this.stateSignal();
     return selection.mode === 'only'
@@ -103,113 +82,42 @@ export class AbwabDoorLinksStore {
     this.stateSignal.set(initialState());
   }
 
-  beginRecordsLoad(page: number, refreshing: boolean): void {
+  beginSnapshotLoad(refreshing: boolean): void {
     this.stateSignal.update((state) => ({
       ...state,
       records: {
         ...state.records,
-        status: refreshing && Object.keys(state.records.pages).length > 0 ? 'refreshing' : 'loading',
-        requestedPage: page,
+        status: refreshing && state.records.items.length > 0 ? 'refreshing' : 'loading',
         errorMessage: null,
       },
     }));
   }
 
-  receiveRecords(page: DoorLinkRecordsPageDto): void {
+  receiveSnapshot(snapshot: DoorLinkSnapshotDto): void {
+    const items = mapDoorLinkSnapshot(snapshot);
     this.stateSignal.update((state) => {
-      if (state.openDoorId !== page.doorId) {
+      if (state.openDoorId !== snapshot.doorId) {
         return state;
       }
-      const pages = page.page === 1
-        ? { [page.page]: { page: page.page, pageSize: page.pageSize, items: page.items } }
-        : { ...state.records.pages, [page.page]: { page: page.page, pageSize: page.pageSize, items: page.items } };
       return {
         ...state,
-        doorVersion: page.doorVersion,
+        doorVersion: snapshot.doorVersion,
         records: {
-          status: page.totalCount === 0 ? 'empty' : 'ready',
-          pages,
-          requestedPage: page.page,
-          pageSize: page.pageSize,
-          totalCount: page.totalCount,
+          status: items.length === 0 ? 'empty' : 'ready',
+          items,
+          linkingDataRevision: snapshot.linkingDataRevision,
+          totalCount: items.length,
           errorMessage: null,
         },
       };
     });
   }
 
-  failRecords(message: string): void {
+  failSnapshot(message: string): void {
     this.stateSignal.update((state) => ({
       ...state,
       records: { ...state.records, status: 'error', errorMessage: message },
     }));
-  }
-
-  expand(unitId: number, isGrouped: boolean | null): void {
-    const current = this.stateSignal().expanded;
-    if (current?.unitId === unitId) {
-      this.stateSignal.update((state) => ({ ...state, expanded: null, edit: initialState().edit }));
-      return;
-    }
-    this.stateSignal.update((state) => ({
-      ...state,
-      expanded: {
-        unitId,
-        isGrouped,
-        linkingDataRevision: null,
-        status: 'idle',
-        pages: {},
-        requestedPage: 0,
-        pageSize: ABWAB_DOOR_LINK_AYAH_PAGE_SIZE,
-        totalCount: 0,
-        errorMessage: null,
-      },
-      edit: initialState().edit,
-    }));
-  }
-
-  collapseExpanded(): void {
-    this.stateSignal.update((state) => ({ ...state, expanded: null }));
-  }
-
-  beginAyahsLoad(page: number): void {
-    this.updateExpanded((expanded) => ({
-      ...expanded,
-      status: Object.keys(expanded.pages).length > 0 ? 'refreshing' : 'loading',
-      requestedPage: page,
-      errorMessage: null,
-    }));
-  }
-
-  receiveAyahs(page: DoorLinkAyahsPageDto): void {
-    this.stateSignal.update((state) => {
-      const expanded = state.expanded;
-      if (state.openDoorId !== page.doorId || expanded?.unitId !== page.unitId) {
-        return state;
-      }
-      const pages = page.page === 1
-        ? { [page.page]: { page: page.page, pageSize: page.pageSize, items: page.items } }
-        : { ...expanded.pages, [page.page]: { page: page.page, pageSize: page.pageSize, items: page.items } };
-      return {
-        ...state,
-        doorVersion: page.doorVersion,
-        expanded: {
-          ...expanded,
-          isGrouped: page.isGrouped,
-          linkingDataRevision: page.linkingDataRevision,
-          status: page.totalCount === 0 ? 'empty' : 'ready',
-          pages,
-          requestedPage: page.page,
-          pageSize: page.pageSize,
-          totalCount: page.totalCount,
-          errorMessage: null,
-        },
-      };
-    });
-  }
-
-  failAyahs(message: string): void {
-    this.updateExpanded((expanded) => ({ ...expanded, status: 'error', errorMessage: message }));
   }
 
   setSelectionMode(mode: AbwabDoorLinkSelectionMode, unitIds: readonly number[] = []): void {
@@ -468,11 +376,5 @@ export class AbwabDoorLinksStore {
 
   clearNotice(): void {
     this.stateSignal.update((state) => ({ ...state, noticeMessage: null, staleMessage: null }));
-  }
-
-  private updateExpanded(update: (state: AbwabDoorLinkExpandedState) => AbwabDoorLinkExpandedState): void {
-    this.stateSignal.update((state) =>
-      state.expanded === null ? state : { ...state, expanded: update(state.expanded) },
-    );
   }
 }

@@ -1,23 +1,17 @@
 :host {
-  display: block;
+  display: contents;
   min-inline-size: 0;
   color: var(--qd-text);
 }
 
-:host.qd-floating-layer {
-  inline-size: min(
-    var(--qd-abwab-door-links-layer-inline-size),
-    calc(100vi - (var(--qd-space-4) * 2))
-  );
-  max-inline-size: calc(100vi - (var(--qd-space-4) * 2));
-  padding: 0;
-}
-
 .abwab-door-links-panel {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: var(--qd-space-3);
+  block-size: 100%;
   min-inline-size: 0;
+  min-block-size: 0;
   padding: var(--qd-space-3);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
@@ -44,18 +38,8 @@
   gap: var(--qd-space-2);
 }
 
-.abwab-door-links-panel__identity h3 {
-  margin: 0;
-  font-size: var(--qd-type-body);
-}
-
 .abwab-door-links-panel__records {
-  display: flex;
-  flex-direction: column;
-  gap: var(--qd-space-2);
+  flex: 1 1 auto;
   min-inline-size: 0;
-}
-
-.abwab-door-links-panel__load-more {
-  align-self: center;
+  min-block-size: 0;
 }

@@ -4,8 +4,11 @@
 
 .abwab-door-link-operations {
   display: flex;
-  flex-direction: column;
-  gap: var(--qd-space-2);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2) var(--qd-space-4);
+  padding-block-end: var(--qd-space-2);
+  border-block-end: 1px solid var(--qd-border);
 }
 
 .abwab-door-link-operations__header {
@@ -14,6 +17,7 @@
   justify-content: space-between;
   gap: var(--qd-space-2);
   flex-wrap: wrap;
+  flex: 1 1 12rem;
 }
 
 .abwab-door-link-operations__header h4 {
@@ -24,12 +28,15 @@
 
 .abwab-door-link-operations__actions {
   display: flex;
-  flex-direction: column;
   gap: var(--qd-space-1);
+  flex-wrap: wrap;
+  flex: 0 1 auto;
 }
 
 .abwab-door-link-operations__actions button {
-  inline-size: 100%;
-  justify-content: flex-start;
-  text-align: start;
+  flex: 1 1 auto;
+}
+
+qd-abwab-door-link-copy {
+  flex: 1 0 100%;
 }

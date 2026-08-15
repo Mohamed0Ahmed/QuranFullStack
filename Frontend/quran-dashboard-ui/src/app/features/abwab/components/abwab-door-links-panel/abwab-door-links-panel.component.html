@@ -1,128 +1,104 @@
-<section
-  class="abwab-door-links-panel"
-  role="region"
-  [id]="'abwab-door-links-panel-' + doorId()"
-  [attr.aria-label]="heading + ' — ' + doorName()"
-  [attr.aria-busy]="initialLoading() || refreshing()"
-  data-testid="abwab-door-links-panel"
+<qd-modal-shell
+  variant="wide"
+  [wideInlineSize]="'var(--qd-linking-workspace-modal-inline-size)'"
+  [wideBlockSize]="'var(--qd-linking-workspace-modal-block-size)'"
+  [titleText]="modalTitle()"
+  [open]="true"
+  [hasFooter]="false"
+  [flushBody]="true"
+  testIdPrefix="abwab-door-links-modal"
+  (dismissed)="dismissed.emit()"
 >
-  <header class="abwab-door-links-panel__header">
-    <div class="abwab-door-links-panel__identity">
-      <h3>{{ heading }} — {{ doorName() }}</h3>
-      <span class="qd-text-muted" data-testid="abwab-door-links-total">{{ totalCountLabel() }}</span>
-      <span class="qd-text-muted" data-testid="abwab-door-links-selected">{{ selectedCountLabel() }}</span>
-    </div>
-    <div class="abwab-door-links-panel__actions">
-      <button
-        type="button"
-        qdAction="tertiary"
-        size="sm"
-        [disabled]="recordEntries().length === 0 || facade.interactionLocked()"
-        data-testid="abwab-door-links-select-page"
-        (click)="facade.selectPage(activePage())"
-      >
-        {{ selectPageLabel }}
-      </button>
-      <button
-        type="button"
-        qdAction="tertiary"
-        size="sm"
-        [disabled]="state().records.totalCount === 0 || facade.interactionLocked()"
-        data-testid="abwab-door-links-select-all"
-        (click)="facade.selectAll()"
-      >
-        {{ selectAllLabel }}
-      </button>
-      <button
-        type="button"
-        qdAction="tertiary"
-        size="sm"
-        [disabled]="facade.selectedCount() === 0 || facade.interactionLocked()"
-        data-testid="abwab-door-links-clear-selection"
-        (click)="facade.clearSelection()"
-      >
-        {{ clearSelectionLabel }}
-      </button>
-    </div>
-  </header>
+  <section
+    class="abwab-door-links-panel"
+    role="region"
+    [id]="'abwab-door-links-panel-' + doorId()"
+    [attr.aria-label]="modalTitle()"
+    [attr.aria-busy]="initialLoading() || refreshing()"
+    data-testid="abwab-door-links-panel"
+  >
+    <header class="abwab-door-links-panel__header">
+      <div class="abwab-door-links-panel__identity">
+        <span class="qd-text-muted" data-testid="abwab-door-links-total">{{ totalCountLabel() }}</span>
+        @if (permissions.isOwner()) {
+          <span class="qd-text-muted" data-testid="abwab-door-links-selected">{{ selectedCountLabel() }}</span>
+        }
+      </div>
+      @if (permissions.isOwner()) {
+        <div class="abwab-door-links-panel__actions">
+          <button
+            type="button"
+            qdAction="tertiary"
+            size="sm"
+            [disabled]="state().records.totalCount === 0 || facade.interactionLocked()"
+            data-testid="abwab-door-links-select-all"
+            (click)="facade.selectAll()"
+          >
+            {{ selectAllLabel }}
+          </button>
+          <button
+            type="button"
+            qdAction="tertiary"
+            size="sm"
+            [disabled]="facade.selectedCount() === 0 || facade.interactionLocked()"
+            data-testid="abwab-door-links-clear-selection"
+            (click)="facade.clearSelection()"
+          >
+            {{ clearSelectionLabel }}
+          </button>
+        </div>
+      }
+    </header>
 
-  @if (state().staleMessage; as message) {
-    <qd-notice
-      tone="info"
-      [message]="message"
-      [dismissLabel]="dismissLabel"
-      testId="abwab-door-links-stale-notice"
-      (dismiss)="facade.clearNotice()"
-    />
-  }
-  @if (state().noticeMessage; as message) {
-    <qd-notice
-      [message]="message"
-      [dismissLabel]="dismissLabel"
-      testId="abwab-door-links-notice"
-      (dismiss)="facade.clearNotice()"
-    />
-  }
-
-  @if (initialLoading()) {
-    <qd-skeleton-rows [count]="3" rowTemplate="auto 1fr auto auto" [loadingLabel]="loadingLabel" />
-  } @else if (state().records.status === 'empty') {
-    <qd-empty-state [message]="emptyLabel" testId="abwab-door-links-empty" />
-  } @else {
-    <qd-refreshing-indicator [active]="refreshing()" testId="abwab-door-links-refreshing" />
-
-    @if (state().records.status === 'error') {
-      <qd-error-state
-        severity="read"
-        [message]="state().records.errorMessage ?? ''"
-        [actionLabel]="facade.interactionLocked() ? null : retryLabel"
-        testId="abwab-door-links-error"
-        actionTestId="abwab-door-links-retry"
-        (action)="facade.retryRecords()"
+    @if (state().staleMessage; as message) {
+      <qd-notice
+        tone="info"
+        [message]="message"
+        [dismissLabel]="dismissLabel"
+        testId="abwab-door-links-stale-notice"
+        (dismiss)="facade.clearNotice()"
+      />
+    }
+    @if (state().noticeMessage; as message) {
+      <qd-notice
+        [message]="message"
+        [dismissLabel]="dismissLabel"
+        testId="abwab-door-links-notice"
+        (dismiss)="facade.clearNotice()"
       />
     }
 
-    @if (recordEntries().length > 0) {
-      <div class="abwab-door-links-panel__records" role="list">
-        @for (entry of recordEntries(); track entry.record.unitId) {
-          <qd-abwab-door-link-record
-            role="listitem"
-            [record]="entry.record"
-            [recordPosition]="entry.position"
-            [totalRecords]="state().records.totalCount"
-            [selected]="isSelected(entry.record.unitId)"
-            [expanded]="state().expanded?.unitId === entry.record.unitId"
-            [expandedState]="state().expanded?.unitId === entry.record.unitId ? state().expanded : null"
-            [ayahEntries]="state().expanded?.unitId === entry.record.unitId ? ayahEntries() : []"
-            [hasMoreAyahs]="state().expanded?.unitId === entry.record.unitId && facade.hasMoreExpandedAyahs()"
-            [editing]="state().edit.unitId === entry.record.unitId"
-            [interactionDisabled]="facade.interactionLocked()"
-            (selectionToggled)="facade.toggleSelected($event)"
-            (expansionToggled)="facade.toggleExpanded($event)"
-            (retryAyahs)="facade.retryExpandedAyahs()"
-            (loadMoreAyahs)="facade.loadNextExpandedAyahs()"
-          />
-        }
-      </div>
+    @if (permissions.isOwner()) {
+      <qd-abwab-door-link-operations
+        [doorOpen]="true"
+        [selectedCount]="facade.selectedCount()"
+      />
     }
 
-    @if (facade.hasMoreRecords()) {
-      <button
-        type="button"
-        qdAction="secondary"
-        size="sm"
-        class="abwab-door-links-panel__load-more"
-        [busy]="state().records.status === 'loading'"
-        [disabled]="
-          facade.interactionLocked()
-          || state().records.status === 'loading'
-          || state().records.status === 'refreshing'
-        "
-        data-testid="abwab-door-links-load-more"
-        (click)="facade.loadNextRecords()"
-      >
-        {{ loadMoreLabel }}
-      </button>
+    @if (initialLoading()) {
+      <qd-skeleton-rows [count]="3" rowTemplate="auto 1fr auto auto" [loadingLabel]="loadingLabel" />
+    } @else if (state().records.status === 'empty') {
+      <qd-empty-state [message]="emptyLabel" testId="abwab-door-links-empty" />
+    } @else {
+      <qd-refreshing-indicator [active]="refreshing()" testId="abwab-door-links-refreshing" />
+
+      @if (state().records.status === 'error') {
+        <qd-error-state
+          severity="read"
+          [message]="state().records.errorMessage ?? ''"
+          [actionLabel]="facade.interactionLocked() ? null : retryLabel"
+          testId="abwab-door-links-error"
+          actionTestId="abwab-door-links-retry"
+          (action)="facade.retryRecords()"
+        />
+      }
+
+      @if (facade.recordViews().length > 0) {
+        <qd-abwab-door-links-list
+          class="abwab-door-links-panel__records"
+          [canSelect]="permissions.isOwner()"
+        />
+      }
     }
-  }
-</section>
+  </section>
+</qd-modal-shell>

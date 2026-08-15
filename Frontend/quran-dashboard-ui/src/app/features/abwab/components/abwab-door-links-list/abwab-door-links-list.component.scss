@@ -1,0 +1,12 @@
+:host,
+.abwab-door-links-list {
+  display: block;
+  min-block-size: 0;
+  block-size: 100%;
+  min-inline-size: 0;
+}
+
+.abwab-door-links-list__record {
+  display: block;
+  padding: 0 var(--qd-space-2) var(--qd-space-2);
+}

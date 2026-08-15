@@ -9,10 +9,10 @@ public sealed class SmokeRouteBaselineTests
             .Select(route => (route.Method.Method, route.Template, route.Access.Kind, route.Access.PermissionCode))
             .ToArray();
 
-        snapshot.Should().HaveCount(101);
+        snapshot.Should().HaveCount(106);
         snapshot.Count(route => route.Kind is SmokeRouteAccessKind.AuthenticatedOnly).Should().Be(1);
         snapshot.Count(route => route.Kind is SmokeRouteAccessKind.Permission).Should().Be(21);
-        snapshot.Count(route => route.Kind is SmokeRouteAccessKind.OwnerOnly).Should().Be(28);
+        snapshot.Count(route => route.Kind is SmokeRouteAccessKind.OwnerOnly).Should().Be(30);
         snapshot.Should().Contain(("GET", "api/access/me", SmokeRouteAccessKind.AuthenticatedOnly, null));
         snapshot.Should().Contain(("GET", "api/access/users", SmokeRouteAccessKind.OwnerOnly, null));
         snapshot.Should().OnlyContain(route =>
@@ -40,6 +40,9 @@ public sealed class SmokeRouteBaselineTests
         var publicReadPaths = new[]
         {
             "/api/abwab/tree",
+            "/api/abwab/doors/1/links/snapshot",
+            "/api/abwab/doors/1/links?page=1&pageSize=100",
+            "/api/abwab/doors/1/links/1/ayahs?page=1&pageSize=100",
             "/api/abwab/doors/1/relations",
             "/api/abwab/templates",
             "/api/abwab/templates/1",

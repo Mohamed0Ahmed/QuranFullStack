@@ -68,6 +68,11 @@ export type { DoorLinkMutationDtoApiResponse } from './models/door-link-mutation
 export type { DoorLinkRecordsPageDto } from './models/door-link-records-page-dto';
 export type { DoorLinkRecordsPageDtoApiResponse } from './models/door-link-records-page-dto-api-response';
 export type { DoorLinkRecordSummaryDto } from './models/door-link-record-summary-dto';
+export type { DoorLinkSnapshotAyahDto } from './models/door-link-snapshot-ayah-dto';
+export type { DoorLinkSnapshotDto } from './models/door-link-snapshot-dto';
+export type { DoorLinkSnapshotDtoApiResponse } from './models/door-link-snapshot-dto-api-response';
+export type { DoorLinkSnapshotRecordAyahDto } from './models/door-link-snapshot-record-ayah-dto';
+export type { DoorLinkSnapshotRecordDto } from './models/door-link-snapshot-record-dto';
 export type { EditDoorBody } from './models/edit-door-body';
 export type { EditTemplateNodeBody } from './models/edit-template-node-body';
 export type { FullI3RabEntryDto } from './models/full-i-3-rab-entry-dto';

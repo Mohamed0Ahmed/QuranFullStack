@@ -49,7 +49,6 @@ import { AbwabDoorRestoreModalComponent } from '../../components/abwab-door-rest
 import { AbwabSectionsModalComponent } from '../../components/abwab-sections-modal/abwab-sections-modal.component';
 import { AbwabModalRestoreComponent } from '../../components/abwab-modal-restore/abwab-modal-restore.component';
 import { AbwabRelationsModalComponent } from '../../components/abwab-relations-modal/abwab-relations-modal.component';
-import { AbwabDoorLinkOperationsComponent } from '../../components/abwab-door-link-operations/abwab-door-link-operations.component';
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
 import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
@@ -79,7 +78,6 @@ const NO_ROOTS: readonly AbwabNode[] = [];
     AbwabDoorRestoreModalComponent,
     AbwabSectionsModalComponent,
     AbwabRelationsModalComponent,
-    AbwabDoorLinkOperationsComponent,
     AbwabModalRestoreComponent,
     QdContextMenuComponent,
     ExplorerResultCountComponent,

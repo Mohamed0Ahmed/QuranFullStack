@@ -2,12 +2,7 @@ import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 import { Injectable, computed, inject } from '@angular/core';
 import { Subscription } from 'rxjs';
 
-import { DoorLinkRecordSummaryDto } from '../../../core/api/generated/models/door-link-record-summary-dto';
 import { AbwabDoorLinksApi } from '../data-access/abwab-door-links.api';
-import {
-  ABWAB_DOOR_LINK_AYAH_PAGE_SIZE,
-  ABWAB_DOOR_LINK_RECORD_PAGE_SIZE,
-} from '../models/abwab-door-links.models';
 import { ABWAB_LABELS } from '../models/abwab.labels';
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabDoorLinkEditController } from './abwab-door-link-edit.controller';
@@ -19,18 +14,15 @@ export class AbwabDoorLinksFacade {
   private readonly store = inject(AbwabDoorLinksStore);
   private readonly tree = inject(AbwabSnapshotFacade);
   private readonly editController = inject(AbwabDoorLinkEditController);
-  private recordsRequest: Subscription | null = null;
-  private ayahsRequest: Subscription | null = null;
+  private snapshotRequest: Subscription | null = null;
   private mutationRequest: Subscription | null = null;
   private generation = 0;
 
   readonly state = this.store.state;
   readonly openDoorId = this.store.openDoorId;
   readonly doorVersion = this.store.doorVersion;
+  readonly recordViews = this.store.recordViews;
   readonly records = this.store.records;
-  readonly hasMoreRecords = this.store.hasMoreRecords;
-  readonly expandedAyahs = this.store.expandedAyahs;
-  readonly hasMoreExpandedAyahs = this.store.hasMoreExpandedAyahs;
   readonly selectedCount = this.store.selectedCount;
   readonly interactionLocked = computed(() =>
     this.state().edit.status === 'saving'
@@ -70,7 +62,7 @@ export class AbwabDoorLinksFacade {
     this.cancelRequests();
     this.generation++;
     this.store.open(doorId);
-    this.loadRecords(1);
+    this.loadSnapshot();
   }
 
   close(): void {
@@ -84,7 +76,7 @@ export class AbwabDoorLinksFacade {
       return;
     }
     this.editController.cancel();
-    this.loadRecords(1, true);
+    this.loadSnapshot(true);
   }
 
   retryRecords(): void {
@@ -92,52 +84,7 @@ export class AbwabDoorLinksFacade {
       return;
     }
     this.editController.cancel();
-    const page = Math.max(this.state().records.requestedPage, 1);
-    this.loadRecords(page, page === 1);
-  }
-
-  loadNextRecords(): void {
-    const records = this.state().records;
-    if (
-      this.interactionLocked()
-      || !this.hasMoreRecords()
-      || records.status === 'loading'
-      || records.status === 'refreshing'
-    ) {
-      return;
-    }
-    this.loadRecords(Math.max(...Object.keys(records.pages).map(Number), 0) + 1);
-  }
-
-  toggleExpanded(record: DoorLinkRecordSummaryDto): void {
-    if (this.interactionLocked()) {
-      return;
-    }
-    this.editController.cancel();
-    this.ayahsRequest?.unsubscribe();
-    const wasExpanded = this.state().expanded?.unitId === record.unitId;
-    this.store.expand(record.unitId, record.isGrouped);
-    if (!wasExpanded) {
-      this.loadAyahs(1);
-    }
-  }
-
-  retryExpandedAyahs(): void {
-    const page = Math.max(this.state().expanded?.requestedPage ?? 1, 1);
-    this.loadAyahs(page);
-  }
-
-  loadNextExpandedAyahs(): void {
-    const expanded = this.state().expanded;
-    if (
-      expanded === null ||
-      !this.hasMoreExpandedAyahs() ||
-      expanded.status === 'loading' ||
-      expanded.status === 'refreshing'
-    ) {
-      return;
-    }
-    this.loadAyahs(Math.max(...Object.keys(expanded.pages).map(Number), 0) + 1);
+    this.loadSnapshot(true);
   }
 
   toggleSelected(unitId: number): void {
@@ -146,15 +93,6 @@ export class AbwabDoorLinksFacade {
     }
     this.editController.cancel();
     this.store.toggleSelected(unitId);
-  }
-
-  selectPage(page: number): void {
-    if (this.interactionLocked()) {
-      return;
-    }
-    this.editController.cancel();
-    const items = this.state().records.pages[page]?.items ?? [];
-    this.store.selectUnits(items.map((record) => record.unitId));
   }
 
   selectAll(): void {
@@ -175,9 +113,13 @@ export class AbwabDoorLinksFacade {
 
   startEdit(): boolean {
     const record = this.selectedRecord();
+    const recordView = record === null
+      ? null
+      : this.recordViews().find((candidate) => candidate.summary.unitId === record.unitId) ?? null;
     const state = this.state();
     if (
       record === null
+      || recordView === null
       || state.openDoorId === null
       || state.doorVersion === null
       || state.deletion.status === 'writing'
@@ -185,14 +127,10 @@ export class AbwabDoorLinksFacade {
     ) {
       return false;
     }
-    this.ayahsRequest?.unsubscribe();
-    this.ayahsRequest = null;
-    this.store.collapseExpanded();
     this.editController.start(
-      state.openDoorId,
       state.doorVersion,
       record.unitId,
-      () => this.loadRecords(1, true),
+      recordView.ayahs,
     );
     return true;
   }
@@ -296,84 +234,44 @@ export class AbwabDoorLinksFacade {
     this.store.clearNotice();
   }
 
-  private loadRecords(page: number, refreshing = false): void {
+  private loadSnapshot(refreshing = false): void {
     const doorId = this.openDoorId();
-    if (doorId === null || page < 1) {
+    if (doorId === null) {
       return;
     }
-    const expectedDoorVersion = page === 1 ? null : this.doorVersion();
-    if (page > 1 && expectedDoorVersion === null) {
-      return;
-    }
-    this.recordsRequest?.unsubscribe();
-    this.store.beginRecordsLoad(page, refreshing);
+    this.snapshotRequest?.unsubscribe();
+    this.store.beginSnapshotLoad(refreshing);
     const generation = this.generation;
-    this.recordsRequest = this.api.getRecords(doorId, {
-      page,
-      pageSize: ABWAB_DOOR_LINK_RECORD_PAGE_SIZE,
-      expectedDoorVersion,
-    }).subscribe({
+    this.snapshotRequest = this.api.getSnapshot(doorId).subscribe({
       next: (response) => {
         if (!this.isCurrent(generation)) {
           return;
         }
-        if (response.isSuccess && response.data != null) {
-          this.store.receiveRecords(response.data);
+        if (response.isSuccess && response.data != null && response.data.doorId === doorId) {
+          try {
+            this.store.receiveSnapshot(response.data);
+          } catch {
+            this.store.failSnapshot(ABWAB_LABELS.doorLinksLoadError);
+          }
         } else {
-          this.store.failRecords(response.message ?? ABWAB_LABELS.doorLinksLoadError);
+          this.store.failSnapshot(response.message ?? ABWAB_LABELS.doorLinksLoadError);
         }
       },
-      error: (error: unknown) => this.handleReadError('records', error, generation),
+      error: (error: unknown) => this.handleReadError(error, generation),
     });
   }
 
-  private loadAyahs(page: number): void {
-    const state = this.state();
-    if (state.openDoorId === null || state.doorVersion === null || state.expanded === null || page < 1) {
-      return;
-    }
-    const expectedLinkingDataRevision = page === 1 ? null : state.expanded.linkingDataRevision;
-    if (page > 1 && expectedLinkingDataRevision === null) {
-      return;
-    }
-    this.ayahsRequest?.unsubscribe();
-    this.store.beginAyahsLoad(page);
-    const generation = this.generation;
-    const unitId = state.expanded.unitId;
-    this.ayahsRequest = this.api.getAyahs(state.openDoorId, unitId, {
-      page,
-      pageSize: ABWAB_DOOR_LINK_AYAH_PAGE_SIZE,
-      expectedDoorVersion: state.doorVersion,
-      expectedLinkingDataRevision,
-    }).subscribe({
-      next: (response) => {
-        if (!this.isCurrent(generation)) {
-          return;
-        }
-        if (response.isSuccess && response.data != null) {
-          this.store.receiveAyahs(response.data);
-        } else {
-          this.store.failAyahs(response.message ?? ABWAB_LABELS.doorLinkAyahsLoadError);
-        }
-      },
-      error: (error: unknown) => this.handleReadError('ayahs', error, generation),
-    });
-  }
-
-  private handleReadError(kind: 'records' | 'ayahs', error: unknown, generation: number): void {
+  private handleReadError(error: unknown, generation: number): void {
     if (!this.isCurrent(generation)) {
       return;
     }
-    const message = doorLinkResponseMessage(error) ?? (
-      kind === 'records' ? ABWAB_LABELS.doorLinksLoadError : ABWAB_LABELS.doorLinkAyahsLoadError
-    );
+    const message = doorLinkResponseMessage(error) ?? ABWAB_LABELS.doorLinksLoadError;
     if (isDoorLinkStaleResponse(error)) {
-      this.ayahsRequest?.unsubscribe();
       this.store.markStale(message || ABWAB_LABELS.doorLinksStale);
-      this.loadRecords(1, true);
+      this.loadSnapshot(true);
       return;
     }
-    kind === 'records' ? this.store.failRecords(message) : this.store.failAyahs(message);
+    this.store.failSnapshot(message);
   }
 
   private handleMutationError(kind: 'edit' | 'delete', error: unknown, generation: number): void {
@@ -384,7 +282,7 @@ export class AbwabDoorLinksFacade {
     const message = doorLinkResponseMessage(error) ?? fallback;
     if (isDoorLinkStaleResponse(error)) {
       this.store.markStale(message || ABWAB_LABELS.doorLinksStale);
-      this.loadRecords(1, true);
+      this.loadSnapshot(true);
       return;
     }
     kind === 'edit'
@@ -395,7 +293,7 @@ export class AbwabDoorLinksFacade {
   private completeMutation(doorVersion: number, message: string): void {
     this.store.completeMutation(doorVersion, message);
     this.tree.refresh();
-    this.loadRecords(1);
+    this.loadSnapshot();
   }
 
   private isCurrent(generation: number): boolean {
@@ -404,11 +302,9 @@ export class AbwabDoorLinksFacade {
 
   private cancelRequests(): void {
     this.editController.cancel();
-    this.recordsRequest?.unsubscribe();
-    this.ayahsRequest?.unsubscribe();
+    this.snapshotRequest?.unsubscribe();
     this.mutationRequest?.unsubscribe();
-    this.recordsRequest = null;
-    this.ayahsRequest = null;
+    this.snapshotRequest = null;
     this.mutationRequest = null;
   }
 }

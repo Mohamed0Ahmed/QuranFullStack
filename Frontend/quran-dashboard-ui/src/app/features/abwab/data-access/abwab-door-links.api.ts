@@ -6,6 +6,7 @@ import { environment } from '../../../../environments/environment';
 import { DoorLinkAyahsPageDto } from '../../../core/api/generated/models/door-link-ayahs-page-dto';
 import { DoorLinkMutationDto } from '../../../core/api/generated/models/door-link-mutation-dto';
 import { DoorLinkRecordsPageDto } from '../../../core/api/generated/models/door-link-records-page-dto';
+import { DoorLinkSnapshotDto } from '../../../core/api/generated/models/door-link-snapshot-dto';
 import { DeleteAbwabDoorLinksBody } from '../../../core/api/generated/models/delete-abwab-door-links-body';
 import { ReplaceAbwabDoorLinkWordsBody } from '../../../core/api/generated/models/replace-abwab-door-link-words-body';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
@@ -24,6 +25,10 @@ export interface AbwabDoorLinkAyahsRequest extends AbwabDoorLinkRecordsRequest {
 export class AbwabDoorLinksApi {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiBaseUrl}/api/abwab/doors`;
+
+  getSnapshot(doorId: number): Observable<ApiResponse<DoorLinkSnapshotDto>> {
+    return this.http.get<ApiResponse<DoorLinkSnapshotDto>>(`${this.base}/${doorId}/links/snapshot`);
+  }
 
   getRecords(
     doorId: number,

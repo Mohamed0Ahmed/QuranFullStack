@@ -4,6 +4,7 @@ using QuranDashboard.Api.Contracts.Linking;
 using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
 using QuranDashboard.Application.Linking.DoorLinks.Queries.GetDoorLinkAyahs;
 using QuranDashboard.Application.Linking.DoorLinks.Queries.GetDoorLinkRecords;
+using QuranDashboard.Application.Linking.DoorLinks.Queries.GetDoorLinkSnapshot;
 using QuranDashboard.Application.Linking.DoorLinks.Commands.DeleteDoorLinks;
 using QuranDashboard.Application.Linking.DoorLinks.Commands.ReplaceDoorLinkWords;
 
@@ -14,12 +15,49 @@ namespace QuranDashboard.Api.Controllers.Abwab;
 public sealed class AbwabDoorLinksController(
     AuthorizationStateAccessEvaluator stateEvaluator,
     GetDoorLinkRecordsHandler getRecordsHandler,
+    GetDoorLinkSnapshotHandler getSnapshotHandler,
     GetDoorLinkAyahsHandler getAyahsHandler,
     ReplaceDoorLinkWordsHandler replaceWordsHandler,
     DeleteDoorLinksHandler deleteLinksHandler) : ControllerBase
 {
+    [HttpGet("snapshot")]
+    [ProducesResponseType(typeof(ApiResponse<DoorLinkSnapshotDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<LinkingLifecycleErrorData>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> GetSnapshot(
+        int doorId,
+        CancellationToken cancellationToken)
+    {
+        var outcome = await getSnapshotHandler.HandleAsync(
+            new GetDoorLinkSnapshotQuery(doorId),
+            cancellationToken);
+
+        return outcome switch
+        {
+            GetDoorLinkSnapshotOutcome.Success success =>
+                Ok(ApiResponse<DoorLinkSnapshotDto>.Ok(
+                    success.Snapshot,
+                    ApiMessages.AbwabDoorLinkRecordsLoaded)),
+            GetDoorLinkSnapshotOutcome.InvalidRequest =>
+                BadRequest(ApiResponse<object>.Fail(ApiMessages.AbwabDoorLinksInvalidRequest)),
+            GetDoorLinkSnapshotOutcome.DoorNotFound =>
+                NotFound(ApiResponse<object>.Fail(ApiMessages.AbwabDoorNotFound)),
+            GetDoorLinkSnapshotOutcome.DoorArchived =>
+                Conflict(LifecycleError(
+                    AbwabDoorLinkConflictCodes.DoorArchived,
+                    ApiMessages.AbwabDoorLinksArchived)),
+            GetDoorLinkSnapshotOutcome.TransientFailure =>
+                StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    ApiResponse<object>.Fail(ApiMessages.LinkingSourceReadTransientFailure)),
+            _ => throw new InvalidOperationException(
+                $"Unhandled {nameof(GetDoorLinkSnapshotOutcome)} variant."),
+        };
+    }
+
     [HttpGet]
-    [RequireOwner]
     [ProducesResponseType(typeof(ApiResponse<DoorLinkRecordsPageDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -61,7 +99,6 @@ public sealed class AbwabDoorLinksController(
     }
 
     [HttpGet("{unitId:long}/ayahs")]
-    [RequireOwner]
     [ProducesResponseType(typeof(ApiResponse<DoorLinkAyahsPageDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]

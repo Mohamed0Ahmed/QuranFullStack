@@ -1,93 +1,52 @@
 <article
   class="abwab-door-link-record"
+  [class.abwab-door-link-record--grouped]="record().isGrouped"
   [class.abwab-door-link-record--selected]="selected()"
   [attr.data-testid]="'abwab-door-link-record-' + record().unitId"
 >
-  <div class="abwab-door-link-record__summary qd-check-row">
-    <input
-      type="checkbox"
-      class="qd-checkbox"
-      [checked]="selected()"
-      [disabled]="interactionDisabled()"
-      [attr.aria-label]="kindLabel() + ' ' + recordPosition()"
-      [attr.data-testid]="'abwab-door-link-record-checkbox-' + record().unitId"
-      (change)="selectionToggled.emit(record().unitId)"
-    />
-    <span class="abwab-door-link-record__number qd-ltr-isolate">
-      {{ recordPosition() }} / {{ totalRecords() }}
-    </span>
-    <span class="qd-badge">{{ kindLabel() }}</span>
-    <span>{{ ayahCountLabel() }}</span>
-    <span>{{ wordCountLabel() }}</span>
-    <span>{{ descriptionCountLabel() }}</span>
-    <span class="abwab-door-link-record__sources qd-text-muted">
-      {{ sourcesLabel }}: {{ record().sourceLabels.join('، ') || '—' }}
-    </span>
-    <button
-      type="button"
-      qdAction="row-action"
-      class="abwab-door-link-record__expand qd-hit-target"
-      [attr.aria-label]="expandLabel()"
-      [attr.aria-expanded]="expanded()"
-      [disabled]="interactionDisabled()"
-      [attr.aria-controls]="'abwab-door-link-record-ayahs-' + record().unitId"
-      [attr.data-testid]="'abwab-door-link-record-expand-' + record().unitId"
-      (click)="expansionToggled.emit(record())"
-    >
-      <span aria-hidden="true">{{ expanded() ? '⌃' : '⌄' }}</span>
-    </button>
-  </div>
-
   @if (editing()) {
     <qd-abwab-door-link-editor [record]="record()" />
-  } @else if (expanded()) {
+  } @else {
     <section
       class="abwab-door-link-record__ayahs"
       [class.abwab-door-link-record__ayahs--grouped]="record().isGrouped"
       [id]="'abwab-door-link-record-ayahs-' + record().unitId"
-      [attr.aria-busy]="initialLoading() || refreshing()"
     >
-      @if (initialLoading()) {
-        <qd-skeleton-rows [count]="2" rowTemplate="1fr" [loadingLabel]="loadingLabel" />
+      @if (displayAyahs().length === 0) {
+        <qd-empty-state [message]="emptyLabel" [testId]="'abwab-door-link-ayahs-empty-' + record().unitId" />
       } @else {
-        <qd-refreshing-indicator [active]="refreshing()" [testId]="'abwab-door-link-ayahs-refreshing-' + record().unitId" />
-
-        @if (expandedState()?.status === 'error') {
-          <qd-error-state
-            severity="read"
-            [message]="expandedState()?.errorMessage ?? ''"
-            [actionLabel]="retryLabel"
-            [testId]="'abwab-door-link-ayahs-error-' + record().unitId"
-            [actionTestId]="'abwab-door-link-ayahs-retry-' + record().unitId"
-            (action)="retryAyahs.emit()"
-          />
-        } @else if (expandedState()?.status === 'empty') {
-          <qd-empty-state [message]="emptyLabel" [testId]="'abwab-door-link-ayahs-empty-' + record().unitId" />
-        }
-
-        @for (entry of displayAyahs(); track entry.ayah.ayahId) {
+        @for (ayah of displayAyahs(); track ayah.ayahId; let isFirst = $first) {
           <qd-linking-ayah-card
-            [ayah]="entry.ayah"
+            class="abwab-door-link-record__card"
+            [class.abwab-door-link-record__card--selectable]="selectable() && !interactionDisabled()"
+            [ayah]="ayah"
             [highlightSourceWords]="true"
             [grouped]="record().isGrouped"
-            [resultPosition]="entry.position"
-            [resultCount]="expandedState()?.totalCount ?? displayAyahs().length"
-          />
-        }
-
-        @if (hasMoreAyahs()) {
-          <button
-            type="button"
-            qdAction="secondary"
-            size="sm"
-            class="abwab-door-link-record__load-more"
-            [busy]="expandedState()?.status === 'loading'"
-            [disabled]="expandedState()?.status === 'loading' || expandedState()?.status === 'refreshing'"
-            [attr.data-testid]="'abwab-door-link-ayahs-load-more-' + record().unitId"
-            (click)="loadMoreAyahs.emit()"
+            metaAlignment="start"
+            [resultPosition]="recordPosition()"
+            [resultCount]="totalRecords()"
+            (click)="toggleSelection()"
           >
-            {{ loadMoreLabel }}
-          </button>
+            @if (isFirst && (selectable() || record().isGrouped)) {
+              <ng-container qdLinkingAyahCardMetaStart>
+                @if (selectable()) {
+                  <input
+                    type="checkbox"
+                    class="qd-checkbox"
+                    [checked]="selected()"
+                    [disabled]="interactionDisabled()"
+                    [attr.aria-label]="kindLabel() + ' ' + recordPosition()"
+                    [attr.data-testid]="'abwab-door-link-record-checkbox-' + record().unitId"
+                    (click)="$event.stopPropagation()"
+                    (change)="toggleSelection()"
+                  />
+                }
+                @if (record().isGrouped) {
+                  <span class="qd-badge">{{ kindLabel() }}</span>
+                }
+              </ng-container>
+            }
+          </qd-linking-ayah-card>
         }
       }
     </section>

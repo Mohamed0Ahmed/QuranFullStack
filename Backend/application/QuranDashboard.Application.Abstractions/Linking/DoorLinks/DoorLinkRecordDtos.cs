@@ -43,6 +43,34 @@ public sealed record DoorLinkAyahDto(
     IReadOnlyList<string> Descriptions,
     IReadOnlyList<LinkingResolvedWordDto> Words);
 
+public sealed record DoorLinkSnapshotDto(
+    int DoorId,
+    uint DoorVersion,
+    long LinkingDataRevision,
+    IReadOnlyList<DoorLinkSnapshotRecordDto> Records,
+    IReadOnlyList<DoorLinkSnapshotAyahDto> Ayahs);
+
+public sealed record DoorLinkSnapshotRecordDto(
+    long UnitId,
+    bool IsGrouped,
+    IReadOnlyList<string> SourceLabels,
+    IReadOnlyList<DoorLinkSnapshotRecordAyahDto> Ayahs);
+
+public sealed record DoorLinkSnapshotRecordAyahDto(
+    int AyahId,
+    IReadOnlyList<int> SelectedWordIds,
+    IReadOnlyList<string> Descriptions);
+
+public sealed record DoorLinkSnapshotAyahDto(
+    int AyahId,
+    string VerseKey,
+    int SurahNumber,
+    int AyahNumber,
+    string SurahNameArabic,
+    short PageFrom,
+    short PageTo,
+    IReadOnlyList<LinkingResolvedWordDto> Words);
+
 public abstract record DoorLinkRecordsReadResult
 {
     private DoorLinkRecordsReadResult() { }
@@ -62,4 +90,13 @@ public abstract record DoorLinkAyahsReadResult
     public sealed record DoorArchived : DoorLinkAyahsReadResult;
     public sealed record DoorVersionStale : DoorLinkAyahsReadResult;
     public sealed record UnitNotFound : DoorLinkAyahsReadResult;
+}
+
+public abstract record DoorLinkSnapshotReadResult
+{
+    private DoorLinkSnapshotReadResult() { }
+
+    public sealed record Success(DoorLinkSnapshotDto Snapshot) : DoorLinkSnapshotReadResult;
+    public sealed record DoorNotFound : DoorLinkSnapshotReadResult;
+    public sealed record DoorArchived : DoorLinkSnapshotReadResult;
 }

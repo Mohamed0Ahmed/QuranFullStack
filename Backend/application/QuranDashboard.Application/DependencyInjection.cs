@@ -99,6 +99,7 @@ using QuranDashboard.Application.Linking.Queries.ResolveLinkingSourcePage;
 using QuranDashboard.Application.Linking.Queries.GetLinkingWorkspace;
 using QuranDashboard.Application.Linking.DoorLinks.Queries.GetDoorLinkAyahs;
 using QuranDashboard.Application.Linking.DoorLinks.Queries.GetDoorLinkRecords;
+using QuranDashboard.Application.Linking.DoorLinks.Queries.GetDoorLinkSnapshot;
 using QuranDashboard.Application.Linking.DoorLinks.Commands.DeleteDoorLinks;
 using QuranDashboard.Application.Linking.DoorLinks.Commands.ReplaceDoorLinkWords;
 using QuranDashboard.Application.Linking.Commands.AddLinkingWorkspaceSource;
@@ -220,6 +221,7 @@ public static class DependencyInjection
         services.AddScoped<ResolveLinkingSourcePageHandler>();
         services.AddScoped<GetLinkingWorkspaceHandler>();
         services.AddScoped<GetDoorLinkRecordsHandler>();
+        services.AddScoped<GetDoorLinkSnapshotHandler>();
         services.AddScoped<GetDoorLinkAyahsHandler>();
         services.AddScoped<ReplaceDoorLinkWordsHandler>();
         services.AddScoped<DeleteDoorLinksHandler>();
