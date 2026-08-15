@@ -24,7 +24,6 @@
       <div
         class="abwab-tree__row"
         [class.abwab-tree__row--revealed]="revealedId() === node.id"
-        [class.abwab-tree__row--match]="matchedIds().has(node.id)"
         role="treeitem"
         [attr.aria-level]="node.depth + 1"
         [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
@@ -103,7 +102,14 @@
           </span>
         }
 
-        <span class="abwab-tree__name qd-truncate" [title]="node.name">{{ node.name }}</span>
+        <span class="abwab-tree__name" [title]="node.name">
+          <span
+            class="abwab-tree__name-text qd-truncate inline-block box-border max-w-full rounded-qd-sm px-qd-8 py-qd-4 align-middle"
+            [class.bg-qd-warning-tint]="matchedIds().has(node.id)"
+          >
+            {{ node.name }}
+          </span>
+        </span>
         </span>
 
         <span class="abwab-tree__count-cell">

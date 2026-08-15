@@ -10,6 +10,7 @@ import { AbwabView } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 const ANNOUNCE_SETTLE_MS = 500;
+const SEARCH_SETTLE_MS = 180;
 
 @Component({
   selector: 'qd-abwab-toolbar',
@@ -53,10 +54,20 @@ export class AbwabToolbarComponent {
   });
 
   protected readonly announcedCountText = signal('');
+  protected readonly searchDraft = signal('');
 
   private announceTimer: ReturnType<typeof setTimeout> | null = null;
+  private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
+    effect(() => {
+      const query = this.searchQuery();
+      untracked(() => {
+        this.clearSearchTimer();
+        this.searchDraft.set(query);
+      });
+    });
+
     effect(() => {
       const query = this.searchQuery();
       const count = this.searchMatchCount();
@@ -73,13 +84,23 @@ export class AbwabToolbarComponent {
       });
     });
 
-    inject(DestroyRef).onDestroy(() => this.clearAnnounceTimer());
+    inject(DestroyRef).onDestroy(() => {
+      this.clearAnnounceTimer();
+      this.clearSearchTimer();
+    });
   }
 
   private clearAnnounceTimer(): void {
     if (this.announceTimer !== null) {
       clearTimeout(this.announceTimer);
       this.announceTimer = null;
+    }
+  }
+
+  private clearSearchTimer(): void {
+    if (this.searchTimer !== null) {
+      clearTimeout(this.searchTimer);
+      this.searchTimer = null;
     }
   }
 
@@ -104,6 +125,15 @@ export class AbwabToolbarComponent {
   }
 
   protected onSearchInput(event: Event): void {
-    this.searchQueryChanged.emit((event.target as HTMLInputElement).value);
+    const query = (event.target as HTMLInputElement).value;
+    this.searchDraft.set(query);
+    this.clearSearchTimer();
+    if (query === this.searchQuery()) {
+      return;
+    }
+    this.searchTimer = setTimeout(() => {
+      this.searchTimer = null;
+      this.searchQueryChanged.emit(query);
+    }, SEARCH_SETTLE_MS);
   }
 }

@@ -51,7 +51,7 @@ export class AbwabPageInteractionsController {
   }
 
   onSearchQueryChanged(q: string): void {
-    this.updateQueryParams(buildAbwabQueryParams({ q }));
+    this.updateQueryParams(buildAbwabQueryParams({ q }), true);
   }
 
   onCardDrilled(id: number): void {
