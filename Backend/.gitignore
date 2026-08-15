@@ -42,6 +42,9 @@ secrets.json
 .env
 .env.*
 
+## Local curation snapshots exported from deployed databases
+/resources/abwab-seed-snapshots/
+
 ## OS files
 .DS_Store
 Thumbs.db
