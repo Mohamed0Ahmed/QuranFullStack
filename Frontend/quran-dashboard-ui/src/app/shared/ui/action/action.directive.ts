@@ -4,6 +4,8 @@ export type QdActionVariant =
   | 'primary'
   | 'secondary'
   | 'tertiary'
+  | 'warning'
+  | 'info'
   | 'danger'
   | 'icon-only'
   | 'toolbar'
@@ -19,6 +21,8 @@ export type QdActionSize = 'sm' | 'md' | 'lg';
     '[class.qd-action--primary]': "variant() === 'primary'",
     '[class.qd-action--secondary]': "variant() === 'secondary'",
     '[class.qd-action--tertiary]': "variant() === 'tertiary'",
+    '[class.qd-action--warning]': "variant() === 'warning'",
+    '[class.qd-action--info]': "variant() === 'info'",
     '[class.qd-action--danger]': "variant() === 'danger'",
     '[class.qd-action--icon-only]': "variant() === 'icon-only'",
     '[class.qd-action--toolbar]': "variant() === 'toolbar'",

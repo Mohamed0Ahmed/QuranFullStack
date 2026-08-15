@@ -2,8 +2,8 @@ import { Injectable, computed, signal } from '@angular/core';
 
 import { DoorLinkAyahDto } from '../../../core/api/generated/models/door-link-ayah-dto';
 import { DoorLinkSnapshotDto } from '../../../core/api/generated/models/door-link-snapshot-dto';
+import { LinkingOperationSourceDraft } from '../../linking/models/linking-operation-draft.models';
 import {
-  AbwabDoorLinkCopyBatch,
   AbwabDoorLinkSelectionState,
   AbwabDoorLinkSelectionMode,
   AbwabDoorLinksState,
@@ -39,8 +39,8 @@ function initialState(openDoorId: number | null = null): AbwabDoorLinksState {
       expectedLinkingDataRevision: null,
       sourceSelection: null,
       targetDoorId: null,
-      batches: [],
-      currentBatchNumber: 0,
+      unitIds: [],
+      sources: [],
       errorMessage: null,
     },
     staleMessage: null,
@@ -280,8 +280,8 @@ export class AbwabDoorLinksStore {
         expectedSourceDoorVersion,
         expectedLinkingDataRevision: null,
         sourceSelection: { ...sourceSelection, unitIds: [...sourceSelection.unitIds] },
-        batches: [],
-        currentBatchNumber: 0,
+        unitIds: [],
+        sources: [],
         errorMessage: null,
       },
     }));
@@ -308,44 +308,28 @@ export class AbwabDoorLinksStore {
     }));
   }
 
-  setCopyBatches(batches: readonly AbwabDoorLinkCopyBatch[]): void {
+  setCopyUnitIds(unitIds: readonly number[]): void {
     this.stateSignal.update((state) => ({
       ...state,
-      copy: { ...state.copy, batches, currentBatchNumber: batches.length === 0 ? 0 : 1, errorMessage: null },
+      copy: { ...state.copy, unitIds: sortedUnique(unitIds), errorMessage: null },
     }));
   }
 
-  updateCopyBatch(batchNumber: number, update: Partial<AbwabDoorLinkCopyBatch>): void {
+  setCopySources(sources: readonly LinkingOperationSourceDraft[]): void {
     this.stateSignal.update((state) => ({
       ...state,
-      copy: {
-        ...state.copy,
-        batches: state.copy.batches.map((batch) =>
-          batch.batchNumber === batchNumber ? { ...batch, ...update, batchNumber } : batch,
-        ),
-      },
+      copy: { ...state.copy, sources: [...sources], errorMessage: null },
     }));
   }
 
-  setCurrentCopyBatch(batchNumber: number): void {
-    this.stateSignal.update((state) => ({
-      ...state,
-      copy: { ...state.copy, currentBatchNumber: batchNumber },
-    }));
-  }
-
-  stopCopy(batchNumber: number, message: string): void {
+  stopCopy(message: string): void {
     this.stateSignal.update((state) => ({
       ...state,
       copy: {
         ...state.copy,
         status: 'stopped',
         errorMessage: message,
-        batches: state.copy.batches.map((batch) =>
-          batch.batchNumber === batchNumber
-            ? { ...batch, sources: [], status: 'error', errorMessage: message }
-            : batch,
-        ),
+        sources: [],
       },
     }));
   }

@@ -39,6 +39,10 @@
         (keydown)="onKeydown($event)"
       >
         <span class="abwab-tree__lead">
+          <qd-abwab-tree-branches
+            [guides]="branchGuidesById().get(node.id) ?? []"
+            [expanded]="row.isExpanded"
+          />
         @if (bulkMode()) {
           <input
             type="checkbox"
@@ -81,7 +85,7 @@
           } @else {
             <button
               type="button"
-              class="abwab-tree__order qd-chip qd-chip--pill"
+              class="abwab-tree__order qd-chip qd-is-selected"
               [attr.aria-label]="orderEditAriaLabel(node)"
               [attr.data-testid]="'abwab-tree-order-' + node.id"
               [attr.tabindex]="rovingId() === node.id ? 0 : -1"
@@ -92,7 +96,7 @@
           }
         } @else {
           <span
-            class="abwab-tree__order qd-chip qd-chip--pill qd-chip--static"
+            class="abwab-tree__order qd-chip qd-chip--static qd-is-selected"
             [attr.data-testid]="'abwab-tree-order-' + node.id"
           >
             {{ displayOrder(node) }}

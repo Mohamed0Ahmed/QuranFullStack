@@ -2,9 +2,6 @@ import type { DoorLinkAyahDto } from '../../../core/api/generated/models/door-li
 import type { DoorLinkRecordSummaryDto } from '../../../core/api/generated/models/door-link-record-summary-dto';
 import type { LinkingOperationSourceDraft } from '../../linking/models/linking-operation-draft.models';
 
-export const ABWAB_DOOR_LINK_AYAH_PAGE_SIZE = 50;
-export const ABWAB_DOOR_LINK_COPY_BATCH_SIZE = 100;
-
 export type AbwabDoorLinksLoadStatus = 'idle' | 'loading' | 'refreshing' | 'ready' | 'empty' | 'error';
 export type AbwabDoorLinksWriteStatus = 'idle' | 'writing' | 'error';
 export type AbwabDoorLinkEditStatus =
@@ -21,7 +18,6 @@ export type AbwabDoorLinkCopyStatus =
   | 'preparing'
   | 'running'
   | 'stopped';
-export type AbwabDoorLinkCopyBatchStatus = 'pending' | 'preparing' | 'running' | 'completed' | 'error';
 
 export interface AbwabDoorLinkRecordView {
   readonly summary: DoorLinkRecordSummaryDto;
@@ -55,14 +51,6 @@ export interface AbwabDoorLinkDeleteState {
   readonly errorMessage: string | null;
 }
 
-export interface AbwabDoorLinkCopyBatch {
-  readonly batchNumber: number;
-  readonly unitIds: readonly number[];
-  readonly sources: readonly LinkingOperationSourceDraft[];
-  readonly status: AbwabDoorLinkCopyBatchStatus;
-  readonly errorMessage: string | null;
-}
-
 export interface AbwabDoorLinkCopyState {
   readonly open: boolean;
   readonly status: AbwabDoorLinkCopyStatus;
@@ -71,8 +59,8 @@ export interface AbwabDoorLinkCopyState {
   readonly expectedLinkingDataRevision: number | null;
   readonly sourceSelection: AbwabDoorLinkSelectionState | null;
   readonly targetDoorId: number | null;
-  readonly batches: readonly AbwabDoorLinkCopyBatch[];
-  readonly currentBatchNumber: number;
+  readonly unitIds: readonly number[];
+  readonly sources: readonly LinkingOperationSourceDraft[];
   readonly errorMessage: string | null;
 }
 

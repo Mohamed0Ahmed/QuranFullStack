@@ -67,13 +67,6 @@ export class AbwabDoorLinkCopyComponent {
       && copy.targetDoorId !== null
       && selectedCount > 0;
   });
-  protected readonly batchLabel = computed(() => {
-    const copy = this.state().copy;
-    return copy.currentBatchNumber > 0
-      ? this.labels.doorLinksCopyBatch(copy.currentBatchNumber, copy.batches.length)
-      : null;
-  });
-
   protected retryDoors(): void {
     this.doors.load();
   }

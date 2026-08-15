@@ -33,12 +33,7 @@ export interface LinkingOperationDraft {
   sources: Readonly<Record<string, LinkingOperationSourceDraft>>;
 }
 
-export interface LinkingCopyBatchInfo {
-  readonly batchNumber: number;
-  readonly totalBatches: number;
-}
-
-export interface LinkingCopyBatchCallbacks {
+export interface LinkingCopyCallbacks {
   readonly acknowledged: () => void;
   readonly stopped: (message: string) => void;
 }

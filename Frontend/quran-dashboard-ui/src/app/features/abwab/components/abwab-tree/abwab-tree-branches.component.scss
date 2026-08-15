@@ -1,0 +1,60 @@
+:host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.abwab-tree-branches {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: var(--qd-space-2);
+  display: flex;
+}
+
+.abwab-tree-branch {
+  position: relative;
+  display: flex;
+  flex: 0 0 var(--abwab-tree-indent-step);
+}
+
+.abwab-tree-branch::before,
+.abwab-tree-child-stem::before {
+  content: '';
+  border-color: var(--qd-border-strong);
+}
+
+.abwab-tree-branch::before {
+  flex: 0 0 50%;
+  align-self: flex-start;
+  block-size: 0;
+  border-inline-end: 1px solid transparent;
+}
+
+.abwab-tree-branch--continues::before {
+  align-self: stretch;
+  block-size: auto;
+  border-inline-end-color: var(--qd-border-strong);
+}
+
+.abwab-tree-branch--current:not(.abwab-tree-branch--continues)::before {
+  block-size: 50%;
+  border-inline-end-color: var(--qd-border-strong);
+}
+
+.abwab-tree-child-stem {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-block-end: 0;
+  inset-inline-start: calc(
+    var(--qd-space-2) +
+      min(var(--abwab-tree-depth, 0), var(--abwab-tree-depth-budget)) *
+      var(--abwab-tree-indent-step)
+  );
+  display: flex;
+  inline-size: var(--abwab-tree-indent-step);
+}
+
+.abwab-tree-child-stem::before {
+  flex: 0 0 50%;
+  border-inline-end: 1px solid var(--qd-border-strong);
+}

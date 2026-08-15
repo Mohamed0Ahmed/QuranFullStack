@@ -261,7 +261,7 @@ public static class ApiMessages
         violation.Code switch
         {
             LinkingWorkspaceViolationCode.PreparedSourceLimitExceeded =>
-                $"{LinkingWorkspaceLimitPrefix} ({LinkingLimits.MaxPreparedSources} مصدر)",
+                $"{LinkingWorkspaceLimitPrefix} ({LinkingLimits.MaxWorkspaceSources} مصدر)",
             LinkingWorkspaceViolationCode.WordsNotAllowedOnAutomaticSource =>
                 "لا يمكن تحديد كلمات يدويًا على مصدر تلقائي",
             LinkingWorkspaceViolationCode.SelectedWordInvalid =>

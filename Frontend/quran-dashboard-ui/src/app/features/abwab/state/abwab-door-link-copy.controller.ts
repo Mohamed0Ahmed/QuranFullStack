@@ -2,17 +2,14 @@ import { Injectable, inject } from '@angular/core';
 
 import { LinkingWorkflowFacade } from '../../linking/state/linking-workflow.facade';
 import {
-  ABWAB_DOOR_LINK_COPY_BATCH_SIZE,
-  AbwabDoorLinkCopyBatch,
+  AbwabDoorLinkCopyRecord,
+  AbwabDoorLinkRecordView,
   AbwabDoorLinkSelectionState,
 } from '../models/abwab-door-links.models';
 import { ABWAB_LABELS } from '../models/abwab.labels';
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabDoorLinkCopyLoader, copyFailureMessage } from './abwab-door-link-copy.loader';
-import {
-  mapAbwabDoorLinkCopyRecords,
-  partitionAbwabDoorLinkCopyUnits,
-} from './abwab-door-link-copy.mapper';
+import { mapAbwabDoorLinkCopyRecords } from './abwab-door-link-copy.mapper';
 import { AbwabDoorLinksStore } from './abwab-door-links.store';
 
 @Injectable({ providedIn: 'root' })
@@ -27,10 +24,7 @@ export class AbwabDoorLinkCopyController {
 
   open(): void {
     const state = this.state();
-    if (
-      state.openDoorId === null
-      || selectedCount(state.selection, state.records.totalCount) === 0
-    ) {
+    if (state.openDoorId === null || selectedCount(state.selection, state.records.totalCount) === 0) {
       return;
     }
     this.generation++;
@@ -56,30 +50,29 @@ export class AbwabDoorLinkCopyController {
   start(): void {
     const state = this.state();
     const copy = state.copy;
-    const sourceDoorId = state.openDoorId;
-    const expectedSourceDoorVersion = state.doorVersion;
     if (
       !copy.open
       || copy.status !== 'choosing'
       || copy.sourceSelection === null
       || copy.targetDoorId === null
-      || sourceDoorId === null
-      || expectedSourceDoorVersion === null
+      || state.openDoorId === null
+      || state.doorVersion === null
+      || state.records.linkingDataRevision === null
       || !this.isValidTarget(copy.targetDoorId)
-      || !this.isLiveDoor(sourceDoorId)
+      || !this.isLiveDoor(state.openDoorId)
     ) {
       return;
     }
-    const sourceSelection = {
-      ...copy.sourceSelection,
-      unitIds: [...copy.sourceSelection.unitIds],
-    };
-    if (selectedCount(sourceSelection, state.records.totalCount) === 0) {
+    const sourceSelection = cloneSelection(copy.sourceSelection);
+    const selectedViews = selectRecordViews(state.records.items, sourceSelection);
+    if (selectedViews.length !== selectedCount(sourceSelection, state.records.totalCount)) {
       return;
     }
     const generation = ++this.generation;
-    this.store.beginCopyPreparation(sourceDoorId, expectedSourceDoorVersion, sourceSelection);
-    void this.enumerateAndPrepare(generation);
+    this.store.beginCopyPreparation(state.openDoorId, state.doorVersion, sourceSelection);
+    this.store.setCopyUnitIds(selectedViews.map((record) => record.summary.unitId));
+    this.store.setCopyLinkingDataRevision(state.records.linkingDataRevision);
+    this.prepareCopy(generation);
   }
 
   retry(): void {
@@ -95,139 +88,93 @@ export class AbwabDoorLinkCopyController {
     }
     const generation = ++this.generation;
     this.store.setCopyStatus('enumerating');
-    this.store.setCopyLinkingDataRevision(null);
     this.tree.load();
-    void this.refreshAndRetry(generation);
+    void this.refreshAndRetry(generation, copy.sourceDoorId);
   }
 
-  private async enumerateAndPrepare(generation: number): Promise<void> {
+  private async refreshAndRetry(generation: number, sourceDoorId: number): Promise<void> {
     try {
+      const snapshot = await this.loader.loadSnapshot(sourceDoorId);
+      if (!this.isCurrent(generation)) {
+        return;
+      }
+      this.store.receiveSnapshot(snapshot);
       const copy = this.requireCapturedCopy();
-      const unitIds = await this.loader.enumerateUnitIds(
-        copy.sourceDoorId,
-        copy.expectedSourceDoorVersion,
-        copy.sourceSelection,
-        () => this.isCurrent(generation),
+      const selectedViews = selectRecordViews(this.state().records.items, copy.sourceSelection);
+      if (selectedViews.length !== selectedCount(copy.sourceSelection, this.state().records.totalCount)) {
+        throw new Error(ABWAB_LABELS.doorLinksCopySourceChanged);
+      }
+      this.store.setCopySourceDoorVersion(snapshot.doorVersion);
+      this.store.setCopyLinkingDataRevision(snapshot.linkingDataRevision);
+      this.store.setCopyUnitIds(selectedViews.map((record) => record.summary.unitId));
+      this.prepareCopy(generation);
+    } catch (error: unknown) {
+      this.stop(generation, copyFailureMessage(error));
+    }
+  }
+
+  private prepareCopy(generation: number): void {
+    try {
+      const state = this.state();
+      const copy = this.requireCapturedCopy();
+      if (
+        copy.unitIds.length === 0
+        || state.doorVersion !== copy.expectedSourceDoorVersion
+        || state.records.linkingDataRevision !== copy.expectedLinkingDataRevision
+        || !this.isLiveDoor(copy.sourceDoorId)
+      ) {
+        throw new Error(ABWAB_LABELS.doorLinksCopySourceChanged);
+      }
+      if (!this.isValidTarget(copy.targetDoorId)) {
+        throw new Error(ABWAB_LABELS.doorLinksCopyTargetUnavailable);
+      }
+      this.store.setCopyStatus('preparing');
+      const selectedIds = new Set(copy.unitIds);
+      const selectedViews = state.records.items.filter((record) => selectedIds.has(record.summary.unitId));
+      if (selectedViews.length !== selectedIds.size || copy.expectedLinkingDataRevision === null) {
+        throw new Error(ABWAB_LABELS.doorLinksCopySourceChanged);
+      }
+      const sourceLabel = ABWAB_LABELS.doorLinksCopySourceLabel(this.sourceDoorName(copy.sourceDoorId));
+      const sources = mapAbwabDoorLinkCopyRecords(
+        toCopyRecords(selectedViews, copy.expectedLinkingDataRevision),
+        sourceLabel,
       );
+      if (sources.length === 0) {
+        throw new Error(ABWAB_LABELS.doorLinksCopyInvalid);
+      }
       if (!this.isCurrent(generation)) {
         return;
       }
-      if (unitIds.length === 0) {
-        throw new Error(ABWAB_LABELS.doorLinksCopyNoRecords);
+      this.store.setCopySources(sources);
+      this.store.setCopyStatus('running');
+      const started = this.workflow.startFromPreparedInlineSources(
+        sources,
+        copy.targetDoorId,
+        {
+          acknowledged: () => this.copyAcknowledged(generation),
+          stopped: (message) => this.stop(generation, safeWorkflowMessage(message)),
+        },
+      );
+      if (!started) {
+        throw new Error(ABWAB_LABELS.doorLinksCopyStartError);
       }
-      this.store.setCopyBatches(partitionAbwabDoorLinkCopyUnits(unitIds));
-      await this.prepareCurrentBatch(generation);
     } catch (error: unknown) {
       this.stop(generation, copyFailureMessage(error));
     }
   }
 
-  private async refreshAndRetry(generation: number): Promise<void> {
-    try {
-      const copy = this.requireCapturedCopy();
-      const doorVersion = await this.loader.captureDoorVersion(copy.sourceDoorId);
-      if (!this.isCurrent(generation)) {
-        return;
-      }
-      this.store.setCopySourceDoorVersion(doorVersion);
-      if (copy.batches.length === 0) {
-        await this.enumerateAndPrepare(generation);
-        return;
-      }
-      this.store.updateCopyBatch(copy.currentBatchNumber, {
-        sources: [],
-        status: 'pending',
-        errorMessage: null,
-      });
-      await this.prepareCurrentBatch(generation);
-    } catch (error: unknown) {
-      this.stop(generation, copyFailureMessage(error));
-    }
-  }
-
-  private async prepareCurrentBatch(generation: number): Promise<void> {
-    const copy = this.requireCapturedCopy();
-    const batch = copy.batches.find((candidate) => candidate.batchNumber === copy.currentBatchNumber);
-    if (batch === undefined) {
-      throw new Error(ABWAB_LABELS.doorLinksCopyBatchInvalid);
-    }
-    if (!this.isValidTarget(copy.targetDoorId)) {
-      throw new Error(ABWAB_LABELS.doorLinksCopyTargetUnavailable);
-    }
-    if (!this.isLiveDoor(copy.sourceDoorId)) {
-      throw new Error(ABWAB_LABELS.doorLinksCopySourceChanged);
-    }
-    this.store.setCopyStatus('preparing');
-    this.store.updateCopyBatch(batch.batchNumber, { sources: [], status: 'preparing', errorMessage: null });
-    const records = await this.loader.hydrateRecords(
-      copy.sourceDoorId,
-      copy.expectedSourceDoorVersion,
-      copy.expectedLinkingDataRevision,
-      batch.unitIds,
-      () => this.isCurrent(generation),
-    );
-    const linkingDataRevisions = new Set(records.map((record) => record.linkingDataRevision));
-    if (linkingDataRevisions.size !== 1) {
-      throw new Error(ABWAB_LABELS.doorLinksCopySourceChanged);
-    }
-    this.store.setCopyLinkingDataRevision([...linkingDataRevisions][0]!);
-    const sourceLabel = ABWAB_LABELS.doorLinksCopySourceLabel(this.sourceDoorName(copy.sourceDoorId));
-    const sources = mapAbwabDoorLinkCopyRecords(records, sourceLabel);
-    if (sources.length === 0 || sources.length > ABWAB_DOOR_LINK_COPY_BATCH_SIZE) {
-      throw new Error(ABWAB_LABELS.doorLinksCopyBatchInvalid);
-    }
-    if (!this.isCurrent(generation)) {
-      throw new Error(ABWAB_LABELS.doorLinksCopyStopped);
-    }
-    if (!this.isLiveDoor(copy.sourceDoorId)) {
-      throw new Error(ABWAB_LABELS.doorLinksCopySourceChanged);
-    }
-    if (!this.isValidTarget(copy.targetDoorId)) {
-      throw new Error(ABWAB_LABELS.doorLinksCopyTargetUnavailable);
-    }
-    this.store.updateCopyBatch(batch.batchNumber, { sources, status: 'running', errorMessage: null });
-    this.store.setCopyStatus('running');
-    const started = this.workflow.startFromPreparedInlineSources(
-      sources,
-      copy.targetDoorId,
-      { batchNumber: batch.batchNumber, totalBatches: copy.batches.length },
-      {
-        acknowledged: () => this.batchAcknowledged(generation, batch.batchNumber),
-        stopped: (message) => this.stop(generation, safeWorkflowMessage(message)),
-      },
-    );
-    if (!started) {
-      throw new Error(ABWAB_LABELS.doorLinksCopyStartError);
-    }
-  }
-
-  private batchAcknowledged(generation: number, batchNumber: number): void {
+  private copyAcknowledged(generation: number): void {
     if (!this.isCurrent(generation)) {
       return;
     }
-    const copy = this.state().copy;
-    this.store.updateCopyBatch(batchNumber, {
-      sources: [],
-      status: 'completed',
-      errorMessage: null,
-    });
-    if (batchNumber >= copy.batches.length) {
-      this.generation++;
-      this.store.completeCopy(ABWAB_LABELS.doorLinksCopyCompleted);
-      return;
-    }
-    this.store.setCurrentCopyBatch(batchNumber + 1);
-    void this.prepareCurrentBatch(generation).catch((error: unknown) => {
-      this.stop(generation, copyFailureMessage(error));
-    });
+    this.generation++;
+    this.store.completeCopy(ABWAB_LABELS.doorLinksCopyCompleted);
   }
 
   private stop(generation: number, message: string): void {
-    if (!this.isCurrent(generation)) {
-      return;
+    if (this.isCurrent(generation)) {
+      this.store.stopCopy(message);
     }
-    const batchNumber = this.state().copy.currentBatchNumber;
-    this.store.stopCopy(batchNumber, message);
   }
 
   private requireCapturedCopy(): {
@@ -236,8 +183,7 @@ export class AbwabDoorLinkCopyController {
     expectedLinkingDataRevision: number | null;
     sourceSelection: AbwabDoorLinkSelectionState;
     targetDoorId: number;
-    batches: readonly AbwabDoorLinkCopyBatch[];
-    currentBatchNumber: number;
+    unitIds: readonly number[];
   } {
     const copy = this.state().copy;
     if (
@@ -254,8 +200,7 @@ export class AbwabDoorLinkCopyController {
       expectedLinkingDataRevision: copy.expectedLinkingDataRevision,
       sourceSelection: copy.sourceSelection,
       targetDoorId: copy.targetDoorId,
-      batches: copy.batches,
-      currentBatchNumber: copy.currentBatchNumber,
+      unitIds: copy.unitIds,
     };
   }
 
@@ -275,6 +220,32 @@ export class AbwabDoorLinkCopyController {
   private isCurrent(generation: number): boolean {
     return generation === this.generation && this.state().copy.open;
   }
+}
+
+function cloneSelection(selection: AbwabDoorLinkSelectionState): AbwabDoorLinkSelectionState {
+  return { ...selection, unitIds: [...selection.unitIds] };
+}
+
+function selectRecordViews(
+  records: readonly AbwabDoorLinkRecordView[],
+  selection: AbwabDoorLinkSelectionState,
+): readonly AbwabDoorLinkRecordView[] {
+  const ids = new Set(selection.unitIds);
+  return records.filter((record) =>
+    selection.mode === 'only' ? ids.has(record.summary.unitId) : !ids.has(record.summary.unitId),
+  );
+}
+
+function toCopyRecords(
+  records: readonly AbwabDoorLinkRecordView[],
+  linkingDataRevision: number,
+): readonly AbwabDoorLinkCopyRecord[] {
+  return records.map((record) => ({
+    unitId: record.summary.unitId,
+    isGrouped: record.summary.isGrouped,
+    linkingDataRevision,
+    ayahs: record.ayahs,
+  }));
 }
 
 function selectedCount(selection: AbwabDoorLinkSelectionState, totalCount: number): number {

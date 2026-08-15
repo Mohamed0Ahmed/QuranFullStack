@@ -44,20 +44,14 @@
   } @else if (state().copy.status === 'enumerating') {
     <qd-skeleton-rows [count]="2" rowTemplate="1fr auto" [loadingLabel]="labels.doorLinksCopyEnumerating" />
   } @else if (state().copy.status === 'preparing') {
-    @if (batchLabel(); as batch) {
-      <strong class="abwab-door-link-copy__batch">{{ batch }}</strong>
-    }
     <qd-skeleton-rows [count]="2" rowTemplate="1fr auto" [loadingLabel]="labels.doorLinksCopyPreparing" />
   } @else if (state().copy.status === 'running') {
     <qd-notice
-      [message]="(batchLabel() ?? '') + '، ' + labels.doorLinksCopyRunning"
+      [message]="labels.doorLinksCopyRunning"
       [dismissLabel]="null"
       testId="abwab-door-links-copy-running"
     />
   } @else if (state().copy.status === 'stopped') {
-    @if (batchLabel(); as batch) {
-      <strong class="abwab-door-link-copy__batch">{{ batch }}</strong>
-    }
     <qd-error-state
       severity="write"
       [message]="state().copy.errorMessage ?? labels.doorLinksCopyStopped"

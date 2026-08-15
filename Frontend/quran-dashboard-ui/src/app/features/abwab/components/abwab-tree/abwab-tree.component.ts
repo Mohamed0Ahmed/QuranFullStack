@@ -18,8 +18,10 @@ import { QdHierarchyKeyboardDirective } from '../../../../shared/ui/hierarchy/hi
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabDoorLinksPanelComponent } from '../abwab-door-links-panel/abwab-door-links-panel.component';
+import { AbwabTreeBranchesComponent } from './abwab-tree-branches.component';
 import {
   AbwabTreeRow,
+  buildAbwabTreeBranchGuides,
   flattenVisibleAbwabRows,
   isNativeButtonActivation,
   resolveAbwabTreeKeyboardIntent,
@@ -34,11 +36,7 @@ export interface AbwabTreeMenuRequest {
 @Component({
   selector: 'qd-abwab-tree',
   standalone: true,
-  imports: [
-    AbwabDoorLinksPanelComponent,
-    QdActionDirective,
-    QdHierarchyKeyboardDirective,
-  ],
+  imports: [AbwabDoorLinksPanelComponent, AbwabTreeBranchesComponent, QdActionDirective, QdHierarchyKeyboardDirective],
   templateUrl: './abwab-tree.component.html',
   styleUrl: './abwab-tree.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -98,11 +96,10 @@ export class AbwabTreeComponent {
     this.roots().forEach(walk);
     return map;
   });
-
   protected readonly visibleRows = computed<AbwabTreeRow[]>(() =>
     flattenVisibleAbwabRows(this.roots(), this.effectiveExpandedIds()),
   );
-
+  protected readonly branchGuidesById = computed(() => buildAbwabTreeBranchGuides(this.roots(), 6));
   protected readonly rovingId = computed(() => {
     const rows = this.visibleRows();
     if (rows.length === 0) {

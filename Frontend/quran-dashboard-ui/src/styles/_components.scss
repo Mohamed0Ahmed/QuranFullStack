@@ -94,9 +94,9 @@ button.qd-interactive-surface {
 }
 
 .qd-btn-secondary {
-  background: transparent;
+  background: var(--qd-neutral-tint);
   color: var(--qd-text);
-  border-color: var(--qd-border);
+  border-color: var(--qd-border-strong);
 
   &:hover {
     background: var(--qd-section-bg);
@@ -175,14 +175,6 @@ button.qd-interactive-surface {
   outline-offset: var(--qd-focus-ring-offset);
 }
 
-.qd-action:disabled,
-.qd-action[aria-disabled='true'] {
-  background: var(--qd-neutral-tint);
-  border-color: var(--qd-border);
-  color: var(--qd-neutral-ink-disabled);
-  cursor: not-allowed;
-}
-
 .qd-action--primary {
   background: var(--qd-green-solid);
   border-color: var(--qd-green-solid);
@@ -193,6 +185,16 @@ button.qd-interactive-surface {
 .qd-action--primary:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--qd-primary-hover);
   border-color: var(--qd-primary-hover);
+}
+
+.qd-action--secondary {
+  background: var(--qd-neutral-tint);
+  border-color: var(--qd-border-strong);
+}
+
+.qd-action--secondary:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--qd-surface-recessed);
+  border-color: var(--qd-neutral);
 }
 
 .qd-action--tertiary {
@@ -216,6 +218,36 @@ button.qd-interactive-surface {
 .qd-action--danger:hover:not(:disabled):not([aria-disabled='true']) {
   background: var(--qd-danger-tint);
   border-color: var(--qd-danger);
+}
+
+.qd-action--warning {
+  background: var(--qd-warning-tint);
+  border-color: var(--qd-warning-hairline);
+  color: var(--qd-warning);
+}
+
+.qd-action--warning:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--qd-warning-tint);
+  border-color: var(--qd-warning);
+}
+
+.qd-action--info {
+  background: var(--qd-info-tint);
+  border-color: var(--qd-info-hairline);
+  color: var(--qd-info);
+}
+
+.qd-action--info:hover:not(:disabled):not([aria-disabled='true']) {
+  background: var(--qd-info-tint);
+  border-color: var(--qd-info);
+}
+
+.qd-action:disabled,
+.qd-action[aria-disabled='true'] {
+  background: var(--qd-neutral-tint);
+  border-color: var(--qd-border);
+  color: var(--qd-neutral-ink-disabled);
+  cursor: not-allowed;
 }
 
 .qd-action--toolbar {

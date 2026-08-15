@@ -6,7 +6,7 @@
   <div class="abwab-door-link-operations__actions">
     <button
       type="button"
-      qdAction="tertiary"
+      qdAction="warning"
       [busy]="preparingEdit()"
       [disabled]="!canEdit()"
       data-testid="abwab-door-link-operation-edit"
@@ -25,7 +25,7 @@
     </button>
     <button
       type="button"
-      qdAction="tertiary"
+      qdAction="info"
       [disabled]="!canCopy() || state().copy.open"
       data-testid="abwab-door-link-operation-copy"
       (click)="copyController.open()"

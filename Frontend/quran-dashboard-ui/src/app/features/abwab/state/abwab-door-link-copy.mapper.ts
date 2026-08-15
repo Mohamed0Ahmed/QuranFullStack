@@ -1,30 +1,11 @@
 import { LinkingOperationSourceDraft } from '../../linking/models/linking-operation-draft.models';
-import {
-  ABWAB_DOOR_LINK_COPY_BATCH_SIZE,
-  AbwabDoorLinkCopyBatch,
-  AbwabDoorLinkCopyRecord,
-} from '../models/abwab-door-links.models';
+import { AbwabDoorLinkCopyRecord } from '../models/abwab-door-links.models';
 
 interface CopySourceGroup {
   readonly records: AbwabDoorLinkCopyRecord[];
   readonly ayahIds: Set<number>;
   readonly isGrouped: boolean;
   readonly linkingDataRevision: number;
-}
-
-export function partitionAbwabDoorLinkCopyUnits(unitIds: readonly number[]): readonly AbwabDoorLinkCopyBatch[] {
-  const uniqueUnitIds = [...new Set(unitIds)];
-  const batches: AbwabDoorLinkCopyBatch[] = [];
-  for (let index = 0; index < uniqueUnitIds.length; index += ABWAB_DOOR_LINK_COPY_BATCH_SIZE) {
-    batches.push({
-      batchNumber: batches.length + 1,
-      unitIds: uniqueUnitIds.slice(index, index + ABWAB_DOOR_LINK_COPY_BATCH_SIZE),
-      sources: [],
-      status: 'pending',
-      errorMessage: null,
-    });
-  }
-  return batches;
 }
 
 export function mapAbwabDoorLinkCopyRecords(

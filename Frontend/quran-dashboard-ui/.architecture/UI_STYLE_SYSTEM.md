@@ -162,6 +162,7 @@ superseded prototype reference):
   (sage) / footer-accent-hover / footer-border
 - danger
 - warning
+- info
 - success
 - focus ring
 - shadow (flat in light: resting `sm` and hover are `none`; one floating shadow —
@@ -597,6 +598,7 @@ existing call-site onto this doctrine was a phased migration; the migration is
 | Hover fill | `--qd-surface-hover` | same | one token, everywhere — **one documented exception**: the mushaf word-hover wash uses `--qd-mushaf-word-hover-bg`, because `--qd-surface-hover` is imperceptible on the parchment reading canvas (ΔL≈0.022 vs `--qd-bg`) |
 | Resting control border | `--qd-border` | `--qd-border` | no accent at rest |
 | Primary action | `--qd-primary` + `--qd-primary-fg` (green) | gold-primary, interim pending dark reconciliation | green is also the structural color in light |
+| Edit / copy semantic actions | `--qd-warning` on `--qd-warning-tint` / `--qd-info` on `--qd-info-tint` | same semantic roles | restrained tints; labels remain authoritative |
 | Danger / success / warning text | `--qd-danger` / `--qd-success` / `--qd-warning` on the matching `*-tint` | same tokens | AA-verified, see below |
 
 The 2px solid-accent indicator is the signature **green thread**: one green edge

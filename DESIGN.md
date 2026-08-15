@@ -84,6 +84,7 @@ All text/background pairs listed here are verified **WCAG AA ≥ 4.5:1**.
 | Accent-tint | `--qd-accent-tint` (aliased by `--qd-selected-bg`) | `#eaf2ee` | Selected backgrounds, active-nav pill, soft-button bg. |
 | Focus ring | `--qd-focus-ring` / `--qd-ring` | green; halo = green @ 22% | Soft `:focus-visible` halo. |
 | Warning | `--qd-warning` on `--qd-warning-tint` | amber `oklch(0.540 0.111 75.1)` on `#fbf1dc` | 4.58:1. |
+| Information | `--qd-info` on `--qd-info-tint` | muted blue | Copy and informational actions that need a distinct semantic affordance. |
 | Danger | `--qd-danger` on `--qd-danger-tint` | `#a44a3f` on `#f9ece8` | 5.01:1. |
 | Success | `--qd-success` on `--qd-success-tint` | `oklch(0.546 0.062 162.7)` on its tint | 4.58:1 (unchanged). |
 
@@ -130,6 +131,11 @@ action, and review/publish state. Its rarity is what gives it meaning. Green is
 now also the structural color (primary buttons, brand), and structural uses obey
 the same restraint: one primary action per view, calm everywhere else. Navy is
 footer-only and is never an accent.
+
+Secondary controls use a visible warm-neutral tint instead of disappearing into
+their surface. Semantic actions may use restrained tinted roles: amber for edit
+or caution, blue for copy or information, and red for destructive actions. The
+Arabic label remains the primary meaning; color is never the only cue.
 
 **The allowed-green list (locked).** Green (`--qd-accent` / `--qd-accent-soft`) may
 appear **only** as:

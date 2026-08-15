@@ -3,11 +3,6 @@
     @if (currentStep() !== 'succeeded') {
       <button qdAction="tertiary" size="sm" type="button" (click)="cancel()">{{ labels.cancel }}</button>
     }
-    @if (copyBatch(); as batch) {
-      <strong class="text-qd-body font-semibold text-qd-ink" role="status">
-        {{ labels.copyBatchProgress(batch.batchNumber, batch.totalBatches) }}
-      </strong>
-    }
   </header>
 
   <ol class="direct-link-workflow__steps" aria-label="مراحل الربط">
@@ -141,8 +136,8 @@
         <qd-error-state
           severity="write"
           [message]="state().errorMessage || labels.sourceLoadError"
-          [actionLabel]="copyBatch() === null ? labels.retry : labels.copyReturn"
-          (action)="copyBatch() === null ? retryPreflight() : cancel()"
+          [actionLabel]="isCopy() ? labels.copyReturn : labels.retry"
+          (action)="isCopy() ? cancel() : retryPreflight()"
         />
       }
       @case ('cancelled') {
@@ -160,8 +155,8 @@
       <button qdAction="primary" type="button" [disabled]="!canAdvanceDoor()" (click)="next()">{{ labels.preflightTitle }}</button>
     }
     @if (currentStep() === 'ready') {
-      @if (copyBatch() !== null && isNoOp()) {
-        <button qdAction="secondary" type="button" (click)="acknowledge()">{{ labels.copyBatchAcknowledge }}</button>
+      @if (isCopy() && isNoOp()) {
+        <button qdAction="secondary" type="button" (click)="acknowledge()">{{ labels.copyAcknowledge }}</button>
       } @else {
         <button qdAction="primary" type="button" [disabled]="!canSubmit()" (click)="submit()">{{ labels.confirm }}</button>
       }
