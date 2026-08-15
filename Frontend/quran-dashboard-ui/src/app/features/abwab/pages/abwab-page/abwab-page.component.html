@@ -77,12 +77,14 @@
       [view]="viewParam()"
       [searchQuery]="searchQueryParam()"
       [searchMatchCount]="searchMatchCount()"
+      [searchResults]="searchMatches()"
       [hideSectionControls]="archiveParam()"
       [rootCountBySectionId]="rootCountBySectionId()"
       [totalRootCount]="totalRootCount()"
       (sectionChanged)="interactions.onSectionChanged($event)"
       (viewChanged)="interactions.onViewChanged($event)"
       (searchQueryChanged)="interactions.onSearchQueryChanged($event)"
+      (searchResultSelected)="onRevealRequested($event)"
     />
 
     @if (facade.isLoading() && !facade.snapshot()) {

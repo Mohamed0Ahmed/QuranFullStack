@@ -90,6 +90,8 @@ export const ABWAB_LABELS = {
   searchLabel: 'ابحث في الأبواب',
   searchPlaceholder: 'ابحث في الأبواب…',
   searchMatchCount: (count: number): string => countPhrase(count, RESULT_FORMS),
+  searchResultsAriaLabel: 'نتائج البحث في الأبواب',
+  searchResultAriaLabel: (doorName: string): string => `الانتقال إلى باب «${doorName}»`,
   searchScopeHintTree: 'يُبرز المطابق مع بقاء التسلسل كاملًا',
   searchScopeHintCards: 'يرشّح المستوى المعروض فقط',
   searchScopeHintArchive: 'يرشّح المسارات المؤرشفة المطابقة',

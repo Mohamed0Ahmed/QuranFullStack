@@ -6,11 +6,12 @@ import { QdFormFieldComponent } from '../../../../shared/ui/form-field/form-fiel
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
-import { AbwabView } from '../../models/abwab.models';
+import { AbwabNode, AbwabView } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 const ANNOUNCE_SETTLE_MS = 500;
 const SEARCH_SETTLE_MS = 180;
+const SEARCH_RESULTS_MIN_CHARACTERS = 3;
 
 @Component({
   selector: 'qd-abwab-toolbar',
@@ -26,6 +27,7 @@ export class AbwabToolbarComponent {
   readonly view = input<AbwabView>('tree');
   readonly searchQuery = input('');
   readonly searchMatchCount = input(0);
+  readonly searchResults = input<readonly AbwabNode[]>([]);
   readonly rootCountBySectionId = input<ReadonlyMap<number, number>>(new Map());
   readonly totalRootCount = input(0);
   readonly hideSectionControls = input(false);
@@ -33,6 +35,7 @@ export class AbwabToolbarComponent {
   readonly sectionChanged = output<number | null>();
   readonly viewChanged = output<AbwabView>();
   readonly searchQueryChanged = output<string>();
+  readonly searchResultSelected = output<number>();
 
   protected get sectionTabsAriaLabel(): string { return ABWAB_LABELS.sectionTabsAriaLabel; }
   protected get allDoorsTabLabel(): string { return ABWAB_LABELS.allDoorsTab; }
@@ -41,8 +44,18 @@ export class AbwabToolbarComponent {
   protected get viewToggleAriaLabel(): string { return ABWAB_LABELS.viewToggleAriaLabel; }
   protected get treeViewLabel(): string { return ABWAB_LABELS.viewToggleTree; }
   protected get cardsViewLabel(): string { return ABWAB_LABELS.viewToggleCards; }
+  protected get searchResultsAriaLabel(): string { return ABWAB_LABELS.searchResultsAriaLabel; }
 
   protected readonly matchCountText = computed(() => ABWAB_LABELS.searchMatchCount(this.searchMatchCount()));
+  protected readonly showSearchResults = computed(() =>
+    !this.hideSectionControls()
+    && Array.from(this.searchQuery().trim()).length >= SEARCH_RESULTS_MIN_CHARACTERS
+    && this.searchResults().length > 0,
+  );
+
+  protected searchResultAriaLabel(doorName: string): string {
+    return ABWAB_LABELS.searchResultAriaLabel(doorName);
+  }
 
   protected readonly searchScopeHint = computed(() => {
     if (this.hideSectionControls()) {
@@ -122,6 +135,10 @@ export class AbwabToolbarComponent {
 
   protected selectView(view: AbwabView): void {
     this.viewChanged.emit(view);
+  }
+
+  protected selectSearchResult(doorId: number): void {
+    this.searchResultSelected.emit(doorId);
   }
 
   protected onSearchInput(event: Event): void {

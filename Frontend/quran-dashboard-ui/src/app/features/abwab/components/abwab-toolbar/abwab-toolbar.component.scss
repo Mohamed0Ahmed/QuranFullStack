@@ -18,6 +18,8 @@
   flex: 1 1 0;
   min-inline-size: 12rem;
   align-items: flex-end;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .abwab-toolbar__search-field {
@@ -31,6 +33,38 @@
   font-size: var(--qd-type-caption);
   white-space: nowrap;
   padding-block-end: var(--qd-space-2);
+}
+
+.abwab-toolbar__search-results {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: var(--qd-space-2);
+  inline-size: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.abwab-toolbar__search-result-item {
+  min-inline-size: 0;
+}
+
+.abwab-toolbar__search-result {
+  min-inline-size: 0;
+  max-inline-size: none;
+  inline-size: 100%;
+  background: var(--qd-surface);
+}
+
+.abwab-toolbar__search-result-name {
+  display: block;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .abwab-toolbar__view-toggle {

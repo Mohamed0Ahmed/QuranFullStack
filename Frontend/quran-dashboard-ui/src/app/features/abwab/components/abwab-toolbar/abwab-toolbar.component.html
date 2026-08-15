@@ -23,6 +23,30 @@
       <span class="qd-sr-only" role="status" data-testid="abwab-toolbar-search-count-announce">
         {{ announcedCountText() }}
       </span>
+      @if (showSearchResults()) {
+        <ul
+          class="abwab-toolbar__search-results"
+          [attr.aria-label]="searchResultsAriaLabel"
+          data-testid="abwab-toolbar-search-results"
+        >
+          @for (door of searchResults(); track door.id) {
+            <li class="abwab-toolbar__search-result-item">
+              <button
+                type="button"
+                qdAction="secondary"
+                size="sm"
+                class="abwab-toolbar__search-result"
+                [title]="door.name"
+                [attr.aria-label]="searchResultAriaLabel(door.name)"
+                [attr.data-testid]="'abwab-toolbar-search-result-' + door.id"
+                (click)="selectSearchResult(door.id)"
+              >
+                <span class="abwab-toolbar__search-result-name">{{ door.name }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
     </div>
 
     @if (!hideSectionControls()) {
