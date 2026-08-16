@@ -7,6 +7,7 @@ namespace QuranDashboard.Infrastructure.Background;
 
 internal sealed class LinkingConfirmationJobProcessorService(
     IServiceScopeFactory scopeFactory,
+    LinkingJobQueueSignal queueSignal,
     LinkingScalabilityOptions options,
     ILogger<LinkingConfirmationJobProcessorService> logger) : BackgroundService
 {
@@ -20,11 +21,9 @@ internal sealed class LinkingConfirmationJobProcessorService(
         {
             try
             {
-                await using var scope = scopeFactory.CreateAsyncScope();
-                var processor = scope.ServiceProvider.GetRequiredService<ILinkingConfirmationJobProcessor>();
-                if (!await processor.ProcessNextAsync(cancellationToken))
+                if (!await ProcessNextAsync(cancellationToken))
                 {
-                    await Task.Delay(options.PollAfterMilliseconds, cancellationToken);
+                    await queueSignal.WaitForConfirmationJobAsync(cancellationToken);
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -37,5 +36,13 @@ internal sealed class LinkingConfirmationJobProcessorService(
                 await Task.Delay(options.PollAfterMilliseconds, cancellationToken);
             }
         }
+    }
+
+    private async Task<bool> ProcessNextAsync(CancellationToken cancellationToken)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        return await scope.ServiceProvider
+            .GetRequiredService<ILinkingConfirmationJobProcessor>()
+            .ProcessNextAsync(cancellationToken);
     }
 }

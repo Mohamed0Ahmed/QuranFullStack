@@ -4,6 +4,7 @@ using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
 using QuranDashboard.Application.Abstractions.Linking.Responses;
 using QuranDashboard.Domain.Linking;
+using QuranDashboard.Infrastructure.Background;
 using QuranDashboard.Infrastructure.Persistence.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
@@ -11,7 +12,8 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 internal sealed partial class EfLinkingConfirmationJobStore(
     QuranDashboardDbContext db,
     ILinkingDataRevisionWriterStore revisionStore,
-    ILinkingScalabilityPolicy policy) : ILinkingConfirmationJobStore
+    ILinkingScalabilityPolicy policy,
+    LinkingJobQueueSignal queueSignal) : ILinkingConfirmationJobStore
 {
     private const int ActorLockNamespace = 193648317;
     private const int IdempotencyLockNamespace = 193648319;
@@ -60,6 +62,11 @@ internal sealed partial class EfLinkingConfirmationJobStore(
             RequireExactJobRequest(existingByKey, existingPreflight, actorUserId, request);
             var existingStatus = ToStatus(existingByKey);
             await transaction.CommitAsync(cancellationToken);
+            if (existingByKey.Status == LinkingConfirmationJobStatus.Queued)
+            {
+                queueSignal.NotifyConfirmationJobQueued();
+            }
+
             return new LinkingConfirmationJobReceipt(
                 new LinkingConfirmationSubmissionDto.Job(existingStatus),
                 false);
@@ -86,6 +93,11 @@ internal sealed partial class EfLinkingConfirmationJobStore(
             RequireSamePreflightRequest(existingForPreflight, preflight, actorUserId, request);
             var existingStatus = ToStatus(existingForPreflight);
             await transaction.CommitAsync(cancellationToken);
+            if (existingForPreflight.Status == LinkingConfirmationJobStatus.Queued)
+            {
+                queueSignal.NotifyConfirmationJobQueued();
+            }
+
             return new LinkingConfirmationJobReceipt(
                 new LinkingConfirmationSubmissionDto.Job(existingStatus),
                 false);
@@ -139,6 +151,7 @@ internal sealed partial class EfLinkingConfirmationJobStore(
         db.LinkingConfirmationJobs.Add(job);
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+        queueSignal.NotifyConfirmationJobQueued();
         return new LinkingConfirmationJobReceipt(
             new LinkingConfirmationSubmissionDto.Job(ToStatus(job)),
             true);

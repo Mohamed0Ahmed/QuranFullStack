@@ -37,6 +37,7 @@ internal static class LinkingDependencyInjection
         services.AddScoped<EfLinkingSourceResolutionReader>();
         services.AddScoped<ILinkingSourcePageReader, CachedLinkingSourcePageReader>();
         services.AddScoped<ILinkingSourcePreparationReader, CachedLinkingSourcePreparationReader>();
+        services.AddSingleton<LinkingJobQueueSignal>();
         services.AddScoped<ILinkingPreparedPreflightStore, EfLinkingPreparedPreflightStore>();
         services.AddHostedService<LinkingPreparedPreflightProcessorService>();
         services.AddHostedService<LinkingPreparedPreflightCleanupService>();

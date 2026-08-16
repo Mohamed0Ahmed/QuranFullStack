@@ -7,6 +7,7 @@ namespace QuranDashboard.Infrastructure.Background;
 
 internal sealed class LinkingPreparedPreflightCleanupService(
     IServiceScopeFactory scopeFactory,
+    LinkingJobQueueSignal queueSignal,
     LinkingScalabilityOptions options,
     ILogger<LinkingPreparedPreflightCleanupService> logger) : BackgroundService
 {
@@ -20,6 +21,7 @@ internal sealed class LinkingPreparedPreflightCleanupService(
                 await using var scope = scopeFactory.CreateAsyncScope();
                 await scope.ServiceProvider.GetRequiredService<ILinkingPreparedPreflightStore>()
                     .RunMaintenanceAsync(stoppingToken);
+                queueSignal.NotifyPreparedPreflightQueued();
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

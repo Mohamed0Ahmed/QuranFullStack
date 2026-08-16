@@ -3,6 +3,7 @@ using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Application.Abstractions.Linking.PreparedPreflights;
 using QuranDashboard.Application.Abstractions.Linking.Preflight;
 using QuranDashboard.Domain.Linking;
+using QuranDashboard.Infrastructure.Background;
 using QuranDashboard.Infrastructure.Persistence.Linking;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -11,7 +12,8 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 internal sealed partial class EfLinkingPreparedPreflightStore(
     QuranDashboardDbContext db,
     ILinkingDataRevisionWriterStore revisionStore,
-    ILinkingScalabilityPolicy policy) : ILinkingPreparedPreflightStore
+    ILinkingScalabilityPolicy policy,
+    LinkingJobQueueSignal queueSignal) : ILinkingPreparedPreflightStore
 {
     private const int RequestSchemaVersion = 1;
     private const int SnapshotSchemaVersion = 1;
@@ -49,6 +51,11 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
 
             var status = await ProjectStatusAsync(existing, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            if (existing.Status == LinkingPreparedPreflightStatus.Queued)
+            {
+                queueSignal.NotifyPreparedPreflightQueued();
+            }
+
             return new LinkingPreparedPreflightReceipt(status, false);
         }
 
@@ -133,9 +140,9 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
         }));
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return new LinkingPreparedPreflightReceipt(
-            await ProjectStatusAsync(preflight, cancellationToken),
-            true);
+        queueSignal.NotifyPreparedPreflightQueued();
+        var createdStatus = await ProjectStatusAsync(preflight, cancellationToken);
+        return new LinkingPreparedPreflightReceipt(createdStatus, true);
     }
 
     public async Task<LinkingPreparedPreflightStatusDto?> GetStatusAsync(
