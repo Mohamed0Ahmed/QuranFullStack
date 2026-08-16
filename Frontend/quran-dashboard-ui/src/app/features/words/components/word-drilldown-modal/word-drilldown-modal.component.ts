@@ -15,6 +15,7 @@ import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-p
 import { SurahOccurrencesListComponent } from '../surah-occurrences-list/surah-occurrences-list.component';
 import { MissingSurahsListComponent } from '../missing-surahs-list/missing-surahs-list.component';
 import { AyahMatchesListComponent } from '../ayah-matches-list/ayah-matches-list.component';
+import { AyahTypeFiltersComponent } from '../ayah-type-filters/ayah-type-filters.component';
 import {
   CLOSE_LABEL,
   DRILLDOWN_EMPTY_AYAHS_LABEL,
@@ -48,6 +49,7 @@ import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.
     SurahOccurrencesListComponent,
     MissingSurahsListComponent,
     AyahMatchesListComponent,
+    AyahTypeFiltersComponent,
     QuranSourceLinkingActionsComponent,
   ],
   templateUrl: './word-drilldown-modal.component.html',
@@ -67,6 +69,7 @@ export class WordDrilldownModalComponent {
   readonly closeModal = output<void>();
   readonly viewChange = output<WordDrilldownView>();
   readonly ayahPageChange = output<number>();
+  readonly typeCodeChange = output<string | null>();
 
   readonly retry = output<void>();
 

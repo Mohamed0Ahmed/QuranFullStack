@@ -30,6 +30,10 @@ export class UniqueWordsDrilldownFacade {
     this.controller.setAyahPage(page);
   }
 
+  setAyahTypeCode(typeCode: string | null): void {
+    this.controller.setAyahTypeCode(typeCode);
+  }
+
   closeDrilldown(): void {
     this.controller.closeDrilldown();
   }
@@ -47,7 +51,8 @@ export class UniqueWordsDrilldownFacade {
     wordId: number | null,
     view: WordDrilldownView | null,
     ayahPage: number | null,
+    typeCode: string | null,
   ): void {
-    this.controller.applyUrlState({ mode, wordId, view, ayahPage });
+    this.controller.applyUrlState({ mode, wordId, view, ayahPage, typeCode });
   }
 }

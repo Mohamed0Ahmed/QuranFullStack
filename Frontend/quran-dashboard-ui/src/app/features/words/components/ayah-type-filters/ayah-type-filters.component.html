@@ -1,0 +1,58 @@
+@if (loading() || items().length > 0) {
+<section class="ayah-type-filters" data-testid="ayah-type-filters" [attr.aria-label]="sectionLabel">
+  @if (loading()) {
+    <p class="qd-sr-only" role="status" aria-live="polite">{{ loadingLabel }}</p>
+  }
+
+  <div
+    class="ayah-type-filters__grid"
+    [class.ayah-type-filters__grid--loading]="loading()"
+    role="group"
+    [attr.aria-busy]="loading() ? true : null"
+  >
+    @if (loading()) {
+      @for (_ of loadingChipPlaceholders; track $index) {
+        <div
+          class="ayah-type-filters__chip ayah-type-filters__chip--loading"
+          aria-hidden="true"
+          data-testid="ayah-type-filter-loading-chip"
+        >
+          <span class="qd-skeleton qd-skeleton--text ayah-type-filters__loading-label"></span>
+          <span class="qd-skeleton qd-skeleton--text ayah-type-filters__loading-count"></span>
+        </div>
+      }
+    } @else {
+      @if (items().length > 1) {
+        <button
+          qdAction="toolbar"
+          size="sm"
+          type="button"
+          class="qd-btn qd-btn-secondary ayah-type-filters__chip"
+          [class.qd-is-selected]="isAllSelected()"
+          [attr.aria-pressed]="isAllSelected()"
+          data-testid="ayah-type-filter-all"
+          (click)="selectTypeCode(null)"
+        >
+          <span class="ayah-type-filters__label">{{ allFilterLabel }}</span>
+        </button>
+      }
+
+      @for (item of items(); track item.code) {
+        <button
+          qdAction="toolbar"
+          size="sm"
+          type="button"
+          class="qd-btn qd-btn-secondary ayah-type-filters__chip"
+          [class.qd-is-selected]="isSelected(item.code)"
+          [attr.aria-pressed]="isSelected(item.code)"
+          [attr.data-testid]="'ayah-type-filter-' + item.code"
+          (click)="selectTypeCode(item.code)"
+        >
+          <span class="ayah-type-filters__label">{{ item.arabicLabel }}</span>
+          <span class="ayah-type-filters__count">{{ item.occurrencesCount }} مرة</span>
+        </button>
+      }
+    }
+  </div>
+</section>
+}

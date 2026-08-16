@@ -14,6 +14,7 @@ import { DetailOverlayHistoryService } from '../../../../core/navigation/detail-
 import { DETAIL_OVERLAY_LINK_MODE } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
 import { RootDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
+import { AyahTypeFiltersComponent } from '../../components/ayah-type-filters/ayah-type-filters.component';
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { RootDetailsPanelComponent } from '../../components/root-details-panel/root-details-panel.component';
 import { RootLemmasListComponent } from '../../components/root-lemmas-list/root-lemmas-list.component';
@@ -57,6 +58,7 @@ let nextSubViewInstance = 0;
   standalone: true,
   imports: [
     AyahMatchesListComponent,
+    AyahTypeFiltersComponent,
     MissingSurahsListComponent,
     NgTemplateOutlet,
     QdErrorStateComponent,
@@ -154,6 +156,7 @@ export class RootDetailOverlayAdapterComponent {
           wordView: frame.wordView,
           surahView: frame.surahView,
           detailPage: frame.detailPage,
+          typeCode: frame.typeCode,
         }),
       );
     });
@@ -180,6 +183,7 @@ export class RootDetailOverlayAdapterComponent {
       wordView: view === 'words' ? frame.wordView : DEFAULT_ROOT_WORD_VIEW,
       surahView: view === 'surahs' ? frame.surahView : DEFAULT_ROOT_SURAHS_VIEW,
       detailPage: DEFAULT_ROOT_DETAIL_PAGE,
+      typeCode: null,
     });
   }
 
@@ -193,7 +197,7 @@ export class RootDetailOverlayAdapterComponent {
       return;
     }
 
-    this.overlay.replaceTopFrame({ ...frame, wordView, detailPage: DEFAULT_ROOT_DETAIL_PAGE });
+    this.overlay.replaceTopFrame({ ...frame, wordView, detailPage: DEFAULT_ROOT_DETAIL_PAGE, typeCode: null });
   }
 
   protected onSurahViewChange(surahView: RootSurahView): void {
@@ -202,7 +206,7 @@ export class RootDetailOverlayAdapterComponent {
       return;
     }
 
-    this.overlay.replaceTopFrame({ ...frame, surahView });
+    this.overlay.replaceTopFrame({ ...frame, surahView, typeCode: null });
   }
 
   protected onDetailPageChange(page: number): void {
@@ -211,6 +215,28 @@ export class RootDetailOverlayAdapterComponent {
       return;
     }
 
-    this.overlay.replaceTopFrame({ ...frame, detailPage: page });
+    this.overlay.replaceTopFrame({ ...frame, detailPage: page, typeCode: frame.view === 'ayahs' ? frame.typeCode : null });
+  }
+
+  protected onAyahTypeCodeChange(typeCode: string | null): void {
+    const frame = this.frame();
+    if (frame.view !== 'ayahs') {
+      return;
+    }
+
+    const normalizedTypeCode = this.normalizeTypeCode(typeCode);
+    if (normalizedTypeCode === frame.typeCode && frame.detailPage === DEFAULT_ROOT_DETAIL_PAGE) {
+      return;
+    }
+
+    this.overlay.replaceTopFrame({
+      ...frame,
+      typeCode: normalizedTypeCode,
+      detailPage: DEFAULT_ROOT_DETAIL_PAGE,
+    });
+  }
+
+  private normalizeTypeCode(typeCode: string | null): string | null {
+    return typeCode === null || typeCode.trim().length === 0 ? null : typeCode.trim();
   }
 }

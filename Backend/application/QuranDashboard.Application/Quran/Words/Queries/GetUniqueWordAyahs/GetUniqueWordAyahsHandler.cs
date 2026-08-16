@@ -70,6 +70,7 @@ public sealed class GetUniqueWordAyahsHandler(
             query.Id,
             query.Page,
             query.PageSize,
+            NormalizeTypeCode(query.TypeCode),
             cancellationToken);
 
         if (page is null)
@@ -104,4 +105,7 @@ public sealed class GetUniqueWordAyahsHandler(
         kind == UniqueWordKind.Tashkeel
             ? UniqueWordKindKeys.Tashkeel
             : UniqueWordKindKeys.Simple;
+
+    private static string? NormalizeTypeCode(string? typeCode) =>
+        string.IsNullOrWhiteSpace(typeCode) ? null : typeCode.Trim();
 }

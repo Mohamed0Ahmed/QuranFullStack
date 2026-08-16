@@ -71,6 +71,14 @@
               {{ panelEmptyLabel }}
             </div>
           } @else {
+            @if (state().view === 'ayahs') {
+              <qd-ayah-type-filters
+                [items]="state().summary?.typeDistribution ?? []"
+                [selectedTypeCode]="state().ayahTypeCode"
+                [loading]="state().status === 'loading' && state().summary === null"
+                (typeCodeChange)="typeCodeChange.emit($event)"
+              />
+            }
             @switch (state().status) {
               @case ('loading') {
                 <qd-explorer-panel-skeleton [loadingLabel]="loadingLabel" data-testid="word-drilldown-loading" />

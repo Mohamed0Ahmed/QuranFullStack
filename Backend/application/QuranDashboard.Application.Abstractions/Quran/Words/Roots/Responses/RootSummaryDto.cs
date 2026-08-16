@@ -1,3 +1,5 @@
+using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Responses;
+
 namespace QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
 
 public sealed record RootSummaryDto(
@@ -9,4 +11,5 @@ public sealed record RootSummaryDto(
     int SimpleWordsCount,
     int TashkeelWordsCount,
     int LemmasCount,
-    int StemsCount);
+    int StemsCount,
+    IReadOnlyList<TypeSummaryDto> TypeDistribution);

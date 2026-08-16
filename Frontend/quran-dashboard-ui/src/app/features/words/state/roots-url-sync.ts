@@ -2,6 +2,7 @@ import { ParamMap } from '@angular/router';
 
 import { rootsRoutePath } from '../../../core/navigation/route-paths';
 import { parseRangeFilters } from './words-range-filters';
+import { parsePosCodeParam } from './words-association-filters';
 
 import {
   DEFAULT_ROOT_DETAIL_PAGE,
@@ -50,6 +51,10 @@ export function parseRootsQueryParams(queryParams: ParamMap): ParsedRootsQuery {
     ? parsePositiveInt(queryParams.get(ROOTS_QUERY_KEYS.detailPage)) ?? DEFAULT_ROOT_DETAIL_PAGE
     : DEFAULT_ROOT_DETAIL_PAGE;
 
+  const typeCode = view === 'ayahs'
+    ? parsePosCodeParam(queryParams.get(ROOTS_QUERY_KEYS.typeCode))
+    : null;
+
   return {
     search: queryParams.get(ROOTS_QUERY_KEYS.search) ?? '',
     sort,
@@ -61,6 +66,7 @@ export function parseRootsQueryParams(queryParams: ParamMap): ParsedRootsQuery {
     wordView,
     surahView,
     detailPage,
+    typeCode,
   };
 }
 
@@ -74,6 +80,7 @@ export type RootsQueryChange = Partial<{
   wordView: RootWordView | null;
   surahView: RootSurahView | null;
   detailPage: number | null;
+  typeCode: string | null;
 }>;
 
 export function buildRootsQueryParams(changes: RootsQueryChange): Record<string, string | null> {
@@ -106,6 +113,9 @@ export function buildRootsQueryParams(changes: RootsQueryChange): Record<string,
   if (changes.detailPage !== undefined) {
     params[ROOTS_QUERY_KEYS.detailPage] =
       changes.detailPage === null ? null : String(changes.detailPage);
+  }
+  if (changes.typeCode !== undefined) {
+    params[ROOTS_QUERY_KEYS.typeCode] = parsePosCodeParam(changes.typeCode);
   }
 
   return params;

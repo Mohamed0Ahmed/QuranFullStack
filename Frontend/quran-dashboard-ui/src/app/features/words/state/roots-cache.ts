@@ -18,8 +18,9 @@ export const RootsCacheKeys = {
     return `roots:${rootId}:words:${wordView}:p${page}`;
   },
 
-  ayahs(rootId: number, page: number): string {
-    return `roots:${rootId}:ayahs:p${page}`;
+  ayahs(rootId: number, page: number, typeCode: string | null): string {
+    const normalizedTypeCode = typeCode && typeCode.trim().length > 0 ? typeCode.trim() : 'all';
+    return `roots:${rootId}:ayahs:${normalizedTypeCode}:p${page}`;
   },
 
   surahs(rootId: number): string {

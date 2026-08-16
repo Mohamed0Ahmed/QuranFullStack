@@ -55,6 +55,7 @@ export class RootWordsListComponent {
         id: item.uniqueWordId,
         view: 'ayahs',
         ayahPage: 1,
+        typeCode: null,
       },
     }));
   });

@@ -19,7 +19,6 @@ import {
   WordDrilldownState,
   WordDrilldownView,
 } from '../models/unique-words.models';
-import { toUniqueWordSummary } from '../utils/unique-words-state.helpers';
 import {
   buildAyahsDrilldownUpdate,
   buildDrilldownErrorUpdate,
@@ -38,6 +37,7 @@ export interface UniqueWordsDrilldownUrlState {
   readonly wordId: number | null;
   readonly view: WordDrilldownView | null;
   readonly ayahPage: number | null;
+  readonly typeCode: string | null;
 }
 
 // `mode` is part of the identity: simple and tashkeel are separate word spaces, so the same
@@ -48,6 +48,7 @@ interface ModalUrlState {
   readonly wordId: number;
   readonly view: WordDrilldownView;
   readonly ayahPage: number;
+  readonly typeCode: string | null;
 }
 
 const INITIAL_DRILLDOWN: WordDrilldownState = {
@@ -59,6 +60,7 @@ const INITIAL_DRILLDOWN: WordDrilldownState = {
   missingSurahs: null,
   ayahs: null,
   ayahPage: DEFAULT_AYAH_PAGE,
+  ayahTypeCode: null,
   status: 'idle',
   errorMessage: '',
 };
@@ -88,22 +90,15 @@ export class UniqueWordsDrilldownController implements OnDestroy {
 
   openDrilldown(word: UniqueWordListItemDto, view: WordDrilldownView): void {
     const token = this.requests.beginTransition();
-    this.activeModalUrlState = {
+    const nextState: ModalUrlState = {
       mode: word.kind,
       wordId: word.id,
       view,
       ayahPage: DEFAULT_AYAH_PAGE,
+      typeCode: null,
     };
-    this._drilldown.set({
-      ...INITIAL_DRILLDOWN,
-      isOpen: true,
-      selectedWordId: word.id,
-      view,
-      summary: toUniqueWordSummary(word),
-      ayahPage: DEFAULT_AYAH_PAGE,
-      status: 'loading',
-    });
-    this.loadDrilldownView(view, word.kind, word.id, DEFAULT_AYAH_PAGE, token);
+    this.activeModalUrlState = nextState;
+    this.loadSummaryAndRestore(word.kind, nextState, token);
   }
 
   setDrilldownView(view: WordDrilldownView): void {
@@ -123,15 +118,53 @@ export class UniqueWordsDrilldownController implements OnDestroy {
       wordId: current.selectedWordId,
       view,
       ayahPage: nextAyahPage,
+      typeCode: null,
     };
     this._drilldown.update((s) => ({
       ...s,
       view,
+      ayahTypeCode: null,
       status: 'loading',
       errorMessage: '',
       ayahPage: nextAyahPage,
     }));
-    this.loadDrilldownView(view, current.summary.kind, current.selectedWordId, nextAyahPage, token);
+    this.loadDrilldownView(view, current.summary.kind, current.selectedWordId, nextAyahPage, null, token);
+  }
+
+  setAyahTypeCode(typeCode: string | null): void {
+    const current = this._drilldown();
+    if (!current.isOpen || current.selectedWordId === null || current.summary === null || current.view !== 'ayahs') {
+      return;
+    }
+
+    const normalizedTypeCode = this.normalizeTypeCode(typeCode);
+    if (normalizedTypeCode === current.ayahTypeCode && current.ayahPage === DEFAULT_AYAH_PAGE) {
+      return;
+    }
+
+    const token = this.requests.beginTransition();
+    this.activeModalUrlState = {
+      mode: current.summary.kind,
+      wordId: current.selectedWordId,
+      view: 'ayahs',
+      ayahPage: DEFAULT_AYAH_PAGE,
+      typeCode: normalizedTypeCode,
+    };
+    this._drilldown.update((state) => ({
+      ...state,
+      ayahTypeCode: normalizedTypeCode,
+      ayahPage: DEFAULT_AYAH_PAGE,
+      status: 'loading',
+      errorMessage: '',
+    }));
+    this.loadDrilldownView(
+      'ayahs',
+      current.summary.kind,
+      current.selectedWordId,
+      DEFAULT_AYAH_PAGE,
+      normalizedTypeCode,
+      token,
+    );
   }
 
   setAyahPage(page: number): void {
@@ -146,9 +179,10 @@ export class UniqueWordsDrilldownController implements OnDestroy {
       wordId: current.selectedWordId,
       view: 'ayahs',
       ayahPage: page,
+      typeCode: current.ayahTypeCode,
     };
     this._drilldown.update((s) => ({ ...s, ayahPage: page, status: 'loading', errorMessage: '' }));
-    this.loadDrilldownView('ayahs', current.summary.kind, current.selectedWordId, page, token);
+    this.loadDrilldownView('ayahs', current.summary.kind, current.selectedWordId, page, current.ayahTypeCode, token);
   }
 
   closeDrilldown(): void {
@@ -176,6 +210,7 @@ export class UniqueWordsDrilldownController implements OnDestroy {
       wordId: state.wordId,
       view: state.view ?? 'surahs',
       ayahPage: state.view === 'ayahs' ? state.ayahPage ?? DEFAULT_AYAH_PAGE : DEFAULT_AYAH_PAGE,
+      typeCode: state.view === 'ayahs' ? this.normalizeTypeCode(state.typeCode) : null,
     };
 
     if (this.isSameModalUrlState(this.activeModalUrlState, nextState)) {
@@ -215,6 +250,7 @@ export class UniqueWordsDrilldownController implements OnDestroy {
         ...s,
         view: nextState.view,
         ayahPage: nextState.ayahPage,
+        ayahTypeCode: nextState.typeCode,
         status: 'loading',
         errorMessage: '',
       }));
@@ -223,6 +259,7 @@ export class UniqueWordsDrilldownController implements OnDestroy {
         current.summary.kind,
         nextState.wordId,
         nextState.ayahPage,
+        nextState.typeCode,
         token,
       );
       return;
@@ -238,6 +275,7 @@ export class UniqueWordsDrilldownController implements OnDestroy {
       selectedWordId: nextState.wordId,
       view: nextState.view,
       ayahPage: nextState.ayahPage,
+      ayahTypeCode: nextState.typeCode,
       status: 'loading',
     });
 
@@ -286,9 +324,10 @@ export class UniqueWordsDrilldownController implements OnDestroy {
       summary,
       view: nextState.view,
       ayahPage: nextState.ayahPage,
+      ayahTypeCode: nextState.typeCode,
       status: 'loading',
     }));
-    this.loadDrilldownView(nextState.view, summary.kind, summary.id, nextState.ayahPage, token);
+    this.loadDrilldownView(nextState.view, summary.kind, summary.id, nextState.ayahPage, nextState.typeCode, token);
   }
 
   private handleRestoredWordNotFound(message: string): void {
@@ -308,7 +347,8 @@ export class UniqueWordsDrilldownController implements OnDestroy {
       current.mode === next.mode &&
       current.wordId === next.wordId &&
       current.view === next.view &&
-      current.ayahPage === next.ayahPage
+      current.ayahPage === next.ayahPage &&
+      current.typeCode === next.typeCode
     );
   }
 
@@ -317,6 +357,7 @@ export class UniqueWordsDrilldownController implements OnDestroy {
     kind: UniqueWordKind,
     wordId: number,
     ayahPage: number,
+    typeCode: string | null,
     token: number,
   ): void {
     if (view === 'surahs') {
@@ -356,8 +397,8 @@ export class UniqueWordsDrilldownController implements OnDestroy {
     }
 
     this.trackDrilldownRead(
-      this.cache.getOrLoad(UniqueWordsCacheKeys.ayahs(kind, wordId, ayahPage), () =>
-        this.api.getAyahMatches(kind, wordId, ayahPage, DEFAULT_AYAH_PAGE_SIZE),
+      this.cache.getOrLoad(UniqueWordsCacheKeys.ayahs(kind, wordId, ayahPage, typeCode), () =>
+        this.api.getAyahMatches(kind, wordId, ayahPage, DEFAULT_AYAH_PAGE_SIZE, typeCode),
       ),
       token,
       buildAyahsDrilldownUpdate,
@@ -394,5 +435,9 @@ export class UniqueWordsDrilldownController implements OnDestroy {
 
   private extractErrorMessage(err: unknown, fallback: string): string {
     return extractDrilldownMessage(err, fallback);
+  }
+
+  private normalizeTypeCode(typeCode: string | null): string | null {
+    return typeCode === null || typeCode.trim().length === 0 ? null : typeCode.trim();
   }
 }

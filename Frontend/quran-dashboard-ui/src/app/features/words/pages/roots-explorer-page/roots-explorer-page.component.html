@@ -146,6 +146,14 @@
 
   <ng-template #rootsPanelContent>
   @if (!emptySelection()) {
+    @if (activeView() === 'ayahs') {
+      <qd-ayah-type-filters
+        [items]="panelState().summary?.typeDistribution ?? []"
+        [selectedTypeCode]="panelState().ayahTypeCode"
+        [loading]="panelState().status === 'loading' && panelState().summary === null"
+        (typeCodeChange)="onAyahTypeChange($event)"
+      />
+    }
     @if (activeView() === 'words') {
       <qd-tabs
         class="roots-explorer__sub-tabs qd-explorer-subtabs"

@@ -46,8 +46,13 @@ public static class UniqueWordsCacheKeys
     public static string Missing(UniqueWordKind kind, int id) =>
         $"words:{KindKey(kind)}:{id}:missing";
 
-    public static string Ayahs(UniqueWordKind kind, int id, int page, int pageSize) =>
-        $"words:{KindKey(kind)}:{id}:ayahs:p{page}:s{pageSize}";
+    public static string Ayahs(
+        UniqueWordKind kind,
+        int id,
+        int page,
+        int pageSize,
+        string? typeCode) =>
+        $"words:{KindKey(kind)}:{id}:ayahs:{NormalizeTypeCode(typeCode)}:p{page}:s{pageSize}";
 
     private static string KindKey(UniqueWordKind kind) => kind switch
     {
@@ -55,6 +60,9 @@ public static class UniqueWordsCacheKeys
         UniqueWordKind.Simple => UniqueWordKindKeys.Simple,
         _ => kind.ToString(),
     };
+
+    private static string NormalizeTypeCode(string? typeCode) =>
+        string.IsNullOrWhiteSpace(typeCode) ? "all" : typeCode.Trim();
 
     // The CANONICAL token, so alias and canonical spellings of one ordering share ONE entry
     // ("occurrences-desc" keys as "occurrences") and every pre-feature key stays byte-identical.

@@ -146,6 +146,7 @@ public sealed class UniqueWordsController(
         int id,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
+        [FromQuery] string? typeCode,
         CancellationToken cancellationToken)
     {
         var outcome = await ayahsHandler.HandleAsync(
@@ -153,7 +154,8 @@ public sealed class UniqueWordsController(
                 kind,
                 id,
                 page ?? DefaultPage,
-                pageSize ?? DefaultAyahPageSize),
+                pageSize ?? DefaultAyahPageSize,
+                NormalizeTypeCode(typeCode)),
             cancellationToken);
 
         return outcome switch
@@ -171,4 +173,7 @@ public sealed class UniqueWordsController(
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetUniqueWordAyahsOutcome)} variant."),
         };
     }
+
+    private static string? NormalizeTypeCode(string? typeCode) =>
+        string.IsNullOrWhiteSpace(typeCode) ? null : typeCode.Trim();
 }

@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, Subscription, debounceTime } from 'rxjs';
 
@@ -9,6 +9,7 @@ import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
 import { AyahMatchesListComponent } from '../../components/ayah-matches-list/ayah-matches-list.component';
+import { AyahTypeFiltersComponent } from '../../components/ayah-type-filters/ayah-type-filters.component';
 import { ExplorerCountRangeFilterComponent } from '../../components/explorer-count-range-filter/explorer-count-range-filter.component';
 import { ExplorerToolbarComponent } from '../../components/explorer-toolbar/explorer-toolbar.component';
 import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
@@ -25,7 +26,7 @@ import { sortQueryValue } from '../../models/explorer-sort';
 import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
 import { WordsExplainerPreference } from '../../state/words-explainer-preference';
 import { ROOTS_EMPTY_SELECTION_LABEL, ROOTS_EMPTY_VIEW_LABEL, ROOTS_LIST_PAGINATION_LABEL, ROOTS_LOADING_LABEL, ROOTS_PAGE_TITLE, ROOTS_PANEL_LABEL, ROOTS_RESULT_COUNT_LABEL, ROOTS_SEARCH_LABEL, ROOTS_SEARCH_PLACEHOLDER, ROOTS_SORT_LABELS, ROOTS_SORT_OPTIONS, ROOTS_SURAHS_TABLIST_LABEL, ROOTS_SURAHS_VIEW_LABELS, ROOTS_TABLE_LABEL, ROOTS_WORDS_TABLIST_LABEL, ROOTS_WORD_VIEW_LABELS } from '../../models/roots.labels';
-import { DEFAULT_ROOT_SORT, DEFAULT_ROOT_VIEW, PagedResultDto, ROOTS_RANGE_METRICS, ROOT_DETAIL_PAGE_SIZE, RootListItemViewModel, RootSort, RootSurahView, RootView, RootWordItemDto, RootWordView, normalizeRootSort, toRootSummary } from '../../models/roots.models';
+import { DEFAULT_ROOT_SORT, DEFAULT_ROOT_VIEW, PagedResultDto, ROOTS_RANGE_METRICS, ROOT_DETAIL_PAGE_SIZE, RootListItemViewModel, RootSort, RootSurahView, RootView, RootWordItemDto, RootWordView, normalizeRootSort } from '../../models/roots.models';
 import { AyahMatchDto } from '../../models/unique-words.models';
 import { RootsDetailFacade } from '../../state/roots-detail.facade';
 import { RootsExplorerFacade } from '../../state/roots-explorer.facade';
@@ -45,7 +46,7 @@ let nextSubViewInstance = 0;
 @Component({
   selector: 'qd-roots-explorer-page',
   standalone: true,
-  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, QdTabDirective, QdTabsComponent, RootDetailsPanelComponent, RootLemmasListComponent, RootStemsListComponent, RootWordsListComponent, RootsTableComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
+  imports: [AyahMatchesListComponent, AyahTypeFiltersComponent, ExplorerCountRangeFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, QdTabDirective, QdTabsComponent, RootDetailsPanelComponent, RootLemmasListComponent, RootStemsListComponent, RootWordsListComponent, RootsTableComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
   templateUrl: './roots-explorer-page.component.html',
   styleUrl: './roots-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -141,12 +142,23 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
       wordView: state.wordView,
       surahView: state.surahView,
       detailPage: state.detailPage,
+      typeCode: state.view === 'ayahs' ? state.ayahTypeCode : null,
     };
   });
 
   protected get sortLabels() { return ROOTS_SORT_LABELS; }
   protected get wordViewLabels() { return ROOTS_WORD_VIEW_LABELS; }
   protected get surahViewLabels() { return ROOTS_SURAHS_VIEW_LABELS; }
+
+  constructor() {
+    effect(() => {
+      const state = this.panelState();
+      if (state.selectedRootId === null || state.view !== 'ayahs' || state.ayahTypeCode === null || state.summary === null) return;
+      if (state.summary.typeDistribution.some((item) => item.code === state.ayahTypeCode)) return;
+      this.detailFacade.setAyahTypeCode(null);
+      this.updateQueryParams(buildRootsQueryParams({ typeCode: null, detailPage: 1 }));
+    });
+  }
 
   ngOnInit(): void {
     this.listFacade.bindToRoute(this.route);
@@ -191,8 +203,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
 
   protected onRowSelected(root: RootListItemViewModel): void {
     this.tableFocus.setFocus({ rowId: root.id, column: 'simple', view: DEFAULT_ROOT_VIEW, wordView: 'simple' });
-    this.detailFacade.selectRoot(toRootSummary(root), DEFAULT_ROOT_VIEW);
-    this.updateQueryParams(buildRootsQueryParams({ rootId: root.id, view: DEFAULT_ROOT_VIEW, column: 'simple', wordView: 'simple', surahView: null, detailPage: null }));
+    this.updateQueryParams(buildRootsQueryParams({ rootId: root.id, view: DEFAULT_ROOT_VIEW, column: 'simple', wordView: 'simple', surahView: null, detailPage: null, typeCode: null }));
   }
 
   protected onCountOpened(event: RootCountOpenedEvent): void {
@@ -202,10 +213,19 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
 
   protected onDetailPageChange(page: number): void { this.tableFocus.cancel(); this.detailFacade.setDetailPage(page); this.updateQueryParams(buildRootsQueryParams({ detailPage: page })); }
 
+  protected onAyahTypeChange(typeCode: string | null): void {
+    const current = this.panelState();
+    if (current.selectedRootId === null || current.view !== 'ayahs') return;
+    if (current.ayahTypeCode === typeCode && current.detailPage === 1) return;
+    this.tableFocus.cancel();
+    this.detailFacade.setAyahTypeCode(typeCode);
+    this.updateQueryParams(buildRootsQueryParams({ view: 'ayahs', column: this.activeColumn() ?? 'occurrences', detailPage: 1, typeCode }));
+  }
+
   protected onPanelViewChange(view: RootView): void {
     this.syncTableFocusToPanelView(view);
     this.detailFacade.setView(view);
-    this.updateQueryParams(buildRootsQueryParams({ view, column: this.defaultColumnForView(view, 'simple'), detailPage: null, wordView: view === 'words' ? 'simple' : null, surahView: view === 'surahs' ? 'mentioned' : null }));
+    this.updateQueryParams(buildRootsQueryParams({ view, column: this.defaultColumnForView(view, 'simple'), detailPage: null, wordView: view === 'words' ? 'simple' : null, surahView: view === 'surahs' ? 'mentioned' : null, typeCode: null }));
   }
 
   protected subViewTabId(option: string): string {
@@ -215,13 +235,13 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected onWordViewChange(wordView: RootWordView): void {
     this.syncTableFocusToPanelView('words', wordView);
     this.detailFacade.setWordView(wordView);
-    this.updateQueryParams(buildRootsQueryParams({ view: 'words', column: wordView === 'tashkeel' ? 'tashkeel' : 'simple', wordView, detailPage: null }));
+    this.updateQueryParams(buildRootsQueryParams({ view: 'words', column: wordView === 'tashkeel' ? 'tashkeel' : 'simple', wordView, detailPage: null, typeCode: null }));
   }
 
   protected onSurahViewChange(surahView: RootSurahView): void {
     this.syncTableFocusToPanelView('surahs', undefined, surahView);
     this.detailFacade.setSurahView(surahView);
-    this.updateQueryParams(buildRootsQueryParams({ view: 'surahs', column: 'surahs', surahView }));
+    this.updateQueryParams(buildRootsQueryParams({ view: 'surahs', column: 'surahs', surahView, typeCode: null }));
   }
 
   protected onClearSelection(): void { this.clearTableFocus(); this.detailFacade.clearSelection(); this.updateQueryParams(buildClearSelectionQueryParams()); }
@@ -239,8 +259,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     const { root, view, column } = event;
     const wordView = view === 'words' ? (event.wordView ?? 'simple') : undefined;
     const surahView = view === 'surahs' ? (event.surahView ?? 'mentioned') : undefined;
-    this.detailFacade.selectRootWithPanel(toRootSummary(root), view, wordView, surahView);
-    this.updateQueryParams(buildRootsQueryParams({ rootId: root.id, view, column, detailPage: null, wordView: view === 'words' ? (event.wordView ?? 'simple') : null, surahView: view === 'surahs' ? (event.surahView ?? 'mentioned') : null }));
+    this.updateQueryParams(buildRootsQueryParams({ rootId: root.id, view, column, detailPage: null, wordView: view === 'words' ? (event.wordView ?? 'simple') : null, surahView: view === 'surahs' ? (event.surahView ?? 'mentioned') : null, typeCode: null }));
   }
 
   private clearTableFocus(): void { this.tableFocus.clear(); }

@@ -23,8 +23,23 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
 
     public async Task<RootSummaryDto?> GetRootSummaryAsync(int id, CancellationToken cancellationToken)
     {
+        var key = RootsCacheKeys.Summary(id);
+        if (_cache.TryGetValue(key, out RootSummaryDto? cached))
+        {
+            return cached;
+        }
+
         var all = await GetOrLoadWholeSummaryAsync(cancellationToken);
-        return RootsListDerivation.ToSummary(all, id);
+        var row = all.FirstOrDefault(item => item.Id == id);
+        if (row is null)
+        {
+            return null;
+        }
+
+        var typeDistribution = await _ef.LoadRootTypeDistributionAsync(id, cancellationToken);
+        var summary = RootsListDerivation.ToSummary([row with { TypeDistribution = typeDistribution }], id);
+        _cache.Set(key, summary, RootsCacheEntryOptions.WholeDetail());
+        return summary;
     }
 
     public async Task<PagedResult<RootWordItemDto>?> GetRootWordsAsync(
@@ -44,16 +59,17 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
         int id,
         int page,
         int pageSize,
+        string? typeCode,
         CancellationToken cancellationToken)
     {
-        var key = RootsCacheKeys.Ayahs(id, page, pageSize);
+        var key = RootsCacheKeys.Ayahs(id, page, pageSize, typeCode);
 
         if (_cache.TryGetValue(key, out PagedResult<RootAyahMatchDto>? cached))
         {
             return cached;
         }
 
-        var ayahs = await _ef.GetRootAyahMatchesAsync(id, page, pageSize, cancellationToken);
+        var ayahs = await _ef.GetRootAyahMatchesAsync(id, page, pageSize, typeCode, cancellationToken);
         if (ayahs is not null)
         {
             _cache.Set(key, ayahs, RootsCacheEntryOptions.PagedDetail());

@@ -37,13 +37,15 @@ public sealed partial class RootsController
         int id,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
+        [FromQuery] string? typeCode,
         CancellationToken cancellationToken)
     {
         var outcome = await ayahsHandler.HandleAsync(
             new GetRootAyahsQuery(
                 id,
                 page ?? DefaultPage,
-                pageSize ?? DefaultDetailPageSize),
+                pageSize ?? DefaultDetailPageSize,
+                NormalizeTypeCode(typeCode)),
             cancellationToken);
 
         return outcome switch
@@ -59,6 +61,9 @@ public sealed partial class RootsController
             _ => throw new InvalidOperationException($"Unhandled {nameof(GetRootAyahsOutcome)} variant."),
         };
     }
+
+    private static string? NormalizeTypeCode(string? typeCode) =>
+        string.IsNullOrWhiteSpace(typeCode) ? null : typeCode.Trim();
 
     [HttpGet("{id:int}/words/{wordKind}")]
     public async Task<ActionResult<ApiResponse<PagedResult<RootWordItemDto>>>> GetWords(

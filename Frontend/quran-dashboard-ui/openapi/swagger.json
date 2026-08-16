@@ -5487,6 +5487,13 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "typeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -6494,6 +6501,13 @@
             "schema": {
               "type": "integer",
               "format": "int32"
+            }
+          },
+          {
+            "name": "typeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -14363,7 +14377,8 @@
           "simpleWordsCount",
           "stemsCount",
           "surahsCount",
-          "tashkeelWordsCount"
+          "tashkeelWordsCount",
+          "typeDistribution"
         ],
         "type": "object",
         "properties": {
@@ -14401,6 +14416,12 @@
           "stemsCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "typeDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TypeSummaryDto"
+            }
           }
         },
         "additionalProperties": false
@@ -16068,7 +16089,8 @@
           "kind",
           "missingSurahsCount",
           "occurrencesCount",
-          "surahsCount"
+          "surahsCount",
+          "typeDistribution"
         ],
         "type": "object",
         "properties": {
@@ -16097,6 +16119,12 @@
           "missingSurahsCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "typeDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TypeSummaryDto"
+            }
           }
         },
         "additionalProperties": false

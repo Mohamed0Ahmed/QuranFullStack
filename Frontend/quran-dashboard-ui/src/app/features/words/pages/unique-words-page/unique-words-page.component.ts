@@ -183,6 +183,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
       id: state.selectedWordId,
       view: state.view,
       ayahPage: state.ayahPage,
+      typeCode: state.view === 'ayahs' ? state.ayahTypeCode : null,
     };
   });
 
@@ -209,6 +210,14 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
         table.scrollToTop();
         this.lastScrolledListPage = state.page;
       });
+    });
+
+    effect(() => {
+      const state = this.drilldownState();
+      if (!state.isOpen || state.view !== 'ayahs' || state.ayahTypeCode === null || state.summary === null) return;
+      if (state.summary.typeDistribution.some((item) => item.code === state.ayahTypeCode)) return;
+      this.facade.setAyahTypeCode(null);
+      this.updateQueryParams(buildUniqueWordsQueryParams({ typeCode: null, ayahPage: 1 }));
     });
   }
 
@@ -295,7 +304,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.clearTableFocus();
 
     void this.router.navigate([`/dashboard/words/unique/${mode}`], {
-      queryParams: { search: null, sort: null, page: null, word: null, view: null, ap: null },
+      queryParams: { search: null, sort: null, page: null, word: null, view: null, ap: null, typeCode: null },
       queryParamsHandling: 'merge',
     });
   }
@@ -307,7 +316,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
       view: 'surahs',
     });
     this.facade.openDrilldown(word, 'surahs');
-    this.updateQueryParams(buildUniqueWordsQueryParams({ wordId: word.id, view: 'surahs', ayahPage: null }));
+    this.updateQueryParams(buildUniqueWordsQueryParams({ wordId: word.id, view: 'surahs', ayahPage: null, typeCode: null }));
   }
 
   protected onDrilldownOpen(event: UniqueWordsDrilldownOpenEvent): void {
@@ -329,13 +338,22 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
     this.tableFocus.cancel();
     this.syncTableFocusToView(view);
     this.facade.setDrilldownView(view);
-    this.updateQueryParams(buildUniqueWordsQueryParams({ view }));
+    this.updateQueryParams(buildUniqueWordsQueryParams({ view, ayahPage: view === 'ayahs' ? 1 : null, typeCode: null }));
   }
 
   protected onAyahPageChange(page: number): void {
     this.tableFocus.cancel();
     this.facade.setAyahPage(page);
     this.updateQueryParams(buildUniqueWordsQueryParams({ ayahPage: page }));
+  }
+
+  protected onAyahTypeChange(typeCode: string | null): void {
+    const current = this.drilldownState();
+    if (!current.isOpen || current.view !== 'ayahs') return;
+    if (current.ayahTypeCode === typeCode && current.ayahPage === 1) return;
+    this.tableFocus.cancel();
+    this.facade.setAyahTypeCode(typeCode);
+    this.updateQueryParams(buildUniqueWordsQueryParams({ view: 'ayahs', ayahPage: 1, typeCode }));
   }
 
   protected onPaginationPageChange(page: number): void {
@@ -362,7 +380,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
 
   private commitDrilldownOpen(event: UniqueWordsDrilldownOpenEvent): void {
     this.facade.openDrilldown(event.word, event.view);
-    this.updateQueryParams(buildUniqueWordsQueryParams({ wordId: event.word.id, view: event.view, ayahPage: null }));
+    this.updateQueryParams(buildUniqueWordsQueryParams({ wordId: event.word.id, view: event.view, ayahPage: null, typeCode: null }));
   }
 
   private clearTableFocus(): void {

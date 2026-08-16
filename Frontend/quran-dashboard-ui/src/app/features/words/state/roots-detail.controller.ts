@@ -40,6 +40,7 @@ const INITIAL_PANEL: RootsPanelState = {
   view: DEFAULT_ROOT_VIEW,
   wordView: DEFAULT_ROOT_WORD_VIEW,
   surahView: DEFAULT_ROOT_SURAHS_VIEW,
+  ayahTypeCode: null,
   detailPage: DEFAULT_ROOT_DETAIL_PAGE,
   ayahs: null,
   words: null,
@@ -51,13 +52,13 @@ const INITIAL_PANEL: RootsPanelState = {
   errorMessage: '',
 };
 
-// Complete root detail identity: every field participates in equality (see rootsDetailUrlStatesEqual).
 export interface RootsDetailUrlState {
   readonly rootId: number;
   readonly view: RootView;
   readonly wordView: RootWordView;
   readonly surahView: RootSurahView;
   readonly detailPage: number;
+  readonly typeCode: string | null;
 }
 
 export function rootsDetailUrlStatesEqual(
@@ -73,14 +74,11 @@ export function rootsDetailUrlStatesEqual(
     current.view === next.view &&
     current.wordView === next.wordView &&
     current.surahView === next.surahView &&
-    current.detailPage === next.detailPage
+    current.detailPage === next.detailPage &&
+    current.typeCode === next.typeCode
   );
 }
 
-// Not providedIn: 'root': the page facade owns one instance and each overlay adapter provides
-// its own component-scoped instance (destroyed with the adapter), so their panel state stays isolated.
-// Every complete-identity transition abandons both the in-flight summary and detail request (new
-// generation), so a late response from a previously selected root can never overwrite this one.
 @Injectable()
 export class RootsDetailController extends AbstractDetailController<
   RootsPanelState,
@@ -106,9 +104,17 @@ export class RootsDetailController extends AbstractDetailController<
     wordView: RootWordView = DEFAULT_ROOT_WORD_VIEW,
     surahView: RootSurahView = DEFAULT_ROOT_SURAHS_VIEW,
     detailPage: number = DEFAULT_ROOT_DETAIL_PAGE,
+    ayahTypeCode: string | null = null,
   ): void {
     const token = this.requests.beginTransition();
-    const nextState: RootsDetailUrlState = { rootId: summary.id, view, wordView, surahView, detailPage };
+    const nextState: RootsDetailUrlState = {
+      rootId: summary.id,
+      view,
+      wordView,
+      surahView,
+      detailPage,
+      typeCode: ayahTypeCode,
+    };
     this.activeUrlState = nextState;
     this._panel.set({
       ...INITIAL_PANEL,
@@ -117,9 +123,41 @@ export class RootsDetailController extends AbstractDetailController<
       view,
       wordView,
       surahView,
+      ayahTypeCode,
       detailPage,
       status: 'loading',
     });
+    this.loadActiveView(nextState, token);
+  }
+
+  setAyahTypeCode(typeCode: string | null): void {
+    const current = this._panel();
+    if (current.selectedRootId === null || current.summary === null || current.view !== 'ayahs') {
+      return;
+    }
+
+    const normalizedTypeCode = this.normalizeTypeCode(typeCode);
+    if (normalizedTypeCode === current.ayahTypeCode && current.detailPage === DEFAULT_ROOT_DETAIL_PAGE) {
+      return;
+    }
+
+    const token = this.requests.beginTransition();
+    const nextState: RootsDetailUrlState = {
+      rootId: current.selectedRootId,
+      view: 'ayahs',
+      wordView: current.wordView,
+      surahView: current.surahView,
+      detailPage: DEFAULT_ROOT_DETAIL_PAGE,
+      typeCode: normalizedTypeCode,
+    };
+    this.activeUrlState = nextState;
+    this._panel.update((state) => ({
+      ...state,
+      ayahTypeCode: normalizedTypeCode,
+      detailPage: DEFAULT_ROOT_DETAIL_PAGE,
+      status: 'loading',
+      errorMessage: '',
+    }));
     this.loadActiveView(nextState, token);
   }
 
@@ -140,6 +178,7 @@ export class RootsDetailController extends AbstractDetailController<
       wordView,
       surahView,
       detailPage,
+      typeCode: null,
     };
     this.activeUrlState = nextState;
     this._panel.update((s) => ({
@@ -147,6 +186,7 @@ export class RootsDetailController extends AbstractDetailController<
       view,
       wordView,
       surahView,
+      ayahTypeCode: null,
       detailPage,
       status: 'loading',
       errorMessage: '',
@@ -172,6 +212,7 @@ export class RootsDetailController extends AbstractDetailController<
       wordView,
       surahView: current.surahView,
       detailPage: DEFAULT_ROOT_DETAIL_PAGE,
+      typeCode: null,
     };
     this.activeUrlState = nextState;
     this._panel.update((s) => ({
@@ -202,6 +243,7 @@ export class RootsDetailController extends AbstractDetailController<
       wordView: current.wordView,
       surahView,
       detailPage: current.detailPage,
+      typeCode: null,
     };
     this.activeUrlState = nextState;
     this._panel.update((s) => ({
@@ -230,6 +272,7 @@ export class RootsDetailController extends AbstractDetailController<
       wordView: current.wordView,
       surahView: current.surahView,
       detailPage: page,
+      typeCode: current.view === 'ayahs' ? current.ayahTypeCode : null,
     };
     this.activeUrlState = nextState;
     this._panel.update((s) => ({
@@ -259,12 +302,13 @@ export class RootsDetailController extends AbstractDetailController<
       view: state.view,
       wordView: state.wordView,
       surahView: state.surahView,
+      ayahTypeCode: state.typeCode,
       detailPage: state.detailPage,
     };
   }
 
-  protected override applySummary(_state: RootsDetailUrlState, data: RootSummaryDto): Partial<RootsPanelState> {
-    return { summary: data };
+  protected override applySummary(state: RootsDetailUrlState, data: RootSummaryDto): Partial<RootsPanelState> {
+    return { summary: data, ayahTypeCode: state.typeCode };
   }
 
   protected override loadSummary(state: RootsDetailUrlState): Observable<ApiResponse<RootSummaryDto>> {
@@ -299,6 +343,7 @@ export class RootsDetailController extends AbstractDetailController<
         view: state.view,
         wordView: state.wordView,
         surahView: state.surahView,
+        ayahTypeCode: state.typeCode,
         detailPage: state.detailPage,
         cachedMissingSurahs: current.missingSurahs,
       },
@@ -319,5 +364,9 @@ export class RootsDetailController extends AbstractDetailController<
       onError: (err) =>
         this.applyIfCurrent(token, (s) => ({ ...s, ...buildDetailErrorUpdate(err, ROOTS_ERROR_LABEL) })),
     };
+  }
+
+  private normalizeTypeCode(typeCode: string | null): string | null {
+    return typeCode === null || typeCode.trim().length === 0 ? null : typeCode.trim();
   }
 }

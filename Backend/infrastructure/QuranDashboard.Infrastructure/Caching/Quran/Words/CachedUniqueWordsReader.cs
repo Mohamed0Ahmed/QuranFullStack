@@ -101,16 +101,17 @@ public sealed class CachedUniqueWordsReader(IUniqueWordsReader inner, IMemoryCac
         int id,
         int page,
         int pageSize,
+        string? typeCode,
         CancellationToken cancellationToken)
     {
-        var key = UniqueWordsCacheKeys.Ayahs(kind, id, page, pageSize);
+        var key = UniqueWordsCacheKeys.Ayahs(kind, id, page, pageSize, typeCode);
 
         if (cache.TryGetValue(key, out PagedResult<UniqueWordAyahMatchDto>? cached))
         {
             return cached;
         }
 
-        var ayahs = await inner.GetAyahMatchesAsync(kind, id, page, pageSize, cancellationToken);
+        var ayahs = await inner.GetAyahMatchesAsync(kind, id, page, pageSize, typeCode, cancellationToken);
         if (ayahs is not null)
         {
             cache.Set(key, ayahs, UniqueWordsCacheEntryOptions.Detail());

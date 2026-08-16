@@ -73,7 +73,15 @@ export function serializeDetailFrame(frame: DetailFrame): string {
   const v = DETAIL_OVERLAY_FRAME_VERSION;
   switch (frame.kind) {
     case 'unique':
-      return [v, 'unique', frame.mode, String(frame.id), frame.view, String(frame.ayahPage)].join(FIELD_SEPARATOR);
+      return [
+        v,
+        'unique',
+        frame.mode,
+        String(frame.id),
+        frame.view,
+        String(frame.ayahPage),
+        frame.typeCode === null ? NULL_SENTINEL : encodeField(frame.typeCode),
+      ].join(FIELD_SEPARATOR);
     case 'root':
       return [
         v,
@@ -83,6 +91,7 @@ export function serializeDetailFrame(frame: DetailFrame): string {
         frame.wordView,
         frame.surahView,
         String(frame.detailPage),
+        frame.typeCode === null ? NULL_SENTINEL : encodeField(frame.typeCode),
       ].join(FIELD_SEPARATOR);
     case 'lemma':
     case 'stem':
@@ -119,20 +128,21 @@ export function parseDetailFrame(raw: string): DetailFrame | null {
 
   switch (fields[1]) {
     case 'unique': {
-      if (fields.length !== 6) {
+      if (fields.length !== 6 && fields.length !== 7) {
         return null;
       }
       const mode = parseEnum(fields[2], UNIQUE_MODES);
       const id = parsePositiveInt(fields[3]);
       const view = parseEnum(fields[4], UNIQUE_VIEWS);
       const ayahPage = parsePositiveInt(fields[5]);
-      if (mode === null || id === null || view === null || ayahPage === null) {
+      const typeCode = fields.length === 7 ? parseNullableCode(fields[6]) : { value: null };
+      if (mode === null || id === null || view === null || ayahPage === null || typeCode === null) {
         return null;
       }
-      return { kind: 'unique', mode, id, view, ayahPage };
+      return { kind: 'unique', mode, id, view, ayahPage, typeCode: typeCode.value };
     }
     case 'root': {
-      if (fields.length !== 7) {
+      if (fields.length !== 7 && fields.length !== 8) {
         return null;
       }
       const id = parsePositiveInt(fields[2]);
@@ -140,10 +150,11 @@ export function parseDetailFrame(raw: string): DetailFrame | null {
       const wordView = parseEnum(fields[4], WORD_VIEWS);
       const surahView = parseEnum(fields[5], SURAH_VIEWS);
       const detailPage = parsePositiveInt(fields[6]);
-      if (id === null || view === null || wordView === null || surahView === null || detailPage === null) {
+      const typeCode = fields.length === 8 ? parseNullableCode(fields[7]) : { value: null };
+      if (id === null || view === null || wordView === null || surahView === null || detailPage === null || typeCode === null) {
         return null;
       }
-      return { kind: 'root', id, view, wordView, surahView, detailPage };
+      return { kind: 'root', id, view, wordView, surahView, detailPage, typeCode: typeCode.value };
     }
     case 'lemma':
     case 'stem': {

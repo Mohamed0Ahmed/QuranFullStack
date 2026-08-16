@@ -36,8 +36,9 @@ export const UniqueWordsCacheKeys = {
     return `words:${mode}:${wordId}:missing`;
   },
 
-  ayahs(mode: UniqueWordKind, wordId: number, page: number): string {
-    return `words:${mode}:${wordId}:ayahs:p${page}`;
+  ayahs(mode: UniqueWordKind, wordId: number, page: number, typeCode: string | null): string {
+    const normalizedTypeCode = typeCode && typeCode.trim().length > 0 ? typeCode.trim() : 'all';
+    return `words:${mode}:${wordId}:ayahs:${normalizedTypeCode}:p${page}`;
   },
 } as const;
 

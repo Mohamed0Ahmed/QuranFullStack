@@ -26,8 +26,6 @@ export class RootsDetailFacade extends AbstractRouteDetailFacade<
   RootWordView,
   RootSurahView
 > {
-  // Per-facade controller instance keeps this page's panel state isolated from the
-  // component-scoped controllers the global overlay adapters use.
   protected readonly controller = new RootsDetailController(
     inject(RootsApi),
     inject(RootsCache),
@@ -59,8 +57,13 @@ export class RootsDetailFacade extends AbstractRouteDetailFacade<
     wordView?: RootWordView,
     surahView?: RootSurahView,
     detailPage?: number,
+    ayahTypeCode?: string | null,
   ): void {
-    this.controller.selectRootWithPanel(summary, view, wordView, surahView, detailPage);
+    this.controller.selectRootWithPanel(summary, view, wordView, surahView, detailPage, ayahTypeCode);
+  }
+
+  setAyahTypeCode(typeCode: string | null): void {
+    this.controller.setAyahTypeCode(typeCode);
   }
 
   protected urlStatesEqual(a: RootsDetailUrlState | null, b: RootsDetailUrlState | null): boolean {
@@ -79,6 +82,7 @@ export class RootsDetailFacade extends AbstractRouteDetailFacade<
       wordView: parsed.wordView,
       surahView: parsed.surahView,
       detailPage: parsed.detailPage,
+      typeCode: parsed.typeCode,
     };
   }
 }

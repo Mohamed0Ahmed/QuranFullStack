@@ -92,6 +92,7 @@ export interface WordDrilldownState {
   missingSurahs: UniqueWordMissingSurahsDto | null;
   ayahs: PagedResultDto<UniqueWordAyahMatchDto> | null;
   ayahPage: number;
+  ayahTypeCode: string | null;
   status: LoadStatus;
   errorMessage: string;
 }
@@ -152,6 +153,7 @@ export const UNIQUE_WORDS_QUERY_KEYS = {
   word: 'word',
   view: 'view',
   ayahPage: 'ap',
+  typeCode: 'typeCode',
 } as const;
 
 // Association filters (Feature 026, US7): primary word type (POS code) and primary root. Both fail
@@ -177,6 +179,7 @@ export const MODAL_QUERY_KEYS: readonly string[] = [
   UNIQUE_WORDS_QUERY_KEYS.word,
   UNIQUE_WORDS_QUERY_KEYS.view,
   UNIQUE_WORDS_QUERY_KEYS.ayahPage,
+  UNIQUE_WORDS_QUERY_KEYS.typeCode,
 ] as const;
 
 export interface ParsedUniqueWordsQuery {
@@ -188,6 +191,7 @@ export interface ParsedUniqueWordsQuery {
   wordId: number | null;
   view: WordDrilldownView | null;
   ayahPage: number | null;
+  typeCode: string | null;
 }
 
 export type UniqueWordListItemViewModel = UniqueWordListItemDto;

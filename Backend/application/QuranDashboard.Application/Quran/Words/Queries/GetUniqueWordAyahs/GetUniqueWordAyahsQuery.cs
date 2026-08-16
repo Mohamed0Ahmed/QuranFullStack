@@ -1,3 +1,8 @@
 namespace QuranDashboard.Application.Quran.Words.Queries.GetUniqueWordAyahs;
 
-public sealed record GetUniqueWordAyahsQuery(string? Kind, int Id, int Page, int PageSize);
+public sealed record GetUniqueWordAyahsQuery(
+    string? Kind,
+    int Id,
+    int Page,
+    int PageSize,
+    string? TypeCode = null);

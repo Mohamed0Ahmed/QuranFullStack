@@ -26,6 +26,7 @@ export interface UniqueDetailFrame {
   readonly id: number;
   readonly view: UniqueFrameView;
   readonly ayahPage: number;
+  readonly typeCode: string | null;
 }
 
 export interface RootDetailFrame {
@@ -35,6 +36,7 @@ export interface RootDetailFrame {
   readonly wordView: FrameWordView;
   readonly surahView: FrameSurahView;
   readonly detailPage: number;
+  readonly typeCode: string | null;
 }
 
 export interface LemmaDetailFrame {
@@ -97,7 +99,13 @@ export function detailFramesEqual(a: DetailFrame, b: DetailFrame): boolean {
   switch (a.kind) {
     case 'unique': {
       const other = b as UniqueDetailFrame;
-      return a.mode === other.mode && a.id === other.id && a.view === other.view && a.ayahPage === other.ayahPage;
+      return (
+        a.mode === other.mode &&
+        a.id === other.id &&
+        a.view === other.view &&
+        a.ayahPage === other.ayahPage &&
+        a.typeCode === other.typeCode
+      );
     }
     case 'root': {
       const other = b as RootDetailFrame;
@@ -106,7 +114,8 @@ export function detailFramesEqual(a: DetailFrame, b: DetailFrame): boolean {
         a.view === other.view &&
         a.wordView === other.wordView &&
         a.surahView === other.surahView &&
-        a.detailPage === other.detailPage
+        a.detailPage === other.detailPage &&
+        a.typeCode === other.typeCode
       );
     }
     case 'lemma':

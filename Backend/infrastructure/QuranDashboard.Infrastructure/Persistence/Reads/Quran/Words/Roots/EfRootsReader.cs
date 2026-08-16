@@ -24,7 +24,14 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
     public async Task<RootSummaryDto?> GetRootSummaryAsync(int id, CancellationToken cancellationToken)
     {
         var all = await LoadWholeSummaryAsync(cancellationToken);
-        return RootsListDerivation.ToSummary(all, id);
+        var row = all.FirstOrDefault(item => item.Id == id);
+        if (row is null)
+        {
+            return null;
+        }
+
+        var typeDistribution = await LoadRootTypeDistributionAsync(id, cancellationToken);
+        return RootsListDerivation.ToSummary([row with { TypeDistribution = typeDistribution }], id);
     }
 
     public async Task<PagedResult<RootWordItemDto>?> GetRootWordsAsync(
@@ -115,8 +122,11 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
         int id,
         int page,
         int pageSize,
+        string? typeCode,
         CancellationToken cancellationToken)
     {
+        var normalizedTypeCode = string.IsNullOrWhiteSpace(typeCode) ? null : typeCode.Trim();
+
         var rootExists = await _db.QuranRoots
             .AsNoTracking()
             .AnyAsync(r => r.Id == id, cancellationToken);
@@ -127,7 +137,7 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
 
         var matchedAyahIds = _db.WordMorphologies
             .AsNoTracking()
-            .Where(m => m.RootId == id)
+            .Where(m => m.RootId == id && (normalizedTypeCode == null || m.HeadPos == normalizedTypeCode))
             .Join(
                 _db.QuranWords.AsNoTracking(),
                 m => m.QuranWordId,
@@ -168,7 +178,9 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
         var matchedRows = await (
             from m in _db.WordMorphologies.AsNoTracking()
             join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
-            where m.RootId == id && ayahIds.Contains(w.AyahId)
+            where m.RootId == id
+                && (normalizedTypeCode == null || m.HeadPos == normalizedTypeCode)
+                && ayahIds.Contains(w.AyahId)
             select new { w.AyahId, w.Id })
             .ToListAsync(cancellationToken);
 
@@ -336,17 +348,17 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
     {
         var sql = $"""
             SELECT
-                r.id AS "{nameof(RootSummaryRow.Id)}",
-                r.root_text AS "{nameof(RootSummaryRow.RootText)}",
-                replace(translate(lower(r.root_text), @foldFrom, @foldTo), ' ', '') AS "{nameof(RootSummaryRow.NormalizedRootText)}",
-                r.words_count AS "{nameof(RootSummaryRow.OccurrencesCount)}",
-                COALESCE(agg.ayahs_count, 0) AS "{nameof(RootSummaryRow.AyahsCount)}",
-                COALESCE(agg.surahs_count, 0) AS "{nameof(RootSummaryRow.SurahsCount)}",
-                COALESCE(agg.simple_words_count, 0) AS "{nameof(RootSummaryRow.SimpleWordsCount)}",
-                COALESCE(agg.tashkeel_words_count, 0) AS "{nameof(RootSummaryRow.TashkeelWordsCount)}",
-                COALESCE(agg.distinct_lemmas_count, r.distinct_lemmas_count) AS "{nameof(RootSummaryRow.LemmasCount)}",
-                COALESCE(agg.stems_count, 0) AS "{nameof(RootSummaryRow.StemsCount)}",
-                r.first_word_order_in_mushaf AS "{nameof(RootSummaryRow.FirstWordOrderInMushaf)}"
+                r.id AS "{nameof(RootAggregationRow.Id)}",
+                r.root_text AS "{nameof(RootAggregationRow.RootText)}",
+                replace(translate(lower(r.root_text), @foldFrom, @foldTo), ' ', '') AS "{nameof(RootAggregationRow.NormalizedRootText)}",
+                r.words_count AS "{nameof(RootAggregationRow.OccurrencesCount)}",
+                COALESCE(agg.ayahs_count, 0) AS "{nameof(RootAggregationRow.AyahsCount)}",
+                COALESCE(agg.surahs_count, 0) AS "{nameof(RootAggregationRow.SurahsCount)}",
+                COALESCE(agg.simple_words_count, 0) AS "{nameof(RootAggregationRow.SimpleWordsCount)}",
+                COALESCE(agg.tashkeel_words_count, 0) AS "{nameof(RootAggregationRow.TashkeelWordsCount)}",
+                COALESCE(agg.distinct_lemmas_count, r.distinct_lemmas_count) AS "{nameof(RootAggregationRow.LemmasCount)}",
+                COALESCE(agg.stems_count, 0) AS "{nameof(RootAggregationRow.StemsCount)}",
+                r.first_word_order_in_mushaf AS "{nameof(RootAggregationRow.FirstWordOrderInMushaf)}"
             FROM quran_roots r
             LEFT JOIN (
                 SELECT
@@ -364,13 +376,62 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
             ) agg ON agg.rid = r.id
             """;
 
-        var rows = await _db.Database.SqlQueryRaw<RootSummaryRow>(
+        var aggregates = await _db.Database.SqlQueryRaw<RootAggregationRow>(
             sql,
             new NpgsqlParameter("foldFrom", ArabicSearchQueryNormalizer.FoldFrom),
             new NpgsqlParameter("foldTo", ArabicSearchQueryNormalizer.FoldTo))
             .ToListAsync(cancellationToken);
 
-        return rows;
+        if (aggregates.Count == 0)
+        {
+            return [];
+        }
+
+        return aggregates
+            .Select(row => new RootSummaryRow(
+                row.Id,
+                row.RootText,
+                row.NormalizedRootText,
+                row.OccurrencesCount,
+                row.AyahsCount,
+                row.SurahsCount,
+                row.SimpleWordsCount,
+                row.TashkeelWordsCount,
+                row.LemmasCount,
+                row.StemsCount,
+                row.FirstWordOrderInMushaf,
+                []))
+            .ToList();
+    }
+
+    internal async Task<IReadOnlyList<RootTypeDistributionRow>> LoadRootTypeDistributionAsync(
+        int rootId,
+        CancellationToken cancellationToken)
+    {
+        var rows = await (
+            from morphology in _db.WordMorphologies.AsNoTracking()
+            join tag in _db.PosTags.AsNoTracking() on morphology.HeadPos equals tag.Code
+            where morphology.RootId == rootId
+            group morphology by new
+            {
+                RootId = morphology.RootId!.Value,
+                tag.Code,
+                tag.ArabicLabel,
+            }
+            into groupRows
+            select new RootTypeDistributionRow(
+                groupRows.Key.RootId,
+                groupRows.Key.Code,
+                groupRows.Key.ArabicLabel,
+                groupRows.Count(),
+                groupRows.Min(row => row.QuranWordId)))
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .OrderByDescending(row => row.OccurrencesCount)
+            .ThenBy(row => row.FirstQuranWordId)
+            .ThenBy(row => row.Code, StringComparer.Ordinal)
+            .ToList();
     }
 
     private sealed record AyahMetaRow(

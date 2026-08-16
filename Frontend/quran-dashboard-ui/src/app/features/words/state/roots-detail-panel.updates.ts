@@ -165,6 +165,7 @@ export function restoredRootNotFoundUpdate(
     view: DEFAULT_ROOT_VIEW,
     wordView: DEFAULT_ROOT_WORD_VIEW,
     surahView: DEFAULT_ROOT_SURAHS_VIEW,
+    ayahTypeCode: null,
     detailPage: DEFAULT_ROOT_DETAIL_PAGE,
     ayahs: null,
     words: null,

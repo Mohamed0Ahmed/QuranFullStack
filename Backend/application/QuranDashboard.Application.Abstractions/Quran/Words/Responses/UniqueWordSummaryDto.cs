@@ -1,3 +1,5 @@
+using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Responses;
+
 namespace QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 
 public sealed record UniqueWordSummaryDto(
@@ -7,4 +9,5 @@ public sealed record UniqueWordSummaryDto(
     int OccurrencesCount,
     int AyahsCount,
     int SurahsCount,
-    int MissingSurahsCount);
+    int MissingSurahsCount,
+    IReadOnlyList<TypeSummaryDto> TypeDistribution);

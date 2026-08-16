@@ -92,6 +92,7 @@ export interface RootsPanelState {
   view: RootView;
   wordView: RootWordView;
   surahView: RootSurahView;
+  ayahTypeCode: string | null;
   detailPage: number;
   ayahs: PagedResultDto<RootAyahMatchDto> | null;
   words: PagedResultDto<RootWordItemDto> | null;
@@ -107,20 +108,6 @@ export interface RootListItemViewModel extends RootListItemDto {
   displayText: string;
 }
 
-export function toRootSummary(root: RootListItemDto): RootSummaryDto {
-  return {
-    id: root.id,
-    rootText: root.rootText,
-    occurrencesCount: root.occurrencesCount,
-    ayahsCount: root.ayahsCount,
-    surahsCount: root.surahsCount,
-    simpleWordsCount: root.simpleWordsCount,
-    tashkeelWordsCount: root.tashkeelWordsCount,
-    lemmasCount: root.lemmasCount,
-    stemsCount: root.stemsCount,
-  };
-}
-
 export const ROOTS_QUERY_KEYS = {
   search: 'search',
   sort: 'sort',
@@ -131,6 +118,7 @@ export const ROOTS_QUERY_KEYS = {
   wordView: 'wordView',
   surahView: 'surahView',
   detailPage: 'detailPage',
+  typeCode: 'typeCode',
 } as const;
 
 export const ROOTS_RANGE_METRICS: readonly RangeMetric[] = [
@@ -150,6 +138,7 @@ export const ROOTS_SELECTION_QUERY_KEYS: readonly string[] = [
   ROOTS_QUERY_KEYS.wordView,
   ROOTS_QUERY_KEYS.surahView,
   ROOTS_QUERY_KEYS.detailPage,
+  ROOTS_QUERY_KEYS.typeCode,
 ] as const;
 
 export const DEFAULT_ROOT_SORT: RootSort = 'mushaf-order';
@@ -237,4 +226,5 @@ export interface ParsedRootsQuery {
   wordView: RootWordView;
   surahView: RootSurahView;
   detailPage: number;
+  typeCode: string | null;
 }

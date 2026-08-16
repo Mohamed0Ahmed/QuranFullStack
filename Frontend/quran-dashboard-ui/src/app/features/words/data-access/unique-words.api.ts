@@ -85,8 +85,12 @@ export class UniqueWordsApi {
     id: number,
     page: number,
     pageSize: number,
+    typeCode: string | null = null,
   ): Observable<ApiResponse<PagedResultDto<UniqueWordAyahMatchDto>>> {
-    const params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    let params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    if (typeCode !== null && typeCode.trim().length > 0) {
+      params = params.set('typeCode', typeCode.trim());
+    }
     return this.http.get<ApiResponse<PagedResultDto<UniqueWordAyahMatchDto>>>(
       `${this.baseUrl}/api/words/unique/${encodeURIComponent(kind)}/${id}/ayahs`,
       { params },

@@ -70,6 +70,7 @@ export class UniqueDetailOverlayAdapterComponent {
           wordId: frame.id,
           view: frame.view,
           ayahPage: frame.ayahPage,
+          typeCode: frame.typeCode,
         }),
       );
     });
@@ -90,7 +91,7 @@ export class UniqueDetailOverlayAdapterComponent {
       return;
     }
 
-    this.overlay.replaceTopFrame({ ...frame, view, ayahPage: DEFAULT_AYAH_PAGE });
+    this.overlay.replaceTopFrame({ ...frame, view, ayahPage: DEFAULT_AYAH_PAGE, typeCode: null });
   }
 
   protected onAyahPageChange(page: number): void {
@@ -100,5 +101,23 @@ export class UniqueDetailOverlayAdapterComponent {
     }
 
     this.overlay.replaceTopFrame({ ...frame, ayahPage: page });
+  }
+
+  protected onAyahTypeCodeChange(typeCode: string | null): void {
+    const frame = this.frame();
+    if (frame.view !== 'ayahs') {
+      return;
+    }
+
+    const normalizedTypeCode = this.normalizeTypeCode(typeCode);
+    if (normalizedTypeCode === frame.typeCode && frame.ayahPage === DEFAULT_AYAH_PAGE) {
+      return;
+    }
+
+    this.overlay.replaceTopFrame({ ...frame, typeCode: normalizedTypeCode, ayahPage: DEFAULT_AYAH_PAGE });
+  }
+
+  private normalizeTypeCode(typeCode: string | null): string | null {
+    return typeCode === null || typeCode.trim().length === 0 ? null : typeCode.trim();
   }
 }

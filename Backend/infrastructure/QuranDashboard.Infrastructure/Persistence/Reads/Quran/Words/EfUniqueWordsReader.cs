@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Common.Filtering;
 using QuranDashboard.Application.Abstractions.Quran.Words;
+using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Responses;
 using QuranDashboard.Application.Abstractions.Quran.Words.Responses;
 using QuranDashboard.Domain.Quran.Words;
 
@@ -96,6 +97,8 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
             return null;
         }
 
+        var typeDistribution = await LoadTypeDistributionAsync(kind, id, cancellationToken);
+
         return new UniqueWordSummaryDto(
             id,
             row.KindKey,
@@ -103,7 +106,8 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
             row.OccurrencesCount,
             row.AyahsCount,
             row.SurahsCount,
-            TotalSurahs - row.SurahsCount);
+            TotalSurahs - row.SurahsCount,
+            typeDistribution);
     }
 
     public async Task<UniqueWordSurahsResponse?> GetMentionedSurahsAsync(
@@ -165,14 +169,20 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
     }
 
     public async Task<PagedResult<UniqueWordAyahMatchDto>?> GetAyahMatchesAsync(
-        UniqueWordKind kind, int id, int page, int pageSize, CancellationToken cancellationToken)
+        UniqueWordKind kind,
+        int id,
+        int page,
+        int pageSize,
+        string? typeCode,
+        CancellationToken cancellationToken)
     {
         if (!await UniqueWordExistsAsync(kind, id, cancellationToken))
         {
             return null;
         }
 
-        var matchedAyahIds = ReadableMatchesQuery(kind, id).Select(w => w.AyahId).Distinct();
+        var matches = FilterReadableMatchesByType(ReadableMatchesQuery(kind, id), typeCode);
+        var matchedAyahIds = matches.Select(w => w.AyahId).Distinct();
 
         var totalCount = await matchedAyahIds.CountAsync(cancellationToken);
         var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
@@ -203,7 +213,7 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
 
         var ayahIds = pageAyahs.Select(a => a.AyahId).ToList();
 
-        var matchedRows = await ReadableMatchesQuery(kind, id)
+        var matchedRows = await matches
             .Where(w => ayahIds.Contains(w.AyahId))
             .Select(w => new { w.AyahId, w.Id })
             .ToListAsync(cancellationToken);
@@ -275,6 +285,46 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
                 .Where(w => !w.IsAyahMarker && w.UniqueTashkeelWordId == id)
             : _db.QuranWords.AsNoTracking()
                 .Where(w => !w.IsAyahMarker && w.UniqueSimpleWordId == id);
+
+    private IQueryable<QuranWord> FilterReadableMatchesByType(
+        IQueryable<QuranWord> matches,
+        string? typeCode)
+    {
+        if (string.IsNullOrWhiteSpace(typeCode))
+        {
+            return matches;
+        }
+
+        var normalizedTypeCode = typeCode.Trim();
+        return matches.Where(word => _db.WordMorphologies.Any(
+            morphology => morphology.QuranWordId == word.Id && morphology.HeadPos == normalizedTypeCode));
+    }
+
+    private async Task<IReadOnlyList<TypeSummaryDto>> LoadTypeDistributionAsync(
+        UniqueWordKind kind,
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var rows = await (
+            from word in ReadableMatchesQuery(kind, id)
+            join morphology in _db.WordMorphologies.AsNoTracking() on word.Id equals morphology.QuranWordId
+            join tag in _db.PosTags.AsNoTracking() on morphology.HeadPos equals tag.Code
+            group word by new { tag.Code, tag.ArabicLabel }
+            into groupRows
+            select new UniqueWordTypeDistributionRow(
+                groupRows.Key.Code,
+                groupRows.Key.ArabicLabel,
+                groupRows.Count(),
+                groupRows.Min(word => word.Id)))
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .OrderByDescending(row => row.OccurrencesCount)
+            .ThenBy(row => row.FirstQuranWordId)
+            .ThenBy(row => row.Code, StringComparer.Ordinal)
+            .Select(row => new TypeSummaryDto(row.Code, row.ArabicLabel, row.OccurrencesCount))
+            .ToList();
+    }
 
     private async Task<bool> UniqueWordExistsAsync(
         UniqueWordKind kind, int id, CancellationToken cancellationToken) =>
@@ -402,6 +452,12 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
         int OccurrencesCount,
         short AyahsCount,
         short SurahsCount);
+
+    private sealed record UniqueWordTypeDistributionRow(
+        string Code,
+        string ArabicLabel,
+        int OccurrencesCount,
+        int FirstQuranWordId);
 
     private sealed record SurahOccurrenceRow(short SurahNumber, int OccurrencesInSurah);
 

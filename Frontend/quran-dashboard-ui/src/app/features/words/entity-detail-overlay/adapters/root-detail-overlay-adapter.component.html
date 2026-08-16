@@ -54,6 +54,16 @@
   [loading]="panelState().status === 'loading'"
   (viewChange)="onViewChange($event)"
 >
+  @if (frame().view === 'ayahs' && (panelState().summary || panelState().status === 'loading')) {
+    <qd-ayah-type-filters
+      [items]="panelState().summary?.typeDistribution ?? []"
+      [selectedTypeCode]="frame().typeCode"
+      [loading]="panelState().status === 'loading' && !panelState().summary"
+      data-testid="overlay-roots-ayah-type-filters"
+      (typeCodeChange)="onAyahTypeCodeChange($event)"
+    />
+  }
+
   @if (frame().view === 'words') {
     <qd-tabs
       class="qd-explorer-subtabs"

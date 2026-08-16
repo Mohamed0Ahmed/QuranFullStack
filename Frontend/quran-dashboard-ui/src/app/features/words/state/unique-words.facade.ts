@@ -127,6 +127,10 @@ export class UniqueWordsFacade {
     this.drilldown.setAyahPage(page);
   }
 
+  setAyahTypeCode(typeCode: string | null): void {
+    this.drilldown.setAyahTypeCode(typeCode);
+  }
+
   closeDrilldown(): void {
     this.drilldown.closeDrilldown();
   }
@@ -156,7 +160,7 @@ export class UniqueWordsFacade {
     this._association.set(parsed.association);
     this._page.set(parsed.page);
 
-    this.drilldown.restoreFromUrl(nextMode, parsed.wordId, parsed.view, parsed.ayahPage);
+    this.drilldown.restoreFromUrl(nextMode, parsed.wordId, parsed.view, parsed.ayahPage, parsed.typeCode);
   }
 
   private listRequestKey(): string {

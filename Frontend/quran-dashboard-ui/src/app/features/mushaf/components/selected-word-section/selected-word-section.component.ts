@@ -93,7 +93,7 @@ export class SelectedWordSectionComponent {
       return null;
     }
 
-    return { kind: 'root', id: rootId, view: 'words', wordView: 'simple', surahView: 'mentioned', detailPage: 1 };
+    return { kind: 'root', id: rootId, view: 'words', wordView: 'simple', surahView: 'mentioned', detailPage: 1, typeCode: null };
   });
 
   protected readonly lemmaFrame = computed<LemmaDetailFrame | null>(() => {
@@ -139,7 +139,7 @@ export class SelectedWordSectionComponent {
       return null;
     }
 
-    return { kind: 'unique', mode: 'tashkeel', id: analysis.identity.uniqueTashkeel.id, view: 'ayahs', ayahPage: 1 };
+    return { kind: 'unique', mode: 'tashkeel', id: analysis.identity.uniqueTashkeel.id, view: 'ayahs', ayahPage: 1, typeCode: null };
   });
 
   protected readonly simpleIdentityFrame = computed<UniqueDetailFrame | null>(() => {
@@ -149,7 +149,7 @@ export class SelectedWordSectionComponent {
       return null;
     }
 
-    return { kind: 'unique', mode: 'simple', id: analysis.identity.uniqueSimple.id, view: 'ayahs', ayahPage: 1 };
+    return { kind: 'unique', mode: 'simple', id: analysis.identity.uniqueSimple.id, view: 'ayahs', ayahPage: 1, typeCode: null };
   });
 
   protected readonly wordTypeFrame = computed<WordTypeDetailFrame | null>(() => {

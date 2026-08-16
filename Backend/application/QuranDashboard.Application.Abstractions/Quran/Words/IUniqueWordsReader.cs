@@ -35,5 +35,6 @@ public interface IUniqueWordsReader
         int id,
         int page,
         int pageSize,
+        string? typeCode,
         CancellationToken cancellationToken);
 }

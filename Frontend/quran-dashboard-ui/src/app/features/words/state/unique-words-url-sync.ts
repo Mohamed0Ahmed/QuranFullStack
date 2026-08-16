@@ -39,6 +39,10 @@ export function parseUniqueWordsQueryParams(queryParams: ParamMap): ParsedUnique
       ? parsePositiveInt(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.ayahPage)) ?? DEFAULT_AYAH_PAGE
       : null;
 
+  const typeCode = view === 'ayahs'
+    ? parsePosCodeParam(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.typeCode))
+    : null;
+
   return {
     search: queryParams.get(UNIQUE_WORDS_QUERY_KEYS.search) ?? '',
     sort,
@@ -51,6 +55,7 @@ export function parseUniqueWordsQueryParams(queryParams: ParamMap): ParsedUnique
     wordId,
     view,
     ayahPage,
+    typeCode,
   };
 }
 
@@ -64,6 +69,7 @@ export function buildUniqueWordsQueryParams(
     wordId: number | null;
     view: WordDrilldownView | null;
     ayahPage: number | null;
+    typeCode: string | null;
   }>,
 ): Record<string, string | null> {
   const params: Record<string, string | null> = {};
@@ -94,6 +100,9 @@ export function buildUniqueWordsQueryParams(
     params[UNIQUE_WORDS_QUERY_KEYS.ayahPage] =
       changes.ayahPage === null ? null : String(changes.ayahPage);
   }
+  if (changes.typeCode !== undefined) {
+    params[UNIQUE_WORDS_QUERY_KEYS.typeCode] = parsePosCodeParam(changes.typeCode);
+  }
 
   return params;
 }
@@ -109,6 +118,7 @@ export interface UniqueWordsDeepLinkOptions {
   wordId?: number;
   view?: WordDrilldownView;
   ayahPage?: number;
+  typeCode?: string;
 }
 
 export interface UniqueWordsDeepLinkTarget {
@@ -127,6 +137,7 @@ export function buildUniqueWordsDeepLink(
     wordId: number | null;
     view: WordDrilldownView | null;
     ayahPage: number | null;
+    typeCode: string | null;
   }> = {};
 
   if (options.search !== undefined) {
@@ -146,6 +157,9 @@ export function buildUniqueWordsDeepLink(
   }
   if (options.ayahPage !== undefined) {
     queryParams.ayahPage = options.ayahPage;
+  }
+  if (options.typeCode !== undefined) {
+    queryParams.typeCode = options.typeCode;
   }
 
   return {

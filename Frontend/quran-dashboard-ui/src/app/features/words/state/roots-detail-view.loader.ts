@@ -34,6 +34,7 @@ export interface RootsDetailLoadContext {
   readonly view: RootView;
   readonly wordView: RootWordView;
   readonly surahView: RootSurahView;
+  readonly ayahTypeCode: string | null;
   readonly detailPage: number;
   readonly cachedMissingSurahs: RootMissingSurahsDto | null;
 }
@@ -47,8 +48,13 @@ export class RootsDetailViewLoader {
     switch (context.view) {
       case 'ayahs':
         return this.subscribe(
-          this.cache.getOrLoad(RootsCacheKeys.ayahs(context.rootId, context.detailPage), () =>
-            this.api.getRootAyahMatches(context.rootId, context.detailPage, ROOT_DETAIL_PAGE_SIZE),
+          this.cache.getOrLoad(RootsCacheKeys.ayahs(context.rootId, context.detailPage, context.ayahTypeCode), () =>
+            this.api.getRootAyahMatches(
+              context.rootId,
+              context.detailPage,
+              ROOT_DETAIL_PAGE_SIZE,
+              context.ayahTypeCode,
+            ),
           ),
           handlers.onAyahs,
           handlers.onError,

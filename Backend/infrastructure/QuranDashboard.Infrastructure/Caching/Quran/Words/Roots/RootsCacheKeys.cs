@@ -6,11 +6,13 @@ public static class RootsCacheKeys
 {
     public static string SummaryAll => "roots:summary:all";
 
+    public static string Summary(int id) => $"roots:{id}:summary";
+
     public static string WordsAll(int id, RootWordKind kind) =>
         $"roots:{id}:words:{KindKey(kind)}:all";
 
-    public static string Ayahs(int id, int page, int pageSize) =>
-        $"roots:{id}:ayahs:p{page}:s{pageSize}";
+    public static string Ayahs(int id, int page, int pageSize, string? typeCode) =>
+        $"roots:{id}:ayahs:{NormalizeTypeCode(typeCode)}:p{page}:s{pageSize}";
 
     public static string Surahs(int id) => $"roots:{id}:surahs";
 
@@ -26,4 +28,7 @@ public static class RootsCacheKeys
         RootWordKind.Tashkeel => RootWordKindKeys.Tashkeel,
         _ => kind.ToString(),
     };
+
+    private static string NormalizeTypeCode(string? typeCode) =>
+        string.IsNullOrWhiteSpace(typeCode) ? "all" : typeCode.Trim();
 }

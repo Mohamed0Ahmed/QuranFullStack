@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.Words;
+using QuranDashboard.Application.Abstractions.Quran.Words.Morphology.Responses;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots;
 using QuranDashboard.Application.Abstractions.Quran.Words.Roots.Responses;
 using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words;
@@ -64,9 +65,6 @@ internal static class RootsListDerivation
         && filter.Lemmas.Includes(row.LemmasCount)
         && filter.Stems.Includes(row.StemsCount);
 
-    // Ordering is part of the read contract. Every allowlisted column is already
-    // on the row, so no branch costs a join, and each tie-break chain is identical in BOTH directions —
-    // reversing a column never reshuffles its ties, which keeps paging deterministic.
     private static IEnumerable<RootSummaryRow> ApplySort(IEnumerable<RootSummaryRow> rows, RootSortSpec sort) => sort.Column switch
     {
         RootSortColumn.Alpha => ByText(rows, r => r.NormalizedRootText, sort.Direction),
@@ -80,8 +78,6 @@ internal static class RootsListDerivation
         RootSortColumn.MushafOrder => rows
             .OrderBy(r => r.FirstWordOrderInMushaf)
             .ThenBy(r => r.Id),
-        // Explicit, so a column added without an arm here fails loudly instead of silently
-        // serving Mushaf order (mirrors the word-types SQL switches).
         _ => throw new InvalidOperationException($"Unhandled {nameof(RootSortColumn)} value: {sort.Column}."),
     };
 
@@ -93,8 +89,6 @@ internal static class RootsListDerivation
             .ThenBy(r => r.FirstWordOrderInMushaf)
             .ThenBy(r => r.Id);
 
-    // Alpha ties break on Id ALONE — deliberately no Mushaf tie-break, preserving the exact row order
-    // existing sort=alpha links already return.
     private static IOrderedEnumerable<RootSummaryRow> ByText(
         IEnumerable<RootSummaryRow> rows,
         Func<RootSummaryRow, string> text,
@@ -126,5 +120,8 @@ internal static class RootsListDerivation
             row.SimpleWordsCount,
             row.TashkeelWordsCount,
             row.LemmasCount,
-            row.StemsCount);
+            row.StemsCount,
+            row.TypeDistribution
+                .Select(type => new TypeSummaryDto(type.Code, type.ArabicLabel, type.OccurrencesCount))
+                .ToList());
 }

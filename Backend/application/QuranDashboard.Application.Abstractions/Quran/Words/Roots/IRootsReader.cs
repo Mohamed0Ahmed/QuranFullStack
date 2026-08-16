@@ -28,6 +28,7 @@ public interface IRootsReader
         int id,
         int page,
         int pageSize,
+        string? typeCode,
         CancellationToken cancellationToken);
 
     Task<RootSurahsResponse?> GetRootMentionedSurahsAsync(

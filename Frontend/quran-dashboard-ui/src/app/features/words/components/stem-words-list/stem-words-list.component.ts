@@ -54,6 +54,7 @@ export class StemWordsListComponent {
         id: item.uniqueWordId,
         view: 'ayahs',
         ayahPage: 1,
+        typeCode: null,
       },
     })),
   );
