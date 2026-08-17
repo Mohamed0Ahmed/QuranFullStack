@@ -25,14 +25,7 @@ export class AbwabDoorLinkOperationsComponent {
   readonly selectedCount = input(0);
 
   protected readonly state = this.facade.state;
-  protected readonly preparingEdit = computed(() => this.state().edit.status === 'preparing');
   protected readonly deleteBusy = computed(() => this.state().deletion.status === 'writing');
-  protected readonly canEdit = computed(() =>
-    this.doorOpen()
-      && this.facade.selectedRecord() !== null
-      && ['idle', 'load-error'].includes(this.state().edit.status)
-      && !this.state().copy.open,
-  );
   protected readonly canDelete = computed(() =>
     this.doorOpen()
       && this.selectedCount() > 0
@@ -56,7 +49,6 @@ export class AbwabDoorLinkOperationsComponent {
   });
 
   protected get heading(): string { return ABWAB_LABELS.doorLinksOperationsHeading; }
-  protected get editLabel(): string { return ABWAB_LABELS.doorLinksEdit; }
   protected get deleteLabel(): string { return ABWAB_LABELS.doorLinksDelete; }
   protected get copyLabel(): string { return ABWAB_LABELS.doorLinksCopy; }
   protected get noDoorHint(): string { return ABWAB_LABELS.doorLinksNoDoorHint; }
@@ -64,10 +56,6 @@ export class AbwabDoorLinkOperationsComponent {
   protected get deleteConfirmLabel(): string { return ABWAB_DOOR_LINK_OPERATIONS_LABELS.deleteConfirm; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
   protected readonly selectedLabel = computed(() => ABWAB_LABELS.doorLinksSelectedCount(this.selectedCount()));
-
-  protected requestEdit(): void {
-    this.facade.startEdit();
-  }
 
   protected requestDelete(): void {
     this.facade.requestDelete();

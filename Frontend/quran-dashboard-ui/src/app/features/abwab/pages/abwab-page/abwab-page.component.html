@@ -81,10 +81,15 @@
       [hideSectionControls]="archiveParam()"
       [rootCountBySectionId]="rootCountBySectionId()"
       [totalRootCount]="totalRootCount()"
+      [canExpandTree]="tree()?.expansionCommands?.canExpandAll() ?? false"
+      [canCollapseTree]="tree()?.expansionCommands?.canCollapseAll() ?? false"
+      [treeExpansionDisabled]="searchIsFiltering()"
       (sectionChanged)="interactions.onSectionChanged($event)"
       (viewChanged)="interactions.onViewChanged($event)"
       (searchQueryChanged)="interactions.onSearchQueryChanged($event)"
       (searchResultSelected)="onRevealRequested($event)"
+      (expandAllRequested)="tree()?.expansionCommands?.expandAll()"
+      (collapseAllRequested)="tree()?.expansionCommands?.collapseAll()"
     />
 
     @if (facade.isLoading() && !facade.snapshot()) {
@@ -342,6 +347,34 @@
     backdropTestId="abwab-page-ctx-backdrop"
     (dismissed)="overlays.closeContextMenu()"
   >
+    @if (byId().get(overlays.contextMenuDoorId() ?? -1); as contextDoor) {
+      @if (contextDoor.children.length > 0) {
+        <button
+          type="button"
+          role="menuitem"
+          class="qd-context-menu__item"
+          [disabled]="searchIsFiltering() || !(tree()?.expansionCommands?.canExpandBranch(contextDoor.id) ?? false)"
+          [attr.aria-disabled]="searchIsFiltering() || !(tree()?.expansionCommands?.canExpandBranch(contextDoor.id) ?? false)"
+          [title]="searchIsFiltering() ? labels.treeExpansionSearchDisabledHint : labels.treeExpandBranch"
+          data-testid="abwab-page-ctx-expand-branch"
+          (click)="tree()?.expansionCommands?.expandBranch(contextDoor.id); overlays.closeContextMenu()"
+        >
+          {{ labels.treeExpandBranch }}
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          class="qd-context-menu__item"
+          [disabled]="searchIsFiltering() || !(tree()?.expansionCommands?.canCollapseBranch(contextDoor.id) ?? false)"
+          [attr.aria-disabled]="searchIsFiltering() || !(tree()?.expansionCommands?.canCollapseBranch(contextDoor.id) ?? false)"
+          [title]="searchIsFiltering() ? labels.treeExpansionSearchDisabledHint : labels.treeCollapseBranch"
+          data-testid="abwab-page-ctx-collapse-branch"
+          (click)="tree()?.expansionCommands?.collapseBranch(contextDoor.id); overlays.closeContextMenu()"
+        >
+          {{ labels.treeCollapseBranch }}
+        </button>
+      }
+    }
     @if (permissions.canEditDoor()) {
       <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-edit" (click)="interactions.onCtxEdit()">{{ editOpLabel }}</button>
     }

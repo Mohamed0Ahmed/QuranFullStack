@@ -32,11 +32,16 @@ export class AbwabToolbarComponent {
   readonly totalRootCount = input(0);
   readonly hideSectionControls = input(false);
   readonly searchOnly = input(false);
+  readonly canExpandTree = input(false);
+  readonly canCollapseTree = input(false);
+  readonly treeExpansionDisabled = input(false);
 
   readonly sectionChanged = output<number | null>();
   readonly viewChanged = output<AbwabView>();
   readonly searchQueryChanged = output<string>();
   readonly searchResultSelected = output<number>();
+  readonly expandAllRequested = output<void>();
+  readonly collapseAllRequested = output<void>();
 
   protected get sectionTabsAriaLabel(): string { return ABWAB_LABELS.sectionTabsAriaLabel; }
   protected get allDoorsTabLabel(): string { return ABWAB_LABELS.allDoorsTab; }
@@ -46,6 +51,10 @@ export class AbwabToolbarComponent {
   protected get treeViewLabel(): string { return ABWAB_LABELS.viewToggleTree; }
   protected get cardsViewLabel(): string { return ABWAB_LABELS.viewToggleCards; }
   protected get searchResultsAriaLabel(): string { return ABWAB_LABELS.searchResultsAriaLabel; }
+  protected get treeExpansionGroupAriaLabel(): string { return ABWAB_LABELS.treeExpansionGroupAriaLabel; }
+  protected get treeExpandAllLabel(): string { return ABWAB_LABELS.treeExpandAll; }
+  protected get treeCollapseAllLabel(): string { return ABWAB_LABELS.treeCollapseAll; }
+  protected get treeExpansionSearchDisabledHint(): string { return ABWAB_LABELS.treeExpansionSearchDisabledHint; }
 
   protected readonly matchCountText = computed(() => ABWAB_LABELS.searchMatchCount(this.searchMatchCount()));
   protected readonly showSearchResults = computed(() =>

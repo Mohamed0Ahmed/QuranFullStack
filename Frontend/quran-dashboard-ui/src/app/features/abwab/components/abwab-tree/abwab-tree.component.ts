@@ -18,6 +18,7 @@ import { QdHierarchyKeyboardDirective } from '../../../../shared/ui/hierarchy/hi
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabTreeBranchesComponent } from './abwab-tree-branches.component';
+import { AbwabTreeExpansionCommands, AbwabTreeExpansionController } from './abwab-tree-expansion.controller';
 import {
   AbwabTreeRow,
   buildAbwabTreeBranchGuides,
@@ -43,6 +44,7 @@ export interface AbwabTreeMenuRequest {
 export class AbwabTreeComponent {
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly hierarchy = viewChild.required(QdHierarchyKeyboardDirective);
+  private readonly expansion = new AbwabTreeExpansionController();
 
   readonly roots = input<readonly AbwabNode[]>([]);
   readonly orderScope = input<AbwabOrderScope>('section');
@@ -67,7 +69,6 @@ export class AbwabTreeComponent {
   readonly linksToggled = output<number>();
   readonly expandedIdsChanged = output<ReadonlySet<number>>();
 
-  private readonly manuallyExpandedIds = signal<ReadonlySet<number>>(new Set());
   private readonly manualFocusId = signal<number | null>(null);
   protected readonly editingId = signal<number | null>(null);
 
@@ -77,16 +78,13 @@ export class AbwabTreeComponent {
       if (seed.size === 0) {
         return;
       }
-      untracked(() => this.manuallyExpandedIds.update((current) => new Set([...current, ...seed])));
+      untracked(() => this.expansion.seed(seed));
     });
   }
 
-  private readonly effectiveExpandedIds = computed<ReadonlySet<number>>(() => {
-    const manual = this.manuallyExpandedIds();
-    const search = this.searchExpandedIds();
-    return search.size === 0 ? manual : new Set([...manual, ...search]);
-  });
-
+  private readonly effectiveExpandedIds = computed<ReadonlySet<number>>(() =>
+    this.expansion.effectiveIds(this.searchExpandedIds()),
+  );
   protected readonly nodesById = computed(() => {
     const map = new Map<number, AbwabNode>();
     const walk = (node: AbwabNode): void => {
@@ -100,6 +98,12 @@ export class AbwabTreeComponent {
     flattenVisibleAbwabRows(this.roots(), this.effectiveExpandedIds()),
   );
   protected readonly branchGuidesById = computed(() => buildAbwabTreeBranchGuides(this.roots(), 6));
+  readonly expansionCommands = new AbwabTreeExpansionCommands(
+    this.expansion,
+    () => this.roots(),
+    (id) => this.nodesById().get(id),
+    (expandedIds) => this.commitExpanded(expandedIds),
+  );
   protected readonly rovingId = computed(() => {
     const rows = this.visibleRows();
     if (rows.length === 0) {
@@ -371,16 +375,13 @@ export class AbwabTreeComponent {
   }
 
   private setExpanded(id: number, expanded: boolean): void {
-    const next = new Set(this.manuallyExpandedIds());
-    if (expanded) {
-      next.add(id);
-    } else {
-      next.delete(id);
-    }
-    this.manuallyExpandedIds.set(next);
+    this.commitExpanded(this.expansion.setExpanded(id, expanded));
+  }
+
+  private commitExpanded(next: ReadonlySet<number>): void {
     this.expandedIdsChanged.emit(next);
     const openLinksDoorId = this.openLinksDoorId();
-    if (!expanded && openLinksDoorId !== null && !this.visibleRows().some((row) => row.id === openLinksDoorId)) {
+    if (openLinksDoorId !== null && !this.visibleRows().some((row) => row.id === openLinksDoorId)) {
       this.linksToggled.emit(openLinksDoorId);
     }
   }

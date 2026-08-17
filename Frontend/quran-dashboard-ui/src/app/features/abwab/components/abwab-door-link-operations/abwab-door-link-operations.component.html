@@ -6,16 +6,6 @@
   <div class="abwab-door-link-operations__actions">
     <button
       type="button"
-      qdAction="warning"
-      [busy]="preparingEdit()"
-      [disabled]="!canEdit()"
-      data-testid="abwab-door-link-operation-edit"
-      (click)="requestEdit()"
-    >
-      {{ editLabel }}
-    </button>
-    <button
-      type="button"
       qdAction="danger"
       [disabled]="!canDelete()"
       data-testid="abwab-door-link-operation-delete"

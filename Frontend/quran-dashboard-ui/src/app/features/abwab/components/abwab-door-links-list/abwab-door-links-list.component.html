@@ -18,6 +18,9 @@
     [editing]="canSelect() && state().edit.unitId === entry.summary.unitId"
     [selectable]="canSelect()"
     [interactionDisabled]="!canSelect() || facade.interactionLocked()"
+    [canEdit]="canSelect()"
+    [editDisabled]="facade.interactionLocked() || state().edit.status !== 'idle' || state().deletion.confirmationOpen || state().copy.open"
     (selectionToggled)="facade.toggleSelected($event)"
+    (editRequested)="facade.startEdit($event)"
   />
 </cdk-virtual-scroll-viewport>
